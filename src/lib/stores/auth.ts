@@ -1,28 +1,16 @@
-import { writable, get } from 'svelte/store';
+// src/lib/stores/auth.ts
 import { persisted } from 'svelte-persisted-store';
 import { openTab, resetTabs, tabsStore } from './tabs';
+import { get } from 'svelte/store';
+import type { User } from '$lib/types';
 
-/**
- * Store de autenticación persistido
- */
 export const isAuthenticated = persisted<boolean>('brisas-auth', false);
+export const currentUser = persisted<User | null>('brisas-user', null);
 
-/**
- * Usuario actual (opcional, si necesitas guardarlo)
- */
-export const currentUser = persisted<any>('brisas-user', null);
-
-/**
- * Login: actualiza estado y abre tab de bienvenida
- */
-export function login(user?: any): void {
+export function login(user: User): void {
   isAuthenticated.set(true);
-  
-  if (user) {
-    currentUser.set(user);
-  }
-  
-  // Abrir tab de bienvenida solo si no hay tabs abiertos
+  currentUser.set(user);
+
   const tabs = get(tabsStore);
   if (tabs.length === 0) {
     openTab({
@@ -33,22 +21,14 @@ export function login(user?: any): void {
   }
 }
 
-/**
- * Logout: limpia estado y cierra todos los tabs
- */
 export function logout(): void {
   isAuthenticated.set(false);
   currentUser.set(null);
   resetTabs();
 }
 
-/**
- * Verifica si hay sesión activa al iniciar la app
- */
 export function checkSession(): boolean {
   const authenticated = get(isAuthenticated);
-  
-  // Si está autenticado pero no hay tabs, abrir welcome
   if (authenticated) {
     const tabs = get(tabsStore);
     if (tabs.length === 0) {
@@ -59,6 +39,5 @@ export function checkSession(): boolean {
       });
     }
   }
-  
   return authenticated;
 }

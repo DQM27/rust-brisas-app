@@ -1,8 +1,10 @@
+<!-- src/lib/components/layout/Sidebar.svelte -->
 <script lang="ts">
   import { activeView } from '$lib/stores/ui';
   import { get } from 'svelte/store';
-  import { isAuthenticated } from '$lib/stores/auth'; 
-  import { resetTabs } from '$lib/stores/tabs';
+  import { isAuthenticated } from '$lib/stores/auth';
+  import { resetTabs, openTab } from '$lib/stores/tabs';
+  import { getComponent } from '$lib/components/registry';
 
   import {
     User,
@@ -10,31 +12,37 @@
     FileText,
     Settings,
     LogIn,
+    UserPlus,
   } from 'lucide-svelte';
 
   const items = [
     { id: 'users', icon: User, label: 'Usuarios' },
     { id: 'access', icon: Lock, label: 'Accesos' },
     { id: 'logs', icon: FileText, label: 'Logs' },
-    { id: 'settings', icon: Settings, label: 'Configuración' }
+    { id: 'settings', icon: Settings, label: 'Configuración' },
   ];
 
   function select(view: string) {
     activeView.set(view);
   }
 
- 
+  function openUserRegistration() {
+    openTab({
+      componentKey: 'user-register',
+      title: 'Registrar Usuario',
+      focusOnOpen: true
+    });
+  }
+
   function logout() {
     isAuthenticated.set(false);
-
-   resetTabs(); 
-
-    activeView.set("");
+    resetTabs();
+    activeView.set('');
   }
 
   const user = {
-    name: "Daniel",
-    initials: "DQ"
+    name: 'Daniel',
+    initials: 'DQM'
   };
 </script>
 
@@ -45,10 +53,16 @@
         class:selected={get(activeView) === item.id}
         on:click={() => select(item.id)}
       >
-        <item.icon size={22} />
+        <svelte:component this={item.icon} size={22} />
         <span class="tooltip">{item.label}</span>
       </button>
     {/each}
+
+    <!-- Botón para abrir panel de registro como tab -->
+    <button on:click={openUserRegistration} title="Registrar nuevo usuario">
+      <UserPlus size={22} />
+      <span class="tooltip">Registrar Usuario</span>
+    </button>
   </div>
 
   <div class="bottom">
@@ -56,7 +70,6 @@
       {user.initials}
     </div>
 
-   
     <button class="logout" on:click={logout} title="Cerrar sesión">
       <LogIn size={24} />
     </button>
@@ -112,6 +125,7 @@
     border-radius: 4px;
     font-size: 11.5px;
     display: none;
+    z-index: 1000;
   }
 
   button:hover .tooltip {

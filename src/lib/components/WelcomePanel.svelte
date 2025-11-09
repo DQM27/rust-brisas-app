@@ -43,7 +43,7 @@
     justify-content: center;
     background: #1e1e1e;
     color: #e5e5e5;
-    padding: 2rem;
+    
   }
 
   .welcome-content {

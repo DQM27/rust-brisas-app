@@ -1,34 +1,25 @@
-
+<!-- src/lib/components/auth/RegisterForm.svelte -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import type { CreateUserInput } from '$lib/types';
-  
+
   export let loading = false;
-  
+
   let email = '';
   let password = '';
   let nombre = '';
   let apellido = '';
-  let role: string = 'user';
-  
-  const dispatch = createEventDispatcher();
-  
+  let role: 'user' | 'admin' = 'user';
+
+  const dispatch = createEventDispatcher<{ submit: CreateUserInput }>();
+
   function handleSubmit() {
-    const data: CreateUserInput = {
-      email,
-      password,
-      nombre,
-      apellido,
-      role
-    };
-    dispatch('submit', data);
+    if (!email || !password || !nombre || !apellido) return;
+    dispatch('submit', { email, password, nombre, apellido, role });
   }
-  
+
   export function reset() {
-    email = '';
-    password = '';
-    nombre = '';
-    apellido = '';
+    email = password = nombre = apellido = '';
     role = 'user';
   }
 </script>
@@ -92,7 +83,26 @@
     </select>
   </div>
 
-  <button type="submit" class="btn btn-primary" disabled={loading}>
+  <button
+    type="submit"
+    class="btn btn-primary"
+    disabled={loading || !email || !password || !nombre || !apellido}
+  >
     {loading ? 'Procesando...' : 'Registrarse'}
   </button>
 </form>
+
+<style>
+  .form-group { margin-bottom: 1rem; }
+  .form-row { display: flex; gap: 1rem; }
+  .form-row .form-group { flex: 1; }
+  label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #ccc; }
+  input, select {
+    width: 100%; padding: 0.5rem; border: 1px solid #444; border-radius: 4px;
+    background: #1e1e1e; color: #fff; font-size: 14px;
+  }
+  input:focus, select:focus { outline: 2px solid #007acc; border-color: #007acc; }
+  .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
+  .btn-primary { background: #007acc; color: white; }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+</style>

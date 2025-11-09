@@ -3,6 +3,7 @@ import type { ComponentKey } from '$lib/types/tabs';
 
 // Importar todos los componentes de tabs
 import WelcomePanel from '$lib/components/WelcomePanel.svelte';
+import UserRegisterPanel from '$lib/components/admin/UserRegisterPanel.svelte';
 
 // TODO: Importar cuando existan
 // import UserList from '$lib/components/UserList.svelte';
@@ -18,6 +19,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any>> = {
   'user-list': WelcomePanel, // Placeholder
   'user-editor': WelcomePanel, // Placeholder
   'dashboard': WelcomePanel, // Placeholder
+  'user-register': UserRegisterPanel,
 };
 
 /**

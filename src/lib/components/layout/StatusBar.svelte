@@ -1,4 +1,4 @@
-<!-- src/lib/components/layout/StatusBar.svelte -->
+
 <script>
   export let line = 1;
   export let col = 1;

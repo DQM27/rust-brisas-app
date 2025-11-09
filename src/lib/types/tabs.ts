@@ -3,7 +3,7 @@ import type { ComponentType } from 'svelte';
 /**
  * Clave de componente registrado
  */
-export type ComponentKey = 'welcome' | 'user-list' | 'user-editor' | 'dashboard';
+export type ComponentKey = 'welcome' | 'user-list' | 'user-editor' | 'user-register' | 'dashboard' ;
 
 /**
  * Tab serializable para persistencia
