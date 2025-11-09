@@ -16,8 +16,6 @@
     "@floating-ui/dom": "^1.7.4",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
-    "dockview": "^4.11.0",
-    "dockview-core": "^4.11.0",
     "lucide-svelte": "^0.553.0",
     "svelte-dnd-action": "^0.9.67",
     "svelte-floating-ui": "^1.6.2",

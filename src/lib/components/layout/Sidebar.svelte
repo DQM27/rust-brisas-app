@@ -1,7 +1,9 @@
 <script lang="ts">
   import { activeView } from '$lib/stores/ui';
   import { get } from 'svelte/store';
-  
+  import { isAuthenticated } from '$lib/stores/auth'; // ✅ importar store
+  import { resetTabs } from '$lib/stores/tabs';
+
   import {
     User,
     Lock,
@@ -10,7 +12,6 @@
     LogIn,
   } from 'lucide-svelte';
 
-  // Ítems de la barra
   const items = [
     { id: 'users', icon: User, label: 'Usuarios' },
     { id: 'access', icon: Lock, label: 'Accesos' },
@@ -22,7 +23,15 @@
     activeView.set(view);
   }
 
-  // Datos del usuario demo
+  // ✅ función para cerrar sesión
+  function logout() {
+    isAuthenticated.set(false);
+
+   resetTabs(); 
+
+    activeView.set("");
+  }
+
   const user = {
     name: "Daniel",
     initials: "DQ"
@@ -46,7 +55,9 @@
     <div class="avatar" title={user.name}>
       {user.initials}
     </div>
-    <button class="logout">
+
+    <!-- ✅ botón de cerrar sesión -->
+    <button class="logout" on:click={logout} title="Cerrar sesión">
       <LogIn size={18} />
     </button>
   </div>

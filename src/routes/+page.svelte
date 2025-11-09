@@ -1,72 +1,67 @@
-
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { Splitpanes, Pane } from 'svelte-splitpanes';
   import AuthPanel from '$lib/components/auth/AuthPanel.svelte';
-  import WelcomePanel from '$lib/components/WelcomePanel.svelte';
+  import Tabs from '$lib/components/layout/Tabs.svelte';
+  import { tabsStore, activeTabId } from '$lib/stores/tabs';
+  import { isAuthenticated, checkSession } from '$lib/stores/auth';
+
+  onMount(() => {
+    // Verificar sesión y restaurar tabs si es necesario
+    checkSession();
+  });
 </script>
 
 <div class="app">
-  <Splitpanes class="default-theme">
-    <Pane minSize={30} size={40}>
+  {#if !$isAuthenticated}
+    <div class="login-container">
       <AuthPanel />
-    </Pane>
-    <Pane minSize={30} size={40}>
-      <WelcomePanel />
-    </Pane>
-  </Splitpanes>
+    </div>
+
+  {:else}
+    <Splitpanes class="default-theme">
+      <Pane minSize={20} size={25}>
+        <div class="sidebar">
+          <h3>Módulos</h3>
+          <p style="color: #888; font-size: 12px;">Panel lateral para navegación</p>
+          <!-- TODO: Sidebar con menú de navegación -->
+        </div>
+      </Pane>
+
+      <Pane>
+        <Tabs tabs={$tabsStore} />
+      </Pane>
+    </Splitpanes>
+  {/if}
 </div>
 
 <style>
   .app {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  }
-
-  /* Estilos del splitpane */
-  :global(.splitpanes) {
-    background-color: #f5f7fa;
-  }
-
-  :global(.splitpanes__splitter) {
-    background-color: #cbd5e0;
-    position: relative;
-    transition: background-color 0.2s;
-  }
-
-  :global(.splitpanes__splitter:hover) {
-    background-color: #4299e1;
-  }
-
-  :global(.splitpanes__splitter::before) {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    transition: opacity 0.4s;
-    background-color: rgba(66, 153, 225, 0.3);
-    opacity: 0;
-    z-index: 1;
-  }
-
-  :global(.splitpanes__splitter:hover::before) {
-    opacity: 1;
-  }
-
-  :global(.splitpanes--vertical > .splitpanes__splitter::before) {
-    left: -5px;
-    right: -5px;
-    height: 100%;
-  }
-
-  :global(.splitpanes--horizontal > .splitpanes__splitter::before) {
-    top: -5px;
-    bottom: -5px;
     width: 100%;
+    height: 100%;
+    overflow: hidden;
   }
 
-  /* Panel contenedor */
-  :global(.splitpanes__pane) {
-    overflow: auto;
+  .login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: #1e1e1e;
+  }
+
+  .sidebar {
+    height: 100%;
+    padding: 16px;
+    background: #252526;
+    color: #ccc;
+    overflow-y: auto;
+  }
+
+  .sidebar h3 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
   }
 </style>
