@@ -10,7 +10,7 @@
     <Pane minSize={30} size={40}>
       <AuthPanel />
     </Pane>
-    <Pane>
+    <Pane minSize={30} size={40}>
       <WelcomePanel />
     </Pane>
   </Splitpanes>
@@ -18,9 +18,9 @@
 
 <style>
   .app {
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
   }
 
   /* Estilos del splitpane */

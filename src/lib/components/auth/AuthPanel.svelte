@@ -8,6 +8,7 @@
   import UserList from './UserList.svelte';
   import Alert from './Alert.svelte';
   import { onMount } from 'svelte';
+  import { isAuthenticated } from '$lib/stores/auth';
 
   let mode: 'login' | 'register' = 'login';
   let error = '';
@@ -45,6 +46,7 @@
     } finally {
       loading = false;
     }
+    isAuthenticated.set(true);
   }
 
   async function handleRegister(event: CustomEvent) {
@@ -65,6 +67,7 @@
 
   function handleLogout() {
     user = null;
+    isAuthenticated.set(false);
     success = '';
     error = '';
   }

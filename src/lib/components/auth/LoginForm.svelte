@@ -2,6 +2,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   
+  
   export let loading = false;
   
   let email = '';
