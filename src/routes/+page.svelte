@@ -15,44 +15,24 @@
   });
 </script>
 
-<div class="app">
-  {#if !$isAuthenticated}
-    <div class="login-container">
-      <!-- Login ahora está en /login, no se muestra aquí -->
-      <div style="display: none;"></div>
-    </div>
-  {:else}
-    <Splitpanes class="default-theme">
-      <Pane minSize={20} size={25}>
-        <div class="sidebar">
-          <h3>Módulos</h3>
-          <p style="color: #888; font-size: 12px;">Panel lateral para navegación</p>
-          <!-- TODO: Sidebar con menú de navegación -->
-        </div>
-      </Pane>
+{#if $isAuthenticated}
+  <Splitpanes class="default-theme">
+    <Pane minSize={20} size={25}>
+      <div class="sidebar">
+        <h3>Módulos</h3>
+        <p style="color: #888; font-size: 12px;">Panel lateral para navegación</p>
+      </div>
+    </Pane>
 
-      <Pane>
-        <Tabs tabs={$tabsStore} />
-      </Pane>
-    </Splitpanes>
-  {/if}
-</div>
+    <Pane>
+      <Tabs tabs={$tabsStore} />
+    </Pane>
+  </Splitpanes>
+{:else}
+  <div style="display: none;"></div>
+{/if}
 
 <style>
-  .app {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-  }
-
-  .login-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background: #1e1e1e;
-  }
-
   .sidebar {
     height: 100%;
     padding: 16px;
