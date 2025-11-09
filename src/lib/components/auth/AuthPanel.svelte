@@ -91,63 +91,24 @@
 
 <style>
   .auth-panel {
+    width: 100%;
     height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-primary);
     overflow-y: auto;
-    background: #f5f7fa;
+    padding: 2rem;
   }
 
   .auth-container {
     width: 100%;
-    max-width: 480px;
-    margin: 0 auto;
-    padding: 1.5rem;
+    max-width: 420px;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
   }
 
-  .card {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  .card-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .card-header h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #111827;
-  }
-
-  .card-body {
-    padding: 1.5rem;
-  }
-
-  .text-center {
-    margin-top: 1rem;
-    text-align: center;
-  }
-
-  .btn-link {
-    background: none;
-    border: none;
-    color: #3b82f6;
-    cursor: pointer;
-    font-size: 0.875rem;
-    padding: 0.5rem;
-  }
-
-  .btn-link:hover:not(:disabled) {
-    text-decoration: underline;
-  }
-
-  .btn-link:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  /* Los estilos de .card, .card-header, .card-body, .text-center y .btn-link 
+     ya están definidos en app.css global */
 </style>
