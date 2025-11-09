@@ -27,7 +27,7 @@
       success = `¡Bienvenido, ${user.nombre}!`;
       loginForm?.reset();
       
-      // Usar helper de auth que maneja tabs automáticamente
+      
       login(user);
       
     } catch (e: any) {
@@ -109,6 +109,5 @@
     gap: 1.5rem;
   }
 
-  /* Los estilos de .card, .card-header, .card-body, .text-center y .btn-link 
-     ya están definidos en app.css global */
+  
 </style>

@@ -17,6 +17,7 @@
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "lucide-svelte": "^0.553.0",
+    "svelte-5-french-toast": "^2.0.6",
     "svelte-dnd-action": "^0.9.67",
     "svelte-floating-ui": "^1.6.2",
     "svelte-headlessui": "^0.0.46",

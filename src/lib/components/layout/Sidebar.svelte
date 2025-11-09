@@ -1,7 +1,7 @@
 <script lang="ts">
   import { activeView } from '$lib/stores/ui';
   import { get } from 'svelte/store';
-  import { isAuthenticated } from '$lib/stores/auth'; // ✅ importar store
+  import { isAuthenticated } from '$lib/stores/auth'; 
   import { resetTabs } from '$lib/stores/tabs';
 
   import {
@@ -23,7 +23,7 @@
     activeView.set(view);
   }
 
-  // ✅ función para cerrar sesión
+ 
   function logout() {
     isAuthenticated.set(false);
 
@@ -56,9 +56,9 @@
       {user.initials}
     </div>
 
-    <!-- ✅ botón de cerrar sesión -->
+   
     <button class="logout" on:click={logout} title="Cerrar sesión">
-      <LogIn size={18} />
+      <LogIn size={24} />
     </button>
   </div>
 </div>

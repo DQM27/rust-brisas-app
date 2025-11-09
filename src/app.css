@@ -556,3 +556,8 @@ textarea::placeholder {
     transform: rotate(360deg);
   }
 }
+
+/* src/app.css (añade al final) */
+.custom-toast { border-left: 4px solid #007acc; }
+.custom-toast[data-type="success"] { border-left-color: #42b883; }
+.custom-toast[data-type="error"] { border-left-color: #e81123; }

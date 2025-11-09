@@ -1,77 +1,44 @@
+<!-- src/routes/+layout.svelte -->
 <script>
   import '../app.css';
   import { isAuthenticated } from '$lib/stores/auth';
   import Sidebar from '$lib/components/layout/Sidebar.svelte';
+  import TopPanel from '$lib/components/layout/TopPanel.svelte';
+  import StatusBar from '$lib/components/layout/StatusBar.svelte';
+  import Toast from '$lib/components/Toast.svelte';
+  import { toast } from 'svelte-5-french-toast';
+  
+  function showSuccess() {
+    toast.success('Archivo guardado');
+  }
 </script>
 
 <div class="layout">
-  <div class="top-panel">
-    <nav class="top-menu">
-      <ul>
-        <li>File</li><li>Edit</li><li>Selection</li><li>View</li><li>Go</li><li>Run</li><li>Terminal</li><li>Help</li>
-      </ul>
-    </nav>
-    <div class="search-bar">
-      <input placeholder="Buscar" />
-    </div>
-    <div class="window-controls">
-      <button class="minimize">−</button>
-      <button class="maximize">□</button>
-      <button class="close">×</button>
-    </div>
-  </div>
+  <TopPanel>
+    <li><button class="menu-btn">File</button></li>
+    <li><button class="menu-btn">Edit</button></li>
+    <li><button class="menu-btn">Selection</button></li>
+    <li><button class="menu-btn">View</button></li>
+    <li><button class="menu-btn">Go</button></li>
+    <li><button class="menu-btn" on:click={showSuccess}>Run</button></li>
+    <li><button class="menu-btn">Terminal</button></li>
+    <li><button class="menu-btn">Help</button></li>
+  </TopPanel>
 
   <div class="main">
-    {#if $isAuthenticated}
-      <Sidebar />
-    {/if}
-    <div class="editor-area">
-      <slot />
-    </div>
+    {#if $isAuthenticated}<Sidebar />{/if}
+    <main class="content"><slot /></main>
   </div>
 
-  <div class="status-bar">
-    <div class="status-left">Ln 1, Col 1  Spaces: 2  UTF-8  HTML</div>
-    <div class="status-right">
-      <span>Remote</span>
-      <span>0</span>
-    </div>
-  </div>
+  <StatusBar line={1} col={1} encoding="UTF-8" language="HTML" remote={false} notifications={0} />
 </div>
 
+<Toast />
+
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; font-family:Segoe UI,Helvetica,Arial,sans-serif; }
-  :global(html,body) { height:100%; overflow:hidden; background:#252526; color:#ccc; }
-  .layout { display:flex; flex-direction:column; height:100vh; }
-  .top-panel { background:#3c3c3c; padding:0 8px; display:flex; align-items:center; height:35px; }
-  .top-menu ul { display:flex; list-style:none; }
-  .top-menu li { padding:0 12px; font-size:13px; cursor:pointer; }
-  .top-menu li:hover { background:#2a2d2e; }
-  .search-bar { flex:1; max-width:500px; margin:0 16px; position:relative; background:#252526; border-radius:4px; }
-  .search-bar input { width:100%; background:transparent; border:none; padding:4px 8px 4px 28px; color:#fff; font-size:13px; outline:none; text-align:center; }
-  .search-bar input::placeholder { color:#858585; text-align:center; }
-  .search-bar::before { content:'🔍'; position:absolute; left:8px; top:50%; transform:translateY(-50%); color:#9e9e9e; font-size:14px; }
-  .window-controls { display:flex; }
-  .window-controls button { background:none; border:none; color:#fff; font-size:16px; width:46px; height:100%; cursor:pointer; }
-  .window-controls button:hover { background:#2a2d2e; }
-  .close:hover { background:#e81123; }
-
-  /* MAIN LAYOUT FIX */
-  .main {
-    display: flex;
-    flex-direction: row;
-    flex: 1;
-    width: 100%;
-    height: 100%;
-  }
-
-  .editor-area {
-    flex: 1;
-    background: #1e1e1e;
-    padding: 16px;
-  }
-
-  .status-bar { background:#007acc; height:22px; display:flex; align-items:center; padding:0 8px; font-size:12px; }
-  .status-left { flex:1; }
-  .status-right { display:flex; gap:16px; }
+  .layout { display: flex; flex-direction: column; height: 100vh; }
+  .main { display: flex; flex: 1; overflow: hidden; }
+  .content { flex: 1; overflow: auto; background: #1e1e1e }
+  .menu-btn { background: none; border: none; color: inherit; font: inherit; padding: 0 12px; cursor: pointer; height: 100%; }
+  .menu-btn:hover { background: #2a2d2e; }
 </style>

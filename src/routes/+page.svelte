@@ -7,7 +7,7 @@
   import { isAuthenticated, checkSession } from '$lib/stores/auth';
 
   onMount(() => {
-    // Verificar sesión y restaurar tabs si es necesario
+   
     checkSession();
   });
 </script>
@@ -20,16 +20,18 @@
 
   {:else}
     <Splitpanes class="default-theme">
-      <Pane minSize={20} size={25}>
-        <div class="sidebar">
-          <h3>Módulos</h3>
-          <p style="color: #888; font-size: 12px;">Panel lateral para navegación</p>
-          <!-- TODO: Sidebar con menú de navegación -->
-        </div>
-      </Pane>
-
+      
       <Pane>
         <Tabs tabs={$tabsStore} />
+       
+      </Pane>
+
+       <Pane minSize={10} size={10}>
+         <div class="sidebar">
+          <h3>Módulos</h3>
+          <p style="color: #888; font-size: 12px;">Panel lateral para navegación</p>
+          
+        </div>
       </Pane>
     </Splitpanes>
   {/if}
