@@ -1,6 +1,5 @@
 <script lang="ts">
-  import '../app.css';
-  import { isAuthenticated } from '$lib/stores/auth';
+   import { isAuthenticated } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import Sidebar from '$lib/components/layout/Sidebar.svelte';

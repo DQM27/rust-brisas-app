@@ -1,18 +1,19 @@
-
+<!-- src/lib/components/layout/Sidebar.svelte -->
 <script lang="ts">
   import { activeView } from '$lib/stores/ui';
   import { get } from 'svelte/store';
   import { isAuthenticated } from '$lib/stores/auth';
   import { resetTabs, openTab } from '$lib/stores/tabs';
   import { getComponent } from '$lib/components/registry';
-  import { logout } from '$lib/stores/auth';
+  // Elimina la importación de logout o renómbrala si la necesitas
+  // import { logout } from '$lib/stores/auth';
 
   import {
     User,
     Lock,
     FileText,
     Settings,
-    LogIn,
+    LogOut,
     UserPlus,
   } from 'lucide-svelte';
 
@@ -35,10 +36,13 @@
     });
   }
 
-  function logout() {
+  // Si necesitas usar la función logout del store, renómbrala o elimina esta función
+  function handleLogout() {
     isAuthenticated.set(false);
     resetTabs();
     activeView.set('');
+    // Si necesitas ejecutar la función del store auth:
+    // logout(); // Esto solo si la importas renombrada
   }
 
   const user = {
@@ -71,8 +75,9 @@
       {user.initials}
     </div>
 
-    <button on:click={logout}>Cerrar sesión</button>
-      <LogIn size={24} />
+    <button on:click={handleLogout} class="logout" title="Cerrar sesión">
+      <LogOut size={20} />
+      <span class="tooltip">Cerrar sesión</span>
     </button>
   </div>
 </div>
