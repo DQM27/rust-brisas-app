@@ -5,6 +5,7 @@
   import Sidebar from '$lib/components/layout/Sidebar.svelte';
   import StatusBar from '$lib/components/layout/StatusBar.svelte';
   import { get } from 'svelte/store';
+  import { onMount } from 'svelte';
 
   // Estado para la StatusBar
   let statusState = {
@@ -19,7 +20,19 @@
     showBattery: false // Ocultar batería por defecto en web
   };
 
-  // Manejar eventos de la StatusBar - CORREGIDO
+  // Verificar autenticación al montar
+  let authenticated = false;
+  
+  onMount(() => {
+    // Suscribirse al store de autenticación
+    const unsubscribe = isAuthenticated.subscribe(value => {
+      authenticated = value;
+    });
+    
+    return () => unsubscribe();
+  });
+
+  // Manejar eventos de la StatusBar
   function handleStatusEvent(event: CustomEvent) {
     const type = event.type;
     console.log('Evento de barra de estado:', type);
@@ -55,41 +68,17 @@
 </script>
 
 <div class="layout">
-  <!-- Top Panel (VS Code style) -->
-  <div class="top-panel">
-    <nav class="top-menu">
-      <ul>
-        <li>Archivo</li>
-        <li>Editar</li>
-        <li>Selección</li>
-        <li>Ver</li>
-        <li>Ir</li>
-        <li>Ejecutar</li>
-        <li>Terminal</li>
-        <li>Ayuda</li>
-      </ul>
-    </nav>
-    <div class="search-bar">
-      <input placeholder="Buscar en el sistema..." />
-    </div>
-    <div class="window-controls">
-      <button class="minimize">−</button>
-      <button class="maximize">□</button>
-      <button class="close">×</button>
-    </div>
-  </div>
-
-  <!-- Main Area -->
+  <!-- Main Area - Sin Top Panel -->
   <div class="main">
-    {#if get(isAuthenticated)}
+    {#if authenticated}
       <Sidebar />
     {/if}
-    <div class="editor-area">
+    <div class="content-area">
       <slot />
     </div>
   </div>
 
-  <!-- Nueva StatusBar con lucide-svelte -->
+  <!-- StatusBar -->
   <StatusBar 
     {...statusState}
     on:sync={handleStatusEvent}
@@ -121,98 +110,6 @@
     background: #1e1e1e;
   }
 
-  /* TOP PANEL */
-  .top-panel { 
-    background: #3c3c3c; 
-    padding: 0 8px; 
-    display: flex; 
-    align-items: center; 
-    height: 35px; 
-    border-bottom: 1px solid #2d2d2d;
-    -webkit-app-region: drag;
-  }
-  
-  .top-menu ul { 
-    display: flex; 
-    list-style: none; 
-    margin-right: 16px;
-  }
-  
-  .top-menu li { 
-    padding: 0 12px; 
-    font-size: 13px; 
-    cursor: pointer; 
-    height: 35px;
-    display: flex;
-    align-items: center;
-    -webkit-app-region: no-drag;
-    transition: background-color 0.15s ease;
-  }
-  
-  .top-menu li:hover { 
-    background: #2a2d2e; 
-  }
-  
-  .search-bar { 
-    flex: 1; 
-    max-width: 400px; 
-    margin: 0 16px; 
-    position: relative; 
-    background: #252526; 
-    border-radius: 4px; 
-    border: 1px solid #3c3c3c;
-  }
-  
-  .search-bar input { 
-    width: 100%; 
-    background: transparent; 
-    border: none; 
-    padding: 6px 12px 6px 32px; 
-    color: #fff; 
-    font-size: 13px; 
-    outline: none; 
-    -webkit-app-region: no-drag;
-  }
-  
-  .search-bar input::placeholder { 
-    color: #858585; 
-  }
-  
-  .search-bar::before { 
-    content: '🔍';
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 12px;
-    color: #858585;
-  }
-  
-  .window-controls { 
-    display: flex; 
-    -webkit-app-region: no-drag;
-  }
-  
-  .window-controls button { 
-    background: none; 
-    border: none; 
-    color: #ccc; 
-    font-size: 16px; 
-    width: 46px; 
-    height: 100%; 
-    cursor: pointer; 
-    transition: background-color 0.15s ease;
-  }
-  
-  .window-controls button:hover { 
-    background: #2a2d2e; 
-  }
-  
-  .close:hover { 
-    background: #e81123; 
-    color: white;
-  }
-
   /* MAIN LAYOUT */
   .main {
     display: flex;
@@ -223,42 +120,17 @@
     background: #1e1e1e;
   }
 
-  .editor-area {
+  .content-area {
     flex: 1;
     background: #1e1e1e;
     overflow: auto;
     position: relative;
+    display: flex;
   }
 
-  /* Responsive para móviles */
-  @media (max-width: 768px) {
-    .top-panel {
-      padding: 0 4px;
-    }
-    
-    .top-menu ul {
-      margin-right: 8px;
-    }
-    
-    .top-menu li {
-      padding: 0 8px;
-      font-size: 12px;
-    }
-    
-    .search-bar {
-      max-width: 200px;
-      margin: 0 8px;
-    }
-    
-    .search-bar input {
-      padding: 6px 8px 6px 28px;
-      font-size: 12px;
-    }
-    
-    .window-controls button {
-      width: 36px;
-      font-size: 14px;
-    }
+  /* Asegurar que el slot ocupe todo el espacio */
+  .content-area > :global(*) {
+    flex: 1;
   }
 
   /* Scrollbar personalizada */
@@ -277,5 +149,16 @@
 
   :global(::-webkit-scrollbar-thumb:hover) {
     background: #4f4f4f;
+  }
+
+  /* Responsive para móviles */
+  @media (max-width: 768px) {
+    .main {
+      flex-direction: column;
+    }
+    
+    .content-area {
+      min-height: calc(100vh - 24px);
+    }
   }
 </style>
