@@ -5,8 +5,7 @@
   import { isAuthenticated } from '$lib/stores/auth';
   import { resetTabs, openTab } from '$lib/stores/tabs';
   import { getComponent } from '$lib/components/registry';
-  // Elimina la importación de logout o renómbrala si la necesitas
-  // import { logout } from '$lib/stores/auth';
+  import { goto } from '$app/navigation'; // ✅ AÑADE ESTA IMPORTACIÓN
 
   import {
     User,
@@ -36,13 +35,11 @@
     });
   }
 
-  // Si necesitas usar la función logout del store, renómbrala o elimina esta función
   function handleLogout() {
     isAuthenticated.set(false);
     resetTabs();
     activeView.set('');
-    // Si necesitas ejecutar la función del store auth:
-    // logout(); // Esto solo si la importas renombrada
+    goto('/login'); // ✅ AÑADE ESTA LÍNEA PARA REDIRIGIR
   }
 
   const user = {
