@@ -30,7 +30,7 @@
     }
   }
 
-  // Computed para el título del botón - CORRECCIÓN
+  // Computed para el título del botón
   $: inspectionToggleTitle = $inspectionPanel.visible 
     ? 'Ocultar panel de inspección' 
     : 'Mostrar panel de inspección';
@@ -38,22 +38,15 @@
 
 {#if $isAuthenticated}
   <div class="main-container">
-    <Splitpanes class="default-theme">
-      <!-- Panel lateral izquierdo -->
-      <Pane minSize={15} size={20}>
-        <div class="sidebar">
-          <h3>Módulos</h3>
-          <div class="module-list">
-            <div class="module-item active">Dashboard</div>
-            <div class="module-item">Usuarios</div>
-            <div class="module-item">Accesos</div>
-            <div class="module-item">Reportes</div>
-            <div class="module-item">Configuración</div>
-          </div>
+    <Splitpanes horizontal class="default-theme">
+      <!-- Contenido principal -->
+      <Pane minSize={30} size={$inspectionPanel.visible ? 70 : 100}>
+        <div class="content-area">
+          <Tabs tabs={$tabsStore} />
           
-          <!-- Botón para controlar panel de inspección - CORREGIDO -->
+          <!-- Botón flotante para controlar panel de inspección -->
           <button 
-            class="inspection-toggle" 
+            class="inspection-toggle-floating" 
             on:click={toggleInspectionPanel}
             on:keydown={(e) => handleKeyPress(e, toggleInspectionPanel)}
             type="button"
@@ -70,55 +63,43 @@
         </div>
       </Pane>
 
-      <!-- Área principal dividida verticalmente -->
-      <Pane>
-        <Splitpanes horizontal>
-          <!-- Contenido principal -->
-          <Pane minSize={30} size={$inspectionPanel.visible ? 70 : 100}>
-            <div class="content-area">
-              <Tabs tabs={$tabsStore} />
+      <!-- Panel de inspección -->
+      {#if $inspectionPanel.visible}
+        <Pane minSize={20} size={30}>
+          <div class="inspection-panel">
+            <div class="inspection-header">
+              <h4>Panel de Inspección</h4>
+              <button 
+                class="close-btn" 
+                on:click={toggleInspectionPanel}
+                on:keydown={(e) => handleKeyPress(e, toggleInspectionPanel)}
+                type="button"
+                title="Cerrar panel de inspección"
+              >
+                <ChevronDown size={16} />
+              </button>
             </div>
-          </Pane>
-
-          <!-- Panel de inspección -->
-          {#if $inspectionPanel.visible}
-            <Pane minSize={20} size={30}>
-              <div class="inspection-panel">
-                <div class="inspection-header">
-                  <h4>Panel de Inspección</h4>
-                  <button 
-                    class="close-btn" 
-                    on:click={toggleInspectionPanel}
-                    on:keydown={(e) => handleKeyPress(e, toggleInspectionPanel)}
-                    type="button"
-                    title="Cerrar panel de inspección"
-                  >
-                    <ChevronDown size={16} />
-                  </button>
+            <div class="inspection-content">
+              {inspectionContent}
+              
+              <div class="inspection-items">
+                <div class="inspection-item">
+                  <span class="label">Estado:</span>
+                  <span class="value success">Conectado</span>
                 </div>
-                <div class="inspection-content">
-                  {inspectionContent}
-                  
-                  <div class="inspection-items">
-                    <div class="inspection-item">
-                      <span class="label">Estado:</span>
-                      <span class="value success">Conectado</span>
-                    </div>
-                    <div class="inspection-item">
-                      <span class="label">Última actualización:</span>
-                      <span class="value">{new Date().toLocaleTimeString()}</span>
-                    </div>
-                    <div class="inspection-item">
-                      <span class="label">Registros hoy:</span>
-                      <span class="value">1,247</span>
-                    </div>
-                  </div>
+                <div class="inspection-item">
+                  <span class="label">Última actualización:</span>
+                  <span class="value">{new Date().toLocaleTimeString()}</span>
+                </div>
+                <div class="inspection-item">
+                  <span class="label">Registros hoy:</span>
+                  <span class="value">1,247</span>
                 </div>
               </div>
-            </Pane>
-          {/if}
-        </Splitpanes>
-      </Pane>
+            </div>
+          </div>
+        </Pane>
+      {/if}
     </Splitpanes>
   </div>
 {:else}
@@ -131,77 +112,40 @@
     background: #1e1e1e;
   }
 
-  .sidebar {
-    height: 100%;
-    padding: 16px;
-    background: #252526;
-    color: #ccc;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .sidebar h3 {
-    margin: 0 0 20px 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #fff;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #3c3c3c;
-  }
-
-  .module-list {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .module-item {
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 13px;
-    transition: background-color 0.15s ease;
-  }
-
-  .module-item:hover {
-    background: #2a2d2e;
-  }
-
-  .module-item.active {
-    background: #094771;
-    color: #fff;
-  }
-
-  .inspection-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px;
-    background: #2d2d2d;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    color: #ccc;
-    margin-top: auto;
-    transition: background-color 0.15s ease;
-    border: none;
-    width: 100%;
-    text-align: left;
-  }
-
-  .inspection-toggle:hover {
-    background: #3c3c3c;
-  }
-
-  .inspection-toggle:focus {
-    outline: 2px solid #007acc;
-    outline-offset: 1px;
-  }
-
   .content-area {
     height: 100%;
     background: #1e1e1e;
+    position: relative;
+  }
+
+  /* Botón flotante para panel de inspección */
+  .inspection-toggle-floating {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #007acc;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: background-color 0.15s ease;
+  }
+
+  .inspection-toggle-floating:hover {
+    background: #1177bb;
+  }
+
+  .inspection-toggle-floating:focus {
+    outline: 2px solid #007acc;
+    outline-offset: 2px;
   }
 
   .inspection-panel {
