@@ -7,7 +7,7 @@
   import { isAuthenticated, checkSession } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
   import { inspectionPanel } from '$lib/stores/ui';
-  import { ChevronUp, ChevronDown } from 'lucide-svelte';
+  import { ChevronDown } from 'lucide-svelte';
 
   let inspectionContent = "Panel de inspección - Aquí puedes mostrar logs, detalles, información de depuración, etc.";
   
@@ -18,11 +18,7 @@
     }
   });
 
-  function toggleInspectionPanel() {
-    $inspectionPanel.visible = !$inspectionPanel.visible;
-  }
-
-  // Función para manejar teclado
+  // Función para manejar teclado (solo para el botón de cerrar)
   function handleKeyPress(event: KeyboardEvent, handler: () => void): void {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -30,10 +26,10 @@
     }
   }
 
-  // Computed para el título del botón
-  $: inspectionToggleTitle = $inspectionPanel.visible 
-    ? 'Ocultar panel de inspección' 
-    : 'Mostrar panel de inspección';
+  // Función para cerrar el panel desde dentro
+  function closeInspectionPanel(): void {
+    $inspectionPanel.visible = false;
+  }
 </script>
 
 {#if $isAuthenticated}
@@ -43,23 +39,6 @@
       <Pane minSize={30} size={$inspectionPanel.visible ? 70 : 100}>
         <div class="content-area">
           <Tabs tabs={$tabsStore} />
-          
-          <!-- Botón flotante para controlar panel de inspección -->
-          <button 
-            class="inspection-toggle-floating" 
-            on:click={toggleInspectionPanel}
-            on:keydown={(e) => handleKeyPress(e, toggleInspectionPanel)}
-            type="button"
-            title={inspectionToggleTitle}
-          >
-            {#if $inspectionPanel.visible}
-              <ChevronDown size={16} />
-              <span>Ocultar Inspección</span>
-            {:else}
-              <ChevronUp size={16} />
-              <span>Mostrar Inspección</span>
-            {/if}
-          </button>
         </div>
       </Pane>
 
@@ -71,8 +50,8 @@
               <h4>Panel de Inspección</h4>
               <button 
                 class="close-btn" 
-                on:click={toggleInspectionPanel}
-                on:keydown={(e) => handleKeyPress(e, toggleInspectionPanel)}
+                on:click={closeInspectionPanel}
+                on:keydown={(e) => handleKeyPress(e, closeInspectionPanel)}
                 type="button"
                 title="Cerrar panel de inspección"
               >
@@ -108,44 +87,13 @@
 
 <style>
   .main-container {
-    height: 100vh;
+    height: 100%;
     background: #1e1e1e;
   }
 
   .content-area {
     height: 100%;
     background: #1e1e1e;
-    position: relative;
-  }
-
-  /* Botón flotante para panel de inspección */
-  .inspection-toggle-floating {
-    position: absolute;
-    bottom: 16px;
-    right: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: #007acc;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    z-index: 100;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    transition: background-color 0.15s ease;
-  }
-
-  .inspection-toggle-floating:hover {
-    background: #1177bb;
-  }
-
-  .inspection-toggle-floating:focus {
-    outline: 2px solid #007acc;
-    outline-offset: 2px;
   }
 
   .inspection-panel {

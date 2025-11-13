@@ -12,7 +12,11 @@
     BatteryMedium,
     BatteryLow,
     Clock,
-    AlertTriangle
+    AlertTriangle,
+    Eye,
+    EyeOff,
+    ChevronUp,
+    ChevronDown
   } from 'lucide-svelte';
 
   // Props del componente
@@ -25,6 +29,10 @@
   export let usersOnline: number = 0;
   export let batteryLevel: number = 100;
   export let showBattery: boolean = false;
+  
+  // Nueva prop para el panel de inspección
+  export let inspectionPanelVisible: boolean = false;
+  export let onInspectionToggle: () => void = () => {};
 
   // Formatear fecha y hora con tipos TypeScript
   function formatTime(date: Date): string {
@@ -42,7 +50,7 @@
   import { createEventDispatcher } from 'svelte';
   const dispatch = createEventDispatcher();
 
-  // Handlers para eventos - CORREGIDOS
+  // Handlers para eventos
   function handleSyncClick(): void {
     console.log('Sincronizar manualmente');
     dispatch('sync', {});
@@ -63,13 +71,25 @@
     dispatch('users', {});
   }
 
-  // Handler para teclado - CORRECCIÓN A11Y
+  // Nuevo handler para el panel de inspección
+  function handleInspectionClick(): void {
+    console.log('Toggle panel de inspección');
+    onInspectionToggle();
+    dispatch('inspectionToggle', { visible: !inspectionPanelVisible });
+  }
+
+  // Handler para teclado
   function handleKeyPress(event: KeyboardEvent, handler: () => void): void {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       handler();
     }
   }
+
+  // Computed para el título del botón de inspección
+  $: inspectionToggleTitle = inspectionPanelVisible 
+    ? 'Ocultar panel de inspección' 
+    : 'Mostrar panel de inspección';
 </script>
 
 <div class="status-bar">
@@ -136,8 +156,25 @@
     {/if}
   </div>
   
-  <!-- Sección derecha - Alertas y notificaciones -->
+  <!-- Sección derecha - Alertas, notificaciones e inspección -->
   <div class="status-right">
+    <!-- Botón de inspección (clickeable) -->
+    <button 
+      class="status-item inspection-toggle {inspectionPanelVisible ? 'active' : ''}" 
+      on:click={handleInspectionClick}
+      on:keydown={(e) => handleKeyPress(e, handleInspectionClick)}
+      type="button"
+      title={inspectionToggleTitle}
+    >
+      {#if inspectionPanelVisible}
+        <EyeOff size={14} />
+        <span>Inspección</span>
+      {:else}
+        <Eye size={14} />
+        <span>Inspección</span>
+      {/if}
+    </button>
+    
     <!-- Nivel de batería (no clickeable) -->
     {#if showBattery && batteryLevel < 100}
       <div class="status-item battery" role="status">
@@ -237,6 +274,12 @@
   /* Elementos no interactivos (divs) */
   div.status-item {
     cursor: default;
+  }
+  
+  /* Estado activo para el botón de inspección */
+  .status-item.inspection-toggle.active {
+    background: var(--status-bar-active, rgba(0, 122, 204, 0.4));
+    color: var(--status-bar-active-foreground, #ffffff);
   }
   
   .status-item.timestamp {

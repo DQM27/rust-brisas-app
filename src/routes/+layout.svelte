@@ -5,6 +5,7 @@
   import Sidebar from '$lib/components/layout/sidebar/Sidebar.svelte';
   import StatusBar from '$lib/components/layout/StatusBar.svelte';
   import { onMount } from 'svelte';
+  import { inspectionPanel } from '$lib/stores/ui'; // Importar el store de inspección
 
   // Definir el tipo para syncStatus
   type SyncStatus = 'synced' | 'syncing' | 'error';
@@ -13,7 +14,7 @@
   let statusState = {
     online: navigator.onLine,
     loading: false,
-    syncStatus: 'synced' as SyncStatus, // ✅ Ahora acepta los 3 estados
+    syncStatus: 'synced' as SyncStatus,
     lastUpdate: new Date(),
     notifications: 0,
     alerts: 0,
@@ -24,6 +25,11 @@
 
   // Estado de autenticación reactivo
   $: authenticated = $isAuthenticated;
+
+  // Función para toggle del panel de inspección
+  function toggleInspectionPanel(): void {
+    $inspectionPanel.visible = !$inspectionPanel.visible;
+  }
 
   // Manejar eventos de la StatusBar con lógica real
   function handleStatusEvent(event: CustomEvent) {
@@ -43,6 +49,9 @@
       case 'users':
         handleUsers();
         break;
+      case 'inspectionToggle': // Nuevo evento para el panel de inspección
+        console.log('Panel de inspección toggled:', event.detail.visible);
+        break;
     }
   }
 
@@ -51,7 +60,7 @@
     statusState = {
       ...statusState,
       loading: true,
-      syncStatus: 'syncing' // ✅ Ahora es válido
+      syncStatus: 'syncing'
     };
     
     // Simular sincronización
@@ -67,21 +76,15 @@
   }
 
   function handleNotifications(): void {
-    // Aquí iría la lógica para abrir el panel de notificaciones
     console.log('Abriendo panel de notificaciones...');
-    // Ejemplo: abrir un modal o cambiar vista
   }
 
   function handleAlerts(): void {
-    // Aquí iría la lógica para abrir el panel de alertas
     console.log('Abriendo panel de alertas...');
-    // Ejemplo: abrir un modal o cambiar vista
   }
 
   function handleUsers(): void {
-    // Aquí iría la lógica para mostrar información de usuarios
     console.log('Mostrando información de usuarios...');
-    // Ejemplo: cambiar a vista de usuarios
   }
 
   // Actualizar estado online/offline
@@ -125,7 +128,7 @@
     </div>
   </div>
 
-  <!-- StatusBar -->
+  <!-- StatusBar con integración del panel de inspección -->
   <StatusBar 
     online={statusState.online}
     loading={statusState.loading}
@@ -136,10 +139,13 @@
     usersOnline={statusState.usersOnline}
     batteryLevel={statusState.batteryLevel}
     showBattery={statusState.showBattery}
+    inspectionPanelVisible={$inspectionPanel.visible}
+    onInspectionToggle={toggleInspectionPanel}
     on:sync={handleStatusEvent}
     on:notifications={handleStatusEvent}
     on:alerts={handleStatusEvent}
     on:users={handleStatusEvent}
+    on:inspectionToggle={handleStatusEvent}
   />
 </div>
 
