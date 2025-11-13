@@ -1,7 +1,7 @@
-// src/lib/stores/auth.ts
 import { persisted } from 'svelte-persisted-store';
 import { openTab, resetTabs, tabsStore } from './tabs';
 import { get } from 'svelte/store';
+import { goto } from '$app/navigation';
 import type { User } from '$lib/types';
 
 export const isAuthenticated = persisted<boolean>('brisas-auth', false);
@@ -25,6 +25,7 @@ export function logout(): void {
   isAuthenticated.set(false);
   currentUser.set(null);
   resetTabs();
+  goto('/login');
 }
 
 export function checkSession(): boolean {

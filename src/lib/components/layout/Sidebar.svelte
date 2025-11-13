@@ -1,10 +1,11 @@
-<!-- src/lib/components/layout/Sidebar.svelte -->
+
 <script lang="ts">
   import { activeView } from '$lib/stores/ui';
   import { get } from 'svelte/store';
   import { isAuthenticated } from '$lib/stores/auth';
   import { resetTabs, openTab } from '$lib/stores/tabs';
   import { getComponent } from '$lib/components/registry';
+  import { logout } from '$lib/stores/auth';
 
   import {
     User,
@@ -42,7 +43,7 @@
 
   const user = {
     name: 'Daniel',
-    initials: 'DQM'
+    initials: 'DQ'
   };
 </script>
 
@@ -70,7 +71,7 @@
       {user.initials}
     </div>
 
-    <button class="logout" on:click={logout} title="Cerrar sesión">
+    <button on:click={logout}>Cerrar sesión</button>
       <LogIn size={24} />
     </button>
   </div>

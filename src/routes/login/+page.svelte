@@ -1,42 +1,53 @@
-<!-- src/routes/login/+page.svelte (NUEVO LOGIN LIMPIO) -->
 <script lang="ts">
-  import LoginForm from '$lib/components/auth/LoginForm.svelte';
-  import Alert from '$lib/components/auth/Alert.svelte';
-  import { tauri } from '$lib/tauri';
-  import { login } from '$lib/stores/auth';
+  import '../app.css';
+  import { isAuthenticated } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
+  import Sidebar from '$lib/components/layout/Sidebar.svelte';
 
-  let error = '';
-  let loading = false;
-
-  async function handleLogin(e: CustomEvent<{ email: string; password: string }>) {
-    error = '';
-    loading = true;
-
-    try {
-      const user = await tauri.login(e.detail.email, e.detail.password);
-      login(user);
-      goto('/');
-    } catch {
-      error = 'Credenciales inválidas';
-    } finally {
-      loading = false;
-    }
-  }
+  onMount(() => {
+    if (!$isAuthenticated) goto('/login');
+  });
 </script>
 
-<div class="login-page">
-  <div class="card">
-    <h1>Iniciar Sesión</h1>
-    <LoginForm {loading} on:submit={handleLogin} />
-    <Alert type="error" message={error} />
-    <div class="text-center">
-      <button class="btn-link" disabled={loading}>
-        ¿Olvidaste tu contraseña?
-      </button>
+<div class="layout">
+  <!-- Top Panel -->
+  <div class="top-panel">
+    <nav class="top-menu">
+      <ul>
+        <li>File</li><li>Edit</li><li>Selection</li><li>View</li><li>Go</li><li>Run</li><li>Terminal</li><li>Help</li>
+      </ul>
+    </nav>
+    <div class="search-bar">
+      <input placeholder="Buscar" />
+    </div>
+    <div class="window-controls">
+      <button class="minimize">−</button>
+      <button class="maximize">□</button>
+      <button class="close">×</button>
+    </div>
+  </div>
+
+  <!-- Main Area -->
+  <div class="main">
+    {#if $isAuthenticated}
+      <Sidebar />
+    {/if}
+    <div class="editor-area">
+      <slot />
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-left">Ln 1, Col 1  Spaces: 2  UTF-8  HTML</div>
+    <div class="status-right">
+      <span>Remote</span>
+      <span>0</span>
     </div>
   </div>
 </div>
+
 
 <style>
   .login-page {
