@@ -140,12 +140,14 @@
     batteryLevel={statusState.batteryLevel}
     showBattery={statusState.showBattery}
     inspectionPanelVisible={$inspectionPanel.visible}
-    onInspectionToggle={toggleInspectionPanel}
     on:sync={handleStatusEvent}
     on:notifications={handleStatusEvent}
     on:alerts={handleStatusEvent}
     on:users={handleStatusEvent}
-    on:inspectionToggle={handleStatusEvent}
+    on:inspectionToggle={(event) => {
+      handleStatusEvent(event);
+      toggleInspectionPanel();
+    }}
   />
 </div>
 

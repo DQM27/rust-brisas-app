@@ -9,7 +9,7 @@
   import { inspectionPanel } from '$lib/stores/ui';
   import { ChevronDown } from 'lucide-svelte';
 
-  let inspectionContent = "Panel de inspección - Aquí puedes mostrar logs, detalles, información de depuración, etc.";
+  let inspectionContent = "Sos una loca";
   
   onMount(() => {
     checkSession();
@@ -47,7 +47,7 @@
         <Pane minSize={20} size={30}>
           <div class="inspection-panel">
             <div class="inspection-header">
-              <h4>Panel de Inspección</h4>
+              <h4>Inspección</h4>
               <button 
                 class="close-btn" 
                 on:click={closeInspectionPanel}

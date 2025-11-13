@@ -12,12 +12,9 @@
     BatteryMedium,
     BatteryLow,
     Clock,
-    AlertTriangle,
-    Eye,
-    EyeOff,
-    ChevronUp,
-    ChevronDown
+    AlertTriangle
   } from 'lucide-svelte';
+  import InspectionToggle from './InspectionToggle.svelte';
 
   // Props del componente
   export let online: boolean = true;
@@ -29,12 +26,9 @@
   export let usersOnline: number = 0;
   export let batteryLevel: number = 100;
   export let showBattery: boolean = false;
-  
-  // Nueva prop para el panel de inspección
   export let inspectionPanelVisible: boolean = false;
-  export let onInspectionToggle: () => void = () => {};
 
-  // Formatear fecha y hora con tipos TypeScript
+  // Formatear fecha y hora
   function formatTime(date: Date): string {
     return date.toLocaleTimeString('es-ES', { 
       hour: '2-digit', 
@@ -48,7 +42,13 @@
 
   // Dispatcher para eventos
   import { createEventDispatcher } from 'svelte';
-  const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher<{
+    sync: {};
+    notifications: {};
+    alerts: {};
+    users: {};
+    inspectionToggle: { visible: boolean };
+  }>();
 
   // Handlers para eventos
   function handleSyncClick(): void {
@@ -71,11 +71,8 @@
     dispatch('users', {});
   }
 
-  // Nuevo handler para el panel de inspección
-  function handleInspectionClick(): void {
-    console.log('Toggle panel de inspección');
-    onInspectionToggle();
-    dispatch('inspectionToggle', { visible: !inspectionPanelVisible });
+  function handleInspectionToggle(event: CustomEvent<{ visible: boolean }>): void {
+    dispatch('inspectionToggle', event.detail);
   }
 
   // Handler para teclado
@@ -85,17 +82,12 @@
       handler();
     }
   }
-
-  // Computed para el título del botón de inspección
-  $: inspectionToggleTitle = inspectionPanelVisible 
-    ? 'Ocultar panel de inspección' 
-    : 'Mostrar panel de inspección';
 </script>
 
 <div class="status-bar">
   <!-- Sección izquierda - Estado del sistema -->
   <div class="status-left">
-    <!-- Estado de conexión (no clickeable) -->
+    <!-- Estado de conexión -->
     <div class="status-item {online ? 'online' : 'offline'}" role="status">
       {#if online}
         <Wifi size={14} />
@@ -106,7 +98,7 @@
       {/if}
     </div>
     
-    <!-- Estado de sincronización (clickeable) -->
+    <!-- Estado de sincronización -->
     <button 
       class="status-item sync-status {syncStatus}" 
       on:click={handleSyncClick}
@@ -126,7 +118,7 @@
       {/if}
     </button>
     
-    <!-- Usuarios en línea (clickeable) -->
+    <!-- Usuarios en línea -->
     {#if usersOnline > 0}
       <button 
         class="status-item" 
@@ -141,7 +133,7 @@
     {/if}
   </div>
   
-  <!-- Sección central - Información temporal (no clickeable) -->
+  <!-- Sección central - Información temporal -->
   <div class="status-center">
     {#if loading}
       <div class="status-item loading" role="status">
@@ -158,24 +150,14 @@
   
   <!-- Sección derecha - Alertas, notificaciones e inspección -->
   <div class="status-right">
-    <!-- Botón de inspección (clickeable) -->
-    <button 
-      class="status-item inspection-toggle {inspectionPanelVisible ? 'active' : ''}" 
-      on:click={handleInspectionClick}
-      on:keydown={(e) => handleKeyPress(e, handleInspectionClick)}
-      type="button"
-      title={inspectionToggleTitle}
-    >
-      {#if inspectionPanelVisible}
-        <EyeOff size={14} />
-        <span>Inspección</span>
-      {:else}
-        <Eye size={14} />
-        <span>Inspección</span>
-      {/if}
-    </button>
+    <!-- Componente de inspección -->
+    <InspectionToggle 
+      visible={inspectionPanelVisible}
+      variant="compact"
+      on:toggle={handleInspectionToggle}
+    />
     
-    <!-- Nivel de batería (no clickeable) -->
+    <!-- Nivel de batería -->
     {#if showBattery && batteryLevel < 100}
       <div class="status-item battery" role="status">
         {#if batteryLevel >= 80}
@@ -189,7 +171,7 @@
       </div>
     {/if}
     
-    <!-- Alertas críticas (clickeable) -->
+    <!-- Alertas críticas -->
     {#if alerts > 0}
       <button 
         class="status-item alert" 
@@ -203,7 +185,7 @@
       </button>
     {/if}
     
-    <!-- Notificaciones (clickeable) -->
+    <!-- Notificaciones -->
     <button 
       class="status-item notification" 
       on:click={handleNotificationsClick}
@@ -257,7 +239,6 @@
     gap: 6px;
     padding: 2px 8px;
     border-radius: 3px;
-    cursor: pointer;
     transition: background-color 0.15s ease;
     white-space: nowrap;
     border: none;
@@ -266,20 +247,16 @@
     font-size: inherit;
   }
   
-  /* Solo elementos interactivos (botones) tienen hover */
+  button.status-item {
+    cursor: pointer;
+  }
+  
   button.status-item:hover {
     background: var(--status-bar-hover, rgba(255, 255, 255, 0.08));
   }
   
-  /* Elementos no interactivos (divs) */
   div.status-item {
     cursor: default;
-  }
-  
-  /* Estado activo para el botón de inspección */
-  .status-item.inspection-toggle.active {
-    background: var(--status-bar-active, rgba(0, 122, 204, 0.4));
-    color: var(--status-bar-active-foreground, #ffffff);
   }
   
   .status-item.timestamp {
