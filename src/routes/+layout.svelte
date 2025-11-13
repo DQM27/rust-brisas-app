@@ -2,7 +2,7 @@
 <script lang="ts">
   import '../app.css';
   import { isAuthenticated } from '$lib/stores/auth';
-  import Sidebar from '$lib/components/layout/Sidebar.svelte';
+  import Sidebar from '$lib/components/layout/sidebar/Sidebar.svelte';
   import StatusBar from '$lib/components/layout/StatusBar.svelte';
   import { onMount } from 'svelte';
 

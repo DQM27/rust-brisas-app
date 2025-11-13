@@ -12,7 +12,18 @@
     FileText,
     Settings,
     LogOut,
+    Users,
     UserPlus,
+    Edit3,
+    BarChart3,
+    Home,
+    Shield,
+    Download,
+    Bell,
+    RefreshCw,
+    Info,
+    Search,
+    Activity
   } from 'lucide-svelte';
 
   // Estado para controlar qué panel está activo
@@ -114,10 +125,7 @@
         </button>
       {/each}
 
-      <button on:click={openUserRegistration} title="Registrar nuevo usuario">
-        <UserPlus size={22} />
-        <span class="tooltip">Registrar Usuario</span>
-      </button>
+      <!-- Eliminado: Botón de Registrar Usuario (ahora está en el panel) -->
     </div>
 
     <div class="bottom">
@@ -148,21 +156,24 @@
               on:click={() => openView('user-list', 'Lista de Usuarios')}
               on:keydown={(e) => handlePanelItemKeydown(e, () => openView('user-list', 'Lista de Usuarios'))}
             >
-              <i>👥</i> Lista de usuarios
+              <svelte:component this={Users} size={16} />
+              <span>Lista de usuarios</span>
             </button>
             <button 
               class="panel-item" 
               on:click={openUserRegistration}
               on:keydown={(e) => handlePanelItemKeydown(e, openUserRegistration)}
             >
-              <i>➕</i> Crear nuevo usuario
+              <svelte:component this={UserPlus} size={16} />
+              <span>Registrar usuario</span>
             </button>
             <button 
               class="panel-item" 
               on:click={() => openView('user-editor', 'Editor de Usuarios')}
               on:keydown={(e) => handlePanelItemKeydown(e, () => openView('user-editor', 'Editor de Usuarios'))}
             >
-              <i>👤</i> Editor de usuarios
+              <svelte:component this={Edit3} size={16} />
+              <span>Editor de usuarios</span>
             </button>
           </div>
           <div class="panel-section">
@@ -172,35 +183,40 @@
               on:click={() => openView('dashboard', 'Dashboard')}
               on:keydown={(e) => handlePanelItemKeydown(e, () => openView('dashboard', 'Dashboard'))}
             >
-              <i>📊</i> Dashboard
+              <svelte:component this={BarChart3} size={16} />
+              <span>Dashboard</span>
             </button>
             <button 
               class="panel-item" 
               on:click={() => openView('welcome', 'Bienvenida')}
               on:keydown={(e) => handlePanelItemKeydown(e, () => openView('welcome', 'Bienvenida'))}
             >
-              <i>🚪</i> Página de bienvenida
+              <svelte:component this={Home} size={16} />
+              <span>Página de bienvenida</span>
             </button>
           </div>
         {:else if activePanel === 'access'}
           <div class="panel-section">
-            <div class="panel-section-title">ACCESOS Y PERMISOS</div>
+            <div class="panel-section-title">CONTROLES DE ACCESO</div>
             <button 
               class="panel-item" 
-              on:click={() => openView('user-list', 'Gestión de Accesos')}
-              on:keydown={(e) => handlePanelItemKeydown(e, () => openView('user-list', 'Gestión de Accesos'))}
+              on:click={() => openView('user-list', 'Gestión de Permisos')}
+              on:keydown={(e) => handlePanelItemKeydown(e, () => openView('user-list', 'Gestión de Permisos'))}
             >
-              <i>🔐</i> Gestión de accesos
+              <svelte:component this={Lock} size={16} />
+              <span>Gestión de permisos</span>
             </button>
             <button 
               class="panel-item" 
               on:click={() => openView('dashboard', 'Panel de Control')}
               on:keydown={(e) => handlePanelItemKeydown(e, () => openView('dashboard', 'Panel de Control'))}
             >
-              <i>📈</i> Panel de control
+              <svelte:component this={BarChart3} size={16} />
+              <span>Panel de control</span>
             </button>
             <div class="panel-item non-clickable">
-              <i>🛡️</i> Configuración de seguridad
+              <svelte:component this={Shield} size={16} />
+              <span>Políticas de seguridad</span>
             </div>
           </div>
           <div class="panel-section">
@@ -210,7 +226,8 @@
               on:click={() => openView('welcome', 'Documentación')}
               on:keydown={(e) => handlePanelItemKeydown(e, () => openView('welcome', 'Documentación'))}
             >
-              <i>📚</i> Documentación
+              <svelte:component this={FileText} size={16} />
+              <span>Documentación</span>
             </button>
           </div>
         {:else if activePanel === 'logs'}
@@ -221,26 +238,27 @@
               on:click={() => openView('dashboard', 'Registros del Sistema')}
               on:keydown={(e) => handlePanelItemKeydown(e, () => openView('dashboard', 'Registros del Sistema'))}
             >
-              <i>📋</i> Ver registros
+              <svelte:component this={Search} size={16} />
+              <span>Buscar en registros</span>
             </button>
-            <div class="panel-item non-clickable">
-              <i>🔍</i> Auditoría del sistema
-            </div>
-            <div class="panel-item non-clickable">
-              <i>⚙️</i> Configuración de logs
-            </div>
-          </div>
-          <div class="panel-section">
-            <div class="panel-section-title">HERRAMIENTAS</div>
             <button 
               class="panel-item" 
               on:click={() => openView('user-list', 'Actividad de Usuarios')}
               on:keydown={(e) => handlePanelItemKeydown(e, () => openView('user-list', 'Actividad de Usuarios'))}
             >
-              <i>📊</i> Actividad de usuarios
+              <svelte:component this={Activity} size={16} />
+              <span>Actividad de usuarios</span>
             </button>
             <div class="panel-item non-clickable">
-              <i>💾</i> Exportar registros
+              <svelte:component this={Download} size={16} />
+              <span>Exportar registros</span>
+            </div>
+          </div>
+          <div class="panel-section">
+            <div class="panel-section-title">CONFIGURACIÓN</div>
+            <div class="panel-item non-clickable">
+              <svelte:component this={Settings} size={16} />
+              <span>Configuración de logs</span>
             </div>
           </div>
         {:else if activePanel === 'settings'}
@@ -248,29 +266,34 @@
             <div class="panel-section-title">CONFIGURACIÓN GENERAL</div>
             <button 
               class="panel-item" 
-              on:click={() => openView('dashboard', 'Ajustes')}
-              on:keydown={(e) => handlePanelItemKeydown(e, () => openView('dashboard', 'Ajustes'))}
+              on:click={() => openView('dashboard', 'Configuración')}
+              on:keydown={(e) => handlePanelItemKeydown(e, () => openView('dashboard', 'Configuración'))}
             >
-              <i>🎨</i> Apariencia
+              <svelte:component this={Settings} size={16} />
+              <span>Ajustes generales</span>
             </button>
             <div class="panel-item non-clickable">
-              <i>🔔</i> Notificaciones
+              <svelte:component this={Bell} size={16} />
+              <span>Notificaciones</span>
             </div>
             <div class="panel-item non-clickable">
-              <i>💾</i> Backup
+              <svelte:component this={Download} size={16} />
+              <span>Backup y restore</span>
             </div>
           </div>
           <div class="panel-section">
             <div class="panel-section-title">SISTEMA</div>
             <div class="panel-item non-clickable">
-              <i>🔄</i> Actualizaciones
+              <svelte:component this={RefreshCw} size={16} />
+              <span>Actualizaciones</span>
             </div>
             <button 
               class="panel-item" 
               on:click={() => openView('welcome', 'Acerca del Sistema')}
               on:keydown={(e) => handlePanelItemKeydown(e, () => openView('welcome', 'Acerca del Sistema'))}
             >
-              <i>📡</i> Acerca del sistema
+              <svelte:component this={Info} size={16} />
+              <span>Acerca del sistema</span>
             </button>
           </div>
         {/if}
@@ -455,6 +478,7 @@
     width: 100%;
     text-align: left;
     border-radius: 0;
+    gap: 8px;
   }
 
   .panel-item.non-clickable {
@@ -464,13 +488,6 @@
 
   .panel-item.non-clickable:hover {
     background-color: transparent;
-  }
-
-  .panel-item i {
-    margin-right: 8px;
-    font-size: 14px;
-    width: 16px;
-    text-align: center;
   }
 
   .panel-item:hover:not(.non-clickable) {
