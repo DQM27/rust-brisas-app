@@ -13,7 +13,7 @@ pub struct Contratista {
     pub nombre: String,
     pub apellido: String,
     pub empresa: String,
-    pub fecha_vencimiento_praind: String, // ISO 8601 format
+    pub fecha_vencimiento_praind: String,
     pub estado: EstadoContratista,
     pub created_at: String,
     pub updated_at: String,
