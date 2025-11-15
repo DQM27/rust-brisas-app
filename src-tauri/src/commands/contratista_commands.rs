@@ -31,19 +31,31 @@ pub async fn create_contratista(
         return Err("Ya existe un contratista con esta cédula".to_string());
     }
     
+    // Verificar que la empresa exista
+    let empresa_existe = sqlx::query("SELECT COUNT(*) as count FROM empresas WHERE id = ?")
+        .bind(&input.empresa_id)
+        .fetch_one(&*pool)
+        .await
+        .map_err(|e| format!("Error al verificar empresa: {}", e))?;
+    
+    let emp_count: i32 = empresa_existe.get("count");
+    if emp_count == 0 {
+        return Err("La empresa especificada no existe".to_string());
+    }
+    
     let id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
     
     sqlx::query(
         r#"INSERT INTO contratistas 
-           (id, cedula, nombre, apellido, empresa, fecha_vencimiento_praind, estado, created_at, updated_at)
+           (id, cedula, nombre, apellido, empresa_id, fecha_vencimiento_praind, estado, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"#
     )
     .bind(&id)
     .bind(input.cedula.trim())
     .bind(input.nombre.trim())
     .bind(input.apellido.trim())
-    .bind(input.empresa.trim())
+    .bind(&input.empresa_id)
     .bind(&input.fecha_vencimiento_praind)
     .bind(EstadoContratista::Activo.as_str())
     .bind(&now)
@@ -61,9 +73,13 @@ pub async fn get_contratista_by_id(
     id: String,
 ) -> Result<ContratistaResponse, String> {
     let row = sqlx::query(
-        r#"SELECT id, cedula, nombre, apellido, empresa, fecha_vencimiento_praind, 
-           estado, created_at, updated_at
-           FROM contratistas WHERE id = ?"#
+        r#"SELECT 
+            c.id, c.cedula, c.nombre, c.apellido, c.empresa_id,
+            c.fecha_vencimiento_praind, c.estado, c.created_at, c.updated_at,
+            e.nombre as empresa_nombre
+           FROM contratistas c
+           INNER JOIN empresas e ON c.empresa_id = e.id
+           WHERE c.id = ?"#
     )
     .bind(&id)
     .fetch_one(&*pool)
@@ -75,14 +91,17 @@ pub async fn get_contratista_by_id(
         cedula: row.get("cedula"),
         nombre: row.get("nombre"),
         apellido: row.get("apellido"),
-        empresa: row.get("empresa"),
+        empresa_id: row.get("empresa_id"),
         fecha_vencimiento_praind: row.get("fecha_vencimiento_praind"),
         estado: EstadoContratista::from_str(row.get("estado"))?,
         created_at: row.get("created_at"),
         updated_at: row.get("updated_at"),
     };
     
-    Ok(ContratistaResponse::from(contratista))
+    let mut response = ContratistaResponse::from(contratista);
+    response.empresa_nombre = row.get("empresa_nombre");
+    
+    Ok(response)
 }
 
 #[tauri::command]
@@ -91,9 +110,13 @@ pub async fn get_contratista_by_cedula(
     cedula: String,
 ) -> Result<ContratistaResponse, String> {
     let row = sqlx::query(
-        r#"SELECT id, cedula, nombre, apellido, empresa, fecha_vencimiento_praind, 
-           estado, created_at, updated_at
-           FROM contratistas WHERE cedula = ?"#
+        r#"SELECT 
+            c.id, c.cedula, c.nombre, c.apellido, c.empresa_id,
+            c.fecha_vencimiento_praind, c.estado, c.created_at, c.updated_at,
+            e.nombre as empresa_nombre
+           FROM contratistas c
+           INNER JOIN empresas e ON c.empresa_id = e.id
+           WHERE c.cedula = ?"#
     )
     .bind(&cedula)
     .fetch_one(&*pool)
@@ -105,14 +128,17 @@ pub async fn get_contratista_by_cedula(
         cedula: row.get("cedula"),
         nombre: row.get("nombre"),
         apellido: row.get("apellido"),
-        empresa: row.get("empresa"),
+        empresa_id: row.get("empresa_id"),
         fecha_vencimiento_praind: row.get("fecha_vencimiento_praind"),
         estado: EstadoContratista::from_str(row.get("estado"))?,
         created_at: row.get("created_at"),
         updated_at: row.get("updated_at"),
     };
     
-    Ok(ContratistaResponse::from(contratista))
+    let mut response = ContratistaResponse::from(contratista);
+    response.empresa_nombre = row.get("empresa_nombre");
+    
+    Ok(response)
 }
 
 #[tauri::command]
@@ -120,9 +146,13 @@ pub async fn get_all_contratistas(
     pool: State<'_, SqlitePool>,
 ) -> Result<ContratistaListResponse, String> {
     let rows = sqlx::query(
-        r#"SELECT id, cedula, nombre, apellido, empresa, fecha_vencimiento_praind, 
-           estado, created_at, updated_at
-           FROM contratistas ORDER BY created_at DESC"#
+        r#"SELECT 
+            c.id, c.cedula, c.nombre, c.apellido, c.empresa_id,
+            c.fecha_vencimiento_praind, c.estado, c.created_at, c.updated_at,
+            e.nombre as empresa_nombre
+           FROM contratistas c
+           INNER JOIN empresas e ON c.empresa_id = e.id
+           ORDER BY c.created_at DESC"#
     )
     .fetch_all(&*pool)
     .await
@@ -135,13 +165,16 @@ pub async fn get_all_contratistas(
                 cedula: row.get("cedula"),
                 nombre: row.get("nombre"),
                 apellido: row.get("apellido"),
-                empresa: row.get("empresa"),
+                empresa_id: row.get("empresa_id"),
                 fecha_vencimiento_praind: row.get("fecha_vencimiento_praind"),
                 estado: EstadoContratista::from_str(row.get("estado")).ok()?,
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
             };
-            Some(ContratistaResponse::from(contratista))
+            
+            let mut response = ContratistaResponse::from(contratista);
+            response.empresa_nombre = row.get("empresa_nombre");
+            Some(response)
         })
         .collect();
     
@@ -164,9 +197,14 @@ pub async fn get_contratistas_activos(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<ContratistaResponse>, String> {
     let rows = sqlx::query(
-        r#"SELECT id, cedula, nombre, apellido, empresa, fecha_vencimiento_praind, 
-           estado, created_at, updated_at
-           FROM contratistas WHERE estado = ? ORDER BY apellido, nombre"#
+        r#"SELECT 
+            c.id, c.cedula, c.nombre, c.apellido, c.empresa_id,
+            c.fecha_vencimiento_praind, c.estado, c.created_at, c.updated_at,
+            e.nombre as empresa_nombre
+           FROM contratistas c
+           INNER JOIN empresas e ON c.empresa_id = e.id
+           WHERE c.estado = ? 
+           ORDER BY c.apellido, c.nombre"#
     )
     .bind(EstadoContratista::Activo.as_str())
     .fetch_all(&*pool)
@@ -180,13 +218,16 @@ pub async fn get_contratistas_activos(
                 cedula: row.get("cedula"),
                 nombre: row.get("nombre"),
                 apellido: row.get("apellido"),
-                empresa: row.get("empresa"),
+                empresa_id: row.get("empresa_id"),
                 fecha_vencimiento_praind: row.get("fecha_vencimiento_praind"),
                 estado: EstadoContratista::from_str(row.get("estado")).ok()?,
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
             };
-            Some(ContratistaResponse::from(contratista))
+            
+            let mut response = ContratistaResponse::from(contratista);
+            response.empresa_nombre = row.get("empresa_nombre");
+            Some(response)
         })
         .collect();
     
@@ -206,8 +247,20 @@ pub async fn update_contratista(
     if let Some(ref apellido) = input.apellido {
         validaciones::validar_apellido(apellido)?;
     }
-    if let Some(ref empresa) = input.empresa {
-        validaciones::validar_empresa(empresa)?;
+    if let Some(ref empresa_id) = input.empresa_id {
+        validaciones::validar_empresa_id(empresa_id)?;
+        
+        // Verificar que la empresa exista
+        let empresa_existe = sqlx::query("SELECT COUNT(*) as count FROM empresas WHERE id = ?")
+            .bind(empresa_id)
+            .fetch_one(&*pool)
+            .await
+            .map_err(|e| format!("Error al verificar empresa: {}", e))?;
+        
+        let count: i32 = empresa_existe.get("count");
+        if count == 0 {
+            return Err("La empresa especificada no existe".to_string());
+        }
     }
     if let Some(ref fecha) = input.fecha_vencimiento_praind {
         validaciones::validar_fecha(fecha)?;
@@ -219,14 +272,14 @@ pub async fn update_contratista(
         r#"UPDATE contratistas SET
             nombre = COALESCE(?, nombre),
             apellido = COALESCE(?, apellido),
-            empresa = COALESCE(?, empresa),
+            empresa_id = COALESCE(?, empresa_id),
             fecha_vencimiento_praind = COALESCE(?, fecha_vencimiento_praind),
             updated_at = ?
         WHERE id = ?"#
     )
     .bind(input.nombre.as_deref().map(|s| s.trim()))
     .bind(input.apellido.as_deref().map(|s| s.trim()))
-    .bind(input.empresa.as_deref().map(|s| s.trim()))
+    .bind(&input.empresa_id)
     .bind(&input.fecha_vencimiento_praind)
     .bind(&now)
     .bind(&id)

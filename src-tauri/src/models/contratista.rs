@@ -12,7 +12,7 @@ pub struct Contratista {
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
-    pub empresa: String,
+    pub empresa_id: String,  // CAMBIÓ: ahora es FK a empresas
     pub fecha_vencimiento_praind: String,
     pub estado: EstadoContratista,
     pub created_at: String,
@@ -56,7 +56,7 @@ pub struct CreateContratistaInput {
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
-    pub empresa: String,
+    pub empresa_id: String,  // CAMBIÓ: ahora es ID de empresa
     pub fecha_vencimiento_praind: String, // "YYYY-MM-DD"
 }
 
@@ -65,7 +65,7 @@ pub struct CreateContratistaInput {
 pub struct UpdateContratistaInput {
     pub nombre: Option<String>,
     pub apellido: Option<String>,
-    pub empresa: Option<String>,
+    pub empresa_id: Option<String>,  // CAMBIÓ
     pub fecha_vencimiento_praind: Option<String>,
 }
 
@@ -87,7 +87,8 @@ pub struct ContratistaResponse {
     pub nombre: String,
     pub apellido: String,
     pub nombre_completo: String,
-    pub empresa: String,
+    pub empresa_id: String,        // NUEVO
+    pub empresa_nombre: String,    // NUEVO - viene del JOIN
     pub fecha_vencimiento_praind: String,
     pub estado: EstadoContratista,
     pub puede_ingresar: bool,
@@ -115,7 +116,8 @@ impl From<Contratista> for ContratistaResponse {
             nombre: c.nombre.clone(),
             apellido: c.apellido.clone(),
             nombre_completo: format!("{} {}", c.nombre, c.apellido),
-            empresa: c.empresa,
+            empresa_id: c.empresa_id,
+            empresa_nombre: String::new(),  // Se llena en el comando con JOIN
             fecha_vencimiento_praind: c.fecha_vencimiento_praind,
             estado: c.estado,
             puede_ingresar,
@@ -191,15 +193,11 @@ pub mod validaciones {
         Ok(())
     }
     
-    pub fn validar_empresa(empresa: &str) -> Result<(), String> {
-        let limpia = empresa.trim();
+    pub fn validar_empresa_id(empresa_id: &str) -> Result<(), String> {  // CAMBIÓ
+        let limpia = empresa_id.trim();
         
         if limpia.is_empty() {
-            return Err("El nombre de la empresa no puede estar vacío".to_string());
-        }
-        
-        if limpia.len() > 100 {
-            return Err("El nombre de la empresa no puede exceder 100 caracteres".to_string());
+            return Err("Debe seleccionar una empresa".to_string());
         }
         
         Ok(())
@@ -214,7 +212,7 @@ pub mod validaciones {
         validar_cedula(&input.cedula)?;
         validar_nombre(&input.nombre)?;
         validar_apellido(&input.apellido)?;
-        validar_empresa(&input.empresa)?;
+        validar_empresa_id(&input.empresa_id)?;  // CAMBIÓ
         validar_fecha(&input.fecha_vencimiento_praind)?;
         Ok(())
     }

@@ -25,6 +25,13 @@ pub fn run() {
                     commands::user_commands::update_user,
                     commands::user_commands::delete_user,
                     commands::user_commands::login,
+                    // Comandos de empresa
+                    commands::empresa_commands::create_empresa,
+                    commands::empresa_commands::get_empresa_by_id,
+                    commands::empresa_commands::get_all_empresas,
+                    commands::empresa_commands::get_empresas_activas,
+                    commands::empresa_commands::update_empresa,
+                    commands::empresa_commands::delete_empresa,
                     // Comandos de contratista
                     commands::contratista_commands::create_contratista,
                     commands::contratista_commands::get_contratista_by_id,
