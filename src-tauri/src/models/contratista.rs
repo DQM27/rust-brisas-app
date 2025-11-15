@@ -12,7 +12,7 @@ pub struct Contratista {
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
-    pub empresa_id: String,  // CAMBIÓ: ahora es FK a empresas
+    pub empresa_id: String, 
     pub fecha_vencimiento_praind: String,
     pub estado: EstadoContratista,
     pub created_at: String,

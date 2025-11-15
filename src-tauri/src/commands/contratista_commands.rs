@@ -19,6 +19,40 @@ pub async fn create_contratista(
     // Validar input
     validaciones::validar_create_input(&input)?;
     
+    // ⭐ NUEVO: Verificar que NO esté en lista negra
+    let blocked = sqlx::query(
+        "SELECT COUNT(*) as count FROM lista_negra WHERE cedula = ? AND is_active = 1"
+    )
+    .bind(&input.cedula)
+    .fetch_one(&*pool)
+    .await
+    .map_err(|e| format!("Error al verificar lista negra: {}", e))?;
+    
+    let blocked_count: i32 = blocked.get("count");
+    if blocked_count > 0 {
+        // Obtener detalles del bloqueo para mensaje más informativo
+        let motivo_row = sqlx::query(
+            "SELECT motivo_bloqueo, bloqueado_por FROM lista_negra WHERE cedula = ? AND is_active = 1 LIMIT 1"
+        )
+        .bind(&input.cedula)
+        .fetch_one(&*pool)
+        .await;
+        
+        if let Ok(row) = motivo_row {
+            let motivo: String = row.get("motivo_bloqueo");
+            let bloqueado_por: String = row.get("bloqueado_por");
+            return Err(format!(
+                "No se puede registrar. La persona con cédula {} está en lista negra. Motivo: {}. Bloqueado por: {}",
+                input.cedula, motivo, bloqueado_por
+            ));
+        } else {
+            return Err(format!(
+                "No se puede registrar. La persona con cédula {} está en lista negra",
+                input.cedula
+            ));
+        }
+    }
+    
     // Verificar que la cédula no exista
     let existe = sqlx::query("SELECT COUNT(*) as count FROM contratistas WHERE cedula = ?")
         .bind(&input.cedula)

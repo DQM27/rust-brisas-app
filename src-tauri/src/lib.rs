@@ -41,6 +41,16 @@ pub fn run() {
                     commands::contratista_commands::update_contratista,
                     commands::contratista_commands::cambiar_estado_contratista,
                     commands::contratista_commands::delete_contratista,
+                    // Comandos de lista negra
+                    commands::lista_negra_commands::add_to_lista_negra,
+                    commands::lista_negra_commands::get_lista_negra_by_id,
+                    commands::lista_negra_commands::get_all_lista_negra,
+                    commands::lista_negra_commands::get_lista_negra_activos,
+                    commands::lista_negra_commands::check_is_blocked,
+                    commands::lista_negra_commands::get_blocked_by_cedula,
+                    commands::lista_negra_commands::remove_from_lista_negra,
+                    commands::lista_negra_commands::update_lista_negra,
+                    commands::lista_negra_commands::delete_lista_negra,
                 ])
                 .run(tauri::generate_context!())?;
             Ok(())
