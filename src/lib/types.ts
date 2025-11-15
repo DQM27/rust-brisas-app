@@ -1,15 +1,45 @@
 // ==========================================
 // src/lib/types.ts
 // ==========================================
+
+
+export type UserRole = 'admin' | 'supervisor' | 'guardia';
+
+// Tipo base de User (ya no se usa directamente, pero lo dejamos por compatibilidad)
 export interface User {
   id: string;
   email: string;
   nombre: string;
   apellido: string;
-  role: string;
-  isActive: boolean;  // camelCase para JS
-  createdAt: string;  // camelCase para JS
-  updatedAt: string;  // camelCase para JS
+  role: UserRole;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Response que ahora viene de Rust (con campos adicionales)
+export interface UserResponse {
+  id: string;
+  email: string;
+  nombre: string;
+  apellido: string;
+  nombreCompleto: string;      // NUEVO
+  role: UserRole;
+  roleDisplay: string;          // NUEVO - "Administrador", "Supervisor", "Guardia"
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserListResponse {
+  users: UserResponse[];
+  total: number;
+  activos: number;
+  porRol: {
+    admins: number;
+    supervisores: number;
+    guardias: number;
+  };
 }
 
 export interface CreateUserInput {
@@ -17,7 +47,7 @@ export interface CreateUserInput {
   password: string;
   nombre: string;
   apellido: string;
-  role?: string;
+  role?: string;  // 'admin' | 'supervisor' | 'guardia'
 }
 
 export interface UpdateUserInput {
@@ -26,17 +56,5 @@ export interface UpdateUserInput {
   nombre?: string;
   apellido?: string;
   role?: string;
-  isActive?: boolean;  // camelCase para JS
-}
-
-// Tipo que viene de Rust (snake_case)
-interface UserFromRust {
-  id: string;
-  email: string;
-  nombre: string;
-  apellido: string;
-  role: string;
-  isActive: boolean;   // Rust ya lo convierte a camelCase gracias a #[serde(rename_all = "camelCase")]
-  createdAt: string;
-  updatedAt: string;
+  isActive?: boolean;
 }

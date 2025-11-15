@@ -1,33 +1,41 @@
-
 // ==========================================
 // src/lib/tauri.ts
 // ==========================================
 import { invoke } from '@tauri-apps/api/core';
-import type { User, CreateUserInput, UpdateUserInput } from './types';
+import type { 
+  UserResponse, 
+  UserListResponse, 
+  CreateUserInput, 
+  UpdateUserInput 
+} from './types';
 
 export const tauri = {
-  createUser: async (data: CreateUserInput): Promise<User> => {
-    const user = await invoke<User>('create_user', { input: data });
+  // ==========================================
+  // User Commands
+  // ==========================================
+  
+  createUser: async (data: CreateUserInput): Promise<UserResponse> => {
+    const user = await invoke<UserResponse>('create_user', { input: data });
     return user;
   },
 
-  login: async (email: string, password: string): Promise<User> => {
-    const user = await invoke<User>('login', { email, password });
+  login: async (email: string, password: string): Promise<UserResponse> => {
+    const user = await invoke<UserResponse>('login', { email, password });
     return user;
   },
 
-  listUsers: async (): Promise<User[]> => {
-    const users = await invoke<User[]>('get_all_users');
-    return users;
+  listUsers: async (): Promise<UserListResponse> => {
+    const response = await invoke<UserListResponse>('get_all_users');
+    return response;
   },
 
-  getUserById: async (id: string): Promise<User> => {
-    const user = await invoke<User>('get_user_by_id', { id });
+  getUserById: async (id: string): Promise<UserResponse> => {
+    const user = await invoke<UserResponse>('get_user_by_id', { id });
     return user;
   },
 
-  updateUser: async (id: string, data: UpdateUserInput): Promise<User> => {
-    const user = await invoke<User>('update_user', { id, input: data });
+  updateUser: async (id: string, data: UpdateUserInput): Promise<UserResponse> => {
+    const user = await invoke<UserResponse>('update_user', { id, input: data });
     return user;
   },
 
