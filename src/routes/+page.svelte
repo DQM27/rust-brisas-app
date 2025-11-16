@@ -1,24 +1,42 @@
-<!-- src/routes/+page.svelte -->
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { isAuthenticated, login } from '$lib/stores/auth';
+  import LoginForm from '$lib/components/LoginForm.svelte';
+  import Alert from '$lib/components/Alert.svelte';
+  import { auth } from '$lib/api/auth';
   import { Splitpanes, Pane } from 'svelte-splitpanes';
   import Tabs from '$lib/components/layout/Tabs.svelte';
   import { tabsStore } from '$lib/stores/tabs';
-  import { isAuthenticated, checkSession } from '$lib/stores/auth';
-  import { goto } from '$app/navigation';
   import { inspectionPanel } from '$lib/stores/ui';
   import { ChevronDown } from 'lucide-svelte';
 
-  let inspectionContent = "27";
-  
-  onMount(() => {
-    checkSession();
-    if (!$isAuthenticated) {
-      goto('/login');
-    }
-  });
+  import type LoginFormType from '$lib/components/LoginForm.svelte';
 
-  // Función para manejar teclado (solo para el botón de cerrar)
+  let error = '';
+  let loading = false;
+  let formRef: LoginFormType; 
+  let inspectionContent = "27";
+
+  // ----------------------------
+  // Funciones de login
+  // ----------------------------
+  async function handleLogin(e: CustomEvent<{ email: string; password: string }>) {
+    error = '';
+    loading = true;
+
+    try {
+      const user = await auth.login(e.detail.email, e.detail.password);
+      login(user);
+      formRef.reset(); // TS reconoce este método
+    } catch {
+      error = 'Credenciales inválidas';
+    } finally {
+      loading = false;
+    }
+  }
+
+  // ----------------------------
+  // Funciones de panel de inspección
+  // ----------------------------
   function handleKeyPress(event: KeyboardEvent, handler: () => void): void {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -26,13 +44,19 @@
     }
   }
 
-  // Función para cerrar el panel desde dentro
   function closeInspectionPanel(): void {
     $inspectionPanel.visible = false;
   }
 </script>
 
-{#if $isAuthenticated}
+{#if !$isAuthenticated}
+  <!-- Pantalla de Login -->
+  <LoginForm bind:this={formRef} {loading} on:submit={handleLogin} />
+  {#if error}
+    <Alert type="error" message={error} />
+  {/if}
+{:else}
+  <!-- App Principal -->
   <div class="main-container">
     <Splitpanes horizontal class="default-theme">
       <!-- Contenido principal -->
@@ -60,7 +84,6 @@
             </div>
             <div class="inspection-content">
               {inspectionContent}
-              
               <div class="inspection-items">
                 <div class="inspection-item">
                   <span class="label">Estado:</span>
@@ -81,121 +104,120 @@
       {/if}
     </Splitpanes>
   </div>
-{:else}
-  <div style="display: none;"></div>
 {/if}
 
 <style>
-  .main-container {
-    height: 100%;
-    background: #1e1e1e;
-  }
+.main-container {
+  height: 100%;
+  background: #1e1e1e;
+}
 
-  .content-area {
-    height: 100%;
-    background: #1e1e1e;
-  }
+.content-area {
+  height: 100%;
+  background: #1e1e1e;
+}
 
-  .inspection-panel {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background: #252526;
-  }
+/* Panel de inspección */
+.inspection-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #252526;
+}
 
-  .inspection-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #3c3c3c;
-  }
+.inspection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #3c3c3c;
+}
 
-  .inspection-header h4 {
-    margin: 0;
-    font-size: 12px;
-    font-weight: 600;
-    color: #ccc;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
+.inspection-header h4 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ccc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
 
-  .close-btn {
-    background: none;
-    border: none;
-    color: #ccc;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+.close-btn {
+  background: none;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-  .close-btn:hover {
-    background: #3c3c3c;
-  }
+.close-btn:hover {
+  background: #3c3c3c;
+}
 
-  .close-btn:focus {
-    outline: 2px solid #007acc;
-    outline-offset: 1px;
-  }
+.close-btn:focus {
+  outline: 2px solid #007acc;
+  outline-offset: 1px;
+}
 
-  .inspection-content {
-    flex: 1;
-    padding: 12px;
-    color: #ccc;
-    font-size: 13px;
-    overflow-y: auto;
-  }
+.inspection-content {
+  flex: 1;
+  padding: 12px;
+  color: #ccc;
+  font-size: 13px;
+  overflow-y: auto;
+}
 
-  .inspection-items {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 12px;
-  }
+.inspection-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
 
-  .inspection-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 0;
-    border-bottom: 1px solid #3c3c3c;
-  }
+.inspection-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #3c3c3c;
+}
 
-  .inspection-item .label {
-    color: #888;
-    font-size: 12px;
-  }
+.inspection-item .label {
+  color: #888;
+  font-size: 12px;
+}
 
-  .inspection-item .value {
-    font-size: 12px;
-    font-weight: 600;
-  }
+.inspection-item .value {
+  font-size: 12px;
+  font-weight: 600;
+}
 
-  .inspection-item .value.success {
-    color: #4caf50;
-  }
+.inspection-item .value.success {
+  color: #4caf50;
+}
 
-  /* Ajustes para el splitpanes */
-  :global(.splitpanes__pane) {
-    background: transparent;
-  }
+/* Splitpanes */
+:global(.splitpanes__pane) {
+  background: transparent;
+}
 
-  :global(.splitpanes__splitter) {
-    background: #2d2d2d;
-    border: none;
-  }
+:global(.splitpanes__splitter) {
+  background: #2d2d2d;
+  border: none;
+}
 
-  :global(.splitpanes__splitter:hover) {
-    background: #3c3c3c;
-  }
+:global(.splitpanes__splitter:hover) {
+  background: #3c3c3c;
+}
 
-  :global(.splitpanes--horizontal .splitpanes__splitter) {
-    min-height: 6px;
-    border-top: 1px solid #3c3c3c;
-    border-bottom: 1px solid #3c3c3c;
-  }
+:global(.splitpanes--horizontal .splitpanes__splitter) {
+  min-height: 6px;
+  border-top: 1px solid #3c3c3c;
+  border-bottom: 1px solid #3c3c3c;
+}
 </style>
