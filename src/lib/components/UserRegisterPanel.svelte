@@ -1,19 +1,18 @@
-<!-- src/lib/components/admin/UserRegisterPanel.svelte -->
 <script lang="ts">
   import Alert from '$lib/components/Alert.svelte';
   import { users } from '$lib/api/users';
   import { toast } from 'svelte-5-french-toast';
   import type { UserRole } from '$lib/types/user';
 
-  let loading = false;
-  let success = '';
-  let error = '';
+  let loading = $state(false);
+  let success = $state('');
+  let error = $state('');
 
-  let email = '';
-  let password = '';
-  let nombre = '';
-  let apellido = '';
-  let role: UserRole = 'guardia';
+  let email = $state('');
+  let password = $state('');
+  let nombre = $state('');
+  let apellido = $state('');
+  let role = $state<UserRole>('guardia');
 
   async function handleSubmit() {
     error = success = '';
@@ -34,150 +33,132 @@
       loading = false;
     }
   }
+
+  const isFormValid = $derived(
+    email.trim() !== '' && 
+    password.trim() !== '' && 
+    nombre.trim() !== '' && 
+    apellido.trim() !== ''
+  );
 </script>
 
-<div class="user-register-panel">
-  <h2>Registrar Nuevo Usuario</h2>
-  
-  <form on:submit|preventDefault={handleSubmit}>
-    <div class="form-group">
-      <label for="email">Email</label>
-      <input
-        id="email"
-        bind:value={email}
-        type="email"
-        placeholder="correo@ejemplo.com"
-        disabled={loading}
-        required
-      />
-    </div>
-
-    <div class="form-group">
-      <label for="password">Contraseña</label>
-      <input
-        id="password"
-        bind:value={password}
-        type="password"
-        placeholder="••••••••"
-        disabled={loading}
-        required
-      />
-    </div>
-
-    <div class="form-row">
-      <div class="form-group">
-        <label for="nombre">Nombre</label>
+<div class="flex min-h-full items-center justify-center p-6">
+  <div class="w-full max-w-2xl rounded-lg bg-[#252526] p-8 shadow-xl">
+    <h2 class="border-b border-[#007acc] pb-3 text-2xl font-semibold text-gray-200">
+      Registrar Nuevo Usuario
+    </h2>
+    
+    <form onsubmit={handleSubmit} class="mt-6 space-y-5">
+      <!-- Email -->
+      <div class="space-y-2">
+        <label for="email" class="block text-sm font-medium text-gray-300">
+          Email
+        </label>
         <input
-          id="nombre"
-          bind:value={nombre}
-          type="text"
-          placeholder="Juan"
+          id="email"
+          bind:value={email}
+          type="email"
+          placeholder="correo@ejemplo.com"
           disabled={loading}
           required
+          class="w-full rounded border border-[#444] bg-[#1e1e1e] px-3 py-2 text-sm text-white 
+                 placeholder:text-gray-500 focus:border-[#007acc] focus:outline-none 
+                 focus:ring-2 focus:ring-[#007acc] disabled:opacity-60"
         />
       </div>
 
-      <div class="form-group">
-        <label for="apellido">Apellido</label>
+      <!-- Contraseña -->
+      <div class="space-y-2">
+        <label for="password" class="block text-sm font-medium text-gray-300">
+          Contraseña
+        </label>
         <input
-          id="apellido"
-          bind:value={apellido}
-          type="text"
-          placeholder="Pérez"
+          id="password"
+          bind:value={password}
+          type="password"
+          placeholder="••••••••"
           disabled={loading}
           required
+          class="w-full rounded border border-[#444] bg-[#1e1e1e] px-3 py-2 text-sm text-white 
+                 placeholder:text-gray-500 focus:border-[#007acc] focus:outline-none 
+                 focus:ring-2 focus:ring-[#007acc] disabled:opacity-60"
         />
       </div>
-    </div>
 
-    <div class="form-group">
-      <label for="role">Rol</label>
-      <select id="role" bind:value={role} disabled={loading}>
-        <option value="guardia">Guardia</option>
-        <option value="supervisor">Supervisor</option>
-        <option value="admin">Administrador</option>
-      </select>
-    </div>
+      <!-- Nombre y Apellido -->
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div class="space-y-2">
+          <label for="nombre" class="block text-sm font-medium text-gray-300">
+            Nombre
+          </label>
+          <input
+            id="nombre"
+            bind:value={nombre}
+            type="text"
+            placeholder="Juan"
+            disabled={loading}
+            required
+            class="w-full rounded border border-[#444] bg-[#1e1e1e] px-3 py-2 text-sm text-white 
+                   placeholder:text-gray-500 focus:border-[#007acc] focus:outline-none 
+                   focus:ring-2 focus:ring-[#007acc] disabled:opacity-60"
+          />
+        </div>
 
-    <button
-      type="submit"
-      class="btn btn-primary"
-      disabled={loading || !email || !password || !nombre || !apellido}
-    >
-      {loading ? 'Procesando...' : 'Registrar Usuario'}
-    </button>
-  </form>
+        <div class="space-y-2">
+          <label for="apellido" class="block text-sm font-medium text-gray-300">
+            Apellido
+          </label>
+          <input
+            id="apellido"
+            bind:value={apellido}
+            type="text"
+            placeholder="Pérez"
+            disabled={loading}
+            required
+            class="w-full rounded border border-[#444] bg-[#1e1e1e] px-3 py-2 text-sm text-white 
+                   placeholder:text-gray-500 focus:border-[#007acc] focus:outline-none 
+                   focus:ring-2 focus:ring-[#007acc] disabled:opacity-60"
+          />
+        </div>
+      </div>
 
-  <Alert type="success" message={success} />
-  <Alert type="error" message={error} />
+      <!-- Rol -->
+      <div class="space-y-2">
+        <label for="role" class="block text-sm font-medium text-gray-300">
+          Rol
+        </label>
+        <select
+          id="role"
+          bind:value={role}
+          disabled={loading}
+          class="w-full rounded border border-[#444] bg-[#1e1e1e] px-3 py-2 text-sm text-white 
+                 focus:border-[#007acc] focus:outline-none focus:ring-2 focus:ring-[#007acc] 
+                 disabled:opacity-60"
+        >
+          <option value="guardia">Guardia</option>
+          <option value="supervisor">Supervisor</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+
+      <!-- Botón Submit -->
+      <button
+        type="submit"
+        disabled={loading || !isFormValid}
+        class="mt-6 w-full rounded bg-[#007acc] px-4 py-2.5 font-medium text-white 
+               transition-colors hover:bg-[#005a9e] disabled:cursor-not-allowed 
+               disabled:opacity-60"
+      >
+        {loading ? 'Procesando...' : 'Registrar Usuario'}
+      </button>
+    </form>
+
+    <!-- Alerts -->
+    {#if success || error}
+      <div class="mt-4">
+        <Alert type="success" message={success} />
+        <Alert type="error" message={error} />
+      </div>
+    {/if}
+  </div>
 </div>
-
-<style>
-  .user-register-panel {
-    padding: 1.5rem;
-    background: #252526;
-    border-radius: 8px;
-    margin: 1rem;
-  }
-
-  h2 {
-    margin-top: 0;
-    color: #ccc;
-    border-bottom: 1px solid #007acc;
-    padding-bottom: 0.5rem;
-  }
-
-  .form-group { 
-    margin-bottom: 1rem; 
-  }
-  
-  .form-row { 
-    display: flex; 
-    gap: 1rem; 
-  }
-  
-  .form-row .form-group { 
-    flex: 1; 
-  }
-  
-  label { 
-    display: block; 
-    margin-bottom: 0.5rem; 
-    font-weight: 500; 
-    color: #ccc; 
-  }
-  
-  input, select {
-    width: 100%; 
-    padding: 0.5rem; 
-    border: 1px solid #444; 
-    border-radius: 4px;
-    background: #1e1e1e; 
-    color: #fff; 
-    font-size: 14px;
-  }
-  
-  input:focus, select:focus { 
-    outline: 2px solid #007acc; 
-    border-color: #007acc; 
-  }
-  
-  .btn { 
-    padding: 0.6rem 1.2rem; 
-    border: none; 
-    border-radius: 4px; 
-    cursor: pointer; 
-    font-weight: 500; 
-    width: 100%;
-  }
-  
-  .btn-primary { 
-    background: #007acc; 
-    color: white; 
-  }
-  
-  .btn:disabled { 
-    opacity: 0.6; 
-    cursor: not-allowed; 
-  }
-</style>

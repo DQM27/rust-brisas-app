@@ -1,105 +1,97 @@
 <script lang="ts">
   import { User, Shield, BarChart3 } from "lucide-svelte";
+  import { fade, fly } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
+
+  const features = [
+    {
+      icon: User,
+      title: "Gestión de Usuarios",
+      description: "Crea, edita y administra usuarios del sistema",
+      delay: 0
+    },
+    {
+      icon: Shield,
+      title: "Autenticación Segura",
+      description: "Login con hashing Argon2 + sesiones persistentes",
+      delay: 100
+    },
+    {
+      icon: BarChart3,
+      title: "Panel de Control",
+      description: "Métricas y estadísticas en tiempo real",
+      delay: 200
+    }
+  ];
 </script>
 
-<div class="welcome-panel">
-  <div class="welcome-content">
-    <h1>Bienvenido a Brisas App</h1>
-    <p>Sistema de gestión de usuarios</p>
+<div class="flex h-full items-center justify-center bg-[#1e1e1e] px-6">
+  <div class="w-full max-w-4xl text-center">
+    <!-- Header con animación de fade y fly -->
+    <div 
+      in:fly={{ y: -30, duration: 800, easing: quintOut }}
+      class="mb-12"
+    >
+      <h1 class="mb-3 bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-5xl font-bold tracking-tight text-transparent">
+        Bienvenido a Brisas App
+      </h1>
+      <p class="text-lg text-gray-400">
+        Sistema de gestión de usuarios
+      </p>
+    </div>
 
-    <div class="features">
-      <div class="feature-card">
-        <div class="icon">
-          <User />
-        </div>
-        <h3>Gestión de Usuarios</h3>
-        <p>Crea, edita y administra usuarios del sistema</p>
-      </div>
+    <!-- Feature Cards con stagger animation -->
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {#each features as feature, i (i)}
+        <div
+          in:fly={{ y: 50, duration: 600, delay: feature.delay, easing: quintOut }}
+          class="group relative overflow-hidden rounded-lg border border-[#333] bg-[#252526] p-6 transition-all duration-300 hover:-translate-y-2 hover:border-[#007acc] hover:shadow-lg hover:shadow-[#007acc]/20"
+        >
+          <!-- Efecto de brillo en hover -->
+          <div class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-700 group-hover:translate-x-full"></div>
+          
+          <!-- Contenido -->
+          <div class="relative z-10">
+            <!-- Icon con animación de escala -->
+            <div class="mb-4 inline-flex rounded-lg bg-[#007acc]/10 p-3 text-[#007acc] transition-all duration-300 group-hover:scale-110 group-hover:bg-[#007acc]/20">
+              <svelte:component this={feature.icon} size={28} strokeWidth={2} />
+            </div>
 
-      <div class="feature-card">
-        <div class="icon">
-          <Shield />
-        </div>
-        <h3>Autenticación Segura</h3>
-        <p>Login con hashing Argon2 + sesiones persistentes</p>
-      </div>
+            <h3 class="mb-2 text-base font-semibold text-white transition-colors duration-300 group-hover:text-[#007acc]">
+              {feature.title}
+            </h3>
+            
+            <p class="text-sm leading-relaxed text-gray-400">
+              {feature.description}
+            </p>
+          </div>
 
-      <div class="feature-card">
-        <div class="icon">
-          <BarChart3 />
+          <!-- Borde animado inferior -->
+          <div class="absolute bottom-0 left-0 h-1 w-0 bg-gradient-to-r from-[#007acc] to-[#0098ff] transition-all duration-500 group-hover:w-full"></div>
         </div>
-        <h3>Panel de Control</h3>
-        <p>Métricas y estadísticas en tiempo real</p>
+      {/each}
+    </div>
+
+    <!-- Indicador sutil animado -->
+    <div 
+      in:fade={{ duration: 1000, delay: 400 }}
+      class="mt-16"
+    >
+      <div class="inline-flex items-center gap-2 rounded-full border border-[#333] bg-[#252526]/50 px-4 py-2 text-xs text-gray-400 backdrop-blur-sm">
+        <div class="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
+        Sistema operativo
       </div>
     </div>
   </div>
 </div>
 
 <style>
-  .welcome-panel {
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #1e1e1e;
-    color: #e5e5e5;
-    
-  }
-
-  .welcome-content {
-    max-width: 700px;
-    text-align: center;
-  }
-
-  h1 {
-    font-size: 2.2rem;
-    margin: 0 0 0.5rem 0;
-    font-weight: 600;
-    color: #ffffff;
-  }
-
-  p {
-    font-size: 1rem;
-    margin: 0 0 2.5rem 0;
-    opacity: 0.8;
-  }
-
-  .features {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 1.25rem;
-  }
-
-  .feature-card {
-    background: #252526;
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 1.25rem;
-    transition: transform 0.15s, border-color 0.15s;
-  }
-
-  .feature-card:hover {
-    transform: translateY(-3px);
-    border-color: #007acc;
-  }
-
-  .icon {
-    width: 32px;
-    height: 32px;
-    margin-bottom: 0.75rem;
-  }
-
-  .feature-card h3 {
-    font-size: 0.95rem;
-    margin: 0 0 0.35rem 0;
-    font-weight: 600;
-    color: #ffffff;
-  }
-
-  .feature-card p {
-    font-size: 0.8rem;
-    margin: 0;
-    opacity: 0.75;
-    line-height: 1.3;
+  @keyframes shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
   }
 </style>

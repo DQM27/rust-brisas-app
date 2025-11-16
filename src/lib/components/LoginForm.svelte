@@ -1,13 +1,16 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  interface Props {
+    loading?: boolean;
+    onSubmit: (data: { email: string; password: string }) => void;
+  }
 
-  export let loading = false;
-  let email = '';
-  let password = '';
-  const dispatch = createEventDispatcher();
+  let { loading = false, onSubmit }: Props = $props();
+
+  let email = $state('');
+  let password = $state('');
 
   function handleSubmit() {
-    dispatch('submit', { email, password });
+    onSubmit({ email, password });
   }
 
   export function reset() {
@@ -16,82 +19,57 @@
   }
 </script>
 
-<div class="login-page">
-  <form on:submit|preventDefault={handleSubmit} class="login-form">
-    <h1>Iniciar Sesión</h1>
-    <div class="form-group">
-      <label for="email">Email</label>
-      <input id="email" type="email" bind:value={email} placeholder="correo@ejemplo.com" disabled={loading} required />
+<div class="flex h-screen w-full items-center justify-center bg-[#1e1e1e]">
+  <form 
+    onsubmit={handleSubmit} 
+    class="flex w-full max-w-md flex-col gap-4 rounded-lg bg-[#252526] p-8 shadow-xl"
+  >
+    <h1 class="mb-2 text-center text-2xl font-semibold text-gray-200">
+      Iniciar Sesión
+    </h1>
+
+    <div class="flex flex-col gap-1">
+      <label for="email" class="text-sm font-medium text-gray-300">
+        Email
+      </label>
+      <input
+        id="email"
+        type="email"
+        bind:value={email}
+        placeholder="correo@ejemplo.com"
+        disabled={loading}
+        required
+        class="rounded border border-[#3c3c3c] bg-[#1e1e1e] px-3 py-2 text-gray-200 
+               placeholder:text-gray-500 focus:border-[#007acc] focus:outline-none 
+               focus:ring-1 focus:ring-[#007acc] disabled:opacity-60"
+      />
     </div>
 
-    <div class="form-group">
-      <label for="password">Contraseña</label>
-      <input id="password" type="password" bind:value={password} placeholder="••••••••" disabled={loading} required />
+    <div class="flex flex-col gap-1">
+      <label for="password" class="text-sm font-medium text-gray-300">
+        Contraseña
+      </label>
+      <input
+        id="password"
+        type="password"
+        bind:value={password}
+        placeholder="••••••••"
+        disabled={loading}
+        required
+        class="rounded border border-[#3c3c3c] bg-[#1e1e1e] px-3 py-2 text-gray-200 
+               placeholder:text-gray-500 focus:border-[#007acc] focus:outline-none 
+               focus:ring-1 focus:ring-[#007acc] disabled:opacity-60"
+      />
     </div>
 
-    <button type="submit" class="btn" disabled={loading}>
+    <button
+      type="submit"
+      disabled={loading}
+      class="mt-2 rounded bg-[#007acc] px-4 py-2.5 font-medium text-white 
+             transition-opacity hover:bg-[#005a9e] disabled:cursor-not-allowed 
+             disabled:opacity-60"
+    >
       {loading ? 'Procesando...' : 'Entrar'}
     </button>
   </form>
 </div>
-
-<style>
-.login-page {
-  width: 100%;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #1e1e1e;
-}
-
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 2rem;
-  background: #252526;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 400px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  color: #ccc;
-}
-
-.login-form h1 {
-  text-align: center;
-  margin: 0 0 1.5rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-input {
-  padding: 8px;
-  border-radius: 4px;
-  border: 1px solid #3c3c3c;
-  background: #1e1e1e;
-  color: #ccc;
-}
-
-input:disabled {
-  opacity: 0.6;
-}
-
-.btn {
-  padding: 10px;
-  border: none;
-  border-radius: 4px;
-  background: #007acc;
-  color: white;
-  cursor: pointer;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-</style>

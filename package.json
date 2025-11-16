@@ -1,7 +1,7 @@
 {
   "name": "brisas-app",
   "version": "0.1.0",
-  "description": "",
+  "description": "Sistema de control de acceso para contratistas",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
@@ -13,15 +13,12 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@floating-ui/dom": "^1.7.4",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "lucide-svelte": "^0.553.0",
     "svelte-5-french-toast": "^2.0.6",
     "svelte-dnd-action": "^0.9.67",
     "svelte-floating-ui": "^1.6.2",
-    "svelte-headlessui": "^0.0.46",
-    "svelte-local-storage-store": "^0.6.4",
     "svelte-persisted-store": "^0.12.0",
     "svelte-splitpanes": "^8.0.9"
   },
@@ -32,8 +29,6 @@
     "@tailwindcss/vite": "^4.1.17",
     "@tauri-apps/cli": "^2",
     "@types/node": "^24.10.0",
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.6",
     "shadcn-svelte": "^1.0.10",
     "svelte": "^5.0.0",
     "svelte-check": "^4.0.0",
