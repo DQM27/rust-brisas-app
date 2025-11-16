@@ -1,19 +1,18 @@
 <script lang="ts">
   import { dndzone } from 'svelte-dnd-action';
-  import { flip } from 'svelte/animate';
   import { activeTabId, closeTab, reorderTabs } from '$lib/stores/tabs';
   import type { HydratedTab } from '$lib/types/tab';
   import { X } from 'lucide-svelte';
 
-  export let tabs: HydratedTab[] = [];
+  interface Props {
+    tabs: HydratedTab[];
+  }
+
+  let { tabs }: Props = $props();
 
   const flipDurationMs = 200;
 
-  // Preparar items para drag & drop
-  $: items = tabs.map(tab => ({ 
-    id: tab.id, 
-    tab 
-  }));
+  let items = $derived(tabs.map(tab => ({ id: tab.id, tab })));
 
   function handleDndConsider(e: CustomEvent) {
     items = e.detail.items;
@@ -43,53 +42,77 @@
   }
 </script>
 
-<div class="tabs-container">
+<div class="flex h-full flex-col overflow-hidden">
+  <!-- Tabs bar mejorado -->
   <div 
-    class="tabs" 
+    class="flex overflow-x-auto overflow-y-hidden border-b border-[#3c3c3c] bg-[#252526] shadow-sm"
     role="tablist"
     use:dndzone={{ items, flipDurationMs, type: 'tabs' }}
-    on:consider={handleDndConsider}
-    on:finalize={handleDndFinalize}
+    onconsider={handleDndConsider}
+    onfinalize={handleDndFinalize}
   >
     {#each items as { id, tab } (id)}
+      {@const isActive = $activeTabId === id}
+      
       <div
-        class="tab"
-        class:active={$activeTabId === id}
-        class:dirty={tab.isDirty}
+        class="group relative flex items-center gap-1 border-r border-[#3c3c3c] transition-all duration-200
+               {isActive 
+                 ? 'bg-[#1e1e1e] text-white shadow-md' 
+                 : 'bg-[#2d2d2d] text-gray-400 hover:bg-[#3a3a3a] hover:text-gray-200'}"
         role="tab"
-        aria-selected={$activeTabId === id}
-        animate:flip={{ duration: flipDurationMs }}
+        aria-selected={isActive}
       >
+        <!-- Indicador activo superior -->
+        {#if isActive}
+          <div class="absolute left-0 right-0 top-0 h-0.5 bg-gradient-to-r from-[#007acc] to-[#0098ff]"></div>
+        {/if}
+
+        <!-- Tab button -->
         <button
-          class="tab-button"
-          on:click={() => setActive(id)}
+          class="flex flex-1 items-center gap-2 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition-all
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#007acc]
+                 {isActive ? '' : 'hover:translate-x-0.5'}"
+          onclick={() => setActive(id)}
           tabindex="0"
         >
           {#if tab.isDirty}
-            <span class="dirty-indicator" title="Cambios sin guardar">●</span>
+            <span 
+              class="relative flex h-2 w-2" 
+              title="Cambios sin guardar"
+            >
+              <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#007acc] opacity-75"></span>
+              <span class="relative inline-flex h-2 w-2 rounded-full bg-[#007acc]"></span>
+            </span>
           {/if}
           
-          <span class="tab-title">{tab.title}</span>
+          <span class="select-none">{tab.title}</span>
         </button>
 
+        <!-- Close button mejorado -->
         <button
-          class="close-btn"
+          class="mr-1 flex items-center justify-center rounded p-1.5 opacity-0 transition-all
+                 group-hover:opacity-70 hover:!opacity-100
+                 {isActive 
+                   ? 'hover:bg-red-500/20 hover:text-red-400' 
+                   : 'hover:bg-white/10 hover:text-white'}"
           type="button"
           aria-label="Cerrar tab"
-          on:click={(e) => handleClose(e, id)}
-          on:keydown={(e) => handleKeyboardClose(e, id)}
+          onclick={(e) => handleClose(e, id)}
+          onkeydown={(e) => handleKeyboardClose(e, id)}
         >
-          <X size={14} />
+          <X size={14} strokeWidth={2.5} />
         </button>
       </div>
     {/each}
   </div>
 
-  <div class="content">
+  <!-- Content area con transición -->
+  <div class="relative flex-1 overflow-hidden bg-[#1e1e1e]">
     {#each tabs as tab (tab.id)}
       {#if $activeTabId === tab.id}
-        <div class="tab-content" role="tabpanel">
-          <svelte:component this={tab.component} tabId={tab.id} data={tab.data} />
+        {@const Component = tab.component}
+        <div class="h-full w-full overflow-auto animate-fade-in" role="tabpanel">
+          <Component tabId={tab.id} data={tab.data} />
         </div>
       {/if}
     {/each}
@@ -97,113 +120,36 @@
 </div>
 
 <style>
-  .tabs-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden;
-  }
-
-  .tabs {
-    display: flex;
-    background: #252526;
-    border-bottom: 1px solid #3c3c3c;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: thin;
-  }
-
-  .tabs::-webkit-scrollbar {
+  /* Scrollbar personalizada */
+  div[role="tablist"]::-webkit-scrollbar {
     height: 4px;
   }
 
-  .tabs::-webkit-scrollbar-thumb {
+  div[role="tablist"]::-webkit-scrollbar-thumb {
     background: #555;
     border-radius: 2px;
+    transition: background 0.2s;
   }
 
-  .tab {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: #2d2d2d;
-    border-right: 1px solid #3c3c3c;
-    transition: background-color 0.15s;
+  div[role="tablist"]::-webkit-scrollbar-thumb:hover {
+    background: #666;
   }
 
-  .tab:hover {
-    background: #3a3a3a;
+  div[role="tablist"]::-webkit-scrollbar-track {
+    background: transparent;
   }
 
-  .tab.active {
-    background: #1e1e1e;
-    color: #fff;
+  /* Animación de fade para contenido */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
-  .tab-button {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    flex: 1;
-    cursor: pointer;
-    font-size: 13px;
-    background: none;
-    border: none;
-    color: inherit;
-    white-space: nowrap;
-    outline: none;
-  }
-
-  .tab-button:focus-visible {
-    box-shadow: inset 0 0 0 1px #007acc;
-  }
-
-  .dirty-indicator {
-    color: #fff;
-    font-size: 16px;
-    line-height: 1;
-    opacity: 0.8;
-  }
-
-  .tab-title {
-    user-select: none;
-  }
-
-  .close-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px 8px;
-    background: none;
-    border: none;
-    color: inherit;
-    cursor: pointer;
-    border-radius: 2px;
-    opacity: 0.6;
-    transition: opacity 0.15s, background-color 0.15s;
-  }
-
-  .close-btn:hover {
-    opacity: 1;
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .tab.active .close-btn:hover {
-    color: #e81123;
-  }
-
-  .content {
-    flex: 1;
-    background: #1e1e1e;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .tab-content {
-    width: 100%;
-    height: 100%;
-    overflow: auto;
+  .animate-fade-in {
+    animation: fade-in 0.15s ease-out;
   }
 </style>

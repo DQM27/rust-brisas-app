@@ -1,12 +1,9 @@
 <script lang="ts">
-  import Alert from '$lib/components/Alert.svelte';
   import { users } from '$lib/api/users';
   import { toast } from 'svelte-5-french-toast';
   import type { UserRole } from '$lib/types/user';
 
   let loading = $state(false);
-  let success = $state('');
-  let error = $state('');
 
   let email = $state('');
   let password = $state('');
@@ -14,21 +11,30 @@
   let apellido = $state('');
   let role = $state<UserRole>('guardia');
 
-  async function handleSubmit() {
-    error = success = '';
+  async function handleSubmit(event: Event) {
+    event.preventDefault(); // ✅ Prevenir recarga de página
     loading = true;
 
     try {
       await users.create({ email, password, nombre, apellido, role });
-      success = 'Usuario creado exitosamente';
-      toast.success(success);
+      
+      toast.success('Usuario creado exitosamente', {
+        duration: 3000,
+        icon: '✓'
+      });
       
       // Limpiar formulario
       email = password = nombre = apellido = '';
       role = 'guardia';
     } catch (err: any) {
-      error = err.includes('UNIQUE') ? 'El email ya está registrado' : 'Error al crear usuario';
-      toast.error(error);
+      const errorMessage = err.includes('UNIQUE') 
+        ? 'El email ya está registrado' 
+        : 'Error al crear usuario';
+      
+      toast.error(errorMessage, {
+        duration: 4000,
+        icon: '✕'
+      });
     } finally {
       loading = false;
     }
@@ -152,13 +158,5 @@
         {loading ? 'Procesando...' : 'Registrar Usuario'}
       </button>
     </form>
-
-    <!-- Alerts -->
-    {#if success || error}
-      <div class="mt-4">
-        <Alert type="success" message={success} />
-        <Alert type="error" message={error} />
-      </div>
-    {/if}
   </div>
 </div>

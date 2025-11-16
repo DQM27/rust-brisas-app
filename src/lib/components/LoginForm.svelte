@@ -9,7 +9,8 @@
   let email = $state('');
   let password = $state('');
 
-  function handleSubmit() {
+  function handleSubmit(event: Event) {
+    event.preventDefault(); // ✅ Esto faltaba
     onSubmit({ email, password });
   }
 
@@ -66,7 +67,7 @@
       type="submit"
       disabled={loading}
       class="mt-2 rounded bg-[#007acc] px-4 py-2.5 font-medium text-white 
-             transition-opacity hover:bg-[#005a9e] disabled:cursor-not-allowed 
+             transition-colors hover:bg-[#005a9e] disabled:cursor-not-allowed 
              disabled:opacity-60"
     >
       {loading ? 'Procesando...' : 'Entrar'}

@@ -7,6 +7,7 @@
   import StatusBar from '$lib/components/layout/StatusBar.svelte';
   import { inspectionPanel } from '$lib/stores/ui';
   import { initNetworkMonitor } from '$lib/stores/network';
+  import Toast from '$lib/components/Toast.svelte';
 
   // Estado de autenticación reactivo
   $: authenticated = $isAuthenticated;
@@ -30,6 +31,7 @@
       <Sidebar />
     {/if}
     <div class="content-area">
+      <Toast />
       <slot />
     </div>
   </div>

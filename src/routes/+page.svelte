@@ -1,34 +1,39 @@
 <script lang="ts">
   import { isAuthenticated, login } from '$lib/stores/auth';
   import LoginForm from '$lib/components/LoginForm.svelte';
-  import Alert from '$lib/components/Alert.svelte';
   import { auth } from '$lib/api/auth';
   import { Splitpanes, Pane } from 'svelte-splitpanes';
   import Tabs from '$lib/components/layout/Tabs.svelte';
   import { tabsStore } from '$lib/stores/tabs';
   import { inspectionPanel } from '$lib/stores/ui';
   import { ChevronDown } from 'lucide-svelte';
+  import { toast } from 'svelte-5-french-toast';
 
   import type LoginFormType from '$lib/components/LoginForm.svelte';
 
-  let error = $state('');
   let loading = $state(false);
-  let formRef: LoginFormType;
+  let formRef = $state<LoginFormType>();
   let inspectionContent = $state("27");
 
   // ----------------------------
   // Funciones de login
   // ----------------------------
   async function handleLogin(data: { email: string; password: string }) {
-    error = '';
     loading = true;
 
     try {
       const user = await auth.login(data.email, data.password);
       login(user);
-      formRef.reset();
-    } catch {
-      error = 'Credenciales inválidas';
+      formRef?.reset();
+      toast.success('Sesión iniciada correctamente', {
+        duration: 3000,
+        icon: '✓'
+      });
+    } catch (err) {
+      toast.error('Credenciales inválidas. Verifica tu email y contraseña.', {
+        duration: 4000,
+        icon: '✕'
+      });
     } finally {
       loading = false;
     }
@@ -52,9 +57,6 @@
 {#if !$isAuthenticated}
   <!-- Pantalla de Login -->
   <LoginForm bind:this={formRef} {loading} onSubmit={handleLogin} />
-  {#if error}
-    <Alert type="error" message={error} />
-  {/if}
 {:else}
   <!-- App Principal -->
   <div class="h-full bg-[#1e1e1e]">
@@ -115,7 +117,7 @@
 {/if}
 
 <style>
-  /* Splitpanes - Mantenemos en CSS porque son estilos globales de librería */
+  /* Splitpanes */
   :global(.splitpanes__pane) {
     background: transparent;
   }
