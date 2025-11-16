@@ -1,9 +1,8 @@
 <!-- src/lib/components/layout/sidebar/Sidebar.svelte -->
 <script lang="ts">
   import { activeView } from '$lib/stores/ui';
-  import { isAuthenticated } from '$lib/stores/auth';
-  import { resetTabs } from '$lib/stores/tabs';
-  import { goto } from '$app/navigation';
+  import { isAuthenticated, logout } from '$lib/stores/auth';
+  import { resetTabs } from '$lib/stores/tabs';   
   
   // Importar iconos directamente
   import { User, Lock, FileText, Settings, LogOut } from 'lucide-svelte';
@@ -73,10 +72,7 @@
   }
 
   function handleLogout() {
-    isAuthenticated.set(false);
-    resetTabs();
-    activeView.set('');
-    goto('/login');
+      logout();
   }
 
   const user = {

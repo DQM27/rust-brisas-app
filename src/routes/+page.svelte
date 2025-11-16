@@ -9,7 +9,7 @@
   import { inspectionPanel } from '$lib/stores/ui';
   import { ChevronDown } from 'lucide-svelte';
 
-  let inspectionContent = "Sos una loca";
+  let inspectionContent = "27";
   
   onMount(() => {
     checkSession();

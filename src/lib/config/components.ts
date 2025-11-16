@@ -9,11 +9,6 @@ import type { ComponentKey } from '$lib/types/component';
 import WelcomePanel from '$lib/components/WelcomePanel.svelte';
 import UserRegisterPanel from '$lib/components/admin/UserRegisterPanel.svelte';
 
-// TODO: Importar cuando existan
-// import UserList from '$lib/components/UserList.svelte';
-// import UserEditor from '$lib/components/UserEditor.svelte';
-// import Dashboard from '$lib/components/Dashboard.svelte';
-
 /**
  * Registry central de componentes
  * Permite serializar tabs y reconstruirlos después
