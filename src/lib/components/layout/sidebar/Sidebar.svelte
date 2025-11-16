@@ -19,8 +19,8 @@
   import SettingsPanel from './panels/SettingsPanel.svelte';
 
   // Store y tipos
-  import { activePanel } from './sidebarStore';
-  import type { SidebarItem } from './types';
+  import { activePanel } from '../../../stores/sidebar';
+  import type { SidebarItem } from '../../../types/Sidebar';
 
   // Items configurables - ahora con importaciones directas
   const sidebarItems: SidebarItem[] = [

@@ -1,6 +1,6 @@
 <!-- src/lib/components/layout/sidebar/SidebarIcon.svelte -->
 <script lang="ts">
-  import type { SidebarItem } from './types';
+  import type { SidebarItem } from '../../../types/Sidebar';
 
   export let item: SidebarItem;
   export let isActive: boolean = false;

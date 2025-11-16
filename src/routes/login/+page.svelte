@@ -2,7 +2,7 @@
 <script lang="ts">
   import LoginForm from '$lib/components/auth/LoginForm.svelte';
   import Alert from '$lib/components/auth/Alert.svelte';
-  import { tauri } from '$lib/tauri';
+  import { auth } from '$lib/api/auth';
   import { login } from '$lib/stores/auth';
   import { goto } from '$app/navigation';
 
@@ -14,7 +14,7 @@
     loading = true;
 
     try {
-      const user = await tauri.login(e.detail.email, e.detail.password);
+      const user = await auth.login(e.detail.email, e.detail.password);
       login(user);
       goto('/');
     } catch {

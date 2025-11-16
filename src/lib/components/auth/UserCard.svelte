@@ -1,6 +1,6 @@
 
 <script lang="ts">
-  import type { User } from '$lib/types';
+  import type { User } from '$lib/types/user';
   import { createEventDispatcher } from 'svelte';
   
   export let user: User;

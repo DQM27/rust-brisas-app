@@ -3,7 +3,7 @@
 // Ahora importa ComponentKey del nuevo archivo
 // ============================================
 import type { Component } from 'svelte';
-import type { ComponentKey } from './components';
+import type { ComponentKey } from './component';
 
 /**
  * Tab serializable para persistencia

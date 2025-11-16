@@ -23,9 +23,9 @@ export interface UserResponse {
   email: string;
   nombre: string;
   apellido: string;
-  nombreCompleto: string;      // NUEVO
+  nombreCompleto: string;      
   role: UserRole;
-  roleDisplay: string;          // NUEVO - "Administrador", "Supervisor", "Guardia"
+  roleDisplay: string;          
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -47,7 +47,7 @@ export interface CreateUserInput {
   password: string;
   nombre: string;
   apellido: string;
-  role?: string;  // 'admin' | 'supervisor' | 'guardia'
+  role?: string;  
 }
 
 export interface UpdateUserInput {

@@ -1,6 +1,6 @@
 
 <script lang="ts">
-  import type { User } from '$lib/types';
+  import type { User } from '$lib/types/user';
   
   export let users: User[] = [];
   

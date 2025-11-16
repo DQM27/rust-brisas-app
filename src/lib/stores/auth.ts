@@ -2,7 +2,7 @@ import { persisted } from 'svelte-persisted-store';
 import { openTab, resetTabs, tabsStore } from './tabs';
 import { get } from 'svelte/store';
 import { goto } from '$app/navigation';
-import type { User } from '$lib/types';
+import type { User } from '$lib/types/user';
 
 export const isAuthenticated = persisted<boolean>('brisas-auth', false);
 export const currentUser = persisted<User | null>('brisas-user', null);

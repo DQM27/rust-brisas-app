@@ -1,7 +1,7 @@
 <!-- src/lib/components/layout/sidebar/panels/UsersPanel.svelte -->
 <script lang="ts">
   import { Users, UserPlus, Edit3, BarChart3, Home } from 'lucide-svelte';
-  import { openView, openUserRegistration } from '../sidebarStore';
+  import { openView, openUserRegistration } from '../../../../stores/sidebar';
   
   // Función para manejar teclado
   function handleKeydown(e: KeyboardEvent, action: () => void) {

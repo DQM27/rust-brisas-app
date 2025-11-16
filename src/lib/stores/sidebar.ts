@@ -1,7 +1,7 @@
 // src/lib/components/layout/sidebar/sidebarStore.ts
 import { writable } from 'svelte/store';
 import { openTab } from '$lib/stores/tabs';
-import type { ComponentKey } from './types';
+import type { ComponentKey } from '$lib/types/Sidebar';
 
 export const activePanel = writable<string | null>(null);
 

@@ -1,6 +1,6 @@
 <!-- src/lib/components/layout/sidebar/SidebarPanel.svelte -->
 <script lang="ts">
-  import type { SidebarItem } from './types';
+  import type { SidebarItem } from '../../../types/Sidebar';
 
   // Asegurarnos de que las props estén correctamente exportadas
   export let item: SidebarItem;

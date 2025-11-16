@@ -1,8 +1,8 @@
 
 import { writable, derived, get } from 'svelte/store';
 import { persisted } from 'svelte-persisted-store';
-import type { SerializableTab, HydratedTab, OpenTabOptions } from '$lib/types/tabs';
-import { getComponent } from '$lib/components/registry';
+import type { SerializableTab, HydratedTab, OpenTabOptions } from '$lib/types/tab';
+import { getComponent } from '$lib/config/components';
 import type { Readable } from 'svelte/store';
 
 /**

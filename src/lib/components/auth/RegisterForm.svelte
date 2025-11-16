@@ -1,7 +1,7 @@
 <!-- src/lib/components/auth/RegisterForm.svelte -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import type { CreateUserInput } from '$lib/types';
+  import type { CreateUserInput } from '$lib/types/user';
 
   export let loading = false;
 

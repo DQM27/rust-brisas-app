@@ -3,7 +3,7 @@
 // Ahora importa ComponentKey del nuevo archivo
 // ============================================
 import type { Component } from 'svelte';
-import type { ComponentKey } from '$lib/types/components';
+import type { ComponentKey } from '$lib/types/component';
 
 // Importar todos los componentes de tabs
 import WelcomePanel from '$lib/components/WelcomePanel.svelte';

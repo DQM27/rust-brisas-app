@@ -2,7 +2,7 @@
   import { dndzone } from 'svelte-dnd-action';
   import { flip } from 'svelte/animate';
   import { activeTabId, closeTab, reorderTabs } from '$lib/stores/tabs';
-  import type { HydratedTab } from '$lib/types/tabs';
+  import type { HydratedTab } from '$lib/types/tab';
   import { X } from 'lucide-svelte';
 
   export let tabs: HydratedTab[] = [];

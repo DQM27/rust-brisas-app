@@ -1,7 +1,7 @@
 <!-- src/lib/components/layout/sidebar/panels/AccessPanel.svelte -->
 <script lang="ts">
   import { Lock, BarChart3, Shield, FileText } from 'lucide-svelte';
-  import { openView } from '../sidebarStore';
+  import { openView } from '../../../../stores/sidebar';
   
   function handleKeydown(e: KeyboardEvent, action: () => void) {
     if (e.key === 'Enter' || e.key === ' ') {
