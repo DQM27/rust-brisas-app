@@ -7,7 +7,7 @@ import type { ComponentKey } from '$lib/types/component';
 
 // Importar todos los componentes de tabs
 import WelcomePanel from '$lib/components/WelcomePanel.svelte';
-import UserRegisterPanel from '$lib/components/admin/UserRegisterPanel.svelte';
+import UserRegisterPanel from '$lib/components/UserRegisterPanel.svelte';
 
 /**
  * Registry central de componentes

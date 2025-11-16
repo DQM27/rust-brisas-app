@@ -1,7 +1,7 @@
 <!-- src/routes/login/+page.svelte (NUEVO LOGIN LIMPIO) -->
 <script lang="ts">
-  import LoginForm from '$lib/components/auth/LoginForm.svelte';
-  import Alert from '$lib/components/auth/Alert.svelte';
+  import LoginForm from '$lib/components/LoginForm.svelte';
+  import Alert from '$lib/components/Alert.svelte';
   import { auth } from '$lib/api/auth';
   import { login } from '$lib/stores/auth';
   import { goto } from '$app/navigation';

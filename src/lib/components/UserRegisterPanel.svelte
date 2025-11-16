@@ -1,6 +1,6 @@
 <!-- src/lib/components/admin/UserRegisterPanel.svelte -->
 <script lang="ts">
-  import Alert from '$lib/components/auth/Alert.svelte';
+  import Alert from '$lib/components/Alert.svelte';
   import { users } from '$lib/api/users';
   import { toast } from 'svelte-5-french-toast';
   import type { UserRole } from '$lib/types/user';
