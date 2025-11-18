@@ -1,9 +1,15 @@
 // ==========================================
-// src/models/user.rs
+// src/models/user.rs (REFACTORIZADO)
 // ==========================================
+// Solo modelos, DTOs y enums - SIN validaciones ni lógica
+
 use serde::{Deserialize, Serialize};
 
-/// Modelo de dominio - Representa un usuario del sistema
+// ==========================================
+// MODELO DE DOMINIO
+// ==========================================
+
+/// Representa un usuario del sistema
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
@@ -11,11 +17,15 @@ pub struct User {
     pub email: String,
     pub nombre: String,
     pub apellido: String,
-    pub role: UserRole,  // CAMBIÓ: ahora es enum
+    pub role: UserRole,
     pub is_active: bool,
     pub created_at: String,
     pub updated_at: String,
 }
+
+// ==========================================
+// ENUM DE ROLES
+// ==========================================
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -45,7 +55,7 @@ impl UserRole {
 }
 
 // ==========================================
-// DTOs de entrada
+// DTOs DE ENTRADA
 // ==========================================
 
 #[derive(Debug, Deserialize)]
@@ -55,7 +65,7 @@ pub struct CreateUserInput {
     pub password: String,
     pub nombre: String,
     pub apellido: String,
-    pub role: Option<String>,  // String desde frontend, se convierte a enum
+    pub role: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -70,7 +80,7 @@ pub struct UpdateUserInput {
 }
 
 // ==========================================
-// DTOs de salida
+// DTOs DE SALIDA
 // ==========================================
 
 #[derive(Debug, Serialize)]
@@ -80,9 +90,9 @@ pub struct UserResponse {
     pub email: String,
     pub nombre: String,
     pub apellido: String,
-    pub nombre_completo: String,  // Nuevo
+    pub nombre_completo: String,
     pub role: UserRole,
-    pub role_display: String,      // Nuevo - "Administrador", "Supervisor", "Guardia"
+    pub role_display: String,
     pub is_active: bool,
     pub created_at: String,
     pub updated_at: String,
@@ -126,87 +136,4 @@ pub struct RoleStats {
     pub admins: usize,
     pub supervisores: usize,
     pub guardias: usize,
-}
-
-// ==========================================
-// Validaciones
-// ==========================================
-
-pub mod validaciones {
-    use super::UserRole;
-    
-    pub fn validar_email(email: &str) -> Result<(), String> {
-        let limpio = email.trim();
-        
-        if limpio.is_empty() {
-            return Err("El email no puede estar vacío".to_string());
-        }
-        
-        if !limpio.contains('@') {
-            return Err("Email inválido".to_string());
-        }
-        
-        if limpio.len() > 100 {
-            return Err("El email no puede exceder 100 caracteres".to_string());
-        }
-        
-        Ok(())
-    }
-    
-    pub fn validar_password(password: &str) -> Result<(), String> {
-        if password.len() < 6 {
-            return Err("La contraseña debe tener al menos 6 caracteres".to_string());
-        }
-        
-        if password.len() > 100 {
-            return Err("La contraseña no puede exceder 100 caracteres".to_string());
-        }
-        
-        Ok(())
-    }
-    
-    pub fn validar_nombre(nombre: &str) -> Result<(), String> {
-        let limpio = nombre.trim();
-        
-        if limpio.is_empty() {
-            return Err("El nombre no puede estar vacío".to_string());
-        }
-        
-        if limpio.len() > 50 {
-            return Err("El nombre no puede exceder 50 caracteres".to_string());
-        }
-        
-        Ok(())
-    }
-    
-    pub fn validar_apellido(apellido: &str) -> Result<(), String> {
-        let limpio = apellido.trim();
-        
-        if limpio.is_empty() {
-            return Err("El apellido no puede estar vacío".to_string());
-        }
-        
-        if limpio.len() > 50 {
-            return Err("El apellido no puede exceder 50 caracteres".to_string());
-        }
-        
-        Ok(())
-    }
-    
-    pub fn validar_role(role_str: &str) -> Result<UserRole, String> {
-        UserRole::from_str(role_str)
-    }
-    
-    pub fn validar_create_input(input: &super::CreateUserInput) -> Result<(), String> {
-        validar_email(&input.email)?;
-        validar_password(&input.password)?;
-        validar_nombre(&input.nombre)?;
-        validar_apellido(&input.apellido)?;
-        
-        if let Some(ref role) = input.role {
-            validar_role(role)?;
-        }
-        
-        Ok(())
-    }
 }
