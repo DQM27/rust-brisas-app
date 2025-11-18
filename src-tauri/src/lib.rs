@@ -5,7 +5,8 @@ pub mod models;
 pub mod services;
 pub mod commands;
 pub mod db;
-
+pub mod config; 
+pub mod supabase; 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -14,9 +15,17 @@ pub fn run() {
         #[tokio::main]
         async fn main_inner() -> Result<(), Box<dyn std::error::Error>> {
             dotenvy::dotenv().ok();
-            let pool = db::init_db().await?;
+            
+            // ✅ Cargar configuración
+            let app_config = config::load_config()?;
+            println!("🏢 Terminal: {} (ID: {})", app_config.terminal.nombre, app_config.terminal.id);
+            
+            // ✅ Inicializar DB con la configuración
+            let pool = db::init_db(&app_config).await?;
+            
             tauri::Builder::default()
                 .manage(pool)
+                .manage(app_config)  // ← Compartir config con comandos
                 .invoke_handler(tauri::generate_handler![
                     // Comandos de usuario
                     commands::user_commands::create_user,
@@ -91,6 +100,9 @@ pub fn run() {
                     commands::ingreso_commands::registrar_salida,
                     commands::ingreso_commands::registrar_salida_con_gafete_perdido,
                     commands::ingreso_commands::cerrar_ingreso_anterior,
+                    // Comandos de Supabase
+                    commands::supabase_commands::test_supabase_connection,
+                    commands::supabase_commands::get_supabase_config,
                 ])
                 .run(tauri::generate_context!())?;
             Ok(())

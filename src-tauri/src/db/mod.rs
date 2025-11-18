@@ -1,15 +1,13 @@
 // src/db/mod.rs
 
 use sqlx::{sqlite::SqlitePoolOptions, migrate::Migrator, SqlitePool};
-use std::path::PathBuf;
+use crate::config::AppConfig;
 
 static MIGRATOR: Migrator = sqlx::migrate!("./migrations");
 
-pub async fn init_db() -> Result<SqlitePool, Box<dyn std::error::Error>> {
-    let db_dir = PathBuf::from("./data");
-    let db_path = db_dir.join("brisas.db");
-    
-    std::fs::create_dir_all(&db_dir)?;
+pub async fn init_db(config: &AppConfig) -> Result<SqlitePool, Box<dyn std::error::Error>> {
+    // Obtener ruta de la DB desde la configuración
+    let db_path = crate::config::manager::get_database_path(config);
     
     let db_exists = db_path.exists();
     let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
