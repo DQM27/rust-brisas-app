@@ -4,3 +4,4 @@ export type ComponentKey =
   | 'user-editor'
   | 'user-register'
   | 'dashboard'
+  | 'supabase-test'

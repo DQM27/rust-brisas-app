@@ -8,6 +8,7 @@ import type { ComponentKey } from '$lib/types/component';
 // Importar todos los componentes de tabs
 import WelcomePanel from '$lib/components/WelcomePanel.svelte';
 import UserRegisterPanel from '$lib/components/UserRegisterPanel.svelte';
+import SupabaseTest from '$lib/components/SupabaseTest.svelte';
 
 /**
  * Registry central de componentes
@@ -19,6 +20,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'user-editor': WelcomePanel, // Placeholder
   'dashboard': WelcomePanel, // Placeholder
   'user-register': UserRegisterPanel,
+  'supabase-test': SupabaseTest,
 };
 
 /**

@@ -4,7 +4,7 @@
   import { auth } from '$lib/api/auth';
   import { Splitpanes, Pane } from 'svelte-splitpanes';
   import Tabs from '$lib/components/layout/Tabs.svelte';
-  import { tabsStore } from '$lib/stores/tabs';
+  import { tabsStore, openTab } from '$lib/stores/tabs';  // ← Importar openTab
   import { inspectionPanel } from '$lib/stores/ui';
   import { ChevronDown } from 'lucide-svelte';
   import { toast } from 'svelte-5-french-toast';
@@ -52,6 +52,15 @@
   function closeInspectionPanel(): void {
     $inspectionPanel.visible = false;
   }
+
+  // ← NUEVA FUNCIÓN
+  function openSupabaseTest(): void {
+    openTab({
+      componentKey: 'supabase-test',
+      title: 'Prueba Supabase',
+      id: 'supabase-test'
+    });
+  }
 </script>
 
 {#if !$isAuthenticated}
@@ -59,7 +68,15 @@
   <LoginForm bind:this={formRef} {loading} onSubmit={handleLogin} />
 {:else}
   <!-- App Principal -->
-  <div class="h-full bg-[#1e1e1e]">
+  <div class="h-full bg-[#1e1e1e] relative">
+    <!-- ← BOTÓN TEMPORAL -->
+    <button
+      onclick={openSupabaseTest}
+      class="absolute top-2 right-2 z-50 px-3 py-1.5 bg-[#007acc] text-white text-xs rounded hover:bg-[#005a9e]"
+    >
+      🧪 Probar Supabase
+    </button>
+
     <Splitpanes horizontal class="default-theme">
       <!-- Contenido principal -->
       <Pane minSize={30} size={$inspectionPanel.visible ? 70 : 100}>
