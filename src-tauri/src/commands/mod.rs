@@ -6,3 +6,4 @@ pub mod vehiculo_commands;
 pub mod gafete_commands;
 pub mod gafete_perdido_commands;
 pub mod ingreso_commands;
+pub mod supabase_commands;

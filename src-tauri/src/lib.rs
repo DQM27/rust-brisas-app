@@ -5,7 +5,8 @@ pub mod models;
 pub mod services;
 pub mod commands;
 pub mod db;
-pub mod config;  // ← NUEVO MÓDULO
+pub mod config; 
+pub mod supabase; 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -99,6 +100,9 @@ pub fn run() {
                     commands::ingreso_commands::registrar_salida,
                     commands::ingreso_commands::registrar_salida_con_gafete_perdido,
                     commands::ingreso_commands::cerrar_ingreso_anterior,
+                    // Comandos de Supabase
+                    commands::supabase_commands::test_supabase_connection,
+                    commands::supabase_commands::get_supabase_config,
                 ])
                 .run(tauri::generate_context!())?;
             Ok(())
