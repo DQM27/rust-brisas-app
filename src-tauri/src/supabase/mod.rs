@@ -4,23 +4,22 @@ use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use crate::config::AppConfig;
 
-/// Cliente de Supabase
 pub struct SupabaseClient {
     pool: PgPool,
 }
 
 impl SupabaseClient {
-    /// Crea una nueva conexión a Supabase
     pub async fn new(config: &AppConfig) -> Result<Self, Box<dyn std::error::Error>> {
-        if config.supabase.url.is_empty() || config.supabase.anon_key.is_empty() {
+        if config.supabase.url.is_empty() || config.supabase.anon_key.is_empty() || config.supabase.db_password.is_empty() {
             return Err("Configuración de Supabase incompleta".into());
         }
 
-        // Construir connection string de PostgreSQL
+        let project_ref = extract_project_ref(&config.supabase.url)?;
+
         let database_url = format!(
-            "postgresql://postgres.{}:{}@aws-0-us-east-1.pooler.supabase.com:6543/postgres",
-            extract_project_ref(&config.supabase.url)?,
-            config.supabase.anon_key
+            "postgresql://postgres:{}@db.{}.supabase.co:5432/postgres",
+            config.supabase.db_password,
+            project_ref
         );
 
         println!("🔌 Conectando a Supabase...");
@@ -35,15 +34,12 @@ impl SupabaseClient {
         Ok(Self { pool })
     }
 
-    /// Obtiene referencia al pool de conexiones
     pub fn pool(&self) -> &PgPool {
         &self.pool
     }
 }
 
-/// Extrae el ref del proyecto de la URL de Supabase
 fn extract_project_ref(url: &str) -> Result<String, Box<dyn std::error::Error>> {
-    // URL ejemplo: https://myygjkofrdxhubjoppnz.supabase.co
     let ref_str = url
         .trim_start_matches("https://")
         .trim_end_matches(".supabase.co")

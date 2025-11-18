@@ -36,6 +36,8 @@ pub struct SupabaseConfig {
     pub url: String,
     /// Clave pública (anon key)
     pub anon_key: String,
+
+    pub db_password: String,
 }
 
 /// Información de la aplicación
@@ -61,6 +63,7 @@ impl Default for AppConfig {
             supabase: SupabaseConfig {
                 url: String::new(),
                 anon_key: String::new(),
+                db_password: String::new(),
             },
             app: AppInfo {
                 version: env!("CARGO_PKG_VERSION").to_string(),
