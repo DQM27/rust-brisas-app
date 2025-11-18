@@ -6,146 +6,123 @@
   position="bottom-right"
   toastOptions={{
     duration: 4000,
-    style: 'background: #252526; color: #e5e5e5; border: 1px solid #3c3c3c; border-radius: 8px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); padding: 16px; font-size: 14px;',
-    className: 'custom-toast'
+    style: 'background: #2a2f32; color: #e9edef; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); padding: 12px 16px; font-size: 14px; min-width: 280px; max-width: 400px;',
+    className: 'whatsapp-toast'
   }}
-  gutter={12}
+  gutter={8}
 />
 
 <style>
-  /* Animaciones de entrada */
-  :global(.custom-toast) {
-    animation: slideIn 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards,
-               pulse 0.3s ease-in-out 0.2s;
+  /* Animación de entrada estilo WhatsApp */
+  :global(.whatsapp-toast) {
+    animation: slideInWhatsApp 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
 
-  @keyframes slideIn {
+  @keyframes slideInWhatsApp {
     from {
-      transform: translateX(100%);
+      transform: translateY(20px);
       opacity: 0;
     }
     to {
-      transform: translateX(0);
+      transform: translateY(0);
       opacity: 1;
     }
-  }
-
-  @keyframes pulse {
-    0%, 100% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.05);
-    }
-  }
-
-  /* Hover effect */
-  :global(.custom-toast:hover) {
-    transform: translateY(-2px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6) !important;
-    transition: all 0.2s ease;
   }
 
   /* Animación de salida */
   :global([data-exit]) {
-    animation: slideOut 0.2s ease-in forwards;
+    animation: slideOutWhatsApp 0.2s ease-out forwards;
   }
 
-  @keyframes slideOut {
+  @keyframes slideOutWhatsApp {
     from {
-      transform: translateX(0) scale(1);
+      transform: translateY(0);
       opacity: 1;
     }
     to {
-      transform: translateX(100%) scale(0.9);
+      transform: translateY(20px);
       opacity: 0;
     }
   }
 
-  /* Estilos específicos por tipo */
+  /* Estilos por tipo con iconos */
   :global([data-type="success"]) {
-    border-color: #4caf50 !important;
-    box-shadow: 0 10px 25px rgba(76, 175, 80, 0.2) !important;
+    background: #2a2f32 !important;
   }
 
   :global([data-type="error"]) {
-    border-color: #f44336 !important;
-    box-shadow: 0 10px 25px rgba(244, 67, 54, 0.2) !important;
+    background: #2a2f32 !important;
   }
 
   :global([data-type="loading"]) {
-    border-color: #007acc !important;
-    box-shadow: 0 10px 25px rgba(0, 122, 204, 0.2) !important;
+    background: #2a2f32 !important;
   }
 
-  /* Barra lateral de acento por tipo */
+  /* Agregar checkmark verde para success */
   :global([data-type="success"]::before) {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: #4caf50;
-    border-radius: 8px 0 0 8px;
+    content: '✓';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: #25d366;
+    color: white;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: bold;
+    flex-shrink: 0;
   }
 
+  /* Agregar X roja para error */
   :global([data-type="error"]::before) {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: #f44336;
-    border-radius: 8px 0 0 8px;
+    content: '✕';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: #dc4a3e;
+    color: white;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: bold;
+    flex-shrink: 0;
   }
 
+  /* Agregar spinner para loading */
   :global([data-type="loading"]::before) {
     content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: linear-gradient(to bottom, #007acc, #0098ff);
-    border-radius: 8px 0 0 8px;
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #25d366;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
   }
 
-  /* Progress bar animado */
-  :global(.custom-toast::after) {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 2px;
-    width: 100%;
-    background: linear-gradient(to right, #007acc, #0098ff);
-    transform-origin: left;
-    animation: shrink 4s linear forwards;
-  }
-
-  @keyframes shrink {
-    from {
-      transform: scaleX(1);
-    }
+  @keyframes spin {
     to {
-      transform: scaleX(0);
+      transform: rotate(360deg);
     }
   }
 
-  /* Colores del progress bar por tipo */
-  :global([data-type="success"]::after) {
-    background: linear-gradient(to right, #4caf50, #66bb6a);
-  }
-
-  :global([data-type="error"]::after) {
-    background: linear-gradient(to right, #f44336, #ef5350);
+  /* Hover sutil */
+  :global(.whatsapp-toast:hover) {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    transition: box-shadow 0.2s ease;
   }
 
   /* Responsive */
   @media (max-width: 640px) {
-    :global(.custom-toast) {
+    :global(.whatsapp-toast) {
+      min-width: 0;
       max-width: calc(100vw - 32px);
       margin: 0 16px;
     }
