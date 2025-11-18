@@ -10,7 +10,7 @@
   let password = $state('');
 
   function handleSubmit(event: Event) {
-    event.preventDefault(); // ✅ Esto faltaba
+    event.preventDefault(); 
     onSubmit({ email, password });
   }
 

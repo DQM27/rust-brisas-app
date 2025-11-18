@@ -30,7 +30,7 @@ export function logout(): void {
   isAuthenticated.set(false);
   currentUser.set(null);
   resetTabs();
-  // No hace falta redirect; la página raíz muestra login automáticamente
+  
 }
 
 // ----------------------------

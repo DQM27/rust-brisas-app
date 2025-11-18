@@ -4,7 +4,7 @@
   import { auth } from '$lib/api/auth';
   import { Splitpanes, Pane } from 'svelte-splitpanes';
   import Tabs from '$lib/components/layout/Tabs.svelte';
-  import { tabsStore, openTab } from '$lib/stores/tabs';  // ← Importar openTab
+  import { tabsStore, openTab } from '$lib/stores/tabs'; 
   import { inspectionPanel } from '$lib/stores/ui';
   import { ChevronDown } from 'lucide-svelte';
   import { toast } from 'svelte-5-french-toast';
