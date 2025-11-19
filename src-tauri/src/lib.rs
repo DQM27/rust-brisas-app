@@ -1,13 +1,21 @@
-// ==========================================
-// src/lib.rs
-// ==========================================
+// src-tauri/src/lib.rs
+
 pub mod models;
 pub mod services;
 pub mod commands;
 pub mod db;
 pub mod domain;
 pub mod config; 
-pub mod supabase; 
+pub mod supabase;
+pub mod keyring_manager;
+
+use std::sync::Arc;
+use tokio::sync::RwLock;
+
+// Estado compartido de Supabase (opcional, puede estar o no)
+pub struct SupabaseState {
+    pub client: Option<supabase::SupabaseClient>,
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -17,16 +25,44 @@ pub fn run() {
         async fn main_inner() -> Result<(), Box<dyn std::error::Error>> {
             dotenvy::dotenv().ok();
             
-            // ✅ Cargar configuración
+            // ✅ 1. Cargar configuración básica (Terminal ID, paths, etc.)
             let app_config = config::load_config()?;
             println!("🏢 Terminal: {} (ID: {})", app_config.terminal.nombre, app_config.terminal.id);
             
-            // ✅ Inicializar DB con la configuración
+            // ✅ 2. Inicializar DB local (SQLite)
             let pool = db::init_db(&app_config).await?;
+            
+            // ✅ 3. Intentar cargar credenciales de Supabase desde keyring
+            let supabase_client = match keyring_manager::load_credentials() {
+                Ok(creds) => {
+                    println!("🔐 Credenciales encontradas en keyring");
+                    match supabase::SupabaseClient::new(&creds).await {
+                        Ok(client) => {
+                            println!("✅ Cliente de Supabase inicializado");
+                            Some(client)
+                        }
+                        Err(e) => {
+                            println!("⚠️ No se pudo conectar a Supabase: {}", e);
+                            None
+                        }
+                    }
+                }
+                Err(e) => {
+                    println!("⚠️ No hay credenciales de Supabase guardadas: {}", e);
+                    println!("💡 Configura las credenciales desde la UI");
+                    None
+                }
+            };
+
+            // Envolver en estado compartido
+            let supabase_state = Arc::new(RwLock::new(SupabaseState {
+                client: supabase_client,
+            }));
             
             tauri::Builder::default()
                 .manage(pool)
-                .manage(app_config)  // ← Compartir config con comandos
+                .manage(app_config)
+                .manage(supabase_state)
                 .invoke_handler(tauri::generate_handler![
                     // Comandos de usuario
                     commands::user_commands::create_user,
@@ -104,6 +140,13 @@ pub fn run() {
                     // Comandos de Supabase
                     commands::supabase_commands::test_supabase_connection,
                     commands::supabase_commands::get_supabase_config,
+                    commands::supabase_commands::reinitialize_supabase,
+                    // Comandos de Keyring
+                    commands::keyring_commands::keyring_save,
+                    commands::keyring_commands::keyring_load,
+                    commands::keyring_commands::keyring_delete,
+                    commands::keyring_commands::keyring_check,
+                    commands::keyring_commands::keyring_info,
                 ])
                 .run(tauri::generate_context!())?;
             Ok(())

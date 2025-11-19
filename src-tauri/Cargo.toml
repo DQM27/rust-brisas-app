@@ -25,11 +25,14 @@ dotenvy = "0.15"
 argon2 = { version = "0.5", features = ["std"] }
 uuid = { version = "1.0", features = ["v4"] }
 
-# Nuevas dependencias para sistema de configuración
+# Sistema de configuración
 toml = "0.8"
 dirs = "5.0"
 mac_address = "1.1"
 shellexpand = "3.1"
+
+# 🔐 Keyring cross-platform (NUEVO)
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
 
 [package.metadata.sqlx]
 offline = true

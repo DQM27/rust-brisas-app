@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct AppConfig {
     pub terminal: TerminalConfig,
     pub database: DatabaseConfig,
-    pub supabase: SupabaseConfig,  // ← AGREGADO
+    // ❌ ELIMINADO: pub supabase: SupabaseConfig
     pub app: AppInfo,
 }
 
@@ -29,16 +29,7 @@ pub struct DatabaseConfig {
     pub default_path: String,
 }
 
-/// Configuración de Supabase
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SupabaseConfig {
-    /// URL del proyecto de Supabase
-    pub url: String,
-    /// Clave pública (anon key)
-    pub anon_key: String,
-
-    pub db_password: String,
-}
+// ❌ ELIMINADO: SupabaseConfig struct completo
 
 /// Información de la aplicación
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,11 +51,7 @@ impl Default for AppConfig {
                 ],
                 default_path: "".to_string(), // Se calculará en runtime
             },
-            supabase: SupabaseConfig {
-                url: String::new(),
-                anon_key: String::new(),
-                db_password: String::new(),
-            },
+            // ❌ ELIMINADO: supabase: SupabaseConfig
             app: AppInfo {
                 version: env!("CARGO_PKG_VERSION").to_string(),
             },

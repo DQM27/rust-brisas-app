@@ -2,24 +2,25 @@
 
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
-use crate::config::AppConfig;
+use crate::keyring_manager::SupabaseCredentials;
 
 pub struct SupabaseClient {
     pool: PgPool,
 }
 
 impl SupabaseClient {
-    pub async fn new(config: &AppConfig) -> Result<Self, Box<dyn std::error::Error>> {
-        if config.supabase.url.is_empty() || config.supabase.anon_key.is_empty() || config.supabase.db_password.is_empty() {
-            return Err("Configuración de Supabase incompleta".into());
+    /// Crea cliente desde credenciales del keyring
+    pub async fn new(creds: &SupabaseCredentials) -> Result<Self, String> {  // ✅ String en lugar de Box<dyn Error>
+        if creds.url.is_empty() || creds.db_password.is_empty() {
+            return Err("Credenciales de Supabase incompletas".to_string());
         }
 
-        let project_ref = extract_project_ref(&config.supabase.url)?;
+        let project_ref = extract_project_ref(&creds.url)?;
 
         let database_url = format!(
-            "postgresql://postgres:{}@db.{}.supabase.co:5432/postgres",
-            config.supabase.db_password,
-            project_ref
+            "postgresql://postgres.{}:{}@aws-0-us-east-1.pooler.supabase.com:6543/postgres",
+            project_ref,
+            creds.db_password
         );
 
         println!("🔌 Conectando a Supabase...");
@@ -27,7 +28,8 @@ impl SupabaseClient {
         let pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(&database_url)
-            .await?;
+            .await
+            .map_err(|e| format!("Error conectando a Supabase: {}", e))?;  // ✅ Convertir a String
 
         println!("✅ Conectado a Supabase");
 
@@ -39,14 +41,14 @@ impl SupabaseClient {
     }
 }
 
-fn extract_project_ref(url: &str) -> Result<String, Box<dyn std::error::Error>> {
+fn extract_project_ref(url: &str) -> Result<String, String> {  // ✅ String en lugar de Box<dyn Error>
     let ref_str = url
         .trim_start_matches("https://")
         .trim_end_matches(".supabase.co")
         .to_string();
     
     if ref_str.is_empty() {
-        return Err("URL de Supabase inválida".into());
+        return Err("URL de Supabase inválida".to_string());
     }
     
     Ok(ref_str)
