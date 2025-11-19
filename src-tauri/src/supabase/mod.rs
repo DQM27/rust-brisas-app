@@ -10,26 +10,28 @@ pub struct SupabaseClient {
 
 impl SupabaseClient {
     /// Crea cliente desde credenciales del keyring
-    pub async fn new(creds: &SupabaseCredentials) -> Result<Self, String> {  // ✅ String en lugar de Box<dyn Error>
+    pub async fn new(creds: &SupabaseCredentials) -> Result<Self, String> {
         if creds.url.is_empty() || creds.db_password.is_empty() {
             return Err("Credenciales de Supabase incompletas".to_string());
         }
 
         let project_ref = extract_project_ref(&creds.url)?;
 
+        // ✅ FORMATO CORRECTO: Direct Connection
         let database_url = format!(
-            "postgresql://postgres.{}:{}@aws-0-us-east-1.pooler.supabase.com:6543/postgres",
-            project_ref,
-            creds.db_password
+            "postgresql://postgres:{}@db.{}.supabase.co:5432/postgres",
+            creds.db_password,
+            project_ref
         );
 
         println!("🔌 Conectando a Supabase...");
+        println!("📍 Project: {}", project_ref);
 
         let pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(&database_url)
             .await
-            .map_err(|e| format!("Error conectando a Supabase: {}", e))?;  // ✅ Convertir a String
+            .map_err(|e| format!("Error conectando a Supabase: {}", e))?;
 
         println!("✅ Conectado a Supabase");
 
@@ -41,7 +43,7 @@ impl SupabaseClient {
     }
 }
 
-fn extract_project_ref(url: &str) -> Result<String, String> {  // ✅ String en lugar de Box<dyn Error>
+fn extract_project_ref(url: &str) -> Result<String, String> {
     let ref_str = url
         .trim_start_matches("https://")
         .trim_end_matches(".supabase.co")
