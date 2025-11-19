@@ -5,6 +5,7 @@
 // Contiene la lógica de negocio completa
 
 use crate::domain::user as domain;
+use crate::services::sync_service::UserSyncData;
 use crate::db::user_queries as db;
 use crate::models::user::{
     UserResponse, UserListResponse, RoleStats, UserRole,
@@ -66,6 +67,30 @@ pub async fn create_user(
     
     // 8. Retornar usuario creado
     get_user_by_id(pool, &id).await
+}
+
+pub fn build_sync_data(
+    id: &str,
+    email: &str,
+    password_hash: &str,
+    nombre: &str,
+    apellido: &str,
+    role: &str,
+    is_active: bool,
+    created_at: &str,
+    updated_at: &str,
+) -> UserSyncData {
+    UserSyncData {
+        id: id.to_string(),
+        email: email.to_string(),
+        password_hash: password_hash.to_string(),
+        nombre: nombre.to_string(),
+        apellido: apellido.to_string(),
+        role: role.to_string(),
+        is_active,
+        created_at: created_at.to_string(),
+        updated_at: updated_at.to_string(),
+    }
 }
 
 // ==========================================

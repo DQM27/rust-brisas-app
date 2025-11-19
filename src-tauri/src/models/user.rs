@@ -3,6 +3,8 @@
 // ==========================================
 // Solo modelos, DTOs y enums - SIN validaciones ni lógica
 
+
+
 use serde::{Deserialize, Serialize};
 
 // ==========================================
@@ -83,7 +85,7 @@ pub struct UpdateUserInput {
 // DTOs DE SALIDA
 // ==========================================
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserResponse {
     pub id: String,

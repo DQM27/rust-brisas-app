@@ -32,7 +32,7 @@
       in:fly={{ y: -30, duration: 800, easing: quintOut }}
       class="mb-12"
     >
-      <h1 class="mb-3 bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-5xl font-bold tracking-tight text-transparent">
+      <h1 class="mb-3 bg-linear-to-r from-white via-blue-100 to-white bg-clip-text text-5xl font-bold tracking-tight text-transparent">
         Bienvenido a Brisas App
       </h1>
       <p class="text-lg text-gray-400">
@@ -48,7 +48,7 @@
           class="group relative overflow-hidden rounded-lg border border-[#333] bg-[#252526] p-6 transition-all duration-300 hover:-translate-y-2 hover:border-[#007acc] hover:shadow-lg hover:shadow-[#007acc]/20"
         >
           <!-- Efecto de brillo en hover -->
-          <div class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-700 group-hover:translate-x-full"></div>
+          <div class="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/5 to-transparent transition-transform duration-700 group-hover:translate-x-full"></div>
           
           <!-- Contenido -->
           <div class="relative z-10">
@@ -67,7 +67,7 @@
           </div>
 
           <!-- Borde animado inferior -->
-          <div class="absolute bottom-0 left-0 h-1 w-0 bg-gradient-to-r from-[#007acc] to-[#0098ff] transition-all duration-500 group-hover:w-full"></div>
+          <div class="absolute bottom-0 left-0 h-1 w-0 bg-linear-to-r from-[#007acc] to-[#0098ff] transition-all duration-500 group-hover:w-full"></div>
         </div>
       {/each}
     </div>
