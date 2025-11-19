@@ -1,24 +1,18 @@
 // src/lib/logic/user/registerUser.ts
 
 import { users } from '$lib/api/users';
-import type { ValidationResult } from './validateUserInput';
+import type { UserResponse } from '$lib/types/user';
 
-export type RegisterResult =
-  | { ok: true; user: any }
-  | { ok: false; error: string };
-
+/**
+ * Wrapper simple del service users.create()
+ * Lanza excepción si falla (no maneja errores)
+ */
 export async function registerUser(input: {
   email: string;
   password: string;
   nombre: string;
   apellido: string;
   role?: string;
-}): Promise<RegisterResult> {
-  try {
-    const user = await users.create(input);
-    return { ok: true, user };
-  } catch (err: any) {
-    const msg = err?.message || 'Ocurrió un error al crear el usuario.';
-    return { ok: false, error: msg };
-  }
+}): Promise<UserResponse> {
+  return await users.create(input);
 }
