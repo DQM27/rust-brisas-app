@@ -64,7 +64,7 @@
       >
         <!-- Indicador activo superior -->
         {#if isActive}
-          <div class="absolute left-0 right-0 top-0 h-0.5 bg-gradient-to-r from-[#007acc] to-[#0098ff]"></div>
+          <div class="absolute left-0 right-0 top-0 h-0.5 bg-linear-to-r from-[#007acc] to-[#0098ff]"></div>
         {/if}
 
         <!-- Tab button -->
@@ -91,7 +91,7 @@
         <!-- Close button mejorado -->
         <button
           class="mr-1 flex items-center justify-center rounded p-1.5 opacity-0 transition-all
-                 group-hover:opacity-70 hover:!opacity-100
+                 group-hover:opacity-70 hover:opacity-100!
                  {isActive 
                    ? 'hover:bg-red-500/20 hover:text-red-400' 
                    : 'hover:bg-white/10 hover:text-white'}"
