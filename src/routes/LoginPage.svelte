@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { login as setAuth, isAuthenticated } from '$lib/stores/auth';
+  import { login as setAuth } from '$lib/stores/auth';
   import LoginForm from '$lib/components/LoginForm.svelte';
   import { submitLogin } from '$lib/logic/auth/submitLogin';
   import { toast } from 'svelte-5-french-toast';
-  import { goto } from '$app/navigation';
 
   import type LoginFormType from '$lib/components/LoginForm.svelte';
 
@@ -19,17 +18,11 @@
       setAuth(result.user);
       formRef?.reset();
       toast.success("Sesión iniciada correctamente", { icon: "✓" });
-      goto('/app');
     } else {
       toast.error(result.error, { icon: "✕" });
     }
 
     loading = false;
-  }
-
-  // Redirigir si ya estaba logueado
-  if ($isAuthenticated) {
-    goto('/app');
   }
 </script>
 

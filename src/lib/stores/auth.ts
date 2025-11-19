@@ -9,7 +9,7 @@ export const currentUser = persisted<User | null>('brisas-user', null);
 export function login(user: User): void {
   isAuthenticated.set(true);
   currentUser.set(user);
-  // NO maneja tabs aquí
+  
 }
 
 export function logout(): void {

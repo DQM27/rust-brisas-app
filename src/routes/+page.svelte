@@ -4,7 +4,7 @@
   import { tabsStore, openTab } from '$lib/stores/tabs';
   import { get } from 'svelte/store';
   import LoginPage from './LoginPage.svelte';
-   import Main from './MainContent.svelte';
+  import Main from './MainContent.svelte';
   
   // Cuando se autentica, inicializar tabs
   $effect(() => {
@@ -20,5 +20,5 @@
 {#if !$isAuthenticated}
   <LoginPage />
 {:else}
-  
+  <Main />
 {/if}

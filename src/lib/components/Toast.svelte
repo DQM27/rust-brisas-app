@@ -2,17 +2,24 @@
   import { Toaster } from 'svelte-5-french-toast';
 </script>
 
-<Toaster 
-  position="bottom-right"
-  toastOptions={{
-    duration: 4000,
-    style: 'background: #2a2f32; color: #e9edef; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); padding: 12px 16px; font-size: 14px; min-width: 280px; max-width: 400px;',
-    className: 'whatsapp-toast'
-  }}
-  gutter={8}
-/>
+<div class="toast-container">
+  <Toaster 
+    position="bottom-right"
+    toastOptions={{
+      duration: 4000,
+      style: 'background: #2a2f32; color: #e9edef; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); padding: 12px 16px; font-size: 14px; min-width: 280px; max-width: 400px;',
+      className: 'whatsapp-toast'
+    }}
+    gutter={8}
+  />
+</div>
 
 <style>
+  .toast-container {
+    /* Esto da scope al componente */
+    display: contents;
+  }
+
   /* Animación de entrada estilo WhatsApp */
   :global(.whatsapp-toast) {
     animation: slideInWhatsApp 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
