@@ -1,51 +1,47 @@
 <script lang="ts">
-  export let loading = false;
-  export let onSubmit: (data: {
-    cedula: string;
-    nombre: string;
-    apellido: string;
-    empresaId: string;
-    fechaVencimientoPraind: string;
-  }) => void;
+  import { onMount } from 'svelte';
+  import { toast } from 'svelte-5-french-toast';
 
-  // Lista de empresas pasada desde el padre
-  export let empresas: { id: string; nombre: string }[] = [];
+  import ContratistaForm from '$lib/components/ContratistaForm.svelte';
+  import type ContratistaFormType from '$lib/components/ContratistaForm.svelte';
 
-  // --- Campos del formulario ---
-  let cedula = "";
-  let nombre = "";
-  let apellido = "";
-  let empresaId = "";
-  let fechaVencimientoPraind = "";
+  import type { CreateContratistaInput, ContratistaResponse } from '$lib/types/contratista';
+  import { submitRegisterContratista } from '$lib/logic/contratista/submitRegisterContratista';
+  import { submitFetchActiveEmpresas } from '$lib/logic/empresa/empresaService';
 
-  // Permite resetear el formulario desde el padre
-  export function reset() {
-    cedula = "";
-    nombre = "";
-    apellido = "";
-    empresaId = "";
-    fechaVencimientoPraind = "";
-  }
+  let loading = false;
+  let formRef: ContratistaFormType;
 
-  function handleSubmit(e: Event) {
-    e.preventDefault();
-    onSubmit({ cedula, nombre, apellido, empresaId, fechaVencimientoPraind });
+  // Lista de empresas
+  let empresas: { id: string; nombre: string }[] = [];
+
+  // --- Cargar empresas activas al montar ---
+  onMount(async () => {
+    const res = await submitFetchActiveEmpresas();
+    if (res.ok) empresas = res.empresas;
+  });
+
+  async function handleRegister(data: CreateContratistaInput) {
+    loading = true;
+
+    const result = await submitRegisterContratista(data);
+
+    if (result.ok) {
+      formRef?.reset();
+      toast.success('Contratista registrado exitosamente', { icon: '✓', duration: 3000 });
+    } else {
+      toast.error(result.error, { icon: '✕', duration: 4000 });
+    }
+
+    loading = false;
   }
 </script>
 
-<form on:submit={handleSubmit} class="space-y-2">
-  <input bind:value={cedula} placeholder="Cédula" />
-  <input bind:value={nombre} placeholder="Nombre" />
-  <input bind:value={apellido} placeholder="Apellido" />
-  <select bind:value={empresaId}>
-    <option value="" disabled selected>Seleccione una empresa</option>
-    {#each empresas as empresa}
-      <option value={empresa.id}>{empresa.nombre}</option>
-    {/each}
-  </select>
-  <input bind:value={fechaVencimientoPraind} type="date" placeholder="Fecha Vencimiento Praind" />
-
-  <button type="submit" disabled={loading}>
-    {loading ? "Cargando..." : "Registrar"}
-  </button>
-</form>
+<div class="flex min-h-full items-center justify-center p-6">
+  <ContratistaForm
+    bind:this={formRef}
+    {loading}
+    {empresas}
+    onSubmit={handleRegister}
+  />
+</div>
