@@ -1,41 +1,45 @@
 <script lang="ts">
-  console.log('RegisterUserView montado');
-  import RegisterUserForm from '$lib/components/UserRegisterPanel.svelte';
-  import { submitRegisterUser } from '$lib/logic/user/submitRegisterUser';
-  import { toast } from 'svelte-5-french-toast';
-  import type { UserRole } from '$lib/types/user';
-
-  import type RegisterUserFormType from '$lib/components/UserRegisterPanel.svelte';
-
-  let loading = $state(false);
-  let formRef = $state<RegisterUserFormType>();
-
-  async function handleRegister(data: {
+  export let loading = false;
+  export let onSubmit: (data: {
     email: string;
     password: string;
     nombre: string;
     apellido: string;
-    role: UserRole;
-  }) {
-    loading = true;
+    role: string;
+  }) => void;
 
-    const result = await submitRegisterUser(
-      data.email,
-      data.password,
-      data.nombre,
-      data.apellido,
-      data.role
-    );
+  let email = "";
+  let password = "";
+  let nombre = "";
+  let apellido = "";
+  let role = "user";
 
-    if (result.ok) {
-      formRef?.reset();
-      toast.success('Usuario creado exitosamente', { icon: '✓', duration: 3000 });
-    } else {
-      toast.error(result.error, { icon: '✕', duration: 4000 });
-    }
+  // Para que el padre pueda hacer reset()
+  export function reset() {
+    email = "";
+    password = "";
+    nombre = "";
+    apellido = "";
+    role = "user";
+  }
 
-    loading = false;
+  function handleSubmit(e: Event) {
+    e.preventDefault();
+    onSubmit({ email, password, nombre, apellido, role });
   }
 </script>
 
-<RegisterUserForm bind:this={formRef} {loading} onSubmit={handleRegister} />
+<form on:submit={handleSubmit}>
+  <input bind:value={email} placeholder="Email" />
+  <input bind:value={password} placeholder="Password" type="password" />
+  <input bind:value={nombre} placeholder="Nombre" />
+  <input bind:value={apellido} placeholder="Apellido" />
+  <select bind:value={role}>
+    <option value="user">Usuario</option>
+    <option value="admin">Administrador</option>
+  </select>
+
+  <button disabled={loading} type="submit">
+    {loading ? "Cargando..." : "Registrar"}
+  </button>
+</form>

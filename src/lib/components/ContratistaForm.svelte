@@ -20,107 +20,40 @@
 
   function handleSubmit(event: Event) {
     event.preventDefault();
-
-    onSubmit({
-      cedula,
-      nombre,
-      apellido,
-      empresaId,
-      fechaVencimientoPraind,
-    });
-  }
-
-  // Reset desde el padre si lo necesitan
-  export function reset() {
-    cedula = "";
-    nombre = "";
-    apellido = "";
-    empresaId = "";
-    fechaVencimientoPraind = "";
+    onSubmit({ cedula, nombre, apellido, empresaId, fechaVencimientoPraind });
   }
 </script>
 
-<form
-  onsubmit={handleSubmit}
-  class="flex w-full max-w-md flex-col gap-4 rounded-lg bg-[#252526] p-8 shadow-xl"
->
-  <h1 class="mb-2 text-center text-2xl font-semibold text-gray-200">
-    Registrar Contratista
-  </h1>
+<form onsubmit={handleSubmit} class="flex flex-col gap-4">
+  
+  <label>
+    Cédula
+    <input bind:value={cedula} required />
+  </label>
 
-  <!-- CÉDULA -->
-  <div class="flex flex-col gap-1">
-    <label class="text-sm font-medium text-gray-300">Cédula</label>
-    <input
-      bind:value={cedula}
-      placeholder="1-2345-6789"
-      disabled={loading}
-      required
-      class="rounded border border-[#3c3c3c] bg-[#1e1e1e] px-3 py-2 text-gray-200
-             placeholder:text-gray-500 focus:border-[#007acc] focus:outline-none 
-             focus:ring-1 focus:ring-[#007acc] disabled:opacity-60"
-    />
-  </div>
+  <label>
+    Nombre
+    <input bind:value={nombre} required />
+  </label>
 
-  <!-- NOMBRE -->
-  <div class="flex flex-col gap-1">
-    <label class="text-sm font-medium text-gray-300">Nombre</label>
-    <input
-      bind:value={nombre}
-      placeholder="Juan"
-      disabled={loading}
-      required
-      class="rounded border border-[#3c3c3c] bg-[#1e1e1e] px-3 py-2 text-gray-200
-             placeholder:text-gray-500 focus:border-[#007acc] focus:outline-none 
-             focus:ring-1 focus:ring-[#007acc] disabled:opacity-60"
-    />
-  </div>
+  <label>
+    Apellido
+    <input bind:value={apellido} required />
+  </label>
 
-  <!-- APELLIDO -->
-  <div class="flex flex-col gap-1">
-    <label class="text-sm font-medium text-gray-300">Apellido</label>
-    <input
-      bind:value={apellido}
-      placeholder="Pérez"
-      disabled={loading}
-      required
-      class="rounded border border-[#3c3c3c] bg-[#1e1e1e] px-3 py-2 text-gray-200
-             placeholder:text-gray-500 focus:border-[#007acc] focus:outline-none 
-             focus:ring-1 focus:ring-[#007acc] disabled:opacity-60"
-    />
-  </div>
+  <label>
+    Empresa
+    <select bind:value={empresaId} required>
+      
+    </select>
+  </label>
 
-  <!-- EMPRESA -->
-  <div class="flex flex-col gap-1">
-    <label class="text-sm font-medium text-gray-300">Empresa</label>
-    <slot name="empresas" />
-    <!-- 
-      Aquí NO cargamos empresas.
-      El padre provee el <select> usando un <slot name="empresas"> 
-    -->
-  </div>
+  <label>
+    Fecha PRAIND
+    <input type="date" bind:value={fechaVencimientoPraind} required />
+  </label>
 
-  <!-- FECHA PRAIND -->
-  <div class="flex flex-col gap-1">
-    <label class="text-sm font-medium text-gray-300">Fecha PRAIND</label>
-    <input
-      type="date"
-      bind:value={fechaVencimientoPraind}
-      disabled={loading}
-      required
-      class="rounded border border-[#3c3c3c] bg-[#1e1e1e] px-3 py-2 text-gray-200
-             placeholder:text-gray-500 focus:border-[#007acc] focus:outline-none 
-             focus:ring-1 focus:ring-[#007acc] disabled:opacity-60"
-    />
-  </div>
-
-  <button
-    type="submit"
-    disabled={loading}
-    class="mt-2 rounded bg-[#007acc] px-4 py-2.5 font-medium text-white 
-           transition-colors hover:bg-[#005a9e] disabled:cursor-not-allowed 
-           disabled:opacity-60"
-  >
+  <button type="submit" disabled={loading}>
     {loading ? "Procesando..." : "Registrar"}
   </button>
 </form>
