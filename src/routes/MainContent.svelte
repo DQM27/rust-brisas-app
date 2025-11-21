@@ -1,6 +1,6 @@
 <script lang="ts">
   import { isAuthenticated } from '$lib/stores/auth';
-   import LoginPage from './LoginPage.svelte';
+  import LoginPage from './LoginPage.svelte';
   import { Splitpanes, Pane } from 'svelte-splitpanes';
   import Tabs from '$lib/components/layout/Tabs.svelte';
   import { tabsStore, openTab } from '$lib/stores/tabs';
@@ -35,8 +35,14 @@
     $inspectionPanel.visible = false;
   }
 
+  // ---- Botón Supabase ----
   function openSupabaseTest() {
     openTab({ componentKey: 'supabase-test', title: 'Prueba Supabase', id: 'supabase-test' });
+  }
+
+  // ---- NUEVO: Botón Contratista ----
+  function openContratista() {
+    openTab({ componentKey: 'contratista', title: 'Contratista', id: 'contratista' });
   }
 </script>
 
@@ -45,11 +51,21 @@
 {:else}
   <!-- App Principal -->
   <div class="h-full bg-[#1e1e1e] relative">
+
+    <!-- Botón Supabase -->
     <button
       onclick={openSupabaseTest}
       class="absolute top-2 right-2 z-50 px-3 py-1.5 bg-[#007acc] text-white text-xs rounded hover:bg-[#005a9e]"
     >
       🧪 Probar Supabase
+    </button>
+
+    <!-- NUEVO: Botón Contratista -->
+    <button
+      onclick={openContratista}
+      class="absolute top-2 right-40 z-50 px-3 py-1.5 bg-[#00cc7a] text-white text-xs rounded hover:bg-[#00995c]"
+    >
+      👷 Contratista
     </button>
 
     <Splitpanes horizontal class="default-theme">
@@ -65,7 +81,9 @@
         <Pane minSize={20} size={30}>
           <div class="flex h-full flex-col bg-[#252526]">
             <div class="flex items-center justify-between border-b border-[#3c3c3c] bg-[#2d2d2d] px-3 py-2">
-              <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-300">Inspección</h4>
+              <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-300">
+                Inspección
+              </h4>
               <button
                 class="flex items-center justify-center rounded p-1 text-gray-300 hover:bg-[#3c3c3c]"
                 onclick={closeInspectionPanel}
