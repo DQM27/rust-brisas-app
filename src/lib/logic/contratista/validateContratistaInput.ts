@@ -9,14 +9,13 @@ export function validateContratistaInput(
   apellido: string,
   cedula: string,
   empresaId: string,
-  fechaVencimientoPraind: string   // <-- CORREGIDO AQUÍ TAMBIÉN
+  fechaVencimientoPraind: string
 ): ValidationResult {
-
   const n = (nombre || '').trim();
   const a = (apellido || '').trim();
   const c = (cedula || '').trim();
   const e = (empresaId || '').trim();
-  const f = (fechaVencimientoPraind || '').trim(); // <-- CORREGIDO
+  const f = (fechaVencimientoPraind || '').trim();
 
   if (!n) return { ok: false, message: 'El nombre no puede estar vacío.' };
   if (n.length > 60) return { ok: false, message: 'Nombre demasiado largo.' };

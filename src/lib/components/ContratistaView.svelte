@@ -1,43 +1,49 @@
-<!-- src/lib/components/ContratistaView.svelte -->
 <script lang="ts">
   import ContratistaForm from '$lib/components/ContratistaForm.svelte';
-  import { submitRegisterContratista } from '$lib/logic/contratista/submitRegisterContratista';
   import { toast } from 'svelte-5-french-toast';
-  import type { CreateContratistaInput } from '$lib/types/contratista';
+  import { submitRegisterContratista } from '$lib/logic/contratista/submitRegisterContratista';
+  import { invoke } from "@tauri-apps/api/core"; // Para llamar comandos Tauri
+  import type { EmpresaResponse } from '$lib/types/empresa';
 
-  let loading = $state(false);
+  let loading = false;
+  let formRef: any = null;
 
-  // SIMPLE typed ref: solo necesitamos reset()
-  let formRef: { reset: () => void } | null = null;
+  // Lista de empresas activas
+  let empresas: EmpresaResponse[] = [];
 
-  async function handleRegister(data: CreateContratistaInput) {
-    loading = true;
-
-    const result = await submitRegisterContratista(data);
-
-    if (result.ok) {
-      formRef?.reset();
-      toast.success('Contratista registrado correctamente', { icon: '✓', duration: 3000 });
-    } else {
-      toast.error(result.error, { icon: '✕', duration: 4000 });
+  // Cargar empresas activas desde la DB
+  async function loadEmpresas() {
+    try {
+      empresas = await invoke<EmpresaResponse[]>('get_empresas_activas');
+    } catch (error) {
+      console.error('Error al cargar empresas:', error);
+      toast.error('No se pudieron cargar las empresas', { icon: '✕', duration: 4000 });
     }
+  }
 
-    loading = false;
+  loadEmpresas(); // Cargar al iniciar
+
+  // Manejar registro de contratista
+  async function handleRegister(data) {
+    loading = true;
+    try {
+      const result = await submitRegisterContratista(data);
+
+      if (result.ok) {
+        formRef?.reset();
+        toast.success('Contratista registrado correctamente', { icon: '✓', duration: 3000 });
+      } else {
+        toast.error(result.error, { icon: '✕', duration: 4000 });
+      }
+    } finally {
+      loading = false;
+    }
   }
 </script>
 
-<div class="flex justify-center mt-10 px-4">
-  <div class="w-full max-w-3xl">
-    <h1 class="text-2xl font-bold text-gray-200 mb-6 text-center">Registrar Contratista</h1>
-
-    <!-- Si quieres pasar un select de empresas, puedes hacerlo con slot="empresa" -->
-    <ContratistaForm bind:this={formRef} {loading} onSubmit={handleRegister}>
-      <select slot="empresa" bind:value={$state('empresaId')} class="px-3 py-2 rounded bg-gray-700 text-white border border-gray-600 w-full">
-        <option value="">-- Seleccione empresa --</option>
-        <!-- Ejemplo estático; reemplaza con tu lista dinámica -->
-        <option value="empresa-1">Empresa 1</option>
-        <option value="empresa-2">Empresa 2</option>
-      </select>
-    </ContratistaForm>
-  </div>
-</div>
+<ContratistaForm
+  bind:this={formRef}
+  {loading}
+  {empresas}        
+  onSubmit={handleRegister}
+/>

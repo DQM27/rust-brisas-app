@@ -2,42 +2,23 @@
 
 // ======================================================
 // TIPOS CENTRALES DEL DOMINIO
-// (Alineados con cómo Rust devuelve datos - camelCase)
-// ======================================================
-
-// ------------- Empresa ----------------
-export interface Empresa {
-  id: string;
-  nombre: string;
-  // Nota: en Rust es `is_active`, en TS usamos camelCase para conveniencia
-  isActive: boolean;
-  fechaRegistro?: string; // opcional, normalmente TEXT en SQLite
-}
-
-// ------------- Contratista (modelo base, puede ser usado en formularios) ------------
-export interface Contratista {
-  id: string;
-  cedula: string;
-  nombre: string;
-  apellido: string;
-
-  empresaId: string;
-  empresaNombre?: string; // opcional si el backend lo añade
-
-  fechaRegistro?: string;
-  fechaVencimientoPraind: string; // string (YYYY-MM-DD)
-  isActive: boolean;
-}
-
-// ======================================================
-// RESPONSES (exactos al DTO de salida de Rust)
 // ======================================================
 
 export type EstadoContratista = "activo" | "inactivo" | "suspendido";
 
-/**
- * ContratistaResponse: refleja exactamente ContratistaResponse del backend (serde rename camelCase)
- */
+// Modelo base (útil para formularios)
+export interface ContratistaBase {
+  id?: string;
+  cedula: string;
+  nombre: string;
+  apellido: string;
+  empresaId: string;
+  empresaNombre?: string;
+  fechaVencimientoPraind: string; // YYYY-MM-DD
+  isActive?: boolean;
+}
+
+// DTO que devuelve el backend (enriquecido)
 export interface ContratistaResponse {
   id: string;
   cedula: string;
@@ -48,8 +29,7 @@ export interface ContratistaResponse {
   empresaId: string;
   empresaNombre: string;
 
-  fechaVencimientoPraind: string; // YYYY-MM-DD
-
+  fechaVencimientoPraind: string;
   estado: EstadoContratista;
 
   puedeIngresar: boolean;
@@ -61,9 +41,26 @@ export interface ContratistaResponse {
   updatedAt: string;
 }
 
-/**
- * Respuesta cuando el backend devuelve el listado (ContratistaListResponse en Rust)
- */
+// Create / Update inputs (lo que envía el frontend)
+export interface CreateContratistaInput {
+  cedula: string;
+  nombre: string;
+  apellido: string;
+  empresaId: string;
+  fechaVencimientoPraind: string;
+}
+
+export interface UpdateContratistaInput {
+  id: string;
+  cedula?: string;
+  nombre?: string;
+  apellido?: string;
+  empresaId?: string;
+  fechaVencimientoPraind?: string;
+  isActive?: boolean;
+}
+
+// List response
 export interface ContratistaListResponse {
   contratistas: ContratistaResponse[];
   total: number;
@@ -72,41 +69,7 @@ export interface ContratistaListResponse {
   requierenAtencion: number;
 }
 
-// ======================================================
-// TIPOS PARA CREAR / ACTUALIZAR CONTRATISTAS
-// ======================================================
-
-export interface CreateContratistaInput {
-  cedula: string;
-  nombre: string;
-  apellido: string;
-  empresaId: string;
-  fechaVencimientoPraind: string; // YYYY-MM-DD desde <input type="date" />
-}
-
-export interface UpdateContratistaInput {
-  id: string;
-
-  cedula?: string;
-  nombre?: string;
-  apellido?: string;
-  empresaId?: string;
-  fechaVencimientoPraind?: string;
-
-  // Si tu backend soporta cambiar estado/activo, mantén esto opcional
-  isActive?: boolean;
-}
-
-// ======================================================
-// TIPOS EXTRAS PARA EMPRESAS (Opcionales)
-// ======================================================
-
-// Crear empresa
-export interface CreateEmpresaInput {
-  nombre: string;
-}
-
-// Respuesta de listar empresas (coincide con EmpresaListResponse del backend)
+// Empresa helpers
 export interface EmpresaResponse {
   id: string;
   nombre: string;

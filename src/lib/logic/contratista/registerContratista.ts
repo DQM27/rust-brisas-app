@@ -1,7 +1,6 @@
 // src/lib/logic/contratista/registerContratista.ts
-
-import { createContratista } from "$lib/api/contratista";
-import type { CreateContratistaInput, ContratistaResponse } from "$lib/types/contratista";
+import { createContratista } from '$lib/api/contratista';
+import type { CreateContratistaInput, ContratistaResponse } from '$lib/types/contratista';
 
 /**
  * Wrapper simple del service createContratista()
@@ -10,11 +9,5 @@ import type { CreateContratistaInput, ContratistaResponse } from "$lib/types/con
 export async function registerContratista(
   input: CreateContratistaInput
 ): Promise<ContratistaResponse> {
-  return await createContratista({
-    cedula: input.cedula,
-    nombre: input.nombre,
-    apellido: input.apellido,
-    empresaId: input.empresaId,
-    fechaVencimientoPraind: input.fechaVencimientoPraind
-  });
+  return await createContratista(input);
 }
