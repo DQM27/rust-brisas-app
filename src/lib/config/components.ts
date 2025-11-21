@@ -9,7 +9,7 @@ import type { ComponentKey } from '$lib/types/component';
 import WelcomePanel from '$lib/components/WelcomePanel.svelte';
 import RegisterUserView from '$lib/components/RegisterUserView.svelte';
 import SupabaseTest from '$lib/components/SupabaseTest.svelte';
-import contratista from '$lib/components/ContratistaForm.svelte';
+import ContratistaView from '$lib/components/ContratistaView.svelte';
 /**
  * Registry central de componentes
  * Permite serializar tabs y reconstruirlos después
@@ -21,7 +21,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'dashboard': WelcomePanel, // Placeholder
   'supabase-test': SupabaseTest,
   "user-register": RegisterUserView,
-  'contratista': contratista,
+  'contratista': ContratistaView,
 };
 
 /**
