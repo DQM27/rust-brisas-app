@@ -1,10 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { fly, fade, scale } from "svelte/transition"; 
+  // NOTE: Assuming $lib/logic/empresa/empresaService is correctly mapped
   import { submitCreateEmpresa, submitFetchActiveEmpresas } from "$lib/logic/empresa/empresaService";
 
+  // PROPS: onSubmit MUST be provided by the parent.
   export let loading = false;
   export let onSubmit: (data: any) => void;
+  
+  // Empresas state
   export let empresas: { id: string; nombre: string }[] = [];
 
   // --- ESTADO DEL FORMULARIO ---
@@ -22,19 +26,26 @@
   let color = "";
 
   // --- ESTADOS UI ---
-  let loadingEmpresas = false;
+  let loadingEmpresas = false; 
   let showEmpresaModal = false;
   let nuevaEmpresaNombre = "";
   let creatingEmpresa = false;
   let empresaError = "";
 
-  // --- CARGA INICIAL ---
+  // ============================================================
+  //  CARGA INICIAL: Cargar empresas al iniciar
+  // ============================================================
   onMount(async () => {
+    // Only attempt to load if the prop is empty
     if (empresas.length > 0) return;
+
     loadingEmpresas = true;
-    const resultado = await submitFetchActiveEmpresas();
+    const resultado = await submitFetchActiveEmpresas(); 
+    
     if (resultado.ok) {
       empresas = resultado.empresas;
+    } else {
+      console.error("Error al cargar empresas:", resultado.error);
     }
     loadingEmpresas = false;
   });
@@ -47,9 +58,20 @@
 
   function handleSubmit(e: Event) {
     e.preventDefault();
-    onSubmit({ cedula, nombre, apellido, empresaId, fechaVencimientoPraind, tieneVehiculo, placa, marca, modelo, color });
+    
+    // FIX: Re-adding the defensive check to prevent "TypeError: onSubmit is not a function"
+    if (typeof onSubmit === 'function') {
+        onSubmit({ 
+            cedula, nombre, apellido, empresaId, fechaVencimientoPraind, 
+            tieneVehiculo, placa, marca, modelo, color 
+        });
+    } else {
+        // This is a controlled error message to help the user if the prop is missing.
+        console.error("Error: onSubmit prop is not defined as a function in the parent component. Please define and pass the handler.");
+    }
   }
 
+  // Reactive statement for form validation
   $: isFormValid = cedula.trim() && nombre.trim() && apellido.trim() && 
                    empresaId.trim() && fechaVencimientoPraind.trim() && 
                    (!tieneVehiculo || (placa.trim() && marca.trim()));
@@ -58,7 +80,9 @@
     if (!nuevaEmpresaNombre.trim()) return;
     creatingEmpresa = true;
     empresaError = "";
+
     const result = await submitCreateEmpresa(nuevaEmpresaNombre);
+
     if (result.ok) {
       empresas = [...empresas, { id: result.empresa.id, nombre: result.empresa.nombre }];
       empresaId = result.empresa.id;
@@ -84,14 +108,17 @@
       
       <div class="flex flex-col gap-8 lg:flex-row">
         
+        <!-- COLUMNA 1: Datos Personales y Empresa -->
         <div class="flex-1 space-y-5">
           
+          <!-- Cédula -->
           <div class="space-y-1.5">
             <label for="cedula" class="text-sm font-medium text-gray-300">Cédula</label>
             <input id="cedula" type="text" bind:value={cedula} placeholder="1-2345-6789" disabled={loading}
               class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all" />
           </div>
 
+          <!-- Nombre y Apellido -->
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-1.5">
               <label for="nombre" class="text-sm font-medium text-gray-300">Nombre</label>
@@ -105,6 +132,7 @@
             </div>
           </div>
 
+          <!-- Empresa Select & Add Button -->
           <div class="space-y-1.5">
             <label for="empresaId" class="text-sm font-medium text-gray-300">Empresa</label>
             <div class="flex gap-2">
@@ -139,12 +167,14 @@
             </div>
           </div>
 
+          <!-- Fecha Vencimiento Praind -->
           <div class="space-y-1.5">
             <label for="fechaVencimientoPraind" class="text-sm font-medium text-gray-300">Fecha PRAIND</label>
             <input id="fechaVencimientoPraind" type="date" bind:value={fechaVencimientoPraind} disabled={loading}
               class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none calendar-icon-white" />
           </div>
 
+          <!-- Toggle for Vehiculo -->
           <div class="pt-2 flex items-center justify-between rounded-lg border border-white/5 bg-white/5 p-3">
             <div class="flex flex-col">
               <span class="text-sm font-medium text-gray-200">¿Agregar Vehículo?</span>
@@ -156,9 +186,11 @@
           </div>
         </div>
 
+        <!-- Columna Separadora (Solo en desktop) -->
         {#if tieneVehiculo}
           <div class="hidden lg:block w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" transition:fade></div>
 
+          <!-- COLUMNA 2: Datos del Vehículo -->
           <div class="flex-1 lg:min-w-[300px]" in:fly={{ x: -20, duration: 400, delay: 100 }} out:fade={{ duration: 200 }}>
             <div class="h-full space-y-5">
               <div class="mb-4">
@@ -166,31 +198,35 @@
                 <p class="text-xs text-gray-500">Información necesaria para el pase vehicular.</p>
               </div>
 
+              <!-- Placa -->
               <div class="space-y-1.5">
                 <label for="placa" class="text-sm font-medium text-gray-300">Número de Placa</label>
                 <input id="placa" type="text" bind:value={placa} placeholder="ABC-123"
                   class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2.5 text-sm text-white uppercase focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" />
               </div>
 
+              <!-- Marca y Modelo -->
               <div class="grid grid-cols-2 gap-4">
-                 <div class="space-y-1.5">
-                  <label for="marca" class="text-sm font-medium text-gray-300">Marca</label>
-                  <input id="marca" type="text" bind:value={marca} placeholder="Toyota"
-                    class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" />
-                </div>
-                <div class="space-y-1.5">
-                  <label for="modelo" class="text-sm font-medium text-gray-300">Modelo</label>
-                  <input id="modelo" type="text" bind:value={modelo} placeholder="Corolla"
-                    class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" />
-                </div>
+                   <div class="space-y-1.5">
+                    <label for="marca" class="text-sm font-medium text-gray-300">Marca</label>
+                    <input id="marca" type="text" bind:value={marca} placeholder="Toyota"
+                      class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" />
+                  </div>
+                  <div class="space-y-1.5">
+                    <label for="modelo" class="text-sm font-medium text-gray-300">Modelo</label>
+                    <input id="modelo" type="text" bind:value={modelo} placeholder="Corolla"
+                      class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" />
+                  </div>
               </div>
-             
+              
+              <!-- Color -->
               <div class="space-y-1.5">
                 <label for="color" class="text-sm font-medium text-gray-300">Color</label>
                 <input id="color" type="text" bind:value={color} placeholder="Blanco"
                   class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" />
               </div>
 
+              <!-- Info box -->
               <div class="mt-4 rounded bg-blue-500/10 p-3 text-xs text-blue-200 border border-blue-500/20">
                 Recuerde verificar que la placa coincida con la tarjeta de circulación física.
               </div>
@@ -199,6 +235,7 @@
         {/if}
       </div>
 
+      <!-- Submit Button -->
       <div class="pt-8 border-t border-white/5 mt-8">
         <button type="submit" disabled={loading || !isFormValid}
           class="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">
@@ -209,6 +246,7 @@
   </div>
 </div>
 
+<!-- Modal for creating a new company -->
 {#if showEmpresaModal}
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" transition:fade={{ duration: 200 }}>
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" on:click={() => !creatingEmpresa && (showEmpresaModal = false)}></div>
@@ -241,6 +279,7 @@
 {/if}
 
 <style>
+  /* Custom style to make the date input icon visible on dark background */
   .calendar-icon-white::-webkit-calendar-picker-indicator {
     filter: invert(1);
     opacity: 0.6;
