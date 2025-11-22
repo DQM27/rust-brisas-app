@@ -1,14 +1,21 @@
 // ==========================================
 // src/models/vehiculo.rs
 // ==========================================
+// Solo modelos, DTOs y enums - SIN validaciones ni lógica
+
 use serde::{Deserialize, Serialize};
 
-/// Modelo de dominio - Representa un vehículo registrado
+// ==========================================
+// MODELO DE DOMINIO
+// ==========================================
+
+/// Representa un vehículo registrado
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Vehiculo {
     pub id: String,
     pub contratista_id: String,
+    pub tipo_vehiculo: TipoVehiculo,
     pub placa: String,
     pub marca: Option<String>,
     pub modelo: Option<String>,
@@ -19,13 +26,49 @@ pub struct Vehiculo {
 }
 
 // ==========================================
-// DTOs de entrada (Commands/Input)
+// ENUM DE TIPO DE VEHÍCULO
+// ==========================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum TipoVehiculo {
+    Motocicleta,
+    Automóvil,
+}
+
+impl TipoVehiculo {
+    pub fn as_str(&self) -> &str {
+        match self {
+            TipoVehiculo::Motocicleta => "motocicleta",
+            TipoVehiculo::Automóvil => "automóvil",
+        }
+    }
+    
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s.to_lowercase().as_str() {
+            "motocicleta" => Ok(TipoVehiculo::Motocicleta),
+            "automóvil" | "automovil" => Ok(TipoVehiculo::Automóvil),
+            _ => Err(format!("Tipo de vehículo desconocido: {}", s)),
+        }
+    }
+    
+    pub fn display(&self) -> &str {
+        match self {
+            TipoVehiculo::Motocicleta => "Motocicleta",
+            TipoVehiculo::Automóvil => "Automóvil",
+        }
+    }
+}
+
+// ==========================================
+// DTOs DE ENTRADA
 // ==========================================
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateVehiculoInput {
     pub contratista_id: String,
+    pub tipo_vehiculo: String,
     pub placa: String,
     pub marca: Option<String>,
     pub modelo: Option<String>,
@@ -35,6 +78,7 @@ pub struct CreateVehiculoInput {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateVehiculoInput {
+    pub tipo_vehiculo: Option<String>,
     pub marca: Option<String>,
     pub modelo: Option<String>,
     pub color: Option<String>,
@@ -42,22 +86,24 @@ pub struct UpdateVehiculoInput {
 }
 
 // ==========================================
-// DTOs de salida (Response/ViewModel)
+// DTOs DE SALIDA
 // ==========================================
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct VehiculoResponse {
     pub id: String,
     pub contratista_id: String,
-    pub contratista_nombre: String,      // JOIN con contratistas
-    pub contratista_cedula: String,      // Para mostrar en UI
-    pub empresa_nombre: String,          // JOIN con empresas
+    pub contratista_nombre: String,
+    pub contratista_cedula: String,
+    pub empresa_nombre: String,
+    pub tipo_vehiculo: TipoVehiculo,
+    pub tipo_vehiculo_display: String,
     pub placa: String,
     pub marca: Option<String>,
     pub modelo: Option<String>,
     pub color: Option<String>,
-    pub descripcion_completa: String,    // "Placa ABC123 - Toyota Corolla (Rojo)"
+    pub descripcion_completa: String,
     pub is_active: bool,
     pub created_at: String,
     pub updated_at: String,
@@ -71,22 +117,25 @@ impl From<Vehiculo> for VehiculoResponse {
         
         let descripcion_completa = if v.marca.is_some() || v.modelo.is_some() {
             format!(
-                "Placa {} - {} {} ({})",
+                "{} - Placa {} - {} {} ({})",
+                v.tipo_vehiculo.display(),
                 v.placa,
                 marca_str,
                 modelo_str,
                 color_str
             )
         } else {
-            format!("Placa {}", v.placa)
+            format!("{} - Placa {}", v.tipo_vehiculo.display(), v.placa)
         };
         
         Self {
             id: v.id,
             contratista_id: v.contratista_id,
-            contratista_nombre: String::new(),  // Se llena en el comando con JOIN
-            contratista_cedula: String::new(),  // Se llena en el comando con JOIN
-            empresa_nombre: String::new(),      // Se llena en el comando con JOIN
+            contratista_nombre: String::new(),
+            contratista_cedula: String::new(),
+            empresa_nombre: String::new(),
+            tipo_vehiculo: v.tipo_vehiculo.clone(),
+            tipo_vehiculo_display: v.tipo_vehiculo.display().to_string(),
             placa: v.placa,
             marca: v.marca,
             modelo: v.modelo,
@@ -106,70 +155,12 @@ pub struct VehiculoListResponse {
     pub total: usize,
     pub activos: usize,
     pub inactivos: usize,
+    pub por_tipo: TipoVehiculoStats,
 }
 
-// ==========================================
-// Validaciones de dominio
-// ==========================================
-
-pub mod validaciones {
-    use super::*;
-    
-    pub fn validar_placa(placa: &str) -> Result<(), String> {
-        let limpia = placa.trim().to_uppercase();
-        
-        if limpia.is_empty() {
-            return Err("La placa no puede estar vacía".to_string());
-        }
-        
-        // Validación flexible: solo alfanuméricos y guiones
-        if !limpia.chars().all(|c| c.is_alphanumeric() || c == '-' || c == ' ') {
-            return Err("La placa solo puede contener letras, números, guiones y espacios".to_string());
-        }
-        
-        if limpia.len() < 3 || limpia.len() > 15 {
-            return Err("La placa debe tener entre 3 y 15 caracteres".to_string());
-        }
-        
-        Ok(())
-    }
-    
-    pub fn validar_contratista_id(contratista_id: &str) -> Result<(), String> {
-        let limpia = contratista_id.trim();
-        
-        if limpia.is_empty() {
-            return Err("Debe especificar un contratista".to_string());
-        }
-        
-        Ok(())
-    }
-    
-    pub fn validar_texto_opcional(texto: &str, campo: &str, max_len: usize) -> Result<(), String> {
-        let limpio = texto.trim();
-        
-        if limpio.len() > max_len {
-            return Err(format!("{} no puede exceder {} caracteres", campo, max_len));
-        }
-        
-        Ok(())
-    }
-    
-    pub fn validar_create_input(input: &CreateVehiculoInput) -> Result<(), String> {
-        validar_contratista_id(&input.contratista_id)?;
-        validar_placa(&input.placa)?;
-        
-        if let Some(ref marca) = input.marca {
-            validar_texto_opcional(marca, "Marca", 50)?;
-        }
-        
-        if let Some(ref modelo) = input.modelo {
-            validar_texto_opcional(modelo, "Modelo", 50)?;
-        }
-        
-        if let Some(ref color) = input.color {
-            validar_texto_opcional(color, "Color", 30)?;
-        }
-        
-        Ok(())
-    }
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TipoVehiculoStats {
+    pub motocicletas: usize,
+    pub automóviles: usize,
 }

@@ -92,3 +92,4 @@ async fn seed_admin_user(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Er
 }
 
 pub mod user_queries;
+pub mod vehiculo_queries;

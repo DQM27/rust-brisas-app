@@ -12,8 +12,7 @@ use sqlx::SqlitePool;
 use tauri::State;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use chrono::Utc;
-use uuid::Uuid;
+
 
 #[tauri::command]
 pub async fn create_user(
