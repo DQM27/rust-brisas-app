@@ -19,53 +19,22 @@
 </script>
 
 <button
-  class:active={isActive}
+  class="group relative flex h-[42px] w-full items-center justify-center border-none bg-transparent text-[#bbb] 
+         cursor-pointer transition-all duration-200 ease-in-out
+         hover:bg-[#3a3a3a] hover:text-white
+         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#2d2d2d]
+         {isActive ? 'bg-[#3c3c3c] text-white' : ''}"
   on:click={handleClick}
   on:keydown={handleKeydown}
   title={item.label}
   tabindex="0"
 >
-  <svelte:component this={item.icon} size={22} />
-  <span class="tooltip">{item.label}</span>
+  <svelte:component this={item.icon} size={22} class="transition-transform duration-200 group-hover:scale-110" />
+  
+  <span class="absolute left-[52px] z-[1000] hidden whitespace-nowrap rounded bg-[#3a3a3a] 
+               px-2 py-1 text-[11.5px] shadow-lg
+               animate-in fade-in slide-in-from-left-1 duration-150
+               group-hover:block">
+    {item.label}
+  </span>
 </button>
-
-<style>
-  button {
-    background: none;
-    border: none;
-    color: #bbb;
-    width: 100%;
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    cursor: pointer;
-  }
-
-  button.active {
-    color: #fff;
-    background: #3c3c3c;
-  }
-
-  button:hover {
-    background: #3a3a3a;
-    color: #fff;
-  }
-
-  .tooltip {
-    position: absolute;
-    left: 52px;
-    background: #3a3a3a;
-    white-space: nowrap;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 11.5px;
-    display: none;
-    z-index: 1000;
-  }
-
-  button:hover .tooltip {
-    display: block;
-  }
-</style>

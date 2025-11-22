@@ -1,87 +1,39 @@
 <!-- src/lib/components/layout/sidebar/SidebarPanel.svelte -->
 <script lang="ts">
+  import { fly, fade } from 'svelte/transition';
+  import { cubicOut, cubicIn } from 'svelte/easing';
   import type { SidebarItem } from '../../../types/Sidebar';
 
-  // Asegurarnos de que las props estén correctamente exportadas
   export let item: SidebarItem;
   export let isOpen: boolean = false;
   export let onClose: () => void;
 </script>
 
 {#if isOpen}
-  <div class="side-panel">
-    <div class="panel-header">
+  <div 
+    class="flex w-[250px] flex-col border-r border-[#1f1f1f] bg-[#252526] overflow-hidden"
+    in:fly={{ x: -250, duration: 300, easing: cubicOut }}
+    out:fly={{ x: -250, duration: 250, easing: cubicIn }}
+  >
+    <div 
+      class="flex items-center justify-between border-b border-[#2d2d2d] 
+             bg-[#2d2d2d] px-[15px] py-3 text-[13px] font-semibold text-[#cccccc]"
+    >
       <span>{item.label}</span>
       <button 
-        class="close-btn" 
+        class="flex h-5 w-5 items-center justify-center rounded border-none 
+               bg-transparent p-0 text-base text-[#858585] cursor-pointer
+               transition-all duration-150
+               hover:bg-[#3c3c3c] hover:text-[#cccccc] hover:rotate-90
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         on:click={onClose}
         title="Cerrar panel"
       >
         ×
       </button>
     </div>
-    <div class="panel-content">
+    <div class="flex-grow overflow-y-auto py-2">
       <svelte:component this={item.panelComponent} />
     </div>
   </div>
 {/if}
-
-<style>
-  .side-panel {
-    width: 250px;
-    background: #252526;
-    border-right: 1px solid #1f1f1f;
-    display: flex;
-    flex-direction: column;
-    animation: slideIn 0.2s ease-out;
-  }
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateX(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  .panel-header {
-    padding: 12px 15px;
-    border-bottom: 1px solid #2d2d2d;
-    font-weight: 600;
-    font-size: 13px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #cccccc;
-    background: #2d2d2d;
-  }
-
-  .close-btn {
-    background: none;
-    border: none;
-    color: #858585;
-    cursor: pointer;
-    font-size: 16px;
-    padding: 0;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 3px;
-  }
-
-  .close-btn:hover {
-    background: #3c3c3c;
-    color: #cccccc;
-  }
-
-  .panel-content {
-    padding: 8px 0;
-    overflow-y: auto;
-    flex-grow: 1;
-  }
-</style>

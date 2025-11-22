@@ -57,6 +57,8 @@
     
     if (item.action) {
       item.action();
+      // Cerrar el panel después de ejecutar la acción
+      activePanel.set(null);
     } else if (item.panelComponent) {
       // Toggle panel
       if ($activePanel === item.id) {
@@ -81,10 +83,11 @@
   };
 </script>
 
-<div class="sidebar-container">
+<div class="flex h-full">
   <!-- Barra lateral de iconos -->
-  <div class="sidebar">
-    <div class="top">
+  <div class="flex w-[52px] flex-col justify-between border-r border-[#1f1f1f] 
+              bg-[#2d2d2d] py-1.5">
+    <div class="flex flex-col gap-1.5">
       {#each sidebarItems as item}
         <SidebarIcon
           {item}
@@ -94,14 +97,34 @@
       {/each}
     </div>
 
-    <div class="bottom">
-      <button class="avatar" title={user.name}>
+    <div class="flex flex-col items-center gap-2 pb-2">
+      <button 
+        class="flex h-8 w-8 items-center justify-center rounded-full border-none 
+               bg-[#764ba2] text-[13px] font-semibold text-white cursor-pointer
+               transition-all duration-200
+               hover:bg-[#8c5fc3] hover:scale-105
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#2d2d2d]"
+        title={user.name}
+      >
         {user.initials}
       </button>
 
-      <button on:click={handleLogout} class="logout" title="Cerrar sesión">
+      <button 
+        on:click={handleLogout} 
+        class="group relative flex h-7 w-4/5 items-center justify-center rounded-md 
+               border-none bg-transparent text-[#bbb] cursor-pointer
+               transition-colors duration-150
+               hover:bg-[#3a3a3a] hover:text-white
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#2d2d2d]"
+        title="Cerrar sesión"
+      >
         <LogOut size={20} />
-        <span class="tooltip">Cerrar sesión</span>
+        <span class="absolute left-[52px] z-[1000] hidden whitespace-nowrap rounded 
+                     bg-[#3a3a3a] px-2 py-1 text-[11.5px] shadow-lg
+                     animate-in fade-in slide-in-from-left-1 duration-150
+                     group-hover:block">
+          Cerrar sesión
+        </span>
       </button>
     </div>
   </div>
@@ -115,88 +138,3 @@
     />
   {/if}
 </div>
-
-<style>
-  .sidebar-container {
-    display: flex;
-    height: 100%;
-  }
-
-  .sidebar {
-    width: 52px;
-    background: #2d2d2d;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 6px 0;
-    border-right: 1px solid #1f1f1f;
-  }
-
-  .top {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .bottom {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding-bottom: 8px;
-  }
-
-  .avatar {
-    width: 32px;
-    height: 32px;
-    background: #764ba2;
-    border-radius: 50%;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    color: white;
-    cursor: pointer;
-    border: none;
-  }
-
-  .avatar:hover {
-    background: #8c5fc3;
-  }
-
-  .logout {
-    width: 80%;
-    border-radius: 6px;
-    height: 28px;
-    background: none;
-    border: none;
-    color: #bbb;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  }
-
-  .logout:hover {
-    background: #3a3a3a;
-    color: #fff;
-  }
-
-  .logout .tooltip {
-    position: absolute;
-    left: 52px;
-    background: #3a3a3a;
-    white-space: nowrap;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 11.5px;
-    display: none;
-    z-index: 1000;
-  }
-
-  .logout:hover .tooltip {
-    display: block;
-  }
-</style>

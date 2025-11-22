@@ -1,95 +1,112 @@
 <!-- src/lib/components/layout/sidebar/panels/UsersPanel.svelte -->
 <script lang="ts">
   import { Users, UserPlus, Edit3, BarChart3, Home } from 'lucide-svelte';
-  import { openView, openUserRegistration } from '../../../../stores/sidebar';
+  import { openView, openUserRegistration, activePanel } from '../../../../stores/sidebar';
+  
+  // Tipos para las acciones del panel
+  type PanelAction = () => void;
   
   // Función para manejar teclado
-  function handleKeydown(e: KeyboardEvent, action: () => void) {
+  function handleKeydown(e: KeyboardEvent, action: PanelAction): void {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       action();
     }
   }
+
+  // Wrapper para acciones que cierra el panel después de ejecutar
+  function executeAndClose(action: PanelAction): PanelAction {
+    return () => {
+      action();
+      // Cerrar inmediatamente - la animación se encarga de la suavidad
+      activePanel.set(null);
+    };
+  }
+
+  // Definición de items del panel para mejor mantenibilidad
+  interface PanelMenuItem {
+    icon: typeof Users;
+    label: string;
+    action: PanelAction;
+  }
+
+  interface PanelSection {
+    title: string;
+    items: PanelMenuItem[];
+  }
+
+  const sections: PanelSection[] = [
+    {
+      title: 'GESTIÓN DE USUARIOS',
+      items: [
+        {
+          icon: Users,
+          label: 'Lista de usuarios',
+          action: executeAndClose(() => openView('user-list', 'Lista de Usuarios'))
+        },
+        {
+          icon: UserPlus,
+          label: 'Registrar usuario',
+          action: executeAndClose(openUserRegistration)
+        },
+        {
+          icon: Edit3,
+          label: 'Editor de usuarios',
+          action: executeAndClose(() => openView('user-editor', 'Editor de Usuarios'))
+        }
+      ]
+    },
+    {
+      title: 'VISTAS',
+      items: [
+        {
+          icon: BarChart3,
+          label: 'Dashboard',
+          action: executeAndClose(() => openView('dashboard', 'Dashboard'))
+        },
+        {
+          icon: Home,
+          label: 'Página de bienvenida',
+          action: executeAndClose(() => openView('welcome', 'Bienvenida'))
+        }
+      ]
+    }
+  ];
+
+  // Clases compartidas
+  const sectionTitleClasses = 'px-[15px] pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-[#858585]';
+  const menuItemClasses = `
+    group flex w-full items-center gap-2 rounded-none border-none bg-transparent 
+    px-[15px] py-1.5 text-left text-[13px] text-[#cccccc] cursor-pointer
+    transition-all duration-100 ease-in-out
+    hover:bg-[#2a2d2e]
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500
+    active:scale-[0.99]
+  `;
 </script>
 
-<div class="panel-section">
-  <div class="panel-section-title">GESTIÓN DE USUARIOS</div>
-  <button 
-    class="panel-item" 
-    on:click={() => openView('user-list', 'Lista de Usuarios')}
-    on:keydown={(e) => handleKeydown(e, () => openView('user-list', 'Lista de Usuarios'))}
-  >
-    <svelte:component this={Users} size={16} />
-    <span>Lista de usuarios</span>
-  </button>
-  <button 
-    class="panel-item" 
-    on:click={openUserRegistration}
-    on:keydown={(e) => handleKeydown(e, openUserRegistration)}
-  >
-    <svelte:component this={UserPlus} size={16} />
-    <span>Registrar usuario</span>
-  </button>
-  <button 
-    class="panel-item" 
-    on:click={() => openView('user-editor', 'Editor de Usuarios')}
-    on:keydown={(e) => handleKeydown(e, () => openView('user-editor', 'Editor de Usuarios'))}
-  >
-    <svelte:component this={Edit3} size={16} />
-    <span>Editor de usuarios</span>
-  </button>
-</div>
-<div class="panel-section">
-  <div class="panel-section-title">VISTAS</div>
-  <button 
-    class="panel-item" 
-    on:click={() => openView('dashboard', 'Dashboard')}
-    on:keydown={(e) => handleKeydown(e, () => openView('dashboard', 'Dashboard'))}
-  >
-    <svelte:component this={BarChart3} size={16} />
-    <span>Dashboard</span>
-  </button>
-  <button 
-    class="panel-item" 
-    on:click={() => openView('welcome', 'Bienvenida')}
-    on:keydown={(e) => handleKeydown(e, () => openView('welcome', 'Bienvenida'))}
-  >
-    <svelte:component this={Home} size={16} />
-    <span>Página de bienvenida</span>
-  </button>
-</div>
-
-<style>
-  .panel-section {
-    margin-bottom: 16px;
-  }
-
-  .panel-section-title {
-    font-size: 11px;
-    text-transform: uppercase;
-    padding: 8px 15px 4px;
-    color: #858585;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-  }
-
-  .panel-item {
-    padding: 6px 15px;
-    cursor: pointer;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    color: #cccccc;
-    transition: background-color 0.1s;
-    width: 100%;
-    text-align: left;
-    border-radius: 0;
-    gap: 8px;
-    background: none;
-    border: none;
-  }
-
-  .panel-item:hover {
-    background-color: #2a2d2e;
-  }
-</style>
+{#each sections as section}
+  <div class="mb-4">
+    <div class={sectionTitleClasses}>
+      {section.title}
+    </div>
+    
+    {#each section.items as item}
+      <button 
+        class={menuItemClasses}
+        on:click={item.action}
+        on:keydown={(e) => handleKeydown(e, item.action)}
+        type="button"
+      >
+        <svelte:component 
+          this={item.icon} 
+          size={16} 
+          class="transition-transform duration-150 group-hover:scale-110" 
+        />
+        <span class="transition-colors duration-150">
+          {item.label}
+        </span>
+      </button>
+    {/each}
+  </div>
+{/each}

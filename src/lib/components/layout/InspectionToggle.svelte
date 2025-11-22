@@ -42,10 +42,42 @@
       handleClick();
     }
   }
+
+  // Clases base compartidas
+  const baseClasses = `
+    inline-flex items-center border-none bg-transparent font-inherit 
+    whitespace-nowrap select-none cursor-pointer
+    transition-all duration-150 ease-in-out
+    animate-in fade-in slide-in-from-top-1 duration-200
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#007acc] focus-visible:ring-offset-2
+  `;
+
+  // Clases de variantes
+  const variantClasses = {
+    default: 'gap-1.5 px-2 py-0.5 text-xs',
+    compact: 'gap-1 px-1.5 py-0.5 text-xs',
+    'icon-only': 'gap-0 p-1'
+  };
+
+  // Clases de estado
+  const stateClasses = `
+    hover:bg-white/[0.08] active:scale-[0.98]
+    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:active:scale-100
+  `;
+
+  // Clases de estado activo
+  const activeClasses = visible
+    ? 'bg-[#007acc]/40 text-white hover:bg-[#007acc]/50'
+    : '';
+
+  // Clases responsivas para la variante default
+  const responsiveClasses = variant === 'default' 
+    ? 'md:gap-1.5 md:px-2 md:text-xs' 
+    : '';
 </script>
 
 <button
-  class="inspection-toggle {variant} {visible ? 'active' : ''}"
+  class="{baseClasses} {variantClasses[variant]} {stateClasses} {activeClasses} {responsiveClasses} rounded-sm"
   class:disabled
   on:click={handleClick}
   on:keydown={handleKeyPress}
@@ -55,16 +87,21 @@
   aria-pressed={visible}
   {disabled}
 >
-  <span class="icon-wrapper" aria-hidden="true">
+  <span 
+    class="flex items-center justify-center transition-transform duration-150 ease-in-out
+           group-hover:scale-110"
+    class:group-hover={!disabled}
+    aria-hidden="true"
+  >
     {#if visible}
-      <EyeOff {size} />
+      <EyeOff {size} class="transition-transform duration-150 {!disabled ? 'hover:scale-110' : ''}" />
     {:else}
-      <Eye {size} />
+      <Eye {size} class="transition-transform duration-150 {!disabled ? 'hover:scale-110' : ''}" />
     {/if}
   </span>
   
   {#if showLabel && variant !== 'icon-only'}
-    <span class="label">
+    <span class="font-medium leading-none {variant === 'default' ? 'max-md:hidden' : ''}">
       {#if variant === 'compact'}
         Inspección
       {:else}
@@ -73,125 +110,3 @@
     </span>
   {/if}
 </button>
-
-<style>
-  .inspection-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 8px;
-    border-radius: 3px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    white-space: nowrap;
-    border: none;
-    background: transparent;
-    color: var(--inspection-toggle-color, inherit);
-    font-size: var(--inspection-toggle-font-size, 12px);
-    font-family: inherit;
-    user-select: none;
-  }
-
-  /* Variantes del componente */
-  .inspection-toggle.compact {
-    padding: 2px 6px;
-    gap: 4px;
-  }
-
-  .inspection-toggle.icon-only {
-    padding: 4px;
-    gap: 0;
-  }
-
-  /* Estados interactivos */
-  .inspection-toggle:hover:not(.disabled) {
-    background: var(--inspection-toggle-hover, rgba(255, 255, 255, 0.08));
-  }
-
-  .inspection-toggle:active:not(.disabled) {
-    transform: scale(0.98);
-  }
-
-  /* Estado activo (panel visible) */
-  .inspection-toggle.active {
-    background: var(--inspection-toggle-active-bg, rgba(0, 122, 204, 0.4));
-    color: var(--inspection-toggle-active-color, #ffffff);
-  }
-
-  .inspection-toggle.active:hover:not(.disabled) {
-    background: var(--inspection-toggle-active-hover, rgba(0, 122, 204, 0.5));
-  }
-
-  /* Estado deshabilitado */
-  .inspection-toggle.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  /* Focus para accesibilidad */
-  .inspection-toggle:focus-visible {
-    outline: 2px solid var(--inspection-toggle-focus, #007acc);
-    outline-offset: 2px;
-  }
-
-  /* Elementos internos */
-  .icon-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.15s ease;
-  }
-
-  .inspection-toggle:hover:not(.disabled) .icon-wrapper {
-    transform: scale(1.1);
-  }
-
-  .label {
-    font-weight: 500;
-    line-height: 1;
-  }
-
-  /* Animación de entrada */
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(-2px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .inspection-toggle {
-    animation: fadeIn 0.2s ease;
-  }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .inspection-toggle.default {
-      padding: 4px 6px;
-      font-size: 11px;
-    }
-
-    .inspection-toggle.default .label {
-      display: none;
-    }
-  }
-
-  /* Tema oscuro (opcional) */
-  @media (prefers-color-scheme: dark) {
-    .inspection-toggle {
-      --inspection-toggle-hover: rgba(255, 255, 255, 0.1);
-    }
-  }
-
-  /* Tema claro (opcional) */
-  @media (prefers-color-scheme: light) {
-    .inspection-toggle {
-      --inspection-toggle-hover: rgba(0, 0, 0, 0.05);
-      --inspection-toggle-active-bg: rgba(0, 122, 204, 0.15);
-      --inspection-toggle-active-color: #007acc;
-    }
-  }
-</style>

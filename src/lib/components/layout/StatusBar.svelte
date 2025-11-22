@@ -1,7 +1,7 @@
 <!-- src/lib/components/layout/StatusBar.svelte -->
 <script lang="ts">
   import { Wifi, WifiOff } from 'lucide-svelte';
-  import InspectionToggle from './InspectionToggle.svelte';
+  import InspectionToggle from '../layout/InspectionToggle.svelte';
   import { createEventDispatcher } from 'svelte';
   import { online } from '$lib/stores/network';
 
@@ -16,24 +16,41 @@
   function handleInspectionToggle(event: CustomEvent<{ visible: boolean }>): void {
     dispatch('inspectionToggle', event.detail);
   }
+
+  // Clases reactivas para el estado de conexión
+  $: connectionClasses = $online 
+    ? 'text-[#4caf50]' 
+    : 'text-[#f44336]';
+  
+  $: connectionIcon = $online ? Wifi : WifiOff;
 </script>
 
-<div class="status-bar">
+<div class="flex h-6 items-center justify-between bg-[#2d2d2d] px-3 
+            text-xs text-[#cccccc] select-none
+            font-['Segoe_UI',Tahoma,Geneva,Verdana,sans-serif]
+            max-md:py-1">
+  
   <!-- Sección izquierda - Estado de conexión -->
-  <div class="status-left">
-    <div class="status-item {$online ? 'online' : 'offline'}" role="status">
-      {#if $online}
-        <Wifi size={14} />
-        <span>En línea</span>
-      {:else}
-        <WifiOff size={14} />
-        <span>Sin conexión</span>
-      {/if}
+  <div class="flex items-center gap-4">
+    <div 
+      class="flex items-center gap-1.5 whitespace-nowrap rounded-sm px-2 py-0.5
+             transition-colors duration-200 {connectionClasses}"
+      role="status"
+      aria-live="polite"
+    >
+      <svelte:component 
+        this={connectionIcon} 
+        size={14} 
+        class="transition-all duration-300 {$online ? 'animate-pulse' : 'animate-bounce'}"
+      />
+      <span class="font-medium">
+        {$online ? 'En línea' : 'Sin conexión'}
+      </span>
     </div>
   </div>
   
   <!-- Sección derecha - Inspección -->
-  <div class="status-right">
+  <div class="flex items-center gap-4">
     <InspectionToggle 
       visible={inspectionPanelVisible}
       variant="compact"
@@ -41,50 +58,3 @@
     />
   </div>
 </div>
-
-<style>
-  .status-bar {
-    background: var(--status-bar-background, #2d2d2d);
-    color: var(--status-bar-foreground, #cccccc);
-    height: 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 12px;
-    font-size: 12px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    user-select: none;
-  }
-  
-  .status-left,
-  .status-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-  
-  .status-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 8px;
-    border-radius: 3px;
-    white-space: nowrap;
-  }
-  
-  /* Estados específicos */
-  .status-item.online {
-    color: #4caf50;
-  }
-  
-  .status-item.offline {
-    color: #f44336;
-  }
-  
-  /* Responsive */
-  @media (max-width: 768px) {
-    .status-bar {
-      padding: 4px 12px;
-    }
-  }
-</style>
