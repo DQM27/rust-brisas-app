@@ -1,14 +1,14 @@
 <!-- src/lib/components/layout/sidebar/panels/UsersPanel.svelte -->
 <script lang="ts">
-  import { Users, UserPlus, Edit3, BarChart3, Home } from 'lucide-svelte';
-  import { openView, openUserRegistration, activePanel } from '../../../../stores/sidebar';
-  
+  import { Users, UserPlus, Edit3, BarChart3, Home } from "lucide-svelte";
+  import { openView, activePanel } from "../../../../stores/sidebar";
+
   // Tipos para las acciones del panel
   type PanelAction = () => void;
-  
+
   // Función para manejar teclado
   function handleKeydown(e: KeyboardEvent, action: PanelAction): void {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       action();
     }
@@ -37,44 +37,51 @@
 
   const sections: PanelSection[] = [
     {
-      title: 'GESTIÓN DE USUARIOS',
+      title: "GESTIÓN DE USUARIOS",
       items: [
         {
           icon: Users,
-          label: 'Lista de usuarios',
-          action: executeAndClose(() => openView('user-list', 'Lista de Usuarios'))
+          label: "Lista de usuarios",
+          action: executeAndClose(() =>
+            openView("user-list", "Lista de Usuarios"),
+          ),
         },
         {
           icon: UserPlus,
-          label: 'Registrar usuario',
-          action: executeAndClose(openUserRegistration)
+          label: "Registrar usuario",
+          action: executeAndClose(() =>
+            openView("user-register", "Registrar Usuario"),
+          ),
         },
         {
           icon: Edit3,
-          label: 'Editor de usuarios',
-          action: executeAndClose(() => openView('user-editor', 'Editor de Usuarios'))
-        }
-      ]
+          label: "Editor de usuarios",
+          action: executeAndClose(() =>
+            openView("user-editor", "Editor de Usuarios"),
+          ),
+        },
+      ],
     },
     {
-      title: 'VISTAS',
+      title: "VISTAS",
       items: [
         {
           icon: BarChart3,
-          label: 'Dashboard',
-          action: executeAndClose(() => openView('dashboard', 'Dashboard'))
+          label: "Dashboard",
+          action: executeAndClose(() => openView("dashboard", "Dashboard")),
         },
         {
           icon: Home,
-          label: 'Página de bienvenida',
-          action: executeAndClose(() => openView('welcome', 'Bienvenida'))
-        }
-      ]
-    }
+          label: "Página de bienvenida",
+          action: executeAndClose(() => openView("welcome", "Bienvenida")),
+        },
+      ],
+    },
   ];
 
   // Clases compartidas
-  const sectionTitleClasses = 'px-[15px] pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-[#858585]';
+  const sectionTitleClasses =
+    "px-[15px] pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-[#858585]";
   const menuItemClasses = `
     group flex w-full items-center gap-2 rounded-none border-none bg-transparent 
     px-[15px] py-1.5 text-left text-[13px] text-[#cccccc] cursor-pointer
@@ -90,18 +97,18 @@
     <div class={sectionTitleClasses}>
       {section.title}
     </div>
-    
+
     {#each section.items as item}
-      <button 
+      <button
         class={menuItemClasses}
         on:click={item.action}
         on:keydown={(e) => handleKeydown(e, item.action)}
         type="button"
       >
-        <svelte:component 
-          this={item.icon} 
-          size={16} 
-          class="transition-transform duration-150 group-hover:scale-110" 
+        <svelte:component
+          this={item.icon}
+          size={16}
+          class="transition-transform duration-150 group-hover:scale-110"
         />
         <span class="transition-colors duration-150">
           {item.label}

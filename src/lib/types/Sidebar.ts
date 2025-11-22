@@ -7,9 +7,13 @@ export interface SidebarItem {
   action?: () => void; // Acción directa (si no tiene panel)
 }
 
-export type ComponentKey = 
+export type ComponentKey =
   | 'welcome'
   | 'user-list'
   | 'user-editor'
   | 'user-register'
-  | 'dashboard';
+  | 'user-register'
+  | 'dashboard'
+  | 'contratista'
+  | 'lista-negra'
+  | 'supabase-test';

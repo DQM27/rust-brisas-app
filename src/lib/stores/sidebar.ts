@@ -13,13 +13,6 @@ export function openView(componentKey: ComponentKey, title: string) {
   });
 }
 
-export function openUserRegistration() {
-  openTab({
-    componentKey: 'user-register',
-    title: 'Registrar Usuario',
-    focusOnOpen: true
-  });
-}
 
 // Función para cerrar el panel activo
 export function closeActivePanel() {

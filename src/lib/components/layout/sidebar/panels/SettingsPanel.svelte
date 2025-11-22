@@ -1,25 +1,59 @@
 <!-- src/lib/components/layout/sidebar/panels/SettingsPanel.svelte -->
 <script lang="ts">
-  import { Settings, Bell, Download, RefreshCw, Info } from 'lucide-svelte';
-  import { openView } from '../../../../stores/sidebar';
-  
+  import {
+    Settings,
+    Bell,
+    Download,
+    RefreshCw,
+    Info,
+    Database,
+  } from "lucide-svelte";
+  import { openView, activePanel } from "../../../../stores/sidebar";
+
   function handleKeydown(e: KeyboardEvent, action: () => void) {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       action();
     }
+  }
+
+  function executeAndClose(action: () => void) {
+    return () => {
+      action();
+      activePanel.set(null);
+    };
   }
 </script>
 
 <div class="panel-section">
   <div class="panel-section-title">CONFIGURACIÓN GENERAL</div>
-  <button 
-    class="panel-item" 
-    on:click={() => openView('dashboard', 'Configuración')}
-    on:keydown={(e) => handleKeydown(e, () => openView('dashboard', 'Configuración'))}
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() => openView("dashboard", "Configuración"))}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() => openView("dashboard", "Configuración")),
+      )}
   >
     <svelte:component this={Settings} size={16} />
     <span>Ajustes generales</span>
+  </button>
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() =>
+      openView("supabase-test", "Configuración Supabase"),
+    )}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() =>
+          openView("supabase-test", "Configuración Supabase"),
+        ),
+      )}
+  >
+    <svelte:component this={Database} size={16} />
+    <span>Configuración Supabase</span>
   </button>
   <div class="panel-item non-clickable">
     <svelte:component this={Bell} size={16} />
@@ -36,10 +70,14 @@
     <svelte:component this={RefreshCw} size={16} />
     <span>Actualizaciones</span>
   </div>
-  <button 
-    class="panel-item" 
-    on:click={() => openView('welcome', 'Acerca del Sistema')}
-    on:keydown={(e) => handleKeydown(e, () => openView('welcome', 'Acerca del Sistema'))}
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() => openView("welcome", "Acerca del Sistema"))}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() => openView("welcome", "Acerca del Sistema")),
+      )}
   >
     <svelte:component this={Info} size={16} />
     <span>Acerca del sistema</span>
