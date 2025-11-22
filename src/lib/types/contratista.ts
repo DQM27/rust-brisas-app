@@ -1,4 +1,6 @@
-// src/lib/types/contratista.ts (LIMPIO)
+// src/lib/types/contratista.ts
+
+import type { TipoVehiculo } from './vehiculo';
 
 // ======================================================
 // TIPOS CENTRALES DEL DOMINIO CONTRATISTA
@@ -41,6 +43,13 @@ export interface CreateContratistaInput {
     apellido: string;
     empresaId: string;
     fechaVencimientoPraind: string;
+    // Campos de vehículo (opcionales, dependen del toggle)
+    tieneVehiculo: boolean;
+    tipoVehiculo?: TipoVehiculo;
+    placa?: string;
+    marca?: string;
+    modelo?: string;
+    color?: string;
 }
 
 export interface UpdateContratistaInput {
@@ -60,4 +69,3 @@ export interface ContratistaListResponse {
     conPraindVencido: number;
     requierenAtencion: number;
 }
-// Las interfaces de Empresa han sido movidas a /types/empresa.ts

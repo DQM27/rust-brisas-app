@@ -1,7 +1,7 @@
 // src/lib/logic/vehiculo/submitRegisterVehiculo.ts
 
-import type { VehiculoResponse } from '$lib/types/vehiculo';
-import { vehiculos } from '$lib/api/vehiculos'; // wrapper Tauri commands
+import type { VehiculoResponse, CreateVehiculoInput, UpdateVehiculoInput, VehiculoListResponse } from '$lib/types/vehiculo';
+import { vehiculos } from '$lib/api/vehiculos';
 
 export type SubmitVehiculoResult =
   | { ok: true; vehiculo: VehiculoResponse }
@@ -17,26 +17,14 @@ export function parseVehiculoError(err: any): string {
 /**
  * Crea un vehículo
  */
-export async function registerVehiculo(input: {
-  contratista_id: string;
-  placa: string;
-  marca?: string;
-  modelo?: string;
-  color?: string;
-}): Promise<VehiculoResponse> {
+export async function registerVehiculo(input: CreateVehiculoInput): Promise<VehiculoResponse> {
   return await vehiculos.create(input);
 }
 
 /**
  * Orquesta el registro de vehículo y parsea errores
  */
-export async function submitRegisterVehiculo(input: {
-  contratista_id: string;
-  placa: string;
-  marca?: string;
-  modelo?: string;
-  color?: string;
-}): Promise<SubmitVehiculoResult> {
+export async function submitRegisterVehiculo(input: CreateVehiculoInput): Promise<SubmitVehiculoResult> {
   try {
     const vehiculo = await registerVehiculo(input);
     return { ok: true, vehiculo };
@@ -51,7 +39,7 @@ export async function submitRegisterVehiculo(input: {
  */
 export async function submitUpdateVehiculo(
   id: string,
-  input: { marca?: string; modelo?: string; color?: string; is_active?: number }
+  input: UpdateVehiculoInput
 ): Promise<SubmitVehiculoResult> {
   try {
     const vehiculo = await vehiculos.update(id, input);
@@ -78,7 +66,7 @@ export async function submitDeleteVehiculo(id: string): Promise<SubmitVehiculoRe
 /**
  * Obtener todos los vehículos
  */
-export async function fetchAllVehiculos(): Promise<VehiculoResponse[]> {
+export async function fetchAllVehiculos(): Promise<VehiculoListResponse> {
   return await vehiculos.getAll();
 }
 
@@ -92,8 +80,8 @@ export async function fetchVehiculosActivos(): Promise<VehiculoResponse[]> {
 /**
  * Obtener vehículos por contratista
  */
-export async function fetchVehiculosByContratista(contratista_id: string): Promise<VehiculoResponse[]> {
-  return await vehiculos.getByContratista(contratista_id);
+export async function fetchVehiculosByContratista(contratistaId: string): Promise<VehiculoResponse[]> {
+  return await vehiculos.getByContratista(contratistaId);
 }
 
 /**

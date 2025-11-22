@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { fly, fade, scale } from "svelte/transition"; 
   import { submitCreateEmpresa, submitFetchActiveEmpresas } from "$lib/logic/empresa/empresaService";
+  import type { TipoVehiculo } from "$lib/types/vehiculo";
 
   export let loading = false;
   export let onSubmit: (data: any) => void;
@@ -16,6 +17,7 @@
 
   // Vehículo
   let tieneVehiculo = false;
+  let tipoVehiculo: TipoVehiculo | "" = "";
   let placa = "";
   let marca = "";
   let modelo = "";
@@ -42,17 +44,29 @@
   export function reset() {
     cedula = ""; nombre = ""; apellido = ""; empresaId = "";
     fechaVencimientoPraind = ""; tieneVehiculo = false;
-    placa = ""; marca = ""; modelo = ""; color = "";
+    tipoVehiculo = ""; placa = ""; marca = ""; modelo = ""; color = "";
   }
 
   function handleSubmit(e: Event) {
     e.preventDefault();
-    onSubmit({ cedula, nombre, apellido, empresaId, fechaVencimientoPraind, tieneVehiculo, placa, marca, modelo, color });
+    onSubmit({ 
+      cedula, 
+      nombre, 
+      apellido, 
+      empresaId, 
+      fechaVencimientoPraind, 
+      tieneVehiculo, 
+      tipoVehiculo: tipoVehiculo || undefined,
+      placa, 
+      marca, 
+      modelo, 
+      color 
+    });
   }
 
   $: isFormValid = cedula.trim() && nombre.trim() && apellido.trim() && 
                    empresaId.trim() && fechaVencimientoPraind.trim() && 
-                   (!tieneVehiculo || (placa.trim() && marca.trim()));
+                   (!tieneVehiculo || (tipoVehiculo && placa.trim() && marca.trim()));
 
   async function handleCrearEmpresa() {
     if (!nuevaEmpresaNombre.trim()) return;
@@ -166,6 +180,33 @@
                 <p class="text-xs text-gray-500">Información necesaria para el pase vehicular.</p>
               </div>
 
+              <!-- NUEVO: Selector de Tipo de Vehículo -->
+              <div class="space-y-1.5">
+                <label class="text-sm font-medium text-gray-300">Tipo de Vehículo</label>
+                <div class="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    on:click={() => tipoVehiculo = "motocicleta"}
+                    class="flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all {tipoVehiculo === 'motocicleta' ? 'border-blue-500 bg-blue-500/10 text-blue-400' : 'border-white/10 bg-[#252526] text-gray-400 hover:border-white/20 hover:text-gray-300'}"
+                  >
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                    </svg>
+                    <span>Moto</span>
+                  </button>
+                  <button
+                    type="button"
+                    on:click={() => tipoVehiculo = "automóvil"}
+                    class="flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all {tipoVehiculo === 'automóvil' ? 'border-blue-500 bg-blue-500/10 text-blue-400' : 'border-white/10 bg-[#252526] text-gray-400 hover:border-white/20 hover:text-gray-300'}"
+                  >
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                    </svg>
+                    <span>Auto</span>
+                  </button>
+                </div>
+              </div>
+
               <div class="space-y-1.5">
                 <label for="placa" class="text-sm font-medium text-gray-300">Número de Placa</label>
                 <input id="placa" type="text" bind:value={placa} placeholder="ABC-123"
@@ -211,6 +252,8 @@
 
 {#if showEmpresaModal}
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" transition:fade={{ duration: 200 }}>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" on:click={() => !creatingEmpresa && (showEmpresaModal = false)}></div>
     <div class="relative w-full max-w-md overflow-hidden rounded-xl bg-[#1e1e1e] shadow-2xl ring-1 ring-white/10" transition:scale={{ start: 0.95, duration: 200 }}>
       <div class="px-6 py-5 border-b border-white/10">

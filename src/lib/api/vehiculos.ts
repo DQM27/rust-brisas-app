@@ -1,23 +1,19 @@
 // src/lib/api/vehiculos.ts
 
 import { invoke } from "@tauri-apps/api/core";
-import type { VehiculoResponse, VehiculoListResponse } from '$lib/types/vehiculo';
+import type { 
+  VehiculoResponse, 
+  VehiculoListResponse,
+  CreateVehiculoInput,
+  UpdateVehiculoInput
+} from '$lib/types/vehiculo';
 
 export const vehiculos = {
-  create: async (input: {
-    contratista_id: string;
-    placa: string;
-    marca?: string;
-    modelo?: string;
-    color?: string;
-  }): Promise<VehiculoResponse> => {
+  create: async (input: CreateVehiculoInput): Promise<VehiculoResponse> => {
     return await invoke('create_vehiculo', { input });
   },
 
-  update: async (
-    id: string,
-    input: { marca?: string; modelo?: string; color?: string; is_active?: number }
-  ): Promise<VehiculoResponse> => {
+  update: async (id: string, input: UpdateVehiculoInput): Promise<VehiculoResponse> => {
     return await invoke('update_vehiculo', { id, input });
   },
 
@@ -33,16 +29,15 @@ export const vehiculos = {
     return await invoke('get_vehiculo_by_placa', { placa });
   },
 
-  getAll: async (): Promise<VehiculoResponse[]> => {
-    const result: VehiculoListResponse = await invoke('get_all_vehiculos');
-    return result.vehiculos;
+  getAll: async (): Promise<VehiculoListResponse> => {
+    return await invoke('get_all_vehiculos');
   },
 
   getActivos: async (): Promise<VehiculoResponse[]> => {
     return await invoke('get_vehiculos_activos');
   },
 
-  getByContratista: async (contratista_id: string): Promise<VehiculoResponse[]> => {
-    return await invoke('get_vehiculos_by_contratista', { contratista_id });
+  getByContratista: async (contratistaId: string): Promise<VehiculoResponse[]> => {
+    return await invoke('get_vehiculos_by_contratista', { contratistaId });
   },
 };

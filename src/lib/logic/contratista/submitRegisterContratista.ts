@@ -1,10 +1,12 @@
 import { validateContratistaInput } from './validateContratistaInput';
 import { registerContratista } from './registerContratista';
 import { parseContratistaError } from './parseContratistaErrors';
+import { validateVehiculoInput } from '$lib/logic/vehiculo/validateVehiculoInput';
+import { submitRegisterVehiculo } from '$lib/logic/vehiculo/submitRegisterVehiculo';
 
 import type {
-  ContratistaResponse,
-  CreateContratistaInput
+  ContratistaResponse,
+  CreateContratistaInput
 } from '$lib/types/contratista';
 
 /**
@@ -13,46 +15,81 @@ import type {
  * o fallido (ok: false) con un mensaje de error.
  */
 export type SubmitRegisterContratistaResult =
-  | { ok: true; contratista: ContratistaResponse }
-  | { ok: false; error: string };
+  | { ok: true; contratista: ContratistaResponse }
+  | { ok: false; error: string };
 
 /**
- * Orquesta el proceso completo de registrar un contratista:
- * 1. Valida input (validateContratistaInput)
- * 2. Llama al servicio de registro (registerContratista)
- * 3. Parsea errores si falla (parseContratistaError)
- * * @param input - Objeto con los datos del nuevo contratista.
+ * Orquesta el proceso completo de registrar un contratista:
+ * 1. Valida input del contratista (validateContratistaInput)
+ * 2. Si tieneVehiculo, valida input del vehículo (validateVehiculoInput)
+ * 3. Llama al servicio de registro del contratista (registerContratista)
+ * 4. Si tieneVehiculo, registra el vehículo (submitRegisterVehiculo)
+ * 5. Parsea errores si falla (parseContratistaError)
+ * 
+ * @param input - Objeto con los datos del nuevo contratista y vehículo (opcional).
  * @returns Promesa que resuelve con SubmitRegisterContratistaResult.
- */
+ */
 export async function submitRegisterContratista(
-  input: CreateContratistaInput
+  input: CreateContratistaInput
 ): Promise<SubmitRegisterContratistaResult> {
 
-  const { nombre, apellido, cedula, empresaId, fechaVencimientoPraind } = input;
+  const { nombre, apellido, cedula, empresaId, fechaVencimientoPraind, tieneVehiculo, tipoVehiculo, placa, marca, modelo, color } = input;
 
-  // 1. Validar campos requeridos
-  const validation = validateContratistaInput(
-    nombre,
-    apellido,
-    cedula,
-    empresaId,
-    fechaVencimientoPraind
-  );
+  // 1. Validar campos requeridos del contratista
+  const contratistaValidation = validateContratistaInput(
+    nombre,
+    apellido,
+    cedula,
+    empresaId,
+    fechaVencimientoPraind
+  );
 
-  if (!validation.ok) {
-    // Retorna el error de validación si la entrada es inválida
-    return { ok: false, error: validation.message };
-  }
+  if (!contratistaValidation.ok) {
+    return { ok: false, error: contratistaValidation.message };
+  }
 
-  // 2. Intentar crear el contratista
-  try {
-    // Asume que registerContratista maneja la lógica de la API/Base de Datos
-    const contratista = await registerContratista(input);
-    // Éxito
-    return { ok: true, contratista };
-  } catch (err: any) {
-    // 3. Parsea el error para devolver un mensaje amigable al usuario
-    const msg = parseContratistaError(err);
-    return { ok: false, error: msg };
-  }
+  // 2. Si tieneVehiculo, validar campos del vehículo
+  if (tieneVehiculo) {
+    if (!tipoVehiculo) {
+      return { ok: false, error: 'Debe seleccionar un tipo de vehículo.' };
+    }
+
+    const vehiculoValidation = validateVehiculoInput(
+      tipoVehiculo,
+      placa || '',
+      marca
+    );
+
+    if (!vehiculoValidation.ok) {
+      return { ok: false, error: vehiculoValidation.message };
+    }
+  }
+
+  // 3. Intentar crear el contratista
+  try {
+    const contratista = await registerContratista(input);
+
+    // 4. Si tieneVehiculo, registrar el vehículo
+    if (tieneVehiculo && tipoVehiculo && placa) {
+      const vehiculoResult = await submitRegisterVehiculo({
+        contratistaId: contratista.id,
+        tipoVehiculo,
+        placa,
+        marca,
+        modelo,
+        color
+      });
+
+      if (!vehiculoResult.ok) {
+        return { ok: false, error: `Error al registrar vehículo: ${vehiculoResult.error}` };
+      }
+    }
+
+    // Éxito completo
+    return { ok: true, contratista };
+  } catch (err: any) {
+    // 5. Parsea el error para devolver un mensaje amigable al usuario
+    const msg = parseContratistaError(err);
+    return { ok: false, error: msg };
+  }
 }

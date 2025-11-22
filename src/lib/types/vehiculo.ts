@@ -1,21 +1,36 @@
 // src/lib/types/vehiculo.ts
 
+export type TipoVehiculo = 'motocicleta' | 'automóvil';
+
 export interface Vehiculo {
   id: string;
-  contratista_id: string;
+  contrafistaId: string;
+  tipoVehiculo: TipoVehiculo;
   placa: string;
   marca?: string;
   modelo?: string;
   color?: string;
-  is_active: number;
-  created_at: string;
-  updated_at: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface VehiculoResponse extends Vehiculo {
-  contratista_nombre?: string;
-  contratista_cedula?: string;
-  empresa_nombre?: string;
+export interface VehiculoResponse {
+  id: string;
+  contratistaId: string;
+  contratistaNombre: string;
+  contratistaCedula: string;
+  empresaNombre: string;
+  tipoVehiculo: TipoVehiculo;
+  tipoVehiculoDisplay: string;
+  placa: string;
+  marca?: string;
+  modelo?: string;
+  color?: string;
+  descripcionCompleta: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface VehiculoListResponse {
@@ -23,4 +38,25 @@ export interface VehiculoListResponse {
   total: number;
   activos: number;
   inactivos: number;
+  porTipo: {
+    motocicletas: number;
+    automóviles: number;
+  };
+}
+
+export interface CreateVehiculoInput {
+  contratistaId: string;
+  tipoVehiculo: TipoVehiculo;
+  placa: string;
+  marca?: string;
+  modelo?: string;
+  color?: string;
+}
+
+export interface UpdateVehiculoInput {
+  tipoVehiculo?: TipoVehiculo;
+  marca?: string;
+  modelo?: string;
+  color?: string;
+  isActive?: boolean;
 }
