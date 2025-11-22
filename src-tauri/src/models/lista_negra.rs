@@ -1,18 +1,24 @@
 // ==========================================
 // src/models/lista_negra.rs
 // ==========================================
+// Solo modelos, DTOs y helpers básicos - SIN validaciones ni lógica
+
 use chrono::{NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-/// Modelo de dominio - Representa una persona bloqueada
+// ==========================================
+// MODELO DE DOMINIO
+// ==========================================
+
+/// Representa una persona bloqueada en el sistema
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListaNegra {
     pub id: String,
     pub contratista_id: Option<String>,
     pub cedula: String,
-    pub nombre: Option<String>,
-    pub apellido: Option<String>,
+    pub nombre: String,
+    pub apellido: String,
     pub motivo_bloqueo: String,
     pub fecha_inicio_bloqueo: String,
     pub fecha_fin_bloqueo: Option<String>,
@@ -24,23 +30,23 @@ pub struct ListaNegra {
 }
 
 // ==========================================
-// DTOs de entrada (Commands/Input)
+// DTOs DE ENTRADA
 // ==========================================
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddToListaNegraInput {
-    pub contratista_id: Option<String>, // Si ya existe en BD
-    pub cedula: Option<String>,         // Requerido si no hay contratista_id
-    pub nombre: Option<String>,         // Requerido si no hay contratista_id
-    pub apellido: Option<String>,       // Requerido si no hay contratista_id
+    pub contratista_id: Option<String>,
+    pub cedula: Option<String>,
+    pub nombre: Option<String>,
+    pub apellido: Option<String>,
     pub motivo_bloqueo: String,
-    pub fecha_fin_bloqueo: Option<String>, // NULL = permanente
+    pub fecha_fin_bloqueo: Option<String>,
     pub bloqueado_por: String,
     pub observaciones: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateListaNegraInput {
     pub motivo_bloqueo: Option<String>,
@@ -49,10 +55,10 @@ pub struct UpdateListaNegraInput {
 }
 
 // ==========================================
-// DTOs de salida (Response/ViewModel)
+// DTOs DE SALIDA
 // ==========================================
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListaNegraResponse {
     pub id: String,
@@ -69,15 +75,14 @@ pub struct ListaNegraResponse {
     pub is_active: bool,
     pub es_bloqueo_permanente: bool,
     pub dias_transcurridos: i64,
-    pub empresa_nombre: Option<String>, // Si tiene contratista_id
+    pub empresa_nombre: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
 
 impl From<ListaNegra> for ListaNegraResponse {
     fn from(ln: ListaNegra) -> Self {
-        let nombre = ln.nombre.clone().unwrap_or_default();
-        let apellido = ln.apellido.clone().unwrap_or_default();
+        let nombre_completo = format!("{} {}", ln.nombre, ln.apellido).trim().to_string();
         let es_bloqueo_permanente = ln.fecha_fin_bloqueo.is_none();
         
         let fecha_inicio = NaiveDateTime::parse_from_str(&ln.fecha_inicio_bloqueo, "%Y-%m-%d %H:%M:%S")
@@ -89,9 +94,9 @@ impl From<ListaNegra> for ListaNegraResponse {
             id: ln.id,
             contratista_id: ln.contratista_id,
             cedula: ln.cedula,
-            nombre: nombre.clone(),
-            apellido: apellido.clone(),
-            nombre_completo: format!("{} {}", nombre, apellido).trim().to_string(),
+            nombre: ln.nombre.clone(),
+            apellido: ln.apellido.clone(),
+            nombre_completo,
             motivo_bloqueo: ln.motivo_bloqueo,
             fecha_inicio_bloqueo: ln.fecha_inicio_bloqueo,
             fecha_fin_bloqueo: ln.fecha_fin_bloqueo,
@@ -100,14 +105,14 @@ impl From<ListaNegra> for ListaNegraResponse {
             is_active: ln.is_active,
             es_bloqueo_permanente,
             dias_transcurridos,
-            empresa_nombre: None, // Se llena en el comando con JOIN
+            empresa_nombre: None, // Se llena en el servicio
             created_at: ln.created_at,
             updated_at: ln.updated_at,
         }
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListaNegraListResponse {
     pub bloqueados: Vec<ListaNegraResponse>,
@@ -117,7 +122,7 @@ pub struct ListaNegraListResponse {
     pub temporales: usize,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockCheckResponse {
     pub is_blocked: bool,
@@ -125,94 +130,4 @@ pub struct BlockCheckResponse {
     pub bloqueado_desde: Option<String>,
     pub bloqueado_hasta: Option<String>,
     pub bloqueado_por: Option<String>,
-}
-
-// ==========================================
-// Validaciones de dominio
-// ==========================================
-
-pub mod validaciones {
-    use super::*;
-    use chrono::NaiveDateTime;
-    
-    pub fn validar_cedula(cedula: &str) -> Result<(), String> {
-        let limpia = cedula.trim();
-        
-        if limpia.is_empty() {
-            return Err("La cédula no puede estar vacía".to_string());
-        }
-        
-        if !limpia.chars().all(|c| c.is_numeric() || c == '-') {
-            return Err("La cédula solo puede contener números y guiones".to_string());
-        }
-        
-        if limpia.len() < 7 || limpia.len() > 20 {
-            return Err("La cédula debe tener entre 7 y 20 caracteres".to_string());
-        }
-        
-        Ok(())
-    }
-    
-    pub fn validar_nombre(nombre: &str) -> Result<(), String> {
-        let limpio = nombre.trim();
-        
-        if limpio.is_empty() {
-            return Err("El nombre no puede estar vacío".to_string());
-        }
-        
-        if limpio.len() > 50 {
-            return Err("El nombre no puede exceder 50 caracteres".to_string());
-        }
-        
-        Ok(())
-    }
-    
-    pub fn validar_motivo(motivo: &str) -> Result<(), String> {
-        let limpio = motivo.trim();
-        
-        if limpio.is_empty() {
-            return Err("Debe especificar un motivo de bloqueo".to_string());
-        }
-        
-        if limpio.len() > 500 {
-            return Err("El motivo no puede exceder 500 caracteres".to_string());
-        }
-        
-        Ok(())
-    }
-    
-    pub fn validar_fecha_fin(fecha_str: &str) -> Result<NaiveDateTime, String> {
-        NaiveDateTime::parse_from_str(fecha_str, "%Y-%m-%d %H:%M:%S")
-            .map_err(|_| "Formato de fecha inválido. Use YYYY-MM-DD HH:MM:SS".to_string())
-    }
-    
-    pub fn validar_add_input(input: &AddToListaNegraInput) -> Result<(), String> {
-        // Si tiene contratista_id, no necesita cédula/nombre/apellido
-        if input.contratista_id.is_some() {
-            validaciones::validar_motivo(&input.motivo_bloqueo)?;
-            return Ok(());
-        }
-        
-        // Si NO tiene contratista_id, requiere cédula + nombre + apellido
-        let cedula = input.cedula.as_ref()
-            .ok_or("Debe proporcionar cédula si no especifica contratista_id")?;
-        validar_cedula(cedula)?;
-        
-        let nombre = input.nombre.as_ref()
-            .ok_or("Debe proporcionar nombre si no especifica contratista_id")?;
-        validar_nombre(nombre)?;
-        
-        let apellido = input.apellido.as_ref()
-            .ok_or("Debe proporcionar apellido si no especifica contratista_id")?;
-        validar_nombre(apellido)?;
-        
-        validaciones::validar_motivo(&input.motivo_bloqueo)?;
-        
-        // Validar fecha_fin si existe
-        if let Some(ref fecha) = input.fecha_fin_bloqueo {
-            validar_fecha_fin(fecha)?;
-        }
-        
-        Ok(())
-    }
 }
