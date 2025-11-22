@@ -1,7 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { fly, fade } from "svelte/transition";
+  import { fly, fade, slide } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  import { tweened } from "svelte/motion";
   import { submitFetchActiveContratistas } from "$lib/logic/contratista/submitFetchContratistas";
+  import { submitFetchAllListaNegra } from "$lib/logic/listaNegra/submitFetchListaNegra";
   import { listaNegra } from "$lib/api/listaNegra";
   import { currentUser } from "$lib/stores/auth";
   import type { BlockCheckResponse } from "$lib/types/listaNegra";
@@ -71,15 +74,45 @@
   // --- CARGA INICIAL ---
   onMount(async () => {
     loadingContratistas = true;
-    const resultado = await submitFetchActiveContratistas();
-    if (resultado.ok) {
-      contratistas = resultado.contratistas.map((c) => ({
+
+    // Ejecutar ambas peticiones en paralelo
+    const [resContratistas, resListaNegra] = await Promise.all([
+      submitFetchActiveContratistas(),
+      submitFetchAllListaNegra(),
+    ]);
+
+    let tempContratistas: typeof contratistas = [];
+
+    // 1. Procesar contratistas activos
+    if (resContratistas.ok) {
+      tempContratistas = resContratistas.contratistas.map((c) => ({
         id: c.id,
         nombreCompleto: `${c.nombre} ${c.apellido}`,
         cedula: c.cedula,
         empresaNombre: c.empresaNombre,
       }));
     }
+
+    // 2. Procesar lista negra (para incluir manuales o inactivos que estén bloqueados)
+    if (resListaNegra.ok) {
+      // Crear un Set de cédulas ya existentes para evitar duplicados
+      const cedulasExistentes = new Set(tempContratistas.map((c) => c.cedula));
+
+      const bloqueadosAdicionales = resListaNegra.data.bloqueados
+        .filter((b) => !cedulasExistentes.has(b.cedula))
+        .map((b) => ({
+          // Si tiene contratistaId lo usamos, si no, usamos el ID del bloqueo como fallback
+          // Nota: Para desbloquear lo importante es la cédula que dispara el chequeo
+          id: b.contratistaId || b.id,
+          nombreCompleto: b.nombreCompleto || `${b.nombre} ${b.apellido}`,
+          cedula: b.cedula,
+          empresaNombre: b.empresaNombre || "Bloqueo Manual/Externo",
+        }));
+
+      tempContratistas = [...tempContratistas, ...bloqueadosAdicionales];
+    }
+
+    contratistas = tempContratistas;
     loadingContratistas = false;
   });
 
@@ -138,10 +171,12 @@
     checkingBlock = false;
   }
 
-  function clearSelection() {
+  function clearSelection(keepSearchTerm = false) {
     selectedContratista = null;
     contratistaId = "";
-    searchTerm = "";
+    if (!keepSearchTerm) {
+      searchTerm = "";
+    }
     blockInfo = null;
     bloqueadoId = null;
     motivoBloqueo = ""; // Limpiar campos de acción al deseleccionar
@@ -210,6 +245,20 @@
     highlightedIndex = -1;
   }
 
+  // Limpiar selección si se borra el término de búsqueda
+  $: if (searchTerm === "" && selectedContratista) {
+    clearSelection(true);
+  }
+
+  // Mostrar dropdown automáticamente cuando el usuario está buscando activamente
+  $: if (
+    searchTerm.trim() &&
+    !selectedContratista &&
+    filteredContratistas.length > 0
+  ) {
+    showDropdown = true;
+  }
+
   function handleSubmit(e: Event) {
     e.preventDefault();
 
@@ -246,6 +295,28 @@
         cedula.trim() &&
         nombre.trim() &&
         apellido.trim()));
+
+  // --- ANIMACIÓN DE ALTURA ---
+  const containerHeight = tweened(300, {
+    duration: 400,
+    easing: cubicOut,
+  });
+
+  function resizeObserver(node: HTMLElement) {
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        containerHeight.set(entry.contentRect.height);
+      }
+    });
+
+    ro.observe(node);
+
+    return {
+      destroy() {
+        ro.disconnect();
+      },
+    };
+  }
 </script>
 
 <div class="flex min-h-full items-center justify-center p-6">
@@ -276,7 +347,7 @@
             Agregar a Lista Negra
           </h2>
           <p class="mt-1 text-sm text-gray-400">
-            Bloquear acceso a una persona del sistema.
+            Bloquear acceso a las instalaciones.
           </p>
         </div>
       </div>
@@ -345,125 +416,40 @@
         </div>
       </div>
 
-      <div class="space-y-5">
-        {#if modoRegistro === "existente"}
-          <div
-            class="space-y-5"
-            in:fly={{ x: -20, duration: 300 }}
-            out:fade={{ duration: 200 }}
-          >
-            <div class="space-y-1.5">
-              <label
-                for="searchContratista"
-                class="text-sm font-medium text-gray-300"
-                >Buscar Contratista</label
-              >
-              <div class="relative">
-                <input
-                  id="searchContratista"
-                  type="text"
-                  bind:value={searchTerm}
-                  on:focus={() => (showDropdown = true)}
-                  on:blur={() => setTimeout(() => (showDropdown = false), 200)}
-                  on:keydown={handleKeyDown}
-                  disabled={loading || loadingContratistas}
-                  placeholder="Buscar por nombre o cédula..."
-                  class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 pr-10 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none disabled:opacity-50"
-                />
-
-                <div
-                  class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400"
+      <div class="transition-all" style="height: {$containerHeight}px">
+        <div class="grid grid-cols-1 grid-rows-1" use:resizeObserver>
+          {#if modoRegistro === "existente"}
+            <div
+              class="space-y-5 col-start-1 row-start-1"
+              in:fly={{ x: -20, duration: 400, delay: 100, easing: cubicOut }}
+              out:fade={{ duration: 300, easing: cubicOut }}
+            >
+              <div class="space-y-1.5">
+                <label
+                  for="searchContratista"
+                  class="text-sm font-medium text-gray-300"
+                  >Buscar Contratista</label
                 >
-                  {#if loadingContratistas}
-                    <svg
-                      class="animate-spin h-4 w-4 text-red-500"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
-                      ></circle>
-                      <path
-                        class="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                  {:else}
-                    <svg
-                      class="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                      />
-                    </svg>
-                  {/if}
-                </div>
+                <div class="relative">
+                  <input
+                    id="searchContratista"
+                    type="text"
+                    bind:value={searchTerm}
+                    on:focus={() => (showDropdown = true)}
+                    on:blur={() =>
+                      setTimeout(() => (showDropdown = false), 200)}
+                    on:keydown={handleKeyDown}
+                    disabled={loading || loadingContratistas}
+                    placeholder="Buscar por nombre o cédula..."
+                    class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 pr-10 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none disabled:opacity-50"
+                  />
 
-                {#if showDropdown && searchTerm.trim() && filteredContratistas.length > 0}
                   <div
-                    class="absolute z-10 mt-1 w-full rounded-lg border border-white/10 bg-[#2d2d2d] shadow-xl max-h-60 overflow-y-auto"
+                    class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400"
                   >
-                    {#each filteredContratistas as contratista, index}
-                      <button
-                        type="button"
-                        on:mousedown|preventDefault={() =>
-                          selectContratista(contratista)}
-                        on:mouseenter={() => (highlightedIndex = index)}
-                        class="w-full px-3 py-2.5 text-left border-b border-white/5 last:border-b-0 transition-colors {highlightedIndex ===
-                        index
-                          ? 'bg-red-500/10'
-                          : 'hover:bg-[#3d3d3d]'}"
-                      >
-                        <div class="text-sm text-white font-medium">
-                          {contratista.nombreCompleto}
-                        </div>
-                        <div class="text-xs text-gray-400">
-                          Cédula: {contratista.cedula}
-                        </div>
-                        {#if contratista.empresaNombre}
-                          <div class="text-xs text-gray-500">
-                            {contratista.empresaNombre}
-                          </div>
-                        {/if}
-                      </button>
-                    {/each}
-                  </div>
-                {/if}
-
-                {#if showDropdown && searchTerm.trim() && filteredContratistas.length === 0}
-                  <div
-                    class="absolute z-10 mt-1 w-full rounded-lg border border-white/10 bg-[#2d2d2d] shadow-xl p-3"
-                  >
-                    <p class="text-sm text-gray-400 text-center">
-                      No se encontraron contratistas
-                    </p>
-                  </div>
-                {/if}
-              </div>
-            </div>
-
-            {#if selectedContratista}
-              <div class="space-y-5" in:fly={{ y: -10, duration: 300 }}>
-                {#if checkingBlock}
-                  <div
-                    class="rounded-lg bg-gray-500/10 border border-gray-500/20 p-4"
-                  >
-                    <div class="flex items-center gap-2">
+                    {#if loadingContratistas}
                       <svg
-                        class="animate-spin h-5 w-5 text-gray-400"
+                        class="animate-spin h-4 w-4 text-red-500"
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -482,18 +468,9 @@
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      <span class="text-sm text-gray-300"
-                        >Verificando estado...</span
-                      >
-                    </div>
-                  </div>
-                {:else if blockInfo?.isBlocked}
-                  <div
-                    class="rounded-lg bg-red-500/10 border border-red-500/20 p-4"
-                  >
-                    <div class="flex items-start gap-3">
+                    {:else}
                       <svg
-                        class="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5"
+                        class="h-4 w-4"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -502,68 +479,96 @@
                           stroke-linecap="round"
                           stroke-linejoin="round"
                           stroke-width="2"
-                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                         />
                       </svg>
-                      <div class="flex-1">
-                        <h4 class="text-sm font-semibold text-red-200 mb-2">
-                          ⚠️ Persona Ya Bloqueada
-                        </h4>
-                        <div class="space-y-1.5 text-sm">
-                          <div class="flex items-center gap-2">
-                            <span class="text-gray-400">Nombre:</span>
-                            <span class="text-white font-medium"
-                              >{selectedContratista.nombreCompleto}</span
-                            >
+                    {/if}
+                  </div>
+
+                  {#if showDropdown && searchTerm.trim() && filteredContratistas.length > 0}
+                    <div
+                      transition:slide={{ duration: 250, easing: cubicOut }}
+                      class="absolute z-10 mt-1 w-full rounded-lg border border-white/10 bg-[#2d2d2d] shadow-xl max-h-60 overflow-y-auto"
+                    >
+                      {#each filteredContratistas as contratista, index}
+                        <button
+                          type="button"
+                          on:mousedown|preventDefault={() =>
+                            selectContratista(contratista)}
+                          on:mouseenter={() => (highlightedIndex = index)}
+                          class="w-full px-3 py-2.5 text-left border-b border-white/5 last:border-b-0 transition-colors {highlightedIndex ===
+                          index
+                            ? 'bg-red-500/10'
+                            : 'hover:bg-[#3d3d3d]'}"
+                        >
+                          <div class="text-sm text-white font-medium">
+                            {contratista.nombreCompleto}
                           </div>
-                          <div class="flex items-center gap-2">
-                            <span class="text-gray-400">Cédula:</span>
-                            <span class="text-white"
-                              >{selectedContratista.cedula}</span
-                            >
+                          <div class="text-xs text-gray-400">
+                            Cédula: {contratista.cedula}
                           </div>
-                          {#if selectedContratista.empresaNombre}
-                            <div class="flex items-center gap-2">
-                              <span class="text-gray-400">Empresa:</span>
-                              <span class="text-white"
-                                >{selectedContratista.empresaNombre}</span
-                              >
+                          {#if contratista.empresaNombre}
+                            <div class="text-xs text-gray-500">
+                              {contratista.empresaNombre}
                             </div>
                           {/if}
-                          <div class="pt-2 mt-2 border-t border-red-500/20">
-                            <div class="flex items-start gap-2">
-                              <span class="text-gray-400">Motivo:</span>
-                              <span class="text-red-200"
-                                >{blockInfo.motivo}</span
-                              >
-                            </div>
-                            <div class="flex items-center gap-2 mt-1">
-                              <span class="text-gray-400">Bloqueado por:</span>
-                              <span class="text-red-200"
-                                >{blockInfo.bloqueadoPor}</span
-                              >
-                            </div>
-                            {#if blockInfo.bloqueadoDesde}
-                              <div class="flex items-center gap-2 mt-1">
-                                <span class="text-gray-400">Desde:</span>
-                                <span class="text-red-200"
-                                  >{new Date(
-                                    blockInfo.bloqueadoDesde,
-                                  ).toLocaleDateString("es-ES")}</span
-                                >
-                              </div>
-                            {/if}
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        on:click={clearSelection}
-                        class="text-red-400 hover:text-red-300 transition-colors"
-                        title="Cambiar selección"
-                      >
+                        </button>
+                      {/each}
+                    </div>
+                  {/if}
+
+                  {#if showDropdown && searchTerm.trim() && filteredContratistas.length === 0}
+                    <div
+                      transition:slide={{ duration: 250, easing: cubicOut }}
+                      class="absolute z-10 mt-1 w-full rounded-lg border border-white/10 bg-[#2d2d2d] shadow-xl p-3"
+                    >
+                      <p class="text-sm text-gray-400 text-center">
+                        No se encontraron contratistas
+                      </p>
+                    </div>
+                  {/if}
+                </div>
+              </div>
+
+              {#if selectedContratista}
+                <div class="space-y-5" in:fly={{ y: -10, duration: 300 }}>
+                  {#if checkingBlock}
+                    <div
+                      class="rounded-lg bg-gray-500/10 border border-gray-500/20 p-4"
+                    >
+                      <div class="flex items-center gap-2">
                         <svg
-                          class="h-5 w-5"
+                          class="animate-spin h-5 w-5 text-gray-400"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"
+                          ></circle>
+                          <path
+                            class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        <span class="text-sm text-gray-300"
+                          >Verificando estado...</span
+                        >
+                      </div>
+                    </div>
+                  {:else if blockInfo?.isBlocked}
+                    <div
+                      class="rounded-lg bg-red-500/10 border border-red-500/20 p-4"
+                    >
+                      <div class="flex items-start gap-3">
+                        <svg
+                          class="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -572,54 +577,69 @@
                             stroke-linecap="round"
                             stroke-linejoin="round"
                             stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                           />
                         </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="space-y-1.5">
-                    <label
-                      for="motivoBloqueo"
-                      class="text-sm font-medium text-gray-300"
-                      >Motivo del Desbloqueo <span class="text-red-500">*</span
-                      ></label
-                    >
-                    <textarea
-                      id="motivoBloqueo"
-                      bind:value={motivoBloqueo}
-                      rows="3"
-                      disabled={loading}
-                      placeholder="Detalle la razón de la desactivación del bloqueo (ej: Cumplió sanción, revisión de caso, etc.)"
-                      class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all resize-y"
-                    ></textarea>
-                  </div>
-
-                  <div class="space-y-1.5">
-                    <label
-                      for="observaciones"
-                      class="text-sm font-medium text-gray-300"
-                      >Observaciones de Desbloqueo (Opcional)</label
-                    >
-                    <textarea
-                      id="observaciones"
-                      bind:value={observaciones}
-                      rows="2"
-                      disabled={loading}
-                      placeholder="Notas internas sobre el desbloqueo."
-                      class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all resize-y"
-                    ></textarea>
-                  </div>
-                {:else}
-                  <div
-                    class="rounded-lg bg-blue-500/10 border border-blue-500/20 p-4"
-                  >
-                    <div class="flex items-start justify-between">
-                      <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-2">
+                        <div class="flex-1">
+                          <h4 class="text-sm font-semibold text-red-200 mb-2">
+                            ⚠️ Persona Ya Bloqueada
+                          </h4>
+                          <div class="space-y-1.5 text-sm">
+                            <div class="flex items-center gap-2">
+                              <span class="text-gray-400">Nombre:</span>
+                              <span class="text-white font-medium"
+                                >{selectedContratista.nombreCompleto}</span
+                              >
+                            </div>
+                            <div class="flex items-center gap-2">
+                              <span class="text-gray-400">Cédula:</span>
+                              <span class="text-white"
+                                >{selectedContratista.cedula}</span
+                              >
+                            </div>
+                            {#if selectedContratista.empresaNombre}
+                              <div class="flex items-center gap-2">
+                                <span class="text-gray-400">Empresa:</span>
+                                <span class="text-white"
+                                  >{selectedContratista.empresaNombre}</span
+                                >
+                              </div>
+                            {/if}
+                            <div class="pt-2 mt-2 border-t border-red-500/20">
+                              <div class="flex items-start gap-2">
+                                <span class="text-gray-400">Motivo:</span>
+                                <span class="text-red-200"
+                                  >{blockInfo.motivo}</span
+                                >
+                              </div>
+                              <div class="flex items-center gap-2 mt-1">
+                                <span class="text-gray-400">Bloqueado por:</span
+                                >
+                                <span class="text-red-200"
+                                  >{blockInfo.bloqueadoPor}</span
+                                >
+                              </div>
+                              {#if blockInfo.bloqueadoDesde}
+                                <div class="flex items-center gap-2 mt-1">
+                                  <span class="text-gray-400">Desde:</span>
+                                  <span class="text-red-200"
+                                    >{new Date(
+                                      blockInfo.bloqueadoDesde,
+                                    ).toLocaleDateString("es-ES")}</span
+                                  >
+                                </div>
+                              {/if}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          on:click={() => clearSelection()}
+                          class="text-red-400 hover:text-red-300 transition-colors"
+                          title="Cambiar selección"
+                        >
                           <svg
-                            class="h-5 w-5 text-blue-400"
+                            class="h-5 w-5"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -628,182 +648,244 @@
                               stroke-linecap="round"
                               stroke-linejoin="round"
                               stroke-width="2"
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                              d="M6 18L18 6M6 6l12 12"
                             />
                           </svg>
-                          <h4 class="text-sm font-semibold text-blue-200">
-                            Contratista Seleccionado (No Bloqueado)
-                          </h4>
-                        </div>
-                        <div class="space-y-1.5 text-sm">
-                          <div class="flex items-center gap-2">
-                            <span class="text-gray-400">Nombre:</span>
-                            <span class="text-white font-medium"
-                              >{selectedContratista.nombreCompleto}</span
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                      <label
+                        for="motivoBloqueo"
+                        class="text-sm font-medium text-gray-300"
+                        >Motivo del Desbloqueo <span class="text-red-500"
+                          >*</span
+                        ></label
+                      >
+                      <textarea
+                        id="motivoBloqueo"
+                        bind:value={motivoBloqueo}
+                        rows="3"
+                        disabled={loading}
+                        placeholder="Detalle la razón de la desactivación del bloqueo (ej: Cumplió sanción, revisión de caso, etc.)"
+                        class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all resize-y"
+                      ></textarea>
+                    </div>
+
+                    <div class="space-y-1.5">
+                      <label
+                        for="observaciones"
+                        class="text-sm font-medium text-gray-300"
+                        >Observaciones de Desbloqueo (Opcional)</label
+                      >
+                      <textarea
+                        id="observaciones"
+                        bind:value={observaciones}
+                        rows="2"
+                        disabled={loading}
+                        placeholder="Notas internas sobre el desbloqueo."
+                        class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all resize-y"
+                      ></textarea>
+                    </div>
+                  {:else}
+                    <div
+                      class="rounded-lg bg-blue-500/10 border border-blue-500/20 p-4"
+                    >
+                      <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                          <div class="flex items-center gap-2 mb-2">
+                            <svg
+                              class="h-5 w-5 text-blue-400"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
                             >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                              />
+                            </svg>
+                            <h4 class="text-sm font-semibold text-blue-200">
+                              Contratista Seleccionado (No Bloqueado)
+                            </h4>
                           </div>
-                          <div class="flex items-center gap-2">
-                            <span class="text-gray-400">Cédula:</span>
-                            <span class="text-white"
-                              >{selectedContratista.cedula}</span
-                            >
-                          </div>
-                          {#if selectedContratista.empresaNombre}
+                          <div class="space-y-1.5 text-sm">
                             <div class="flex items-center gap-2">
-                              <span class="text-gray-400">Empresa:</span>
-                              <span class="text-white"
-                                >{selectedContratista.empresaNombre}</span
+                              <span class="text-gray-400">Nombre:</span>
+                              <span class="text-white font-medium"
+                                >{selectedContratista.nombreCompleto}</span
                               >
                             </div>
-                          {/if}
+                            <div class="flex items-center gap-2">
+                              <span class="text-gray-400">Cédula:</span>
+                              <span class="text-white"
+                                >{selectedContratista.cedula}</span
+                              >
+                            </div>
+                            {#if selectedContratista.empresaNombre}
+                              <div class="flex items-center gap-2">
+                                <span class="text-gray-400">Empresa:</span>
+                                <span class="text-white"
+                                  >{selectedContratista.empresaNombre}</span
+                                >
+                              </div>
+                            {/if}
+                          </div>
                         </div>
-                      </div>
-                      <button
-                        type="button"
-                        on:click={clearSelection}
-                        class="text-blue-400 hover:text-blue-300 transition-colors"
-                        title="Cambiar selección"
-                      >
-                        <svg
-                          class="h-5 w-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                        <button
+                          type="button"
+                          on:click={() => clearSelection()}
+                          class="text-blue-400 hover:text-blue-300 transition-colors"
+                          title="Cambiar selección"
                         >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
+                          <svg
+                            class="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  <div class="space-y-1.5">
-                    <label
-                      for="motivoBloqueo"
-                      class="text-sm font-medium text-gray-300"
-                      >Motivo del Bloqueo <span class="text-red-500">*</span
-                      ></label
-                    >
-                    <textarea
-                      id="motivoBloqueo"
-                      bind:value={motivoBloqueo}
-                      rows="3"
-                      disabled={loading}
-                      placeholder="Detalle la razón del bloqueo (ej: Agresión verbal a personal de seguridad, incumplimiento grave de normas, etc.)"
-                      class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all resize-y"
-                    ></textarea>
-                  </div>
+                    <div class="space-y-1.5">
+                      <label
+                        for="motivoBloqueo"
+                        class="text-sm font-medium text-gray-300"
+                        >Motivo del Bloqueo <span class="text-red-500">*</span
+                        ></label
+                      >
+                      <textarea
+                        id="motivoBloqueo"
+                        bind:value={motivoBloqueo}
+                        rows="3"
+                        disabled={loading}
+                        placeholder="Detalle la razón del bloqueo (ej: Agresión verbal a personal de seguridad, incumplimiento grave de normas, etc.)"
+                        class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all resize-y"
+                      ></textarea>
+                    </div>
 
-                  <div class="space-y-1.5">
-                    <label
-                      for="observaciones"
-                      class="text-sm font-medium text-gray-300"
-                      >Observaciones Adicionales (Opcional)</label
-                    >
-                    <textarea
-                      id="observaciones"
-                      bind:value={observaciones}
-                      rows="2"
-                      disabled={loading}
-                      placeholder="Notas internas sobre el incidente."
-                      class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all resize-y"
-                    ></textarea>
-                  </div>
-                {/if}
-              </div>
-            {/if}
-          </div>
-        {/if}
-
-        {#if modoRegistro === "manual"}
-          <div
-            class="space-y-5"
-            in:fly={{ x: -20, duration: 300 }}
-            out:fade={{ duration: 200 }}
-          >
-            <div class="space-y-1.5">
-              <label for="cedula" class="text-sm font-medium text-gray-300"
-                >Cédula</label
-              >
-              <input
-                id="cedula"
-                type="text"
-                bind:value={cedula}
-                placeholder="1-2345-6789"
-                disabled={loading}
-                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all"
-              />
+                    <div class="space-y-1.5">
+                      <label
+                        for="observaciones"
+                        class="text-sm font-medium text-gray-300"
+                        >Observaciones Adicionales (Opcional)</label
+                      >
+                      <textarea
+                        id="observaciones"
+                        bind:value={observaciones}
+                        rows="2"
+                        disabled={loading}
+                        placeholder="Notas internas sobre el incidente."
+                        class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all resize-y"
+                      ></textarea>
+                    </div>
+                  {/if}
+                </div>
+              {/if}
             </div>
+          {/if}
 
-            <div class="grid grid-cols-2 gap-4">
+          {#if modoRegistro === "manual"}
+            <div
+              class="space-y-5 col-start-1 row-start-1"
+              in:fly={{ x: 20, duration: 400, delay: 100, easing: cubicOut }}
+              out:fade={{ duration: 300, easing: cubicOut }}
+            >
               <div class="space-y-1.5">
-                <label for="nombre" class="text-sm font-medium text-gray-300"
-                  >Nombre</label
+                <label for="cedula" class="text-sm font-medium text-gray-300"
+                  >Cédula</label
                 >
                 <input
-                  id="nombre"
+                  id="cedula"
                   type="text"
-                  bind:value={nombre}
-                  placeholder="Juan"
+                  bind:value={cedula}
+                  placeholder="1-2345-6789"
                   disabled={loading}
-                  class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none"
+                  class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all"
                 />
               </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1.5">
+                  <label for="nombre" class="text-sm font-medium text-gray-300"
+                    >Nombre</label
+                  >
+                  <input
+                    id="nombre"
+                    type="text"
+                    bind:value={nombre}
+                    placeholder="Juan"
+                    disabled={loading}
+                    class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <label
+                    for="apellido"
+                    class="text-sm font-medium text-gray-300">Apellido</label
+                  >
+                  <input
+                    id="apellido"
+                    type="text"
+                    bind:value={apellido}
+                    placeholder="Pérez"
+                    disabled={loading}
+                    class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
               <div class="space-y-1.5">
-                <label for="apellido" class="text-sm font-medium text-gray-300"
-                  >Apellido</label
+                <label
+                  for="motivoBloqueo"
+                  class="text-sm font-medium text-gray-300"
+                  >Motivo del Bloqueo <span class="text-red-500">*</span></label
                 >
-                <input
-                  id="apellido"
-                  type="text"
-                  bind:value={apellido}
-                  placeholder="Pérez"
+                <textarea
+                  id="motivoBloqueo"
+                  bind:value={motivoBloqueo}
+                  rows="3"
                   disabled={loading}
-                  class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none"
-                />
+                  placeholder="Detalle la razón del bloqueo (ej: Agresión verbal a personal de seguridad, incumplimiento grave de normas, etc.)"
+                  class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all resize-y"
+                ></textarea>
+              </div>
+
+              <div class="space-y-1.5">
+                <label
+                  for="observaciones"
+                  class="text-sm font-medium text-gray-300"
+                  >Observaciones Adicionales (Opcional)</label
+                >
+                <textarea
+                  id="observaciones"
+                  bind:value={observaciones}
+                  rows="2"
+                  disabled={loading}
+                  placeholder="Notas internas sobre el incidente."
+                  class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all resize-y"
+                ></textarea>
               </div>
             </div>
-
-            <div class="space-y-1.5">
-              <label
-                for="motivoBloqueo"
-                class="text-sm font-medium text-gray-300"
-                >Motivo del Bloqueo <span class="text-red-500">*</span></label
-              >
-              <textarea
-                id="motivoBloqueo"
-                bind:value={motivoBloqueo}
-                rows="3"
-                disabled={loading}
-                placeholder="Detalle la razón del bloqueo (ej: Agresión verbal a personal de seguridad, incumplimiento grave de normas, etc.)"
-                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all resize-y"
-              ></textarea>
-            </div>
-
-            <div class="space-y-1.5">
-              <label
-                for="observaciones"
-                class="text-sm font-medium text-gray-300"
-                >Observaciones Adicionales (Opcional)</label
-              >
-              <textarea
-                id="observaciones"
-                bind:value={observaciones}
-                rows="2"
-                disabled={loading}
-                placeholder="Notas internas sobre el incidente."
-                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none transition-all resize-y"
-              ></textarea>
-            </div>
-          </div>
-        {/if}
+          {/if}
+        </div>
       </div>
 
-      <div class="mt-8 flex justify-end gap-3">
+      <div
+        class="mt-8 flex justify-end gap-3"
+        in:fade={{ duration: 300, delay: 300, easing: cubicOut }}
+      >
         {#if selectedContratista && blockInfo?.isBlocked && !checkingBlock}
           <button
             type="button"

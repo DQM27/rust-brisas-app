@@ -14,11 +14,13 @@ export type SubmitRemoveFromListaNegraResult =
  * 2. Parsea errores si falló
  */
 export async function submitRemoveFromListaNegra(
-  id: string
+  id: string,
+  motivo: string,
+  observaciones?: string
 ): Promise<SubmitRemoveFromListaNegraResult> {
   // Intentar remover
   try {
-    const bloqueado = await removeFromListaNegra(id);
+    const bloqueado = await removeFromListaNegra(id, motivo, observaciones);
     return { ok: true, bloqueado };
   } catch (err: any) {
     // Parsear error
