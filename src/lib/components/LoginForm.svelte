@@ -1,112 +1,76 @@
 <script lang="ts">
-  export interface Props {
+  interface Props {
     loading?: boolean;
-    onSubmit: (data: {
-      cedula: string;
-      nombre: string;
-      apellido: string;
-      empresaId: string;
-      fechaVencimientoPraind: string;
-    }) => void;
+    onSubmit: (data: { email: string; password: string }) => void;
   }
 
   let { loading = false, onSubmit }: Props = $props();
 
-  let cedula = $state("");
-  let nombre = $state("");
-  let apellido = $state("");
-  let empresaId = $state("");
-  let fechaVencimientoPraind = $state("");
+  let email = $state('');
+  let password = $state('');
 
   function handleSubmit(event: Event) {
-    event.preventDefault();
-    onSubmit({ cedula, nombre, apellido, empresaId, fechaVencimientoPraind });
+    event.preventDefault(); 
+    onSubmit({ email, password });
   }
 
   export function reset() {
-    cedula = "";
-    nombre = "";
-    apellido = "";
-    empresaId = "";
-    fechaVencimientoPraind = "";
+    email = '';
+    password = '';
   }
 </script>
 
-<form
-  on:submit={handleSubmit}
-  class="w-full max-w-lg mx-auto mt-8 p-6 bg-gray-800 rounded-lg shadow-lg flex flex-col gap-4"
->
-  <h2 class="text-xl font-semibold text-white text-center mb-4">Registrar Contratista</h2>
-
-  <div class="flex flex-col gap-1">
-    <label for="cedula" class="text-sm font-medium text-gray-300">Cédula</label>
-    <input
-      id="cedula"
-      type="text"
-      bind:value={cedula}
-      placeholder="1-2345-6789"
-      disabled={loading}
-      required
-      class="px-3 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-    />
-  </div>
-
-  <div class="flex flex-col gap-1">
-    <label for="nombre" class="text-sm font-medium text-gray-300">Nombre</label>
-    <input
-      id="nombre"
-      type="text"
-      bind:value={nombre}
-      placeholder="Juan"
-      disabled={loading}
-      required
-      class="px-3 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-    />
-  </div>
-
-  <div class="flex flex-col gap-1">
-    <label for="apellido" class="text-sm font-medium text-gray-300">Apellido</label>
-    <input
-      id="apellido"
-      type="text"
-      bind:value={apellido}
-      placeholder="Pérez"
-      disabled={loading}
-      required
-      class="px-3 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-    />
-  </div>
-
-  <div class="flex flex-col gap-1">
-    <label for="empresa" class="text-sm font-medium text-gray-300">Empresa</label>
-    <input
-      id="empresa"
-      type="text"
-      bind:value={empresaId}
-      placeholder="ID Empresa"
-      disabled={loading}
-      required
-      class="px-3 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-    />
-  </div>
-
-  <div class="flex flex-col gap-1">
-    <label for="fecha" class="text-sm font-medium text-gray-300">Fecha PRAIND</label>
-    <input
-      id="fecha"
-      type="date"
-      bind:value={fechaVencimientoPraind}
-      disabled={loading}
-      required
-      class="px-3 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-    />
-  </div>
-
-  <button
-    type="submit"
-    disabled={loading}
-    class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+<div class="flex h-screen w-full items-center justify-center bg-[#1e1e1e]">
+  <form 
+    onsubmit={handleSubmit} 
+    class="flex w-full max-w-md flex-col gap-4 rounded-lg bg-[#252526] p-8 shadow-xl"
   >
-    {loading ? "Procesando..." : "Registrar"}
-  </button>
-</form>
+    <h1 class="mb-2 text-center text-2xl font-semibold text-gray-200">
+      Iniciar Sesión
+    </h1>
+
+    <div class="flex flex-col gap-1">
+      <label for="email" class="text-sm font-medium text-gray-300">
+        Email
+      </label>
+      <input
+        id="email"
+        type="email"
+        bind:value={email}
+        placeholder="correo@ejemplo.com"
+        disabled={loading}
+        required
+        class="rounded border border-[#3c3c3c] bg-[#1e1e1e] px-3 py-2 text-gray-200 
+               placeholder:text-gray-500 focus:border-[#007acc] focus:outline-none 
+               focus:ring-1 focus:ring-[#007acc] disabled:opacity-60"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="password" class="text-sm font-medium text-gray-300">
+        Contraseña
+      </label>
+      <input
+        id="password"
+        type="password"
+        bind:value={password}
+        placeholder="••••••••"
+        disabled={loading}
+        required
+        class="rounded border border-[#3c3c3c] bg-[#1e1e1e] px-3 py-2 text-gray-200 
+               placeholder:text-gray-500 focus:border-[#007acc] focus:outline-none 
+               focus:ring-1 focus:ring-[#007acc] disabled:opacity-60"
+      />
+    </div>
+
+    <button
+      type="submit"
+      disabled={loading}
+      class="mt-2 rounded bg-[#007acc] px-4 py-2.5 font-medium text-white 
+             transition-colors hover:bg-[#005a9e] disabled:cursor-not-allowed 
+             disabled:opacity-60"
+    >
+      {loading ? 'Procesando...' : 'Entrar'}
+    </button>
+  </form>
+</div>
