@@ -52,7 +52,7 @@
   <!-- App Principal -->
   <div class="h-full bg-[#1e1e1e] relative">
 
-    <!-- Botón Supabase -->
+    <!-- Botón Supabase - MOVIDO AQUÍ DENTRO DEL BLOQUE AUTENTICADO -->
     <button
       onclick={openSupabaseTest}
       class="absolute top-2 right-2 z-50 px-3 py-1.5 bg-[#007acc] text-white text-xs rounded hover:bg-[#005a9e]"
@@ -60,7 +60,7 @@
       🧪 Probar Supabase
     </button>
 
-    <!-- NUEVO: Botón Contratista -->
+    <!-- Botón Contratista - MOVIDO AQUÍ DENTRO DEL BLOQUE AUTENTICADO -->
     <button
       onclick={openContratista}
       class="absolute top-2 right-40 z-50 px-3 py-1.5 bg-[#00cc7a] text-white text-xs rounded hover:bg-[#00995c]"
