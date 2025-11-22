@@ -277,12 +277,27 @@ pub async fn update(
     Ok(())
 }
 
-/// Desactiva un bloqueo (soft delete)
-pub async fn deactivate(pool: &SqlitePool, id: &str, updated_at: &str) -> Result<(), String> {
+/// Desactiva un bloqueo (soft delete) y actualiza el motivo/observaciones de salida
+pub async fn deactivate(
+    pool: &SqlitePool, 
+    id: &str, 
+    motivo: &str,             // <--- Nuevo: Motivo del desbloqueo
+    observacion: Option<&str>, // <--- Nuevo: Observaciones finales
+    updated_at: &str          // Se usará para updated_at y fecha_fin_bloqueo
+) -> Result<(), String> {
     sqlx::query(
-        "UPDATE lista_negra SET is_active = 0, updated_at = ? WHERE id = ?"
+        r#"UPDATE lista_negra SET 
+            is_active = 0, 
+            motivo_bloqueo = ?,      -- Sobreescribimos con el motivo de desbloqueo
+            observaciones = ?,       -- Guardamos la observación de desbloqueo
+            fecha_fin_bloqueo = ?,   -- Establecemos la fecha de fin real (ahora)
+            updated_at = ? 
+        WHERE id = ?"#
     )
-    .bind(updated_at)
+    .bind(motivo)
+    .bind(observacion)
+    .bind(updated_at) // fecha_fin_bloqueo
+    .bind(updated_at) // updated_at
     .bind(id)
     .execute(pool)
     .await
@@ -290,7 +305,6 @@ pub async fn deactivate(pool: &SqlitePool, id: &str, updated_at: &str) -> Result
     
     Ok(())
 }
-
 /// Elimina un bloqueo por ID (hard delete)
 pub async fn delete(pool: &SqlitePool, id: &str) -> Result<(), String> {
     sqlx::query("DELETE FROM lista_negra WHERE id = ?")

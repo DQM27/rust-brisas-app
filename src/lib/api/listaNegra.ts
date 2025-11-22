@@ -1,5 +1,4 @@
 // src/lib/api/listaNegra.ts
-
 import { invoke } from "@tauri-apps/api/core";
 import type { 
   ListaNegraResponse, 
@@ -22,9 +21,12 @@ export const listaNegra = {
     return await invoke('delete_lista_negra', { id });
   },
 
-  remove: async (id: string): Promise<ListaNegraResponse> => {
-    return await invoke('remove_from_lista_negra', { id });
+  // --- AQUÍ ESTÁ EL CAMBIO ---
+  // Ahora aceptamos motivo y observacion para pasarlos al comando de Tauri
+  remove: async (id: string, motivo: string, observacion?: string): Promise<ListaNegraResponse> => {
+    return await invoke('remove_from_lista_negra', { id, motivo, observacion });
   },
+  // ---------------------------
 
   getById: async (id: string): Promise<ListaNegraResponse> => {
     return await invoke('get_lista_negra_by_id', { id });

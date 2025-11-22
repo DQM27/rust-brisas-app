@@ -274,6 +274,8 @@ pub async fn get_blocked_by_cedula(
     }
 }
 
+
+
 // ==========================================
 // DESACTIVAR BLOQUEO
 // ==========================================
@@ -281,19 +283,34 @@ pub async fn get_blocked_by_cedula(
 pub async fn remove_from_lista_negra(
     pool: &SqlitePool,
     id: String,
+    motivo: String,             // <--- Nuevo parámetro
+    observacion: Option<String> // <--- Nuevo parámetro
 ) -> Result<ListaNegraResponse, String> {
-    // Verificar que existe antes de desactivar
+    // 1. Verificar que existe antes de desactivar
     let _ = db::find_by_id(pool, &id).await?;
     
+    // 2. Normalizar datos (Igual que haces en el Add/Update)
+    let motivo_normalizado = domain::normalizar_texto(&motivo);
+    
+    let observacion_normalizada = observacion
+        .map(|o| domain::normalizar_texto(&o))
+        .filter(|o| !o.is_empty());
+
     let now = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
     
-    // Desactivar
-    db::deactivate(pool, &id, &now).await?;
+    // 3. Desactivar y actualizar motivo/observaciones
+    // NOTA: Aquí asumimos que actualizaste la firma de db::deactivate
+    db::deactivate(
+        pool, 
+        &id, 
+        &motivo_normalizado, 
+        observacion_normalizada.as_deref(), 
+        &now
+    ).await?;
     
-    // Retornar actualizado
+    // 4. Retornar actualizado
     get_lista_negra_by_id(pool, &id).await
 }
-
 // ==========================================
 // ACTUALIZAR BLOQUEO
 // ==========================================

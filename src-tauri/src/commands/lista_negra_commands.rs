@@ -65,12 +65,15 @@ pub async fn get_blocked_by_cedula(
 }
 
 /// Desactiva un bloqueo (quita de lista negra)
+
 #[tauri::command]
 pub async fn remove_from_lista_negra(
     pool: State<'_, SqlitePool>,
     id: String,
+    motivo: String,             // <--- Nuevo parámetro
+    observacion: Option<String> // <--- Nuevo parámetro
 ) -> Result<ListaNegraResponse, String> {
-    lista_negra_service::remove_from_lista_negra(&pool, id).await
+    lista_negra_service::remove_from_lista_negra(&pool, id, motivo, observacion).await
 }
 
 /// Actualiza información de un bloqueo

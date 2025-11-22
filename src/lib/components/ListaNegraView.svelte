@@ -39,7 +39,7 @@
       formRef?.reset();
       toast.success('Persona desbloqueada exitosamente', { icon: '✅', duration: 3000 });
     } else {
-      toast.error(result.error, { icon: '✕', duration: 4000 });
+      toast.error(result.error ?? 'Error desconocido', { icon: '✕', duration: 4000 });
     }
 
     loading = false;
