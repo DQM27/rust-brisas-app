@@ -1,30 +1,30 @@
 <script lang="ts">
-  import { invoke } from '@tauri-apps/api/core';
-  
+  import { invoke } from "@tauri-apps/api/core";
+
   let loading = $state(false);
-  let result = $state('');
+  let result = $state("");
   let config = $state<any>(null);
-  
+
   // Keyring states
-  let keyringInfo = $state('');
+  let keyringInfo = $state("");
   let keyringExists = $state(false);
-  let keyringResult = $state('');
+  let keyringResult = $state("");
   let keyringLoading = $state(false);
-  
+
   // Formulario para credenciales de prueba
-  let testUrl = $state('https://test.supabase.co');
-  let testAnonKey = $state('test-anon-key-123');
-  let testPassword = $state('mi-password-secreto');
-  
+  let testUrl = $state("https://test.supabase.co");
+  let testAnonKey = $state("test-anon-key-123");
+  let testPassword = $state("mi-password-secreto");
+
   // Credenciales leídas
   let loadedCredentials = $state<any>(null);
 
   async function testConnection() {
     loading = true;
-    result = '';
-    
+    result = "";
+
     try {
-      const response = await invoke<string>('test_supabase_connection');
+      const response = await invoke<string>("test_supabase_connection");
       result = `✅ ${response}`;
     } catch (err: any) {
       result = `❌ ${err}`;
@@ -35,44 +35,44 @@
 
   async function getConfig() {
     try {
-      config = await invoke('get_supabase_config');
+      config = await invoke("get_supabase_config");
     } catch (err: any) {
-      console.error('Error al obtener config:', err);
+      console.error("Error al obtener config:", err);
     }
   }
 
   // ============================================
   // FUNCIONES DE KEYRING
   // ============================================
-  
+
   async function getKeyringInfo() {
     try {
-      keyringInfo = await invoke<string>('keyring_info');
+      keyringInfo = await invoke<string>("keyring_info");
       await checkKeyringExists();
     } catch (err: any) {
-      console.error('Error al obtener info del keyring:', err);
+      console.error("Error al obtener info del keyring:", err);
     }
   }
-  
+
   async function checkKeyringExists() {
     try {
-      keyringExists = await invoke<boolean>('keyring_check');
+      keyringExists = await invoke<boolean>("keyring_check");
     } catch (err: any) {
-      console.error('Error al verificar keyring:', err);
+      console.error("Error al verificar keyring:", err);
       keyringExists = false;
     }
   }
-  
+
   async function saveToKeyring() {
     keyringLoading = true;
-    keyringResult = '';
+    keyringResult = "";
     loadedCredentials = null;
-    
+
     try {
-      const response = await invoke<string>('keyring_save', {
+      const response = await invoke<string>("keyring_save", {
         url: testUrl,
         anonKey: testAnonKey,
-        dbPassword: testPassword
+        dbPassword: testPassword,
       });
       keyringResult = `✅ ${response}`;
       await checkKeyringExists();
@@ -82,30 +82,30 @@
       keyringLoading = false;
     }
   }
-  
+
   async function loadFromKeyring() {
     keyringLoading = true;
-    keyringResult = '';
+    keyringResult = "";
     loadedCredentials = null;
-    
+
     try {
-      const creds = await invoke('keyring_load');
+      const creds = await invoke("keyring_load");
       loadedCredentials = creds;
-      keyringResult = '✅ Credenciales leídas exitosamente';
+      keyringResult = "✅ Credenciales leídas exitosamente";
     } catch (err: any) {
       keyringResult = `❌ Error al leer: ${err}`;
     } finally {
       keyringLoading = false;
     }
   }
-  
+
   async function deleteFromKeyring() {
     keyringLoading = true;
-    keyringResult = '';
+    keyringResult = "";
     loadedCredentials = null;
-    
+
     try {
-      const response = await invoke<string>('keyring_delete');
+      const response = await invoke<string>("keyring_delete");
       keyringResult = `✅ ${response}`;
       await checkKeyringExists();
     } catch (err: any) {
@@ -125,11 +125,17 @@
   <!-- SECCIÓN SUPABASE -->
   <section>
     <h2 class="text-2xl font-bold text-white mb-4">🗄️ Prueba de Supabase</h2>
-    
+
     {#if config}
       <div class="mb-4 p-4 bg-[#2d2d2d] rounded">
-        <p class="text-gray-300">URL: <span class="text-[#007acc]">{config.url}</span></p>
-        <p class="text-gray-300">Anon Key: <span class="text-green-500">{config.has_anon_key ? '✓ Configurada' : '✗ No configurada'}</span></p>
+        <p class="text-gray-300">
+          URL: <span class="text-[#007acc]">{config.url}</span>
+        </p>
+        <p class="text-gray-300">
+          Anon Key: <span class="text-green-500"
+            >{config.has_anon_key ? "✓ Configurada" : "✗ No configurada"}</span
+          >
+        </p>
       </div>
     {/if}
 
@@ -138,7 +144,7 @@
       disabled={loading}
       class="px-4 py-2 bg-[#007acc] text-white rounded hover:bg-[#005a9e] disabled:opacity-50"
     >
-      {loading ? 'Probando...' : 'Probar Conexión'}
+      {loading ? "Probando..." : "Probar Conexión"}
     </button>
 
     {#if result}
@@ -153,14 +159,21 @@
 
   <!-- SECCIÓN KEYRING -->
   <section>
-    <h2 class="text-2xl font-bold text-white mb-4">🔐 Prueba de Keyring (Almacenamiento Seguro)</h2>
-    
+    <h2 class="text-2xl font-bold text-white mb-4">
+      🔐 Prueba de Keyring (Almacenamiento Seguro)
+    </h2>
+
     <!-- Info del sistema -->
     <div class="mb-4 p-4 bg-[#2d2d2d] rounded">
-      <p class="text-gray-300">Sistema: <span class="text-[#007acc] font-semibold">{keyringInfo || 'Cargando...'}</span></p>
-      <p class="text-gray-300">Estado: 
-        <span class={keyringExists ? 'text-green-500' : 'text-yellow-500'}>
-          {keyringExists ? '✓ Credenciales guardadas' : '✗ Sin credenciales'}
+      <p class="text-gray-300">
+        Sistema: <span class="text-[#007acc] font-semibold"
+          >{keyringInfo || "Cargando..."}</span
+        >
+      </p>
+      <p class="text-gray-300">
+        Estado:
+        <span class={keyringExists ? "text-green-500" : "text-yellow-500"}>
+          {keyringExists ? "✓ Credenciales guardadas" : "✗ Sin credenciales"}
         </span>
       </p>
     </div>
@@ -168,30 +181,40 @@
     <!-- Formulario de prueba -->
     <div class="mb-4 p-4 bg-[#252526] rounded space-y-3">
       <h3 class="text-lg font-semibold text-white mb-2">Datos de Prueba:</h3>
-      
+
       <div>
-        <label class="block text-sm text-gray-400 mb-1">URL de Supabase:</label>
+        <label for="supabase-url" class="block text-sm text-gray-400 mb-1"
+          >URL de Supabase:</label
+        >
         <input
+          id="supabase-url"
           type="text"
           bind:value={testUrl}
           class="w-full px-3 py-2 bg-[#1e1e1e] border border-[#3c3c3c] rounded text-white focus:outline-none focus:border-[#007acc]"
           placeholder="https://tu-proyecto.supabase.co"
         />
       </div>
-      
+
       <div>
-        <label class="block text-sm text-gray-400 mb-1">Anon Key:</label>
+        <label for="supabase-anon-key" class="block text-sm text-gray-400 mb-1"
+          >Anon Key:</label
+        >
         <input
+          id="supabase-anon-key"
           type="text"
           bind:value={testAnonKey}
           class="w-full px-3 py-2 bg-[#1e1e1e] border border-[#3c3c3c] rounded text-white focus:outline-none focus:border-[#007acc]"
           placeholder="eyJhbGciOi..."
         />
       </div>
-      
+
       <div>
-        <label class="block text-sm text-gray-400 mb-1">DB Password:</label>
+        <label
+          for="supabase-db-password"
+          class="block text-sm text-gray-400 mb-1">DB Password:</label
+        >
         <input
+          id="supabase-db-password"
           type="password"
           bind:value={testPassword}
           class="w-full px-3 py-2 bg-[#1e1e1e] border border-[#3c3c3c] rounded text-white focus:outline-none focus:border-[#007acc]"
@@ -207,7 +230,7 @@
         disabled={keyringLoading}
         class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
       >
-        {keyringLoading ? '⏳' : '💾'} Guardar en Keyring
+        {keyringLoading ? "⏳" : "💾"} Guardar en Keyring
       </button>
 
       <button
@@ -215,7 +238,7 @@
         disabled={keyringLoading || !keyringExists}
         class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
       >
-        {keyringLoading ? '⏳' : '📖'} Leer del Keyring
+        {keyringLoading ? "⏳" : "📖"} Leer del Keyring
       </button>
 
       <button
@@ -223,7 +246,7 @@
         disabled={keyringLoading}
         class="px-4 py-2 bg-[#007acc] text-white rounded hover:bg-[#005a9e] disabled:opacity-50"
       >
-        {keyringLoading ? '⏳' : '🔍'} Verificar Estado
+        {keyringLoading ? "⏳" : "🔍"} Verificar Estado
       </button>
 
       <button
@@ -231,7 +254,7 @@
         disabled={keyringLoading || !keyringExists}
         class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
       >
-        {keyringLoading ? '⏳' : '🗑️'} Eliminar del Keyring
+        {keyringLoading ? "⏳" : "🗑️"} Eliminar del Keyring
       </button>
     </div>
 
@@ -245,22 +268,46 @@
     <!-- Credenciales leídas -->
     {#if loadedCredentials}
       <div class="mt-4 p-4 bg-[#1e1e1e] border border-green-500/30 rounded">
-        <h4 class="text-lg font-semibold text-green-400 mb-2">📦 Credenciales Recuperadas:</h4>
+        <h4 class="text-lg font-semibold text-green-400 mb-2">
+          📦 Credenciales Recuperadas:
+        </h4>
         <div class="space-y-1 text-sm">
-          <p class="text-gray-300">URL: <span class="text-[#007acc]">{loadedCredentials.url}</span></p>
-          <p class="text-gray-300">Anon Key: <span class="text-yellow-400">{loadedCredentials.anon_key}</span></p>
-          <p class="text-gray-300">DB Password: <span class="text-red-400">{loadedCredentials.db_password}</span></p>
+          <p class="text-gray-300">
+            URL: <span class="text-[#007acc]">{loadedCredentials.url}</span>
+          </p>
+          <p class="text-gray-300">
+            Anon Key: <span class="text-yellow-400"
+              >{loadedCredentials.anon_key}</span
+            >
+          </p>
+          <p class="text-gray-300">
+            DB Password: <span class="text-red-400"
+              >{loadedCredentials.db_password}</span
+            >
+          </p>
         </div>
       </div>
     {/if}
 
     <!-- Instrucciones -->
     <div class="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded">
-      <h4 class="text-sm font-semibold text-blue-400 mb-2">ℹ️ Cómo verificar manualmente:</h4>
+      <h4 class="text-sm font-semibold text-blue-400 mb-2">
+        ℹ️ Cómo verificar manualmente:
+      </h4>
       <div class="text-xs text-gray-400 space-y-1">
-        <p><strong>Windows:</strong> Control Panel → Credential Manager → Windows Credentials → Busca "brisas-app"</p>
-        <p><strong>macOS:</strong> Abre "Keychain Access.app" → Busca "brisas-app"</p>
-        <p><strong>Linux:</strong> Ejecuta: <code class="bg-[#1e1e1e] px-1 rounded">secret-tool lookup service brisas-app username supabase</code></p>
+        <p>
+          <strong>Windows:</strong> Control Panel → Credential Manager → Windows
+          Credentials → Busca "brisas-app"
+        </p>
+        <p>
+          <strong>macOS:</strong> Abre "Keychain Access.app" → Busca "brisas-app"
+        </p>
+        <p>
+          <strong>Linux:</strong> Ejecuta:
+          <code class="bg-[#1e1e1e] px-1 rounded"
+            >secret-tool lookup service brisas-app username supabase</code
+          >
+        </p>
       </div>
     </div>
   </section>

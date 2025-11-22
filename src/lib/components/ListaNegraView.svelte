@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { toast } from 'svelte-5-french-toast';
+  import { toast } from "svelte-5-french-toast";
 
-  import ListaNegraForm from '$lib/components/ListaNegraForm.svelte';
-  import type ListaNegraFormType from '$lib/components/ListaNegraForm.svelte';
+  import ListaNegraForm from "$lib/components/Listanegraform.svelte";
+  import type ListaNegraFormType from "$lib/components/Listanegraform.svelte";
 
-  import type { AddToListaNegraInput } from '$lib/types/listaNegra';
-  import { submitAddToListaNegra } from '$lib/logic/listaNegra/submitAddToListaNegra';
-  import { submitUnblockListaNegra } from '$lib/logic/listaNegra/submitUnblockListaNegra';
+  import type { AddToListaNegraInput } from "$lib/types/listaNegra";
+  import { submitAddToListaNegra } from "$lib/logic/listaNegra/submitAddToListaNegra";
+  import { submitUnblockListaNegra } from "$lib/logic/listaNegra/submitUnblockListaNegra";
 
   let loading = false;
   let formRef: ListaNegraFormType;
@@ -18,28 +18,41 @@
 
     if (result.ok) {
       formRef?.reset();
-      toast.success('Persona bloqueada exitosamente', { icon: '🚫', duration: 3000 });
+      toast.success("Persona bloqueada exitosamente", {
+        icon: "🚫",
+        duration: 3000,
+      });
     } else {
-      toast.error(result.error, { icon: '✕', duration: 4000 });
+      toast.error(result.error, { icon: "✕", duration: 4000 });
     }
 
     loading = false;
   }
 
-  async function handleUnblock(data: { id: string; motivoDesbloqueo: string; observaciones?: string }) {
+  async function handleUnblock(data: {
+    id: string;
+    motivoDesbloqueo: string;
+    observaciones?: string;
+  }) {
     loading = true;
 
     const result = await submitUnblockListaNegra(
       data.id,
       data.motivoDesbloqueo,
-      data.observaciones
+      data.observaciones,
     );
 
     if (result.ok) {
       formRef?.reset();
-      toast.success('Persona desbloqueada exitosamente', { icon: '✅', duration: 3000 });
+      toast.success("Persona desbloqueada exitosamente", {
+        icon: "✅",
+        duration: 3000,
+      });
     } else {
-      toast.error(result.error ?? 'Error desconocido', { icon: '✕', duration: 4000 });
+      toast.error(result.error ?? "Error desconocido", {
+        icon: "✕",
+        duration: 4000,
+      });
     }
 
     loading = false;
