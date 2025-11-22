@@ -40,9 +40,14 @@
     openTab({ componentKey: 'supabase-test', title: 'Prueba Supabase', id: 'supabase-test' });
   }
 
-  // ---- NUEVO: Botón Contratista ----
+  // ---- Botón Contratista ----
   function openContratista() {
     openTab({ componentKey: 'contratista', title: 'Contratista', id: 'contratista' });
+  }
+
+  // ---- Botón Lista Negra ----
+  function openListaNegra() {
+    openTab({ componentKey: 'lista-negra', title: 'Lista Negra', id: 'lista-negra' });
   }
 </script>
 
@@ -52,7 +57,7 @@
   <!-- App Principal -->
   <div class="h-full bg-[#1e1e1e] relative">
 
-    <!-- Botón Supabase - MOVIDO AQUÍ DENTRO DEL BLOQUE AUTENTICADO -->
+    <!-- Botón Supabase -->
     <button
       onclick={openSupabaseTest}
       class="absolute top-2 right-2 z-50 px-3 py-1.5 bg-[#007acc] text-white text-xs rounded hover:bg-[#005a9e]"
@@ -60,12 +65,20 @@
       🧪 Probar Supabase
     </button>
 
-    <!-- Botón Contratista - MOVIDO AQUÍ DENTRO DEL BLOQUE AUTENTICADO -->
+    <!-- Botón Contratista -->
     <button
       onclick={openContratista}
       class="absolute top-2 right-40 z-50 px-3 py-1.5 bg-[#00cc7a] text-white text-xs rounded hover:bg-[#00995c]"
     >
       👷 Contratista
+    </button>
+
+    <!-- Botón Lista Negra -->
+    <button
+      onclick={openListaNegra}
+      class="absolute top-2 right-[330px] z-50 px-3 py-1.5 bg-[#cc0000] text-white text-xs rounded hover:bg-[#990000]"
+    >
+      🚫 Lista Negra
     </button>
 
     <Splitpanes horizontal class="default-theme">

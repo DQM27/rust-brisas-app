@@ -5,4 +5,5 @@ export type ComponentKey =
   | 'user-register'
   | 'dashboard'
   | 'supabase-test'
-  | 'contratista';
+  | 'contratista'
+  | 'lista-negra';

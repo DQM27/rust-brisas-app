@@ -10,18 +10,21 @@ import WelcomePanel from '$lib/components/WelcomePanel.svelte';
 import RegisterUserView from '$lib/components/RegisterUserView.svelte';
 import SupabaseTest from '$lib/components/SupabaseTest.svelte';
 import ContratistaView from '$lib/components/ContratistaView.svelte';
+import ListaNegraView from '$lib/components/ListaNegraView.svelte';
+
 /**
  * Registry central de componentes
  * Permite serializar tabs y reconstruirlos después
  */
 export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'welcome': WelcomePanel,
-  'user-list': WelcomePanel, // Placeholder
-  'user-editor': WelcomePanel, // Placeholder
-  'dashboard': WelcomePanel, // Placeholder
+  'user-list': WelcomePanel, 
+  'user-editor': WelcomePanel, 
+  'dashboard': WelcomePanel, 
   'supabase-test': SupabaseTest,
   "user-register": RegisterUserView,
   'contratista': ContratistaView,
+  'lista-negra': ListaNegraView,
 };
 
 /**
@@ -80,4 +83,3 @@ export function isComponentAvailable(key: ComponentKey): boolean {
   const component = COMPONENT_REGISTRY[key];
   return component !== undefined && component !== WelcomePanel;
 }
-
