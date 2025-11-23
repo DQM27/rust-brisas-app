@@ -1,62 +1,49 @@
 <script lang="ts">
-  import { Copy, FileDown, Eye, Trash2 } from "lucide-svelte";
-  import type { ListaNegraResponse } from "$lib/types/listaNegra";
+  import type { DataTableContextMenuItem } from "$lib/types/dataTable";
 
   interface Props {
-    row: ListaNegraResponse;
+    contextMenuItems: DataTableContextMenuItem<any>[];
+    row: any;
     x: number;
     y: number;
     onClose: () => void;
-    onCopyRow: (row: ListaNegraResponse) => void;
-    onViewDetails: (row: ListaNegraResponse) => void;
-    onUnblock?: (row: ListaNegraResponse) => void;
+    onItemClick: (item: DataTableContextMenuItem<any>) => void;
   }
 
-  let { row, x, y, onClose, onCopyRow, onViewDetails, onUnblock }: Props =
-    $props();
+  let { contextMenuItems, row, x, y, onClose, onItemClick }: Props = $props();
 
-  function handleAction(action: () => void) {
-    action();
-    onClose();
-  }
+  let visibleItems = $derived(
+    contextMenuItems.filter((item) => !item.show || item.show(row)),
+  );
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="context-menu-overlay" onclick={onClose}>
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="context-menu"
     style="left: {x}px; top: {y}px;"
     onclick={(e) => e.stopPropagation()}
   >
-    <button
-      class="menu-item"
-      onclick={() => handleAction(() => onCopyRow(row))}
-    >
-      <Copy size={14} />
-      <span>Copiar cédula</span>
-    </button>
-
-    <button
-      class="menu-item"
-      onclick={() => handleAction(() => onViewDetails(row))}
-    >
-      <Eye size={14} />
-      <span>Ver detalles</span>
-    </button>
-
-    {#if row.isActive && onUnblock}
-      <div class="menu-divider"></div>
+    {#each visibleItems as item}
       <button
-        class="menu-item danger"
-        onclick={() => handleAction(() => onUnblock?.(row))}
+        class="menu-item"
+        class:danger={item.variant === "danger"}
+        onclick={() => onItemClick(item)}
       >
-        <Trash2 size={14} />
-        <span>Desbloquear</span>
+        {#if item.icon}
+          {@const Icon = item.icon}
+          <Icon size={14} />
+        {/if}
+        <span>{item.label}</span>
       </button>
-    {/if}
+
+      {#if item.dividerAfter}
+        <div class="menu-divider"></div>
+      {/if}
+    {/each}
   </div>
 </div>
 
