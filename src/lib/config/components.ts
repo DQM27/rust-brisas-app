@@ -10,7 +10,9 @@ import WelcomePanel from '$lib/components/WelcomePanel.svelte';
 import RegisterUserView from '$lib/components/RegisterUserView.svelte';
 import SupabaseTest from '$lib/components/SupabaseTest.svelte';
 import ContratistaView from '$lib/components/ContratistaView.svelte';
+import ContratistaListView from '$lib/components/ContratistaListView.svelte';
 import ListaNegraView from '$lib/components/ListaNegraView.svelte';
+import ListaNegraListView from '$lib/components/ListaNegraListView.svelte';
 
 /**
  * Registry central de componentes
@@ -18,13 +20,15 @@ import ListaNegraView from '$lib/components/ListaNegraView.svelte';
  */
 export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'welcome': WelcomePanel,
-  'user-list': WelcomePanel, 
-  'user-editor': WelcomePanel, 
-  'dashboard': WelcomePanel, 
+  'user-list': WelcomePanel,
+  'user-editor': WelcomePanel,
+  'dashboard': WelcomePanel,
   'supabase-test': SupabaseTest,
   "user-register": RegisterUserView,
   'contratista': ContratistaView,
+  'contratista-list': ContratistaListView,
   'lista-negra': ListaNegraView,
+  'lista-negra-list': ListaNegraListView,
 };
 
 /**
@@ -36,20 +40,20 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
  */
 export function getComponent(key: ComponentKey): Component<any, any> {
   const component = COMPONENT_REGISTRY[key];
-  
+
   if (!component) {
     console.error(`Componente no encontrado: ${key}`);
     console.error('Componentes disponibles:', Object.keys(COMPONENT_REGISTRY));
-    
+
     // Fallback a welcome si existe
     if (COMPONENT_REGISTRY['welcome']) {
       console.warn(`Usando fallback: welcome para ${key}`);
       return COMPONENT_REGISTRY['welcome'];
     }
-    
+
     throw new Error(`Componente "${key}" no encontrado y no hay fallback disponible`);
   }
-  
+
   return component;
 }
 

@@ -1,6 +1,12 @@
 <!-- src/lib/components/layout/sidebar/panels/ContractorsPanel.svelte -->
 <script lang="ts">
-  import { HardHat, UserPlus, FileText } from "lucide-svelte";
+  import {
+    HardHat,
+    UserPlus,
+    FileText,
+    UserX,
+    ShieldAlert,
+  } from "lucide-svelte";
   import { activePanel } from "../../../../stores/sidebar";
   import { openTab } from "$lib/stores/tabs";
 
@@ -18,6 +24,15 @@
     };
   }
 
+  function openContractorList() {
+    openTab({
+      componentKey: "contratista-list",
+      title: "Lista de Contratistas",
+      id: "contratista-list", // Singleton ID to prevent duplicates
+      focusOnOpen: true,
+    });
+  }
+
   function openContractorRegister() {
     openTab({
       componentKey: "contratista",
@@ -26,14 +41,36 @@
       focusOnOpen: true,
     });
   }
+
+  function openBlacklistList() {
+    openTab({
+      componentKey: "lista-negra-list",
+      title: "Lista Negra",
+      id: "lista-negra-list", // Singleton ID to prevent duplicates
+      focusOnOpen: true,
+    });
+  }
+
+  function openAddToBlacklist() {
+    openTab({
+      componentKey: "lista-negra",
+      title: "Agregar a Lista Negra",
+      id: "lista-negra-add", // Singleton ID to prevent duplicates
+      focusOnOpen: true,
+    });
+  }
 </script>
 
 <div class="panel-section">
   <div class="panel-section-title">GESTIÓN DE CONTRATISTAS</div>
-  <div class="panel-item non-clickable">
+  <button
+    class="panel-item"
+    on:click={executeAndClose(openContractorList)}
+    on:keydown={(e) => handleKeydown(e, executeAndClose(openContractorList))}
+  >
     <svelte:component this={HardHat} size={16} />
-    <span>Lista de contratistas</span>
-  </div>
+    <span>Listar contratistas</span>
+  </button>
   <button
     class="panel-item"
     on:click={executeAndClose(openContractorRegister)}
@@ -42,6 +79,26 @@
   >
     <svelte:component this={UserPlus} size={16} />
     <span>Registrar contratista</span>
+  </button>
+</div>
+
+<div class="panel-section">
+  <div class="panel-section-title">LISTA NEGRA</div>
+  <button
+    class="panel-item"
+    on:click={executeAndClose(openBlacklistList)}
+    on:keydown={(e) => handleKeydown(e, executeAndClose(openBlacklistList))}
+  >
+    <svelte:component this={UserX} size={16} />
+    <span>Listar bloqueados</span>
+  </button>
+  <button
+    class="panel-item"
+    on:click={executeAndClose(openAddToBlacklist)}
+    on:keydown={(e) => handleKeydown(e, executeAndClose(openAddToBlacklist))}
+  >
+    <svelte:component this={ShieldAlert} size={16} />
+    <span>Agregar a lista negra</span>
   </button>
 </div>
 

@@ -1,4 +1,4 @@
-export type ComponentKey = 
+export type ComponentKey =
   | 'welcome'
   | 'user-list'
   | 'user-editor'
@@ -6,4 +6,6 @@ export type ComponentKey =
   | 'dashboard'
   | 'supabase-test'
   | 'contratista'
-  | 'lista-negra';
+  | 'contratista-list'
+  | 'lista-negra'
+  | 'lista-negra-list';
