@@ -1,6 +1,6 @@
 <script lang="ts">
   import DataTable from "$lib/components/common/DataTable.svelte";
-  import { UserX, Clock, User, Copy, Eye, Trash2 } from "lucide-svelte";
+  import { UserX, Clock, User, Copy, Eye, Trash2, Ban } from "lucide-svelte";
   import type { ListaNegraResponse } from "$lib/types/listaNegra";
   import type {
     DataTableColumn,
@@ -39,19 +39,32 @@
     {
       field: "motivoBloqueo",
       headerName: "Motivo",
-      width: 300,
+      width: 250,
       minWidth: 200,
-      maxWidth: 500,
+      maxWidth: 400,
       cellStyle: { color: "#d4d4d4" },
       tooltipField: "motivoBloqueo",
       wrapText: true,
       autoHeight: true,
     },
     {
+      field: "observaciones",
+      headerName: "Observaciones",
+      width: 250,
+      minWidth: 200,
+      maxWidth: 400,
+      cellStyle: { color: "#9ca3af", fontStyle: "italic" },
+      tooltipField: "observaciones",
+      wrapText: true,
+      autoHeight: true,
+      valueFormatter: (params) => {
+        return params.value || "Sin observaciones";
+      },
+    },
+    {
       field: "isActive",
       headerName: "Estado",
       width: 130,
-      autoHeight: true,
       cellRenderer: (params: ICellRendererParams<ListaNegraResponse>) => {
         const isActive = params.value;
         const bgColor = isActive
@@ -61,7 +74,7 @@
         const borderColor = isActive
           ? "rgba(239, 68, 68, 0.2)"
           : "rgba(107, 114, 128, 0.2)";
-        const icon = isActive ? "🚫" : "⏰";
+        const icon = isActive ? "🚫" : "✓";
         const text = isActive ? "Bloqueado" : "Desbloqueado";
 
         return `
@@ -88,7 +101,6 @@
       field: "esBloqueoPermanente",
       headerName: "Tipo",
       width: 120,
-      autoHeight: true,
       cellRenderer: (params: ICellRendererParams<ListaNegraResponse>) => {
         const isPermanente = params.value;
         const bgColor = isPermanente
@@ -161,7 +173,7 @@
     },
   ];
 
-  // Acciones
+  // Acciones - CORREGIDO: Agregar acción para bloquear personas desbloqueadas
   const actions: DataTableAction<ListaNegraResponse>[] = [
     {
       id: "unblock",
@@ -169,6 +181,13 @@
       variant: "success",
       show: (row) => row.isActive,
       onClick: (row) => onUnblock(row),
+    },
+    {
+      id: "reblock",
+      label: "Re-bloquear",
+      variant: "danger",
+      show: (row) => !row.isActive,
+      onClick: (row) => onUnblock(row), // Usa el mismo handler, ajustaremos la lógica en el padre
     },
   ];
 
@@ -187,11 +206,13 @@
       label: "Ver detalles",
       icon: Eye,
       onClick: (row) => {
+        const observaciones = row.observaciones || "Sin observaciones";
         alert(
           `Detalles de ${row.nombreCompleto}:\n\n` +
             `Cédula: ${row.cedula}\n` +
             `Empresa: ${row.empresaNombre || "N/A"}\n` +
             `Motivo: ${row.motivoBloqueo}\n` +
+            `Observaciones: ${observaciones}\n` +
             `Estado: ${row.isActive ? "Bloqueado" : "Desbloqueado"}\n` +
             `Tipo: ${row.esBloqueoPermanente ? "Permanente" : "Temporal"}\n` +
             `Bloqueado por: ${row.bloqueadoPor}\n` +
@@ -202,11 +223,10 @@
       dividerAfter: true,
     },
     {
-      id: "unblock",
-      label: "Desbloquear",
-      icon: Trash2,
+      id: "action",
+      label: "Gestionar bloqueo",
+      icon: Ban,
       variant: "danger",
-      show: (row) => row.isActive,
       onClick: (row) => onUnblock(row),
     },
   ];
@@ -220,6 +240,7 @@
   storageKey="lista-negra-table"
   rowSelection="multiple"
   getRowId={(row) => row.id}
+  autoSizeOnLoad={true}
   exportConfig={{
     fileName: `lista-negra-${new Date().toISOString().split("T")[0]}.csv`,
   }}

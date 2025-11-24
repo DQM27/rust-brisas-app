@@ -12,7 +12,7 @@
   export let onSearchChange: (value: string) => void;
   export let onFilterStatusChange: (value: "todos" | "activos" | "inactivos") => void;
   export let onFilterTipoChange: (value: "todos" | "permanente" | "temporal") => void;
-  export let onRemove: ((id: string) => void) | undefined = undefined;
+  export let onUnblockOrReblock: ((bloqueado: any) => void) | undefined = undefined; // ACTUALIZADO
   export let onEdit: ((bloqueado: any) => void) | undefined = undefined;
   export let onViewDetails: ((bloqueado: any) => void) | undefined = undefined;
 
@@ -264,14 +264,27 @@
                 </button>
               {/if}
 
-              {#if onRemove && bloqueado.isActive}
-                <button on:click={() => onRemove(bloqueado.id)} type="button"
-                  class="flex items-center justify-center rounded-lg bg-[#2d2d2d] p-2 text-gray-400 transition-colors hover:bg-green-500/10 hover:text-green-400"
-                  title="Desbloquear">
-                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
-                  </svg>
-                </button>
+              <!-- ACTUALIZADO: Botón que maneja desbloqueo Y re-bloqueo -->
+              {#if onUnblockOrReblock}
+                {#if bloqueado.isActive}
+                  <!-- Persona bloqueada → Mostrar botón DESBLOQUEAR (verde) -->
+                  <button on:click={() => onUnblockOrReblock(bloqueado)} type="button"
+                    class="flex items-center justify-center rounded-lg bg-[#2d2d2d] p-2 text-gray-400 transition-colors hover:bg-green-500/10 hover:text-green-400"
+                    title="Desbloquear">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                    </svg>
+                  </button>
+                {:else}
+                  <!-- Persona desbloqueada → Mostrar botón RE-BLOQUEAR (rojo) -->
+                  <button on:click={() => onUnblockOrReblock(bloqueado)} type="button"
+                    class="flex items-center justify-center rounded-lg bg-[#2d2d2d] p-2 text-gray-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    title="Re-bloquear">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                  </button>
+                {/if}
               {/if}
             </div>
           </div>

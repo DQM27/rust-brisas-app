@@ -95,6 +95,7 @@ pub fn run() {
                     commands::lista_negra_commands::check_is_blocked,
                     commands::lista_negra_commands::get_blocked_by_cedula,
                     commands::lista_negra_commands::remove_from_lista_negra,
+                    commands::lista_negra_commands::reactivate_lista_negra,
                     commands::lista_negra_commands::update_lista_negra,
                     commands::lista_negra_commands::delete_lista_negra,
                     // Comandos de vehículo

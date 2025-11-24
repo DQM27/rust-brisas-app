@@ -315,3 +315,42 @@ pub async fn delete(pool: &SqlitePool, id: &str) -> Result<(), String> {
     
     Ok(())
 }
+
+// ==========================================
+// REACTIVAR BLOQUEO
+// ==========================================
+
+pub async fn reactivate(
+    pool: &SqlitePool,
+    id: &str,
+    motivo_bloqueo: &str,
+    observaciones: Option<&str>,
+    bloqueado_por: &str,
+    updated_at: &str,
+) -> Result<(), String> {
+    use chrono::Utc;
+    let fecha_inicio = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    
+    sqlx::query(
+        r#"UPDATE lista_negra
+           SET isActive = 1,
+               motivoBloqueo = ?,
+               observaciones = ?,
+               bloqueadoPor = ?,
+               fechaInicioBloqueo = ?,
+               fechaFinBloqueo = NULL,
+               updatedAt = ?
+           WHERE id = ?"#
+    )
+    .bind(motivo_bloqueo)
+    .bind(observaciones)
+    .bind(bloqueado_por)
+    .bind(fecha_inicio)
+    .bind(updated_at)
+    .bind(id)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("Error al reactivar bloqueo: {}", e))?;
+    
+    Ok(())
+}

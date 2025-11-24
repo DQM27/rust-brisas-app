@@ -274,8 +274,6 @@ pub async fn get_blocked_by_cedula(
     }
 }
 
-
-
 // ==========================================
 // DESACTIVAR BLOQUEO
 // ==========================================
@@ -283,13 +281,13 @@ pub async fn get_blocked_by_cedula(
 pub async fn remove_from_lista_negra(
     pool: &SqlitePool,
     id: String,
-    motivo: String,             // <--- Nuevo parámetro
-    observacion: Option<String> // <--- Nuevo parámetro
+    motivo: String,
+    observacion: Option<String>
 ) -> Result<ListaNegraResponse, String> {
     // 1. Verificar que existe antes de desactivar
     let _ = db::find_by_id(pool, &id).await?;
     
-    // 2. Normalizar datos (Igual que haces en el Add/Update)
+    // 2. Normalizar datos
     let motivo_normalizado = domain::normalizar_texto(&motivo);
     
     let observacion_normalizada = observacion
@@ -299,7 +297,6 @@ pub async fn remove_from_lista_negra(
     let now = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
     
     // 3. Desactivar y actualizar motivo/observaciones
-    // NOTA: Aquí asumimos que actualizaste la firma de db::deactivate
     db::deactivate(
         pool, 
         &id, 
@@ -311,6 +308,50 @@ pub async fn remove_from_lista_negra(
     // 4. Retornar actualizado
     get_lista_negra_by_id(pool, &id).await
 }
+
+// ==========================================
+// REACTIVAR BLOQUEO (RE-BLOQUEAR)
+// ==========================================
+
+pub async fn reactivate_lista_negra(
+    pool: &SqlitePool,
+    id: String,
+    motivo_bloqueo: String,
+    observaciones: Option<String>,
+    bloqueado_por: String,
+) -> Result<ListaNegraResponse, String> {
+    // 1. Verificar que existe
+    let registro = db::find_by_id(pool, &id).await?;
+    
+    // 2. Verificar que esté desactivado
+    if registro.is_active {
+        return Err("La persona ya está bloqueada actualmente".to_string());
+    }
+    
+    // 3. Normalizar datos
+    let motivo_normalizado = domain::normalizar_texto(&motivo_bloqueo);
+    let bloqueado_por_normalizado = domain::normalizar_texto(&bloqueado_por);
+    
+    let observaciones_normalizadas = observaciones
+        .map(|o| domain::normalizar_texto(&o))
+        .filter(|o| !o.is_empty());
+    
+    let now = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    
+    // 4. Reactivar en DB
+    db::reactivate(
+        pool,
+        &id,
+        &motivo_normalizado,
+        observaciones_normalizadas.as_deref(),
+        &bloqueado_por_normalizado,
+        &now,
+    ).await?;
+    
+    // 5. Retornar actualizado
+    get_lista_negra_by_id(pool, &id).await
+}
+
 // ==========================================
 // ACTUALIZAR BLOQUEO
 // ==========================================

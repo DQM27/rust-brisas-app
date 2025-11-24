@@ -11,6 +11,7 @@
   import type { ListaNegraResponse } from "$lib/types/listaNegra";
   import Listanegraform from "./Listanegraform.svelte";
   import ListaNegraTable from "./ListaNegraTable.svelte";
+  import UnblockModal from "./ListaNegraUnblockModal.svelte";
 
   export let bloqueados: ListaNegraResponse[] = [];
   export let loading = false;
@@ -25,7 +26,6 @@
 
   // Modal state
   let showAddModal = false;
-  let showUnblockModal = false;
   let selectedBloqueado: ListaNegraResponse | null = null;
   let addFormLoading = false;
 
@@ -73,20 +73,9 @@
     closeModal();
   }
 
-  async function handleUnblockSubmit(data: {
-    id: string;
-    motivoDesbloqueo: string;
-    observaciones?: string;
-  }) {
-    addFormLoading = true;
-    await onUnblock(data);
-    addFormLoading = false;
-    closeUnblockModal();
-  }
-
-  function handleUnblockClick(bloqueado: ListaNegraResponse) {
+  // Handler para el botón de acción de la tabla
+  function handleActionClick(bloqueado: ListaNegraResponse) {
     selectedBloqueado = bloqueado;
-    showUnblockModal = true;
   }
 
   $: if (!showAddModal) {
@@ -107,7 +96,6 @@
   }
 
   function closeUnblockModal() {
-    showUnblockModal = false;
     selectedBloqueado = null;
   }
 </script>
@@ -244,7 +232,7 @@
     {:else}
       <ListaNegraTable
         data={filteredBloqueados}
-        onUnblock={handleUnblockClick}
+        onUnblock={handleActionClick}
       />
     {/if}
   </div>
@@ -270,36 +258,17 @@
         bind:this={formRef}
         loading={addFormLoading}
         onSubmit={handleAddSubmit}
-        onUnblock={handleUnblockSubmit}
+        onUnblock={onUnblock}
       />
     </div>
   </div>
 {/if}
 
-<!-- Modal para desbloquear -->
-{#if showUnblockModal && selectedBloqueado}
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center p-4"
-    transition:fade={{ duration: 200 }}
-  >
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div
-      class="absolute inset-0 bg-black/60 backdrop-blur-sm"
-      on:click={closeUnblockModal}
-    ></div>
-    <div
-      class="relative z-10 w-full max-w-2xl"
-      transition:fly={{ y: 20, duration: 300 }}
-    >
-      <!-- Aquí va tu componente de desbloqueo -->
-      <div class="rounded-lg bg-[#252526] p-6">
-        <h3 class="text-lg font-semibold text-white">Desbloquear persona</h3>
-        <p class="mt-2 text-sm text-gray-400">
-          {selectedBloqueado.nombreCompleto} - {selectedBloqueado.cedula}
-        </p>
-        <!-- Formulario de desbloqueo aquí -->
-      </div>
-    </div>
-  </div>
+<!-- Modal para desbloquear/rebloquear -->
+{#if selectedBloqueado}
+  <UnblockModal
+    bloqueado={selectedBloqueado}
+    {onUnblock}
+    onClose={closeUnblockModal}
+  />
 {/if}
