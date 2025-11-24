@@ -1,6 +1,6 @@
 // $lib/types/blacklistImport.types.ts
 
-export type ValidationStatus = 'valid' | 'needs_review' | 'invalid';
+export type ValidationStatus = 'valid' | 'needs_review' | 'Invalid';
 
 export interface ExcelRowRaw {
   cedula?: string;

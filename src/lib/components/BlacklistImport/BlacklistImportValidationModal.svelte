@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { X, AlertTriangle, Save } from 'lucide-svelte';
+  import { X, AlertTriangle, Save, ChevronLeft, ChevronRight } from 'lucide-svelte';
   import type { BlacklistImportEntry } from '$lib/types/blacklistImport.types';
 
   interface Props {
@@ -14,15 +14,20 @@
   let editedEntries = $state<BlacklistImportEntry[]>([]);
   let currentIndex = $state(0);
 
-  // Inicializar con copia de las entradas
   $effect(() => {
-    editedEntries = structuredClone(entries);
+    editedEntries = entries.map(entry => ({
+      ...entry,
+      segundoNombre: entry.segundoNombre,
+      segundoApellido: entry.segundoApellido,
+      observaciones: entry.observaciones
+    }));
   });
 
   const currentEntry = $derived(editedEntries[currentIndex]);
   const hasNext = $derived(currentIndex < editedEntries.length - 1);
   const hasPrev = $derived(currentIndex > 0);
   const progress = $derived(`${currentIndex + 1} / ${editedEntries.length}`);
+  const progressPercent = $derived(((currentIndex + 1) / editedEntries.length) * 100);
 
   function handleNext() {
     if (hasNext) {
@@ -53,80 +58,105 @@
   }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="modal-overlay" onclick={onClose}>
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+<div class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-200">
+  <div class="bg-[#252526] border border-white/10 rounded-xl w-[95%] max-w-4xl max-h-[95vh] flex flex-col shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+    
     <!-- Header -->
-    <div class="modal-header">
-      <div class="header-left">
-        <AlertTriangle size={24} class="text-yellow-400" />
+    <div class="flex items-start justify-between p-6 border-b border-white/10">
+      <div class="flex gap-4">
+        <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+          <AlertTriangle size={24} class="text-yellow-400" />
+        </div>
         <div>
-          <h2 class="modal-title">Validación Manual Requerida</h2>
-          <p class="modal-subtitle">
-            Los siguientes nombres requieren corrección manual
+          <h2 class="text-xl font-semibold text-white mb-1">
+            Validación Manual Requerida
+          </h2>
+          <p class="text-sm text-gray-400">
+            Estos nombres contienen preposiciones y requieren corrección manual
           </p>
         </div>
       </div>
-      <button onclick={onClose} class="close-button" title="Cerrar">
+      <button
+        onclick={onClose}
+        class="flex items-center justify-center w-9 h-9 rounded-lg bg-transparent hover:bg-white/5 text-gray-400 hover:text-white transition-all"
+        title="Cerrar"
+      >
         <X size={20} />
       </button>
     </div>
 
-    <!-- Progress -->
-    <div class="progress-bar">
-      <div class="progress-fill" style="width: {((currentIndex + 1) / editedEntries.length) * 100}%"></div>
+    <!-- Progress Bar -->
+    <div class="relative h-1 bg-white/5">
+      <div 
+        class="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-300 ease-out"
+        style="width: {progressPercent}%"
+      ></div>
     </div>
-    <p class="progress-text">{progress}</p>
+    
+    <div class="px-6 py-3 bg-[#1e1e1e] border-b border-white/10">
+      <p class="text-xs font-medium text-gray-400 text-center">
+        Entrada {progress}
+      </p>
+    </div>
 
     {#if currentEntry}
-      <!-- Current Entry Form -->
-      <div class="form-container">
-        <!-- Nombre Original -->
-        <div class="original-name">
-          <p class="original-label">Nombre original detectado:</p>
-          <p class="original-value">{currentEntry.primerNombre} {currentEntry.primerApellido}</p>
-          {#if currentEntry.validationMessage}
-            <p class="validation-message">
-              <AlertTriangle size={14} />
-              {currentEntry.validationMessage}
-            </p>
-          {/if}
-        </div>
-
-        <!-- Datos básicos (solo lectura) -->
-        <div class="readonly-section">
-          <div class="readonly-field">
-            <label>Cédula</label>
-            <input
-              type="text"
-              value={currentEntry.cedula}
-              readonly
-              class="readonly-input"
-            />
-          </div>
-          <div class="readonly-field">
-            <label>Empresa</label>
-            <input
-              type="text"
-              value={currentEntry.empresa}
-              readonly
-              class="readonly-input"
-            />
+      <!-- Form Container -->
+      <div class="flex-1 overflow-y-auto p-6 space-y-6">
+        
+        <!-- Nombre Original - Card destacado -->
+        <div class="p-5 bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border border-yellow-500/20 rounded-xl">
+          <div class="flex items-start gap-3">
+            <AlertTriangle size={20} class="text-yellow-400 mt-0.5 flex-shrink-0" />
+            <div class="flex-1">
+              <p class="text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-2">
+                Nombre Original Detectado
+              </p>
+              <p class="text-lg font-semibold text-white mb-3">
+                {currentEntry.primerNombre} {currentEntry.primerApellido}
+              </p>
+              {#if currentEntry.validationMessage}
+                <p class="text-sm text-yellow-300/90 leading-relaxed">
+                  {currentEntry.validationMessage}
+                </p>
+              {/if}
+            </div>
           </div>
         </div>
 
-        <!-- Nombres (editables) -->
-        <div class="editable-section">
-          <h3 class="section-title">Corrija los nombres:</h3>
+        <!-- Datos de Solo Lectura -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Cédula
+            </label>
+            <div class="px-4 py-3 bg-[#1e1e1e] border border-white/10 rounded-lg">
+              <p class="text-sm font-mono text-gray-300">{currentEntry.cedula}</p>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Empresa
+            </label>
+            <div class="px-4 py-3 bg-[#1e1e1e] border border-white/10 rounded-lg">
+              <p class="text-sm text-gray-300">{currentEntry.empresa}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección Editable -->
+        <div class="p-6 bg-[#1e1e1e] border border-blue-500/20 rounded-xl">
+          <div class="flex items-center gap-2 mb-5">
+            <div class="w-1 h-5 bg-blue-500 rounded-full"></div>
+            <h3 class="text-sm font-semibold text-white uppercase tracking-wider">
+              Corrija los Nombres
+            </h3>
+          </div>
           
-          <div class="form-grid">
+          <div class="grid grid-cols-2 gap-4">
             <!-- Primer Nombre -->
-            <div class="form-field">
-              <label for="primerNombre" class="field-label">
-                Primer Nombre <span class="required">*</span>
+            <div class="space-y-2">
+              <label for="primerNombre" class="block text-xs font-medium text-gray-300">
+                Primer Nombre <span class="text-red-400">*</span>
               </label>
               <input
                 id="primerNombre"
@@ -134,13 +164,13 @@
                 value={currentEntry.primerNombre}
                 oninput={(e) => updateCurrentEntry('primerNombre', e.currentTarget.value)}
                 placeholder="Juan"
-                class="field-input"
+                class="w-full px-4 py-2.5 bg-[#252526] border border-white/20 rounded-lg text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
               />
             </div>
 
             <!-- Segundo Nombre -->
-            <div class="form-field">
-              <label for="segundoNombre" class="field-label">
+            <div class="space-y-2">
+              <label for="segundoNombre" class="block text-xs font-medium text-gray-300">
                 Segundo Nombre
               </label>
               <input
@@ -149,14 +179,14 @@
                 value={currentEntry.segundoNombre || ''}
                 oninput={(e) => updateCurrentEntry('segundoNombre', e.currentTarget.value || undefined)}
                 placeholder="Carlos"
-                class="field-input"
+                class="w-full px-4 py-2.5 bg-[#252526] border border-white/20 rounded-lg text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
               />
             </div>
 
             <!-- Primer Apellido -->
-            <div class="form-field">
-              <label for="primerApellido" class="field-label">
-                Primer Apellido <span class="required">*</span>
+            <div class="space-y-2">
+              <label for="primerApellido" class="block text-xs font-medium text-gray-300">
+                Primer Apellido <span class="text-red-400">*</span>
               </label>
               <input
                 id="primerApellido"
@@ -164,13 +194,13 @@
                 value={currentEntry.primerApellido}
                 oninput={(e) => updateCurrentEntry('primerApellido', e.currentTarget.value)}
                 placeholder="Pérez"
-                class="field-input"
+                class="w-full px-4 py-2.5 bg-[#252526] border border-white/20 rounded-lg text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
               />
             </div>
 
             <!-- Segundo Apellido -->
-            <div class="form-field">
-              <label for="segundoApellido" class="field-label">
+            <div class="space-y-2">
+              <label for="segundoApellido" class="block text-xs font-medium text-gray-300">
                 Segundo Apellido
               </label>
               <input
@@ -179,33 +209,40 @@
                 value={currentEntry.segundoApellido || ''}
                 oninput={(e) => updateCurrentEntry('segundoApellido', e.currentTarget.value || undefined)}
                 placeholder="Gómez"
-                class="field-input"
+                class="w-full px-4 py-2.5 bg-[#252526] border border-white/20 rounded-lg text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
               />
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Navigation & Actions -->
-      <div class="modal-footer">
-        <div class="nav-buttons">
+      <!-- Footer -->
+      <div class="flex items-center justify-between gap-4 p-6 border-t border-white/10 bg-[#1e1e1e]">
+        <!-- Navegación -->
+        <div class="flex gap-2">
           <button
             onclick={handlePrev}
             disabled={!hasPrev}
-            class="nav-button"
+            class="flex items-center gap-2 px-4 py-2.5 bg-transparent border border-white/20 rounded-lg text-white text-sm font-medium hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
-            ← Anterior
+            <ChevronLeft size={16} />
+            Anterior
           </button>
           <button
             onclick={handleNext}
             disabled={!hasNext}
-            class="nav-button"
+            class="flex items-center gap-2 px-4 py-2.5 bg-transparent border border-white/20 rounded-lg text-white text-sm font-medium hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
-            Siguiente →
+            Siguiente
+            <ChevronRight size={16} />
           </button>
         </div>
 
-        <button onclick={handleSave} class="save-button">
+        <!-- Botón Guardar -->
+        <button
+          onclick={handleSave}
+          class="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg text-white text-sm font-semibold hover:from-blue-500 hover:to-blue-400 shadow-lg shadow-blue-500/20 transition-all"
+        >
           <Save size={18} />
           Guardar Correcciones
         </button>
@@ -213,287 +250,3 @@
     {/if}
   </div>
 </div>
-
-<style>
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    animation: fadeIn 0.2s;
-  }
-
-  .modal-content {
-    background-color: #252526;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    width: 90%;
-    max-width: 700px;
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7);
-    animation: slideUp 0.3s;
-    overflow: hidden;
-  }
-
-  .modal-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: 20px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .header-left {
-    display: flex;
-    gap: 12px;
-  }
-
-  .modal-title {
-    margin: 0 0 4px 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #ffffff;
-  }
-
-  .modal-subtitle {
-    margin: 0;
-    font-size: 13px;
-    color: #a0a0a0;
-  }
-
-  .close-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    background-color: transparent;
-    border: none;
-    border-radius: 4px;
-    color: #a0a0a0;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .close-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-  }
-
-  .progress-bar {
-    height: 3px;
-    background-color: rgba(255, 255, 255, 0.1);
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background-color: #007acc;
-    transition: width 0.3s ease;
-  }
-
-  .progress-text {
-    padding: 8px 24px;
-    margin: 0;
-    font-size: 12px;
-    color: #a0a0a0;
-    text-align: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .form-container {
-    padding: 20px 24px;
-    overflow-y: auto;
-    flex: 1;
-  }
-
-  .original-name {
-    padding: 12px;
-    background-color: rgba(234, 179, 8, 0.1);
-    border: 1px solid rgba(234, 179, 8, 0.2);
-    border-radius: 6px;
-    margin-bottom: 20px;
-  }
-
-  .original-label {
-    margin: 0 0 4px 0;
-    font-size: 11px;
-    color: #fde047;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .original-value {
-    margin: 0 0 8px 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: #ffffff;
-  }
-
-  .validation-message {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 0;
-    font-size: 12px;
-    color: #fde047;
-  }
-
-  .readonly-section {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  .readonly-field label {
-    display: block;
-    margin-bottom: 4px;
-    font-size: 12px;
-    color: #a0a0a0;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .readonly-input {
-    width: 100%;
-    padding: 8px 12px;
-    background-color: #1e1e1e;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    color: #a0a0a0;
-    font-size: 13px;
-  }
-
-  .editable-section {
-    padding: 16px;
-    background-color: #1e1e1e;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .section-title {
-    margin: 0 0 16px 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #ffffff;
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-  }
-
-  .form-field {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .field-label {
-    margin-bottom: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    color: #d4d4d4;
-  }
-
-  .required {
-    color: #f87171;
-  }
-
-  .field-input {
-    padding: 8px 12px;
-    background-color: #252526;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    color: #ffffff;
-    font-size: 13px;
-    transition: all 0.2s;
-  }
-
-  .field-input:focus {
-    outline: none;
-    border-color: #007acc;
-    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
-  }
-
-  .modal-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: #1e1e1e;
-  }
-
-  .nav-buttons {
-    display: flex;
-    gap: 8px;
-  }
-
-  .nav-button {
-    padding: 8px 16px;
-    background-color: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .nav-button:hover:not(:disabled) {
-    background-color: rgba(255, 255, 255, 0.05);
-  }
-
-  .nav-button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .save-button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 24px;
-    background-color: #007acc;
-    border: none;
-    border-radius: 6px;
-    color: #ffffff;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .save-button:hover {
-    background-color: #005a9e;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes slideUp {
-    from {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-</style>

@@ -1,12 +1,11 @@
 // ==========================================
-// src/commands/blacklist_import.rs
+// src/commands/blacklist_import_commands.rs
 // ==========================================
 // Comandos Tauri para importación de lista negra
 // Expone la funcionalidad al frontend
 
 use tauri::State;
 use sqlx::SqlitePool;
-use std::sync::Arc;
 
 use crate::models::blacklist_import::{
     CreateBlacklistImportInput,
@@ -25,7 +24,7 @@ use crate::services::{blacklist_import_service, excel_parser};
 /// Crea una entrada manual en la tabla de prueba
 #[tauri::command]
 pub async fn create_blacklist_import_entry(
-    pool: State<'_, Arc<SqlitePool>>,
+    pool: State<'_, SqlitePool>,
     input: CreateBlacklistImportInput,
     user_id: String,
 ) -> Result<BlacklistImportResponse, String> {
@@ -35,7 +34,7 @@ pub async fn create_blacklist_import_entry(
 /// Obtiene una entrada por ID
 #[tauri::command]
 pub async fn get_blacklist_import_by_id(
-    pool: State<'_, Arc<SqlitePool>>,
+    pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<BlacklistImportResponse, String> {
     blacklist_import_service::get_blacklist_import_by_id(&pool, &id).await
@@ -44,7 +43,7 @@ pub async fn get_blacklist_import_by_id(
 /// Obtiene una entrada por cédula
 #[tauri::command]
 pub async fn get_blacklist_import_by_cedula(
-    pool: State<'_, Arc<SqlitePool>>,
+    pool: State<'_, SqlitePool>,
     cedula: String,
 ) -> Result<BlacklistImportResponse, String> {
     blacklist_import_service::get_blacklist_import_by_cedula(&pool, &cedula).await
@@ -53,7 +52,7 @@ pub async fn get_blacklist_import_by_cedula(
 /// Obtiene todas las entradas
 #[tauri::command]
 pub async fn get_all_blacklist_imports(
-    pool: State<'_, Arc<SqlitePool>>,
+    pool: State<'_, SqlitePool>,
 ) -> Result<Vec<BlacklistImportResponse>, String> {
     blacklist_import_service::get_all_blacklist_imports(&pool).await
 }
@@ -61,7 +60,7 @@ pub async fn get_all_blacklist_imports(
 /// Obtiene entradas por empresa
 #[tauri::command]
 pub async fn get_blacklist_imports_by_empresa(
-    pool: State<'_, Arc<SqlitePool>>,
+    pool: State<'_, SqlitePool>,
     empresa: String,
 ) -> Result<Vec<BlacklistImportResponse>, String> {
     blacklist_import_service::get_blacklist_imports_by_empresa(&pool, &empresa).await
@@ -70,7 +69,7 @@ pub async fn get_blacklist_imports_by_empresa(
 /// Actualiza una entrada
 #[tauri::command]
 pub async fn update_blacklist_import_entry(
-    pool: State<'_, Arc<SqlitePool>>,
+    pool: State<'_, SqlitePool>,
     id: String,
     input: UpdateBlacklistImportInput,
 ) -> Result<BlacklistImportResponse, String> {
@@ -80,7 +79,7 @@ pub async fn update_blacklist_import_entry(
 /// Elimina una entrada
 #[tauri::command]
 pub async fn delete_blacklist_import_entry(
-    pool: State<'_, Arc<SqlitePool>>,
+    pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<(), String> {
     blacklist_import_service::delete_blacklist_import(&pool, &id).await
@@ -89,7 +88,7 @@ pub async fn delete_blacklist_import_entry(
 /// Elimina todas las entradas (limpia la tabla de prueba)
 #[tauri::command]
 pub async fn delete_all_blacklist_imports(
-    pool: State<'_, Arc<SqlitePool>>,
+    pool: State<'_, SqlitePool>,
 ) -> Result<u64, String> {
     blacklist_import_service::delete_all_blacklist_imports(&pool).await
 }
@@ -101,7 +100,7 @@ pub async fn delete_all_blacklist_imports(
 /// Obtiene estadísticas de la tabla de prueba
 #[tauri::command]
 pub async fn get_blacklist_import_stats(
-    pool: State<'_, Arc<SqlitePool>>,
+    pool: State<'_, SqlitePool>,
 ) -> Result<BlacklistImportStats, String> {
     blacklist_import_service::get_blacklist_import_stats(&pool).await
 }
@@ -109,7 +108,7 @@ pub async fn get_blacklist_import_stats(
 /// Verifica si una cédula ya existe
 #[tauri::command]
 pub async fn check_duplicate_cedula(
-    pool: State<'_, Arc<SqlitePool>>,
+    pool: State<'_, SqlitePool>,
     cedula: String,
 ) -> Result<bool, String> {
     blacklist_import_service::check_duplicate_cedula(&pool, &cedula).await
@@ -143,7 +142,7 @@ pub async fn parse_excel_file(
 /// Importa el archivo Excel a la base de datos
 #[tauri::command]
 pub async fn import_excel_to_database(
-    pool: State<'_, Arc<SqlitePool>>,
+    pool: State<'_, SqlitePool>,
     file_path: String,
     user_id: String,
     skip_header: bool,
@@ -202,7 +201,7 @@ pub async fn import_excel_to_database(
 /// Importa solo las entradas que requieren revisión (después de corrección manual)
 #[tauri::command]
 pub async fn import_reviewed_entries(
-    pool: State<'_, Arc<SqlitePool>>,
+    pool: State<'_, SqlitePool>,
     entries: Vec<CreateBlacklistImportInput>,
     user_id: String,
 ) -> Result<ImportResultResponse, String> {

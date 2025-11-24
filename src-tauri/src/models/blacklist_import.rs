@@ -47,11 +47,11 @@ pub struct BlacklistImportTest {
 // ==========================================
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum ValidationStatus {
-    Valid,        // Validación automática exitosa
-    NeedsReview,  // Requiere revisión manual (nombre compuesto detectado)
-    Invalid,      // Datos inválidos
+    Valid,        // Se serializa como "valid"
+    NeedsReview,  // Se serializa como "needs_review"
+    Invalid,      // Se serializa como "invalid"
 }
 
 impl ValidationStatus {

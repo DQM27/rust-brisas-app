@@ -30,28 +30,71 @@
     parseResult?.entries.filter(e => e.validationStatus === 'needs_review') || []
   );
 
-  // Paso 1: Seleccionar archivo
-  async function handleFileSelect(file: File | null) {
-    selectedFile = file;
-    filePath = null;
+  // Entradas válidas (para importar directamente)
+  const validEntries = $derived(
+    parseResult?.entries.filter(e => e.validationStatus === 'valid') || []
+  );
 
-    if (file) {
-      // Guardar archivo temporalmente para Tauri
-      try {
-        const result = await open({
-          multiple: false,
-          filters: [{
-            name: 'Excel',
-            extensions: ['xlsx', 'xls', 'ods']
-          }]
-        });
-
-        if (result) {
-          filePath = result as string;
-        }
-      } catch (err) {
-        console.error('Error selecting file:', err);
+  // DEBUG: Ver qué se está recibiendo
+  $effect(() => {
+    if (parseResult) {
+      console.log('📊 Parse Result completo:', parseResult);
+      console.log('📈 Total rows:', parseResult.totalRows);
+      console.log('✅ Successful:', parseResult.successful);
+      console.log('⚠️ Needs review:', parseResult.needsReview);
+      console.log('❌ Failed:', parseResult.failed);
+      console.log('📋 Entries array length:', parseResult.entries.length);
+      console.log('📋 Entries:', parseResult.entries);
+      
+      if (parseResult.entries.length > 0) {
+        console.log('🔍 Primera entrada completa:', JSON.parse(JSON.stringify(parseResult.entries[0])));
+        console.log('🔍 validationStatus de primera entrada:', parseResult.entries[0].validationStatus);
+        console.log('🔍 Tipo de validationStatus:', typeof parseResult.entries[0].validationStatus);
+        
+        // Ver todas las validationStatus
+        const statuses = parseResult.entries.map(e => e.validationStatus);
+        console.log('🔍 Todos los validationStatus:', statuses);
+        console.log('🔍 Únicos:', [...new Set(statuses)]);
       }
+      
+      console.log('✅ Valid entries count:', validEntries.length);
+      console.log('✅ Valid entries:', validEntries);
+      console.log('⚠️ Needs review count:', entriesNeedingReview.length);
+      console.log('⚠️ Needs review entries:', entriesNeedingReview);
+    }
+  });
+
+  // Abrir diálogo de archivo
+  async function handleOpenFileDialog() {
+    try {
+      const result = await open({
+        multiple: false,
+        filters: [{
+          name: 'Excel',
+          extensions: ['xlsx', 'xls', 'ods']
+        }]
+      });
+
+      if (result) {
+        const path = result as string;
+        console.log('📁 File path:', path);
+        filePath = path;
+        // Crear un File object mock con el nombre
+        const fileName = path.split('/').pop() || path.split('\\').pop() || 'archivo.xlsx';
+        const mockFile = new File([], fileName, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        selectedFile = mockFile;
+      }
+    } catch (err) {
+      console.error('Error selecting file:', err);
+      toast.error('Error al seleccionar archivo');
+    }
+  }
+
+  // Paso 1: Seleccionar archivo
+  function handleFileSelect(file: File | null) {
+    selectedFile = file;
+    if (!file) {
+      filePath = null;
     }
   }
 
@@ -62,15 +105,22 @@
       return;
     }
 
+    console.log('🔄 Procesando archivo:', filePath);
     loading = true;
 
     const result = await submitPreview(filePath, true);
+    console.log('📥 Resultado de submitPreview:', result);
 
     if (result.ok) {
-      parseResult = result.result;
+      // ⬇️⬇️⬇️ FIX: Convertir entries a array normal ⬇️⬇️⬇️
+      parseResult = {
+        ...result.result,
+        entries: [...result.result.entries]
+      };
       step = 'summary';
       toast.success('Archivo procesado correctamente');
     } else {
+      console.error('❌ Error en preview:', result.error);
       toast.error(result.error, { duration: 5000 });
     }
 
@@ -78,13 +128,19 @@
   }
 
   // Paso 3: Desde Summary - Continuar
-  function handleContinueFromSummary() {
+  async function handleContinueFromSummary() {
+    console.log('▶️ handleContinueFromSummary called');
+    console.log('⚠️ entriesNeedingReview.length:', entriesNeedingReview.length);
+    console.log('✅ validEntries.length:', validEntries.length);
+
     if (entriesNeedingReview.length > 0) {
       // Hay entradas que necesitan revisión manual
+      console.log('🔍 Abriendo modal de validación');
       showValidationModal = true;
     } else {
       // Todas las entradas son válidas, importar directamente
-      handleFinalImport();
+      console.log('✅ Importando solo válidas');
+      await handleImportValidEntries();
     }
   }
 
@@ -95,39 +151,57 @@
 
   // Paso 5: Guardar correcciones manuales
   async function handleSaveCorrections(correctedEntries: BlacklistImportEntry[]) {
+    console.log('💾 Guardando correcciones:', correctedEntries);
     showValidationModal = false;
     loading = true;
 
     try {
-      // Convertir entradas corregidas a formato de input
-      const inputs: CreateBlacklistImportInput[] = correctedEntries.map(entry => ({
-        cedula: entry.cedula,
-        primerNombre: entry.primerNombre,
-        segundoNombre: entry.segundoNombre,
-        primerApellido: entry.primerApellido,
-        segundoApellido: entry.segundoApellido,
-        empresa: entry.empresa,
-        motivoBloqueo: entry.motivoBloqueo,
-        fechaInicioBloqueo: entry.fechaInicioBloqueo,
-        observaciones: entry.observaciones
-      }));
+      let totalImported = 0;
 
-      // Importar entradas corregidas
-      const reviewedResult = await importReviewedEntries(inputs, userId);
+      // 1. Importar las entradas corregidas manualmente
+      if (correctedEntries.length > 0) {
+        console.log('📝 Importando entradas corregidas:', correctedEntries.length);
+        const inputs: CreateBlacklistImportInput[] = correctedEntries.map(entry => ({
+          cedula: entry.cedula,
+          primerNombre: entry.primerNombre,
+          segundoNombre: entry.segundoNombre,
+          primerApellido: entry.primerApellido,
+          segundoApellido: entry.segundoApellido,
+          empresa: entry.empresa,
+          motivoBloqueo: entry.motivoBloqueo,
+          fechaInicioBloqueo: entry.fechaInicioBloqueo,
+          observaciones: entry.observaciones
+        }));
 
-      // También importar las que ya eran válidas
-      if (filePath && parseResult) {
-        await submitImport(filePath, userId, true);
+        const reviewedResult = await importReviewedEntries(inputs, userId);
+        console.log('📥 Resultado de entradas corregidas:', reviewedResult);
+        totalImported += reviewedResult.successful;
+
+        if (reviewedResult.failed > 0) {
+          toast.error(`${reviewedResult.failed} entradas corregidas fallaron al importar`, { duration: 4000 });
+        }
       }
 
+      // 2. Importar las que ya eran válidas desde el Excel
+      if (filePath && validEntries.length > 0) {
+        console.log('✅ Importando entradas válidas:', validEntries.length);
+        const importResult = await submitImport(filePath, userId, true);
+        console.log('📥 Resultado de entradas válidas:', importResult);
+        if (importResult.ok) {
+          totalImported += importResult.result.successful;
+        }
+      }
+
+      console.log('✅ Total importado:', totalImported);
       toast.success(
-        `✓ Importación completada: ${reviewedResult.successful + (parseResult?.successful || 0)} registros importados`,
+        `✓ Importación completada: ${totalImported} registros importados`,
         { duration: 4000 }
       );
 
       onSuccess?.();
       resetWizard();
     } catch (err: any) {
+      console.error('❌ Error en handleSaveCorrections:', err);
       const errorMessage = parseImportError(err);
       toast.error(errorMessage, { duration: 5000 });
     }
@@ -135,15 +209,25 @@
     loading = false;
   }
 
-  // Importación final (cuando no hay correcciones)
-  async function handleFinalImport() {
-    if (!filePath) return;
+  // Importar solo entradas válidas (sin correcciones)
+  async function handleImportValidEntries() {
+    console.log('📤 handleImportValidEntries called');
+    console.log('📁 filePath:', filePath);
+    console.log('👤 userId:', userId);
+
+    if (!filePath) {
+      console.error('❌ No hay filePath');
+      return;
+    }
 
     loading = true;
 
+    console.log('🔄 Llamando submitImport...');
     const result = await submitImport(filePath, userId, true);
+    console.log('📥 Resultado de submitImport:', result);
 
     if (result.ok) {
+      console.log('✅ Importación exitosa:', result.result.successful);
       toast.success(
         `✓ Importación completada: ${result.result.successful} registros importados`,
         { duration: 4000 }
@@ -151,6 +235,7 @@
       onSuccess?.();
       resetWizard();
     } else {
+      console.error('❌ Error en importación:', result.error);
       toast.error(result.error, { duration: 5000 });
     }
 
@@ -159,6 +244,7 @@
 
   // Reset wizard
   function resetWizard() {
+    console.log('🔄 Reseteando wizard');
     step = 'upload';
     selectedFile = null;
     filePath = null;
@@ -167,13 +253,14 @@
   }
 </script>
 
-<div class="container">
+<div class="w-full min-h-screen p-10 bg-[#1e1e1e]">
   {#if step === 'upload'}
     <BlacklistImportUpload
       {loading}
       {selectedFile}
       onFileSelect={handleFileSelect}
       onSubmit={handleSubmitPreview}
+      onOpenFileDialog={handleOpenFileDialog}
     />
   {:else if step === 'summary' && parseResult}
     <BlacklistImportSummary
@@ -191,12 +278,3 @@
     />
   {/if}
 </div>
-
-<style>
-  .container {
-    width: 100%;
-    min-height: 100vh;
-    padding: 40px 20px;
-    background-color: #1e1e1e;
-  }
-</style>

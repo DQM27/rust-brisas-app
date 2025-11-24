@@ -54,11 +54,15 @@ pub fn run() {
                 client: supabase_client,
             }));
             
+            // Envolver el pool en Arc para que coincida con los comandos
+            
+            
             tauri::Builder::default()
                 .manage(pool)
                 .manage(app_config)
                 .manage(supabase_state)
                 .plugin(tauri_plugin_dialog::init())
+                .plugin(tauri_plugin_opener::init())
                 .invoke_handler(tauri::generate_handler![
                     // Comandos de usuario
                     commands::user_commands::create_user,
@@ -143,8 +147,6 @@ pub fn run() {
                     commands::keyring_commands::keyring_delete,
                     commands::keyring_commands::keyring_check,
                     commands::keyring_commands::keyring_info,
-                    
-                    // ⬇️⬇️⬇️ NUEVOS COMANDOS DE IMPORTACIÓN ⬇️⬇️⬇️
                     
                     // Comandos CRUD de blacklist_import
                     commands::blacklist_import_commands::create_blacklist_import_entry,
