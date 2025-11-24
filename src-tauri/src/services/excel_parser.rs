@@ -164,7 +164,16 @@ fn get_cell_value(row: &[Data], index: usize) -> Option<String> {
             Data::Float(f) => Some(f.to_string()),
             Data::Int(i) => Some(i.to_string()),
             Data::Bool(b) => Some(b.to_string()),
-            Data::DateTime(dt) => Some(format!("{}", dt)),
+            Data::DateTime(dt) => {
+                // Excel almacena fechas como f64 (días desde 1899-12-30)
+                // Convertir a formato YYYY-MM-DD
+                let days_since_1900 = dt.as_f64().floor() as i64;
+                let base = chrono::NaiveDate::from_ymd_opt(1899, 12, 30).unwrap();
+                
+                base.checked_add_signed(chrono::Duration::days(days_since_1900))
+                    .map(|d| d.format("%Y-%m-%d").to_string())
+                    .or_else(|| Some(format!("{}", dt.as_f64()))) // Fallback
+            }
             Data::DateTimeIso(dt) => Some(dt.to_string()),
             Data::DurationIso(d) => Some(d.to_string()),
             Data::Error(e) => {
@@ -174,7 +183,6 @@ fn get_cell_value(row: &[Data], index: usize) -> Option<String> {
         }
     })
 }
-
 // ==========================================
 // NORMALIZACIÓN DE FILAS
 // ==========================================
