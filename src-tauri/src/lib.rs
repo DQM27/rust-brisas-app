@@ -12,7 +12,6 @@ pub mod keyring_manager;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-// Estado compartido de Supabase (opcional, puede estar o no)
 pub struct SupabaseState {
     pub client: Option<supabase::SupabaseClient>,
 }
@@ -25,14 +24,11 @@ pub fn run() {
         async fn main_inner() -> Result<(), Box<dyn std::error::Error>> {
             dotenvy::dotenv().ok();
             
-            // ✅ 1. Cargar configuración básica (Terminal ID, paths, etc.)
             let app_config = config::load_config()?;
             println!("🏢 Terminal: {} (ID: {})", app_config.terminal.nombre, app_config.terminal.id);
             
-            // ✅ 2. Inicializar DB local (SQLite)
             let pool = db::init_db(&app_config).await?;
             
-            // ✅ 3. Intentar cargar credenciales de Supabase desde keyring
             let supabase_client = match keyring_manager::load_credentials() {
                 Ok(creds) => {
                     println!("🔐 Credenciales encontradas en keyring");
@@ -54,7 +50,6 @@ pub fn run() {
                 }
             };
 
-            // Envolver en estado compartido
             let supabase_state = Arc::new(RwLock::new(SupabaseState {
                 client: supabase_client,
             }));
@@ -147,6 +142,34 @@ pub fn run() {
                     commands::keyring_commands::keyring_delete,
                     commands::keyring_commands::keyring_check,
                     commands::keyring_commands::keyring_info,
+                    
+                    // ⬇️⬇️⬇️ NUEVOS COMANDOS DE IMPORTACIÓN ⬇️⬇️⬇️
+                    
+                    // Comandos CRUD de blacklist_import
+                    commands::blacklist_import_commands::create_blacklist_import_entry,
+                    commands::blacklist_import_commands::get_blacklist_import_by_id,
+                    commands::blacklist_import_commands::get_blacklist_import_by_cedula,
+                    commands::blacklist_import_commands::get_all_blacklist_imports,
+                    commands::blacklist_import_commands::get_blacklist_imports_by_empresa,
+                    commands::blacklist_import_commands::update_blacklist_import_entry,
+                    commands::blacklist_import_commands::delete_blacklist_import_entry,
+                    commands::blacklist_import_commands::delete_all_blacklist_imports,
+                    
+                    // Comandos de estadísticas
+                    commands::blacklist_import_commands::get_blacklist_import_stats,
+                    commands::blacklist_import_commands::check_duplicate_cedula,
+                    
+                    // Comandos de importación Excel
+                    commands::blacklist_import_commands::preview_excel_import,
+                    commands::blacklist_import_commands::parse_excel_file,
+                    commands::blacklist_import_commands::import_excel_to_database,
+                    commands::blacklist_import_commands::import_reviewed_entries,
+                    
+                    // Comandos de utilidad
+                    commands::blacklist_import_commands::validate_and_split_name,
+                    commands::blacklist_import_commands::check_name_requires_validation,
+                    commands::blacklist_import_commands::normalize_cedula,
+                    commands::blacklist_import_commands::capitalize_name,
                 ])
                 .run(tauri::generate_context!())?;
             Ok(())

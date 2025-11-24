@@ -6,3 +6,4 @@ pub mod vehiculo;
 pub mod gafete;
 pub mod gafete_perdido;
 pub mod ingreso;
+pub mod blacklist_import;
