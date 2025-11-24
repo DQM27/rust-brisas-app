@@ -58,6 +58,7 @@ pub fn run() {
                 .manage(pool)
                 .manage(app_config)
                 .manage(supabase_state)
+                .plugin(tauri_plugin_dialog::init())
                 .invoke_handler(tauri::generate_handler![
                     // Comandos de usuario
                     commands::user_commands::create_user,

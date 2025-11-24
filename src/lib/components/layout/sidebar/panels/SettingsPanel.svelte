@@ -7,6 +7,7 @@
     RefreshCw,
     Info,
     Database,
+    FileSpreadsheet, // ⬅️ NUEVO ICONO
   } from "lucide-svelte";
   import { openView, activePanel } from "../../../../stores/sidebar";
 
@@ -64,6 +65,28 @@
     <span>Backup y restore</span>
   </div>
 </div>
+
+<!-- ⬇️ NUEVA SECCIÓN -->
+<div class="panel-section">
+  <div class="panel-section-title">DATOS</div>
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() =>
+      openView("blacklist-import", "Importar Lista Negra"),
+    )}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() =>
+          openView("blacklist-import", "Importar Lista Negra"),
+        ),
+      )}
+  >
+    <svelte:component this={FileSpreadsheet} size={16} />
+    <span>Importar Lista Negra desde Excel</span>
+  </button>
+</div>
+
 <div class="panel-section">
   <div class="panel-section-title">SISTEMA</div>
   <div class="panel-item non-clickable">

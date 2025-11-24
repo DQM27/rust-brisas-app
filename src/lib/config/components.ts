@@ -13,6 +13,7 @@ import ContratistaView from '$lib/components/ContratistaView.svelte';
 import ContratistaListView from '$lib/components/ContratistaListView.svelte';
 import ListaNegraView from '$lib/components/ListaNegraView.svelte';
 import ListaNegraListView from '$lib/components/ListaNegraListView.svelte';
+import BlacklistImportView from '$lib/components/BlacklistImportView.svelte';
 
 /**
  * Registry central de componentes
@@ -29,6 +30,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'contratista-list': ContratistaListView,
   'lista-negra': ListaNegraView,
   'lista-negra-list': ListaNegraListView,
+  'blacklist-import': BlacklistImportView,
 };
 
 /**

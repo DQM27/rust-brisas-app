@@ -17,6 +17,7 @@
     "@ag-grid-community/core": "^32.3.9",
     "@ag-grid-community/theming": "^32.3.9",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "^2.4.2",
     "@tauri-apps/plugin-opener": "^2",
     "ag-grid-svelte5-extended": "^0.0.13",
     "lucide-svelte": "^0.553.0",
