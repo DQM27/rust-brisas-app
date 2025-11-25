@@ -1,226 +1,161 @@
 import { persisted } from 'svelte-persisted-store';
-import { derived } from 'svelte/store';
-import type { Readable } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
+import type { Readable, Writable } from 'svelte/store';
+import type { TablePreferences, ColumnVisibilityConfig } from '$lib/types/dataTable';
 
 /**
- * Configuración de visibilidad de columnas para Lista Negra
+ * Cache de stores por storageKey
  */
-export interface ColumnVisibility {
-    cedula: boolean;
-    nombreCompleto: boolean;
-    empresaNombre: boolean;
-    motivoBloqueo: boolean;
-    isActive: boolean;
-    esBloqueoPermanente: boolean;
-    bloqueadoPor: boolean;
-    fechaInicioBloqueo: boolean;
-    diasTranscurridos: boolean;
-    actions: boolean;
+const storeCache = new Map<string, Writable<TablePreferences>>();
+
+/**
+ * Obtiene o crea un store de preferencias para una tabla específica
+ * 
+ * @param storageKey - Clave única para esta tabla
+ * @param defaultVisibility - Visibilidad por defecto de columnas
+ * @returns Store persistido de preferencias
+ */
+export function getTablePreferencesStore(
+    storageKey: string,
+    defaultVisibility: ColumnVisibilityConfig
+): Writable<TablePreferences> {
+    // Retornar del cache si ya existe
+    if (storeCache.has(storageKey)) {
+        return storeCache.get(storageKey)!;
+    }
+
+    // Crear nuevo store
+    const store = persisted<TablePreferences>(storageKey, {
+        columnVisibility: defaultVisibility,
+        pageSize: 20,
+    });
+
+    // Cachear
+    storeCache.set(storageKey, store);
+
+    return store;
 }
 
 /**
- * Configuración por defecto de columnas visibles
+ * Obtiene un store derivado con el conteo de columnas visibles
  */
-const DEFAULT_COLUMN_VISIBILITY: ColumnVisibility = {
-    cedula: true,
-    nombreCompleto: true,
-    empresaNombre: true,
-    motivoBloqueo: true,
-    isActive: true,
-    esBloqueoPermanente: true,
-    bloqueadoPor: true,
-    fechaInicioBloqueo: true,
-    diasTranscurridos: true,
-    actions: true,
-};
-
-/**
- * Store persistido con la configuración de columnas
- */
-export const columnVisibilityStore = persisted<ColumnVisibility>(
-    'lista-negra-column-visibility',
-    DEFAULT_COLUMN_VISIBILITY
-);
-
-/**
- * Labels legibles para cada columna
- */
-export const COLUMN_LABELS: Record<keyof ColumnVisibility, string> = {
-    cedula: 'Cédula',
-    nombreCompleto: 'Nombre Completo',
-    empresaNombre: 'Empresa',
-    motivoBloqueo: 'Motivo',
-    isActive: 'Estado',
-    esBloqueoPermanente: 'Tipo',
-    bloqueadoPor: 'Bloqueado por',
-    fechaInicioBloqueo: 'Fecha de bloqueo',
-    diasTranscurridos: 'Días transcurridos',
-    actions: 'Acciones',
-};
-
-/**
- * Store derivado que indica cuántas columnas están visibles
- */
-export const visibleColumnCount: Readable<number> = derived(
-    columnVisibilityStore,
-    ($config) => Object.values($config).filter(Boolean).length
-);
+export function getVisibleColumnCount(
+    preferencesStore: Writable<TablePreferences>
+): Readable<number> {
+    return derived(preferencesStore, ($prefs) =>
+        Object.values($prefs.columnVisibility).filter(Boolean).length
+    );
+}
 
 /**
  * Alterna la visibilidad de una columna
- * 
- * @param columnKey - Clave de la columna a alternar
  */
-export function toggleColumnVisibility(columnKey: keyof ColumnVisibility): void {
-    columnVisibilityStore.update(config => ({
-        ...config,
-        [columnKey]: !config[columnKey]
+export function toggleColumnVisibility(
+    preferencesStore: Writable<TablePreferences>,
+    columnKey: string
+): void {
+    preferencesStore.update(prefs => ({
+        ...prefs,
+        columnVisibility: {
+            ...prefs.columnVisibility,
+            [columnKey]: !prefs.columnVisibility[columnKey]
+        }
     }));
 }
 
 /**
- * Muestra una columna específica
- * 
- * @param columnKey - Clave de la columna a mostrar
+ * Actualiza la visibilidad de múltiples columnas
  */
-export function showColumn(columnKey: keyof ColumnVisibility): void {
-    columnVisibilityStore.update(config => ({
-        ...config,
-        [columnKey]: true
-    }));
-}
-
-/**
- * Oculta una columna específica
- * 
- * @param columnKey - Clave de la columna a ocultar
- */
-export function hideColumn(columnKey: keyof ColumnVisibility): void {
-    columnVisibilityStore.update(config => ({
-        ...config,
-        [columnKey]: false
+export function updateColumnVisibility(
+    preferencesStore: Writable<TablePreferences>,
+    updates: Partial<ColumnVisibilityConfig>
+): void {
+    preferencesStore.update(prefs => ({
+        ...prefs,
+        columnVisibility: {
+            ...prefs.columnVisibility,
+            ...(updates as ColumnVisibilityConfig)
+        }
     }));
 }
 
 /**
  * Muestra todas las columnas
  */
-export function showAllColumns(): void {
-    columnVisibilityStore.set(DEFAULT_COLUMN_VISIBILITY);
-}
-
-/**
- * Oculta todas las columnas excepto las esenciales
- */
-export function showMinimalColumns(): void {
-    columnVisibilityStore.set({
-        cedula: true,
-        nombreCompleto: true,
-        empresaNombre: false,
-        motivoBloqueo: false,
-        isActive: true,
-        esBloqueoPermanente: false,
-        bloqueadoPor: false,
-        fechaInicioBloqueo: false,
-        diasTranscurridos: false,
-        actions: true,
+export function showAllColumns(
+    preferencesStore: Writable<TablePreferences>
+): void {
+    preferencesStore.update(prefs => {
+        const allVisible = Object.keys(prefs.columnVisibility).reduce(
+            (acc, key) => ({ ...acc, [key]: true }),
+            {} as ColumnVisibilityConfig
+        );
+        return {
+            ...prefs,
+            columnVisibility: allVisible
+        };
     });
 }
 
 /**
- * Restaura la configuración por defecto
+ * Oculta todas las columnas
  */
-export function resetColumnVisibility(): void {
-    columnVisibilityStore.set(DEFAULT_COLUMN_VISIBILITY);
+export function hideAllColumns(
+    preferencesStore: Writable<TablePreferences>
+): void {
+    preferencesStore.update(prefs => {
+        const allHidden = Object.keys(prefs.columnVisibility).reduce(
+            (acc, key) => ({ ...acc, [key]: false }),
+            {} as ColumnVisibilityConfig
+        );
+        return {
+            ...prefs,
+            columnVisibility: allHidden
+        };
+    });
 }
 
 /**
- * Actualiza múltiples columnas a la vez
- * 
- * @param updates - Objeto con las columnas a actualizar
+ * Oculta todas las columnas excepto las especificadas
  */
-export function updateColumnVisibility(updates: Partial<ColumnVisibility>): void {
-    columnVisibilityStore.update(config => ({
-        ...config,
-        ...updates
-    }));
+export function showOnlyColumns(
+    preferencesStore: Writable<TablePreferences>,
+    columnsToShow: string[]
+): void {
+    preferencesStore.update(prefs => {
+        const visibility = Object.keys(prefs.columnVisibility).reduce(
+            (acc, key) => ({ ...acc, [key]: columnsToShow.includes(key) }),
+            {} as ColumnVisibilityConfig
+        );
+        return {
+            ...prefs,
+            columnVisibility: visibility
+        };
+    });
 }
-
-/**
- * Verifica si una columna está visible
- * 
- * @param columnKey - Clave de la columna
- * @param config - Configuración actual
- * @returns true si la columna está visible
- */
-export function isColumnVisible(
-    columnKey: keyof ColumnVisibility,
-    config: ColumnVisibility
-): boolean {
-    return config[columnKey];
-}
-
-/**
- * Obtiene lista de columnas visibles
- * 
- * @param config - Configuración actual
- * @returns Array con las claves de columnas visibles
- */
-export function getVisibleColumns(config: ColumnVisibility): (keyof ColumnVisibility)[] {
-    return Object.entries(config)
-        .filter(([_, visible]) => visible)
-        .map(([key]) => key as keyof ColumnVisibility);
-}
-
-/**
- * Obtiene lista de columnas ocultas
- * 
- * @param config - Configuración actual
- * @returns Array con las claves de columnas ocultas
- */
-export function getHiddenColumns(config: ColumnVisibility): (keyof ColumnVisibility)[] {
-    return Object.entries(config)
-        .filter(([_, visible]) => !visible)
-        .map(([key]) => key as keyof ColumnVisibility);
-}
-
-/**
- * Configuración adicional de la tabla
- */
-export interface TablePreferences {
-    columnVisibility: ColumnVisibility;
-    pageSize: number;
-    quickFilterText: string;
-}
-
-/**
- * Store persistido con todas las preferencias de la tabla
- */
-export const tablePreferencesStore = persisted<TablePreferences>(
-    'lista-negra-table-preferences',
-    {
-        columnVisibility: DEFAULT_COLUMN_VISIBILITY,
-        pageSize: 20,
-        quickFilterText: '',
-    }
-);
 
 /**
  * Actualiza el tamaño de página
  */
-export function updatePageSize(pageSize: number): void {
-    tablePreferencesStore.update(prefs => ({
+export function updatePageSize(
+    preferencesStore: Writable<TablePreferences>,
+    pageSize: number
+): void {
+    preferencesStore.update(prefs => ({
         ...prefs,
         pageSize
     }));
 }
 
 /**
- * Actualiza el texto del filtro rápido
+ * Resetea las preferencias a los valores por defecto
  */
-export function updateQuickFilter(text: string): void {
-    tablePreferencesStore.update(prefs => ({
-        ...prefs,
-        quickFilterText: text
-    }));
+export function resetTablePreferences(
+    preferencesStore: Writable<TablePreferences>,
+    defaultVisibility: ColumnVisibilityConfig
+): void {
+    preferencesStore.set({
+        columnVisibility: defaultVisibility,
+        pageSize: 20,
+    });
 }

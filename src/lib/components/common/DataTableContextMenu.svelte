@@ -19,96 +19,34 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="context-menu-overlay" onclick={onClose}>
+<div 
+  class="fixed inset-0 z-50"
+  on:click={onClose}
+>
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="context-menu"
+    class="fixed bg-[#252526] border border-white/10 rounded-md shadow-xl min-w-[180px] p-1 z-51 animate-in fade-in-0 zoom-in-95"
     style="left: {x}px; top: {y}px;"
-    onclick={(e) => e.stopPropagation()}
+    on:click={(e) => e.stopPropagation()}
   >
-    {#each visibleItems as item}
-      <button
-        class="menu-item"
-        class:danger={item.variant === "danger"}
-        onclick={() => onItemClick(item)}
-      >
-        {#if item.icon}
-          {@const Icon = item.icon}
-          <Icon size={14} />
-        {/if}
-        <span>{item.label}</span>
-      </button>
+    <div class="space-y-0.5">
+      {#each visibleItems as item, index}
+        <button
+          class="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none rounded-sm text-gray-300 text-sm cursor-pointer transition-colors hover:bg-white/10 hover:text-white {item.variant === 'danger' ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300' : ''}"
+          on:click={() => onItemClick(item)}
+        >
+          {#if item.icon}
+            {@const Icon = item.icon}
+            <Icon size={14} class="shrink-0" />
+          {/if}
+          <span class="text-left whitespace-nowrap">{item.label}</span>
+        </button>
 
-      {#if item.dividerAfter}
-        <div class="menu-divider"></div>
-      {/if}
-    {/each}
+        {#if item.dividerAfter && index < visibleItems.length - 1}
+          <div class="h-px bg-white/10 my-1"></div>
+        {/if}
+      {/each}
+    </div>
   </div>
 </div>
-
-<style>
-  .context-menu-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-  }
-
-  .context-menu {
-    position: fixed;
-    background-color: #252526;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-    min-width: 180px;
-    padding: 4px;
-    z-index: 1001;
-    animation: slideIn 0.15s ease-out;
-  }
-
-  .menu-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 8px 12px;
-    background: transparent;
-    border: none;
-    border-radius: 4px;
-    color: #d4d4d4;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: left;
-  }
-
-  .menu-item:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-  }
-
-  .menu-item.danger {
-    color: #f87171;
-  }
-
-  .menu-item.danger:hover {
-    background-color: rgba(248, 113, 113, 0.1);
-  }
-
-  .menu-divider {
-    height: 1px;
-    background-color: rgba(255, 255, 255, 0.1);
-    margin: 4px 0;
-  }
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95) translateY(-5px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-</style>

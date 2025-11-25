@@ -1,8 +1,3 @@
-<!-- ==========================================
-// src/lib/components/contratista/ContratistaListForm.svelte
-// Componente visual limpio - Solo presentación
-// ========================================== -->
-
 <script lang="ts">
   import { fade } from "svelte/transition";
   import {
@@ -17,26 +12,46 @@
   import SearchBar from "$lib/components/shared/SearchBar.svelte";
   import DataTable from "$lib/components/common/DataTable.svelte";
 
-  // Props - Solo inputs y outputs
-  export let contratistas: ContratistaResponse[] = [];
-  export let loading = false;
-  export let error = "";
-  export let blockedContratistas: Set<string> = new Set();
-  export let filteredData: ContratistaResponse[] = [];
-  export let stats = { total: 0, activos: 0, vencidos: 0, porVencer: 0 };
-  export let columns: DataTableColumn<ContratistaResponse>[] = [];
-  export let estadoFilter = "todos";
-  export let praindFilter = "todos";
+  // Props usando sintaxis de Svelte 5
+  interface Props {
+    contratistas?: ContratistaResponse[];
+    loading?: boolean;
+    error?: string;
+    blockedContratistas?: Set<string>;
+    filteredData?: ContratistaResponse[];
+    stats?: { total: number; activos: number; vencidos: number; porVencer: number };
+    columns: DataTableColumn<ContratistaResponse>[];
+    estadoFilter?: string;
+    praindFilter?: string;
+    onRefresh: () => void;
+    onBlock: (data: any) => Promise<void>;
+    onUnblock: (data: any) => Promise<void>;
+    onEstadoFilterChange: (filter: string) => void;
+    onPraindFilterChange: (filter: string) => void;
+    onClearAllFilters: () => void;
+    onSearchSelect: (e: CustomEvent<SearchResult>) => void;
+    onSearchClear: () => void;
+  }
 
-  // Eventos - Solo comunicación hacia arriba
-  export let onRefresh: () => void;
-  export let onBlock: (data: any) => Promise<void>;
-  export let onUnblock: (data: any) => Promise<void>;
-  export let onEstadoFilterChange: (filter: string) => void;
-  export let onPraindFilterChange: (filter: string) => void;
-  export let onClearAllFilters: () => void;
-  export let onSearchSelect: (e: CustomEvent<SearchResult>) => void;
-  export let onSearchClear: () => void;
+  let {
+    contratistas = [],
+    loading = false,
+    error = "",
+    blockedContratistas = new Set(),
+    filteredData = [],
+    stats = { total: 0, activos: 0, vencidos: 0, porVencer: 0 },
+    columns,
+    estadoFilter = $bindable("todos"),
+    praindFilter = $bindable("todos"),
+    onRefresh,
+    onBlock,
+    onUnblock,
+    onEstadoFilterChange,
+    onPraindFilterChange,
+    onClearAllFilters,
+    onSearchSelect,
+    onSearchClear,
+  }: Props = $props();
 
   // Handlers con type safety
   function handleEstadoFilterChange(e: Event) {

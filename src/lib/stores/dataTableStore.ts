@@ -98,6 +98,24 @@ export function showAllColumns(
 }
 
 /**
+ * Oculta todas las columnas
+ */
+export function hideAllColumns(
+    preferencesStore: Writable<TablePreferences>
+): void {
+    preferencesStore.update(prefs => {
+        const allHidden = Object.keys(prefs.columnVisibility).reduce(
+            (acc, key) => ({ ...acc, [key]: false }),
+            {} as ColumnVisibilityConfig
+        );
+        return {
+            ...prefs,
+            columnVisibility: allHidden
+        };
+    });
+}
+
+/**
  * Oculta todas las columnas excepto las especificadas
  */
 export function showOnlyColumns(

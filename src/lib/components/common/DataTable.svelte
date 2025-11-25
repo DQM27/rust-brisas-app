@@ -9,6 +9,7 @@
     RowSelectedEvent,
     CellContextMenuEvent,
     GridApi,
+    SelectionChangedEvent,
   } from "@ag-grid-community/core";
   import {
     Settings,
@@ -117,16 +118,16 @@
     rowData = data;
   });
 
-  // Tema oscuro
+  // Tema oscuro para AG Grid v32
   const myTheme = themeQuartz.withPart(colorSchemeDark).withParams({
-    backgroundColor: "#1e1e1e",
-    foregroundColor: "#ffffff",
+    backgroundColor: "rgb(30 30 30)",
+    foregroundColor: "rgb(255 255 255)", 
     browserColorScheme: "dark",
-    headerBackgroundColor: "#252526",
-    headerTextColor: "#cccccc",
-    oddRowBackgroundColor: "#1e1e1e",
-    chromeBackgroundColor: "#252526",
-    rowHoverColor: "rgba(255, 255, 255, 0.05)",
+    headerBackgroundColor: "rgb(37 37 38)",
+    headerTextColor: "rgb(209 213 219)",
+    oddRowBackgroundColor: "rgb(30 30 30)",
+    chromeBackgroundColor: "rgb(37 37 38)",
+    rowHoverColor: "rgba(255, 255, 255, 0.05)", 
     columnBorder: true,
     borderColor: "rgba(255, 255, 255, 0.1)",
     fontSize: 13,
@@ -151,6 +152,7 @@
         filter: false,
         resizable: false,
         suppressMovable: true,
+        showDisabledCheckboxes: true,
       });
     }
 
@@ -176,6 +178,7 @@
         autoHeight: col.autoHeight,
         suppressMovable: col.suppressMovable,
         suppressSizeToFit: col.suppressSizeToFit,
+        enableCellChangeFlash: true,
       };
 
       cols.push(colDef);
@@ -199,52 +202,19 @@
             .filter((action) => !action.show || action.show(row))
             .map((action) => {
               const variant = action.variant || "default";
-              const colors = {
-                default: {
-                  bg: "rgba(59, 130, 246, 0.1)",
-                  text: "#60a5fa",
-                  border: "rgba(59, 130, 246, 0.2)",
-                },
-                danger: {
-                  bg: "rgba(239, 68, 68, 0.1)",
-                  text: "#f87171",
-                  border: "rgba(239, 68, 68, 0.2)",
-                },
-                success: {
-                  bg: "rgba(34, 197, 94, 0.1)",
-                  text: "#4ade80",
-                  border: "rgba(34, 197, 94, 0.2)",
-                },
-                warning: {
-                  bg: "rgba(234, 179, 8, 0.1)",
-                  text: "#fde047",
-                  border: "rgba(234, 179, 8, 0.2)",
-                },
+              const colorClasses = {
+                default: "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20",
+                danger: "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20",
+                success: "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20",
+                warning: "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20",
               };
-              const color = colors[variant];
+              const colorClass = colorClasses[variant];
 
               return `
                 <button
                   data-action="${action.id}"
                   data-row-id="${getRowId(row)}"
-                  style="
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 4px;
-                    padding: 4px 10px;
-                    margin-right: 4px;
-                    border-radius: 6px;
-                    background-color: ${color.bg};
-                    color: ${color.text};
-                    border: 1px solid ${color.border};
-                    font-size: 10px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                    white-space: nowrap;
-                  "
-                  onmouseover="this.style.opacity='0.8'"
-                  onmouseout="this.style.opacity='1'"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 mr-1 rounded-md border text-xs font-medium transition-colors ${colorClass}"
                 >
                   ${action.label}
                 </button>
@@ -252,7 +222,7 @@
             })
             .join("");
 
-          return `<div style="display: flex; gap: 4px;">${buttons}</div>`;
+          return `<div class="flex gap-1">${buttons}</div>`;
         },
       });
     }
@@ -260,18 +230,24 @@
     return cols;
   });
 
-  // Configuración del grid
+  // NUEVO: Effect para actualizar el grid cuando cambian las columnas
+  $effect(() => {
+    if (gridApi && columnDefs) {
+      gridApi.setGridOption('columnDefs', columnDefs);
+    }
+  });
+
+  // Configuración del grid para v32.3.9
   const gridOptions: GridOptions<T> = {
-    get columnDefs() {
-      return columnDefs;
-    },
+    columnDefs: columnDefs,
     defaultColDef: {
       sortable: true,
       filter: true,
       resizable: true,
       minWidth: 100,
+      enableCellChangeFlash: true,
     },
-    rowSelection: rowSelection || undefined,
+    rowSelection: rowSelection ? (rowSelection === "multiple" ? "multiple" : "single") : undefined,
     suppressRowClickSelection: true,
     pagination,
     paginationPageSize: $preferencesStore.pageSize || paginationPageSize,
@@ -283,14 +259,23 @@
     ensureDomOrder: true,
     enableCellChangeFlash: true,
     suppressMovableColumns: false,
+    
+    // Eventos actualizados para v32
     onGridReady: (params) => {
       gridApi = params.api;
-    },
-    onFirstDataRendered: (params) => {
+      
+      // Auto-size después de que el grid esté listo
       if (autoSizeOnLoad) {
-        params.api.autoSizeAllColumns();
+        setTimeout(() => {
+          params.api.autoSizeAllColumns();
+        }, 150);
       }
     },
+    
+    onFirstDataRendered: (params) => {
+      // Opcional: puedes agregar lógica adicional aquí
+    },
+    
     onCellClicked: (event) => {
       const target = event.event?.target as HTMLElement;
 
@@ -312,18 +297,21 @@
         onRowClick(event.data);
       }
     },
+    
     onRowDoubleClicked: (event) => {
       if (event.data && onRowDoubleClick) {
         onRowDoubleClick(event.data);
       }
     },
-    onRowSelected: (event: RowSelectedEvent) => {
+    
+    onSelectionChanged: (event: SelectionChangedEvent) => {
       if (gridApi) {
         const selected = gridApi.getSelectedRows();
         selectedRows = selected;
         onSelectionChange?.(selected);
       }
     },
+    
     onCellContextMenu: (event: CellContextMenuEvent) => {
       if (contextMenuItems.length === 0) return;
 
@@ -354,7 +342,10 @@
     gridApi.exportDataAsCsv({
       fileName,
       columnKeys,
-      onlySelected: exportConfig.onlySelected,
+      onlySelected: exportConfig.onlySelected ?? false,
+      processCellCallback: (params) => {
+        return params.value ?? '';
+      }
     });
   }
 
@@ -394,7 +385,7 @@
       .join("\n");
 
     const text = `${headers}\n${rows}`;
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(text).catch(console.error);
   }
 
   function closeContextMenu() {
@@ -409,7 +400,7 @@
   }
 </script>
 
-<div class="data-table-wrapper" style="height: {height};">
+<div class="flex flex-col w-full bg-gray-950" style="height: {height};">
   <!-- Toolbar -->
   <DataTableToolbar
     {toolbarConfig}
@@ -447,29 +438,17 @@
     />
   {/if}
 
-  <!-- AG Grid -->
-  <div class="ag-grid-container">
+  <!-- AG Grid Container -->
+  <div class="flex-1 overflow-hidden rounded-b-lg border border-white/10">
     <AgGrid {gridOptions} {rowData} {modules} />
   </div>
 </div>
 
 <style>
-  .data-table-wrapper {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    background-color: #1e1e1e;
-  }
-
-  .ag-grid-container {
-    flex: 1;
-    overflow: hidden;
-  }
-
+  /* Estilos optimizados para AG Grid v32 + Tailwind v4 */
   :global(.ag-root-wrapper) {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0 0 8px 8px;
-    overflow: hidden;
+    border: none !important;
+    border-radius: 0 0 0.5rem 0.5rem !important;
   }
 
   :global(.ag-header-cell-text) {
@@ -477,6 +456,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-size: 11px;
+    color: rgb(209 213 219);
   }
 
   :global(.ag-cell) {
@@ -485,20 +465,21 @@
     line-height: 1.4;
     padding-top: 8px;
     padding-bottom: 8px;
+    color: rgb(243 244 246);
   }
 
   :global(.ag-paging-panel) {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background-color: #252526;
-    padding: 16px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background-color: rgb(37 37 38);
+    color: rgb(209 213 219);
   }
 
   :global(.ag-paging-button),
   :global(.ag-paging-page-size) {
-    background-color: #1e1e1e;
+    background-color: rgb(30 30 30);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-    border-radius: 6px;
+    color: rgb(255 255 255);
+    border-radius: 0.375rem;
   }
 
   :global(.ag-paging-button:hover:not(:disabled)) {
@@ -518,7 +499,29 @@
     background-color: rgba(59, 130, 246, 0.2) !important;
   }
 
+  :global(.ag-checkbox-input-wrapper.ag-checked) {
+    background-color: rgb(59 130 246);
+    border-color: rgb(59 130 246);
+  }
+
+  :global(.ag-row-hover) {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+  }
+
+  :global(.ag-header) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  :global(.ag-cell-focus) {
+    border-color: rgb(59 130 246) !important;
+  }
+
+  /* Nuevos estilos para v32 */
   :global(.ag-checkbox-input-wrapper) {
-    accent-color: #3b82f6;
+    border-radius: 0.25rem;
+  }
+
+  :global(.ag-header-cell-resize) {
+    background-color: rgba(255, 255, 255, 0.1);
   }
 </style>

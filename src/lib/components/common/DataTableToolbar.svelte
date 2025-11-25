@@ -41,12 +41,13 @@
   }: Props = $props();
 </script>
 
-<div class="toolbar">
-  <div class="toolbar-section">
+<div class="flex justify-between items-center gap-3 p-4 bg-[#252526] border-b border-white/10">
+  <!-- Sección izquierda: Acciones principales -->
+  <div class="flex items-center gap-2">
     {#if toolbarConfig.showColumnSelector}
       <button
-        onclick={onOpenColumnSelector}
-        class="toolbar-button"
+        on:click={onOpenColumnSelector}
+        class="flex items-center gap-1.5 px-3 py-2 bg-[#1e1e1e] border border-white/10 rounded-md text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white/20 whitespace-nowrap"
         title="Configurar columnas"
       >
         <Settings size={16} />
@@ -56,8 +57,8 @@
 
     {#if toolbarConfig.showExport}
       <button
-        onclick={onExport}
-        class="toolbar-button"
+        on:click={onExport}
+        class="flex items-center gap-1.5 px-3 py-2 bg-[#1e1e1e] border border-white/10 rounded-md text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
         title="Exportar a CSV"
         disabled={!gridReady}
       >
@@ -67,11 +68,11 @@
     {/if}
 
     {#if toolbarConfig.showAutoSize}
-      <div class="toolbar-divider"></div>
+      <div class="w-px h-6 bg-white/10"></div>
 
       <button
-        onclick={onAutoSize}
-        class="toolbar-button compact"
+        on:click={onAutoSize}
+        class="flex items-center gap-1 px-2 py-2 bg-[#1e1e1e] border border-white/10 rounded-md text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
         title="Ajustar columnas al contenido"
         disabled={!gridReady}
       >
@@ -80,8 +81,8 @@
       </button>
 
       <button
-        onclick={onSizeToFit}
-        class="toolbar-button compact"
+        on:click={onSizeToFit}
+        class="flex items-center gap-1 px-2 py-2 bg-[#1e1e1e] border border-white/10 rounded-md text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
         title="Ajustar al ancho disponible"
         disabled={!gridReady}
       >
@@ -91,11 +92,11 @@
     {/if}
 
     {#if toolbarConfig.customButtons}
-      <div class="toolbar-divider"></div>
+      <div class="w-px h-6 bg-white/10"></div>
       {#each toolbarConfig.customButtons as button}
         <button
-          onclick={button.onClick}
-          class="toolbar-button"
+          on:click={button.onClick}
+          class="flex items-center gap-1.5 px-3 py-2 bg-[#1e1e1e] border border-white/10 rounded-md text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           disabled={button.disabled}
           title={button.label}
         >
@@ -109,33 +110,34 @@
     {/if}
   </div>
 
+  <!-- Sección derecha: Acciones de selección -->
   {#if selectedRows.length > 0}
-    <div class="toolbar-section selection-actions">
-      <span class="selection-count">
+    <div class="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-md px-3 py-2">
+      <span class="text-blue-400 text-xs font-medium mr-2">
         {selectedRows.length} seleccionada(s)
       </span>
 
       <button
-        onclick={onCopySelected}
-        class="toolbar-button compact"
+        on:click={onCopySelected}
+        class="flex items-center gap-1 px-2 py-1.5 bg-[#1e1e1e] border border-white/10 rounded text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white/20"
         title="Copiar seleccionadas"
       >
         <Copy size={14} />
       </button>
 
       <button
-        onclick={onDeselectAll}
-        class="toolbar-button compact"
+        on:click={onDeselectAll}
+        class="flex items-center gap-1 px-2 py-1.5 bg-[#1e1e1e] border border-white/10 rounded text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white-20"
         title="Deseleccionar todas"
       >
         <X size={14} />
       </button>
     </div>
   {:else if gridReady}
-    <div class="toolbar-section">
+    <div class="flex items-center gap-2">
       <button
-        onclick={onSelectAll}
-        class="toolbar-button compact"
+        on:click={onSelectAll}
+        class="flex items-center gap-1 px-2 py-2 bg-[#1e1e1e] border border-white/10 rounded-md text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white/20 whitespace-nowrap"
         title="Seleccionar todas las visibles"
       >
         <CheckSquare size={14} />
@@ -144,72 +146,3 @@
     </div>
   {/if}
 </div>
-
-<style>
-  .toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    background-color: #252526;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .toolbar-section {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .toolbar-divider {
-    width: 1px;
-    height: 24px;
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .selection-actions {
-    background-color: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    border-radius: 6px;
-    padding: 6px 12px;
-  }
-
-  .selection-count {
-    color: #60a5fa;
-    font-size: 12px;
-    font-weight: 500;
-    margin-right: 8px;
-  }
-
-  .toolbar-button {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background-color: #1e1e1e;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    color: #ffffff;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .toolbar-button:hover:not(:disabled) {
-    background-color: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-
-  .toolbar-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .toolbar-button.compact {
-    padding: 6px 8px;
-    font-size: 11px;
-  }
-</style>
