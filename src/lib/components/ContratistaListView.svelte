@@ -7,6 +7,8 @@
   import { submitUnblockListaNegra } from "$lib/logic/listaNegra/submitUnblockListaNegra";
   import { listaNegra } from "$lib/api/listaNegra";
   import { currentUser } from "$lib/stores/auth";
+  import { selectedSearchStore } from "$lib/stores/searchStore";
+  import { reindexAllContratistas } from "$lib/api/searchService";
   import type { ContratistaResponse } from "$lib/types/contratista";
   import type { SearchResult } from "$lib/types/search.types";
   import { createContratistaListLogic, ContratistaListLogic } from "$lib/logic/contratista/contratistaListLogic";
@@ -27,28 +29,42 @@
   const listLogic = createContratistaListLogic();
   const listState = listLogic.getState();
 
-  // Datos derivados para la UI - USANDO $derived
-  let filteredData = $derived(listLogic.getFilteredData(contratistas));
+  // CORREGIDO: Reactivity forzada observando todos los stores
+  let filteredData = $derived.by(() => {
+    // Forzar reactividad
+    $selectedSearchStore;
+    listState.estadoFilter;
+    listState.praindFilter;
+    contratistas; // También observar cambios en contratistas
+    return listLogic.getFilteredData(contratistas);
+  });
+  
   let stats = $derived(listLogic.getStats(contratistas));
   let columns = $derived(ContratistaListLogic.getColumns());
-
-  // Sincronizar loading con la lógica - USANDO $effect
-  $effect(() => {
-    // Si necesitas hacer algo cuando cambie loading, lo pones aquí
-    // Por ejemplo: listLogic.setLoading(loading);
-  });
 
   async function loadContratistas() {
     loading = true;
     error = "";
 
-    const result = await submitFetchAllContratistas();
+    try {
+      // PASO 1: Reindexar primero
+      console.log('🔄 Reindexando contratistas...');
+      await reindexAllContratistas();
+      console.log('✅ Reindexación completada');
+      
+      // PASO 2: Cargar datos
+      const result = await submitFetchAllContratistas();
 
-    if (result.ok) {
-      contratistas = result.contratistas;
-      await loadBlockedContratistas();
-    } else {
-      error = result.error;
+      if (result.ok) {
+        contratistas = result.contratistas;
+        console.log(`📊 Cargados ${contratistas.length} contratistas`);
+        await loadBlockedContratistas();
+      } else {
+        error = result.error;
+      }
+    } catch (err) {
+      console.error("❌ Error al cargar contratistas:", err);
+      error = "Error al cargar contratistas";
     }
 
     loading = false;
@@ -132,22 +148,28 @@
   // Handlers para los eventos del componente de presentación
   function handleEstadoFilterChange(filter: string) {
     listLogic.setEstadoFilter(filter as any);
+    listState.estadoFilter = filter as any;
   }
 
   function handlePraindFilterChange(filter: string) {
     listLogic.setPraindFilter(filter as any);
+    listState.praindFilter = filter as any;
   }
 
   function handleClearAllFilters() {
     listLogic.clearAllFilters();
+    listState.estadoFilter = "todos";
+    listState.praindFilter = "todos";
   }
 
   function handleSearchSelect(e: CustomEvent<SearchResult>) {
-    // La lógica ya está en la store, no necesita hacer nada
+    // El store ya maneja esto
+    console.log('🔍 Contratista seleccionado:', e.detail);
   }
 
   function handleSearchClear() {
-    // La lógica ya está en la store, no necesita hacer nada
+    // El store ya maneja esto
+    console.log('🔍 Búsqueda limpiada');
   }
 
   onMount(() => {

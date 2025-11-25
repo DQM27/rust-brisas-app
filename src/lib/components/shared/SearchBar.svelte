@@ -1,12 +1,8 @@
-<!-- ==========================================
-// src/lib/components/shared/SearchBar.svelte
-// ========================================== -->
-
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
   import { slide } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
-  import { searchStore, hasResults } from '$lib/stores/searchStore';
+  import { searchStore, selectedSearchStore, hasResults } from '$lib/stores/searchStore';
   import { performSearch } from '$lib/logic/search/performSearch';
   import type { SearchResult } from '$lib/types/search.types';
 
@@ -29,6 +25,7 @@
   $: results = $searchStore.results;
   $: isLoading = $searchStore.isLoading;
   $: error = $searchStore.error;
+  $: selectedResult = $selectedSearchStore.result;
 
   function handleInput() {
     clearTimeout(debounceTimer);
@@ -47,8 +44,15 @@
   }
 
   function handleSelect(result: SearchResult) {
+    // CAMBIADO: Guardar selección antes de limpiar
+    selectedSearchStore.select(result);
     dispatch('select', result);
-    clear();
+    
+    // Limpiar UI pero mantener la selección en el store
+    query = '';
+    showDropdown = false;
+    highlightedIndex = -1;
+    searchStore.clear();
   }
 
   function clear() {
@@ -56,6 +60,7 @@
     showDropdown = false;
     highlightedIndex = -1;
     searchStore.clear();
+    selectedSearchStore.clear(); // NUEVO: Limpiar selección
     dispatch('clear');
   }
 
@@ -117,9 +122,9 @@
       on:focus={() => query.trim().length >= 2 && results.length > 0 && (showDropdown = true)}
       on:keydown={handleKeyDown}
       type="text"
-      {placeholder}
+      placeholder={selectedResult ? `Filtrando: ${selectedResult.nombreCompleto || selectedResult.id}` : placeholder}
       {disabled}
-      class="w-full rounded-xl border border-white/10 bg-[#2d2d2d] pl-11 pr-20 py-3.5 text-sm text-white placeholder:text-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+      class="w-full rounded-xl border border-white/10 bg-[#2d2d2d] pl-11 pr-20 py-3.5 text-sm text-white placeholder:text-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 {selectedResult ? 'border-blue-500/50 ring-1 ring-blue-500/20' : ''}"
     />
 
     <div class="absolute inset-y-0 right-0 flex items-center gap-1 pr-3">
@@ -128,7 +133,7 @@
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
         </svg>
-      {:else if query}
+      {:else if selectedResult || query}
         <button type="button" on:click={clear} class="rounded-lg p-1.5 text-gray-400 hover:bg-white/5 hover:text-gray-300 transition-colors" title="Limpiar">
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -136,7 +141,11 @@
         </button>
       {/if}
 
-      {#if $hasResults && !isLoading}
+      {#if selectedResult}
+        <span class="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-400">
+          Filtrado
+        </span>
+      {:else if $hasResults && !isLoading}
         <span class="text-xs text-gray-500 font-medium">{results.length}</span>
       {/if}
     </div>

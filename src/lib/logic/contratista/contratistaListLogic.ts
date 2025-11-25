@@ -1,6 +1,6 @@
 // lib/logic/contratista/contratistaListLogic.ts
 import { get } from 'svelte/store';
-import { searchStore } from "$lib/stores/searchStore";
+import { selectedSearchStore } from "$lib/stores/searchStore";
 import type { ContratistaResponse, EstadoContratista } from "$lib/types/contratista";
 import type { DataTableColumn } from "$lib/types/dataTable";
 
@@ -26,6 +26,14 @@ export class ContratistaListLogic {
   getFilteredData(contratistas: ContratistaResponse[]): ContratistaResponse[] {
     let filtered = contratistas;
 
+    // CAMBIADO: Filtro por búsqueda seleccionada (tiene prioridad)
+    const selectedSearch = get(selectedSearchStore);
+    if (selectedSearch.result) {
+      // Si hay un resultado seleccionado, mostrar solo ese
+      filtered = filtered.filter((c) => c.id === selectedSearch.result!.id);
+      return filtered; // Retornar temprano, ignorando otros filtros
+    }
+
     // Filtro de estado
     if (this.state.estadoFilter !== "todos") {
       filtered = filtered.filter((c) => c.estado === this.state.estadoFilter);
@@ -42,13 +50,6 @@ export class ContratistaListLogic {
       filtered = filtered.filter(
         (c) => !c.praindVencido && c.diasHastaVencimiento <= 30,
       );
-    }
-
-    // Filtro por búsqueda de Tantivy
-    const searchState = get(searchStore);
-    if (searchState.results.length > 0) {
-      const searchIds = new Set(searchState.results.map((r) => r.id));
-      filtered = filtered.filter((c) => searchIds.has(c.id));
     }
 
     return filtered;
@@ -77,7 +78,7 @@ export class ContratistaListLogic {
   clearAllFilters(): void {
     this.state.estadoFilter = "todos";
     this.state.praindFilter = "todos";
-    searchStore.clearResults();
+    selectedSearchStore.clear(); // NUEVO: Limpiar búsqueda seleccionada
   }
 
   // Column configuration

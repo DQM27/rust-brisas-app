@@ -57,6 +57,11 @@
     getRowId?: (row: T) => string;
     autoSizeOnLoad?: boolean;
     height?: string;
+    // NUEVO: Opciones de animaciones
+    enableAnimations?: boolean;
+    animateRows?: boolean;
+    // NUEVO: Opciones de filtros avanzados
+    enableAdvancedFilters?: boolean;
   }
 
   let {
@@ -81,6 +86,9 @@
     getRowId = (row) => row.id || String(Math.random()),
     autoSizeOnLoad = true,
     height = "100%",
+    enableAnimations = true,
+    animateRows = true,
+    enableAdvancedFilters = true,
   }: Props = $props();
 
   // Estado
@@ -118,7 +126,7 @@
     rowData = data;
   });
 
-  // Tema oscuro para AG Grid v32
+  // Tema oscuro para AG Grid v32 con animaciones mejoradas
   const myTheme = themeQuartz.withPart(colorSchemeDark).withParams({
     backgroundColor: "rgb(30 30 30)",
     foregroundColor: "rgb(255 255 255)", 
@@ -134,7 +142,86 @@
     headerFontSize: 12,
     spacing: 4,
     cellHorizontalPadding: 16,
+    // NUEVO: Configuración de animaciones
+    
   });
+
+  /**
+   * Determina el tipo de filtro según el tipo de dato de la columna
+   * Solo usa filtros disponibles en AG Grid Community (gratuito)
+   */
+  function getFilterType(column: DataTableColumn<T>): string | boolean {
+    if (!enableAdvancedFilters) return true;
+    
+    // Si la columna especifica un filtro custom, usarlo
+    if (column.filter === false) return false;
+    if (typeof column.filter === 'string') return column.filter;
+    
+    // Inferir tipo de filtro basado en el field
+    const field = String(column.field);
+    
+    // Filtros de fecha (Community)
+    if (field.includes('fecha') || field.includes('date') || field.includes('_at') || field.includes('vencimiento')) {
+      return 'agDateColumnFilter';
+    }
+    
+    // Filtros numéricos (Community)
+    if (field.includes('id') || field.includes('cantidad') || field.includes('monto') || field.includes('precio') || field.includes('numero')) {
+      return 'agNumberColumnFilter';
+    }
+    
+    // Por defecto: filtro de texto (Community)
+    return 'agTextColumnFilter';
+  }
+
+  /**
+   * Configuración de filtros avanzados por tipo
+   * Solo características de AG Grid Community
+   */
+  function getFilterParams(column: DataTableColumn<T>) {
+    const filterType = getFilterType(column);
+    
+    if (filterType === 'agDateColumnFilter') {
+      return {
+        buttons: ['reset', 'apply'],
+        closeOnApply: true,
+        comparator: (filterDate: Date, cellValue: string) => {
+          if (!cellValue) return -1;
+          const cellDate = new Date(cellValue);
+          if (filterDate.getTime() === cellDate.getTime()) return 0;
+          return cellDate < filterDate ? -1 : 1;
+        },
+      };
+    }
+    
+    if (filterType === 'agNumberColumnFilter') {
+      return {
+        buttons: ['reset', 'apply'],
+        closeOnApply: true,
+        allowedCharPattern: '\\d\\-\\,\\.', // números, guiones, comas y puntos
+      };
+    }
+    
+    // Text filter (por defecto) - Community
+    return {
+      buttons: ['reset', 'apply'],
+      closeOnApply: true,
+      // Opciones de búsqueda de texto
+      filterOptions: [
+        'contains',
+        'notContains',
+        'equals',
+        'notEqual',
+        'startsWith',
+        'endsWith',
+      ],
+      defaultOption: 'contains',
+      // Case insensitive por defecto
+      caseSensitive: false,
+      // Trim espacios
+      trimInput: true,
+    };
+  }
 
   // Convertir columnas a definiciones de AG Grid
   let columnDefs = $derived.by((): ColDef<T>[] => {
@@ -158,6 +245,9 @@
 
     // Agregar columnas de datos
     columns.forEach((col) => {
+      const filterType = getFilterType(col);
+      const filterParams = getFilterParams(col);
+      
       const colDef: ColDef<T> = {
         field: String(col.field) as any,
         headerName: col.headerName,
@@ -167,7 +257,8 @@
         flex: col.flex,
         hide: !$preferencesStore.columnVisibility[String(col.field)],
         sortable: col.sortable !== false,
-        filter: col.filter !== false,
+        filter: filterType,
+        filterParams: filterParams,
         resizable: col.resizable !== false,
         pinned: col.pinned || null,
         cellRenderer: col.cellRenderer,
@@ -178,7 +269,7 @@
         autoHeight: col.autoHeight,
         suppressMovable: col.suppressMovable,
         suppressSizeToFit: col.suppressSizeToFit,
-        enableCellChangeFlash: true,
+        enableCellChangeFlash: enableAnimations,
       };
 
       cols.push(colDef);
@@ -230,7 +321,7 @@
     return cols;
   });
 
-  // NUEVO: Effect para actualizar el grid cuando cambian las columnas
+  // Effect para actualizar el grid cuando cambian las columnas
   $effect(() => {
     if (gridApi && columnDefs) {
       gridApi.setGridOption('columnDefs', columnDefs);
@@ -245,7 +336,9 @@
       filter: true,
       resizable: true,
       minWidth: 100,
-      enableCellChangeFlash: true,
+      enableCellChangeFlash: enableAnimations,
+      // NUEVO: Floating filter (mini filtros bajo los headers)
+      floatingFilter: enableAdvancedFilters,
     },
     rowSelection: rowSelection ? (rowSelection === "multiple" ? "multiple" : "single") : undefined,
     suppressRowClickSelection: true,
@@ -257,8 +350,14 @@
     tooltipShowDelay: 500,
     enableCellTextSelection: true,
     ensureDomOrder: true,
-    enableCellChangeFlash: true,
+    enableCellChangeFlash: enableAnimations,
     suppressMovableColumns: false,
+    
+    // NUEVO: Configuración de animaciones
+    animateRows: animateRows,
+    
+    // NUEVO: Configuración de filtros avanzados
+    suppressMenuHide: false,
     
     // Eventos actualizados para v32
     onGridReady: (params) => {
@@ -443,85 +542,3 @@
     <AgGrid {gridOptions} {rowData} {modules} />
   </div>
 </div>
-
-<style>
-  /* Estilos optimizados para AG Grid v32 + Tailwind v4 */
-  :global(.ag-root-wrapper) {
-    border: none !important;
-    border-radius: 0 0 0.5rem 0.5rem !important;
-  }
-
-  :global(.ag-header-cell-text) {
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-size: 11px;
-    color: rgb(209 213 219);
-  }
-
-  :global(.ag-cell) {
-    display: flex;
-    align-items: center;
-    line-height: 1.4;
-    padding-top: 8px;
-    padding-bottom: 8px;
-    color: rgb(243 244 246);
-  }
-
-  :global(.ag-paging-panel) {
-    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-    background-color: rgb(37 37 38);
-    color: rgb(209 213 219);
-  }
-
-  :global(.ag-paging-button),
-  :global(.ag-paging-page-size) {
-    background-color: rgb(30 30 30);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgb(255 255 255);
-    border-radius: 0.375rem;
-  }
-
-  :global(.ag-paging-button:hover:not(:disabled)) {
-    background-color: rgba(255, 255, 255, 0.05);
-  }
-
-  :global(.ag-cell-wrap-text) {
-    word-break: break-word;
-    white-space: normal;
-  }
-
-  :global(.ag-row-selected) {
-    background-color: rgba(59, 130, 246, 0.15) !important;
-  }
-
-  :global(.ag-row-selected:hover) {
-    background-color: rgba(59, 130, 246, 0.2) !important;
-  }
-
-  :global(.ag-checkbox-input-wrapper.ag-checked) {
-    background-color: rgb(59 130 246);
-    border-color: rgb(59 130 246);
-  }
-
-  :global(.ag-row-hover) {
-    background-color: rgba(255, 255, 255, 0.05) !important;
-  }
-
-  :global(.ag-header) {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-  }
-
-  :global(.ag-cell-focus) {
-    border-color: rgb(59 130 246) !important;
-  }
-
-  /* Nuevos estilos para v32 */
-  :global(.ag-checkbox-input-wrapper) {
-    border-radius: 0.25rem;
-  }
-
-  :global(.ag-header-cell-resize) {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-</style>

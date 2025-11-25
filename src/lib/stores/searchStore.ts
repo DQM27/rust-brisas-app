@@ -13,6 +13,15 @@ const initialState: SearchState = {
   error: null,
 };
 
+// NUEVO: Store para el resultado seleccionado
+interface SelectedSearchState {
+  result: SearchResult | null;
+}
+
+const initialSelectedState: SelectedSearchState = {
+  result: null,
+};
+
 // Store principal
 function createSearchStore() {
   const { subscribe, set, update } = writable<SearchState>(initialState);
@@ -44,7 +53,23 @@ function createSearchStore() {
   };
 }
 
+// NUEVO: Store para el resultado seleccionado
+function createSelectedSearchStore() {
+  const { subscribe, set, update } = writable<SelectedSearchState>(initialSelectedState);
+
+  return {
+    subscribe,
+    
+    // Seleccionar un resultado
+    select: (result: SearchResult) => set({ result }),
+    
+    // Limpiar selección
+    clear: () => set(initialSelectedState),
+  };
+}
+
 export const searchStore = createSearchStore();
+export const selectedSearchStore = createSelectedSearchStore();
 
 // Derived stores útiles
 export const hasResults = derived(
@@ -55,4 +80,9 @@ export const hasResults = derived(
 export const isSearching = derived(
   searchStore,
   $store => $store.query.length > 0
+);
+
+export const hasSelectedResult = derived(
+  selectedSearchStore,
+  $store => $store.result !== null
 );

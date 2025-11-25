@@ -1,7 +1,11 @@
+<!-- ==========================================
+// src/lib/components/contratista/ContratistaListForm.svelte
+// Componente visual limpio - Solo presentación
+// ========================================== -->
+
 <script lang="ts">
   import { fade } from "svelte/transition";
   import {
-    RefreshCw,
     AlertCircle,
     XCircle,
     Filter,
@@ -81,14 +85,6 @@
           Gestión y visualización de todos los contratistas registrados
         </p>
       </div>
-      <button
-        on:click={onRefresh}
-        disabled={loading}
-        class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <RefreshCw size={16} class={loading ? "animate-spin" : ""} />
-        Actualizar
-      </button>
     </div>
 
     <!-- Stats -->
@@ -189,7 +185,10 @@
     {:else if loading}
       <div class="flex h-full items-center justify-center">
         <div class="text-center">
-          <RefreshCw size={32} class="mx-auto animate-spin text-blue-500" />
+          <svg class="mx-auto h-8 w-8 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+          </svg>
           <p class="mt-4 text-sm text-gray-400">Cargando contratistas...</p>
         </div>
       </div>
@@ -206,7 +205,7 @@
         </div>
       </div>
     {:else}
-      <!-- AG Grid DataTable -->
+      <!-- AG Grid DataTable con filtros avanzados, animaciones y CSV export -->
       <DataTable
         data={filteredData}
         {columns}
@@ -225,6 +224,9 @@
         exportConfig={{
           fileName: `contratistas-${new Date().toISOString().split("T")[0]}.csv`,
         }}
+        enableAnimations={true}
+        animateRows={true}
+        enableAdvancedFilters={true}
       />
     {/if}
   </div>   
