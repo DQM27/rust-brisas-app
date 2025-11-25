@@ -9,3 +9,7 @@ pub mod ingreso_commands;
 pub mod supabase_commands;
 pub mod keyring_commands;
 pub mod blacklist_import_commands;
+pub mod search_commands;
+
+#[macro_use]
+pub mod handlers;
