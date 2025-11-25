@@ -95,3 +95,4 @@ pub mod user_queries;
 pub mod vehiculo_queries;
 pub mod lista_negra_queries;
 pub mod blacklist_import_queries;
+pub mod contratista_queries;

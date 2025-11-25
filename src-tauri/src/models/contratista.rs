@@ -11,7 +11,9 @@ pub struct Contratista {
     pub id: String,
     pub cedula: String,
     pub nombre: String,
+    pub segundo_nombre: Option<String>,
     pub apellido: String,
+    pub segundo_apellido: Option<String>,
     pub empresa_id: String, 
     pub fecha_vencimiento_praind: String,
     pub estado: EstadoContratista,
@@ -55,8 +57,10 @@ impl EstadoContratista {
 pub struct CreateContratistaInput {
     pub cedula: String,
     pub nombre: String,
+    pub segundo_nombre: Option<String>,
     pub apellido: String,
-    pub empresa_id: String,  // CAMBIÓ: ahora es ID de empresa
+    pub segundo_apellido: Option<String>,
+    pub empresa_id: String,
     pub fecha_vencimiento_praind: String, // "YYYY-MM-DD"
 }
 
@@ -64,8 +68,10 @@ pub struct CreateContratistaInput {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateContratistaInput {
     pub nombre: Option<String>,
+    pub segundo_nombre: Option<String>,
     pub apellido: Option<String>,
-    pub empresa_id: Option<String>,  // CAMBIÓ
+    pub segundo_apellido: Option<String>,
+    pub empresa_id: Option<String>,
     pub fecha_vencimiento_praind: Option<String>,
 }
 
@@ -85,16 +91,18 @@ pub struct ContratistaResponse {
     pub id: String,
     pub cedula: String,
     pub nombre: String,
+    pub segundo_nombre: Option<String>,
     pub apellido: String,
+    pub segundo_apellido: Option<String>,
     pub nombre_completo: String,
-    pub empresa_id: String,        // NUEVO
-    pub empresa_nombre: String,    // NUEVO - viene del JOIN
+    pub empresa_id: String,
+    pub empresa_nombre: String,
     pub fecha_vencimiento_praind: String,
     pub estado: EstadoContratista,
     pub puede_ingresar: bool,
     pub praind_vencido: bool,
     pub dias_hasta_vencimiento: i64,
-    pub requiere_atencion: bool, // true si vence en <= 30 días
+    pub requiere_atencion: bool,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -110,14 +118,28 @@ impl From<Contratista> for ContratistaResponse {
         let requiere_atencion = dias_hasta_vencimiento <= 30 && dias_hasta_vencimiento >= 0;
         let puede_ingresar = c.estado == EstadoContratista::Activo && !praind_vencido;
         
+        let mut nombre_completo = c.nombre.clone();
+        if let Some(segundo) = &c.segundo_nombre {
+            nombre_completo.push(' ');
+            nombre_completo.push_str(segundo);
+        }
+        nombre_completo.push(' ');
+        nombre_completo.push_str(&c.apellido);
+        if let Some(segundo) = &c.segundo_apellido {
+            nombre_completo.push(' ');
+            nombre_completo.push_str(segundo);
+        }
+        
         Self {
             id: c.id,
             cedula: c.cedula.clone(),
             nombre: c.nombre.clone(),
+            segundo_nombre: c.segundo_nombre.clone(),
             apellido: c.apellido.clone(),
-            nombre_completo: format!("{} {}", c.nombre, c.apellido),
+            segundo_apellido: c.segundo_apellido.clone(),
+            nombre_completo,
             empresa_id: c.empresa_id,
-            empresa_nombre: String::new(),  // Se llena en el comando con JOIN
+            empresa_nombre: String::new(),
             fecha_vencimiento_praind: c.fecha_vencimiento_praind,
             estado: c.estado,
             puede_ingresar,
@@ -179,6 +201,18 @@ pub mod validaciones {
         Ok(())
     }
     
+    pub fn validar_segundo_nombre(segundo_nombre: Option<&String>) -> Result<(), String> {
+        if let Some(nombre) = segundo_nombre {
+            let limpio = nombre.trim();
+            
+            if !limpio.is_empty() && limpio.len() > 50 {
+                return Err("El segundo nombre no puede exceder 50 caracteres".to_string());
+            }
+        }
+        
+        Ok(())
+    }
+    
     pub fn validar_apellido(apellido: &str) -> Result<(), String> {
         let limpio = apellido.trim();
         
@@ -193,7 +227,19 @@ pub mod validaciones {
         Ok(())
     }
     
-    pub fn validar_empresa_id(empresa_id: &str) -> Result<(), String> {  // CAMBIÓ
+    pub fn validar_segundo_apellido(segundo_apellido: Option<&String>) -> Result<(), String> {
+        if let Some(apellido) = segundo_apellido {
+            let limpio = apellido.trim();
+            
+            if !limpio.is_empty() && limpio.len() > 50 {
+                return Err("El segundo apellido no puede exceder 50 caracteres".to_string());
+            }
+        }
+        
+        Ok(())
+    }
+    
+    pub fn validar_empresa_id(empresa_id: &str) -> Result<(), String> {
         let limpia = empresa_id.trim();
         
         if limpia.is_empty() {
@@ -211,8 +257,10 @@ pub mod validaciones {
     pub fn validar_create_input(input: &super::CreateContratistaInput) -> Result<(), String> {
         validar_cedula(&input.cedula)?;
         validar_nombre(&input.nombre)?;
+        validar_segundo_nombre(input.segundo_nombre.as_ref())?;
         validar_apellido(&input.apellido)?;
-        validar_empresa_id(&input.empresa_id)?;  // CAMBIÓ
+        validar_segundo_apellido(input.segundo_apellido.as_ref())?;
+        validar_empresa_id(&input.empresa_id)?;
         validar_fecha(&input.fecha_vencimiento_praind)?;
         Ok(())
     }

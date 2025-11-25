@@ -2,3 +2,4 @@ pub mod user;
 pub mod vehiculo;
 pub mod lista_negra;
 pub mod blacklist_import;
+pub mod contratista;

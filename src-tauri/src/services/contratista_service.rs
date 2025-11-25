@@ -1,0 +1,269 @@
+// ==========================================
+// src/services/contratista_service.rs
+// ==========================================
+// Capa de servicio: orquesta dominio y db
+// Contiene la lógica de negocio completa
+
+use crate::domain::contratista as domain;
+use crate::db::contratista_queries as db;
+use crate::models::contratista::{
+    ContratistaResponse, ContratistaListResponse,
+    CreateContratistaInput, UpdateContratistaInput, CambiarEstadoInput,
+    EstadoContratista,
+};
+use sqlx::SqlitePool;
+use uuid::Uuid;
+use chrono::Utc;
+
+// ==========================================
+// CREAR CONTRATISTA
+// ==========================================
+
+pub async fn create_contratista(
+    pool: &SqlitePool,
+    input: CreateContratistaInput,
+) -> Result<ContratistaResponse, String> {
+    // 1. Validar input
+    domain::validar_create_input(&input)?;
+    
+    // 2. Normalizar datos
+    let cedula_normalizada = domain::normalizar_cedula(&input.cedula);
+    let nombre_normalizado = domain::normalizar_nombre(&input.nombre);
+    let segundo_nombre_normalizado = domain::normalizar_segundo_nombre(input.segundo_nombre.as_ref());
+    let apellido_normalizado = domain::normalizar_apellido(&input.apellido);
+    let segundo_apellido_normalizado = domain::normalizar_segundo_apellido(input.segundo_apellido.as_ref());
+    
+    // 3. Verificar que NO esté en lista negra
+    let blocked_count = db::count_cedula_in_blacklist(pool, &cedula_normalizada).await?;
+    if blocked_count > 0 {
+        // Intentar obtener detalles del bloqueo
+        if let Ok((motivo, bloqueado_por)) = db::get_blacklist_details(pool, &cedula_normalizada).await {
+            return Err(format!(
+                "No se puede registrar. La persona con cédula {} está en lista negra. Motivo: {}. Bloqueado por: {}",
+                cedula_normalizada, motivo, bloqueado_por
+            ));
+        } else {
+            return Err(format!(
+                "No se puede registrar. La persona con cédula {} está en lista negra",
+                cedula_normalizada
+            ));
+        }
+    }
+    
+    // 4. Verificar que la cédula no exista
+    let count = db::count_by_cedula(pool, &cedula_normalizada).await?;
+    if count > 0 {
+        return Err("Ya existe un contratista con esta cédula".to_string());
+    }
+    
+    // 5. Verificar que la empresa exista
+    let empresa_existe = db::empresa_exists(pool, &input.empresa_id).await?;
+    if !empresa_existe {
+        return Err("La empresa especificada no existe".to_string());
+    }
+    
+    // 6. Generar ID y timestamps
+    let id = Uuid::new_v4().to_string();
+    let now = Utc::now().to_rfc3339();
+    
+    // 7. Insertar en DB
+    db::insert(
+        pool,
+        &id,
+        &cedula_normalizada,
+        &nombre_normalizado,
+        segundo_nombre_normalizado.as_deref(),
+        &apellido_normalizado,
+        segundo_apellido_normalizado.as_deref(),
+        &input.empresa_id,
+        &input.fecha_vencimiento_praind,
+        EstadoContratista::Activo.as_str(),
+        &now,
+        &now,
+    ).await?;
+    
+    // 8. Retornar contratista creado
+    get_contratista_by_id(pool, &id).await
+}
+
+// ==========================================
+// OBTENER CONTRATISTA POR ID
+// ==========================================
+
+pub async fn get_contratista_by_id(
+    pool: &SqlitePool,
+    id: &str,
+) -> Result<ContratistaResponse, String> {
+    let (contratista, empresa_nombre) = db::find_by_id_with_empresa(pool, id).await?;
+    
+    let mut response = ContratistaResponse::from(contratista);
+    response.empresa_nombre = empresa_nombre;
+    
+    Ok(response)
+}
+
+// ==========================================
+// OBTENER CONTRATISTA POR CÉDULA
+// ==========================================
+
+pub async fn get_contratista_by_cedula(
+    pool: &SqlitePool,
+    cedula: &str,
+) -> Result<ContratistaResponse, String> {
+    let (contratista, empresa_nombre) = db::find_by_cedula_with_empresa(pool, cedula).await?;
+    
+    let mut response = ContratistaResponse::from(contratista);
+    response.empresa_nombre = empresa_nombre;
+    
+    Ok(response)
+}
+
+// ==========================================
+// OBTENER TODOS LOS CONTRATISTAS
+// ==========================================
+
+pub async fn get_all_contratistas(pool: &SqlitePool) -> Result<ContratistaListResponse, String> {
+    let contratistas_with_empresa = db::find_all_with_empresa(pool).await?;
+    
+    // Convertir a ContratistaResponse
+    let contratistas: Vec<ContratistaResponse> = contratistas_with_empresa
+        .into_iter()
+        .map(|(contratista, empresa_nombre)| {
+            let mut response = ContratistaResponse::from(contratista);
+            response.empresa_nombre = empresa_nombre;
+            response
+        })
+        .collect();
+    
+    // Calcular estadísticas
+    let total = contratistas.len();
+    let activos = contratistas.iter().filter(|c| c.estado == EstadoContratista::Activo).count();
+    let con_praind_vencido = contratistas.iter().filter(|c| c.praind_vencido).count();
+    let requieren_atencion = contratistas.iter().filter(|c| c.requiere_atencion).count();
+    
+    Ok(ContratistaListResponse {
+        contratistas,
+        total,
+        activos,
+        con_praind_vencido,
+        requieren_atencion,
+    })
+}
+
+// ==========================================
+// OBTENER CONTRATISTAS ACTIVOS
+// ==========================================
+
+pub async fn get_contratistas_activos(pool: &SqlitePool) -> Result<Vec<ContratistaResponse>, String> {
+    let contratistas_with_empresa = db::find_activos_with_empresa(pool).await?;
+    
+    let contratistas = contratistas_with_empresa
+        .into_iter()
+        .map(|(contratista, empresa_nombre)| {
+            let mut response = ContratistaResponse::from(contratista);
+            response.empresa_nombre = empresa_nombre;
+            response
+        })
+        .collect();
+    
+    Ok(contratistas)
+}
+
+// ==========================================
+// ACTUALIZAR CONTRATISTA
+// ==========================================
+
+pub async fn update_contratista(
+    pool: &SqlitePool,
+    id: String,
+    input: UpdateContratistaInput,
+) -> Result<ContratistaResponse, String> {
+    // 1. Validar input
+    domain::validar_update_input(&input)?;
+    
+    // 2. Verificar que el contratista existe
+    let _ = db::find_by_id_with_empresa(pool, &id).await?;
+    
+    // 3. Normalizar datos si vienen
+    let nombre_normalizado = input.nombre
+        .as_ref()
+        .map(|n| domain::normalizar_nombre(n));
+    
+    let segundo_nombre_normalizado = input.segundo_nombre
+        .as_ref()
+        .map(|sn| domain::normalizar_segundo_nombre(Some(sn)))
+        .flatten();
+    
+    let apellido_normalizado = input.apellido
+        .as_ref()
+        .map(|a| domain::normalizar_apellido(a));
+    
+    let segundo_apellido_normalizado = input.segundo_apellido
+        .as_ref()
+        .map(|sa| domain::normalizar_segundo_apellido(Some(sa)))
+        .flatten();
+    
+    // 4. Verificar que la empresa exista si viene
+    if let Some(ref empresa_id) = input.empresa_id {
+        let empresa_existe = db::empresa_exists(pool, empresa_id).await?;
+        if !empresa_existe {
+            return Err("La empresa especificada no existe".to_string());
+        }
+    }
+    
+    // 5. Timestamp de actualización
+    let now = Utc::now().to_rfc3339();
+    
+    // 6. Actualizar en DB
+    db::update(
+        pool,
+        &id,
+        nombre_normalizado.as_deref(),
+        segundo_nombre_normalizado.as_deref(),
+        apellido_normalizado.as_deref(),
+        segundo_apellido_normalizado.as_deref(),
+        input.empresa_id.as_deref(),
+        input.fecha_vencimiento_praind.as_deref(),
+        &now,
+    ).await?;
+    
+    // 7. Retornar contratista actualizado
+    get_contratista_by_id(pool, &id).await
+}
+
+// ==========================================
+// CAMBIAR ESTADO
+// ==========================================
+
+pub async fn cambiar_estado_contratista(
+    pool: &SqlitePool,
+    id: String,
+    input: CambiarEstadoInput,
+) -> Result<ContratistaResponse, String> {
+    // 1. Validar estado
+    let estado = domain::validar_estado(&input.estado)?;
+    
+    // 2. Verificar que el contratista existe
+    let _ = db::find_by_id_with_empresa(pool, &id).await?;
+    
+    // 3. Timestamp de actualización
+    let now = Utc::now().to_rfc3339();
+    
+    // 4. Actualizar estado en DB
+    db::update_estado(pool, &id, estado.as_str(), &now).await?;
+    
+    // 5. Retornar contratista actualizado
+    get_contratista_by_id(pool, &id).await
+}
+
+// ==========================================
+// ELIMINAR CONTRATISTA
+// ==========================================
+
+pub async fn delete_contratista(pool: &SqlitePool, id: String) -> Result<(), String> {
+    // Verificar que existe antes de eliminar
+    let _ = db::find_by_id_with_empresa(pool, &id).await?;
+    
+    // Eliminar
+    db::delete(pool, &id).await
+}
