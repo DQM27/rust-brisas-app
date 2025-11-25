@@ -11,9 +11,11 @@ use crate::models::contratista::{
     CreateContratistaInput, UpdateContratistaInput, CambiarEstadoInput,
     EstadoContratista,
 };
+use crate::services::search_service::SearchService;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use chrono::Utc;
+use std::sync::Arc;
 
 // ==========================================
 // CREAR CONTRATISTA
@@ -21,6 +23,7 @@ use chrono::Utc;
 
 pub async fn create_contratista(
     pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
     input: CreateContratistaInput,
 ) -> Result<ContratistaResponse, String> {
     // 1. Validar input
@@ -82,8 +85,18 @@ pub async fn create_contratista(
         &now,
     ).await?;
     
-    // 8. Retornar contratista creado
-    get_contratista_by_id(pool, &id).await
+    // 8. Obtener contratista creado
+    let response = get_contratista_by_id(pool, &id).await?;
+    
+    // 9. Indexar en Tantivy (automático)
+    if let Ok((contratista, empresa_nombre)) = db::find_by_id_with_empresa(pool, &id).await {
+        if let Err(e) = search_service.add_contratista(&contratista, &empresa_nombre) {
+            eprintln!("⚠️ Error al indexar contratista {}: {}", id, e);
+            // No fallamos la operación, solo logueamos el error
+        }
+    }
+    
+    Ok(response)
 }
 
 // ==========================================
@@ -175,6 +188,7 @@ pub async fn get_contratistas_activos(pool: &SqlitePool) -> Result<Vec<Contratis
 
 pub async fn update_contratista(
     pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
     id: String,
     input: UpdateContratistaInput,
 ) -> Result<ContratistaResponse, String> {
@@ -227,8 +241,17 @@ pub async fn update_contratista(
         &now,
     ).await?;
     
-    // 7. Retornar contratista actualizado
-    get_contratista_by_id(pool, &id).await
+    // 7. Obtener contratista actualizado
+    let response = get_contratista_by_id(pool, &id).await?;
+    
+    // 8. Actualizar índice de Tantivy (automático)
+    if let Ok((contratista, empresa_nombre)) = db::find_by_id_with_empresa(pool, &id).await {
+        if let Err(e) = search_service.update_contratista(&contratista, &empresa_nombre) {
+            eprintln!("⚠️ Error al actualizar índice del contratista {}: {}", id, e);
+        }
+    }
+    
+    Ok(response)
 }
 
 // ==========================================
@@ -237,6 +260,7 @@ pub async fn update_contratista(
 
 pub async fn cambiar_estado_contratista(
     pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
     id: String,
     input: CambiarEstadoInput,
 ) -> Result<ContratistaResponse, String> {
@@ -252,18 +276,38 @@ pub async fn cambiar_estado_contratista(
     // 4. Actualizar estado en DB
     db::update_estado(pool, &id, estado.as_str(), &now).await?;
     
-    // 5. Retornar contratista actualizado
-    get_contratista_by_id(pool, &id).await
+    // 5. Obtener contratista actualizado
+    let response = get_contratista_by_id(pool, &id).await?;
+    
+    // 6. Actualizar índice de Tantivy (automático)
+    if let Ok((contratista, empresa_nombre)) = db::find_by_id_with_empresa(pool, &id).await {
+        if let Err(e) = search_service.update_contratista(&contratista, &empresa_nombre) {
+            eprintln!("⚠️ Error al actualizar índice del contratista {}: {}", id, e);
+        }
+    }
+    
+    Ok(response)
 }
 
 // ==========================================
 // ELIMINAR CONTRATISTA
 // ==========================================
 
-pub async fn delete_contratista(pool: &SqlitePool, id: String) -> Result<(), String> {
+pub async fn delete_contratista(
+    pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
+    id: String,
+) -> Result<(), String> {
     // Verificar que existe antes de eliminar
     let _ = db::find_by_id_with_empresa(pool, &id).await?;
     
-    // Eliminar
-    db::delete(pool, &id).await
+    // Eliminar de DB
+    db::delete(pool, &id).await?;
+    
+    // Eliminar del índice de Tantivy (automático)
+    if let Err(e) = search_service.delete_contratista(&id) {
+        eprintln!("⚠️ Error al eliminar del índice el contratista {}: {}", id, e);
+    }
+    
+    Ok(())
 }

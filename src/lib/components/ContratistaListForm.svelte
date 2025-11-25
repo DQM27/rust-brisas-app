@@ -23,6 +23,7 @@
   import SearchBar from "$lib/components/shared/SearchBar.svelte";
   import DataTable from "$lib/components/common/DataTable.svelte";
   import ContratistaActionModal from "./ContratistaActionModal.svelte";
+  import { searchStore } from "$lib/stores/searchStore";
 
   interface Props {
     contratistas: ContratistaResponse[];
@@ -53,8 +54,6 @@
   }: Props = $props();
 
   // Estado local
-  let searchQuery = $state("");
-  let selectedContratista = $state<ContratistaResponse | null>(null);
   let estadoFilter = $state<"todos" | "activo" | "inactivo" | "suspendido">(
     "todos",
   );
@@ -84,9 +83,11 @@
       );
     }
 
-    // Filtro por búsqueda de Tantivy (si hay una búsqueda activa)
-    if (searchQuery && selectedContratista) {
-      filtered = filtered.filter((c) => c.id === selectedContratista!.id);
+    // Filtro por búsqueda de Tantivy
+    // Si hay resultados de búsqueda, solo mostrar esos IDs
+    if ($searchStore.results.length > 0) {
+      const searchIds = new Set($searchStore.results.map((r) => r.id));
+      filtered = filtered.filter((c) => searchIds.has(c.id));
     }
 
     return filtered;
@@ -219,18 +220,13 @@
   ];
 
   function handleSearchSelect(e: CustomEvent<SearchResult>) {
-    const result = e.detail;
-    // Buscar el contratista completo por ID
-    const found = contratistas.find((c) => c.id === result.id);
-    if (found) {
-      selectedContratista = found;
-      searchQuery = result.nombreCompleto || "";
-    }
+    // Los resultados ya están en searchStore, el filtro se aplica automáticamente
+    // No necesitamos hacer nada aquí
   }
 
   function handleSearchClear() {
-    selectedContratista = null;
-    searchQuery = "";
+    // searchStore se limpia automáticamente desde el SearchBar
+    // No necesitamos hacer nada aquí
   }
 
   function clearAllFilters() {
@@ -328,7 +324,7 @@
       </select>
 
       <!-- Clear Filters -->
-      {#if estadoFilter !== "todos" || praindFilter !== "todos" || searchQuery}
+      {#if estadoFilter !== "todos" || praindFilter !== "todos" || $searchStore.results.length > 0}
         <button
           on:click={clearAllFilters}
           class="flex items-center gap-2 rounded-lg border border-white/10 bg-[#1e1e1e] px-3 py-2 text-sm text-gray-400 transition-colors hover:bg-white/5 hover:text-gray-300"
