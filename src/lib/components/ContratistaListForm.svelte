@@ -1,6 +1,6 @@
 <!-- ==========================================
 // src/lib/components/contratista/ContratistaListForm.svelte
-// Componente visual con SearchBar de Tantivy + AG Grid
+// Componente visual limpio - Solo presentación
 // ========================================== -->
 
 <script lang="ts">
@@ -8,231 +8,49 @@
   import {
     RefreshCw,
     AlertCircle,
-    CheckCircle2,
-    Clock,
     XCircle,
     Filter,
-    Download,
   } from "lucide-svelte";
-  import type { ContratistaResponse, EstadoContratista } from "$lib/types/contratista";
+  import type { ContratistaResponse } from "$lib/types/contratista";
   import type { SearchResult } from "$lib/types/search.types";
-  import type {
-    DataTableColumn,
-    DataTableAction,
-  } from "$lib/types/dataTable";
+  import type { DataTableColumn } from "$lib/types/dataTable";
   import SearchBar from "$lib/components/shared/SearchBar.svelte";
   import DataTable from "$lib/components/common/DataTable.svelte";
-  import ContratistaActionModal from "./ContratistaActionModal.svelte";
-  import { searchStore } from "$lib/stores/searchStore";
 
-  interface Props {
-    contratistas: ContratistaResponse[];
-    loading: boolean;
-    error: string;
-    onRefresh: () => void;
-    onBlock: (data: {
-      contratistaId: string;
-      motivoBloqueo: string;
-      observaciones?: string;
-    }) => Promise<void>;
-    onUnblock: (data: {
-      id: string;
-      motivoDesbloqueo: string;
-      observaciones?: string;
-    }) => Promise<void>;
-    blockedContratistas: Set<string>;
+  // Props - Solo inputs y outputs
+  export let contratistas: ContratistaResponse[] = [];
+  export let loading = false;
+  export let error = "";
+  export let blockedContratistas: Set<string> = new Set();
+  export let filteredData: ContratistaResponse[] = [];
+  export let stats = { total: 0, activos: 0, vencidos: 0, porVencer: 0 };
+  export let columns: DataTableColumn<ContratistaResponse>[] = [];
+  export let estadoFilter = "todos";
+  export let praindFilter = "todos";
+
+  // Eventos - Solo comunicación hacia arriba
+  export let onRefresh: () => void;
+  export let onBlock: (data: any) => Promise<void>;
+  export let onUnblock: (data: any) => Promise<void>;
+  export let onEstadoFilterChange: (filter: string) => void;
+  export let onPraindFilterChange: (filter: string) => void;
+  export let onClearAllFilters: () => void;
+  export let onSearchSelect: (e: CustomEvent<SearchResult>) => void;
+  export let onSearchClear: () => void;
+
+  // Handlers con type safety
+  function handleEstadoFilterChange(e: Event) {
+    const target = e.target as HTMLSelectElement;
+    if (target && onEstadoFilterChange) {
+      onEstadoFilterChange(target.value);
+    }
   }
 
-  let {
-    contratistas = [],
-    loading = false,
-    error = "",
-    onRefresh,
-    onBlock,
-    onUnblock,
-    blockedContratistas = new Set(),
-  }: Props = $props();
-
-  // Estado local
-  let estadoFilter = $state<"todos" | "activo" | "inactivo" | "suspendido">(
-    "todos",
-  );
-  let praindFilter = $state<"todos" | "vigente" | "vencido" | "por-vencer">(
-    "todos",
-  );
-
-  // Datos filtrados para la tabla
-  let filteredData = $derived.by(() => {
-    let filtered = contratistas;
-
-    // Filtro de estado
-    if (estadoFilter !== "todos") {
-      filtered = filtered.filter((c) => c.estado === estadoFilter);
+  function handlePraindFilterChange(e: Event) {
+    const target = e.target as HTMLSelectElement;
+    if (target && onPraindFilterChange) {
+      onPraindFilterChange(target.value);
     }
-
-    // Filtro de PRAIND
-    if (praindFilter === "vigente") {
-      filtered = filtered.filter(
-        (c) => !c.praindVencido && c.diasHastaVencimiento > 30,
-      );
-    } else if (praindFilter === "vencido") {
-      filtered = filtered.filter((c) => c.praindVencido);
-    } else if (praindFilter === "por-vencer") {
-      filtered = filtered.filter(
-        (c) => !c.praindVencido && c.diasHastaVencimiento <= 30,
-      );
-    }
-
-    // Filtro por búsqueda de Tantivy
-    // Si hay resultados de búsqueda, solo mostrar esos IDs
-    if ($searchStore.results.length > 0) {
-      const searchIds = new Set($searchStore.results.map((r) => r.id));
-      filtered = filtered.filter((c) => searchIds.has(c.id));
-    }
-
-    return filtered;
-  });
-
-  // Estadísticas
-  let stats = $derived({
-    total: contratistas.length,
-    activos: contratistas.filter((c) => c.estado === "activo").length,
-    vencidos: contratistas.filter((c) => c.praindVencido).length,
-    porVencer: contratistas.filter(
-      (c) => !c.praindVencido && c.diasHastaVencimiento <= 30,
-    ).length,
-  });
-
-  // Definición de columnas para AG Grid
-  const columns: DataTableColumn<ContratistaResponse>[] = [
-    {
-      field: "cedula",
-      headerName: "Cédula",
-      width: 130,
-      pinned: "left",
-      cellStyle: { fontFamily: "monospace", fontSize: "13px" },
-    },
-    {
-      field: "nombreCompleto",
-      headerName: "Nombre Completo",
-      flex: 1,
-      minWidth: 200,
-      cellStyle: { fontWeight: 500 },
-    },
-    {
-      field: "empresaNombre",
-      headerName: "Empresa",
-      flex: 1,
-      minWidth: 180,
-    },
-    {
-      field: "estado",
-      headerName: "Estado",
-      width: 130,
-      cellRenderer: (params) => {
-        const estado = params.value as EstadoContratista;
-        const badges: Record<EstadoContratista, { icon: string; class: string }> = {
-          activo: {
-            icon: "check-circle",
-            class: "bg-green-500/10 text-green-400 border-green-500/20",
-          },
-          inactivo: {
-            icon: "clock",
-            class: "bg-gray-500/10 text-gray-400 border-gray-500/20",
-          },
-          suspendido: {
-            icon: "x-circle",
-            class: "bg-red-500/10 text-red-400 border-red-500/20",
-          },
-        };
-        const badge = badges[estado] || badges.inactivo;
-        return `
-          <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${badge.class}">
-            ${estado ? estado.charAt(0).toUpperCase() + estado.slice(1) : 'N/A'}
-          </span>
-        `;
-      },
-    },
-    {
-      field: "praindVencido",
-      headerName: "PRAIND",
-      width: 130,
-      cellRenderer: (params) => {
-        const row = params.data;
-        if (!row) return "";
-
-        let badgeClass = "";
-        let text = "";
-
-        if (row.praindVencido) {
-          badgeClass = "bg-red-500/10 text-red-400 border-red-500/20";
-          text = "Vencido";
-        } else if (row.diasHastaVencimiento <= 30) {
-          badgeClass = "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
-          text = `${row.diasHastaVencimiento} días`;
-        } else {
-          badgeClass = "bg-green-500/10 text-green-400 border-green-500/20";
-          text = "Vigente";
-        }
-
-        return `
-          <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${badgeClass}">
-            ${text}
-          </span>
-        `;
-      },
-    },
-    {
-      field: "fechaVencimientoPraind",
-      headerName: "Vencimiento",
-      width: 130,
-      valueFormatter: (params) => {
-        if (!params.value) return "";
-        const date = new Date(params.value);
-        return date.toLocaleDateString("es-PA", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        });
-      },
-    },
-    {
-      field: "puedeIngresar",
-      headerName: "Acceso",
-      width: 130,
-      cellRenderer: (params) => {
-        const canEnter = params.value;
-        if (canEnter) {
-          return `
-            <span class="inline-flex items-center gap-1.5 rounded-full border border-green-500/20 bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-400">
-              Permitido
-            </span>
-          `;
-        } else {
-          return `
-            <span class="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400">
-              Denegado
-            </span>
-          `;
-        }
-      },
-    },
-  ];
-
-  function handleSearchSelect(e: CustomEvent<SearchResult>) {
-    // Los resultados ya están en searchStore, el filtro se aplica automáticamente
-    // No necesitamos hacer nada aquí
-  }
-
-  function handleSearchClear() {
-    // searchStore se limpia automáticamente desde el SearchBar
-    // No necesitamos hacer nada aquí
-  }
-
-  function clearAllFilters() {
-    estadoFilter = "todos";
-    praindFilter = "todos";
-    handleSearchClear();
   }
 </script>
 
@@ -293,8 +111,8 @@
         <SearchBar
           placeholder="Buscar por nombre, cédula o empresa..."
           limit={10}
-          on:select={handleSearchSelect}
-          on:clear={handleSearchClear}
+          on:select={onSearchSelect}
+          on:clear={onSearchClear}
         />
       </div>
 
@@ -303,6 +121,7 @@
         <Filter size={16} class="text-gray-400" />
         <select
           bind:value={estadoFilter}
+          on:change={handleEstadoFilterChange}
           class="rounded-lg border border-white/10 bg-[#1e1e1e] px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="todos">Todos los estados</option>
@@ -315,6 +134,7 @@
       <!-- PRAIND Filter -->
       <select
         bind:value={praindFilter}
+        on:change={handlePraindFilterChange}
         class="rounded-lg border border-white/10 bg-[#1e1e1e] px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
       >
         <option value="todos">Todos PRAIND</option>
@@ -324,9 +144,9 @@
       </select>
 
       <!-- Clear Filters -->
-      {#if estadoFilter !== "todos" || praindFilter !== "todos" || $searchStore.results.length > 0}
+      {#if estadoFilter !== "todos" || praindFilter !== "todos"}
         <button
-          on:click={clearAllFilters}
+          on:click={onClearAllFilters}
           class="flex items-center gap-2 rounded-lg border border-white/10 bg-[#1e1e1e] px-3 py-2 text-sm text-gray-400 transition-colors hover:bg-white/5 hover:text-gray-300"
         >
           <XCircle size={14} />
@@ -392,5 +212,5 @@
         }}
       />
     {/if}
-  </div>
+  </div>   
 </div>

@@ -109,24 +109,25 @@
   }
 </script>
 
-<div class="flex min-h-full items-center justify-center p-6">
+<div class="flex min-h-full items-center justify-center p-4 sm:p-6">
   <div
-    class="relative z-10 w-full rounded-xl bg-[#1e1e1e] shadow-2xl ring-1 ring-white/10 transition-[max-width] duration-500 ease-in-out {tieneVehiculo
-      ? 'max-w-5xl'
-      : 'max-w-xl'}"
+    class="relative z-10 w-full max-w-[90vw] rounded-xl bg-[#1e1e1e] shadow-2xl ring-1 ring-white/10 transition-all duration-500 ease-in-out {tieneVehiculo
+      ? 'max-w-[590px]'
+      : 'max-w-sm'}"
   >
-    <div class="border-b border-white/10 px-8 py-5">
-      <h2 class="text-xl font-semibold text-gray-100">Registrar Contratista</h2>
-      <p class="mt-1 text-sm text-gray-400">
+    <div class="border-b border-white/10 px-6 py-4">
+      <h2 class="text-lg font-semibold text-gray-100">Registrar Contratista</h2>
+      <p class="mt-1 text-xs text-gray-400">
         Ingresa los datos requeridos para el acceso.
       </p>
     </div>
 
-    <form on:submit={handleSubmit} class="p-8">
-      <div class="flex flex-col gap-8 lg:flex-row">
-        <div class="flex-1 space-y-5">
-          <div class="space-y-1.5">
-            <label for="cedula" class="text-sm font-medium text-gray-300"
+    <form on:submit={handleSubmit} class="p-6">
+      <div class="flex flex-col gap-6 lg:flex-row">
+        <!-- Columna Principal -->
+        <div class="flex-1 space-y-4">
+          <div class="space-y-1">
+            <label for="cedula" class="text-xs font-medium text-gray-300"
               >Cédula</label
             >
             <input
@@ -135,13 +136,13 @@
               bind:value={cedula}
               placeholder="1-2345-6789"
               disabled={loading}
-              class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
+              class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
             />
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label for="nombre" class="text-sm font-medium text-gray-300"
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label for="nombre" class="text-xs font-medium text-gray-300"
                 >Nombre <span class="text-red-400">*</span></label
               >
               <input
@@ -150,11 +151,11 @@
                 bind:value={nombre}
                 placeholder="Juan"
                 disabled={loading}
-                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               />
             </div>
-            <div class="space-y-1.5">
-              <label for="segundoNombre" class="text-sm font-medium text-gray-300"
+            <div class="space-y-1">
+              <label for="segundoNombre" class="text-xs font-medium text-gray-300"
                 >Segundo Nombre</label
               >
               <input
@@ -163,14 +164,14 @@
                 bind:value={segundoNombre}
                 placeholder="Carlos"
                 disabled={loading}
-                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               />
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label for="apellido" class="text-sm font-medium text-gray-300"
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label for="apellido" class="text-xs font-medium text-gray-300"
                 >Apellido <span class="text-red-400">*</span></label
               >
               <input
@@ -179,11 +180,11 @@
                 bind:value={apellido}
                 placeholder="Pérez"
                 disabled={loading}
-                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               />
             </div>
-            <div class="space-y-1.5">
-              <label for="segundoApellido" class="text-sm font-medium text-gray-300"
+            <div class="space-y-1">
+              <label for="segundoApellido" class="text-xs font-medium text-gray-300"
                 >Segundo Apellido</label
               >
               <input
@@ -192,22 +193,22 @@
                 bind:value={segundoApellido}
                 placeholder="González"
                 disabled={loading}
-                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
               />
             </div>
           </div>
 
-          <div class="space-y-1.5">
-            <label for="empresaId" class="text-sm font-medium text-gray-300"
+          <div class="space-y-1">
+            <label for="empresaId" class="text-xs font-medium text-gray-300"
               >Empresa</label
             >
             <div class="flex gap-2">
-              <div class="relative w-full">
+              <div class="relative flex-1">
                 <select
                   id="empresaId"
                   bind:value={empresaId}
                   disabled={loading || loadingEmpresas}
-                  class="w-full appearance-none rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:opacity-50"
+                  class="w-full appearance-none rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:opacity-50"
                 >
                   <option value="" disabled selected>
                     {loadingEmpresas
@@ -219,11 +220,11 @@
                   {/each}
                 </select>
                 <div
-                  class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400"
+                  class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400"
                 >
                   {#if loadingEmpresas}
                     <svg
-                      class="animate-spin h-4 w-4 text-blue-500"
+                      class="animate-spin h-3 w-3 text-blue-500"
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -244,7 +245,7 @@
                     </svg>
                   {:else}
                     <svg
-                      class="h-4 w-4"
+                      class="h-3 w-3"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -262,12 +263,12 @@
                 type="button"
                 on:click={() => (showEmpresaModal = true)}
                 disabled={loading}
-                class="flex items-center justify-center rounded-lg bg-[#2d2d2d] px-3 text-gray-400 hover:bg-[#3d3d3d] hover:text-white border border-white/10 transition-colors"
+                class="flex items-center justify-center rounded-lg bg-[#2d2d2d] px-2 text-gray-400 hover:bg-[#3d3d3d] hover:text-white border border-white/10 transition-colors flex-shrink-0"
                 title="Agregar Nueva Empresa"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
+                  class="h-4 w-4"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -283,25 +284,25 @@
             </div>
           </div>
 
-          <div class="space-y-1.5">
+          <div class="space-y-1">
             <label
               for="fechaVencimientoPraind"
-              class="text-sm font-medium text-gray-300">Fecha PRAIND</label
+              class="text-xs font-medium text-gray-300">Fecha PRAIND</label
             >
             <input
               id="fechaVencimientoPraind"
               type="date"
               bind:value={fechaVencimientoPraind}
               disabled={loading}
-              class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none calendar-icon-white"
+              class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none calendar-icon-white"
             />
           </div>
 
           <div
-            class="pt-2 flex items-center justify-between rounded-lg border border-white/5 bg-white/5 p-3"
+            class="pt-1 flex items-center justify-between rounded-lg border border-white/5 bg-white/5 p-3"
           >
             <div class="flex flex-col">
-              <span class="text-sm font-medium text-gray-200"
+              <span class="text-xs font-medium text-gray-200"
                 >¿Agregar Vehículo?</span
               >
             </div>
@@ -311,13 +312,13 @@
               aria-checked={tieneVehiculo}
               aria-label="Agregar Vehículo"
               on:click={() => (tieneVehiculo = !tieneVehiculo)}
-              class="group relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#1e1e1e] {tieneVehiculo
+              class="group relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#1e1e1e] {tieneVehiculo
                 ? 'bg-blue-600'
                 : 'bg-[#3e3e3e]'}"
             >
               <span
-                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {tieneVehiculo
-                  ? 'translate-x-5'
+                class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {tieneVehiculo
+                  ? 'translate-x-4'
                   : 'translate-x-0'}"
               ></span>
             </button>
@@ -326,18 +327,18 @@
 
         {#if tieneVehiculo}
           <div
-            class="hidden lg:block w-px bg-gradient-to-b from-transparent via-white/10 to-transparent"
+            class="hidden lg:block w-px bg-gradient-to-b from-transparent via-white/10 to-transparent self-stretch my-2"
             transition:fade
           ></div>
 
           <div
-            class="flex-1 lg:min-w-[300px]"
+            class="flex-1 lg:min-w-[200px]"
             in:fly={{ x: -20, duration: 400, delay: 100 }}
             out:fade={{ duration: 200 }}
           >
-            <div class="h-full space-y-5">
-              <div class="mb-4">
-                <h3 class="text-lg font-medium text-gray-200">
+            <div class="h-full space-y-4">
+              <div class="mb-3">
+                <h3 class="text-base font-medium text-gray-200">
                   Datos del Vehículo
                 </h3>
                 <p class="text-xs text-gray-500">
@@ -345,22 +346,21 @@
                 </p>
               </div>
 
-              <!-- NUEVO: Selector de Tipo de Vehículo -->
-              <div class="space-y-1.5">
-                <span class="block text-sm font-medium text-gray-300"
+              <div class="space-y-1">
+                <span class="block text-xs font-medium text-gray-300"
                   >Tipo de Vehículo</span
                 >
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     on:click={() => (tipoVehiculo = "motocicleta")}
-                    class="flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all {tipoVehiculo ===
+                    class="flex items-center justify-center gap-1 rounded-lg border px-3 py-2 text-xs font-medium transition-all {tipoVehiculo ===
                     'motocicleta'
                       ? 'border-blue-500 bg-blue-500/10 text-blue-400'
                       : 'border-white/10 bg-[#252526] text-gray-400 hover:border-white/20 hover:text-gray-300'}"
                   >
                     <svg
-                      class="h-5 w-5"
+                      class="h-4 w-4"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -377,13 +377,13 @@
                   <button
                     type="button"
                     on:click={() => (tipoVehiculo = "automóvil")}
-                    class="flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-all {tipoVehiculo ===
+                    class="flex items-center justify-center gap-1 rounded-lg border px-3 py-2 text-xs font-medium transition-all {tipoVehiculo ===
                     'automóvil'
                       ? 'border-blue-500 bg-blue-500/10 text-blue-400'
                       : 'border-white/10 bg-[#252526] text-gray-400 hover:border-white/20 hover:text-gray-300'}"
                   >
                     <svg
-                      class="h-5 w-5"
+                      class="h-4 w-4"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -400,8 +400,8 @@
                 </div>
               </div>
 
-              <div class="space-y-1.5">
-                <label for="placa" class="text-sm font-medium text-gray-300"
+              <div class="space-y-1">
+                <label for="placa" class="text-xs font-medium text-gray-300"
                   >Número de Placa</label
                 >
                 <input
@@ -409,13 +409,13 @@
                   type="text"
                   bind:value={placa}
                   placeholder="ABC-123"
-                  class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2.5 text-sm text-white uppercase focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2 text-sm text-white uppercase focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
-              <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-1.5">
-                  <label for="marca" class="text-sm font-medium text-gray-300"
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-1">
+                  <label for="marca" class="text-xs font-medium text-gray-300"
                     >Marca</label
                   >
                   <input
@@ -423,11 +423,11 @@
                     type="text"
                     bind:value={marca}
                     placeholder="Toyota"
-                    class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                    class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
-                <div class="space-y-1.5">
-                  <label for="modelo" class="text-sm font-medium text-gray-300"
+                <div class="space-y-1">
+                  <label for="modelo" class="text-xs font-medium text-gray-300"
                     >Modelo</label
                   >
                   <input
@@ -435,13 +435,13 @@
                     type="text"
                     bind:value={modelo}
                     placeholder="Corolla"
-                    class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                    class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div class="space-y-1.5">
-                <label for="color" class="text-sm font-medium text-gray-300"
+              <div class="space-y-1">
+                <label for="color" class="text-xs font-medium text-gray-300"
                   >Color</label
                 >
                 <input
@@ -449,12 +449,12 @@
                   type="text"
                   bind:value={color}
                   placeholder="Blanco"
-                  class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
               <div
-                class="mt-4 rounded bg-blue-500/10 p-3 text-xs text-blue-200 border border-blue-500/20"
+                class="mt-3 rounded bg-blue-500/10 p-2 text-xs text-blue-200 border border-blue-500/20"
               >
                 Recuerde verificar que la placa coincida con la tarjeta de
                 circulación física.
@@ -464,11 +464,12 @@
         {/if}
       </div>
 
-      <div class="pt-8 border-t border-white/5 mt-8">
+      <!-- Botón centrado y más pequeño -->
+      <div class="pt-6 border-t border-white/5 mt-6 flex justify-center">
         <button
           type="submit"
           disabled={loading || !isFormValid}
-          class="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+          class="w-auto min-w-[200px] rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Procesando..." : "Registrar Contratista"}
         </button>
@@ -479,7 +480,7 @@
 
 {#if showEmpresaModal}
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4"
     transition:fade={{ duration: 200 }}
   >
     <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -489,25 +490,25 @@
       on:click={() => !creatingEmpresa && (showEmpresaModal = false)}
     ></div>
     <div
-      class="relative w-full max-w-md overflow-hidden rounded-xl bg-[#1e1e1e] shadow-2xl ring-1 ring-white/10"
+      class="relative w-full max-w-sm overflow-hidden rounded-xl bg-[#1e1e1e] shadow-2xl ring-1 ring-white/10"
       transition:scale={{ start: 0.95, duration: 200 }}
     >
-      <div class="px-6 py-5 border-b border-white/10">
-        <h3 class="text-lg font-semibold text-white">Nueva Empresa</h3>
+      <div class="px-5 py-4 border-b border-white/10">
+        <h3 class="text-base font-semibold text-white">Nueva Empresa</h3>
         <p class="text-xs text-gray-400 mt-1">
           Agrega una nueva empresa al catálogo.
         </p>
       </div>
-      <div class="p-6 space-y-4">
+      <div class="p-5 space-y-3">
         {#if empresaError}
           <div
-            class="rounded bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400"
+            class="rounded bg-red-500/10 border border-red-500/20 p-2 text-xs text-red-400"
           >
             {empresaError}
           </div>
         {/if}
-        <div class="space-y-1.5">
-          <label for="newEmpresa" class="text-sm font-medium text-gray-300"
+        <div class="space-y-1">
+          <label for="newEmpresa" class="text-xs font-medium text-gray-300"
             >Nombre de la Empresa</label
           >
           <input
@@ -516,26 +517,26 @@
             bind:value={nuevaEmpresaNombre}
             placeholder="Ej. Servicios Generales S.A."
             disabled={creatingEmpresa}
-            class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             on:keydown={(e) => e.key === "Enter" && handleCrearEmpresa()}
           />
         </div>
       </div>
       <div
-        class="flex justify-end gap-3 px-6 py-4 bg-[#252526] border-t border-white/10"
+        class="flex justify-end gap-2 px-5 py-3 bg-[#252526] border-t border-white/10"
       >
         <button
           type="button"
           disabled={creatingEmpresa}
           on:click={() => (showEmpresaModal = false)}
-          class="rounded-lg px-4 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 transition-colors"
+          class="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-white/5 transition-colors"
           >Cancelar</button
         >
         <button
           type="button"
           disabled={creatingEmpresa || !nuevaEmpresaNombre.trim()}
           on:click={handleCrearEmpresa}
-          class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 flex items-center gap-2"
+          class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50 flex items-center gap-1"
         >
           {creatingEmpresa ? "Guardando..." : "Guardar Empresa"}
         </button>

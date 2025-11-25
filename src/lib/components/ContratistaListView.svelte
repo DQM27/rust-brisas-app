@@ -8,6 +8,8 @@
   import { listaNegra } from "$lib/api/listaNegra";
   import { currentUser } from "$lib/stores/auth";
   import type { ContratistaResponse } from "$lib/types/contratista";
+  import type { SearchResult } from "$lib/types/search.types";
+  import { createContratistaListLogic, ContratistaListLogic } from "$lib/logic/contratista/contratistaListLogic";
 
   interface Props {
     tabId: string;
@@ -21,6 +23,21 @@
   let error = $state("");
   let blockedContratistas = $state<Set<string>>(new Set());
 
+  // Inicializar lógica de presentación
+  const listLogic = createContratistaListLogic();
+  const listState = listLogic.getState();
+
+  // Datos derivados para la UI - USANDO $derived
+  let filteredData = $derived(listLogic.getFilteredData(contratistas));
+  let stats = $derived(listLogic.getStats(contratistas));
+  let columns = $derived(ContratistaListLogic.getColumns());
+
+  // Sincronizar loading con la lógica - USANDO $effect
+  $effect(() => {
+    // Si necesitas hacer algo cuando cambie loading, lo pones aquí
+    // Por ejemplo: listLogic.setLoading(loading);
+  });
+
   async function loadContratistas() {
     loading = true;
     error = "";
@@ -29,7 +46,6 @@
 
     if (result.ok) {
       contratistas = result.contratistas;
-      // Cargar lista de bloqueados
       await loadBlockedContratistas();
     } else {
       error = result.error;
@@ -71,13 +87,10 @@
     });
 
     if (result.ok) {
-      // Actualizar lista de bloqueados
       await loadBlockedContratistas();
-      // Recargar contratistas para actualizar estado
       await loadContratistas();
     } else {
       console.error("Error al bloquear:", result.error);
-      // TODO: Mostrar notificación de error
     }
   }
 
@@ -86,7 +99,6 @@
     motivoDesbloqueo: string;
     observaciones?: string;
   }) {
-    // El ID que recibimos es el contratistaId, necesitamos encontrar el ID del registro de lista negra
     try {
       const contratista = contratistas.find((c) => c.id === data.id);
       if (!contratista) {
@@ -94,7 +106,6 @@
         return;
       }
 
-      // Buscar el registro de lista negra por cédula
       const bloqueado = await listaNegra.getByCedula(contratista.cedula);
       if (!bloqueado) {
         console.error("Registro de lista negra no encontrado");
@@ -108,17 +119,35 @@
       );
 
       if (result.ok) {
-        // Actualizar lista de bloqueados
         await loadBlockedContratistas();
-        // Recargar contratistas para actualizar estado
         await loadContratistas();
       } else {
         console.error("Error al desbloquear:", result.error);
-        // TODO: Mostrar notificación de error
       }
     } catch (error) {
       console.error("Error en handleUnblock:", error);
     }
+  }
+
+  // Handlers para los eventos del componente de presentación
+  function handleEstadoFilterChange(filter: string) {
+    listLogic.setEstadoFilter(filter as any);
+  }
+
+  function handlePraindFilterChange(filter: string) {
+    listLogic.setPraindFilter(filter as any);
+  }
+
+  function handleClearAllFilters() {
+    listLogic.clearAllFilters();
+  }
+
+  function handleSearchSelect(e: CustomEvent<SearchResult>) {
+    // La lógica ya está en la store, no necesita hacer nada
+  }
+
+  function handleSearchClear() {
+    // La lógica ya está en la store, no necesita hacer nada
   }
 
   onMount(() => {
@@ -131,7 +160,17 @@
   {loading}
   {error}
   {blockedContratistas}
+  {filteredData}
+  {stats}
+  {columns}
+  estadoFilter={listState.estadoFilter}
+  praindFilter={listState.praindFilter}
   onRefresh={loadContratistas}
   onBlock={handleBlock}
   onUnblock={handleUnblock}
+  onEstadoFilterChange={handleEstadoFilterChange}
+  onPraindFilterChange={handlePraindFilterChange}
+  onClearAllFilters={handleClearAllFilters}
+  onSearchSelect={handleSearchSelect}
+  onSearchClear={handleSearchClear}
 />
