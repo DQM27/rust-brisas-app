@@ -6,6 +6,9 @@ export interface SearchResult {
   id: string;
   tipo: string;
   score: number;
+   cedula?: string;              
+  nombreCompleto?: string;      
+  empresaNombre?: string; 
 }
 
 export interface SearchState {

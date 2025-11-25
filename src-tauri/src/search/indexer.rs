@@ -132,3 +132,4 @@ pub fn commit_index(writer: &mut IndexWriter) -> Result<(), String> {
         .map_err(|e| format!("Error al hacer commit: {}", e))?;
     Ok(()) 
 }
+

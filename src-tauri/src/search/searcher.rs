@@ -17,6 +17,9 @@ pub struct SearchResult {
     pub id: String,
     pub tipo: String,
     pub score: f32,
+    pub cedula: Option<String>,
+    pub nombre_completo: Option<String>,
+    pub empresa_nombre: Option<String>,
 }
 
 /// Inicializa un reader para búsquedas
@@ -81,11 +84,18 @@ pub fn search_index(
         let tipo = get_field_value(&retrieved_doc, &schema, fields::TIPO)
             .unwrap_or_default();
         
+        let cedula = get_field_value(&retrieved_doc, &schema, fields::CEDULA);
+        let nombre_completo = construir_nombre_completo(&retrieved_doc, &schema);
+        let empresa_nombre = get_field_value(&retrieved_doc, &schema, fields::EMPRESA_NOMBRE);
+    
         results.push(SearchResult {
             id,
             tipo,
             score,
-        });
+            cedula,
+            nombre_completo,
+            empresa_nombre,
+            });
     }
     
     Ok(results)
@@ -111,4 +121,22 @@ fn get_field_value(
 ) -> Option<String> {
     let field = schema.get_field(field_name).ok()?;
     doc.get_first(field)?.as_str().map(|s| s.to_string())
+}
+
+fn construir_nombre_completo(doc: &tantivy::TantivyDocument, schema: &Schema) -> Option<String> {
+    let nombre = get_field_value(doc, schema, fields::NOMBRE)?;
+    let apellido = get_field_value(doc, schema, fields::APELLIDO)?;
+    
+    let mut nombre_completo = format!("{} {}", nombre, apellido);
+    
+    if let Some(segundo_nombre) = get_field_value(doc, schema, fields::SEGUNDO_NOMBRE) {
+        nombre_completo = format!("{} {} {}", nombre, segundo_nombre, apellido);
+    }
+    
+    if let Some(segundo_apellido) = get_field_value(doc, schema, fields::SEGUNDO_APELLIDO) {
+        nombre_completo.push(' ');
+        nombre_completo.push_str(&segundo_apellido);
+    }
+    
+    Some(nombre_completo)
 }
