@@ -4,9 +4,19 @@
   import ContratistaListForm from "./ContratistaListForm.svelte";
   import { submitFetchAllContratistas } from "$lib/logic/contratista/submitFetchContratistas";
   import { submitFetchAllListaNegra } from "$lib/logic/listaNegra/submitFetchListaNegra";
+  import { openTab } from "$lib/stores/tabs"; // ← Importar openTab
+  import { UserPlus, Edit } from "lucide-svelte";
   import type { ContratistaResponse } from "$lib/types/contratista";
   import type { SearchResult } from "$lib/types/search.types";
-  import { createContratistaListLogic, ContratistaListLogic } from "$lib/logic/contratista/contratistaListLogic";
+  import type { ColDef } from "@ag-grid-community/core";
+  import {
+    createContratistaListLogic,
+    ContratistaListLogic,
+  } from "$lib/logic/contratista/contratistaListLogic";
+
+  import { selectedSearchStore } from "$lib/stores/searchStore";
+  import { reindexAllContratistas } from "$lib/api/searchService";
+  import { toast } from "svelte-5-french-toast";
 
   interface Props {
     tabId: string;
@@ -26,10 +36,31 @@
   const listState = listLogic.getState();
 
   let filteredData = $derived.by(() => {
+    // Suscribirse a cambios en la búsqueda seleccionada
+    const _search = $selectedSearchStore;
     return listLogic.getFilteredData(contratistas);
   });
 
-  let columns = $derived(ContratistaListLogic.getColumns());
+  // Convertir columnas a ColDef de AG Grid
+  let columnDefs = $derived.by((): ColDef<ContratistaResponse>[] => {
+    const cols = ContratistaListLogic.getColumns();
+    return cols.map(
+      (col) =>
+        ({
+          field: String(col.field) as any,
+          headerName: col.headerName,
+          width: col.width,
+          minWidth: col.minWidth,
+          flex: col.flex,
+          sortable: col.sortable !== false,
+          filter: true,
+          resizable: true,
+          cellRenderer: col.cellRenderer,
+          valueFormatter: col.valueFormatter,
+          cellStyle: col.cellStyle,
+        }) as ColDef<ContratistaResponse>,
+    );
+  });
 
   // --- Cargar datos ---
   async function loadContratistas() {
@@ -65,6 +96,53 @@
     }
   }
 
+  // --- Acciones ---
+  function handleNewContratista() {
+    openTab({
+      componentKey: "contratista",
+      title: "Nuevo Contratista",
+      data: {},
+    });
+  }
+
+  function handleEditContratista(contratista: ContratistaResponse) {
+    openTab({
+      componentKey: "contratista",
+      title: `Editar: ${contratista.nombre}`,
+      data: { contratistaId: contratista.id },
+    });
+  }
+
+  function handleViewInfo(contratista: ContratistaResponse) {
+    console.log("Ver información de:", contratista);
+    // TODO: Abrir panel lateral o modal con información detallada
+  }
+
+  function handleViewHistory(contratista: ContratistaResponse) {
+    console.log("Ver historial de:", contratista);
+    // TODO: Abrir tab o modal con historial de ingresos
+  }
+
+  function handleViewVehicles(contratista: ContratistaResponse) {
+    console.log("Ver vehículos de:", contratista);
+    // TODO: Abrir tab de vehículos filtrado por este contratista
+  }
+
+  function handleViewBadges(contratista: ContratistaResponse) {
+    console.log("Ver carnets de:", contratista);
+    // TODO: Abrir tab de carnets filtrado por este contratista
+  }
+
+  function handleDeleteContratista(contratista: ContratistaResponse) {
+    // TODO: Mostrar confirmación y eliminar
+    console.log("Eliminar:", contratista);
+  }
+
+  function handleDeleteMultiple(contratistas: ContratistaResponse[]) {
+    // TODO: Mostrar confirmación y eliminar múltiples
+    console.log("Eliminar múltiples:", contratistas.length);
+  }
+
   // --- Filtros ---
   function handleEstadoFilterChange(filter: string) {
     listLogic.setEstadoFilter(filter as any);
@@ -82,13 +160,24 @@
     listState.praindFilter = "todos";
   }
 
-  // --- Busqueda ---
+  // --- Búsqueda ---
   function handleSearchSelect(e: CustomEvent<SearchResult>) {
     console.log("Contratista seleccionado:", e.detail);
   }
 
   function handleSearchClear() {
     console.log("Búsqueda limpiada");
+  }
+
+  async function handleReindex() {
+    const toastId = toast.loading("Reindexando búsqueda...");
+    try {
+      await reindexAllContratistas();
+      toast.success("Índice de búsqueda actualizado", { id: toastId });
+    } catch (err) {
+      console.error("Error al reindexar:", err);
+      toast.error("Error al reindexar", { id: toastId });
+    }
   }
 
   onMount(() => {
@@ -102,13 +191,22 @@
   {error}
   {blockedContratistas}
   {filteredData}
-  {columns}
+  {columnDefs}
   estadoFilter={listState.estadoFilter}
   praindFilter={listState.praindFilter}
   onRefresh={loadContratistas}
+  onReindex={handleReindex}
   onEstadoFilterChange={handleEstadoFilterChange}
   onPraindFilterChange={handlePraindFilterChange}
   onClearAllFilters={handleClearAllFilters}
   onSearchSelect={handleSearchSelect}
   onSearchClear={handleSearchClear}
+  onNewContratista={handleNewContratista}
+  onEditContratista={handleEditContratista}
+  onViewInfo={handleViewInfo}
+  onViewHistory={handleViewHistory}
+  onViewVehicles={handleViewVehicles}
+  onViewBadges={handleViewBadges}
+  onDeleteContratista={handleDeleteContratista}
+  onDeleteMultiple={handleDeleteMultiple}
 />

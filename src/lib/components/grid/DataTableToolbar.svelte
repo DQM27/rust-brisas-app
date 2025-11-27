@@ -41,12 +41,14 @@
   }: Props = $props();
 </script>
 
-<div class="flex justify-between items-center gap-3 p-4 bg-[#252526] border-b border-white/10">
+<div
+  class="flex justify-between items-center gap-3 p-4 bg-[#252526] border-b border-white/10"
+>
   <!-- Sección izquierda: Acciones principales -->
   <div class="flex items-center gap-2">
     {#if toolbarConfig.showColumnSelector}
       <button
-        on:click={onOpenColumnSelector}
+        onclick={onOpenColumnSelector}
         class="flex items-center gap-1.5 px-3 py-2 bg-[#1e1e1e] border border-white/10 rounded-md text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white/20 whitespace-nowrap"
         title="Configurar columnas"
       >
@@ -57,7 +59,7 @@
 
     {#if toolbarConfig.showExport}
       <button
-        on:click={onExport}
+        onclick={onExport}
         class="flex items-center gap-1.5 px-3 py-2 bg-[#1e1e1e] border border-white/10 rounded-md text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
         title="Exportar a CSV"
         disabled={!gridReady}
@@ -71,7 +73,7 @@
       <div class="w-px h-6 bg-white/10"></div>
 
       <button
-        on:click={onAutoSize}
+        onclick={onAutoSize}
         class="flex items-center gap-1 px-2 py-2 bg-[#1e1e1e] border border-white/10 rounded-md text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
         title="Ajustar columnas al contenido"
         disabled={!gridReady}
@@ -81,7 +83,7 @@
       </button>
 
       <button
-        on:click={onSizeToFit}
+        onclick={onSizeToFit}
         class="flex items-center gap-1 px-2 py-2 bg-[#1e1e1e] border border-white/10 rounded-md text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
         title="Ajustar al ancho disponible"
         disabled={!gridReady}
@@ -95,7 +97,7 @@
       <div class="w-px h-6 bg-white/10"></div>
       {#each toolbarConfig.customButtons as button}
         <button
-          on:click={button.onClick}
+          onclick={button.onClick}
           class="flex items-center gap-1.5 px-3 py-2 bg-[#1e1e1e] border border-white/10 rounded-md text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           disabled={button.disabled}
           title={button.label}
@@ -112,13 +114,15 @@
 
   <!-- Sección derecha: Acciones de selección -->
   {#if selectedRows.length > 0}
-    <div class="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-md px-3 py-2">
+    <div
+      class="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-md px-3 py-2"
+    >
       <span class="text-blue-400 text-xs font-medium mr-2">
         {selectedRows.length} seleccionada(s)
       </span>
 
       <button
-        on:click={onCopySelected}
+        onclick={onCopySelected}
         class="flex items-center gap-1 px-2 py-1.5 bg-[#1e1e1e] border border-white/10 rounded text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white/20"
         title="Copiar seleccionadas"
       >
@@ -126,7 +130,7 @@
       </button>
 
       <button
-        on:click={onDeselectAll}
+        onclick={onDeselectAll}
         class="flex items-center gap-1 px-2 py-1.5 bg-[#1e1e1e] border border-white/10 rounded text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white-20"
         title="Deseleccionar todas"
       >
@@ -136,7 +140,7 @@
   {:else if gridReady}
     <div class="flex items-center gap-2">
       <button
-        on:click={onSelectAll}
+        onclick={onSelectAll}
         class="flex items-center gap-1 px-2 py-2 bg-[#1e1e1e] border border-white/10 rounded-md text-white text-xs font-medium cursor-pointer transition-colors hover:bg-white/5 hover:border-white/20 whitespace-nowrap"
         title="Seleccionar todas las visibles"
       >

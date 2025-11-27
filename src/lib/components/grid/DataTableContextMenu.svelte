@@ -17,24 +17,29 @@
   );
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div 
+<div
   class="fixed inset-0 z-50"
-  on:click={onClose}
+  role="button"
+  tabindex="0"
+  onclick={onClose}
+  onkeydown={(e) => e.key === "Escape" && onClose()}
 >
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="fixed bg-[#252526] border border-white/10 rounded-md shadow-xl min-w-[180px] p-1 z-51 animate-in fade-in-0 zoom-in-95"
     style="left: {x}px; top: {y}px;"
-    on:click={(e) => e.stopPropagation()}
+    role="menu"
+    tabindex="0"
+    onclick={(e) => e.stopPropagation()}
+    onkeydown={(e) => e.stopPropagation()}
   >
     <div class="space-y-0.5">
       {#each visibleItems as item, index}
         <button
-          class="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none rounded-sm text-gray-300 text-sm cursor-pointer transition-colors hover:bg-white/10 hover:text-white {item.variant === 'danger' ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300' : ''}"
-          on:click={() => onItemClick(item)}
+          class="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none rounded-sm text-gray-300 text-sm cursor-pointer transition-colors hover:bg-white/10 hover:text-white {item.variant ===
+          'danger'
+            ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300'
+            : ''}"
+          onclick={() => onItemClick(item)}
         >
           {#if item.icon}
             {@const Icon = item.icon}

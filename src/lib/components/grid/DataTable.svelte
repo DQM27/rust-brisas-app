@@ -129,13 +129,13 @@
   // Tema oscuro para AG Grid v32 con animaciones mejoradas
   const myTheme = themeQuartz.withPart(colorSchemeDark).withParams({
     backgroundColor: "rgb(30 30 30)",
-    foregroundColor: "rgb(255 255 255)", 
+    foregroundColor: "rgb(255 255 255)",
     browserColorScheme: "dark",
     headerBackgroundColor: "rgb(37 37 38)",
     headerTextColor: "rgb(209 213 219)",
     oddRowBackgroundColor: "rgb(30 30 30)",
     chromeBackgroundColor: "rgb(37 37 38)",
-    rowHoverColor: "rgba(255, 255, 255, 0.05)", 
+    rowHoverColor: "rgba(255, 255, 255, 0.05)",
     columnBorder: true,
     borderColor: "rgba(255, 255, 255, 0.1)",
     fontSize: 13,
@@ -143,7 +143,6 @@
     spacing: 4,
     cellHorizontalPadding: 16,
     // NUEVO: Configuración de animaciones
-    
   });
 
   /**
@@ -152,26 +151,37 @@
    */
   function getFilterType(column: DataTableColumn<T>): string | boolean {
     if (!enableAdvancedFilters) return true;
-    
+
     // Si la columna especifica un filtro custom, usarlo
     if (column.filter === false) return false;
-    if (typeof column.filter === 'string') return column.filter;
-    
+    if (typeof column.filter === "string") return column.filter;
+
     // Inferir tipo de filtro basado en el field
     const field = String(column.field);
-    
+
     // Filtros de fecha (Community)
-    if (field.includes('fecha') || field.includes('date') || field.includes('_at') || field.includes('vencimiento')) {
-      return 'agDateColumnFilter';
+    if (
+      field.includes("fecha") ||
+      field.includes("date") ||
+      field.includes("_at") ||
+      field.includes("vencimiento")
+    ) {
+      return "agDateColumnFilter";
     }
-    
+
     // Filtros numéricos (Community)
-    if (field.includes('id') || field.includes('cantidad') || field.includes('monto') || field.includes('precio') || field.includes('numero')) {
-      return 'agNumberColumnFilter';
+    if (
+      field.includes("id") ||
+      field.includes("cantidad") ||
+      field.includes("monto") ||
+      field.includes("precio") ||
+      field.includes("numero")
+    ) {
+      return "agNumberColumnFilter";
     }
-    
+
     // Por defecto: filtro de texto (Community)
-    return 'agTextColumnFilter';
+    return "agTextColumnFilter";
   }
 
   /**
@@ -180,10 +190,10 @@
    */
   function getFilterParams(column: DataTableColumn<T>) {
     const filterType = getFilterType(column);
-    
-    if (filterType === 'agDateColumnFilter') {
+
+    if (filterType === "agDateColumnFilter") {
       return {
-        buttons: ['reset', 'apply'],
+        buttons: ["reset", "apply"],
         closeOnApply: true,
         comparator: (filterDate: Date, cellValue: string) => {
           if (!cellValue) return -1;
@@ -193,29 +203,29 @@
         },
       };
     }
-    
-    if (filterType === 'agNumberColumnFilter') {
+
+    if (filterType === "agNumberColumnFilter") {
       return {
-        buttons: ['reset', 'apply'],
+        buttons: ["reset", "apply"],
         closeOnApply: true,
-        allowedCharPattern: '\\d\\-\\,\\.', // números, guiones, comas y puntos
+        allowedCharPattern: "\\d\\-\\,\\.", // números, guiones, comas y puntos
       };
     }
-    
+
     // Text filter (por defecto) - Community
     return {
-      buttons: ['reset', 'apply'],
+      buttons: ["reset", "apply"],
       closeOnApply: true,
       // Opciones de búsqueda de texto
       filterOptions: [
-        'contains',
-        'notContains',
-        'equals',
-        'notEqual',
-        'startsWith',
-        'endsWith',
+        "contains",
+        "notContains",
+        "equals",
+        "notEqual",
+        "startsWith",
+        "endsWith",
       ],
-      defaultOption: 'contains',
+      defaultOption: "contains",
       // Case insensitive por defecto
       caseSensitive: false,
       // Trim espacios
@@ -247,7 +257,7 @@
     columns.forEach((col) => {
       const filterType = getFilterType(col);
       const filterParams = getFilterParams(col);
-      
+
       const colDef: ColDef<T> = {
         field: String(col.field) as any,
         headerName: col.headerName,
@@ -294,10 +304,14 @@
             .map((action) => {
               const variant = action.variant || "default";
               const colorClasses = {
-                default: "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20",
-                danger: "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20",
-                success: "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20",
-                warning: "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20",
+                default:
+                  "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20",
+                danger:
+                  "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20",
+                success:
+                  "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20",
+                warning:
+                  "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20",
               };
               const colorClass = colorClasses[variant];
 
@@ -324,13 +338,15 @@
   // Effect para actualizar el grid cuando cambian las columnas
   $effect(() => {
     if (gridApi && columnDefs) {
-      gridApi.setGridOption('columnDefs', columnDefs);
+      gridApi.setGridOption("columnDefs", columnDefs);
     }
   });
 
   // Configuración del grid para v32.3.9
   const gridOptions: GridOptions<T> = {
-    columnDefs: columnDefs,
+    get columnDefs() {
+      return columnDefs;
+    },
     defaultColDef: {
       sortable: true,
       filter: true,
@@ -340,7 +356,11 @@
       // NUEVO: Floating filter (mini filtros bajo los headers)
       floatingFilter: enableAdvancedFilters,
     },
-    rowSelection: rowSelection ? (rowSelection === "multiple" ? "multiple" : "single") : undefined,
+    rowSelection: rowSelection
+      ? rowSelection === "multiple"
+        ? "multiple"
+        : "single"
+      : undefined,
     suppressRowClickSelection: true,
     pagination,
     paginationPageSize: $preferencesStore.pageSize || paginationPageSize,
@@ -352,17 +372,17 @@
     ensureDomOrder: true,
     enableCellChangeFlash: enableAnimations,
     suppressMovableColumns: false,
-    
+
     // NUEVO: Configuración de animaciones
     animateRows: animateRows,
-    
+
     // NUEVO: Configuración de filtros avanzados
     suppressMenuHide: false,
-    
+
     // Eventos actualizados para v32
     onGridReady: (params) => {
       gridApi = params.api;
-      
+
       // Auto-size después de que el grid esté listo
       if (autoSizeOnLoad) {
         setTimeout(() => {
@@ -370,11 +390,11 @@
         }, 150);
       }
     },
-    
+
     onFirstDataRendered: (params) => {
       // Opcional: puedes agregar lógica adicional aquí
     },
-    
+
     onCellClicked: (event) => {
       const target = event.event?.target as HTMLElement;
 
@@ -396,13 +416,13 @@
         onRowClick(event.data);
       }
     },
-    
+
     onRowDoubleClicked: (event) => {
       if (event.data && onRowDoubleClick) {
         onRowDoubleClick(event.data);
       }
     },
-    
+
     onSelectionChanged: (event: SelectionChangedEvent) => {
       if (gridApi) {
         const selected = gridApi.getSelectedRows();
@@ -410,7 +430,7 @@
         onSelectionChange?.(selected);
       }
     },
-    
+
     onCellContextMenu: (event: CellContextMenuEvent) => {
       if (contextMenuItems.length === 0) return;
 
@@ -443,8 +463,8 @@
       columnKeys,
       onlySelected: exportConfig.onlySelected ?? false,
       processCellCallback: (params) => {
-        return params.value ?? '';
-      }
+        return params.value ?? "";
+      },
     });
   }
 

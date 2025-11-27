@@ -1,12 +1,14 @@
 <!-- src/lib/components/contratista/ContratistaListForm.svelte -->
 <script lang="ts">
   import { fade } from "svelte/transition";
-  import { AlertCircle, XCircle, Filter } from "lucide-svelte";
+  import { AlertCircle, Filter, Trash2 } from "lucide-svelte";
   import type { ContratistaResponse } from "$lib/types/contratista";
   import type { SearchResult } from "$lib/types/search.types";
-  import type { DataTableColumn } from "$lib/types/dataTable";
+  import type { ColDef } from "@ag-grid-community/core";
+  import type { CustomToolbarButton } from "$lib/types/agGrid";
   import SearchBar from "$lib/components/shared/SearchBar.svelte";
-  import DataTable from "$lib/components/grid/DataTable.svelte";
+  import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
+  import { createCustomButton } from "$lib/config/agGridConfigs";
 
   interface Props {
     contratistas?: ContratistaResponse[];
@@ -14,15 +16,24 @@
     error?: string;
     filteredData?: ContratistaResponse[];
     blockedContratistas?: Set<string>;
-    columns: DataTableColumn<ContratistaResponse>[];
+    columnDefs: ColDef<ContratistaResponse>[];
     estadoFilter?: string;
     praindFilter?: string;
     onRefresh: () => void;
+    onReindex?: () => void;
     onEstadoFilterChange: (filter: string) => void;
     onPraindFilterChange: (filter: string) => void;
     onClearAllFilters: () => void;
     onSearchSelect: (e: CustomEvent<SearchResult>) => void;
     onSearchClear: () => void;
+    onNewContratista?: () => void;
+    onEditContratista?: (contratista: ContratistaResponse) => void;
+    onViewInfo?: (contratista: ContratistaResponse) => void;
+    onViewHistory?: (contratista: ContratistaResponse) => void;
+    onViewVehicles?: (contratista: ContratistaResponse) => void;
+    onViewBadges?: (contratista: ContratistaResponse) => void;
+    onDeleteContratista?: (contratista: ContratistaResponse) => void;
+    onDeleteMultiple?: (contratistas: ContratistaResponse[]) => void;
   }
 
   let {
@@ -30,43 +41,210 @@
     loading = false,
     error = "",
     filteredData = [],
-    columns,
+    columnDefs,
     estadoFilter = "todos",
     praindFilter = "todos",
     onRefresh,
+    onReindex,
     onEstadoFilterChange,
     onPraindFilterChange,
     onClearAllFilters,
     onSearchSelect,
     onSearchClear,
+    onNewContratista,
+    onEditContratista,
+    onViewInfo,
+    onViewHistory,
+    onViewVehicles,
+    onViewBadges,
+    onDeleteContratista,
+    onDeleteMultiple,
   }: Props = $props();
 
-  function handleEstadoFilterChange(e: Event) {
-    const target = e.target as HTMLSelectElement;
-    onEstadoFilterChange(target.value);
+  // Estado para selección
+  let selectedRows = $state<ContratistaResponse[]>([]);
+
+  // Estados para dropdowns
+  let showEstadoDropdown = $state(false);
+  let showPraindDropdown = $state(false);
+
+  // Obtener label del filtro actual
+  const estadoLabel = $derived.by(() => {
+    const labels: Record<string, string> = {
+      todos: "Todos",
+      activo: "Activos",
+      inactivo: "Inactivos",
+      suspendido: "Suspendidos",
+    };
+    return labels[estadoFilter] || "Estado";
+  });
+
+  const praindLabel = $derived.by(() => {
+    const labels: Record<string, string> = {
+      todos: "Todos",
+      vigente: "Vigentes",
+      "por-vencer": "Por vencer",
+      vencido: "Vencidos",
+    };
+    return labels[praindFilter] || "PRAIND";
+  });
+
+  const hasActiveFilters = $derived(
+    estadoFilter !== "todos" || praindFilter !== "todos",
+  );
+
+  // Custom buttons por contexto
+  const customButtons = $derived.by(() => {
+    const selected = selectedRows[0];
+
+    // Botones de filtro para el contexto default
+    const filterButtons: CustomToolbarButton[] = [
+      // Filtro de Estado
+      {
+        id: "filter-estado",
+        label: `Estado: ${estadoLabel}`,
+        icon: Filter,
+        onClick: () => {
+          showEstadoDropdown = !showEstadoDropdown;
+          showPraindDropdown = false;
+        },
+        variant: (estadoFilter !== "todos" ? "primary" : "default") as
+          | "primary"
+          | "default",
+        tooltip: "Filtrar por estado",
+      },
+      // Filtro de PRAIND
+      {
+        id: "filter-praind",
+        label: `PRAIND: ${praindLabel}`,
+        icon: Filter,
+        onClick: () => {
+          showPraindDropdown = !showPraindDropdown;
+          showEstadoDropdown = false;
+        },
+        variant: (praindFilter !== "todos" ? "primary" : "default") as
+          | "primary"
+          | "default",
+        tooltip: "Filtrar por PRAIND",
+      },
+    ];
+
+    // Si hay filtros activos, agregar botón de limpiar
+    if (hasActiveFilters) {
+      filterButtons.push({
+        id: "clear-filters",
+        label: "Limpiar Filtros",
+        icon: Filter,
+        onClick: () => {
+          onClearAllFilters();
+          showEstadoDropdown = false;
+          showPraindDropdown = false;
+        },
+        variant: "danger" as const,
+        tooltip: "Limpiar todos los filtros",
+      });
+    }
+
+    return {
+      default: [
+        createCustomButton.nuevo(() => {
+          onNewContratista?.();
+        }),
+        createCustomButton.importar(() => {
+          console.log("Importar contratistas");
+        }),
+        {
+          id: "reindex",
+          label: "Reindexar",
+          icon: AlertCircle,
+          onClick: () => onReindex?.(),
+          variant: "default" as const,
+          tooltip: "Reparar índice de búsqueda",
+        },
+        ...filterButtons,
+      ],
+
+      singleSelect: [
+        createCustomButton.verInformacion(() => {
+          if (selected) onViewInfo?.(selected);
+        }),
+        createCustomButton.editar(() => {
+          if (selected) onEditContratista?.(selected);
+        }),
+        createCustomButton.historial(() => {
+          if (selected) onViewHistory?.(selected);
+        }),
+        createCustomButton.vehiculos(() => {
+          if (selected) onViewVehicles?.(selected);
+        }),
+        createCustomButton.badges(() => {
+          if (selected) onViewBadges?.(selected);
+        }),
+        createCustomButton.eliminar(() => {
+          if (selected) onDeleteContratista?.(selected);
+        }),
+      ],
+
+      multiSelect: [
+        {
+          id: "delete-multiple",
+          label: "Eliminar Seleccionados",
+          icon: Trash2,
+          onClick: () => {
+            onDeleteMultiple?.(selectedRows);
+          },
+          variant: "danger" as const,
+          tooltip: `Eliminar ${selectedRows.length} contratistas`,
+        },
+      ],
+    };
+  });
+
+  function handleEstadoSelect(value: string) {
+    onEstadoFilterChange(value);
+    showEstadoDropdown = false;
   }
 
-  function handlePraindFilterChange(e: Event) {
-    const target = e.target as HTMLSelectElement;
-    onPraindFilterChange(target.value);
+  function handlePraindSelect(value: string) {
+    onPraindFilterChange(value);
+    showPraindDropdown = false;
+  }
+
+  // Cerrar dropdowns al hacer click fuera
+  function handleClickOutside(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+
+    // No cerrar si se hizo click en:
+    // 1. Los dropdowns mismos
+    // 2. Los botones de filtro (buscar por el texto del botón o el contenedor del botón)
+    const clickedDropdown = target.closest(".filter-dropdown-container");
+    const clickedFilterButton = target.closest("[data-filter-button]");
+
+    if (!clickedDropdown && !clickedFilterButton) {
+      showEstadoDropdown = false;
+      showPraindDropdown = false;
+    }
   }
 </script>
 
-<div class="flex h-full flex-col bg-white dark:bg-[#1e1e1e]">
-  <!-- Header -->
-  <div class="border-b border-gray-200 dark:border-white/10 px-6 py-4 bg-gray-50 dark:bg-[#252526]">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Lista de Contratistas</h2>
-        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Gestión y visualización de todos los contratistas registrados</p>
-      </div>
-    </div>
-  </div>
+<svelte:window onclick={handleClickOutside} />
 
-  <!-- Search & Filters Bar -->
-  <div class="border-b border-gray-200 dark:border-white/10 px-6 py-4 bg-gray-50 dark:bg-[#252526]">
-    <div class="flex flex-wrap items-center gap-4">
-      <div class="flex-1 min-w-[300px]">
+<div class="flex h-full flex-col relative">
+  <!-- Header con SearchBar -->
+  <div
+    class="border-b border-gray-200 dark:border-white/10 px-6 py-4 bg-gray-50 dark:bg-[#252526]"
+  >
+    <div class="flex items-center justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          Lista de Contratistas
+        </h2>
+        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          Gestión y visualización de todos los contratistas registrados
+        </p>
+      </div>
+
+      <div class="flex-1 max-w-md">
         <SearchBar
           placeholder="Buscar por nombre, cédula o empresa..."
           limit={10}
@@ -74,51 +252,17 @@
           on:clear={onSearchClear}
         />
       </div>
-
-      <!-- Estado Filter -->
-      <div class="flex items-center gap-2">
-        <Filter size={16} class="text-gray-400 dark:text-gray-400" />
-        <select
-          bind:value={estadoFilter}
-          on:change={handleEstadoFilterChange}
-          class="rounded-lg border border-gray-300 dark:border-white/10 bg-white dark:bg-[#1e1e1e] px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        >
-          <option value="todos">Todos los estados</option>
-          <option value="activo">Activos</option>
-          <option value="inactivo">Inactivos</option>
-          <option value="suspendido">Suspendidos</option>
-        </select>
-      </div>
-
-      <!-- PRAIND Filter -->
-      <select
-        bind:value={praindFilter}
-        on:change={handlePraindFilterChange}
-        class="rounded-lg border border-gray-300 dark:border-white/10 bg-white dark:bg-[#1e1e1e] px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-      >
-        <option value="todos">Todos PRAIND</option>
-        <option value="vigente">Vigentes</option>
-        <option value="por-vencer">Por vencer (≤30 días)</option>
-        <option value="vencido">Vencidos</option>
-      </select>
-
-      {#if estadoFilter !== "todos" || praindFilter !== "todos"}
-        <button
-          on:click={onClearAllFilters}
-          class="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-white/10 bg-white dark:bg-[#1e1e1e] px-3 py-2 text-sm text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-700 dark:hover:text-gray-200"
-        >
-          <XCircle size={14} />
-          Limpiar filtros
-        </button>
-      {/if}
     </div>
   </div>
 
   <!-- Content -->
-  <div class="flex-1 overflow-hidden">
+  <div class="flex-1 overflow-hidden relative">
     {#if error}
       <div class="p-6">
-        <div class="flex items-center gap-3 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-red-400" transition:fade>
+        <div
+          class="flex items-center gap-3 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-red-400"
+          transition:fade
+        >
           <AlertCircle size={20} />
           <div>
             <div class="font-medium">Error al cargar contratistas</div>
@@ -129,44 +273,133 @@
     {:else if loading}
       <div class="flex h-full items-center justify-center">
         <div class="text-center">
-          <svg class="mx-auto h-8 w-8 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+          <svg
+            class="mx-auto h-8 w-8 animate-spin text-blue-500"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            />
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
           </svg>
-          <p class="mt-4 text-sm text-gray-400 dark:text-gray-400">Cargando contratistas...</p>
+          <p class="mt-4 text-sm text-gray-400 dark:text-gray-400">
+            Cargando contratistas...
+          </p>
         </div>
       </div>
     {:else if contratistas.length === 0}
       <div class="flex h-full items-center justify-center">
         <div class="text-center">
-          <AlertCircle size={48} class="mx-auto text-gray-600 dark:text-gray-400" />
-          <p class="mt-4 text-lg font-medium text-gray-400 dark:text-gray-300">No hay contratistas registrados</p>
-          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Los contratistas aparecerán aquí una vez sean registrados</p>
+          <AlertCircle
+            size={48}
+            class="mx-auto text-gray-600 dark:text-gray-400"
+          />
+          <p class="mt-4 text-lg font-medium text-gray-400 dark:text-gray-300">
+            No hay contratistas registrados
+          </p>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Los contratistas aparecerán aquí una vez sean registrados
+          </p>
         </div>
       </div>
     {:else}
-      <DataTable
-        data={filteredData}
-        {columns}
-        storageKey="contratistas-list"
-        rowSelection={false}
-        pagination={true}
-        paginationPageSize={20}
-        paginationPageSizeSelector={[10, 20, 30, 50, 100]}
-        getRowId={(row) => row.id}
-        height="100%"
-        toolbarConfig={{
-          showColumnSelector: true,
-          showExport: true,
-          showAutoSize: true,
-        }}
-        exportConfig={{
-          fileName: `contratistas-${new Date().toISOString().split("T")[0]}.csv`,
-        }}
-        enableAnimations={true}
-        animateRows={true}
-        enableAdvancedFilters={true}
+      <AGGridWrapper
+        gridId="contratista-list"
+        {columnDefs}
+        rowData={filteredData}
+        {customButtons}
+        getRowId={(params) => params.data.id}
+        onSelectionChanged={(rows) => (selectedRows = rows)}
       />
+    {/if}
+  </div>
+
+  <!-- Dropdowns flotantes -->
+  <div class="filter-dropdown-container">
+    {#if showEstadoDropdown}
+      <div
+        class="absolute top-16 left-6 z-50 bg-[#1e1e1e] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
+        transition:fade={{ duration: 150 }}
+      >
+        <button
+          onclick={() => handleEstadoSelect("todos")}
+          class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors
+            {estadoFilter === 'todos' ? 'bg-blue-500/20 text-blue-400' : ''}"
+        >
+          Todos los estados
+        </button>
+        <button
+          onclick={() => handleEstadoSelect("activo")}
+          class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors
+            {estadoFilter === 'activo' ? 'bg-blue-500/20 text-blue-400' : ''}"
+        >
+          Activos
+        </button>
+        <button
+          onclick={() => handleEstadoSelect("inactivo")}
+          class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors
+            {estadoFilter === 'inactivo' ? 'bg-blue-500/20 text-blue-400' : ''}"
+        >
+          Inactivos
+        </button>
+        <button
+          onclick={() => handleEstadoSelect("suspendido")}
+          class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors
+            {estadoFilter === 'suspendido'
+            ? 'bg-blue-500/20 text-blue-400'
+            : ''}"
+        >
+          Suspendidos
+        </button>
+      </div>
+    {/if}
+
+    {#if showPraindDropdown}
+      <div
+        class="absolute top-16 left-52 z-50 bg-[#1e1e1e] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
+        transition:fade={{ duration: 150 }}
+      >
+        <button
+          onclick={() => handlePraindSelect("todos")}
+          class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors
+            {praindFilter === 'todos' ? 'bg-blue-500/20 text-blue-400' : ''}"
+        >
+          Todos PRAIND
+        </button>
+        <button
+          onclick={() => handlePraindSelect("vigente")}
+          class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors
+            {praindFilter === 'vigente' ? 'bg-blue-500/20 text-blue-400' : ''}"
+        >
+          Vigentes
+        </button>
+        <button
+          onclick={() => handlePraindSelect("por-vencer")}
+          class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors
+            {praindFilter === 'por-vencer'
+            ? 'bg-blue-500/20 text-blue-400'
+            : ''}"
+        >
+          Por vencer (≤30 días)
+        </button>
+        <button
+          onclick={() => handlePraindSelect("vencido")}
+          class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors
+            {praindFilter === 'vencido' ? 'bg-blue-500/20 text-blue-400' : ''}"
+        >
+          Vencidos
+        </button>
+      </div>
     {/if}
   </div>
 </div>

@@ -3,6 +3,7 @@ import { registerContratista } from './registerContratista';
 import { parseContratistaError } from './parseContratistaErrors';
 import { validateVehiculoInput } from '$lib/logic/vehiculo/validateVehiculoInput';
 import { submitRegisterVehiculo } from '$lib/logic/vehiculo/submitRegisterVehiculo';
+import { reindexAllContratistas } from '$lib/api/searchService';
 
 import type {
   ContratistaResponse,
@@ -84,6 +85,9 @@ export async function submitRegisterContratista(
         return { ok: false, error: `Error al registrar vehículo: ${vehiculoResult.error}` };
       }
     }
+
+    // 5. Reindexar búsqueda
+    await reindexAllContratistas();
 
     // Éxito completo
     return { ok: true, contratista };

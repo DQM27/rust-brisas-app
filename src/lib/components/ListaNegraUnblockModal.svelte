@@ -21,8 +21,12 @@
 
   // Determinar si es desbloqueo o re-bloqueo
   const isUnblocking = $derived(bloqueado.isActive);
-  const title = $derived(isUnblocking ? "Desbloquear Persona" : "Re-bloquear Persona");
-  const buttonText = $derived(isUnblocking ? "Confirmar Desbloqueo" : "Confirmar Re-bloqueo");
+  const title = $derived(
+    isUnblocking ? "Desbloquear Persona" : "Re-bloquear Persona",
+  );
+  const buttonText = $derived(
+    isUnblocking ? "Confirmar Desbloqueo" : "Confirmar Re-bloqueo",
+  );
   const Icon = $derived(isUnblocking ? ShieldCheck : Ban);
   const colorClass = $derived(isUnblocking ? "green" : "red");
 
@@ -58,11 +62,14 @@
   class="fixed inset-0 z-50 flex items-center justify-center p-4"
   transition:fade={{ duration: 200 }}
 >
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+    role="button"
+    tabindex="0"
     onclick={handleClose}
+    onkeydown={(e) => e.key === "Escape" && handleClose()}
   ></div>
   <div
     class="relative z-10 w-full max-w-md rounded-xl bg-[#1e1e1e] shadow-2xl ring-1 ring-white/10"
