@@ -229,17 +229,17 @@
 
 <svelte:window onclick={handleClickOutside} />
 
-<div class="flex h-full flex-col relative">
+<div class="flex h-full flex-col relative bg-[#1e1e1e]">
   <!-- Header con SearchBar -->
   <div
-    class="border-b border-gray-200 dark:border-white/10 px-6 py-4 bg-gray-50 dark:bg-[#252526]"
+    class="border-b border-white/10 px-6 py-4 bg-[#252526]"
   >
     <div class="flex items-center justify-between gap-4">
       <div>
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+        <h2 class="text-xl font-semibold text-gray-100">
           Lista de Contratistas
         </h2>
-        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+        <p class="mt-1 text-sm text-gray-400">
           Gestión y visualización de todos los contratistas registrados
         </p>
       </div>
@@ -256,7 +256,7 @@
   </div>
 
   <!-- Content -->
-  <div class="flex-1 overflow-hidden relative">
+  <div class="flex-1 overflow-hidden relative bg-[#1e1e1e]">
     {#if error}
       <div class="p-6">
         <div
@@ -271,7 +271,7 @@
         </div>
       </div>
     {:else if loading}
-      <div class="flex h-full items-center justify-center">
+      <div class="flex h-full items-center justify-center bg-[#1e1e1e]">
         <div class="text-center">
           <svg
             class="mx-auto h-8 w-8 animate-spin text-blue-500"
@@ -292,22 +292,22 @@
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             />
           </svg>
-          <p class="mt-4 text-sm text-gray-400 dark:text-gray-400">
+          <p class="mt-4 text-sm text-gray-400">
             Cargando contratistas...
           </p>
         </div>
       </div>
     {:else if contratistas.length === 0}
-      <div class="flex h-full items-center justify-center">
+      <div class="flex h-full items-center justify-center bg-[#1e1e1e]">
         <div class="text-center">
           <AlertCircle
             size={48}
-            class="mx-auto text-gray-600 dark:text-gray-400"
+            class="mx-auto text-gray-400"
           />
-          <p class="mt-4 text-lg font-medium text-gray-400 dark:text-gray-300">
+          <p class="mt-4 text-lg font-medium text-gray-300">
             No hay contratistas registrados
           </p>
-          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          <p class="mt-2 text-sm text-gray-400">
             Los contratistas aparecerán aquí una vez sean registrados
           </p>
         </div>
@@ -328,7 +328,7 @@
   <div class="filter-dropdown-container">
     {#if showEstadoDropdown}
       <div
-        class="absolute top-16 left-6 z-50 bg-[#1e1e1e] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
+        class="absolute top-16 left-6 z-50 bg-[#252526] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
         transition:fade={{ duration: 150 }}
       >
         <button
@@ -366,7 +366,7 @@
 
     {#if showPraindDropdown}
       <div
-        class="absolute top-16 left-52 z-50 bg-[#1e1e1e] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
+        class="absolute top-16 left-52 z-50 bg-[#252526] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
         transition:fade={{ duration: 150 }}
       >
         <button
