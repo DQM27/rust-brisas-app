@@ -2,8 +2,8 @@
   import { onMount } from 'svelte';
   import { toast } from 'svelte-5-french-toast';
 
-  import ContratistaForm from '$lib/components/ContratistaForm.svelte';
-  import type ContratistaFormType from '$lib/components/ContratistaForm.svelte';
+  import ContratistaForm from './ContratistaForm.svelte';
+  import type ContratistaFormType from './ContratistaForm.svelte';
 
   import type { CreateContratistaInput, ContratistaResponse } from '$lib/types/contratista';
   import { submitRegisterContratista } from '$lib/logic/contratista/submitRegisterContratista';

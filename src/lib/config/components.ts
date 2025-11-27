@@ -1,7 +1,6 @@
 // ============================================
-// src/lib/components/registry.ts (ACTUALIZADO)
-// Ahora importa ComponentKey del nuevo archivo
-// ============================================
+// src/lib/components/components.ts 
+// // ============================================
 import type { Component } from 'svelte';
 import type { ComponentKey } from '$lib/types/component';
 
@@ -9,8 +8,8 @@ import type { ComponentKey } from '$lib/types/component';
 import WelcomePanel from '$lib/components/WelcomePanel.svelte';
 import RegisterUserView from '$lib/components/RegisterUserView.svelte';
 import SupabaseTest from '$lib/components/SupabaseTest.svelte';
-import ContratistaView from '$lib/components/ContratistaView.svelte';
-import ContratistaListView from '$lib/components/ContratistaListView.svelte';
+import ContratistaView from '$lib/components/contratista/ContratistaView.svelte';
+import ContratistaListView from '$lib/components/contratista/ContratistaListView.svelte';
 import ListaNegraView from '$lib/components/ListaNegraView.svelte';
 import ListaNegraListView from '$lib/components/ListaNegraListView.svelte';
 import BlacklistImportView from '$lib/components/BlacklistImportView.svelte';

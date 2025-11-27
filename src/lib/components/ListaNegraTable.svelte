@@ -1,5 +1,5 @@
 <script lang="ts">
-  import DataTable from "$lib/components/common/DataTable.svelte";
+  import DataTable from "$lib/components/grid/DataTable.svelte";
   import { UserX, Clock, User, Copy, Eye, Trash2, Ban } from "lucide-svelte";
   import type { ListaNegraResponse } from "$lib/types/listaNegra";
   import type {
