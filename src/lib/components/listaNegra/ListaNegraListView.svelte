@@ -5,11 +5,14 @@
   import ListaNegraListForm from "./ListaNegraListForm.svelte";
   import Listanegraform from "./Listanegraform.svelte";
   import UnblockModal from "./ListaNegraUnblockModal.svelte";
-  import { submitFetchAllListaNegra } from "$lib/logic/listaNegra/submitFetchListaNegra";
-  import { submitAddToListaNegra } from "$lib/logic/listaNegra/submitAddToListaNegra";
-  import { submitUnblockListaNegra } from "$lib/logic/listaNegra/submitUnblockListaNegra";
+  import {
+    loadAllListaNegra,
+    addToListaNegraAction,
+    unblockListaNegraAction,
+    reblockListaNegraAction,
+  } from "$lib/logic/listaNegra/listaNegraActions";
   import { selectedSearchStore } from "$lib/stores/searchStore";
-  import type { ListaNegraResponse } from "$lib/types/listaNegra";
+  import type { ListaNegraResponse, AddToListaNegraInput } from "$lib/types/listaNegra";
   import type { SearchResult } from "$lib/types/search.types";
   import type { ColDef } from "@ag-grid-community/core";
   import {
@@ -71,16 +74,12 @@
     loading = true;
     error = "";
 
-    try {
-      const result = await submitFetchAllListaNegra();
-      if (result.ok) {
-        bloqueados = result.data.bloqueados;
-      } else {
-        error = result.error;
-      }
-    } catch (err) {
-      console.error("Error al cargar lista negra:", err);
-      error = "Error al cargar lista negra";
+    const result = await loadAllListaNegra();
+    
+    if (result.ok && result.data) {
+      bloqueados = result.data.bloqueados;
+    } else {
+      error = result.error || "Error al cargar lista negra";
     }
 
     loading = false;
@@ -91,10 +90,11 @@
     showAddModal = true;
   }
 
-  async function handleAddSubmit(data: any) {
+  async function handleAddSubmit(input: AddToListaNegraInput) {
     addFormLoading = true;
-    const result = await submitAddToListaNegra(data);
-
+    
+    const result = await addToListaNegraAction(input);
+    
     if (result.ok) {
       await loadListaNegra();
       showAddModal = false;
@@ -104,6 +104,7 @@
       // TODO: Toast de error
       console.error("Error al agregar a lista negra:", result.error);
     }
+    
     addFormLoading = false;
   }
 
@@ -113,14 +114,30 @@
 
   async function handleUnblockSubmit(data: {
     id: string;
-    motivoDesbloqueo: string;
+    motivoDesbloqueo?: string;
     observaciones?: string;
   }) {
-    const result = await submitUnblockListaNegra(
-      data.id,
-      data.motivoDesbloqueo,
-      data.observaciones,
-    );
+    const bloqueado = bloqueados.find((b) => b.id === data.id);
+    if (!bloqueado) return;
+
+    let result;
+    
+    if (bloqueado.isActive) {
+      // Desbloquear (remove)
+      result = await unblockListaNegraAction(
+        data.id,
+        data.motivoDesbloqueo || "Desbloqueo manual",
+        data.observaciones,
+      );
+    } else {
+      // Re-bloquear (reactivate)
+      result = await reblockListaNegraAction(
+        data.id,
+        data.motivoDesbloqueo || "Re-bloqueo manual",
+        data.observaciones,
+        "usuario_actual", // TODO: Obtener usuario actual del store
+      );
+    }
 
     if (result.ok) {
       await loadListaNegra();
@@ -128,7 +145,7 @@
       // TODO: Toast de éxito
     } else {
       // TODO: Toast de error
-      console.error("Error al desbloquear:", result.error);
+      console.error("Error:", result.error);
     }
   }
 

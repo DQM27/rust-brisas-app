@@ -29,8 +29,9 @@ export class ListaNegraListLogic {
     // Filtro por búsqueda seleccionada (tiene prioridad)
     const selectedSearch = get(selectedSearchStore);
     if (selectedSearch.result) {
-      // Si hay un resultado seleccionado, mostrar solo ese
-      filtered = filtered.filter((b) => b.id === selectedSearch.result!.id);
+      // Filtrar por cédula del resultado seleccionado
+      const cedula = selectedSearch.result.cedula || selectedSearch.result.id;
+      filtered = filtered.filter((b) => b.cedula === cedula);
       return filtered; // Retornar temprano, ignorando otros filtros
     }
 
@@ -129,6 +130,19 @@ export class ListaNegraListLogic {
         },
       },
       {
+        field: "observaciones",
+        headerName: "Observaciones",
+        flex: 1,
+        minWidth: 200,
+        cellRenderer: (params) => {
+          const obs = params.value;
+          if (!obs || obs.trim() === "") {
+            return `<span class="text-xs text-gray-500 italic">Sin observaciones</span>`;
+          }
+          return `<span class="text-xs text-gray-300 line-clamp-2">${obs}</span>`;
+        },
+      },
+      {
         field: "bloqueadoPor",
         headerName: "Bloqueado Por",
         width: 160,
@@ -138,25 +152,54 @@ export class ListaNegraListLogic {
         },
       },
       {
-        field: "fechaBloqueo",
+        field: "fechaInicioBloqueo",
         headerName: "Fecha Bloqueo",
-        width: 140,
-        valueFormatter: (params) => {
-          if (!params.value) return "N/A";
-          return new Date(params.value).toLocaleDateString("es-CR");
+        width: 150,
+        cellRenderer: (params) => {
+          if (!params.value) return `<span class="text-xs text-gray-500">N/A</span>`;
+          const fecha = new Date(params.value);
+          const fechaStr = fecha.toLocaleDateString("es-CR", { 
+            day: "2-digit", 
+            month: "2-digit", 
+            year: "numeric" 
+          });
+          const horaStr = fecha.toLocaleTimeString("es-CR", { 
+            hour: "2-digit", 
+            minute: "2-digit" 
+          });
+          return `
+            <div class="text-xs">
+              <div class="text-gray-300">${fechaStr}</div>
+              <div class="text-gray-500">${horaStr}</div>
+            </div>
+          `;
         },
-        cellStyle: { color: "#9CA3AF" },
       },
       {
-        field: "fechaDesbloqueo",
+        field: "fechaFinBloqueo",
         headerName: "Fecha Desbloqueo",
-        width: 160,
+        width: 170,
         cellRenderer: (params) => {
           const fecha = params.value;
           if (!fecha) {
-            return `<span class="text-xs text-gray-500">No desbloqueado</span>`;
+            return `<span class="text-xs text-gray-500 italic">No desbloqueado</span>`;
           }
-          return `<span class="text-xs text-gray-400">${new Date(fecha).toLocaleDateString("es-CR")}</span>`;
+          const fechaObj = new Date(fecha);
+          const fechaStr = fechaObj.toLocaleDateString("es-CR", { 
+            day: "2-digit", 
+            month: "2-digit", 
+            year: "numeric" 
+          });
+          const horaStr = fechaObj.toLocaleTimeString("es-CR", { 
+            hour: "2-digit", 
+            minute: "2-digit" 
+          });
+          return `
+            <div class="text-xs">
+              <div class="text-green-400">${fechaStr}</div>
+              <div class="text-gray-500">${horaStr}</div>
+            </div>
+          `;
         },
       },
     ];
