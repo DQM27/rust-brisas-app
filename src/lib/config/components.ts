@@ -10,8 +10,8 @@ import RegisterUserView from '$lib/components/RegisterUserView.svelte';
 import SupabaseTest from '$lib/components/SupabaseTest.svelte';
 import ContratistaView from '$lib/components/contratista/ContratistaView.svelte';
 import ContratistaListView from '$lib/components/contratista/ContratistaListView.svelte';
-import ListaNegraView from '$lib/components/ListaNegraView.svelte';
-import ListaNegraListView from '$lib/components/ListaNegraListView.svelte';
+import ListaNegraView from '$lib/components/listaNegra/ListaNegraView.svelte';
+import ListaNegraListView from '$lib/components/listaNegra/ListaNegraListView.svelte';
 import BlacklistImportView from '$lib/components/BlacklistImportView.svelte';
 
 /**
