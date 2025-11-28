@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct AppConfig {
     pub terminal: TerminalConfig,
     pub database: DatabaseConfig,
-    // ❌ ELIMINADO: pub supabase: SupabaseConfig
+
     pub app: AppInfo,
 }
 
@@ -29,8 +29,6 @@ pub struct DatabaseConfig {
     pub default_path: String,
 }
 
-// ❌ ELIMINADO: SupabaseConfig struct completo
-
 /// Información de la aplicación
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppInfo {
@@ -51,7 +49,7 @@ impl Default for AppConfig {
                 ],
                 default_path: "".to_string(), // Se calculará en runtime
             },
-            // ❌ ELIMINADO: supabase: SupabaseConfig
+
             app: AppInfo {
                 version: env!("CARGO_PKG_VERSION").to_string(),
             },

@@ -16,5 +16,5 @@ export type ComponentKey =
   | 'dashboard'
   | 'contratista'
   | 'lista-negra'
-  | 'supabase-test'
+
   | 'blacklist-import';

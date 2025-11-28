@@ -40,22 +40,7 @@
     <svelte:component this={Settings} size={16} />
     <span>Ajustes generales</span>
   </button>
-  <button
-    class="panel-item"
-    on:click={executeAndClose(() =>
-      openView("supabase-test", "Configuración Supabase"),
-    )}
-    on:keydown={(e) =>
-      handleKeydown(
-        e,
-        executeAndClose(() =>
-          openView("supabase-test", "Configuración Supabase"),
-        ),
-      )}
-  >
-    <svelte:component this={Database} size={16} />
-    <span>Configuración Supabase</span>
-  </button>
+
   <div class="panel-item non-clickable">
     <svelte:component this={Bell} size={16} />
     <span>Notificaciones</span>

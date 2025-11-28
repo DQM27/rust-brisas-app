@@ -3,8 +3,6 @@
 // ==========================================
 // Macro centralizada para registrar todos los comandos
 
-
-
 #[macro_export]
 macro_rules! register_handlers {
     () => {
@@ -83,16 +81,6 @@ macro_rules! register_handlers {
             commands::ingreso_commands::registrar_salida,
             commands::ingreso_commands::registrar_salida_con_gafete_perdido,
             commands::ingreso_commands::cerrar_ingreso_anterior,
-            // Comandos de Supabase
-            commands::supabase_commands::test_supabase_connection,
-            commands::supabase_commands::get_supabase_config,
-            commands::supabase_commands::reinitialize_supabase,
-            // Comandos de Keyring
-            commands::keyring_commands::keyring_save,
-            commands::keyring_commands::keyring_load,
-            commands::keyring_commands::keyring_delete,
-            commands::keyring_commands::keyring_check,
-            commands::keyring_commands::keyring_info,
             // Comandos CRUD de blacklist_import
             commands::blacklist_import_commands::create_blacklist_import_entry,
             commands::blacklist_import_commands::get_blacklist_import_by_id,
