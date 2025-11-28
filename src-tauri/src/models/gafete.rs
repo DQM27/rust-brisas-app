@@ -1,108 +1,106 @@
 // ==========================================
 // src/models/gafete.rs
 // ==========================================
+// Solo modelos, DTOs y enums - SIN validaciones ni lógica
+
 use serde::{Deserialize, Serialize};
 
-/// Estados posibles de un gafete
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum EstadoGafete {
-    Disponible,
-    Asignado,
-    Perdido,
-}
+// ==========================================
+// MODELO DE DOMINIO
+// ==========================================
 
-impl EstadoGafete {
-    pub fn as_str(&self) -> &str {
-        match self {
-            EstadoGafete::Disponible => "disponible",
-            EstadoGafete::Asignado => "asignado",
-            EstadoGafete::Perdido => "perdido",
-        }
-    }
-    
-    pub fn from_str(s: &str) -> Result<Self, String> {
-        match s.to_lowercase().as_str() {
-            "disponible" => Ok(EstadoGafete::Disponible),
-            "asignado" => Ok(EstadoGafete::Asignado),
-            "perdido" => Ok(EstadoGafete::Perdido),
-            _ => Err(format!("Estado de gafete desconocido: {}", s)),
-        }
-    }
-}
-
-/// Modelo de dominio - Representa un gafete físico
+/// Representa un gafete físico del inventario
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Gafete {
-    pub id: String,
     pub numero: String,
-    pub estado: String,
-    pub contratista_asignado_id: Option<String>,
-    pub ingreso_actual_id: Option<String>,
+    pub tipo: TipoGafete,
     pub created_at: String,
     pub updated_at: String,
 }
 
 // ==========================================
-// DTOs de entrada (Commands/Input)
+// ENUM DE TIPOS
+// ==========================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum TipoGafete {
+    Contratista,
+    Proveedor,
+    Visita,
+    Otro,
+}
+
+impl TipoGafete {
+    pub fn as_str(&self) -> &str {
+        match self {
+            TipoGafete::Contratista => "contratista",
+            TipoGafete::Proveedor => "proveedor",
+            TipoGafete::Visita => "visita",
+            TipoGafete::Otro => "otro",
+        }
+    }
+    
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s.to_lowercase().as_str() {
+            "contratista" => Ok(TipoGafete::Contratista),
+            "proveedor" => Ok(TipoGafete::Proveedor),
+            "visita" => Ok(TipoGafete::Visita),
+            "otro" => Ok(TipoGafete::Otro),
+            _ => Err(format!("Tipo de gafete desconocido: {}", s)),
+        }
+    }
+    
+    pub fn display(&self) -> &str {
+        match self {
+            TipoGafete::Contratista => "Contratista",
+            TipoGafete::Proveedor => "Proveedor",
+            TipoGafete::Visita => "Visita",
+            TipoGafete::Otro => "Otro",
+        }
+    }
+}
+
+// ==========================================
+// DTOs DE ENTRADA
 // ==========================================
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateGafeteInput {
     pub numero: String,
+    pub tipo: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateGafeteInput {
-    pub numero: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AsignarGafeteInput {
-    pub contratista_id: String,
-    pub ingreso_id: String,
+    pub tipo: Option<String>,
 }
 
 // ==========================================
-// DTOs de salida (Response/ViewModel)
+// DTOs DE SALIDA
 // ==========================================
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GafeteResponse {
-    pub id: String,
     pub numero: String,
-    pub estado: EstadoGafete,
-    pub contratista_asignado_id: Option<String>,
-    pub contratista_nombre: Option<String>,      // JOIN si está asignado
-    pub contratista_cedula: Option<String>,      // JOIN si está asignado
-    pub ingreso_actual_id: Option<String>,
-    pub es_sin_gafete: bool,                     // true si numero == "S/G"
-    pub puede_asignarse: bool,                   // true si estado == disponible
+    pub tipo: TipoGafete,
+    pub tipo_display: String,
+    pub esta_disponible: bool,
     pub created_at: String,
     pub updated_at: String,
 }
 
 impl From<Gafete> for GafeteResponse {
     fn from(g: Gafete) -> Self {
-        let estado = EstadoGafete::from_str(&g.estado).unwrap_or(EstadoGafete::Disponible);
-        let es_sin_gafete = g.numero.to_uppercase() == "S/G";
-        let puede_asignarse = estado == EstadoGafete::Disponible && !es_sin_gafete;
-        
         Self {
-            id: g.id,
             numero: g.numero,
-            estado,
-            contratista_asignado_id: g.contratista_asignado_id,
-            contratista_nombre: None,  // Se llena en comando con JOIN
-            contratista_cedula: None,  // Se llena en comando con JOIN
-            ingreso_actual_id: g.ingreso_actual_id,
-            es_sin_gafete,
-            puede_asignarse,
+            tipo: g.tipo.clone(),
+            tipo_display: g.tipo.display().to_string(),
+            esta_disponible: false, // Se calcula después con query
             created_at: g.created_at,
             updated_at: g.updated_at,
         }
@@ -114,44 +112,23 @@ impl From<Gafete> for GafeteResponse {
 pub struct GafeteListResponse {
     pub gafetes: Vec<GafeteResponse>,
     pub total: usize,
-    pub disponibles: usize,
-    pub asignados: usize,
-    pub perdidos: usize,
+    pub stats: StatsGafetes,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GafeteStockResponse {
-    pub total_gafetes: usize,
+pub struct StatsGafetes {
+    pub total: usize,
     pub disponibles: usize,
-    pub asignados: usize,
-    pub perdidos: usize,
-    pub porcentaje_disponibilidad: f64,
+    pub en_uso: usize,
+    pub por_tipo: StatsPorTipo,
 }
 
-// ==========================================
-// Validaciones de dominio
-// ==========================================
-
-pub mod validaciones {
-    use super::*;
-    
-    pub fn validar_numero(numero: &str) -> Result<(), String> {
-        let limpio = numero.trim().to_uppercase();
-        
-        if limpio.is_empty() {
-            return Err("El número de gafete no puede estar vacío".to_string());
-        }
-        
-        if limpio.len() > 20 {
-            return Err("El número de gafete no puede exceder 20 caracteres".to_string());
-        }
-        
-        Ok(())
-    }
-    
-    pub fn validar_create_input(input: &CreateGafeteInput) -> Result<(), String> {
-        validar_numero(&input.numero)?;
-        Ok(())
-    }
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StatsPorTipo {
+    pub contratistas: usize,
+    pub proveedores: usize,
+    pub visitas: usize,
+    pub otros: usize,
 }
