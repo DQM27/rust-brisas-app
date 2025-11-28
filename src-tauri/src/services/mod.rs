@@ -8,3 +8,4 @@ pub mod contratista_service;
 pub mod search_service;
 pub mod gafete_service;
 pub mod ingreso_service;
+pub mod empresa_service;

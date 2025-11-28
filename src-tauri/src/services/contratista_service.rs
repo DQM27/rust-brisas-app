@@ -6,6 +6,8 @@
 
 use crate::domain::contratista as domain;
 use crate::db::contratista_queries as db;
+use crate::db::empresa_queries;
+use crate::db::lista_negra_queries;
 use crate::models::contratista::{
     ContratistaResponse, ContratistaListResponse,
     CreateContratistaInput, UpdateContratistaInput, CambiarEstadoInput,
@@ -37,20 +39,13 @@ pub async fn create_contratista(
     let segundo_apellido_normalizado = domain::normalizar_segundo_apellido(input.segundo_apellido.as_ref());
     
     // 3. Verificar que NO esté en lista negra
-    let blocked_count = db::count_cedula_in_blacklist(pool, &cedula_normalizada).await?;
-    if blocked_count > 0 {
-        // Intentar obtener detalles del bloqueo
-        if let Ok((motivo, bloqueado_por)) = db::get_blacklist_details(pool, &cedula_normalizada).await {
-            return Err(format!(
-                "No se puede registrar. La persona con cédula {} está en lista negra. Motivo: {}. Bloqueado por: {}",
-                cedula_normalizada, motivo, bloqueado_por
-            ));
-        } else {
-            return Err(format!(
-                "No se puede registrar. La persona con cédula {} está en lista negra",
-                cedula_normalizada
-            ));
-        }
+    let block_status = lista_negra_queries::check_if_blocked_by_cedula(pool, &cedula_normalizada).await?;
+    if block_status.blocked {
+        let motivo = block_status.motivo.unwrap_or_else(|| "Sin motivo especificado".to_string());
+        return Err(format!(
+            "No se puede registrar. La persona con cédula {} está en lista negra. Motivo: {}",
+            cedula_normalizada, motivo
+        ));
     }
     
     // 4. Verificar que la cédula no exista
@@ -60,7 +55,7 @@ pub async fn create_contratista(
     }
     
     // 5. Verificar que la empresa exista
-    let empresa_existe = db::empresa_exists(pool, &input.empresa_id).await?;
+    let empresa_existe = empresa_queries::exists(pool, &input.empresa_id).await?;
     if !empresa_existe {
         return Err("La empresa especificada no existe".to_string());
     }
@@ -219,7 +214,7 @@ pub async fn update_contratista(
     
     // 4. Verificar que la empresa exista si viene
     if let Some(ref empresa_id) = input.empresa_id {
-        let empresa_existe = db::empresa_exists(pool, empresa_id).await?;
+        let empresa_existe = empresa_queries::exists(pool, empresa_id).await?;
         if !empresa_existe {
             return Err("La empresa especificada no existe".to_string());
         }

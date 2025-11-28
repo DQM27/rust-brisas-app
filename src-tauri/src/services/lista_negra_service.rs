@@ -6,6 +6,7 @@
 
 use crate::domain::lista_negra as domain;
 use crate::db::lista_negra_queries as db;
+use crate::db::contratista_queries;
 use crate::models::lista_negra::{
     ListaNegraResponse, ListaNegraListResponse, BlockCheckResponse,
     AddToListaNegraInput, UpdateListaNegraInput,
@@ -28,7 +29,7 @@ pub async fn add_to_lista_negra(
     // 2. Determinar datos según si tiene o no contratista_id
     let (contratista_id, cedula, nombre, apellido) = if let Some(ref cid) = input.contratista_id {
         // Caso 1: Tiene contratista_id - traer datos de la BD
-        let (c, n, a) = db::get_contratista_data(pool, cid).await?;
+        let (c, n, a) = contratista_queries::get_basic_data(pool, cid).await?;
         (Some(cid.clone()), c, n, a)
     } else {
         // Caso 2: Registro manual - usar datos proporcionados

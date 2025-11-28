@@ -48,6 +48,25 @@ pub async fn find_basic_info_by_id(
     }
 }
 
+/// Obtiene datos básicos de un contratista (cédula, nombre, apellido)
+/// Usado por lista_negra para crear registros
+pub async fn get_basic_data(
+    pool: &SqlitePool,
+    contratista_id: &str,
+) -> Result<(String, String, String), String> {
+    let row = sqlx::query("SELECT cedula, nombre, apellido FROM contratistas WHERE id = ?")
+        .bind(contratista_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| format!("Error buscando contratista: {}", e))?;
+
+    if let Some(row) = row {
+        Ok((row.get("cedula"), row.get("nombre"), row.get("apellido")))
+    } else {
+        Err("Contratista no encontrado".to_string())
+    }
+}
+
 /// Cuenta contratistas por cédula
 pub async fn count_by_cedula(pool: &SqlitePool, cedula: &str) -> Result<i64, String> {
     let row = sqlx::query("SELECT COUNT(*) as count FROM contratistas WHERE cedula = ?")
@@ -57,18 +76,6 @@ pub async fn count_by_cedula(pool: &SqlitePool, cedula: &str) -> Result<i64, Str
         .map_err(|e| format!("Error contando contratistas: {}", e))?;
 
     Ok(row.get("count"))
-}
-
-/// Verifica si una empresa existe
-pub async fn empresa_exists(pool: &SqlitePool, empresa_id: &str) -> Result<bool, String> {
-    let row = sqlx::query("SELECT COUNT(*) as count FROM empresas WHERE id = ?")
-        .bind(empresa_id)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| format!("Error verificando empresa: {}", e))?;
-
-    let count: i64 = row.get("count");
-    Ok(count > 0)
 }
 
 /// Inserta un nuevo contratista
@@ -273,40 +280,6 @@ pub async fn delete(pool: &SqlitePool, id: &str) -> Result<(), String> {
         .map_err(|e| format!("Error al eliminar contratista: {}", e))?;
 
     Ok(())
-}
-
-// Helper para verificar lista negra (usado por contratista_service pero debería estar en lista_negra_queries)
-// Lo mantenemos aquí por compatibilidad temporal si es necesario, pero lo ideal es moverlo.
-// El servicio usa db::count_cedula_in_blacklist, así que lo ponemos aquí.
-pub async fn count_cedula_in_blacklist(pool: &SqlitePool, cedula: &str) -> Result<i64, String> {
-    let row =
-        sqlx::query("SELECT COUNT(*) as count FROM lista_negra WHERE cedula = ? AND activo = 1")
-            .bind(cedula)
-            .fetch_one(pool)
-            .await
-            .map_err(|e| format!("Error verificando lista negra: {}", e))?;
-
-    Ok(row.get("count"))
-}
-
-// Helper para detalles de lista negra
-pub async fn get_blacklist_details(
-    pool: &SqlitePool,
-    cedula: &str,
-) -> Result<(String, String), String> {
-    let row = sqlx::query(
-        "SELECT motivo_bloqueo, bloqueado_por FROM lista_negra WHERE cedula = ? AND activo = 1",
-    )
-    .bind(cedula)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| format!("Error obteniendo detalles lista negra: {}", e))?;
-
-    if let Some(row) = row {
-        Ok((row.get("motivo_bloqueo"), row.get("bloqueado_por")))
-    } else {
-        Err("No encontrado en lista negra".to_string())
-    }
 }
 
 fn row_to_contratista(row: &sqlx::sqlite::SqliteRow) -> Result<Contratista, String> {

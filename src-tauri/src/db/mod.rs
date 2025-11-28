@@ -13,6 +13,7 @@ pub mod migrate;
 pub mod seed;
 pub mod user_queries;
 pub mod vehiculo_queries;
+pub mod empresa_queries;
 
 /// Inicializa la conexión a la base de datos (Pool)
 pub async fn init_pool(config: &AppConfig) -> Result<SqlitePool, Box<dyn std::error::Error>> {

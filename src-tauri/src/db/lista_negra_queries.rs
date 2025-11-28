@@ -56,24 +56,6 @@ pub async fn check_if_blocked_by_cedula(
     })
 }
 
-/// Obtiene datos básicos de un contratista para lista negra
-pub async fn get_contratista_data(
-    pool: &SqlitePool,
-    contratista_id: &str,
-) -> Result<(String, String, String), String> {
-    let row = sqlx::query("SELECT cedula, nombre, apellido FROM contratistas WHERE id = ?")
-        .bind(contratista_id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|e| format!("Error buscando contratista: {}", e))?;
-
-    if let Some(row) = row {
-        Ok((row.get("cedula"), row.get("nombre"), row.get("apellido")))
-    } else {
-        Err("Contratista no encontrado".to_string())
-    }
-}
-
 /// Cuenta bloqueos activos por cédula
 pub async fn count_active_by_cedula(pool: &SqlitePool, cedula: &str) -> Result<i64, String> {
     let row =
