@@ -61,14 +61,14 @@ macro_rules! register_handlers {
             // Ingresos
             commands::ingreso_commands::validar_ingreso_contratista,
             commands::ingreso_commands::create_ingreso_contratista,
-            commands::ingreso_commands::create_ingreso_temporal,
+            commands::ingreso_commands::registrar_salida,
             commands::ingreso_commands::get_ingreso_by_id,
             commands::ingreso_commands::get_all_ingresos,
             commands::ingreso_commands::get_ingresos_abiertos,
             commands::ingreso_commands::get_ingreso_by_gafete,
-            commands::ingreso_commands::registrar_salida,
-            commands::ingreso_commands::registrar_salida_con_gafete_perdido,
-            commands::ingreso_commands::cerrar_ingreso_anterior,
+            commands::ingreso_commands::get_alertas_pendientes_by_cedula,
+            commands::ingreso_commands::get_all_alertas_gafetes,
+            commands::ingreso_commands::resolver_alerta_gafete,
             // Comandos CRUD de blacklist_import
             commands::blacklist_import_commands::create_blacklist_import_entry,
             commands::blacklist_import_commands::get_blacklist_import_by_id,

@@ -4,3 +4,4 @@ pub mod lista_negra;
 pub mod blacklist_import;
 pub mod contratista;
 pub mod gafete;
+pub mod ingreso;

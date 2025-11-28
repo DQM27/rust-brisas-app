@@ -1,75 +1,72 @@
 -- ==========================================
--- Migration: Ingresos
--- Fecha: 2025-11-15
--- Descripción: Tabla para registro de ingresos y salidas
+-- Migración: Tabla de Ingresos
 -- ==========================================
+-- Registro de entradas y salidas de contratistas
 
 CREATE TABLE IF NOT EXISTS ingresos (
-    id TEXT PRIMARY KEY NOT NULL,
+    id TEXT PRIMARY KEY,
     
-    -- Persona (siempre obligatorios)
-    contratista_id TEXT,
+    -- Contratista
+    contratista_id TEXT NOT NULL,
     cedula TEXT NOT NULL,
     nombre TEXT NOT NULL,
     apellido TEXT NOT NULL,
     empresa_nombre TEXT NOT NULL,
     
-    -- Tipo
-    tipo_ingreso TEXT NOT NULL CHECK(tipo_ingreso IN ('contratista', 'temporal')),
-    tipo_autorizacion TEXT NOT NULL CHECK(tipo_autorizacion IN ('praind', 'correo')),
+    -- Tipo de ingreso (solo contratistas)
+    tipo_ingreso TEXT NOT NULL DEFAULT 'contratista' CHECK (tipo_ingreso = 'contratista'),
+    tipo_autorizacion TEXT NOT NULL CHECK (tipo_autorizacion IN ('praind', 'correo')),
+    modo_ingreso TEXT NOT NULL CHECK (modo_ingreso IN ('caminando', 'vehiculo')),
     
-    -- Transporte
-    modo_ingreso TEXT NOT NULL CHECK(modo_ingreso IN ('caminando', 'vehiculo', 'vehiculo_temporal')),
+    -- Vehículo
     vehiculo_id TEXT,
-    placa_temporal TEXT,
+    placa_temporal TEXT,  -- Mantener para compatibilidad futura
     
-    -- Gafete
-    gafete_id TEXT NOT NULL,
-    gafete_numero TEXT NOT NULL,
+    -- Gafete (NULL = sin gafete)
+    gafete_numero TEXT,
     
-    -- Timestamps CRÍTICOS (formato: "YYYY-MM-DD HH:MM:SS")
+    -- Tiempos
     fecha_hora_ingreso TEXT NOT NULL,
     fecha_hora_salida TEXT,
     tiempo_permanencia_minutos INTEGER,
     
-    -- Usuarios
+    -- Usuarios (guardias)
     usuario_ingreso_id TEXT NOT NULL,
     usuario_salida_id TEXT,
     
-    -- Snapshots (histórico - solo para contratistas)
-    praind_vigente_al_ingreso INTEGER,
+    -- Snapshot de validaciones al momento del ingreso
+    praind_vigente_al_ingreso INTEGER,  -- 0/1 (bool)
     estado_contratista_al_ingreso TEXT,
     
     -- Observaciones
     observaciones TEXT,
     
-    -- Metadata
+    -- Auditoría
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     
-    FOREIGN KEY (contratista_id) REFERENCES contratistas(id) ON DELETE SET NULL,
-    FOREIGN KEY (vehiculo_id) REFERENCES vehiculos(id) ON DELETE SET NULL,
-    FOREIGN KEY (gafete_id) REFERENCES gafetes(id),
+    FOREIGN KEY (contratista_id) REFERENCES contratistas(id),
+    FOREIGN KEY (vehiculo_id) REFERENCES vehiculos(id),
     FOREIGN KEY (usuario_ingreso_id) REFERENCES users(id),
     FOREIGN KEY (usuario_salida_id) REFERENCES users(id)
 );
 
--- Índices para optimizar consultas
-CREATE INDEX IF NOT EXISTS idx_ingresos_cedula ON ingresos(cedula);
-CREATE INDEX IF NOT EXISTS idx_ingresos_contratista ON ingresos(contratista_id);
-CREATE INDEX IF NOT EXISTS idx_ingresos_fecha_ingreso ON ingresos(fecha_hora_ingreso);
-CREATE INDEX IF NOT EXISTS idx_ingresos_fecha_salida ON ingresos(fecha_hora_salida);
-CREATE INDEX IF NOT EXISTS idx_ingresos_gafete ON ingresos(gafete_id);
-CREATE INDEX IF NOT EXISTS idx_ingresos_estado ON ingresos(fecha_hora_salida);
+-- ==========================================
+-- Índices para optimizar queries frecuentes
+-- ==========================================
 
--- Constraint crítico: Solo 1 ingreso abierto por cédula
-CREATE UNIQUE INDEX idx_ingreso_unico_abierto 
-ON ingresos(cedula) 
+-- Buscar por contratista (verificar ingreso abierto)
+CREATE INDEX IF NOT EXISTS idx_ingresos_contratista ON ingresos(contratista_id, fecha_hora_salida);
+
+-- Buscar por cédula
+CREATE INDEX IF NOT EXISTS idx_ingresos_cedula ON ingresos(cedula);
+
+-- Listar ingresos abiertos (personas adentro)
+CREATE INDEX IF NOT EXISTS idx_ingresos_abiertos ON ingresos(fecha_hora_salida) 
 WHERE fecha_hora_salida IS NULL;
 
--- Trigger para actualizar updated_at automáticamente
-CREATE TRIGGER IF NOT EXISTS update_ingresos_timestamp 
-AFTER UPDATE ON ingresos
-BEGIN
-    UPDATE ingresos SET updated_at = datetime('now') WHERE id = NEW.id;
-END;
+-- Buscar ingreso por gafete (para registrar salida)
+CREATE INDEX IF NOT EXISTS idx_ingresos_gafete ON ingresos(gafete_numero, fecha_hora_salida);
+
+-- Listar por fecha (reportes)
+CREATE INDEX IF NOT EXISTS idx_ingresos_fecha ON ingresos(fecha_hora_ingreso DESC);

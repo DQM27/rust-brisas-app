@@ -1,212 +1,93 @@
-// ==========================================
 // src/db/lista_negra_queries.rs
-// ==========================================
-// Capa de data access: queries SQL puras
-// Sin lógica de negocio, solo interacción con la base de datos
 
 use crate::models::lista_negra::ListaNegra;
-use sqlx::{SqlitePool, Row};
+use sqlx::{Row, SqlitePool};
 
-// ==========================================
-// QUERIES DE LECTURA
-// ==========================================
-
-/// Busca un bloqueo por ID
-pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<ListaNegra, String> {
-    let row = sqlx::query(
-        r#"SELECT 
-            id, contratista_id, cedula, nombre, apellido,
-            motivo_bloqueo, fecha_inicio_bloqueo, fecha_fin_bloqueo,
-            bloqueado_por, observaciones, is_active, 
-            created_at, updated_at
-           FROM lista_negra
-           WHERE id = ?"#
-    )
-    .bind(id)
-    .fetch_one(pool)
-    .await
-    .map_err(|_| "Registro no encontrado".to_string())?;
-    
-    Ok(ListaNegra {
-        id: row.get("id"),
-        contratista_id: row.get("contratista_id"),
-        cedula: row.get("cedula"),
-        nombre: row.get("nombre"),
-        apellido: row.get("apellido"),
-        motivo_bloqueo: row.get("motivo_bloqueo"),
-        fecha_inicio_bloqueo: row.get("fecha_inicio_bloqueo"),
-        fecha_fin_bloqueo: row.get("fecha_fin_bloqueo"),
-        bloqueado_por: row.get("bloqueado_por"),
-        observaciones: row.get("observaciones"),
-        is_active: row.get::<i32, _>("is_active") != 0,
-        created_at: row.get("created_at"),
-        updated_at: row.get("updated_at"),
-    })
+pub struct BlockStatus {
+    pub blocked: bool,
+    pub motivo: Option<String>,
 }
 
-/// Busca un bloqueo activo por cédula
-pub async fn find_active_by_cedula(pool: &SqlitePool, cedula: &str) -> Result<Option<ListaNegra>, String> {
-    let row = sqlx::query(
-        r#"SELECT 
-            id, contratista_id, cedula, nombre, apellido,
-            motivo_bloqueo, fecha_inicio_bloqueo, fecha_fin_bloqueo,
-            bloqueado_por, observaciones, is_active, 
-            created_at, updated_at
-           FROM lista_negra
-           WHERE cedula = ? AND is_active = 1
-           LIMIT 1"#
-    )
-    .bind(cedula)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| format!("Error al buscar bloqueo: {}", e))?;
-    
-    if let Some(row) = row {
-        Ok(Some(ListaNegra {
-            id: row.get("id"),
-            contratista_id: row.get("contratista_id"),
-            cedula: row.get("cedula"),
-            nombre: row.get("nombre"),
-            apellido: row.get("apellido"),
-            motivo_bloqueo: row.get("motivo_bloqueo"),
-            fecha_inicio_bloqueo: row.get("fecha_inicio_bloqueo"),
-            fecha_fin_bloqueo: row.get("fecha_fin_bloqueo"),
-            bloqueado_por: row.get("bloqueado_por"),
-            observaciones: row.get("observaciones"),
-            is_active: row.get::<i32, _>("is_active") != 0,
-            created_at: row.get("created_at"),
-            updated_at: row.get("updated_at"),
-        }))
-    } else {
-        Ok(None)
-    }
-}
-
-/// Obtiene todos los bloqueos
-pub async fn find_all(pool: &SqlitePool) -> Result<Vec<ListaNegra>, String> {
-    let rows = sqlx::query(
-        r#"SELECT 
-            id, contratista_id, cedula, nombre, apellido,
-            motivo_bloqueo, fecha_inicio_bloqueo, fecha_fin_bloqueo,
-            bloqueado_por, observaciones, is_active, 
-            created_at, updated_at
-           FROM lista_negra
-           ORDER BY created_at DESC"#
-    )
-    .fetch_all(pool)
-    .await
-    .map_err(|e| format!("Error al obtener lista negra: {}", e))?;
-    
-    let bloqueados: Vec<ListaNegra> = rows
-        .into_iter()
-        .map(|row| ListaNegra {
-            id: row.get("id"),
-            contratista_id: row.get("contratista_id"),
-            cedula: row.get("cedula"),
-            nombre: row.get("nombre"),
-            apellido: row.get("apellido"),
-            motivo_bloqueo: row.get("motivo_bloqueo"),
-            fecha_inicio_bloqueo: row.get("fecha_inicio_bloqueo"),
-            fecha_fin_bloqueo: row.get("fecha_fin_bloqueo"),
-            bloqueado_por: row.get("bloqueado_por"),
-            observaciones: row.get("observaciones"),
-            is_active: row.get::<i32, _>("is_active") != 0,
-            created_at: row.get("created_at"),
-            updated_at: row.get("updated_at"),
-        })
-        .collect();
-    
-    Ok(bloqueados)
-}
-
-/// Obtiene todos los bloqueos activos
-pub async fn find_activos(pool: &SqlitePool) -> Result<Vec<ListaNegra>, String> {
-    let rows = sqlx::query(
-        r#"SELECT 
-            id, contratista_id, cedula, nombre, apellido,
-            motivo_bloqueo, fecha_inicio_bloqueo, fecha_fin_bloqueo,
-            bloqueado_por, observaciones, is_active, 
-            created_at, updated_at
-           FROM lista_negra
-           WHERE is_active = 1
-           ORDER BY fecha_inicio_bloqueo DESC"#
-    )
-    .fetch_all(pool)
-    .await
-    .map_err(|e| format!("Error al obtener bloqueados activos: {}", e))?;
-    
-    let bloqueados: Vec<ListaNegra> = rows
-        .into_iter()
-        .map(|row| ListaNegra {
-            id: row.get("id"),
-            contratista_id: row.get("contratista_id"),
-            cedula: row.get("cedula"),
-            nombre: row.get("nombre"),
-            apellido: row.get("apellido"),
-            motivo_bloqueo: row.get("motivo_bloqueo"),
-            fecha_inicio_bloqueo: row.get("fecha_inicio_bloqueo"),
-            fecha_fin_bloqueo: row.get("fecha_fin_bloqueo"),
-            bloqueado_por: row.get("bloqueado_por"),
-            observaciones: row.get("observaciones"),
-            is_active: row.get::<i32, _>("is_active") != 0,
-            created_at: row.get("created_at"),
-            updated_at: row.get("updated_at"),
-        })
-        .collect();
-    
-    Ok(bloqueados)
-}
-
-/// Cuenta cuántos bloqueos activos existen para una cédula (para verificar unicidad)
-pub async fn count_active_by_cedula(pool: &SqlitePool, cedula: &str) -> Result<i32, String> {
-    let row = sqlx::query(
-        "SELECT COUNT(*) as count FROM lista_negra WHERE cedula = ? AND is_active = 1"
-    )
-    .bind(cedula)
-    .fetch_one(pool)
-    .await
-    .map_err(|e| format!("Error al verificar bloqueo existente: {}", e))?;
-    
-    Ok(row.get("count"))
-}
-
-/// Verifica si un contratista existe
-pub async fn contratista_exists(pool: &SqlitePool, contratista_id: &str) -> Result<bool, String> {
-    let row = sqlx::query("SELECT COUNT(*) as count FROM contratistas WHERE id = ?")
-        .bind(contratista_id)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| format!("Error al verificar contratista: {}", e))?;
-    
-    let count: i32 = row.get("count");
-    Ok(count > 0)
-}
-
-/// Obtiene datos de un contratista por ID
-pub async fn get_contratista_data(
+/// Verifica si un contratista está bloqueado
+pub async fn check_if_blocked(
     pool: &SqlitePool,
     contratista_id: &str,
-) -> Result<(String, String, String), String> {
+) -> Result<BlockStatus, String> {
     let row = sqlx::query(
-        "SELECT cedula, nombre, apellido FROM contratistas WHERE id = ?"
+        "SELECT COUNT(*) as count, motivo_bloqueo 
+         FROM lista_negra 
+         WHERE contratista_id = ? AND activo = 1",
     )
     .bind(contratista_id)
     .fetch_one(pool)
     .await
-    .map_err(|_| "El contratista especificado no existe".to_string())?;
-    
-    Ok((
-        row.get("cedula"),
-        row.get("nombre"),
-        row.get("apellido"),
-    ))
+    .map_err(|e| format!("Error verificando lista negra: {}", e))?;
+
+    let count: i32 = row.get("count");
+    let motivo: Option<String> = row.get("motivo_bloqueo");
+
+    Ok(BlockStatus {
+        blocked: count > 0,
+        motivo,
+    })
 }
 
-// ==========================================
-// QUERIES DE ESCRITURA
-// ==========================================
+/// Verifica si una cédula está bloqueada
+pub async fn check_if_blocked_by_cedula(
+    pool: &SqlitePool,
+    cedula: &str,
+) -> Result<BlockStatus, String> {
+    let row = sqlx::query(
+        "SELECT COUNT(*) as count, motivo_bloqueo 
+         FROM lista_negra 
+         WHERE cedula = ? AND activo = 1",
+    )
+    .bind(cedula)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| format!("Error verificando lista negra: {}", e))?;
 
-/// Inserta un nuevo bloqueo en la base de datos
+    let count: i32 = row.get("count");
+    let motivo: Option<String> = row.get("motivo_bloqueo");
+
+    Ok(BlockStatus {
+        blocked: count > 0,
+        motivo,
+    })
+}
+
+/// Obtiene datos básicos de un contratista para lista negra
+pub async fn get_contratista_data(
+    pool: &SqlitePool,
+    contratista_id: &str,
+) -> Result<(String, String, String), String> {
+    let row = sqlx::query("SELECT cedula, nombre, apellido FROM contratistas WHERE id = ?")
+        .bind(contratista_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| format!("Error buscando contratista: {}", e))?;
+
+    if let Some(row) = row {
+        Ok((row.get("cedula"), row.get("nombre"), row.get("apellido")))
+    } else {
+        Err("Contratista no encontrado".to_string())
+    }
+}
+
+/// Cuenta bloqueos activos por cédula
+pub async fn count_active_by_cedula(pool: &SqlitePool, cedula: &str) -> Result<i64, String> {
+    let row =
+        sqlx::query("SELECT COUNT(*) as count FROM lista_negra WHERE cedula = ? AND activo = 1")
+            .bind(cedula)
+            .fetch_one(pool)
+            .await
+            .map_err(|e| format!("Error contando bloqueos: {}", e))?;
+
+    Ok(row.get("count"))
+}
+
+/// Inserta un nuevo registro en lista negra
+#[allow(clippy::too_many_arguments)]
 pub async fn insert(
     pool: &SqlitePool,
     id: &str,
@@ -224,10 +105,9 @@ pub async fn insert(
 ) -> Result<(), String> {
     sqlx::query(
         r#"INSERT INTO lista_negra 
-           (id, contratista_id, cedula, nombre, apellido, motivo_bloqueo, 
-            fecha_inicio_bloqueo, fecha_fin_bloqueo, bloqueado_por, observaciones, 
-            is_active, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#
+           (id, contratista_id, cedula, nombre, apellido, motivo_bloqueo, fecha_inicio_bloqueo, 
+            fecha_fin_bloqueo, bloqueado_por, observaciones, activo, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#,
     )
     .bind(id)
     .bind(contratista_id)
@@ -243,114 +123,181 @@ pub async fn insert(
     .bind(updated_at)
     .execute(pool)
     .await
-    .map_err(|e| format!("Error al agregar a lista negra: {}", e))?;
-    
+    .map_err(|e| format!("Error al insertar en lista negra: {}", e))?;
+
     Ok(())
 }
 
-/// Actualiza un bloqueo existente (campos opcionales)
-pub async fn update(
+/// Busca por ID
+pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<ListaNegra, String> {
+    let row = sqlx::query("SELECT * FROM lista_negra WHERE id = ?")
+        .bind(id)
+        .fetch_one(pool)
+        .await
+        .map_err(|_| "Registro no encontrado".to_string())?;
+
+    row_to_lista_negra(&row)
+}
+
+/// Busca todos los registros
+pub async fn find_all(pool: &SqlitePool) -> Result<Vec<ListaNegra>, String> {
+    let rows = sqlx::query("SELECT * FROM lista_negra ORDER BY created_at DESC")
+        .fetch_all(pool)
+        .await
+        .map_err(|e| format!("Error buscando lista negra: {}", e))?;
+
+    let mut result = Vec::new();
+    for row in rows {
+        result.push(row_to_lista_negra(&row)?);
+    }
+    Ok(result)
+}
+
+/// Busca registros activos
+pub async fn find_activos(pool: &SqlitePool) -> Result<Vec<ListaNegra>, String> {
+    let rows = sqlx::query("SELECT * FROM lista_negra WHERE activo = 1 ORDER BY created_at DESC")
+        .fetch_all(pool)
+        .await
+        .map_err(|e| format!("Error buscando activos: {}", e))?;
+
+    let mut result = Vec::new();
+    for row in rows {
+        result.push(row_to_lista_negra(&row)?);
+    }
+    Ok(result)
+}
+
+/// Busca activo por cédula
+pub async fn find_active_by_cedula(
+    pool: &SqlitePool,
+    cedula: &str,
+) -> Result<Option<ListaNegra>, String> {
+    let row = sqlx::query("SELECT * FROM lista_negra WHERE cedula = ? AND activo = 1")
+        .bind(cedula)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| format!("Error buscando por cédula: {}", e))?;
+
+    if let Some(row) = row {
+        Ok(Some(row_to_lista_negra(&row)?))
+    } else {
+        Ok(None)
+    }
+}
+
+/// Desactiva un bloqueo
+pub async fn deactivate(
     pool: &SqlitePool,
     id: &str,
-    motivo_bloqueo: Option<&str>,
-    fecha_fin_bloqueo: Option<&str>,
+    motivo: &str,
     observaciones: Option<&str>,
     updated_at: &str,
 ) -> Result<(), String> {
     sqlx::query(
-        r#"UPDATE lista_negra SET
-            motivo_bloqueo = COALESCE(?, motivo_bloqueo),
-            fecha_fin_bloqueo = COALESCE(?, fecha_fin_bloqueo),
-            observaciones = COALESCE(?, observaciones),
-            updated_at = ?
-        WHERE id = ?"#
+        r#"UPDATE lista_negra SET 
+           activo = 0, 
+           motivo_bloqueo = ?, 
+           observaciones = COALESCE(?, observaciones),
+           updated_at = ? 
+           WHERE id = ?"#,
     )
-    .bind(motivo_bloqueo)
-    .bind(fecha_fin_bloqueo)
+    .bind(motivo)
     .bind(observaciones)
     .bind(updated_at)
     .bind(id)
     .execute(pool)
     .await
-    .map_err(|e| format!("Error al actualizar bloqueo: {}", e))?;
-    
+    .map_err(|e| format!("Error al desactivar: {}", e))?;
+
     Ok(())
 }
 
-/// Desactiva un bloqueo (soft delete) y actualiza el motivo/observaciones de salida
-pub async fn deactivate(
-    pool: &SqlitePool, 
-    id: &str, 
-    motivo: &str,             // <--- Nuevo: Motivo del desbloqueo
-    observacion: Option<&str>, // <--- Nuevo: Observaciones finales
-    updated_at: &str          // Se usará para updated_at y fecha_fin_bloqueo
+/// Reactiva un bloqueo
+pub async fn reactivate(
+    pool: &SqlitePool,
+    id: &str,
+    motivo: &str,
+    observaciones: Option<&str>,
+    bloqueado_por: &str,
+    updated_at: &str,
 ) -> Result<(), String> {
     sqlx::query(
         r#"UPDATE lista_negra SET 
-            is_active = 0, 
-            motivo_bloqueo = ?,      -- Sobreescribimos con el motivo de desbloqueo
-            observaciones = ?,       -- Guardamos la observación de desbloqueo
-            fecha_fin_bloqueo = ?,   -- Establecemos la fecha de fin real (ahora)
-            updated_at = ? 
-        WHERE id = ?"#
+           activo = 1, 
+           motivo_bloqueo = ?, 
+           observaciones = COALESCE(?, observaciones),
+           bloqueado_por = ?,
+           updated_at = ? 
+           WHERE id = ?"#,
     )
     .bind(motivo)
-    .bind(observacion)
-    .bind(updated_at) // fecha_fin_bloqueo
-    .bind(updated_at) // updated_at
+    .bind(observaciones)
+    .bind(bloqueado_por)
+    .bind(updated_at)
     .bind(id)
     .execute(pool)
     .await
-    .map_err(|e| format!("Error al desactivar bloqueo: {}", e))?;
-    
+    .map_err(|e| format!("Error al reactivar: {}", e))?;
+
     Ok(())
 }
-/// Elimina un bloqueo por ID (hard delete)
+
+/// Actualiza un registro
+pub async fn update(
+    pool: &SqlitePool,
+    id: &str,
+    motivo: Option<&str>,
+    fecha_fin: Option<&str>,
+    observaciones: Option<&str>,
+    updated_at: &str,
+) -> Result<(), String> {
+    sqlx::query(
+        r#"UPDATE lista_negra SET 
+           motivo_bloqueo = COALESCE(?, motivo_bloqueo),
+           fecha_fin_bloqueo = COALESCE(?, fecha_fin_bloqueo),
+           observaciones = COALESCE(?, observaciones),
+           updated_at = ?
+           WHERE id = ?"#,
+    )
+    .bind(motivo)
+    .bind(fecha_fin)
+    .bind(observaciones)
+    .bind(updated_at)
+    .bind(id)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("Error al actualizar: {}", e))?;
+
+    Ok(())
+}
+
+/// Elimina un registro
 pub async fn delete(pool: &SqlitePool, id: &str) -> Result<(), String> {
     sqlx::query("DELETE FROM lista_negra WHERE id = ?")
         .bind(id)
         .execute(pool)
         .await
-        .map_err(|e| format!("Error al eliminar registro: {}", e))?;
-    
+        .map_err(|e| format!("Error al eliminar: {}", e))?;
+
     Ok(())
 }
 
-// ==========================================
-// REACTIVAR BLOQUEO
-// ==========================================
+fn row_to_lista_negra(row: &sqlx::sqlite::SqliteRow) -> Result<ListaNegra, String> {
+    let activo_int: i32 = row.get("activo");
 
-pub async fn reactivate(
-    pool: &SqlitePool,
-    id: &str,
-    motivo_bloqueo: &str,
-    observaciones: Option<&str>,
-    bloqueado_por: &str,
-    updated_at: &str,
-) -> Result<(), String> {
-    use chrono::Utc;
-    let fecha_inicio = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-    
-    sqlx::query(
-        r#"UPDATE lista_negra
-           SET isActive = 1,
-               motivoBloqueo = ?,
-               observaciones = ?,
-               bloqueadoPor = ?,
-               fechaInicioBloqueo = ?,
-               fechaFinBloqueo = NULL,
-               updatedAt = ?
-           WHERE id = ?"#
-    )
-    .bind(motivo_bloqueo)
-    .bind(observaciones)
-    .bind(bloqueado_por)
-    .bind(fecha_inicio)
-    .bind(updated_at)
-    .bind(id)
-    .execute(pool)
-    .await
-    .map_err(|e| format!("Error al reactivar bloqueo: {}", e))?;
-    
-    Ok(())
+    Ok(ListaNegra {
+        id: row.get("id"),
+        contratista_id: row.get("contratista_id"),
+        cedula: row.get("cedula"),
+        nombre: row.get("nombre"),
+        apellido: row.get("apellido"),
+        motivo_bloqueo: row.get("motivo_bloqueo"),
+        fecha_inicio_bloqueo: row.get("fecha_inicio_bloqueo"),
+        fecha_fin_bloqueo: row.get("fecha_fin_bloqueo"),
+        bloqueado_por: row.get("bloqueado_por"),
+        observaciones: row.get("observaciones"),
+        is_active: activo_int == 1,
+        created_at: row.get("created_at"),
+        updated_at: row.get("updated_at"),
+    })
 }

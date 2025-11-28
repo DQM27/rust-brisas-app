@@ -1,215 +1,62 @@
-// ==========================================
 // src/db/contratista_queries.rs
-// ==========================================
-// Capa de data access: queries SQL puras
-// Sin lógica de negocio, solo interacción con la base de datos
 
-use crate::models::contratista::{Contratista, EstadoContratista};
-use sqlx::{SqlitePool, Row};
+use crate::models::contratista::Contratista;
+use serde::Serialize;
+use sqlx::{Row, SqlitePool};
 
-// ==========================================
-// QUERIES DE LECTURA
-// ==========================================
+#[derive(Debug, Serialize)]
+pub struct ContratistaInfo {
+    pub id: String,
+    pub cedula: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub empresa_nombre: String,
+    pub estado: String,
+    pub fecha_vencimiento_praind: String,
+}
 
-/// Busca un contratista por ID con datos de empresa
-pub async fn find_by_id_with_empresa(
+/// Busca información básica de un contratista por ID
+pub async fn find_basic_info_by_id(
     pool: &SqlitePool,
     id: &str,
-) -> Result<(Contratista, String), String> {
+) -> Result<Option<ContratistaInfo>, String> {
     let row = sqlx::query(
-        r#"SELECT 
-            c.id, c.cedula, c.nombre, c.segundo_nombre, c.apellido, c.segundo_apellido,
-            c.empresa_id, c.fecha_vencimiento_praind, c.estado, c.created_at, c.updated_at,
-            e.nombre as empresa_nombre
-           FROM contratistas c
-           INNER JOIN empresas e ON c.empresa_id = e.id
-           WHERE c.id = ?"#
+        "SELECT c.id, c.cedula, c.nombre, c.apellido, e.nombre as empresa_nombre, c.estado, c.fecha_vencimiento_praind 
+         FROM contratistas c
+         LEFT JOIN empresas e ON c.empresa_id = e.id
+         WHERE c.id = ?",
     )
     .bind(id)
-    .fetch_one(pool)
+    .fetch_optional(pool)
     .await
-    .map_err(|e| format!("Contratista no encontrado: {}", e))?;
-    
-    let contratista = Contratista {
-        id: row.get("id"),
-        cedula: row.get("cedula"),
-        nombre: row.get("nombre"),
-        segundo_nombre: row.get("segundo_nombre"),
-        apellido: row.get("apellido"),
-        segundo_apellido: row.get("segundo_apellido"),
-        empresa_id: row.get("empresa_id"),
-        fecha_vencimiento_praind: row.get("fecha_vencimiento_praind"),
-        estado: EstadoContratista::from_str(row.get("estado"))?,
-        created_at: row.get("created_at"),
-        updated_at: row.get("updated_at"),
-    };
-    
-    let empresa_nombre: String = row.get("empresa_nombre");
-    
-    Ok((contratista, empresa_nombre))
+    .map_err(|e| format!("Error buscando contratista: {}", e))?;
+
+    match row {
+        Some(r) => {
+            let estado: String = r.get("estado");
+            Ok(Some(ContratistaInfo {
+                id: r.get("id"),
+                cedula: r.get("cedula"),
+                nombre: r.get("nombre"),
+                apellido: r.get("apellido"),
+                empresa_nombre: r.get("empresa_nombre"),
+                estado,
+                fecha_vencimiento_praind: r.get("fecha_vencimiento_praind"),
+            }))
+        }
+        None => Ok(None),
+    }
 }
 
-/// Busca un contratista por cédula con datos de empresa
-pub async fn find_by_cedula_with_empresa(
-    pool: &SqlitePool,
-    cedula: &str,
-) -> Result<(Contratista, String), String> {
-    let row = sqlx::query(
-        r#"SELECT 
-            c.id, c.cedula, c.nombre, c.segundo_nombre, c.apellido, c.segundo_apellido,
-            c.empresa_id, c.fecha_vencimiento_praind, c.estado, c.created_at, c.updated_at,
-            e.nombre as empresa_nombre
-           FROM contratistas c
-           INNER JOIN empresas e ON c.empresa_id = e.id
-           WHERE c.cedula = ?"#
-    )
-    .bind(cedula)
-    .fetch_one(pool)
-    .await
-    .map_err(|e| format!("Contratista no encontrado: {}", e))?;
-    
-    let contratista = Contratista {
-        id: row.get("id"),
-        cedula: row.get("cedula"),
-        nombre: row.get("nombre"),
-        segundo_nombre: row.get("segundo_nombre"),
-        apellido: row.get("apellido"),
-        segundo_apellido: row.get("segundo_apellido"),
-        empresa_id: row.get("empresa_id"),
-        fecha_vencimiento_praind: row.get("fecha_vencimiento_praind"),
-        estado: EstadoContratista::from_str(row.get("estado"))?,
-        created_at: row.get("created_at"),
-        updated_at: row.get("updated_at"),
-    };
-    
-    let empresa_nombre: String = row.get("empresa_nombre");
-    
-    Ok((contratista, empresa_nombre))
-}
-
-/// Obtiene todos los contratistas con datos de empresa
-pub async fn find_all_with_empresa(pool: &SqlitePool) -> Result<Vec<(Contratista, String)>, String> {
-    let rows = sqlx::query(
-        r#"SELECT 
-            c.id, c.cedula, c.nombre, c.segundo_nombre, c.apellido, c.segundo_apellido,
-            c.empresa_id, c.fecha_vencimiento_praind, c.estado, c.created_at, c.updated_at,
-            e.nombre as empresa_nombre
-           FROM contratistas c
-           INNER JOIN empresas e ON c.empresa_id = e.id
-           ORDER BY c.created_at DESC"#
-    )
-    .fetch_all(pool)
-    .await
-    .map_err(|e| format!("Error al obtener contratistas: {}", e))?;
-    
-    let contratistas: Vec<(Contratista, String)> = rows
-        .into_iter()
-        .filter_map(|row| {
-            let contratista = Contratista {
-                id: row.get("id"),
-                cedula: row.get("cedula"),
-                nombre: row.get("nombre"),
-                segundo_nombre: row.get("segundo_nombre"),
-                apellido: row.get("apellido"),
-                segundo_apellido: row.get("segundo_apellido"),
-                empresa_id: row.get("empresa_id"),
-                fecha_vencimiento_praind: row.get("fecha_vencimiento_praind"),
-                estado: EstadoContratista::from_str(row.get("estado")).ok()?,
-                created_at: row.get("created_at"),
-                updated_at: row.get("updated_at"),
-            };
-            
-            let empresa_nombre: String = row.get("empresa_nombre");
-            Some((contratista, empresa_nombre))
-        })
-        .collect();
-    
-    Ok(contratistas)
-}
-
-/// Obtiene todos los contratistas activos con datos de empresa
-pub async fn find_activos_with_empresa(pool: &SqlitePool) -> Result<Vec<(Contratista, String)>, String> {
-    let rows = sqlx::query(
-        r#"SELECT 
-            c.id, c.cedula, c.nombre, c.segundo_nombre, c.apellido, c.segundo_apellido,
-            c.empresa_id, c.fecha_vencimiento_praind, c.estado, c.created_at, c.updated_at,
-            e.nombre as empresa_nombre
-           FROM contratistas c
-           INNER JOIN empresas e ON c.empresa_id = e.id
-           WHERE c.estado = ? 
-           ORDER BY c.apellido, c.nombre"#
-    )
-    .bind(EstadoContratista::Activo.as_str())
-    .fetch_all(pool)
-    .await
-    .map_err(|e| format!("Error al obtener contratistas activos: {}", e))?;
-    
-    let contratistas: Vec<(Contratista, String)> = rows
-        .into_iter()
-        .filter_map(|row| {
-            let contratista = Contratista {
-                id: row.get("id"),
-                cedula: row.get("cedula"),
-                nombre: row.get("nombre"),
-                segundo_nombre: row.get("segundo_nombre"),
-                apellido: row.get("apellido"),
-                segundo_apellido: row.get("segundo_apellido"),
-                empresa_id: row.get("empresa_id"),
-                fecha_vencimiento_praind: row.get("fecha_vencimiento_praind"),
-                estado: EstadoContratista::from_str(row.get("estado")).ok()?,
-                created_at: row.get("created_at"),
-                updated_at: row.get("updated_at"),
-            };
-            
-            let empresa_nombre: String = row.get("empresa_nombre");
-            Some((contratista, empresa_nombre))
-        })
-        .collect();
-    
-    Ok(contratistas)
-}
-
-/// Cuenta cuántos contratistas tienen una cédula específica
-pub async fn count_by_cedula(pool: &SqlitePool, cedula: &str) -> Result<i32, String> {
+/// Cuenta contratistas por cédula
+pub async fn count_by_cedula(pool: &SqlitePool, cedula: &str) -> Result<i64, String> {
     let row = sqlx::query("SELECT COUNT(*) as count FROM contratistas WHERE cedula = ?")
         .bind(cedula)
         .fetch_one(pool)
         .await
-        .map_err(|e| format!("Error al verificar cédula: {}", e))?;
-    
-    Ok(row.get("count"))
-}
+        .map_err(|e| format!("Error contando contratistas: {}", e))?;
 
-/// Verifica si una cédula está en lista negra activa
-pub async fn count_cedula_in_blacklist(pool: &SqlitePool, cedula: &str) -> Result<i32, String> {
-    let row = sqlx::query(
-        "SELECT COUNT(*) as count FROM lista_negra WHERE cedula = ? AND is_active = 1"
-    )
-    .bind(cedula)
-    .fetch_one(pool)
-    .await
-    .map_err(|e| format!("Error al verificar lista negra: {}", e))?;
-    
     Ok(row.get("count"))
-}
-
-/// Obtiene detalles del bloqueo en lista negra
-pub async fn get_blacklist_details(
-    pool: &SqlitePool,
-    cedula: &str,
-) -> Result<(String, String), String> {
-    let row = sqlx::query(
-        "SELECT motivo_bloqueo, bloqueado_por FROM lista_negra WHERE cedula = ? AND is_active = 1 LIMIT 1"
-    )
-    .bind(cedula)
-    .fetch_one(pool)
-    .await
-    .map_err(|e| format!("Error al obtener detalles de bloqueo: {}", e))?;
-    
-    let motivo: String = row.get("motivo_bloqueo");
-    let bloqueado_por: String = row.get("bloqueado_por");
-    
-    Ok((motivo, bloqueado_por))
 }
 
 /// Verifica si una empresa existe
@@ -218,17 +65,14 @@ pub async fn empresa_exists(pool: &SqlitePool, empresa_id: &str) -> Result<bool,
         .bind(empresa_id)
         .fetch_one(pool)
         .await
-        .map_err(|e| format!("Error al verificar empresa: {}", e))?;
-    
-    let count: i32 = row.get("count");
+        .map_err(|e| format!("Error verificando empresa: {}", e))?;
+
+    let count: i64 = row.get("count");
     Ok(count > 0)
 }
 
-// ==========================================
-// QUERIES DE ESCRITURA
-// ==========================================
-
 /// Inserta un nuevo contratista
+#[allow(clippy::too_many_arguments)]
 pub async fn insert(
     pool: &SqlitePool,
     id: &str,
@@ -261,12 +105,110 @@ pub async fn insert(
     .bind(updated_at)
     .execute(pool)
     .await
-    .map_err(|e| format!("Error al crear contratista: {}", e))?;
-    
+    .map_err(|e| format!("Error al insertar contratista: {}", e))?;
+
     Ok(())
 }
 
-/// Actualiza un contratista existente
+/// Busca contratista por ID con nombre de empresa
+pub async fn find_by_id_with_empresa(
+    pool: &SqlitePool,
+    id: &str,
+) -> Result<(Contratista, String), String> {
+    let row = sqlx::query(
+        r#"SELECT c.*, e.nombre as empresa_nombre
+           FROM contratistas c
+           LEFT JOIN empresas e ON c.empresa_id = e.id
+           WHERE c.id = ?"#,
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Error buscando contratista: {}", e))?;
+
+    if let Some(row) = row {
+        let contratista = row_to_contratista(&row)?;
+        let empresa_nombre: String = row.get("empresa_nombre");
+        Ok((contratista, empresa_nombre))
+    } else {
+        Err("Contratista no encontrado".to_string())
+    }
+}
+
+/// Busca contratista por cédula con nombre de empresa
+pub async fn find_by_cedula_with_empresa(
+    pool: &SqlitePool,
+    cedula: &str,
+) -> Result<(Contratista, String), String> {
+    let row = sqlx::query(
+        r#"SELECT c.*, e.nombre as empresa_nombre
+           FROM contratistas c
+           LEFT JOIN empresas e ON c.empresa_id = e.id
+           WHERE c.cedula = ?"#,
+    )
+    .bind(cedula)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Error buscando contratista: {}", e))?;
+
+    if let Some(row) = row {
+        let contratista = row_to_contratista(&row)?;
+        let empresa_nombre: String = row.get("empresa_nombre");
+        Ok((contratista, empresa_nombre))
+    } else {
+        Err("Contratista no encontrado".to_string())
+    }
+}
+
+/// Busca todos los contratistas con nombre de empresa
+pub async fn find_all_with_empresa(
+    pool: &SqlitePool,
+) -> Result<Vec<(Contratista, String)>, String> {
+    let rows = sqlx::query(
+        r#"SELECT c.*, e.nombre as empresa_nombre
+           FROM contratistas c
+           LEFT JOIN empresas e ON c.empresa_id = e.id
+           ORDER BY c.updated_at DESC"#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| format!("Error buscando contratistas: {}", e))?;
+
+    let mut result = Vec::new();
+    for row in rows {
+        let contratista = row_to_contratista(&row)?;
+        let empresa_nombre: String = row.get("empresa_nombre");
+        result.push((contratista, empresa_nombre));
+    }
+    Ok(result)
+}
+
+/// Busca contratistas activos con nombre de empresa
+pub async fn find_activos_with_empresa(
+    pool: &SqlitePool,
+) -> Result<Vec<(Contratista, String)>, String> {
+    let rows = sqlx::query(
+        r#"SELECT c.*, e.nombre as empresa_nombre
+           FROM contratistas c
+           LEFT JOIN empresas e ON c.empresa_id = e.id
+           WHERE c.estado = 'activo'
+           ORDER BY c.nombre ASC"#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| format!("Error buscando contratistas activos: {}", e))?;
+
+    let mut result = Vec::new();
+    for row in rows {
+        let contratista = row_to_contratista(&row)?;
+        let empresa_nombre: String = row.get("empresa_nombre");
+        result.push((contratista, empresa_nombre));
+    }
+    Ok(result)
+}
+
+/// Actualiza un contratista
+#[allow(clippy::too_many_arguments)]
 pub async fn update(
     pool: &SqlitePool,
     id: &str,
@@ -287,7 +229,7 @@ pub async fn update(
             empresa_id = COALESCE(?, empresa_id),
             fecha_vencimiento_praind = COALESCE(?, fecha_vencimiento_praind),
             updated_at = ?
-        WHERE id = ?"#
+        WHERE id = ?"#,
     )
     .bind(nombre)
     .bind(segundo_nombre)
@@ -300,37 +242,89 @@ pub async fn update(
     .execute(pool)
     .await
     .map_err(|e| format!("Error al actualizar contratista: {}", e))?;
-    
+
     Ok(())
 }
 
-/// Cambia el estado de un contratista
+/// Actualiza el estado de un contratista
 pub async fn update_estado(
     pool: &SqlitePool,
     id: &str,
     estado: &str,
     updated_at: &str,
 ) -> Result<(), String> {
-    sqlx::query(
-        "UPDATE contratistas SET estado = ?, updated_at = ? WHERE id = ?"
-    )
-    .bind(estado)
-    .bind(updated_at)
-    .bind(id)
-    .execute(pool)
-    .await
-    .map_err(|e| format!("Error al cambiar estado: {}", e))?;
-    
+    sqlx::query("UPDATE contratistas SET estado = ?, updated_at = ? WHERE id = ?")
+        .bind(estado)
+        .bind(updated_at)
+        .bind(id)
+        .execute(pool)
+        .await
+        .map_err(|e| format!("Error al actualizar estado: {}", e))?;
+
     Ok(())
 }
 
-/// Elimina un contratista por ID
+/// Elimina un contratista
 pub async fn delete(pool: &SqlitePool, id: &str) -> Result<(), String> {
     sqlx::query("DELETE FROM contratistas WHERE id = ?")
         .bind(id)
         .execute(pool)
         .await
         .map_err(|e| format!("Error al eliminar contratista: {}", e))?;
-    
+
     Ok(())
+}
+
+// Helper para verificar lista negra (usado por contratista_service pero debería estar en lista_negra_queries)
+// Lo mantenemos aquí por compatibilidad temporal si es necesario, pero lo ideal es moverlo.
+// El servicio usa db::count_cedula_in_blacklist, así que lo ponemos aquí.
+pub async fn count_cedula_in_blacklist(pool: &SqlitePool, cedula: &str) -> Result<i64, String> {
+    let row =
+        sqlx::query("SELECT COUNT(*) as count FROM lista_negra WHERE cedula = ? AND activo = 1")
+            .bind(cedula)
+            .fetch_one(pool)
+            .await
+            .map_err(|e| format!("Error verificando lista negra: {}", e))?;
+
+    Ok(row.get("count"))
+}
+
+// Helper para detalles de lista negra
+pub async fn get_blacklist_details(
+    pool: &SqlitePool,
+    cedula: &str,
+) -> Result<(String, String), String> {
+    let row = sqlx::query(
+        "SELECT motivo_bloqueo, bloqueado_por FROM lista_negra WHERE cedula = ? AND activo = 1",
+    )
+    .bind(cedula)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Error obteniendo detalles lista negra: {}", e))?;
+
+    if let Some(row) = row {
+        Ok((row.get("motivo_bloqueo"), row.get("bloqueado_por")))
+    } else {
+        Err("No encontrado en lista negra".to_string())
+    }
+}
+
+fn row_to_contratista(row: &sqlx::sqlite::SqliteRow) -> Result<Contratista, String> {
+    let estado_str: String = row.get("estado");
+    let estado = crate::models::contratista::EstadoContratista::from_str(&estado_str)
+        .unwrap_or(crate::models::contratista::EstadoContratista::Inactivo);
+
+    Ok(Contratista {
+        id: row.get("id"),
+        cedula: row.get("cedula"),
+        nombre: row.get("nombre"),
+        segundo_nombre: row.get("segundo_nombre"),
+        apellido: row.get("apellido"),
+        segundo_apellido: row.get("segundo_apellido"),
+        empresa_id: row.get("empresa_id"),
+        fecha_vencimiento_praind: row.get("fecha_vencimiento_praind"),
+        estado,
+        created_at: row.get("created_at"),
+        updated_at: row.get("updated_at"),
+    })
 }
