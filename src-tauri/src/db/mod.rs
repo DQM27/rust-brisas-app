@@ -1,16 +1,15 @@
 // src/db/mod.rs
 
 use crate::config::AppConfig;
-use sqlx::{migrate::Migrator, sqlite::SqlitePoolOptions, SqlitePool};
+use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 
 pub mod blacklist_import_queries;
 pub mod contratista_queries;
 pub mod lista_negra_queries;
+pub mod migrate;
 pub mod seed;
 pub mod user_queries;
 pub mod vehiculo_queries;
-
-static MIGRATOR: Migrator = sqlx::migrate!("./migrations");
 
 /// Inicializa la conexión a la base de datos (Pool)
 pub async fn init_pool(config: &AppConfig) -> Result<SqlitePool, Box<dyn std::error::Error>> {
@@ -36,23 +35,4 @@ pub async fn init_pool(config: &AppConfig) -> Result<SqlitePool, Box<dyn std::er
         .await?;
 
     Ok(pool)
-}
-
-/// Ejecuta las migraciones pendientes
-pub async fn run_migrations(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
-    println!("🔄 Ejecutando migraciones...");
-
-    match MIGRATOR.run(pool).await {
-        Ok(_) => {
-            println!("✅ Migraciones completadas");
-            Ok(())
-        }
-        Err(e) => {
-            eprintln!("❌ Error en migraciones: {}", e);
-            // No retornamos error fatal aquí para permitir que la app arranque si es un error menor,
-            // pero en producción quizás deberíamos. Por ahora mantenemos comportamiento similar.
-            // O mejor, retornamos el error para que init falle explícitamente.
-            Err(e.into())
-        }
-    }
 }

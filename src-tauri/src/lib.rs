@@ -25,7 +25,7 @@ pub fn run() {
             );
 
             let pool = db::init_pool(&app_config).await?;
-            db::run_migrations(&pool).await?;
+            db::migrate::run_migrations(&pool).await?;
             db::seed::seed_db(&pool).await?;
             let search_service = search::init_search_service(&app_config)?;
 
