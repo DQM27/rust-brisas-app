@@ -16,7 +16,7 @@ pub async fn check_if_blocked(
     let row = sqlx::query(
         "SELECT COUNT(*) as count, motivo_bloqueo 
          FROM lista_negra 
-         WHERE contratista_id = ? AND activo = 1",
+         WHERE contratista_id = ? AND is_active = 1",
     )
     .bind(contratista_id)
     .fetch_one(pool)
@@ -40,7 +40,7 @@ pub async fn check_if_blocked_by_cedula(
     let row = sqlx::query(
         "SELECT COUNT(*) as count, motivo_bloqueo 
          FROM lista_negra 
-         WHERE cedula = ? AND activo = 1",
+         WHERE cedula = ? AND is_active = 1",
     )
     .bind(cedula)
     .fetch_one(pool)
@@ -59,7 +59,7 @@ pub async fn check_if_blocked_by_cedula(
 /// Cuenta bloqueos activos por cédula
 pub async fn count_active_by_cedula(pool: &SqlitePool, cedula: &str) -> Result<i64, String> {
     let row =
-        sqlx::query("SELECT COUNT(*) as count FROM lista_negra WHERE cedula = ? AND activo = 1")
+        sqlx::query("SELECT COUNT(*) as count FROM lista_negra WHERE cedula = ? AND is_active = 1")
             .bind(cedula)
             .fetch_one(pool)
             .await
@@ -88,7 +88,7 @@ pub async fn insert(
     sqlx::query(
         r#"INSERT INTO lista_negra 
            (id, contratista_id, cedula, nombre, apellido, motivo_bloqueo, fecha_inicio_bloqueo, 
-            fecha_fin_bloqueo, bloqueado_por, observaciones, activo, created_at, updated_at)
+            fecha_fin_bloqueo, bloqueado_por, observaciones, is_active, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#,
     )
     .bind(id)
@@ -137,10 +137,11 @@ pub async fn find_all(pool: &SqlitePool) -> Result<Vec<ListaNegra>, String> {
 
 /// Busca registros activos
 pub async fn find_activos(pool: &SqlitePool) -> Result<Vec<ListaNegra>, String> {
-    let rows = sqlx::query("SELECT * FROM lista_negra WHERE activo = 1 ORDER BY created_at DESC")
-        .fetch_all(pool)
-        .await
-        .map_err(|e| format!("Error buscando activos: {}", e))?;
+    let rows =
+        sqlx::query("SELECT * FROM lista_negra WHERE is_active = 1 ORDER BY created_at DESC")
+            .fetch_all(pool)
+            .await
+            .map_err(|e| format!("Error buscando activos: {}", e))?;
 
     let mut result = Vec::new();
     for row in rows {
@@ -154,7 +155,7 @@ pub async fn find_active_by_cedula(
     pool: &SqlitePool,
     cedula: &str,
 ) -> Result<Option<ListaNegra>, String> {
-    let row = sqlx::query("SELECT * FROM lista_negra WHERE cedula = ? AND activo = 1")
+    let row = sqlx::query("SELECT * FROM lista_negra WHERE cedula = ? AND is_active = 1")
         .bind(cedula)
         .fetch_optional(pool)
         .await
@@ -177,7 +178,7 @@ pub async fn deactivate(
 ) -> Result<(), String> {
     sqlx::query(
         r#"UPDATE lista_negra SET 
-           activo = 0, 
+           is_active = 0, 
            motivo_bloqueo = ?, 
            observaciones = COALESCE(?, observaciones),
            updated_at = ? 
@@ -205,7 +206,7 @@ pub async fn reactivate(
 ) -> Result<(), String> {
     sqlx::query(
         r#"UPDATE lista_negra SET 
-           activo = 1, 
+           is_active = 1, 
            motivo_bloqueo = ?, 
            observaciones = COALESCE(?, observaciones),
            bloqueado_por = ?,
@@ -265,7 +266,7 @@ pub async fn delete(pool: &SqlitePool, id: &str) -> Result<(), String> {
 }
 
 fn row_to_lista_negra(row: &sqlx::sqlite::SqliteRow) -> Result<ListaNegra, String> {
-    let activo_int: i32 = row.get("activo");
+    let activo_int: i32 = row.get("is_active");
 
     Ok(ListaNegra {
         id: row.get("id"),
