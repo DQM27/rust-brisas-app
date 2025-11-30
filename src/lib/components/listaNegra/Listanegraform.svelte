@@ -3,8 +3,8 @@
   import { fly, fade, slide } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import { tweened } from "svelte/motion";
-  import { submitFetchActiveContratistas } from "$lib/logic/contratista/submitFetchContratistas";
-  import { submitFetchAllListaNegra } from "$lib/logic/listaNegra/submitFetchListaNegra";
+  import * as contratistaService from "$lib/logic/contratista/contratistaService";
+  import * as listaNegraService from "$lib/logic/listaNegra/listaNegraService";
   import { listaNegra } from "$lib/api/listaNegra";
   import { currentUser } from "$lib/stores/auth";
   import type { BlockCheckResponse } from "$lib/types/listaNegra";
@@ -77,8 +77,8 @@
 
     // Ejecutar ambas peticiones en paralelo
     const [resContratistas, resListaNegra] = await Promise.all([
-      submitFetchActiveContratistas(),
-      submitFetchAllListaNegra(),
+      contratistaService.submitFetchActiveContratistas(),
+      listaNegraService.fetchAll(),
     ]);
 
     let tempContratistas: typeof contratistas = [];

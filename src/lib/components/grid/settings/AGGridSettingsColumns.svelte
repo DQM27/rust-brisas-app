@@ -21,13 +21,12 @@
   let columns = $state<ColumnInfo[]>([]);
   let draggedIndex = $state<number | null>(null);
 
-  // Cargar columnas del gridApi
   $effect(() => {
     if (gridApi) {
       const colState = gridApi.getColumnState();
       if (colState) {
         columns = colState
-          .filter((col) => col.colId !== "ag-Grid-AutoColumn") // Filtrar columnas internas
+          .filter((col) => col.colId !== "ag-Grid-AutoColumn")
           .map((col, idx) => ({
             id: col.colId,
             name: gridApi.getColumnDef(col.colId)?.headerName || col.colId,
@@ -71,7 +70,6 @@
   function resetToDefault() {
     if (!gridApi) return;
     gridApi.resetColumnState();
-    // Recargar columnas
     const colState = gridApi.getColumnState();
     if (colState) {
       columns = colState
@@ -85,7 +83,6 @@
     }
   }
 
-  // Drag & Drop handlers
   function handleDragStart(index: number) {
     draggedIndex = index;
   }
@@ -104,7 +101,6 @@
 
   function handleDragEnd() {
     if (gridApi && draggedIndex !== null) {
-      // Aplicar nuevo orden al grid
       const columnState: ColumnState[] = columns.map((col, idx) => ({
         colId: col.id,
         hide: !col.visible,
@@ -128,7 +124,7 @@
 </script>
 
 <div class="space-y-4">
-  <!-- Header con contadores -->
+  <!-- Header -->
   <div class="flex items-center justify-between">
     <div class="text-sm text-gray-400">
       <span class="text-white font-medium">{visibleCount}</span> de
@@ -137,13 +133,13 @@
     <div class="flex gap-2">
       <button
         onclick={showAll}
-        class="px-3 py-1.5 text-xs font-medium text-green-400 bg-green-500/10 border border-green-500/20 rounded-md hover:bg-green-500/20 transition-colors"
+        class="px-3 py-1 text-xs font-medium text-green-400 bg-green-500/10 border border-green-500/30 rounded-md hover:bg-green-500/20 transition-colors"
       >
         Mostrar todas
       </button>
       <button
         onclick={hideAll}
-        class="px-3 py-1.5 text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-md hover:bg-red-500/20 transition-colors"
+        class="px-3 py-1 text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/30 rounded-md hover:bg-red-500/20 transition-colors"
       >
         Ocultar todas
       </button>
@@ -151,7 +147,10 @@
   </div>
 
   <!-- Lista de columnas -->
-  <div class="space-y-1 max-h-96 overflow-y-auto" role="list">
+  <div
+    class="space-y-1.5 max-h-96 overflow-y-auto pr-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20"
+    role="list"
+  >
     {#each columns as column, index (column.id)}
       <div
         role="listitem"
@@ -159,32 +158,30 @@
         ondragstart={() => handleDragStart(index)}
         ondragover={(e) => handleDragOver(e, index)}
         ondragend={handleDragEnd}
-        class="flex items-center gap-3 p-3 bg-[#252526] border border-white/10 rounded-lg hover:border-white/20 transition-all cursor-move
-          {draggedIndex === index ? 'opacity-50 scale-95' : ''}"
+        class="flex items-center gap-2.5 p-2.5 bg-[#252526] border rounded-lg transition-all cursor-move
+          {draggedIndex === index
+          ? 'opacity-50 scale-95 border-blue-500/50'
+          : 'border-white/10 hover:border-white/20 hover:bg-[#2a2a2b]'}"
       >
-        <!-- Drag Handle -->
         <div class="text-gray-500">
-          <GripVertical size={18} />
+          <GripVertical size={16} />
         </div>
 
-        <!-- Checkbox -->
         <input
           type="checkbox"
           checked={column.visible}
           onchange={() => toggleVisibility(column.id)}
-          class="w-4 h-4 text-blue-500 bg-[#1e1e1e] border-white/20 rounded focus:ring-blue-500 focus:ring-2"
+          class="w-3.5 h-3.5 text-blue-500 bg-[#1e1e1e] border-white/20 rounded focus:ring-blue-500 focus:ring-2"
         />
 
-        <!-- Nombre -->
         <span class="flex-1 text-sm text-white">
           {column.name}
         </span>
 
-        <!-- Icono de visibilidad -->
         {#if column.visible}
-          <Eye size={16} class="text-green-400" />
+          <Eye size={14} class="text-green-400" />
         {:else}
-          <EyeOff size={16} class="text-gray-500" />
+          <EyeOff size={14} class="text-gray-500" />
         {/if}
       </div>
     {/each}
@@ -193,9 +190,28 @@
   <!-- Botón de reset -->
   <button
     onclick={resetToDefault}
-    class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#252526] border border-white/10 rounded-lg text-sm font-medium text-white hover:bg-white/5 hover:border-white/20 transition-colors"
+    class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#252526] border border-white/10 rounded-lg text-sm font-medium text-white hover:bg-[#2a2a2b] hover:border-white/20 transition-all"
   >
-    <RotateCcw size={16} />
+    <RotateCcw size={14} />
     Restaurar por defecto
   </button>
 </div>
+
+<style>
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-track-transparent::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thumb-white\/10::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thumb-white\/10:hover::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+</style>

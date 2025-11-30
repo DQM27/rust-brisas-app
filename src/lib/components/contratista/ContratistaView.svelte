@@ -1,13 +1,16 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { toast } from 'svelte-5-french-toast';
+  import { onMount } from "svelte";
+  import { toast } from "svelte-5-french-toast";
 
-  import ContratistaForm from './ContratistaForm.svelte';
-  import type ContratistaFormType from './ContratistaForm.svelte';
+  import ContratistaForm from "./ContratistaForm.svelte";
+  import type ContratistaFormType from "./ContratistaForm.svelte";
 
-  import type { CreateContratistaInput, ContratistaResponse } from '$lib/types/contratista';
-  import { submitRegisterContratista } from '$lib/logic/contratista/submitRegisterContratista';
-  import { submitFetchActiveEmpresas } from '$lib/logic/empresa/empresaService';
+  import type {
+    CreateContratistaInput,
+    ContratistaResponse,
+  } from "$lib/types/contratista";
+  import * as contratistaService from "$lib/logic/contratista/contratistaService";
+  import { submitFetchActiveEmpresas } from "$lib/logic/empresa/empresaService";
 
   let loading = false;
   let formRef: ContratistaFormType;
@@ -24,13 +27,16 @@
   async function handleRegister(data: CreateContratistaInput) {
     loading = true;
 
-    const result = await submitRegisterContratista(data);
+    const result = await contratistaService.submitRegisterContratista(data);
 
     if (result.ok) {
       formRef?.reset();
-      toast.success('Contratista registrado exitosamente', { icon: '✓', duration: 3000 });
+      toast.success("Contratista registrado exitosamente", {
+        icon: "✓",
+        duration: 3000,
+      });
     } else {
-      toast.error(result.error, { icon: '✕', duration: 4000 });
+      toast.error(result.error, { icon: "✕", duration: 4000 });
     }
 
     loading = false;

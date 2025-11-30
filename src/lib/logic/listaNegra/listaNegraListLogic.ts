@@ -2,7 +2,7 @@
 import { get } from 'svelte/store';
 import { selectedSearchStore } from "$lib/stores/searchStore";
 import type { ListaNegraResponse } from "$lib/types/listaNegra";
-import type { DataTableColumn } from "$lib/types/dataTable";
+import type { ColDef, ICellRendererParams } from "@ag-grid-community/core";
 
 export interface ListaNegraListState {
   estadoFilter: "todos" | "activo" | "inactivo";
@@ -77,7 +77,7 @@ export class ListaNegraListLogic {
   }
 
   // Column configuration
-  static getColumns(): DataTableColumn<ListaNegraResponse>[] {
+  static getColumns(): ColDef<ListaNegraResponse>[] {
     return [
       {
         field: "cedula",
@@ -98,7 +98,7 @@ export class ListaNegraListLogic {
         headerName: "Empresa",
         flex: 1,
         minWidth: 180,
-        cellRenderer: (params) => {
+        cellRenderer: (params: ICellRendererParams) => {
           const empresa = params.value || "Sin empresa";
           return `<span class="text-sm text-gray-400">${empresa}</span>`;
         },
@@ -107,7 +107,7 @@ export class ListaNegraListLogic {
         field: "isActive",
         headerName: "Estado",
         width: 130,
-        cellRenderer: (params) => {
+        cellRenderer: (params: ICellRendererParams) => {
           return ListaNegraListLogic.formatEstadoBadge(params.value);
         },
       },
@@ -115,7 +115,7 @@ export class ListaNegraListLogic {
         field: "esBloqueoPermanente",
         headerName: "Tipo",
         width: 140,
-        cellRenderer: (params) => {
+        cellRenderer: (params: ICellRendererParams) => {
           return ListaNegraListLogic.formatTipoBadge(params.value);
         },
       },
@@ -124,7 +124,7 @@ export class ListaNegraListLogic {
         headerName: "Motivo de Bloqueo",
         flex: 1,
         minWidth: 250,
-        cellRenderer: (params) => {
+        cellRenderer: (params: ICellRendererParams) => {
           const motivo = params.value || "Sin motivo especificado";
           return `<span class="text-xs text-gray-300 line-clamp-2">${motivo}</span>`;
         },
@@ -134,7 +134,7 @@ export class ListaNegraListLogic {
         headerName: "Observaciones",
         flex: 1,
         minWidth: 200,
-        cellRenderer: (params) => {
+        cellRenderer: (params: ICellRendererParams) => {
           const obs = params.value;
           if (!obs || obs.trim() === "") {
             return `<span class="text-xs text-gray-500 italic">Sin observaciones</span>`;
@@ -146,7 +146,7 @@ export class ListaNegraListLogic {
         field: "bloqueadoPor",
         headerName: "Bloqueado Por",
         width: 160,
-        cellRenderer: (params) => {
+        cellRenderer: (params: ICellRendererParams) => {
           const usuario = params.value || "Sistema";
           return `<span class="text-sm text-gray-400">${usuario}</span>`;
         },
@@ -155,17 +155,17 @@ export class ListaNegraListLogic {
         field: "fechaInicioBloqueo",
         headerName: "Fecha Bloqueo",
         width: 150,
-        cellRenderer: (params) => {
+        cellRenderer: (params: ICellRendererParams) => {
           if (!params.value) return `<span class="text-xs text-gray-500">N/A</span>`;
           const fecha = new Date(params.value);
-          const fechaStr = fecha.toLocaleDateString("es-CR", { 
-            day: "2-digit", 
-            month: "2-digit", 
-            year: "numeric" 
+          const fechaStr = fecha.toLocaleDateString("es-CR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
           });
-          const horaStr = fecha.toLocaleTimeString("es-CR", { 
-            hour: "2-digit", 
-            minute: "2-digit" 
+          const horaStr = fecha.toLocaleTimeString("es-CR", {
+            hour: "2-digit",
+            minute: "2-digit"
           });
           return `
             <div class="text-xs">
@@ -179,20 +179,20 @@ export class ListaNegraListLogic {
         field: "fechaFinBloqueo",
         headerName: "Fecha Desbloqueo",
         width: 170,
-        cellRenderer: (params) => {
+        cellRenderer: (params: ICellRendererParams) => {
           const fecha = params.value;
           if (!fecha) {
             return `<span class="text-xs text-gray-500 italic">No desbloqueado</span>`;
           }
           const fechaObj = new Date(fecha);
-          const fechaStr = fechaObj.toLocaleDateString("es-CR", { 
-            day: "2-digit", 
-            month: "2-digit", 
-            year: "numeric" 
+          const fechaStr = fechaObj.toLocaleDateString("es-CR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
           });
-          const horaStr = fechaObj.toLocaleTimeString("es-CR", { 
-            hour: "2-digit", 
-            minute: "2-digit" 
+          const horaStr = fechaObj.toLocaleTimeString("es-CR", {
+            hour: "2-digit",
+            minute: "2-digit"
           });
           return `
             <div class="text-xs">

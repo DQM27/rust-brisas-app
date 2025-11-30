@@ -5,8 +5,7 @@
   import type ListaNegraFormType from "$lib/components/listaNegra/Listanegraform.svelte";
 
   import type { AddToListaNegraInput } from "$lib/types/listaNegra";
-  import { submitAddToListaNegra } from "$lib/logic/listaNegra/submitAddToListaNegra";
-  import { submitUnblockListaNegra } from "$lib/logic/listaNegra/submitUnblockListaNegra";
+  import * as listaNegraService from "$lib/logic/listaNegra/listaNegraService";
 
   let loading = false;
   let formRef: ListaNegraFormType;
@@ -14,7 +13,7 @@
   async function handleRegister(data: AddToListaNegraInput) {
     loading = true;
 
-    const result = await submitAddToListaNegra(data);
+    const result = await listaNegraService.add(data);
 
     if (result.ok) {
       formRef?.reset();
@@ -36,7 +35,7 @@
   }) {
     loading = true;
 
-    const result = await submitUnblockListaNegra(
+    const result = await listaNegraService.unblock(
       data.id,
       data.motivoDesbloqueo,
       data.observaciones,

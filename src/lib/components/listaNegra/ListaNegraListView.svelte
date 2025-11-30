@@ -5,14 +5,12 @@
   import ListaNegraListForm from "./ListaNegraListForm.svelte";
   import Listanegraform from "./Listanegraform.svelte";
   import UnblockModal from "./ListaNegraUnblockModal.svelte";
-  import {
-    loadAllListaNegra,
-    addToListaNegraAction,
-    unblockListaNegraAction,
-    reblockListaNegraAction,
-  } from "$lib/logic/listaNegra/listaNegraActions";
+  import * as listaNegraService from "$lib/logic/listaNegra/listaNegraService";
   import { selectedSearchStore } from "$lib/stores/searchStore";
-  import type { ListaNegraResponse, AddToListaNegraInput } from "$lib/types/listaNegra";
+  import type {
+    ListaNegraResponse,
+    AddToListaNegraInput,
+  } from "$lib/types/listaNegra";
   import type { SearchResult } from "$lib/types/search.types";
   import type { ColDef } from "@ag-grid-community/core";
   import {
@@ -74,12 +72,14 @@
     loading = true;
     error = "";
 
-    const result = await loadAllListaNegra();
-    
+    const result = await listaNegraService.fetchAll();
+
     if (result.ok && result.data) {
       bloqueados = result.data.bloqueados;
+    } else if (!result.ok) {
+      error = result.error;
     } else {
-      error = result.error || "Error al cargar lista negra";
+      error = "Error al cargar lista negra";
     }
 
     loading = false;
@@ -92,9 +92,9 @@
 
   async function handleAddSubmit(input: AddToListaNegraInput) {
     addFormLoading = true;
-    
-    const result = await addToListaNegraAction(input);
-    
+
+    const result = await listaNegraService.add(input);
+
     if (result.ok) {
       await loadListaNegra();
       showAddModal = false;
@@ -104,7 +104,7 @@
       // TODO: Toast de error
       console.error("Error al agregar a lista negra:", result.error);
     }
-    
+
     addFormLoading = false;
   }
 
@@ -121,17 +121,17 @@
     if (!bloqueado) return;
 
     let result;
-    
+
     if (bloqueado.isActive) {
       // Desbloquear (remove)
-      result = await unblockListaNegraAction(
+      result = await listaNegraService.unblock(
         data.id,
         data.motivoDesbloqueo || "Desbloqueo manual",
         data.observaciones,
       );
     } else {
       // Re-bloquear (reactivate)
-      result = await reblockListaNegraAction(
+      result = await listaNegraService.reblock(
         data.id,
         data.motivoDesbloqueo || "Re-bloqueo manual",
         data.observaciones,

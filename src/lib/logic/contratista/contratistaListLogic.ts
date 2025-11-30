@@ -2,7 +2,7 @@
 import { get } from 'svelte/store';
 import { selectedSearchStore } from "$lib/stores/searchStore";
 import type { ContratistaResponse, EstadoContratista } from "$lib/types/contratista";
-import type { DataTableColumn } from "$lib/types/dataTable";
+import type { ColDef, ICellRendererParams } from "@ag-grid-community/core";
 
 export interface ContratistaListState {
   estadoFilter: "todos" | "activo" | "inactivo" | "suspendido";
@@ -82,7 +82,7 @@ export class ContratistaListLogic {
   }
 
   // Column configuration
-  static getColumns(): DataTableColumn<ContratistaResponse>[] {
+  static getColumns(): ColDef<ContratistaResponse>[] {
     return [
       {
         field: "cedula",
@@ -108,7 +108,7 @@ export class ContratistaListLogic {
         field: "estado",
         headerName: "Estado",
         width: 130,
-        cellRenderer: (params) => {
+        cellRenderer: (params: ICellRendererParams) => {
           const estado = params.value as EstadoContratista;
           return ContratistaListLogic.formatEstadoBadge(estado);
         },
@@ -117,7 +117,7 @@ export class ContratistaListLogic {
         field: "praindVencido",
         headerName: "PRAIND",
         width: 130,
-        cellRenderer: (params) => {
+        cellRenderer: (params: ICellRendererParams) => {
           const row = params.data as ContratistaResponse;
           return ContratistaListLogic.formatPraindBadge(row);
         },
@@ -140,7 +140,7 @@ export class ContratistaListLogic {
         field: "puedeIngresar",
         headerName: "Acceso",
         width: 130,
-        cellRenderer: (params) => {
+        cellRenderer: (params: ICellRendererParams) => {
           const canEnter = params.value;
           if (canEnter) {
             return `
@@ -164,13 +164,13 @@ export class ContratistaListLogic {
   static formatEstadoBadge(estado: EstadoContratista): string {
     const badges = {
       activo: "bg-green-500/10 text-green-400 border-green-500/20",
-      inactivo: "bg-gray-500/10 text-gray-400 border-gray-500/20", 
+      inactivo: "bg-gray-500/10 text-gray-400 border-gray-500/20",
       suspendido: "bg-red-500/10 text-red-400 border-red-500/20",
     };
-    
+
     const badgeClass = badges[estado] || badges.inactivo;
     const displayText = estado ? estado.charAt(0).toUpperCase() + estado.slice(1) : 'N/A';
-    
+
     return `
       <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${badgeClass}">
         ${displayText}

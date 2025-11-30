@@ -2,8 +2,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import ContratistaListForm from "./ContratistaListForm.svelte";
-  import { submitFetchAllContratistas } from "$lib/logic/contratista/submitFetchContratistas";
-  import { submitFetchAllListaNegra } from "$lib/logic/listaNegra/submitFetchListaNegra";
+  import * as contratistaService from "$lib/logic/contratista/contratistaService";
+  import * as listaNegraService from "$lib/logic/listaNegra/listaNegraService";
   import { openTab } from "$lib/stores/tabs"; // ← Importar openTab
   import { UserPlus, Edit } from "lucide-svelte";
   import type { ContratistaResponse } from "$lib/types/contratista";
@@ -68,7 +68,7 @@
     error = "";
 
     try {
-      const result = await submitFetchAllContratistas();
+      const result = await contratistaService.submitFetchAllContratistas();
       if (result.ok) {
         contratistas = result.contratistas;
         await loadBlockedContratistas();
@@ -84,7 +84,7 @@
   }
 
   async function loadBlockedContratistas() {
-    const result = await submitFetchAllListaNegra();
+    const result = await listaNegraService.fetchAll();
     if (result.ok) {
       const blocked = new Set<string>();
       result.data.bloqueados.forEach((b) => {
