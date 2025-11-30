@@ -1,106 +1,132 @@
 // ==========================================
 // src/commands/ingreso_commands.rs
 // ==========================================
+// Comandos generales de consulta de ingresos
+// (Los comandos de entrada/salida están en sus propios módulos)
 
 use crate::models::ingreso::{
-    AlertaGafeteResponse, CreateIngresoContratistaInput, IngresoListResponse, IngresoResponse,
-    RegistrarSalidaInput, ResolverAlertaInput, ValidacionIngresoResponse,
+    AlertaGafeteResponse, IngresoListResponse, IngresoResponse, ResolverAlertaInput,
 };
-use crate::services::ingreso_service;
+use crate::db::ingreso_queries as db;
+use crate::db::alerta_gafete_queries as alerta_db;
 use sqlx::SqlitePool;
 use tauri::State;
+use chrono::Utc;
 
 // ==========================================
-// VALIDACIÓN Y CONSULTAS
+// CONSULTAS GENERALES DE INGRESOS
 // ==========================================
 
-#[tauri::command]
-pub async fn validar_ingreso_contratista(
-    pool: State<'_, SqlitePool>,
-    contratista_id: String,
-) -> Result<ValidacionIngresoResponse, String> {
-    ingreso_service::validar_ingreso_contratista(&pool, contratista_id).await
-}
-
+/// Obtiene un ingreso por ID
 #[tauri::command]
 pub async fn get_ingreso_by_id(
     pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<IngresoResponse, String> {
-    ingreso_service::get_ingreso_by_id(&pool, id).await
+    let ingreso = db::find_by_id(&pool, &id).await?;
+    let details = db::find_details_by_id(&pool, &id).await?;
+
+    let mut response = IngresoResponse::from(ingreso);
+    response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
+    response.usuario_salida_nombre = details.usuario_salida_nombre;
+    response.vehiculo_placa = details.vehiculo_placa;
+
+    Ok(response)
 }
 
+/// Obtiene todos los ingresos (limitado a 500)
 #[tauri::command]
 pub async fn get_all_ingresos(pool: State<'_, SqlitePool>) -> Result<IngresoListResponse, String> {
-    ingreso_service::get_all_ingresos(&pool).await
+    let ingresos = db::find_all(&pool).await?;
+
+    let mut responses = Vec::new();
+    for ingreso in ingresos {
+        let response = IngresoResponse::from(ingreso);
+        responses.push(response);
+    }
+
+    let total = responses.len();
+    let adentro = responses
+        .iter()
+        .filter(|i| i.fecha_hora_salida.is_none())
+        .count();
+    let salieron = total - adentro;
+
+    Ok(IngresoListResponse {
+        ingresos: responses,
+        total,
+        adentro,
+        salieron,
+    })
 }
 
+/// Obtiene solo ingresos abiertos (personas adentro)
 #[tauri::command]
 pub async fn get_ingresos_abiertos(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<IngresoResponse>, String> {
-    ingreso_service::get_ingresos_abiertos(&pool).await
+    let ingresos = db::find_ingresos_abiertos(&pool).await?;
+
+    let mut responses = Vec::new();
+    for ingreso in ingresos {
+        let response = IngresoResponse::from(ingreso);
+        responses.push(response);
+    }
+
+    Ok(responses)
 }
 
+/// Busca ingreso abierto por número de gafete
 #[tauri::command]
 pub async fn get_ingreso_by_gafete(
     pool: State<'_, SqlitePool>,
     gafete_numero: String,
 ) -> Result<IngresoResponse, String> {
-    ingreso_service::get_ingreso_by_gafete(&pool, gafete_numero).await
-}
-
-// ==========================================
-// CREAR INGRESOS
-// ==========================================
-
-#[tauri::command]
-pub async fn create_ingreso_contratista(
-    pool: State<'_, SqlitePool>,
-    input: CreateIngresoContratistaInput,
-) -> Result<IngresoResponse, String> {
-    let usuario_id = input.usuario_ingreso_id.clone();
-    ingreso_service::create_ingreso_contratista(&pool, input, usuario_id).await
-}
-
-// ==========================================
-// REGISTRAR SALIDA
-// ==========================================
-
-#[tauri::command]
-pub async fn registrar_salida(
-    pool: State<'_, SqlitePool>,
-    ingreso_id: String,
-    mut input: RegistrarSalidaInput,
-) -> Result<IngresoResponse, String> {
-    input.ingreso_id = ingreso_id;
-    let usuario_id = input.usuario_salida_id.clone();
-    ingreso_service::registrar_salida(&pool, input, usuario_id).await
+    let ingreso = db::find_ingreso_by_gafete(&pool, &gafete_numero).await?;
+    let response = IngresoResponse::from(ingreso);
+    Ok(response)
 }
 
 // ==========================================
 // GESTIÓN DE ALERTAS DE GAFETES
 // ==========================================
 
+/// Obtiene alertas pendientes de gafetes por cédula
 #[tauri::command]
 pub async fn get_alertas_pendientes_by_cedula(
     pool: State<'_, SqlitePool>,
     cedula: String,
 ) -> Result<Vec<AlertaGafeteResponse>, String> {
-    ingreso_service::get_alertas_pendientes_by_cedula(&pool, cedula).await
+    let alertas = alerta_db::find_pendientes_by_cedula(&pool, &cedula).await?;
+    let responses: Vec<_> = alertas
+        .into_iter()
+        .map(AlertaGafeteResponse::from)
+        .collect();
+    Ok(responses)
 }
 
+/// Obtiene todas las alertas de gafetes
 #[tauri::command]
 pub async fn get_all_alertas_gafetes(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<AlertaGafeteResponse>, String> {
-    ingreso_service::get_all_alertas_gafetes(&pool).await
+    let alertas = alerta_db::find_all(&pool, None).await?;
+    let responses: Vec<_> = alertas
+        .into_iter()
+        .map(AlertaGafeteResponse::from)
+        .collect();
+    Ok(responses)
 }
 
+/// Marca una alerta de gafete como resuelta
 #[tauri::command]
 pub async fn resolver_alerta_gafete(
     pool: State<'_, SqlitePool>,
     input: ResolverAlertaInput,
 ) -> Result<AlertaGafeteResponse, String> {
-    ingreso_service::resolver_alerta_gafete(&pool, input).await
+    let now = Utc::now().to_rfc3339();
+    alerta_db::resolver(&pool, &input.alerta_id, &now, input.notas.as_deref(), &now).await?;
+
+    let alerta = alerta_db::find_by_id(&pool, &input.alerta_id).await?;
+    Ok(AlertaGafeteResponse::from(alerta))
 }
