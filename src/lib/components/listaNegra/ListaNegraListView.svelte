@@ -4,7 +4,7 @@
   import { fade, fly } from "svelte/transition";
   import ListaNegraListForm from "./ListaNegraListForm.svelte";
   import ListaNegraForm from "./ListaNegraForm.svelte";
-  import UnblockModal from "./ListaNegraUnblockModal.svelte";
+  import BlacklistConfirmModal from "./blacklistForm/BlacklistConfirmModal.svelte";
   import * as listaNegraService from "$lib/logic/listaNegra/listaNegraService";
   import { selectedSearchStore } from "$lib/stores/searchStore";
   import type {
@@ -34,6 +34,11 @@
   let showAddModal = $state(false);
   let selectedBloqueado = $state<ListaNegraResponse | null>(null);
   let addFormLoading = $state(false);
+
+  // Estados para modal de desbloqueo
+  let showUnblockModal = $state(false);
+  let motivoDesbloqueo = $state("");
+  let observacionesDesbloqueo = $state("");
 
   // Lógica de presentación
   const listLogic = createListaNegraListLogic();
@@ -110,6 +115,9 @@
 
   function handleUnblock(bloqueado: ListaNegraResponse) {
     selectedBloqueado = bloqueado;
+    showUnblockModal = true;
+    motivoDesbloqueo = "";
+    observacionesDesbloqueo = "";
   }
 
   async function handleUnblockSubmit(data: {
@@ -200,7 +208,22 @@
   }
 
   function closeUnblockModal() {
+    showUnblockModal = false;
     selectedBloqueado = null;
+    motivoDesbloqueo = "";
+    observacionesDesbloqueo = "";
+  }
+
+  async function confirmUnblock() {
+    if (!selectedBloqueado) return;
+
+    await handleUnblockSubmit({
+      id: selectedBloqueado.id,
+      motivoDesbloqueo,
+      observaciones: observacionesDesbloqueo.trim() || undefined,
+    });
+
+    closeUnblockModal();
   }
 
   $effect(() => {
@@ -261,10 +284,13 @@
 {/if}
 
 <!-- Modal para desbloquear/rebloquear -->
-{#if selectedBloqueado}
-  <UnblockModal
-    bloqueado={selectedBloqueado}
-    onUnblock={handleUnblockSubmit}
-    onClose={closeUnblockModal}
-  />
-{/if}
+<BlacklistConfirmModal
+  show={showUnblockModal}
+  contratistaName={selectedBloqueado?.nombreCompleto || ""}
+  motivo={motivoDesbloqueo}
+  observaciones={observacionesDesbloqueo}
+  onConfirm={confirmUnblock}
+  onCancel={closeUnblockModal}
+  onMotivoChange={(v) => (motivoDesbloqueo = v)}
+  onObservacionesChange={(v) => (observacionesDesbloqueo = v)}
+/>
