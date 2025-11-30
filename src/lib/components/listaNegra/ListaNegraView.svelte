@@ -1,8 +1,8 @@
 <script lang="ts">
   import { toast } from "svelte-5-french-toast";
 
-  import ListaNegraForm from "$lib/components/listaNegra/Listanegraform.svelte";
-  import type ListaNegraFormType from "$lib/components/listaNegra/Listanegraform.svelte";
+  import ListaNegraForm from "$lib/components/listaNegra/ListaNegraForm.svelte";
+  import type ListaNegraFormType from "$lib/components/listaNegra/ListaNegraForm.svelte";
 
   import type { AddToListaNegraInput } from "$lib/types/listaNegra";
   import * as listaNegraService from "$lib/logic/listaNegra/listaNegraService";

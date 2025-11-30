@@ -3,10 +3,8 @@
   import { Users, UserPlus, Edit3, BarChart3, Home } from "lucide-svelte";
   import { openView, activePanel } from "../../../../stores/sidebar";
 
-  // Tipos para las acciones del panel
   type PanelAction = () => void;
 
-  // Función para manejar teclado
   function handleKeydown(e: KeyboardEvent, action: PanelAction): void {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -14,16 +12,13 @@
     }
   }
 
-  // Wrapper para acciones que cierra el panel después de ejecutar
   function executeAndClose(action: PanelAction): PanelAction {
     return () => {
       action();
-      // Cerrar inmediatamente - la animación se encarga de la suavidad
       activePanel.set(null);
     };
   }
 
-  // Definición de items del panel para mejor mantenibilidad
   interface PanelMenuItem {
     icon: typeof Users;
     label: string;
@@ -78,39 +73,23 @@
       ],
     },
   ];
-
-  // Clases compartidas
-  const sectionTitleClasses =
-    "px-[15px] pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-[#858585]";
-  const menuItemClasses = `
-    group flex w-full items-center gap-2 rounded-none border-none bg-transparent 
-    px-[15px] py-1.5 text-left text-[13px] text-[#cccccc] cursor-pointer
-    transition-all duration-100 ease-in-out
-    hover:bg-[#2a2d2e]
-    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500
-    active:scale-[0.99]
-  `;
 </script>
 
 {#each sections as section}
-  <div class="mb-4">
-    <div class={sectionTitleClasses}>
+  <div class="panel-section">
+    <div class="panel-section-title">
       {section.title}
     </div>
 
     {#each section.items as item}
       <button
-        class={menuItemClasses}
+        class="panel-item"
         on:click={item.action}
         on:keydown={(e) => handleKeydown(e, item.action)}
         type="button"
       >
-        <svelte:component
-          this={item.icon}
-          size={16}
-          class="transition-transform duration-150 group-hover:scale-110"
-        />
-        <span class="transition-colors duration-150">
+        <svelte:component this={item.icon} size={16} />
+        <span>
           {item.label}
         </span>
       </button>

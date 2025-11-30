@@ -3,6 +3,7 @@
   import { activeView } from "$lib/stores/ui";
   import { isAuthenticated, logout, currentUser } from "$lib/stores/auth";
   import { resetTabs } from "$lib/stores/tabs";
+  import { themeStore } from "$lib/stores/themeStore";
 
   // Importar iconos directamente
   import {
@@ -12,6 +13,8 @@
     Settings,
     LogOut,
     HardHat,
+    Sun,
+    Moon,
   } from "lucide-svelte";
 
   // Componentes
@@ -101,10 +104,7 @@
 
 <div class="flex h-full">
   <!-- Barra lateral de iconos -->
-  <div
-    class="flex w-[52px] flex-col justify-between border-r border-[#1f1f1f]
-              bg-[#2d2d2d] py-1.5"
-  >
+  <div class="sidebar-icons">
     <div class="flex flex-col gap-1.5">
       {#each sidebarItems as item}
         <SidebarIcon
@@ -115,34 +115,36 @@
       {/each}
     </div>
 
-    <div class="flex flex-col items-center gap-2 pb-2">
-      <button
-        class="flex h-8 w-8 items-center justify-center rounded-full border-none
-               bg-[#764ba2] text-[13px] font-semibold text-white cursor-pointer
-               transition-all duration-200
-               hover:bg-[#8c5fc3] hover:scale-105
-               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#2d2d2d]"
-        title={userName}
-      >
+    <div class="sidebar-bottom-actions">
+      <!-- User Avatar -->
+      <button class="user-avatar" title={userName}>
         {userInitials}
       </button>
 
+      <!-- Logout Button -->
       <button
         on:click={handleLogout}
-        class="group relative flex h-7 w-4/5 items-center justify-center rounded-md
-               border-none bg-transparent text-[#bbb] cursor-pointer
-               transition-colors duration-150
-               hover:bg-[#3a3a3a] hover:text-white
-               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#2d2d2d]"
+        class="sidebar-action-btn group"
+        title="Cerrar sesión"
       >
         <LogOut size={20} />
-        <span
-          class="absolute left-[52px] z-[1000] hidden whitespace-nowrap rounded
-                     bg-[#3a3a3a] px-2 py-1 text-[11.5px] shadow-lg
-                     animate-in fade-in slide-in-from-left-1 duration-150
-                     group-hover:block"
-        >
-          Cerrar sesión
+        <span class="sidebar-tooltip"> Cerrar sesión </span>
+      </button>
+
+      <!-- Theme Toggle -->
+      <button
+        on:click={() =>
+          themeStore.update((t) => (t === "dark" ? "light" : "dark"))}
+        class="sidebar-action-btn group"
+        title={$themeStore === "dark" ? "Modo Claro" : "Modo Oscuro"}
+      >
+        {#if $themeStore === "dark"}
+          <Moon size={20} />
+        {:else}
+          <Sun size={20} />
+        {/if}
+        <span class="sidebar-tooltip">
+          {$themeStore === "dark" ? "Modo Claro" : "Modo Oscuro"}
         </span>
       </button>
     </div>

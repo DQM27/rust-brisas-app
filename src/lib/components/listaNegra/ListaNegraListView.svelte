@@ -3,7 +3,7 @@
   import { onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
   import ListaNegraListForm from "./ListaNegraListForm.svelte";
-  import Listanegraform from "./Listanegraform.svelte";
+  import ListaNegraForm from "./ListaNegraForm.svelte";
   import UnblockModal from "./ListaNegraUnblockModal.svelte";
   import * as listaNegraService from "$lib/logic/listaNegra/listaNegraService";
   import { selectedSearchStore } from "$lib/stores/searchStore";
@@ -250,7 +250,7 @@
       class="relative z-10 w-full max-w-4xl"
       transition:fly={{ y: 20, duration: 300 }}
     >
-      <Listanegraform
+      <ListaNegraForm
         bind:this={formRef}
         loading={addFormLoading}
         onSubmit={handleAddSubmit}

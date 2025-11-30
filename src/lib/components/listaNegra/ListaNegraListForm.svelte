@@ -1,7 +1,14 @@
 <!-- src/lib/components/listaNegra/ListaNegraListForm.svelte -->
 <script lang="ts">
   import { fade } from "svelte/transition";
-  import { AlertCircle, Filter, Plus, UserX, ShieldAlert, RefreshCw } from "lucide-svelte";
+  import {
+    AlertCircle,
+    Filter,
+    Plus,
+    UserX,
+    ShieldAlert,
+    RefreshCw,
+  } from "lucide-svelte";
   import type { ListaNegraResponse } from "$lib/types/listaNegra";
   import type { SearchResult } from "$lib/types/search.types";
   import type { ColDef } from "@ag-grid-community/core";
@@ -77,7 +84,7 @@
   });
 
   const hasActiveFilters = $derived(
-    estadoFilter !== "todos" || tipoFilter !== "todos"
+    estadoFilter !== "todos" || tipoFilter !== "todos",
   );
 
   // Custom buttons por contexto
@@ -161,7 +168,9 @@
           onClick: () => {
             if (selected) onUnblock?.(selected);
           },
-          variant: selected?.isActive ? ("success" as const) : ("danger" as const),
+          variant: selected?.isActive
+            ? ("success" as const)
+            : ("danger" as const),
           tooltip: selected?.isActive
             ? "Desbloquear persona"
             : "Volver a bloquear persona",
@@ -202,13 +211,13 @@
 
 <svelte:window onclick={handleClickOutside} />
 
-<div class="flex h-full flex-col relative bg-[#1e1e1e]">
+<div class="flex h-full flex-col relative bg-surface-1">
   <!-- Header con SearchBar -->
-  <div class="border-b border-white/10 px-6 py-4 bg-[#252526]">
+  <div class="border-b border-surface px-6 py-4 bg-surface-2">
     <div class="flex items-center justify-between gap-4">
       <div>
-        <h2 class="text-xl font-semibold text-gray-100">Lista Negra</h2>
-        <p class="mt-1 text-sm text-gray-400">
+        <h2 class="text-xl font-semibold text-primary">Lista Negra</h2>
+        <p class="mt-1 text-sm text-secondary">
           Gestión de personas bloqueadas del acceso a las instalaciones
         </p>
       </div>
@@ -225,11 +234,11 @@
   </div>
 
   <!-- Content -->
-  <div class="flex-1 overflow-hidden relative bg-[#1e1e1e]">
+  <div class="flex-1 overflow-hidden relative bg-surface-1">
     {#if error}
       <div class="p-6">
         <div
-          class="flex items-center gap-3 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-red-400"
+          class="flex items-center gap-3 rounded-lg border border-error bg-error p-4 text-error"
           transition:fade
         >
           <AlertCircle size={20} />
@@ -240,10 +249,10 @@
         </div>
       </div>
     {:else if loading}
-      <div class="flex h-full items-center justify-center bg-[#1e1e1e]">
+      <div class="flex h-full items-center justify-center bg-surface-1">
         <div class="text-center">
           <svg
-            class="mx-auto h-8 w-8 animate-spin text-red-500"
+            class="mx-auto h-8 w-8 animate-spin text-error"
             fill="none"
             viewBox="0 0 24 24"
           >
@@ -261,17 +270,17 @@
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             />
           </svg>
-          <p class="mt-4 text-sm text-gray-400">Cargando lista negra...</p>
+          <p class="mt-4 text-sm text-secondary">Cargando lista negra...</p>
         </div>
       </div>
     {:else if bloqueados.length === 0}
-      <div class="flex h-full items-center justify-center bg-[#1e1e1e]">
+      <div class="flex h-full items-center justify-center bg-surface-1">
         <div class="text-center">
-          <UserX size={48} class="mx-auto text-gray-400" />
-          <p class="mt-4 text-lg font-medium text-gray-300">
+          <UserX size={48} class="mx-auto text-tertiary" />
+          <p class="mt-4 text-lg font-medium text-primary">
             No hay personas bloqueadas
           </p>
-          <p class="mt-2 text-sm text-gray-400">
+          <p class="mt-2 text-sm text-secondary">
             Las personas bloqueadas aparecerán aquí
           </p>
         </div>
@@ -292,27 +301,27 @@
   <div class="filter-dropdown-container">
     {#if showEstadoDropdown}
       <div
-        class="absolute top-16 left-6 z-50 bg-[#252526] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
+        class="absolute top-16 left-6 z-50 bg-surface-2 border border-surface rounded-lg shadow-2xl py-2 min-w-[200px]"
         transition:fade={{ duration: 150 }}
       >
         <button
           onclick={() => handleEstadoSelect("todos")}
-          class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors
-            {estadoFilter === 'todos' ? 'bg-blue-500/20 text-blue-400' : ''}"
+          class="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surface-hover transition-colors
+            {estadoFilter === 'todos' ? 'bg-accent-subtle text-accent' : ''}"
         >
           Todos los estados
         </button>
         <button
           onclick={() => handleEstadoSelect("activo")}
-          class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors
-            {estadoFilter === 'activo' ? 'bg-blue-500/20 text-blue-400' : ''}"
+          class="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surface-hover transition-colors
+            {estadoFilter === 'activo' ? 'bg-accent-subtle text-accent' : ''}"
         >
           Bloqueados activos
         </button>
         <button
           onclick={() => handleEstadoSelect("inactivo")}
-          class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors
-            {estadoFilter === 'inactivo' ? 'bg-blue-500/20 text-blue-400' : ''}"
+          class="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surface-hover transition-colors
+            {estadoFilter === 'inactivo' ? 'bg-accent-subtle text-accent' : ''}"
         >
           Desbloqueados
         </button>
@@ -321,27 +330,27 @@
 
     {#if showTipoDropdown}
       <div
-        class="absolute top-16 left-52 z-50 bg-[#252526] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
+        class="absolute top-16 left-52 z-50 bg-surface-2 border border-surface rounded-lg shadow-2xl py-2 min-w-[200px]"
         transition:fade={{ duration: 150 }}
       >
         <button
           onclick={() => handleTipoSelect("todos")}
-          class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors
-            {tipoFilter === 'todos' ? 'bg-blue-500/20 text-blue-400' : ''}"
+          class="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surface-hover transition-colors
+            {tipoFilter === 'todos' ? 'bg-accent-subtle text-accent' : ''}"
         >
           Todos los tipos
         </button>
         <button
           onclick={() => handleTipoSelect("permanente")}
-          class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors
-            {tipoFilter === 'permanente' ? 'bg-blue-500/20 text-blue-400' : ''}"
+          class="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surface-hover transition-colors
+            {tipoFilter === 'permanente' ? 'bg-accent-subtle text-accent' : ''}"
         >
           Permanentes
         </button>
         <button
           onclick={() => handleTipoSelect("temporal")}
-          class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors
-            {tipoFilter === 'temporal' ? 'bg-blue-500/20 text-blue-400' : ''}"
+          class="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surface-hover transition-colors
+            {tipoFilter === 'temporal' ? 'bg-accent-subtle text-accent' : ''}"
         >
           Temporales
         </button>
