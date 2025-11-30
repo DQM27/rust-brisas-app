@@ -92,7 +92,7 @@ pub async fn count_by_numero(pool: &SqlitePool, numero: &str) -> Result<i32, Str
 pub async fn is_en_uso(pool: &SqlitePool, numero: &str) -> Result<bool, String> {
     let row = sqlx::query(
         "SELECT COUNT(*) as count FROM ingresos 
-         WHERE gafete_numero = ? AND fecha_salida IS NULL"
+         WHERE gafete_numero = ? AND fecha_hora_salida IS NULL"
     )
     .bind(numero)
     .fetch_one(pool)

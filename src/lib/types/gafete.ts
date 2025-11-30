@@ -1,44 +1,44 @@
 import { z } from 'zod';
 
 // ==========================================
-// ESQUEMAS (VALIDACIÓN)
+// ENUMS
 // ==========================================
 
 export const TipoGafeteEnum = z.enum(['contratista', 'proveedor', 'visita', 'otro']);
+export type TipoGafete = z.infer<typeof TipoGafeteEnum>;
 
-export const GafeteSchema = z.object({
-    numero: z.string(),
-    tipo: TipoGafeteEnum,
-    tipoDisplay: z.string().optional(), // Mapped from tipo_display
-    estaDisponible: z.boolean().default(false), // Mapped from esta_disponible
-    createdAt: z.string(),
-    updatedAt: z.string(),
-});
+// ==========================================
+// SCHEMAS DE VALIDACIÓN
+// ==========================================
 
 export const CreateGafeteSchema = z.object({
-    numero: z.string().min(1, "El número de gafete es requerido").max(50),
-    tipo: z.string().refine((val) => ['contratista', 'proveedor', 'visita', 'otro'].includes(val.toLowerCase()), {
-        message: "Tipo de gafete inválido. Valores permitidos: contratista, proveedor, visita, otro"
-    }),
+    numero: z.string()
+        .min(1, "El número de gafete es requerido")
+        .max(50, "El número no puede exceder 50 caracteres")
+        .transform(val => val.trim()),  // Bonus: eliminar espacios
+    tipo: TipoGafeteEnum
 });
 
 export const UpdateGafeteSchema = z.object({
-    tipo: z.string().refine((val) => ['contratista', 'proveedor', 'visita', 'otro'].includes(val.toLowerCase()), {
-        message: "Tipo de gafete inválido"
-    }).optional(),
+    tipo: TipoGafeteEnum.optional()
 });
 
+// No necesitas GafeteSchema completo aquí, solo los inputs
+
 // ==========================================
-// TIPOS INFERIDOS (TYPESCRIPT)
+// TIPOS INFERIDOS
 // ==========================================
 
-export type Gafete = z.infer<typeof GafeteSchema>;
 export type CreateGafeteInput = z.infer<typeof CreateGafeteSchema>;
 export type UpdateGafeteInput = z.infer<typeof UpdateGafeteSchema>;
 
+// ==========================================
+// INTERFACES DE RESPUESTA
+// ==========================================
+
 export interface GafeteResponse {
     numero: string;
-    tipo: string; // "contratista" | "proveedor" ...
+    tipo: TipoGafete;
     tipoDisplay: string;
     estaDisponible: boolean;
     createdAt: string;
