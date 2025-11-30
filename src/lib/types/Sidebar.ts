@@ -15,6 +15,10 @@ export type ComponentKey =
   | 'user-register'
   | 'dashboard'
   | 'contratista'
+  | 'contratista-list'
   | 'lista-negra'
+  | 'lista-negra-list'
+  | 'blacklist-import'
 
-  | 'blacklist-import';
+  | 'gafete-list'
+  | 'ingreso-list';

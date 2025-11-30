@@ -1,6 +1,14 @@
 <!-- src/lib/components/layout/sidebar/panels/AccessPanel.svelte -->
 <script lang="ts">
-  import { Lock, BarChart3, Shield, FileText, Ban } from "lucide-svelte";
+  import {
+    Lock,
+    BarChart3,
+    Shield,
+    FileText,
+    Ban,
+    BadgeCheck,
+    LogIn,
+  } from "lucide-svelte";
   import { openView, activePanel } from "../../../../stores/sidebar";
 
   function handleKeydown(e: KeyboardEvent, action: () => void) {
@@ -45,6 +53,34 @@
   >
     <svelte:component this={Ban} size={16} />
     <span>Lista negra</span>
+  </button>
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() =>
+      openView("gafete-list", "Gestión de Gafetes"),
+    )}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() => openView("gafete-list", "Gestión de Gafetes")),
+      )}
+  >
+    <svelte:component this={BadgeCheck} size={16} />
+    <span>Gafetes</span>
+  </button>
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() =>
+      openView("ingreso-list", "Control de Ingresos"),
+    )}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() => openView("ingreso-list", "Control de Ingresos")),
+      )}
+  >
+    <svelte:component this={LogIn} size={16} />
+    <span>Ingresos</span>
   </button>
   <button
     class="panel-item"

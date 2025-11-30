@@ -1,9 +1,9 @@
 // src/lib/stores/agGridSettings.svelte.ts
 
-import type { 
-  AGGridTheme, 
-  AGGridFont, 
-  GridId, 
+import type {
+  AGGridTheme,
+  AGGridFont,
+  GridId,
   GridConfiguration,
   RowHeight,
   ToolbarButtonsConfig,
@@ -94,33 +94,33 @@ class AGGridSettingsStore {
 
   getTheme(gridId: GridId): AGGridTheme {
     this.version;
-    const config = this.getOrCreateConfiguration(gridId);
-    return config.theme;
+    const config = this.getConfiguration(gridId);
+    return config?.theme ?? this.settings.defaultTheme;
   }
 
   setTheme(gridId: GridId, theme: AGGridTheme): void {
     const config = this.getOrCreateConfiguration(gridId);
-    
+
     // Crear nuevo objeto para forzar reactividad
     const newConfig = { ...config, theme };
     this.settings.configurations.set(gridId, newConfig);
-    
+
     this.saveToStorage();
     this.triggerUpdate();
   }
 
   getFont(gridId: GridId): AGGridFont {
     this.version;
-    const config = this.getOrCreateConfiguration(gridId);
-    return config.font;
+    const config = this.getConfiguration(gridId);
+    return config?.font ?? this.settings.defaultFont;
   }
 
   setFont(gridId: GridId, font: AGGridFont): void {
     const config = this.getOrCreateConfiguration(gridId);
-    
+
     const newConfig = { ...config, font };
     this.settings.configurations.set(gridId, newConfig);
-    
+
     this.saveToStorage();
     this.triggerUpdate();
   }
@@ -145,11 +145,14 @@ class AGGridSettingsStore {
   // ============================================
 
   getButtonsConfig(
-    gridId: GridId, 
+    gridId: GridId,
     context: 'default' | 'singleSelect' | 'multiSelect'
   ): ToolbarButtonsConfig {
     this.version;
-    const config = this.getOrCreateConfiguration(gridId);
+    const config = this.getConfiguration(gridId);
+    if (!config) {
+      return { order: [], hidden: [] };
+    }
     return config.buttons[context];
   }
 
@@ -159,7 +162,7 @@ class AGGridSettingsStore {
     order: string[]
   ): void {
     const config = this.getOrCreateConfiguration(gridId);
-    
+
     // Crear nuevo objeto para forzar reactividad
     const newConfig = {
       ...config,
@@ -171,7 +174,7 @@ class AGGridSettingsStore {
         }
       }
     };
-    
+
     this.settings.configurations.set(gridId, newConfig);
     this.saveToStorage();
     this.triggerUpdate();
@@ -183,7 +186,7 @@ class AGGridSettingsStore {
     hidden: string[]
   ): void {
     const config = this.getOrCreateConfiguration(gridId);
-    
+
     // Crear nuevo objeto para forzar reactividad
     const newConfig = {
       ...config,
@@ -195,7 +198,7 @@ class AGGridSettingsStore {
         }
       }
     };
-    
+
     this.settings.configurations.set(gridId, newConfig);
     this.saveToStorage();
     this.triggerUpdate();
@@ -219,16 +222,16 @@ class AGGridSettingsStore {
 
   getColumnsConfig(gridId: GridId): AGGridColumnConfig[] {
     this.version;
-    const config = this.getOrCreateConfiguration(gridId);
-    return config.columns;
+    const config = this.getConfiguration(gridId);
+    return config?.columns ?? [];
   }
 
   setColumnsConfig(gridId: GridId, columns: AGGridColumnConfig[]): void {
     const config = this.getOrCreateConfiguration(gridId);
-    
+
     const newConfig = { ...config, columns };
     this.settings.configurations.set(gridId, newConfig);
-    
+
     this.saveToStorage();
     this.triggerUpdate();
   }
@@ -239,48 +242,48 @@ class AGGridSettingsStore {
 
   getRowHeight(gridId: GridId): RowHeight {
     this.version;
-    const config = this.getOrCreateConfiguration(gridId);
-    return config.rowHeight;
+    const config = this.getConfiguration(gridId);
+    return config?.rowHeight ?? 'normal';
   }
 
   setRowHeight(gridId: GridId, height: RowHeight): void {
     const config = this.getOrCreateConfiguration(gridId);
-    
+
     const newConfig = { ...config, rowHeight: height };
     this.settings.configurations.set(gridId, newConfig);
-    
+
     this.saveToStorage();
     this.triggerUpdate();
   }
 
   getPaginationSize(gridId: GridId): number {
     this.version;
-    const config = this.getOrCreateConfiguration(gridId);
-    return config.paginationSize;
+    const config = this.getConfiguration(gridId);
+    return config?.paginationSize ?? 50;
   }
 
   setPaginationSize(gridId: GridId, size: number): void {
     const config = this.getOrCreateConfiguration(gridId);
-    
+
     const newConfig = { ...config, paginationSize: size };
     this.settings.configurations.set(gridId, newConfig);
-    
+
     this.saveToStorage();
     this.triggerUpdate();
   }
 
   getConfirmations(gridId: GridId): ConfirmationsConfig {
     this.version;
-    const config = this.getOrCreateConfiguration(gridId);
-    return config.confirmations;
+    const config = this.getConfiguration(gridId);
+    return config?.confirmations ?? { deleteRecords: true, dontAskAgain: false };
   }
 
   setConfirmations(gridId: GridId, confirmations: ConfirmationsConfig): void {
     const config = this.getOrCreateConfiguration(gridId);
-    
+
     const newConfig = { ...config, confirmations };
     this.settings.configurations.set(gridId, newConfig);
-    
+
     this.saveToStorage();
     this.triggerUpdate();
   }
@@ -300,16 +303,16 @@ class AGGridSettingsStore {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        
+
         if (parsed.configurations) {
           const entries = Object.entries(parsed.configurations) as [GridId, GridConfiguration][];
           this.settings.configurations = new Map(entries);
         }
-        
+
         if (parsed.defaultTheme) {
           this.settings.defaultTheme = parsed.defaultTheme;
         }
-        
+
         if (parsed.defaultFont) {
           this.settings.defaultFont = parsed.defaultFont;
         }

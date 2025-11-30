@@ -9,4 +9,7 @@ export type ComponentKey =
   | 'contratista-list'
   | 'lista-negra'
   | 'lista-negra-list'
-  | 'blacklist-import';
+  | 'blacklist-import'
+
+  | 'gafete-list'
+  | 'ingreso-list';

@@ -20,8 +20,8 @@ export const ingreso = {
     /**
      * Validar si un contratista puede ingresar
      */
-    validarIngresoContratista: async (cedula: string): Promise<ValidacionIngresoResponse> => {
-        return await invoke('validar_ingreso_contratista', { cedula });
+    validarIngresoContratista: async (contratistaId: string): Promise<ValidacionIngresoResponse> => {
+        return await invoke('validar_ingreso_contratista', { contratistaId });
     },
 
     /**

@@ -14,6 +14,9 @@ import ListaNegraView from '$lib/components/listaNegra/ListaNegraView.svelte';
 import ListaNegraListView from '$lib/components/listaNegra/ListaNegraListView.svelte';
 import BlacklistImportView from '$lib/components/BlacklistImport/BlacklistImportView.svelte';
 
+import GafeteListView from '$lib/components/gafete/GafeteListView.svelte';
+import IngresoListView from '$lib/components/ingreso/IngresoListView.svelte';
+
 /**
  * Registry central de componentes
  * Permite serializar tabs y reconstruirlos después
@@ -30,6 +33,9 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'lista-negra': ListaNegraView,
   'lista-negra-list': ListaNegraListView,
   'blacklist-import': BlacklistImportView,
+
+  'gafete-list': GafeteListView,
+  'ingreso-list': IngresoListView,
 };
 
 /**

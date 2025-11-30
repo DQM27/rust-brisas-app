@@ -33,9 +33,10 @@ export const gafete = {
 
     /**
      * Obtener gafetes disponibles (que no están en uso)
+     * @param tipo - Tipo de gafete (opcional, '' para todos)
      */
-    getDisponibles: async (): Promise<GafeteResponse[]> => {
-        return await invoke('get_gafetes_disponibles');
+    getDisponibles: async (tipo: string = ''): Promise<GafeteResponse[]> => {
+        return await invoke('get_gafetes_disponibles', { tipo });
     },
 
     /**
