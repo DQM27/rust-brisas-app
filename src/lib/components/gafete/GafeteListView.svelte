@@ -16,7 +16,9 @@
   let selectedGafete: GafeteResponse | null = null;
   let formLoading = false;
 
-  // Configuración de columnas AG Grid
+  // ==========================================
+  // COLUMNAS AG GRID
+  // ==========================================
   const columnDefs: ColDef<GafeteResponse>[] = [
     {
       field: "numero",
@@ -25,6 +27,8 @@
       filter: true,
       cellStyle: { fontWeight: "bold" },
     },
+
+    // ========= TIPO (con badges pastel modernos) =========
     {
       field: "tipoDisplay",
       headerName: "Tipo",
@@ -32,29 +36,35 @@
       filter: true,
       cellRenderer: (params: any) => {
         const tipo = params.data.tipo;
-        let colorClass = "bg-gray-100 text-gray-800";
+        let colorClass = "";
 
         switch (tipo) {
           case "contratista":
             colorClass =
-              "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+              "bg-indigo-100 text-indigo-700 border border-indigo-300 dark:bg-indigo-900 dark:text-indigo-200";
             break;
           case "proveedor":
             colorClass =
-              "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+              "bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-900 dark:text-amber-200";
             break;
           case "visita":
             colorClass =
-              "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+              "bg-emerald-100 text-emerald-700 border border-emerald-300 dark:bg-emerald-900 dark:text-emerald-200";
             break;
           default:
             colorClass =
-              "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+              "bg-gray-200 text-gray-700 border border-gray-400 dark:bg-gray-700 dark:text-gray-200";
         }
 
-        return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClass}">${params.value}</span>`;
+        return `
+          <span class="px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${colorClass}">
+            ${params.value}
+          </span>
+        `;
       },
     },
+
+    // ========= ESTADO (rediseñado) =========
     {
       field: "estaDisponible",
       headerName: "Estado",
@@ -62,16 +72,26 @@
       filter: true,
       cellRenderer: (params: any) => {
         return params.value
-          ? `<span class="text-green-600 font-medium">Disponible</span>`
-          : `<span class="text-red-500 font-medium">En Uso</span>`;
+          ? `
+              <span class="px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-300 dark:bg-emerald-900 dark:text-emerald-200">
+                ✔ Disponible
+              </span>
+            `
+          : `
+              <span class="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-300 dark:bg-red-900 dark:text-red-200">
+                ✖ En Uso
+              </span>
+            `;
       },
     },
+
+    // ========= ACCIONES =========
     {
       headerName: "Acciones",
       width: 120,
       cellRenderer: (params: any) => {
         return `
-          <button class="text-blue-600 hover:text-blue-900 mr-3 edit-btn">Editar</button>
+          <button class="text-indigo-600 hover:text-indigo-900 mr-3 edit-btn">Editar</button>
           <button class="text-red-600 hover:text-red-900 delete-btn">Eliminar</button>
         `;
       },
@@ -86,7 +106,9 @@
     },
   ];
 
+  // ==========================================
   // Cargar datos
+  // ==========================================
   async function loadGafetes() {
     loading = true;
     const result = await gafeteService.fetchAll();
@@ -98,7 +120,9 @@
     loading = false;
   }
 
+  // ==========================================
   // Manejadores
+  // ==========================================
   function handleNew() {
     selectedGafete = null;
     showModal = true;
@@ -148,21 +172,23 @@
   });
 </script>
 
+<!-- ========================================== -->
+<!-- LAYOUT -->
+<!-- ========================================== -->
 <div class="h-full flex flex-col space-y-4 p-4">
-  <!-- Header -->
   <div class="flex justify-between items-center">
     <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
       Gestión de Gafetes
     </h1>
+
     <button
       on:click={handleNew}
-      class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+      class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
     >
       + Nuevo Gafete
     </button>
   </div>
 
-  <!-- Tabla -->
   <div
     class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden"
   >
@@ -175,7 +201,9 @@
   </div>
 </div>
 
-<!-- Modal -->
+<!-- ========================================== -->
+<!-- MODAL -->
+<!-- ========================================== -->
 {#if showModal}
   <div
     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
