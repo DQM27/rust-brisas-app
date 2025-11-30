@@ -12,7 +12,7 @@ import ContratistaView from '$lib/components/contratista/ContratistaView.svelte'
 import ContratistaListView from '$lib/components/contratista/ContratistaListView.svelte';
 import ListaNegraView from '$lib/components/listaNegra/ListaNegraView.svelte';
 import ListaNegraListView from '$lib/components/listaNegra/ListaNegraListView.svelte';
-import BlacklistImportView from '$lib/components/BlacklistImportView.svelte';
+import BlacklistImportView from '$lib/components/BlacklistImport/BlacklistImportView.svelte';
 
 /**
  * Registry central de componentes

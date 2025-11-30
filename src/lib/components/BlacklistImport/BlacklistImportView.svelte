@@ -1,9 +1,9 @@
 <!-- $lib/components/BlacklistImportView.svelte -->
 <script lang="ts">
-  import BlacklistImportContainer from './BlacklistImport/BlacklistImportContainer.svelte';
-  import { currentUser } from '$lib/stores/auth';
+  import BlacklistImportContainer from "./BlacklistImportContainer.svelte";
+  import { currentUser } from "$lib/stores/auth";
 
-  const userId = $derived($currentUser?.id || '');
+  const userId = $derived($currentUser?.id || "");
 
   // Si no hay usuario, mostrar mensaje
   const hasUser = $derived(!!$currentUser);
