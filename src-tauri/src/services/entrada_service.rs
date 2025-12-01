@@ -3,8 +3,8 @@
 // ==========================================
 // Orquesta DB + Dominio para la fase de ENTRADA
 
-use crate::db::{alerta_gafete_queries as alerta_db, contratista_queries, ingreso_queries as db};
 use crate::db::lista_negra_queries;
+use crate::db::{alerta_gafete_queries as alerta_db, contratista_queries, ingreso_queries as db};
 use crate::domain::ingreso::validaciones_entrada as domain;
 use crate::models::ingreso::{
     CreateIngresoContratistaInput, IngresoResponse, ModoIngreso, TipoAutorizacion, TipoIngreso,
@@ -20,7 +20,7 @@ use uuid::Uuid;
 // ==========================================
 
 /// Valida si un contratista puede ingresar
-/// 
+///
 /// Orquesta:
 /// 1. Consultas a DB (lista negra, ingreso abierto, datos contratista, alertas)
 /// 2. Validaciones de dominio (elegibilidad)
@@ -84,7 +84,13 @@ pub async fn validar_ingreso_contratista(
         cantidad_alertas,
     );
 
-    // 7. Construir respuesta
+    // 7. Obtener vehículos del contratista (si es elegible o tiene rechazo pero existe)
+    // Esto es necesario para que el frontend pueda mostrar el selector de vehículos
+    let vehiculos = crate::db::vehiculo_queries::find_by_contratista(pool, &contratista_id)
+        .await
+        .unwrap_or_default(); // Si falla, simplemente lista vacía
+
+    // 8. Construir respuesta
     let contratista_json = if resultado.puede_ingresar || resultado.motivo_rechazo.is_some() {
         Some(serde_json::json!({
             "id": contratista.id,
@@ -95,6 +101,7 @@ pub async fn validar_ingreso_contratista(
             "estado": contratista.estado,
             "praind_vigente": praind_vigente,
             "fecha_vencimiento_praind": contratista.fecha_vencimiento_praind,
+            "vehiculos": vehiculos // Incluimos los vehículos aquí
         }))
     } else {
         None
@@ -115,7 +122,7 @@ pub async fn validar_ingreso_contratista(
 // ==========================================
 
 /// Crea un nuevo registro de ingreso para un contratista
-/// 
+///
 /// Orquesta:
 /// 1. Validaciones de dominio (input, praind, gafete)
 /// 2. Verificación de duplicados
@@ -148,13 +155,13 @@ pub async fn crear_ingreso_contratista(
     // 5. Validar y normalizar gafete si se proporciona
     let gafete_normalizado = if let Some(ref g) = input.gafete_numero {
         let normalizado = domain::normalizar_numero_gafete(g);
-        
+
         // Validar disponibilidad en DB
         let disponible = gafete_service::is_gafete_disponible(pool, &normalizado).await?;
         if !disponible {
             return Err(format!("Gafete {} no está disponible", normalizado));
         }
-        
+
         Some(normalizado)
     } else {
         None

@@ -52,6 +52,12 @@
           : "-",
     },
     {
+      field: "vehiculoPlaca",
+      headerName: "Vehículo",
+      width: 120,
+      valueFormatter: (params) => params.value || "-",
+    },
+    {
       field: "fechaHoraIngreso",
       headerName: "Entrada",
       width: 140,

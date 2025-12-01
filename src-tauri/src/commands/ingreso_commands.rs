@@ -4,14 +4,14 @@
 // Comandos generales de consulta de ingresos
 // (Los comandos de entrada/salida están en sus propios módulos)
 
+use crate::db::alerta_gafete_queries as alerta_db;
+use crate::db::ingreso_queries as db;
 use crate::models::ingreso::{
     AlertaGafeteResponse, IngresoListResponse, IngresoResponse, ResolverAlertaInput,
 };
-use crate::db::ingreso_queries as db;
-use crate::db::alerta_gafete_queries as alerta_db;
+use chrono::Utc;
 use sqlx::SqlitePool;
 use tauri::State;
-use chrono::Utc;
 
 // ==========================================
 // CONSULTAS GENERALES DE INGRESOS
@@ -37,11 +37,14 @@ pub async fn get_ingreso_by_id(
 /// Obtiene todos los ingresos (limitado a 500)
 #[tauri::command]
 pub async fn get_all_ingresos(pool: State<'_, SqlitePool>) -> Result<IngresoListResponse, String> {
-    let ingresos = db::find_all(&pool).await?;
+    let results = db::find_all_with_details(&pool).await?;
 
     let mut responses = Vec::new();
-    for ingreso in ingresos {
-        let response = IngresoResponse::from(ingreso);
+    for (ingreso, details) in results {
+        let mut response = IngresoResponse::from(ingreso);
+        response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
+        response.usuario_salida_nombre = details.usuario_salida_nombre;
+        response.vehiculo_placa = details.vehiculo_placa;
         responses.push(response);
     }
 
@@ -65,11 +68,14 @@ pub async fn get_all_ingresos(pool: State<'_, SqlitePool>) -> Result<IngresoList
 pub async fn get_ingresos_abiertos(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<IngresoResponse>, String> {
-    let ingresos = db::find_ingresos_abiertos(&pool).await?;
+    let results = db::find_ingresos_abiertos_with_details(&pool).await?;
 
     let mut responses = Vec::new();
-    for ingreso in ingresos {
-        let response = IngresoResponse::from(ingreso);
+    for (ingreso, details) in results {
+        let mut response = IngresoResponse::from(ingreso);
+        response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
+        response.usuario_salida_nombre = details.usuario_salida_nombre;
+        response.vehiculo_placa = details.vehiculo_placa;
         responses.push(response);
     }
 

@@ -22,7 +22,7 @@ pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<Ingreso, String> 
     .await
     .map_err(|_| "Ingreso no encontrado".to_string())?;
 
-    Ok(row_to_ingreso(row)?)
+    Ok(row_to_ingreso(&row)?)
 }
 
 pub struct IngresoDetails {
@@ -49,11 +49,7 @@ pub async fn find_details_by_id(pool: &SqlitePool, id: &str) -> Result<IngresoDe
     .await
     .map_err(|e| format!("Error obteniendo detalles: {}", e))?;
 
-    Ok(IngresoDetails {
-        usuario_ingreso_nombre: row.get("usuario_ingreso_nombre"),
-        usuario_salida_nombre: row.get("usuario_salida_nombre"),
-        vehiculo_placa: row.get("vehiculo_placa"),
-    })
+    Ok(extract_details(&row))
 }
 
 /// Busca ingreso abierto por cédula
@@ -75,7 +71,7 @@ pub async fn find_ingreso_abierto_by_cedula(
     .map_err(|e| format!("Error al buscar ingreso abierto: {}", e))?;
 
     match row {
-        Some(r) => Ok(Some(row_to_ingreso(r)?)),
+        Some(r) => Ok(Some(row_to_ingreso(&r)?)),
         None => Ok(None),
     }
 }
@@ -98,7 +94,7 @@ pub async fn find_ingreso_abierto_by_contratista(
     .await
     .map_err(|_| "No se encontró ingreso abierto para este contratista".to_string())?;
 
-    Ok(row_to_ingreso(row)?)
+    Ok(row_to_ingreso(&row)?)
 }
 
 /// Busca ingreso abierto por número de gafete
@@ -124,10 +120,10 @@ pub async fn find_ingreso_by_gafete(
         )
     })?;
 
-    Ok(row_to_ingreso(row)?)
+    Ok(row_to_ingreso(&row)?)
 }
 
-/// Obtiene todos los ingresos (limitado a 500)
+/// Obtiene todos los ingresos (limitado a 500) - SIN DETALLES
 pub async fn find_all(pool: &SqlitePool) -> Result<Vec<Ingreso>, String> {
     let rows = sqlx::query(
         "SELECT id, contratista_id, cedula, nombre, apellido, empresa_nombre,
@@ -141,7 +137,35 @@ pub async fn find_all(pool: &SqlitePool) -> Result<Vec<Ingreso>, String> {
     .await
     .map_err(|e| format!("Error al obtener ingresos: {}", e))?;
 
-    rows.into_iter().map(|row| row_to_ingreso(row)).collect()
+    rows.iter().map(|row| row_to_ingreso(row)).collect()
+}
+
+/// Obtiene todos los ingresos con detalles (JOINs)
+pub async fn find_all_with_details(
+    pool: &SqlitePool,
+) -> Result<Vec<(Ingreso, IngresoDetails)>, String> {
+    let rows = sqlx::query(
+        "SELECT i.*,
+                u_ingreso.nombre as usuario_ingreso_nombre,
+                u_salida.nombre as usuario_salida_nombre,
+                v.placa as vehiculo_placa
+         FROM ingresos i
+         LEFT JOIN users u_ingreso ON i.usuario_ingreso_id = u_ingreso.id
+         LEFT JOIN users u_salida ON i.usuario_salida_id = u_salida.id
+         LEFT JOIN vehiculos v ON i.vehiculo_id = v.id
+         ORDER BY i.fecha_hora_ingreso DESC LIMIT 500",
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| format!("Error al obtener ingresos con detalles: {}", e))?;
+
+    let mut results = Vec::new();
+    for row in rows {
+        let ingreso = row_to_ingreso(&row)?;
+        let details = extract_details(&row);
+        results.push((ingreso, details));
+    }
+    Ok(results)
 }
 
 /// Obtiene solo ingresos abiertos (personas adentro)
@@ -158,7 +182,36 @@ pub async fn find_ingresos_abiertos(pool: &SqlitePool) -> Result<Vec<Ingreso>, S
     .await
     .map_err(|e| format!("Error al obtener ingresos abiertos: {}", e))?;
 
-    rows.into_iter().map(|row| row_to_ingreso(row)).collect()
+    rows.iter().map(|row| row_to_ingreso(row)).collect()
+}
+
+/// Obtiene ingresos abiertos con detalles (JOINs)
+pub async fn find_ingresos_abiertos_with_details(
+    pool: &SqlitePool,
+) -> Result<Vec<(Ingreso, IngresoDetails)>, String> {
+    let rows = sqlx::query(
+        "SELECT i.*,
+                u_ingreso.nombre as usuario_ingreso_nombre,
+                u_salida.nombre as usuario_salida_nombre,
+                v.placa as vehiculo_placa
+         FROM ingresos i
+         LEFT JOIN users u_ingreso ON i.usuario_ingreso_id = u_ingreso.id
+         LEFT JOIN users u_salida ON i.usuario_salida_id = u_salida.id
+         LEFT JOIN vehiculos v ON i.vehiculo_id = v.id
+         WHERE i.fecha_hora_salida IS NULL 
+         ORDER BY i.fecha_hora_ingreso DESC",
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| format!("Error al obtener ingresos abiertos con detalles: {}", e))?;
+
+    let mut results = Vec::new();
+    for row in rows {
+        let ingreso = row_to_ingreso(&row)?;
+        let details = extract_details(&row);
+        results.push((ingreso, details));
+    }
+    Ok(results)
 }
 
 /// Cuenta ingresos abiertos de una cédula
@@ -278,7 +331,7 @@ pub async fn registrar_salida(
 // HELPERS INTERNOS
 // ==========================================
 
-fn row_to_ingreso(row: sqlx::sqlite::SqliteRow) -> Result<Ingreso, String> {
+fn row_to_ingreso(row: &sqlx::sqlite::SqliteRow) -> Result<Ingreso, String> {
     let praind_int: Option<i32> = row.get("praind_vigente_al_ingreso");
     let praind_vigente_al_ingreso = praind_int.map(|v| v != 0);
 
@@ -306,4 +359,12 @@ fn row_to_ingreso(row: sqlx::sqlite::SqliteRow) -> Result<Ingreso, String> {
         created_at: row.get("created_at"),
         updated_at: row.get("updated_at"),
     })
+}
+
+fn extract_details(row: &sqlx::sqlite::SqliteRow) -> IngresoDetails {
+    IngresoDetails {
+        usuario_ingreso_nombre: row.try_get("usuario_ingreso_nombre").ok(),
+        usuario_salida_nombre: row.try_get("usuario_salida_nombre").ok(),
+        vehiculo_placa: row.try_get("vehiculo_placa").ok(),
+    }
 }
