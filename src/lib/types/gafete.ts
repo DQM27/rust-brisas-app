@@ -41,6 +41,7 @@ export interface GafeteResponse {
     estaDisponible: boolean;
     status: string; // "disponible" | "en_uso" | "perdido"
     // Información de alerta (si está perdido)
+    alertaId?: string; // UUID de la alerta
     fechaPerdido?: string;
     quienPerdio?: string;
     alertaResuelta?: boolean;

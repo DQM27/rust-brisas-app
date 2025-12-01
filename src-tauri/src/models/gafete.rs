@@ -92,6 +92,7 @@ pub struct GafeteResponse {
     pub esta_disponible: bool,
     pub status: String, // "disponible", "en_uso", "perdido"
     // Información de alerta (si está perdido)
+    pub alerta_id: Option<String>, // UUID de la alerta
     pub fecha_perdido: Option<String>,
     pub quien_perdio: Option<String>,
     pub alerta_resuelta: Option<bool>,
@@ -107,6 +108,7 @@ impl From<Gafete> for GafeteResponse {
             tipo_display: g.tipo.display().to_string(),
             esta_disponible: false,             // Se calcula después con query
             status: String::from("disponible"), // Se calcula después
+            alerta_id: None,
             fecha_perdido: None,
             quien_perdio: None,
             alerta_resuelta: None,

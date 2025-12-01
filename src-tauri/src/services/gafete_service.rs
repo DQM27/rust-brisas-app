@@ -62,8 +62,10 @@ pub async fn get_gafete(pool: &SqlitePool, numero: &str) -> Result<GafeteRespons
     let mut response = GafeteResponse::from(gafete);
 
     // Obtener detalles de la alerta si existe
-    if let Ok(Some((fecha, nombre, resuelto))) = db::get_recent_alert_for_gafete(pool, numero).await
+    if let Ok(Some((alerta_id, fecha, nombre, resuelto))) =
+        db::get_recent_alert_for_gafete(pool, numero).await
     {
+        response.alerta_id = Some(alerta_id);
         response.fecha_perdido = Some(fecha);
         response.quien_perdio = Some(nombre);
         response.alerta_resuelta = Some(resuelto);
@@ -100,9 +102,10 @@ pub async fn get_all_gafetes(pool: &SqlitePool) -> Result<GafeteListResponse, St
         let mut response = GafeteResponse::from(gafete);
 
         // Obtener detalles de la alerta si existe
-        if let Ok(Some((fecha, nombre, resuelto))) =
+        if let Ok(Some((alerta_id, fecha, nombre, resuelto))) =
             db::get_recent_alert_for_gafete(pool, &response.numero).await
         {
+            response.alerta_id = Some(alerta_id);
             response.fecha_perdido = Some(fecha);
             response.quien_perdio = Some(nombre);
             response.alerta_resuelta = Some(resuelto);

@@ -144,7 +144,9 @@
               </svg>
               <span>
                 <strong>Gafete Pendiente:</strong> Debe el gafete
-                <span class="font-mono font-bold">{alerta.gafeteNumero}</span>
+                <span class="font-mono font-bold"
+                  >{alerta.gafeteNumero || alerta.gafete_numero || "N/A"}</span
+                >
               </span>
             </div>
           {/each}

@@ -215,9 +215,9 @@ pub async fn delete(pool: &SqlitePool, numero: &str) -> Result<(), String> {
 pub async fn get_recent_alert_for_gafete(
     pool: &SqlitePool,
     numero: &str,
-) -> Result<Option<(String, String, bool)>, String> {
+) -> Result<Option<(String, String, String, bool)>, String> {
     let row = sqlx::query(
-        "SELECT fecha_reporte, nombre_completo, resuelto 
+        "SELECT id, fecha_reporte, nombre_completo, resuelto 
          FROM alertas_gafetes 
          WHERE gafete_numero = ? 
          ORDER BY fecha_reporte DESC 
@@ -231,6 +231,7 @@ pub async fn get_recent_alert_for_gafete(
     Ok(row.map(|r| {
         let resuelto_int: i32 = r.get("resuelto");
         (
+            r.get("id"),
             r.get("fecha_reporte"),
             r.get("nombre_completo"),
             resuelto_int != 0,

@@ -6,8 +6,10 @@
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
 
   import * as gafeteService from "$lib/logic/gafete/gafeteService";
+  import * as alertaGafeteService from "$lib/logic/alertaGafete/alertaGafeteService";
   import type { GafeteResponse } from "$lib/types/gafete";
   import GafeteForm from "./GafeteForm.svelte";
+  import ResolveAlertModal from "./ResolveAlertModal.svelte";
 
   // Estado
   let gafetes: GafeteResponse[] = [];
@@ -15,6 +17,10 @@
   let showModal = false;
   let selectedGafete: GafeteResponse | null = null;
   let formLoading = false;
+
+  // Estado para modal de resolución de alertas
+  let showResolveModal = false;
+  let selectedAlertGafete: GafeteResponse | null = null;
 
   // ==========================================
   // COLUMNAS AG GRID
@@ -140,19 +146,24 @@
     // ========= ACCIONES =========
     {
       headerName: "Acciones",
-      width: 120,
+      width: 150,
       cellRenderer: (params: any) => {
-        return `
-          <button class="text-indigo-600 hover:text-indigo-900 mr-3 edit-btn">Editar</button>
-          <button class="text-red-600 hover:text-red-900 delete-btn">Eliminar</button>
-        `;
+        const status = params.data.status;
+
+        if (status === "perdido") {
+          return `
+            <button class="px-3 py-1 bg-green-100 text-green-700 rounded-md hover:bg-green-200 text-xs font-medium resolve-btn">
+              ✓ Resolver Alerta
+            </button>
+          `;
+        }
+
+        return `<span class="text-xs text-gray-400">-</span>`;
       },
       onCellClicked: (params: any) => {
         const event = params.event;
-        if (event.target.classList.contains("edit-btn")) {
-          handleEdit(params.data);
-        } else if (event.target.classList.contains("delete-btn")) {
-          handleDelete(params.data);
+        if (event.target.classList.contains("resolve-btn")) {
+          handleResolve(params.data);
         }
       },
     },
@@ -183,6 +194,35 @@
   function handleEdit(gafete: GafeteResponse) {
     selectedGafete = gafete;
     showModal = true;
+  }
+
+  function handleResolve(gafete: GafeteResponse) {
+    selectedAlertGafete = gafete;
+    showResolveModal = true;
+  }
+
+  async function handleResolveSubmit(notas: string, fechaDevolucion: string) {
+    if (!selectedAlertGafete?.alertaId) {
+      toast.error("No se encontró el ID de la alerta");
+      return;
+    }
+
+    formLoading = true;
+
+    const result = await alertaGafeteService.resolverAlerta(
+      selectedAlertGafete.alertaId,
+      `${notas} - Fecha de devolución/pago: ${fechaDevolucion}`,
+    );
+
+    if (result.ok) {
+      toast.success("Alerta resuelta correctamente");
+      showResolveModal = false;
+      selectedAlertGafete = null;
+      loadGafetes();
+    } else {
+      toast.error(result.error);
+    }
+    formLoading = false;
   }
 
   async function handleDelete(gafete: GafeteResponse) {
@@ -268,4 +308,18 @@
       on:cancel={() => (showModal = false)}
     />
   </div>
+{/if}
+
+<!-- ========================================== -->
+<!-- MODAL RESOLVER ALERTA -->
+<!-- ========================================== -->
+{#if showResolveModal && selectedAlertGafete}
+  <ResolveAlertModal
+    show={showResolveModal}
+    gafeteNumero={selectedAlertGafete.numero}
+    nombrePersona={selectedAlertGafete.quienPerdio || "Desconocido"}
+    fechaReporte={selectedAlertGafete.fechaPerdido || new Date().toISOString()}
+    onResolve={handleResolveSubmit}
+    onCancel={() => (showResolveModal = false)}
+  />
 {/if}
