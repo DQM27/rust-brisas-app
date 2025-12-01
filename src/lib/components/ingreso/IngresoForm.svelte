@@ -115,6 +115,9 @@
         $currentUser?.id || "00000000-0000-0000-0000-000000000000",
     };
 
+    console.log("[DEBUG] Usuario actual:", $currentUser);
+    console.log("[DEBUG] ID siendo enviado:", data.usuarioIngresoId);
+
     dispatch("submit", data);
 
     // Resetear solo los campos del formulario, mantener contratista

@@ -7,26 +7,32 @@
 
   const dispatch = createEventDispatcher();
 
-  let devolvioGafete = true;
+  let devolvioGafete = ingreso.gafeteNumero ? true : false;
   let observaciones = "";
 
   function handleSubmit() {
     dispatch("confirm", {
       ingresoId: ingreso.id,
       devolvioGafete,
-      observaciones: observaciones.trim() || undefined
+      observaciones: observaciones.trim() || undefined,
     });
   }
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-auto">
+<div
+  class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-auto"
+>
   <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">
     Registrar Salida
   </h2>
 
   <div class="mb-6">
-    <p class="text-sm text-gray-500 dark:text-gray-400">Confirmar salida para:</p>
-    <p class="text-lg font-medium text-gray-900 dark:text-white">{ingreso.nombreCompleto}</p>
+    <p class="text-sm text-gray-500 dark:text-gray-400">
+      Confirmar salida para:
+    </p>
+    <p class="text-lg font-medium text-gray-900 dark:text-white">
+      {ingreso.nombreCompleto}
+    </p>
     {#if ingreso.gafeteNumero}
       <p class="text-sm text-blue-600 dark:text-blue-400 mt-1">
         Gafete asignado: <span class="font-bold">{ingreso.gafeteNumero}</span>
@@ -36,21 +42,29 @@
 
   <form on:submit|preventDefault={handleSubmit} class="space-y-4">
     {#if ingreso.gafeteNumero}
-      <div class="flex items-center space-x-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md border border-yellow-200 dark:border-yellow-800">
+      <div
+        class="flex items-center space-x-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md border border-yellow-200 dark:border-yellow-800"
+      >
         <input
           type="checkbox"
           id="devolvioGafete"
           bind:checked={devolvioGafete}
           class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
         />
-        <label for="devolvioGafete" class="text-sm font-medium text-gray-900 dark:text-gray-200">
+        <label
+          for="devolvioGafete"
+          class="text-sm font-medium text-gray-900 dark:text-gray-200"
+        >
           ¿Devolvió el gafete físico?
         </label>
       </div>
     {/if}
 
     <div>
-      <label for="observaciones" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      <label
+        for="observaciones"
+        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+      >
         Observaciones (Opcional)
       </label>
       <textarea
