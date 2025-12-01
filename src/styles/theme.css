@@ -351,6 +351,54 @@
   transform: translateY(1px);
 }
 
+/* GitHub-like Success Button */
+.btn-success {
+  background-color: #2da44e; /* GitHub Green */
+  color: #ffffff;
+  border: 1px solid rgba(27, 31, 36, 0.15);
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: #2c974b;
+}
+
+.btn-success:active:not(:disabled) {
+  background-color: #298e46;
+  box-shadow: inset 0 0.15em 0.3em rgba(27, 31, 36, 0.15);
+}
+
+.btn-success:disabled {
+  background-color: #94d3a2;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: not-allowed;
+  border-color: transparent;
+}
+
+/* GitHub-like Danger Button */
+.btn-danger {
+  background-color: var(--color-surface-secondary);
+  color: var(--color-error);
+  border: 1px solid var(--color-border-emphasis);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-error);
+  color: #ffffff;
+  border-color: var(--color-error);
+}
+
+.btn-danger:active:not(:disabled) {
+  background-color: var(--color-error-hover);
+  color: #ffffff;
+  border-color: var(--color-error-hover);
+  box-shadow: inset 0 0.15em 0.3em rgba(27, 31, 36, 0.15);
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btn-ghost {
   background-color: transparent;
   color: var(--color-text-secondary);

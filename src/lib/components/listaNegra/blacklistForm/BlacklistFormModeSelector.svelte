@@ -9,19 +9,21 @@
   let { modoRegistro, loading = false, onModeChange }: Props = $props();
 </script>
 
-<div class="mb-6 space-y-3">
-  <span class="block text-sm font-medium text-primary">Modo de Registro</span>
-  <div class="grid grid-cols-2 gap-3">
+<div class="border-b border-border-subtle mb-6">
+  <nav class="-mb-px flex space-x-8" aria-label="Tabs">
     <button
       type="button"
       onclick={() => onModeChange("existente")}
       disabled={loading}
-      class="btn-base {modoRegistro === 'existente'
-        ? 'border-error bg-error text-error'
-        : 'btn-secondary'}"
+      class="group inline-flex items-center gap-2 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors {modoRegistro ===
+      'existente'
+        ? 'border-error text-error'
+        : 'border-transparent text-tertiary hover:border-border-emphasis hover:text-primary'}"
     >
       <svg
-        class="h-5 w-5"
+        class="h-5 w-5 {modoRegistro === 'existente'
+          ? 'text-error'
+          : 'text-tertiary group-hover:text-primary'}"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -35,16 +37,20 @@
       </svg>
       <span>Contratista Existente</span>
     </button>
+
     <button
       type="button"
       onclick={() => onModeChange("manual")}
       disabled={loading}
-      class="btn-base {modoRegistro === 'manual'
-        ? 'border-error bg-error text-error'
-        : 'btn-secondary'}"
+      class="group inline-flex items-center gap-2 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors {modoRegistro ===
+      'manual'
+        ? 'border-error text-error'
+        : 'border-transparent text-tertiary hover:border-border-emphasis hover:text-primary'}"
     >
       <svg
-        class="h-5 w-5"
+        class="h-5 w-5 {modoRegistro === 'manual'
+          ? 'text-error'
+          : 'text-tertiary group-hover:text-primary'}"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -58,5 +64,5 @@
       </svg>
       <span>Registro Manual</span>
     </button>
-  </div>
+  </nav>
 </div>

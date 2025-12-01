@@ -1,8 +1,5 @@
 <!-- ListaNegraForm.svelte - REFACTORIZADO -->
 <script lang="ts">
-  import { fade, fly } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
-  import { tweened } from "svelte/motion";
   import { currentUser } from "$lib/stores/auth";
   import type { SearchResult } from "$lib/types/search.types";
   import type { BlockCheckResponse } from "$lib/types/listaNegra";
@@ -184,72 +181,53 @@
           nombre.trim() &&
           apellido.trim())),
   );
-
-  // Animación de altura
-  const containerHeight = tweened(300, {
-    duration: 400,
-    easing: cubicOut,
-  });
-
-  function resizeObserver(node: HTMLElement) {
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        containerHeight.set(entry.contentRect.height);
-      }
-    });
-
-    ro.observe(node);
-
-    return {
-      destroy() {
-        ro.disconnect();
-      },
-    };
-  }
 </script>
 
 <div class="flex min-h-full items-center justify-center p-6">
-  <div class="form-container relative z-10 w-full max-w-2xl">
+  <div class="card-base bg-surface-1 p-0 w-full max-w-2xl overflow-hidden">
     <!-- Header -->
-    <div class="form-header">
-      <div class="form-icon">
-        <svg
-          class="h-6 w-6"
-          style="color: var(--color-error)"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+    <div class="border-b border-border-subtle bg-surface-2 px-6 py-4">
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-8 w-8 items-center justify-center rounded-md bg-surface-1 border border-border-subtle"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-          />
-        </svg>
-      </div>
-      <div>
-        <h2 class="form-title">Agregar a Lista Negra</h2>
-        <p class="form-description">Bloquear acceso a las instalaciones.</p>
+          <svg
+            class="h-5 w-5 text-error"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-base font-semibold text-primary">
+            Agregar a Lista Negra
+          </h2>
+          <p class="text-xs text-tertiary">
+            Bloquear acceso a las instalaciones.
+          </p>
+        </div>
       </div>
     </div>
 
     <!-- Form -->
-    <form onsubmit={handleSubmit} class="form-body">
-      <BlacklistFormModeSelector
-        {modoRegistro}
-        {loading}
-        onModeChange={handleModeChange}
-      />
+    <form onsubmit={handleSubmit}>
+      <div class="p-6">
+        <BlacklistFormModeSelector
+          {modoRegistro}
+          {loading}
+          onModeChange={handleModeChange}
+        />
 
-      <div class="transition-all" style="height: {$containerHeight}px">
-        <div class="grid grid-cols-1 grid-rows-1" use:resizeObserver>
+        <div class="mt-6">
           {#if modoRegistro === "existente"}
-            <div
-              class="space-y-5 col-start-1 row-start-1"
-              in:fly={{ x: -20, duration: 400, delay: 100, easing: cubicOut }}
-              out:fade={{ duration: 300, easing: cubicOut }}
-            >
+            <div class="space-y-5">
               <BlacklistContratistaSearch
                 {loading}
                 onSelect={handleContratistaSelect}
@@ -275,11 +253,7 @@
               {/if}
             </div>
           {:else}
-            <div
-              class="space-y-5 col-start-1 row-start-1"
-              in:fly={{ x: 20, duration: 400, delay: 100, easing: cubicOut }}
-              out:fade={{ duration: 300, easing: cubicOut }}
-            >
+            <div class="space-y-5">
               <BlacklistManualInputs
                 {cedula}
                 {nombre}
@@ -304,7 +278,9 @@
       </div>
 
       <!-- Actions -->
-      <div class="form-actions" in:fade={{ duration: 300, delay: 300, easing: cubicOut }}>
+      <div
+        class="bg-surface-2 border-t border-border-subtle px-6 py-4 flex justify-end gap-3"
+      >
         {#if selectedContratista && blockInfo?.isBlocked && !checkingBlock}
           <button
             type="button"
@@ -324,7 +300,7 @@
           >
             {#if loading}
               <svg
-                class="spinner -ml-1 mr-3 h-5 w-5 text-white inline-block"
+                class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
