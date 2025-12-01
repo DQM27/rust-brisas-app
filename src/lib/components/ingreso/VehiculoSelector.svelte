@@ -20,7 +20,8 @@
       {#each vehiculos as vehiculo}
         <option value={vehiculo.id}>
           {vehiculo.placa} - {vehiculo.marca}
-          {vehiculo.modelo} ({vehiculo.tipo})
+          {vehiculo.modelo}
+          {vehiculo.tipoVehiculo ? `(${vehiculo.tipoVehiculo})` : ""}
         </option>
       {/each}
     </select>
