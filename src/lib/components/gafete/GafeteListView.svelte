@@ -64,24 +64,76 @@
       },
     },
 
-    // ========= ESTADO (rediseñado) =========
+    // ========= ESTADO (3 estados: Disponible, En Uso, Perdido) =========
     {
-      field: "estaDisponible",
+      field: "status",
       headerName: "Estado",
       sortable: true,
       filter: true,
       cellRenderer: (params: any) => {
+        const status = params.value;
+
+        if (status === "disponible") {
+          return `
+            <span class="px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-300 dark:bg-emerald-900 dark:text-emerald-200">
+              ✔ Disponible
+            </span>
+          `;
+        } else if (status === "en_uso") {
+          return `
+            <span class="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-300 dark:bg-blue-900 dark:text-blue-200">
+              ◉ En Uso
+            </span>
+          `;
+        } else if (status === "perdido") {
+          return `
+            <span class="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-300 dark:bg-red-900 dark:text-red-200">
+              ✖ Perdido
+            </span>
+          `;
+        }
+
+        return "-";
+      },
+    },
+
+    // ========= FECHA PERDIDO =========
+    {
+      field: "fechaPerdido",
+      headerName: "Fecha Perdido",
+      sortable: true,
+      filter: true,
+      width: 150,
+      valueFormatter: (params) => {
+        if (!params.value) return "-";
+        const date = new Date(params.value);
+        return date.toLocaleDateString("es-ES");
+      },
+    },
+
+    // ========= QUIEN LO PERDIÓ =========
+    {
+      field: "quienPerdio",
+      headerName: "Quién lo Perdió",
+      sortable: true,
+      filter: true,
+      width: 180,
+      valueFormatter: (params) => params.value || "-",
+    },
+
+    // ========= ESTADO ALERTA (Devuelto/Pendiente) =========
+    {
+      field: "alertaResuelta",
+      headerName: "Devuelto",
+      sortable: true,
+      filter: true,
+      width: 120,
+      cellRenderer: (params: any) => {
+        if (params.value === null || params.value === undefined) return "-";
+
         return params.value
-          ? `
-              <span class="px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-300 dark:bg-emerald-900 dark:text-emerald-200">
-                ✔ Disponible
-              </span>
-            `
-          : `
-              <span class="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-300 dark:bg-red-900 dark:text-red-200">
-                ✖ En Uso
-              </span>
-            `;
+          ? `<span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">Sí</span>`
+          : `<span class="px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200">Pendiente</span>`;
       },
     },
 

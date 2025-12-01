@@ -102,18 +102,31 @@ pub async fn exists_by_numero_and_tipo(
     Ok(row.is_some())
 }
 
-/// Verifica si un gafete está en uso (tiene ingreso activo) O tiene una alerta pendiente
+/// Verifica si un gafete está en uso (tiene ingreso activo)
 pub async fn is_en_uso(pool: &SqlitePool, numero: &str) -> Result<bool, String> {
     let row = sqlx::query(
-        "SELECT (
-            (SELECT COUNT(*) FROM ingresos WHERE gafete_numero = ?1 AND fecha_hora_salida IS NULL) +
-            (SELECT COUNT(*) FROM alertas_gafetes WHERE gafete_numero = ?1 AND resuelto = 0)
-         ) as count",
+        "SELECT COUNT(*) as count FROM ingresos 
+         WHERE gafete_numero = ? AND fecha_hora_salida IS NULL",
     )
     .bind(numero)
     .fetch_one(pool)
     .await
-    .map_err(|e| format!("Error al verificar disponibilidad: {}", e))?;
+    .map_err(|e| format!("Error al verificar uso: {}", e))?;
+
+    let count: i32 = row.get("count");
+    Ok(count > 0)
+}
+
+/// Verifica si un gafete tiene una alerta pendiente (no resuelta)
+pub async fn has_unresolved_alert(pool: &SqlitePool, numero: &str) -> Result<bool, String> {
+    let row = sqlx::query(
+        "SELECT COUNT(*) as count FROM alertas_gafetes 
+         WHERE gafete_numero = ? AND resuelto = 0",
+    )
+    .bind(numero)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| format!("Error al verificar alertas: {}", e))?;
 
     let count: i32 = row.get("count");
     Ok(count > 0)
@@ -196,4 +209,31 @@ pub async fn delete(pool: &SqlitePool, numero: &str) -> Result<(), String> {
         .map_err(|e| format!("Error al eliminar gafete: {}", e))?;
 
     Ok(())
+}
+
+/// Obtiene la alerta más reciente de un gafete (si existe)
+pub async fn get_recent_alert_for_gafete(
+    pool: &SqlitePool,
+    numero: &str,
+) -> Result<Option<(String, String, bool)>, String> {
+    let row = sqlx::query(
+        "SELECT fecha_reporte, nombre_completo, resuelto 
+         FROM alertas_gafetes 
+         WHERE gafete_numero = ? 
+         ORDER BY fecha_reporte DESC 
+         LIMIT 1",
+    )
+    .bind(numero)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Error al obtener alerta: {}", e))?;
+
+    Ok(row.map(|r| {
+        let resuelto_int: i32 = r.get("resuelto");
+        (
+            r.get("fecha_reporte"),
+            r.get("nombre_completo"),
+            resuelto_int != 0,
+        )
+    }))
 }

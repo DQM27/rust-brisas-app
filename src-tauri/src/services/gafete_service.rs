@@ -28,14 +28,14 @@ pub async fn create_gafete(
 
     // 3. Verificar que no exista
     // 3. Verificar que no exista con este número + tipo
-let tipo = TipoGafete::from_str(&input.tipo)?;
-let exists = db::exists_by_numero_and_tipo(pool, &numero_normalizado, tipo.as_str()).await?;
-if exists {
-    return Err(format!(
-        "Ya existe un gafete con el número {} de tipo {}",
-        numero_normalizado, input.tipo
-    ));
-}
+    let tipo = TipoGafete::from_str(&input.tipo)?;
+    let exists = db::exists_by_numero_and_tipo(pool, &numero_normalizado, tipo.as_str()).await?;
+    if exists {
+        return Err(format!(
+            "Ya existe un gafete con el número {} de tipo {}",
+            numero_normalizado, input.tipo
+        ));
+    }
 
     // 4. Parsear tipo
     let tipo = TipoGafete::from_str(&input.tipo)?;
@@ -57,9 +57,29 @@ if exists {
 pub async fn get_gafete(pool: &SqlitePool, numero: &str) -> Result<GafeteResponse, String> {
     let gafete = db::find_by_numero(pool, numero).await?;
     let en_uso = db::is_en_uso(pool, numero).await?;
+    let tiene_alerta = db::has_unresolved_alert(pool, numero).await?;
 
     let mut response = GafeteResponse::from(gafete);
-    response.esta_disponible = !en_uso;
+
+    // Obtener detalles de la alerta si existe
+    if let Ok(Some((fecha, nombre, resuelto))) = db::get_recent_alert_for_gafete(pool, numero).await
+    {
+        response.fecha_perdido = Some(fecha);
+        response.quien_perdio = Some(nombre);
+        response.alerta_resuelta = Some(resuelto);
+    }
+
+    // Determinar estado y disponibilidad
+    if tiene_alerta {
+        response.status = "perdido".to_string();
+        response.esta_disponible = false;
+    } else if en_uso {
+        response.status = "en_uso".to_string();
+        response.esta_disponible = false;
+    } else {
+        response.status = "disponible".to_string();
+        response.esta_disponible = true;
+    }
 
     Ok(response)
 }
@@ -71,12 +91,35 @@ pub async fn get_gafete(pool: &SqlitePool, numero: &str) -> Result<GafeteRespons
 pub async fn get_all_gafetes(pool: &SqlitePool) -> Result<GafeteListResponse, String> {
     let gafetes = db::find_all(pool).await?;
 
-    // Calcular disponibilidad para cada uno
+    // Calcular disponibilidad y estado para cada uno
     let mut responses = Vec::new();
     for gafete in gafetes {
         let en_uso = db::is_en_uso(pool, &gafete.numero).await?;
+        let tiene_alerta = db::has_unresolved_alert(pool, &gafete.numero).await?;
+
         let mut response = GafeteResponse::from(gafete);
-        response.esta_disponible = !en_uso;
+
+        // Obtener detalles de la alerta si existe
+        if let Ok(Some((fecha, nombre, resuelto))) =
+            db::get_recent_alert_for_gafete(pool, &response.numero).await
+        {
+            response.fecha_perdido = Some(fecha);
+            response.quien_perdio = Some(nombre);
+            response.alerta_resuelta = Some(resuelto);
+        }
+
+        // Determinar estado y disponibilidad
+        if tiene_alerta {
+            response.status = "perdido".to_string();
+            response.esta_disponible = false;
+        } else if en_uso {
+            response.status = "en_uso".to_string();
+            response.esta_disponible = false;
+        } else {
+            response.status = "disponible".to_string();
+            response.esta_disponible = true;
+        }
+
         responses.push(response);
     }
 
@@ -133,7 +176,8 @@ pub async fn get_gafetes_disponibles(
     for numero in numeros {
         let gafete = db::find_by_numero(pool, &numero).await?;
         let mut response = GafeteResponse::from(gafete);
-        response.esta_disponible = true; // Ya lo filtramos
+        response.esta_disponible = true;
+        response.status = "disponible".to_string(); // Ya lo filtramos
         responses.push(response);
     }
 
@@ -146,7 +190,8 @@ pub async fn get_gafetes_disponibles(
 
 pub async fn is_gafete_disponible(pool: &SqlitePool, numero: &str) -> Result<bool, String> {
     let en_uso = db::is_en_uso(pool, numero).await?;
-    Ok(!en_uso)
+    let tiene_alerta = db::has_unresolved_alert(pool, numero).await?;
+    Ok(!en_uso && !tiene_alerta)
 }
 
 // ==========================================

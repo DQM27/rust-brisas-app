@@ -41,7 +41,7 @@ impl TipoGafete {
             TipoGafete::Otro => "otro",
         }
     }
-    
+
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s.to_lowercase().as_str() {
             "contratista" => Ok(TipoGafete::Contratista),
@@ -51,7 +51,7 @@ impl TipoGafete {
             _ => Err(format!("Tipo de gafete desconocido: {}", s)),
         }
     }
-    
+
     pub fn display(&self) -> &str {
         match self {
             TipoGafete::Contratista => "Contratista",
@@ -90,6 +90,11 @@ pub struct GafeteResponse {
     pub tipo: TipoGafete,
     pub tipo_display: String,
     pub esta_disponible: bool,
+    pub status: String, // "disponible", "en_uso", "perdido"
+    // Información de alerta (si está perdido)
+    pub fecha_perdido: Option<String>,
+    pub quien_perdio: Option<String>,
+    pub alerta_resuelta: Option<bool>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -100,7 +105,11 @@ impl From<Gafete> for GafeteResponse {
             numero: g.numero,
             tipo: g.tipo.clone(),
             tipo_display: g.tipo.display().to_string(),
-            esta_disponible: false, // Se calcula después con query
+            esta_disponible: false,             // Se calcula después con query
+            status: String::from("disponible"), // Se calcula después
+            fecha_perdido: None,
+            quien_perdio: None,
+            alerta_resuelta: None,
             created_at: g.created_at,
             updated_at: g.updated_at,
         }

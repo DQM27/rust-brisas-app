@@ -23,8 +23,6 @@ export const UpdateGafeteSchema = z.object({
     tipo: TipoGafeteEnum.optional()
 });
 
-// No necesitas GafeteSchema completo aquí, solo los inputs
-
 // ==========================================
 // TIPOS INFERIDOS
 // ==========================================
@@ -41,6 +39,11 @@ export interface GafeteResponse {
     tipo: TipoGafete;
     tipoDisplay: string;
     estaDisponible: boolean;
+    status: string; // "disponible" | "en_uso" | "perdido"
+    // Información de alerta (si está perdido)
+    fechaPerdido?: string;
+    quienPerdio?: string;
+    alertaResuelta?: boolean;
     createdAt: string;
     updatedAt: string;
 }

@@ -40,7 +40,7 @@
         mensajeValidacion = "";
 
         if (data.alertas && data.alertas.length > 0) {
-          toast("⚠️ Tiene alertas pendientes", { icon: "⚠️" });
+          toast("Tiene alertas pendientes", { icon: "⚠️" });
         }
 
         // Dispatch con datos del contratista para auto-selección
@@ -65,6 +65,7 @@
 
 <div>
   <label
+    for="contratista-search"
     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
   >
     Buscar Contratista
@@ -131,7 +132,7 @@
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 flex-shrink-0"
+                class="h-5 w-5 shrink-0"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
