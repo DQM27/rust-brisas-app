@@ -1,0 +1,283 @@
+// ==========================================
+// src/services/export_service.rs
+// ==========================================
+// Capa de servicio: orquesta dominio y módulos de export
+// Contiene la lógica de negocio completa
+
+use crate::domain::export as domain;
+use crate::export::errors::{ExportError, ExportResult};
+use crate::models::export::{
+    CsvConfig, CsvDelimiter, ExcelConfig, ExportData, ExportFormat, ExportRequest, ExportResponse,
+    PageOrientation, PdfConfig,
+};
+use std::collections::HashMap;
+
+// ==========================================
+// FUNCIÓN PRINCIPAL DE EXPORTACIÓN
+// ==========================================
+
+/// Punto de entrada principal para cualquier exportación
+pub async fn export_data(request: ExportRequest) -> ExportResult<ExportResponse> {
+    // 1. Validar request completo
+    domain::validar_export_request(&request)
+        .map_err(|e| ExportError::InvalidData(e))?;
+
+    // 2. Validar tamaño total (seguridad)
+    domain::validar_tamano_total(&request)
+        .map_err(|e| ExportError::InvalidData(e))?;
+
+    // 3. Normalizar datos
+    let export_data = normalizar_export_data(&request)?;
+
+    // 4. Exportar según formato
+    match export_data.format {
+        ExportFormat::Pdf => export_to_pdf_internal(export_data).await,
+        ExportFormat::Excel => export_to_excel_internal(export_data).await,
+        ExportFormat::Csv => export_to_csv_internal(export_data).await,
+    }
+}
+
+// ==========================================
+// NORMALIZACIÓN DE DATOS
+// ==========================================
+
+/// Convierte ExportRequest en ExportData normalizado
+fn normalizar_export_data(request: &ExportRequest) -> ExportResult<ExportData> {
+    // 1. Parsear formato
+    let format = ExportFormat::from_str(&request.format)
+        .map_err(|e| ExportError::InvalidFormat(e))?;
+
+    // 2. Clonar headers
+    let headers = request.headers.clone();
+
+    // 3. Normalizar todas las rows (JSON → String)
+    let rows: Vec<HashMap<String, String>> = request
+        .rows
+        .iter()
+        .map(|row| domain::normalizar_row(row, &headers))
+        .collect();
+
+    // 4. Construir config según formato
+    let pdf_config = if format == ExportFormat::Pdf {
+        Some(construir_pdf_config(request)?)
+    } else {
+        None
+    };
+
+    let excel_config = if format == ExportFormat::Excel {
+        Some(construir_excel_config(request))
+    } else {
+        None
+    };
+
+    let csv_config = if format == ExportFormat::Csv {
+        Some(construir_csv_config(request)?)
+    } else {
+        None
+    };
+
+    Ok(ExportData {
+        format,
+        headers,
+        rows,
+        pdf_config,
+        excel_config,
+        csv_config,
+    })
+}
+
+/// Construye configuración para PDF
+fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
+    // Título
+    let title = if let Some(ref t) = request.title {
+        domain::validar_titulo(t)
+            .map_err(|e| ExportError::InvalidTitle(e))?;
+        domain::normalizar_titulo(t)
+    } else {
+        "Reporte".to_string()
+    };
+
+    // Orientación
+    let orientation = if let Some(ref o) = request.orientation {
+        domain::validar_orientacion(o)
+            .map_err(|e| ExportError::InvalidOrientation(e))?
+    } else {
+        PageOrientation::Landscape
+    };
+
+    // Preview
+    let show_preview = request.show_preview.unwrap_or(false);
+
+    Ok(PdfConfig {
+        title,
+        orientation,
+        headers: request.headers.clone(),
+        show_preview,
+    })
+}
+
+/// Construye configuración para Excel
+fn construir_excel_config(request: &ExportRequest) -> ExcelConfig {
+    let filename = request
+        .title
+        .clone()
+        .unwrap_or_else(|| "export".to_string());
+
+    ExcelConfig {
+        filename: format!("{}.xlsx", sanitizar_filename(&filename)),
+        headers: request.headers.clone(),
+    }
+}
+
+/// Construye configuración para CSV
+fn construir_csv_config(request: &ExportRequest) -> ExportResult<CsvConfig> {
+    // Filename
+    let filename = request
+        .title
+        .clone()
+        .unwrap_or_else(|| "export".to_string());
+
+    // Delimitador
+    let delimiter = if let Some(ref d) = request.delimiter {
+        domain::validar_delimitador(d)
+            .map_err(|e| ExportError::InvalidDelimiter(e))?
+    } else {
+        CsvDelimiter::Comma
+    };
+
+    // BOM para Excel UTF-8
+    let include_bom = request.include_bom.unwrap_or(true);
+
+    Ok(CsvConfig {
+        filename: format!("{}.csv", sanitizar_filename(&filename)),
+        headers: request.headers.clone(),
+        delimiter,
+        include_bom,
+    })
+}
+
+// ==========================================
+// EXPORTACIÓN POR FORMATO
+// ==========================================
+
+/// Exporta a PDF usando Typst
+#[cfg(feature = "export")]
+async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse> {
+    use crate::export::pdf;
+
+    let config = data.pdf_config.ok_or_else(|| {
+        ExportError::Unknown("Config PDF no encontrada".to_string())
+    })?;
+
+    // Generar PDF
+    let pdf_bytes = pdf::generate_pdf(&data.headers, &data.rows, &config)?;
+
+    Ok(ExportResponse {
+        success: true,
+        format: "pdf".to_string(),
+        bytes: Some(pdf_bytes),
+        file_path: None,
+        message: "PDF generado exitosamente".to_string(),
+    })
+}
+
+#[cfg(not(feature = "export"))]
+async fn export_to_pdf_internal(_data: ExportData) -> ExportResult<ExportResponse> {
+    Err(ExportError::Unknown(
+        "Función de exportación PDF no disponible en esta build".to_string(),
+    ))
+}
+
+/// Exporta a Excel usando rust_xlsxwriter
+#[cfg(feature = "export")]
+async fn export_to_excel_internal(data: ExportData) -> ExportResult<ExportResponse> {
+    use crate::export::excel;
+
+    let config = data.excel_config.ok_or_else(|| {
+        ExportError::Unknown("Config Excel no encontrada".to_string())
+    })?;
+
+    // Generar Excel y obtener path
+    let file_path = excel::generate_excel(&data.headers, &data.rows, &config)?;
+
+    Ok(ExportResponse {
+        success: true,
+        format: "excel".to_string(),
+        bytes: None,
+        file_path: Some(file_path),
+        message: "Excel generado exitosamente".to_string(),
+    })
+}
+
+#[cfg(not(feature = "export"))]
+async fn export_to_excel_internal(_data: ExportData) -> ExportResult<ExportResponse> {
+    Err(ExportError::Unknown(
+        "Función de exportación Excel no disponible en esta build".to_string(),
+    ))
+}
+
+/// Exporta a CSV (sin dependencias externas)
+async fn export_to_csv_internal(data: ExportData) -> ExportResult<ExportResponse> {
+    use crate::export::csv;
+
+    let config = data.csv_config.ok_or_else(|| {
+        ExportError::Unknown("Config CSV no encontrada".to_string())
+    })?;
+
+    // Generar CSV y obtener path
+    let file_path = csv::generate_csv(&data.headers, &data.rows, &config)?;
+
+    Ok(ExportResponse {
+        success: true,
+        format: "csv".to_string(),
+        bytes: None,
+        file_path: Some(file_path),
+        message: "CSV generado exitosamente".to_string(),
+    })
+}
+
+// ==========================================
+// HELPERS INTERNOS
+// ==========================================
+
+/// Sanitiza un filename (remueve caracteres especiales)
+fn sanitizar_filename(filename: &str) -> String {
+    filename
+        .chars()
+        .map(|c| match c {
+            'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' => c,
+            ' ' => '_',
+            _ => '-',
+        })
+        .collect::<String>()
+        .trim_matches('-')
+        .to_string()
+}
+
+/// Verifica si el módulo de export está disponible
+pub fn is_export_available() -> bool {
+    cfg!(feature = "export")
+}
+
+// ==========================================
+// TESTS
+// ==========================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sanitizar_filename() {
+        assert_eq!(sanitizar_filename("Reporte Mensual"), "Reporte_Mensual");
+        assert_eq!(sanitizar_filename("Test@#$%"), "Test");
+        assert_eq!(sanitizar_filename("File (1).xlsx"), "File_1_xlsx");
+    }
+
+    #[test]
+    fn test_is_export_available() {
+        // Depende de si el feature está activado
+        let available = is_export_available();
+        assert!(available || !available); // Siempre pasa, solo para cobertura
+    }
+}

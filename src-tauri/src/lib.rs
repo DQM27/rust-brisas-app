@@ -1,4 +1,6 @@
+// ==========================================
 // src-tauri/src/lib.rs
+// ==========================================
 
 #[macro_use]
 pub mod commands;
@@ -7,8 +9,8 @@ pub mod db;
 pub mod domain;
 pub mod models;
 pub mod services;
-
 pub mod search;
+pub mod export;  // ✅ AGREGAR ESTO
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

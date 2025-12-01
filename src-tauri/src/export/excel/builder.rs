@@ -1,0 +1,299 @@
+// ==========================================
+// src/export/excel/builder.rs
+// ==========================================
+// Generador Excel usando rust_xlsxwriter
+// Crea archivos .xlsx con formato profesional
+
+use crate::export::errors::{ExportError, ExportResult};
+use crate::models::export::ExcelConfig;
+use rust_xlsxwriter::{Format, Workbook, Worksheet};
+use std::collections::HashMap;
+use std::path::PathBuf;
+
+// ==========================================
+// FUNCIÓN PRINCIPAL
+// ==========================================
+
+/// Genera un archivo Excel y retorna el path
+pub fn generate_excel(
+    headers: &[String],
+    rows: &[HashMap<String, String>],
+    config: &ExcelConfig,
+) -> ExportResult<String> {
+    // 1. Crear workbook
+    let mut workbook = Workbook::new();
+
+    // 2. Agregar worksheet
+    // ✅ FIX: add_worksheet() retorna &mut Worksheet directamente
+    let worksheet = workbook.add_worksheet();
+
+    // 3. Escribir contenido
+    write_excel_content(worksheet, headers, rows)?;
+
+    // 4. Determinar path de salida
+    let output_path = get_output_path(&config.filename)?;
+
+    // 5. Guardar archivo
+    workbook
+        .save(&output_path)
+        .map_err(|e| ExportError::XlsxWriteError(format!("Error guardando Excel: {}", e)))?;
+
+    // 6. Retornar path como string
+    Ok(output_path
+        .to_str()
+        .ok_or_else(|| ExportError::FileSystemError("Path inválido".to_string()))?
+        .to_string())
+}
+
+// ==========================================
+// ESCRITURA DEL CONTENIDO
+// ==========================================
+
+/// Escribe headers y rows en el worksheet con formato
+fn write_excel_content(
+    worksheet: &mut Worksheet,
+    headers: &[String],
+    rows: &[HashMap<String, String>],
+) -> ExportResult<()> {
+    // 1. Crear formatos
+    let header_format = create_header_format()?;
+    let cell_format = create_cell_format()?;
+
+    // 2. Escribir headers (fila 0)
+    for (col_idx, header) in headers.iter().enumerate() {
+        worksheet
+            .write_string_with_format(0, col_idx as u16, header, &header_format)
+            .map_err(|e| {
+                ExportError::XlsxWriteError(format!("Error escribiendo header: {}", e))
+            })?;
+    }
+
+    // 3. Escribir rows (empezando en fila 1)
+    for (row_idx, row) in rows.iter().enumerate() {
+        for (col_idx, header) in headers.iter().enumerate() {
+            let value = row.get(header).map(|s| s.as_str()).unwrap_or("");
+
+            worksheet
+                .write_string_with_format(
+                    (row_idx + 1) as u32,
+                    col_idx as u16,
+                    value,
+                    &cell_format,
+                )
+                .map_err(|e| {
+                    ExportError::XlsxWriteError(format!(
+                        "Error escribiendo celda [{}, {}]: {}",
+                        row_idx + 1,
+                        col_idx,
+                        e
+                    ))
+                })?;
+        }
+    }
+
+    // 4. Autofit columnas
+    autofit_columns(worksheet, headers, rows)?;
+
+    // 5. Freeze headers (congelar primera fila)
+    worksheet.set_freeze_panes(1, 0).map_err(|e| {
+        ExportError::XlsxFormatError(format!("Error congelando headers: {}", e))
+    })?;
+
+    Ok(())
+}
+
+// ==========================================
+// FORMATOS
+// ==========================================
+
+/// Crea formato para headers (negrita, fondo gris claro, bordes)
+fn create_header_format() -> ExportResult<Format> {
+    // ✅ FIX: Format methods consumen self, usar chaining
+    let format = Format::new()
+        .set_bold()
+        .set_background_color(rust_xlsxwriter::Color::RGB(0xD9D9D9)) // Gris claro
+        .set_border(rust_xlsxwriter::FormatBorder::Thin)
+        .set_align(rust_xlsxwriter::FormatAlign::Center)
+        .set_align(rust_xlsxwriter::FormatAlign::VerticalCenter);
+
+    Ok(format)
+}
+
+/// Crea formato para celdas normales (solo bordes)
+fn create_cell_format() -> ExportResult<Format> {
+    // ✅ FIX: Chaining
+    let format = Format::new()
+        .set_border(rust_xlsxwriter::FormatBorder::Thin)
+        .set_align(rust_xlsxwriter::FormatAlign::VerticalCenter);
+
+    Ok(format)
+}
+
+// ==========================================
+// AUTOFIT DE COLUMNAS
+// ==========================================
+
+/// Ajusta automáticamente el ancho de las columnas
+fn autofit_columns(
+    worksheet: &mut Worksheet,
+    headers: &[String],
+    rows: &[HashMap<String, String>],
+) -> ExportResult<()> {
+    for (col_idx, header) in headers.iter().enumerate() {
+        // Calcular ancho máximo para esta columna
+        let max_width = calculate_column_width(header, rows);
+
+        // Aplicar ancho (con límites razonables)
+        let width = max_width.clamp(10.0, 50.0);
+
+        worksheet
+            .set_column_width(col_idx as u16, width)
+            .map_err(|e| {
+                ExportError::XlsxFormatError(format!(
+                    "Error ajustando columna {}: {}",
+                    col_idx, e
+                ))
+            })?;
+    }
+
+    Ok(())
+}
+
+/// Calcula el ancho apropiado para una columna
+fn calculate_column_width(header: &str, rows: &[HashMap<String, String>]) -> f64 {
+    // Ancho del header
+    let mut max_len = header.len();
+
+    // Revisar todas las filas
+    for row in rows {
+        if let Some(value) = row.get(header) {
+            max_len = max_len.max(value.len());
+        }
+    }
+
+    // Convertir a puntos de Excel (aproximación: 1 char ≈ 1.2 puntos)
+    (max_len as f64) * 1.2
+}
+
+// ==========================================
+// PATH MANAGEMENT
+// ==========================================
+
+/// Obtiene el path de salida (Downloads o directorio temporal)
+fn get_output_path(filename: &str) -> ExportResult<PathBuf> {
+    // Asegurar extensión .xlsx
+    let filename = ensure_xlsx_extension(filename);
+
+    // Intentar usar el directorio de Downloads
+    if let Some(downloads_dir) = get_downloads_dir() {
+        let path = downloads_dir.join(&filename);
+        return Ok(path);
+    }
+
+    // Fallback: directorio temporal
+    let temp_dir = std::env::temp_dir();
+    Ok(temp_dir.join(&filename))
+}
+
+/// Asegura que el filename tenga extensión .xlsx
+fn ensure_xlsx_extension(filename: &str) -> String {
+    if filename.to_lowercase().ends_with(".xlsx") {
+        filename.to_string()
+    } else {
+        format!("{}.xlsx", filename.trim_end_matches(".xlsx"))
+    }
+}
+
+/// Obtiene el directorio de Downloads del usuario
+fn get_downloads_dir() -> Option<PathBuf> {
+    #[cfg(target_os = "windows")]
+    {
+        dirs::download_dir()
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        dirs::download_dir()
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        dirs::download_dir()
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    {
+        None
+    }
+}
+
+// ==========================================
+// HELPERS
+// ==========================================
+
+/// Estima el tamaño del Excel resultante (aproximado)
+pub fn estimate_excel_size(headers: &[String], rows: &[HashMap<String, String>]) -> usize {
+    // Aproximación: ~100 bytes por celda + overhead del formato
+    let total_cells = (headers.len() * (rows.len() + 1)) as usize;
+    let base_size = total_cells * 100;
+
+    // Agregar overhead del formato XML (~50KB)
+    base_size + 50_000
+}
+
+// ==========================================
+// TESTS
+// ==========================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ensure_xlsx_extension() {
+        assert_eq!(ensure_xlsx_extension("file.xlsx"), "file.xlsx");
+        assert_eq!(ensure_xlsx_extension("file"), "file.xlsx");
+        assert_eq!(ensure_xlsx_extension("file.XLS"), "file.XLS.xlsx");
+        assert_eq!(ensure_xlsx_extension("file.txt"), "file.txt.xlsx");
+    }
+
+    #[test]
+    fn test_calculate_column_width() {
+        let header = "Name";
+        let mut row1 = HashMap::new();
+        row1.insert("Name".to_string(), "John".to_string());
+
+        let mut row2 = HashMap::new();
+        row2.insert("Name".to_string(), "Alexander".to_string());
+
+        let rows = vec![row1, row2];
+
+        let width = calculate_column_width(header, &rows);
+        // "Alexander" = 9 chars * 1.2 = 10.8
+        assert!(width > 10.0);
+    }
+
+    #[test]
+    fn test_estimate_excel_size() {
+        let headers = vec!["A".to_string(), "B".to_string(), "C".to_string()];
+        let rows = vec![HashMap::new(); 100]; // 100 filas vacías
+
+        let size = estimate_excel_size(&headers, &rows);
+        // 3 headers * (100 rows + 1 header row) = 303 cells
+        // 303 * 100 + 50000 = ~80KB
+        assert!(size > 50_000);
+        assert!(size < 100_000);
+    }
+
+    #[test]
+    fn test_create_header_format() {
+        let format = create_header_format();
+        assert!(format.is_ok());
+    }
+
+    #[test]
+    fn test_create_cell_format() {
+        let format = create_cell_format();
+        assert!(format.is_ok());
+    }
+}

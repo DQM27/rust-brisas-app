@@ -128,6 +128,23 @@ macro_rules! register_handlers {
             // Comandos de búsqueda
             commands::search_commands::search_contratistas,
             commands::search_commands::reindex_all_contratistas,
+            
+            // ==========================================
+            // COMANDOS DE EXPORTACIÓN (NUEVO)
+            // ==========================================
+            
+            // Comando principal unificado
+            commands::export_commands::export_data,
+            
+            // Comandos de verificación de disponibilidad
+            commands::export_commands::check_export_available,
+            commands::export_commands::get_available_export_formats,
+            commands::export_commands::is_export_format_available,
+            
+            // Comandos específicos por formato (opcionales)
+            commands::export_commands::export_to_pdf,
+            commands::export_commands::export_to_excel,
+            commands::export_commands::export_to_csv,
         ]
     };
 }

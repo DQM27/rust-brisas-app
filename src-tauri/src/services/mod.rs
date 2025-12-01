@@ -11,3 +11,4 @@ pub mod empresa_service;
 pub mod entrada_service;
 pub mod permanencia_service;
 pub mod salida_service;
+pub mod export_service;

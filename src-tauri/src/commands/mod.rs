@@ -10,5 +10,6 @@ pub mod salida_commands;
 pub mod search_commands;
 pub mod user_commands;
 pub mod vehiculo_commands;
+pub mod export_commands;
 #[macro_use]
 pub mod handlers;

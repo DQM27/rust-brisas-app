@@ -13,29 +13,73 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+# ==========================================
+# CORE DEPENDENCIES
+# ==========================================
 tauri = { version = "2", features = ["test"] }
 tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+# ==========================================
+# DATABASE
+# ==========================================
 sqlx = { version = "0.7", features = ["sqlite", "runtime-tokio-rustls", "macros", "migrate"], default-features = false }
+
+# ==========================================
+# ASYNC RUNTIME
+# ==========================================
 tokio = { version = "1", features = ["full"] }
+
+# ==========================================
+# UTILITIES
+# ==========================================
 chrono = { version = "0.4", features = ["serde"] }
 reqwest = { version = "0.12", features = ["json"] }
 dotenvy = "0.15"
 argon2 = { version = "0.5", features = ["std"] }
 uuid = { version = "1.0", features = ["v4"] }
 
-# Sistema de configuración
+# ==========================================
+# CONFIGURATION SYSTEM
+# ==========================================
 toml = "0.8"
 dirs = "5.0"
 mac_address = "1.1"
 shellexpand = "3.1"
 
-# 🔐 Keyring cross-platform
-
-
-# 📊 Importación de Excel (NUEVO)
+# ==========================================
+# EXCEL IMPORT (existente)
+# ==========================================
 calamine = "0.26"
 unicode-normalization = "0.1"
-tauri-plugin-dialog = "2"
+
+# ==========================================
+# SEARCH
+# ==========================================
 tantivy = "0.22"
+
+# ==========================================
+# EXPORT MODULE - VERSIÓN MÁS RECIENTE
+# ==========================================
+# PDF generation - typst 0.14
+typst = { version = "0.14", optional = true }
+typst-pdf = { version = "0.14", optional = true }
+typst-assets = { version = "0.14", optional = true }
+
+# Excel export
+rust_xlsxwriter = { version = "0.69", optional = true }
+
+# CSV export - sin dependencias (usa std)
+
+[features]
+# Por default, todas las funciones de export están habilitadas
+default = ["export"]
+
+# Feature flag principal para export
+export = ["export-pdf", "export-excel"]
+
+# Features individuales por formato
+export-pdf = ["typst", "typst-pdf", "typst-assets"]
+export-excel = ["rust_xlsxwriter"]

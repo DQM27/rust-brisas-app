@@ -6,3 +6,4 @@ pub mod vehiculo;
 pub mod gafete;
 pub mod ingreso;
 pub mod blacklist_import;
+pub mod export;
