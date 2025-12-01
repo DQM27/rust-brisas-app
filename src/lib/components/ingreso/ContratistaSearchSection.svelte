@@ -89,14 +89,14 @@
           <p class="font-bold text-lg text-gray-900 dark:text-white">
             {contratistaNombre}
           </p>
-          {#if contratistaData?.empresaNombre}
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              {contratistaData.empresaNombre}
-            </p>
-          {/if}
           {#if contratistaData?.cedula}
             <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
               Cédula: {contratistaData.cedula}
+            </p>
+          {/if}
+          {#if contratistaData?.empresa_nombre}
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Empresa: {contratistaData.empresa_nombre}
             </p>
           {/if}
         </div>
@@ -116,12 +116,6 @@
           {/if}
         </div>
       </div>
-
-      {#if !puedeIngresar}
-        <p class="text-sm mt-2 text-red-700 dark:text-red-300 font-medium">
-          {mensajeValidacion}
-        </p>
-      {/if}
 
       <!-- Alertas de Gafetes Pendientes -->
       {#if contratistaData?.alertas && contratistaData.alertas.length > 0}
@@ -143,10 +137,8 @@
                 />
               </svg>
               <span>
-                <strong>Gafete Pendiente:</strong> Debe el gafete
-                <span class="font-mono font-bold"
-                  >{alerta.gafeteNumero || alerta.gafete_numero || "N/A"}</span
-                >
+                <strong>Gafete Pendiente:</strong> Debe devolver el gafete
+                <span class="font-mono font-bold">#{alerta.gafeteNumero}</span>
               </span>
             </div>
           {/each}
