@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from "svelte";
   import { toast } from "svelte-5-french-toast";
+  import { currentUser } from "$lib/stores/auth";
   import type { CreateIngresoContratistaInput } from "$lib/types/ingreso";
   import * as gafeteService from "$lib/logic/gafete/gafeteService";
   import type { GafeteResponse } from "$lib/types/gafete";
@@ -110,7 +111,8 @@
       gafeteNumero: gafeteNumero.trim().toUpperCase() || null,
       vehiculoId: modoIngreso === "vehiculo" ? vehiculoId : null,
       observaciones: observaciones.trim() || null,
-      usuarioIngresoId: "00000000-0000-0000-0000-000000000000", // TODO: Obtener del store de auth
+      usuarioIngresoId:
+        $currentUser?.id || "00000000-0000-0000-0000-000000000000",
     };
 
     dispatch("submit", data);

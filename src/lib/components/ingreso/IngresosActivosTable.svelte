@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
   import { toast } from "svelte-5-french-toast";
+  import { currentUser } from "$lib/stores/auth";
   import type { ColDef } from "@ag-grid-community/core";
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
 
@@ -99,7 +100,8 @@
       ingresoId: event.detail.ingresoId,
       devolvioGafete: event.detail.devolvioGafete,
       observacionesSalida: event.detail.observaciones,
-      usuarioSalidaId: "00000000-0000-0000-0000-000000000000", // TODO: Obtener del store de auth
+      usuarioSalidaId:
+        $currentUser?.id || "00000000-0000-0000-0000-000000000000",
     });
 
     if (result.ok) {

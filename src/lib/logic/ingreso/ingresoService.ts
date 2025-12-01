@@ -148,9 +148,9 @@ export async function fetchSalidasDelDia(): Promise<ServiceResult<IngresoListRes
 // PUBLIC API - CONSULTAS
 // ============================================
 
-export async function fetchAbiertos(): Promise<ServiceResult<IngresoListResponse>> {
+export async function fetchAbiertos(): Promise<ServiceResult<IngresoResponse[]>> {
     try {
-        const data = await ingreso.getAbiertos();
+        const data = await ingreso.getAbiertos(); // Returns array directly
         return { ok: true, data };
     } catch (err: any) {
         console.error('Error al obtener ingresos abiertos:', err);

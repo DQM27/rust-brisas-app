@@ -13,7 +13,7 @@ function createIngresoStore() {
         load: async () => {
             const result = await ingresoService.fetchAbiertos();
             if (result.ok) {
-                set(result.data.ingresos);
+                set(result.data); // data is already an array
             } else {
                 console.error("Error al cargar ingresos activos:", result.error);
             }

@@ -77,7 +77,7 @@ export const ingreso = {
         return await invoke('get_all_ingresos');
     },
 
-    getAbiertos: async (): Promise<IngresoListResponse> => {
+    getAbiertos: async (): Promise<IngresoResponse[]> => {
         return await invoke('get_ingresos_abiertos');
     },
 
