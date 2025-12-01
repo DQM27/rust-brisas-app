@@ -27,13 +27,15 @@ pub async fn create_gafete(
     let numero_normalizado = domain::normalizar_numero(&input.numero);
 
     // 3. Verificar que no exista
-    let count = db::count_by_numero(pool, &numero_normalizado).await?;
-    if count > 0 {
-        return Err(format!(
-            "Ya existe un gafete con el número {}",
-            numero_normalizado
-        ));
-    }
+    // 3. Verificar que no exista con este número + tipo
+let tipo = TipoGafete::from_str(&input.tipo)?;
+let exists = db::exists_by_numero_and_tipo(pool, &numero_normalizado, tipo.as_str()).await?;
+if exists {
+    return Err(format!(
+        "Ya existe un gafete con el número {} de tipo {}",
+        numero_normalizado, input.tipo
+    ));
+}
 
     // 4. Parsear tipo
     let tipo = TipoGafete::from_str(&input.tipo)?;

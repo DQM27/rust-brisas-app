@@ -86,6 +86,24 @@ pub async fn count_by_numero(pool: &SqlitePool, numero: &str) -> Result<i32, Str
     Ok(row.get("count"))
 }
 
+/// Verifica si ya existe un gafete con ese número + tipo (nueva regla de unicidad)
+pub async fn exists_by_numero_and_tipo(
+    pool: &SqlitePool,
+    numero: &str,
+    tipo: &str,
+) -> Result<bool, String> {
+    let row = sqlx::query(
+        "SELECT 1 FROM gafetes WHERE numero = ? AND tipo = ? LIMIT 1"
+    )
+    .bind(numero)
+    .bind(tipo)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Error al verificar número y tipo: {}", e))?;
+
+    Ok(row.is_some())
+}
+
 /// Verifica si un gafete está en uso (tiene ingreso activo)
 pub async fn is_en_uso(pool: &SqlitePool, numero: &str) -> Result<bool, String> {
     let row = sqlx::query(

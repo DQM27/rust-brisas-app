@@ -13,13 +13,13 @@
 
   // Estado del formulario
   let numero = "";
-  let tipo = "contratista";
+  let tipo: "contratista" | "proveedor" | "visita" | "otro" = "contratista";
   let isEditing = false;
 
   // Cargar datos iniciales si es edición
   $: if (initialData) {
     numero = initialData.numero;
-    tipo = initialData.tipo;
+    tipo = initialData.tipo;   // initialData.tipo ya tiene el tipo correcto
     isEditing = true;
   } else {
     numero = "";
@@ -41,7 +41,7 @@
 
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-auto">
   <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-    {isEditing ? 'Editar Gafete' : 'Nuevo Gafete'}
+    {isEditing ? "Editar Gafete" : "Nuevo Gafete"}
   </h2>
 
   <form on:submit|preventDefault={handleSubmit} class="space-y-4">
@@ -104,7 +104,7 @@
           </svg>
           Guardando...
         {:else}
-          {isEditing ? 'Actualizar' : 'Crear Gafete'}
+          {isEditing ? "Actualizar" : "Crear Gafete"}
         {/if}
       </button>
     </div>
