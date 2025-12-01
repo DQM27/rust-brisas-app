@@ -110,7 +110,7 @@
       gafeteNumero: gafeteNumero.trim().toUpperCase() || null,
       vehiculoId: modoIngreso === "vehiculo" ? vehiculoId : null,
       observaciones: observaciones.trim() || null,
-      usuarioIngresoId: "usuario_actual_id", // TODO: Obtener del store de auth
+      usuarioIngresoId: "00000000-0000-0000-0000-000000000000", // TODO: Obtener del store de auth
     };
 
     dispatch("submit", data);

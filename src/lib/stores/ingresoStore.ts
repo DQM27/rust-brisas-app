@@ -20,7 +20,7 @@ function createIngresoStore() {
         },
         // Agregar un nuevo ingreso a la lista local
         add: (ingreso: IngresoResponse) => {
-            update(items => [ingreso, ...items]);
+            update(items => items ? [ingreso, ...items] : [ingreso]);
         },
         // Remover un ingreso (cuando sale)
         remove: (id: string) => {
@@ -37,6 +37,6 @@ export const ingresoStore = createIngresoStore();
 
 // Stores derivados para contadores
 export const totalPersonasAdentro = derived(ingresoStore, $ingresos => $ingresos.length);
-export const contratistasAdentro = derived(ingresoStore, $ingresos => 
+export const contratistasAdentro = derived(ingresoStore, $ingresos =>
     $ingresos.filter(i => i.tipoIngreso === 'contratista').length
 );

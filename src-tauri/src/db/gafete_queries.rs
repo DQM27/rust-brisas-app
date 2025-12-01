@@ -4,7 +4,7 @@
 // Queries SQL puras - Sin lógica de negocio
 
 use crate::models::gafete::{Gafete, TipoGafete};
-use sqlx::{SqlitePool, Row};
+use sqlx::{Row, SqlitePool};
 
 // ==========================================
 // QUERIES DE LECTURA
@@ -12,14 +12,13 @@ use sqlx::{SqlitePool, Row};
 
 /// Busca un gafete por número
 pub async fn find_by_numero(pool: &SqlitePool, numero: &str) -> Result<Gafete, String> {
-    let row = sqlx::query(
-        "SELECT numero, tipo, created_at, updated_at FROM gafetes WHERE numero = ?"
-    )
-    .bind(numero)
-    .fetch_one(pool)
-    .await
-    .map_err(|_| format!("Gafete {} no encontrado", numero))?;
-    
+    let row =
+        sqlx::query("SELECT numero, tipo, created_at, updated_at FROM gafetes WHERE numero = ?")
+            .bind(numero)
+            .fetch_one(pool)
+            .await
+            .map_err(|_| format!("Gafete {} no encontrado", numero))?;
+
     Ok(Gafete {
         numero: row.get("numero"),
         tipo: TipoGafete::from_str(row.get("tipo"))?,
@@ -30,13 +29,12 @@ pub async fn find_by_numero(pool: &SqlitePool, numero: &str) -> Result<Gafete, S
 
 /// Obtiene todos los gafetes
 pub async fn find_all(pool: &SqlitePool) -> Result<Vec<Gafete>, String> {
-    let rows = sqlx::query(
-        "SELECT numero, tipo, created_at, updated_at FROM gafetes ORDER BY numero"
-    )
-    .fetch_all(pool)
-    .await
-    .map_err(|e| format!("Error al obtener gafetes: {}", e))?;
-    
+    let rows =
+        sqlx::query("SELECT numero, tipo, created_at, updated_at FROM gafetes ORDER BY numero")
+            .fetch_all(pool)
+            .await
+            .map_err(|e| format!("Error al obtener gafetes: {}", e))?;
+
     let gafetes: Vec<Gafete> = rows
         .into_iter()
         .filter_map(|row| {
@@ -48,20 +46,20 @@ pub async fn find_all(pool: &SqlitePool) -> Result<Vec<Gafete>, String> {
             })
         })
         .collect();
-    
+
     Ok(gafetes)
 }
 
 /// Busca gafetes de un tipo específico
 pub async fn find_by_tipo(pool: &SqlitePool, tipo: &str) -> Result<Vec<Gafete>, String> {
     let rows = sqlx::query(
-        "SELECT numero, tipo, created_at, updated_at FROM gafetes WHERE tipo = ? ORDER BY numero"
+        "SELECT numero, tipo, created_at, updated_at FROM gafetes WHERE tipo = ? ORDER BY numero",
     )
     .bind(tipo)
     .fetch_all(pool)
     .await
     .map_err(|e| format!("Error al obtener gafetes: {}", e))?;
-    
+
     let gafetes: Vec<Gafete> = rows
         .into_iter()
         .filter_map(|row| {
@@ -73,7 +71,7 @@ pub async fn find_by_tipo(pool: &SqlitePool, tipo: &str) -> Result<Vec<Gafete>, 
             })
         })
         .collect();
-    
+
     Ok(gafetes)
 }
 
@@ -84,7 +82,7 @@ pub async fn count_by_numero(pool: &SqlitePool, numero: &str) -> Result<i32, Str
         .fetch_one(pool)
         .await
         .map_err(|e| format!("Error al verificar número: {}", e))?;
-    
+
     Ok(row.get("count"))
 }
 
@@ -92,30 +90,33 @@ pub async fn count_by_numero(pool: &SqlitePool, numero: &str) -> Result<i32, Str
 pub async fn is_en_uso(pool: &SqlitePool, numero: &str) -> Result<bool, String> {
     let row = sqlx::query(
         "SELECT COUNT(*) as count FROM ingresos 
-         WHERE gafete_numero = ? AND fecha_hora_salida IS NULL"
+         WHERE gafete_numero = ? AND fecha_hora_salida IS NULL",
     )
     .bind(numero)
     .fetch_one(pool)
     .await
     .map_err(|e| format!("Error al verificar disponibilidad: {}", e))?;
-    
+
     let count: i32 = row.get("count");
     Ok(count > 0)
 }
 
 /// Obtiene números de gafetes disponibles de un tipo
-pub async fn find_disponibles_by_tipo(pool: &SqlitePool, tipo: &str) -> Result<Vec<String>, String> {
+pub async fn find_disponibles_by_tipo(
+    pool: &SqlitePool,
+    tipo: &str,
+) -> Result<Vec<String>, String> {
     let rows = sqlx::query(
         "SELECT g.numero FROM gafetes g
-         LEFT JOIN ingresos i ON g.numero = i.gafete_numero AND i.fecha_salida IS NULL
+         LEFT JOIN ingresos i ON g.numero = i.gafete_numero AND i.fecha_hora_salida IS NULL
          WHERE g.tipo = ? AND i.id IS NULL AND g.numero != 'S/G'
-         ORDER BY g.numero"
+         ORDER BY g.numero",
     )
     .bind(tipo)
     .fetch_all(pool)
     .await
     .map_err(|e| format!("Error al obtener disponibles: {}", e))?;
-    
+
     Ok(rows.into_iter().map(|row| row.get("numero")).collect())
 }
 
@@ -131,23 +132,21 @@ pub async fn insert(
     created_at: &str,
     updated_at: &str,
 ) -> Result<(), String> {
-    sqlx::query(
-        "INSERT INTO gafetes (numero, tipo, created_at, updated_at) VALUES (?, ?, ?, ?)"
-    )
-    .bind(numero)
-    .bind(tipo)
-    .bind(created_at)
-    .bind(updated_at)
-    .execute(pool)
-    .await
-    .map_err(|e| {
-        if e.to_string().contains("UNIQUE constraint") {
-            format!("Ya existe un gafete con el número {}", numero)
-        } else {
-            format!("Error al crear gafete: {}", e)
-        }
-    })?;
-    
+    sqlx::query("INSERT INTO gafetes (numero, tipo, created_at, updated_at) VALUES (?, ?, ?, ?)")
+        .bind(numero)
+        .bind(tipo)
+        .bind(created_at)
+        .bind(updated_at)
+        .execute(pool)
+        .await
+        .map_err(|e| {
+            if e.to_string().contains("UNIQUE constraint") {
+                format!("Ya existe un gafete con el número {}", numero)
+            } else {
+                format!("Error al crear gafete: {}", e)
+            }
+        })?;
+
     Ok(())
 }
 
@@ -158,16 +157,14 @@ pub async fn update(
     tipo: Option<&str>,
     updated_at: &str,
 ) -> Result<(), String> {
-    sqlx::query(
-        "UPDATE gafetes SET tipo = COALESCE(?, tipo), updated_at = ? WHERE numero = ?"
-    )
-    .bind(tipo)
-    .bind(updated_at)
-    .bind(numero)
-    .execute(pool)
-    .await
-    .map_err(|e| format!("Error al actualizar gafete: {}", e))?;
-    
+    sqlx::query("UPDATE gafetes SET tipo = COALESCE(?, tipo), updated_at = ? WHERE numero = ?")
+        .bind(tipo)
+        .bind(updated_at)
+        .bind(numero)
+        .execute(pool)
+        .await
+        .map_err(|e| format!("Error al actualizar gafete: {}", e))?;
+
     Ok(())
 }
 
@@ -178,6 +175,6 @@ pub async fn delete(pool: &SqlitePool, numero: &str) -> Result<(), String> {
         .execute(pool)
         .await
         .map_err(|e| format!("Error al eliminar gafete: {}", e))?;
-    
+
     Ok(())
 }

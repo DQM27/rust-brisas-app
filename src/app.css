@@ -1,2 +1,8 @@
 @import "tailwindcss";
 @import "./styles/theme.css";
+
+:root {
+    --ag-row-height: 42px;
+    --ag-header-height: 48px;
+    --ag-list-item-height: 24px;
+}

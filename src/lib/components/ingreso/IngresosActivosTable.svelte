@@ -99,7 +99,7 @@
       ingresoId: event.detail.ingresoId,
       devolvioGafete: event.detail.devolvioGafete,
       observacionesSalida: event.detail.observaciones,
-      usuarioSalidaId: "usuario_actual_id",
+      usuarioSalidaId: "00000000-0000-0000-0000-000000000000", // TODO: Obtener del store de auth
     });
 
     if (result.ok) {
@@ -118,9 +118,13 @@
   });
 </script>
 
-<div class="flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden h-full">
+<div
+  class="flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden h-full"
+>
   <!-- Header -->
-  <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+  <div
+    class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center"
+  >
     <h2 class="text-lg font-bold text-gray-900 dark:text-white">
       Personas Adentro ({ingresos?.length ?? 0})
     </h2>

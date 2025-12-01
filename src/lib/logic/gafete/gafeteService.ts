@@ -83,7 +83,7 @@ export async function fetchAll(): Promise<ServiceResult<GafeteListResponse>> {
  */
 export async function fetchDisponibles(): Promise<ServiceResult<GafeteResponse[]>> {
     try {
-        const data = await gafete.getDisponibles();
+        const data = await gafete.getDisponibles('contratista');
         return { ok: true, data };
     } catch (err: any) {
         console.error('Error al cargar gafetes disponibles:', err);
