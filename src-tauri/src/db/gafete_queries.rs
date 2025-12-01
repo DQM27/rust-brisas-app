@@ -92,23 +92,23 @@ pub async fn exists_by_numero_and_tipo(
     numero: &str,
     tipo: &str,
 ) -> Result<bool, String> {
-    let row = sqlx::query(
-        "SELECT 1 FROM gafetes WHERE numero = ? AND tipo = ? LIMIT 1"
-    )
-    .bind(numero)
-    .bind(tipo)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| format!("Error al verificar número y tipo: {}", e))?;
+    let row = sqlx::query("SELECT 1 FROM gafetes WHERE numero = ? AND tipo = ? LIMIT 1")
+        .bind(numero)
+        .bind(tipo)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| format!("Error al verificar número y tipo: {}", e))?;
 
     Ok(row.is_some())
 }
 
-/// Verifica si un gafete está en uso (tiene ingreso activo)
+/// Verifica si un gafete está en uso (tiene ingreso activo) O tiene una alerta pendiente
 pub async fn is_en_uso(pool: &SqlitePool, numero: &str) -> Result<bool, String> {
     let row = sqlx::query(
-        "SELECT COUNT(*) as count FROM ingresos 
-         WHERE gafete_numero = ? AND fecha_hora_salida IS NULL",
+        "SELECT (
+            (SELECT COUNT(*) FROM ingresos WHERE gafete_numero = ?1 AND fecha_hora_salida IS NULL) +
+            (SELECT COUNT(*) FROM alertas_gafetes WHERE gafete_numero = ?1 AND resuelto = 0)
+         ) as count",
     )
     .bind(numero)
     .fetch_one(pool)
@@ -127,7 +127,8 @@ pub async fn find_disponibles_by_tipo(
     let rows = sqlx::query(
         "SELECT g.numero FROM gafetes g
          LEFT JOIN ingresos i ON g.numero = i.gafete_numero AND i.fecha_hora_salida IS NULL
-         WHERE g.tipo = ? AND i.id IS NULL AND g.numero != 'S/G'
+         LEFT JOIN alertas_gafetes a ON g.numero = a.gafete_numero AND a.resuelto = 0
+         WHERE g.tipo = ? AND i.id IS NULL AND a.id IS NULL AND g.numero != 'S/G'
          ORDER BY g.numero",
     )
     .bind(tipo)
