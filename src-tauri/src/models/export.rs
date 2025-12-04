@@ -96,18 +96,21 @@ impl Default for CsvDelimiter {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExportRequest {
-    pub format: String,                     // "pdf" | "excel" | "csv"
-    pub headers: Vec<String>,               // Headers de columnas
+    pub format: String,                                // "pdf" | "excel" | "csv"
+    pub headers: Vec<String>,                          // Headers de columnas
     pub rows: Vec<HashMap<String, serde_json::Value>>, // Datos (flexible)
-    
+
     // Opcionales para PDF
-    pub title: Option<String>,              // Título del documento
-    pub orientation: Option<String>,        // "portrait" | "landscape"
-    pub show_preview: Option<bool>,         // Si mostrar preview (PDF.js)
-    
+    pub title: Option<String>,       // Título del documento
+    pub orientation: Option<String>, // "portrait" | "landscape"
+    pub show_preview: Option<bool>,  // Si mostrar preview (PDF.js)
+
     // Opcionales para CSV
-    pub delimiter: Option<String>,          // "comma" | "semicolon" | "tab" | "pipe"
-    pub include_bom: Option<bool>,          // BOM para Excel UTF-8
+    pub delimiter: Option<String>, // "comma" | "semicolon" | "tab" | "pipe"
+    pub include_bom: Option<bool>, // BOM para Excel UTF-8
+
+    // Opcionales generales
+    pub target_path: Option<String>, // Path absoluto donde guardar el archivo
 }
 
 /// Configuración específica para PDF
@@ -175,8 +178,8 @@ impl Default for CsvConfig {
 #[serde(rename_all = "camelCase")]
 pub struct PdfExportResponse {
     pub success: bool,
-    pub bytes: Option<Vec<u8>>,     // Bytes del PDF
-    pub file_path: Option<String>,  // Path si se guardó
+    pub bytes: Option<Vec<u8>>,    // Bytes del PDF
+    pub file_path: Option<String>, // Path si se guardó
     pub message: String,
 }
 
@@ -185,7 +188,7 @@ pub struct PdfExportResponse {
 #[serde(rename_all = "camelCase")]
 pub struct ExcelExportResponse {
     pub success: bool,
-    pub file_path: Option<String>,  // Path donde se guardó
+    pub file_path: Option<String>, // Path donde se guardó
     pub message: String,
 }
 
@@ -194,7 +197,7 @@ pub struct ExcelExportResponse {
 #[serde(rename_all = "camelCase")]
 pub struct CsvExportResponse {
     pub success: bool,
-    pub file_path: Option<String>,  // Path donde se guardó
+    pub file_path: Option<String>, // Path donde se guardó
     pub message: String,
 }
 
@@ -203,9 +206,9 @@ pub struct CsvExportResponse {
 #[serde(rename_all = "camelCase")]
 pub struct ExportResponse {
     pub success: bool,
-    pub format: String,             // "pdf" | "excel" | "csv"
-    pub bytes: Option<Vec<u8>>,     // Solo para PDF
-    pub file_path: Option<String>,  // Para todos
+    pub format: String,            // "pdf" | "excel" | "csv"
+    pub bytes: Option<Vec<u8>>,    // Solo para PDF
+    pub file_path: Option<String>, // Para todos
     pub message: String,
 }
 
@@ -222,4 +225,5 @@ pub struct ExportData {
     pub pdf_config: Option<PdfConfig>,
     pub excel_config: Option<ExcelConfig>,
     pub csv_config: Option<CsvConfig>,
+    pub target_path: Option<String>,
 }

@@ -19,12 +19,10 @@ use std::collections::HashMap;
 /// Punto de entrada principal para cualquier exportación
 pub async fn export_data(request: ExportRequest) -> ExportResult<ExportResponse> {
     // 1. Validar request completo
-    domain::validar_export_request(&request)
-        .map_err(|e| ExportError::InvalidData(e))?;
+    domain::validar_export_request(&request).map_err(|e| ExportError::InvalidData(e))?;
 
     // 2. Validar tamaño total (seguridad)
-    domain::validar_tamano_total(&request)
-        .map_err(|e| ExportError::InvalidData(e))?;
+    domain::validar_tamano_total(&request).map_err(|e| ExportError::InvalidData(e))?;
 
     // 3. Normalizar datos
     let export_data = normalizar_export_data(&request)?;
@@ -44,8 +42,8 @@ pub async fn export_data(request: ExportRequest) -> ExportResult<ExportResponse>
 /// Convierte ExportRequest en ExportData normalizado
 fn normalizar_export_data(request: &ExportRequest) -> ExportResult<ExportData> {
     // 1. Parsear formato
-    let format = ExportFormat::from_str(&request.format)
-        .map_err(|e| ExportError::InvalidFormat(e))?;
+    let format =
+        ExportFormat::from_str(&request.format).map_err(|e| ExportError::InvalidFormat(e))?;
 
     // 2. Clonar headers
     let headers = request.headers.clone();
@@ -83,6 +81,7 @@ fn normalizar_export_data(request: &ExportRequest) -> ExportResult<ExportData> {
         pdf_config,
         excel_config,
         csv_config,
+        target_path: request.target_path.clone(),
     })
 }
 
@@ -90,8 +89,7 @@ fn normalizar_export_data(request: &ExportRequest) -> ExportResult<ExportData> {
 fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
     // Título
     let title = if let Some(ref t) = request.title {
-        domain::validar_titulo(t)
-            .map_err(|e| ExportError::InvalidTitle(e))?;
+        domain::validar_titulo(t).map_err(|e| ExportError::InvalidTitle(e))?;
         domain::normalizar_titulo(t)
     } else {
         "Reporte".to_string()
@@ -99,8 +97,7 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
 
     // Orientación
     let orientation = if let Some(ref o) = request.orientation {
-        domain::validar_orientacion(o)
-            .map_err(|e| ExportError::InvalidOrientation(e))?
+        domain::validar_orientacion(o).map_err(|e| ExportError::InvalidOrientation(e))?
     } else {
         PageOrientation::Landscape
     };
@@ -139,8 +136,7 @@ fn construir_csv_config(request: &ExportRequest) -> ExportResult<CsvConfig> {
 
     // Delimitador
     let delimiter = if let Some(ref d) = request.delimiter {
-        domain::validar_delimitador(d)
-            .map_err(|e| ExportError::InvalidDelimiter(e))?
+        domain::validar_delimitador(d).map_err(|e| ExportError::InvalidDelimiter(e))?
     } else {
         CsvDelimiter::Comma
     };
@@ -165,18 +161,34 @@ fn construir_csv_config(request: &ExportRequest) -> ExportResult<CsvConfig> {
 async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse> {
     use crate::export::pdf;
 
-    let config = data.pdf_config.ok_or_else(|| {
-        ExportError::Unknown("Config PDF no encontrada".to_string())
-    })?;
+    let config = data
+        .pdf_config
+        .ok_or_else(|| ExportError::Unknown("Config PDF no encontrada".to_string()))?;
 
     // Generar PDF
     let pdf_bytes = pdf::generate_pdf(&data.headers, &data.rows, &config)?;
 
+    // Determinar si guardar en disco
+    let file_path = if let Some(path) = data.target_path {
+        std::fs::write(&path, &pdf_bytes)
+            .map_err(|e| ExportError::FileSystemError(format!("Error escribiendo PDF: {}", e)))?;
+        Some(path)
+    } else {
+        None
+    };
+
+    // Si hay preview, devolver bytes aunque se haya guardado
+    let bytes = if config.show_preview || file_path.is_none() {
+        Some(pdf_bytes)
+    } else {
+        None
+    };
+
     Ok(ExportResponse {
         success: true,
         format: "pdf".to_string(),
-        bytes: Some(pdf_bytes),
-        file_path: None,
+        bytes,
+        file_path,
         message: "PDF generado exitosamente".to_string(),
     })
 }
@@ -193,9 +205,9 @@ async fn export_to_pdf_internal(_data: ExportData) -> ExportResult<ExportRespons
 async fn export_to_excel_internal(data: ExportData) -> ExportResult<ExportResponse> {
     use crate::export::excel;
 
-    let config = data.excel_config.ok_or_else(|| {
-        ExportError::Unknown("Config Excel no encontrada".to_string())
-    })?;
+    let config = data
+        .excel_config
+        .ok_or_else(|| ExportError::Unknown("Config Excel no encontrada".to_string()))?;
 
     // Generar Excel y obtener path
     let file_path = excel::generate_excel(&data.headers, &data.rows, &config)?;
@@ -220,12 +232,12 @@ async fn export_to_excel_internal(_data: ExportData) -> ExportResult<ExportRespo
 async fn export_to_csv_internal(data: ExportData) -> ExportResult<ExportResponse> {
     use crate::export::csv;
 
-    let config = data.csv_config.ok_or_else(|| {
-        ExportError::Unknown("Config CSV no encontrada".to_string())
-    })?;
+    let config = data
+        .csv_config
+        .ok_or_else(|| ExportError::Unknown("Config CSV no encontrada".to_string()))?;
 
     // Generar CSV y obtener path
-    let file_path = csv::generate_csv(&data.headers, &data.rows, &config)?;
+    let file_path = csv::generate_csv(&data.headers, &data.rows, &config, data.target_path)?;
 
     Ok(ExportResponse {
         success: true,
@@ -251,6 +263,8 @@ fn sanitizar_filename(filename: &str) -> String {
         })
         .collect::<String>()
         .trim_matches('-')
+        .to_string()
+        .trim_matches('_')
         .to_string()
 }
 

@@ -13,19 +13,23 @@
   import { ingresoStore } from "$lib/stores/ingresoStore";
 
   import SalidaModal from "./SalidaModal.svelte";
-  
+
   // ✅ NUEVO: Importar componentes de exportación
   import ExportDialog from "$lib/components/export/ExportDialog.svelte";
-  import { exportData, previewPDF, downloadBytes } from "$lib/services/exportService";
+  import {
+    exportData,
+    previewPDF,
+    downloadBytes,
+  } from "$lib/services/exportService";
   import type { ExportOptions } from "$lib/services/exportService";
 
   // Estado
-  let ingresos: IngresoResponse[] = [];
-  let loading = false;
-  let showSalidaModal = false;
-  let selectedIngreso: IngresoResponse | null = null;
-  let formLoading = false;
-  
+  let ingresos = $state<IngresoResponse[]>([]);
+  let loading = $state(false);
+  let showSalidaModal = $state(false);
+  let selectedIngreso = $state<IngresoResponse | null>(null);
+  let formLoading = $state(false);
+
   // ✅ NUEVO: Estado para exportación
   let gridApi = $state<GridApi | null>(null);
   let showExportDialog = $state(false);
@@ -166,8 +170,8 @@
   }
 
   async function handleExport(
-    format: 'pdf' | 'excel' | 'csv',
-    options: ExportOptions
+    format: "pdf" | "excel" | "csv",
+    options: ExportOptions,
   ) {
     if (!gridApi) return;
 
@@ -178,11 +182,11 @@
         gridApi,
         format,
         options,
-        exportOnlySelected
+        exportOnlySelected,
       );
 
       if (response.success) {
-        if (format === 'pdf' && response.bytes) {
+        if (format === "pdf" && response.bytes) {
           if (options.showPreview) {
             previewPDF(response.bytes);
             toast.success("PDF abierto en nueva pestaña");
@@ -256,7 +260,7 @@
       Personas Adentro ({ingresos?.length ?? 0})
     </h2>
     <button
-      on:click={loadData}
+      onclick={loadData}
       class="text-blue-600 hover:text-blue-800 text-sm font-medium"
     >
       🔄 Actualizar

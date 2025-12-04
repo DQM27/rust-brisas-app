@@ -1,5 +1,6 @@
 // src/lib/services/exportService.ts
 import { invoke } from '@tauri-apps/api/core';
+import { save } from '@tauri-apps/plugin-dialog';
 import type { GridApi } from '@ag-grid-community/core';
 
 // ==========================================
@@ -10,15 +11,18 @@ export interface ExportRequest {
   format: 'pdf' | 'excel' | 'csv';
   headers: string[];
   rows: Record<string, any>[];
-  
+
   // Opcionales para PDF
   title?: string;
   orientation?: 'portrait' | 'landscape';
   showPreview?: boolean;
-  
+
   // Opcionales para CSV
   delimiter?: 'comma' | 'semicolon' | 'tab' | 'pipe';
   includeBom?: boolean;
+
+  // Opcionales generales
+  targetPath?: string;
 }
 
 export interface ExportResponse {
@@ -59,16 +63,16 @@ export function extractGridData(gridApi: GridApi): {
   gridApi.forEachNodeAfterFilterAndSort(node => {
     if (node.data) {
       const row: Record<string, any> = {};
-      
+
       columns.forEach(col => {
         const colId = col.getColId();
         const headerName = col.getColDef().headerName || colId;
         const value = node.data[colId];
-        
+
         // Convertir valores a string de manera segura
         row[headerName] = value != null ? String(value) : '';
       });
-      
+
       rows.push(row);
     }
   });
@@ -94,14 +98,14 @@ export function extractSelectedRows(gridApi: GridApi): {
   selectedNodes.forEach(node => {
     if (node.data) {
       const row: Record<string, any> = {};
-      
+
       columns.forEach(col => {
         const colId = col.getColId();
         const headerName = col.getColDef().headerName || colId;
         const value = node.data[colId];
         row[headerName] = value != null ? String(value) : '';
       });
-      
+
       rows.push(row);
     }
   });
@@ -124,12 +128,33 @@ export async function exportData(
 ): Promise<ExportResponse> {
   try {
     // Extraer datos
-    const { headers, rows } = onlySelected 
+    const { headers, rows } = onlySelected
       ? extractSelectedRows(gridApi)
       : extractGridData(gridApi);
 
     if (rows.length === 0) {
       throw new Error('No hay datos para exportar');
+    }
+
+    let targetPath: string | null = null;
+
+    // Si NO es preview, pedir path de guardado
+    if (!options.showPreview) {
+      const defaultName = options.title
+        ? `${options.title.replace(/[^a-z0-9]/gi, '_')}.${format}`
+        : `export.${format}`;
+
+      targetPath = await save({
+        defaultPath: defaultName,
+        filters: [{
+          name: format.toUpperCase(),
+          extensions: [format]
+        }]
+      });
+
+      if (!targetPath) {
+        throw new Error('Exportación cancelada por el usuario');
+      }
     }
 
     // Construir request
@@ -142,6 +167,7 @@ export async function exportData(
       delimiter: options.delimiter || 'comma',
       includeBom: options.includeBom ?? true,
       showPreview: options.showPreview || false,
+      targetPath: targetPath || undefined,
     };
 
     // Invocar comando Tauri

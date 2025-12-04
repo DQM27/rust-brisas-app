@@ -18,12 +18,17 @@ pub fn generate_csv(
     headers: &[String],
     rows: &[HashMap<String, String>],
     config: &CsvConfig,
+    target_path: Option<String>,
 ) -> ExportResult<String> {
     // 1. Construir contenido CSV
     let csv_content = build_csv_content(headers, rows, config)?;
 
     // 2. Determinar path de salida
-    let output_path = get_output_path(&config.filename)?;
+    let output_path = if let Some(path) = target_path {
+        PathBuf::from(path)
+    } else {
+        get_output_path(&config.filename)?
+    };
 
     // 3. Escribir archivo
     std::fs::write(&output_path, csv_content)
@@ -260,7 +265,7 @@ mod tests {
     #[test]
     fn test_different_delimiters() {
         let values = vec!["A".to_string(), "B".to_string(), "C".to_string()];
-        
+
         assert_eq!(encode_csv_line(&values, ','), "A,B,C");
         assert_eq!(encode_csv_line(&values, ';'), "A;B;C");
         assert_eq!(encode_csv_line(&values, '\t'), "A\tB\tC");

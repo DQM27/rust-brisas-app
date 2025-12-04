@@ -144,6 +144,12 @@
     },
 
     onCellClicked: (event) => {
+      // Si la columna tiene su propio handler (como botones de acción), usarlo
+      if (event.colDef && (event.colDef as any).onCellClicked) {
+        (event.colDef as any).onCellClicked(event);
+        return;
+      }
+
       if (event.data && onRowClicked) {
         onRowClicked(event.data);
       }
