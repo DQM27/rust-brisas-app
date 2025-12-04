@@ -1,74 +1,85 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
-  import { toast } from "svelte-5-french-toast";
-  import type { SearchResult } from "$lib/types/search.types";
-  import * as ingresoService from "$lib/logic/ingreso/ingresoService";
-  import SearchBar from "$lib/components/shared/SearchBar.svelte";
+  import { createEventDispatcher } from 'svelte';
+  import type { SearchResult } from '$lib/types/search.types';
+  import SearchBar from '$lib/components/shared/SearchBar.svelte';
+
+  /**
+   * Componente de presentación para búsqueda de contratista
+   * 
+   * Responsabilidades:
+   * - Renderizar SearchBar
+   * - Mostrar información del contratista validado
+   * - Mostrar alertas de gafetes pendientes
+   * - Emitir eventos al padre
+   * 
+   * NO hace:
+   * - Llamadas al service
+   * - Validaciones de negocio
+   * - Manejo de toasts
+   */
 
   const dispatch = createEventDispatcher();
 
-  export let contratistaId: string = "";
-  export let contratistaNombre: string = "";
-  export let contratistaData: any = null;
+  // ==========================================
+  // PROPS
+  // ==========================================
+
+  export let contratistaId: string = '';
+  export let contratistaNombre: string = '';
+  export let contratistaData: any | null = null;
   export let puedeIngresar: boolean = false;
-  export let mensajeValidacion: string = "";
+  export let mensajeValidacion: string = '';
 
-  async function handleContratistaSelect(event: CustomEvent<SearchResult>) {
-    const selected = event.detail;
-
-    if (selected.tipo !== "contratista") {
-      toast.error("Por favor selecciona un contratista");
-      return;
-    }
-
-    contratistaId = selected.id;
-    contratistaNombre = selected.nombreCompleto || selected.id;
-
-    // Validar si puede ingresar
-    const result = await ingresoService.validarIngreso(selected.id);
-
-    if (result.ok) {
-      const data = result.data;
-      puedeIngresar = data.puedeIngresar;
-      // Fusionamos las alertas en el objeto del contratista para visualizarlas
-      contratistaData = { ...data.contratista, alertas: data.alertas };
-
-      if (!puedeIngresar) {
-        mensajeValidacion = data.motivoRechazo || "No autorizado para ingresar";
-        toast.error(mensajeValidacion);
-      } else {
-        mensajeValidacion = "";
-
-        if (data.alertas && data.alertas.length > 0) {
-          toast("Tiene alertas pendientes", { icon: "⚠️" });
-        }
-
-        // Dispatch con datos del contratista para auto-selección
-        dispatch("validated", { contratistaData: data.contratista });
-      }
-    } else {
-      toast.error(result.error);
-      puedeIngresar = false;
-      contratistaData = null;
-    }
-  }
+  // ==========================================
+  // ESTADO LOCAL
+  // ==========================================
 
   let searchBar: any = null;
 
-  export function reset() {
-    if (searchBar) searchBar.clear();
-    handleSearchClear();
+  // ==========================================
+  // HANDLERS
+  // ==========================================
+
+  function handleContratistaSelect(event: CustomEvent<SearchResult>) {
+    const selected = event.detail;
+
+    // Validación simple de tipo (UI level)
+    if (selected.tipo !== 'contratista') {
+      // Emit evento de error para que el padre maneje
+      dispatch('error', { message: 'Por favor selecciona un contratista' });
+      return;
+    }
+
+    // Emit evento con el ID seleccionado
+    dispatch('select', {
+      id: selected.id,
+      nombreCompleto: selected.nombreCompleto || selected.id
+    });
   }
 
   function handleSearchClear() {
-    contratistaId = "";
-    contratistaNombre = "";
-    puedeIngresar = false;
-    mensajeValidacion = "";
-    contratistaData = null;
-    dispatch("clear");
+    dispatch('clear');
+  }
+
+  // ==========================================
+  // MÉTODOS PÚBLICOS
+  // ==========================================
+
+  /**
+   * Reset del componente (llamado desde el padre)
+   */
+  export function reset() {
+    if (searchBar) {
+      searchBar.clear();
+    }
+    handleSearchClear();
   }
 </script>
+
+<!-- 
+  Sección de búsqueda de contratista
+  Componente de presentación puro
+-->
 
 <div>
   <label
@@ -77,6 +88,7 @@
   >
     Buscar Contratista
   </label>
+
   <SearchBar
     bind:this={searchBar}
     placeholder="Buscar por nombre o cédula..."
@@ -98,7 +110,7 @@
             {contratistaNombre}
           </p>
           {#if contratistaData?.cedula}
-            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Cédula: {contratistaData.cedula}
             </p>
           {/if}
@@ -124,6 +136,13 @@
           {/if}
         </div>
       </div>
+
+      <!-- Mensaje de validación (si no puede ingresar) -->
+      {#if !puedeIngresar && mensajeValidacion}
+        <div class="mt-3 p-2 bg-red-100 dark:bg-red-900/30 rounded text-sm text-red-800 dark:text-red-200">
+          {mensajeValidacion}
+        </div>
+      {/if}
 
       <!-- Alertas de Gafetes Pendientes -->
       {#if contratistaData?.alertas && contratistaData.alertas.length > 0}

@@ -185,6 +185,8 @@ pub async fn find_ingresos_abiertos(pool: &SqlitePool) -> Result<Vec<Ingreso>, S
     rows.iter().map(|row| row_to_ingreso(row)).collect()
 }
 
+
+
 /// Obtiene ingresos abiertos con detalles (JOINs)
 pub async fn find_ingresos_abiertos_with_details(
     pool: &SqlitePool,
@@ -204,6 +206,47 @@ pub async fn find_ingresos_abiertos_with_details(
     .fetch_all(pool)
     .await
     .map_err(|e| format!("Error al obtener ingresos abiertos con detalles: {}", e))?;
+
+    let mut results = Vec::new();
+    for row in rows {
+        let ingreso = row_to_ingreso(&row)?;
+        let details = extract_details(&row);
+        results.push((ingreso, details));
+    }
+    Ok(results)
+}
+
+/// Obtiene salidas en un rango de fechas (query optimizada)
+/// 
+/// Filtra directamente en SQL en lugar de cargar todo y filtrar en memoria
+pub async fn find_salidas_en_rango(
+    pool: &SqlitePool,
+    fecha_inicio: &str, // formato: "YYYY-MM-DD"
+    fecha_fin: &str,    // formato: "YYYY-MM-DD"
+) -> Result<Vec<(Ingreso, IngresoDetails)>, String> {
+    // Construir fechas con tiempo para el rango completo
+    let fecha_inicio_completa = format!("{}T00:00:00", fecha_inicio);
+    let fecha_fin_completa = format!("{}T23:59:59", fecha_fin);
+
+    let rows = sqlx::query(
+        "SELECT i.*,
+                u_ingreso.nombre as usuario_ingreso_nombre,
+                u_salida.nombre as usuario_salida_nombre,
+                v.placa as vehiculo_placa
+         FROM ingresos i
+         LEFT JOIN users u_ingreso ON i.usuario_ingreso_id = u_ingreso.id
+         LEFT JOIN users u_salida ON i.usuario_salida_id = u_salida.id
+         LEFT JOIN vehiculos v ON i.vehiculo_id = v.id
+         WHERE i.fecha_hora_salida IS NOT NULL 
+           AND i.fecha_hora_salida >= ?
+           AND i.fecha_hora_salida <= ?
+         ORDER BY i.fecha_hora_salida DESC",
+    )
+    .bind(fecha_inicio_completa)
+    .bind(fecha_fin_completa)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| format!("Error al obtener salidas en rango: {}", e))?;
 
     let mut results = Vec::new();
     for row in rows {

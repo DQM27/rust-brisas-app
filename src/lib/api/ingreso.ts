@@ -59,11 +59,21 @@ export const ingreso = {
     },
 
     /**
-     * Obtener salidas del día actual
+     * Obtener salidas del día actual o de una fecha específica
      */
-    getSalidasDelDia: async (): Promise<IngresoResponse[]> => {
-        const fecha = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        return await invoke('get_salidas_del_dia', { fecha });
+    getSalidasDelDia: async (fecha?: string): Promise<IngresoResponse[]> => {
+        const targetDate = fecha || new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        return await invoke('get_salidas_del_dia', { fecha: targetDate });
+    },
+
+    /**
+     * Obtener salidas en un rango de fechas (query optimizada en backend)
+     */
+    getSalidasEnRango: async (fechaInicio: string, fechaFin: string): Promise<IngresoResponse[]> => {
+        return await invoke('get_salidas_en_rango', { 
+            fechaInicio, 
+            fechaFin 
+        });
     },
 
     // ==========================================

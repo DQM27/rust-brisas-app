@@ -23,13 +23,16 @@
   import AGGridToolbar from "./AGGridToolbar.svelte";
   import AGGridSettingsModal from "./AGGridSettingsModal.svelte";
 
-  interface Props extends AGGridWrapperProps<T> {}
+  interface Props extends AGGridWrapperProps<T> {
+    customToolbarSlot?: import('svelte').Snippet;
+  }
 
   let {
     gridId,
     columnDefs,
     rowData,
     customButtons = {},
+    customToolbarSlot,
     onGridReady,
     onSelectionChanged,
     onRowClicked,
@@ -180,6 +183,7 @@
     {selectedRows}
     {gridApi}
     {customButtons}
+    {customToolbarSlot}
     onOpenSettings={() => (showSettings = true)}
   />
 

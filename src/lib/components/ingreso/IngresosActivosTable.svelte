@@ -13,6 +13,7 @@
   import { ingresoStore } from "$lib/stores/ingresoStore";
 
   import SalidaModal from "./SalidaModal.svelte";
+  import DateRangePicker from "$lib/components/shared/DateRangePicker.svelte";
 
   // ✅ NUEVO: Importar componentes de exportación
   import ExportDialog from "$lib/components/export/ExportDialog.svelte";
@@ -38,9 +39,16 @@
   // Estado para alternar entre activos y salidas
   let showingActive = $state(true);
 
-  // Suscribirse al store
-  const unsubscribe = ingresoStore.subscribe((value) => {
-    ingresos = value;
+  // ✅ Estado para rango de fechas en historial
+  let startDate = $state(new Date().toISOString().split("T")[0]);
+  let endDate = $state(new Date().toISOString().split("T")[0]);
+
+  // ✅ Suscribirse al store con nueva estructura
+  const unsubscribe = ingresoStore.subscribe((storeState) => {
+    ingresos = storeState.data;
+    if (showingActive) {
+      loading = storeState.loading;
+    }
   });
 
   onDestroy(() => {
@@ -48,123 +56,159 @@
   });
 
   // Configuración de columnas - cambia según el modo
-  const columnDefs = $derived.by((): ColDef<IngresoResponse>[] => [
-    {
-      field: "nombreCompleto",
-      headerName: "Nombre",
-      flex: 1,
-      minWidth: 200,
-      cellStyle: { fontWeight: "500" },
-    },
-    {
-      field: "empresaNombre",
-      headerName: "Empresa",
-      width: 150,
-    },
-    {
-      field: "gafeteNumero",
-      headerName: "Gafete",
-      width: 100,
-      cellRenderer: (params: any) =>
-        params.value
-          ? `<span class="font-mono font-bold text-blue-600">${params.value}</span>`
-          : "-",
-    },
-    {
-      field: "vehiculoPlaca",
-      headerName: "Vehículo",
-      width: 120,
-      valueFormatter: (params) => params.value || "-",
-    },
-    {
-      field: "tipoAutorizacionDisplay",
-      headerName: "Autorización",
-      width: 120,
-    },
-    {
-      field: "modoIngresoDisplay",
-      headerName: "Modo",
-      width: 120,
-    },
-    {
-      field: "usuarioIngresoNombre",
-      headerName: "Registró Entrada",
-      width: 150,
-    },
-    {
-      field: "usuarioSalidaNombre",
-      headerName: "Registró Salida",
-      width: 150,
-      valueFormatter: (params) => params.value || "-",
-    },
-    {
-      field: "fechaHoraIngreso",
-      headerName: "Hora Entrada",
-      width: 140,
-      valueFormatter: (params) =>
-        new Date(params.value).toLocaleString("es-MX", {
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-    },
-    {
-      field: "fechaHoraSalida",
-      headerName: "Hora Salida",
-      width: 140,
-      hide: showingActive, // Solo mostrar en vista de salidas
-      valueFormatter: (params) =>
-        params.value
-          ? new Date(params.value).toLocaleString("es-MX", {
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "-",
-    },
-    {
+  const columnDefs = $derived.by((): ColDef<IngresoResponse>[] => {
+    const baseColumns: ColDef<IngresoResponse>[] = [
+      {
+        field: "nombreCompleto",
+        headerName: "Nombre",
+        flex: 1,
+        minWidth: 200,
+        cellStyle: { fontWeight: "500" },
+      },
+      {
+        field: "empresaNombre",
+        headerName: "Empresa",
+        width: 150,
+      },
+      {
+        field: "gafeteNumero",
+        headerName: "Gafete",
+        width: 100,
+        cellRenderer: (params: any) =>
+          params.value
+            ? `<span class="font-mono font-bold text-blue-600">${params.value}</span>`
+            : "-",
+      },
+      {
+        field: "vehiculoPlaca",
+        headerName: "Vehículo",
+        width: 120,
+        valueFormatter: (params) => params.value || "-",
+      },
+      {
+        field: "tipoAutorizacionDisplay",
+        headerName: "Autorización",
+        width: 120,
+      },
+      {
+        field: "modoIngresoDisplay",
+        headerName: "Modo",
+        width: 120,
+      },
+      {
+        field: "usuarioIngresoNombre",
+        headerName: "Registró Entrada",
+        width: 150,
+      },
+      {
+        field: "usuarioSalidaNombre",
+        headerName: "Registró Salida",
+        width: 150,
+        valueFormatter: (params) => params.value || "-",
+      },
+      {
+        field: "fechaHoraIngreso",
+        headerName: "Hora Entrada",
+        width: 140,
+        valueFormatter: (params) =>
+          new Date(params.value).toLocaleString("es-MX", {
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+      },
+    ];
+
+    // Agregar columnas condicionales según el modo
+    if (!showingActive) {
+      // Modo historial: agregar columna de hora salida
+      baseColumns.push({
+        field: "fechaHoraSalida" as any,
+        headerName: "Hora Salida",
+        width: 140,
+        valueFormatter: (params) =>
+          params.value
+            ? new Date(params.value).toLocaleString("es-MX", {
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "-",
+      } as ColDef<IngresoResponse>);
+    }
+
+    // Siempre agregar columna de tiempo de permanencia
+    baseColumns.push({
       field: "tiempoPermanenciaTexto",
       headerName: "Tiempo",
       width: 120,
       cellStyle: { color: "#666" },
-    },
-    {
-      headerName: "Acciones",
-      width: 140,
-      hide: !showingActive, // Solo mostrar en vista activa
-      cellRenderer: (params: any) => {
-        return `<button class="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-xs font-medium salida-btn">Registrar Salida</button>`;
-      },
-      onCellClicked: (params: any) => {
-        if (params.event.target.classList.contains("salida-btn")) {
-          handleSalidaClick(params.data);
-        }
-      },
-    },
-  ]);
+    });
+
+    if (showingActive) {
+      // Modo activos: agregar columna de acciones
+      baseColumns.push({
+        headerName: "Acciones",
+        width: 140,
+        cellRenderer: (params: any) => {
+          return `<button class="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-xs font-medium salida-btn">Registrar Salida</button>`;
+        },
+        onCellClicked: (params: any) => {
+          if (params.event.target.classList.contains("salida-btn")) {
+            handleSalidaClick(params.data);
+          }
+        },
+      } as ColDef<IngresoResponse>);
+    }
+
+    return baseColumns;
+  });
 
   // Cargar datos
   async function loadData() {
-    loading = true;
     if (showingActive) {
+      // Para activos, usa el store (que ya tiene su propio loading state)
       await ingresoStore.load();
     } else {
-      // Cargar salidas del día
-      const result = await ingresoService.fetchSalidasDelDia();
+      // Para salidas, usar el método de rango de fechas optimizado
+      loading = true;
+      
+      const result = await ingresoService.fetchSalidasEnRango(startDate, endDate);
+      
       if (result.ok) {
         ingresos = result.data;
+        
+        if (result.data.length === 0) {
+          toast("No se encontraron salidas en el rango seleccionado", { icon: "ℹ️" });
+        }
       } else {
         console.error("Error al cargar salidas:", result.error);
         toast.error(result.error);
         ingresos = [];
       }
+      
+      loading = false;
     }
-    loading = false;
   }
 
-  // Handlers de salida (sin cambios)
+  // Handler para cambio de rango de fechas
+  function handleDateRangeChange(event: CustomEvent) {
+    startDate = event.detail.startDate;
+    endDate = event.detail.endDate;
+    loadData();
+  }
+
+  // Effect para actualizar columnas cuando cambia el modo
+  $effect(() => {
+    if (gridApi && columnDefs) {
+      // Forzar actualización de columnas
+      gridApi.setGridOption('columnDefs', columnDefs);
+    }
+  });
+
+  // Handlers de salida
   function handleSalidaClick(ingreso: IngresoResponse) {
     selectedIngreso = ingreso;
     showSalidaModal = true;
@@ -245,8 +289,8 @@
       default: CustomToolbarButton[];
       singleSelect: CustomToolbarButton[];
       multiSelect: CustomToolbarButton[];
-    } => ({
-      default: [
+    } => {
+      const defaultButtons: CustomToolbarButton[] = [
         {
           id: "toggle-view",
           label: showingActive ? "Ver Salidas" : "Ver Activos",
@@ -268,28 +312,32 @@
           tooltip: "Exportar todos los registros de permanencia",
           onClick: () => handleExportClick(false),
         },
-      ],
-      singleSelect: [
-        {
-          id: "export-selected-single-permanencia",
-          label: "Exportar",
-          icon: FileDown,
-          variant: "primary" as const,
-          tooltip: "Exportar registro seleccionado",
-          onClick: () => handleExportClick(true),
-        },
-      ],
-      multiSelect: [
-        {
-          id: "export-selected-multi-permanencia",
-          label: "Exportar Seleccionados",
-          icon: FileDown,
-          variant: "primary" as const,
-          tooltip: "Exportar registros seleccionados",
-          onClick: () => handleExportClick(true),
-        },
-      ],
-    }),
+      ];
+
+      return {
+        default: defaultButtons,
+        singleSelect: [
+          {
+            id: "export-selected-single-permanencia",
+            label: "Exportar",
+            icon: FileDown,
+            variant: "primary" as const,
+            tooltip: "Exportar registro seleccionado",
+            onClick: () => handleExportClick(true),
+          },
+        ],
+        multiSelect: [
+          {
+            id: "export-selected-multi-permanencia",
+            label: "Exportar Seleccionados",
+            icon: FileDown,
+            variant: "primary" as const,
+            tooltip: "Exportar registros seleccionados",
+            onClick: () => handleExportClick(true),
+          },
+        ],
+      };
+    },
   );
 
   onMount(() => {
@@ -302,50 +350,46 @@
 >
   <!-- Tabla o Empty State -->
   <div class="flex-1 relative">
-    {#if !ingresos || ingresos.length === 0}
+    {#if loading}
       <div
-        class="flex h-full items-center justify-center bg-gray-50 dark:bg-gray-900"
+        transition:fade
+        class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-800/50 z-10"
       >
-        <div class="text-center p-6">
+        <div class="text-center">
           <div
-            class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 mb-4"
-          >
-            <svg
-              class="h-6 w-6 text-blue-600 dark:text-blue-300"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white">
-            No hay personas adentro
-          </h3>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            En este momento no hay registros de ingresos activos.
+            class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"
+          ></div>
+          <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">
+            Cargando...
           </p>
         </div>
       </div>
-    {:else}
-      <AGGridWrapper
-        gridId="entries-list"
-        rowData={ingresos}
-        {columnDefs}
-        {customButtons}
-        onGridReady={(api) => (gridApi = api)}
-        getRowId={(params) => params.data.id}
-      />
     {/if}
+
+    <AGGridWrapper
+      gridId="entries-list"
+      {columnDefs}
+      rowData={ingresos}
+      {customButtons}
+      onGridReady={(api) => (gridApi = api)}
+      getRowId={(params) => params.data.id}
+    >
+      {#snippet customToolbarSlot()}
+        <!-- ✅ DateRangePicker solo visible en modo salidas -->
+        {#if !showingActive}
+          <DateRangePicker
+            {startDate}
+            {endDate}
+            label="Periodo"
+            on:change={handleDateRangeChange}
+          />
+        {/if}
+      {/snippet}
+    </AGGridWrapper>
   </div>
 </div>
 
-<!-- Modal Salida (sin cambios) -->
+<!-- Modal Salida -->
 {#if showSalidaModal && selectedIngreso}
   <div
     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"

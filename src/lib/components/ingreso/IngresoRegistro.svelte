@@ -4,7 +4,7 @@
   import { ingresoStore } from "$lib/stores/ingresoStore";
   import { ingresoFormStore } from "$lib/stores/ingresoFormStore";
 
-  import IngresoForm from "./IngresoForm.svelte";
+  import IngresoForm from "./IngresoFormContainer.svelte";
 
   let formLoading = false;
 

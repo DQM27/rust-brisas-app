@@ -2,41 +2,154 @@ import { writable, derived } from 'svelte/store';
 import type { IngresoResponse } from '$lib/types/ingreso';
 import * as ingresoService from '$lib/logic/ingreso/ingresoService';
 
-// Store principal para los ingresos activos (personas adentro)
+// ==========================================
+// TIPOS
+// ==========================================
+
+interface IngresoStoreState {
+    data: IngresoResponse[];
+    loading: boolean;
+    error: string | null;
+}
+
+// ==========================================
+// STORE FACTORY
+// ==========================================
+
+/**
+ * Store para la lista de ingresos activos (personas adentro)
+ * 
+ * Responsabilidades:
+ * - Mantener lista de ingresos activos
+ * - Cargar datos desde el backend
+ * - Operaciones CRUD locales (optimistic updates)
+ * 
+ * Este store SÍ puede hacer fetching porque es una lista de datos,
+ * no un formulario con lógica de negocio compleja.
+ */
 function createIngresoStore() {
-    const { subscribe, set, update } = writable<IngresoResponse[]>([]);
+    const { subscribe, set, update } = writable<IngresoStoreState>({
+        data: [],
+        loading: false,
+        error: null
+    });
 
     return {
         subscribe,
-        set,
-        // Cargar datos desde el backend
+
+        /**
+         * Cargar ingresos activos desde el backend
+         */
         load: async () => {
+            update(state => ({ ...state, loading: true, error: null }));
+            
             const result = await ingresoService.fetchAbiertos();
+            
             if (result.ok) {
-                set(result.data); // data is already an array
+                update(state => ({
+                    ...state,
+                    data: result.data,
+                    loading: false,
+                    error: null
+                }));
             } else {
-                console.error("Error al cargar ingresos activos:", result.error);
+                console.error('Error al cargar ingresos activos:', result.error);
+                update(state => ({
+                    ...state,
+                    loading: false,
+                    error: result.error
+                }));
             }
         },
-        // Agregar un nuevo ingreso a la lista local
+
+        /**
+         * Agregar un nuevo ingreso a la lista (optimistic update)
+         */
         add: (ingreso: IngresoResponse) => {
-            update(items => items ? [ingreso, ...items] : [ingreso]);
+            update(state => ({
+                ...state,
+                data: [ingreso, ...state.data]
+            }));
         },
-        // Remover un ingreso (cuando sale)
+
+        /**
+         * Remover un ingreso de la lista (cuando sale)
+         */
         remove: (id: string) => {
-            update(items => items.filter(i => i.id !== id));
+            update(state => ({
+                ...state,
+                data: state.data.filter(i => i.id !== id)
+            }));
         },
-        // Actualizar un ingreso existente
+
+        /**
+         * Actualizar un ingreso existente en la lista
+         */
         updateItem: (ingreso: IngresoResponse) => {
-            update(items => items.map(i => i.id === ingreso.id ? ingreso : i));
+            update(state => ({
+                ...state,
+                data: state.data.map(i => i.id === ingreso.id ? ingreso : i)
+            }));
+        },
+
+        /**
+         * Limpiar error
+         */
+        clearError: () => {
+            update(state => ({ ...state, error: null }));
+        },
+
+        /**
+         * Reset completo del store
+         */
+        reset: () => {
+            set({
+                data: [],
+                loading: false,
+                error: null
+            });
         }
     };
 }
 
+// ==========================================
+// STORES
+// ==========================================
+
 export const ingresoStore = createIngresoStore();
 
-// Stores derivados para contadores
-export const totalPersonasAdentro = derived(ingresoStore, $ingresos => $ingresos.length);
-export const contratistasAdentro = derived(ingresoStore, $ingresos =>
-    $ingresos.filter(i => i.tipoIngreso === 'contratista').length
+// ==========================================
+// DERIVED STORES
+// ==========================================
+
+/**
+ * Total de personas adentro
+ */
+export const totalPersonasAdentro = derived(
+    ingresoStore,
+    $store => $store.data.length
+);
+
+/**
+ * Total de contratistas adentro
+ */
+export const contratistasAdentro = derived(
+    ingresoStore,
+    $store => $store.data.filter(i => i.tipoIngreso === 'contratista').length
+);
+
+/**
+ * Indicador de carga
+ */
+export const isLoading = derived(
+    ingresoStore,
+    $store => $store.loading
+);
+
+/**
+ * Error actual si existe
+ */
+export const error = derived(
+    ingresoStore,
+    $store => $store.error
 );

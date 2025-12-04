@@ -1,16 +1,33 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher } from 'svelte';
+
+  /**
+   * Selector de modo de ingreso
+   * Componente de presentación puro
+   */
 
   const dispatch = createEventDispatcher();
 
-  export let modoIngreso: "caminando" | "vehiculo" = "caminando";
+  // ==========================================
+  // PROPS
+  // ==========================================
+
+  export let modoIngreso: 'caminando' | 'vehiculo' = 'caminando';
   export let tieneVehiculos: boolean = false;
 
-  function handleModoChange(modo: "caminando" | "vehiculo") {
-    modoIngreso = modo;
-    dispatch("change", modo);
+  // ==========================================
+  // HANDLERS
+  // ==========================================
+
+  function handleModoChange(modo: 'caminando' | 'vehiculo') {
+    dispatch('change', modo);
   }
 </script>
+
+<!-- 
+  Selector de modo de ingreso (caminando/vehículo)
+  Componente de presentación puro
+-->
 
 <div>
   <label
@@ -22,7 +39,7 @@
     <!-- Caminando -->
     <button
       type="button"
-      on:click={() => handleModoChange("caminando")}
+      on:click={() => handleModoChange('caminando')}
       class="relative flex items-center justify-center p-4 border-2 rounded-lg transition-all {modoIngreso ===
       'caminando'
         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400'
@@ -52,7 +69,7 @@
           Caminando
         </span>
       </div>
-      {#if modoIngreso === "caminando"}
+      {#if modoIngreso === 'caminando'}
         <div
           class="absolute top-2 right-2 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center"
         >
@@ -74,7 +91,7 @@
     <!-- Vehículo -->
     <button
       type="button"
-      on:click={() => handleModoChange("vehiculo")}
+      on:click={() => handleModoChange('vehiculo')}
       disabled={!tieneVehiculos}
       class="relative flex items-center justify-center p-4 border-2 rounded-lg transition-all {modoIngreso ===
       'vehiculo'
@@ -113,7 +130,7 @@
           Vehículo
         </span>
       </div>
-      {#if modoIngreso === "vehiculo"}
+      {#if modoIngreso === 'vehiculo'}
         <div
           class="absolute top-2 right-2 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center"
         >

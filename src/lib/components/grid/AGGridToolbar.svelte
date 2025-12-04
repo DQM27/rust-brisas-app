@@ -25,6 +25,7 @@
       singleSelect?: CustomToolbarButton[];
       multiSelect?: CustomToolbarButton[];
     };
+    customToolbarSlot?: import('svelte').Snippet;
   }
 
   let {
@@ -34,6 +35,7 @@
     gridApi,
     onOpenSettings,
     customButtons = {},
+    customToolbarSlot,
   }: Props = $props();
 
   // Obtener configuración de la grid
@@ -293,8 +295,20 @@
       {/each}
     {/each}
 
+    <!-- Divider antes de componentes personalizados -->
+    {#if visibleButtons.length > 0 && customToolbarSlot}
+      <div class="w-px h-6 bg-white/10"></div>
+    {/if}
+
+    <!-- ✅ NUEVO: Slot personalizado para componentes adicionales (ej: DateRangePicker) -->
+    {#if customToolbarSlot}
+      <div class="flex items-center">
+        {@render customToolbarSlot()}
+      </div>
+    {/if}
+
     <!-- Divider antes de Settings -->
-    {#if visibleButtons.length > 0}
+    {#if visibleButtons.length > 0 || customToolbarSlot}
       <div class="w-px h-6 bg-white/10"></div>
     {/if}
 

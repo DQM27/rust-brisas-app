@@ -88,6 +88,7 @@ macro_rules! register_handlers {
             commands::salida_commands::registrar_salida,
             commands::salida_commands::registrar_salida_con_verificacion_gafete,
             commands::salida_commands::get_salidas_del_dia,
+            commands::salida_commands::get_salidas_en_rango,
             commands::salida_commands::get_estadisticas_salidas,
             
             // ==========================================

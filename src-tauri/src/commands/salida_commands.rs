@@ -70,6 +70,16 @@ pub async fn get_salidas_del_dia(
     salida_service::get_salidas_del_dia(&pool, &fecha).await
 }
 
+/// Obtiene todas las salidas en un rango de fechas
+#[tauri::command]
+pub async fn get_salidas_en_rango(
+    pool: State<'_, SqlitePool>,
+    fecha_inicio: String, // formato: "YYYY-MM-DD"
+    fecha_fin: String,    // formato: "YYYY-MM-DD"
+) -> Result<Vec<IngresoResponse>, String> {
+    salida_service::get_salidas_en_rango(&pool, &fecha_inicio, &fecha_fin).await
+}
+
 /// Obtiene estadísticas de salidas en un rango de fechas
 #[tauri::command]
 pub async fn get_estadisticas_salidas(

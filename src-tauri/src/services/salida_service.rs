@@ -371,3 +371,30 @@ pub async fn get_estadisticas_salidas(
         promedio_permanencia_minutos,
     })
 }
+
+/// Obtiene todas las salidas en un rango de fechas
+pub async fn get_salidas_en_rango(
+    pool: &SqlitePool,
+    fecha_inicio: &str,
+    fecha_fin: &str,
+) -> Result<Vec<IngresoResponse>, String> {
+    // Validar fechas
+    if fecha_inicio > fecha_fin {
+        return Err("La fecha de inicio no puede ser mayor que la fecha de fin".to_string());
+    }
+
+    // Usar la query optimizada de la capa de datos
+    let resultados = db::find_salidas_en_rango(pool, fecha_inicio, fecha_fin).await?;
+
+    // Mapear a IngresoResponse
+    let mut responses = Vec::new();
+    for (ingreso, details) in resultados {
+        let mut response = IngresoResponse::from(ingreso);
+        response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
+        response.usuario_salida_nombre = details.usuario_salida_nombre;
+        response.vehiculo_placa = details.vehiculo_placa;
+        responses.push(response);
+    }
+
+    Ok(responses)
+}

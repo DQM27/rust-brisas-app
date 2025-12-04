@@ -1,39 +1,68 @@
 <script lang="ts">
-  import type { GafeteResponse } from "$lib/types/gafete";
+  import { createEventDispatcher } from 'svelte';
+  import type { GafeteResponse } from '$lib/types/gafete';
+  import * as controller from '$lib/logic/ingreso/ingresoFormController';
 
-  export let gafeteNumero: string = "";
+  /**
+   * Input de gafete con validación visual
+   * Componente de presentación con validación local para feedback inmediato
+   */
+
+  const dispatch = createEventDispatcher();
+
+  // ==========================================
+  // PROPS
+  // ==========================================
+
+  export let gafeteNumero: string = '';
   export let gafetesDisponibles: GafeteResponse[] = [];
 
-  let gafeteValido = false;
+  // ==========================================
+  // ESTADO LOCAL (Solo para UI)
+  // ==========================================
+
+  let gafeteValido = true;
   let gafeteSugerencias: string[] = [];
 
-  // Validación de gafete en tiempo real
+  // ==========================================
+  // VALIDACIÓN REACTIVA (Solo para feedback visual)
+  // ==========================================
+
   $: {
     if (gafeteNumero.trim()) {
-      const normalizado = gafeteNumero.trim().toUpperCase();
-      gafeteValido = gafetesDisponibles.some(
-        (g) => g.numero === normalizado && g.estaDisponible,
+      const validacion = controller.validarGafete(
+        gafeteNumero,
+        gafetesDisponibles
       );
 
-      // Generar sugerencias
-      if (!gafeteValido) {
-        gafeteSugerencias = gafetesDisponibles
-          .filter((g) => g.numero.includes(normalizado))
-          .map((g) => g.numero)
-          .slice(0, 5);
-      } else {
-        gafeteSugerencias = [];
+      if (validacion.ok) {
+        gafeteValido = validacion.data.isValid;
+        gafeteSugerencias = validacion.data.suggestions;
       }
     } else {
-      gafeteValido = true; // Sin gafete es válido
+      gafeteValido = true; // Sin gafete es válido (opcional)
       gafeteSugerencias = [];
     }
   }
 
-  export function isValid(): boolean {
-    return gafeteNumero.trim() === "" || gafeteValido;
+  // ==========================================
+  // HANDLERS
+  // ==========================================
+
+  function handleInput(event: Event) {
+    const target = event.target as HTMLInputElement;
+    dispatch('change', target.value);
+  }
+
+  function handleSugerenciaClick(sugerencia: string) {
+    dispatch('change', sugerencia);
   }
 </script>
+
+<!-- 
+  Input de gafete con validación visual
+  Componente de presentación con validación local para UX
+-->
 
 <div>
   <label
@@ -46,11 +75,12 @@
     <input
       type="text"
       id="gafete"
-      bind:value={gafeteNumero}
+      value={gafeteNumero}
+      on:input={handleInput}
       placeholder="Ej: 027"
       class="w-full px-3 py-2 border {gafeteNumero.trim() && !gafeteValido
-        ? 'border-red-500'
-        : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white uppercase font-mono"
+        ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+        : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'} rounded-md shadow-sm dark:bg-gray-700 dark:text-white uppercase font-mono"
       maxlength="20"
     />
     {#if gafeteNumero.trim()}
@@ -96,8 +126,8 @@
         {#each gafeteSugerencias as sugerencia}
           <button
             type="button"
-            on:click={() => (gafeteNumero = sugerencia)}
-            class="px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600"
+            on:click={() => handleSugerenciaClick(sugerencia)}
+            class="px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
           >
             {sugerencia}
           </button>

@@ -1,85 +1,200 @@
 import { writable } from 'svelte/store';
-import type { GafeteResponse } from '$lib/types/gafete';
+import type { IngresoFormState } from '$lib/types/ingreso-form.types';
 
-export interface IngresoFormState {
-    contratistaId: string;
-    contratistaNombre: string;
-    contratistaData: any | null;
-    puedeIngresar: boolean;
-    mensajeValidacion: string;
-
-    modoIngreso: "caminando" | "vehiculo";
-    vehiculoId: string | null;
-    gafeteNumero: string;
-    tipoAutorizacion: string;
-    observaciones: string;
-}
+// ==========================================
+// ESTADO INICIAL
+// ==========================================
 
 const initialState: IngresoFormState = {
-    contratistaId: "",
-    contratistaNombre: "",
+    // Datos del contratista
+    contratistaId: '',
+    contratistaNombre: '',
     contratistaData: null,
     puedeIngresar: false,
-    mensajeValidacion: "",
+    mensajeValidacion: '',
 
-    modoIngreso: "caminando",
+    // Datos del ingreso
+    modoIngreso: 'caminando',
     vehiculoId: null,
-    gafeteNumero: "",
-    tipoAutorizacion: "praind",
-    observaciones: ""
+    gafeteNumero: '',
+    tipoAutorizacion: 'praind',
+    observaciones: ''
 };
 
+// ==========================================
+// STORE FACTORY
+// ==========================================
+
+/**
+ * Store para el formulario de ingreso
+ * 
+ * Responsabilidades:
+ * - Mantener el estado del formulario
+ * - Proveer métodos simples de actualización
+ * - NO contiene lógica de negocio
+ * 
+ * La lógica de validación y auto-selección está en ingresoService
+ */
 function createIngresoFormStore() {
     const { subscribe, set, update } = writable<IngresoFormState>(initialState);
 
     return {
         subscribe,
 
-        // Actualizar un campo específico
-        setField: (field: keyof IngresoFormState, value: any) => {
+        // ==========================================
+        // MÉTODOS DE ACTUALIZACIÓN INDIVIDUAL
+        // ==========================================
+
+        /**
+         * Actualizar un campo específico del formulario
+         */
+        setField: <K extends keyof IngresoFormState>(
+            field: K,
+            value: IngresoFormState[K]
+        ) => {
             update(state => ({ ...state, [field]: value }));
         },
 
-        // Establecer datos del contratista validado
-        setContratista: (data: any, puedeIngresar: boolean, mensaje: string = "") => {
-            update(state => {
-                // Lógica de auto-selección de vehículo
-                let modo: "caminando" | "vehiculo" = "caminando";
-                let vehiculoId: string | null = null;
-
-                if (puedeIngresar && data?.vehiculos?.length === 1) {
-                    modo = "vehiculo";
-                    vehiculoId = data.vehiculos[0].id;
-                }
-
-                return {
-                    ...state,
-                    contratistaId: data?.id || "",
-                    contratistaNombre: data?.nombreCompleto || "",
-                    contratistaData: data,
-                    puedeIngresar,
-                    mensajeValidacion: mensaje,
-                    modoIngreso: modo,
-                    vehiculoId: vehiculoId
-                };
-            });
+        /**
+         * Actualizar múltiples campos a la vez
+         */
+        updateFields: (fields: Partial<IngresoFormState>) => {
+            update(state => ({ ...state, ...fields }));
         },
 
-        // Limpiar todo el formulario
+        // ==========================================
+        // MÉTODOS ESPECÍFICOS DE CONTRATISTA
+        // ==========================================
+
+        /**
+         * Establecer datos del contratista después de validación
+         * 
+         * NOTA: Este método solo actualiza el estado.
+         * La lógica de validación debe ejecutarse en el service ANTES de llamar esto.
+         */
+        setContratistaValidado: (data: {
+            contratistaId: string;
+            contratistaNombre: string;
+            contratistaData: any;
+            puedeIngresar: boolean;
+            mensajeValidacion: string;
+        }) => {
+            update(state => ({
+                ...state,
+                contratistaId: data.contratistaId,
+                contratistaNombre: data.contratistaNombre,
+                contratistaData: data.contratistaData,
+                puedeIngresar: data.puedeIngresar,
+                mensajeValidacion: data.mensajeValidacion
+            }));
+        },
+
+        /**
+         * Limpiar datos del contratista
+         */
+        clearContratista: () => {
+            update(state => ({
+                ...state,
+                contratistaId: '',
+                contratistaNombre: '',
+                contratistaData: null,
+                puedeIngresar: false,
+                mensajeValidacion: ''
+            }));
+        },
+
+        // ==========================================
+        // MÉTODOS ESPECÍFICOS DE INGRESO
+        // ==========================================
+
+        /**
+         * Establecer modo de ingreso y vehículo
+         * 
+         * NOTA: La validación debe hacerse en el service antes.
+         */
+        setModoIngreso: (modo: 'caminando' | 'vehiculo', vehiculoId: string | null = null) => {
+            update(state => ({
+                ...state,
+                modoIngreso: modo,
+                vehiculoId: modo === 'caminando' ? null : vehiculoId
+            }));
+        },
+
+        /**
+         * Establecer vehículo seleccionado
+         */
+        setVehiculo: (vehiculoId: string | null) => {
+            update(state => ({ ...state, vehiculoId }));
+        },
+
+        /**
+         * Establecer número de gafete
+         */
+        setGafete: (gafeteNumero: string) => {
+            update(state => ({ ...state, gafeteNumero }));
+        },
+
+        /**
+         * Establecer tipo de autorización
+         */
+        setTipoAutorizacion: (tipo: string) => {
+            update(state => ({ ...state, tipoAutorizacion: tipo }));
+        },
+
+        /**
+         * Establecer observaciones
+         */
+        setObservaciones: (observaciones: string) => {
+            update(state => ({ ...state, observaciones }));
+        },
+
+        // ==========================================
+        // MÉTODOS DE RESET
+        // ==========================================
+
+        /**
+         * Resetear todo el formulario al estado inicial
+         */
         reset: () => {
             set(initialState);
         },
 
-        // Limpiar solo campos de ingreso (mantener contratista)
+        /**
+         * Resetear solo los campos de ingreso, mantener contratista
+         * Útil para registrar múltiples ingresos del mismo contratista
+         */
         resetIngresoFields: () => {
             update(state => ({
                 ...state,
-                gafeteNumero: "",
-                observaciones: "",
-                // Mantener modo y vehículo si ya estaban seleccionados
+                modoIngreso: 'caminando',
+                vehiculoId: null,
+                gafeteNumero: '',
+                tipoAutorizacion: 'praind',
+                observaciones: ''
+            }));
+        },
+
+        /**
+         * Aplicar auto-selección calculada por el service
+         * 
+         * Este método recibe el resultado del service y lo aplica al estado.
+         * NO contiene lógica de negocio, solo actualiza el estado.
+         */
+        aplicarAutoSeleccion: (autoSeleccion: {
+            modoSugerido: 'caminando' | 'vehiculo';
+            vehiculoSugerido: string | null;
+        }) => {
+            update(state => ({
+                ...state,
+                modoIngreso: autoSeleccion.modoSugerido,
+                vehiculoId: autoSeleccion.vehiculoSugerido
             }));
         }
     };
 }
+
+// ==========================================
+// EXPORT
+// ==========================================
 
 export const ingresoFormStore = createIngresoFormStore();
