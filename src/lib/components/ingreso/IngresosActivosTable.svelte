@@ -3,14 +3,21 @@
   import { fade } from "svelte/transition";
   import { toast } from "svelte-5-french-toast";
   import { currentUser } from "$lib/stores/auth";
-  import type { ColDef } from "@ag-grid-community/core";
+  import type { ColDef, GridApi } from "@ag-grid-community/core";
+  import type { CustomToolbarButton } from "$lib/types/agGrid";
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
+  import { Download, FileDown } from "lucide-svelte";
 
   import * as ingresoService from "$lib/logic/ingreso/ingresoService";
   import type { IngresoResponse } from "$lib/types/ingreso";
   import { ingresoStore } from "$lib/stores/ingresoStore";
 
   import SalidaModal from "./SalidaModal.svelte";
+  
+  // ✅ NUEVO: Importar componentes de exportación
+  import ExportDialog from "$lib/components/export/ExportDialog.svelte";
+  import { exportData, previewPDF, downloadBytes } from "$lib/services/exportService";
+  import type { ExportOptions } from "$lib/services/exportService";
 
   // Estado
   let ingresos: IngresoResponse[] = [];
@@ -18,6 +25,11 @@
   let showSalidaModal = false;
   let selectedIngreso: IngresoResponse | null = null;
   let formLoading = false;
+  
+  // ✅ NUEVO: Estado para exportación
+  let gridApi = $state<GridApi | null>(null);
+  let showExportDialog = $state(false);
+  let exportOnlySelected = $state(false);
 
   // Suscribirse al store
   const unsubscribe = ingresoStore.subscribe((value) => {
@@ -115,7 +127,7 @@
     loading = false;
   }
 
-  // Handlers
+  // Handlers de salida (sin cambios)
   function handleSalidaClick(ingreso: IngresoResponse) {
     selectedIngreso = ingreso;
     showSalidaModal = true;
@@ -141,6 +153,92 @@
     }
     formLoading = false;
   }
+
+  // ✅ NUEVO: Handlers de exportación
+  async function handleExportClick(onlySelected: boolean = false) {
+    if (!gridApi) {
+      toast.error("Grid no está listo");
+      return;
+    }
+
+    exportOnlySelected = onlySelected;
+    showExportDialog = true;
+  }
+
+  async function handleExport(
+    format: 'pdf' | 'excel' | 'csv',
+    options: ExportOptions
+  ) {
+    if (!gridApi) return;
+
+    try {
+      toast.loading("Exportando...");
+
+      const response = await exportData(
+        gridApi,
+        format,
+        options,
+        exportOnlySelected
+      );
+
+      if (response.success) {
+        if (format === 'pdf' && response.bytes) {
+          if (options.showPreview) {
+            previewPDF(response.bytes);
+            toast.success("PDF abierto en nueva pestaña");
+          } else {
+            downloadBytes(response.bytes, `personas-adentro-${Date.now()}.pdf`);
+            toast.success("PDF descargado exitosamente");
+          }
+        } else if (response.filePath) {
+          toast.success(`Archivo guardado: ${response.filePath}`);
+        }
+      } else {
+        toast.error(response.message || "Error al exportar");
+      }
+    } catch (error) {
+      console.error("Error exportando:", error);
+      toast.error("Error al exportar: " + (error as Error).message);
+    }
+  }
+
+  // ✅ NUEVO: Custom buttons para exportación
+  const customButtons: {
+    default: CustomToolbarButton[];
+    singleSelect: CustomToolbarButton[];
+    multiSelect: CustomToolbarButton[];
+  } = {
+    default: [
+      {
+        id: "export-all-permanencia",
+        label: "Exportar Todo",
+        icon: Download,
+        variant: "primary",
+        tooltip: "Exportar todos los registros de permanencia",
+        onClick: () => handleExportClick(false),
+      },
+    ],
+    singleSelect: [
+      {
+        id: "export-selected-single-permanencia",
+        label: "Exportar",
+        icon: FileDown,
+        variant: "primary",
+        tooltip: "Exportar registro seleccionado",
+        onClick: () => handleExportClick(true),
+      },
+    ],
+    multiSelect: [
+      {
+        id: "export-selected-multi-permanencia",
+        label: "Exportar Seleccionados",
+        icon: FileDown,
+        variant: "primary",
+        tooltip: "Exportar registros seleccionados",
+        onClick: () => handleExportClick(true),
+      },
+    ],
+  };
 
   onMount(() => {
     loadData();
@@ -202,13 +300,15 @@
         gridId="entries-list"
         rowData={ingresos}
         {columnDefs}
+        {customButtons}
+        onGridReady={(api) => (gridApi = api)}
         getRowId={(params) => params.data.id}
       />
     {/if}
   </div>
 </div>
 
-<!-- Modal Salida -->
+<!-- Modal Salida (sin cambios) -->
 {#if showSalidaModal && selectedIngreso}
   <div
     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
@@ -221,4 +321,12 @@
       on:cancel={() => (showSalidaModal = false)}
     />
   </div>
+{/if}
+
+<!-- ✅ NUEVO: Modal de exportación -->
+{#if showExportDialog}
+  <ExportDialog
+    onExport={handleExport}
+    onClose={() => (showExportDialog = false)}
+  />
 {/if}
