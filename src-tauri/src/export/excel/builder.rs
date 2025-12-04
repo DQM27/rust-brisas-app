@@ -19,6 +19,7 @@ pub fn generate_excel(
     headers: &[String],
     rows: &[HashMap<String, String>],
     config: &ExcelConfig,
+    target_path: Option<String>,
 ) -> ExportResult<String> {
     // 1. Crear workbook
     let mut workbook = Workbook::new();
@@ -30,8 +31,8 @@ pub fn generate_excel(
     // 3. Escribir contenido
     write_excel_content(worksheet, headers, rows)?;
 
-    // 4. Determinar path de salida
-    let output_path = get_output_path(&config.filename)?;
+    // 4. Determinar path de salida (priorizar target_path del usuario)
+    let output_path = get_output_path(&config.filename, target_path)?;
 
     // 5. Guardar archivo
     workbook
@@ -63,9 +64,7 @@ fn write_excel_content(
     for (col_idx, header) in headers.iter().enumerate() {
         worksheet
             .write_string_with_format(0, col_idx as u16, header, &header_format)
-            .map_err(|e| {
-                ExportError::XlsxWriteError(format!("Error escribiendo header: {}", e))
-            })?;
+            .map_err(|e| ExportError::XlsxWriteError(format!("Error escribiendo header: {}", e)))?;
     }
 
     // 3. Escribir rows (empezando en fila 1)
@@ -74,12 +73,7 @@ fn write_excel_content(
             let value = row.get(header).map(|s| s.as_str()).unwrap_or("");
 
             worksheet
-                .write_string_with_format(
-                    (row_idx + 1) as u32,
-                    col_idx as u16,
-                    value,
-                    &cell_format,
-                )
+                .write_string_with_format((row_idx + 1) as u32, col_idx as u16, value, &cell_format)
                 .map_err(|e| {
                     ExportError::XlsxWriteError(format!(
                         "Error escribiendo celda [{}, {}]: {}",
@@ -95,9 +89,9 @@ fn write_excel_content(
     autofit_columns(worksheet, headers, rows)?;
 
     // 5. Freeze headers (congelar primera fila)
-    worksheet.set_freeze_panes(1, 0).map_err(|e| {
-        ExportError::XlsxFormatError(format!("Error congelando headers: {}", e))
-    })?;
+    worksheet
+        .set_freeze_panes(1, 0)
+        .map_err(|e| ExportError::XlsxFormatError(format!("Error congelando headers: {}", e)))?;
 
     Ok(())
 }
@@ -149,10 +143,7 @@ fn autofit_columns(
         worksheet
             .set_column_width(col_idx as u16, width)
             .map_err(|e| {
-                ExportError::XlsxFormatError(format!(
-                    "Error ajustando columna {}: {}",
-                    col_idx, e
-                ))
+                ExportError::XlsxFormatError(format!("Error ajustando columna {}: {}", col_idx, e))
             })?;
     }
 
@@ -179,18 +170,34 @@ fn calculate_column_width(header: &str, rows: &[HashMap<String, String>]) -> f64
 // PATH MANAGEMENT
 // ==========================================
 
-/// Obtiene el path de salida (Downloads o directorio temporal)
-fn get_output_path(filename: &str) -> ExportResult<PathBuf> {
-    // Asegurar extensión .xlsx
+/// Obtiene el path de salida (prioritiza target_path del usuario, luego Downloads)
+fn get_output_path(filename: &str, target_path: Option<String>) -> ExportResult<PathBuf> {
+    // ✅ Prioridad 1: Usar target_path si fue proporcionado por el usuario
+    if let Some(path) = target_path {
+        let path_buf = PathBuf::from(path);
+
+        // Validar que el directorio padre existe
+        if let Some(parent) = path_buf.parent() {
+            if !parent.exists() {
+                return Err(ExportError::FileSystemError(format!(
+                    "El directorio no existe: {}",
+                    parent.display()
+                )));
+            }
+        }
+
+        return Ok(path_buf);
+    }
+
+    // ✅ Prioridad 2: Usar el directorio de Downloads
     let filename = ensure_xlsx_extension(filename);
 
-    // Intentar usar el directorio de Downloads
     if let Some(downloads_dir) = get_downloads_dir() {
         let path = downloads_dir.join(&filename);
         return Ok(path);
     }
 
-    // Fallback: directorio temporal
+    // ✅ Fallback: directorio temporal
     let temp_dir = std::env::temp_dir();
     Ok(temp_dir.join(&filename))
 }

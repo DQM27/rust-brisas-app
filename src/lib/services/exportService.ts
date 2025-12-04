@@ -54,9 +54,9 @@ export function extractGridData(gridApi: GridApi): {
 } {
   // Obtener columnas visibles
   const columns = gridApi.getColumns() || [];
-  const headers = columns
-    .filter(col => !col.getColDef().hide)
-    .map(col => col.getColDef().headerName || col.getColId());
+  const visibleColumns = columns.filter(col => !col.getColDef().hide);
+
+  const headers = visibleColumns.map(col => col.getColDef().headerName || col.getColId());
 
   // Obtener todas las filas (respetando filtros)
   const rows: Record<string, any>[] = [];
@@ -64,13 +64,61 @@ export function extractGridData(gridApi: GridApi): {
     if (node.data) {
       const row: Record<string, any> = {};
 
-      columns.forEach(col => {
+      visibleColumns.forEach(col => {
+        const colDef = col.getColDef();
         const colId = col.getColId();
-        const headerName = col.getColDef().headerName || colId;
-        const value = node.data[colId];
+        const headerName = colDef.headerName || colId;
 
-        // Convertir valores a string de manera segura
-        row[headerName] = value != null ? String(value) : '';
+        // ✅ Obtener valor usando valueGetter si existe, sino del field (NO colId)
+        let value;
+        if (colDef.valueGetter && typeof colDef.valueGetter === 'function') {
+          // Usar valueGetter personalizado
+          value = colDef.valueGetter({ data: node.data, node, colDef, column: col, api: gridApi } as any);
+        } else {
+          // ✅ CRÍTICO: Usar 'field' en lugar de 'colId' para obtener el valor
+          // Cuando múltiples columnas usan el mismo field (ej: fecha y hora),
+          // AG Grid asigna diferentes colIds, pero el valor debe venir del field
+          const fieldName = (colDef as any).field || colId;
+          value = node.data[fieldName];
+        }
+
+        // ✅ Usar valueFormatter si existe (para fechas separadas, etc.)
+        if (colDef.valueFormatter && typeof colDef.valueFormatter === 'function') {
+          try {
+            const formattedValue = colDef.valueFormatter({ value, data: node.data, node, colDef, column: col, api: gridApi } as any);
+            row[headerName] = formattedValue || '';
+
+            // 🔍 DEBUG: Log para columnas de hora
+            if (headerName.includes('Hora') || headerName.includes('Fecha')) {
+              console.log(`[EXPORT DEBUG] ${headerName}:`, {
+                field: (colDef as any).field,
+                colId: colId,
+                rawValue: value,
+                formatted: formattedValue,
+                hasFormatter: true,
+                hasValueGetter: !!colDef.valueGetter
+              });
+            }
+          } catch (e) {
+            console.error(`Error formatting column ${headerName}:`, e);
+            // Fallback si valueFormatter falla
+            row[headerName] = value != null ? String(value) : '';
+          }
+        } else {
+          // Convertir valores a string de manera segura
+          row[headerName] = value != null ? String(value) : '';
+
+          // 🔍 DEBUG: Log para columnas sin formatter
+          if (headerName.includes('Hora') || headerName.includes('Fecha')) {
+            console.log(`[EXPORT DEBUG] ${headerName} (no formatter):`, {
+              field: (colDef as any).field,
+              colId: colId,
+              rawValue: value,
+              hasFormatter: false,
+              hasValueGetter: !!colDef.valueGetter
+            });
+          }
+        }
       });
 
       rows.push(row);
@@ -88,9 +136,9 @@ export function extractSelectedRows(gridApi: GridApi): {
   rows: Record<string, any>[];
 } {
   const columns = gridApi.getColumns() || [];
-  const headers = columns
-    .filter(col => !col.getColDef().hide)
-    .map(col => col.getColDef().headerName || col.getColId());
+  const visibleColumns = columns.filter(col => !col.getColDef().hide);
+
+  const headers = visibleColumns.map(col => col.getColDef().headerName || col.getColId());
 
   const selectedNodes = gridApi.getSelectedNodes();
   const rows: Record<string, any>[] = [];
@@ -99,11 +147,36 @@ export function extractSelectedRows(gridApi: GridApi): {
     if (node.data) {
       const row: Record<string, any> = {};
 
-      columns.forEach(col => {
+      visibleColumns.forEach(col => {
+        const colDef = col.getColDef();
         const colId = col.getColId();
-        const headerName = col.getColDef().headerName || colId;
-        const value = node.data[colId];
-        row[headerName] = value != null ? String(value) : '';
+        const headerName = colDef.headerName || colId;
+
+        // ✅ Obtener valor usando valueGetter si existe, sino del field (NO colId)
+        let value;
+        if (colDef.valueGetter && typeof colDef.valueGetter === 'function') {
+          // Usar valueGetter personalizado
+          value = colDef.valueGetter({ data: node.data, node, colDef, column: col, api: gridApi } as any);
+        } else {
+          // ✅ CRÍTICO: Usar 'field' en lugar de 'colId' para obtener el valor
+          const fieldName = (colDef as any).field || colId;
+          value = node.data[fieldName];
+        }
+
+        // ✅ Usar valueFormatter si existe (para fechas separadas, etc.)
+        if (colDef.valueFormatter && typeof colDef.valueFormatter === 'function') {
+          try {
+            const formattedValue = colDef.valueFormatter({ value, data: node.data, node, colDef, column: col, api: gridApi } as any);
+            row[headerName] = formattedValue || '';
+          } catch (e) {
+            console.error(`Error formatting column ${headerName}:`, e);
+            // Fallback si valueFormatter falla
+            row[headerName] = value != null ? String(value) : '';
+          }
+        } else {
+          // Convertir valores a string de manera segura
+          row[headerName] = value != null ? String(value) : '';
+        }
       });
 
       rows.push(row);
@@ -141,14 +214,17 @@ export async function exportData(
     // Si NO es preview, pedir path de guardado
     if (!options.showPreview) {
       const defaultName = options.title
-        ? `${options.title.replace(/[^a-z0-9]/gi, '_')}.${format}`
-        : `export.${format}`;
+        ? `${options.title.replace(/[^a-z0-9]/gi, '_')}.${format === 'excel' ? 'xlsx' : format}`
+        : `export.${format === 'excel' ? 'xlsx' : format}`;
+
+      // ✅ Mapear extensión correcta para el filtro del diálogo
+      const fileExtension = format === 'excel' ? 'xlsx' : format;
 
       targetPath = await save({
         defaultPath: defaultName,
         filters: [{
           name: format.toUpperCase(),
-          extensions: [format]
+          extensions: [fileExtension]  // ✅ Usar 'xlsx' no 'excel'
         }]
       });
 

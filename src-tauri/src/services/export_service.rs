@@ -209,8 +209,8 @@ async fn export_to_excel_internal(data: ExportData) -> ExportResult<ExportRespon
         .excel_config
         .ok_or_else(|| ExportError::Unknown("Config Excel no encontrada".to_string()))?;
 
-    // Generar Excel y obtener path
-    let file_path = excel::generate_excel(&data.headers, &data.rows, &config)?;
+    // ✅ Generar Excel con target_path opcional
+    let file_path = excel::generate_excel(&data.headers, &data.rows, &config, data.target_path)?;
 
     Ok(ExportResponse {
         success: true,
