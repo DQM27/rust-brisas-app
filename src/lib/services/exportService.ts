@@ -87,18 +87,6 @@ export function extractGridData(gridApi: GridApi): {
           try {
             const formattedValue = colDef.valueFormatter({ value, data: node.data, node, colDef, column: col, api: gridApi } as any);
             row[headerName] = formattedValue || '';
-
-            // 🔍 DEBUG: Log para columnas de hora
-            if (headerName.includes('Hora') || headerName.includes('Fecha')) {
-              console.log(`[EXPORT DEBUG] ${headerName}:`, {
-                field: (colDef as any).field,
-                colId: colId,
-                rawValue: value,
-                formatted: formattedValue,
-                hasFormatter: true,
-                hasValueGetter: !!colDef.valueGetter
-              });
-            }
           } catch (e) {
             console.error(`Error formatting column ${headerName}:`, e);
             // Fallback si valueFormatter falla
@@ -107,17 +95,6 @@ export function extractGridData(gridApi: GridApi): {
         } else {
           // Convertir valores a string de manera segura
           row[headerName] = value != null ? String(value) : '';
-
-          // 🔍 DEBUG: Log para columnas sin formatter
-          if (headerName.includes('Hora') || headerName.includes('Fecha')) {
-            console.log(`[EXPORT DEBUG] ${headerName} (no formatter):`, {
-              field: (colDef as any).field,
-              colId: colId,
-              rawValue: value,
-              hasFormatter: false,
-              hasValueGetter: !!colDef.valueGetter
-            });
-          }
         }
       });
 
@@ -301,7 +278,30 @@ export function downloadBytes(bytes: number[], filename: string) {
  * Abre archivo PDF en nueva pestaña (preview)
  */
 export function previewPDF(bytes: number[]) {
-  const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
+  try {
+    const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+
+    // Intentar abrir en nueva pestaña
+    const newWindow = window.open(url, '_blank');
+
+    // Verificar si fue bloqueado por popup blocker
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      // Alternativa: crear link de descarga temporal
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `preview-${Date.now()}.pdf`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      throw new Error('El navegador bloqueó la ventana emergente. Descargando PDF en su lugar.');
+    }
+
+    // Limpiar URL después de un tiempo
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (error) {
+    throw error;
+  }
 }

@@ -9,7 +9,11 @@
   import { Download, FileDown, UserCheck, History } from "lucide-svelte";
 
   import * as ingresoService from "$lib/logic/ingreso/ingresoService";
-  import type { IngresoResponse, IngresoConEstadoResponse, EstadoPermanencia } from "$lib/types/ingreso";
+  import type {
+    IngresoResponse,
+    IngresoConEstadoResponse,
+    EstadoPermanencia,
+  } from "$lib/types/ingreso";
   import { ingresoStore } from "$lib/stores/ingresoStore";
 
   import SalidaModal from "./SalidaModal.svelte";
@@ -28,7 +32,9 @@
   let ingresos = $state<(IngresoResponse | IngresoConEstadoResponse)[]>([]);
   let loading = $state(false);
   let showSalidaModal = $state(false);
-  let selectedIngreso = $state<IngresoResponse | IngresoConEstadoResponse | null>(null);
+  let selectedIngreso = $state<
+    IngresoResponse | IngresoConEstadoResponse | null
+  >(null);
   let formLoading = $state(false);
 
   // ✅ NUEVO: Estado para exportación
@@ -152,11 +158,14 @@
           }),
         filterValueGetter: (params) => {
           if (!params.data) return "";
-          return new Date(params.data.fechaHoraIngreso).toLocaleDateString("es-CR", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          });
+          return new Date(params.data.fechaHoraIngreso).toLocaleDateString(
+            "es-CR",
+            {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            },
+          );
         },
       },
       {
@@ -171,11 +180,14 @@
           }),
         filterValueGetter: (params) => {
           if (!params.data) return "";
-          return new Date(params.data.fechaHoraIngreso).toLocaleTimeString("es-CR", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          });
+          return new Date(params.data.fechaHoraIngreso).toLocaleTimeString(
+            "es-CR",
+            {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            },
+          );
         },
       },
     ];
@@ -197,14 +209,17 @@
             : "-",
         filterValueGetter: (params) => {
           if (!params.data || !params.data.fechaHoraSalida) return "-";
-          return new Date(params.data.fechaHoraSalida).toLocaleDateString("es-CR", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          });
+          return new Date(params.data.fechaHoraSalida).toLocaleDateString(
+            "es-CR",
+            {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            },
+          );
         },
       } as ColDef<IngresoResponse>);
-      
+
       baseColumns.push({
         field: "fechaHoraSalida" as any,
         headerName: "Hora Salida",
@@ -219,11 +234,14 @@
             : "-",
         filterValueGetter: (params) => {
           if (!params.data || !params.data.fechaHoraSalida) return "-";
-          return new Date(params.data.fechaHoraSalida).toLocaleTimeString("es-CR", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          });
+          return new Date(params.data.fechaHoraSalida).toLocaleTimeString(
+            "es-CR",
+            {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            },
+          );
         },
       } as ColDef<IngresoResponse>);
     }
@@ -235,68 +253,73 @@
       width: 120,
       valueGetter: (params) => {
         if (!params.data) return "--:--";
-        
+
         // Si tiene tiempoPermanenciaTexto y no está en modo activos, usarlo
         if (params.data.tiempoPermanenciaTexto && !showingActive) {
           return params.data.tiempoPermanenciaTexto;
         }
-        
+
         // Si tiene alertaTiempo, calcular desde minutosTranscurridos en formato reloj
-        if (tieneAlertaTiempo(params.data) && params.data.alertaTiempo.minutosTranscurridos != null) {
-          return formatearTiempoReloj(params.data.alertaTiempo.minutosTranscurridos);
+        if (
+          tieneAlertaTiempo(params.data) &&
+          params.data.alertaTiempo.minutosTranscurridos != null
+        ) {
+          return formatearTiempoReloj(
+            params.data.alertaTiempo.minutosTranscurridos,
+          );
         }
-        
+
         return "--:--";
       },
       cellStyle: (params) => {
         // Estilo base para historial (texto blanco en fondo negro)
         if (!params.data || !showingActive || !tieneAlertaTiempo(params.data)) {
           return {
-            color: '#ffffff',
-            fontWeight: '700',
-            fontSize: '15px',
-            fontFamily: 'monospace',
-            textAlign: 'center'
+            color: "#ffffff",
+            fontWeight: "700",
+            fontSize: "15px",
+            fontFamily: "monospace",
+            textAlign: "center",
           };
         }
-        
+
         // Obtener el estado de la alerta para modo activos
         const estado = params.data.alertaTiempo.estado;
-        
+
         switch (estado) {
-          case 'tiempo_excedido':
+          case "tiempo_excedido":
             return {
-              backgroundColor: '#fee2e2',
-              color: '#7f1d1d',
-              fontWeight: '700',
-              fontSize: '15px',
-              fontFamily: 'monospace',
-              textAlign: 'center',
-              borderLeft: '4px solid #ef4444',
-              paddingLeft: '8px'
+              backgroundColor: "#fee2e2",
+              color: "#7f1d1d",
+              fontWeight: "700",
+              fontSize: "15px",
+              fontFamily: "monospace",
+              textAlign: "center",
+              borderLeft: "4px solid #ef4444",
+              paddingLeft: "8px",
             };
-          case 'alerta_temprana':
+          case "alerta_temprana":
             return {
-              backgroundColor: '#fef3c7',
-              color: '#713f12',
-              fontWeight: '700',
-              fontSize: '15px',
-              fontFamily: 'monospace',
-              textAlign: 'center',
-              borderLeft: '4px solid #f59e0b',
-              paddingLeft: '8px'
+              backgroundColor: "#fef3c7",
+              color: "#713f12",
+              fontWeight: "700",
+              fontSize: "15px",
+              fontFamily: "monospace",
+              textAlign: "center",
+              borderLeft: "4px solid #f59e0b",
+              paddingLeft: "8px",
             };
-          case 'normal':
+          case "normal":
           default:
             return {
-              backgroundColor: '#d1fae5',
-              color: '#064e3b',
-              fontWeight: '700',
-              fontSize: '15px',
-              fontFamily: 'monospace',
-              textAlign: 'center',
-              borderLeft: '4px solid #10b981',
-              paddingLeft: '8px'
+              backgroundColor: "#d1fae5",
+              color: "#064e3b",
+              fontWeight: "700",
+              fontSize: "15px",
+              fontFamily: "monospace",
+              textAlign: "center",
+              borderLeft: "4px solid #10b981",
+              paddingLeft: "8px",
             };
         }
       },
@@ -329,21 +352,26 @@
     } else {
       // Para salidas, usar el método de rango de fechas optimizado
       loading = true;
-      
-      const result = await ingresoService.fetchSalidasEnRango(startDate, endDate);
-      
+
+      const result = await ingresoService.fetchSalidasEnRango(
+        startDate,
+        endDate,
+      );
+
       if (result.ok) {
         ingresos = result.data;
-        
+
         if (result.data.length === 0) {
-          toast("No se encontraron salidas en el rango seleccionado", { icon: "ℹ️" });
+          toast("No se encontraron salidas en el rango seleccionado", {
+            icon: "ℹ️",
+          });
         }
       } else {
         console.error("Error al cargar salidas:", result.error);
         toast.error(result.error);
         ingresos = [];
       }
-      
+
       loading = false;
     }
   }
@@ -355,7 +383,7 @@
   }
 
   function getCurrentMode(): string {
-    return showingActive ? 'activos' : 'salidas';
+    return showingActive ? "activos" : "salidas";
   }
 
   function saveColumnState(api: GridApi) {
@@ -365,7 +393,7 @@
       localStorage.setItem(getStorageKey(mode), JSON.stringify(columnState));
       console.log(`💾 Guardado estado de columnas para modo: ${mode}`);
     } catch (e) {
-      console.error('Error guardando estado de columnas:', e);
+      console.error("Error guardando estado de columnas:", e);
     }
   }
 
@@ -374,33 +402,46 @@
       const stored = localStorage.getItem(getStorageKey(mode));
       if (stored) {
         const columnState = JSON.parse(stored);
-        api.applyColumnState({ state: columnState, applyOrder: true });
-        console.log(`📥 Cargado estado de columnas para modo: ${mode}`);
+
+        // Intentar aplicar el estado
+        try {
+          api.applyColumnState({ state: columnState, applyOrder: true });
+          console.log(`📥 Cargado estado de columnas para modo: ${mode}`);
+        } catch (applyError) {
+          // Si falla al aplicar el estado, limpiar localStorage corrupto
+          console.warn(
+            `⚠️ Estado de columnas corrupto para modo ${mode}, limpiando...`,
+            applyError,
+          );
+          localStorage.removeItem(getStorageKey(mode));
+        }
       }
     } catch (e) {
-      console.error('Error cargando estado de columnas:', e);
+      console.error("Error cargando estado de columnas:", e);
+      // Limpiar localStorage si hay error de parsing
+      localStorage.removeItem(getStorageKey(mode));
     }
   }
 
   // Effect para guardar estado actual y cargar nuevo al cambiar de modo
-  let previousMode = showingActive ? 'activos' : 'salidas';
-  
+  let previousMode = showingActive ? "activos" : "salidas";
+
   $effect(() => {
     if (gridApi) {
-      const currentMode = showingActive ? 'activos' : 'salidas';
-      
+      const currentMode = showingActive ? "activos" : "salidas";
+
       // Si cambió el modo
       if (currentMode !== previousMode) {
         // Guardar estado del modo anterior
         saveColumnState(gridApi);
-        
+
         // Pequeño delay para cargar el estado del nuevo modo
         setTimeout(() => {
           if (gridApi) {
             loadColumnState(gridApi, currentMode);
           }
         }, 100);
-        
+
         previousMode = currentMode;
       }
     }
@@ -416,26 +457,28 @@
   $effect(() => {
     if (gridApi && columnDefs) {
       // Forzar actualización de columnas
-      gridApi.setGridOption('columnDefs', columnDefs);
+      gridApi.setGridOption("columnDefs", columnDefs);
     }
   });
 
   // Helper para verificar si tiene alertaTiempo
-  function tieneAlertaTiempo(ingreso: any): ingreso is IngresoConEstadoResponse {
-    return ingreso && 'alertaTiempo' in ingreso;
+  function tieneAlertaTiempo(
+    ingreso: any,
+  ): ingreso is IngresoConEstadoResponse {
+    return ingreso && "alertaTiempo" in ingreso;
   }
 
   // Helper para formatear minutos a formato reloj digital (HH:MM)
   function formatearTiempoReloj(minutos: number): string {
     if (minutos < 0) return "--:--";
-    
+
     const horas = Math.floor(minutos / 60);
     const mins = minutos % 60;
 
     // Formato digital con padding de ceros
-    const horasStr = String(horas).padStart(2, '0');
-    const minsStr = String(mins).padStart(2, '0');
-    
+    const horasStr = String(horas).padStart(2, "0");
+    const minsStr = String(mins).padStart(2, "0");
+
     return `${horasStr}:${minsStr}`;
   }
 
@@ -494,22 +537,36 @@
       );
 
       if (response.success) {
-        if (format === "pdf" && response.bytes) {
-          if (options.showPreview) {
-            previewPDF(response.bytes);
-            toast.success("PDF abierto en nueva pestaña");
-          } else {
-            downloadBytes(response.bytes, `personas-adentro-${Date.now()}.pdf`);
-            toast.success("PDF descargado exitosamente");
-          }
-        } else if (response.filePath) {
+        // ✅ Prioridad 1: Si hay filePath, el archivo se guardó exitosamente
+        if (response.filePath) {
           toast.success(`Archivo guardado: ${response.filePath}`);
+        }
+        // ✅ Prioridad 2: Si hay bytes (modo preview o descarga directa)
+        else if (response.bytes) {
+          if (format === "pdf") {
+            if (options.showPreview) {
+              // Vista previa en navegador
+              try {
+                previewPDF(response.bytes);
+                toast.success("PDF abierto en nueva pestaña");
+              } catch (error) {
+                toast.error(
+                  "No se pudo abrir la vista previa. Verifica que los popups estén permitidos.",
+                );
+              }
+            } else {
+              // Descarga directa (fallback si no hay filePath)
+              downloadBytes(response.bytes, `export-${Date.now()}.pdf`);
+              toast.success("PDF descargado");
+            }
+          }
+        } else {
+          toast.error("Exportación completada pero no se recibió el archivo");
         }
       } else {
         toast.error(response.message || "Error al exportar");
       }
     } catch (error) {
-      console.error("Error exportando:", error);
       toast.error("Error al exportar: " + (error as Error).message);
     }
   }
@@ -604,15 +661,15 @@
       {customButtons}
       onGridReady={(api) => {
         gridApi = api;
-        
+
         // Restaurar estado de columnas guardado
         const mode = getCurrentMode();
         loadColumnState(api, mode);
-        
+
         // Guardar estado cuando las columnas cambien (sin pasar mode, usa getCurrentMode())
-        api.addEventListener('columnMoved', () => saveColumnState(api));
-        api.addEventListener('columnResized', () => saveColumnState(api));
-        api.addEventListener('columnVisible', () => saveColumnState(api));
+        api.addEventListener("columnMoved", () => saveColumnState(api));
+        api.addEventListener("columnResized", () => saveColumnState(api));
+        api.addEventListener("columnVisible", () => saveColumnState(api));
       }}
       getRowId={(params) => params.data.id}
     >

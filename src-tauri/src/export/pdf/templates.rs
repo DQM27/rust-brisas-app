@@ -53,7 +53,7 @@ fn generate_page_setup(config: &PdfConfig) -> ExportResult<String> {
   margin: (x: 1.5cm, y: 2cm),\n\
 )\n\n\
 #set text(\n\
-  font: \"Liberation Sans\",\n\
+  font: \"New Computer Modern\",\n\
   size: 10pt,\n\
   lang: \"es\",\n\
 )\n\n\
@@ -167,7 +167,7 @@ pub fn generate_minimal_template(
     // Setup simple
     markup.push_str(
         r#"#set page(margin: 2cm)
-#set text(font: "Liberation Sans", size: 10pt)
+#set text(font: "New Computer Modern", size: 10pt)
 
 "#,
     );

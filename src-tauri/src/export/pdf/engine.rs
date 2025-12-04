@@ -14,8 +14,8 @@ use typst::diag::{FileError, FileResult};
 use typst::foundations::{Bytes, Datetime};
 use typst::syntax::{FileId, Source, VirtualPath};
 use typst::text::{Font, FontBook};
-use typst::{Library, LibraryExt, World};
 use typst::utils::LazyHash;
+use typst::{Library, LibraryExt, World};
 
 // ==========================================
 // FUNCIÓN PRINCIPAL
@@ -27,6 +27,12 @@ pub fn generate_pdf(
     config: &PdfConfig,
 ) -> ExportResult<Vec<u8>> {
     let markup = templates::generate_typst_markup(headers, rows, config)?;
+
+    // 🔍TEMP DEBUG: Ver qué markup se está generando
+    println!("========== TYPST MARKUP DEBUG ==========");
+    println!("{}", markup);
+    println!("========================================");
+
     templates::validate_markup(&markup)?;
     let pdf_bytes = compile_typst_to_pdf(&markup)?;
 
@@ -49,10 +55,7 @@ fn compile_typst_to_pdf(markup: &str) -> ExportResult<Vec<u8>> {
     // ✅ FIX: compile() ahora retorna Warned<T>, usar .output
     let result = typst::compile(&world);
     let document = result.output.map_err(|errors| {
-        let error_messages: Vec<String> = errors
-            .iter()
-            .map(|e| format!("{}", e.message))
-            .collect();
+        let error_messages: Vec<String> = errors.iter().map(|e| format!("{}", e.message)).collect();
 
         if error_messages.is_empty() {
             ExportError::TypstCompilationError("Error desconocido".to_string())
@@ -63,9 +66,8 @@ fn compile_typst_to_pdf(markup: &str) -> ExportResult<Vec<u8>> {
 
     // ✅ FIX: pdf() ahora toma (&document, &PdfOptions) y retorna Result
     let options = typst_pdf::PdfOptions::default();
-    let pdf_bytes = typst_pdf::pdf(&document, &options).map_err(|e| {
-        ExportError::TypstCompilationError(format!("Error generando PDF: {:?}", e))
-    })?;
+    let pdf_bytes = typst_pdf::pdf(&document, &options)
+        .map_err(|e| ExportError::TypstCompilationError(format!("Error generando PDF: {:?}", e)))?;
 
     Ok(pdf_bytes)
 }
@@ -86,10 +88,10 @@ impl TypstWorld {
     fn new(markup: &str) -> ExportResult<Self> {
         // ✅ FIX: Usar LibraryExt para default()
         let library = LazyHash::new(Library::default());
-        
+
         let fonts = Self::load_embedded_fonts();
         let book = LazyHash::new(FontBook::from_fonts(&fonts));
-        
+
         let main_id = FileId::new(None, VirtualPath::new("main.typ"));
         let source = Source::new(main_id, markup.to_string());
 
@@ -104,13 +106,50 @@ impl TypstWorld {
 
     fn load_embedded_fonts() -> Vec<Font> {
         let mut fonts = Vec::new();
-        for data in typst_assets::fonts() {
-            // ✅ FIX: Bytes::new() en lugar de from_static()
-            // ✅ FIX: Font::new() retorna Option, no Result
-            if let Some(font) = Font::new(Bytes::new(data), 0) {
-                fonts.push(font);
+        println!("🔍 Loading Typst embedded fonts...");
+
+        let assets = typst_assets::fonts();
+        let mut count = 0;
+
+        // ✅ Cargar TODAS las fuentes embebidas de typst-assets
+        for data in assets {
+            count += 1;
+            let buffer = Bytes::new(data.to_vec()); // Converted to Vec for Bytes::new
+                                                    // Actually, let's check what data is.
+            println!(
+                "  Processing font asset #{} (size: {} bytes)",
+                count,
+                data.len()
+            );
+
+            let face_count = ttf_parser::fonts_in_collection(&buffer).unwrap_or(1);
+            println!("    Face count: {}", face_count);
+
+            // Cargar todas las fuentes en la colección (para TTC files)
+            for face_index in 0..face_count {
+                match Font::new(buffer.clone(), face_index) {
+                    Some(font) => {
+                        let family = font.info().family.clone();
+                        println!("    ✓ Loaded font: {} (face {})", family, face_index);
+                        fonts.push(font);
+                    }
+                    None => {
+                        println!("    ❌ Failed to load font face {}", face_index);
+                    }
+                }
             }
         }
+
+        if count == 0 {
+            println!("❌ typst_assets::fonts() returned no items!");
+        }
+
+        println!("🔍 Total fonts loaded: {}", fonts.len());
+
+        if fonts.is_empty() {
+            eprintln!("⚠️  WARNING: No fonts were loaded! PDF text will not render.");
+        }
+
         fonts
     }
 }
