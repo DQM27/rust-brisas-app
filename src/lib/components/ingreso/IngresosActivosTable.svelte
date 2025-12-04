@@ -354,10 +354,16 @@
     return `ag-grid-entries-list-${mode}-columns`;
   }
 
-  function saveColumnState(api: GridApi, mode: string) {
+  function getCurrentMode(): string {
+    return showingActive ? 'activos' : 'salidas';
+  }
+
+  function saveColumnState(api: GridApi) {
     try {
+      const mode = getCurrentMode(); // Obtener modo actual, no capturado
       const columnState = api.getColumnState();
       localStorage.setItem(getStorageKey(mode), JSON.stringify(columnState));
+      console.log(`💾 Guardado estado de columnas para modo: ${mode}`);
     } catch (e) {
       console.error('Error guardando estado de columnas:', e);
     }
@@ -369,22 +375,34 @@
       if (stored) {
         const columnState = JSON.parse(stored);
         api.applyColumnState({ state: columnState, applyOrder: true });
+        console.log(`📥 Cargado estado de columnas para modo: ${mode}`);
       }
     } catch (e) {
       console.error('Error cargando estado de columnas:', e);
     }
   }
 
-  // Effect para restaurar estado al cambiar de modo
+  // Effect para guardar estado actual y cargar nuevo al cambiar de modo
+  let previousMode = showingActive ? 'activos' : 'salidas';
+  
   $effect(() => {
     if (gridApi) {
-      const mode = showingActive ? 'activos' : 'salidas';
-      // Pequeño delay para asegurar que las columnas se hayan actualizado
-      setTimeout(() => {
-        if (gridApi) {
-          loadColumnState(gridApi, mode);
-        }
-      }, 100);
+      const currentMode = showingActive ? 'activos' : 'salidas';
+      
+      // Si cambió el modo
+      if (currentMode !== previousMode) {
+        // Guardar estado del modo anterior
+        saveColumnState(gridApi);
+        
+        // Pequeño delay para cargar el estado del nuevo modo
+        setTimeout(() => {
+          if (gridApi) {
+            loadColumnState(gridApi, currentMode);
+          }
+        }, 100);
+        
+        previousMode = currentMode;
+      }
     }
   });
 
@@ -588,13 +606,13 @@
         gridApi = api;
         
         // Restaurar estado de columnas guardado
-        const mode = showingActive ? 'activos' : 'salidas';
+        const mode = getCurrentMode();
         loadColumnState(api, mode);
         
-        // Guardar estado cuando las columnas cambien
-        api.addEventListener('columnMoved', () => saveColumnState(api, mode));
-        api.addEventListener('columnResized', () => saveColumnState(api, mode));
-        api.addEventListener('columnVisible', () => saveColumnState(api, mode));
+        // Guardar estado cuando las columnas cambien (sin pasar mode, usa getCurrentMode())
+        api.addEventListener('columnMoved', () => saveColumnState(api));
+        api.addEventListener('columnResized', () => saveColumnState(api));
+        api.addEventListener('columnVisible', () => saveColumnState(api));
       }}
       getRowId={(params) => params.data.id}
     >
