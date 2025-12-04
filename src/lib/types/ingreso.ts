@@ -1,3 +1,6 @@
+// src/lib/types/ingreso.types.ts
+// Tipos compartidos para el módulo de ingresos
+
 import { z } from 'zod';
 
 // ==========================================
@@ -8,7 +11,7 @@ export const TipoIngresoEnum = z.enum(['contratista']);
 export const TipoAutorizacionEnum = z.enum(['praind', 'correo']);
 export const ModoIngresoEnum = z.enum(['caminando', 'vehiculo']);
 
-// Esquema para crear ingreso de contratista (CreateIngresoContratistaInput)
+// Esquema para crear ingreso de contratista
 export const CreateIngresoContratistaSchema = z.object({
     contratistaId: z.string().uuid("ID de contratista inválido"),
     vehiculoId: z.string().uuid().optional().nullable(),
@@ -23,7 +26,7 @@ export const CreateIngresoContratistaSchema = z.object({
     usuarioIngresoId: z.string().uuid("ID de usuario inválido"),
 });
 
-// Esquema para registrar salida (RegistrarSalidaInput)
+// Esquema para registrar salida
 export const RegistrarSalidaSchema = z.object({
     ingresoId: z.string().uuid("ID de ingreso inválido"),
     devolvioGafete: z.boolean(),
@@ -31,19 +34,23 @@ export const RegistrarSalidaSchema = z.object({
     observacionesSalida: z.string().max(500).optional().nullable(),
 });
 
-// Esquema para resolver alerta (ResolverAlertaInput)
+// Esquema para resolver alerta
 export const ResolverAlertaSchema = z.object({
     alertaId: z.string().uuid(),
     notas: z.string().max(500).optional().nullable(),
 });
 
 // ==========================================
-// TIPOS INFERIDOS (TYPESCRIPT)
+// TIPOS INFERIDOS
 // ==========================================
 
 export type CreateIngresoContratistaInput = z.infer<typeof CreateIngresoContratistaSchema>;
 export type RegistrarSalidaInput = z.infer<typeof RegistrarSalidaSchema>;
 export type ResolverAlertaInput = z.infer<typeof ResolverAlertaSchema>;
+
+// ==========================================
+// TIPOS DE RESPUESTA
+// ==========================================
 
 export interface IngresoResponse {
     id: string;
@@ -53,11 +60,11 @@ export interface IngresoResponse {
     apellido: string;
     nombreCompleto: string;
     empresaNombre: string;
-    tipoIngreso: string; // "contratista"
+    tipoIngreso: string;
     tipoIngresoDisplay: string;
-    tipoAutorizacion: string; // "praind" | "correo"
+    tipoAutorizacion: string;
     tipoAutorizacionDisplay: string;
-    modoIngreso: string; // "caminando" | "vehiculo"
+    modoIngreso: string;
     modoIngresoDisplay: string;
     vehiculoId?: string;
     vehiculoPlaca?: string;
@@ -91,7 +98,7 @@ export interface ValidacionIngresoResponse {
     puedeIngresar: boolean;
     motivoRechazo?: string;
     alertas: string[];
-    contratista?: any; // JSON Value
+    contratista?: any;
     tieneIngresoAbierto: boolean;
     ingresoAbierto?: IngresoResponse;
 }
@@ -111,4 +118,48 @@ export interface AlertaGafeteResponse {
     reportadoPorNombre: string;
     createdAt: string;
     updatedAt: string;
+}
+
+// ==========================================
+// TIPOS DE PERMANENCIA Y ALERTAS
+// ==========================================
+
+export type EstadoPermanencia = 'normal' | 'alerta_temprana' | 'tiempo_excedido';
+
+export interface AlertaTiempo {
+    estado: EstadoPermanencia;
+    minutosTranscurridos: number;
+    minutosRestantes: number;
+    mensaje?: string;
+}
+
+export interface IngresoConEstadoResponse extends IngresoResponse {
+    alertaTiempo: AlertaTiempo;
+}
+
+export interface AlertaTiempoExcedido {
+    ingresoId: string;
+    cedula: string;
+    nombreCompleto: string;
+    empresaNombre: string;
+    fechaHoraIngreso: string;
+    minutosTranscurridos: number;
+    minutosExcedidos: number;
+    estado: EstadoPermanencia;
+}
+
+export interface AlertaListaNegra {
+    ingresoId: string;
+    cedula: string;
+    nombreCompleto: string;
+    bloqueado: boolean;
+    motivo?: string;
+}
+
+export interface ResumenPermanencias {
+    totalAdentro: number;
+    normal: number;
+    alertaTemprana: number;
+    tiempoExcedido: number;
+    bloqueadosDurantePermanencia: number;
 }

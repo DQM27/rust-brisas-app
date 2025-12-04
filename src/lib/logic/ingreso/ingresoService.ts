@@ -5,6 +5,7 @@
 import { ingreso } from '$lib/api/ingreso';
 import type {
     IngresoResponse,
+    IngresoConEstadoResponse,
     IngresoListResponse,
     ValidacionIngresoResponse,
     CreateIngresoContratistaInput,
@@ -422,9 +423,13 @@ export async function fetchSalidasEnRango(
 // PUBLIC API - CONSULTAS
 // ============================================
 
-export async function fetchAbiertos(): Promise<ServiceResult<IngresoResponse[]>> {
+/**
+ * Obtener ingresos abiertos CON alertas de tiempo
+ * Usa el endpoint optimizado que calcula el estado de permanencia
+ */
+export async function fetchAbiertos(): Promise<ServiceResult<IngresoConEstadoResponse[]>> {
     try {
-        const data = await ingreso.getAbiertos();
+        const data = await ingreso.getIngresosAbiertosConAlertas();
         return { ok: true, data };
     } catch (err: any) {
         console.error('Error al obtener ingresos abiertos:', err);

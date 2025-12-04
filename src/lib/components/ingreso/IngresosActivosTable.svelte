@@ -9,7 +9,7 @@
   import { Download, FileDown, UserCheck, History } from "lucide-svelte";
 
   import * as ingresoService from "$lib/logic/ingreso/ingresoService";
-  import type { IngresoResponse } from "$lib/types/ingreso";
+  import type { IngresoResponse, IngresoConEstadoResponse, EstadoPermanencia } from "$lib/types/ingreso";
   import { ingresoStore } from "$lib/stores/ingresoStore";
 
   import SalidaModal from "./SalidaModal.svelte";
@@ -25,10 +25,10 @@
   import type { ExportOptions } from "$lib/services/exportService";
 
   // Estado
-  let ingresos = $state<IngresoResponse[]>([]);
+  let ingresos = $state<(IngresoResponse | IngresoConEstadoResponse)[]>([]);
   let loading = $state(false);
   let showSalidaModal = $state(false);
-  let selectedIngreso = $state<IngresoResponse | null>(null);
+  let selectedIngreso = $state<IngresoResponse | IngresoConEstadoResponse | null>(null);
   let formLoading = $state(false);
 
   // ✅ NUEVO: Estado para exportación
@@ -42,6 +42,34 @@
   // ✅ Estado para rango de fechas en historial
   let startDate = $state(new Date().toISOString().split("T")[0]);
   let endDate = $state(new Date().toISOString().split("T")[0]);
+
+  // ✅ Auto-refresh cada 30 segundos en modo activos
+  let refreshInterval: NodeJS.Timeout | null = null;
+
+  $effect(() => {
+    // Limpiar interval anterior si existe
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+    }
+
+    // Solo auto-refresh en modo activos
+    if (showingActive) {
+      console.log("⏰ Auto-refresh activado (cada 30s)");
+      refreshInterval = setInterval(() => {
+        console.log("🔄 Auto-refresh: recargando datos...");
+        loadData();
+      }, 30000); // 30 segundos
+    }
+
+    // Cleanup
+    return () => {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+      }
+    };
+  });
 
   // ✅ Suscribirse al store con nueva estructura
   const unsubscribe = ingresoStore.subscribe((storeState) => {
@@ -200,13 +228,79 @@
       } as ColDef<IngresoResponse>);
     }
 
-    // Siempre agregar columna de tiempo de permanencia
+    // Siempre agregar columna de tiempo de permanencia CON COLORES (formato reloj)
     baseColumns.push({
       field: "tiempoPermanenciaTexto",
       headerName: "Tiempo",
       width: 120,
-      cellStyle: { color: "#666" },
-    });
+      valueGetter: (params) => {
+        if (!params.data) return "--:--";
+        
+        // Si tiene tiempoPermanenciaTexto y no está en modo activos, usarlo
+        if (params.data.tiempoPermanenciaTexto && !showingActive) {
+          return params.data.tiempoPermanenciaTexto;
+        }
+        
+        // Si tiene alertaTiempo, calcular desde minutosTranscurridos en formato reloj
+        if (tieneAlertaTiempo(params.data) && params.data.alertaTiempo.minutosTranscurridos != null) {
+          return formatearTiempoReloj(params.data.alertaTiempo.minutosTranscurridos);
+        }
+        
+        return "--:--";
+      },
+      cellStyle: (params) => {
+        // Estilo base para historial (texto blanco en fondo negro)
+        if (!params.data || !showingActive || !tieneAlertaTiempo(params.data)) {
+          return {
+            color: '#ffffff',
+            fontWeight: '700',
+            fontSize: '15px',
+            fontFamily: 'monospace',
+            textAlign: 'center'
+          };
+        }
+        
+        // Obtener el estado de la alerta para modo activos
+        const estado = params.data.alertaTiempo.estado;
+        
+        switch (estado) {
+          case 'tiempo_excedido':
+            return {
+              backgroundColor: '#fee2e2',
+              color: '#7f1d1d',
+              fontWeight: '700',
+              fontSize: '15px',
+              fontFamily: 'monospace',
+              textAlign: 'center',
+              borderLeft: '4px solid #ef4444',
+              paddingLeft: '8px'
+            };
+          case 'alerta_temprana':
+            return {
+              backgroundColor: '#fef3c7',
+              color: '#713f12',
+              fontWeight: '700',
+              fontSize: '15px',
+              fontFamily: 'monospace',
+              textAlign: 'center',
+              borderLeft: '4px solid #f59e0b',
+              paddingLeft: '8px'
+            };
+          case 'normal':
+          default:
+            return {
+              backgroundColor: '#d1fae5',
+              color: '#064e3b',
+              fontWeight: '700',
+              fontSize: '15px',
+              fontFamily: 'monospace',
+              textAlign: 'center',
+              borderLeft: '4px solid #10b981',
+              paddingLeft: '8px'
+            };
+        }
+      },
+    } as ColDef<IngresoResponse>);
 
     if (showingActive) {
       // Modo activos: agregar columna de acciones
@@ -255,6 +349,45 @@
   }
 
   // Handler para cambio de rango de fechas
+  // Funciones para guardar/cargar estado de columnas por modo
+  function getStorageKey(mode: string): string {
+    return `ag-grid-entries-list-${mode}-columns`;
+  }
+
+  function saveColumnState(api: GridApi, mode: string) {
+    try {
+      const columnState = api.getColumnState();
+      localStorage.setItem(getStorageKey(mode), JSON.stringify(columnState));
+    } catch (e) {
+      console.error('Error guardando estado de columnas:', e);
+    }
+  }
+
+  function loadColumnState(api: GridApi, mode: string) {
+    try {
+      const stored = localStorage.getItem(getStorageKey(mode));
+      if (stored) {
+        const columnState = JSON.parse(stored);
+        api.applyColumnState({ state: columnState, applyOrder: true });
+      }
+    } catch (e) {
+      console.error('Error cargando estado de columnas:', e);
+    }
+  }
+
+  // Effect para restaurar estado al cambiar de modo
+  $effect(() => {
+    if (gridApi) {
+      const mode = showingActive ? 'activos' : 'salidas';
+      // Pequeño delay para asegurar que las columnas se hayan actualizado
+      setTimeout(() => {
+        if (gridApi) {
+          loadColumnState(gridApi, mode);
+        }
+      }, 100);
+    }
+  });
+
   function handleDateRangeChange(event: CustomEvent) {
     startDate = event.detail.startDate;
     endDate = event.detail.endDate;
@@ -268,6 +401,25 @@
       gridApi.setGridOption('columnDefs', columnDefs);
     }
   });
+
+  // Helper para verificar si tiene alertaTiempo
+  function tieneAlertaTiempo(ingreso: any): ingreso is IngresoConEstadoResponse {
+    return ingreso && 'alertaTiempo' in ingreso;
+  }
+
+  // Helper para formatear minutos a formato reloj digital (HH:MM)
+  function formatearTiempoReloj(minutos: number): string {
+    if (minutos < 0) return "--:--";
+    
+    const horas = Math.floor(minutos / 60);
+    const mins = minutos % 60;
+
+    // Formato digital con padding de ceros
+    const horasStr = String(horas).padStart(2, '0');
+    const minsStr = String(mins).padStart(2, '0');
+    
+    return `${horasStr}:${minsStr}`;
+  }
 
   // Handlers de salida
   function handleSalidaClick(ingreso: IngresoResponse) {
@@ -432,7 +584,18 @@
       {columnDefs}
       rowData={ingresos}
       {customButtons}
-      onGridReady={(api) => (gridApi = api)}
+      onGridReady={(api) => {
+        gridApi = api;
+        
+        // Restaurar estado de columnas guardado
+        const mode = showingActive ? 'activos' : 'salidas';
+        loadColumnState(api, mode);
+        
+        // Guardar estado cuando las columnas cambien
+        api.addEventListener('columnMoved', () => saveColumnState(api, mode));
+        api.addEventListener('columnResized', () => saveColumnState(api, mode));
+        api.addEventListener('columnVisible', () => saveColumnState(api, mode));
+      }}
       getRowId={(params) => params.data.id}
     >
       {#snippet customToolbarSlot()}

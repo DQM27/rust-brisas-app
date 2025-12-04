@@ -1,5 +1,5 @@
 import { writable, derived } from 'svelte/store';
-import type { IngresoResponse } from '$lib/types/ingreso';
+import type { IngresoResponse, IngresoConEstadoResponse } from '$lib/types/ingreso';
 import * as ingresoService from '$lib/logic/ingreso/ingresoService';
 
 // ==========================================
@@ -7,7 +7,7 @@ import * as ingresoService from '$lib/logic/ingreso/ingresoService';
 // ==========================================
 
 interface IngresoStoreState {
-    data: IngresoResponse[];
+    data: (IngresoResponse | IngresoConEstadoResponse)[];
     loading: boolean;
     error: string | null;
 }

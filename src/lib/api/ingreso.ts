@@ -7,9 +7,13 @@ import {
     type RegistrarSalidaInput,
     type ResolverAlertaInput,
     type IngresoResponse,
+    type IngresoConEstadoResponse,
     type IngresoListResponse,
     type ValidacionIngresoResponse,
-    type AlertaGafeteResponse
+    type AlertaGafeteResponse,
+    type ResumenPermanencias,
+    type AlertaTiempoExcedido,
+    type AlertaListaNegra,
 } from '$lib/types/ingreso';
 
 export const ingreso = {
@@ -100,7 +104,52 @@ export const ingreso = {
     // PERMANENCIA & ALERTAS
     // ==========================================
 
-    getResumenPermanencias: async (): Promise<any> => {
+    /**
+     * Obtener ingreso por ID con estado de permanencia calculado
+     */
+    getIngresoConEstado: async (ingresoId: string): Promise<IngresoConEstadoResponse> => {
+        return await invoke('get_ingreso_con_estado', { ingresoId });
+    },
+
+    /**
+     * Obtener todos los ingresos abiertos con alertas de tiempo
+     */
+    getIngresosAbiertosConAlertas: async (): Promise<IngresoConEstadoResponse[]> => {
+        return await invoke('get_ingresos_abiertos_con_alertas');
+    },
+
+    /**
+     * Verificar contratistas que excedieron el tiempo límite (>= 14h)
+     */
+    verificarTiemposExcedidos: async (): Promise<AlertaTiempoExcedido[]> => {
+        return await invoke('verificar_tiempos_excedidos');
+    },
+
+    /**
+     * Verificar contratistas próximos al límite (>= 13h 30min)
+     */
+    verificarAlertasTempranas: async (): Promise<AlertaTiempoExcedido[]> => {
+        return await invoke('verificar_alertas_tempranas');
+    },
+
+    /**
+     * Verificar si un contratista fue bloqueado mientras estaba dentro
+     */
+    verificarCambioListaNegra: async (ingresoId: string): Promise<AlertaListaNegra | null> => {
+        return await invoke('verificar_cambio_lista_negra', { ingresoId });
+    },
+
+    /**
+     * Verificar cambios en lista negra para todos los ingresos abiertos
+     */
+    verificarCambiosListaNegraMasivo: async (): Promise<AlertaListaNegra[]> => {
+        return await invoke('verificar_cambios_lista_negra_masivo');
+    },
+
+    /**
+     * Obtener resumen de estado de todos los ingresos abiertos
+     */
+    getResumenPermanencias: async (): Promise<ResumenPermanencias> => {
         return await invoke('get_resumen_permanencias');
     },
 
