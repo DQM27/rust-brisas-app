@@ -66,6 +66,12 @@
         cellStyle: { fontWeight: "500" },
       },
       {
+        field: "cedula",
+        headerName: "Cédula",
+        width: 130,
+        cellStyle: { fontFamily: "monospace" },
+      },
+      {
         field: "empresaNombre",
         headerName: "Empresa",
         width: 150,
@@ -116,6 +122,14 @@
             month: "2-digit",
             year: "numeric",
           }),
+        filterValueGetter: (params) => {
+          if (!params.data) return "";
+          return new Date(params.data.fechaHoraIngreso).toLocaleDateString("es-CR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+        },
       },
       {
         field: "fechaHoraIngreso",
@@ -127,6 +141,14 @@
             minute: "2-digit",
             hour12: false,
           }),
+        filterValueGetter: (params) => {
+          if (!params.data) return "";
+          return new Date(params.data.fechaHoraIngreso).toLocaleTimeString("es-CR", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+        },
       },
     ];
 
@@ -145,6 +167,14 @@
                 year: "numeric",
               })
             : "-",
+        filterValueGetter: (params) => {
+          if (!params.data || !params.data.fechaHoraSalida) return "-";
+          return new Date(params.data.fechaHoraSalida).toLocaleDateString("es-CR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+        },
       } as ColDef<IngresoResponse>);
       
       baseColumns.push({
@@ -159,6 +189,14 @@
                 hour12: false,
               })
             : "-",
+        filterValueGetter: (params) => {
+          if (!params.data || !params.data.fechaHoraSalida) return "-";
+          return new Date(params.data.fechaHoraSalida).toLocaleTimeString("es-CR", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+        },
       } as ColDef<IngresoResponse>);
     }
 

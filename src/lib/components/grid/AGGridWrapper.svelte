@@ -20,6 +20,7 @@
     AGGridWrapperProps,
   } from "$lib/types/agGrid";
   import { agGridSettings } from "$lib/stores/agGridSettings.svelte";
+  import { AG_GRID_LOCALE_ES } from "$lib/config/agGridLocale";
   import AGGridToolbar from "./AGGridToolbar.svelte";
   import AGGridSettingsModal from "./AGGridSettingsModal.svelte";
 
@@ -124,6 +125,7 @@
   // Configuración del grid
   const gridOptions: GridOptions<T> = {
     columnDefs: columnDefs,
+    localeText: AG_GRID_LOCALE_ES,
     defaultColDef: {
       sortable: true,
       filter: true,
