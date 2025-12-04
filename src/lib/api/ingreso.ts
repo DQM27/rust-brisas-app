@@ -61,8 +61,9 @@ export const ingreso = {
     /**
      * Obtener salidas del día actual
      */
-    getSalidasDelDia: async (): Promise<IngresoListResponse> => {
-        return await invoke('get_salidas_del_dia');
+    getSalidasDelDia: async (): Promise<IngresoResponse[]> => {
+        const fecha = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        return await invoke('get_salidas_del_dia', { fecha });
     },
 
     // ==========================================

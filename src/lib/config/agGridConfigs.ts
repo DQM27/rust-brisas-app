@@ -1,15 +1,15 @@
 // src/lib/config/agGridConfigs.ts
 
-import type { 
-  GridId, 
+import type {
+  GridId,
   ToolbarButtonDefinition,
-  AGGridToolbarConfig 
+  AGGridToolbarConfig
 } from '$lib/types/agGrid';
-import { 
-  Download, 
-  FileSpreadsheet, 
+import {
+  Download,
+  FileSpreadsheet,
   FileJson,
-  Maximize2, 
+  Maximize2,
   Minimize2,
   RotateCw,
   CheckSquare,
@@ -62,7 +62,7 @@ export const COMMON_DEFAULT_BUTTONS: ToolbarButtonDefinition[] = [
     tooltip: 'Restaurar columnas a tamaño por defecto',
     category: 'columns'
   },
-  
+
   // Export
   {
     id: 'export-csv',
@@ -85,7 +85,7 @@ export const COMMON_DEFAULT_BUTTONS: ToolbarButtonDefinition[] = [
     tooltip: 'Exportar datos a JSON',
     category: 'export'
   },
-  
+
   // Selección
   {
     id: 'select-all',
@@ -101,7 +101,7 @@ export const COMMON_DEFAULT_BUTTONS: ToolbarButtonDefinition[] = [
     tooltip: 'Quitar todas las selecciones',
     category: 'selection'
   },
-  
+
   // UI
   {
     id: 'toggle-filters',
@@ -117,7 +117,7 @@ export const COMMON_DEFAULT_BUTTONS: ToolbarButtonDefinition[] = [
     tooltip: 'Mostrar/Ocultar panel lateral',
     category: 'ui'
   },
-  
+
   // Data
   {
     id: 'refresh',
@@ -140,7 +140,7 @@ export const COMMON_DEFAULT_BUTTONS: ToolbarButtonDefinition[] = [
     tooltip: 'Eliminar ordenamiento',
     category: 'data'
   },
-  
+
   // Grouping
   {
     id: 'expand-groups',
@@ -219,7 +219,7 @@ export const createCustomButton = {
     variant: 'primary' as const,
     tooltip: 'Crear nuevo registro'
   }),
-  
+
   editar: (onClick: () => void, disabled = false) => ({
     id: 'edit-record',
     label: 'Editar',
@@ -228,7 +228,7 @@ export const createCustomButton = {
     disabled,
     tooltip: 'Editar seleccionado'
   }),
-  
+
   eliminar: (onClick: () => void, disabled = false) => ({
     id: 'delete-record',
     label: 'Eliminar',
@@ -238,7 +238,7 @@ export const createCustomButton = {
     variant: 'danger' as const,
     tooltip: 'Eliminar seleccionado(s)'
   }),
-  
+
   importar: (onClick: () => void, disabled = false) => ({
     id: 'import-data',
     label: 'Importar',
@@ -247,7 +247,7 @@ export const createCustomButton = {
     disabled,
     tooltip: 'Importar datos'
   }),
-  
+
   verInformacion: (onClick: () => void, disabled = false) => ({
     id: 'view-info',
     label: 'Ver Información',
@@ -256,7 +256,7 @@ export const createCustomButton = {
     disabled,
     tooltip: 'Ver información detallada'
   }),
-  
+
   historial: (onClick: () => void, disabled = false) => ({
     id: 'view-history',
     label: 'Historial',
@@ -265,7 +265,7 @@ export const createCustomButton = {
     disabled,
     tooltip: 'Ver historial'
   }),
-  
+
   vehiculos: (onClick: () => void, disabled = false) => ({
     id: 'view-vehicles',
     label: 'Vehículos',
@@ -274,7 +274,7 @@ export const createCustomButton = {
     disabled,
     tooltip: 'Ver vehículos asociados'
   }),
-  
+
   badges: (onClick: () => void, disabled = false) => ({
     id: 'view-badges',
     label: 'Carnets',
@@ -283,7 +283,7 @@ export const createCustomButton = {
     disabled,
     tooltip: 'Ver carnets asignados'
   }),
-  
+
   quitarListaNegra: (onClick: () => void, disabled = false) => ({
     id: 'remove-blacklist',
     label: 'Quitar de Lista',
@@ -306,9 +306,9 @@ const CONTRATISTA_LIST_CONFIG: Omit<AGGridToolbarConfig, 'customButtons'> = {
   gridId: 'contratista-list',
   availableButtons: {
     default: [
-      ...COMMON_DEFAULT_BUTTONS.filter(b => 
-        ['autosize-all', 'reset-columns', 'export-csv', 'export-excel', 
-         'select-all', 'clear-filters', 'refresh'].includes(b.id)
+      ...COMMON_DEFAULT_BUTTONS.filter(b =>
+        ['autosize-all', 'reset-columns', 'export-csv', 'export-excel',
+          'select-all', 'clear-filters', 'refresh'].includes(b.id)
       )
     ],
     singleSelect: [
@@ -331,9 +331,9 @@ const LISTA_NEGRA_CONFIG: Omit<AGGridToolbarConfig, 'customButtons'> = {
   gridId: 'lista-negra-list',
   availableButtons: {
     default: [
-      ...COMMON_DEFAULT_BUTTONS.filter(b => 
-        ['autosize-all', 'reset-columns', 'export-csv', 'export-excel', 
-         'export-json', 'select-all', 'clear-filters'].includes(b.id)
+      ...COMMON_DEFAULT_BUTTONS.filter(b =>
+        ['autosize-all', 'reset-columns', 'export-csv', 'export-excel',
+          'export-json', 'select-all', 'clear-filters'].includes(b.id)
       )
     ],
     singleSelect: [
@@ -354,7 +354,7 @@ const LISTA_NEGRA_CONFIG: Omit<AGGridToolbarConfig, 'customButtons'> = {
 export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButtons'>> = {
   'contratista-list': CONTRATISTA_LIST_CONFIG,
   'lista-negra-list': LISTA_NEGRA_CONFIG,
-  
+
   // Placeholders para las demás grids
   'vehicles-list': {
     gridId: 'vehicles-list',
@@ -379,12 +379,21 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
   'entries-list': {
     gridId: 'entries-list',
     availableButtons: {
-      default: COMMON_DEFAULT_BUTTONS,
-      singleSelect: COMMON_SINGLE_SELECT_BUTTONS,
-      multiSelect: COMMON_MULTI_SELECT_BUTTONS
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b =>
+          ['autosize-all', 'reset-columns', 'refresh'].includes(b.id)
+        )
+      ],
+      singleSelect: [
+        ...COMMON_SINGLE_SELECT_BUTTONS
+      ],
+      multiSelect: [
+        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => b.id !== 'export-selection')
+      ]
     },
     showColumnSelector: true,
-    showThemeSelector: true
+    showThemeSelector: true,
+    enableGrouping: false
   },
   'companies-list': {
     gridId: 'companies-list',

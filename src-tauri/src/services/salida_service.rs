@@ -29,7 +29,7 @@ pub struct ResultadoValidacionSalida {
 // ==========================================
 
 /// Valida que se puede registrar la salida
-/// 
+///
 /// Verifica:
 /// 1. Ingreso existe
 /// 2. Ingreso está abierto
@@ -81,7 +81,7 @@ pub async fn validar_puede_salir(
 // ==========================================
 
 /// Registra la salida de un contratista
-/// 
+///
 /// Orquesta:
 /// 1. Obtener ingreso actual
 /// 2. Validaciones de dominio (estado abierto, gafete)
@@ -107,7 +107,8 @@ pub async fn registrar_salida(
     domain::validar_tiempo_salida(&ingreso.fecha_hora_ingreso, &now)?;
 
     // 5. Calcular tiempo de permanencia con dominio
-    let minutos_permanencia = domain::calcular_tiempo_permanencia(&ingreso.fecha_hora_ingreso, &now)?;
+    let minutos_permanencia =
+        domain::calcular_tiempo_permanencia(&ingreso.fecha_hora_ingreso, &now)?;
 
     // 6. Evaluar devolución de gafete con dominio
     let tenia_gafete = ingreso.gafete_numero.is_some();
@@ -141,9 +142,9 @@ pub async fn registrar_salida(
 
     // 8. Generar reporte de gafete si es necesario
     if decision.debe_generar_reporte {
-        let gafete_numero = decision
-            .gafete_numero
-            .ok_or_else(|| "Error: debe generar reporte pero no hay número de gafete".to_string())?;
+        let gafete_numero = decision.gafete_numero.ok_or_else(|| {
+            "Error: debe generar reporte pero no hay número de gafete".to_string()
+        })?;
 
         let nombre_completo = format!("{} {}", ingreso.nombre, ingreso.apellido);
         let alerta_id = Uuid::new_v4().to_string();
@@ -174,7 +175,7 @@ pub async fn registrar_salida(
 // ==========================================
 
 /// Registra salida verificando que el gafete devuelto coincida EXACTAMENTE
-/// 
+///
 /// Esta versión es más estricta y requiere que el frontend envíe
 /// el número de gafete devuelto explícitamente
 pub async fn registrar_salida_con_verificacion_gafete(
@@ -198,7 +199,8 @@ pub async fn registrar_salida_con_verificacion_gafete(
     domain::validar_tiempo_salida(&ingreso.fecha_hora_ingreso, &now)?;
 
     // 5. Calcular tiempo de permanencia
-    let minutos_permanencia = domain::calcular_tiempo_permanencia(&ingreso.fecha_hora_ingreso, &now)?;
+    let minutos_permanencia =
+        domain::calcular_tiempo_permanencia(&ingreso.fecha_hora_ingreso, &now)?;
 
     // 6. Evaluar devolución de gafete (versión estricta)
     let tenia_gafete = ingreso.gafete_numero.is_some();
@@ -225,9 +227,9 @@ pub async fn registrar_salida_con_verificacion_gafete(
 
     // 8. Generar reporte si es necesario
     if decision.debe_generar_reporte {
-        let gafete_numero = decision
-            .gafete_numero
-            .ok_or_else(|| "Error: debe generar reporte pero no hay número de gafete".to_string())?;
+        let gafete_numero = decision.gafete_numero.ok_or_else(|| {
+            "Error: debe generar reporte pero no hay número de gafete".to_string()
+        })?;
 
         let nombre_completo = format!("{} {}", ingreso.nombre, ingreso.apellido);
         let alerta_id = Uuid::new_v4().to_string();
@@ -281,17 +283,25 @@ pub async fn get_salidas_del_dia(
 ) -> Result<Vec<IngresoResponse>, String> {
     let ingresos = db::find_all(pool).await?;
 
-    let salidas_del_dia: Vec<_> = ingresos
-        .into_iter()
-        .filter(|i| {
-            if let Some(ref salida) = i.fecha_hora_salida {
-                salida.starts_with(fecha)
-            } else {
-                false
+    let mut salidas_del_dia = Vec::new();
+
+    for ingreso in ingresos {
+        // Filtrar solo los que tienen salida en la fecha especificada
+        if let Some(ref salida) = ingreso.fecha_hora_salida {
+            if salida.starts_with(fecha) {
+                // Obtener detalles completos incluyendo nombres de usuarios
+                let details = db::find_details_by_id(pool, &ingreso.id).await?;
+
+                let mut response = IngresoResponse::from(ingreso);
+                response.usuario_ingreso_nombre =
+                    details.usuario_ingreso_nombre.unwrap_or_default();
+                response.usuario_salida_nombre = details.usuario_salida_nombre;
+                response.vehiculo_placa = details.vehiculo_placa;
+
+                salidas_del_dia.push(response);
             }
-        })
-        .map(IngresoResponse::from)
-        .collect();
+        }
+    }
 
     Ok(salidas_del_dia)
 }
@@ -338,10 +348,7 @@ pub async fn get_estadisticas_salidas(
     let total_salidas = salidas.len();
 
     // Contar gafetes devueltos
-    let con_gafete_devuelto = salidas
-        .iter()
-        .filter(|i| i.gafete_numero.is_some())
-        .count();
+    let con_gafete_devuelto = salidas.iter().filter(|i| i.gafete_numero.is_some()).count();
 
     let sin_gafete_devuelto = total_salidas - con_gafete_devuelto;
 

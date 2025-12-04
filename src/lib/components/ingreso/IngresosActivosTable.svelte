@@ -6,7 +6,7 @@
   import type { ColDef, GridApi } from "@ag-grid-community/core";
   import type { CustomToolbarButton } from "$lib/types/agGrid";
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
-  import { Download, FileDown } from "lucide-svelte";
+  import { Download, FileDown, UserCheck, History } from "lucide-svelte";
 
   import * as ingresoService from "$lib/logic/ingreso/ingresoService";
   import type { IngresoResponse } from "$lib/types/ingreso";
@@ -35,6 +35,9 @@
   let showExportDialog = $state(false);
   let exportOnlySelected = $state(false);
 
+  // Estado para alternar entre activos y salidas
+  let showingActive = $state(true);
+
   // Suscribirse al store
   const unsubscribe = ingresoStore.subscribe((value) => {
     ingresos = value;
@@ -44,8 +47,8 @@
     unsubscribe();
   });
 
-  // Configuración de columnas
-  const columnDefs: ColDef<IngresoResponse>[] = [
+  // Configuración de columnas - cambia según el modo
+  const columnDefs = $derived.by((): ColDef<IngresoResponse>[] => [
     {
       field: "nombreCompleto",
       headerName: "Nombre",
@@ -96,13 +99,30 @@
     },
     {
       field: "fechaHoraIngreso",
-      headerName: "Entrada",
+      headerName: "Hora Entrada",
       width: 140,
       valueFormatter: (params) =>
-        new Date(params.value).toLocaleTimeString([], {
+        new Date(params.value).toLocaleString("es-MX", {
+          month: "2-digit",
+          day: "2-digit",
           hour: "2-digit",
           minute: "2-digit",
         }),
+    },
+    {
+      field: "fechaHoraSalida",
+      headerName: "Hora Salida",
+      width: 140,
+      hide: showingActive, // Solo mostrar en vista de salidas
+      valueFormatter: (params) =>
+        params.value
+          ? new Date(params.value).toLocaleString("es-MX", {
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "-",
     },
     {
       field: "tiempoPermanenciaTexto",
@@ -113,6 +133,7 @@
     {
       headerName: "Acciones",
       width: 140,
+      hide: !showingActive, // Solo mostrar en vista activa
       cellRenderer: (params: any) => {
         return `<button class="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-xs font-medium salida-btn">Registrar Salida</button>`;
       },
@@ -122,12 +143,24 @@
         }
       },
     },
-  ];
+  ]);
 
   // Cargar datos
   async function loadData() {
     loading = true;
-    await ingresoStore.load();
+    if (showingActive) {
+      await ingresoStore.load();
+    } else {
+      // Cargar salidas del día
+      const result = await ingresoService.fetchSalidasDelDia();
+      if (result.ok) {
+        ingresos = result.data;
+      } else {
+        console.error("Error al cargar salidas:", result.error);
+        toast.error(result.error);
+        ingresos = [];
+      }
+    }
     loading = false;
   }
 
@@ -206,43 +239,58 @@
     }
   }
 
-  // ✅ NUEVO: Custom buttons para exportación
-  const customButtons: {
-    default: CustomToolbarButton[];
-    singleSelect: CustomToolbarButton[];
-    multiSelect: CustomToolbarButton[];
-  } = {
-    default: [
-      {
-        id: "export-all-permanencia",
-        label: "Exportar Todo",
-        icon: Download,
-        variant: "primary",
-        tooltip: "Exportar todos los registros de permanencia",
-        onClick: () => handleExportClick(false),
-      },
-    ],
-    singleSelect: [
-      {
-        id: "export-selected-single-permanencia",
-        label: "Exportar",
-        icon: FileDown,
-        variant: "primary",
-        tooltip: "Exportar registro seleccionado",
-        onClick: () => handleExportClick(true),
-      },
-    ],
-    multiSelect: [
-      {
-        id: "export-selected-multi-permanencia",
-        label: "Exportar Seleccionados",
-        icon: FileDown,
-        variant: "primary",
-        tooltip: "Exportar registros seleccionados",
-        onClick: () => handleExportClick(true),
-      },
-    ],
-  };
+  // ✅ NUEVO: Custom buttons para exportación y toggle
+  const customButtons = $derived.by(
+    (): {
+      default: CustomToolbarButton[];
+      singleSelect: CustomToolbarButton[];
+      multiSelect: CustomToolbarButton[];
+    } => ({
+      default: [
+        {
+          id: "toggle-view",
+          label: showingActive ? "Ver Salidas" : "Ver Activos",
+          icon: showingActive ? History : UserCheck,
+          variant: "default" as const,
+          tooltip: showingActive
+            ? "Cambiar a vista de personas que ya salieron"
+            : "Cambiar a vista de personas adentro",
+          onClick: () => {
+            showingActive = !showingActive;
+            loadData();
+          },
+        },
+        {
+          id: "export-all-permanencia",
+          label: "Exportar Todo",
+          icon: Download,
+          variant: "primary" as const,
+          tooltip: "Exportar todos los registros de permanencia",
+          onClick: () => handleExportClick(false),
+        },
+      ],
+      singleSelect: [
+        {
+          id: "export-selected-single-permanencia",
+          label: "Exportar",
+          icon: FileDown,
+          variant: "primary" as const,
+          tooltip: "Exportar registro seleccionado",
+          onClick: () => handleExportClick(true),
+        },
+      ],
+      multiSelect: [
+        {
+          id: "export-selected-multi-permanencia",
+          label: "Exportar Seleccionados",
+          icon: FileDown,
+          variant: "primary" as const,
+          tooltip: "Exportar registros seleccionados",
+          onClick: () => handleExportClick(true),
+        },
+      ],
+    }),
+  );
 
   onMount(() => {
     loadData();
@@ -252,21 +300,6 @@
 <div
   class="flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden h-full"
 >
-  <!-- Header -->
-  <div
-    class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center"
-  >
-    <h2 class="text-lg font-bold text-gray-900 dark:text-white">
-      Personas Adentro ({ingresos?.length ?? 0})
-    </h2>
-    <button
-      onclick={loadData}
-      class="text-blue-600 hover:text-blue-800 text-sm font-medium"
-    >
-      🔄 Actualizar
-    </button>
-  </div>
-
   <!-- Tabla o Empty State -->
   <div class="flex-1 relative">
     {#if !ingresos || ingresos.length === 0}

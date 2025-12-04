@@ -134,7 +134,7 @@ export async function registrarSalidaConGafete(
 /**
  * Obtener salidas del día
  */
-export async function fetchSalidasDelDia(): Promise<ServiceResult<IngresoListResponse>> {
+export async function fetchSalidasDelDia(): Promise<ServiceResult<IngresoResponse[]>> {
     try {
         const data = await ingreso.getSalidasDelDia();
         return { ok: true, data };

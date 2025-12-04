@@ -40,6 +40,7 @@
   // ==========================================
   let gafetesDisponibles: GafeteResponse[] = [];
   let gafeteInputRef: any;
+  let contratistaSection: any = null;
 
   // Cargar gafetes disponibles tipo "contratista"
   onMount(async () => {
@@ -120,9 +121,9 @@
 
     dispatch("submit", data);
 
-    // Resetear solo los campos del formulario, mantener contratista
-    gafeteNumero = "";
-    observaciones = "";
+    // Resetear formulario completo
+    if (contratistaSection) contratistaSection.reset();
+    resetForm();
   }
 
   // Computed: tiene vehículos registrados?
@@ -137,6 +138,7 @@
   <form on:submit|preventDefault={handleSubmit} class="space-y-6">
     <!-- BÚSQUEDA DE CONTRATISTA -->
     <ContratistaSearchSection
+      bind:this={contratistaSection}
       bind:contratistaId
       bind:contratistaNombre
       bind:contratistaData

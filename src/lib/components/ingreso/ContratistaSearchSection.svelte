@@ -53,6 +53,13 @@
     }
   }
 
+  let searchBar: any = null;
+
+  export function reset() {
+    if (searchBar) searchBar.clear();
+    handleSearchClear();
+  }
+
   function handleSearchClear() {
     contratistaId = "";
     contratistaNombre = "";
@@ -71,6 +78,7 @@
     Buscar Contratista
   </label>
   <SearchBar
+    bind:this={searchBar}
     placeholder="Buscar por nombre o cédula..."
     limit={10}
     on:select={handleContratistaSelect}
