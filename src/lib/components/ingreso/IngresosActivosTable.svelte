@@ -108,32 +108,55 @@
       },
       {
         field: "fechaHoraIngreso",
-        headerName: "Hora Entrada",
-        width: 140,
+        headerName: "Fecha Entrada",
+        width: 110,
         valueFormatter: (params) =>
-          new Date(params.value).toLocaleString("es-MX", {
-            month: "2-digit",
+          new Date(params.value).toLocaleDateString("es-CR", {
             day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          }),
+      },
+      {
+        field: "fechaHoraIngreso",
+        headerName: "Hora Entrada",
+        width: 90,
+        valueFormatter: (params) =>
+          new Date(params.value).toLocaleTimeString("es-CR", {
             hour: "2-digit",
             minute: "2-digit",
+            hour12: false,
           }),
       },
     ];
 
     // Agregar columnas condicionales según el modo
     if (!showingActive) {
-      // Modo historial: agregar columna de hora salida
+      // Modo historial: agregar columnas de fecha y hora de salida
+      baseColumns.push({
+        field: "fechaHoraSalida" as any,
+        headerName: "Fecha Salida",
+        width: 110,
+        valueFormatter: (params) =>
+          params.value
+            ? new Date(params.value).toLocaleDateString("es-CR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              })
+            : "-",
+      } as ColDef<IngresoResponse>);
+      
       baseColumns.push({
         field: "fechaHoraSalida" as any,
         headerName: "Hora Salida",
-        width: 140,
+        width: 90,
         valueFormatter: (params) =>
           params.value
-            ? new Date(params.value).toLocaleString("es-MX", {
-                month: "2-digit",
-                day: "2-digit",
+            ? new Date(params.value).toLocaleTimeString("es-CR", {
                 hour: "2-digit",
                 minute: "2-digit",
+                hour12: false,
               })
             : "-",
       } as ColDef<IngresoResponse>);
