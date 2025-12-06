@@ -47,6 +47,9 @@
   // Estado para alternar entre activos y salidas
   let showingActive = $state(true);
 
+  // Flag para prevenir sobrescritura de estado durante cambios de modo
+  let isRestoringState = false;
+
   // ✅ Estado para rango de fechas en historial
   let startDate = $state(new Date().toISOString().split("T")[0]);
   let endDate = $state(new Date().toISOString().split("T")[0]);
@@ -389,6 +392,8 @@
   }
 
   function saveColumnState(api: GridApi) {
+    if (isRestoringState) return;
+
     try {
       const mode = getCurrentMode(); // Obtener modo actual, no capturado
       const columnState = api.getColumnState();
@@ -426,7 +431,7 @@
   }
 
   // Effect para guardar estado actual y cargar nuevo al cambiar de modo
-  let previousMode = showingActive ? "activos" : "salidas";
+  let previousMode = "activos";
 
   $effect(() => {
     if (gridApi) {
@@ -434,15 +439,20 @@
 
       // Si cambió el modo
       if (currentMode !== previousMode) {
-        // Guardar estado del modo anterior
-        saveColumnState(gridApi);
+        // Nota: El guardado del estado anterior se hace en el onClick del botón toggle
+        // para asegurar que se guarde antes de que cambie showingActive
 
         // Pequeño delay para cargar el estado del nuevo modo
         setTimeout(() => {
           if (gridApi) {
             loadColumnState(gridApi, currentMode);
+            // Desbloquear guardado después de restaurar
+            // Damos un poco más de tiempo para que se asienten los eventos internos
+            setTimeout(() => {
+              isRestoringState = false;
+            }, 500);
           }
-        }, 100);
+        }, 200);
 
         previousMode = currentMode;
       }
@@ -460,6 +470,9 @@
     if (gridApi && columnDefs) {
       // Forzar actualización de columnas
       gridApi.setGridOption("columnDefs", columnDefs);
+
+      // No cargar estado aquí directo, dejar que onGridReady o el cambio de modo lo manejen
+      // para evitar conflictos con el ciclo de vida inicial
     }
   });
 
@@ -601,6 +614,13 @@
             ? "Cambiar a vista de personas que ya salieron"
             : "Cambiar a vista de personas adentro",
           onClick: () => {
+            // 1. Guardar estado actual ANTES de cambiar
+            if (gridApi) saveColumnState(gridApi);
+
+            // 2. Bloquear guardado automático (para evitar que se guarde el reset de columnas)
+            isRestoringState = true;
+
+            // 3. Cambiar modo
             showingActive = !showingActive;
             loadData();
           },
@@ -675,14 +695,18 @@
       onGridReady={(api) => {
         gridApi = api;
 
-        // Restaurar estado de columnas guardado
-        const mode = getCurrentMode();
-        loadColumnState(api, mode);
+        // Restaurar estado de columnas guardado con un pequeño delay
+        // para asegurar que el grid esté listo para animaciones
+        setTimeout(() => {
+          const mode = getCurrentMode();
+          loadColumnState(api, mode);
 
-        // Guardar estado cuando las columnas cambien (sin pasar mode, usa getCurrentMode())
-        api.addEventListener("columnMoved", () => saveColumnState(api));
-        api.addEventListener("columnResized", () => saveColumnState(api));
-        api.addEventListener("columnVisible", () => saveColumnState(api));
+          // ✅ Attach listeners AFTER loading state to prevent overwriting with defaults
+          // during initialization or columnDefs updates
+          api.addEventListener("columnMoved", () => saveColumnState(api));
+          api.addEventListener("columnResized", () => saveColumnState(api));
+          api.addEventListener("columnVisible", () => saveColumnState(api));
+        }, 300); // 300ms to be safe after autoSize (150ms)
       }}
       getRowId={(params) => params.data.id}
     >

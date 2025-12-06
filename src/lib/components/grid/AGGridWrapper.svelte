@@ -25,7 +25,7 @@
   import AGGridSettingsModal from "./AGGridSettingsModal.svelte";
 
   interface Props extends AGGridWrapperProps<T> {
-    customToolbarSlot?: import('svelte').Snippet;
+    customToolbarSlot?: import("svelte").Snippet;
   }
 
   let {
