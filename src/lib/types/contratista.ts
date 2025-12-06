@@ -31,6 +31,7 @@ export interface ContratistaResponse {
     estado: EstadoContratista;
     puedeIngresar: boolean;
     praindVencido: boolean;
+    estaBloqueado: boolean;
     diasHastaVencimiento: number;
     requiereAtencion: boolean;
     vehiculoTipo?: string;
@@ -62,6 +63,13 @@ export interface UpdateContratistaInput {
     empresaId?: string;
     fechaVencimientoPraind?: string;
     isActive?: boolean;
+    // Campos para actualizar vehículo
+    tieneVehiculo?: boolean;
+    tipoVehiculo?: string;
+    placa?: string;
+    marca?: string;
+    modelo?: string;
+    color?: string;
 }
 
 export interface ContratistaListResponse {

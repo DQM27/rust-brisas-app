@@ -154,8 +154,14 @@ export class ContratistaListLogic {
         headerName: "Acceso",
         width: 130,
         cellRenderer: (params: ICellRendererParams) => {
-          const canEnter = params.value;
-          if (canEnter) {
+          const row = params.data as ContratistaResponse;
+          if (row.estaBloqueado) {
+            return `
+              <span class="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400">
+                Bloqueado
+              </span>
+            `;
+          } else if (row.puedeIngresar) {
             return `
               <span class="inline-flex items-center gap-1.5 rounded-full border border-green-500/20 bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-400">
                 Permitido

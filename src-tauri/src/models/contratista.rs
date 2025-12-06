@@ -73,6 +73,13 @@ pub struct UpdateContratistaInput {
     pub segundo_apellido: Option<String>,
     pub empresa_id: Option<String>,
     pub fecha_vencimiento_praind: Option<String>,
+    // Campos para actualizar vehículo
+    pub tiene_vehiculo: Option<bool>,
+    pub tipo_vehiculo: Option<String>,
+    pub placa: Option<String>,
+    pub marca: Option<String>,
+    pub modelo: Option<String>,
+    pub color: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -101,6 +108,7 @@ pub struct ContratistaResponse {
     pub estado: EstadoContratista,
     pub puede_ingresar: bool,
     pub praind_vencido: bool,
+    pub esta_bloqueado: bool,
     pub dias_hasta_vencimiento: i64,
     pub requiere_atencion: bool,
     pub vehiculo_tipo: Option<String>,
@@ -146,6 +154,7 @@ impl From<Contratista> for ContratistaResponse {
             estado: c.estado,
             puede_ingresar,
             praind_vencido,
+            esta_bloqueado: false, // Se actualiza en el servicio
             dias_hasta_vencimiento,
             requiere_atencion,
             vehiculo_tipo: None,

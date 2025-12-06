@@ -90,7 +90,8 @@ pub async fn create_contratista(
 
     // 9. Indexar en Tantivy (automático)
     // 9. Indexar en Tantivy (automático)
-    if let Ok((contratista, empresa_nombre, _, _)) = db::find_by_id_with_empresa(pool, &id).await {
+    if let Ok((contratista, empresa_nombre, _, _, _)) = db::find_by_id_with_empresa(pool, &id).await
+    {
         if let Err(e) = search_service.add_contratista(&contratista, &empresa_nombre) {
             eprintln!("⚠️ Error al indexar contratista {}: {}", id, e);
             // No fallamos la operación, solo logueamos el error
@@ -108,13 +109,18 @@ pub async fn get_contratista_by_id(
     pool: &SqlitePool,
     id: &str,
 ) -> Result<ContratistaResponse, String> {
-    let (contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa) =
+    let (contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa, is_blocked) =
         db::find_by_id_with_empresa(pool, id).await?;
 
     let mut response = ContratistaResponse::from(contratista);
     response.empresa_nombre = empresa_nombre;
     response.vehiculo_tipo = vehiculo_tipo;
     response.vehiculo_placa = vehiculo_placa;
+    response.esta_bloqueado = is_blocked;
+
+    if is_blocked {
+        response.puede_ingresar = false;
+    }
 
     Ok(response)
 }
@@ -127,13 +133,18 @@ pub async fn get_contratista_by_cedula(
     pool: &SqlitePool,
     cedula: &str,
 ) -> Result<ContratistaResponse, String> {
-    let (contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa) =
+    let (contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa, is_blocked) =
         db::find_by_cedula_with_empresa(pool, cedula).await?;
 
     let mut response = ContratistaResponse::from(contratista);
     response.empresa_nombre = empresa_nombre;
     response.vehiculo_tipo = vehiculo_tipo;
     response.vehiculo_placa = vehiculo_placa;
+    response.esta_bloqueado = is_blocked;
+
+    if is_blocked {
+        response.puede_ingresar = false;
+    }
 
     Ok(response)
 }
@@ -150,11 +161,17 @@ pub async fn get_all_contratistas(pool: &SqlitePool) -> Result<ContratistaListRe
         .into_iter()
         .into_iter()
         .map(
-            |(contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa)| {
+            |(contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa, is_blocked)| {
                 let mut response = ContratistaResponse::from(contratista);
                 response.empresa_nombre = empresa_nombre;
                 response.vehiculo_tipo = vehiculo_tipo;
                 response.vehiculo_placa = vehiculo_placa;
+                response.esta_bloqueado = is_blocked;
+
+                if is_blocked {
+                    response.puede_ingresar = false;
+                }
+
                 response
             },
         )
@@ -191,11 +208,17 @@ pub async fn get_contratistas_activos(
         .into_iter()
         .into_iter()
         .map(
-            |(contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa)| {
+            |(contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa, is_blocked)| {
                 let mut response = ContratistaResponse::from(contratista);
                 response.empresa_nombre = empresa_nombre;
                 response.vehiculo_tipo = vehiculo_tipo;
                 response.vehiculo_placa = vehiculo_placa;
+                response.esta_bloqueado = is_blocked;
+
+                if is_blocked {
+                    response.puede_ingresar = false;
+                }
+
                 response
             },
         )
@@ -265,11 +288,66 @@ pub async fn update_contratista(
     )
     .await?;
 
-    // 7. Obtener contratista actualizado
+    // 7. Gestionar Vehículo
+    if let Some(tiene) = input.tiene_vehiculo {
+        use crate::db::vehiculo_queries;
+        let vehiculos = vehiculo_queries::find_by_contratista(pool, &id)
+            .await
+            .unwrap_or_default();
+        let vehiculo_existente = vehiculos.first();
+
+        if tiene {
+            // Caso: El usuario indica que TIENE vehículo
+            // Validar datos mínimos
+            if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
+                if !tipo.is_empty() && !placa.is_empty() {
+                    if let Some(v) = vehiculo_existente {
+                        // Actualizar existente
+                        vehiculo_queries::update(
+                            pool,
+                            &v.id,
+                            Some(tipo),
+                            input.marca.as_deref(),
+                            input.modelo.as_deref(),
+                            input.color.as_deref(),
+                            Some(1), // Activo
+                            &now,
+                        )
+                        .await?;
+                    } else {
+                        // Crear nuevo
+                        let vid = Uuid::new_v4().to_string();
+                        vehiculo_queries::insert(
+                            pool,
+                            &vid,
+                            &id,
+                            tipo,
+                            placa,
+                            input.marca.as_deref(),
+                            input.modelo.as_deref(),
+                            input.color.as_deref(),
+                            &now,
+                            &now,
+                        )
+                        .await?;
+                    }
+                }
+            }
+        } else {
+            // Caso: El usuario indica que NO TIENE vehículo
+            // Si existe uno, lo eliminamos o desactivamos (aquí eliminamos físico para limpiar)
+            if let Some(v) = vehiculo_existente {
+                vehiculo_queries::delete(pool, &v.id).await?;
+            }
+        }
+    }
+
+    // 8. Obtener contratista actualizado
     let response = get_contratista_by_id(pool, &id).await?;
 
-    // 8. Actualizar índice de Tantivy (automático)
-    if let Ok((contratista, empresa_nombre, _, _)) = db::find_by_id_with_empresa(pool, &id).await {
+    // 9. Actualizar índice de Tantivy (automático)
+    if let Ok((contratista, empresa_nombre, _, _, _)) = db::find_by_id_with_empresa(pool, &id).await
+    {
         if let Err(e) = search_service.update_contratista(&contratista, &empresa_nombre) {
             eprintln!(
                 "⚠️ Error al actualizar índice del contratista {}: {}",
@@ -307,7 +385,8 @@ pub async fn cambiar_estado_contratista(
     let response = get_contratista_by_id(pool, &id).await?;
 
     // 6. Actualizar índice de Tantivy (automático)
-    if let Ok((contratista, empresa_nombre, _, _)) = db::find_by_id_with_empresa(pool, &id).await {
+    if let Ok((contratista, empresa_nombre, _, _, _)) = db::find_by_id_with_empresa(pool, &id).await
+    {
         if let Err(e) = search_service.update_contratista(&contratista, &empresa_nombre) {
             eprintln!(
                 "⚠️ Error al actualizar índice del contratista {}: {}",

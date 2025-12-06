@@ -155,9 +155,10 @@ pub async fn insert(
 pub async fn find_by_id_with_empresa(
     pool: &SqlitePool,
     id: &str,
-) -> Result<(Contratista, String, Option<String>, Option<String>), String> {
+) -> Result<(Contratista, String, Option<String>, Option<String>, bool), String> {
     let row = sqlx::query(
-        r#"SELECT c.*, e.nombre as empresa_nombre, v.tipo_vehiculo, v.placa
+        r#"SELECT c.*, e.nombre as empresa_nombre, v.tipo_vehiculo, v.placa,
+           EXISTS (SELECT 1 FROM lista_negra ln WHERE ln.cedula = c.cedula AND ln.is_active = 1) as is_blocked
            FROM contratistas c
            LEFT JOIN empresas e ON c.empresa_id = e.id
            LEFT JOIN vehiculos v ON c.id = v.contratista_id
@@ -173,7 +174,14 @@ pub async fn find_by_id_with_empresa(
         let empresa_nombre: String = row.get("empresa_nombre");
         let vehiculo_tipo: Option<String> = row.try_get("tipo_vehiculo").ok();
         let vehiculo_placa: Option<String> = row.try_get("placa").ok();
-        Ok((contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa))
+        let is_blocked: bool = row.get("is_blocked");
+        Ok((
+            contratista,
+            empresa_nombre,
+            vehiculo_tipo,
+            vehiculo_placa,
+            is_blocked,
+        ))
     } else {
         Err("Contratista no encontrado".to_string())
     }
@@ -183,9 +191,10 @@ pub async fn find_by_id_with_empresa(
 pub async fn find_by_cedula_with_empresa(
     pool: &SqlitePool,
     cedula: &str,
-) -> Result<(Contratista, String, Option<String>, Option<String>), String> {
+) -> Result<(Contratista, String, Option<String>, Option<String>, bool), String> {
     let row = sqlx::query(
-        r#"SELECT c.*, e.nombre as empresa_nombre, v.tipo_vehiculo, v.placa
+        r#"SELECT c.*, e.nombre as empresa_nombre, v.tipo_vehiculo, v.placa,
+           EXISTS (SELECT 1 FROM lista_negra ln WHERE ln.cedula = c.cedula AND ln.is_active = 1) as is_blocked
            FROM contratistas c
            LEFT JOIN empresas e ON c.empresa_id = e.id
            LEFT JOIN vehiculos v ON c.id = v.contratista_id
@@ -201,7 +210,14 @@ pub async fn find_by_cedula_with_empresa(
         let empresa_nombre: String = row.get("empresa_nombre");
         let vehiculo_tipo: Option<String> = row.try_get("tipo_vehiculo").ok();
         let vehiculo_placa: Option<String> = row.try_get("placa").ok();
-        Ok((contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa))
+        let is_blocked: bool = row.get("is_blocked");
+        Ok((
+            contratista,
+            empresa_nombre,
+            vehiculo_tipo,
+            vehiculo_placa,
+            is_blocked,
+        ))
     } else {
         Err("Contratista no encontrado".to_string())
     }
@@ -209,9 +225,10 @@ pub async fn find_by_cedula_with_empresa(
 
 pub async fn find_all_with_empresa(
     pool: &SqlitePool,
-) -> Result<Vec<(Contratista, String, Option<String>, Option<String>)>, String> {
+) -> Result<Vec<(Contratista, String, Option<String>, Option<String>, bool)>, String> {
     let rows = sqlx::query(
-        r#"SELECT c.*, e.nombre as empresa_nombre, v.tipo_vehiculo, v.placa
+        r#"SELECT c.*, e.nombre as empresa_nombre, v.tipo_vehiculo, v.placa,
+           EXISTS (SELECT 1 FROM lista_negra ln WHERE ln.cedula = c.cedula AND ln.is_active = 1) as is_blocked
            FROM contratistas c
            LEFT JOIN empresas e ON c.empresa_id = e.id
            LEFT JOIN vehiculos v ON c.id = v.contratista_id
@@ -227,16 +244,24 @@ pub async fn find_all_with_empresa(
         let empresa_nombre: String = row.get("empresa_nombre");
         let vehiculo_tipo: Option<String> = row.try_get("tipo_vehiculo").ok();
         let vehiculo_placa: Option<String> = row.try_get("placa").ok();
-        result.push((contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa));
+        let is_blocked: bool = row.get("is_blocked");
+        result.push((
+            contratista,
+            empresa_nombre,
+            vehiculo_tipo,
+            vehiculo_placa,
+            is_blocked,
+        ));
     }
     Ok(result)
 }
 
 pub async fn find_activos_with_empresa(
     pool: &SqlitePool,
-) -> Result<Vec<(Contratista, String, Option<String>, Option<String>)>, String> {
+) -> Result<Vec<(Contratista, String, Option<String>, Option<String>, bool)>, String> {
     let rows = sqlx::query(
-        r#"SELECT c.*, e.nombre as empresa_nombre, v.tipo_vehiculo, v.placa
+        r#"SELECT c.*, e.nombre as empresa_nombre, v.tipo_vehiculo, v.placa,
+           EXISTS (SELECT 1 FROM lista_negra ln WHERE ln.cedula = c.cedula AND ln.is_active = 1) as is_blocked
            FROM contratistas c
            LEFT JOIN empresas e ON c.empresa_id = e.id
            LEFT JOIN vehiculos v ON c.id = v.contratista_id
@@ -253,7 +278,14 @@ pub async fn find_activos_with_empresa(
         let empresa_nombre: String = row.get("empresa_nombre");
         let vehiculo_tipo: Option<String> = row.try_get("tipo_vehiculo").ok();
         let vehiculo_placa: Option<String> = row.try_get("placa").ok();
-        result.push((contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa));
+        let is_blocked: bool = row.get("is_blocked");
+        result.push((
+            contratista,
+            empresa_nombre,
+            vehiculo_tipo,
+            vehiculo_placa,
+            is_blocked,
+        ));
     }
     Ok(result)
 }

@@ -53,7 +53,7 @@ impl SearchService {
         let contratistas = contratista_queries::find_all_with_empresa(pool).await?;
 
         // Indexar cada uno
-        for (contratista, empresa_nombre, _, _) in contratistas {
+        for (contratista, empresa_nombre, _, _, _) in contratistas {
             index_contratista(&mut writer, &schema, &contratista, &empresa_nombre)?;
         }
 
