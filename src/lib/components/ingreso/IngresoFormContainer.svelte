@@ -1,17 +1,19 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { ingresoFormStore } from '$lib/stores/ingresoFormStore';
-  import { currentUser } from '$lib/stores/auth';
-  import * as controller from '$lib/logic/ingreso/ingresoFormController';
-  import * as gafeteService from '$lib/logic/gafete/gafeteService';
-  import type { GafeteResponse } from '$lib/types/gafete';
+  import { onMount } from "svelte";
+  import { ingresoFormStore } from "$lib/stores/ingresoFormStore";
+  import { currentUser } from "$lib/stores/auth";
+  import * as controller from "$lib/logic/ingreso/ingresoFormController";
+  import * as gafeteService from "$lib/logic/gafete/gafeteService";
+  import type { GafeteResponse } from "$lib/types/gafete";
 
   // Componentes hijos (presentacionales)
-  import ContratistaSearchSection from './ContratistaSearchSection.svelte';
-  import ModoIngresoSelector from './ModoIngresoSelector.svelte';
-  import VehiculoSelector from './VehiculoSelector.svelte';
-  import GafeteInput from './GafeteInput.svelte';
-  import IngresoFormFields from './IngresoFormFields.svelte';
+  import ContratistaSearchSection from "./ContratistaSearchSection.svelte";
+  import ModoIngresoSelector from "./ModoIngresoSelector.svelte";
+  import VehiculoSelector from "./VehiculoSelector.svelte";
+  import GafeteInput from "./GafeteInput.svelte";
+  import IngresoFormFields from "./IngresoFormFields.svelte";
+
+  export let onSuccess: () => void = () => {};
 
   // ==========================================
   // ESTADO LOCAL
@@ -29,8 +31,8 @@
   $: tieneVehiculos = formState.contratistaData?.vehiculos?.length > 0;
   $: puedeSubmit =
     formState.puedeIngresar &&
-    (formState.modoIngreso === 'caminando' ||
-      (formState.modoIngreso === 'vehiculo' && formState.vehiculoId));
+    (formState.modoIngreso === "caminando" ||
+      (formState.modoIngreso === "vehiculo" && formState.vehiculoId));
 
   // ==========================================
   // LIFECYCLE
@@ -40,7 +42,7 @@
     // Cargar gafetes disponibles tipo "contratista"
     const res = await gafeteService.fetchDisponibles();
     if (res.ok) {
-      gafetesDisponibles = res.data.filter((g) => g.tipo === 'contratista');
+      gafetesDisponibles = res.data.filter((g) => g.tipo === "contratista");
     }
   });
 
@@ -100,7 +102,7 @@
 
   async function handleSubmit() {
     if (!$currentUser?.id) {
-      console.error('No hay usuario autenticado');
+      console.error("No hay usuario autenticado");
       return;
     }
 
@@ -108,14 +110,17 @@
 
     const success = await controller.registrarEntrada(
       $currentUser.id,
-      gafetesDisponibles
+      gafetesDisponibles,
     );
 
     loading = false;
 
-    // Si fue exitoso, limpiar búsqueda de contratista
-    if (success && contratistaSearchRef) {
-      contratistaSearchRef.reset();
+    // Si fue exitoso, limpiar búsqueda de contratista y notificar
+    if (success) {
+      if (contratistaSearchRef) {
+        contratistaSearchRef.reset();
+      }
+      onSuccess();
     }
   }
 </script>
@@ -158,7 +163,7 @@
       />
 
       <!-- SELECTOR DE VEHÍCULO (Solo si modo = vehiculo) -->
-      {#if formState.modoIngreso === 'vehiculo' && tieneVehiculos}
+      {#if formState.modoIngreso === "vehiculo" && tieneVehiculos}
         <VehiculoSelector
           vehiculos={formState.contratistaData.vehiculos}
           vehiculoId={formState.vehiculoId}

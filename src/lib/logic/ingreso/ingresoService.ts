@@ -85,7 +85,7 @@ function parseError(err: any): string {
  */
 export function calcularAutoSeleccion(contratistaData: any): AutoSelectionResult {
     const vehiculos = contratistaData?.vehiculos || [];
-    
+
     if (vehiculos.length === 0) {
         return {
             suggestedMode: 'caminando',
@@ -93,7 +93,7 @@ export function calcularAutoSeleccion(contratistaData: any): AutoSelectionResult
             reason: 'no_vehicles'
         };
     }
-    
+
     if (vehiculos.length === 1) {
         return {
             suggestedMode: 'vehiculo',
@@ -101,7 +101,7 @@ export function calcularAutoSeleccion(contratistaData: any): AutoSelectionResult
             reason: 'single_vehicle'
         };
     }
-    
+
     // Múltiples vehículos: dejar que el usuario elija
     return {
         suggestedMode: 'caminando',
@@ -124,7 +124,7 @@ export function calcularAutoSeleccion(contratistaData: any): AutoSelectionResult
 export function validarGafete(input: ValidarGafeteInput): ServiceResult<GafeteValidationResult> {
     try {
         const normalizado = input.gafeteNumero.trim().toUpperCase();
-        
+
         // Si está vacío, es válido (gafete es opcional)
         if (!normalizado) {
             return {
@@ -132,34 +132,34 @@ export function validarGafete(input: ValidarGafeteInput): ServiceResult<GafeteVa
                 data: { isValid: true, suggestions: [] }
             };
         }
-        
+
         // Validación con Zod
         const validation = GafeteValidationSchema.safeParse({
             numero: normalizado,
             gafetesDisponibles: input.gafetesDisponibles
         });
-        
+
         if (validation.success) {
             return {
                 ok: true,
                 data: { isValid: true, suggestions: [] }
             };
         }
-        
+
         // Generar sugerencias si no es válido
         const suggestions = input.gafetesDisponibles
             .filter(g => g.numero.includes(normalizado) && g.estaDisponible)
             .map(g => g.numero)
             .slice(0, 5);
-        
+
         return {
             ok: true,
-            data: { 
-                isValid: false, 
-                suggestions 
+            data: {
+                isValid: false,
+                suggestions
             }
         };
-        
+
     } catch (err) {
         return {
             ok: false,
@@ -185,9 +185,9 @@ export function validarModoVehiculo(input: ValidarModoVehiculoInput): ServiceRes
             vehiculoId: input.vehiculoId,
             tieneVehiculos: input.tieneVehiculos
         });
-        
+
         return { ok: true, data: true };
-        
+
     } catch (err) {
         if (err instanceof ZodError) {
             return {
@@ -222,9 +222,9 @@ export function validarFormularioCompleto(input: ValidarFormularioCompletoInput)
             gafeteNumero: input.gafeteNumero,
             tipoAutorizacion: input.tipoAutorizacion
         });
-        
+
         return { ok: true, data: true };
-        
+
     } catch (err) {
         if (err instanceof ZodError) {
             return {
@@ -260,13 +260,13 @@ export async function prepararFormularioIngreso(
     try {
         // 1. Validar si puede ingresar
         const validacionResult = await validarIngreso(contratistaId);
-        
+
         if (!validacionResult.ok) {
             return validacionResult as ServiceResult<PrepararFormularioOutput>;
         }
-        
+
         const validacion = validacionResult.data;
-        
+
         // 2. Verificar que puede ingresar
         if (!validacion.puedeIngresar) {
             return {
@@ -274,10 +274,10 @@ export async function prepararFormularioIngreso(
                 error: validacion.motivoRechazo || 'No autorizado para ingresar'
             };
         }
-        
+
         // 3. Calcular auto-selección basada en vehículos
         const autoSeleccion = calcularAutoSeleccion(validacion.contratista);
-        
+
         // 4. Retornar todo preparado
         return {
             ok: true,
@@ -286,7 +286,7 @@ export async function prepararFormularioIngreso(
                 autoSeleccion
             }
         };
-        
+
     } catch (err) {
         return {
             ok: false,
@@ -407,12 +407,12 @@ export async function fetchSalidasEnRango(
                 error: 'La fecha de inicio no puede ser mayor que la fecha de fin'
             };
         }
-        
+
         // Llamar al backend con query SQL optimizada
         const data = await ingreso.getSalidasEnRango(startDate, endDate);
-        
+
         return { ok: true, data };
-        
+
     } catch (err: any) {
         console.error('Error al obtener salidas en rango:', err);
         return { ok: false, error: parseError(err) };
@@ -469,4 +469,50 @@ export async function resolverAlerta(input: ResolverAlertaInput): Promise<Servic
         console.error('Error al resolver alerta:', err);
         return { ok: false, error: parseError(err) };
     }
+}
+
+// ============================================
+// FRONTEND TIME LOGIC (Replicating Backend)
+// ============================================
+
+import type { AlertaTiempo, EstadoPermanencia } from '$lib/types/ingreso';
+
+/**
+ * Evalúa el estado de permanencia en tiempo real sin pedirlo al backend.
+ * Replica la lógica de validaciones_permanencia.rs
+ */
+export function evaluateTimeStatus(entryDate: Date, currentDate: Date = new Date()): AlertaTiempo {
+    const diffMs = currentDate.getTime() - entryDate.getTime();
+    const minutosTranscurridos = Math.floor(diffMs / 60000);
+
+    // Constantes idénticas al backend
+    const TIEMPO_MAXIMO_MINUTOS = 840; // 14 horas
+    const TIEMPO_ALERTA_TEMPRANA_MINUTOS = 810; // 13.5 horas
+
+    let estado: EstadoPermanencia = 'normal';
+
+    if (minutosTranscurridos >= TIEMPO_MAXIMO_MINUTOS) {
+        estado = 'tiempo_excedido';
+    } else if (minutosTranscurridos >= TIEMPO_ALERTA_TEMPRANA_MINUTOS) {
+        estado = 'alerta_temprana';
+    }
+
+    const minutosRestantes = TIEMPO_MAXIMO_MINUTOS - minutosTranscurridos;
+
+    // Generar mensaje si es necesario
+    let mensaje: string | undefined;
+
+    if (estado === 'alerta_temprana') {
+        mensaje = `⚠️ Tiempo límite próximo: ${minutosRestantes} minutos restantes para salir`;
+    } else if (estado === 'tiempo_excedido') {
+        const excedidos = Math.abs(minutosRestantes);
+        mensaje = `🚨 TIEMPO EXCEDIDO: ${excedidos} minutos sobre el límite de 14 horas`;
+    }
+
+    return {
+        estado,
+        minutosTranscurridos,
+        minutosRestantes,
+        mensaje
+    };
 }

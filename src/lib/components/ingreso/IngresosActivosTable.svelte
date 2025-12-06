@@ -6,7 +6,13 @@
   import type { ColDef, GridApi } from "@ag-grid-community/core";
   import type { CustomToolbarButton } from "$lib/types/agGrid";
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
-  import { Download, FileDown, UserCheck, History } from "lucide-svelte";
+  import {
+    Download,
+    FileDown,
+    UserCheck,
+    History,
+    UserPlus,
+  } from "lucide-svelte";
 
   import * as ingresoService from "$lib/logic/ingreso/ingresoService";
   import type {
@@ -24,6 +30,16 @@
   import PdfPreviewModal from "$lib/components/export/PdfPreviewModal.svelte";
   import { exportData, downloadBytes } from "$lib/logic/export";
   import type { ExportOptions } from "$lib/logic/export";
+
+  // ✅ NUEVO: Importar store de tiempo y utilidad de evaluación
+  import { currentTime } from "$lib/stores/timeStore";
+  import { evaluateTimeStatus } from "$lib/logic/ingreso/ingresoService";
+
+  // Props
+  const { onRegisterClick, isFormOpen = false } = $props<{
+    onRegisterClick?: () => void;
+    isFormOpen?: boolean;
+  }>();
 
   // Estado
   let ingresos = $state<(IngresoResponse | IngresoConEstadoResponse)[]>([]);
@@ -54,40 +70,49 @@
   let startDate = $state(new Date().toISOString().split("T")[0]);
   let endDate = $state(new Date().toISOString().split("T")[0]);
 
-  // ✅ Auto-refresh cada 30 segundos en modo activos
-  let refreshInterval: NodeJS.Timeout | null = null;
+  // ✅ Eliminar polling de 30 segundos
+  // El tiempo ahora es reactivo gracias a currentTime store
+  // Solo necesitamos recargar si queremos datos nuevos del backend (nuevos ingresos)
+  // Dejamos un polling más lento (e.g. 5 min) o dependemos de SSE/WebSockets en el futuro
+  // Por ahora, eliminamos el intervalo agresivo.
 
+  // Si se desea mantener actualización de lista (no tiempo), podemos dejarlo cada 2-5 min
   $effect(() => {
-    // Limpiar interval anterior si existe
-    if (refreshInterval) {
-      clearInterval(refreshInterval);
-      refreshInterval = null;
-    }
+    let interval = setInterval(() => {
+      if (showingActive) loadData();
+    }, 60000 * 5); // 5 minutos para nuevos ingresos
 
-    // Solo auto-refresh en modo activos
-    if (showingActive) {
-      // console.log("⏰ Auto-refresh activado (cada 30s)");
-      refreshInterval = setInterval(() => {
-        // console.log("🔄 Auto-refresh: recargando datos...");
-        loadData();
-      }, 30000); // 30 segundos
-    }
-
-    // Cleanup
-    return () => {
-      if (refreshInterval) {
-        clearInterval(refreshInterval);
-        refreshInterval = null;
-      }
-    };
+    return () => clearInterval(interval);
   });
 
   // ✅ Suscribirse al store con nueva estructura
+  // ✅ Suscribirse al store
   const unsubscribe = ingresoStore.subscribe((storeState) => {
     ingresos = storeState.data;
     if (showingActive) {
       loading = storeState.loading;
     }
+  });
+
+  // ✅ Computed: Ingresos procesados con tiempo real
+  // Se recalcula cada vez que cambia $currentTime o ingresos
+  const processedIngresos = $derived.by(() => {
+    if (!showingActive) return ingresos; // En historial no necesitamos tiempo real
+
+    return ingresos.map((ingreso) => {
+      // Calcular estado de tiempo en tiempo real
+      if (ingreso.estaAdentro && ingreso.fechaHoraIngreso) {
+        const entryDate = new Date(ingreso.fechaHoraIngreso);
+        const status = evaluateTimeStatus(entryDate, $currentTime);
+
+        // Retornar copia con alerta actualizada
+        return {
+          ...ingreso,
+          alertaTiempo: status,
+        } as IngresoConEstadoResponse;
+      }
+      return ingreso;
+    });
   });
 
   onDestroy(() => {
@@ -605,6 +630,20 @@
       multiSelect: CustomToolbarButton[];
     } => {
       const defaultButtons: CustomToolbarButton[] = [
+        ...(showingActive && !isFormOpen
+          ? [
+              {
+                id: "register-ingreso",
+                label: "Registrar Ingreso",
+                icon: UserPlus,
+                variant: "primary" as const,
+                tooltip: "Abrir formulario de registro",
+                onClick: () => {
+                  onRegisterClick?.();
+                },
+              },
+            ]
+          : []),
         {
           id: "toggle-view",
           label: showingActive ? "Ver Salidas" : "Ver Activos",
@@ -690,7 +729,7 @@
     <AGGridWrapper
       gridId="entries-list"
       {columnDefs}
-      rowData={ingresos}
+      rowData={processedIngresos}
       {customButtons}
       onGridReady={(api) => {
         gridApi = api;
