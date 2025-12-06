@@ -3,7 +3,7 @@
 // ============================================
 // Servicio consolidado para contratista - reemplaza 6 archivos fragmentados
 
-import { listContratistas, createContratista, updateContratista, deleteContratista, getContratista } from '$lib/api/contratista';
+import { listContratistas, createContratista, updateContratista, deleteContratista, getContratista, changeEstadoContratista } from '$lib/api/contratista';
 import { submitRegisterVehiculo } from '$lib/logic/vehiculo/submitRegisterVehiculo';
 import { validateVehiculoInput } from '$lib/logic/vehiculo/validateVehiculoInput';
 import { reindexAllContratistas } from '$lib/api/searchService';
@@ -179,8 +179,8 @@ export async function register(input: CreateContratistaInput): Promise<ServiceRe
             }
         }
 
-        // 5. Reindexar búsqueda
-        await reindexAllContratistas();
+        // 5. Reindexar búsqueda (YA SE HACE EN EL BACKEND - ELIMINADO PARA EVITAR BLOQUEOS)
+        // await reindexAllContratistas(); 
 
         return { ok: true, data: contratista };
     } catch (err: any) {
@@ -196,8 +196,8 @@ export async function update(id: string, input: UpdateContratistaInput): Promise
     try {
         const contratista = await updateContratista(input);
 
-        // Reindexar búsqueda
-        await reindexAllContratistas();
+        // Reindexar búsqueda (YA SE HACE EN EL BACKEND)
+        // await reindexAllContratistas();
 
         return { ok: true, data: contratista };
     } catch (err: any) {
@@ -213,8 +213,8 @@ export async function remove(id: string): Promise<ServiceResult<void>> {
     try {
         await deleteContratista(id);
 
-        // Reindexar búsqueda
-        await reindexAllContratistas();
+        // Reindexar búsqueda (YA SE HACE EN EL BACKEND)
+        // await reindexAllContratistas();
 
         return { ok: true, data: undefined };
     } catch (err: any) {
@@ -226,6 +226,23 @@ export async function remove(id: string): Promise<ServiceResult<void>> {
 // ============================================
 // COMPATIBILITY LAYER (para transición suave)
 // ============================================
+
+/**
+ * Cambiar estado (Activo/Inactivo/Suspendido)
+ */
+export async function changeStatus(id: string, nuevoEstado: 'activo' | 'inactivo' | 'suspendido'): Promise<ServiceResult<ContratistaResponse>> {
+    try {
+        const contratista = await changeEstadoContratista(id, nuevoEstado);
+
+        // Reindexar búsqueda (YA SE HACE EN EL BACKEND)
+        // await reindexAllContratistas();
+
+        return { ok: true, data: contratista };
+    } catch (err: any) {
+        console.error('Error al cambiar estado:', err);
+        return { ok: false, error: parseError(err) };
+    }
+}
 
 // Aliases para compatibilidad con código existente
 export const fetchAllContratistas = fetchAll;

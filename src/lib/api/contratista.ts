@@ -33,3 +33,10 @@ export async function updateContratista(
 export async function deleteContratista(id: string): Promise<boolean> {
   return await invoke("delete_contratista", { id });
 }
+
+export async function changeEstadoContratista(
+  id: string,
+  estado: string
+): Promise<ContratistaResponse> {
+  return await invoke("cambiar_estado_contratista", { id, input: { id, estado } });
+}

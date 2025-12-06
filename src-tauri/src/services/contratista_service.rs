@@ -89,10 +89,12 @@ pub async fn create_contratista(
     let response = get_contratista_by_id(pool, &id).await?;
 
     // 9. Indexar en Tantivy (automático)
-    // 9. Indexar en Tantivy (automático)
     if let Ok((contratista, empresa_nombre, _, _, _)) = db::find_by_id_with_empresa(pool, &id).await
     {
-        if let Err(e) = search_service.add_contratista(&contratista, &empresa_nombre) {
+        if let Err(e) = search_service
+            .add_contratista(&contratista, &empresa_nombre)
+            .await
+        {
             eprintln!("⚠️ Error al indexar contratista {}: {}", id, e);
             // No fallamos la operación, solo logueamos el error
         }
@@ -348,7 +350,10 @@ pub async fn update_contratista(
     // 9. Actualizar índice de Tantivy (automático)
     if let Ok((contratista, empresa_nombre, _, _, _)) = db::find_by_id_with_empresa(pool, &id).await
     {
-        if let Err(e) = search_service.update_contratista(&contratista, &empresa_nombre) {
+        if let Err(e) = search_service
+            .update_contratista(&contratista, &empresa_nombre)
+            .await
+        {
             eprintln!(
                 "⚠️ Error al actualizar índice del contratista {}: {}",
                 id, e
@@ -387,7 +392,10 @@ pub async fn cambiar_estado_contratista(
     // 6. Actualizar índice de Tantivy (automático)
     if let Ok((contratista, empresa_nombre, _, _, _)) = db::find_by_id_with_empresa(pool, &id).await
     {
-        if let Err(e) = search_service.update_contratista(&contratista, &empresa_nombre) {
+        if let Err(e) = search_service
+            .update_contratista(&contratista, &empresa_nombre)
+            .await
+        {
             eprintln!(
                 "⚠️ Error al actualizar índice del contratista {}: {}",
                 id, e
@@ -414,7 +422,7 @@ pub async fn delete_contratista(
     db::delete(pool, &id).await?;
 
     // Eliminar del índice de Tantivy (automático)
-    if let Err(e) = search_service.delete_contratista(&id) {
+    if let Err(e) = search_service.delete_contratista(&id).await {
         eprintln!(
             "⚠️ Error al eliminar del índice el contratista {}: {}",
             id, e

@@ -1,8 +1,3 @@
-// ==========================================
-// src/services/search_service.rs
-// ==========================================
-// Servicio que maneja el índice de búsqueda de Tantivy
-
 use crate::db::contratista_queries;
 use crate::models::contratista::Contratista;
 use crate::search::{
@@ -14,11 +9,13 @@ use sqlx::SqlitePool;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tantivy::{Index, IndexReader};
+use tokio::sync::Mutex;
 
 /// Estado del servicio de búsqueda
 pub struct SearchService {
     pub index: Arc<Index>,
     pub reader: Arc<IndexReader>,
+    pub writer_mutex: Mutex<()>,
     #[allow(dead_code)]
     index_path: PathBuf,
 }
@@ -35,12 +32,19 @@ impl SearchService {
         Ok(Self {
             index: Arc::new(index),
             reader: Arc::new(reader),
+            writer_mutex: Mutex::new(()),
             index_path,
         })
     }
 
     /// Re-indexa todos los contratistas desde la base de datos
     pub async fn reindex_all_contratistas(&self, pool: &SqlitePool) -> Result<(), String> {
+        // Obtener todos los contratistas con empresa (Async, sin lock)
+        let contratistas = contratista_queries::find_all_with_empresa(pool).await?;
+
+        // Adquirir lock para escribir en el índice
+        let _lock = self.writer_mutex.lock().await;
+
         let schema = self.index.schema();
         let mut writer = get_index_writer(&self.index)?;
 
@@ -48,9 +52,6 @@ impl SearchService {
         writer
             .delete_all_documents()
             .map_err(|e| format!("Error al limpiar índice: {}", e))?;
-
-        // Obtener todos los contratistas con empresa
-        let contratistas = contratista_queries::find_all_with_empresa(pool).await?;
 
         // Indexar cada uno
         for (contratista, empresa_nombre, _, _, _) in contratistas {
@@ -69,11 +70,13 @@ impl SearchService {
     }
 
     /// Indexa un contratista nuevo
-    pub fn add_contratista(
+    pub async fn add_contratista(
         &self,
         contratista: &Contratista,
         empresa_nombre: &str,
     ) -> Result<(), String> {
+        let _lock = self.writer_mutex.lock().await;
+
         let schema = self.index.schema();
         let mut writer = get_index_writer(&self.index)?;
 
@@ -88,11 +91,13 @@ impl SearchService {
     }
 
     /// Actualiza un contratista en el índice
-    pub fn update_contratista(
+    pub async fn update_contratista(
         &self,
         contratista: &Contratista,
         empresa_nombre: &str,
     ) -> Result<(), String> {
+        let _lock = self.writer_mutex.lock().await;
+
         let schema = self.index.schema();
         let mut writer = get_index_writer(&self.index)?;
 
@@ -107,7 +112,9 @@ impl SearchService {
     }
 
     /// Elimina un contratista del índice
-    pub fn delete_contratista(&self, id: &str) -> Result<(), String> {
+    pub async fn delete_contratista(&self, id: &str) -> Result<(), String> {
+        let _lock = self.writer_mutex.lock().await;
+
         let schema = self.index.schema();
         let mut writer = get_index_writer(&self.index)?;
 

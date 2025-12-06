@@ -144,7 +144,9 @@
       onGridReady?.(params.api);
 
       setTimeout(() => {
-        params.api.autoSizeAllColumns();
+        if (!params.api.isDestroyed()) {
+          params.api.autoSizeAllColumns();
+        }
       }, 150);
     },
 

@@ -41,9 +41,25 @@
     return listLogic.getFilteredData(contratistas);
   });
 
+  // --- Acciones de Estado ---
+  async function handleStatusChange(id: string, currentStatus: string) {
+    const newStatus = currentStatus === "activo" ? "inactivo" : "activo";
+    // Si está suspendido también lo pasamos a activo
+
+    const toastId = toast.loading("Actualizando estado...");
+    const result = await contratistaService.changeStatus(id, newStatus as any);
+
+    if (result.ok) {
+      toast.success(`Estado actualizado`, { id: toastId });
+      await loadContratistas();
+    } else {
+      toast.error(`Error: ${result.error}`, { id: toastId });
+    }
+  }
+
   // Convertir columnas a ColDef de AG Grid
   let columnDefs = $derived.by((): ColDef<ContratistaResponse>[] => {
-    const cols = ContratistaListLogic.getColumns();
+    const cols = ContratistaListLogic.getColumns(handleStatusChange);
     return cols.map(
       (col) =>
         ({
@@ -58,6 +74,7 @@
           cellRenderer: col.cellRenderer,
           valueFormatter: col.valueFormatter,
           cellStyle: col.cellStyle,
+          onCellClicked: col.onCellClicked, // Importante: pasar el handler de click
         }) as ColDef<ContratistaResponse>,
     );
   });

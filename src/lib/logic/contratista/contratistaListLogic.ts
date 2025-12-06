@@ -82,7 +82,9 @@ export class ContratistaListLogic {
   }
 
   // Column configuration
-  static getColumns(): ColDef<ContratistaResponse>[] {
+  static getColumns(
+    onStatusToggle?: (id: string, currentStatus: EstadoContratista) => void
+  ): ColDef<ContratistaResponse>[] {
     return [
       {
         field: "cedula",
@@ -123,8 +125,14 @@ export class ContratistaListLogic {
         width: 130,
         cellRenderer: (params: ICellRendererParams) => {
           const estado = params.value as EstadoContratista;
-          return ContratistaListLogic.formatEstadoBadge(estado);
+          return ContratistaListLogic.formatEstadoBadge(estado); // Ahora retorna un botón
         },
+        onCellClicked: (params) => {
+          if (onStatusToggle && params.data) {
+            const row = params.data as ContratistaResponse;
+            onStatusToggle(row.id, row.estado);
+          }
+        }
       },
       {
         field: "praindVencido",
@@ -191,9 +199,12 @@ export class ContratistaListLogic {
     const displayText = estado ? estado.charAt(0).toUpperCase() + estado.slice(1) : 'N/A';
 
     return `
-      <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${badgeClass}">
+      <button 
+        class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${badgeClass} cursor-pointer hover:opacity-80 transition-opacity"
+        title="Clic para cambiar estado"
+      >
         ${displayText}
-      </span>
+      </button>
     `;
   }
 

@@ -79,3 +79,8 @@ export interface ContratistaListResponse {
     conPraindVencido: number;
     requierenAtencion: number;
 }
+
+export interface CambiarEstadoInput {
+    id: string;
+    estado: EstadoContratista;
+}
