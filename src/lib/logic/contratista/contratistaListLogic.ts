@@ -163,13 +163,25 @@ export class ContratistaListLogic {
         width: 130,
         cellRenderer: (params: ICellRendererParams) => {
           const row = params.data as ContratistaResponse;
+
           if (row.estaBloqueado) {
             return `
               <span class="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400">
                 Bloqueado
               </span>
             `;
-          } else if (row.puedeIngresar) {
+          }
+
+          // Si está inactivo o suspendido, el acceso es denegado
+          if (row.estado !== 'activo') {
+            return `
+              <span class="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400">
+                Denegado
+              </span>
+            `;
+          }
+
+          if (row.puedeIngresar) {
             return `
               <span class="inline-flex items-center gap-1.5 rounded-full border border-green-500/20 bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-400">
                 Permitido
