@@ -213,6 +213,7 @@ export interface AGGridWrapperProps<T = any> {
   onRowDoubleClicked?: (row: T) => void;
   enableGrouping?: boolean;
   getRowId?: (params: any) => string;
+  persistenceKey?: string;
 }
 
 /**

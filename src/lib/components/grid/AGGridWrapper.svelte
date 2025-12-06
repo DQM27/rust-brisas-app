@@ -40,12 +40,15 @@
     onRowDoubleClicked,
     enableGrouping = false,
     getRowId,
+    persistenceKey, // Nuevo prop
   }: Props = $props();
 
   // Estado
   let gridApi = $state<GridApi | null>(null);
   let selectedRows = $state<T[]>([]);
   let showSettings = $state(false);
+  let isRestoring = false; // Prevents saving during restore
+  let canSaveState = false; // Prevents saving during initialization
 
   // Determinar contexto actual basado en selección
   const context = $derived.by((): ToolbarContext => {
@@ -122,6 +125,45 @@
     }
   });
 
+  // Gestionar persistencia de columnas
+  function saveColumnState(api: GridApi = gridApi!) {
+    // Solo guardar si ya estamos listos y no estamos restaurando
+    if (!api || !persistenceKey || isRestoring || !canSaveState) return;
+    try {
+      const state = api.getColumnState();
+      localStorage.setItem(
+        `ag-grid-state-${persistenceKey}`,
+        JSON.stringify(state),
+      );
+    } catch (e) {
+      console.warn("Error saving grid state:", e);
+    }
+  }
+
+  function restoreColumnState(api: GridApi) {
+    if (!api || !persistenceKey) return false;
+    const savedState = localStorage.getItem(`ag-grid-state-${persistenceKey}`);
+    if (savedState) {
+      try {
+        isRestoring = true;
+        api.applyColumnState({
+          state: JSON.parse(savedState),
+          applyOrder: true,
+        });
+        // Unlock after a short delay to allow events to settle
+        setTimeout(() => {
+          isRestoring = false;
+        }, 500);
+        return true;
+      } catch (e) {
+        console.warn("Error restoring grid state:", e);
+        isRestoring = false;
+        return false;
+      }
+    }
+    return false;
+  }
+
   // Configuración del grid
   const gridOptions: GridOptions<T> = {
     columnDefs: columnDefs,
@@ -143,12 +185,42 @@
       gridApi = params.api;
       onGridReady?.(params.api);
 
+      // Restaurar estado con un pequeño delay para asegurar que el grid esté listo
       setTimeout(() => {
-        if (!params.api.isDestroyed()) {
+        if (params.api.isDestroyed()) return;
+
+        let restored = false;
+        if (persistenceKey) {
+          restored = restoreColumnState(params.api);
+        }
+
+        // Solo auto-size si NO se restauró estado
+        if (!restored) {
           params.api.autoSizeAllColumns();
         }
-      }, 150);
+
+        // Habilitar el guardado DESPUÉS de restaurar o inicializar
+        // Damos un poco más de tiempo para que pasen los eventos iniciales de autoSize
+        setTimeout(() => {
+          canSaveState = true;
+          // Reactivar animaciones para interacción del usuario
+          params.api.setGridOption("suppressColumnMoveAnimation", false);
+        }, 500);
+      }, 200);
     },
+
+    // Eventos para guardar estado
+    onColumnMoved: (params) => saveColumnState(params.api),
+    onColumnPinned: (params) => saveColumnState(params.api),
+    onColumnResized: (params) => {
+      // Solo guardar al terminar el resize
+      if (params.finished) saveColumnState(params.api);
+    },
+    onColumnVisible: (params) => saveColumnState(params.api),
+    onSortChanged: (params) => saveColumnState(params.api),
+
+    // Suprimir animación inicial para evitar el "baile" de columnas al restaurar
+    suppressColumnMoveAnimation: true,
 
     onCellClicked: (event) => {
       // Si la columna tiene su propio handler (como botones de acción), usarlo

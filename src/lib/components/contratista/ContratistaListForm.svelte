@@ -313,6 +313,7 @@
         rowData={filteredData}
         {customButtons}
         getRowId={(params) => params.data.id}
+        persistenceKey="contratistas-list-columns"
         onSelectionChanged={(rows) => (selectedRows = rows)}
       />
     {/if}
