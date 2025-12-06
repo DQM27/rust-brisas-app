@@ -30,11 +30,13 @@
   let loading = $state(false);
   let error = $state("");
   let blockedContratistas = $state<Set<string>>(new Set());
+  let isUpdatingStatus = false; // Lock para evitar doble ejecución
 
   // Lógica de presentación
   const listLogic = createContratistaListLogic();
   const listState = listLogic.getState();
 
+  // ... (derived filteredData)
   let filteredData = $derived.by(() => {
     // Suscribirse a cambios en la búsqueda seleccionada
     const _search = $selectedSearchStore;
@@ -43,17 +45,39 @@
 
   // --- Acciones de Estado ---
   async function handleStatusChange(id: string, currentStatus: string) {
-    const newStatus = currentStatus === "activo" ? "inactivo" : "activo";
-    // Si está suspendido también lo pasamos a activo
+    // Evitar múltiples clicks simultáneos
+    if (loading || isUpdatingStatus) return;
 
-    const toastId = toast.loading("Actualizando estado...");
-    const result = await contratistaService.changeStatus(id, newStatus as any);
+    try {
+      isUpdatingStatus = true;
 
-    if (result.ok) {
-      toast.success(`Estado actualizado`, { id: toastId });
-      await loadContratistas();
-    } else {
-      toast.error(`Error: ${result.error}`, { id: toastId });
+      const newStatus = currentStatus === "activo" ? "inactivo" : "activo";
+
+      // Actualización optimista del estado local para evitar parpadeo
+      const oldContratistas = [...contratistas];
+      contratistas = contratistas.map((c) =>
+        c.id === id ? { ...c, estado: newStatus as any } : c,
+      );
+
+      const toastId = toast.loading("Actualizando estado...");
+
+      // Llamada al backend
+      const result = await contratistaService.changeStatus(
+        id,
+        newStatus as any,
+      );
+
+      if (result.ok) {
+        toast.success(`Estado actualizado`, { id: toastId });
+        // No recargamos toda la lista, ya está actualizada localmente
+        // await loadContratistas();
+      } else {
+        // Revertir cambios si falla
+        contratistas = oldContratistas;
+        toast.error(`Error: ${result.error}`, { id: toastId });
+      }
+    } finally {
+      isUpdatingStatus = false;
     }
   }
 
