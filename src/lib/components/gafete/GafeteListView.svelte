@@ -3,7 +3,9 @@
   import { fade } from "svelte/transition";
   import { toast } from "svelte-5-french-toast";
   import type { ColDef } from "@ag-grid-community/core";
+
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
+  import { createCustomButton } from "$lib/config/agGridConfigs";
 
   import * as gafeteService from "$lib/logic/gafete/gafeteService";
   import * as alertaGafeteService from "$lib/logic/alertaGafete/alertaGafeteService";
@@ -12,15 +14,42 @@
   import ResolveAlertModal from "./ResolveAlertModal.svelte";
 
   // Estado
-  let gafetes: GafeteResponse[] = [];
-  let loading = false;
-  let showModal = false;
-  let selectedGafete: GafeteResponse | null = null;
-  let formLoading = false;
+  let gafetes = $state<GafeteResponse[]>([]);
+  let loading = $state(false);
+  let showModal = $state(false);
+  let selectedGafete = $state<GafeteResponse | null>(null);
+  let formLoading = $state(false);
 
   // Estado para modal de resolución de alertas
-  let showResolveModal = false;
-  let selectedAlertGafete: GafeteResponse | null = null;
+  let showResolveModal = $state(false);
+  let selectedAlertGafete = $state<GafeteResponse | null>(null);
+
+  // Debug check
+  $effect(() => {
+    console.log("GafeteListView: mounted");
+    console.log("createCustomButton:", createCustomButton);
+  });
+
+  // Custom buttons para la toolbar
+  const customButtons = $derived.by(() => {
+    try {
+      if (!createCustomButton) {
+        console.error("createCustomButton is undefined!");
+        return {};
+      }
+      return {
+        default: [
+          createCustomButton.nuevo(() => {
+            console.log("Custom Button Clicked via closure");
+            handleNew();
+          }),
+        ],
+      };
+    } catch (err) {
+      console.error("Error generating customButtons:", err);
+      return {};
+    }
+  });
 
   // ==========================================
   // COLUMNAS AG GRID
@@ -175,19 +204,27 @@
   // ==========================================
   async function loadGafetes() {
     loading = true;
-    const result = await gafeteService.fetchAll();
-    if (result.ok) {
-      gafetes = result.data.gafetes;
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await gafeteService.fetchAll();
+      if (result.ok) {
+        gafetes = result.data.gafetes;
+      } else {
+        console.error("loadGafetes failed:", result.error);
+        toast.error(result.error);
+      }
+    } catch (err) {
+      console.error("loadGafetes exception:", err);
+      toast.error("Error inesperado al cargar gafetes");
+    } finally {
+      loading = false;
     }
-    loading = false;
   }
 
   // ==========================================
   // Manejadores
   // ==========================================
   function handleNew() {
+    console.log("Nuevo Gafete button clicked");
     selectedGafete = null;
     showModal = true;
   }
@@ -268,27 +305,24 @@
 <!-- ========================================== -->
 <!-- LAYOUT -->
 <!-- ========================================== -->
-<div class="h-full flex flex-col space-y-4 p-4">
-  <div class="flex justify-between items-center">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-      Gestión de Gafetes
-    </h1>
-
-    <button
-      on:click={handleNew}
-      class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
-    >
-      + Nuevo Gafete
-    </button>
+<div class="flex h-full flex-col relative bg-[#1e1e1e]">
+  <div class="border-b border-white/10 px-6 py-4 bg-[#252526]">
+    <div class="flex items-center justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-100">Gestión de Gafetes</h2>
+        <p class="mt-1 text-sm text-gray-400">
+          Administración de gafetes para contratistas, proveedores y visitas
+        </p>
+      </div>
+    </div>
   </div>
 
-  <div
-    class="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden"
-  >
+  <div class="flex-1 overflow-hidden relative bg-[#1e1e1e]">
     <AGGridWrapper
       gridId="badges-list"
       rowData={gafetes}
       {columnDefs}
+      {customButtons}
       getRowId={(params) => params.data.numero}
     />
   </div>

@@ -366,9 +366,17 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
   'badges-list': {
     gridId: 'badges-list',
     availableButtons: {
-      default: COMMON_DEFAULT_BUTTONS,
-      singleSelect: COMMON_SINGLE_SELECT_BUTTONS,
-      multiSelect: COMMON_MULTI_SELECT_BUTTONS
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b =>
+          ['autosize-all', 'autosize-selected', 'reset-columns', 'toggle-filters'].includes(b.id)
+        )
+      ],
+      singleSelect: [
+        ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
+      ],
+      multiSelect: [
+        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))
+      ]
     },
     showColumnSelector: true,
     showThemeSelector: true
