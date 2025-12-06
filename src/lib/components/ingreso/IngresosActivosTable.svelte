@@ -21,11 +21,8 @@
 
   // ✅ NUEVO: Importar componentes de exportación
   import ExportDialog from "$lib/components/export/ExportDialog.svelte";
-  import {
-    exportData,
-    previewPDF,
-    downloadBytes,
-  } from "$lib/services/exportService";
+  import PdfPreviewModal from "$lib/components/export/PdfPreviewModal.svelte";
+  import { exportData, downloadBytes } from "$lib/services/exportService";
   import type { ExportOptions } from "$lib/services/exportService";
 
   // Estado
@@ -41,6 +38,11 @@
   let gridApi = $state<GridApi | null>(null);
   let showExportDialog = $state(false);
   let exportOnlySelected = $state(false);
+
+  // Estado para preview de PDF
+  let showPdfPreview = $state(false);
+  let pdfPreviewUrl = $state<string | null>(null);
+  let pdfPreviewName = $state("documento.pdf");
 
   // Estado para alternar entre activos y salidas
   let showingActive = $state(true);
@@ -543,22 +545,33 @@
         }
         // ✅ Prioridad 2: Si hay bytes (modo preview o descarga directa)
         else if (response.bytes) {
-          if (format === "pdf") {
-            if (options.showPreview) {
-              // Vista previa en navegador
-              try {
-                previewPDF(response.bytes);
-                toast.success("PDF abierto en nueva pestaña");
-              } catch (error) {
-                toast.error(
-                  "No se pudo abrir la vista previa. Verifica que los popups estén permitidos.",
-                );
-              }
-            } else {
-              // Descarga directa (fallback si no hay filePath)
-              downloadBytes(response.bytes, `export-${Date.now()}.pdf`);
-              toast.success("PDF descargado");
+          if (format === "pdf" && options.showPreview) {
+            // Generar URL Blob para el modal
+            try {
+              const blob = new Blob([new Uint8Array(response.bytes)], {
+                type: "application/pdf",
+              });
+              const url = URL.createObjectURL(blob);
+
+              pdfPreviewUrl = url;
+              pdfPreviewName = options.title
+                ? `${options.title}.pdf`
+                : `export-${Date.now()}.pdf`;
+              showPdfPreview = true;
+
+              toast.success("Abriendo vista previa...");
+            } catch (e) {
+              console.error("Error creando blob URL:", e);
+              toast.error("Error al generar vista previa");
             }
+          } else {
+            // Descarga directa (fallback o si no es PDF preview)
+            const fileName = options.title
+              ? `${options.title}.${format === "excel" ? "xlsx" : format}`
+              : `export-${Date.now()}.${format === "excel" ? "xlsx" : format}`;
+
+            downloadBytes(response.bytes, fileName);
+            toast.success("Archivo descargado");
           }
         } else {
           toast.error("Exportación completada pero no se recibió el archivo");
@@ -708,5 +721,21 @@
   <ExportDialog
     onExport={handleExport}
     onClose={() => (showExportDialog = false)}
+  />
+{/if}
+
+<!-- ✅ NUEVO: Modal de Preview PDF -->
+{#if showPdfPreview && pdfPreviewUrl}
+  <PdfPreviewModal
+    pdfUrl={pdfPreviewUrl}
+    fileName={pdfPreviewName}
+    onClose={() => {
+      showPdfPreview = false;
+      // Revocar URL para liberar memoria
+      if (pdfPreviewUrl) {
+        URL.revokeObjectURL(pdfPreviewUrl);
+        pdfPreviewUrl = null;
+      }
+    }}
   />
 {/if}

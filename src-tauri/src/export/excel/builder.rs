@@ -238,16 +238,6 @@ fn get_downloads_dir() -> Option<PathBuf> {
 // HELPERS
 // ==========================================
 
-/// Estima el tamaño del Excel resultante (aproximado)
-pub fn estimate_excel_size(headers: &[String], rows: &[HashMap<String, String>]) -> usize {
-    // Aproximación: ~100 bytes por celda + overhead del formato
-    let total_cells = (headers.len() * (rows.len() + 1)) as usize;
-    let base_size = total_cells * 100;
-
-    // Agregar overhead del formato XML (~50KB)
-    base_size + 50_000
-}
-
 // ==========================================
 // TESTS
 // ==========================================
@@ -278,18 +268,6 @@ mod tests {
         let width = calculate_column_width(header, &rows);
         // "Alexander" = 9 chars * 1.2 = 10.8
         assert!(width > 10.0);
-    }
-
-    #[test]
-    fn test_estimate_excel_size() {
-        let headers = vec!["A".to_string(), "B".to_string(), "C".to_string()];
-        let rows = vec![HashMap::new(); 100]; // 100 filas vacías
-
-        let size = estimate_excel_size(&headers, &rows);
-        // 3 headers * (100 rows + 1 header row) = 303 cells
-        // 303 * 100 + 50000 = ~80KB
-        assert!(size > 50_000);
-        assert!(size < 100_000);
     }
 
     #[test]

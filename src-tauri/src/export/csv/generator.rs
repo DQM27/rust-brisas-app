@@ -148,34 +148,6 @@ fn get_downloads_dir() -> Option<PathBuf> {
 // HELPERS
 // ==========================================
 
-/// Estima el tamaño del CSV resultante (para validación)
-pub fn estimate_csv_size(
-    headers: &[String],
-    rows: &[HashMap<String, String>],
-    config: &CsvConfig,
-) -> usize {
-    let delimiter_char = config.delimiter.as_char();
-    let bom_size = if config.include_bom { 3 } else { 0 };
-
-    // Headers
-    let header_size: usize = headers.iter().map(|h| h.len() + 2).sum(); // +2 para quotes
-    let header_delimiters = (headers.len().saturating_sub(1)) * delimiter_char.len_utf8();
-
-    // Rows
-    let mut rows_size = 0;
-    for row in rows {
-        for header in headers {
-            if let Some(value) = row.get(header) {
-                rows_size += value.len() + 2; // +2 para potential quotes
-            }
-        }
-        rows_size += (headers.len().saturating_sub(1)) * delimiter_char.len_utf8();
-        rows_size += 1; // newline
-    }
-
-    bom_size + header_size + header_delimiters + 1 + rows_size
-}
-
 // ==========================================
 // TESTS
 // ==========================================

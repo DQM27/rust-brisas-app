@@ -153,54 +153,6 @@ fn escape_typst_string(input: &str) -> String {
 }
 
 // ==========================================
-// TEMPLATES ALTERNATIVOS (para futura expansión)
-// ==========================================
-
-/// Template minimalista (sin colores ni estilos avanzados)
-pub fn generate_minimal_template(
-    headers: &[String],
-    rows: &[HashMap<String, String>],
-    title: &str,
-) -> ExportResult<String> {
-    let mut markup = String::new();
-
-    // Setup simple
-    markup.push_str(
-        r#"#set page(margin: 2cm)
-#set text(font: "New Computer Modern", size: 10pt)
-
-"#,
-    );
-
-    // Título
-    markup.push_str(&format!(
-        "#align(center)[#text(weight: \"bold\")[{}]]\n\n",
-        escape_typst_string(title)
-    ));
-
-    // Tabla simple
-    markup.push_str("#table(\n");
-    markup.push_str(&format!("  columns: {},\n", headers.len()));
-
-    // Headers
-    for header in headers {
-        markup.push_str(&format!("  [*{}*],\n", escape_typst_string(header)));
-    }
-
-    // Rows
-    for row in rows {
-        for header in headers {
-            let value = row.get(header).map(|s| s.as_str()).unwrap_or("");
-            markup.push_str(&format!("  [{}],\n", escape_typst_string(value)));
-        }
-    }
-
-    markup.push_str(")\n");
-
-    Ok(markup)
-}
-
-// ==========================================
 // VALIDACIONES
 // ==========================================
 
@@ -302,18 +254,5 @@ mod tests {
     fn test_validate_markup_unbalanced() {
         let markup = "[hello [world]";
         assert!(validate_markup(markup).is_err());
-    }
-
-    #[test]
-    fn test_generate_minimal_template() {
-        let headers = vec!["Col1".to_string()];
-        let mut row = HashMap::new();
-        row.insert("Col1".to_string(), "Value".to_string());
-        let rows = vec![row];
-
-        let markup = generate_minimal_template(&headers, &rows, "Minimal").unwrap();
-        assert!(markup.contains("Minimal"));
-        assert!(markup.contains("Col1"));
-        assert!(markup.contains("Value"));
     }
 }
