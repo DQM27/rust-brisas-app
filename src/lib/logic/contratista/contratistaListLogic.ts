@@ -105,6 +105,19 @@ export class ContratistaListLogic {
         minWidth: 180,
       },
       {
+        field: "vehiculoTipo",
+        headerName: "Vehículo",
+        width: 120,
+        valueFormatter: (params) => params.value || "-",
+      },
+      {
+        field: "vehiculoPlaca",
+        headerName: "Placa",
+        width: 100,
+        valueFormatter: (params) => params.value || "-",
+        cellStyle: { fontFamily: "monospace" },
+      },
+      {
         field: "estado",
         headerName: "Estado",
         width: 130,

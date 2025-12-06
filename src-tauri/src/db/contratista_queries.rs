@@ -155,11 +155,12 @@ pub async fn insert(
 pub async fn find_by_id_with_empresa(
     pool: &SqlitePool,
     id: &str,
-) -> Result<(Contratista, String), String> {
+) -> Result<(Contratista, String, Option<String>, Option<String>), String> {
     let row = sqlx::query(
-        r#"SELECT c.*, e.nombre as empresa_nombre
+        r#"SELECT c.*, e.nombre as empresa_nombre, v.tipo_vehiculo, v.placa
            FROM contratistas c
            LEFT JOIN empresas e ON c.empresa_id = e.id
+           LEFT JOIN vehiculos v ON c.id = v.contratista_id
            WHERE c.id = ?"#,
     )
     .bind(id)
@@ -170,7 +171,9 @@ pub async fn find_by_id_with_empresa(
     if let Some(row) = row {
         let contratista = row_to_contratista(&row)?;
         let empresa_nombre: String = row.get("empresa_nombre");
-        Ok((contratista, empresa_nombre))
+        let vehiculo_tipo: Option<String> = row.try_get("tipo_vehiculo").ok();
+        let vehiculo_placa: Option<String> = row.try_get("placa").ok();
+        Ok((contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa))
     } else {
         Err("Contratista no encontrado".to_string())
     }
@@ -180,11 +183,12 @@ pub async fn find_by_id_with_empresa(
 pub async fn find_by_cedula_with_empresa(
     pool: &SqlitePool,
     cedula: &str,
-) -> Result<(Contratista, String), String> {
+) -> Result<(Contratista, String, Option<String>, Option<String>), String> {
     let row = sqlx::query(
-        r#"SELECT c.*, e.nombre as empresa_nombre
+        r#"SELECT c.*, e.nombre as empresa_nombre, v.tipo_vehiculo, v.placa
            FROM contratistas c
            LEFT JOIN empresas e ON c.empresa_id = e.id
+           LEFT JOIN vehiculos v ON c.id = v.contratista_id
            WHERE c.cedula = ?"#,
     )
     .bind(cedula)
@@ -195,20 +199,22 @@ pub async fn find_by_cedula_with_empresa(
     if let Some(row) = row {
         let contratista = row_to_contratista(&row)?;
         let empresa_nombre: String = row.get("empresa_nombre");
-        Ok((contratista, empresa_nombre))
+        let vehiculo_tipo: Option<String> = row.try_get("tipo_vehiculo").ok();
+        let vehiculo_placa: Option<String> = row.try_get("placa").ok();
+        Ok((contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa))
     } else {
         Err("Contratista no encontrado".to_string())
     }
 }
 
-/// Busca todos los contratistas con nombre de empresa
 pub async fn find_all_with_empresa(
     pool: &SqlitePool,
-) -> Result<Vec<(Contratista, String)>, String> {
+) -> Result<Vec<(Contratista, String, Option<String>, Option<String>)>, String> {
     let rows = sqlx::query(
-        r#"SELECT c.*, e.nombre as empresa_nombre
+        r#"SELECT c.*, e.nombre as empresa_nombre, v.tipo_vehiculo, v.placa
            FROM contratistas c
            LEFT JOIN empresas e ON c.empresa_id = e.id
+           LEFT JOIN vehiculos v ON c.id = v.contratista_id
            ORDER BY c.updated_at DESC"#,
     )
     .fetch_all(pool)
@@ -219,19 +225,21 @@ pub async fn find_all_with_empresa(
     for row in rows {
         let contratista = row_to_contratista(&row)?;
         let empresa_nombre: String = row.get("empresa_nombre");
-        result.push((contratista, empresa_nombre));
+        let vehiculo_tipo: Option<String> = row.try_get("tipo_vehiculo").ok();
+        let vehiculo_placa: Option<String> = row.try_get("placa").ok();
+        result.push((contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa));
     }
     Ok(result)
 }
 
-/// Busca contratistas activos con nombre de empresa
 pub async fn find_activos_with_empresa(
     pool: &SqlitePool,
-) -> Result<Vec<(Contratista, String)>, String> {
+) -> Result<Vec<(Contratista, String, Option<String>, Option<String>)>, String> {
     let rows = sqlx::query(
-        r#"SELECT c.*, e.nombre as empresa_nombre
+        r#"SELECT c.*, e.nombre as empresa_nombre, v.tipo_vehiculo, v.placa
            FROM contratistas c
            LEFT JOIN empresas e ON c.empresa_id = e.id
+           LEFT JOIN vehiculos v ON c.id = v.contratista_id
            WHERE c.estado = 'activo'
            ORDER BY c.nombre ASC"#,
     )
@@ -243,7 +251,9 @@ pub async fn find_activos_with_empresa(
     for row in rows {
         let contratista = row_to_contratista(&row)?;
         let empresa_nombre: String = row.get("empresa_nombre");
-        result.push((contratista, empresa_nombre));
+        let vehiculo_tipo: Option<String> = row.try_get("tipo_vehiculo").ok();
+        let vehiculo_placa: Option<String> = row.try_get("placa").ok();
+        result.push((contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa));
     }
     Ok(result)
 }

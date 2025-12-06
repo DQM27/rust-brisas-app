@@ -14,7 +14,7 @@ pub struct Contratista {
     pub segundo_nombre: Option<String>,
     pub apellido: String,
     pub segundo_apellido: Option<String>,
-    pub empresa_id: String, 
+    pub empresa_id: String,
     pub fecha_vencimiento_praind: String,
     pub estado: EstadoContratista,
     pub created_at: String,
@@ -37,7 +37,7 @@ impl EstadoContratista {
             EstadoContratista::Suspendido => "suspendido",
         }
     }
-    
+
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s.to_lowercase().as_str() {
             "activo" => Ok(EstadoContratista::Activo),
@@ -103,6 +103,8 @@ pub struct ContratistaResponse {
     pub praind_vencido: bool,
     pub dias_hasta_vencimiento: i64,
     pub requiere_atencion: bool,
+    pub vehiculo_tipo: Option<String>,
+    pub vehiculo_placa: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -111,13 +113,13 @@ impl From<Contratista> for ContratistaResponse {
     fn from(c: Contratista) -> Self {
         let fecha_vencimiento = NaiveDate::parse_from_str(&c.fecha_vencimiento_praind, "%Y-%m-%d")
             .unwrap_or_else(|_| Utc::now().date_naive());
-        
+
         let hoy = Utc::now().date_naive();
         let dias_hasta_vencimiento = (fecha_vencimiento - hoy).num_days();
         let praind_vencido = dias_hasta_vencimiento < 0;
         let requiere_atencion = dias_hasta_vencimiento <= 30 && dias_hasta_vencimiento >= 0;
         let puede_ingresar = c.estado == EstadoContratista::Activo && !praind_vencido;
-        
+
         let mut nombre_completo = c.nombre.clone();
         if let Some(segundo) = &c.segundo_nombre {
             nombre_completo.push(' ');
@@ -129,7 +131,7 @@ impl From<Contratista> for ContratistaResponse {
             nombre_completo.push(' ');
             nombre_completo.push_str(segundo);
         }
-        
+
         Self {
             id: c.id,
             cedula: c.cedula.clone(),
@@ -146,6 +148,8 @@ impl From<Contratista> for ContratistaResponse {
             praind_vencido,
             dias_hasta_vencimiento,
             requiere_atencion,
+            vehiculo_tipo: None,
+            vehiculo_placa: None,
             created_at: c.created_at,
             updated_at: c.updated_at,
         }
@@ -168,92 +172,92 @@ pub struct ContratistaListResponse {
 
 pub mod validaciones {
     use chrono::NaiveDate;
-    
+
     pub fn validar_cedula(cedula: &str) -> Result<(), String> {
         let limpia = cedula.trim();
-        
+
         if limpia.is_empty() {
             return Err("La cédula no puede estar vacía".to_string());
         }
-        
+
         if !limpia.chars().all(|c| c.is_numeric() || c == '-') {
             return Err("La cédula solo puede contener números y guiones".to_string());
         }
-        
+
         if limpia.len() < 7 || limpia.len() > 20 {
             return Err("La cédula debe tener entre 7 y 20 caracteres".to_string());
         }
-        
+
         Ok(())
     }
-    
+
     pub fn validar_nombre(nombre: &str) -> Result<(), String> {
         let limpio = nombre.trim();
-        
+
         if limpio.is_empty() {
             return Err("El nombre no puede estar vacío".to_string());
         }
-        
+
         if limpio.len() > 50 {
             return Err("El nombre no puede exceder 50 caracteres".to_string());
         }
-        
+
         Ok(())
     }
-    
+
     pub fn validar_segundo_nombre(segundo_nombre: Option<&String>) -> Result<(), String> {
         if let Some(nombre) = segundo_nombre {
             let limpio = nombre.trim();
-            
+
             if !limpio.is_empty() && limpio.len() > 50 {
                 return Err("El segundo nombre no puede exceder 50 caracteres".to_string());
             }
         }
-        
+
         Ok(())
     }
-    
+
     pub fn validar_apellido(apellido: &str) -> Result<(), String> {
         let limpio = apellido.trim();
-        
+
         if limpio.is_empty() {
             return Err("El apellido no puede estar vacío".to_string());
         }
-        
+
         if limpio.len() > 50 {
             return Err("El apellido no puede exceder 50 caracteres".to_string());
         }
-        
+
         Ok(())
     }
-    
+
     pub fn validar_segundo_apellido(segundo_apellido: Option<&String>) -> Result<(), String> {
         if let Some(apellido) = segundo_apellido {
             let limpio = apellido.trim();
-            
+
             if !limpio.is_empty() && limpio.len() > 50 {
                 return Err("El segundo apellido no puede exceder 50 caracteres".to_string());
             }
         }
-        
+
         Ok(())
     }
-    
+
     pub fn validar_empresa_id(empresa_id: &str) -> Result<(), String> {
         let limpia = empresa_id.trim();
-        
+
         if limpia.is_empty() {
             return Err("Debe seleccionar una empresa".to_string());
         }
-        
+
         Ok(())
     }
-    
+
     pub fn validar_fecha(fecha_str: &str) -> Result<NaiveDate, String> {
         NaiveDate::parse_from_str(fecha_str, "%Y-%m-%d")
             .map_err(|_| "Formato de fecha inválido. Use YYYY-MM-DD".to_string())
     }
-    
+
     pub fn validar_create_input(input: &super::CreateContratistaInput) -> Result<(), String> {
         validar_cedula(&input.cedula)?;
         validar_nombre(&input.nombre)?;

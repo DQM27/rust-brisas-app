@@ -33,6 +33,8 @@ export interface ContratistaResponse {
     praindVencido: boolean;
     diasHastaVencimiento: number;
     requiereAtencion: boolean;
+    vehiculoTipo?: string;
+    vehiculoPlaca?: string;
     createdAt: string;
     updatedAt: string;
 }
