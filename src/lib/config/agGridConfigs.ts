@@ -305,14 +305,9 @@ export const createCustomButton = {
 const CONTRATISTA_LIST_CONFIG: Omit<AGGridToolbarConfig, 'customButtons'> = {
   gridId: 'contratista-list',
   availableButtons: {
-    default: [
-      ...COMMON_DEFAULT_BUTTONS.filter(b =>
-        ['autosize-all', 'reset-columns', 'export-csv', 'export-excel',
-          'select-all', 'clear-filters', 'refresh'].includes(b.id)
-      )
-    ],
+    default: [], // Los botones comunes se mueven a customButtons en el componente para controlar el orden (Nuevo primero)
     singleSelect: [
-      ...COMMON_SINGLE_SELECT_BUTTONS
+      ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
       // Los custom buttons se agregan desde el componente
     ],
     multiSelect: [

@@ -8,7 +8,10 @@
   import type { CustomToolbarButton } from "$lib/types/agGrid";
   import SearchBar from "$lib/components/shared/SearchBar.svelte";
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
-  import { createCustomButton } from "$lib/config/agGridConfigs";
+  import {
+    createCustomButton,
+    COMMON_DEFAULT_BUTTONS,
+  } from "$lib/config/agGridConfigs";
 
   interface Props {
     contratistas?: ContratistaResponse[];
@@ -150,6 +153,17 @@
         createCustomButton.nuevo(() => {
           onNewContratista?.();
         }),
+        // Botones estándar movidos aquí para estar DESPUÉS de Nuevo
+        ...COMMON_DEFAULT_BUTTONS.filter((b) =>
+          ["autosize-all", "reset-columns", "select-all"].includes(b.id),
+        ).map((b) => ({
+          id: b.id,
+          label: b.label,
+          icon: b.icon,
+          tooltip: b.tooltip,
+          onClick: undefined, // undefined explícito para que AGGridToolbar use el handler común
+          useCommonHandler: true, // Flag para indicar que es un botón estándar
+        })),
         createCustomButton.importar(() => {
           console.log("Importar contratistas");
         }),
@@ -161,27 +175,14 @@
           variant: "default" as const,
           tooltip: "Reparar índice de búsqueda",
         },
-        ...filterButtons,
       ],
 
       singleSelect: [
-        createCustomButton.verInformacion(() => {
-          if (selected) onViewInfo?.(selected);
-        }),
         createCustomButton.editar(() => {
           if (selected) onEditContratista?.(selected);
         }),
         createCustomButton.historial(() => {
           if (selected) onViewHistory?.(selected);
-        }),
-        createCustomButton.vehiculos(() => {
-          if (selected) onViewVehicles?.(selected);
-        }),
-        createCustomButton.badges(() => {
-          if (selected) onViewBadges?.(selected);
-        }),
-        createCustomButton.eliminar(() => {
-          if (selected) onDeleteContratista?.(selected);
         }),
       ],
 
@@ -231,9 +232,7 @@
 
 <div class="flex h-full flex-col relative bg-[#1e1e1e]">
   <!-- Header con SearchBar -->
-  <div
-    class="border-b border-white/10 px-6 py-4 bg-[#252526]"
-  >
+  <div class="border-b border-white/10 px-6 py-4 bg-[#252526]">
     <div class="flex items-center justify-between gap-4">
       <div>
         <h2 class="text-xl font-semibold text-gray-100">
@@ -292,18 +291,13 @@
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             />
           </svg>
-          <p class="mt-4 text-sm text-gray-400">
-            Cargando contratistas...
-          </p>
+          <p class="mt-4 text-sm text-gray-400">Cargando contratistas...</p>
         </div>
       </div>
     {:else if contratistas.length === 0}
       <div class="flex h-full items-center justify-center bg-[#1e1e1e]">
         <div class="text-center">
-          <AlertCircle
-            size={48}
-            class="mx-auto text-gray-400"
-          />
+          <AlertCircle size={48} class="mx-auto text-gray-400" />
           <p class="mt-4 text-lg font-medium text-gray-300">
             No hay contratistas registrados
           </p>

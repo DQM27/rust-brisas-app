@@ -25,7 +25,7 @@
       singleSelect?: CustomToolbarButton[];
       multiSelect?: CustomToolbarButton[];
     };
-    customToolbarSlot?: import('svelte').Snippet;
+    customToolbarSlot?: import("svelte").Snippet;
   }
 
   let {
@@ -90,7 +90,7 @@
       variant: btn.variant,
       tooltip: btn.tooltip,
       category: "custom",
-      custom: true,
+      custom: !btn.useCommonHandler,
       onClick: btn.onClick,
       disabled: btn.disabled,
       state: btn.state,

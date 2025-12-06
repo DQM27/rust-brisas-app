@@ -6,7 +6,7 @@ import type { GridApi, ColDef } from '@ag-grid-community/core';
 /**
  * Temas disponibles de AG Grid Community
  */
-export type AGGridTheme = 
+export type AGGridTheme =
   | 'ag-theme-quartz'
   | 'ag-theme-alpine'
   | 'ag-theme-alpine-dark'
@@ -16,7 +16,7 @@ export type AGGridTheme =
 /**
  * Fuentes disponibles para las grids
  */
-export type AGGridFont = 
+export type AGGridFont =
   | 'system'
   | 'inter'
   | 'roboto'
@@ -26,7 +26,7 @@ export type AGGridFont =
  * IDs de las grids basados en ComponentKey
  * Solo los componentes que usan AG Grid
  */
-export type GridId = 
+export type GridId =
   | 'contratista-list'
   | 'lista-negra-list'
   | 'vehicles-list'
@@ -43,7 +43,7 @@ export type ToolbarContext = 'default' | 'singleSelect' | 'multiSelect';
 /**
  * Botones comunes de toolbar (operaciones genéricas de grid)
  */
-export type CommonToolbarButton = 
+export type CommonToolbarButton =
   | 'autosize-all'
   | 'autosize-selected'
   | 'reset-columns'
@@ -78,11 +78,12 @@ export interface CustomToolbarButton {
   id: string;
   label: string;
   icon?: ComponentType;
-  onClick: () => void | Promise<void>;
+  onClick?: () => void | Promise<void>;
   disabled?: boolean;
   variant?: ButtonVariant;
   tooltip?: string;
   state?: ButtonState;
+  useCommonHandler?: boolean;
 }
 
 /**
@@ -130,28 +131,28 @@ export interface ConfirmationsConfig {
  */
 export interface GridConfiguration {
   gridId: GridId;
-  
+
   // Visual
   theme: AGGridTheme;
   font: AGGridFont;
-  
+
   // Columnas
   columns: AGGridColumnConfig[];
-  
+
   // Botones por contexto
   buttons: {
     default: ToolbarButtonsConfig;
     singleSelect: ToolbarButtonsConfig;
     multiSelect: ToolbarButtonsConfig;
   };
-  
+
   // Avanzado
   rowHeight: RowHeight;
   paginationSize: number;
   enableGrouping: boolean;
   enableFilters: boolean;
   enableSidebar: boolean;
-  
+
   // Confirmaciones
   confirmations: ConfirmationsConfig;
 }
@@ -173,21 +174,21 @@ export interface ToolbarButtonDefinition {
  */
 export interface AGGridToolbarConfig {
   gridId: GridId;
-  
+
   // Botones comunes disponibles por contexto
   availableButtons: {
     default: ToolbarButtonDefinition[];
     singleSelect: ToolbarButtonDefinition[];
     multiSelect: ToolbarButtonDefinition[];
   };
-  
+
   // Botones personalizados (pasados desde el componente)
   customButtons?: {
     default?: CustomToolbarButton[];
     singleSelect?: CustomToolbarButton[];
     multiSelect?: CustomToolbarButton[];
   };
-  
+
   // Features opcionales
   showColumnSelector?: boolean;
   showThemeSelector?: boolean;
