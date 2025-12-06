@@ -164,35 +164,25 @@ export class ContratistaListLogic {
         cellRenderer: (params: ICellRendererParams) => {
           const row = params.data as ContratistaResponse;
 
+          // Estilo GitHub "Closed" / "Failure" (Rojo)
+          const redBadge = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800";
+
+          // Estilo GitHub "Open" / "Success" (Verde)
+          const greenBadge = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800";
+
           if (row.estaBloqueado) {
-            return `
-              <span class="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400">
-                Bloqueado
-              </span>
-            `;
+            return `<span class="${redBadge}">Bloqueado</span>`;
           }
 
           // Si está inactivo o suspendido, el acceso es denegado
           if (row.estado !== 'activo') {
-            return `
-              <span class="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400">
-                Denegado
-              </span>
-            `;
+            return `<span class="${redBadge}">Denegado</span>`;
           }
 
           if (row.puedeIngresar) {
-            return `
-              <span class="inline-flex items-center gap-1.5 rounded-full border border-green-500/20 bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-400">
-                Permitido
-              </span>
-            `;
+            return `<span class="${greenBadge}">Permitido</span>`;
           } else {
-            return `
-              <span class="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400">
-                Denegado
-              </span>
-            `;
+            return `<span class="${redBadge}">Denegado</span>`;
           }
         },
       },
@@ -201,10 +191,15 @@ export class ContratistaListLogic {
 
   // Helper methods
   static formatEstadoBadge(estado: EstadoContratista): string {
+    const baseClass = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity";
+
     const badges = {
-      activo: "bg-green-500/10 text-green-400 border-green-500/20",
-      inactivo: "bg-gray-500/10 text-gray-400 border-gray-500/20",
-      suspendido: "bg-red-500/10 text-red-400 border-red-500/20",
+      // GitHub Open (Green)
+      activo: "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800",
+      // GitHub Draft/Gray (Gray)
+      inactivo: "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
+      // GitHub Closed (Red/Purple) -> Usamos Rojo para suspendido
+      suspendido: "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800",
     };
 
     const badgeClass = badges[estado] || badges.inactivo;
@@ -212,7 +207,7 @@ export class ContratistaListLogic {
 
     return `
       <button 
-        class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${badgeClass} cursor-pointer hover:opacity-80 transition-opacity"
+        class="${baseClass} ${badgeClass}"
         title="Clic para cambiar estado"
       >
         ${displayText}
@@ -221,22 +216,26 @@ export class ContratistaListLogic {
   }
 
   static formatPraindBadge(row: ContratistaResponse): string {
+    const baseClass = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border";
     let badgeClass = "";
     let text = "";
 
     if (row.praindVencido) {
-      badgeClass = "bg-red-500/10 text-red-400 border-red-500/20";
+      // Red
+      badgeClass = "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800";
       text = "Vencido";
     } else if (row.diasHastaVencimiento <= 30) {
-      badgeClass = "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
+      // Yellow/Orange (Attention)
+      badgeClass = "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800";
       text = `${row.diasHastaVencimiento} días`;
     } else {
-      badgeClass = "bg-green-500/10 text-green-400 border-green-500/20";
+      // Green
+      badgeClass = "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800";
       text = "Vigente";
     }
 
     return `
-      <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${badgeClass}">
+      <span class="${baseClass} ${badgeClass}">
         ${text}
       </span>
     `;

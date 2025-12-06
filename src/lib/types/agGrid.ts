@@ -155,6 +155,9 @@ export interface GridConfiguration {
 
   // Confirmaciones
   confirmations: ConfirmationsConfig;
+
+  // Filtros flotantes
+  showFloatingFilters: boolean;
 }
 
 /**

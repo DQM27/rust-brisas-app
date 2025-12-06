@@ -207,34 +207,30 @@ export class ListaNegraListLogic {
 
   // Helper methods
   static formatTipoBadge(esPermanente: boolean): string {
+    const baseClass = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border";
+
     if (esPermanente) {
-      return `
-        <span class="inline-flex items-center gap-1.5 rounded-full border border-purple-500/20 bg-purple-500/10 px-2.5 py-1 text-xs font-medium text-purple-400">
-          Permanente
-        </span>
-      `;
+      // Purple (GitHub Merged/Purple)
+      const classes = "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800";
+      return `<span class="${baseClass} ${classes}">Permanente</span>`;
     } else {
-      return `
-        <span class="inline-flex items-center gap-1.5 rounded-full border border-yellow-500/20 bg-yellow-500/10 px-2.5 py-1 text-xs font-medium text-yellow-400">
-          Temporal
-        </span>
-      `;
+      // Yellow (GitHub Attention)
+      const classes = "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800";
+      return `<span class="${baseClass} ${classes}">Temporal</span>`;
     }
   }
 
   static formatEstadoBadge(isActive: boolean): string {
+    const baseClass = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border";
+
     if (isActive) {
-      return `
-        <span class="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400">
-          ● Bloqueado
-        </span>
-      `;
+      // Red (GitHub Closed/Blocked)
+      const classes = "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800";
+      return `<span class="${baseClass} ${classes}">● Bloqueado</span>`;
     } else {
-      return `
-        <span class="inline-flex items-center gap-1.5 rounded-full border border-green-500/20 bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-400">
-          ✓ Desbloqueado
-        </span>
-      `;
+      // Green (GitHub Open)
+      const classes = "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800";
+      return `<span class="${baseClass} ${classes}">✓ Desbloqueado</span>`;
     }
   }
 }

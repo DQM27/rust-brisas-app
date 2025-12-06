@@ -34,7 +34,7 @@
       cellStyle: { fontWeight: "bold" },
     },
 
-    // ========= TIPO (con badges pastel modernos) =========
+    // ========= TIPO (con badges estilo GitHub) =========
     {
       field: "tipoDisplay",
       headerName: "Tipo",
@@ -42,31 +42,33 @@
       filter: true,
       cellRenderer: (params: any) => {
         const tipo = params.data.tipo;
+        const baseClass =
+          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border";
         let colorClass = "";
 
         switch (tipo) {
           case "contratista":
+            // Indigo/Blue
             colorClass =
-              "bg-indigo-100 text-indigo-700 border border-indigo-300 dark:bg-indigo-900 dark:text-indigo-200";
+              "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800";
             break;
           case "proveedor":
+            // Amber/Yellow
             colorClass =
-              "bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-900 dark:text-amber-200";
+              "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800";
             break;
           case "visita":
+            // Emerald/Green
             colorClass =
-              "bg-emerald-100 text-emerald-700 border border-emerald-300 dark:bg-emerald-900 dark:text-emerald-200";
+              "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800";
             break;
           default:
+            // Gray
             colorClass =
-              "bg-gray-200 text-gray-700 border border-gray-400 dark:bg-gray-700 dark:text-gray-200";
+              "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
         }
 
-        return `
-          <span class="px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${colorClass}">
-            ${params.value}
-          </span>
-        `;
+        return `<span class="${baseClass} ${colorClass}">${params.value}</span>`;
       },
     },
 
@@ -78,25 +80,21 @@
       filter: true,
       cellRenderer: (params: any) => {
         const status = params.value;
+        const baseClass =
+          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border";
 
         if (status === "disponible") {
-          return `
-            <span class="px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-300 dark:bg-emerald-900 dark:text-emerald-200">
-              ✔ Disponible
-            </span>
-          `;
+          const classes =
+            "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800";
+          return `<span class="${baseClass} ${classes}">✔ Disponible</span>`;
         } else if (status === "en_uso") {
-          return `
-            <span class="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-300 dark:bg-blue-900 dark:text-blue-200">
-              ◉ En Uso
-            </span>
-          `;
+          const classes =
+            "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
+          return `<span class="${baseClass} ${classes}">◉ En Uso</span>`;
         } else if (status === "perdido") {
-          return `
-            <span class="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 border border-red-300 dark:bg-red-900 dark:text-red-200">
-              ✖ Perdido
-            </span>
-          `;
+          const classes =
+            "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800";
+          return `<span class="${baseClass} ${classes}">✖ Perdido</span>`;
         }
 
         return "-";
@@ -137,9 +135,12 @@
       cellRenderer: (params: any) => {
         if (params.value === null || params.value === undefined) return "-";
 
+        const baseClass =
+          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border";
+
         return params.value
-          ? `<span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">Sí</span>`
-          : `<span class="px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200">Pendiente</span>`;
+          ? `<span class="${baseClass} bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800">Sí</span>`
+          : `<span class="${baseClass} bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800">Pendiente</span>`;
       },
     },
 

@@ -62,7 +62,11 @@
   const themeClass = $derived(agGridSettings.getThemeClass(gridId));
   const fontClass = $derived(agGridSettings.getFontClass(gridId));
   const rowHeight = $derived(agGridSettings.getRowHeight(gridId));
+
   const paginationSize = $derived(agGridSettings.getPaginationSize(gridId));
+  const showFloatingFilters = $derived(
+    agGridSettings.getShowFloatingFilters(gridId),
+  );
 
   // Calcular altura de fila según configuración
   const rowHeightPx = $derived.by(() => {
@@ -125,6 +129,18 @@
     }
   });
 
+  // Effect para actualizar floatingFilters cuando cambia
+  $effect(() => {
+    if (gridApi) {
+      const currentDefaultColDef = gridApi.getGridOption("defaultColDef");
+      gridApi.setGridOption("defaultColDef", {
+        ...currentDefaultColDef,
+        floatingFilter: showFloatingFilters,
+      });
+      gridApi.refreshHeader();
+    }
+  });
+
   // Gestionar persistencia de columnas
   function saveColumnState(api: GridApi = gridApi!) {
     // Solo guardar si ya estamos listos y no estamos restaurando
@@ -173,7 +189,8 @@
       filter: true,
       resizable: true,
       minWidth: 100,
-      floatingFilter: true,
+
+      floatingFilter: showFloatingFilters,
     },
     rowSelection: {
       mode: "multiRow",

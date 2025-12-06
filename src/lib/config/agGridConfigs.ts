@@ -305,7 +305,9 @@ export const createCustomButton = {
 const CONTRATISTA_LIST_CONFIG: Omit<AGGridToolbarConfig, 'customButtons'> = {
   gridId: 'contratista-list',
   availableButtons: {
-    default: [], // Los botones comunes se mueven a customButtons en el componente para controlar el orden (Nuevo primero)
+    default: [
+      ...COMMON_DEFAULT_BUTTONS.filter(b => b.id === 'toggle-filters')
+    ], // Los botones comunes se mueven a customButtons en el componente para controlar el orden (Nuevo primero)
     singleSelect: [
       ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
       // Los custom buttons se agregan desde el componente
@@ -328,7 +330,7 @@ const LISTA_NEGRA_CONFIG: Omit<AGGridToolbarConfig, 'customButtons'> = {
     default: [
       ...COMMON_DEFAULT_BUTTONS.filter(b =>
         ['autosize-all', 'reset-columns', 'export-csv', 'export-excel',
-          'export-json', 'select-all', 'clear-filters'].includes(b.id)
+          'export-json', 'select-all', 'clear-filters', 'toggle-filters'].includes(b.id)
       )
     ],
     singleSelect: [
@@ -376,7 +378,7 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     availableButtons: {
       default: [
         ...COMMON_DEFAULT_BUTTONS.filter(b =>
-          ['autosize-all', 'reset-columns', 'refresh'].includes(b.id)
+          ['autosize-all', 'reset-columns', 'refresh', 'toggle-filters'].includes(b.id)
         )
       ],
       singleSelect: [

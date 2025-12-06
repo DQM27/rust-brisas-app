@@ -301,57 +301,53 @@
 
         return "--:--";
       },
-      cellStyle: (params) => {
-        // Estilo base para historial (texto blanco en fondo negro)
-        if (!params.data || !showingActive || !tieneAlertaTiempo(params.data)) {
-          return {
-            color: "#ffffff",
-            fontWeight: "700",
-            fontSize: "15px",
-            fontFamily: "monospace",
-            textAlign: "center",
-          };
+      cellRenderer: (params: any) => {
+        let tiempo = "--:--";
+
+        // Obtener texto del tiempo
+        if (params.data) {
+          if (params.data.tiempoPermanenciaTexto && !showingActive) {
+            tiempo = params.data.tiempoPermanenciaTexto;
+          } else if (
+            tieneAlertaTiempo(params.data) &&
+            params.data.alertaTiempo.minutosTranscurridos != null
+          ) {
+            tiempo = formatearTiempoReloj(
+              params.data.alertaTiempo.minutosTranscurridos,
+            );
+          }
         }
 
-        // Obtener el estado de la alerta para modo activos
-        const estado = params.data.alertaTiempo.estado;
+        // Estilo base
+        const baseClass =
+          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border font-mono";
 
-        switch (estado) {
-          case "tiempo_excedido":
-            return {
-              backgroundColor: "#fee2e2",
-              color: "#7f1d1d",
-              fontWeight: "700",
-              fontSize: "15px",
-              fontFamily: "monospace",
-              textAlign: "center",
-              borderLeft: "4px solid #ef4444",
-              paddingLeft: "8px",
-            };
-          case "alerta_temprana":
-            return {
-              backgroundColor: "#fef3c7",
-              color: "#713f12",
-              fontWeight: "700",
-              fontSize: "15px",
-              fontFamily: "monospace",
-              textAlign: "center",
-              borderLeft: "4px solid #f59e0b",
-              paddingLeft: "8px",
-            };
-          case "normal":
-          default:
-            return {
-              backgroundColor: "#d1fae5",
-              color: "#064e3b",
-              fontWeight: "700",
-              fontSize: "15px",
-              fontFamily: "monospace",
-              textAlign: "center",
-              borderLeft: "4px solid #10b981",
-              paddingLeft: "8px",
-            };
+        // Determinar color
+        let colorClass =
+          "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"; // Default/Historial
+
+        if (showingActive && params.data && tieneAlertaTiempo(params.data)) {
+          const estado = params.data.alertaTiempo.estado;
+          switch (estado) {
+            case "tiempo_excedido":
+              // Red
+              colorClass =
+                "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800";
+              break;
+            case "alerta_temprana":
+              // Orange/Yellow
+              colorClass =
+                "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800";
+              break;
+            case "normal":
+              // Green
+              colorClass =
+                "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800";
+              break;
+          }
         }
+
+        return `<span class="${baseClass} ${colorClass}">${tiempo}</span>`;
       },
     } as ColDef<IngresoResponse>);
 

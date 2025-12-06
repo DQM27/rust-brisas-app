@@ -191,18 +191,8 @@
         }
         break;
       case "toggle-filters":
-        const currentDefaultColDef = gridApi.getGridOption(
-          "defaultColDef",
-        ) as any;
-        const currentFloatingFilter =
-          currentDefaultColDef?.floatingFilter ?? false;
-
-        gridApi.setGridOption("defaultColDef", {
-          ...currentDefaultColDef,
-          floatingFilter: !currentFloatingFilter,
-        });
-
-        gridApi.refreshHeader();
+        const isFiltersVisible = agGridSettings.getShowFloatingFilters(gridId);
+        agGridSettings.setShowFloatingFilters(gridId, !isFiltersVisible);
         break;
       case "toggle-sidebar":
         console.warn("Sidebar requires AG Grid Enterprise");

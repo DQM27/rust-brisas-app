@@ -79,7 +79,8 @@ class AGGridSettingsStore {
       confirmations: {
         deleteRecords: true,
         dontAskAgain: false
-      }
+      },
+      showFloatingFilters: false
     };
 
     this.settings.configurations.set(gridId, defaultConfig);
@@ -291,6 +292,20 @@ class AGGridSettingsStore {
   // ============================================
   // Reset & Persistence
   // ============================================
+
+  getShowFloatingFilters(gridId: GridId): boolean {
+    this.version;
+    const config = this.getConfiguration(gridId);
+    return config?.showFloatingFilters ?? false;
+  }
+
+  setShowFloatingFilters(gridId: GridId, show: boolean): void {
+    const config = this.getOrCreateConfiguration(gridId);
+    const newConfig = { ...config, showFloatingFilters: show };
+    this.settings.configurations.set(gridId, newConfig);
+    this.saveToStorage();
+    this.triggerUpdate();
+  }
 
   resetConfiguration(gridId: GridId): void {
     this.settings.configurations.delete(gridId);
