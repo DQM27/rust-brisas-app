@@ -3,7 +3,7 @@
 // ============================================
 // Servicio consolidado para contratista - reemplaza 6 archivos fragmentados
 
-import { listContratistas, createContratista, updateContratista, deleteContratista } from '$lib/api/contratista';
+import { listContratistas, createContratista, updateContratista, deleteContratista, getContratista } from '$lib/api/contratista';
 import { submitRegisterVehiculo } from '$lib/logic/vehiculo/submitRegisterVehiculo';
 import { validateVehiculoInput } from '$lib/logic/vehiculo/validateVehiculoInput';
 import { reindexAllContratistas } from '$lib/api/searchService';
@@ -102,6 +102,19 @@ export async function fetchActivos(): Promise<ServiceResult<ContratistaResponse[
         return { ok: true, data: activos };
     } catch (err: any) {
         console.error('Error al cargar contratistas activos:', err);
+        return { ok: false, error: parseError(err) };
+    }
+}
+
+/**
+ * Obtener un contratista por ID
+ */
+export async function fetchContratistaById(id: string): Promise<ServiceResult<ContratistaResponse>> {
+    try {
+        const contratista = await getContratista(id);
+        return { ok: true, data: contratista };
+    } catch (err: any) {
+        console.error('Error al cargar contratista:', err);
         return { ok: false, error: parseError(err) };
     }
 }

@@ -4,14 +4,14 @@
 // Capa de comandos Tauri: delega al servicio
 
 use crate::models::contratista::{
-    ContratistaResponse, ContratistaListResponse,
-    CreateContratistaInput, UpdateContratistaInput, CambiarEstadoInput,
+    CambiarEstadoInput, ContratistaListResponse, ContratistaResponse, CreateContratistaInput,
+    UpdateContratistaInput,
 };
 use crate::services::contratista_service;
 use crate::services::search_service::SearchService;
 use sqlx::SqlitePool;
-use tauri::State;
 use std::sync::Arc;
+use tauri::State;
 
 #[tauri::command]
 pub async fn create_contratista(
@@ -24,6 +24,14 @@ pub async fn create_contratista(
 
 #[tauri::command]
 pub async fn get_contratista_by_id(
+    pool: State<'_, SqlitePool>,
+    id: String,
+) -> Result<ContratistaResponse, String> {
+    contratista_service::get_contratista_by_id(&pool, &id).await
+}
+
+#[tauri::command]
+pub async fn get_contratista(
     pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<ContratistaResponse, String> {

@@ -10,6 +10,8 @@
   export let loading = false;
   export let onSubmit: (data: any) => void;
   export let empresas: { id: string; nombre: string }[] = [];
+  export let mode: "create" | "edit" = "create";
+  export let initialData: Partial<any> = {};
 
   // --- ESTADO DEL FORMULARIO ---
   let cedula = "";
@@ -45,6 +47,47 @@
     }
     loadingEmpresas = false;
   });
+
+  // Reaccionar a cambios en initialData para modo edición
+  $: if (
+    mode === "edit" &&
+    initialData &&
+    Object.keys(initialData).length > 0
+  ) {
+    // Solo actualizar si tenemos datos y estamos en modo edición
+    cedula = initialData.cedula || "";
+    nombre = initialData.nombre || "";
+    // Nota: El backend actual de ContratistaResponse no parece devolver segundoNombre/segundoApellido separados
+    // Si el backend los devuelve, úsalos. Si no, quizás necesites parsear o ajustar el backend.
+    // Por ahora asumiremos que pueden venir en initialData si hacemos el fetch correcto.
+    segundoNombre = initialData.segundoNombre || "";
+    apellido = initialData.apellido || "";
+    segundoApellido = initialData.segundoApellido || "";
+
+    empresaId = initialData.empresaId || "";
+
+    // Formato de fecha para input type="date" (YYYY-MM-DD)
+    if (initialData.fechaVencimientoPraind) {
+      // A veces viene con hora, nos aseguramos de tomar solo la parte de fecha
+      fechaVencimientoPraind = initialData.fechaVencimientoPraind.split("T")[0];
+    }
+
+    // Datos de vehículo si existen
+    // Ajustar según como venga del backend. Suponiendo que el backend devuelva datos de vehículo relacionados
+    // Si el backend NO devuelve esto, habrá que hacer un fetch extra o ajustar el endpoint get_contratista
+    /* 
+       TODO: Verificar estructura de respuesta real para vehículo.
+       Por ahora, mapeamos si existen las propiedades.
+    */
+    if (initialData.vehiculo) {
+      tieneVehiculo = true;
+      tipoVehiculo = initialData.vehiculo.tipo || "";
+      placa = initialData.vehiculo.placa || "";
+      marca = initialData.vehiculo.marca || "";
+      modelo = initialData.vehiculo.modelo || "";
+      color = initialData.vehiculo.color || "";
+    }
+  }
 
   export function reset() {
     cedula = "";
@@ -116,9 +159,13 @@
       : 'max-w-sm'}"
   >
     <div class="border-b border-white/10 px-6 py-4">
-      <h2 class="text-lg font-semibold text-gray-100">Registrar Contratista</h2>
+      <h2 class="text-lg font-semibold text-gray-100">
+        {mode === "edit" ? "Editar Contratista" : "Registrar Contratista"}
+      </h2>
       <p class="mt-1 text-xs text-gray-400">
-        Ingresa los datos requeridos para el acceso.
+        {mode === "edit"
+          ? "Modifique los datos necesarios."
+          : "Ingresa los datos requeridos para el acceso."}
       </p>
     </div>
 
@@ -155,8 +202,9 @@
               />
             </div>
             <div class="space-y-1">
-              <label for="segundoNombre" class="text-xs font-medium text-gray-300"
-                >Segundo Nombre</label
+              <label
+                for="segundoNombre"
+                class="text-xs font-medium text-gray-300">Segundo Nombre</label
               >
               <input
                 id="segundoNombre"
@@ -184,7 +232,9 @@
               />
             </div>
             <div class="space-y-1">
-              <label for="segundoApellido" class="text-xs font-medium text-gray-300"
+              <label
+                for="segundoApellido"
+                class="text-xs font-medium text-gray-300"
                 >Segundo Apellido</label
               >
               <input
@@ -471,7 +521,11 @@
           disabled={loading || !isFormValid}
           class="w-auto min-w-[200px] rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? "Procesando..." : "Registrar Contratista"}
+          {loading
+            ? "Procesando..."
+            : mode === "edit"
+              ? "Guardar Cambios"
+              : "Registrar Contratista"}
         </button>
       </div>
     </form>
