@@ -22,8 +22,8 @@
   // ✅ NUEVO: Importar componentes de exportación
   import ExportDialog from "$lib/components/export/ExportDialog.svelte";
   import PdfPreviewModal from "$lib/components/export/PdfPreviewModal.svelte";
-  import { exportData, downloadBytes } from "$lib/services/exportService";
-  import type { ExportOptions } from "$lib/services/exportService";
+  import { exportData, downloadBytes } from "$lib/logic/export";
+  import type { ExportOptions } from "$lib/logic/export";
 
   // Estado
   let ingresos = $state<(IngresoResponse | IngresoConEstadoResponse)[]>([]);

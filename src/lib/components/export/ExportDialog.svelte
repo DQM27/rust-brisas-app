@@ -1,11 +1,19 @@
 <!-- src/lib/components/export/ExportDialog.svelte -->
 <script lang="ts">
-  import { X, FileText, Table2, FileSpreadsheet, Palette } from "lucide-svelte";
-  import type { ExportOptions } from "$lib/services/exportService";
+  import {
+    X,
+    FileText,
+    Table2,
+    FileSpreadsheet,
+    Palette,
+    ChevronDown,
+  } from "lucide-svelte";
+  import type { ExportOptions } from "$lib/logic/export";
   import { onMount } from "svelte";
   import { templateStore } from "$lib/stores/templateStore";
   import type { PdfTemplate } from "$lib/types/template";
   import TemplateManager from "./TemplateManager.svelte";
+  import { slide } from "svelte/transition";
 
   interface Props {
     onExport: (
@@ -25,6 +33,7 @@
   }: Props = $props();
 
   // Estado de columnas
+  let showColumns = $state(false);
   let columnSelection = $state(
     columns.map((c) => ({ ...c, selected: c.selected })),
   );
@@ -326,39 +335,76 @@
         </div>
       {/if}
 
-      <!-- Selector de Columnas -->
+      <!-- Selector de Columnas (Collapsible) -->
       {#if columns.length > 0}
         <div
-          class="space-y-3 p-3 bg-[#252526] border border-white/10 rounded-lg"
+          class="border border-white/10 rounded-lg overflow-hidden bg-[#252526]"
         >
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-sm font-medium text-white">Columnas</h3>
-            <button
-              class="text-xs text-blue-400 hover:text-blue-300"
-              onclick={toggleAllColumns}
-            >
-              {allColumnsSelected ? "Deseleccionar todas" : "Seleccionar todas"}
-            </button>
-          </div>
-
-          <div
-            class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar"
+          <button
+            class="w-full flex items-center justify-between p-3 text-sm font-medium text-white hover:bg-white/5 transition-colors"
+            onclick={() => (showColumns = !showColumns)}
           >
-            {#each columnSelection as col}
-              <label
-                class="flex items-center gap-2 cursor-pointer p-1.5 rounded hover:bg-white/5 transition-colors"
+            <span class="flex items-center gap-2">
+              <Table2 size={16} class="text-gray-400" />
+              Columnas
+              <span class="text-xs text-gray-400 font-normal">
+                ({columnSelection.filter((c) => c.selected)
+                  .length}/{columnSelection.length}
+                seleccionadas)
+              </span>
+            </span>
+            <ChevronDown
+              size={16}
+              class="text-gray-400 transition-transform duration-200 {showColumns
+                ? 'rotate-180'
+                : ''}"
+            />
+          </button>
+
+          {#if showColumns}
+            <div
+              transition:slide={{ duration: 200 }}
+              class="p-3 pt-0 border-t border-white/10"
+            >
+              <div class="flex justify-end mb-3 mt-3">
+                <button
+                  class="text-xs text-blue-400 hover:text-blue-300"
+                  onclick={toggleAllColumns}
+                >
+                  {allColumnsSelected
+                    ? "Deseleccionar todas"
+                    : "Seleccionar todas"}
+                </button>
+              </div>
+
+              <div
+                class="flex flex-wrap gap-2 max-h-40 overflow-y-auto custom-scrollbar"
               >
-                <input
-                  type="checkbox"
-                  bind:checked={col.selected}
-                  class="w-3.5 h-3.5 text-blue-500 bg-[#1e1e1e] border-white/20 rounded focus:ring-blue-500"
-                />
-                <span class="text-xs text-gray-300 truncate" title={col.name}>
-                  {col.name}
-                </span>
-              </label>
-            {/each}
-          </div>
+                {#each columnSelection as col}
+                  <label
+                    class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-full border transition-all text-xs
+                      {col.selected
+                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-200'
+                      : 'bg-[#1e1e1e] border-white/10 text-gray-400 hover:border-white/30'}"
+                  >
+                    <input
+                      type="checkbox"
+                      bind:checked={col.selected}
+                      class="hidden"
+                    />
+                    <span class="truncate max-w-[150px]" title={col.name}>
+                      {col.name}
+                    </span>
+                    {#if col.selected}
+                      <div
+                        class="w-1.5 h-1.5 rounded-full bg-blue-400 ml-1"
+                      ></div>
+                    {/if}
+                  </label>
+                {/each}
+              </div>
+            </div>
+          {/if}
         </div>
       {/if}
     </div>
