@@ -14,7 +14,6 @@ macro_rules! register_handlers {
             commands::user_commands::update_user,
             commands::user_commands::delete_user,
             commands::user_commands::login,
-            
             // Comandos de empresa
             commands::empresa_commands::create_empresa,
             commands::empresa_commands::get_empresa_by_id,
@@ -22,7 +21,6 @@ macro_rules! register_handlers {
             commands::empresa_commands::get_empresas_activas,
             commands::empresa_commands::update_empresa,
             commands::empresa_commands::delete_empresa,
-            
             // Comandos de contratista
             commands::contratista_commands::create_contratista,
             commands::contratista_commands::get_contratista_by_id,
@@ -32,7 +30,6 @@ macro_rules! register_handlers {
             commands::contratista_commands::update_contratista,
             commands::contratista_commands::cambiar_estado_contratista,
             commands::contratista_commands::delete_contratista,
-            
             // Comandos de lista negra
             commands::lista_negra_commands::add_to_lista_negra,
             commands::lista_negra_commands::get_lista_negra_by_id,
@@ -44,7 +41,6 @@ macro_rules! register_handlers {
             commands::lista_negra_commands::reactivate_lista_negra,
             commands::lista_negra_commands::update_lista_negra,
             commands::lista_negra_commands::delete_lista_negra,
-            
             // Comandos de vehículo
             commands::vehiculo_commands::create_vehiculo,
             commands::vehiculo_commands::get_vehiculo_by_id,
@@ -54,7 +50,6 @@ macro_rules! register_handlers {
             commands::vehiculo_commands::get_vehiculos_by_contratista,
             commands::vehiculo_commands::update_vehiculo,
             commands::vehiculo_commands::delete_vehiculo,
-            
             // Comandos de gafetes
             commands::gafete_commands::create_gafete,
             commands::gafete_commands::get_gafete,
@@ -63,13 +58,11 @@ macro_rules! register_handlers {
             commands::gafete_commands::is_gafete_disponible,
             commands::gafete_commands::update_gafete,
             commands::gafete_commands::delete_gafete,
-            
             // ==========================================
             // COMANDOS DE ENTRADA (Fase 1)
             // ==========================================
             commands::entrada_commands::validar_ingreso_contratista,
             commands::entrada_commands::crear_ingreso_contratista,
-            
             // ==========================================
             // COMANDOS DE PERMANENCIA (Fase 2)
             // ==========================================
@@ -80,7 +73,6 @@ macro_rules! register_handlers {
             commands::permanencia_commands::verificar_cambio_lista_negra,
             commands::permanencia_commands::verificar_cambios_lista_negra_masivo,
             commands::permanencia_commands::get_resumen_permanencias,
-            
             // ==========================================
             // COMANDOS DE SALIDA (Fase 3)
             // ==========================================
@@ -90,7 +82,6 @@ macro_rules! register_handlers {
             commands::salida_commands::get_salidas_del_dia,
             commands::salida_commands::get_salidas_en_rango,
             commands::salida_commands::get_estadisticas_salidas,
-            
             // ==========================================
             // COMANDOS GENERALES DE CONSULTA DE INGRESOS
             // ==========================================
@@ -98,14 +89,12 @@ macro_rules! register_handlers {
             commands::ingreso_commands::get_all_ingresos,
             commands::ingreso_commands::get_ingresos_abiertos,
             commands::ingreso_commands::get_ingreso_by_gafete,
-            
             // ==========================================
             // COMANDOS DE ALERTAS DE GAFETES
             // ==========================================
             commands::ingreso_commands::get_alertas_pendientes_by_cedula,
             commands::ingreso_commands::get_all_alertas_gafetes,
             commands::ingreso_commands::resolver_alerta_gafete,
-            
             // Comandos de blacklist import
             commands::blacklist_import_commands::create_blacklist_import_entry,
             commands::blacklist_import_commands::get_blacklist_import_by_id,
@@ -125,27 +114,29 @@ macro_rules! register_handlers {
             commands::blacklist_import_commands::check_name_requires_validation,
             commands::blacklist_import_commands::normalize_cedula,
             commands::blacklist_import_commands::capitalize_name,
-            
             // Comandos de búsqueda
             commands::search_commands::search_contratistas,
             commands::search_commands::reindex_all_contratistas,
-            
             // ==========================================
             // COMANDOS DE EXPORTACIÓN (NUEVO)
             // ==========================================
-            
+
             // Comando principal unificado
             commands::export_commands::export_data,
-            
             // Comandos de verificación de disponibilidad
             commands::export_commands::check_export_available,
             commands::export_commands::get_available_export_formats,
             commands::export_commands::is_export_format_available,
-            
             // Comandos específicos por formato (opcionales)
             commands::export_commands::export_to_pdf,
             commands::export_commands::export_to_excel,
             commands::export_commands::export_to_csv,
+            // ==========================================
+            // COMANDOS DE TEMPLATES
+            // ==========================================
+            commands::templates::get_templates,
+            commands::templates::save_template,
+            commands::templates::delete_template,
         ]
     };
 }

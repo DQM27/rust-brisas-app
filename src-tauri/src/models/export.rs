@@ -104,6 +104,7 @@ pub struct ExportRequest {
     pub title: Option<String>,       // Título del documento
     pub orientation: Option<String>, // "portrait" | "landscape"
     pub show_preview: Option<bool>,  // Si mostrar preview (PDF.js)
+    pub template_id: Option<String>, // ID del template a usar
 
     // Opcionales para CSV
     pub delimiter: Option<String>, // "comma" | "semicolon" | "tab" | "pipe"
@@ -120,6 +121,7 @@ pub struct PdfConfig {
     pub orientation: PageOrientation,
     pub headers: Vec<String>,
     pub show_preview: bool,
+    pub template_id: Option<String>,
 }
 
 impl Default for PdfConfig {
@@ -129,6 +131,7 @@ impl Default for PdfConfig {
             orientation: PageOrientation::Landscape,
             headers: Vec::new(),
             show_preview: false,
+            template_id: None,
         }
     }
 }

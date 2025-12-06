@@ -110,6 +110,7 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
         orientation,
         headers: request.headers.clone(),
         show_preview,
+        template_id: request.template_id.clone(),
     })
 }
 
@@ -160,13 +161,32 @@ fn construir_csv_config(request: &ExportRequest) -> ExportResult<CsvConfig> {
 #[cfg(feature = "export")]
 async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse> {
     use crate::export::pdf;
+    use crate::services::template_service;
 
     let config = data
         .pdf_config
         .ok_or_else(|| ExportError::Unknown("Config PDF no encontrada".to_string()))?;
 
+    // ✅ Obtener template (o default si no existe ID)
+    let template = if let Some(ref id) = config.template_id {
+        template_service::get_template_by_id(id).unwrap_or_else(|| {
+            template_service::get_all_templates()
+                .unwrap()
+                .first()
+                .unwrap()
+                .clone()
+        })
+    } else {
+        // Usar el primero (Default)
+        template_service::get_all_templates()
+            .unwrap_or_default()
+            .first()
+            .cloned()
+            .unwrap_or_default()
+    };
+
     // Generar PDF
-    let pdf_bytes = pdf::generate_pdf(&data.headers, &data.rows, &config)?;
+    let pdf_bytes = pdf::generate_pdf(&data.headers, &data.rows, &config, &template)?;
 
     // Determinar si guardar en disco
     let file_path = if let Some(path) = data.target_path {

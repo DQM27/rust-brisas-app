@@ -16,6 +16,7 @@ export interface ExportRequest {
   title?: string;
   orientation?: 'portrait' | 'landscape';
   showPreview?: boolean;
+  templateId?: string; // ✅ Add templateId
 
   // Opcionales para CSV
   delimiter?: 'comma' | 'semicolon' | 'tab' | 'pipe';
@@ -39,6 +40,7 @@ export interface ExportOptions {
   delimiter?: 'comma' | 'semicolon' | 'tab' | 'pipe';
   includeBom?: boolean;
   showPreview?: boolean;
+  templateId?: string; // ✅ Add templateId
 }
 
 // ==========================================
@@ -220,6 +222,7 @@ export async function exportData(
       delimiter: options.delimiter || 'comma',
       includeBom: options.includeBom ?? true,
       showPreview: options.showPreview || false,
+      templateId: options.templateId, // ✅ Pass templateId
       targetPath: targetPath || undefined,
     };
 

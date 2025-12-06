@@ -63,9 +63,9 @@
 
     // Solo auto-refresh en modo activos
     if (showingActive) {
-      console.log("⏰ Auto-refresh activado (cada 30s)");
+      // console.log("⏰ Auto-refresh activado (cada 30s)");
       refreshInterval = setInterval(() => {
-        console.log("🔄 Auto-refresh: recargando datos...");
+        // console.log("🔄 Auto-refresh: recargando datos...");
         loadData();
       }, 30000); // 30 segundos
     }
@@ -393,7 +393,7 @@
       const mode = getCurrentMode(); // Obtener modo actual, no capturado
       const columnState = api.getColumnState();
       localStorage.setItem(getStorageKey(mode), JSON.stringify(columnState));
-      console.log(`💾 Guardado estado de columnas para modo: ${mode}`);
+      // console.log(`💾 Guardado estado de columnas para modo: ${mode}`);
     } catch (e) {
       console.error("Error guardando estado de columnas:", e);
     }
@@ -408,7 +408,7 @@
         // Intentar aplicar el estado
         try {
           api.applyColumnState({ state: columnState, applyOrder: true });
-          console.log(`📥 Cargado estado de columnas para modo: ${mode}`);
+          // console.log(`📥 Cargado estado de columnas para modo: ${mode}`);
         } catch (applyError) {
           // Si falla al aplicar el estado, limpiar localStorage corrupto
           console.warn(

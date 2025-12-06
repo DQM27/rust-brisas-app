@@ -1,9 +1,10 @@
-pub mod user;
+pub mod blacklist_import;
 pub mod contratista;
 pub mod empresa;
-pub mod lista_negra;
-pub mod vehiculo;
+pub mod export;
 pub mod gafete;
 pub mod ingreso;
-pub mod blacklist_import;
-pub mod export;
+pub mod lista_negra;
+pub mod template;
+pub mod user;
+pub mod vehiculo;

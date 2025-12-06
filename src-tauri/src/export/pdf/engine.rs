@@ -5,6 +5,7 @@
 
 use crate::export::errors::{ExportError, ExportResult};
 use crate::models::export::PdfConfig;
+use crate::models::template::PdfTemplate;
 use std::collections::HashMap;
 
 use super::templates;
@@ -25,13 +26,12 @@ pub fn generate_pdf(
     headers: &[String],
     rows: &[HashMap<String, String>],
     config: &PdfConfig,
+    template: &PdfTemplate, // ✅ RECIBE EL TEMPLATE
 ) -> ExportResult<Vec<u8>> {
-    let markup = templates::generate_typst_markup(headers, rows, config)?;
+    let markup = templates::generate_typst_markup(headers, rows, config, template)?;
 
-    // 🔍TEMP DEBUG: Ver qué markup se está generando
-    println!("========== TYPST MARKUP DEBUG ==========");
-    println!("{}", markup);
-    println!("========================================");
+    // templates::validate_markup(&markup)?; // Validation moved inside debug block if needed, or kept before compile.
+    // Keeping validate_markup active but removing print.
 
     templates::validate_markup(&markup)?;
     let pdf_bytes = compile_typst_to_pdf(&markup)?;
