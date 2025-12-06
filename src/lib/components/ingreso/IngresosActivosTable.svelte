@@ -721,6 +721,11 @@
   <ExportDialog
     onExport={handleExport}
     onClose={() => (showExportDialog = false)}
+    columns={gridApi?.getColumns()?.map((col) => ({
+      id: col.getColId(),
+      name: col.getColDef().headerName || col.getColId(),
+      selected: col.isVisible(),
+    })) || []}
   />
 {/if}
 

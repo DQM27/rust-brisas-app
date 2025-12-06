@@ -14,13 +14,34 @@
     ) => Promise<void>;
     onClose: () => void;
     availableFormats?: string[];
+    columns?: { id: string; name: string; selected: boolean }[];
   }
 
   let {
     onExport,
     onClose,
     availableFormats = ["pdf", "excel", "csv"],
+    columns = [],
   }: Props = $props();
+
+  // Estado de columnas
+  let columnSelection = $state(
+    columns.map((c) => ({ ...c, selected: c.selected })),
+  );
+
+  // Computed: toggle select all
+  let allColumnsSelected = $derived(columnSelection.every((c) => c.selected));
+  let someColumnsSelected = $derived(
+    columnSelection.some((c) => c.selected) && !allColumnsSelected,
+  );
+
+  function toggleAllColumns() {
+    const newState = !allColumnsSelected;
+    columnSelection = columnSelection.map((c) => ({
+      ...c,
+      selected: newState,
+    }));
+  }
 
   // Estado
   let selectedFormat = $state<"pdf" | "excel" | "csv">("pdf");
@@ -84,6 +105,7 @@
           selectedFormat === "pdf" && selectedTemplate
             ? selectedTemplate.id
             : undefined,
+        columnIds: columnSelection.filter((c) => c.selected).map((c) => c.id),
       };
 
       await onExport(selectedFormat, options);
@@ -301,6 +323,42 @@
             />
             <span class="text-sm text-gray-400">UTF-8 BOM (para Excel)</span>
           </label>
+        </div>
+      {/if}
+
+      <!-- Selector de Columnas -->
+      {#if columns.length > 0}
+        <div
+          class="space-y-3 p-3 bg-[#252526] border border-white/10 rounded-lg"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium text-white">Columnas</h3>
+            <button
+              class="text-xs text-blue-400 hover:text-blue-300"
+              onclick={toggleAllColumns}
+            >
+              {allColumnsSelected ? "Deseleccionar todas" : "Seleccionar todas"}
+            </button>
+          </div>
+
+          <div
+            class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar"
+          >
+            {#each columnSelection as col}
+              <label
+                class="flex items-center gap-2 cursor-pointer p-1.5 rounded hover:bg-white/5 transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  bind:checked={col.selected}
+                  class="w-3.5 h-3.5 text-blue-500 bg-[#1e1e1e] border-white/20 rounded focus:ring-blue-500"
+                />
+                <span class="text-xs text-gray-300 truncate" title={col.name}>
+                  {col.name}
+                </span>
+              </label>
+            {/each}
+          </div>
         </div>
       {/if}
     </div>

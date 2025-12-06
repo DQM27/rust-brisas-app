@@ -41,6 +41,7 @@ export interface ExportOptions {
   includeBom?: boolean;
   showPreview?: boolean;
   templateId?: string; // ✅ Add templateId
+  columnIds?: string[]; // ✅ Add columnIds for explicit column selection
 }
 
 // ==========================================
@@ -50,15 +51,26 @@ export interface ExportOptions {
 /**
  * Extrae datos del AG-Grid para exportación
  */
-export function extractGridData(gridApi: GridApi): {
+export function extractGridData(gridApi: GridApi, columnIds?: string[]): {
   headers: string[];
   rows: Record<string, any>[];
 } {
-  // Obtener columnas visibles
-  const columns = gridApi.getColumns() || [];
-  const visibleColumns = columns.filter(col => !col.getColDef().hide);
+  // Obtener columnas
+  const allColumns = gridApi.getColumns() || [];
 
-  const headers = visibleColumns.map(col => col.getColDef().headerName || col.getColId());
+  // Si se especifican columnas, filtrar por ID. Si no, usar visibles.
+  const targetColumns = columnIds
+    ? allColumns.filter(col => columnIds.includes(col.getColId()))
+    : allColumns.filter(col => col.isVisible());
+
+  // Ordenar columnas según el orden en columnIds si existe, para respetar la selección del usuario
+  if (columnIds) {
+    targetColumns.sort((a, b) => {
+      return columnIds.indexOf(a.getColId()) - columnIds.indexOf(b.getColId());
+    });
+  }
+
+  const headers = targetColumns.map(col => col.getColDef().headerName || col.getColId());
 
   // Obtener todas las filas (respetando filtros)
   const rows: Record<string, any>[] = [];
@@ -66,7 +78,7 @@ export function extractGridData(gridApi: GridApi): {
     if (node.data) {
       const row: Record<string, any> = {};
 
-      visibleColumns.forEach(col => {
+      targetColumns.forEach(col => {
         const colDef = col.getColDef();
         const colId = col.getColId();
         const headerName = colDef.headerName || colId;
@@ -110,14 +122,25 @@ export function extractGridData(gridApi: GridApi): {
 /**
  * Extrae solo filas seleccionadas
  */
-export function extractSelectedRows(gridApi: GridApi): {
+export function extractSelectedRows(gridApi: GridApi, columnIds?: string[]): {
   headers: string[];
   rows: Record<string, any>[];
 } {
-  const columns = gridApi.getColumns() || [];
-  const visibleColumns = columns.filter(col => !col.getColDef().hide);
+  const allColumns = gridApi.getColumns() || [];
 
-  const headers = visibleColumns.map(col => col.getColDef().headerName || col.getColId());
+  // Si se especifican columnas, filtrar por ID. Si no, usar visibles.
+  const targetColumns = columnIds
+    ? allColumns.filter(col => columnIds.includes(col.getColId()))
+    : allColumns.filter(col => col.isVisible());
+
+  // Ordenar columnas según el orden en columnIds si existe
+  if (columnIds) {
+    targetColumns.sort((a, b) => {
+      return columnIds.indexOf(a.getColId()) - columnIds.indexOf(b.getColId());
+    });
+  }
+
+  const headers = targetColumns.map(col => col.getColDef().headerName || col.getColId());
 
   const selectedNodes = gridApi.getSelectedNodes();
   const rows: Record<string, any>[] = [];
@@ -126,7 +149,7 @@ export function extractSelectedRows(gridApi: GridApi): {
     if (node.data) {
       const row: Record<string, any> = {};
 
-      visibleColumns.forEach(col => {
+      targetColumns.forEach(col => {
         const colDef = col.getColDef();
         const colId = col.getColId();
         const headerName = colDef.headerName || colId;
@@ -181,8 +204,8 @@ export async function exportData(
   try {
     // Extraer datos
     const { headers, rows } = onlySelected
-      ? extractSelectedRows(gridApi)
-      : extractGridData(gridApi);
+      ? extractSelectedRows(gridApi, options.columnIds)
+      : extractGridData(gridApi, options.columnIds);
 
     if (rows.length === 0) {
       throw new Error('No hay datos para exportar');
