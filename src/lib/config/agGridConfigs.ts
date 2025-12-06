@@ -313,7 +313,7 @@ const CONTRATISTA_LIST_CONFIG: Omit<AGGridToolbarConfig, 'customButtons'> = {
       // Los custom buttons se agregan desde el componente
     ],
     multiSelect: [
-      ...COMMON_MULTI_SELECT_BUTTONS
+      ...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))
     ]
   },
   showColumnSelector: true,

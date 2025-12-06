@@ -186,18 +186,7 @@
         }),
       ],
 
-      multiSelect: [
-        {
-          id: "delete-multiple",
-          label: "Eliminar Seleccionados",
-          icon: Trash2,
-          onClick: () => {
-            onDeleteMultiple?.(selectedRows);
-          },
-          variant: "danger" as const,
-          tooltip: `Eliminar ${selectedRows.length} contratistas`,
-        },
-      ],
+      multiSelect: [],
     };
   });
 
