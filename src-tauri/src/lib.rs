@@ -7,10 +7,10 @@ pub mod commands;
 pub mod config;
 pub mod db;
 pub mod domain;
+pub mod export;
 pub mod models;
-pub mod services;
 pub mod search;
-pub mod export;  // ✅ AGREGAR ESTO
+pub mod services; // ✅ AGREGAR ESTO
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -30,6 +30,14 @@ pub fn run() {
             db::migrate::run_migrations(&pool).await?;
             db::seed::seed_db(&pool).await?;
             let search_service = search::init_search_service(&app_config)?;
+
+            // Reindexar todo al inicio para asegurar consistencia con la DB
+            println!("🔄 Reindexando base de datos completa...");
+            if let Err(e) = search_service.reindex_all(&pool).await {
+                eprintln!("❌ Error al reindexar al inicio: {}", e);
+            } else {
+                println!("✅ Reindexado completado con éxito");
+            }
 
             tauri::Builder::default()
                 .manage(pool)

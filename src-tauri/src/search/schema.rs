@@ -8,13 +8,13 @@ use tantivy::schema::*;
 /// Crea el schema para el índice de búsqueda
 pub fn build_search_schema() -> Schema {
     let mut schema_builder = Schema::builder();
-    
+
     // ID único del documento
     schema_builder.add_text_field("id", STRING | STORED);
-    
+
     // Tipo de entidad
     schema_builder.add_text_field("tipo", STRING | STORED);
-    
+
     // Campos de búsqueda para contratistas
     schema_builder.add_text_field("cedula", TEXT | STORED);
     schema_builder.add_text_field("nombre", TEXT | STORED);
@@ -22,10 +22,11 @@ pub fn build_search_schema() -> Schema {
     schema_builder.add_text_field("apellido", TEXT | STORED);
     schema_builder.add_text_field("segundo_apellido", TEXT | STORED);
     schema_builder.add_text_field("empresa_nombre", TEXT | STORED);
-    
+    schema_builder.add_text_field("email", TEXT | STORED);
+
     // Campo de búsqueda general (concatenación de todos los campos)
     schema_builder.add_text_field("search_text", TEXT);
-    
+
     schema_builder.build()
 }
 
@@ -39,5 +40,6 @@ pub mod fields {
     pub const APELLIDO: &str = "apellido";
     pub const SEGUNDO_APELLIDO: &str = "segundo_apellido";
     pub const EMPRESA_NOMBRE: &str = "empresa_nombre";
+    pub const EMAIL: &str = "email";
     pub const SEARCH_TEXT: &str = "search_text";
 }

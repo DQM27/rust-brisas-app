@@ -1,10 +1,13 @@
 use crate::db::contratista_queries;
+use crate::db::user_queries;
 use crate::models::contratista::Contratista;
+use crate::models::user::User;
 use crate::search::{
-    commit_index, delete_from_index, index_contratista, update_contratista_in_index,
+    commit_index, delete_from_index, index_contratista, index_user, update_contratista_in_index,
+    update_user_in_index,
 };
 use crate::search::{get_index_reader, get_index_writer, initialize_index};
-use crate::search::{search_contratistas, SearchResult};
+use crate::search::{search_index, SearchResult};
 use sqlx::SqlitePool;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -37,10 +40,13 @@ impl SearchService {
         })
     }
 
-    /// Re-indexa todos los contratistas desde la base de datos
-    pub async fn reindex_all_contratistas(&self, pool: &SqlitePool) -> Result<(), String> {
+    /// Re-indexa todo (contratistas y usuarios) desde la base de datos
+    pub async fn reindex_all(&self, pool: &SqlitePool) -> Result<(), String> {
         // Obtener todos los contratistas con empresa (Async, sin lock)
         let contratistas = contratista_queries::find_all_with_empresa(pool).await?;
+
+        // Obtener todos los usuarios
+        let users = user_queries::find_all(pool).await?;
 
         // Adquirir lock para escribir en el índice
         let _lock = self.writer_mutex.lock().await;
@@ -53,9 +59,14 @@ impl SearchService {
             .delete_all_documents()
             .map_err(|e| format!("Error al limpiar índice: {}", e))?;
 
-        // Indexar cada uno
+        // Indexar contratistas
         for (contratista, empresa_nombre, _, _, _) in contratistas {
             index_contratista(&mut writer, &schema, &contratista, &empresa_nombre)?;
+        }
+
+        // Indexar usuarios
+        for user in users {
+            index_user(&mut writer, &schema, &user)?;
         }
 
         // Commit
@@ -67,6 +78,11 @@ impl SearchService {
             .map_err(|e| format!("Error al recargar reader: {}", e))?;
 
         Ok(())
+    }
+
+    /// Método legado para compatibilidad si es necesario, ahora llama a reindex_all
+    pub async fn reindex_all_contratistas(&self, pool: &SqlitePool) -> Result<(), String> {
+        self.reindex_all(pool).await
     }
 
     /// Indexa un contratista nuevo
@@ -128,8 +144,59 @@ impl SearchService {
         Ok(())
     }
 
-    /// Busca contratistas
+    /// Indexa un usuario nuevo
+    pub async fn add_user(&self, user: &User) -> Result<(), String> {
+        let _lock = self.writer_mutex.lock().await;
+
+        let schema = self.index.schema();
+        let mut writer = get_index_writer(&self.index)?;
+
+        index_user(&mut writer, &schema, user)?;
+        commit_index(&mut writer)?;
+
+        self.reader
+            .reload()
+            .map_err(|e| format!("Error al recargar reader: {}", e))?;
+
+        Ok(())
+    }
+
+    /// Actualiza un usuario en el índice
+    pub async fn update_user(&self, user: &User) -> Result<(), String> {
+        let _lock = self.writer_mutex.lock().await;
+
+        let schema = self.index.schema();
+        let mut writer = get_index_writer(&self.index)?;
+
+        update_user_in_index(&mut writer, &schema, user)?;
+        commit_index(&mut writer)?;
+
+        self.reader
+            .reload()
+            .map_err(|e| format!("Error al recargar reader: {}", e))?;
+
+        Ok(())
+    }
+
+    /// Elimina un usuario del índice
+    pub async fn delete_user(&self, id: &str) -> Result<(), String> {
+        let _lock = self.writer_mutex.lock().await;
+
+        let schema = self.index.schema();
+        let mut writer = get_index_writer(&self.index)?;
+
+        delete_from_index(&mut writer, &schema, id)?;
+        commit_index(&mut writer)?;
+
+        self.reader
+            .reload()
+            .map_err(|e| format!("Error al recargar reader: {}", e))?;
+
+        Ok(())
+    }
+
+    /// Busca en el índice (contratistas y usuarios)
     pub fn search(&self, query: &str, limit: usize) -> Result<Vec<SearchResult>, String> {
-        search_contratistas(&self.index, &self.reader, query, limit)
+        search_index(&self.index, &self.reader, query, limit)
     }
 }

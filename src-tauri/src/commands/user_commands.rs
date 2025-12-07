@@ -3,18 +3,21 @@
 use crate::models::user::{
     ChangePasswordInput, CreateUserInput, UpdateUserInput, UserListResponse, UserResponse,
 };
+use crate::services::search_service::SearchService;
 use crate::services::user_service;
 
 use sqlx::SqlitePool;
+use std::sync::Arc;
 use tauri::State;
 
 #[tauri::command]
 pub async fn create_user(
     pool: State<'_, SqlitePool>,
+    search_service: State<'_, Arc<SearchService>>,
     input: CreateUserInput,
 ) -> Result<UserResponse, String> {
     // 1. Crear usuario localmente
-    let user = user_service::create_user(&pool, input).await?;
+    let user = user_service::create_user(&pool, &search_service, input).await?;
 
     Ok(user)
 }
@@ -22,19 +25,24 @@ pub async fn create_user(
 #[tauri::command]
 pub async fn update_user(
     pool: State<'_, SqlitePool>,
+    search_service: State<'_, Arc<SearchService>>,
     id: String,
     input: UpdateUserInput,
 ) -> Result<UserResponse, String> {
     // 1. Actualizar localmente
-    let user = user_service::update_user(&pool, id.clone(), input).await?;
+    let user = user_service::update_user(&pool, &search_service, id.clone(), input).await?;
 
     Ok(user)
 }
 
 #[tauri::command]
-pub async fn delete_user(pool: State<'_, SqlitePool>, id: String) -> Result<(), String> {
+pub async fn delete_user(
+    pool: State<'_, SqlitePool>,
+    search_service: State<'_, Arc<SearchService>>,
+    id: String,
+) -> Result<(), String> {
     // 1. Eliminar localmente
-    user_service::delete_user(&pool, id.clone()).await?;
+    user_service::delete_user(&pool, &search_service, id.clone()).await?;
 
     Ok(())
 }

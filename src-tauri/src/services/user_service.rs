@@ -12,11 +12,13 @@ use crate::models::user::{
     UserResponse, UserRole,
 };
 use crate::services::auth;
+use crate::services::search_service::SearchService;
 
 use chrono::Utc;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use sqlx::SqlitePool;
+use std::sync::Arc;
 use uuid::Uuid;
 
 // ==========================================
@@ -25,6 +27,7 @@ use uuid::Uuid;
 
 pub async fn create_user(
     pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
     mut input: CreateUserInput,
 ) -> Result<UserResponse, String> {
     // 0. Normalizar input: Si campos opcionales vienen vacíos, convertirlos a None
@@ -127,6 +130,17 @@ pub async fn create_user(
         response.temporary_password = Some(password_str.to_string());
     }
 
+    // 9. Indexar en Tantivy (automático)
+    // Obtenemos el User crudo para indexar
+    match db::find_by_id(pool, &id).await {
+        Ok(user) => {
+            if let Err(e) = search_service.add_user(&user).await {
+                eprintln!("⚠️ Error al indexar usuario {}: {}", id, e);
+            }
+        }
+        Err(e) => eprintln!("⚠️ Error al obtener usuario para indexar {}: {}", id, e),
+    }
+
     Ok(response)
 }
 
@@ -183,6 +197,7 @@ pub async fn get_all_users(pool: &SqlitePool) -> Result<UserListResponse, String
 
 pub async fn update_user(
     pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
     id: String,
     mut input: UpdateUserInput,
 ) -> Result<UserResponse, String> {
@@ -283,19 +298,46 @@ pub async fn update_user(
     .await?;
 
     // 10. Retornar usuario actualizado
-    get_user_by_id(pool, &id).await
+    let response = get_user_by_id(pool, &id).await?;
+
+    // 11. Actualizar índice de Tantivy (automático)
+    match db::find_by_id(pool, &id).await {
+        Ok(user) => {
+            if let Err(e) = search_service.update_user(&user).await {
+                eprintln!("⚠️ Error al actualizar índice del usuario {}: {}", id, e);
+            }
+        }
+        Err(e) => eprintln!(
+            "⚠️ Error al obtener usuario para actualizar índice {}: {}",
+            id, e
+        ),
+    }
+
+    Ok(response)
 }
 
 // ==========================================
 // ELIMINAR USUARIO
 // ==========================================
 
-pub async fn delete_user(pool: &SqlitePool, id: String) -> Result<(), String> {
+pub async fn delete_user(
+    pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
+    id: String,
+) -> Result<(), String> {
     // Verificar que existe antes de eliminar
     let _ = db::find_by_id(pool, &id).await?;
 
     // Eliminar
-    db::delete(pool, &id).await
+    // Eliminar
+    db::delete(pool, &id).await?;
+
+    // Eliminar del índice
+    if let Err(e) = search_service.delete_user(&id).await {
+        eprintln!("⚠️ Error al eliminar usuario del índice {}: {}", id, e);
+    }
+
+    Ok(())
 }
 
 // ==========================================
