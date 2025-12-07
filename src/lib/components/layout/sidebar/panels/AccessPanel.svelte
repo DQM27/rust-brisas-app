@@ -2,14 +2,15 @@
 <script lang="ts">
   import {
     Lock,
-    BarChart3,
-    Shield,
     FileText,
     Ban,
     BadgeCheck,
     LogIn,
+    ShieldAlert,
   } from "lucide-svelte";
   import { openView, activePanel } from "../../../../stores/sidebar";
+  import { currentUser } from "$lib/stores/auth";
+  import { can } from "$lib/logic/permissions";
 
   function handleKeydown(e: KeyboardEvent, action: () => void) {
     if (e.key === "Enter" || e.key === " ") {
@@ -28,32 +29,54 @@
 
 <div class="panel-section">
   <div class="panel-section-title">CONTROLES DE ACCESO</div>
+  {#if $currentUser && can($currentUser, "VIEW_USER_LIST")}
+    <button
+      class="panel-item"
+      on:click={executeAndClose(() =>
+        openView("user-list", "Gestión de Permisos"),
+      )}
+      on:keydown={(e) =>
+        handleKeydown(
+          e,
+          executeAndClose(() => openView("user-list", "Gestión de Permisos")),
+        )}
+    >
+      <svelte:component this={Lock} size={16} />
+      <span>Gestión de permisos</span>
+    </button>
+  {/if}
   <button
     class="panel-item"
     on:click={executeAndClose(() =>
-      openView("user-list", "Gestión de Permisos"),
+      openView("lista-negra-list", "Lista Negra"),
     )}
     on:keydown={(e) =>
       handleKeydown(
         e,
-        executeAndClose(() => openView("user-list", "Gestión de Permisos")),
-      )}
-  >
-    <svelte:component this={Lock} size={16} />
-    <span>Gestión de permisos</span>
-  </button>
-  <button
-    class="panel-item"
-    on:click={executeAndClose(() => openView("lista-negra", "Lista Negra"))}
-    on:keydown={(e) =>
-      handleKeydown(
-        e,
-        executeAndClose(() => openView("lista-negra", "Lista Negra")),
+        executeAndClose(() => openView("lista-negra-list", "Lista Negra")),
       )}
   >
     <svelte:component this={Ban} size={16} />
     <span>Lista negra</span>
   </button>
+  {#if $currentUser && can($currentUser, "MANAGE_BLACKLIST")}
+    <button
+      class="panel-item"
+      on:click={executeAndClose(() =>
+        openView("lista-negra", "Agregar a Lista Negra"),
+      )}
+      on:keydown={(e) =>
+        handleKeydown(
+          e,
+          executeAndClose(() =>
+            openView("lista-negra", "Agregar a Lista Negra"),
+          ),
+        )}
+    >
+      <svelte:component this={ShieldAlert} size={16} />
+      <span>Agregar a lista negra</span>
+    </button>
+  {/if}
   <button
     class="panel-item"
     on:click={executeAndClose(() =>
@@ -82,22 +105,6 @@
     <svelte:component this={LogIn} size={16} />
     <span>Ingresos</span>
   </button>
-  <button
-    class="panel-item"
-    on:click={executeAndClose(() => openView("dashboard", "Panel de Control"))}
-    on:keydown={(e) =>
-      handleKeydown(
-        e,
-        executeAndClose(() => openView("dashboard", "Panel de Control")),
-      )}
-  >
-    <svelte:component this={BarChart3} size={16} />
-    <span>Panel de control</span>
-  </button>
-  <div class="panel-item non-clickable">
-    <svelte:component this={Shield} size={16} />
-    <span>Políticas de seguridad</span>
-  </div>
 </div>
 
 <div class="panel-section">

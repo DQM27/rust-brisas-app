@@ -13,7 +13,9 @@ export type Action =
     | 'UPDATE_USER_SENSITIVE'  // Sensitive info: role, status, active/inactive
     | 'CHANGE_USER_PASSWORD'   // Change own password
     | 'RESET_USER_PASSWORD'    // Admin reset password (optional future)
-    | 'DELETE_USER';
+    | 'DELETE_USER'
+    | 'MANAGE_BLACKLIST'       // Add/Remove from blacklist
+    | 'VIEW_BLACKLIST_REASON'; // View sensitive reason column
 
 // ==========================================
 // LOGIC
@@ -33,7 +35,10 @@ export function can(actor: UserResponse | null | undefined, action: Action, targ
     // ADMIN OVERRIDE
     // Admin has full access to almost everything
     // Supervisor temporarily has same privileges as Admin
-    if (actor.role === 'admin' || actor.role === 'supervisor') {
+    // ADMIN OVERRIDE
+    // Admin has full access to almost everything, EXCEPT changing other people's passwords directly (they use reset)
+    if ((actor.role === 'admin' || actor.role === 'supervisor') && action !== 'CHANGE_USER_PASSWORD') {
+        // Special case: RESET_USER_PASSWORD is allowed for admins via this override (or explicit below)
         return true;
     }
 
@@ -60,6 +65,14 @@ export function can(actor: UserResponse | null | undefined, action: Action, targ
         case 'RESET_USER_PASSWORD':
             // Only admins/supervisors can reset OTHER users' passwords
             // We already returned true for them at the top, so this is just fallback for safety
+            return false;
+
+        case 'MANAGE_BLACKLIST':
+            // Admins/Supervisors true via override. Guards false.
+            return false;
+
+        case 'VIEW_BLACKLIST_REASON':
+            // Admins/Supervisors true via override. Guards false.
             return false;
 
         default:

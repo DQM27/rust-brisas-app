@@ -31,14 +31,16 @@
   // Store y tipos
   import { activePanel } from "$lib/stores/sidebar";
   import type { SidebarItem } from "../../../types/Sidebar";
+  import { can } from "$lib/logic/permissions";
 
-  // Items configurables - ahora con importaciones directas
-  const sidebarItems: SidebarItem[] = [
+  // Items configurables - Definición base
+  const allSidebarItems: SidebarItem[] = [
     {
       id: "users",
       icon: User,
       label: "Usuarios",
       panelComponent: UsersPanel,
+      permission: "VIEW_USER_LIST",
     },
     {
       id: "contractors",
@@ -57,14 +59,38 @@
       icon: FileText,
       label: "Logs",
       panelComponent: LogsPanel,
+      role: ["admin", "supervisor"], // Explicit role check fallback or new permission
     },
     {
       id: "settings",
       icon: Settings,
       label: "Configuración",
       panelComponent: SettingsPanel,
+      role: ["admin"],
     },
   ];
+
+  // Filtrar items según permisos
+  $: sidebarItems = allSidebarItems.filter((item) => {
+    if (!item) return false;
+
+    // 1. Check permission if defined
+    // @ts-ignore
+    if (item.permission && !can($currentUser, item.permission)) {
+      return false;
+    }
+
+    // 2. Check strict role if defined (legacy/simple way)
+    // @ts-ignore
+    if (item.role && $currentUser) {
+      // @ts-ignore
+      if (!item.role.includes($currentUser.role)) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   $: currentActivePanel = $activePanel;
   $: activeItem = sidebarItems.find((item) => item.id === currentActivePanel);

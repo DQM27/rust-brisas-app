@@ -151,7 +151,16 @@ export class UserListLogic {
                 width: 130,
                 valueFormatter: (params) => {
                     if (!params.value) return "-";
-                    const date = new Date(params.value);
+                    // Split "YYYY-MM-DD" to avoid timezone issues with new Date()
+                    // If it's a full ISO string, we might need different logic, but simple dates usually come as YYYY-MM-DD or we treat them as such for display.
+                    const val = String(params.value);
+                    const [year, month, day] = val.split('T')[0].split('-').map(Number);
+
+                    if (!year || !month || !day) return val;
+
+                    // Create date as local time (noon to be safe, or just use parts directly)
+                    const date = new Date(year, month - 1, day);
+
                     return date.toLocaleDateString("es-PA", {
                         year: "numeric",
                         month: "short",

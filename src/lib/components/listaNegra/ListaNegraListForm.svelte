@@ -92,37 +92,42 @@
     const selected = selectedRows[0];
 
     // Botones por defecto - Solo los esenciales
-    const defaultButtons: CustomToolbarButton[] = [
-      {
+    // Botones por defecto - Solo los esenciales
+    const defaultButtons: CustomToolbarButton[] = [];
+
+    if (onAddToBlacklist) {
+      defaultButtons.push({
         id: "add-blacklist",
         label: "Agregar a Lista Negra",
         icon: Plus,
         onClick: () => onAddToBlacklist?.(),
         variant: "danger" as const,
         tooltip: "Agregar nueva persona a lista negra",
+      });
+    }
+
+    defaultButtons.push({
+      id: "refresh",
+      label: "Actualizar",
+      icon: RefreshCw,
+      onClick: onRefresh,
+      variant: "default" as const,
+      tooltip: "Actualizar lista",
+    });
+
+    defaultButtons.push({
+      id: "filter-estado",
+      label: `Estado: ${estadoLabel}`,
+      icon: Filter,
+      onClick: () => {
+        showEstadoDropdown = !showEstadoDropdown;
+        showTipoDropdown = false;
       },
-      {
-        id: "refresh",
-        label: "Actualizar",
-        icon: RefreshCw,
-        onClick: onRefresh,
-        variant: "default" as const,
-        tooltip: "Actualizar lista",
-      },
-      {
-        id: "filter-estado",
-        label: `Estado: ${estadoLabel}`,
-        icon: Filter,
-        onClick: () => {
-          showEstadoDropdown = !showEstadoDropdown;
-          showTipoDropdown = false;
-        },
-        variant: (estadoFilter !== "todos" ? "primary" : "default") as
-          | "primary"
-          | "default",
-        tooltip: "Filtrar por estado",
-      },
-    ];
+      variant: (estadoFilter !== "todos" ? "primary" : "default") as
+        | "primary"
+        | "default",
+      tooltip: "Filtrar por estado",
+    });
 
     // Agregar Filtro de Tipo solo si está activo o hay filtros activos
     if (tipoFilter !== "todos" || hasActiveFilters) {
@@ -161,20 +166,24 @@
       default: defaultButtons,
 
       singleSelect: [
-        {
-          id: "unblock",
-          label: selected?.isActive ? "Desbloquear" : "Re-bloquear",
-          icon: ShieldAlert,
-          onClick: () => {
-            if (selected) onUnblock?.(selected);
-          },
-          variant: selected?.isActive
-            ? ("success" as const)
-            : ("danger" as const),
-          tooltip: selected?.isActive
-            ? "Desbloquear persona"
-            : "Volver a bloquear persona",
-        },
+        ...(onUnblock
+          ? [
+              {
+                id: "unblock",
+                label: selected?.isActive ? "Desbloquear" : "Re-bloquear",
+                icon: ShieldAlert,
+                onClick: () => {
+                  if (selected) onUnblock?.(selected);
+                },
+                variant: selected?.isActive
+                  ? ("success" as const)
+                  : ("danger" as const),
+                tooltip: selected?.isActive
+                  ? "Desbloquear persona"
+                  : "Volver a bloquear persona",
+              },
+            ]
+          : []),
         createCustomButton.verInformacion(() => {
           if (selected) onViewInfo?.(selected);
         }),

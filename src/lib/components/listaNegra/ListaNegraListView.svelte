@@ -17,6 +17,8 @@
     createListaNegraListLogic,
     ListaNegraListLogic,
   } from "$lib/logic/listaNegra/listaNegraListLogic";
+  import { currentUser } from "$lib/stores/auth";
+  import { can } from "$lib/logic/permissions";
 
   interface Props {
     tabId: string;
@@ -29,6 +31,10 @@
   let bloqueados = $state<ListaNegraResponse[]>([]);
   let loading = $state(false);
   let error = $state("");
+
+  // Permisos derivados
+  let canManage = $derived(can($currentUser, "MANAGE_BLACKLIST"));
+  let canViewReason = $derived(can($currentUser, "VIEW_BLACKLIST_REASON"));
 
   // Modales
   let showAddModal = $state(false);
@@ -54,22 +60,27 @@
   // Convertir columnas a ColDef de AG Grid
   let columnDefs = $derived.by((): ColDef<ListaNegraResponse>[] => {
     const cols = ListaNegraListLogic.getColumns();
-    return cols.map(
-      (col) =>
-        ({
-          field: String(col.field) as any,
-          headerName: col.headerName,
-          width: col.width,
-          minWidth: col.minWidth,
-          flex: col.flex,
-          sortable: col.sortable !== false,
-          filter: true,
-          resizable: true,
-          cellRenderer: col.cellRenderer,
-          valueFormatter: col.valueFormatter,
-          cellStyle: col.cellStyle,
-        }) as ColDef<ListaNegraResponse>,
-    );
+    return cols
+      .filter((col) => {
+        if (col.field === "motivoBloqueo" && !canViewReason) return false;
+        return true;
+      })
+      .map(
+        (col) =>
+          ({
+            field: String(col.field) as any,
+            headerName: col.headerName,
+            width: col.width,
+            minWidth: col.minWidth,
+            flex: col.flex,
+            sortable: col.sortable !== false,
+            filter: true,
+            resizable: true,
+            cellRenderer: col.cellRenderer,
+            valueFormatter: col.valueFormatter,
+            cellStyle: col.cellStyle,
+          }) as ColDef<ListaNegraResponse>,
+      );
   });
 
   // --- Cargar datos ---
@@ -251,8 +262,8 @@
   onClearAllFilters={handleClearAllFilters}
   onSearchSelect={handleSearchSelect}
   onSearchClear={handleSearchClear}
-  onAddToBlacklist={handleAddToBlacklist}
-  onUnblock={handleUnblock}
+  onAddToBlacklist={canManage ? handleAddToBlacklist : undefined}
+  onUnblock={canManage ? handleUnblock : undefined}
   onViewInfo={handleViewInfo}
   onViewHistory={handleViewHistory}
 />

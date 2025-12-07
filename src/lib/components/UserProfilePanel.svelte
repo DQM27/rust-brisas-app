@@ -320,7 +320,7 @@
                 value={formData.cedula}
                 oninput={handleCedulaInput}
                 class={inputClass}
-                disabled={loading}
+                disabled={loading || !permissions.canEditBasic}
                 placeholder="Ej: 001-000000-0000A"
               />
             </div>
@@ -330,7 +330,7 @@
                 id="email"
                 type="email"
                 bind:value={formData.email}
-                disabled={loading}
+                disabled={loading || !permissions.canEditBasic}
                 class={inputClass}
                 title="Puedes actualizar tu email si es necesario"
               />
@@ -344,7 +344,7 @@
                 type="date"
                 bind:value={formData.fechaNacimiento}
                 class={inputClass}
-                disabled={loading}
+                disabled={loading || !permissions.canEditBasic}
               />
             </div>
 
@@ -356,7 +356,7 @@
                 value={formData.nombre}
                 oninput={(e) => handleNameInput(e, "nombre")}
                 class={inputClass}
-                disabled={loading}
+                disabled={loading || !permissions.canEditBasic}
               />
               {#if errors.nombre}<p class={errorClass}>{errors.nombre}</p>{/if}
             </div>
@@ -370,7 +370,7 @@
                 value={formData.segundoNombre}
                 oninput={(e) => handleNameInput(e, "segundoNombre")}
                 class={inputClass}
-                disabled={loading}
+                disabled={loading || !permissions.canEditBasic}
               />
             </div>
 
@@ -382,7 +382,7 @@
                 value={formData.apellido}
                 oninput={(e) => handleNameInput(e, "apellido")}
                 class={inputClass}
-                disabled={loading}
+                disabled={loading || !permissions.canEditBasic}
               />
               {#if errors.apellido}<p class={errorClass}>
                   {errors.apellido}
@@ -398,7 +398,7 @@
                 value={formData.segundoApellido}
                 oninput={(e) => handleNameInput(e, "segundoApellido")}
                 class={inputClass}
-                disabled={loading}
+                disabled={loading || !permissions.canEditBasic}
               />
             </div>
           </div>
@@ -417,7 +417,7 @@
                 oninput={(e) => handlePhoneInput(e, "telefono")}
                 onkeydown={handlePhoneKeydown}
                 class={inputClass}
-                disabled={loading}
+                disabled={loading || !permissions.canEditBasic}
                 placeholder="+505 8888-8888"
               />
             </div>
@@ -427,7 +427,7 @@
                 id="direccion"
                 bind:value={formData.direccion}
                 class={inputClass}
-                disabled={loading}
+                disabled={loading || !permissions.canEditBasic}
                 rows="2"
               ></textarea>
             </div>
@@ -448,7 +448,7 @@
                 value={formData.contactoEmergenciaNombre}
                 oninput={(e) => handleNameInput(e, "contactoEmergenciaNombre")}
                 class={inputClass}
-                disabled={loading}
+                disabled={loading || !permissions.canEditBasic}
               />
             </div>
             <div>
@@ -463,7 +463,7 @@
                   handlePhoneInput(e, "contactoEmergenciaTelefono")}
                 onkeydown={handlePhoneKeydown}
                 class={inputClass}
-                disabled={loading}
+                disabled={loading || !permissions.canEditBasic}
                 placeholder="+505 8888-8888"
               />
             </div>

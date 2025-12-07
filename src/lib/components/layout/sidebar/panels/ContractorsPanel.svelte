@@ -1,12 +1,6 @@
 <!-- src/lib/components/layout/sidebar/panels/ContractorsPanel.svelte -->
 <script lang="ts">
-  import {
-    HardHat,
-    UserPlus,
-    FileText,
-    UserX,
-    ShieldAlert,
-  } from "lucide-svelte";
+  import { HardHat, UserPlus, FileText } from "lucide-svelte";
   import { activePanel } from "../../../../stores/sidebar";
   import { openTab } from "$lib/stores/tabs";
 
@@ -42,23 +36,7 @@
     });
   }
 
-  function openBlacklistList() {
-    openTab({
-      componentKey: "lista-negra-list",
-      title: "Lista Negra",
-      id: "lista-negra-list",
-      focusOnOpen: true,
-    });
-  }
-
-  function openAddToBlacklist() {
-    openTab({
-      componentKey: "lista-negra",
-      title: "Agregar a Lista Negra",
-      id: "lista-negra-add",
-      focusOnOpen: true,
-    });
-  }
+  // Unused blacklist functions removed
 </script>
 
 <div class="panel-section">
@@ -79,26 +57,6 @@
   >
     <svelte:component this={UserPlus} size={16} />
     <span>Registrar contratista</span>
-  </button>
-</div>
-
-<div class="panel-section">
-  <div class="panel-section-title">LISTA NEGRA</div>
-  <button
-    class="panel-item"
-    on:click={executeAndClose(openBlacklistList)}
-    on:keydown={(e) => handleKeydown(e, executeAndClose(openBlacklistList))}
-  >
-    <svelte:component this={UserX} size={16} />
-    <span>Listar bloqueados</span>
-  </button>
-  <button
-    class="panel-item"
-    on:click={executeAndClose(openAddToBlacklist)}
-    on:keydown={(e) => handleKeydown(e, executeAndClose(openAddToBlacklist))}
-  >
-    <svelte:component this={ShieldAlert} size={16} />
-    <span>Agregar a lista negra</span>
   </button>
 </div>
 

@@ -1,6 +1,6 @@
 <!-- src/lib/components/layout/sidebar/panels/UsersPanel.svelte -->
 <script lang="ts">
-  import { Users, UserPlus, Edit3, BarChart3, Home } from "lucide-svelte";
+  import { Users, UserPlus } from "lucide-svelte";
   import { openView, activePanel } from "../../../../stores/sidebar";
 
   type PanelAction = () => void;
@@ -47,28 +47,6 @@
           action: executeAndClose(() =>
             openView("user-register", "Registrar Usuario"),
           ),
-        },
-        {
-          icon: Edit3,
-          label: "Editor de usuarios",
-          action: executeAndClose(() =>
-            openView("user-editor", "Editor de Usuarios"),
-          ),
-        },
-      ],
-    },
-    {
-      title: "VISTAS",
-      items: [
-        {
-          icon: BarChart3,
-          label: "Dashboard",
-          action: executeAndClose(() => openView("dashboard", "Dashboard")),
-        },
-        {
-          icon: Home,
-          label: "Página de bienvenida",
-          action: executeAndClose(() => openView("welcome", "Bienvenida")),
         },
       ],
     },
