@@ -10,18 +10,4 @@ export interface SidebarItem {
   role?: string[];
 }
 
-export type ComponentKey =
-  | 'welcome'
-  | 'user-list'
-  | 'user-editor'
-  | 'user-register'
-  | 'user-register'
-  | 'dashboard'
-  | 'contratista'
-  | 'contratista-list'
-  | 'lista-negra'
-  | 'lista-negra-list'
-  | 'blacklist-import'
-
-  | 'gafete-list'
-  | 'ingreso-list';
+export type { ComponentKey } from './component';

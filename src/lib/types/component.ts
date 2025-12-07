@@ -12,4 +12,5 @@ export type ComponentKey =
   | 'blacklist-import'
   | 'user-profile'
   | 'gafete-list'
-  | 'ingreso-list';
+  | 'ingreso-list'
+  | 'general-settings';

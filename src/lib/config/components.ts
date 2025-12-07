@@ -15,6 +15,7 @@ import ContratistaListView from '$lib/components/contratista/ContratistaListView
 import ListaNegraView from '$lib/components/listaNegra/ListaNegraView.svelte';
 import ListaNegraListView from '$lib/components/listaNegra/ListaNegraListView.svelte';
 import BlacklistImportView from '$lib/components/BlacklistImport/BlacklistImportView.svelte';
+import GeneralSettingsPanel from '$lib/components/settings/GeneralSettingsPanel.svelte';
 
 import GafeteListView from '$lib/components/gafete/GafeteListView.svelte';
 import IngresoListView from '$lib/components/ingreso/IngresoListView.svelte';
@@ -36,6 +37,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'lista-negra': ListaNegraView,
   'lista-negra-list': ListaNegraListView,
   'blacklist-import': BlacklistImportView,
+  'general-settings': GeneralSettingsPanel,
 
   'gafete-list': GafeteListView,
   'ingreso-list': IngresoListView,

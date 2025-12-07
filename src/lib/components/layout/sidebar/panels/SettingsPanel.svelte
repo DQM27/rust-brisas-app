@@ -30,11 +30,15 @@
   <div class="panel-section-title">CONFIGURACIÓN GENERAL</div>
   <button
     class="panel-item"
-    on:click={executeAndClose(() => openView("dashboard", "Configuración"))}
+    on:click={executeAndClose(() =>
+      openView("general-settings", "Ajustes Generales"),
+    )}
     on:keydown={(e) =>
       handleKeydown(
         e,
-        executeAndClose(() => openView("dashboard", "Configuración")),
+        executeAndClose(() =>
+          openView("general-settings", "Ajustes Generales"),
+        ),
       )}
   >
     <svelte:component this={Settings} size={16} />
