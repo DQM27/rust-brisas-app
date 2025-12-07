@@ -3,7 +3,6 @@
   import { activeView } from "$lib/stores/ui";
   import { isAuthenticated, logout, currentUser } from "$lib/stores/auth";
   import { resetTabs, openTab } from "$lib/stores/tabs";
-  import { themeStore } from "$lib/stores/themeStore";
 
   // Importar iconos directamente
   import {
@@ -13,8 +12,6 @@
     Settings,
     LogOut,
     HardHat,
-    Sun,
-    Moon,
   } from "lucide-svelte";
 
   // Componentes
@@ -163,23 +160,6 @@
       >
         <LogOut size={20} />
         <span class="sidebar-tooltip"> Cerrar sesión </span>
-      </button>
-
-      <!-- Theme Toggle -->
-      <button
-        on:click={() =>
-          themeStore.update((t) => (t === "dark" ? "light" : "dark"))}
-        class="sidebar-action-btn group"
-        title={$themeStore === "dark" ? "Modo Claro" : "Modo Oscuro"}
-      >
-        {#if $themeStore === "dark"}
-          <Moon size={20} />
-        {:else}
-          <Sun size={20} />
-        {/if}
-        <span class="sidebar-tooltip">
-          {$themeStore === "dark" ? "Modo Claro" : "Modo Oscuro"}
-        </span>
       </button>
     </div>
   </div>

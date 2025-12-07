@@ -75,7 +75,6 @@
 
     try {
       await onUpdate(result.data);
-      toast.success("Perfil actualizado correctamente");
     } catch (err) {
       console.error(err);
     }

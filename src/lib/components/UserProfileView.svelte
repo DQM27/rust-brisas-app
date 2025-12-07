@@ -10,6 +10,7 @@
     getPermissionsForUser,
     type UserPermissions,
   } from "$lib/logic/permissions";
+  import { closeTab, activeTabId } from "$lib/stores/tabs";
 
   interface Props {
     data?: { userId?: string };
@@ -78,7 +79,19 @@
       // Si estamos editando el usuario actual, actualizar store (opcional, pero buena práctica)
       // Nota: auth store se actualiza usualmente al recargar sesión, pero aquí es visual
       user = updated;
+
+      // CRITICAL: Update the global store if we are editing ourselves
+      // This ensures that next time we load the profile (lines 55+), we have fresh data
+      if ($currentUser && $currentUser.id === user.id) {
+        currentUser.set(updated);
+      }
+
       toast.success("Perfil actualizado");
+
+      // Close the tab after successful update as requested
+      if ($activeTabId) {
+        closeTab($activeTabId);
+      }
     } catch (err: any) {
       console.error("Error updating user:", err);
       throw typeof err === "string" ? err : "Error al actualizar perfil";
