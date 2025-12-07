@@ -31,21 +31,51 @@ const passwordSchema = z.string()
 // ==========================================
 
 export const CreateUserSchema = z.object({
-    cedula: stringRequerido(20, 'Cédula'),
+    cedula: z.string()
+        .trim()
+        .min(7, 'Cédula debe tener al menos 7 caracteres')
+        .max(15, 'Cédula no puede exceder 15 caracteres')
+        .regex(/^[0-9-]+$/, 'Cédula solo puede contener números y guiones'),
     email: emailSchema,
     // Password es opcional en la creación, permitimos string vacío o undefined
     password: z.union([passwordSchema, z.literal(''), z.undefined()]).optional(),
-    nombre: stringRequerido(50, 'Nombre'),
-    apellido: stringRequerido(50, 'Apellido'),
-    segundoNombre: stringOpcional(50, 'Segundo nombre'),
-    segundoApellido: stringOpcional(50, 'Segundo apellido'),
+
+    nombre: z.string()
+        .trim()
+        .min(1, 'Nombre es requerido')
+        .max(50, 'Nombre no puede exceder 50 caracteres')
+        .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'Nombre solo puede contener letras'),
+
+    apellido: z.string()
+        .trim()
+        .min(1, 'Apellido es requerido')
+        .max(50, 'Apellido no puede exceder 50 caracteres')
+        .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'Apellido solo puede contener letras'),
+
+    segundoNombre: z.string()
+        .trim()
+        .max(50, 'Segundo nombre no puede exceder 50 caracteres')
+        .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/, 'Segundo nombre solo puede contener letras')
+        .optional()
+        .or(z.literal('')),
+
+    segundoApellido: z.string()
+        .trim()
+        .max(50, 'Segundo apellido no puede exceder 50 caracteres')
+        .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/, 'Segundo apellido solo puede contener letras')
+        .optional()
+        .or(z.literal('')),
     role: z.enum(['admin', 'supervisor', 'guardia']),
 
     // Campos adicionales opcionales
     telefono: stringOpcional(20, 'Teléfono'),
     direccion: stringOpcional(200, 'Dirección'),
     fechaInicioLabores: z.string().optional(),
-    numeroGafete: stringOpcional(50, 'Número de gafete'),
+    numeroGafete: z.string()
+        .max(50, 'Número de gafete no puede exceder 50 caracteres')
+        .regex(/^K-\d+$/, 'El número de gafete debe tener el formato K-1234')
+        .optional()
+        .or(z.literal('')),
     fechaNacimiento: z.string().optional(),
     contactoEmergenciaNombre: stringOpcional(100, 'Nombre contacto emergencia'),
     contactoEmergenciaTelefono: stringOpcional(20, 'Teléfono contacto emergencia'),

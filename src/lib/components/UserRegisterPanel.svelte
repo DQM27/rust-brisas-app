@@ -89,17 +89,37 @@
     const input = event.target as HTMLInputElement;
     let value = input.value;
 
-    // Si el usuario borra todo, reseteamos a K-
-    if (value === "" || value === "K" || value === "K-") {
-      formData.numeroGafete = "K-";
-      return;
-    }
-
-    // Normalizamos: quitamos K, k, -, y espacios para dejar solo números
+    // Normalizamos: dejamos solo números
     const numbers = value.replace(/[^0-9]/g, "");
 
-    // Asignamos K- + números
-    formData.numeroGafete = `K-${numbers}`;
+    // Construimos el nuevo valor
+    const newValue = `K-${numbers}`;
+
+    // Actualizamos el estado
+    formData.numeroGafete = newValue;
+
+    // IMPORTANTE: Forzamos la actualización visual si Svelte no lo hace
+    // (Esto evita que caracteres inválidos se queden en pantalla)
+    if (input.value !== newValue) {
+      input.value = newValue;
+      // Ajustamos el cursor al final para mejor UX
+      input.selectionStart = input.selectionEnd = newValue.length;
+    }
+  }
+
+  function handleCedulaInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const newValue = input.value.replace(/[^0-9-]/g, "");
+    formData.cedula = newValue;
+    if (input.value !== newValue) input.value = newValue;
+  }
+
+  function handleNameInput(event: Event, field: keyof CreateUserForm) {
+    const input = event.target as HTMLInputElement;
+    const newValue = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "");
+    // @ts-ignore
+    formData[field] = newValue;
+    if (input.value !== newValue) input.value = newValue;
   }
 
   const inputFieldClass =
@@ -189,7 +209,8 @@
             <input
               id="cedula"
               type="text"
-              bind:value={formData.cedula}
+              value={formData.cedula}
+              oninput={handleCedulaInput}
               placeholder="Ej: 1-1122-0333"
               disabled={loading}
               class={inputFieldClass}
@@ -210,7 +231,8 @@
               <input
                 id="nombre"
                 type="text"
-                bind:value={formData.nombre}
+                value={formData.nombre}
+                oninput={(e) => handleNameInput(e, "nombre")}
                 placeholder="Ej: Juan"
                 disabled={loading}
                 class={inputFieldClass}
@@ -228,7 +250,8 @@
               <input
                 id="segundoNombre"
                 type="text"
-                bind:value={formData.segundoNombre}
+                value={formData.segundoNombre}
+                oninput={(e) => handleNameInput(e, "segundoNombre")}
                 placeholder="Ej: Carlos"
                 disabled={loading}
                 class={inputFieldClass}
@@ -245,7 +268,8 @@
               <input
                 id="apellido"
                 type="text"
-                bind:value={formData.apellido}
+                value={formData.apellido}
+                oninput={(e) => handleNameInput(e, "apellido")}
                 placeholder="Ej: Pérez"
                 disabled={loading}
                 class={inputFieldClass}
@@ -265,7 +289,8 @@
               <input
                 id="segundoApellido"
                 type="text"
-                bind:value={formData.segundoApellido}
+                value={formData.segundoApellido}
+                oninput={(e) => handleNameInput(e, "segundoApellido")}
                 placeholder="Ej: González"
                 disabled={loading}
                 class={inputFieldClass}
