@@ -71,6 +71,7 @@ ttf-parser = { version = "0.24", optional = true }
 
 # Excel export
 rust_xlsxwriter = { version = "0.69", optional = true }
+rand = "0.8.5"
 
 # CSV export - sin dependencias (usa std)
 

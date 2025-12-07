@@ -11,7 +11,10 @@ use crate::models::user::{
     CreateUserInput, RoleStats, UpdateUserInput, UserListResponse, UserResponse, UserRole,
 };
 use crate::services::auth;
+
 use chrono::Utc;
+use rand::distributions::Alphanumeric;
+use rand::Rng;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -44,8 +47,22 @@ pub async fn create_user(
         UserRole::Guardia
     };
 
-    // 5. Hashear contraseña
-    let password_hash = auth::hash_password(&input.password)?;
+    // 5. Generar o usar contraseña
+    let (password_str, must_change_password) = match input.password {
+        Some(p) => (p, false), // Admin asignó contraseña (opcional)
+        None => {
+            // Generar temporal
+            let rng = rand::thread_rng();
+            let temp: String = rng
+                .sample_iter(&Alphanumeric)
+                .take(12)
+                .map(char::from)
+                .collect();
+            (temp, true)
+        }
+    };
+
+    let password_hash = auth::hash_password(&password_str)?;
 
     // 6. Generar ID y timestamps
     let id = Uuid::new_v4().to_string();
@@ -62,11 +79,28 @@ pub async fn create_user(
         role.as_str(),
         &now,
         &now,
+        &input.cedula,
+        input.segundo_nombre.as_deref(),
+        input.segundo_apellido.as_deref(),
+        // New fields
+        input.fecha_inicio_labores.as_deref(),
+        input.numero_gafete.as_deref(),
+        input.fecha_nacimiento.as_deref(),
+        input.telefono.as_deref(),
+        input.direccion.as_deref(),
+        input.contacto_emergencia_nombre.as_deref(),
+        input.contacto_emergencia_telefono.as_deref(),
+        must_change_password,
     )
     .await?;
 
-    // 8. Retornar usuario creado
-    get_user_by_id(pool, &id).await
+    // 8. Retornar usuario creado con la contraseña temporal si aplica
+    let mut response = get_user_by_id(pool, &id).await?;
+    if must_change_password {
+        response.temporary_password = Some(password_str.to_string());
+    }
+
+    Ok(response)
 }
 
 // ==========================================
@@ -185,6 +219,17 @@ pub async fn update_user(
         role_str.as_deref(),
         is_active_int,
         &now,
+        // New params
+        input.cedula.as_deref(),
+        input.segundo_nombre.as_deref(),
+        input.segundo_apellido.as_deref(),
+        input.fecha_inicio_labores.as_deref(),
+        input.numero_gafete.as_deref(),
+        input.fecha_nacimiento.as_deref(),
+        input.telefono.as_deref(),
+        input.direccion.as_deref(),
+        input.contacto_emergencia_nombre.as_deref(),
+        input.contacto_emergencia_telefono.as_deref(),
     )
     .await?;
 
