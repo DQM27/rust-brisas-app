@@ -85,6 +85,23 @@
     }
   }
 
+  function handleGafeteInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    let value = input.value;
+
+    // Si el usuario borra todo, reseteamos a K-
+    if (value === "" || value === "K" || value === "K-") {
+      formData.numeroGafete = "K-";
+      return;
+    }
+
+    // Normalizamos: quitamos K, k, -, y espacios para dejar solo números
+    const numbers = value.replace(/[^0-9]/g, "");
+
+    // Asignamos K- + números
+    formData.numeroGafete = `K-${numbers}`;
+  }
+
   const inputFieldClass =
     "w-full rounded border border-emphasis bg-surface-1 px-3 py-2 text-sm text-primary placeholder:text-tertiary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-60";
 
@@ -250,6 +267,48 @@
                 type="text"
                 bind:value={formData.segundoApellido}
                 placeholder="Ej: González"
+                disabled={loading}
+                class={inputFieldClass}
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: INFORMACIÓN LABORAL -->
+        <div>
+          <h3 class="mb-3 text-lg font-medium text-accent">
+            Información Laboral
+          </h3>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <!-- Número de Gafete -->
+            <div class="space-y-2">
+              <label
+                for="numeroGafete"
+                class="block text-sm font-medium text-primary"
+                >Número Gafete</label
+              >
+              <input
+                id="numeroGafete"
+                type="text"
+                value={formData.numeroGafete}
+                oninput={handleGafeteInput}
+                placeholder="K-017367"
+                disabled={loading}
+                class={inputFieldClass}
+              />
+            </div>
+
+            <!-- Fecha Inicio Labores -->
+            <div class="space-y-2">
+              <label
+                for="fechaInicioLabores"
+                class="block text-sm font-medium text-primary"
+                >Fecha Inicio Labores</label
+              >
+              <input
+                id="fechaInicioLabores"
+                type="date"
+                bind:value={formData.fechaInicioLabores}
                 disabled={loading}
                 class={inputFieldClass}
               />
