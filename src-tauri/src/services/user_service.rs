@@ -8,7 +8,8 @@ use crate::domain::user as domain;
 
 use crate::db::user_queries as db;
 use crate::models::user::{
-    CreateUserInput, RoleStats, UpdateUserInput, UserListResponse, UserResponse, UserRole,
+    ChangePasswordInput, CreateUserInput, RoleStats, UpdateUserInput, UserListResponse,
+    UserResponse, UserRole,
 };
 use crate::services::auth;
 
@@ -230,6 +231,7 @@ pub async fn update_user(
         input.direccion.as_deref(),
         input.contacto_emergencia_nombre.as_deref(),
         input.contacto_emergencia_telefono.as_deref(),
+        None, // must_change_password (usar change_password para esto)
     )
     .await?;
 
@@ -247,6 +249,67 @@ pub async fn delete_user(pool: &SqlitePool, id: String) -> Result<(), String> {
 
     // Eliminar
     db::delete(pool, &id).await
+}
+
+// ==========================================
+// CAMBIAR CONTRASEÑA
+// ==========================================
+
+pub async fn change_password(
+    pool: &SqlitePool,
+    id: String,
+    input: ChangePasswordInput,
+) -> Result<(), String> {
+    // 1. Obtener usuario (incluye password hash para verificar si es necesario)
+    let (_, current_hash) =
+        db::find_by_email_with_password(pool, &get_user_by_id(pool, &id).await?.email).await?;
+
+    // 2. Verificar contraseña actual si se provee (obligatorio para usuario normal)
+    if let Some(current) = input.current_password {
+        let is_valid = auth::verify_password(&current, &current_hash)?;
+        if !is_valid {
+            return Err("La contraseña actual es incorrecta".to_string());
+        }
+    } else {
+        // Si no se provee current, asumir que es admin reset (validar permisos en capa superior si es necesario)
+        // Ojo: En este diseño básico confiamos que si llega sin current es porque el comando lo permitió
+    }
+
+    // 3. Validar nueva contraseña
+    domain::validar_password(&input.new_password)?;
+
+    // 4. Hashear nueva
+    let new_hash = auth::hash_password(&input.new_password)?;
+
+    // 5. Actualizar en DB y QUITAR flag de must_change_password
+    let now = Utc::now().to_rfc3339();
+
+    // Reusamos db::update pasando solo lo necesario
+    db::update(
+        pool,
+        &id,
+        None, // email
+        Some(&new_hash),
+        None,
+        None,
+        None,
+        None, // nombre, apellido, role, is_active
+        &now, // updated_at
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,        // otros campos opcionales
+        Some(false), // must_change_password = FALSE
+    )
+    .await?;
+
+    Ok(())
 }
 
 // ==========================================

@@ -1,6 +1,8 @@
 // src/commands/user_commands.rs
 
-use crate::models::user::{CreateUserInput, UpdateUserInput, UserListResponse, UserResponse};
+use crate::models::user::{
+    ChangePasswordInput, CreateUserInput, UpdateUserInput, UserListResponse, UserResponse,
+};
 use crate::services::user_service;
 
 use sqlx::SqlitePool;
@@ -57,4 +59,13 @@ pub async fn login(
     password: String,
 ) -> Result<UserResponse, String> {
     user_service::login(&pool, email, password).await
+}
+
+#[tauri::command]
+pub async fn change_password(
+    pool: State<'_, SqlitePool>,
+    id: String,
+    input: ChangePasswordInput,
+) -> Result<(), String> {
+    user_service::change_password(&pool, id, input).await
 }

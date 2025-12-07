@@ -257,7 +257,10 @@ pub async fn update(
     direccion: Option<&str>,
     contacto_emergencia_nombre: Option<&str>,
     contacto_emergencia_telefono: Option<&str>,
+    must_change_password: Option<bool>,
 ) -> Result<(), String> {
+    let must_change_password_int = must_change_password.map(|b| if b { 1 } else { 0 });
+
     sqlx::query(
         r#"UPDATE users SET
             email = COALESCE(?, email),
@@ -276,7 +279,8 @@ pub async fn update(
             telefono = COALESCE(?, telefono),
             direccion = COALESCE(?, direccion),
             contacto_emergencia_nombre = COALESCE(?, contacto_emergencia_nombre),
-            contacto_emergencia_telefono = COALESCE(?, contacto_emergencia_telefono)
+            contacto_emergencia_telefono = COALESCE(?, contacto_emergencia_telefono),
+            must_change_password = COALESCE(?, must_change_password)
         WHERE id = ?"#,
     )
     .bind(email)
@@ -297,6 +301,7 @@ pub async fn update(
     .bind(direccion)
     .bind(contacto_emergencia_nombre)
     .bind(contacto_emergencia_telefono)
+    .bind(must_change_password_int)
     .bind(id)
     .execute(pool)
     .await

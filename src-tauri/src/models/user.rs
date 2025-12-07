@@ -119,6 +119,13 @@ pub struct UpdateUserInput {
     pub contacto_emergencia_telefono: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChangePasswordInput {
+    pub current_password: Option<String>, // Requerido si no es admin reseteando a otro
+    pub new_password: String,
+}
+
 // ==========================================
 // DTOs DE SALIDA
 // ==========================================

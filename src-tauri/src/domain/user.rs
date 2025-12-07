@@ -72,6 +72,34 @@ pub fn validar_role(role_str: &str) -> Result<UserRole, String> {
     UserRole::from_str(role_str)
 }
 
+pub fn validar_cedula(cedula: &str) -> Result<(), String> {
+    let limpio = cedula.trim();
+    if limpio.is_empty() {
+        return Err("La cédula no puede estar vacía".to_string());
+    }
+    if limpio.len() > 20 {
+        return Err("La cédula no puede exceder 20 caracteres".to_string());
+    }
+    Ok(())
+}
+
+pub fn validar_opcional(
+    valor: Option<&String>,
+    max_len: usize,
+    nombre_campo: &str,
+) -> Result<(), String> {
+    if let Some(v) = valor {
+        let limpio = v.trim();
+        if !limpio.is_empty() && limpio.len() > max_len {
+            return Err(format!(
+                "El {} no puede exceder {} caracteres",
+                nombre_campo, max_len
+            ));
+        }
+    }
+    Ok(())
+}
+
 // ==========================================
 // VALIDACIONES DE INPUTS COMPLETOS
 // ==========================================
@@ -84,6 +112,12 @@ pub fn validar_create_input(input: &CreateUserInput) -> Result<(), String> {
     }
     validar_nombre(&input.nombre)?;
     validar_apellido(&input.apellido)?;
+    validar_cedula(&input.cedula)?;
+
+    validar_opcional(input.segundo_nombre.as_ref(), 50, "segundo nombre")?;
+    validar_opcional(input.segundo_apellido.as_ref(), 50, "segundo apellido")?;
+    validar_opcional(input.telefono.as_ref(), 20, "teléfono")?;
+    validar_opcional(input.direccion.as_ref(), 200, "dirección")?;
 
     if let Some(ref role) = input.role {
         validar_role(role)?;
