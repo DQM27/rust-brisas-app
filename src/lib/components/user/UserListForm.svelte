@@ -154,9 +154,16 @@
         createCustomButton.historial(() => {
           if (selected) onViewHistory?.(selected);
         }),
+        createCustomButton.eliminar(() => {
+          if (selected) onDeleteUser?.(selected);
+        }),
       ],
 
-      multiSelect: [],
+      multiSelect: [
+        createCustomButton.eliminar(() => {
+          if (selectedRows.length > 0) onDeleteMultiple?.(selectedRows);
+        }),
+      ],
     };
   });
 

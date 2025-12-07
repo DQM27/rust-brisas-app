@@ -131,23 +131,56 @@
   }
 
   function handleViewInfo(user: UserResponse) {
-    console.log("Ver información de:", user);
-    // TODO: Abrir panel lateral o modal
+    // Abrimos el panel de usuario en modo "lectura" o edición limitada (es la misma vista)
+    openTab({
+      componentKey: "user-profile",
+      title: `Perfil: ${user.nombre}`,
+      data: { userId: user.id },
+    });
   }
 
   function handleViewHistory(user: UserResponse) {
-    console.log("Ver historial de:", user);
-    // TODO: Abrir tab de historial
+    // TODO: Implementar vista de historial real
+    toast.error("Historial no implementado aún");
   }
 
-  function handleDeleteUser(user: UserResponse) {
-    console.log("Eliminar:", user);
-    // TODO: Confirmación y eliminar
+  async function handleDeleteUser(user: UserResponse) {
+    if (!confirm(`¿Estás seguro de eliminar al usuario ${user.nombre}?`))
+      return;
+
+    const toastId = toast.loading("Eliminando usuario...");
+    try {
+      const result = await userService.deleteUser(user.id);
+      if (result.ok) {
+        toast.success("Usuario eliminado", { id: toastId });
+        loadUsers(); // Recargar lista
+      } else {
+        toast.error(result.error, { id: toastId });
+      }
+    } catch (err: any) {
+      toast.error("Error al eliminar", { id: toastId });
+    }
   }
 
-  function handleDeleteMultiple(users: UserResponse[]) {
-    console.log("Eliminar múltiples:", users.length);
-    // TODO: Confirmación y eliminar
+  async function handleDeleteMultiple(usersToDelete: UserResponse[]) {
+    if (!confirm(`¿Estás seguro de eliminar ${usersToDelete.length} usuarios?`))
+      return;
+
+    const toastId = toast.loading("Eliminando usuarios...");
+
+    // Ejecutar en serie o paralelo según preferencia. Aquí serie para seguridad.
+    let errors = 0;
+    for (const u of usersToDelete) {
+      const res = await userService.deleteUser(u.id);
+      if (!res.ok) errors++;
+    }
+
+    if (errors === 0) {
+      toast.success("Usuarios eliminados", { id: toastId });
+    } else {
+      toast.error(`Eliminados con ${errors} errores`, { id: toastId });
+    }
+    loadUsers();
   }
 
   // --- Filtros ---

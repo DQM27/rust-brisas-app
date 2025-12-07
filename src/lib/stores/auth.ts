@@ -1,15 +1,15 @@
 // $lib/stores/auth.ts
 import { persisted } from 'svelte-persisted-store';
 import { resetTabs } from './tabs';
-import type { User } from '$lib/types/user';
+import type { UserResponse } from '$lib/types/user';
 
 export const isAuthenticated = persisted<boolean>('brisas-auth', false);
-export const currentUser = persisted<User | null>('brisas-user', null);
+export const currentUser = persisted<UserResponse | null>('brisas-user', null);
 
-export function login(user: User): void {
+export function login(user: UserResponse): void {
   isAuthenticated.set(true);
   currentUser.set(user);
-  
+
 }
 
 export function logout(): void {

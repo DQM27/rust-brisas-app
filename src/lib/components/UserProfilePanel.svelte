@@ -4,17 +4,30 @@
     UpdateUserSchema,
     type UpdateUserForm,
   } from "$lib/schemas/userSchema";
+  import { auth } from "$lib/api/auth";
+  import AdminConfirmModal from "$lib/components/AdminConfirmModal.svelte";
+  import { currentUser } from "$lib/stores/auth";
   import ChangePasswordPanel from "$lib/components/ChangePasswordPanel.svelte";
   import { toast } from "svelte-5-french-toast";
-  import { auth } from "$lib/api/auth";
+  import type { UserPermissions } from "$lib/logic/permissions";
 
   interface Props {
     user: UserResponse;
     loading?: boolean;
+    permissions: UserPermissions;
+    isSelf?: boolean;
     onUpdate: (data: UpdateUserForm) => Promise<void>;
+    onStatusChange?: (isActive: boolean) => Promise<void>;
   }
 
-  let { user, loading = false, onUpdate }: Props = $props();
+  let {
+    user,
+    loading = false,
+    permissions,
+    isSelf = false,
+    onUpdate,
+    onStatusChange,
+  }: Props = $props();
 
   // Estado del formulario de edición
   let formData = $state<UpdateUserForm>({
@@ -22,6 +35,7 @@
     apellido: user.apellido,
     email: user.email,
     cedula: user.cedula,
+    role: user.role, // Ahora relevante para admins
     segundoNombre: user.segundoNombre || "",
     segundoApellido: user.segundoApellido || "",
     telefono: user.telefono || "",
@@ -36,6 +50,9 @@
 
   let errors = $state<Record<string, string>>({});
   let isEditingPassword = $state(false);
+  let showAdminConfirm = $state(false);
+  let generatedPassword = $state<string | null>(null);
+  let showSuccessModal = $state(false);
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
@@ -64,6 +81,36 @@
     }
   }
 
+  function handleGafeteInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    let value = input.value;
+
+    // Normalizamos: dejamos solo números
+    const numbers = value.replace(/[^0-9]/g, "");
+
+    // Construimos el nuevo valor
+    const newValue = `K-${numbers}`;
+
+    // Actualizamos el estado
+    formData.numeroGafete = newValue;
+
+    // IMPORTANTE: Forzamos la actualización visual si Svelte no lo hace
+    if (input.value !== newValue) {
+      input.value = newValue;
+      // Ajustamos el cursor al final para mejor UX
+      input.selectionStart = input.selectionEnd = newValue.length;
+    }
+  }
+
+  function handleCedulaInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    // Permitir solo números y guiones
+    const newValue = input.value.replace(/[^0-9-]/g, "");
+    // @ts-ignore
+    formData.cedula = newValue;
+    if (input.value !== newValue) input.value = newValue;
+  }
+
   function handleNameInput(event: Event, field: keyof UpdateUserForm) {
     const input = event.target as HTMLInputElement;
     const newValue = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "");
@@ -77,7 +124,6 @@
   }
 
   function handlePhoneInput(event: Event, field: keyof UpdateUserForm) {
-    console.log("🔥 PHONE HANDLER EJECUTADO", field, event);
     const input = event.target as HTMLInputElement;
     let value = input.value.replace(/[^0-9]/g, ""); // Solo números
 
@@ -119,12 +165,52 @@
       input.value = formatted;
       input.setSelectionRange(formatted.length, formatted.length);
     }
-    console.log(
-      "✅ FIN HANDLER - input.value:",
-      input.value,
-      "formData:",
-      formData[field],
-    );
+  }
+
+  async function handleResetPasswordClick() {
+    showAdminConfirm = true;
+  }
+
+  async function onAdminConfirm(adminPass: string) {
+    showAdminConfirm = false;
+
+    // 1. Verify Admin Password
+    if (!$currentUser?.email) {
+      toast.error("Error de sesión");
+      return;
+    }
+
+    const toastId = toast.loading("Verificando permisos...");
+    try {
+      // Try to login to verify password (simple verification)
+      await auth.login($currentUser.email, adminPass);
+
+      // 2. Generate Random Password
+      const newPass =
+        Math.random().toString(36).slice(-8) +
+        Math.random().toString(36).slice(-2).toUpperCase(); // Alphanumeric mix
+
+      // 3. Update User
+      await onUpdate({
+        ...formData, // Send current form data to avoid partial updates if necessary, or just empty object if API supports partial
+        password: newPass,
+      });
+
+      generatedPassword = newPass;
+      showSuccessModal = true;
+
+      toast.success("Contraseña restablecida", { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error("Contraseña de administrador incorrecta", { id: toastId });
+    }
+  }
+
+  function copyNewPassword() {
+    if (generatedPassword) {
+      navigator.clipboard.writeText(generatedPassword);
+      toast.success("Copiado al portapapeles");
+    }
   }
 
   const inputClass =
@@ -138,19 +224,53 @@
 <div class="flex min-h-full flex-col items-center p-6">
   <div class="w-full max-w-4xl rounded-lg bg-surface-2 p-8 shadow-xl">
     <div class="flex items-center justify-between mb-8">
-      <h2 class="text-2xl font-bold text-primary">Mi Perfil</h2>
-      <div class="flex items-center gap-2">
-        <span
-          class="px-3 py-1 rounded-full bg-surface-3 text-sm font-medium text-tertiary border border-surface-tertiary capitalize"
-        >
-          {user.roleDisplay}
-        </span>
-        <span
-          class={`px-3 py-1 rounded-full text-sm font-medium border ${user.isActive ? "bg-green-900/20 text-green-400 border-green-900/30" : "bg-red-900/20 text-red-400 border-red-900/30"}`}
-        >
-          {user.isActive ? "Activo" : "Inactivo"}
-        </span>
+      <div class="flex flex-col">
+        <h2 class="text-2xl font-bold text-primary">
+          {isSelf ? "Mi Perfil" : "Edición de Perfil"}
+        </h2>
+        {#if !isSelf}
+          <p class="text-sm text-tertiary">
+            Editando a: <span class="font-medium text-primary"
+              >{user.nombre} {user.apellido}</span
+            >
+          </p>
+        {/if}
       </div>
+      {#if permissions.canEditSensitive}
+        <div class="flex items-center gap-2">
+          <!-- Role Selector -->
+          <select
+            bind:value={formData.role}
+            class="px-2 py-1 rounded bg-surface-1 border border-emphasis text-sm text-primary focus:border-accent focus:outline-none"
+          >
+            <option value="admin">Administrador</option>
+            <option value="supervisor">Supervisor</option>
+            <option value="guardia">Guardia</option>
+          </select>
+
+          <!-- Status Toggle -->
+          <button
+            type="button"
+            onclick={() => onStatusChange?.(!user.isActive)}
+            class={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${user.isActive ? "bg-green-900/20 text-green-400 border-green-900/30 hover:bg-red-900/20 hover:text-red-400 hover:border-red-900/30" : "bg-red-900/20 text-red-400 border-red-900/30 hover:bg-green-900/20 hover:text-green-400 hover:border-green-900/30"}`}
+          >
+            {user.isActive ? "Activo" : "Inactivo"}
+          </button>
+        </div>
+      {:else}
+        <div class="flex items-center gap-2">
+          <span
+            class="px-3 py-1 rounded-full bg-surface-3 text-sm font-medium text-tertiary border border-surface-tertiary capitalize"
+          >
+            {user.roleDisplay}
+          </span>
+          <span
+            class={`px-3 py-1 rounded-full text-sm font-medium border ${user.isActive ? "bg-green-900/20 text-green-400 border-green-900/30" : "bg-red-900/20 text-red-400 border-red-900/30"}`}
+          >
+            {user.isActive ? "Activo" : "Inactivo"}
+          </span>
+        </div>
+      {/if}
     </div>
 
     {#if isEditingPassword}
@@ -167,6 +287,18 @@
         <div>
           <h3 class={sectionTitleClass}>Información Personal</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="cedula" class={labelClass}>Cédula</label>
+              <input
+                id="cedula"
+                type="text"
+                value={formData.cedula}
+                oninput={handleCedulaInput}
+                class={inputClass}
+                disabled={loading}
+                placeholder="Ej: 001-000000-0000A"
+              />
+            </div>
             <div>
               <label for="email" class={labelClass}>Email</label>
               <input
@@ -311,31 +443,97 @@
           </div>
         </div>
 
+        <!-- Sección: Datos Laborales (Admin/Supervisor Only) -->
+        {#if permissions.canEditSensitive}
+          <div>
+            <h3 class={sectionTitleClass}>Datos Laborales</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="numeroGafete" class={labelClass}
+                  >Número de Gafete</label
+                >
+                <input
+                  id="numeroGafete"
+                  type="text"
+                  value={formData.numeroGafete}
+                  oninput={handleGafeteInput}
+                  class={inputClass}
+                  disabled={loading}
+                  placeholder="Ej: K-1234"
+                />
+              </div>
+              <div>
+                <label for="fechaInicioLabores" class={labelClass}
+                  >Fecha Inicio Labores</label
+                >
+                <input
+                  id="fechaInicioLabores"
+                  type="date"
+                  bind:value={formData.fechaInicioLabores}
+                  class={inputClass}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          </div>
+        {/if}
+
         <!-- Botones de Acción -->
         <div
           class="flex flex-col-reverse sm:flex-row items-center justify-between gap-4 pt-6 mt-6 border-t border-surface-tertiary"
         >
-          <button
-            type="button"
-            onclick={() => (isEditingPassword = true)}
-            class="text-accent hover:text-accent-hover font-medium text-sm flex items-center gap-2 transition-colors"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path
-                d="M7 11V7a5 5 0 0 1 10 0v4"
-              /></svg
+          {#if permissions.canChangePassword}
+            <!-- User changing their OWN password -->
+            <button
+              type="button"
+              onclick={() => (isEditingPassword = true)}
+              class="text-accent hover:text-accent-hover font-medium text-sm flex items-center gap-2 transition-colors"
             >
-            Cambiar Contraseña
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path
+                  d="M7 11V7a5 5 0 0 1 10 0v4"
+                /></svg
+              >
+              Cambiar Contraseña
+            </button>
+          {:else if permissions.canResetPassword}
+            <!-- Admin resetting user password -->
+            <button
+              type="button"
+              onclick={handleResetPasswordClick}
+              class="text-orange-400 hover:text-orange-300 font-medium text-sm flex items-center gap-2 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><path
+                  d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
+                /><path d="M3 3v5h5" /><path
+                  d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"
+                /><path d="M16 21h5v-5" /></svg
+              >
+              Restablecer Contraseña
+            </button>
+          {:else}
+            <div></div>
+            <!-- Spacer -->
+          {/if}
 
           <button
             type="submit"
@@ -349,3 +547,80 @@
     {/if}
   </div>
 </div>
+
+<!-- Modales -->
+<AdminConfirmModal
+  isOpen={showAdminConfirm}
+  onConfirm={onAdminConfirm}
+  onCancel={() => (showAdminConfirm = false)}
+/>
+
+{#if showSuccessModal && generatedPassword}
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+  >
+    <div
+      class="w-full max-w-md bg-surface-2 rounded-lg shadow-xl border border-green-500/30 p-6 animate-scale-in"
+    >
+      <div class="text-center">
+        <div
+          class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-500/20 text-green-400 mb-4"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
+          >
+        </div>
+        <h3 class="text-xl font-bold text-white mb-2">
+          Contraseña Restablecida
+        </h3>
+        <p class="text-gray-400 text-sm mb-6">
+          La contraseña ha sido generada exitosamente. Por favor compártela con
+          el usuario.
+        </p>
+
+        <div
+          class="flex items-center justify-center gap-3 bg-surface-1 p-3 rounded-lg border border-surface-tertiary mb-6"
+        >
+          <code class="text-lg font-mono font-bold text-accent tracking-wider"
+            >{generatedPassword}</code
+          >
+          <button
+            onclick={copyNewPassword}
+            class="p-2 text-gray-400 hover:text-white transition-colors"
+            title="Copiar"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path
+                d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
+              /></svg
+            >
+          </button>
+        </div>
+
+        <button
+          onclick={() => (showSuccessModal = false)}
+          class="w-full bg-surface-3 hover:bg-surface-4 text-white font-medium py-2 rounded transition-colors"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
