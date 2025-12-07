@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { generalSettings, type Season } from "$lib/stores/settingsStore";
+  import { currentSeason } from "$lib/utils/season";
 
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D | null;
@@ -22,21 +23,10 @@
   let particles: Particle[] = [];
   const COUNT = 100;
 
-  function getSeason(): Season {
-    const month = new Date().getMonth();
-    if (month >= 2 && month <= 4) return "spring";
-    if (month >= 5 && month <= 7) return "summer";
-    if (month >= 8 && month <= 10) return "autumn";
-    return "winter";
-  }
-
-  // Reactive season
-  $: currentSeason = $generalSettings.overrideSeason || getSeason();
-
   // Watch for season changes to reset particles
   let lastSeason: Season | null = null;
-  $: if (currentSeason !== lastSeason) {
-    lastSeason = currentSeason;
+  $: if ($currentSeason !== lastSeason) {
+    lastSeason = $currentSeason;
     if (canvas) createParticles(); // Only recreate if mounted
   }
 
@@ -68,7 +58,7 @@
       color: "#fff",
     };
 
-    switch (currentSeason) {
+    switch ($currentSeason) {
       case "winter": // Nieve
         p.radius = Math.random() * 3 + 2;
         p.speedY = Math.random() * 1 + 0.5;
@@ -125,7 +115,7 @@
 
     particles.forEach((p, i) => {
       // Logic
-      if (currentSeason === "summer") {
+      if ($currentSeason === "summer") {
         p.opacity += (Math.random() - 0.5) * 0.05;
         if (p.opacity < 0) p.opacity = 0;
         if (p.opacity > 1) p.opacity = 1;
@@ -136,7 +126,7 @@
       ctx!.fillStyle = p.color;
       ctx!.globalAlpha = p.opacity;
 
-      if (currentSeason === "winter" || currentSeason === "summer") {
+      if ($currentSeason === "winter" || $currentSeason === "summer") {
         ctx!.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx!.fill();
       } else {
@@ -159,7 +149,7 @@
       const outOfBounds =
         p.y > canvas.height + 10 || p.x > canvas.width + 10 || p.x < -10;
       const resetSummer =
-        currentSeason === "summer" && (outOfBounds || Math.random() < 0.001);
+        $currentSeason === "summer" && (outOfBounds || Math.random() < 0.001);
 
       if (outOfBounds || resetSummer) {
         resetParticle(i);
