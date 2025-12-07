@@ -122,6 +122,50 @@
     if (input.value !== newValue) input.value = newValue;
   }
 
+  function handlePhoneInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    let value = input.value.replace(/[^0-9]/g, "");
+
+    // Si está vacío, permitimos borrar todo
+    if (value === "") {
+      // @ts-ignore - Generic handler logic or specific field logic needed
+      // Since we can't easily map field name from event in this helper without passing it,
+      // we will use a closure or check id.
+      // Better: Make it generic or rely on input.id matching field name if possible?
+      // Actually, UserRegisterPanel uses specific bindings.
+      // Let's modify this to take the field name like handleNameInput.
+    }
+  }
+
+  // Refined generic phone handler
+  function handleGenericPhoneInput(event: Event, field: keyof CreateUserForm) {
+    const input = event.target as HTMLInputElement;
+    let value = input.value.replace(/[^0-9]/g, "");
+
+    // Limitar a máximo 11 dígitos (3+4+4)
+    if (value.length > 11) {
+      value = value.substring(0, 11);
+    }
+
+    if (value === "") {
+      // @ts-ignore
+      formData[field] = "";
+      return;
+    }
+
+    let formatted = "+";
+    if (value.length > 0) formatted += value.substring(0, 3);
+    if (value.length > 3) formatted += " " + value.substring(3, 7);
+    if (value.length > 7) formatted += "-" + value.substring(7, 11);
+
+    // @ts-ignore
+    formData[field] = formatted;
+
+    if (input.value !== formatted) {
+      input.value = formatted;
+    }
+  }
+
   const inputFieldClass =
     "w-full rounded border border-emphasis bg-surface-1 px-3 py-2 text-sm text-primary placeholder:text-tertiary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-60";
 
@@ -376,6 +420,90 @@
                 <option value="supervisor">Supervisor</option>
                 <option value="admin">Administrador</option>
               </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: CONTACTO -->
+        <div>
+          <h3 class="mb-3 text-lg font-medium text-accent">Contacto</h3>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <!-- Teléfono -->
+            <div class="space-y-2">
+              <label
+                for="telefono"
+                class="block text-sm font-medium text-primary">Teléfono</label
+              >
+              <input
+                id="telefono"
+                type="tel"
+                value={formData.telefono}
+                oninput={(e) => handleGenericPhoneInput(e, "telefono")}
+                placeholder="+505 8888-8888"
+                disabled={loading}
+                class={inputFieldClass}
+              />
+            </div>
+
+            <!-- Dirección -->
+            <div class="col-span-1 sm:col-span-2 space-y-2">
+              <label
+                for="direccion"
+                class="block text-sm font-medium text-primary">Dirección</label
+              >
+              <textarea
+                id="direccion"
+                bind:value={formData.direccion}
+                disabled={loading}
+                class={inputFieldClass}
+                rows="2"
+                placeholder="Dirección completa"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: EMERGENCIA -->
+        <div>
+          <h3 class="mb-3 text-lg font-medium text-accent">
+            Contacto de Emergencia
+          </h3>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <!-- Nombre Contacto -->
+            <div class="space-y-2">
+              <label
+                for="contactoEmergenciaNombre"
+                class="block text-sm font-medium text-primary"
+                >Nombre Contacto</label
+              >
+              <input
+                id="contactoEmergenciaNombre"
+                type="text"
+                value={formData.contactoEmergenciaNombre}
+                oninput={(e) => handleNameInput(e, "contactoEmergenciaNombre")}
+                disabled={loading}
+                class={inputFieldClass}
+                placeholder="Nombre del familiar"
+              />
+            </div>
+
+            <!-- Teléfono Contacto -->
+            <div class="space-y-2">
+              <label
+                for="contactoEmergenciaTelefono"
+                class="block text-sm font-medium text-primary"
+                >Teléfono Contacto</label
+              >
+              <input
+                id="contactoEmergenciaTelefono"
+                type="tel"
+                value={formData.contactoEmergenciaTelefono}
+                oninput={(e) =>
+                  handleGenericPhoneInput(e, "contactoEmergenciaTelefono")}
+                placeholder="+505 8888-8888"
+                disabled={loading}
+                class={inputFieldClass}
+              />
             </div>
           </div>
         </div>

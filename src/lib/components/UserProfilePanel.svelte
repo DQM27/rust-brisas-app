@@ -64,6 +64,61 @@
     }
   }
 
+  function handleNameInput(event: Event, field: keyof UpdateUserForm) {
+    const input = event.target as HTMLInputElement;
+    const newValue = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "");
+
+    // @ts-ignore
+    formData[field] = newValue;
+
+    if (input.value !== newValue) {
+      input.value = newValue;
+    }
+  }
+
+  function handlePhoneInput(event: Event, field: keyof UpdateUserForm) {
+    const input = event.target as HTMLInputElement;
+    let value = input.value.replace(/[^0-9]/g, ""); // Solo números
+
+    // Limitar a máximo 11 dígitos (3+4+4)
+    if (value.length > 11) {
+      value = value.substring(0, 11);
+    }
+
+    // Si está vacío, permitimos borrar todo
+    if (value === "") {
+      // @ts-ignore
+      formData[field] = "";
+      return;
+    }
+
+    // Aplicar máscara +XXX XXXX-XXXX
+    let formatted = "+";
+
+    // Primer bloque (3 dígitos)
+    if (value.length > 0) {
+      formatted += value.substring(0, 3);
+    }
+
+    // Segundo bloque (4 dígitos)
+    if (value.length > 3) {
+      formatted += " " + value.substring(3, 7);
+    }
+
+    // Tercer bloque (4 dígitos)
+    if (value.length > 7) {
+      formatted += "-" + value.substring(7, 11);
+    }
+
+    // @ts-ignore
+    formData[field] = formatted;
+
+    // Actualización visual forzada
+    if (input.value !== formatted) {
+      input.value = formatted;
+    }
+  }
+
   const inputClass =
     "w-full rounded border border-emphasis bg-surface-1 px-3 py-2 text-sm text-primary placeholder:text-tertiary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-60";
   const labelClass = "block text-sm font-medium text-primary mb-1";
@@ -133,7 +188,8 @@
               <input
                 id="nombre"
                 type="text"
-                bind:value={formData.nombre}
+                value={formData.nombre}
+                oninput={(e) => handleNameInput(e, "nombre")}
                 class={inputClass}
                 disabled={loading}
               />
@@ -146,7 +202,8 @@
               <input
                 id="segundoNombre"
                 type="text"
-                bind:value={formData.segundoNombre}
+                value={formData.segundoNombre}
+                oninput={(e) => handleNameInput(e, "segundoNombre")}
                 class={inputClass}
                 disabled={loading}
               />
@@ -157,7 +214,8 @@
               <input
                 id="apellido"
                 type="text"
-                bind:value={formData.apellido}
+                value={formData.apellido}
+                oninput={(e) => handleNameInput(e, "apellido")}
                 class={inputClass}
                 disabled={loading}
               />
@@ -172,7 +230,8 @@
               <input
                 id="segundoApellido"
                 type="text"
-                bind:value={formData.segundoApellido}
+                value={formData.segundoApellido}
+                oninput={(e) => handleNameInput(e, "segundoApellido")}
                 class={inputClass}
                 disabled={loading}
               />
@@ -189,10 +248,11 @@
               <input
                 id="telefono"
                 type="tel"
-                bind:value={formData.telefono}
+                value={formData.telefono}
+                oninput={(e) => handlePhoneInput(e, "telefono")}
                 class={inputClass}
                 disabled={loading}
-                placeholder="+506 8888-8888"
+                placeholder="+505 8888-8888"
               />
             </div>
             <div class="col-span-1 md:col-span-2">
@@ -219,7 +279,8 @@
               <input
                 id="contactoEmergenciaNombre"
                 type="text"
-                bind:value={formData.contactoEmergenciaNombre}
+                value={formData.contactoEmergenciaNombre}
+                oninput={(e) => handleNameInput(e, "contactoEmergenciaNombre")}
                 class={inputClass}
                 disabled={loading}
               />
@@ -231,9 +292,12 @@
               <input
                 id="contactoEmergenciaTelefono"
                 type="tel"
-                bind:value={formData.contactoEmergenciaTelefono}
+                value={formData.contactoEmergenciaTelefono}
+                oninput={(e) =>
+                  handlePhoneInput(e, "contactoEmergenciaTelefono")}
                 class={inputClass}
                 disabled={loading}
+                placeholder="+505 8888-8888"
               />
             </div>
           </div>
