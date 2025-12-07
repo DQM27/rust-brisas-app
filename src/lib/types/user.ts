@@ -95,4 +95,5 @@ export interface UpdateUserInput {
   direccion?: string;
   contactoEmergenciaNombre?: string;
   contactoEmergenciaTelefono?: string;
+  mustChangePassword?: boolean;
 }

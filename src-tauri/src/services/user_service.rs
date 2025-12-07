@@ -278,7 +278,7 @@ pub async fn update_user(
         input.direccion.as_deref(),
         input.contacto_emergencia_nombre.as_deref(),
         input.contacto_emergencia_telefono.as_deref(),
-        None, // must_change_password (usar change_password para esto)
+        input.must_change_password,
     )
     .await?;
 

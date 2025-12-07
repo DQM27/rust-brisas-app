@@ -16,7 +16,10 @@
     loading?: boolean;
     permissions: UserPermissions;
     isSelf?: boolean;
-    onUpdate: (data: UpdateUserForm) => Promise<void>;
+    onUpdate: (
+      data: UpdateUserForm,
+      options?: { closeTab?: boolean },
+    ) => Promise<void>;
     onStatusChange?: (isActive: boolean) => Promise<void>;
   }
 
@@ -74,7 +77,7 @@
     errors = {};
 
     try {
-      await onUpdate(result.data);
+      await onUpdate(result.data, { closeTab: true });
     } catch (err) {
       console.error(err);
     }
@@ -215,10 +218,14 @@
         Math.random().toString(36).slice(-2).toUpperCase(); // Alphanumeric mix
 
       // 3. Update User
-      await onUpdate({
-        ...formData, // Send current form data to avoid partial updates if necessary, or just empty object if API supports partial
-        password: newPass,
-      });
+      await onUpdate(
+        {
+          ...formData, // Send current form data to avoid partial updates if necessary, or just empty object if API supports partial
+          password: newPass,
+          mustChangePassword: true,
+        },
+        { closeTab: false },
+      );
 
       generatedPassword = newPass;
       showSuccessModal = true;

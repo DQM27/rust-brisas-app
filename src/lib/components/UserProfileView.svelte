@@ -70,7 +70,10 @@
     }
   }
 
-  async function handleUpdate(data: UpdateUserInput) {
+  async function handleUpdate(
+    data: UpdateUserInput,
+    options?: { closeTab?: boolean },
+  ) {
     if (!user) return;
 
     try {
@@ -88,8 +91,9 @@
 
       toast.success("Perfil actualizado");
 
-      // Close the tab after successful update as requested
-      if ($activeTabId) {
+      // Close the tab after successful update as requested, unless explicitly disabled (e.g. for password reset modal)
+      const shouldClose = options?.closeTab !== false; // Default to true if undefined
+      if (shouldClose && $activeTabId) {
         closeTab($activeTabId);
       }
     } catch (err: any) {

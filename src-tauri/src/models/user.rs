@@ -117,6 +117,7 @@ pub struct UpdateUserInput {
     pub direccion: Option<String>,
     pub contacto_emergencia_nombre: Option<String>,
     pub contacto_emergencia_telefono: Option<String>,
+    pub must_change_password: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
