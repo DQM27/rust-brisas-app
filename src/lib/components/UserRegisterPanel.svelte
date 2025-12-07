@@ -137,6 +137,31 @@
     }
   }
 
+  function handlePhoneKeydown(event: KeyboardEvent) {
+    if (
+      [
+        "Backspace",
+        "Delete",
+        "Tab",
+        "Escape",
+        "Enter",
+        "ArrowLeft",
+        "ArrowRight",
+        "Home",
+        "End",
+      ].includes(event.key)
+    ) {
+      return;
+    }
+    // Permitir Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+    if (event.ctrlKey || event.metaKey) {
+      return;
+    }
+    if (!/^[0-9]$/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
   // Refined generic phone handler
   function handleGenericPhoneInput(event: Event, field: keyof CreateUserForm) {
     const input = event.target as HTMLInputElement;
@@ -440,6 +465,7 @@
                 type="tel"
                 value={formData.telefono}
                 oninput={(e) => handleGenericPhoneInput(e, "telefono")}
+                onkeydown={handlePhoneKeydown}
                 placeholder="+505 8888-8888"
                 disabled={loading}
                 class={inputFieldClass}
@@ -501,6 +527,7 @@
                 value={formData.contactoEmergenciaTelefono}
                 oninput={(e) =>
                   handleGenericPhoneInput(e, "contactoEmergenciaTelefono")}
+                onkeydown={handlePhoneKeydown}
                 placeholder="+505 8888-8888"
                 disabled={loading}
                 class={inputFieldClass}

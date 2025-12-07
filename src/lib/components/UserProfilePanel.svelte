@@ -123,6 +123,31 @@
     }
   }
 
+  function handlePhoneKeydown(event: KeyboardEvent) {
+    if (
+      [
+        "Backspace",
+        "Delete",
+        "Tab",
+        "Escape",
+        "Enter",
+        "ArrowLeft",
+        "ArrowRight",
+        "Home",
+        "End",
+      ].includes(event.key)
+    ) {
+      return;
+    }
+    // Permitir Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+    if (event.ctrlKey || event.metaKey) {
+      return;
+    }
+    if (!/^[0-9]$/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
   function handlePhoneInput(event: Event, field: keyof UpdateUserForm) {
     const input = event.target as HTMLInputElement;
     let value = input.value.replace(/[^0-9]/g, ""); // Solo números
@@ -390,6 +415,7 @@
                 type="tel"
                 value={formData.telefono}
                 oninput={(e) => handlePhoneInput(e, "telefono")}
+                onkeydown={handlePhoneKeydown}
                 class={inputClass}
                 disabled={loading}
                 placeholder="+505 8888-8888"
@@ -435,6 +461,7 @@
                 value={formData.contactoEmergenciaTelefono}
                 oninput={(e) =>
                   handlePhoneInput(e, "contactoEmergenciaTelefono")}
+                onkeydown={handlePhoneKeydown}
                 class={inputClass}
                 disabled={loading}
                 placeholder="+505 8888-8888"
