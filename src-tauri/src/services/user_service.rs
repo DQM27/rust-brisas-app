@@ -25,8 +25,15 @@ use uuid::Uuid;
 
 pub async fn create_user(
     pool: &SqlitePool,
-    input: CreateUserInput,
+    mut input: CreateUserInput,
 ) -> Result<UserResponse, String> {
+    // 0. Normalizar input: Si password viene vacía, tratarla como None (para generar auto)
+    if let Some(ref p) = input.password {
+        if p.trim().is_empty() {
+            input.password = None;
+        }
+    }
+
     // 1. Validar input
     domain::validar_create_input(&input)?;
 

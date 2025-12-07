@@ -31,8 +31,8 @@ async fn seed_admin_user(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Er
 
     sqlx::query(
         r#"INSERT INTO users 
-           (id, email, password_hash, nombre, apellido, role, is_active, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+           (id, email, password_hash, nombre, apellido, role, is_active, created_at, updated_at, cedula, must_change_password)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
     )
     .bind(&id)
     .bind("daniel.bleach1@gmail.com")
@@ -43,6 +43,8 @@ async fn seed_admin_user(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Er
     .bind(1)
     .bind(&now)
     .bind(&now)
+    .bind("155824395105") // Cedula
+    .bind(0) // must_change_password (false)
     .execute(pool)
     .await?;
 

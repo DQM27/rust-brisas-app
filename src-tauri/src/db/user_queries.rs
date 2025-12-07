@@ -15,6 +15,7 @@ use sqlx::{Row, SqlitePool};
 pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<User, String> {
     let row = sqlx::query(
         "SELECT id, email, nombre, apellido, role, is_active, created_at, updated_at,
+                cedula, segundo_nombre, segundo_apellido,
                 fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
                 contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password
          FROM users WHERE id = ?",
@@ -57,6 +58,7 @@ pub async fn find_by_email_with_password(
 ) -> Result<(User, String), String> {
     let row = sqlx::query(
         "SELECT id, email, nombre, apellido, role, is_active, created_at, updated_at, password_hash,
+                cedula, segundo_nombre, segundo_apellido,
                 fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
                 contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password
          FROM users WHERE email = ?"
@@ -100,6 +102,7 @@ pub async fn find_by_email_with_password(
 pub async fn find_all(pool: &SqlitePool) -> Result<Vec<User>, String> {
     let rows = sqlx::query(
         "SELECT id, email, nombre, apellido, role, is_active, created_at, updated_at,
+                cedula, segundo_nombre, segundo_apellido,
                 fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
                 contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password
          FROM users ORDER BY created_at DESC",

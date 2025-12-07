@@ -6,7 +6,7 @@ export type ValidationResult =
 
 export function validateUserInput(
   email: string,
-  password: string,
+  password: string | undefined,
   nombre: string,
   apellido: string
 ): ValidationResult {
@@ -19,9 +19,9 @@ export function validateUserInput(
   if (!e.includes('@')) return { ok: false, message: 'Email inválido.' };
   if (e.length > 100) return { ok: false, message: 'El email no puede exceder 100 caracteres.' };
 
-  if (!p) return { ok: false, message: 'La contraseña no puede estar vacía.' };
-  if (p.length < 6) return { ok: false, message: 'La contraseña debe tener al menos 6 caracteres.' };
-  if (p.length > 100) return { ok: false, message: 'La contraseña no puede exceder 100 caracteres.' };
+  // Password es opcional, pero si se envía, validamos longitud
+  if (p && p.length < 6) return { ok: false, message: 'La contraseña debe tener al menos 6 caracteres.' };
+  if (p && p.length > 100) return { ok: false, message: 'La contraseña no puede exceder 100 caracteres.' };
 
   if (!n) return { ok: false, message: 'El nombre no puede estar vacío.' };
   if (n.length > 50) return { ok: false, message: 'El nombre no puede exceder 50 caracteres.' };

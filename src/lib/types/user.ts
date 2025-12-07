@@ -23,12 +23,26 @@ export interface UserResponse {
   email: string;
   nombre: string;
   apellido: string;
-  nombreCompleto: string;      
+  nombreCompleto: string;
   role: UserRole;
-  roleDisplay: string;          
+  roleDisplay: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+
+  // Nuevos campos opcionales
+  cedula: string;
+  segundoNombre?: string | null;
+  segundoApellido?: string | null;
+  fechaInicioLabores?: string | null;
+  numeroGafete?: string | null;
+  fechaNacimiento?: string | null;
+  telefono?: string | null;
+  direccion?: string | null;
+  contactoEmergenciaNombre?: string | null;
+  contactoEmergenciaTelefono?: string | null;
+  temporaryPassword?: string | null;
+  mustChangePassword: boolean;
 }
 
 export interface UserListResponse {
@@ -44,10 +58,19 @@ export interface UserListResponse {
 
 export interface CreateUserInput {
   email: string;
-  password: string;
+  password?: string;
   nombre: string;
   apellido: string;
-  role?: string;  
+  role?: string;
+
+  // Nuevos campos
+  fechaInicioLabores?: string;
+  numeroGafete?: string;
+  fechaNacimiento?: string;
+  telefono?: string;
+  direccion?: string;
+  contactoEmergenciaNombre?: string;
+  contactoEmergenciaTelefono?: string;
 }
 
 export interface UpdateUserInput {
@@ -57,4 +80,13 @@ export interface UpdateUserInput {
   apellido?: string;
   role?: string;
   isActive?: boolean;
+
+  // Nuevos campos
+  fechaInicioLabores?: string;
+  numeroGafete?: string;
+  fechaNacimiento?: string;
+  telefono?: string;
+  direccion?: string;
+  contactoEmergenciaNombre?: string;
+  contactoEmergenciaTelefono?: string;
 }
