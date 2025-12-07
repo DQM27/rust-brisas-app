@@ -55,6 +55,14 @@
       delay: 200,
     },
   ];
+  // Lógica de saludo dinámico
+  $: currentHour = new Date().getHours();
+  $: greeting =
+    currentHour >= 6 && currentHour < 12
+      ? "Buenos días"
+      : currentHour >= 12 && currentHour < 20
+        ? "Buenas tardes"
+        : "Buenas noches";
 </script>
 
 <div
@@ -67,7 +75,7 @@
       <h1
         class="mb-3 bg-linear-to-r from-white via-blue-100 to-white bg-clip-text text-5xl font-bold tracking-tight text-transparent"
       >
-        Hola, {$currentUser?.nombre || "Usuario"}
+        {greeting}, {$currentUser?.nombre || "Usuario"}
       </h1>
       <p class="text-lg text-secondary">
         Brisas App - Sistema Integral de Control de Acceso y Seguridad
