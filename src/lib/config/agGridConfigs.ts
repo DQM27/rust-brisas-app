@@ -413,12 +413,20 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
   'users-list': {
     gridId: 'users-list',
     availableButtons: {
-      default: COMMON_DEFAULT_BUTTONS,
-      singleSelect: COMMON_SINGLE_SELECT_BUTTONS,
-      multiSelect: COMMON_MULTI_SELECT_BUTTONS
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b => b.id === 'toggle-filters')
+      ], // Solo toggle-filters, igual que contratistas
+      singleSelect: [
+        ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
+        // Los custom buttons se agregan desde el componente
+      ],
+      multiSelect: [
+        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))
+      ]
     },
     showColumnSelector: true,
-    showThemeSelector: true
+    showThemeSelector: true,
+    enableGrouping: false
   }
 };
 

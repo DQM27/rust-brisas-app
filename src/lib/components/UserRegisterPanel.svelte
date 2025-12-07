@@ -163,6 +163,7 @@
 
     if (input.value !== formatted) {
       input.value = formatted;
+      input.setSelectionRange(formatted.length, formatted.length);
     }
   }
 

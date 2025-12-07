@@ -77,6 +77,7 @@
   }
 
   function handlePhoneInput(event: Event, field: keyof UpdateUserForm) {
+    console.log("🔥 PHONE HANDLER EJECUTADO", field, event);
     const input = event.target as HTMLInputElement;
     let value = input.value.replace(/[^0-9]/g, ""); // Solo números
 
@@ -116,7 +117,14 @@
     // Actualización visual forzada
     if (input.value !== formatted) {
       input.value = formatted;
+      input.setSelectionRange(formatted.length, formatted.length);
     }
+    console.log(
+      "✅ FIN HANDLER - input.value:",
+      input.value,
+      "formData:",
+      formData[field],
+    );
   }
 
   const inputClass =

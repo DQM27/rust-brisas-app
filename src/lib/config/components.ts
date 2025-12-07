@@ -8,6 +8,7 @@ import type { ComponentKey } from '$lib/types/component';
 import WelcomePanel from '$lib/components/WelcomePanel.svelte';
 import RegisterUserView from '$lib/components/RegisterUserView.svelte';
 import UserProfileView from '$lib/components/UserProfileView.svelte';
+import UserListView from '$lib/components/user/UserListView.svelte';
 
 import ContratistaView from '$lib/components/contratista/ContratistaView.svelte';
 import ContratistaListView from '$lib/components/contratista/ContratistaListView.svelte';
@@ -24,7 +25,7 @@ import IngresoListView from '$lib/components/ingreso/IngresoListView.svelte';
  */
 export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'welcome': WelcomePanel,
-  'user-list': WelcomePanel,
+  'user-list': UserListView,
   'user-editor': WelcomePanel,
   'user-profile': UserProfileView,
   'dashboard': WelcomePanel,
