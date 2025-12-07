@@ -14,6 +14,7 @@ macro_rules! register_handlers {
             commands::user_commands::update_user,
             commands::user_commands::delete_user,
             commands::user_commands::login,
+            commands::user_commands::change_password,
             // Comandos de empresa
             commands::empresa_commands::create_empresa,
             commands::empresa_commands::get_empresa_by_id,

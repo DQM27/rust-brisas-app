@@ -2,7 +2,7 @@
 <script lang="ts">
   import { activeView } from "$lib/stores/ui";
   import { isAuthenticated, logout, currentUser } from "$lib/stores/auth";
-  import { resetTabs } from "$lib/stores/tabs";
+  import { resetTabs, openTab } from "$lib/stores/tabs";
   import { themeStore } from "$lib/stores/themeStore";
 
   // Importar iconos directamente
@@ -94,6 +94,14 @@
     logout();
   }
 
+  function openProfile() {
+    openTab({
+      componentKey: "user-profile",
+      title: "Mi Perfil",
+      id: "user-profile-tab",
+    });
+  }
+
   // Derivar iniciales del usuario actual
   $: userInitials = $currentUser
     ? `${$currentUser.nombre?.[0] || ""}${$currentUser.apellido?.[0] || ""}`.toUpperCase()
@@ -117,7 +125,7 @@
 
     <div class="sidebar-bottom-actions">
       <!-- User Avatar -->
-      <button class="user-avatar" title={userName}>
+      <button class="user-avatar" title={userName} on:click={openProfile}>
         {userInitials}
       </button>
 

@@ -64,6 +64,9 @@ export interface CreateUserInput {
   role?: string;
 
   // Nuevos campos
+  cedula: string;
+  segundoNombre?: string;
+  segundoApellido?: string;
   fechaInicioLabores?: string;
   numeroGafete?: string;
   fechaNacimiento?: string;
@@ -82,6 +85,9 @@ export interface UpdateUserInput {
   isActive?: boolean;
 
   // Nuevos campos
+  cedula?: string;
+  segundoNombre?: string;
+  segundoApellido?: string;
   fechaInicioLabores?: string;
   numeroGafete?: string;
   fechaNacimiento?: string;

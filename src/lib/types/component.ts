@@ -10,6 +10,6 @@ export type ComponentKey =
   | 'lista-negra'
   | 'lista-negra-list'
   | 'blacklist-import'
-
+  | 'user-profile'
   | 'gafete-list'
   | 'ingreso-list';

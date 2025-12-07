@@ -37,18 +37,18 @@ export const CreateUserSchema = z.object({
     password: z.union([passwordSchema, z.literal(''), z.undefined()]).optional(),
     nombre: stringRequerido(50, 'Nombre'),
     apellido: stringRequerido(50, 'Apellido'),
-    segundo_nombre: stringOpcional(50, 'Segundo nombre'),
-    segundo_apellido: stringOpcional(50, 'Segundo apellido'),
+    segundoNombre: stringOpcional(50, 'Segundo nombre'),
+    segundoApellido: stringOpcional(50, 'Segundo apellido'),
     role: z.enum(['admin', 'supervisor', 'guardia']),
 
     // Campos adicionales opcionales
     telefono: stringOpcional(20, 'Teléfono'),
     direccion: stringOpcional(200, 'Dirección'),
-    fecha_inicio_labores: z.string().optional(),
-    numero_gafete: stringOpcional(50, 'Número de gafete'),
-    fecha_nacimiento: z.string().optional(),
-    contacto_emergencia_nombre: stringOpcional(100, 'Nombre contacto emergencia'),
-    contacto_emergencia_telefono: stringOpcional(20, 'Teléfono contacto emergencia'),
+    fechaInicioLabores: z.string().optional(),
+    numeroGafete: stringOpcional(50, 'Número de gafete'),
+    fechaNacimiento: z.string().optional(),
+    contactoEmergenciaNombre: stringOpcional(100, 'Nombre contacto emergencia'),
+    contactoEmergenciaTelefono: stringOpcional(20, 'Teléfono contacto emergencia'),
 });
 
 export const UpdateUserSchema = CreateUserSchema.partial().extend({
@@ -57,15 +57,21 @@ export const UpdateUserSchema = CreateUserSchema.partial().extend({
 });
 
 export const ChangePasswordSchema = z.object({
-    current_password: z.string().optional(), // Requerido salvo admin reset
-    new_password: passwordSchema,
-    confirm_password: z.string()
-}).refine((data) => data.new_password === data.confirm_password, {
+    currentPassword: z.string().optional(), // Requerido salvo admin reset
+    newPassword: passwordSchema,
+    confirmPassword: z.string()
+}).refine((data) => data.newPassword === data.confirmPassword, {
     message: "Las contraseñas no coinciden",
-    path: ["confirm_password"],
+    path: ["confirmPassword"],
+});
+
+export const LoginSchema = z.object({
+    email: emailSchema,
+    password: z.string().min(1, 'La contraseña es requerida') // Para login solo validamos que exista
 });
 
 // Tipos inferidos
 export type CreateUserForm = z.infer<typeof CreateUserSchema>;
 export type UpdateUserForm = z.infer<typeof UpdateUserSchema>;
 export type ChangePasswordForm = z.infer<typeof ChangePasswordSchema>;
+export type LoginForm = z.infer<typeof LoginSchema>;

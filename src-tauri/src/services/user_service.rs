@@ -27,12 +27,31 @@ pub async fn create_user(
     pool: &SqlitePool,
     mut input: CreateUserInput,
 ) -> Result<UserResponse, String> {
-    // 0. Normalizar input: Si password viene vacía, tratarla como None (para generar auto)
+    // 0. Normalizar input: Si campos opcionales vienen vacíos, convertirlos a None
     if let Some(ref p) = input.password {
         if p.trim().is_empty() {
             input.password = None;
         }
     }
+
+    // Función helper interna para limpiar opciones
+    let clean_opt = |opt: &mut Option<String>| {
+        if let Some(s) = opt {
+            if s.trim().is_empty() {
+                *opt = None;
+            }
+        }
+    };
+
+    clean_opt(&mut input.segundo_nombre);
+    clean_opt(&mut input.segundo_apellido);
+    clean_opt(&mut input.fecha_inicio_labores);
+    clean_opt(&mut input.numero_gafete);
+    clean_opt(&mut input.fecha_nacimiento);
+    clean_opt(&mut input.telefono);
+    clean_opt(&mut input.direccion);
+    clean_opt(&mut input.contacto_emergencia_nombre);
+    clean_opt(&mut input.contacto_emergencia_telefono);
 
     // 1. Validar input
     domain::validar_create_input(&input)?;
@@ -165,8 +184,29 @@ pub async fn get_all_users(pool: &SqlitePool) -> Result<UserListResponse, String
 pub async fn update_user(
     pool: &SqlitePool,
     id: String,
-    input: UpdateUserInput,
+    mut input: UpdateUserInput,
 ) -> Result<UserResponse, String> {
+    // Función helper interna para limpiar opciones
+    let clean_opt = |opt: &mut Option<String>| {
+        if let Some(s) = opt {
+            if s.trim().is_empty() {
+                *opt = None;
+            }
+        }
+    };
+
+    clean_opt(&mut input.segundo_nombre);
+    clean_opt(&mut input.segundo_apellido);
+    clean_opt(&mut input.fecha_inicio_labores);
+    clean_opt(&mut input.numero_gafete);
+    clean_opt(&mut input.fecha_nacimiento);
+    clean_opt(&mut input.telefono);
+    clean_opt(&mut input.direccion);
+    clean_opt(&mut input.contacto_emergencia_nombre);
+    clean_opt(&mut input.contacto_emergencia_telefono);
+    clean_opt(&mut input.email);
+    clean_opt(&mut input.password);
+
     // 1. Validar input
     domain::validar_update_input(&input)?;
 

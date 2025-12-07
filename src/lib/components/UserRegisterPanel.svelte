@@ -25,18 +25,18 @@
     cedula: "",
     nombre: "",
     apellido: "",
-    segundo_nombre: "",
-    segundo_apellido: "",
+    segundoNombre: "",
+    segundoApellido: "",
     email: "",
     password: "", // Opcional
     role: "guardia",
     telefono: "",
     direccion: "",
-    fecha_inicio_labores: "",
-    numero_gafete: "",
-    fecha_nacimiento: "",
-    contacto_emergencia_nombre: "",
-    contacto_emergencia_telefono: "",
+    fechaInicioLabores: "",
+    numeroGafete: "",
+    fechaNacimiento: "",
+    contactoEmergenciaNombre: "",
+    contactoEmergenciaTelefono: "",
   });
 
   let errors = $state<Record<string, string>>({});
@@ -201,6 +201,23 @@
               {#if errors.nombre}<p class={errorClass}>{errors.nombre}</p>{/if}
             </div>
 
+            <!-- Segundo Nombre -->
+            <div class="space-y-2">
+              <label
+                for="segundoNombre"
+                class="block text-sm font-medium text-primary"
+                >Segundo Nombre</label
+              >
+              <input
+                id="segundoNombre"
+                type="text"
+                bind:value={formData.segundoNombre}
+                placeholder="Ej: Carlos"
+                disabled={loading}
+                class={inputFieldClass}
+              />
+            </div>
+
             <!-- Apellido -->
             <div class="space-y-2">
               <label
@@ -219,6 +236,23 @@
               {#if errors.apellido}<p class={errorClass}>
                   {errors.apellido}
                 </p>{/if}
+            </div>
+
+            <!-- Segundo Apellido -->
+            <div class="space-y-2">
+              <label
+                for="segundoApellido"
+                class="block text-sm font-medium text-primary"
+                >Segundo Apellido</label
+              >
+              <input
+                id="segundoApellido"
+                type="text"
+                bind:value={formData.segundoApellido}
+                placeholder="Ej: González"
+                disabled={loading}
+                class={inputFieldClass}
+              />
             </div>
           </div>
         </div>
