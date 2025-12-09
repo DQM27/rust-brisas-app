@@ -3,6 +3,10 @@
   import { generalSettings, type Season } from "$lib/stores/settingsStore";
   import { currentSeason } from "$lib/utils/season";
 
+  // Time logic for fireflies
+  $: effectiveHour = $generalSettings.overrideHour ?? new Date().getHours();
+  $: isNight = effectiveHour >= 18 || effectiveHour < 5;
+
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D | null;
   let animationFrameId: number;
@@ -114,8 +118,14 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     particles.forEach((p, i) => {
-      // Logic
+      // Special Summer Logic (Fireflies)
       if ($currentSeason === "summer") {
+        if (!isNight) {
+          // If it's summer but NOT night, don't draw fireflies
+          return;
+        }
+
+        // Firefly behavior: flicker and slow movement
         p.opacity += (Math.random() - 0.5) * 0.05;
         if (p.opacity < 0) p.opacity = 0;
         if (p.opacity > 1) p.opacity = 1;

@@ -27,10 +27,10 @@
   // Determine current palette state
   $: effectiveHour = $generalSettings.overrideHour ?? new Date().getHours();
 
-  $: isNight = effectiveHour >= 19 || effectiveHour < 5;
-  $: isDawn = effectiveHour >= 5 && effectiveHour < 7;
-  $: isDay = effectiveHour >= 7 && effectiveHour < 17;
-  $: isDusk = effectiveHour >= 17 && effectiveHour < 19;
+  $: isNight = effectiveHour >= 18 || effectiveHour < 5;
+  $: isDawn = effectiveHour >= 5 && effectiveHour < 6;
+  $: isDay = effectiveHour >= 6 && effectiveHour < 17;
+  $: isDusk = effectiveHour >= 17 && effectiveHour < 18;
 
   $: currentSky = isNight
     ? SKY_PALETTES.night
