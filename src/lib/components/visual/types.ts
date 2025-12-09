@@ -40,6 +40,14 @@ export interface RenderState {
     twinkleSpeed: number;
     shootingStarFrequency: number;
     shootingStarSpeed: number;
+    meteorShowerEnabled: boolean;
+  };
+  cloudSettings?: {
+    style: 'cartoon' | 'soft';
+    opacity: number;
+    count: number;
+    windSpeed: number;
+    turbulence: number;
   };
 }
 
@@ -122,6 +130,7 @@ export interface CelestialSystemState {
 export interface Cloud {
   x: number;              // can go beyond 0-100 for entering/exiting
   y: number;              // percentage
+  baseY: number;          // For turbulence calculation
   scale: number;          // size multiplier
   speed: number;          // horizontal movement speed
   opacity: number;

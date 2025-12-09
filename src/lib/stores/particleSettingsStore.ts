@@ -28,6 +28,14 @@ export interface ParticleSettings {
     starTwinkleSpeed: number; // 0 to 3
     shootingStarFrequency: number; // 0 to 5
     shootingStarSpeed: number; // 0.5 to 3
+    meteorShowerEnabled: boolean;
+
+    // Cloud settings
+    cloudStyle: 'cartoon' | 'soft';
+    cloudOpacity: number; // 0.1 to 1.0
+    cloudCount: number; // 3 to 10
+    cloudWindSpeed: number; // 0.0 to 3.0
+    cloudTurbulence: number; // 0.0 to 1.0
 }
 
 export const DEFAULT_PARTICLE_SETTINGS: ParticleSettings = {
@@ -55,6 +63,13 @@ export const DEFAULT_PARTICLE_SETTINGS: ParticleSettings = {
     starTwinkleSpeed: 1.0,
     shootingStarFrequency: 1.0,
     shootingStarSpeed: 1.0,
+    meteorShowerEnabled: false,
+
+    cloudStyle: 'cartoon',
+    cloudOpacity: 0.9,
+    cloudCount: 5,
+    cloudWindSpeed: 1.0,
+    cloudTurbulence: 0.0,
 };
 
 function createParticleSettingsStore() {
@@ -87,6 +102,14 @@ function createParticleSettingsStore() {
         updateStarTwinkle: (m: number) => update(s => ({ ...s, starTwinkleSpeed: m })),
         updateShootingStarFreq: (m: number) => update(s => ({ ...s, shootingStarFrequency: m })),
         updateShootingStarSpeed: (m: number) => update(s => ({ ...s, shootingStarSpeed: m })),
+        toggleMeteorShower: () => update(s => ({ ...s, meteorShowerEnabled: !s.meteorShowerEnabled })),
+
+        // Cloud updates
+        updateCloudStyle: (style: 'cartoon' | 'soft') => update(s => ({ ...s, cloudStyle: style })),
+        updateCloudOpacity: (opacity: number) => update(s => ({ ...s, cloudOpacity: opacity })),
+        updateCloudCount: (count: number) => update(s => ({ ...s, cloudCount: count })),
+        updateCloudWindSpeed: (speed: number) => update(s => ({ ...s, cloudWindSpeed: speed })),
+        updateCloudTurbulence: (turb: number) => update(s => ({ ...s, cloudTurbulence: turb })),
     };
 }
 

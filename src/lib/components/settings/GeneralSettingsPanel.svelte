@@ -26,6 +26,7 @@
   let showWeatherCustomization = false;
   let showCelestialCustomization = false;
   let showStarCustomization = false;
+  let showCloudCustomization = false;
 
   // ==========================================================================
   // Toggle Component (reusable)
@@ -131,6 +132,22 @@
           $generalSettings.showClouds,
           () => generalSettings.toggleClouds(),
         )}
+
+        {#if $generalSettings.showClouds}
+          <div class="pr-4 pt-1 pb-4" transition:slide={{ duration: 200 }}>
+            <button
+              class="flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600 hover:underline transition-colors w-fit ml-1"
+              onclick={() => (showCloudCustomization = !showCloudCustomization)}
+            >
+              <Sliders size={14} />
+              {showCloudCustomization ? "Ocultar" : "Personalizar"}
+            </button>
+
+            {#if showCloudCustomization}
+              <VisualCustomizationPanel embedded={true} mode="clouds" />
+            {/if}
+          </div>
+        {/if}
 
         {@render settingRow(
           Star,

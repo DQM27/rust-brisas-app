@@ -183,6 +183,14 @@
         twinkleSpeed: $particleSettings.starTwinkleSpeed,
         shootingStarFrequency: $particleSettings.shootingStarFrequency,
         shootingStarSpeed: $particleSettings.shootingStarSpeed,
+        meteorShowerEnabled: $particleSettings.meteorShowerEnabled,
+      },
+      cloudSettings: {
+        style: $particleSettings.cloudStyle,
+        opacity: $particleSettings.cloudOpacity,
+        count: $particleSettings.cloudCount,
+        windSpeed: $particleSettings.cloudWindSpeed,
+        turbulence: $particleSettings.cloudTurbulence,
       },
     };
 

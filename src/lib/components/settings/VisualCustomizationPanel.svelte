@@ -10,12 +10,16 @@
     CloudRain,
     Sun,
     Moon,
+    Cloud,
+    Wind,
+    Waves,
   } from "lucide-svelte";
   import { particleSettings } from "$lib/stores/particleSettingsStore";
 
   export let onClose: () => void = () => {};
   export let embedded = false;
-  export let mode: "bokeh" | "weather" | "celestial" | "stars" = "bokeh"; // New prop
+  export let mode: "bokeh" | "weather" | "celestial" | "stars" | "clouds" =
+    "bokeh"; // New prop
 
   // Helper to format percentage
   function pct(value: number): string {
@@ -422,6 +426,39 @@
         </h3>
       </div>
 
+      <!-- Meteor Shower Toggle -->
+      <div
+        class="control-group bg-yellow-400/10 border border-yellow-400/20 p-3 rounded-lg mb-4"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <Zap size={16} class="text-yellow-400" />
+            <span class="text-sm font-medium text-yellow-100"
+              >Lluvia de Meteoros</span
+            >
+          </div>
+          <button
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-gray-900
+              {$particleSettings.meteorShowerEnabled
+              ? 'bg-yellow-400'
+              : 'bg-surface-3'}"
+            on:click={particleSettings.toggleMeteorShower}
+          >
+            <span
+              class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                {$particleSettings.meteorShowerEnabled
+                ? 'translate-x-6'
+                : 'translate-x-1'}"
+            />
+          </button>
+        </div>
+        {#if $particleSettings.meteorShowerEnabled}
+          <p class="text-xs text-yellow-200/70 mt-2 ml-1" transition:slide>
+            ¡Prepárate para el espectáculo! (Frecuencia x100)
+          </p>
+        {/if}
+      </div>
+
       <!-- Star Count -->
       <div class="control-group">
         <div class="flex justify-between items-center mb-2">
@@ -511,6 +548,135 @@
               $particleSettings.shootingStarSpeed,
             )}
           class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-yellow-200"
+        />
+      </div>
+    </div>
+  {:else if mode === "clouds"}
+    <!-- Section: Cloud Customization -->
+    <div class="space-y-4">
+      <div class="flex items-center gap-2 mb-2">
+        <Cloud size={16} class="text-blue-200" />
+        <h3 class="text-sm font-semibold text-primary uppercase tracking-wider">
+          Nubes
+        </h3>
+      </div>
+
+      <!-- Cloud Style (Cartoon vs Soft) -->
+      <div class="control-group">
+        <span class="text-sm text-secondary block mb-2">Estilo de Nube</span>
+        <div class="grid grid-cols-2 gap-2">
+          <button
+            class="px-3 py-2 rounded-lg text-xs font-medium border transition-all text-center
+              {$particleSettings.cloudStyle === 'cartoon'
+              ? 'bg-blue-500/20 border-blue-500 text-blue-200'
+              : 'bg-surface-3 border-white/5 text-secondary hover:bg-surface-2'}"
+            on:click={() => particleSettings.updateCloudStyle("cartoon")}
+          >
+            Cartoon
+          </button>
+          <button
+            class="px-3 py-2 rounded-lg text-xs font-medium border transition-all text-center
+              {$particleSettings.cloudStyle === 'soft'
+              ? 'bg-blue-500/20 border-blue-500 text-blue-200'
+              : 'bg-surface-3 border-white/5 text-secondary hover:bg-surface-2'}"
+            on:click={() => particleSettings.updateCloudStyle("soft")}
+          >
+            Suave
+          </button>
+        </div>
+      </div>
+
+      <!-- Cloud Opacity -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Opacidad</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >{Math.round($particleSettings.cloudOpacity * 100)}%</span
+          >
+        </div>
+        <input
+          type="range"
+          min="0.1"
+          max="1.0"
+          step="0.05"
+          bind:value={$particleSettings.cloudOpacity}
+          on:input={() =>
+            particleSettings.updateCloudOpacity($particleSettings.cloudOpacity)}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-blue-400"
+        />
+      </div>
+
+      <!-- Cloud Count -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Cantidad</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >{$particleSettings.cloudCount}</span
+          >
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="10"
+          step="1"
+          bind:value={$particleSettings.cloudCount}
+          on:input={() =>
+            particleSettings.updateCloudCount($particleSettings.cloudCount)}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-blue-400"
+        />
+      </div>
+
+      <!-- Cloud Wind Speed -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <div class="flex items-center gap-2">
+            <Wind size={14} class="text-secondary" />
+            <span class="text-sm text-secondary">Viento</span>
+          </div>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >x{$particleSettings.cloudWindSpeed}</span
+          >
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="3"
+          step="0.1"
+          bind:value={$particleSettings.cloudWindSpeed}
+          on:input={() =>
+            particleSettings.updateCloudWindSpeed(
+              $particleSettings.cloudWindSpeed,
+            )}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-blue-400"
+        />
+      </div>
+
+      <!-- Cloud Turbulence -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <div class="flex items-center gap-2">
+            <Waves size={14} class="text-secondary" />
+            <span class="text-sm text-secondary">Turbulencia</span>
+          </div>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >{Math.round($particleSettings.cloudTurbulence * 100)}%</span
+          >
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="1.0"
+          step="0.05"
+          bind:value={$particleSettings.cloudTurbulence}
+          on:input={() =>
+            particleSettings.updateCloudTurbulence(
+              $particleSettings.cloudTurbulence,
+            )}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-blue-400"
         />
       </div>
     </div>

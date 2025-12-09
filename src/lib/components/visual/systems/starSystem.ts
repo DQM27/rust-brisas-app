@@ -76,9 +76,28 @@ export function updateStarSystem(
   // Maybe spawn new shooting star (only at night)
   const baseChance = 0.0003;
   const freqMultiplier = render.starSettings?.shootingStarFrequency ?? 1.0;
+  // If meteor shower is enabled, boost frequency massively (e.g. 500x)
+  const showerMultiplier = render.starSettings?.meteorShowerEnabled ? 500.0 : 1.0;
 
-  if (visibility > 0.5 && Math.random() < baseChance * freqMultiplier) {
-    shootingStars.push(createShootingStar(canvas, render.starSettings?.shootingStarSpeed));
+  // Allow multiple spawns per frame for intense showers
+  const spawnChance = baseChance * freqMultiplier * showerMultiplier;
+
+  if (visibility > 0.5) {
+    // Basic spawn check
+    if (Math.random() < spawnChance) {
+      shootingStars.push(createShootingStar(canvas, render.starSettings?.shootingStarSpeed));
+    }
+
+    // Extra spawns for high intensity (probabilistic loop)
+    if (spawnChance > 1.0) {
+      let remainingChance = spawnChance - 1.0;
+      while (remainingChance > 0) {
+        if (Math.random() < remainingChance) {
+          shootingStars.push(createShootingStar(canvas, render.starSettings?.shootingStarSpeed));
+        }
+        remainingChance -= 1.0;
+      }
+    }
   }
 
   return {
