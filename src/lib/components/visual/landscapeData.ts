@@ -10,7 +10,7 @@ export const LANDSCAPE_TYPES: { id: LandscapeType; name: string; icon: string }[
 ];
 
 // Reusing Season type from constants/types for consistency
-type Season = 'winter' | 'spring' | 'summer' | 'autumn';
+import type { Season } from "$lib/stores/settingsStore";
 
 export interface LandscapeTheme {
     colors: [string, string, string]; // [Back, Mid, Front]
@@ -22,6 +22,7 @@ export const MOUNTAIN_THEMES: Record<Season, LandscapeTheme> = {
     spring: { colors: ['#dcfce7', '#86efac', '#4ade80'] }, // Green 100, 300, 400
     summer: { colors: ['#fae8ff', '#f0abfc', '#e879f9'] }, // Fuchsia 100, 300, 400
     autumn: { colors: ['#ffedd5', '#fdba74', '#fb923c'] }, // Orange 100, 300, 400
+    rain: { colors: ['#94a3b8', '#64748b', '#475569'] }, // Rainy gray/blue
 };
 
 // Forest Themes
@@ -30,6 +31,7 @@ export const FOREST_THEMES: Record<Season, LandscapeTheme> = {
     spring: { colors: ['#bef264', '#84cc16', '#4d7c0f'] }, // Lime greens
     summer: { colors: ['#4ade80', '#16a34a', '#14532d'] }, // Deep greens
     autumn: { colors: ['#fcd34d', '#d97706', '#92400e'] }, // Amber/Brown
+    rain: { colors: ['#334155', '#1e293b', '#0f172a'] }, // Dark/Wet Forest
 };
 
 // City Themes (More neutral, changing with light mostly)
@@ -38,6 +40,7 @@ export const CITY_THEMES: Record<Season, LandscapeTheme> = {
     spring: { colors: ['#a5b4fc', '#818cf8', '#6366f1'] }, // Indigo tint
     summer: { colors: ['#c4b5fd', '#a78bfa', '#8b5cf6'] }, // Violet tint
     autumn: { colors: ['#fdba74', '#fb923c', '#f97316'] }, // Orange sunset vibe
+    rain: { colors: ['#64748b', '#475569', '#334155'] }, // Rainy City
 };
 
 // Desert Themes (Consistent mostly)
@@ -46,6 +49,7 @@ export const DESERT_THEMES: Record<Season, LandscapeTheme> = {
     spring: { colors: ['#fde68a', '#fcd34d', '#fbbf24'] },
     summer: { colors: ['#fef3c7', '#fde68a', '#d97706'] }, // Hot gold
     autumn: { colors: ['#fed7aa', '#fdba74', '#ea580c'] },
+    rain: { colors: ['#a8a29e', '#78716c', '#57534e'] }, // Wet Sand
 };
 
 // Beach Themes
@@ -56,6 +60,7 @@ export const BEACH_THEMES: Record<Season, LandscapeTheme> = {
     spring: { colors: ['#38bdf8', '#0ea5e9', '#fde047'] },
     summer: { colors: ['#06b6d4', '#0891b2', '#fcd34d'] }, // Cyan/Gold
     autumn: { colors: ['#67e8f9', '#22d3ee', '#fdba74'] },
+    rain: { colors: ['#0c4a6e', '#075985', '#78716c'] }, // Stormy Sea
 };
 
 // Moon Themes (Monochrome mostly)
@@ -64,6 +69,7 @@ export const MOON_THEMES: Record<Season, LandscapeTheme> = {
     spring: { colors: ['#475569', '#334155', '#1e293b'] },
     summer: { colors: ['#64748b', '#475569', '#334155'] },
     autumn: { colors: ['#475569', '#334155', '#1e293b'] },
+    rain: { colors: ['#334155', '#1e293b', '#0f172a'] },
 };
 
 
@@ -116,13 +122,17 @@ export const LANDSCAPE_PATHS: Record<LandscapeType, [string, string, string]> = 
 };
 
 export function getLandscapeTheme(type: LandscapeType, season: Season): LandscapeTheme {
+    let themeSet: Record<Season, LandscapeTheme>;
     switch (type) {
-        case 'forest': return FOREST_THEMES[season];
-        case 'city': return CITY_THEMES[season];
-        case 'desert': return DESERT_THEMES[season];
-        case 'beach': return BEACH_THEMES[season];
-        case 'moon': return MOON_THEMES[season];
+        case 'forest': themeSet = FOREST_THEMES; break;
+        case 'city': themeSet = CITY_THEMES; break;
+        case 'desert': themeSet = DESERT_THEMES; break;
+        case 'beach': themeSet = BEACH_THEMES; break;
+        case 'moon': themeSet = MOON_THEMES; break;
+        // Case mountains falls through to default
         case 'mountains':
-        default: return MOUNTAIN_THEMES[season];
+        default: themeSet = MOUNTAIN_THEMES; break;
     }
+    // Fallback to winter if specific season is missing/undefined
+    return themeSet[season] || themeSet['winter'];
 }

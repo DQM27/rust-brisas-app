@@ -2,7 +2,7 @@
 // BRISAS VISUAL SYSTEM v2 - Type Definitions
 // =============================================================================
 
-export type Season = 'winter' | 'spring' | 'summer' | 'autumn';
+export type Season = 'winter' | 'spring' | 'summer' | 'autumn' | 'rain';
 
 export type TimeOfDay = 'night' | 'dawn' | 'morning' | 'day' | 'dusk' | 'evening';
 
@@ -163,7 +163,7 @@ export interface Particle {
   glowSpeed?: number;
 }
 
-export type ParticleType = 'snowflake' | 'petal' | 'leaf' | 'pollen' | 'firefly';
+export type ParticleType = 'snowflake' | 'petal' | 'leaf' | 'pollen' | 'firefly' | 'rain';
 
 export interface ParticleConfig {
   count: number;

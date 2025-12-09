@@ -73,6 +73,7 @@ export const MOUNTAIN_THEMES: Record<Season, [string, string, string]> = {
   summer: ['#8bc990', '#6aaa70', '#4a8a50'],     // Lush greens
   autumn: ['#d4855a', '#c06a3a', '#9a4a2a'],     // Warm oranges/browns
   winter: ['#6a7a8a', '#4a5a6a', '#3a4a5a'],     // Cool blue-grays
+  rain: ['#4a5a4a', '#3a4a3a', '#2a3a2a'],       // Dark/Moody greens for rain
 };
 
 // Night modifier - darken mountains at night
@@ -198,8 +199,8 @@ export const PARTICLE_CONFIGS: Record<Season, ParticleConfig & { nightVariant?: 
     nightVariant: {
       count: 40,
       colors: ['#ffff88', '#ccffcc', '#ffffff', '#e0ffe0', '#ffffe0'], // Yellow, Green, White mix
-      sizeRange: [3, 6],
-      speedRange: [0.01, 0.05], // Slow floating
+      sizeRange: [2, 4],
+      speedRange: [0.5, 2.0], // Erratic movement
       rotates: false,
       glows: true,
     },
@@ -207,13 +208,23 @@ export const PARTICLE_CONFIGS: Record<Season, ParticleConfig & { nightVariant?: 
 
   autumn: {
     count: 50,
-    colors: ['#cd5c5c', '#d2691e', '#daa520', '#8b4513', '#ff6347'],
-    sizeRange: [8, 15],
-    speedRange: [0.5, 1.2],
+    colors: ['#d4855a', '#c06a3a', '#9a4a2a', '#e8b88a'],
+    sizeRange: [6, 12],
+    speedRange: [1.0, 3.0],
     rotates: true,
     glows: false,
   },
+
+  rain: {
+    count: 300,
+    colors: ['#a0c0ff', '#80a0e0', '#6080c0'],
+    sizeRange: [2, 4], // Using "size" for length/width ratio
+    speedRange: [15, 25], // Falling fast
+    rotates: false,
+    glows: false,
+  },
 };
+
 
 // -----------------------------------------------------------------------------
 // Wind Configuration

@@ -464,8 +464,8 @@
         {/if}
       </div>
 
-      <div class="grid grid-cols-5 gap-2">
-        {#each [{ label: "Auto", value: null, icon: "🔄", bg: "bg-gray-500" }, { label: "Invierno", value: "winter" as Season, icon: "❄️", bg: "bg-blue-500" }, { label: "Primavera", value: "spring" as Season, icon: "🌸", bg: "bg-pink-400" }, { label: "Verano", value: "summer" as Season, icon: "✨", bg: "bg-yellow-500" }, { label: "Otoño", value: "autumn" as Season, icon: "🍂", bg: "bg-orange-500" }] as season}
+      <div class="grid grid-cols-6 gap-2">
+        {#each [{ label: "Auto", value: null, icon: "🔄", bg: "bg-gray-500" }, { label: "Invierno", value: "winter" as Season, icon: "❄️", bg: "bg-blue-500" }, { label: "Primavera", value: "spring" as Season, icon: "🌸", bg: "bg-pink-400" }, { label: "Verano", value: "summer" as Season, icon: "✨", bg: "bg-yellow-500" }, { label: "Otoño", value: "autumn" as Season, icon: "🍂", bg: "bg-orange-500" }, { label: "Lluvia", value: "rain" as Season, icon: "🌧️", bg: "bg-slate-500" }] as season}
           <button
             class="flex flex-col items-center gap-1 py-2 px-1 rounded-lg transition-all
                 {$generalSettings.overrideSeason === season.value

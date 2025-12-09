@@ -91,11 +91,15 @@ function createParticle(
   };
 }
 
+// Placeholder - waiting for view_file result to know where to edit rendering logic.
+// For now, I'll update the 'getParticleType' logic in particleSystem.ts to identify rain.
+
 function getParticleType(config: ParticleConfig): Particle['type'] {
-  // Determine type based on config characteristics
   if (config.glows) return 'firefly';
+  // Rain logic
+  if (config.speedRange[0] > 10) return 'rain'; // Simple heuristic for now or use specific prop if added
+
   if (config.sizeRange[0] >= 6 && config.rotates) {
-    // Could be petal or leaf based on colors
     if (config.colors.some(c => c.includes('ff') && c.includes('b7'))) return 'petal';
     return 'leaf';
   }
@@ -209,6 +213,14 @@ function updateParticle(
         glowPhase += particle.glowSpeed * 0.05 * dt;
         opacity = 0.3 + Math.sin(glowPhase) * 0.5 + 0.2;
       }
+
+
+      break;
+
+    case 'rain':
+      // Basic rain fall with wind slant
+      x += (vx + windEffect * 0.2) * dt * speedMult;
+      y += vy * dt * speedMult;
       break;
   }
 
@@ -226,6 +238,9 @@ function updateParticle(
     if (x > width + particle.size) {
       needsReset = true;
     }
+  } else if (particle.type === 'rain') {
+    // Rain resets when hitting bottom
+    if (y > height) needsReset = true;
   } else {
     // Snow/petals/leaves fall down and can drift sideways
     if (y > height + particle.size || x < -50 || x > width + 50) {
@@ -290,6 +305,11 @@ function renderParticle(
 
     case 'firefly':
       renderFirefly(particle, ctx);
+      break;
+
+
+    case 'rain':
+      renderRain(particle, ctx);
       break;
   }
 
@@ -376,6 +396,26 @@ function renderFirefly(particle: Particle, ctx: CanvasRenderingContext2D): void 
   ctx.beginPath();
   ctx.arc(0, 0, particle.size * 0.3, 0, Math.PI * 2);
   ctx.fill();
+  ctx.fill();
+}
+
+function renderRain(particle: Particle, ctx: CanvasRenderingContext2D): void {
+  ctx.strokeStyle = particle.color;
+  ctx.lineWidth = Math.max(1, particle.size / 2);
+  ctx.lineCap = 'round';
+
+  // Draw streak
+  ctx.beginPath();
+  ctx.moveTo(0, 0); // Translated to x,y
+  // Length relates to speed? Or just fixed length based on size
+  // Let's use speed-based length for motion blur effect
+  const length = particle.vy * 0.5 + particle.size * 2;
+
+  // Angle based on wind? Ideally yes, but for now vertical streak
+  // We can use vx/vy to determine angle if we want strict accuracy, usually rain falls straight or slanted
+  // Let's just draw line down-ish
+  ctx.lineTo(particle.vx * 0.2, length);
+  ctx.stroke();
 }
 
 // -----------------------------------------------------------------------------

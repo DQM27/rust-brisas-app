@@ -5,7 +5,7 @@ import { browser } from '$app/environment';
 // TYPES
 // =============================================================================
 
-export type Season = 'winter' | 'spring' | 'summer' | 'autumn';
+export type Season = 'winter' | 'spring' | 'summer' | 'autumn' | 'rain';
 
 export interface GeneralSettings {
   // === Visual Background ===
