@@ -89,8 +89,8 @@ export interface MoonState extends CelestialBody {
   phase: MoonPhase;
 }
 
-export type MoonPhase = 'new' | 'waxing-crescent' | 'first-quarter' | 'waxing-gibbous' 
-                      | 'full' | 'waning-gibbous' | 'last-quarter' | 'waning-crescent';
+export type MoonPhase = 'new' | 'waxing-crescent' | 'first-quarter' | 'waxing-gibbous'
+  | 'full' | 'waning-gibbous' | 'last-quarter' | 'waning-crescent';
 
 export interface CelestialSystemState {
   sun: SunState;
@@ -205,6 +205,22 @@ export interface BirthdaySystemState {
   confetti: Confetti[];
   fireworks: Firework[];
   nextFireworkTimer: number;
+}
+
+// -----------------------------------------------------------------------------
+// Bokeh (Flent) System
+// -----------------------------------------------------------------------------
+
+import type { BokehConfig } from '$lib/stores/particleSettingsStore';
+
+export interface BokehParticle extends Particle {
+  targetOpacity: number;
+  pulseSpeed: number;
+}
+
+export interface BokehSystemState {
+  particles: BokehParticle[];
+  config: BokehConfig;
 }
 
 // -----------------------------------------------------------------------------
