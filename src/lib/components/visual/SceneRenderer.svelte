@@ -174,6 +174,16 @@
         windInfluence: $particleSettings.weatherWindInfluence,
         turbulence: $particleSettings.weatherTurbulence,
       },
+      celestialSettings: {
+        moonPhase: $particleSettings.moonPhase,
+        sunStyle: $particleSettings.sunStyle,
+      },
+      starSettings: {
+        countMultiplier: $particleSettings.starCountMultiplier,
+        twinkleSpeed: $particleSettings.starTwinkleSpeed,
+        shootingStarFrequency: $particleSettings.shootingStarFrequency,
+        shootingStarSpeed: $particleSettings.shootingStarSpeed,
+      },
     };
 
     // Clear canvas

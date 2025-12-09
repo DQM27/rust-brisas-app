@@ -92,7 +92,7 @@ export function getMountainBrightness(hour: number): number {
 // -----------------------------------------------------------------------------
 
 export const STAR_CONFIG = {
-  COUNT: 80,
+  COUNT: 340, // More stars to allow for >1x multiplier effect (default 1x shows half)
   SIZE_RANGE: [1.5, 4] as [number, number],
   TWINKLE_SPEED_RANGE: [0.5, 2] as [number, number],
 

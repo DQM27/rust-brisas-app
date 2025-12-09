@@ -31,6 +31,16 @@ export interface RenderState {
     windInfluence: number;
     turbulence: number;
   };
+  celestialSettings: {
+    moonPhase: string;
+    sunStyle: string;
+  };
+  starSettings: {
+    countMultiplier: number;
+    twinkleSpeed: number;
+    shootingStarFrequency: number;
+    shootingStarSpeed: number;
+  };
 }
 
 // -----------------------------------------------------------------------------

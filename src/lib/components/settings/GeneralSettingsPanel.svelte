@@ -22,9 +22,10 @@
     Sliders,
   } from "lucide-svelte";
 
-  // State for advanced customization modal
   let showAdvancedCustomization = false;
   let showWeatherCustomization = false;
+  let showCelestialCustomization = false;
+  let showStarCustomization = false;
 
   // ==========================================================================
   // Toggle Component (reusable)
@@ -140,6 +141,22 @@
           () => generalSettings.toggleStars(),
         )}
 
+        {#if $generalSettings.showStars}
+          <div class="pr-4 pt-1 pb-4" transition:slide={{ duration: 200 }}>
+            <button
+              class="flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600 hover:underline transition-colors w-fit ml-1"
+              onclick={() => (showStarCustomization = !showStarCustomization)}
+            >
+              <Sliders size={14} />
+              {showStarCustomization ? "Ocultar" : "Personalizar"}
+            </button>
+
+            {#if showStarCustomization}
+              <VisualCustomizationPanel embedded={true} mode="stars" />
+            {/if}
+          </div>
+        {/if}
+
         {@render settingRow(
           Sun,
           "bg-amber-50 dark:bg-amber-900/20",
@@ -148,6 +165,23 @@
           $generalSettings.showCelestial,
           () => generalSettings.toggleCelestial(),
         )}
+
+        {#if $generalSettings.showCelestial}
+          <div class="pr-4 pt-1 pb-4" transition:slide={{ duration: 200 }}>
+            <button
+              class="flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600 hover:underline transition-colors w-fit ml-1"
+              onclick={() =>
+                (showCelestialCustomization = !showCelestialCustomization)}
+            >
+              <Sliders size={14} />
+              {showCelestialCustomization ? "Ocultar" : "Personalizar"}
+            </button>
+
+            {#if showCelestialCustomization}
+              <VisualCustomizationPanel embedded={true} mode="celestial" />
+            {/if}
+          </div>
+        {/if}
 
         {@render settingRow(
           CloudRain,

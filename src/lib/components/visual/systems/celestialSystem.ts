@@ -2,11 +2,11 @@
 // CELESTIAL SYSTEM - Simple Sun & Moon (estilo original)
 // =============================================================================
 
-import type { 
-  CanvasContext, 
-  RenderState, 
-  CelestialSystemState, 
-  SunState, 
+import type {
+  CanvasContext,
+  RenderState,
+  CelestialSystemState,
+  SunState,
   MoonState,
 } from '../types';
 import { TIME, CELESTIAL_CONFIG } from '../constants';
@@ -47,17 +47,17 @@ export function updateCelestialSystem(
   render: RenderState
 ): CelestialSystemState {
   const hour = render.time;
-  
+
   // Calculate sun position
   const sun = calculateSunPosition(hour, state.sun, render.timestamp);
-  
+
   // Calculate moon position
   const moon = calculateMoonPosition(hour, state.moon);
-  
+
   // Show both during transitions
   const showBoth = (hour >= TIME.DAWN_START && hour < TIME.DAWN_END) ||
-                   (hour >= TIME.DUSK_START && hour < TIME.DUSK_END);
-  
+    (hour >= TIME.DUSK_START && hour < TIME.DUSK_END);
+
   return { sun, moon, showBoth };
 }
 
@@ -71,15 +71,15 @@ export function renderCelestialSystem(
   canvas: CanvasContext
 ): void {
   const { ctx, width, height } = canvas;
-  
+
   // Render moon first (behind sun during transitions)
   if (state.moon.opacity > 0) {
-    renderMoon(state.moon, ctx, width, height, render.timestamp);
+    renderMoon(state.moon, ctx, width, height, render.timestamp, render.celestialSettings);
   }
-  
+
   // Render sun
   if (state.sun.opacity > 0) {
-    renderSun(state.sun, ctx, width, height, render.timestamp);
+    renderSun(state.sun, ctx, width, height, render.timestamp, render.celestialSettings);
   }
 }
 
@@ -91,19 +91,19 @@ function calculateSunPosition(hour: number, current: SunState, timestamp: number
   let x = 50;
   let y = CELESTIAL_CONFIG.ARC_BOTTOM;
   let opacity = 0;
-  
+
   // Sun visible from DAWN_START to DUSK_END
   if (hour >= TIME.DAWN_START && hour < TIME.DUSK_END) {
     const duration = TIME.DUSK_END - TIME.DAWN_START;
     const progress = (hour - TIME.DAWN_START) / duration;
-    
+
     // X: -10% to 110%
     x = -10 + progress * 120;
-    
+
     // Y: Arco usando seno - de ARC_BOTTOM a ARC_TOP
     const arcHeight = Math.sin(progress * Math.PI);
     y = CELESTIAL_CONFIG.ARC_BOTTOM - arcHeight * (CELESTIAL_CONFIG.ARC_BOTTOM - CELESTIAL_CONFIG.ARC_TOP);
-    
+
     // Opacity: fade in/out en los bordes
     if (progress < 0.08) {
       opacity = progress / 0.08;
@@ -113,10 +113,10 @@ function calculateSunPosition(hour: number, current: SunState, timestamp: number
       opacity = 1;
     }
   }
-  
+
   // Glow pulsante (como animate-pulse del original)
   const glowIntensity = 0.8 + Math.sin(timestamp / 1500) * 0.2;
-  
+
   return {
     x,
     y,
@@ -128,16 +128,23 @@ function calculateSunPosition(hour: number, current: SunState, timestamp: number
   };
 }
 
-function renderSun(sun: SunState, ctx: CanvasRenderingContext2D, width: number, height: number, timestamp: number): void {
+function renderSun(
+  sun: SunState,
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  timestamp: number,
+  settings?: { sunStyle: string }
+): void {
   const x = (sun.x / 100) * width;
   const y = (sun.y / 100) * height;
   const size = CELESTIAL_CONFIG.SUN_SIZE;
   const colors = CELESTIAL_CONFIG.SUN_COLORS;
-  
+
   ctx.save();
   ctx.globalAlpha = sun.opacity;
-  
-  // Glow exterior grande (parpadeante) - como el blur-xl del original
+
+  // Glow exterior grande (parpadeante)
   const outerGlowSize = size * 2.5 * sun.glowIntensity;
   const outerGlow = ctx.createRadialGradient(x, y, size * 0.3, x, y, outerGlowSize);
   outerGlow.addColorStop(0, colors.glowOuter);
@@ -146,8 +153,8 @@ function renderSun(sun: SunState, ctx: CanvasRenderingContext2D, width: number, 
   ctx.beginPath();
   ctx.arc(x, y, outerGlowSize, 0, Math.PI * 2);
   ctx.fill();
-  
-  // Glow medio (como blur-md del original)
+
+  // Glow medio
   const midGlowSize = size * 1.5;
   const midGlow = ctx.createRadialGradient(x, y, size * 0.2, x, y, midGlowSize);
   midGlow.addColorStop(0, colors.glow);
@@ -156,8 +163,8 @@ function renderSun(sun: SunState, ctx: CanvasRenderingContext2D, width: number, 
   ctx.beginPath();
   ctx.arc(x, y, midGlowSize, 0, Math.PI * 2);
   ctx.fill();
-  
-  // Cuerpo del sol (círculo sólido con gradiente suave)
+
+  // Cuerpo del sol
   const bodyGradient = ctx.createRadialGradient(
     x - size * 0.15, y - size * 0.15, 0,
     x, y, size * 0.5
@@ -165,12 +172,31 @@ function renderSun(sun: SunState, ctx: CanvasRenderingContext2D, width: number, 
   bodyGradient.addColorStop(0, '#ffee88');
   bodyGradient.addColorStop(0.7, colors.core);
   bodyGradient.addColorStop(1, '#ffcc22');
-  
+
   ctx.fillStyle = bodyGradient;
   ctx.beginPath();
   ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
   ctx.fill();
-  
+
+  // Cloudy Style Overlay
+  if (settings?.sunStyle === 'cloudy') {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+
+    // Cloud 1
+    ctx.beginPath();
+    ctx.arc(x - size * 0.4, y + size * 0.2, size * 0.3, 0, Math.PI * 2);
+    ctx.arc(x, y + size * 0.3, size * 0.4, 0, Math.PI * 2);
+    ctx.arc(x + size * 0.5, y + size * 0.2, size * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cloud 2
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.beginPath();
+    ctx.arc(x - size * 0.2, y - size * 0.1, size * 0.35, 0, Math.PI * 2);
+    ctx.arc(x + size * 0.3, y - size * 0.1, size * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   ctx.restore();
 }
 
@@ -182,28 +208,28 @@ function calculateMoonPosition(hour: number, current: MoonState): MoonState {
   let x = 50;
   let y = CELESTIAL_CONFIG.ARC_BOTTOM;
   let opacity = 0;
-  
+
   // Moon visible from DUSK_START to DAWN_END (cruza medianoche)
   let progress = 0;
   const isVisible = hour >= TIME.DUSK_START || hour < TIME.DAWN_END;
-  
+
   if (isVisible) {
     // Calcular progreso (0 a 1 a través de la noche)
     const nightDuration = (24 - TIME.DUSK_START) + TIME.DAWN_END; // ~13 horas
-    
+
     if (hour >= TIME.DUSK_START) {
       progress = (hour - TIME.DUSK_START) / nightDuration;
     } else {
       progress = (hour + (24 - TIME.DUSK_START)) / nightDuration;
     }
-    
+
     // X: -10% to 110%
     x = -10 + progress * 120;
-    
+
     // Y: Arco
     const arcHeight = Math.sin(progress * Math.PI);
     y = CELESTIAL_CONFIG.ARC_BOTTOM - arcHeight * (CELESTIAL_CONFIG.ARC_BOTTOM - CELESTIAL_CONFIG.ARC_TOP);
-    
+
     // Opacity
     if (progress < 0.08) {
       opacity = progress / 0.08;
@@ -213,7 +239,7 @@ function calculateMoonPosition(hour: number, current: MoonState): MoonState {
       opacity = 1;
     }
   }
-  
+
   return {
     x,
     y,
@@ -224,18 +250,27 @@ function calculateMoonPosition(hour: number, current: MoonState): MoonState {
   };
 }
 
-function renderMoon(moon: MoonState, ctx: CanvasRenderingContext2D, width: number, height: number, timestamp: number): void {
+function renderMoon(
+  moon: MoonState,
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  timestamp: number,
+  settings?: { moonPhase: string }
+): void {
   const x = (moon.x / 100) * width;
   const y = (moon.y / 100) * height;
   const size = CELESTIAL_CONFIG.MOON_SIZE;
   const colors = CELESTIAL_CONFIG.MOON_COLORS;
-  
+
+  const phaseId = settings?.moonPhase ?? 'full';
+
   ctx.save();
   ctx.globalAlpha = moon.opacity;
-  
-  // Glow pulsante (como el original)
+
+  // Glow pulsante
   const glowPulse = 0.8 + Math.sin(timestamp / 2000) * 0.2;
-  
+
   // Glow exterior grande
   const outerGlowSize = size * 2 * glowPulse;
   const outerGlow = ctx.createRadialGradient(x, y, size * 0.3, x, y, outerGlowSize);
@@ -245,7 +280,7 @@ function renderMoon(moon: MoonState, ctx: CanvasRenderingContext2D, width: numbe
   ctx.beginPath();
   ctx.arc(x, y, outerGlowSize, 0, Math.PI * 2);
   ctx.fill();
-  
+
   // Glow medio
   const midGlowSize = size * 1.3;
   const midGlow = ctx.createRadialGradient(x, y, size * 0.2, x, y, midGlowSize);
@@ -255,20 +290,68 @@ function renderMoon(moon: MoonState, ctx: CanvasRenderingContext2D, width: numbe
   ctx.beginPath();
   ctx.arc(x, y, midGlowSize, 0, Math.PI * 2);
   ctx.fill();
-  
-  // Dibujar luna creciente (crescent moon) - estilo simple
-  // Círculo principal de la luna
+
+  const moonRadius = size * 0.45;
+
+  // New Moon
+  if (phaseId === 'new') {
+    ctx.fillStyle = 'rgba(15, 20, 40, 0.9)';
+    ctx.beginPath();
+    ctx.arc(x, y, moonRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  // Full Moon
+  if (phaseId === 'full') {
+    ctx.fillStyle = colors.fill;
+    ctx.beginPath();
+    ctx.arc(x, y, moonRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  const isWaxing = ['waxing-crescent', 'first-quarter', 'waxing-gibbous'].includes(phaseId);
+  const isGibbous = phaseId.includes('gibbous');
+  const isCrescent = phaseId.includes('crescent');
+  const isQuarter = phaseId.includes('quarter');
+
+  // Dark Base
+  ctx.fillStyle = 'rgba(15, 20, 40, 0.9)';
+  ctx.beginPath();
+  ctx.arc(x, y, moonRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Lit part
   ctx.fillStyle = colors.fill;
   ctx.beginPath();
-  ctx.arc(x, y, size * 0.45, 0, Math.PI * 2);
-  ctx.fill();
-  
-  // Sombra para crear efecto de media luna
-  ctx.fillStyle = 'rgba(15, 20, 40, 0.92)';
-  ctx.beginPath();
-  ctx.arc(x + size * 0.22, y, size * 0.36, 0, Math.PI * 2);
-  ctx.fill();
-  
+
+  if (isWaxing) {
+    ctx.arc(x, y, moonRadius, -Math.PI / 2, Math.PI / 2);
+  } else {
+    ctx.arc(x, y, moonRadius, Math.PI / 2, 3 * Math.PI / 2);
+  }
+
+  if (isQuarter) {
+    ctx.fill();
+  } else if (isCrescent) {
+    ctx.fill();
+    const ellipseWidth = moonRadius * 0.6;
+    ctx.fillStyle = 'rgba(15, 20, 40, 1)';
+    ctx.beginPath();
+    ctx.ellipse(x, y, ellipseWidth, moonRadius, 0, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (isGibbous) {
+    ctx.fill();
+    const ellipseWidth = moonRadius * 0.6;
+    ctx.fillStyle = colors.fill;
+    ctx.beginPath();
+    ctx.ellipse(x, y, ellipseWidth, moonRadius, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   ctx.restore();
 }
 

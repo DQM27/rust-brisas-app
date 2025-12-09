@@ -18,6 +18,16 @@ export interface ParticleSettings {
     weatherSizeMultiplier: number;
     weatherWindInfluence: number; // 0 to 2
     weatherTurbulence: number; // 0 to 2
+
+    // Celestial Controls
+    moonPhase: string;
+    sunStyle: string;
+
+    // Star Controls
+    starCountMultiplier: number; // 0 to 2
+    starTwinkleSpeed: number; // 0 to 3
+    shootingStarFrequency: number; // 0 to 5
+    shootingStarSpeed: number; // 0.5 to 3
 }
 
 export const DEFAULT_PARTICLE_SETTINGS: ParticleSettings = {
@@ -36,6 +46,15 @@ export const DEFAULT_PARTICLE_SETTINGS: ParticleSettings = {
     weatherSizeMultiplier: 1.0,
     weatherWindInfluence: 1.0,
     weatherTurbulence: 1.0,
+
+    // Celestial Controls
+    moonPhase: 'full', // 'new', 'waxing-crescent', 'first-quarter', 'waxing-gibbous', 'full', 'waning-gibbous', 'last-quarter', 'waning-crescent'
+    sunStyle: 'normal', // 'normal', 'cloudy'
+
+    starCountMultiplier: 1.0,
+    starTwinkleSpeed: 1.0,
+    shootingStarFrequency: 1.0,
+    shootingStarSpeed: 1.0,
 };
 
 function createParticleSettingsStore() {
@@ -58,6 +77,16 @@ function createParticleSettingsStore() {
         updateWeatherSize: (m: number) => update(s => ({ ...s, weatherSizeMultiplier: m })),
         updateWeatherWind: (m: number) => update(s => ({ ...s, weatherWindInfluence: m })),
         updateWeatherTurbulence: (m: number) => update(s => ({ ...s, weatherTurbulence: m })),
+
+        // Celestial actions
+        updateMoonPhase: (phase: string) => update(s => ({ ...s, moonPhase: phase })),
+        updateSunStyle: (style: string) => update(s => ({ ...s, sunStyle: style })),
+
+        // Star actions
+        updateStarCount: (m: number) => update(s => ({ ...s, starCountMultiplier: m })),
+        updateStarTwinkle: (m: number) => update(s => ({ ...s, starTwinkleSpeed: m })),
+        updateShootingStarFreq: (m: number) => update(s => ({ ...s, shootingStarFrequency: m })),
+        updateShootingStarSpeed: (m: number) => update(s => ({ ...s, shootingStarSpeed: m })),
     };
 }
 

@@ -8,17 +8,30 @@
     Maximize,
     Circle,
     CloudRain,
+    Sun,
+    Moon,
   } from "lucide-svelte";
   import { particleSettings } from "$lib/stores/particleSettingsStore";
 
   export let onClose: () => void = () => {};
   export let embedded = false;
-  export let mode: "bokeh" | "weather" = "bokeh"; // New prop
+  export let mode: "bokeh" | "weather" | "celestial" | "stars" = "bokeh"; // New prop
 
   // Helper to format percentage
   function pct(value: number): string {
     return Math.round(value * 100) + "%";
   }
+
+  const MOON_PHASES = [
+    { id: "new", label: "🌑", name: "Nueva" },
+    { id: "waxing-crescent", label: "🌒", name: "Creciente" },
+    { id: "first-quarter", label: "🌓", name: "Cuarto Creciente" },
+    { id: "waxing-gibbous", label: "🌔", name: "Gibosa Creciente" },
+    { id: "full", label: "🌕", name: "Llena" },
+    { id: "waning-gibbous", label: "🌖", name: "Gibosa Menguante" },
+    { id: "last-quarter", label: "🌗", name: "Cuarto Menguante" },
+    { id: "waning-crescent", label: "🌘", name: "Menguante" },
+  ];
 </script>
 
 {#if !embedded}
@@ -325,6 +338,179 @@
               $particleSettings.weatherTurbulence,
             )}
           class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-blue-500"
+        />
+      </div>
+    </div>
+  {:else if mode === "celestial"}
+    <!-- Section: Celestial -->
+    <div class="space-y-4">
+      <div class="flex items-center gap-2 mb-2">
+        <Sun size={16} class="text-amber-400" />
+        <h3 class="text-sm font-semibold text-primary uppercase tracking-wider">
+          Cuerpos Celestes
+        </h3>
+      </div>
+
+      <!-- Moon Phase -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Fase Lunar</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5 capitalize"
+            >{MOON_PHASES.find((p) => p.id === $particleSettings.moonPhase)
+              ?.name ?? $particleSettings.moonPhase}</span
+          >
+        </div>
+        <div class="grid grid-cols-4 gap-2">
+          {#each MOON_PHASES as phase}
+            <button
+              class="flex flex-col items-center p-2 rounded-lg border transition-all text-center
+                {$particleSettings.moonPhase === phase.id
+                ? 'bg-primary/20 border-primary text-primary'
+                : 'bg-surface-3 border-transparent text-secondary hover:bg-surface-hover'}"
+              on:click={() => particleSettings.updateMoonPhase(phase.id)}
+              title={phase.name}
+            >
+              <span class="text-lg leading-none mb-1">{phase.label}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <!-- Sun Style -->
+      <div class="control-group mt-6">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Estilo del Sol</span>
+        </div>
+        <div class="flex gap-3">
+          <button
+            class="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border transition-all
+                {$particleSettings.sunStyle === 'normal'
+              ? 'bg-amber-500/20 border-amber-500 text-amber-500'
+              : 'bg-surface-3 border-transparent text-secondary hover:bg-surface-hover'}"
+            on:click={() => particleSettings.updateSunStyle("normal")}
+          >
+            <Sun size={18} />
+            <span class="text-sm font-medium">Normal</span>
+          </button>
+          <button
+            class="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border transition-all
+                {$particleSettings.sunStyle === 'cloudy'
+              ? 'bg-blue-400/20 border-blue-400 text-blue-400'
+              : 'bg-surface-3 border-transparent text-secondary hover:bg-surface-hover'}"
+            on:click={() => particleSettings.updateSunStyle("cloudy")}
+          >
+            <div class="relative">
+              <Sun
+                size={18}
+                class="text-amber-400 absolute -top-1 -left-1 opacity-50"
+              />
+              <CloudRain size={18} />
+            </div>
+            <span class="text-sm font-medium">Con Nubes</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  {:else if mode === "stars"}
+    <!-- Section: Stars & Shooting Stars -->
+    <div class="space-y-4">
+      <div class="flex items-center gap-2 mb-2">
+        <Sparkles size={16} class="text-yellow-200" />
+        <h3 class="text-sm font-semibold text-primary uppercase tracking-wider">
+          Estrellas & Fugaces
+        </h3>
+      </div>
+
+      <!-- Star Count -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Cantidad Estrellas</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >x{$particleSettings.starCountMultiplier}</span
+          >
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="2"
+          step="0.1"
+          bind:value={$particleSettings.starCountMultiplier}
+          on:input={() =>
+            particleSettings.updateStarCount(
+              $particleSettings.starCountMultiplier,
+            )}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-amber-300"
+        />
+      </div>
+
+      <!-- Star Twinkle -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Vel. Parpadeo</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >x{$particleSettings.starTwinkleSpeed}</span
+          >
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="3"
+          step="0.1"
+          bind:value={$particleSettings.starTwinkleSpeed}
+          on:input={() =>
+            particleSettings.updateStarTwinkle(
+              $particleSettings.starTwinkleSpeed,
+            )}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-amber-300"
+        />
+      </div>
+
+      <!-- Shooting Star Freq -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Frecuencia Fugaces</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >x{$particleSettings.shootingStarFrequency}</span
+          >
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="5"
+          step="0.5"
+          bind:value={$particleSettings.shootingStarFrequency}
+          on:input={() =>
+            particleSettings.updateShootingStarFreq(
+              $particleSettings.shootingStarFrequency,
+            )}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-yellow-200"
+        />
+      </div>
+
+      <!-- Shooting Star Speed -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Velocidad Fugaces</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >x{$particleSettings.shootingStarSpeed}</span
+          >
+        </div>
+        <input
+          type="range"
+          min="0.5"
+          max="3"
+          step="0.1"
+          bind:value={$particleSettings.shootingStarSpeed}
+          on:input={() =>
+            particleSettings.updateShootingStarSpeed(
+              $particleSettings.shootingStarSpeed,
+            )}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-yellow-200"
         />
       </div>
     </div>
