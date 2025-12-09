@@ -72,8 +72,23 @@ export const DEFAULT_PARTICLE_SETTINGS: ParticleSettings = {
     cloudTurbulence: 0.0,
 };
 
+import { browser } from '$app/environment';
+
 function createParticleSettingsStore() {
-    const { subscribe, set, update } = writable<ParticleSettings>(DEFAULT_PARTICLE_SETTINGS);
+    // Load from localStorage if available
+    const savedSettings = browser ? localStorage.getItem('particleSettings') : null;
+    const initialSettings: ParticleSettings = savedSettings
+        ? { ...DEFAULT_PARTICLE_SETTINGS, ...JSON.parse(savedSettings) } // Merge to ensure new fields (like clouds) are present if missing in old save
+        : DEFAULT_PARTICLE_SETTINGS;
+
+    const { subscribe, set, update } = writable<ParticleSettings>(initialSettings);
+
+    // Subscribe to changes and save to localStorage
+    if (browser) {
+        subscribe(settings => {
+            localStorage.setItem('particleSettings', JSON.stringify(settings));
+        });
+    }
 
     return {
         subscribe,

@@ -6,7 +6,7 @@
     LANDSCAPE_PATHS,
     getLandscapeTheme,
     type LandscapeType,
-  } from "./landscapeData";
+  } from "./systems/landscapeData";
   import type { Season } from "./types";
   import { fade } from "svelte/transition";
 

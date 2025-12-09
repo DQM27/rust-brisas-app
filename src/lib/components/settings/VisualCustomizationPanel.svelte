@@ -20,7 +20,7 @@
   } from "lucide-svelte";
   import { generalSettings } from "$lib/stores/settingsStore";
   import { particleSettings } from "$lib/stores/particleSettingsStore";
-  import { LANDSCAPE_TYPES } from "$lib/components/visual/landscapeData";
+  import { LANDSCAPE_TYPES } from "$lib/components/visual/systems/landscapeData";
 
   export let onClose: () => void = () => {};
   export let embedded = false;

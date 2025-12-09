@@ -24,7 +24,7 @@
     Building2,
     Umbrella,
   } from "lucide-svelte";
-  import { LANDSCAPE_TYPES } from "$lib/components/visual/landscapeData";
+  import { LANDSCAPE_TYPES } from "$lib/components/visual/systems/landscapeData";
 
   let showAdvancedCustomization = false;
   let showWeatherCustomization = false;
