@@ -1,296 +1,368 @@
 <script lang="ts">
-  import { generalSettings } from "$lib/stores/settingsStore";
-  import { scale } from "svelte/transition";
-  import { CloudRain, Check, X, Layout, Mountain } from "lucide-svelte";
+  import { generalSettings, type Season } from "$lib/stores/settingsStore";
+  import { scale, slide } from "svelte/transition";
+  import { 
+    CloudRain, 
+    Check, 
+    X, 
+    Layout, 
+    Mountain,
+    Sun,
+    Moon,
+    Cloud,
+    Sparkles,
+    Star,
+    Cake,
+    RotateCcw,
+    Eye,
+    EyeOff,
+    Type
+  } from "lucide-svelte";
 
-  function toggleWeather() {
-    $generalSettings.enableWeatherEffects =
-      !$generalSettings.enableWeatherEffects;
-  }
-
-  function toggleCards() {
-    $generalSettings.showWelcomeCards = !$generalSettings.showWelcomeCards;
-  }
-
-  function toggleBackground() {
-    $generalSettings.showBackground = !$generalSettings.showBackground;
+  // ==========================================================================
+  // Toggle Component (reusable)
+  // ==========================================================================
+  
+  // Inline toggle to reduce repetition
+  function Toggle(props: { 
+    checked: boolean; 
+    onChange: () => void;
+    srLabel: string;
+    accentColor?: string;
+  }) {
+    return props;
   }
 </script>
 
+<!-- Reusable Toggle Switch -->
+{#snippet toggleSwitch(checked: boolean, onChange: () => void, srLabel: string)}
+  <button
+    onclick={onChange}
+    class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2
+    {checked ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}"
+  >
+    <span class="sr-only">{srLabel}</span>
+    <span
+      class="pointer-events-none inline-flex h-6 w-6 items-center justify-center transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out
+      {checked ? 'translate-x-5' : 'translate-x-0'}"
+    >
+      {#if checked}
+        <Check size={12} class="text-green-600" strokeWidth={3} />
+      {:else}
+        <X size={12} class="text-gray-400" strokeWidth={3} />
+      {/if}
+    </span>
+  </button>
+{/snippet}
+
+<!-- Setting Row -->
+{#snippet settingRow(icon: any, iconBg: string, iconColor: string, label: string, checked: boolean, onChange: () => void)}
+  <div class="flex items-center justify-between py-3">
+    <div class="flex items-center gap-3">
+      <div class="p-2 rounded-md {iconBg}">
+        <svelte:component this={icon} size={18} class={iconColor} />
+      </div>
+      <span class="text-secondary font-medium">{label}</span>
+    </div>
+    {@render toggleSwitch(checked, onChange, label)}
+  </div>
+{/snippet}
+
 <div
-  class="flex h-full flex-col bg-surface-1 p-6"
+  class="flex h-full flex-col bg-surface-1 p-6 overflow-y-auto"
   in:scale={{ duration: 300, start: 0.95 }}
 >
-  <div class="mb-8">
+  <div class="mb-6">
     <h2 class="text-2xl font-bold text-primary">Ajustes Generales</h2>
     <p class="text-secondary mt-1">
-      Configura las preferencias globales del sistema.
+      Configura las preferencias visuales del sistema.
     </p>
   </div>
 
   <div class="grid gap-4 max-w-3xl pb-8">
-    <!-- Visual Customization Card (All Toggles) -->
-    <div class="card-base p-6">
-      <div class="flex items-center gap-4 mb-6">
-        <div
-          class="p-3 rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
-        >
-          <Layout size={24} />
+    
+    <!-- ================================================================== -->
+    <!-- VISUAL ELEMENTS CARD -->
+    <!-- ================================================================== -->
+    <div class="card-base p-5">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="p-3 rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+          <Eye size={22} />
         </div>
         <div>
-          <h3 class="text-lg font-semibold text-primary">Personalización</h3>
-          <p class="text-sm text-secondary mt-1">
-            Configura todos los elementos visuales de la pantalla.
-          </p>
+          <h3 class="text-lg font-semibold text-primary">Elementos Visuales</h3>
+          <p class="text-sm text-secondary">Activa o desactiva cada capa del paisaje.</p>
         </div>
       </div>
 
-      <div class="space-y-4">
-        <!-- Weather Effect Toggle -->
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div
-              class="p-2 rounded-md bg-blue-50 text-blue-500/80 dark:bg-blue-900/20"
-            >
-              <CloudRain size={18} />
-            </div>
-            <span class="text-secondary font-medium">Efectos Climáticos</span>
-          </div>
-          <button
-            on:click={toggleWeather}
-            class="relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
-            {$generalSettings.enableWeatherEffects
-              ? 'bg-green-500'
-              : 'bg-gray-300 dark:bg-gray-700'}"
-          >
-            <span class="sr-only">Activar efectos climáticos</span>
-            <span
-              class="pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out
-              {$generalSettings.enableWeatherEffects
-                ? 'translate-x-6'
-                : 'translate-x-0'}"
-            >
-              <span
-                class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity
-                {$generalSettings.enableWeatherEffects
-                  ? 'opacity-100 duration-200 ease-in'
-                  : 'opacity-0 duration-100 ease-out'}"
-              >
-                <Check size={14} class="text-green-600" strokeWidth={3} />
-              </span>
-              <span
-                class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity
-                {$generalSettings.enableWeatherEffects
-                  ? 'opacity-0 duration-100 ease-out'
-                  : 'opacity-100 duration-200 ease-in'}"
-              >
-                <X size={14} class="text-gray-400" strokeWidth={3} />
-              </span>
-            </span>
-          </button>
-        </div>
-
-        <!-- Cards Toggle -->
-        <div
-          class="flex items-center justify-between pt-4 border-t border-emphasis"
-        >
-          <div class="flex items-center gap-3">
-            <div
-              class="p-2 rounded-md bg-purple-50 text-purple-500/80 dark:bg-purple-900/20"
-            >
-              <Layout size={18} />
-            </div>
-            <span class="text-secondary font-medium">Mostrar Tarjetas</span>
-          </div>
-          <button
-            on:click={toggleCards}
-            class="relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2
-            {$generalSettings.showWelcomeCards
-              ? 'bg-green-500'
-              : 'bg-gray-300 dark:bg-gray-700'}"
-          >
-            <span class="sr-only">Mostrar tarjetas</span>
-            <span
-              class="pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out
-              {$generalSettings.showWelcomeCards
-                ? 'translate-x-6'
-                : 'translate-x-0'}"
-            >
-              <span
-                class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity
-                {$generalSettings.showWelcomeCards
-                  ? 'opacity-100 duration-200 ease-in'
-                  : 'opacity-0 duration-100 ease-out'}"
-              >
-                <Check size={14} class="text-green-600" strokeWidth={3} />
-              </span>
-              <span
-                class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity
-                {$generalSettings.showWelcomeCards
-                  ? 'opacity-0 duration-100 ease-out'
-                  : 'opacity-100 duration-200 ease-in'}"
-              >
-                <X size={14} class="text-gray-400" strokeWidth={3} />
-              </span>
-            </span>
-          </button>
-        </div>
-
-        <!-- Background Toggle -->
-        <div
-          class="flex items-center justify-between pt-4 border-t border-emphasis"
-        >
-          <div class="flex items-center gap-3">
-            <div
-              class="p-2 rounded-md bg-emerald-50 text-emerald-500/80 dark:bg-emerald-900/20"
-            >
-              <Mountain size={18} />
-            </div>
-            <span class="text-secondary font-medium">Mostrar Paisaje</span>
-          </div>
-          <button
-            on:click={toggleBackground}
-            class="relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2
-            {$generalSettings.showBackground
-              ? 'bg-green-500'
-              : 'bg-gray-300 dark:bg-gray-700'}"
-          >
-            <span class="sr-only">Mostrar paisaje</span>
-            <span
-              class="pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out
-              {$generalSettings.showBackground
-                ? 'translate-x-6'
-                : 'translate-x-0'}"
-            >
-              <span
-                class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity
-                {$generalSettings.showBackground
-                  ? 'opacity-100 duration-200 ease-in'
-                  : 'opacity-0 duration-100 ease-out'}"
-              >
-                <Check size={14} class="text-green-600" strokeWidth={3} />
-              </span>
-              <span
-                class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity
-                {$generalSettings.showBackground
-                  ? 'opacity-0 duration-100 ease-out'
-                  : 'opacity-100 duration-200 ease-in'}"
-              >
-                <X size={14} class="text-gray-400" strokeWidth={3} />
-              </span>
-            </span>
-          </button>
-        </div>
+      <div class="divide-y divide-emphasis">
+        {@render settingRow(
+          Mountain, 
+          "bg-emerald-50 dark:bg-emerald-900/20", 
+          "text-emerald-500",
+          "Paisaje de Montañas",
+          $generalSettings.showBackground,
+          () => generalSettings.toggleBackground()
+        )}
+        
+        {@render settingRow(
+          Cloud, 
+          "bg-sky-50 dark:bg-sky-900/20", 
+          "text-sky-500",
+          "Nubes Animadas",
+          $generalSettings.showClouds,
+          () => generalSettings.toggleClouds()
+        )}
+        
+        {@render settingRow(
+          Star, 
+          "bg-indigo-50 dark:bg-indigo-900/20", 
+          "text-indigo-400",
+          "Estrellas (Noche)",
+          $generalSettings.showStars,
+          () => generalSettings.toggleStars()
+        )}
+        
+        {@render settingRow(
+          Sun, 
+          "bg-amber-50 dark:bg-amber-900/20", 
+          "text-amber-500",
+          "Sol / Luna",
+          $generalSettings.showCelestial,
+          () => generalSettings.toggleCelestial()
+        )}
+        
+        {@render settingRow(
+          CloudRain, 
+          "bg-blue-50 dark:bg-blue-900/20", 
+          "text-blue-500",
+          "Efectos Climáticos",
+          $generalSettings.enableWeatherEffects,
+          () => generalSettings.toggleWeather()
+        )}
       </div>
     </div>
 
-    <!-- Time Control (God Mode) - Moved UP -->
-    <div class="card-base p-6" in:scale={{ duration: 300, delay: 150 }}>
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h3 class="text-lg font-semibold text-primary">Ciclo Solar/Lunar</h3>
-          <p class="text-sm text-secondary">
-            Controla el tiempo manualmente (⚡).
-          </p>
+    <!-- ================================================================== -->
+    <!-- UI ELEMENTS CARD -->
+    <!-- ================================================================== -->
+    <div class="card-base p-5">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="p-3 rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+          <Layout size={22} />
         </div>
+        <div>
+          <h3 class="text-lg font-semibold text-primary">Interfaz</h3>
+          <p class="text-sm text-secondary">Configura los elementos de la UI.</p>
+        </div>
+      </div>
+
+      <div class="divide-y divide-emphasis">
+        {@render settingRow(
+          Type, 
+          "bg-cyan-50 dark:bg-cyan-900/20", 
+          "text-cyan-500",
+          "Texto de Bienvenida",
+          $generalSettings.showWelcomeText,
+          () => generalSettings.toggleWelcomeText()
+        )}
+        
+        {@render settingRow(
+          Layout, 
+          "bg-violet-50 dark:bg-violet-900/20", 
+          "text-violet-500",
+          "Tarjetas de Módulos",
+          $generalSettings.showWelcomeCards,
+          () => generalSettings.toggleCards()
+        )}
+      </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- TIME CONTROL CARD -->
+    <!-- ================================================================== -->
+    <div class="card-base p-5">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-4">
+          <div class="p-3 rounded-lg bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+            {#if $generalSettings.overrideHour !== null && $generalSettings.overrideHour >= 6 && $generalSettings.overrideHour < 18}
+              <Sun size={22} />
+            {:else}
+              <Moon size={22} />
+            {/if}
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-primary">Ciclo Día/Noche</h3>
+            <p class="text-sm text-secondary">Controla la hora manualmente.</p>
+          </div>
+        </div>
+        
         {#if $generalSettings.overrideHour !== null}
           <button
-            class="text-xs text-accent hover:underline"
-            on:click={() => ($generalSettings.overrideHour = null)}
+            class="flex items-center gap-1 text-xs text-accent hover:underline"
+            onclick={() => ($generalSettings.overrideHour = null)}
           >
-            Restaurar a Tiempo Real
+            <RotateCcw size={12} />
+            Auto
           </button>
         {/if}
       </div>
 
-      <div class="flex items-center gap-4">
-        <span class="text-sm font-mono text-secondary w-12">
-          {$generalSettings.overrideHour !== null
-            ? Math.floor($generalSettings.overrideHour ?? 0)
-                .toString()
-                .padStart(2, "0") + ":00"
-            : "Auto"}
-        </span>
-        <input
-          type="range"
-          min="0"
-          max="23"
-          step="0.5"
-          class="w-full h-2 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-primary"
-          value={$generalSettings.overrideHour ?? new Date().getHours()}
-          on:input={(e) =>
-            ($generalSettings.overrideHour = parseFloat(e.currentTarget.value))}
-        />
-        <span class="text-xl">
-          {$generalSettings.overrideHour != null &&
-          ($generalSettings.overrideHour ?? 0) >= 6 &&
-          ($generalSettings.overrideHour ?? 0) < 18
-            ? "☀️"
-            : "🌙"}
-        </span>
+      <div class="space-y-3">
+        <!-- Time Display -->
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-secondary">Hora simulada:</span>
+          <span class="font-mono text-lg font-semibold text-primary">
+            {#if $generalSettings.overrideHour !== null}
+              {Math.floor($generalSettings.overrideHour).toString().padStart(2, "0")}:{Math.round(($generalSettings.overrideHour % 1) * 60).toString().padStart(2, "0")}
+            {:else}
+              <span class="text-accent">Tiempo Real</span>
+            {/if}
+          </span>
+        </div>
+        
+        <!-- Time Slider -->
+        <div class="flex items-center gap-3">
+          <Moon size={16} class="text-indigo-400" />
+          <input
+            type="range"
+            min="0"
+            max="24"
+            step="0.25"
+            class="flex-1 h-2 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-accent"
+            value={$generalSettings.overrideHour ?? new Date().getHours() + new Date().getMinutes() / 60}
+            oninput={(e) => ($generalSettings.overrideHour = parseFloat(e.currentTarget.value) % 24)}
+          />
+          <Sun size={16} class="text-amber-400" />
+        </div>
+        
+        <!-- Quick Time Buttons -->
+        <div class="flex gap-2 pt-2">
+          {#each [
+            { label: '🌅 6:00', hour: 6 },
+            { label: '☀️ 12:00', hour: 12 },
+            { label: '🌆 18:00', hour: 18 },
+            { label: '🌙 0:00', hour: 0 },
+          ] as preset}
+            <button
+              class="flex-1 py-1.5 px-2 text-xs rounded-md transition-colors
+                {$generalSettings.overrideHour === preset.hour 
+                  ? 'bg-accent text-white' 
+                  : 'bg-surface-2 hover:bg-surface-hover text-secondary'}"
+              onclick={() => ($generalSettings.overrideHour = preset.hour)}
+            >
+              {preset.label}
+            </button>
+          {/each}
+        </div>
       </div>
     </div>
 
-    <!-- Preview Controls - Moved DOWN -->
+    <!-- ================================================================== -->
+    <!-- SEASON PREVIEW CARD -->
+    <!-- ================================================================== -->
     {#if $generalSettings.enableWeatherEffects}
-      <div class="card-base p-6 mt-2" in:scale={{ duration: 300, delay: 100 }}>
-        <h3 class="text-lg font-semibold text-primary mb-4">Vista Previa</h3>
-        <p class="text-sm text-secondary mb-4">
-          Selecciona un efecto para previsualizarlo instantáneamente.
-        </p>
+      <div class="card-base p-5" transition:slide={{ duration: 200 }}>
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-4">
+            <div class="p-3 rounded-lg bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400">
+              <Sparkles size={22} />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-primary">Estación</h3>
+              <p class="text-sm text-secondary">Previsualiza efectos estacionales.</p>
+            </div>
+          </div>
+          
+          {#if $generalSettings.overrideSeason !== null}
+            <button
+              class="flex items-center gap-1 text-xs text-accent hover:underline"
+              onclick={() => ($generalSettings.overrideSeason = null)}
+            >
+              <RotateCcw size={12} />
+              Auto
+            </button>
+          {/if}
+        </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-          <button
-            class="btn-base w-full justify-center {$generalSettings.overrideSeason ===
-            null
-              ? 'bg-primary text-white'
-              : 'bg-surface-2 hover:bg-surface-hover'}"
-            on:click={() => ($generalSettings.overrideSeason = null)}
-          >
-            Auto
-          </button>
-
-          <button
-            class="btn-base w-full justify-center {$generalSettings.overrideSeason ===
-            'winter'
-              ? 'bg-blue-500 text-white'
-              : 'bg-surface-2 hover:bg-surface-hover'}"
-            on:click={() => ($generalSettings.overrideSeason = "winter")}
-          >
-            Invierno ❄️
-          </button>
-
-          <button
-            class="btn-base w-full justify-center {$generalSettings.overrideSeason ===
-            'spring'
-              ? 'bg-pink-400 text-white'
-              : 'bg-surface-2 hover:bg-surface-hover'}"
-            on:click={() => ($generalSettings.overrideSeason = "spring")}
-          >
-            Primavera 🌸
-          </button>
-
-          <button
-            class="btn-base w-full justify-center {$generalSettings.overrideSeason ===
-            'summer'
-              ? 'bg-yellow-500 text-white'
-              : 'bg-surface-2 hover:bg-surface-hover'}"
-            on:click={() => ($generalSettings.overrideSeason = "summer")}
-          >
-            Verano ✨
-          </button>
-
-          <button
-            class="btn-base w-full justify-center {$generalSettings.overrideSeason ===
-            'autumn'
-              ? 'bg-orange-500 text-white'
-              : 'bg-surface-2 hover:bg-surface-hover'}"
-            on:click={() => ($generalSettings.overrideSeason = "autumn")}
-          >
-            Otoño 🍂
-          </button>
+        <div class="grid grid-cols-5 gap-2">
+          {#each [
+            { label: 'Auto', value: null, icon: '🔄', bg: 'bg-gray-500' },
+            { label: 'Invierno', value: 'winter' as Season, icon: '❄️', bg: 'bg-blue-500' },
+            { label: 'Primavera', value: 'spring' as Season, icon: '🌸', bg: 'bg-pink-400' },
+            { label: 'Verano', value: 'summer' as Season, icon: '✨', bg: 'bg-yellow-500' },
+            { label: 'Otoño', value: 'autumn' as Season, icon: '🍂', bg: 'bg-orange-500' },
+          ] as season}
+            <button
+              class="flex flex-col items-center gap-1 py-2 px-1 rounded-lg transition-all
+                {$generalSettings.overrideSeason === season.value 
+                  ? `${season.bg} text-white scale-105 shadow-md` 
+                  : 'bg-surface-2 hover:bg-surface-hover text-secondary hover:scale-102'}"
+              onclick={() => ($generalSettings.overrideSeason = season.value)}
+            >
+              <span class="text-lg">{season.icon}</span>
+              <span class="text-xs font-medium">{season.label}</span>
+            </button>
+          {/each}
         </div>
       </div>
     {/if}
+
+    <!-- ================================================================== -->
+    <!-- BIRTHDAY TEST CARD -->
+    <!-- ================================================================== -->
+    <div class="card-base p-5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="p-3 rounded-lg bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
+            <Cake size={22} />
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-primary">Modo Cumpleaños</h3>
+            <p class="text-sm text-secondary">Prueba la celebración de cumpleaños.</p>
+          </div>
+        </div>
+        
+        {@render toggleSwitch(
+          $generalSettings.overrideBirthday,
+          () => generalSettings.toggleBirthdayTest(),
+          "Activar modo cumpleaños"
+        )}
+      </div>
+      
+      {#if $generalSettings.overrideBirthday}
+        <div 
+          class="mt-3 p-3 rounded-md bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 text-sm"
+          transition:slide={{ duration: 150 }}
+        >
+          🎉 ¡Modo cumpleaños activado! Revisa la pantalla de bienvenida.
+        </div>
+      {/if}
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- RESET BUTTON -->
+    <!-- ================================================================== -->
+    <div class="flex justify-end gap-2 pt-2">
+      <button
+        class="btn-base bg-surface-2 hover:bg-surface-hover text-secondary text-sm"
+        onclick={() => generalSettings.resetOverrides()}
+      >
+        <RotateCcw size={14} />
+        Resetear Previews
+      </button>
+      
+      <button
+        class="btn-base bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 text-sm"
+        onclick={() => {
+          if (confirm('¿Restaurar todas las configuraciones a sus valores por defecto?')) {
+            generalSettings.reset();
+          }
+        }}
+      >
+        Restaurar Todo
+      </button>
+    </div>
+
   </div>
 </div>

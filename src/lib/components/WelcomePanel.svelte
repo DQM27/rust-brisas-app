@@ -14,37 +14,30 @@
   import { onMount } from "svelte";
   import { ingresoStore } from "$lib/stores/ingresoStore";
   import { generalSettings } from "$lib/stores/settingsStore";
-  import WeatherEffect from "./visual/WeatherEffect.svelte";
-  import CelestialCycle from "./visual/CelestialCycle.svelte";
-  import MountainLandscape from "./visual/MountainLandscape.svelte";
-  import BirthdayCelebration from "./visual/BirthdayCelebration.svelte"; // Import the party!
   import { currentSeason } from "$lib/utils/season";
+  import { TIME, getTimeOfDay } from "$lib/components/visual/constants";
+  
+  // Visual System Components
+  import SceneRenderer from "$lib/components/visual/SceneRenderer.svelte";
+  import MountainLandscape from "$lib/components/visual/MountainLandscape.svelte";
+  import BirthdayCelebration from "$lib/components/visual/BirthdayCelebration.svelte";
 
-  // Cargar datos de ingresos al montar para que el contador sea real
+  // Load ingreso data on mount
   onMount(() => {
     ingresoStore.load();
   });
 
-  // Birthday Logic 🎂
-  $: isBirthday = checkBirthday($currentUser?.fechaNacimiento);
-
+  // Birthday Logic 🎂 - Check real birthday OR override from settings
   function checkBirthday(dateString?: string | null): boolean {
     if (!dateString) return false;
     try {
-      // Assuming format YYYY-MM-DD
-      // We want to match MM-DD with local time
-      const birth = new Date(dateString);
-      const today = new Date();
-      // Handle timezone offset issues by using getMonth/getDate directly from the ISO string parts if possible,
-      // but standard Date object usually works fine if we just compare Month and Date.
-
-      // Note: dateString "2000-01-01" might be parsed as UTC.
-      // Let's be safe and split the string if it matches YYYY-MM-DD
       if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const [_, month, day] = dateString.split("-").map(Number);
+        const today = new Date();
         return today.getMonth() + 1 === month && today.getDate() === day;
       }
-
+      const birth = new Date(dateString);
+      const today = new Date();
       return (
         birth.getMonth() === today.getMonth() &&
         birth.getDate() === today.getDate()
@@ -54,6 +47,8 @@
       return false;
     }
   }
+  
+  let isBirthday = $derived($generalSettings.overrideBirthday || checkBirthday($currentUser?.fechaNacimiento));
 
   const modules = [
     {
@@ -92,28 +87,28 @@
     {
       icon: Settings,
       title: "Configuración",
-      description: "Ajustes generales del sistema y preferencias gloables",
+      description: "Ajustes generales del sistema y preferencias globales",
       delay: 250,
     },
   ];
 
-  // Logic: Use dark text ONLY if it's Day AND NOT Winter AND Background is visible matches the bright day background.
-  // Winter day background is dark mountains, so needs white text.
-  // Night always needs white text.
-  $: effectiveHour = $generalSettings.overrideHour ?? new Date().getHours();
-  $: isDay = effectiveHour >= 7 && effectiveHour < 18; // 7am to 6pm matching MountainLandscape logic
-  $: useDarkText =
-    $generalSettings.showBackground && isDay && $currentSeason !== "winter";
+  // Time-based text styling
+  let effectiveHour = $derived($generalSettings.overrideHour ?? new Date().getHours());
+  let timeOfDay = $derived(getTimeOfDay(effectiveHour));
+  let isDay = $derived(timeOfDay === 'day' || timeOfDay === 'morning');
+  
+  // Use dark text only if it's daytime AND NOT winter (winter mountains are dark) AND background is shown
+  let useDarkText = $derived($generalSettings.showBackground && isDay && $currentSeason !== "winter");
 
-  $: textColorClass = isBirthday
-    ? "text-white drop-shadow-xl tracking-wide" // White text with shadow for birthday
+  let textColorClass = $derived(isBirthday
+    ? "text-white drop-shadow-xl tracking-wide"
     : useDarkText
       ? "text-slate-800 drop-shadow-sm"
-      : "text-white drop-shadow-md";
+      : "text-white drop-shadow-md");
 
-  // Lógica de saludo dinámico
-  $: currentHour = new Date().getHours();
-  $: greeting = isBirthday
+  // Dynamic greeting based on time
+  let currentHour = $derived(new Date().getHours());
+  let greeting = $derived(isBirthday
     ? "¡Feliz Cumpleaños!"
     : currentHour < 6
       ? "Feliz madrugada"
@@ -121,92 +116,94 @@
         ? "Buenos días"
         : currentHour < 18
           ? "Buenas tardes"
-          : "Buenas noches";
+          : "Buenas noches");
 </script>
 
-<div
-  class="relative flex h-full items-center justify-center bg-surface-1 px-6 overflow-hidden"
->
+<div class="relative flex h-full items-center justify-center bg-surface-1 px-6 overflow-hidden">
+  <!-- Visual Background System -->
   {#if isBirthday}
     <BirthdayCelebration name={$currentUser?.nombre || "Usuario"} />
-    <div class="absolute inset-0 bg-black/10 pointer-events-none"></div>
-    <!-- Slight dim for text readability -->
+    <div class="absolute inset-0 bg-black/10 pointer-events-none z-[3]"></div>
   {:else if $generalSettings.showBackground}
-    <MountainLandscape>
-      <CelestialCycle />
-    </MountainLandscape>
+    <SceneRenderer isBirthday={false}>
+      <MountainLandscape />
+    </SceneRenderer>
   {:else}
-    <CelestialCycle />
+    <!-- Minimal mode: just celestial cycle and weather (no mountains) -->
+    <SceneRenderer isBirthday={false} />
   {/if}
-  <WeatherEffect />
+
+  <!-- Content -->
   <div class="relative z-10 w-full max-w-5xl text-center">
-    <!-- Header con animación de fade y fly -->
-    <div
-      in:fly={{ y: -30, duration: 800, easing: quintOut }}
-      class="flex flex-col items-center {$generalSettings.showWelcomeCards
-        ? 'mb-4 md:mb-6'
-        : 'mb-12 md:mb-16'}"
-    >
-      {#if isBirthday}
-        <!-- Diseño Especial de Cumpleaños 🎂 -->
-        <div class="flex flex-col items-center gap-2">
+    <!-- Header with animations (solo si showWelcomeText está activo) -->
+    {#if $generalSettings.showWelcomeText}
+      <div
+        in:fly={{ y: -30, duration: 800, easing: quintOut }}
+        class="flex flex-col items-center {$generalSettings.showWelcomeCards
+          ? 'mb-4 md:mb-6'
+          : 'mb-12 md:mb-16'}"
+      >
+        {#if isBirthday}
+          <!-- Special Birthday Design 🎂 -->
+          <div class="flex flex-col items-center gap-2">
+            <h2
+              class="{$generalSettings.showWelcomeCards
+                ? 'text-3xl md:text-4xl mb-2'
+                : 'text-5xl md:text-6xl mb-4'} font-black text-white drop-shadow-lg tracking-widest uppercase"
+            >
+              {greeting}
+            </h2>
+            <h1
+              class="{$generalSettings.showWelcomeCards
+                ? 'text-5xl md:text-7xl'
+                : 'text-7xl md:text-9xl'} font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-amber-200 to-yellow-400 drop-shadow-xl animate-pulse"
+              style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));"
+            >
+              {$currentUser?.nombre || "Usuario"}
+            </h1>
+          </div>
+        {:else}
+          <!-- Normal Greeting -->
           <h2
-            class="{$generalSettings.showWelcomeCards
-              ? 'text-3xl md:text-4xl mb-2'
-              : 'text-5xl md:text-6xl mb-4'} font-black text-white drop-shadow-lg tracking-widest uppercase"
+            class="tracking-wide transition-colors duration-1000 {$generalSettings.showWelcomeCards
+              ? 'text-xl md:text-2xl mb-0'
+              : 'text-3xl md:text-4xl mb-1'} font-medium {useDarkText
+              ? 'text-slate-700/80'
+              : 'text-white/90 drop-shadow-md'}"
           >
             {greeting}
           </h2>
+
+          <!-- Elegant Adaptive Name -->
           <h1
-            class="{$generalSettings.showWelcomeCards
-              ? 'text-5xl md:text-7xl'
-              : 'text-7xl md:text-9xl'} font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-amber-200 to-yellow-400 drop-shadow-xl animate-pulse"
-            style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));"
+            class="tracking-tight transition-all duration-1000 font-bold
+            {$generalSettings.showWelcomeCards
+              ? 'text-4xl md:text-5xl'
+              : 'text-6xl md:text-7xl'}
+            {useDarkText
+              ? 'text-transparent bg-clip-text bg-gradient-to-br from-slate-800 via-slate-600 to-slate-800 drop-shadow-sm'
+              : 'text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-blue-50 drop-shadow-lg'}"
+            style={useDarkText
+              ? ""
+              : "filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));"}
           >
             {$currentUser?.nombre || "Usuario"}
           </h1>
-        </div>
-      {:else}
-        <!-- Saludo Normal -->
-        <h2
-          class="tracking-wide transition-colors duration-1000 {$generalSettings.showWelcomeCards
-            ? 'text-xl md:text-2xl mb-0'
-            : 'text-3xl md:text-4xl mb-1'} font-medium {useDarkText
-            ? 'text-slate-700/80'
-            : 'text-white/90 drop-shadow-md'}"
-        >
-          {greeting}
-        </h2>
+        {/if}
 
-        <!-- Nombre Elegante y Adaptable -->
-        <h1
-          class="tracking-tight transition-all duration-1000 font-bold
-          {$generalSettings.showWelcomeCards
-            ? 'text-4xl md:text-5xl'
-            : 'text-6xl md:text-7xl'}
-          {useDarkText
-            ? 'text-transparent bg-clip-text bg-gradient-to-br from-slate-800 via-slate-600 to-slate-800 drop-shadow-sm'
-            : 'text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-blue-50 drop-shadow-lg'}"
-          style={useDarkText
-            ? ""
-            : "filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));"}
+        <p
+          class="transition-colors duration-1000 {textColorClass} {isBirthday
+            ? 'text-xl font-bold mt-2'
+            : $generalSettings.showWelcomeCards
+              ? 'text-sm mt-2 opacity-80'
+              : 'text-xl font-medium tracking-wide opacity-90 mt-6'}"
         >
-          {$currentUser?.nombre || "Usuario"}
-        </h1>
-      {/if}
-
-      <p
-        class="transition-colors duration-1000 {textColorClass} {isBirthday
-          ? 'text-xl font-bold mt-2'
-          : $generalSettings.showWelcomeCards
-            ? 'text-sm mt-2 opacity-80'
-            : 'text-xl font-medium tracking-wide opacity-90 mt-6'}"
-      >
         {isBirthday
           ? "Te desea el equipo de Brisas App 🎉"
           : "Brisas App - Sistema Integral de Control de Acceso"}
       </p>
-    </div>
+      </div>
+    {/if}
 
     <!-- Modules Grid -->
     {#if $generalSettings.showWelcomeCards}
@@ -224,15 +221,15 @@
             }}
             class="group relative overflow-hidden rounded-lg border border-emphasis bg-surface-2 p-6 text-left transition-all duration-300 hover:-translate-y-2 hover:border-accent hover:shadow-lg hover:shadow-accent/20"
           >
-            <!-- Efecto de brillo en hover -->
+            <!-- Shine effect on hover -->
             <div
-              class="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-surface-1/5 to-transparent transition-transform duration-700 group-hover:translate-x-full"
+              class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-surface-1/5 to-transparent transition-transform duration-700 group-hover:translate-x-full"
             ></div>
 
-            <!-- Contenido -->
+            <!-- Content -->
             <div class="relative z-10 flex flex-col h-full justify-between">
               <div>
-                <!-- Icon con animación de escala -->
+                <!-- Icon with scale animation -->
                 <div
                   class="mb-4 inline-flex rounded-lg bg-surface-1 p-3 {module.color ||
                     'text-accent'} transition-all duration-300 group-hover:scale-110 group-hover:bg-accent/10"
@@ -255,7 +252,7 @@
                 </p>
               </div>
 
-              <!-- Stat opcional (solo si existe) -->
+              <!-- Optional stat -->
               {#if module.stat}
                 <div
                   class="mt-4 flex items-center gap-2 border-t border-emphasis pt-3"
@@ -274,9 +271,9 @@
               {/if}
             </div>
 
-            <!-- Borde animado inferior -->
+            <!-- Animated bottom border -->
             <div
-              class="absolute bottom-0 left-0 h-1 w-0 bg-linear-to-r from-[#007acc] to-[#0098ff] transition-all duration-500 group-hover:w-full"
+              class="absolute bottom-0 left-0 h-1 w-0 bg-gradient-to-r from-[#007acc] to-[#0098ff] transition-all duration-500 group-hover:w-full"
             ></div>
           </div>
         {/each}
@@ -284,7 +281,3 @@
     {/if}
   </div>
 </div>
-
-<style>
-  /* Animaciones adicionales personalizadas si fueran necesarias */
-</style>
