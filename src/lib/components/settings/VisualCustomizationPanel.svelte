@@ -13,13 +13,24 @@
     Cloud,
     Wind,
     Waves,
+    Trees,
+    Building2,
+    Umbrella,
+    Mountain,
   } from "lucide-svelte";
+  import { generalSettings } from "$lib/stores/settingsStore";
   import { particleSettings } from "$lib/stores/particleSettingsStore";
+  import { LANDSCAPE_TYPES } from "$lib/components/visual/landscapeData";
 
   export let onClose: () => void = () => {};
   export let embedded = false;
-  export let mode: "bokeh" | "weather" | "celestial" | "stars" | "clouds" =
-    "bokeh"; // New prop
+  export let mode:
+    | "bokeh"
+    | "weather"
+    | "celestial"
+    | "stars"
+    | "clouds"
+    | "landscape" = "bokeh"; // New prop
 
   // Helper to format percentage
   function pct(value: number): string {
@@ -550,6 +561,42 @@
           class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-yellow-200"
         />
       </div>
+    </div>
+  {:else if mode === "landscape"}
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        {#each LANDSCAPE_TYPES as biome}
+          <button
+            class="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all duration-200
+            {$generalSettings.landscapeType === biome.id
+              ? 'bg-blue-500/10 border-blue-500 text-blue-500'
+              : 'bg-surface-2 border-white/5 text-secondary hover:bg-surface-3 hover:border-white/10'}"
+            on:click={() => generalSettings.setLandscapeType(biome.id)}
+          >
+            <!-- Dynamic Icon Rendering -->
+            {#if biome.icon === "Mountain"}
+              <Mountain size={24} />
+            {:else if biome.icon === "Trees"}
+              <Trees size={24} />
+            {:else if biome.icon === "Building2"}
+              <Building2 size={24} />
+            {:else if biome.icon === "Sun"}
+              <Sun size={24} />
+            {:else if biome.icon === "Umbrella"}
+              <Umbrella size={24} />
+            {:else if biome.icon === "Moon"}
+              <Moon size={24} />
+            {/if}
+
+            <span class="text-xs font-medium">{biome.name}</span>
+          </button>
+        {/each}
+      </div>
+
+      <p class="text-xs text-secondary/60 text-center mt-2 px-2">
+        El paisaje cambia dinámicamente según la hora del día y la estación del
+        año.
+      </p>
     </div>
   {:else if mode === "clouds"}
     <!-- Section: Cloud Customization -->

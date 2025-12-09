@@ -20,13 +20,18 @@
     EyeOff,
     Type,
     Sliders,
+    Trees,
+    Building2,
+    Umbrella,
   } from "lucide-svelte";
+  import { LANDSCAPE_TYPES } from "$lib/components/visual/landscapeData";
 
   let showAdvancedCustomization = false;
   let showWeatherCustomization = false;
   let showCelestialCustomization = false;
   let showStarCustomization = false;
   let showCloudCustomization = false;
+  let showLandscapeCustomization = false;
 
   // ==========================================================================
   // Toggle Component (reusable)
@@ -119,10 +124,47 @@
           Mountain,
           "bg-emerald-50 dark:bg-emerald-900/20",
           "text-emerald-500",
-          "Paisaje de Montañas",
+          "Paisaje",
           $generalSettings.showBackground,
           () => generalSettings.toggleBackground(),
         )}
+
+        {#if $generalSettings.showBackground}
+          <div
+            class="pr-4 pl-12 pt-2 pb-4"
+            transition:slide={{ duration: 200 }}
+          >
+            <div class="grid grid-cols-3 gap-2">
+              {#each LANDSCAPE_TYPES as biome}
+                <button
+                  class="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all duration-200
+                  {$generalSettings.landscapeType === biome.id
+                    ? 'bg-blue-500/10 border-blue-500 text-blue-500'
+                    : 'bg-surface-2 border-white/5 text-secondary hover:bg-surface-3 hover:border-white/10'}"
+                  onclick={() => generalSettings.setLandscapeType(biome.id)}
+                  title={biome.name}
+                >
+                  <!-- Icon -->
+                  {#if biome.icon === "Mountain"}
+                    <Mountain size={16} />
+                  {:else if biome.icon === "Trees"}
+                    <Trees size={16} />
+                  {:else if biome.icon === "Building2"}
+                    <Building2 size={16} />
+                  {:else if biome.icon === "Sun"}
+                    <Sun size={16} />
+                  {:else if biome.icon === "Umbrella"}
+                    <Umbrella size={16} />
+                  {:else if biome.icon === "Moon"}
+                    <Moon size={16} />
+                  {/if}
+
+                  <span class="text-[10px] font-medium">{biome.name}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
 
         {@render settingRow(
           Cloud,

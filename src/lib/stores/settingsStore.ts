@@ -12,7 +12,9 @@ export interface GeneralSettings {
   showBackground: boolean;        // Mostrar paisaje de montañas
   showClouds: boolean;            // Mostrar nubes animadas
   showStars: boolean;             // Mostrar estrellas de noche
+
   showCelestial: boolean;         // Mostrar sol/luna
+  landscapeType: 'mountains' | 'forest' | 'city' | 'desert' | 'beach' | 'moon'; // Tipo de paisaje
 
   // === Weather Effects ===
   enableWeatherEffects: boolean;  // Partículas climáticas (nieve, hojas, etc.)
@@ -38,6 +40,7 @@ const DEFAULT_SETTINGS: GeneralSettings = {
   showClouds: true,
   showStars: true,
   showCelestial: true,
+  landscapeType: 'mountains',
 
   // Weather
   enableWeatherEffects: true,
@@ -106,7 +109,9 @@ export interface GeneralSettingsStore extends Writable<GeneralSettings> {
   toggleCards: () => void;
   toggleWelcomeText: () => void;
   toggleBokeh: () => void;
+
   toggleBirthdayTest: () => void;
+  setLandscapeType: (type: 'mountains' | 'forest' | 'city' | 'desert' | 'beach' | 'moon') => void;
 }
 
 function createGeneralSettingsStore(): GeneralSettingsStore {
@@ -153,7 +158,9 @@ function createGeneralSettingsStore(): GeneralSettingsStore {
     toggleCards: () => update(s => ({ ...s, showWelcomeCards: !s.showWelcomeCards })),
     toggleWelcomeText: () => update(s => ({ ...s, showWelcomeText: !s.showWelcomeText })),
     toggleBokeh: () => update(s => ({ ...s, showBokeh: !s.showBokeh })),
+
     toggleBirthdayTest: () => update(s => ({ ...s, overrideBirthday: !s.overrideBirthday })),
+    setLandscapeType: (type) => update(s => ({ ...s, landscapeType: type })),
   };
 }
 

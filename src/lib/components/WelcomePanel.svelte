@@ -16,10 +16,11 @@
   import { generalSettings } from "$lib/stores/settingsStore";
   import { currentSeason } from "$lib/utils/season";
   import { TIME, getTimeOfDay } from "$lib/components/visual/constants";
-  
+
   // Visual System Components
   import SceneRenderer from "$lib/components/visual/SceneRenderer.svelte";
-  import MountainLandscape from "$lib/components/visual/MountainLandscape.svelte";
+
+  import Landscape from "$lib/components/visual/Landscape.svelte";
   import BirthdayCelebration from "$lib/components/visual/BirthdayCelebration.svelte";
 
   // Load ingreso data on mount
@@ -47,8 +48,11 @@
       return false;
     }
   }
-  
-  let isBirthday = $derived($generalSettings.overrideBirthday || checkBirthday($currentUser?.fechaNacimiento));
+
+  let isBirthday = $derived(
+    $generalSettings.overrideBirthday ||
+      checkBirthday($currentUser?.fechaNacimiento),
+  );
 
   const modules = [
     {
@@ -93,40 +97,50 @@
   ];
 
   // Time-based text styling
-  let effectiveHour = $derived($generalSettings.overrideHour ?? new Date().getHours());
+  let effectiveHour = $derived(
+    $generalSettings.overrideHour ?? new Date().getHours(),
+  );
   let timeOfDay = $derived(getTimeOfDay(effectiveHour));
-  let isDay = $derived(timeOfDay === 'day' || timeOfDay === 'morning');
-  
-  // Use dark text only if it's daytime AND NOT winter (winter mountains are dark) AND background is shown
-  let useDarkText = $derived($generalSettings.showBackground && isDay && $currentSeason !== "winter");
+  let isDay = $derived(timeOfDay === "day" || timeOfDay === "morning");
 
-  let textColorClass = $derived(isBirthday
-    ? "text-white drop-shadow-xl tracking-wide"
-    : useDarkText
-      ? "text-slate-800 drop-shadow-sm"
-      : "text-white drop-shadow-md");
+  // Use dark text only if it's daytime AND NOT winter (winter mountains are dark) AND background is shown
+  let useDarkText = $derived(
+    $generalSettings.showBackground && isDay && $currentSeason !== "winter",
+  );
+
+  let textColorClass = $derived(
+    isBirthday
+      ? "text-white drop-shadow-xl tracking-wide"
+      : useDarkText
+        ? "text-slate-800 drop-shadow-sm"
+        : "text-white drop-shadow-md",
+  );
 
   // Dynamic greeting based on time
   let currentHour = $derived(new Date().getHours());
-  let greeting = $derived(isBirthday
-    ? "¡Feliz Cumpleaños!"
-    : currentHour < 6
-      ? "Feliz madrugada"
-      : currentHour < 12
-        ? "Buenos días"
-        : currentHour < 18
-          ? "Buenas tardes"
-          : "Buenas noches");
+  let greeting = $derived(
+    isBirthday
+      ? "¡Feliz Cumpleaños!"
+      : currentHour < 6
+        ? "Feliz madrugada"
+        : currentHour < 12
+          ? "Buenos días"
+          : currentHour < 18
+            ? "Buenas tardes"
+            : "Buenas noches",
+  );
 </script>
 
-<div class="relative flex h-full items-center justify-center bg-surface-1 px-6 overflow-hidden">
+<div
+  class="relative flex h-full items-center justify-center bg-surface-1 px-6 overflow-hidden"
+>
   <!-- Visual Background System -->
   {#if isBirthday}
     <BirthdayCelebration name={$currentUser?.nombre || "Usuario"} />
     <div class="absolute inset-0 bg-black/10 pointer-events-none z-[3]"></div>
   {:else if $generalSettings.showBackground}
     <SceneRenderer isBirthday={false}>
-      <MountainLandscape />
+      <Landscape />
     </SceneRenderer>
   {:else}
     <!-- Minimal mode: just celestial cycle and weather (no mountains) -->
@@ -198,10 +212,10 @@
               ? 'text-sm mt-2 opacity-80'
               : 'text-xl font-medium tracking-wide opacity-90 mt-6'}"
         >
-        {isBirthday
-          ? "Te desea el equipo de Brisas App 🎉"
-          : "Brisas App - Sistema Integral de Control de Acceso"}
-      </p>
+          {isBirthday
+            ? "Te desea el equipo de Brisas App 🎉"
+            : "Brisas App - Sistema Integral de Control de Acceso"}
+        </p>
       </div>
     {/if}
 
