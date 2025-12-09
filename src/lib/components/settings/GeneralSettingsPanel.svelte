@@ -130,39 +130,49 @@
         )}
 
         {#if $generalSettings.showBackground}
-          <div
-            class="pr-4 pl-12 pt-2 pb-4"
-            transition:slide={{ duration: 200 }}
-          >
-            <div class="grid grid-cols-3 gap-2">
-              {#each LANDSCAPE_TYPES as biome}
-                <button
-                  class="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all duration-200
-                  {$generalSettings.landscapeType === biome.id
-                    ? 'bg-blue-500/10 border-blue-500 text-blue-500'
-                    : 'bg-surface-2 border-white/5 text-secondary hover:bg-surface-3 hover:border-white/10'}"
-                  onclick={() => generalSettings.setLandscapeType(biome.id)}
-                  title={biome.name}
-                >
-                  <!-- Icon -->
-                  {#if biome.icon === "Mountain"}
-                    <Mountain size={16} />
-                  {:else if biome.icon === "Trees"}
-                    <Trees size={16} />
-                  {:else if biome.icon === "Building2"}
-                    <Building2 size={16} />
-                  {:else if biome.icon === "Sun"}
-                    <Sun size={16} />
-                  {:else if biome.icon === "Umbrella"}
-                    <Umbrella size={16} />
-                  {:else if biome.icon === "Moon"}
-                    <Moon size={16} />
-                  {/if}
+          <div class="pr-4 pt-1 pb-4" transition:slide={{ duration: 200 }}>
+            <button
+              class="flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600 hover:underline transition-colors w-fit ml-1 mb-2"
+              onclick={() =>
+                (showLandscapeCustomization = !showLandscapeCustomization)}
+            >
+              <Sliders size={14} />
+              {showLandscapeCustomization ? "Ocultar" : "Personalizar"}
+            </button>
 
-                  <span class="text-[10px] font-medium">{biome.name}</span>
-                </button>
-              {/each}
-            </div>
+            {#if showLandscapeCustomization}
+              <div class="pl-12 pt-2" transition:slide={{ duration: 200 }}>
+                <div class="grid grid-cols-3 gap-2">
+                  {#each LANDSCAPE_TYPES as biome}
+                    <button
+                      class="flex flex-col items-center justify-center gap-1.5 p-2 rounded-lg border transition-all duration-200
+                      {$generalSettings.landscapeType === biome.id
+                        ? 'bg-blue-500/10 border-blue-500 text-blue-500'
+                        : 'bg-surface-2 border-white/5 text-secondary hover:bg-surface-3 hover:border-white/10'}"
+                      onclick={() => generalSettings.setLandscapeType(biome.id)}
+                      title={biome.name}
+                    >
+                      <!-- Icon -->
+                      {#if biome.icon === "Mountain"}
+                        <Mountain size={16} />
+                      {:else if biome.icon === "Trees"}
+                        <Trees size={16} />
+                      {:else if biome.icon === "Building2"}
+                        <Building2 size={16} />
+                      {:else if biome.icon === "Sun"}
+                        <Sun size={16} />
+                      {:else if biome.icon === "Umbrella"}
+                        <Umbrella size={16} />
+                      {:else if biome.icon === "Moon"}
+                        <Moon size={16} />
+                      {/if}
+
+                      <span class="text-[10px] font-medium">{biome.name}</span>
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/if}
           </div>
         {/if}
 
