@@ -11,6 +11,13 @@ export interface ParticleSettings {
 
     // General Particle Controls
     globalSpeedMultiplier: number;
+
+    // Weather Controls (New)
+    weatherDensityMultiplier: number;
+    weatherSpeedMultiplier: number;
+    weatherSizeMultiplier: number;
+    weatherWindInfluence: number; // 0 to 2
+    weatherTurbulence: number; // 0 to 2
 }
 
 export const DEFAULT_PARTICLE_SETTINGS: ParticleSettings = {
@@ -22,6 +29,13 @@ export const DEFAULT_PARTICLE_SETTINGS: ParticleSettings = {
     bokehSpeedMultiplier: 1.0,
 
     globalSpeedMultiplier: 1.0,
+
+    // Weather defaults
+    weatherDensityMultiplier: 1.0,
+    weatherSpeedMultiplier: 1.0,
+    weatherSizeMultiplier: 1.0,
+    weatherWindInfluence: 1.0,
+    weatherTurbulence: 1.0,
 };
 
 function createParticleSettingsStore() {
@@ -37,6 +51,13 @@ function createParticleSettingsStore() {
         updateBokehCount: (count: number) => update(s => ({ ...s, bokehCount: count })),
         updateBokehOpacity: (opacity: number) => update(s => ({ ...s, bokehMaxOpacity: opacity })),
         updateBokehSize: (min: number, max: number) => update(s => ({ ...s, bokehMinSize: min, bokehMaxSize: max })),
+
+        // Weather actions
+        updateWeatherDensity: (m: number) => update(s => ({ ...s, weatherDensityMultiplier: m })),
+        updateWeatherSpeed: (m: number) => update(s => ({ ...s, weatherSpeedMultiplier: m })),
+        updateWeatherSize: (m: number) => update(s => ({ ...s, weatherSizeMultiplier: m })),
+        updateWeatherWind: (m: number) => update(s => ({ ...s, weatherWindInfluence: m })),
+        updateWeatherTurbulence: (m: number) => update(s => ({ ...s, weatherTurbulence: m })),
     };
 }
 

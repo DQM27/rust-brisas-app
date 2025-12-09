@@ -65,8 +65,14 @@ function createParticle(
   canvasHeight: number,
   randomizeY: boolean
 ): Particle {
+  // Determine type first to check if it's weather-affected
   const type = getParticleType(config);
+
   const size = randomRange(config.sizeRange[0], config.sizeRange[1]);
+
+  // Apply weather multipliers if available (passed via config or special logic, but here we might need to access them differently or pass them in)
+  // Ideally, speed adjustment happens primarily in update, but initial speed also matters.
+  // We'll stick to base speed here and modify effective speed in update to be dynamic with the slider.
   const baseSpeed = randomRange(config.speedRange[0], config.speedRange[1]);
 
   return {
@@ -111,13 +117,22 @@ export function updateParticleSystem(
 
   // Check if we need to recreate particles (season or day/night changed)
   const newConfig = getParticleConfig(render.season, isNight);
-  const configChanged = newConfig.count !== state.config.count ||
+
+  // Apply density multiplier
+  const densityMult = render.weatherSettings?.densityMultiplier ?? 1;
+  const effectiveCount = Math.floor(newConfig.count * densityMult);
+
+  // Check if we need to recreate (count changed or glows changed)
+  const configChanged = effectiveCount !== state.particles.length ||
     newConfig.glows !== state.config.glows;
 
   if (configChanged) {
+    // Clone config and apply density to count
+    const effectiveConfig = { ...newConfig, count: effectiveCount };
     return {
-      particles: createParticles(newConfig, canvas, true),
-      config: newConfig,
+      particles: createParticles(effectiveConfig, canvas, true),
+      config: newConfig, // Keep original config for reference? Or update it? state.config is used for checking changes.
+      // Only the count changes dynamically.
     };
   }
 
@@ -139,43 +154,55 @@ function updateParticle(
   const dt = render.deltaTime / 16; // Normalize to 60fps
   const wind = render.wind.strength;
 
+  // Get multipliers (default to 1 if missing for safety)
+  const densityMult = render.weatherSettings?.densityMultiplier ?? 1;
+  const speedMult = render.weatherSettings?.speedMultiplier ?? 1;
+  const sizeMult = render.weatherSettings?.sizeMultiplier ?? 1;
+  const windMult = render.weatherSettings?.windInfluence ?? 1;
+  const turbMult = render.weatherSettings?.turbulence ?? 1;
+
   let { x, y, vx, vy, rotation, opacity, glowPhase } = particle;
 
+  // Apply visual size scaling via a temporary scale factor? No, we likely need to scale drawing.
+  // Actually, we can just treat particle.size as base size and apply multiplier during render?
+  // Or modify effective size here? No, 'particle.size' is state.
+  // Best approach: Use sizeMult in the render function.
+
   // Apply wind
-  const windEffect = wind * 0.5;
+  const windEffect = wind * 0.5 * windMult;
 
   switch (particle.type) {
     case 'snowflake':
       // Snow drifts with wind, falls steadily
-      x += (vx + windEffect) * dt;
-      y += vy * dt;
+      x += (vx + windEffect) * dt * speedMult;
+      y += vy * dt * speedMult;
       // Add subtle wobble
-      x += Math.sin(y * 0.02 + particle.size) * 0.3;
+      x += Math.sin(y * 0.02 + particle.size) * 0.3 * turbMult;
       break;
 
     case 'petal':
     case 'leaf':
       // Petals/leaves flutter and rotate
-      x += (vx + windEffect * 1.5) * dt;
-      y += vy * dt;
+      x += (vx + windEffect * 1.5) * dt * speedMult;
+      y += vy * dt * speedMult;
       // Oscillating horizontal movement
-      x += Math.sin(y * 0.01 + particle.size * 10) * 1.5;
-      rotation += particle.rotationSpeed * dt;
+      x += Math.sin(y * 0.01 + particle.size * 10) * 1.5 * turbMult;
+      rotation += particle.rotationSpeed * dt * speedMult;
       break;
 
     case 'pollen':
       // Pollen floats with wind, organic wavy motion
-      x += (vx + windEffect * 0.8) * dt;
+      x += (vx + windEffect * 0.8) * dt * speedMult;
       // Compound sine waves for organic float
-      y += (Math.sin(render.timestamp * 0.001 + particle.size * 10) * 0.2 + 0.1) * dt;
+      y += (Math.sin(render.timestamp * 0.001 + particle.size * 10) * 0.2 + 0.1) * dt * speedMult;
       // Slight random wobble
-      x += Math.cos(render.timestamp * 0.0015 + particle.y * 0.01) * 0.1 * dt;
+      x += Math.cos(render.timestamp * 0.0015 + particle.y * 0.01) * 0.1 * dt * turbMult;
       break;
 
     case 'firefly':
       // Fireflies wander randomly, glow pulses
-      x += (vx + Math.sin(render.timestamp * 0.002 + particle.size * 50) * 0.5) * dt;
-      y += (vy + Math.cos(render.timestamp * 0.002 + particle.size * 30) * 0.5) * dt;
+      x += (vx + Math.sin(render.timestamp * 0.002 + particle.size * 50) * 0.5 * turbMult) * dt * speedMult;
+      y += (vy + Math.cos(render.timestamp * 0.002 + particle.size * 30) * 0.5 * turbMult) * dt * speedMult;
 
       // Update glow
       if (glowPhase !== undefined && particle.glowSpeed !== undefined) {
@@ -225,17 +252,23 @@ export function renderParticleSystem(
   const { ctx } = canvas;
 
   state.particles.forEach(particle => {
-    renderParticle(particle, ctx, render.timestamp);
+    renderParticle(particle, ctx, render);
   });
 }
 
 function renderParticle(
   particle: Particle,
   ctx: CanvasRenderingContext2D,
-  timestamp: number
+  render: RenderState
 ): void {
+  const sizeMult = render.weatherSettings?.sizeMultiplier ?? 1;
+
   ctx.save();
   ctx.translate(particle.x, particle.y);
+  // Apply size multiplier here for all drawing operations
+  if (sizeMult !== 1) {
+    ctx.scale(sizeMult, sizeMult);
+  }
   ctx.globalAlpha = clamp(particle.opacity, 0, 1);
 
   switch (particle.type) {

@@ -24,6 +24,7 @@
 
   // State for advanced customization modal
   let showAdvancedCustomization = false;
+  let showWeatherCustomization = false;
 
   // ==========================================================================
   // Toggle Component (reusable)
@@ -156,6 +157,23 @@
           $generalSettings.enableWeatherEffects,
           () => generalSettings.toggleWeather(),
         )}
+
+        {#if $generalSettings.enableWeatherEffects}
+          <div class="pr-4 pt-1 pb-4" transition:slide={{ duration: 200 }}>
+            <button
+              class="flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600 hover:underline transition-colors w-fit ml-1"
+              onclick={() =>
+                (showWeatherCustomization = !showWeatherCustomization)}
+            >
+              <Sliders size={14} />
+              {showWeatherCustomization ? "Ocultar" : "Personalizar"}
+            </button>
+
+            {#if showWeatherCustomization}
+              <VisualCustomizationPanel embedded={true} mode="weather" />
+            {/if}
+          </div>
+        {/if}
 
         {@render settingRow(
           Sparkles,

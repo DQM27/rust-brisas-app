@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { generalSettings, type Season } from "$lib/stores/settingsStore";
+  import { particleSettings } from "$lib/stores/particleSettingsStore";
   import { currentSeason } from "$lib/utils/season";
   import { currentTime } from "$lib/stores/timeStore";
 
@@ -166,6 +167,13 @@
       timestamp,
       wind: windState,
       isBirthday,
+      weatherSettings: {
+        densityMultiplier: $particleSettings.weatherDensityMultiplier,
+        speedMultiplier: $particleSettings.weatherSpeedMultiplier,
+        sizeMultiplier: $particleSettings.weatherSizeMultiplier,
+        windInfluence: $particleSettings.weatherWindInfluence,
+        turbulence: $particleSettings.weatherTurbulence,
+      },
     };
 
     // Clear canvas

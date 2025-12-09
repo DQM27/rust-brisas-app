@@ -1,10 +1,19 @@
 <script lang="ts">
   import { fade, scale, slide } from "svelte/transition"; // Added slide
-  import { X, Sparkles, Sliders, Zap, Maximize, Circle } from "lucide-svelte";
+  import {
+    X,
+    Sparkles,
+    Sliders,
+    Zap,
+    Maximize,
+    Circle,
+    CloudRain,
+  } from "lucide-svelte";
   import { particleSettings } from "$lib/stores/particleSettingsStore";
 
   export let onClose: () => void = () => {};
-  export let embedded = false; // New prop
+  export let embedded = false;
+  export let mode: "bokeh" | "weather" = "bokeh"; // New prop
 
   // Helper to format percentage
   function pct(value: number): string {
@@ -90,109 +99,236 @@
 {/if}
 
 {#snippet content()}
-  <!-- Section: Bokeh Effect -->
-  <div class="space-y-4">
-    <div class="flex items-center gap-2 mb-2">
-      <Sparkles size={16} class="text-pink-400" />
-      <h3 class="text-sm font-semibold text-primary uppercase tracking-wider">
-        Efecto Bokeh (Flent)
-      </h3>
-    </div>
-
-    <!-- Count -->
-    <div class="control-group">
-      <div class="flex justify-between items-center mb-2">
-        <span class="text-sm text-secondary">Cantidad de Partículas</span>
-        <span
-          class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
-          >{$particleSettings.bokehCount}</span
-        >
+  {#if mode === "bokeh"}
+    <!-- Section: Bokeh Effect -->
+    <div class="space-y-4">
+      <div class="flex items-center gap-2 mb-2">
+        <Sparkles size={16} class="text-pink-400" />
+        <h3 class="text-sm font-semibold text-primary uppercase tracking-wider">
+          Efecto Bokeh (Flent)
+        </h3>
       </div>
-      <input
-        type="range"
-        min="0"
-        max="150"
-        step="1"
-        bind:value={$particleSettings.bokehCount}
-        on:input={() =>
-          particleSettings.updateBokehCount($particleSettings.bokehCount)}
-        class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer"
-      />
-    </div>
 
-    <!-- Opacity -->
-    <div class="control-group">
-      <div class="flex justify-between items-center mb-2">
-        <span class="text-sm text-secondary">Opacidad Máxima</span>
-        <span
-          class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
-          >{pct($particleSettings.bokehMaxOpacity)}</span
-        >
-      </div>
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.05"
-        bind:value={$particleSettings.bokehMaxOpacity}
-        on:input={() =>
-          particleSettings.updateBokehOpacity(
-            $particleSettings.bokehMaxOpacity,
-          )}
-        class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer"
-      />
-    </div>
-
-    <!-- Size Range -->
-    <div class="control-group">
-      <div class="flex justify-between items-center mb-2">
-        <span class="text-sm text-secondary">Tamaño (Mín - Máx)</span>
-        <span
-          class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
-          >{$particleSettings.bokehMinSize}px - {$particleSettings.bokehMaxSize}px</span
-        >
-      </div>
-      <div class="flex gap-4">
+      <!-- Count -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Cantidad de Partículas</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >{$particleSettings.bokehCount}</span
+          >
+        </div>
         <input
           type="range"
-          min="5"
-          max="100"
-          step="5"
-          bind:value={$particleSettings.bokehMinSize}
-          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer flex-1"
-          title="Tamaño Mínimo"
+          min="0"
+          max="150"
+          step="1"
+          bind:value={$particleSettings.bokehCount}
+          on:input={() =>
+            particleSettings.updateBokehCount($particleSettings.bokehCount)}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer"
         />
+      </div>
+
+      <!-- Opacity -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Opacidad Máxima</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >{pct($particleSettings.bokehMaxOpacity)}</span
+          >
+        </div>
         <input
           type="range"
-          min="5"
-          max="200"
-          step="5"
-          bind:value={$particleSettings.bokehMaxSize}
-          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer flex-1"
-          title="Tamaño Máximo"
+          min="0"
+          max="1"
+          step="0.05"
+          bind:value={$particleSettings.bokehMaxOpacity}
+          on:input={() =>
+            particleSettings.updateBokehOpacity(
+              $particleSettings.bokehMaxOpacity,
+            )}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer"
+        />
+      </div>
+
+      <!-- Size Range -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Tamaño (Mín - Máx)</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >{$particleSettings.bokehMinSize}px - {$particleSettings.bokehMaxSize}px</span
+          >
+        </div>
+        <div class="flex gap-4">
+          <input
+            type="range"
+            min="5"
+            max="100"
+            step="5"
+            bind:value={$particleSettings.bokehMinSize}
+            class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer flex-1"
+            title="Tamaño Mínimo"
+          />
+          <input
+            type="range"
+            min="5"
+            max="200"
+            step="5"
+            bind:value={$particleSettings.bokehMaxSize}
+            class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer flex-1"
+            title="Tamaño Máximo"
+          />
+        </div>
+      </div>
+
+      <!-- Speed Multiplier -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Velocidad del Bokeh</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >{Math.round($particleSettings.bokehSpeedMultiplier * 100)}%</span
+          >
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="5"
+          step="0.1"
+          bind:value={$particleSettings.bokehSpeedMultiplier}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-pink-500"
         />
       </div>
     </div>
-
-    <!-- Speed Multiplier -->
-    <div class="control-group">
-      <div class="flex justify-between items-center mb-2">
-        <span class="text-sm text-secondary">Velocidad del Bokeh</span>
-        <span
-          class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
-          >{Math.round($particleSettings.bokehSpeedMultiplier * 100)}%</span
-        >
+  {:else if mode === "weather"}
+    <!-- Section: Weather Effect -->
+    <div class="space-y-4">
+      <div class="flex items-center gap-2 mb-2">
+        <CloudRain size={16} class="text-blue-400" />
+        <h3 class="text-sm font-semibold text-primary uppercase tracking-wider">
+          Clima (Lluvia/Nieve/Polen)
+        </h3>
       </div>
-      <input
-        type="range"
-        min="0"
-        max="5"
-        step="0.1"
-        bind:value={$particleSettings.bokehSpeedMultiplier}
-        class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-pink-500"
-      />
+
+      <!-- Density -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Densidad de Partículas</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >x{$particleSettings.weatherDensityMultiplier}</span
+          >
+        </div>
+        <input
+          type="range"
+          min="0.1"
+          max="3"
+          step="0.1"
+          bind:value={$particleSettings.weatherDensityMultiplier}
+          on:input={() =>
+            particleSettings.updateWeatherDensity(
+              $particleSettings.weatherDensityMultiplier,
+            )}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-blue-500"
+        />
+      </div>
+
+      <!-- Speed -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Velocidad de Caída/Vuelo</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >x{$particleSettings.weatherSpeedMultiplier}</span
+          >
+        </div>
+        <input
+          type="range"
+          min="0.1"
+          max="3"
+          step="0.1"
+          bind:value={$particleSettings.weatherSpeedMultiplier}
+          on:input={() =>
+            particleSettings.updateWeatherSpeed(
+              $particleSettings.weatherSpeedMultiplier,
+            )}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-blue-500"
+        />
+      </div>
+
+      <!-- Size -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Tamaño</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >x{$particleSettings.weatherSizeMultiplier}</span
+          >
+        </div>
+        <input
+          type="range"
+          min="0.5"
+          max="3"
+          step="0.1"
+          bind:value={$particleSettings.weatherSizeMultiplier}
+          on:input={() =>
+            particleSettings.updateWeatherSize(
+              $particleSettings.weatherSizeMultiplier,
+            )}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-blue-500"
+        />
+      </div>
+
+      <!-- Wind Influence -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Influencia Viento</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >x{$particleSettings.weatherWindInfluence}</span
+          >
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="3"
+          step="0.1"
+          bind:value={$particleSettings.weatherWindInfluence}
+          on:input={() =>
+            particleSettings.updateWeatherWind(
+              $particleSettings.weatherWindInfluence,
+            )}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-blue-500"
+        />
+      </div>
+
+      <!-- Turbulence -->
+      <div class="control-group">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-secondary">Turbulencia / Caos</span>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-mono bg-surface-3 text-secondary border border-white/5"
+            >x{$particleSettings.weatherTurbulence}</span
+          >
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="3"
+          step="0.1"
+          bind:value={$particleSettings.weatherTurbulence}
+          on:input={() =>
+            particleSettings.updateWeatherTurbulence(
+              $particleSettings.weatherTurbulence,
+            )}
+          class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-blue-500"
+        />
+      </div>
     </div>
-  </div>
+  {/if}
 {/snippet}
 
 <style lang="postcss">

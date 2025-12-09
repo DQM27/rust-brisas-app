@@ -24,6 +24,13 @@ export interface RenderState {
   timestamp: number;      // performance.now()
   wind: WindState;
   isBirthday: boolean;
+  weatherSettings: {
+    densityMultiplier: number;
+    speedMultiplier: number;
+    sizeMultiplier: number;
+    windInfluence: number;
+    turbulence: number;
+  };
 }
 
 // -----------------------------------------------------------------------------
