@@ -27,11 +27,19 @@
   let particles: Particle[] = [];
   const COUNT = 100;
 
-  // Watch for season changes to reset particles
+  // Watch for season OR day/night changes to reset particles
   let lastSeason: Season | null = null;
-  $: if ($currentSeason !== lastSeason) {
-    lastSeason = $currentSeason;
-    if (canvas) createParticles(); // Only recreate if mounted
+  let lastIsNight: boolean | null = null;
+
+  $: {
+    const seasonChanged = $currentSeason !== lastSeason;
+    const dayNightChanged = isNight !== lastIsNight;
+
+    if (seasonChanged || (dayNightChanged && $currentSeason === "summer")) {
+      lastSeason = $currentSeason;
+      lastIsNight = isNight;
+      if (canvas) createParticles();
+    }
   }
 
   function resize() {
@@ -77,13 +85,29 @@
         p.rotation = Math.random() * 360;
         p.rotationSpeed = Math.random() * 2 - 1;
         break;
-      case "summer": // Luciérnagas
-        p.y = Math.random() * h;
-        p.radius = Math.random() * 2 + 1;
-        p.speedY = Math.random() * 0.2 - 0.1;
-        p.speedX = Math.random() * 0.2 - 0.1;
-        p.color = "#FFD700";
-        p.opacity = Math.random();
+      case "summer":
+        if (isNight) {
+          // Luciérnagas (Noche) - Mix de colores
+          p.y = Math.random() * h;
+          p.radius = Math.random() * 2 + 1;
+          p.speedY = Math.random() * 0.2 - 0.1; // Flotar suave vertical
+          p.speedX = Math.random() * 0.2 - 0.1; // Flotar suave horizontal
+
+          // Mix de colores: Blanco, Amarillo y Verde (Lima)
+          const fireflyColors = ["#FFFFFF", "#FFD700", "#CCFF00"];
+          p.color =
+            fireflyColors[Math.floor(Math.random() * fireflyColors.length)];
+
+          p.opacity = Math.random(); // Comienza en opacidad random para parpadeo
+        } else {
+          // Polen / Viento (Día)
+          p.y = Math.random() * h;
+          p.radius = Math.random() * 1.5 + 0.5; // Pequeñas
+          p.speedY = Math.random() * 0.5 - 0.25; // Flotar leve
+          p.speedX = Math.random() * 2 + 1; // Viento rápido a la derecha
+          p.color = "#FFFDD0"; // Crema / Polen
+          p.opacity = Math.random() * 0.3 + 0.4; // Semitransparente constante
+        }
         break;
       case "autumn": // Hojas
         p.radius = Math.random() * 4 + 3;
@@ -118,14 +142,9 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     particles.forEach((p, i) => {
-      // Special Summer Logic (Fireflies)
-      if ($currentSeason === "summer") {
-        if (!isNight) {
-          // If it's summer but NOT night, don't draw fireflies
-          return;
-        }
-
-        // Firefly behavior: flicker and slow movement
+      // Logic
+      if ($currentSeason === "summer" && isNight) {
+        // Solo parpaderar si son luciérnagas (noche)
         p.opacity += (Math.random() - 0.5) * 0.05;
         if (p.opacity < 0) p.opacity = 0;
         if (p.opacity > 1) p.opacity = 1;
@@ -158,10 +177,12 @@
       // Bounds
       const outOfBounds =
         p.y > canvas.height + 10 || p.x > canvas.width + 10 || p.x < -10;
-      const resetSummer =
-        $currentSeason === "summer" && (outOfBounds || Math.random() < 0.001);
 
-      if (outOfBounds || resetSummer) {
+      // Reset logic
+      // Summer day needs horizontal reset
+      const resetSummer = $currentSeason === "summer" && outOfBounds;
+
+      if (outOfBounds) {
         resetParticle(i);
       }
     });

@@ -28,62 +28,9 @@
     </p>
   </div>
 
-  <div class="grid gap-6 max-w-3xl">
-    <!-- Weather Effects Card -->
-    <div class="card-base p-6 flex items-center justify-between">
-      <div class="flex items-start gap-4">
-        <div
-          class="p-3 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-        >
-          <CloudRain size={24} />
-        </div>
-        <div>
-          <h3 class="text-lg font-semibold text-primary">Efectos Climáticos</h3>
-          <p class="text-sm text-secondary mt-1 max-w-md">
-            Habilita animaciones estacionales (nieve, lluvia, hojas) en la
-            pantalla de bienvenida.
-          </p>
-        </div>
-      </div>
-
-      <!-- Toggle Switch -->
-      <button
-        on:click={toggleWeather}
-        class="relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
-        {$generalSettings.enableWeatherEffects
-          ? 'bg-green-500'
-          : 'bg-gray-300 dark:bg-gray-700'}"
-      >
-        <span class="sr-only">Activar efectos climáticos</span>
-        <span
-          class="pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out
-          {$generalSettings.enableWeatherEffects
-            ? 'translate-x-6'
-            : 'translate-x-0'}"
-        >
-          <span
-            class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity
-            {$generalSettings.enableWeatherEffects
-              ? 'opacity-100 duration-200 ease-in'
-              : 'opacity-0 duration-100 ease-out'}"
-          >
-            <Check size={14} class="text-green-600" strokeWidth={3} />
-          </span>
-          <span
-            class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity
-            {$generalSettings.enableWeatherEffects
-              ? 'opacity-0 duration-100 ease-out'
-              : 'opacity-100 duration-200 ease-in'}"
-          >
-            <X size={14} class="text-gray-400" strokeWidth={3} />
-          </span>
-        </span>
-      </button>
-    </div>
-
-    <!-- Interface Settings Card -->
+  <div class="grid gap-4 max-w-3xl pb-8">
+    <!-- Visual Customization Card (All Toggles) -->
     <div class="card-base p-6">
-      <!-- Header -->
       <div class="flex items-center gap-4 mb-6">
         <div
           class="p-3 rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
@@ -91,18 +38,70 @@
           <Layout size={24} />
         </div>
         <div>
-          <h3 class="text-lg font-semibold text-primary">Interfaz</h3>
+          <h3 class="text-lg font-semibold text-primary">Personalización</h3>
           <p class="text-sm text-secondary mt-1">
-            Personaliza los elementos visuales de la pantalla de bienvenida.
+            Configura todos los elementos visuales de la pantalla.
           </p>
         </div>
       </div>
 
-      <!-- Toggles Grid -->
       <div class="space-y-4">
-        <!-- Toggle Cards -->
+        <!-- Weather Effect Toggle -->
         <div class="flex items-center justify-between">
-          <span class="text-secondary font-medium">Mostrar Tarjetas</span>
+          <div class="flex items-center gap-3">
+            <div
+              class="p-2 rounded-md bg-blue-50 text-blue-500/80 dark:bg-blue-900/20"
+            >
+              <CloudRain size={18} />
+            </div>
+            <span class="text-secondary font-medium">Efectos Climáticos</span>
+          </div>
+          <button
+            on:click={toggleWeather}
+            class="relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
+            {$generalSettings.enableWeatherEffects
+              ? 'bg-green-500'
+              : 'bg-gray-300 dark:bg-gray-700'}"
+          >
+            <span class="sr-only">Activar efectos climáticos</span>
+            <span
+              class="pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out
+              {$generalSettings.enableWeatherEffects
+                ? 'translate-x-6'
+                : 'translate-x-0'}"
+            >
+              <span
+                class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity
+                {$generalSettings.enableWeatherEffects
+                  ? 'opacity-100 duration-200 ease-in'
+                  : 'opacity-0 duration-100 ease-out'}"
+              >
+                <Check size={14} class="text-green-600" strokeWidth={3} />
+              </span>
+              <span
+                class="absolute inset-0 flex h-full w-full items-center justify-center transition-opacity
+                {$generalSettings.enableWeatherEffects
+                  ? 'opacity-0 duration-100 ease-out'
+                  : 'opacity-100 duration-200 ease-in'}"
+              >
+                <X size={14} class="text-gray-400" strokeWidth={3} />
+              </span>
+            </span>
+          </button>
+        </div>
+
+        <!-- Cards Toggle -->
+        <div
+          class="flex items-center justify-between pt-4 border-t border-emphasis"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="p-2 rounded-md bg-purple-50 text-purple-500/80 dark:bg-purple-900/20"
+            >
+              <Layout size={18} />
+            </div>
+            <span class="text-secondary font-medium">Mostrar Tarjetas</span>
+          </div>
           <button
             on:click={toggleCards}
             class="relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2
@@ -137,15 +136,18 @@
           </button>
         </div>
 
-        <!-- Toggle Background -->
+        <!-- Background Toggle -->
         <div
           class="flex items-center justify-between pt-4 border-t border-emphasis"
         >
-          <div class="flex items-center gap-2">
-            <Mountain size={18} class="text-secondary" />
+          <div class="flex items-center gap-3">
+            <div
+              class="p-2 rounded-md bg-emerald-50 text-emerald-500/80 dark:bg-emerald-900/20"
+            >
+              <Mountain size={18} />
+            </div>
             <span class="text-secondary font-medium">Mostrar Paisaje</span>
           </div>
-
           <button
             on:click={toggleBackground}
             class="relative inline-flex h-8 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2
@@ -182,65 +184,8 @@
       </div>
     </div>
 
-    <!-- Preview Controls -->
-    {#if $generalSettings.enableWeatherEffects}
-      <div class="card-base p-6" in:scale={{ duration: 300, delay: 100 }}>
-        <h3 class="text-lg font-semibold text-primary mb-4">Vista Previa</h3>
-        <p class="text-sm text-secondary mb-4">
-          Selecciona un efecto para previsualizarlo instantáneamente.
-        </p>
-
-        <div class="flex flex-wrap gap-3">
-          <button
-            class="btn-base {$generalSettings.overrideSeason === null
-              ? 'bg-primary text-white'
-              : 'bg-surface-2 hover:bg-surface-hover'}"
-            on:click={() => ($generalSettings.overrideSeason = null)}
-          >
-            Automático
-          </button>
-
-          <button
-            class="btn-base {$generalSettings.overrideSeason === 'winter'
-              ? 'bg-blue-500 text-white'
-              : 'bg-surface-2 hover:bg-surface-hover'}"
-            on:click={() => ($generalSettings.overrideSeason = "winter")}
-          >
-            Invierno ❄️
-          </button>
-
-          <button
-            class="btn-base {$generalSettings.overrideSeason === 'spring'
-              ? 'bg-pink-400 text-white'
-              : 'bg-surface-2 hover:bg-surface-hover'}"
-            on:click={() => ($generalSettings.overrideSeason = "spring")}
-          >
-            Primavera 🌸
-          </button>
-
-          <button
-            class="btn-base {$generalSettings.overrideSeason === 'summer'
-              ? 'bg-yellow-500 text-white'
-              : 'bg-surface-2 hover:bg-surface-hover'}"
-            on:click={() => ($generalSettings.overrideSeason = "summer")}
-          >
-            Verano ✨
-          </button>
-
-          <button
-            class="btn-base {$generalSettings.overrideSeason === 'autumn'
-              ? 'bg-orange-500 text-white'
-              : 'bg-surface-2 hover:bg-surface-hover'}"
-            on:click={() => ($generalSettings.overrideSeason = "autumn")}
-          >
-            Otoño 🍂
-          </button>
-        </div>
-      </div>
-    {/if}
-
-    <!-- Time Control (God Mode) -->
-    <div class="card-base p-6 mt-6" in:scale={{ duration: 300, delay: 150 }}>
+    <!-- Time Control (God Mode) - Moved UP -->
+    <div class="card-base p-6" in:scale={{ duration: 300, delay: 150 }}>
       <div class="flex items-center justify-between mb-4">
         <div>
           <h3 class="text-lg font-semibold text-primary">Ciclo Solar/Lunar</h3>
@@ -285,5 +230,67 @@
         </span>
       </div>
     </div>
+
+    <!-- Preview Controls - Moved DOWN -->
+    {#if $generalSettings.enableWeatherEffects}
+      <div class="card-base p-6 mt-2" in:scale={{ duration: 300, delay: 100 }}>
+        <h3 class="text-lg font-semibold text-primary mb-4">Vista Previa</h3>
+        <p class="text-sm text-secondary mb-4">
+          Selecciona un efecto para previsualizarlo instantáneamente.
+        </p>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+          <button
+            class="btn-base w-full justify-center {$generalSettings.overrideSeason ===
+            null
+              ? 'bg-primary text-white'
+              : 'bg-surface-2 hover:bg-surface-hover'}"
+            on:click={() => ($generalSettings.overrideSeason = null)}
+          >
+            Auto
+          </button>
+
+          <button
+            class="btn-base w-full justify-center {$generalSettings.overrideSeason ===
+            'winter'
+              ? 'bg-blue-500 text-white'
+              : 'bg-surface-2 hover:bg-surface-hover'}"
+            on:click={() => ($generalSettings.overrideSeason = "winter")}
+          >
+            Invierno ❄️
+          </button>
+
+          <button
+            class="btn-base w-full justify-center {$generalSettings.overrideSeason ===
+            'spring'
+              ? 'bg-pink-400 text-white'
+              : 'bg-surface-2 hover:bg-surface-hover'}"
+            on:click={() => ($generalSettings.overrideSeason = "spring")}
+          >
+            Primavera 🌸
+          </button>
+
+          <button
+            class="btn-base w-full justify-center {$generalSettings.overrideSeason ===
+            'summer'
+              ? 'bg-yellow-500 text-white'
+              : 'bg-surface-2 hover:bg-surface-hover'}"
+            on:click={() => ($generalSettings.overrideSeason = "summer")}
+          >
+            Verano ✨
+          </button>
+
+          <button
+            class="btn-base w-full justify-center {$generalSettings.overrideSeason ===
+            'autumn'
+              ? 'bg-orange-500 text-white'
+              : 'bg-surface-2 hover:bg-surface-hover'}"
+            on:click={() => ($generalSettings.overrideSeason = "autumn")}
+          >
+            Otoño 🍂
+          </button>
+        </div>
+      </div>
+    {/if}
   </div>
 </div>
