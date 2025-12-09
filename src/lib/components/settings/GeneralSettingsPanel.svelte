@@ -95,7 +95,7 @@
   in:scale={{ duration: 300, start: 0.95 }}
 >
   <div class="mb-6">
-    <h2 class="text-2xl font-bold text-primary">Ajustes Generales</h2>
+    <h2 class="text-2xl font-bold text-primary">Ajustes Gráficos</h2>
     <p class="text-secondary mt-1">
       Configura las preferencias visuales del sistema.
     </p>

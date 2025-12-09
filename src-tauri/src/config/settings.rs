@@ -18,6 +18,13 @@ pub struct TerminalConfig {
     pub nombre: String,
     /// ID único generado a partir del hardware
     pub id: String,
+    /// Ubicación física de la terminal
+    #[serde(default = "default_ubicacion")]
+    pub ubicacion: String,
+}
+
+fn default_ubicacion() -> String {
+    "Sin asignar".to_string()
 }
 
 /// Configuración de la base de datos
@@ -41,6 +48,7 @@ impl Default for AppConfig {
             terminal: TerminalConfig {
                 nombre: "Terminal Principal".to_string(),
                 id: String::new(), // Se generará automáticamente
+                ubicacion: "Sin asignar".to_string(),
             },
             database: DatabaseConfig {
                 paths: vec![

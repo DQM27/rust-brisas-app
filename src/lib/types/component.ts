@@ -15,4 +15,5 @@ export type ComponentKey =
   | 'ingreso-list'
   | 'general-settings'
   | 'update-settings'
-  | 'backup-settings';
+  | 'backup-settings'
+  | 'device-settings';

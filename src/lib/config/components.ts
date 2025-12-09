@@ -18,6 +18,7 @@ import BlacklistImportView from '$lib/components/BlacklistImport/BlacklistImport
 import GeneralSettingsPanel from '$lib/components/settings/GeneralSettingsPanel.svelte';
 import UpdateSettingsPanel from '$lib/components/settings/UpdateSettingsPanel.svelte';
 import BackupSettingsPanel from '$lib/components/settings/BackupSettingsPanel.svelte';
+import DeviceSettingsPanel from '$lib/components/settings/DeviceSettingsPanel.svelte';
 
 import GafeteListView from '$lib/components/gafete/GafeteListView.svelte';
 import IngresoListView from '$lib/components/ingreso/IngresoListView.svelte';
@@ -42,6 +43,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'general-settings': GeneralSettingsPanel,
   'update-settings': UpdateSettingsPanel,
   'backup-settings': BackupSettingsPanel,
+  'device-settings': DeviceSettingsPanel,
 
   'gafete-list': GafeteListView,
   'ingreso-list': IngresoListView,

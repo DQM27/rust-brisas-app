@@ -31,18 +31,37 @@
   <button
     class="panel-item"
     on:click={executeAndClose(() =>
-      openView("general-settings", "Ajustes Generales"),
+      openView("device-settings", "Ajustes Generales"),
     )}
     on:keydown={(e) =>
       handleKeydown(
         e,
         executeAndClose(() =>
-          openView("general-settings", "Ajustes Generales"),
+          openView("device-settings", "Ajustes Generales"),
         ),
       )}
   >
     <svelte:component this={Settings} size={16} />
-    <span>Ajustes generales</span>
+    <span>Ajustes Generales</span>
+  </button>
+
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() =>
+      openView("general-settings", "Ajustes Gráficos"),
+    )}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() =>
+          openView("general-settings", "Ajustes Gráficos"),
+        ),
+      )}
+  >
+    <!-- Usamos FileSpreadsheet temporalmente como icono de visual/paleta si no hay otro, o mantenemos Settings pero cambiamos texto -->
+    <!-- Mejor: Usar el mismo Settings para ambos por ahora o buscar uno de paleta si estuviera impoortado -->
+    <svelte:component this={Settings} size={16} />
+    <span>Ajustes Gráficos</span>
   </button>
 
   <div class="panel-item non-clickable">

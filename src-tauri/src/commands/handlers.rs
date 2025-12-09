@@ -144,6 +144,11 @@ macro_rules! register_handlers {
             // ==========================================
             commands::backup::backup_database,
             commands::backup::restore_database,
+            // ==========================================
+            // COMANDOS DE CONFIGURACIÓN
+            // ==========================================
+            commands::config_commands::get_app_config,
+            commands::config_commands::update_terminal_config,
         ]
     };
 }
