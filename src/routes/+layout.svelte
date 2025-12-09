@@ -9,6 +9,7 @@
   import { initNetworkMonitor } from "$lib/stores/network";
   import Toast from "$lib/components/Toast.svelte";
   import { themeStore } from "$lib/stores/themeStore"; // Inicializar tema
+  import { generalSettings } from "$lib/stores/settingsStore";
 
   // Estado de autenticación reactivo
   $: authenticated = $isAuthenticated;
@@ -32,7 +33,7 @@
   <div
     class="flex flex-1 w-full overflow-hidden bg-surface-1 md:flex-row flex-col"
   >
-    {#if authenticated}
+    {#if authenticated && !$generalSettings.isKioskMode}
       <Sidebar />
     {/if}
     <div class="flex-1 bg-surface-1 overflow-auto relative flex">
@@ -44,8 +45,10 @@
   </div>
 
   <!-- StatusBar -->
-  <StatusBar
-    inspectionPanelVisible={$inspectionPanel.visible}
-    on:inspectionToggle={toggleInspectionPanel}
-  />
+  {#if !$generalSettings.isKioskMode}
+    <StatusBar
+      inspectionPanelVisible={$inspectionPanel.visible}
+      on:inspectionToggle={toggleInspectionPanel}
+    />
+  {/if}
 </div>

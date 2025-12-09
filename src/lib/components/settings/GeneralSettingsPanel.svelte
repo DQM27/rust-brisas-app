@@ -25,6 +25,7 @@
     Umbrella,
   } from "lucide-svelte";
   import { LANDSCAPE_TYPES } from "$lib/components/visual/systems/landscapeData";
+  import { onMount } from "svelte";
 
   let showAdvancedCustomization = false;
   let showWeatherCustomization = false;
@@ -101,6 +102,8 @@
   </div>
 
   <div class="grid gap-4 max-w-3xl pb-8">
+    <!-- ================================================================== -->
+
     <!-- ================================================================== -->
     <!-- VISUAL ELEMENTS CARD -->
     <!-- ================================================================== -->

@@ -22,10 +22,86 @@
 
   import Landscape from "$lib/components/visual/Landscape.svelte";
   import BirthdayCelebration from "$lib/components/visual/BirthdayCelebration.svelte";
+  import { Monitor } from "lucide-svelte";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
+
+  import { onDestroy } from "svelte";
 
   // Load ingreso data on mount
+  let wakeLock: any = null;
+
+  async function requestWakeLock() {
+    try {
+      if ("wakeLock" in navigator) {
+        wakeLock = await navigator.wakeLock.request("screen");
+        console.log("Wake Lock is active");
+      }
+    } catch (err) {
+      const e = err as Error;
+      console.error(`${e.name}, ${e.message}`);
+    }
+  }
+
+  // Handle visibility change (tab switching releases lock, so request again when back)
+  function handleVisibilityChange() {
+    if (wakeLock !== null && document.visibilityState === "visible") {
+      requestWakeLock();
+    }
+  }
+
+  async function toggleFullscreen() {
+    try {
+      const appWindow = getCurrentWindow();
+      const current = await appWindow.isFullscreen();
+      await appWindow.setFullscreen(!current);
+      generalSettings.update((s) => ({ ...s, isKioskMode: !current }));
+    } catch (e) {
+      console.log("Not running in Tauri, trying web fullscreen");
+      if (!document.fullscreenElement) {
+        document.documentElement
+          .requestFullscreen()
+          .catch((err) => console.log(err));
+        generalSettings.update((s) => ({ ...s, isKioskMode: true }));
+      } else {
+        document.exitFullscreen().catch((err) => console.log(err));
+        generalSettings.update((s) => ({ ...s, isKioskMode: false }));
+      }
+    }
+  }
+
+  // Sync state on mount and listen for external changes (like Esc key)
   onMount(() => {
-    ingresoStore.load();
+    (async () => {
+      ingresoStore.load();
+      requestWakeLock();
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+
+      try {
+        const appWindow = getCurrentWindow();
+        const isFull = await appWindow.isFullscreen();
+        generalSettings.update((s) => ({ ...s, isKioskMode: isFull }));
+      } catch (e) {}
+    })();
+
+    // Listen for Escape key to exit kiosk mode
+    const handleKeydown = async (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        try {
+          const appWindow = getCurrentWindow();
+          if (await appWindow.isFullscreen()) {
+            await appWindow.setFullscreen(false);
+            generalSettings.update((s) => ({ ...s, isKioskMode: false }));
+          }
+        } catch (err) {
+          if (document.fullscreenElement) {
+            document.exitFullscreen();
+            generalSettings.update((s) => ({ ...s, isKioskMode: false }));
+          }
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeydown);
+    return () => window.removeEventListener("keydown", handleKeydown);
   });
 
   // Birthday Logic 🎂 - Check real birthday OR override from settings
@@ -132,7 +208,11 @@
 </script>
 
 <div
-  class="relative flex h-full items-center justify-center bg-surface-1 px-6 overflow-hidden"
+  class="relative flex h-full items-center justify-center bg-surface-1 px-6 overflow-hidden select-none transition-all duration-300 {$generalSettings.isKioskMode
+    ? 'fixed inset-0 z-[9999]'
+    : ''}"
+  ondblclick={toggleFullscreen}
+  role="presentation"
 >
   <!-- Visual Background System -->
   {#if isBirthday}

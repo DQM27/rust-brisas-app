@@ -28,6 +28,7 @@ export interface GeneralSettings {
   overrideHour: number | null;    // null = tiempo real, 0-23 = hora fija
   overrideSeason: Season | null;  // null = estación real, string = estación fija
   overrideBirthday: boolean;      // Forzar modo cumpleaños para testing
+  isKioskMode: boolean;           // Modo quiosco (oculta todo excepto el panel)
 }
 
 // =============================================================================
@@ -54,6 +55,8 @@ const DEFAULT_SETTINGS: GeneralSettings = {
   overrideHour: null,
   overrideSeason: null,
   overrideBirthday: false,
+
+  isKioskMode: false,
 };
 
 // =============================================================================

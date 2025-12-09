@@ -4,6 +4,8 @@
   import type { HydratedTab } from "$lib/types/tab";
   import { X } from "lucide-svelte";
 
+  import { generalSettings } from "$lib/stores/settingsStore";
+
   interface Props {
     tabs: HydratedTab[];
   }
@@ -44,55 +46,57 @@
 
 <div class="flex h-full flex-col overflow-hidden">
   <!-- Tabs bar -->
-  <div
-    class="tab-bar"
-    role="tablist"
-    use:dndzone={{ items, flipDurationMs, type: "tabs" }}
-    onconsider={handleDndConsider}
-    onfinalize={handleDndFinalize}
-  >
-    {#each items as { id, tab } (id)}
-      {@const isActive = $activeTabId === id}
+  {#if !$generalSettings.isKioskMode}
+    <div
+      class="tab-bar"
+      role="tablist"
+      use:dndzone={{ items, flipDurationMs, type: "tabs" }}
+      onconsider={handleDndConsider}
+      onfinalize={handleDndFinalize}
+    >
+      {#each items as { id, tab } (id)}
+        {@const isActive = $activeTabId === id}
 
-      <div
-        class="tab-item {isActive ? 'active' : ''}"
-        role="tab"
-        aria-selected={isActive}
-      >
-        <!-- Indicador activo superior -->
-        {#if isActive}
-          <div class="tab-active-indicator"></div>
-        {/if}
-
-        <!-- Tab button -->
-        <button
-          class="tab-button {isActive ? 'active' : ''}"
-          onclick={() => setActive(id)}
-          tabindex="0"
+        <div
+          class="tab-item {isActive ? 'active' : ''}"
+          role="tab"
+          aria-selected={isActive}
         >
-          {#if tab.isDirty}
-            <span class="tab-dirty-indicator" title="Cambios sin guardar">
-              <span class="tab-dirty-ping"></span>
-              <span class="tab-dirty-dot"></span>
-            </span>
+          <!-- Indicador activo superior -->
+          {#if isActive}
+            <div class="tab-active-indicator"></div>
           {/if}
 
-          <span class="select-none">{tab.title}</span>
-        </button>
+          <!-- Tab button -->
+          <button
+            class="tab-button {isActive ? 'active' : ''}"
+            onclick={() => setActive(id)}
+            tabindex="0"
+          >
+            {#if tab.isDirty}
+              <span class="tab-dirty-indicator" title="Cambios sin guardar">
+                <span class="tab-dirty-ping"></span>
+                <span class="tab-dirty-dot"></span>
+              </span>
+            {/if}
 
-        <!-- Close button -->
-        <button
-          class="tab-close-btn {isActive ? 'active' : ''}"
-          type="button"
-          aria-label="Cerrar tab"
-          onclick={(e) => handleClose(e, id)}
-          onkeydown={(e) => handleKeyboardClose(e, id)}
-        >
-          <X size={14} strokeWidth={2.5} />
-        </button>
-      </div>
-    {/each}
-  </div>
+            <span class="select-none">{tab.title}</span>
+          </button>
+
+          <!-- Close button -->
+          <button
+            class="tab-close-btn {isActive ? 'active' : ''}"
+            type="button"
+            aria-label="Cerrar tab"
+            onclick={(e) => handleClose(e, id)}
+            onkeydown={(e) => handleKeyboardClose(e, id)}
+          >
+            <X size={14} strokeWidth={2.5} />
+          </button>
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   <!-- Content area -->
   <div class="tab-content-area">
