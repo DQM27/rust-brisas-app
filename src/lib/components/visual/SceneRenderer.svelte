@@ -3,7 +3,6 @@
   import { generalSettings, type Season } from "$lib/stores/settingsStore";
   import { currentSeason } from "$lib/utils/season";
   import { currentTime } from "$lib/stores/timeStore";
-  import { particleSettings } from "$lib/stores/particleSettingsStore";
 
   import type {
     CanvasContext,
@@ -136,22 +135,12 @@
     celestialState = celestialSystem.init();
     cloudState = cloudSystem.init(canvasCtx);
     windState = windSystem.init();
-    // Resolve initial weather config
-    let weatherConfig = $particleSettings.weather[season];
-    if (
-      season === "summer" &&
-      isNight &&
-      $particleSettings.weather.summer.nightVariant
-    ) {
-      weatherConfig = $particleSettings.weather.summer.nightVariant;
-    }
-
-    particleState = particleSystem.init(canvasCtx, weatherConfig);
+    particleState = particleSystem.init(canvasCtx, season, isNight);
 
     if (isBirthday) {
       birthdayState = birthdaySystem.init(canvasCtx);
     } else {
-      bokehState = bokehSystem.init(canvasCtx, $particleSettings.bokeh);
+      bokehState = bokehSystem.init(canvasCtx);
     }
   }
 
@@ -222,32 +211,16 @@
 
       // Update bokeh (flent)
       if (showBokeh) {
-        bokehState = bokehSystem.update(
-          bokehState,
-          renderState,
-          canvasCtx,
-          $particleSettings.bokeh,
-        );
+        bokehState = bokehSystem.update(bokehState, renderState, canvasCtx);
       }
     }
 
     // Update weather particles
     if (enableWeather && !isBirthday) {
-      // Resolve active config
-      let weatherConfig = $particleSettings.weather[season];
-      if (
-        season === "summer" &&
-        isNight &&
-        $particleSettings.weather.summer.nightVariant
-      ) {
-        weatherConfig = $particleSettings.weather.summer.nightVariant;
-      }
-
       particleState = particleSystem.update(
         particleState,
         renderState,
         canvasCtx,
-        weatherConfig,
       );
     }
 
@@ -329,16 +302,7 @@
       lastSeason = season;
       const canvasCtx = getCanvasContext();
       if (canvasCtx) {
-        // Resolve weather config
-        let weatherConfig = $particleSettings.weather[season];
-        if (
-          season === "summer" &&
-          isNight &&
-          $particleSettings.weather.summer.nightVariant
-        ) {
-          weatherConfig = $particleSettings.weather.summer.nightVariant;
-        }
-        particleState = particleSystem.init(canvasCtx, weatherConfig);
+        particleState = particleSystem.init(canvasCtx, season, isNight);
       }
     }
   });
@@ -348,14 +312,14 @@
 <div
   class="absolute inset-0 transition-all duration-1000 ease-out"
   style="background: {isBirthday ? birthdayGradientCSS : skyGradientCSS};"
-></div>
+/>
 
 <!-- Canvas for all animated elements -->
 <canvas
   bind:this={canvas}
   class="absolute inset-0 w-full h-full"
   style="z-index: 1;"
-></canvas>
+/>
 
 <!-- Slot for MountainLandscape SVG (rendered on top of canvas sky) -->
 <div class="absolute inset-0" style="z-index: 2;">

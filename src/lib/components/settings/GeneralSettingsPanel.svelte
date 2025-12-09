@@ -1,9 +1,6 @@
 <script lang="ts">
   import { generalSettings, type Season } from "$lib/stores/settingsStore";
   import { particleSettings } from "$lib/stores/particleSettingsStore";
-  import { currentTime } from "$lib/stores/timeStore";
-  import { currentSeason } from "$lib/utils/season";
-  import { TIME } from "$lib/components/visual/constants";
   import { scale, slide } from "svelte/transition";
   import {
     CloudRain,
@@ -19,33 +16,22 @@
     Cake,
     RotateCcw,
     Eye,
+    EyeOff,
     Type,
-    Sliders,
   } from "lucide-svelte";
 
-  // State for customization panels
-  let showWeatherCustomization = false;
-  let showBokehCustomization = false;
+  // ==========================================================================
+  // Toggle Component (reusable)
+  // ==========================================================================
 
-  // Logic for Customization
-  $: effectiveHour =
-    $generalSettings.overrideHour ??
-    $currentTime.getHours() + $currentTime.getMinutes() / 60;
-  $: activeSeason = ($generalSettings.overrideSeason ??
-    $currentSeason) as Season;
-  $: isNight =
-    effectiveHour >= TIME.DUSK_END || effectiveHour < TIME.DAWN_START;
-
-  $: activeWeatherKey =
-    activeSeason === "summer" && isNight ? "summerNight" : activeSeason;
-  $: activeWeatherConfig =
-    activeWeatherKey === "summerNight"
-      ? $particleSettings.weather.summer.nightVariant
-      : $particleSettings.weather[activeSeason];
-
-  function updateWeatherConfig(changes: any) {
-    // @ts-ignore
-    particleSettings.updateWeather(activeWeatherKey, changes);
+  // Inline toggle to reduce repetition
+  function Toggle(props: {
+    checked: boolean;
+    onChange: () => void;
+    srLabel: string;
+    accentColor?: string;
+  }) {
+    return props;
   }
 </script>
 
@@ -87,41 +73,6 @@
       <span class="text-secondary font-medium">{label}</span>
     </div>
     {@render toggleSwitch(checked, onChange, label)}
-  </div>
-{/snippet}
-
-<!-- Customization Row (Special handling for Weather/Bokeh) -->
-{#snippet customizationRow(
-  icon: any,
-  iconBg: string,
-  iconColor: string,
-  label: string,
-  checked: boolean,
-  onChange: () => void,
-  onCustomize: () => void,
-  isExpanded: boolean,
-)}
-  <div class="py-3">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="p-2 rounded-md {iconBg}">
-          <svelte:component this={icon} size={18} class={iconColor} />
-        </div>
-        <span class="text-secondary font-medium">{label}</span>
-      </div>
-      <div class="flex items-center gap-4">
-        {#if checked}
-          <button
-            class="text-xs font-medium text-accent hover:underline flex items-center gap-1"
-            onclick={onCustomize}
-          >
-            <Sliders size={12} />
-            Configurar
-          </button>
-        {/if}
-        {@render toggleSwitch(checked, onChange, label)}
-      </div>
-    </div>
   </div>
 {/snippet}
 
@@ -192,153 +143,71 @@
           () => generalSettings.toggleCelestial(),
         )}
 
-        <!-- Weather with Customization -->
-        <div>
-          {@render customizationRow(
-            CloudRain,
-            "bg-blue-50 dark:bg-blue-900/20",
-            "text-blue-500",
-            "Efectos Climáticos",
-            $generalSettings.enableWeatherEffects,
-            () => generalSettings.toggleWeather(),
-            () => (showWeatherCustomization = !showWeatherCustomization),
-            showWeatherCustomization,
-          )}
+        {@render settingRow(
+          CloudRain,
+          "bg-blue-50 dark:bg-blue-900/20",
+          "text-blue-500",
+          "Efectos Climáticos",
+          $generalSettings.enableWeatherEffects,
+          () => generalSettings.toggleWeather(),
+        )}
 
-          {#if $generalSettings.enableWeatherEffects && showWeatherCustomization}
-            <div transition:slide class="pb-3 pl-12 pr-4 space-y-4">
-              <div class="p-4 bg-surface-2 rounded-lg border border-surface-3">
-                <div
-                  class="text-xs font-bold text-secondary uppercase tracking-wider mb-4 border-b border-surface-3 pb-2"
-                >
-                  {#if activeWeatherKey === "summerNight"}
-                    Luciérnagas
-                  {:else if activeWeatherKey === "summer"}
-                    Polen
-                  {:else if activeWeatherKey === "winter"}
-                    Nieve
-                  {:else if activeWeatherKey === "spring"}
-                    Pétalos
-                  {:else}
-                    Hojas
-                  {/if}
-                </div>
-                {#if activeWeatherConfig}
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                      <div class="flex justify-between text-xs text-secondary">
-                        <span>Densidad</span>
-                        <span class="text-primary font-mono"
-                          >{activeWeatherConfig.count}</span
-                        >
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="200"
-                        step="5"
-                        class="w-full h-1.5 bg-surface-3 rounded-lg accent-blue-500"
-                        value={activeWeatherConfig.count}
-                        oninput={(e) =>
-                          updateWeatherConfig({
-                            count: +e.currentTarget.value,
-                          })}
-                      />
-                    </div>
-                    <div class="space-y-2">
-                      <div class="flex justify-between text-xs text-secondary">
-                        <span>Velocidad</span>
-                        <span class="text-primary font-mono"
-                          >x{(
-                            (activeWeatherConfig.speedRange[0] +
-                              activeWeatherConfig.speedRange[1]) /
-                            2
-                          ).toFixed(1)}</span
-                        >
-                      </div>
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="4"
-                        step="0.1"
-                        class="w-full h-1.5 bg-surface-3 rounded-lg accent-blue-500"
-                        value={(activeWeatherConfig.speedRange[0] +
-                          activeWeatherConfig.speedRange[1]) /
-                          2}
-                        oninput={(e) => {
-                          const val = +e.currentTarget.value;
-                          updateWeatherConfig({
-                            speedRange: [val * 0.8, val * 1.2],
-                          });
-                        }}
-                      />
-                    </div>
-                  </div>
-                {/if}
+        {@render settingRow(
+          Sparkles,
+          "bg-pink-50 dark:bg-pink-900/20",
+          "text-pink-500",
+          "Efecto Bokeh",
+          $generalSettings.showBokeh,
+          () => generalSettings.toggleBokeh(),
+        )}
+
+        {#if $generalSettings.showBokeh}
+          <div
+            class="pl-12 pr-4 pt-1 pb-4 space-y-4"
+            transition:slide={{ duration: 200 }}
+          >
+            <!-- Count Slider -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs text-secondary">
+                <span>Cantidad</span>
+                <span>{$particleSettings.bokehCount}</span>
               </div>
+              <input
+                type="range"
+                min="5"
+                max="100"
+                value={$particleSettings.bokehCount}
+                oninput={(e) =>
+                  particleSettings.updateBokehCount(
+                    parseInt(e.currentTarget.value),
+                  )}
+                class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-pink-500"
+              />
             </div>
-          {/if}
-        </div>
 
-        <!-- Bokeh with Customization -->
-        <div>
-          {@render customizationRow(
-            Sparkles,
-            "bg-pink-50 dark:bg-pink-900/20",
-            "text-pink-500",
-            "Efecto Bokeh",
-            $generalSettings.showBokeh,
-            () => generalSettings.toggleBokeh(),
-            () => (showBokehCustomization = !showBokehCustomization),
-            showBokehCustomization,
-          )}
-
-          {#if $generalSettings.showBokeh && showBokehCustomization}
-            <div transition:slide class="pb-3 pl-12 pr-4 space-y-4">
-              <div class="p-4 bg-surface-2 rounded-lg border border-surface-3">
-                <div
-                  class="text-xs font-bold text-secondary uppercase tracking-wider mb-4 border-b border-surface-3 pb-2"
+            <!-- Opacity Slider -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs text-secondary">
+                <span>Opacidad Máxima</span>
+                <span
+                  >{Math.round($particleSettings.bokehMaxOpacity * 100)}%</span
                 >
-                  Configuración Bokeh
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div class="space-y-2">
-                    <div class="flex justify-between text-xs text-secondary">
-                      <span>Cantidad</span>
-                      <span class="text-primary font-mono"
-                        >{$particleSettings.bokeh.count}</span
-                      >
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="150"
-                      step="1"
-                      class="w-full h-1.5 bg-surface-3 rounded-lg accent-pink-500"
-                      bind:value={$particleSettings.bokeh.count}
-                    />
-                  </div>
-                  <div class="space-y-2">
-                    <div class="flex justify-between text-xs text-secondary">
-                      <span>Velocidad</span>
-                      <span class="text-primary font-mono"
-                        >{$particleSettings.bokeh.maxSpeed.toFixed(2)}</span
-                      >
-                    </div>
-                    <input
-                      type="range"
-                      min="0.01"
-                      max="0.5"
-                      step="0.01"
-                      class="w-full h-1.5 bg-surface-3 rounded-lg accent-pink-500"
-                      bind:value={$particleSettings.bokeh.maxSpeed}
-                    />
-                  </div>
-                </div>
               </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={$particleSettings.bokehMaxOpacity}
+                oninput={(e) =>
+                  particleSettings.updateBokehOpacity(
+                    parseFloat(e.currentTarget.value),
+                  )}
+                class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-pink-500"
+              />
             </div>
-          {/if}
-        </div>
+          </div>
+        {/if}
       </div>
     </div>
 
@@ -470,50 +339,51 @@
     <!-- ================================================================== -->
     <!-- SEASON PREVIEW CARD -->
     <!-- ================================================================== -->
-    {#if $generalSettings.enableWeatherEffects}
-      <div class="card-base p-5" transition:slide={{ duration: 200 }}>
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-4">
-            <div
-              class="p-3 rounded-lg bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400"
-            >
-              <Sparkles size={22} />
-            </div>
-            <div>
-              <h3 class="text-lg font-semibold text-primary">Estación</h3>
-              <p class="text-sm text-secondary">
-                Previsualiza efectos estacionales.
-              </p>
-            </div>
+    <!-- ================================================================== -->
+    <!-- SEASON PREVIEW CARD -->
+    <!-- ================================================================== -->
+    <div class="card-base p-5">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-4">
+          <div
+            class="p-3 rounded-lg bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400"
+          >
+            <Sparkles size={22} />
           </div>
-
-          {#if $generalSettings.overrideSeason !== null}
-            <button
-              class="flex items-center gap-1 text-xs text-accent hover:underline"
-              onclick={() => ($generalSettings.overrideSeason = null)}
-            >
-              <RotateCcw size={12} />
-              Auto
-            </button>
-          {/if}
+          <div>
+            <h3 class="text-lg font-semibold text-primary">Estación</h3>
+            <p class="text-sm text-secondary">
+              Previsualiza efectos estacionales.
+            </p>
+          </div>
         </div>
 
-        <div class="grid grid-cols-5 gap-2">
-          {#each [{ label: "Auto", value: null, icon: "🔄", bg: "bg-gray-500" }, { label: "Invierno", value: "winter", icon: "❄️", bg: "bg-blue-500" }, { label: "Primavera", value: "spring", icon: "🌸", bg: "bg-pink-400" }, { label: "Verano", value: "summer", icon: "✨", bg: "bg-yellow-500" }, { label: "Otoño", value: "autumn", icon: "🍂", bg: "bg-orange-500" }] as season}
-            <button
-              class="flex flex-col items-center gap-1 py-2 px-1 rounded-lg transition-all
-                {$generalSettings.overrideSeason === season.value
-                ? `${season.bg} text-white scale-105 shadow-md`
-                : 'bg-surface-2 hover:bg-surface-hover text-secondary hover:scale-102'}"
-              onclick={() => ($generalSettings.overrideSeason = season.value)}
-            >
-              <span class="text-lg">{season.icon}</span>
-              <span class="text-xs font-medium">{season.label}</span>
-            </button>
-          {/each}
-        </div>
+        {#if $generalSettings.overrideSeason !== null}
+          <button
+            class="flex items-center gap-1 text-xs text-accent hover:underline"
+            onclick={() => ($generalSettings.overrideSeason = null)}
+          >
+            <RotateCcw size={12} />
+            Auto
+          </button>
+        {/if}
       </div>
-    {/if}
+
+      <div class="grid grid-cols-5 gap-2">
+        {#each [{ label: "Auto", value: null, icon: "🔄", bg: "bg-gray-500" }, { label: "Invierno", value: "winter" as Season, icon: "❄️", bg: "bg-blue-500" }, { label: "Primavera", value: "spring" as Season, icon: "🌸", bg: "bg-pink-400" }, { label: "Verano", value: "summer" as Season, icon: "✨", bg: "bg-yellow-500" }, { label: "Otoño", value: "autumn" as Season, icon: "🍂", bg: "bg-orange-500" }] as season}
+          <button
+            class="flex flex-col items-center gap-1 py-2 px-1 rounded-lg transition-all
+                {$generalSettings.overrideSeason === season.value
+              ? `${season.bg} text-white scale-105 shadow-md`
+              : 'bg-surface-2 hover:bg-surface-hover text-secondary hover:scale-102'}"
+            onclick={() => ($generalSettings.overrideSeason = season.value)}
+          >
+            <span class="text-lg">{season.icon}</span>
+            <span class="text-xs font-medium">{season.label}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
 
     <!-- ================================================================== -->
     <!-- BIRTHDAY TEST CARD -->

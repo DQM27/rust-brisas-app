@@ -211,8 +211,6 @@ export interface BirthdaySystemState {
 // Bokeh (Flent) System
 // -----------------------------------------------------------------------------
 
-import type { BokehConfig } from '$lib/stores/particleSettingsStore';
-
 export interface BokehParticle extends Particle {
   targetOpacity: number;
   pulseSpeed: number;
@@ -220,7 +218,6 @@ export interface BokehParticle extends Particle {
 
 export interface BokehSystemState {
   particles: BokehParticle[];
-  config: BokehConfig;
 }
 
 // -----------------------------------------------------------------------------

@@ -11,6 +11,7 @@ import type {
   Season
 } from '../types';
 import {
+  PARTICLE_CONFIGS,
   TIME,
   randomRange,
   clamp,
@@ -23,14 +24,25 @@ import {
 
 export function initParticleSystem(
   canvas: CanvasContext,
-  config: ParticleConfig // Config is now explicitly passed
+  season: Season,
+  isNight: boolean
 ): ParticleSystemState {
+  const config = getParticleConfig(season, isNight);
   const particles = createParticles(config, canvas, true);
 
   return { particles, config };
 }
 
-// (Removed getParticleConfig that depended on constants.ts)
+function getParticleConfig(season: Season, isNight: boolean): ParticleConfig {
+  const baseConfig = PARTICLE_CONFIGS[season];
+
+  // Summer has different particles for day/night
+  if (season === 'summer' && isNight && baseConfig.nightVariant) {
+    return baseConfig.nightVariant;
+  }
+
+  return baseConfig;
+}
 
 function createParticles(
   config: ParticleConfig,
@@ -92,29 +104,29 @@ function getParticleType(config: ParticleConfig): Particle['type'] {
 export function updateParticleSystem(
   state: ParticleSystemState,
   render: RenderState,
-  canvas: CanvasContext,
-  activeConfig: ParticleConfig
+  canvas: CanvasContext
 ): ParticleSystemState {
   const { width, height } = canvas;
-  // isNight is no longer needed here as config is passed externally
+  const isNight = render.time >= TIME.DUSK_END || render.time < TIME.DAWN_START;
 
-  // Check if we need to recreate particles (config changed significantly)
-  const configChanged = activeConfig.count !== state.config.count ||
-    activeConfig.glows !== state.config.glows;
+  // Check if we need to recreate particles (season or day/night changed)
+  const newConfig = getParticleConfig(render.season, isNight);
+  const configChanged = newConfig.count !== state.config.count ||
+    newConfig.glows !== state.config.glows;
 
   if (configChanged) {
     return {
-      particles: createParticles(activeConfig, canvas, true),
-      config: activeConfig,
+      particles: createParticles(newConfig, canvas, true),
+      config: newConfig,
     };
   }
 
   // Update existing particles
   const particles = state.particles.map(p =>
-    updateParticle(p, render, canvas, activeConfig)
+    updateParticle(p, render, canvas, state.config)
   );
 
-  return { particles, config: activeConfig };
+  return { particles, config: state.config };
 }
 
 function updateParticle(

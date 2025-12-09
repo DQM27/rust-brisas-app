@@ -9,7 +9,8 @@ import type {
     ParticleSystemState,
 } from '../types';
 import { randomRange, clamp } from '../constants';
-import type { BokehConfig } from '$lib/stores/particleSettingsStore';
+import { get } from 'svelte/store';
+import { particleSettings } from '../../../stores/particleSettingsStore';
 
 // -----------------------------------------------------------------------------
 // Types
@@ -22,43 +23,50 @@ export interface BokehParticle extends Particle {
 
 export interface BokehSystemState {
     particles: BokehParticle[];
-    config: BokehConfig; // Keep track of current config
 }
+
+// -----------------------------------------------------------------------------
+// Configuration
+// -----------------------------------------------------------------------------
+
+// Default config acts as fallback or initial state
+const BOKEH_CONFIG = {
+    COLORS: [
+        'rgba(255, 220, 150, 0.15)',  // Warm yellow/gold
+        'rgba(150, 255, 150, 0.12)', // Distinct green
+        'rgba(255, 150, 150, 0.12)', // Distinct pink
+        'rgba(150, 150, 255, 0.12)', // Distinct blue
+        'rgba(255, 255, 255, 0.08)', // Pure white
+    ],
+    SPEED_RANGE: [0.03, 0.1] as [number, number],
+};
 
 // -----------------------------------------------------------------------------
 // Initialization
 // -----------------------------------------------------------------------------
 
-export function initBokehSystem(canvas: CanvasContext, config: BokehConfig): BokehSystemState {
-    const particles = createBokehParticles(canvas, config);
-    return { particles, config };
+export function initBokehSystem(canvas: CanvasContext): BokehSystemState {
+    const particles = createBokehParticles(canvas);
+    return { particles };
 }
 
-function createBokehParticles(canvas: CanvasContext, config: BokehConfig): BokehParticle[] {
+function createBokehParticles(canvas: CanvasContext): BokehParticle[] {
+    const settings = get(particleSettings);
     const particles: BokehParticle[] = [];
     const { width, height } = canvas;
 
-    for (let i = 0; i < config.count; i++) {
-        particles.push(createBokehParticle(width, height, config));
+    for (let i = 0; i < settings.bokehCount; i++) {
+        particles.push(createBokehParticle(width, height));
     }
 
     return particles;
 }
 
-function createBokehParticle(width: number, height: number, config: BokehConfig): BokehParticle {
-    const size = randomRange(config.minSize, config.maxSize);
-    const speed = randomRange(config.minSpeed, config.maxSpeed);
+function createBokehParticle(width: number, height: number): BokehParticle {
+    const settings = get(particleSettings);
+    const size = randomRange(settings.bokehMinSize, settings.bokehMaxSize);
+    const speed = randomRange(BOKEH_CONFIG.SPEED_RANGE[0], BOKEH_CONFIG.SPEED_RANGE[1]) * settings.bokehSpeedMultiplier;
     const angle = Math.random() * Math.PI * 2;
-
-    const COLORS = [
-        'rgba(255, 220, 150, 1)',  // Warm yellow/gold
-        'rgba(150, 255, 150, 1)', // Distinct green
-        'rgba(255, 150, 150, 1)', // Distinct pink
-        'rgba(150, 150, 255, 1)', // Distinct blue
-        'rgba(255, 255, 255, 1)', // Pure white
-    ];
-
-    const baseColor = COLORS[Math.floor(Math.random() * COLORS.length)];
 
     return {
         x: Math.random() * width,
@@ -68,10 +76,10 @@ function createBokehParticle(width: number, height: number, config: BokehConfig)
         size,
         rotation: 0,
         rotationSpeed: 0,
-        opacity: 0, // Start invisible and fade in
-        targetOpacity: randomRange(config.minOpacity, config.maxOpacity),
+        opacity: 0,
+        targetOpacity: randomRange(0.1, settings.bokehMaxOpacity),
         pulseSpeed: randomRange(0.001, 0.003),
-        color: baseColor,
+        color: BOKEH_CONFIG.COLORS[Math.floor(Math.random() * BOKEH_CONFIG.COLORS.length)],
         type: 'pollen',
         glowPhase: Math.random() * Math.PI * 2,
     };
@@ -84,44 +92,46 @@ function createBokehParticle(width: number, height: number, config: BokehConfig)
 export function updateBokehSystem(
     state: BokehSystemState,
     render: RenderState,
-    canvas: CanvasContext,
-    newConfig?: BokehConfig
+    canvas: CanvasContext
 ): BokehSystemState {
     const { width, height } = canvas;
     const deltaTime = render.deltaTime;
 
-    let currentConfig = state.config;
-    let particles = state.particles;
+    // Read current settings
+    const settings = get(particleSettings);
 
-    // Check for config config changes
-    if (newConfig) {
-        if (newConfig.count !== currentConfig.count) {
-            if (newConfig.count > currentConfig.count) {
-                // Add more
-                const toAdd = newConfig.count - currentConfig.count;
-                for (let i = 0; i < toAdd; i++) {
-                    particles.push(createBokehParticle(width, height, newConfig));
-                }
-            } else {
-                // Remove extras
-                particles = particles.slice(0, newConfig.count);
+    // Handle count changes dynamically (simple approach: trim or add)
+    if (state.particles.length !== settings.bokehCount) {
+        if (state.particles.length < settings.bokehCount) {
+            // Add missing
+            for (let i = state.particles.length; i < settings.bokehCount; i++) {
+                state.particles.push(createBokehParticle(width, height));
             }
+        } else {
+            // Remove excess
+            state.particles = state.particles.slice(0, settings.bokehCount);
         }
-        currentConfig = newConfig;
     }
 
-    particles = particles.map(p => {
-        let { x, y, vx, vy, glowPhase, opacity, pulseSpeed, targetOpacity, color } = p;
+    const particles = state.particles.map(p => {
+        let { x, y, vx, vy, glowPhase, opacity, pulseSpeed, targetOpacity } = p;
+
+        // Apply global speed multiplier
+        const currentSpeedMultiplier = settings.bokehSpeedMultiplier;
 
         // Movement
-        x += vx * (deltaTime / 16);
-        y += vy * (deltaTime / 16);
+        x += vx * (deltaTime / 16) * currentSpeedMultiplier;
+        y += vy * (deltaTime / 16) * currentSpeedMultiplier;
 
         // Gentle pulsing
         if (glowPhase !== undefined) {
             glowPhase += pulseSpeed * deltaTime;
-            const maxOp = currentConfig.maxOpacity;
-            opacity = (Math.sin(glowPhase) + 1) * 0.5 * Math.min(targetOpacity, maxOp);
+            // Cap opacity based on current settings
+            const maxOpacity = settings.bokehMaxOpacity;
+            // Re-calculate target opacity if it exceeds new max
+            const effectiveTargetPayload = Math.min(targetOpacity, maxOpacity);
+
+            opacity = (Math.sin(glowPhase) + 1) * 0.5 * effectiveTargetPayload;
         }
 
         // Wrap around screen
@@ -133,7 +143,7 @@ export function updateBokehSystem(
         return { ...p, x, y, glowPhase, opacity };
     });
 
-    return { particles, config: currentConfig };
+    return { particles };
 }
 
 // -----------------------------------------------------------------------------
@@ -147,7 +157,10 @@ export function renderBokehSystem(
 ): void {
     const { ctx } = canvas;
 
+    // Composite operation for "glow" effect (additive blending might be too strong, sticking to source-over for subtle)
+    // But for "flent", screen or lighter might look nice if background is dark
     ctx.save();
+    // ctx.globalCompositeOperation = 'screen'; 
 
     state.particles.forEach(p => {
         ctx.globalAlpha = clamp(p.opacity, 0, 1);
