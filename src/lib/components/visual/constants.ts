@@ -187,19 +187,19 @@ export const PARTICLE_CONFIGS: Record<Season, ParticleConfig & { nightVariant?: 
   },
 
   summer: {
-    // Day - pollen/dust
-    count: 30,
-    colors: ['#fffdd0', '#fff8c0', '#ffffff'],
-    sizeRange: [2, 4],
-    speedRange: [0.5, 1.5],
-    rotates: false,
+    // Day - pollen/dust/dandelions
+    count: 60,
+    colors: ['#fffdd0', '#fff8c0', '#ffffff', '#fffaf0'], // Cream/White mix
+    sizeRange: [2, 5],
+    speedRange: [0.3, 1.0], // Slower, more drifting
+    rotates: true, // Some might be dandelions
     glows: false,
     // Night - fireflies
     nightVariant: {
-      count: 25,
-      colors: ['#ffff88', '#aaffaa', '#ffffff', '#e0ffe0', '#ffffe0'], // Yellow, Green, White mix
-      sizeRange: [3, 5],
-      speedRange: [0.01, 0.03], // Extremely slow (floating)
+      count: 40,
+      colors: ['#ffff88', '#ccffcc', '#ffffff', '#e0ffe0', '#ffffe0'], // Yellow, Green, White mix
+      sizeRange: [3, 6],
+      speedRange: [0.01, 0.05], // Slow floating
       rotates: false,
       glows: true,
     },

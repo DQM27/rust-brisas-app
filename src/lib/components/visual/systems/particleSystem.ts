@@ -164,9 +164,12 @@ function updateParticle(
       break;
 
     case 'pollen':
-      // Pollen floats with wind, slight vertical drift
-      x += (vx + windEffect * 2) * dt;
-      y += Math.sin(render.timestamp * 0.001 + particle.size * 100) * 0.3 * dt;
+      // Pollen floats with wind, organic wavy motion
+      x += (vx + windEffect * 0.8) * dt;
+      // Compound sine waves for organic float
+      y += (Math.sin(render.timestamp * 0.001 + particle.size * 10) * 0.2 + 0.1) * dt;
+      // Slight random wobble
+      x += Math.cos(render.timestamp * 0.0015 + particle.y * 0.01) * 0.1 * dt;
       break;
 
     case 'firefly':

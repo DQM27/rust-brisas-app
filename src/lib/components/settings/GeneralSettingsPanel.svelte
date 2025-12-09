@@ -2,6 +2,7 @@
   import { generalSettings, type Season } from "$lib/stores/settingsStore";
   import { particleSettings } from "$lib/stores/particleSettingsStore";
   import { scale, slide } from "svelte/transition";
+  import VisualCustomizationPanel from "./VisualCustomizationPanel.svelte";
   import {
     CloudRain,
     Check,
@@ -18,7 +19,11 @@
     Eye,
     EyeOff,
     Type,
+    Sliders,
   } from "lucide-svelte";
+
+  // State for advanced customization modal
+  let showAdvancedCustomization = false;
 
   // ==========================================================================
   // Toggle Component (reusable)
@@ -162,50 +167,19 @@
         )}
 
         {#if $generalSettings.showBokeh}
-          <div
-            class="pl-12 pr-4 pt-1 pb-4 space-y-4"
-            transition:slide={{ duration: 200 }}
-          >
-            <!-- Count Slider -->
-            <div class="space-y-1">
-              <div class="flex justify-between text-xs text-secondary">
-                <span>Cantidad</span>
-                <span>{$particleSettings.bokehCount}</span>
-              </div>
-              <input
-                type="range"
-                min="5"
-                max="100"
-                value={$particleSettings.bokehCount}
-                oninput={(e) =>
-                  particleSettings.updateBokehCount(
-                    parseInt(e.currentTarget.value),
-                  )}
-                class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-pink-500"
-              />
-            </div>
+          <div class="pr-4 pt-1 pb-4" transition:slide={{ duration: 200 }}>
+            <button
+              class="flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600 hover:underline transition-colors w-fit ml-1"
+              onclick={() =>
+                (showAdvancedCustomization = !showAdvancedCustomization)}
+            >
+              <Sliders size={14} />
+              {showAdvancedCustomization ? "Ocultar" : "Personalizar"}
+            </button>
 
-            <!-- Opacity Slider -->
-            <div class="space-y-1">
-              <div class="flex justify-between text-xs text-secondary">
-                <span>Opacidad Máxima</span>
-                <span
-                  >{Math.round($particleSettings.bokehMaxOpacity * 100)}%</span
-                >
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={$particleSettings.bokehMaxOpacity}
-                oninput={(e) =>
-                  particleSettings.updateBokehOpacity(
-                    parseFloat(e.currentTarget.value),
-                  )}
-                class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-pink-500"
-              />
-            </div>
+            {#if showAdvancedCustomization}
+              <VisualCustomizationPanel embedded={true} />
+            {/if}
           </div>
         {/if}
       </div>
@@ -450,3 +424,5 @@
     </div>
   </div>
 </div>
+
+<!-- Advanced Customization Modal Overlay -->
