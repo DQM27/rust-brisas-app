@@ -13,4 +13,6 @@ export type ComponentKey =
   | 'user-profile'
   | 'gafete-list'
   | 'ingreso-list'
-  | 'general-settings';
+  | 'general-settings'
+  | 'update-settings'
+  | 'backup-settings';

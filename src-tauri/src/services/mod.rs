@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod backup;
 pub mod blacklist_import_service;
 pub mod contratista_service;
 pub mod empresa_service;

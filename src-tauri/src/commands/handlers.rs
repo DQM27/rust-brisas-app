@@ -139,6 +139,11 @@ macro_rules! register_handlers {
             commands::templates::get_templates,
             commands::templates::save_template,
             commands::templates::delete_template,
+            // ==========================================
+            // COMANDOS DE BACKUP/RESTORE
+            // ==========================================
+            commands::backup::backup_database,
+            commands::backup::restore_database,
         ]
     };
 }

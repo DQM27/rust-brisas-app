@@ -26,6 +26,11 @@ pub fn run() {
                 app_config.terminal.nombre, app_config.terminal.id
             );
 
+            // Verificar si hay restauración pendiente ANTES de conectar a la DB
+            if let Err(e) = services::backup::check_and_restore_database(&app_config) {
+                eprintln!("❌ Error crítico al restaurar base de datos: {}", e);
+            }
+
             let pool = db::init_pool(&app_config).await?;
             db::migrate::run_migrations(&pool).await?;
             db::seed::seed_db(&pool).await?;
@@ -45,6 +50,7 @@ pub fn run() {
                 .manage(search_service)
                 .plugin(tauri_plugin_dialog::init())
                 .plugin(tauri_plugin_opener::init())
+                .plugin(tauri_plugin_updater::Builder::new().build())
                 .invoke_handler(register_handlers!())
                 .run(tauri::generate_context!())?;
             Ok(())

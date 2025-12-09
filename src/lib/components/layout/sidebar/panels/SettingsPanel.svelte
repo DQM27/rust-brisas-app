@@ -49,10 +49,22 @@
     <svelte:component this={Bell} size={16} />
     <span>Notificaciones</span>
   </div>
-  <div class="panel-item non-clickable">
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() =>
+      openView("backup-settings", "Copias de Seguridad"),
+    )}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() =>
+          openView("backup-settings", "Copias de Seguridad"),
+        ),
+      )}
+  >
     <svelte:component this={Download} size={16} />
     <span>Backup y restore</span>
-  </div>
+  </button>
 </div>
 
 <div class="panel-section">
@@ -77,10 +89,20 @@
 
 <div class="panel-section">
   <div class="panel-section-title">SISTEMA</div>
-  <div class="panel-item non-clickable">
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() =>
+      openView("update-settings", "Actualizaciones"),
+    )}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() => openView("update-settings", "Actualizaciones")),
+      )}
+  >
     <svelte:component this={RefreshCw} size={16} />
     <span>Actualizaciones</span>
-  </div>
+  </button>
   <button
     class="panel-item"
     on:click={executeAndClose(() => openView("welcome", "Acerca del Sistema"))}
