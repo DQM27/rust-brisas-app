@@ -1,10 +1,10 @@
 pub mod auth;
 pub mod backup;
-pub mod blacklist_import_service;
+
 pub mod contratista_service;
 pub mod empresa_service;
 pub mod entrada_service;
-pub mod excel_parser;
+
 pub mod export_service;
 pub mod gafete_service;
 pub mod lista_negra_service;

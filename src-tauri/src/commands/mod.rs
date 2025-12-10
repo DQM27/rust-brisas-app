@@ -1,5 +1,5 @@
 pub mod backup;
-pub mod blacklist_import_commands;
+
 pub mod config_commands;
 pub mod contratista_commands;
 pub mod empresa_commands;
