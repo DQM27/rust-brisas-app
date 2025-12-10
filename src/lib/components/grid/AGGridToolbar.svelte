@@ -246,12 +246,12 @@
 
   // Ordenar grupos para display
   const categoryOrder = [
+    "custom",
     "columns",
     "export",
     "selection",
     "data",
     "ui",
-    "custom",
   ];
   const orderedGroups = $derived.by(() => {
     return categoryOrder
