@@ -8,6 +8,7 @@
     Info,
     Database,
     FileSpreadsheet,
+    Keyboard,
   } from "lucide-svelte";
   import { openView, activePanel } from "../../../../stores/sidebar";
 
@@ -36,9 +37,7 @@
     on:keydown={(e) =>
       handleKeydown(
         e,
-        executeAndClose(() =>
-          openView("device-settings", "Ajustes Generales"),
-        ),
+        executeAndClose(() => openView("device-settings", "Ajustes Generales")),
       )}
   >
     <svelte:component this={Settings} size={16} />
@@ -53,15 +52,30 @@
     on:keydown={(e) =>
       handleKeydown(
         e,
-        executeAndClose(() =>
-          openView("general-settings", "Ajustes Gráficos"),
-        ),
+        executeAndClose(() => openView("general-settings", "Ajustes Gráficos")),
       )}
   >
     <!-- Usamos FileSpreadsheet temporalmente como icono de visual/paleta si no hay otro, o mantenemos Settings pero cambiamos texto -->
     <!-- Mejor: Usar el mismo Settings para ambos por ahora o buscar uno de paleta si estuviera impoortado -->
     <svelte:component this={Settings} size={16} />
     <span>Ajustes Gráficos</span>
+  </button>
+
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() =>
+      openView("shortcut-settings", "Atajos de Teclado"),
+    )}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() =>
+          openView("shortcut-settings", "Atajos de Teclado"),
+        ),
+      )}
+  >
+    <svelte:component this={Keyboard} size={16} />
+    <span>Atajos de Teclado</span>
   </button>
 
   <div class="panel-item non-clickable">
@@ -83,26 +97,6 @@
   >
     <svelte:component this={Download} size={16} />
     <span>Backup y restore</span>
-  </button>
-</div>
-
-<div class="panel-section">
-  <div class="panel-section-title">DATOS</div>
-  <button
-    class="panel-item"
-    on:click={executeAndClose(() =>
-      openView("blacklist-import", "Importar Lista Negra"),
-    )}
-    on:keydown={(e) =>
-      handleKeydown(
-        e,
-        executeAndClose(() =>
-          openView("blacklist-import", "Importar Lista Negra"),
-        ),
-      )}
-  >
-    <svelte:component this={FileSpreadsheet} size={16} />
-    <span>Importar Lista Negra desde Excel</span>
   </button>
 </div>
 

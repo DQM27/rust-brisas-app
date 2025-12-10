@@ -15,6 +15,10 @@
   export let limit: number = 10;
   export let autofocus: boolean = false;
 
+  export function focus() {
+    inputRef?.focus();
+  }
+
   let inputRef: HTMLInputElement;
   let query = "";
   let showDropdown = false;

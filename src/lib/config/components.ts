@@ -19,6 +19,7 @@ import GeneralSettingsPanel from '$lib/components/settings/GeneralSettingsPanel.
 import UpdateSettingsPanel from '$lib/components/settings/UpdateSettingsPanel.svelte';
 import BackupSettingsPanel from '$lib/components/settings/BackupSettingsPanel.svelte';
 import DeviceSettingsPanel from '$lib/components/settings/DeviceSettingsPanel.svelte';
+import ShortcutSettings from '$lib/components/settings/ShortcutSettings.svelte';
 
 import GafeteListView from '$lib/components/gafete/GafeteListView.svelte';
 import IngresoListView from '$lib/components/ingreso/IngresoListView.svelte';
@@ -44,6 +45,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'update-settings': UpdateSettingsPanel,
   'backup-settings': BackupSettingsPanel,
   'device-settings': DeviceSettingsPanel,
+  'shortcut-settings': ShortcutSettings,
 
   'gafete-list': GafeteListView,
   'ingreso-list': IngresoListView,

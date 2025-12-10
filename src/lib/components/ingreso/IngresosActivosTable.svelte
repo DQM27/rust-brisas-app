@@ -39,6 +39,7 @@
   // ✅ NUEVO: Importar store de tiempo y utilidad de evaluación
   import { currentTime } from "$lib/stores/timeStore";
   import { evaluateTimeStatus } from "$lib/logic/ingreso/ingresoService";
+  import { shortcutStore } from "$lib/stores/shortcutStore";
 
   // Props
   const {
@@ -724,22 +725,38 @@
   onMount(() => {
     loadData();
   });
+
+  let searchBarRef: SearchBar;
 </script>
+
+<svelte:window
+  use:shortcutStore.useShortcut={{
+    trigger: "search.focus",
+    handler: () => searchBarRef?.focus(),
+  }}
+/>
 
 <div class="flex h-full flex-col relative bg-[#1e1e1e]">
   <div class="border-b border-white/10 px-6 py-4 bg-[#252526]">
     <div class="flex items-center justify-between gap-4">
       <div>
-        <h2 class="text-xl font-semibold text-gray-100">Control de Ingresos</h2>
+        <h2 class="text-xl font-semibold text-gray-100">
+          {showingActive ? "Control de Ingresos" : "Historial de Accesos"}
+        </h2>
         <p class="mt-1 text-sm text-gray-400">
-          Gestión de entradas y salidas en tiempo real
+          {showingActive
+            ? "Gestión de entradas y salidas en tiempo real"
+            : "Registro histórico de entradas y salidas"}
         </p>
       </div>
 
       <!-- ✅ SearchBar -->
       <div class="flex-1 max-w-md">
         <SearchBar
-          placeholder="Buscar persona para ver su ingreso..."
+          bind:this={searchBarRef}
+          placeholder={showingActive
+            ? "Buscar persona adentro..."
+            : "Buscar en el historial..."}
           limit={5}
           disabled={loading}
           on:clear={() => selectedSearchStore.clear()}

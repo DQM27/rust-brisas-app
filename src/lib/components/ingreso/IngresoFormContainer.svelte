@@ -12,6 +12,8 @@
   import VehiculoSelector from "./VehiculoSelector.svelte";
   import GafeteInput from "./GafeteInput.svelte";
   import IngresoFormFields from "./IngresoFormFields.svelte";
+  import IngresoRegistro from "./IngresoRegistro.svelte";
+  import { shortcutStore } from "$lib/stores/shortcutStore";
 
   import { X } from "lucide-svelte";
 

@@ -1,5 +1,7 @@
 <script lang="ts">
   import { fade, fly } from "svelte/transition";
+  import { preventDefault } from "svelte/legacy";
+  import { shortcutStore } from "$lib/stores/shortcutStore";
   import { cubicOut } from "svelte/easing";
   import { activeTabId } from "$lib/stores/tabs";
   import IngresoFormContainer from "./IngresoFormContainer.svelte";
@@ -23,12 +25,19 @@
   }
 </script>
 
-<!-- 
+<svelte:window
+  use:shortcutStore.useShortcut={{
+    trigger: "ingreso.new",
+    handler: openForm,
+  }}
+/>
+
+<!--
   Vista principal del módulo de Ingreso
   Refactorizada para soportar formulario colapsable
 -->
 
-<div class="h-full flex gap-0 overflow-hidden relative bg-[#1e1e1e]">
+<div class="h-full flex gap-6 overflow-hidden relative bg-[#1e1e1e]">
   <!-- Panel Izquierdo: Formulario de Entrada (Colapsable) -->
   {#if isFormOpen}
     <div

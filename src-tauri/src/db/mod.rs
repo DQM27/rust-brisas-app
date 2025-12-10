@@ -1,17 +1,21 @@
 // src/db/mod.rs
 
 use crate::config::AppConfig;
-use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
+use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::SqlitePool;
+use std::fs;
+use std::path::Path;
+
+pub mod migrate;
+pub mod seed;
 
 pub mod alerta_gafete_queries;
-
 pub mod contratista_queries;
 pub mod empresa_queries;
 pub mod gafete_queries;
 pub mod ingreso_queries;
 pub mod lista_negra_queries;
-pub mod migrate;
-pub mod seed;
+pub mod preferences_queries;
 pub mod user_queries;
 pub mod vehiculo_queries;
 

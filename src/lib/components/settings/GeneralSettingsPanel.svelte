@@ -7,6 +7,7 @@
     CloudRain,
     Check,
     X,
+    Keyboard,
     Layout,
     Mountain,
     Sun,
@@ -103,10 +104,9 @@
 
   <div class="grid gap-4 max-w-3xl pb-8">
     <!-- ================================================================== -->
-
-    <!-- ================================================================== -->
     <!-- VISUAL ELEMENTS CARD -->
     <!-- ================================================================== -->
+
     <div class="card-base p-5">
       <div class="flex items-center gap-4 mb-4">
         <div

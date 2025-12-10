@@ -9,10 +9,11 @@ pub mod gafete_commands;
 pub mod ingreso_commands;
 pub mod lista_negra_commands;
 pub mod permanencia_commands;
+pub mod preferences_commands;
 pub mod salida_commands;
 pub mod search_commands;
 pub mod templates;
 pub mod user_commands;
-pub mod vehiculo_commands; // ✅ AGREGAR
+pub mod vehiculo_commands; // ✅ ADD
 #[macro_use]
 pub mod handlers;

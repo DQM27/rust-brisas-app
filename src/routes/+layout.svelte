@@ -10,6 +10,7 @@
   import Toast from "$lib/components/Toast.svelte";
   import { themeStore } from "$lib/stores/themeStore"; // Inicializar tema
   import { generalSettings } from "$lib/stores/settingsStore";
+  import { initShortcutSystem } from "$lib/stores/shortcutStore";
 
   // Estado de autenticación reactivo
   $: authenticated = $isAuthenticated;
@@ -19,8 +20,9 @@
     $inspectionPanel.visible = !$inspectionPanel.visible;
   }
 
-  // Inicializar monitor de red
+  // Inicializar monitor de red y atajos
   onMount(() => {
+    initShortcutSystem();
     const cleanup = initNetworkMonitor();
     return cleanup;
   });

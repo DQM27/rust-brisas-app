@@ -97,7 +97,6 @@ macro_rules! register_handlers {
             commands::ingreso_commands::get_alertas_pendientes_by_cedula,
             commands::ingreso_commands::get_all_alertas_gafetes,
             commands::ingreso_commands::resolver_alerta_gafete,
-
             // Comandos de búsqueda
             commands::search_commands::search_contratistas,
             commands::search_commands::reindex_all_contratistas,
@@ -131,6 +130,11 @@ macro_rules! register_handlers {
             // ==========================================
             commands::config_commands::get_app_config,
             commands::config_commands::update_terminal_config,
+            // ==========================================
+            // COMANDOS DE PREFERENCIAS (NUEVO)
+            // ==========================================
+            commands::preferences_commands::get_user_preferences,
+            commands::preferences_commands::set_user_preference,
         ]
     };
 }
