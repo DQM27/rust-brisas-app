@@ -129,12 +129,12 @@
       </div>
     </div>
   {:else}
-    <div class="card-base bg-info border-info p-4">
+    <div class="card-base bg-info border-info p-3">
       <div class="flex items-start justify-between">
         <div class="flex-1">
-          <div class="flex items-center gap-2 mb-2">
+          <div class="flex items-center gap-2 mb-1.5">
             <svg
-              class="h-5 w-5 text-info"
+              class="h-4 w-4 text-info"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -146,25 +146,21 @@
                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
               />
             </svg>
-            <h4 class="text-sm font-semibold text-primary">
-              Contratista Seleccionado (No Bloqueado)
+            <h4 class="text-xs font-semibold text-primary">
+              Contratista Seleccionado
             </h4>
           </div>
-          <div class="space-y-1.5 text-sm">
+          <div class="space-y-1 text-xs">
             <div class="flex items-center gap-2">
-              <span class="text-secondary">Nombre:</span>
-              <span class="text-primary font-medium"
+              <span class="text-secondary font-medium"
                 >{contratista.nombreCompleto}</span
               >
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-secondary">Cédula:</span>
-              <span class="text-primary">{contratista.cedula}</span>
+              <span class="text-secondary opacity-75">|</span>
+              <span class="text-secondary">Cédula: {contratista.cedula}</span>
             </div>
             {#if contratista.empresaNombre}
-              <div class="flex items-center gap-2">
-                <span class="text-secondary">Empresa:</span>
-                <span class="text-primary">{contratista.empresaNombre}</span>
+              <div class="text-secondary opacity-90">
+                Empresa: {contratista.empresaNombre}
               </div>
             {/if}
           </div>

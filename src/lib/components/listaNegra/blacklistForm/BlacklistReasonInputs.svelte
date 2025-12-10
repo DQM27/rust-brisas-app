@@ -32,34 +32,34 @@
     : "Notas internas sobre el incidente.";
 </script>
 
-<div class="space-y-5">
-  <div class="space-y-1.5">
-    <label for="motivoBloqueo" class="text-sm font-medium text-primary">
+<div class="space-y-3">
+  <div class="space-y-1">
+    <label for="motivoBloqueo" class="text-xs font-medium text-primary">
       {motivoLabel} <span class="text-error">*</span>
     </label>
     <textarea
       id="motivoBloqueo"
       value={motivo}
       oninput={(e) => onMotivoChange(e.currentTarget.value)}
-      rows="3"
+      rows="2"
       disabled={loading}
       placeholder={motivoPlaceholder}
-      class="input-base w-full resize-y"
+      class="input-base w-full resize-y text-sm"
     ></textarea>
   </div>
 
-  <div class="space-y-1.5">
-    <label for="observaciones" class="text-sm font-medium text-primary">
+  <div class="space-y-1">
+    <label for="observaciones" class="text-xs font-medium text-primary">
       {observacionesLabel}
     </label>
     <textarea
       id="observaciones"
       value={observaciones}
       oninput={(e) => onObservacionesChange(e.currentTarget.value)}
-      rows="2"
+      rows="1"
       disabled={loading}
       placeholder={observacionesPlaceholder}
-      class="input-base w-full resize-y"
+      class="input-base w-full resize-y text-sm"
     ></textarea>
   </div>
 </div>

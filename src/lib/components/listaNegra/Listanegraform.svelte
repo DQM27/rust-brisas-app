@@ -195,9 +195,11 @@
 </script>
 
 <div class="flex min-h-full items-center justify-center p-6">
-  <div class="card-base bg-surface-1 p-0 w-full max-w-2xl overflow-hidden">
+  <div class="card-base bg-surface-1 p-0 w-full max-w-2xl">
     <!-- Header -->
-    <div class="border-b border-border-subtle bg-surface-2 px-6 py-4">
+    <div
+      class="border-b border-border-subtle bg-surface-2 px-6 py-4 rounded-t-lg"
+    >
       <div class="flex items-center gap-3">
         <div
           class="flex h-8 w-8 items-center justify-center rounded-md bg-surface-1 border border-border-subtle"
@@ -294,7 +296,7 @@
 
       <!-- Actions -->
       <div
-        class="bg-surface-2 border-t border-border-subtle px-6 py-4 flex justify-end gap-3"
+        class="bg-surface-2 border-t border-border-subtle px-4 py-3 flex justify-end gap-3 rounded-b-lg"
       >
         {#if selectedContratista && blockInfo?.isBlocked && !checkingBlock}
           <button
