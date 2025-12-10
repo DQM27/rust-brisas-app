@@ -103,6 +103,18 @@
 
   <!-- Tarjeta de información del contratista -->
   {#if contratistaNombre || contratistaData}
+    {@const computedName =
+      contratistaNombre ||
+      contratistaData?.nombreCompleto ||
+      [
+        contratistaData?.nombre,
+        contratistaData?.segundoNombre,
+        contratistaData?.apellido,
+        contratistaData?.segundoApellido,
+      ]
+        .filter(Boolean)
+        .join(" ") ||
+      "Contratista"}
     <div
       class="mt-3 p-4 rounded-lg border-2 {puedeIngresar
         ? 'bg-green-50 border-green-300 dark:bg-green-900/20 dark:border-green-700'
@@ -111,9 +123,7 @@
       <div class="flex items-start justify-between">
         <div class="flex-1">
           <p class="font-bold text-lg text-gray-900 dark:text-white">
-            {contratistaNombre ||
-              contratistaData?.nombreCompleto ||
-              "Contratista"}
+            {computedName}
           </p>
           {#if contratistaData?.cedula}
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -144,7 +154,8 @@
       </div>
 
       <!-- Mensaje de validación (si no puede ingresar) -->
-      {#if !puedeIngresar && mensajeValidacion}
+      <!-- OJO: No mostramos el mensaje genérico para evitar redundancia y proteger privacidad -->
+      {#if !puedeIngresar && mensajeValidacion && mensajeValidacion !== "Contratista no autorizado para ingresar."}
         <div
           class="mt-3 p-2 bg-red-100 dark:bg-red-900/30 rounded text-sm text-red-800 dark:text-red-200"
         >

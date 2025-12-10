@@ -268,12 +268,9 @@ export async function prepararFormularioIngreso(
         const validacion = validacionResult.data;
 
         // 2. Verificar que puede ingresar
-        if (!validacion.puedeIngresar) {
-            return {
-                ok: false,
-                error: validacion.motivoRechazo || 'No autorizado para ingresar'
-            };
-        }
+        // 2. Check removed to allow UI handling of rejection reason
+        // The controller will handle !puedeIngresar and show the message in the UI
+
 
         // 3. Calcular auto-selección basada en vehículos
         const autoSeleccion = calcularAutoSeleccion(validacion.contratista);

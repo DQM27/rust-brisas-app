@@ -101,7 +101,8 @@ pub async fn validar_ingreso_contratista(
             "estado": contratista.estado,
             "praind_vigente": praind_vigente,
             "fecha_vencimiento_praind": contratista.fecha_vencimiento_praind,
-            "vehiculos": vehiculos // Incluimos los vehículos aquí
+            "vehiculos": vehiculos, // Incluimos los vehículos al finalizar
+            "alertas": alertas_db.iter().cloned().map(crate::models::ingreso::AlertaGafeteResponse::from).collect::<Vec<_>>()
         }))
     } else {
         None

@@ -45,36 +45,36 @@ export async function buscarYValidarContratista(
 ): Promise<boolean> {
     // 1. Llamar al service para preparar todo
     const result = await ingresoService.prepararFormularioIngreso(contratistaId);
-    
+
     if (!result.ok) {
         // Error en la validación
         toast.error(result.error);
         limpiarContratista();
         return false;
     }
-    
+
     const { validacion, autoSeleccion } = result.data;
-    
+
     // 2. Actualizar store con datos del contratista
     ingresoFormStore.setContratistaValidado({
         contratistaId: validacion.contratista?.id || contratistaId,
         contratistaNombre: validacion.contratista?.nombreCompleto || '',
         contratistaData: validacion.contratista,
-        puedeIngresar: true,
-        mensajeValidacion: ''
+        puedeIngresar: validacion.puedeIngresar,
+        mensajeValidacion: validacion.puedeIngresar ? '' : 'Contratista no autorizado para ingresar.'
     });
-    
+
     // 3. Aplicar auto-selección de vehículo
     ingresoFormStore.aplicarAutoSeleccion({
         modoSugerido: autoSeleccion.suggestedMode,
         vehiculoSugerido: autoSeleccion.suggestedVehicleId
     });
-    
+
     // 4. Mostrar alertas si existen
     if (validacion.alertas && validacion.alertas.length > 0) {
         toast('Tiene alertas pendientes de gafetes', { icon: '⚠️' });
     }
-    
+
     return true;
 }
 
@@ -100,19 +100,19 @@ export function cambiarModoIngreso(
     contratistaData: any
 ): void {
     const tieneVehiculos = contratistaData?.vehiculos?.length > 0;
-    
+
     // Si cambia a vehículo pero no tiene vehículos, mostrar error
     if (modo === 'vehiculo' && !tieneVehiculos) {
         toast.error('El contratista no tiene vehículos registrados');
         return;
     }
-    
+
     // Si cambia a caminando, limpiar vehículo
     if (modo === 'caminando') {
         ingresoFormStore.setModoIngreso('caminando', null);
         return;
     }
-    
+
     // Si cambia a vehículo, mantener el vehículo actual si existe
     const estadoActual = get(ingresoFormStore);
     ingresoFormStore.setModoIngreso('vehiculo', estadoActual.vehiculoId);
@@ -199,7 +199,7 @@ export async function registrarEntrada(
     gafetesDisponibles: GafeteResponse[]
 ): Promise<boolean> {
     const estado = get(ingresoFormStore);
-    
+
     // 1. Validación completa del formulario
     const validacionFormulario = ingresoService.validarFormularioCompleto({
         contratistaValidated: estado.contratistaId !== '' && estado.puedeIngresar,
@@ -210,25 +210,25 @@ export async function registrarEntrada(
         gafeteNumero: estado.gafeteNumero,
         tipoAutorizacion: estado.tipoAutorizacion as 'praind' | 'correo'
     });
-    
+
     if (!validacionFormulario.ok) {
         toast.error(validacionFormulario.error);
         return false;
     }
-    
+
     // 2. Validación de gafete si se proporcionó
     if (estado.gafeteNumero.trim()) {
         const validacionGafete = ingresoService.validarGafete({
             gafeteNumero: estado.gafeteNumero,
             gafetesDisponibles
         });
-        
+
         if (!validacionGafete.ok || !validacionGafete.data.isValid) {
             toast.error('Número de gafete inválido o no disponible');
             return false;
         }
     }
-    
+
     // 3. Validación de modo vehículo
     const tieneVehiculos = estado.contratistaData?.vehiculos?.length > 0;
     const validacionModo = ingresoService.validarModoVehiculo({
@@ -236,12 +236,12 @@ export async function registrarEntrada(
         vehiculoId: estado.vehiculoId,
         tieneVehiculos
     });
-    
+
     if (!validacionModo.ok) {
         toast.error(validacionModo.error);
         return false;
     }
-    
+
     // 4. Construir payload
     const input: CreateIngresoContratistaInput = {
         contratistaId: estado.contratistaId,
@@ -252,24 +252,24 @@ export async function registrarEntrada(
         observaciones: estado.observaciones.trim() || null,
         usuarioIngresoId: usuarioId
     };
-    
+
     // 5. Registrar en el backend
     const result = await ingresoService.registrarEntrada(input);
-    
+
     if (!result.ok) {
         toast.error(result.error);
         return false;
     }
-    
+
     // 6. Actualizar store de ingresos activos
     ingresoStore.add(result.data);
-    
+
     // 7. Mostrar éxito
     toast.success('Entrada registrada correctamente');
-    
+
     // 8. Reset del formulario
     ingresoFormStore.reset();
-    
+
     return true;
 }
 
