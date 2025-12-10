@@ -1,138 +1,202 @@
 <script lang="ts">
-  import {
-    shortcutStore,
-    SHORTCUT_DEFS,
-    type ShortcutAction,
-  } from "$lib/stores/shortcutStore";
-  import { fade } from "svelte/transition";
-  import { Keyboard, RotateCcw } from "lucide-svelte";
-  import { createEventDispatcher } from "svelte";
+  import { onMount } from "svelte";
+  import { shortcutService } from "$lib/services/shortcutService";
+  import { invoke } from "@tauri-apps/api/core";
+  import type { ShortcutConfig } from "$lib/types/shortcuts";
+  import { Loader2, Save, Undo2 } from "lucide-svelte";
+  import { toast } from "svelte-5-french-toast";
 
-  // Agrupar por categoría
-  const groupedShortcuts = Object.values(SHORTCUT_DEFS).reduce(
-    (acc, def) => {
-      if (!acc[def.category]) acc[def.category] = [];
-      acc[def.category].push(def);
-      return acc;
-    },
-    {} as Record<string, (typeof SHORTCUT_DEFS)[ShortcutAction][]>,
-  );
+  let config = $state<ShortcutConfig | null>(null);
+  let loading = $state(true);
+  let recordingKeyFor: { context: string; command: string } | null =
+    $state(null);
 
-  let recordingId: string | null = null;
+  onMount(async () => {
+    await loadConfig();
+  });
 
-  function handleKeyRecord(e: KeyboardEvent, actionId: ShortcutAction) {
+  async function loadConfig() {
+    loading = true;
+    try {
+      config = await invoke("get_shortcuts");
+    } catch (e) {
+      console.error(e);
+      toast.error("Error al cargar atajos");
+    } finally {
+      loading = false;
+    }
+  }
+
+  async function saveConfig() {
+    if (!config) return;
+    try {
+      await invoke("update_shortcuts", { config });
+      toast.success("Atajos guardados correctamente");
+      // Recargar servicio para aplicar cambios
+      window.location.reload(); // O idealmente método en service para recargar
+    } catch (e) {
+      console.error(e);
+      toast.error("Error al guardar configuración");
+    }
+  }
+
+  async function resetConfig() {
+    if (!confirm("¿Restaurar atajos por defecto?")) return;
+    try {
+      config = await invoke("reset_shortcuts");
+      toast.success("Valores por defecto restaurados");
+      window.location.reload();
+    } catch (e) {
+      toast.error("Error al restaurar");
+    }
+  }
+
+  function handleRecordKey(e: KeyboardEvent) {
+    if (!recordingKeyFor || !config) return;
+
     e.preventDefault();
     e.stopPropagation();
 
-    // Ignorar teclas modificadoras solas
+    if (e.key === "Escape") {
+      recordingKeyFor = null;
+      return;
+    }
+
+    // Ignorar modificadores solos
     if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
 
+    // Construir string
     const parts = [];
-    if (e.ctrlKey) parts.push("Control");
-    if (e.metaKey) parts.push("Meta");
-    if (e.altKey) parts.push("Alt");
+    if (e.ctrlKey) parts.push("Ctrl");
     if (e.shiftKey) parts.push("Shift");
+    if (e.altKey) parts.push("Alt");
 
-    // Normalizar teclas especiales
-    let key = e.key;
-    if (key === " ") key = "Space";
-    if (key.length === 1) key = key.toLowerCase();
+    let k = e.key;
+    if (k === " ") k = "Space";
+    if (k.length === 1) k = k.toUpperCase();
 
-    parts.push(key);
-    const newCombo = parts.join("+");
+    parts.push(k);
+    const keyString = parts.join("+");
 
-    shortcutStore.updateShortcut(actionId, newCombo);
-    recordingId = null;
-  }
+    // Guardar
+    const { context, command } = recordingKeyFor;
 
-  function startRecording(id: string) {
-    recordingId = id;
-  }
+    if (context === "global") {
+      config.global[command] = keyString;
+    } else {
+      if (config.contexts[context]) {
+        config.contexts[context][command] = keyString;
+      }
+    }
 
-  function cancelRecording() {
-    recordingId = null;
-  }
-  function focusOnMount(node: HTMLElement) {
-    node.focus();
+    recordingKeyFor = null;
   }
 </script>
 
-<div class="space-y-6 p-6 bg-[#1e1e1e] rounded-lg text-gray-200">
-  <div class="flex items-center justify-between border-b border-white/10 pb-4">
-    <div>
-      <h2 class="text-xl font-semibold flex items-center gap-2">
-        <Keyboard size={24} class="text-blue-400" />
-        Atajos de Teclado
-      </h2>
-      <p class="text-sm text-gray-400 mt-1">
-        Personaliza las combinaciones de teclas para cada acción.
-      </p>
+<svelte:window on:keydown={recordingKeyFor ? handleRecordKey : undefined} />
+
+<div class="space-y-6">
+  {#if loading}
+    <div class="flex items-center justify-center py-10">
+      <Loader2 class="animate-spin text-blue-500" size={32} />
     </div>
-  </div>
-
-  <div class="grid gap-8">
-    {#each Object.entries(groupedShortcuts) as [category, defs]}
-      <div>
-        <h3
-          class="text-sm font-medium text-blue-400 uppercase tracking-wider mb-3 px-2"
-        >
-          {category}
-        </h3>
-        <div class="space-y-2">
-          {#each defs as def (def.id)}
-            <div
-              class="flex items-center justify-between p-3 rounded-lg bg-[#252526] hover:bg-[#2d2d2d] transition-colors border border-white/5"
-            >
-              <div class="flex flex-col">
-                <span class="font-medium text-gray-200">{def.label}</span>
-                <span class="text-xs text-gray-500">ID: {def.id}</span>
-              </div>
-
-              <div class="flex items-center gap-2">
-                {#if recordingId === def.id}
-                  <!-- Modo Grabación -->
-                  <div class="relative">
-                    <input
-                      type="text"
-                      class="bg-blue-900/30 border border-blue-500 text-blue-300 px-4 py-1.5 rounded-md text-sm font-mono text-center min-w-[120px] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                      value="Presiona teclas..."
-                      readonly
-                      on:keydown={(e) => handleKeyRecord(e, def.id)}
-                      on:blur={cancelRecording}
-                      use:focusOnMount
-                    />
-                    <span
-                      class="absolute -top-8 left-1/2 -translate-x-1/2 text-xs bg-black/80 text-white px-2 py-1 rounded whitespace-nowrap"
-                    >
-                      Esc para cancelar
-                    </span>
-                  </div>
-                {:else}
-                  <!-- Modo Visualización -->
-                  <button
-                    class="bg-[#333] hover:bg-[#404040] border border-white/10 text-gray-300 px-4 py-1.5 rounded-md text-sm font-mono min-w-[120px] transition-all hover:border-white/20 active:scale-95 shadow-sm"
-                    on:click={() => startRecording(def.id)}
-                    title="Clic para cambiar"
-                  >
-                    {$shortcutStore[def.id] || def.defaultKey}
-                  </button>
-                {/if}
-
-                {#if $shortcutStore[def.id] !== def.defaultKey}
-                  <button
-                    class="p-1.5 text-gray-500 hover:text-yellow-400 hover:bg-white/5 rounded-full transition-colors"
-                    title="Restaurar valor original"
-                    on:click={() =>
-                      shortcutStore.updateShortcut(def.id, def.defaultKey)}
-                  >
-                    <RotateCcw size={14} />
-                  </button>
-                {/if}
-              </div>
-            </div>
-          {/each}
-        </div>
+  {:else if config}
+    <!-- HEADER -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="text-sm text-gray-400">
+        Haz clic en un atajo para editarlo. Pulsa ESC para cancelar la
+        grabación.
       </div>
-    {/each}
-  </div>
+      <div class="flex gap-2">
+        <button
+          class="btn btn-secondary text-sm flex items-center gap-2"
+          on:click={resetConfig}
+        >
+          <Undo2 size={16} />
+          Restaurar Defaults
+        </button>
+        <button
+          class="btn btn-primary text-sm flex items-center gap-2"
+          on:click={saveConfig}
+        >
+          <Save size={16} />
+          Guardar Cambios
+        </button>
+      </div>
+    </div>
+
+    <!-- GLOBAL COMMANDS -->
+    <div class="card-base p-4">
+      <h3
+        class="text-lg font-bold text-primary mb-4 border-b border-white/10 pb-2"
+      >
+        Globales
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {#each Object.entries(config.global) as [cmd, key]}
+          <div
+            class="flex items-center justify-between bg-black/20 p-3 rounded-lg border border-white/5"
+          >
+            <span class="text-gray-300 font-medium">{cmd}</span>
+            <button
+              class="px-3 py-1.5 rounded bg-[#333] border border-white/10 text-white font-mono text-sm min-w-[80px] text-center hover:bg-blue-600/50 transition-colors"
+              class:ring-2={recordingKeyFor?.context === "global" &&
+                recordingKeyFor?.command === cmd}
+              class:ring-blue-500={recordingKeyFor?.context === "global" &&
+                recordingKeyFor?.command === cmd}
+              on:click={() =>
+                (recordingKeyFor = { context: "global", command: cmd })}
+            >
+              {recordingKeyFor?.context === "global" &&
+              recordingKeyFor?.command === cmd
+                ? "Grabando..."
+                : key}
+            </button>
+          </div>
+        {/each}
+      </div>
+    </div>
+
+    <!-- CONTEXTUAL COMMANDS -->
+    <div class="card-base p-4">
+      <h3
+        class="text-lg font-bold text-primary mb-4 border-b border-white/10 pb-2"
+      >
+        Contextuales
+      </h3>
+
+      {#each Object.entries(config.contexts) as [ctxName, commands]}
+        <div class="mb-6 last:mb-0">
+          <h4
+            class="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-2"
+          >
+            {ctxName}
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {#each Object.entries(commands) as [cmd, key]}
+              <div
+                class="flex items-center justify-between bg-black/20 p-3 rounded-lg border border-white/5"
+              >
+                <span class="text-gray-300 font-medium">{cmd}</span>
+                <button
+                  class="px-3 py-1.5 rounded bg-[#333] border border-white/10 text-white font-mono text-sm min-w-[80px] text-center hover:bg-blue-600/50 transition-colors"
+                  class:ring-2={recordingKeyFor?.context === ctxName &&
+                    recordingKeyFor?.command === cmd}
+                  class:ring-blue-500={recordingKeyFor?.context === ctxName &&
+                    recordingKeyFor?.command === cmd}
+                  on:click={() =>
+                    (recordingKeyFor = { context: ctxName, command: cmd })}
+                >
+                  {recordingKeyFor?.context === ctxName &&
+                  recordingKeyFor?.command === cmd
+                    ? "Grabando..."
+                    : key}
+                </button>
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
 </div>

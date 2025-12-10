@@ -39,7 +39,7 @@
   // ✅ NUEVO: Importar store de tiempo y utilidad de evaluación
   import { currentTime } from "$lib/stores/timeStore";
   import { evaluateTimeStatus } from "$lib/logic/ingreso/ingresoService";
-  import { shortcutStore } from "$lib/stores/shortcutStore";
+  import { shortcutService } from "$lib/services/shortcutService";
 
   // Props
   const {
@@ -727,14 +727,17 @@
   });
 
   let searchBarRef: SearchBar;
-</script>
 
-<svelte:window
-  use:shortcutStore.useShortcut={{
-    trigger: "search.focus",
-    handler: () => searchBarRef?.focus(),
-  }}
-/>
+  onMount(() => {
+    return shortcutService.registerHandler(
+      "ingreso-list",
+      "search.focus",
+      () => {
+        searchBarRef?.focus();
+      },
+    );
+  });
+</script>
 
 <div class="flex h-full flex-col relative bg-[#1e1e1e]">
   <div class="border-b border-white/10 px-6 py-4 bg-[#252526]">

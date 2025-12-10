@@ -5,6 +5,8 @@
     type CreateUserForm,
   } from "$lib/schemas/userSchema";
   import { z } from "zod";
+  import { shortcutService } from "$lib/services/shortcutService";
+  import { onMount } from "svelte";
 
   interface Props {
     loading?: boolean;
@@ -58,6 +60,28 @@
         errors = {};
       }
     }
+  });
+
+  // Atajos de teclado
+  onMount(() => {
+    const unregSave = shortcutService.registerHandler(
+      "user-form",
+      "save",
+      () => {
+        // Simular evento de submit
+        handleSubmit(new Event("submit"));
+      },
+    );
+    const unregCancel = shortcutService.registerHandler(
+      "user-form",
+      "cancel",
+      onReset,
+    );
+
+    return () => {
+      unregSave();
+      unregCancel();
+    };
   });
 
   function handleSubmit(event: Event) {
@@ -198,7 +222,10 @@
   const errorClass = "text-xs text-red-500 mt-1";
 </script>
 
-<div class="flex min-h-full items-center justify-center p-6">
+<div
+  class="flex min-h-full items-center justify-center p-6"
+  use:shortcutService.useScope={"user-form"}
+>
   <div class="w-full max-w-2xl rounded-lg bg-surface-2 p-8 shadow-xl">
     {#if createdUser && createdUser.temporaryPassword}
       <div

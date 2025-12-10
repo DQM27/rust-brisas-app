@@ -10,7 +10,7 @@
   import Toast from "$lib/components/Toast.svelte";
   import { themeStore } from "$lib/stores/themeStore"; // Inicializar tema
   import { generalSettings } from "$lib/stores/settingsStore";
-  import { initShortcutSystem } from "$lib/stores/shortcutStore";
+  import { shortcutService } from "$lib/services/shortcutService";
 
   // Estado de autenticación reactivo
   $: authenticated = $isAuthenticated;
@@ -22,7 +22,8 @@
 
   // Inicializar monitor de red y atajos
   onMount(() => {
-    initShortcutSystem();
+    // shortcutService se auto-inicializa, pero podemos forzar init explicito si queremos
+    shortcutService.init();
     const cleanup = initNetworkMonitor();
     return cleanup;
   });

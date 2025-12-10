@@ -1,7 +1,9 @@
 // src-tauri/src/config/mod.rs
 
-pub mod settings;
 pub mod manager;
+pub mod settings;
+pub mod shortcuts;
+pub mod shortcuts_manager;
 
+pub use manager::{get_database_path, load_config, save_config};
 pub use settings::AppConfig;
-pub use manager::{load_config, save_config, get_database_path};

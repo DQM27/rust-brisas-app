@@ -74,6 +74,10 @@
     }
     handleSearchClear();
   }
+
+  export function focus() {
+    searchBar?.focus();
+  }
 </script>
 
 <!-- 

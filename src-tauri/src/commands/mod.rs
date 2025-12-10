@@ -12,6 +12,7 @@ pub mod permanencia_commands;
 pub mod preferences_commands;
 pub mod salida_commands;
 pub mod search_commands;
+pub mod shortcuts_commands;
 pub mod templates;
 pub mod user_commands;
 pub mod vehiculo_commands; // ✅ ADD

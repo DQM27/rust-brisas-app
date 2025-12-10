@@ -1,7 +1,8 @@
 <script lang="ts">
   import { fade, fly } from "svelte/transition";
+  import { onMount } from "svelte";
   import { preventDefault } from "svelte/legacy";
-  import { shortcutStore } from "$lib/stores/shortcutStore";
+  import { shortcutService } from "$lib/services/shortcutService";
   import { cubicOut } from "svelte/easing";
   import { activeTabId } from "$lib/stores/tabs";
   import IngresoFormContainer from "./IngresoFormContainer.svelte";
@@ -23,21 +24,22 @@
   function openForm() {
     isFormOpen = true;
   }
-</script>
 
-<svelte:window
-  use:shortcutStore.useShortcut={{
-    trigger: "ingreso.new",
-    handler: openForm,
-  }}
-/>
+  // Registrar manejador para el comando "new" en el contexto "ingreso-list"
+  // Esto escucha cuando se dispara el comando (ej. Ctrl+N)
+  onMount(() => {
+    return shortcutService.registerHandler("ingreso-list", "new", openForm);
+  });
+</script>
 
 <!--
   Vista principal del módulo de Ingreso
-  Refactorizada para soportar formulario colapsable
+  Usa use:shortcutService.useScope para activar el contexto "ingreso-list"
 -->
-
-<div class="h-full flex gap-6 overflow-hidden relative bg-[#1e1e1e]">
+<div
+  class="h-full flex gap-6 overflow-hidden relative bg-[#1e1e1e]"
+  use:shortcutService.useScope={"ingreso-list"}
+>
   <!-- Panel Izquierdo: Formulario de Entrada (Colapsable) -->
   {#if isFormOpen}
     <div

@@ -6,6 +6,7 @@
     submitFetchActiveEmpresas,
   } from "$lib/logic/empresa/empresaService";
   import type { TipoVehiculo } from "$lib/types/vehiculo";
+  import { shortcutService } from "$lib/services/shortcutService";
 
   export let loading = false;
   export let onSubmit: (data: any) => void;
@@ -38,14 +39,35 @@
   let empresaError = "";
 
   // --- CARGA INICIAL ---
-  onMount(async () => {
-    if (empresas.length > 0) return;
-    loadingEmpresas = true;
-    const resultado = await submitFetchActiveEmpresas();
-    if (resultado.ok) {
-      empresas = resultado.empresas;
-    }
-    loadingEmpresas = false;
+  onMount(() => {
+    // 1. Carga de datos asíncrona (Empresas)
+    (async () => {
+      if (empresas.length > 0) return;
+      loadingEmpresas = true;
+      const resultado = await submitFetchActiveEmpresas();
+      if (resultado.ok) {
+        empresas = resultado.empresas;
+      }
+      loadingEmpresas = false;
+    })();
+
+    // 2. Registro de Atajos (Síncrono)
+    const unregSave = shortcutService.registerHandler(
+      "contractor-form",
+      "save",
+      () => handleSubmit(new Event("submit")),
+    );
+    const unregCancel = shortcutService.registerHandler(
+      "contractor-form",
+      "cancel",
+      reset,
+    );
+
+    // Retornamos cleanup síncrono
+    return () => {
+      unregSave();
+      unregCancel();
+    };
   });
 
   // Reaccionar a cambios en initialData para modo edición
@@ -152,7 +174,10 @@
   }
 </script>
 
-<div class="flex min-h-full items-center justify-center p-4 sm:p-6">
+<div
+  class="flex min-h-full items-center justify-center p-4 sm:p-6"
+  use:shortcutService.useScope={"contractor-form"}
+>
   <div
     class="relative z-10 w-full max-w-[90vw] rounded-xl bg-[#1e1e1e] shadow-2xl ring-1 ring-white/10 transition-all duration-500 ease-in-out {tieneVehiculo
       ? 'max-w-[590px]'

@@ -21,6 +21,7 @@ import BackupSettingsPanel from '$lib/components/settings/BackupSettingsPanel.sv
 import DeviceSettingsPanel from '$lib/components/settings/DeviceSettingsPanel.svelte';
 import ShortcutSettings from '$lib/components/settings/ShortcutSettings.svelte';
 
+
 import GafeteListView from '$lib/components/gafete/GafeteListView.svelte';
 import IngresoListView from '$lib/components/ingreso/IngresoListView.svelte';
 

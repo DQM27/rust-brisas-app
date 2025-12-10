@@ -12,8 +12,7 @@
   import VehiculoSelector from "./VehiculoSelector.svelte";
   import GafeteInput from "./GafeteInput.svelte";
   import IngresoFormFields from "./IngresoFormFields.svelte";
-  import IngresoRegistro from "./IngresoRegistro.svelte";
-  import { shortcutStore } from "$lib/stores/shortcutStore";
+  import { shortcutService } from "$lib/services/shortcutService";
 
   import { X } from "lucide-svelte";
 
@@ -43,12 +42,36 @@
   // LIFECYCLE
   // ==========================================
 
-  onMount(async () => {
-    // Cargar gafetes disponibles tipo "contratista"
-    const res = await gafeteService.fetchDisponibles();
-    if (res.ok) {
-      gafetesDisponibles = res.data.filter((g) => g.tipo === "contratista");
-    }
+  onMount(() => {
+    // 1. Carga de datos asíncrona (Gafetes)
+    (async () => {
+      const res = await gafeteService.fetchDisponibles();
+      if (res.ok) {
+        gafetesDisponibles = res.data.filter((g) => g.tipo === "contratista");
+      }
+    })();
+
+    // 2. Atajos
+    const unregSave = shortcutService.registerHandler(
+      "ingreso-form",
+      "save",
+      () => handleSubmit(),
+    );
+    const unregCancel = shortcutService.registerHandler(
+      "ingreso-form",
+      "cancel",
+      handleCloseForm,
+    );
+
+    // 3. Auto-focus (dar tiempo para renderizado)
+    setTimeout(() => {
+      contratistaSearchRef?.focus();
+    }, 100);
+
+    return () => {
+      unregSave();
+      unregCancel();
+    };
   });
 
   // ==========================================
@@ -106,6 +129,7 @@
   // ==========================================
 
   async function handleSubmit() {
+    if (loading) return; // Guard para evitar doble envío
     if (!$currentUser?.id) {
       console.error("No hay usuario autenticado");
       return;
@@ -129,7 +153,7 @@
     }
   }
 
-  function handleClose() {
+  function handleCloseForm() {
     controller.resetearFormulario();
     if (contratistaSearchRef) {
       contratistaSearchRef.reset();
@@ -148,13 +172,16 @@
   - Pasar datos a componentes presentacionales
 -->
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 relative">
+<div
+  class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 relative"
+  use:shortcutService.useScope={"ingreso-form"}
+>
   <div class="flex justify-between items-center mb-6">
     <h2 class="text-xl font-bold text-gray-900 dark:text-white">
       Registrar Ingreso
     </h2>
     <button
-      on:click={handleClose}
+      on:click={handleCloseForm}
       class="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
       type="button"
       aria-label="Cerrar formulario"
@@ -216,7 +243,7 @@
       <div class="pt-2 flex gap-3">
         <button
           type="button"
-          on:click={handleClose}
+          on:click={handleCloseForm}
           class="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
         >
           Cancelar

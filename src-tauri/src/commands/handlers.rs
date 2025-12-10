@@ -135,6 +135,9 @@ macro_rules! register_handlers {
             // ==========================================
             commands::preferences_commands::get_user_preferences,
             commands::preferences_commands::set_user_preference,
+            commands::shortcuts_commands::get_shortcuts,
+            commands::shortcuts_commands::update_shortcuts,
+            commands::shortcuts_commands::reset_shortcuts,
         ]
     };
 }
