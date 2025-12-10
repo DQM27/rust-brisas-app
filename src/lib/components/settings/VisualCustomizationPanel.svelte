@@ -77,7 +77,8 @@
         </div>
         <button
           class="p-2 hover:bg-white/10 rounded-full transition-colors text-secondary hover:text-primary"
-          on:click={onClose}
+          onclick={onClose}
+          aria-label="Cerrar"
         >
           <X size={20} />
         </button>
@@ -94,13 +95,13 @@
       >
         <button
           class="px-4 py-2 text-sm font-medium text-secondary hover:text-primary hover:bg-white/5 rounded-lg transition-colors"
-          on:click={particleSettings.reset}
+          onclick={particleSettings.reset}
         >
           Restaurar Originales
         </button>
         <button
           class="px-4 py-2 text-sm font-medium bg-primary text-primary-inverse rounded-lg hover:brightness-110 shadow-lg shadow-primary/20 transition-all"
-          on:click={onClose}
+          onclick={onClose}
         >
           Listo
         </button>
@@ -118,7 +119,7 @@
     <div class="flex justify-end pt-4 mt-4 border-t border-white/5">
       <button
         class="text-xs text-secondary hover:text-primary hover:underline transition-colors"
-        on:click={particleSettings.reset}
+        onclick={particleSettings.reset}
       >
         Restaurar Valores por Defecto
       </button>
@@ -152,7 +153,7 @@
           max="150"
           step="1"
           bind:value={$particleSettings.bokehCount}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateBokehCount($particleSettings.bokehCount)}
           class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer"
         />
@@ -173,7 +174,7 @@
           max="1"
           step="0.05"
           bind:value={$particleSettings.bokehMaxOpacity}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateBokehOpacity(
               $particleSettings.bokehMaxOpacity,
             )}
@@ -256,7 +257,7 @@
           max="3"
           step="0.1"
           bind:value={$particleSettings.weatherDensityMultiplier}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateWeatherDensity(
               $particleSettings.weatherDensityMultiplier,
             )}
@@ -279,7 +280,7 @@
           max="3"
           step="0.1"
           bind:value={$particleSettings.weatherSpeedMultiplier}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateWeatherSpeed(
               $particleSettings.weatherSpeedMultiplier,
             )}
@@ -302,7 +303,7 @@
           max="3"
           step="0.1"
           bind:value={$particleSettings.weatherSizeMultiplier}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateWeatherSize(
               $particleSettings.weatherSizeMultiplier,
             )}
@@ -325,7 +326,7 @@
           max="3"
           step="0.1"
           bind:value={$particleSettings.weatherWindInfluence}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateWeatherWind(
               $particleSettings.weatherWindInfluence,
             )}
@@ -348,7 +349,7 @@
           max="3"
           step="0.1"
           bind:value={$particleSettings.weatherTurbulence}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateWeatherTurbulence(
               $particleSettings.weatherTurbulence,
             )}
@@ -383,7 +384,7 @@
                 {$particleSettings.moonPhase === phase.id
                 ? 'bg-primary/20 border-primary text-primary'
                 : 'bg-surface-3 border-transparent text-secondary hover:bg-surface-hover'}"
-              on:click={() => particleSettings.updateMoonPhase(phase.id)}
+              onclick={() => particleSettings.updateMoonPhase(phase.id)}
               title={phase.name}
             >
               <span class="text-lg leading-none mb-1">{phase.label}</span>
@@ -403,7 +404,7 @@
                 {$particleSettings.sunStyle === 'normal'
               ? 'bg-amber-500/20 border-amber-500 text-amber-500'
               : 'bg-surface-3 border-transparent text-secondary hover:bg-surface-hover'}"
-            on:click={() => particleSettings.updateSunStyle("normal")}
+            onclick={() => particleSettings.updateSunStyle("normal")}
           >
             <Sun size={18} />
             <span class="text-sm font-medium">Normal</span>
@@ -413,7 +414,7 @@
                 {$particleSettings.sunStyle === 'cloudy'
               ? 'bg-blue-400/20 border-blue-400 text-blue-400'
               : 'bg-surface-3 border-transparent text-secondary hover:bg-surface-hover'}"
-            on:click={() => particleSettings.updateSunStyle("cloudy")}
+            onclick={() => particleSettings.updateSunStyle("cloudy")}
           >
             <div class="relative">
               <Sun
@@ -453,14 +454,15 @@
               {$particleSettings.meteorShowerEnabled
               ? 'bg-yellow-400'
               : 'bg-surface-3'}"
-            on:click={particleSettings.toggleMeteorShower}
+            onclick={particleSettings.toggleMeteorShower}
+            aria-label="Toggle Meteor Shower"
           >
             <span
               class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-                {$particleSettings.meteorShowerEnabled
+              {$particleSettings.meteorShowerEnabled
                 ? 'translate-x-6'
                 : 'translate-x-1'}"
-            />
+            ></span>
           </button>
         </div>
         {#if $particleSettings.meteorShowerEnabled}
@@ -485,7 +487,7 @@
           max="2"
           step="0.1"
           bind:value={$particleSettings.starCountMultiplier}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateStarCount(
               $particleSettings.starCountMultiplier,
             )}
@@ -508,7 +510,7 @@
           max="3"
           step="0.1"
           bind:value={$particleSettings.starTwinkleSpeed}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateStarTwinkle(
               $particleSettings.starTwinkleSpeed,
             )}
@@ -531,7 +533,7 @@
           max="5"
           step="0.5"
           bind:value={$particleSettings.shootingStarFrequency}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateShootingStarFreq(
               $particleSettings.shootingStarFrequency,
             )}
@@ -554,7 +556,7 @@
           max="3"
           step="0.1"
           bind:value={$particleSettings.shootingStarSpeed}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateShootingStarSpeed(
               $particleSettings.shootingStarSpeed,
             )}
@@ -571,7 +573,7 @@
             {$generalSettings.landscapeType === biome.id
               ? 'bg-blue-500/10 border-blue-500 text-blue-500'
               : 'bg-surface-2 border-white/5 text-secondary hover:bg-surface-3 hover:border-white/10'}"
-            on:click={() => generalSettings.setLandscapeType(biome.id)}
+            onclick={() => generalSettings.setLandscapeType(biome.id)}
           >
             <!-- Dynamic Icon Rendering -->
             {#if biome.icon === "Mountain"}
@@ -617,7 +619,7 @@
               {$particleSettings.cloudStyle === 'cartoon'
               ? 'bg-blue-500/20 border-blue-500 text-blue-200'
               : 'bg-surface-3 border-white/5 text-secondary hover:bg-surface-2'}"
-            on:click={() => particleSettings.updateCloudStyle("cartoon")}
+            onclick={() => particleSettings.updateCloudStyle("cartoon")}
           >
             Cartoon
           </button>
@@ -626,7 +628,7 @@
               {$particleSettings.cloudStyle === 'soft'
               ? 'bg-blue-500/20 border-blue-500 text-blue-200'
               : 'bg-surface-3 border-white/5 text-secondary hover:bg-surface-2'}"
-            on:click={() => particleSettings.updateCloudStyle("soft")}
+            onclick={() => particleSettings.updateCloudStyle("soft")}
           >
             Suave
           </button>
@@ -648,7 +650,7 @@
           max="1.0"
           step="0.05"
           bind:value={$particleSettings.cloudOpacity}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateCloudOpacity($particleSettings.cloudOpacity)}
           class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-blue-400"
         />
@@ -669,7 +671,7 @@
           max="10"
           step="1"
           bind:value={$particleSettings.cloudCount}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateCloudCount($particleSettings.cloudCount)}
           class="w-full h-1.5 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-blue-400"
         />
@@ -693,7 +695,7 @@
           max="3"
           step="0.1"
           bind:value={$particleSettings.cloudWindSpeed}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateCloudWindSpeed(
               $particleSettings.cloudWindSpeed,
             )}
@@ -719,7 +721,7 @@
           max="1.0"
           step="0.05"
           bind:value={$particleSettings.cloudTurbulence}
-          on:input={() =>
+          oninput={() =>
             particleSettings.updateCloudTurbulence(
               $particleSettings.cloudTurbulence,
             )}

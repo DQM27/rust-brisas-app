@@ -58,14 +58,18 @@
   // Columnas filtradas por búsqueda
   const filteredColumns = $derived(
     columns.filter((col) =>
-      col.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+      col.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    ),
   );
 
   // Contadores
   const visibleCount = $derived(columns.filter((c) => c.visible).length);
-  const pinnedLeftCount = $derived(columns.filter((c) => c.pinned === "left").length);
-  const pinnedRightCount = $derived(columns.filter((c) => c.pinned === "right").length);
+  const pinnedLeftCount = $derived(
+    columns.filter((c) => c.pinned === "left").length,
+  );
+  const pinnedRightCount = $derived(
+    columns.filter((c) => c.pinned === "right").length,
+  );
 
   // Handlers
   function toggleVisibility(columnId: string) {
@@ -87,19 +91,28 @@
   function showAll() {
     if (!gridApi) return;
     columns.forEach((col) => (col.visible = true));
-    gridApi.setColumnsVisible(columns.map((c) => c.id), true);
+    gridApi.setColumnsVisible(
+      columns.map((c) => c.id),
+      true,
+    );
   }
 
   function hideAll() {
     if (!gridApi) return;
     columns.forEach((col) => (col.visible = false));
-    gridApi.setColumnsVisible(columns.map((c) => c.id), false);
+    gridApi.setColumnsVisible(
+      columns.map((c) => c.id),
+      false,
+    );
   }
 
   function unpinAll() {
     if (!gridApi) return;
     columns.forEach((col) => (col.pinned = null));
-    gridApi.setColumnsPinned(columns.map((c) => c.id), null);
+    gridApi.setColumnsPinned(
+      columns.map((c) => c.id),
+      null,
+    );
   }
 
   function autosizeAll() {
@@ -150,11 +163,14 @@
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-4 text-xs text-gray-400">
       <span>
-        <span class="text-white font-medium">{visibleCount}</span>/{columns.length} visibles
+        <span class="text-white font-medium">{visibleCount}</span
+        >/{columns.length} visibles
       </span>
       {#if pinnedLeftCount > 0 || pinnedRightCount > 0}
         <span>
-          <span class="text-white font-medium">{pinnedLeftCount + pinnedRightCount}</span> fijadas
+          <span class="text-white font-medium"
+            >{pinnedLeftCount + pinnedRightCount}</span
+          > fijadas
         </span>
       {/if}
     </div>
@@ -162,7 +178,10 @@
 
   <!-- Search -->
   <div class="relative">
-    <Search size={14} class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+    <Search
+      size={14}
+      class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+    />
     <input
       type="text"
       bind:value={searchQuery}
@@ -212,7 +231,7 @@
   </div>
 
   <!-- Column List -->
-  <div class="space-y-1 max-h-80 overflow-y-auto pr-1">
+  <div class="space-y-1 max-h-80 overflow-y-auto pr-1" role="list">
     {#each filteredColumns as column, index (column.id)}
       <div
         draggable="true"
@@ -221,8 +240,9 @@
         ondragend={handleDragEnd}
         class="group flex items-center gap-2 p-2 rounded-lg transition-all cursor-move
           {draggedIndex === index
-            ? 'opacity-50 scale-98 bg-blue-500/20 border border-blue-500/30'
-            : 'bg-[#252526] border border-transparent hover:border-white/10'}"
+          ? 'opacity-50 scale-98 bg-blue-500/20 border border-blue-500/30'
+          : 'bg-[#252526] border border-transparent hover:border-white/10'}"
+        role="listitem"
       >
         <!-- Drag Handle -->
         <div class="text-gray-600 group-hover:text-gray-400 transition-colors">
@@ -234,8 +254,8 @@
           onclick={() => toggleVisibility(column.id)}
           class="p-1 rounded transition-colors
             {column.visible
-              ? 'text-green-400 hover:bg-green-500/10'
-              : 'text-gray-500 hover:bg-white/5'}"
+            ? 'text-green-400 hover:bg-green-500/10'
+            : 'text-gray-500 hover:bg-white/5'}"
           title={column.visible ? "Ocultar" : "Mostrar"}
         >
           {#if column.visible}
@@ -254,23 +274,27 @@
         </span>
 
         <!-- Pin Controls -->
-        <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div
+          class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
           <button
-            onclick={() => setPinned(column.id, column.pinned === "left" ? null : "left")}
+            onclick={() =>
+              setPinned(column.id, column.pinned === "left" ? null : "left")}
             class="p-1 rounded transition-colors
               {column.pinned === 'left'
-                ? 'text-blue-400 bg-blue-500/10'
-                : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}"
+              ? 'text-blue-400 bg-blue-500/10'
+              : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}"
             title="Fijar izquierda"
           >
             <ArrowLeftToLine size={12} />
           </button>
           <button
-            onclick={() => setPinned(column.id, column.pinned === "right" ? null : "right")}
+            onclick={() =>
+              setPinned(column.id, column.pinned === "right" ? null : "right")}
             class="p-1 rounded transition-colors
               {column.pinned === 'right'
-                ? 'text-blue-400 bg-blue-500/10'
-                : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}"
+              ? 'text-blue-400 bg-blue-500/10'
+              : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}"
             title="Fijar derecha"
           >
             <ArrowRightToLine size={12} />
@@ -281,7 +305,9 @@
         {#if column.pinned}
           <span
             class="px-1.5 py-0.5 text-[10px] font-medium rounded
-              {column.pinned === 'left' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}"
+              {column.pinned === 'left'
+              ? 'bg-blue-500/20 text-blue-400'
+              : 'bg-purple-500/20 text-purple-400'}"
           >
             {column.pinned === "left" ? "IZQ" : "DER"}
           </span>

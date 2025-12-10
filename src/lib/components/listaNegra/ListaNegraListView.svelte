@@ -205,7 +205,7 @@
   }
 
   // --- Form helpers ---
-  let formRef: any;
+  let formRef = $state<any>(null);
 
   function resetForm() {
     if (formRef && formRef.reset) {
@@ -274,12 +274,11 @@
     class="fixed inset-0 z-50 flex items-center justify-center p-4"
     transition:fade={{ duration: 200 }}
   >
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div
-      class="absolute inset-0 bg-black/60 backdrop-blur-sm"
-      on:click={closeModal}
-    ></div>
+    <button
+      class="absolute inset-0 w-full h-full bg-black/60 backdrop-blur-sm border-0 cursor-default"
+      onclick={closeModal}
+      aria-label="Cerrar modal"
+    ></button>
     <div
       class="relative z-10 w-full max-w-4xl"
       transition:fly={{ y: 20, duration: 300 }}

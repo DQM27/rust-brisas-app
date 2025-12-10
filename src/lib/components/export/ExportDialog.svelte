@@ -138,12 +138,16 @@
   class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
   onclick={handleBackdropClick}
   role="presentation"
+  onkeydown={(e) => e.key === "Escape" && !isExporting && onClose()}
+  tabindex="-1"
 >
   <div
     class="bg-[#1e1e1e] border border-white/10 rounded-lg shadow-2xl w-full max-w-md"
     onclick={(e) => e.stopPropagation()}
     role="dialog"
     aria-modal="true"
+    tabindex="-1"
+    onkeydown={(e) => e.stopPropagation()}
   >
     <!-- Header -->
     <div class="flex items-center justify-between p-4 border-b border-white/10">
@@ -167,11 +171,12 @@
     <div class="p-5 space-y-5">
       <!-- Selector de formato -->
       <div>
-        <label class="block text-sm font-medium text-gray-400 mb-3">
+        <span class="block text-sm font-medium text-gray-400 mb-3">
           Formato de exportación
-        </label>
+        </span>
         <div class="grid grid-cols-3 gap-2">
           {#each formats as format}
+            {@const Icon = format.icon}
             <button
               onclick={() => (selectedFormat = format.id)}
               disabled={!format.available || isExporting}
@@ -186,11 +191,7 @@
               title={format.available ? format.description : "No disponible"}
             >
               <div class="flex flex-col items-center gap-2">
-                <svelte:component
-                  this={format.icon}
-                  size={24}
-                  class="text-white"
-                />
+                <Icon size={24} class="text-white" />
                 <span class="text-xs font-medium text-white"
                   >{format.label}</span
                 >
@@ -239,11 +240,15 @@
 
           <!-- Selector de Template -->
           <div>
-            <label class="block text-xs text-gray-400 mb-1">
+            <label
+              for="template-select"
+              class="block text-xs text-gray-400 mb-1"
+            >
               Estilo Visual
             </label>
             <div class="flex gap-2">
               <select
+                id="template-select"
                 bind:value={selectedTemplate}
                 class="flex-1 px-3 py-2 bg-[#1e1e1e] border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher } from "svelte";
 
   /**
    * Campos adicionales del formulario
@@ -12,8 +12,7 @@
   // PROPS
   // ==========================================
 
-  export let tipoAutorizacion: string = 'praind';
-  export let observaciones: string = '';
+  export let tipoAutorizacion: string = "praind";
 
   // ==========================================
   // HANDLERS
@@ -21,12 +20,12 @@
 
   function handleTipoChange(event: Event) {
     const target = event.target as HTMLSelectElement;
-    dispatch('tipoChange', target.value);
+    dispatch("tipoChange", target.value);
   }
 
   function handleObservacionesInput(event: Event) {
     const target = event.target as HTMLTextAreaElement;
-    dispatch('observacionesChange', target.value);
+    dispatch("observacionesChange", target.value);
   }
 </script>
 

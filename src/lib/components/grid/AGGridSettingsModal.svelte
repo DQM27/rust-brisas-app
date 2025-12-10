@@ -76,22 +76,34 @@
   onclick={handleBackdropClick}
   role="dialog"
   aria-modal="true"
+  tabindex="-1"
+  onkeydown={(e) => e.key === "Escape" && handleClose()}
 >
   <!-- Backdrop -->
   <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
 
   <!-- Modal -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
     class="relative w-full max-w-4xl max-h-[85vh] flex flex-col
       bg-[#1a1a1b] border border-white/10 rounded-xl shadow-2xl
       {isClosing ? 'scale-95' : 'scale-100'} transition-transform duration-150"
     onclick={(e) => e.stopPropagation()}
+    role="document"
+    tabindex="-1"
+    onkeydown={(e) => e.stopPropagation()}
   >
     <!-- Header -->
-    <div class="flex items-center justify-between px-5 py-4 border-b border-white/10">
+    <div
+      class="flex items-center justify-between px-5 py-4 border-b border-white/10"
+    >
       <div>
-        <h2 class="text-base font-semibold text-white">Configuración de Grid</h2>
-        <p class="text-xs text-gray-500 mt-0.5">Personaliza la tabla a tu gusto</p>
+        <h2 class="text-base font-semibold text-white">
+          Configuración de Grid
+        </h2>
+        <p class="text-xs text-gray-500 mt-0.5">
+          Personaliza la tabla a tu gusto
+        </p>
       </div>
       <div class="flex items-center gap-2">
         <button
@@ -115,14 +127,16 @@
     <!-- Content -->
     <div class="flex flex-1 overflow-hidden">
       <!-- Sidebar Tabs -->
-      <div class="w-44 border-r border-white/10 bg-black/20 p-2 flex flex-col gap-1">
+      <div
+        class="w-44 border-r border-white/10 bg-black/20 p-2 flex flex-col gap-1"
+      >
         {#each tabs as tab}
           <button
             onclick={() => (activeTab = tab.id)}
             class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-all
               {activeTab === tab.id
-                ? 'bg-white/10 text-white'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'}"
+              ? 'bg-white/10 text-white'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'}"
           >
             <span class="text-base">{tab.icon}</span>
             <span class="text-sm font-medium">{tab.label}</span>
@@ -147,7 +161,9 @@
     </div>
 
     <!-- Footer -->
-    <div class="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-black/20">
+    <div
+      class="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-black/20"
+    >
       <p class="text-xs text-gray-500">
         Los cambios se aplican automáticamente
       </p>
@@ -167,16 +183,25 @@
       transition:fade={{ duration: 100 }}
       class="absolute inset-0 z-10 flex items-center justify-center bg-black/50"
       onclick={() => (showResetConfirm = false)}
+      role="button"
+      tabindex="0"
+      onkeydown={(e) => e.key === "Escape" && (showResetConfirm = false)}
     >
       <div
         transition:slide={{ duration: 150, easing: cubicOut }}
         class="bg-[#252526] border border-white/10 rounded-xl p-5 max-w-sm mx-4 shadow-2xl"
         onclick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        tabindex="-1"
+        onkeydown={(e) => e.stopPropagation()}
       >
-        <h3 class="text-sm font-semibold text-white mb-2">¿Restaurar configuración?</h3>
+        <h3 class="text-sm font-semibold text-white mb-2">
+          ¿Restaurar configuración?
+        </h3>
         <p class="text-xs text-gray-400 mb-4">
-          Esto restablecerá todas las opciones de esta grid a sus valores por defecto.
-          Esta acción no se puede deshacer.
+          Esto restablecerá todas las opciones de esta grid a sus valores por
+          defecto. Esta acción no se puede deshacer.
         </p>
         <div class="flex justify-end gap-2">
           <button

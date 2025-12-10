@@ -24,7 +24,6 @@
   // PROPS
   // ==========================================
 
-  export let contratistaId: string = "";
   export let contratistaNombre: string = "";
   export let contratistaData: any | null = null;
   export let puedeIngresar: boolean = false;

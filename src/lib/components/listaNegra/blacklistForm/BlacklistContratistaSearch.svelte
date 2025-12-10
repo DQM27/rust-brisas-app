@@ -44,7 +44,7 @@
 </script>
 
 <div class="space-y-1.5">
-  <label class="text-sm font-medium text-primary"> Buscar Contratista </label>
+  <div class="text-sm font-medium text-primary mb-1">Buscar Contratista</div>
   <SearchBar
     placeholder="Buscar por nombre, cédula o empresa..."
     disabled={loading}

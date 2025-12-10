@@ -19,11 +19,8 @@ async fn seed_admin_user(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Er
         .await?;
 
     if count > 0 {
-        println!("👤 Usuario admin ya existe");
         return Ok(());
     }
-
-    println!("👤 Creando usuario admin inicial...");
 
     let id = Uuid::new_v4().to_string();
     let password_hash = hash_password("daniel27")?;
@@ -47,10 +44,6 @@ async fn seed_admin_user(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Er
     .bind(0) // must_change_password (false)
     .execute(pool)
     .await?;
-
-    println!("✅ Usuario admin creado exitosamente");
-    println!("   📧 Email: daniel.bleach1@gmail.com");
-    println!("   🔑 Contraseña: daniel27");
 
     Ok(())
 }

@@ -21,8 +21,6 @@ pub fn initialize_index(index_path: &Path) -> Result<Index, String> {
 
         // Verificar si existe el campo "email" (indicador simple de migración)
         if index.schema().get_field(fields::EMAIL).is_err() {
-            println!("⚠️ Esquema de índice obsoleto (falta 'email'). Recreando índice...");
-
             // Intentar eliminar directorio
             std::fs::remove_dir_all(index_path)
                 .map_err(|e| format!("Error al eliminar índice obsoleto: {}", e))?;

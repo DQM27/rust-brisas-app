@@ -115,11 +115,12 @@
 
       <!-- Nombre -->
       <div class="space-y-2">
-        <label class="text-sm font-medium text-secondary"
+        <label class="text-sm font-medium text-secondary" for="terminalName"
           >Nombre de la Terminal</label
         >
         <div class="relative">
           <input
+            id="terminalName"
             type="text"
             bind:value={terminalName}
             placeholder="Ej: Portería Principal"
@@ -137,11 +138,12 @@
 
       <!-- Ubicación -->
       <div class="space-y-2">
-        <label class="text-sm font-medium text-secondary"
+        <label class="text-sm font-medium text-secondary" for="terminalLocation"
           >Ubicación Física</label
         >
         <div class="relative">
           <input
+            id="terminalLocation"
             type="text"
             bind:value={terminalLocation}
             placeholder="Ej: Edificio A - Planta Baja"

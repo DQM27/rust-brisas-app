@@ -1,5 +1,9 @@
 <script lang="ts">
-  import type { GridId, ToolbarContext, ToolbarButtonDefinition } from "$lib/types/agGrid";
+  import type {
+    GridId,
+    ToolbarContext,
+    ToolbarButtonDefinition,
+  } from "$lib/types/agGrid";
   import type { GridApi } from "@ag-grid-community/core";
   import { agGridSettings } from "$lib/stores/agGridSettings.svelte";
   import { getGridConfig } from "$lib/config/agGridConfigs";
@@ -67,7 +71,7 @@
 
   // Config actual de botones
   const buttonsConfig = $derived(
-    agGridSettings.getButtonsConfig(gridId, selectedContext)
+    agGridSettings.getButtonsConfig(gridId, selectedContext),
   );
 
   // Lista de botones ordenada
@@ -138,7 +142,7 @@
       agGridSettings.setHiddenButtons(
         gridId,
         selectedContext,
-        currentHidden.filter((id) => id !== buttonId)
+        currentHidden.filter((id) => id !== buttonId),
       );
     }
   }
@@ -188,12 +192,18 @@
         bg-[#252526] border border-white/10 hover:border-white/20 transition-colors"
     >
       <div class="text-left">
-        <p class="text-sm font-medium text-white">{contextLabels[selectedContext]}</p>
-        <p class="text-xs text-gray-500">{contextDescriptions[selectedContext]}</p>
+        <p class="text-sm font-medium text-white">
+          {contextLabels[selectedContext]}
+        </p>
+        <p class="text-xs text-gray-500">
+          {contextDescriptions[selectedContext]}
+        </p>
       </div>
       <ChevronDown
         size={16}
-        class="text-gray-400 transition-transform {showContextMenu ? 'rotate-180' : ''}"
+        class="text-gray-400 transition-transform {showContextMenu
+          ? 'rotate-180'
+          : ''}"
       />
     </button>
 
@@ -206,10 +216,14 @@
           <button
             onclick={() => handleContextChange(ctx as ToolbarContext)}
             class="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors
-              {selectedContext === ctx ? 'bg-blue-500/10 border-l-2 border-l-blue-500' : ''}"
+              {selectedContext === ctx
+              ? 'bg-blue-500/10 border-l-2 border-l-blue-500'
+              : ''}"
           >
             <p class="text-sm text-white">{label}</p>
-            <p class="text-xs text-gray-500">{contextDescriptions[ctx as ToolbarContext]}</p>
+            <p class="text-xs text-gray-500">
+              {contextDescriptions[ctx as ToolbarContext]}
+            </p>
           </button>
         {/each}
       </div>
@@ -219,7 +233,9 @@
   <!-- Counter -->
   <div
     class="flex items-center justify-between p-3 rounded-lg
-      {isOverLimit ? 'bg-red-500/10 border border-red-500/20' : 'bg-[#252526] border border-white/10'}"
+      {isOverLimit
+      ? 'bg-red-500/10 border border-red-500/20'
+      : 'bg-[#252526] border border-white/10'}"
   >
     <div class="flex items-center gap-2">
       {#if isOverLimit}
@@ -229,7 +245,11 @@
         Botones visibles:
         <span
           class="font-semibold
-            {isOverLimit ? 'text-red-400' : isAtLimit ? 'text-amber-400' : 'text-green-400'}"
+            {isOverLimit
+            ? 'text-red-400'
+            : isAtLimit
+              ? 'text-amber-400'
+              : 'text-green-400'}"
         >
           {visibleCount}/{buttonLimit}
         </span>
@@ -245,7 +265,7 @@
   </div>
 
   <!-- Button List -->
-  <div class="space-y-1 max-h-72 overflow-y-auto pr-1">
+  <div class="space-y-1 max-h-72 overflow-y-auto pr-1" role="list">
     {#each buttons as button, index (button.id)}
       {@const canToggle = button.visible || !isAtLimit}
 
@@ -256,9 +276,10 @@
         ondragend={handleDragEnd}
         class="group flex items-center gap-2 p-2.5 rounded-lg transition-all
           {draggedIndex === index
-            ? 'opacity-50 scale-98 bg-blue-500/20 border border-blue-500/30'
-            : 'bg-[#252526] border border-transparent hover:border-white/10'}
+          ? 'opacity-50 scale-98 bg-blue-500/20 border border-blue-500/30'
+          : 'bg-[#252526] border border-transparent hover:border-white/10'}
           {!canToggle && !button.visible ? 'opacity-50' : ''}"
+        role="listitem"
       >
         <!-- Drag Handle -->
         <div class="text-gray-600 group-hover:text-gray-400 cursor-move">
@@ -271,8 +292,8 @@
           disabled={!canToggle && !button.visible}
           class="p-1 rounded transition-colors
             {button.visible
-              ? 'text-green-400 hover:bg-green-500/10'
-              : 'text-gray-500 hover:bg-white/5'}
+            ? 'text-green-400 hover:bg-green-500/10'
+            : 'text-gray-500 hover:bg-white/5'}
             disabled:cursor-not-allowed disabled:opacity-50"
         >
           {#if button.visible}
@@ -298,14 +319,18 @@
 
         <!-- Category Badge -->
         {#if button.category}
-          <span class="px-1.5 py-0.5 text-[10px] text-gray-500 bg-white/5 rounded">
+          <span
+            class="px-1.5 py-0.5 text-[10px] text-gray-500 bg-white/5 rounded"
+          >
             {button.category}
           </span>
         {/if}
 
         <!-- Order Number -->
         {#if button.visible}
-          <span class="w-5 h-5 flex items-center justify-center text-[10px] text-gray-500 bg-white/5 rounded">
+          <span
+            class="w-5 h-5 flex items-center justify-center text-[10px] text-gray-500 bg-white/5 rounded"
+          >
             {index + 1}
           </span>
         {/if}
@@ -327,8 +352,8 @@
   <!-- Tips -->
   <div class="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
     <p class="text-xs text-blue-400">
-      <strong>Tips:</strong> Arrastra para reordenar • El orden se guarda por contexto • 
-      Los botones ocultos no aparecen en la toolbar
+      <strong>Tips:</strong> Arrastra para reordenar • El orden se guarda por contexto
+      • Los botones ocultos no aparecen en la toolbar
     </p>
   </div>
 </div>

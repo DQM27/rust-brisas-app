@@ -63,19 +63,25 @@
   const fontClass = $derived(agGridSettings.getFontClass(gridId));
   const rowHeightPx = $derived(agGridSettings.getRowHeightPx(gridId));
   const paginationSize = $derived(agGridSettings.getPaginationSize(gridId));
-  const showFloatingFilters = $derived(agGridSettings.getShowFloatingFilters(gridId));
+  const showFloatingFilters = $derived(
+    agGridSettings.getShowFloatingFilters(gridId),
+  );
   const animateRows = $derived(agGridSettings.getAnimateRows(gridId));
-  const cellTextSelection = $derived(agGridSettings.getCellTextSelection(gridId));
+  const cellTextSelection = $derived(
+    agGridSettings.getCellTextSelection(gridId),
+  );
   const enableUndoRedo = $derived(agGridSettings.getEnableUndoRedo(gridId));
   const rowBuffer = $derived(agGridSettings.getRowBuffer(gridId));
   const debounceScroll = $derived(agGridSettings.getDebounceScroll(gridId));
-  const enableQuickFilter = $derived(agGridSettings.getEnableQuickFilter(gridId));
+  const enableQuickFilter = $derived(
+    agGridSettings.getEnableQuickFilter(gridId),
+  );
 
   // Tema personalizado reactivo
   const myTheme = $derived.by(() => {
     const isDark = currentTheme.includes("dark");
     const baseTheme = themeQuartz.withPart(
-      isDark ? colorSchemeDark : colorSchemeLight
+      isDark ? colorSchemeDark : colorSchemeLight,
     );
 
     return baseTheme.withParams({
@@ -169,7 +175,7 @@
       const state = api.getColumnState();
       localStorage.setItem(
         `ag-grid-state-${persistenceKey}`,
-        JSON.stringify(state)
+        JSON.stringify(state),
       );
     } catch (e) {
       console.warn("Error saving grid state:", e);
@@ -207,6 +213,7 @@
   }
 
   // Configuración del grid
+  // svelte-ignore state_referenced_locally
   const gridOptions: GridOptions<T> = {
     columnDefs: columnDefs,
     localeText: AG_GRID_LOCALE_ES,
@@ -338,7 +345,9 @@
     />
   {/if}
 
-  <div class="flex-1 overflow-hidden border-x border-b border-white/10 {themeClass}">
+  <div
+    class="flex-1 overflow-hidden border-x border-b border-white/10 {themeClass}"
+  >
     <AgGrid {gridOptions} {rowData} {modules} />
   </div>
 </div>

@@ -93,7 +93,7 @@
   }
 </script>
 
-<svelte:window on:keydown={recordingKeyFor ? handleRecordKey : undefined} />
+<svelte:window onkeydown={recordingKeyFor ? handleRecordKey : undefined} />
 
 <div class="space-y-6">
   {#if loading}
@@ -110,14 +110,14 @@
       <div class="flex gap-2">
         <button
           class="btn btn-secondary text-sm flex items-center gap-2"
-          on:click={resetConfig}
+          onclick={resetConfig}
         >
           <Undo2 size={16} />
           Restaurar Defaults
         </button>
         <button
           class="btn btn-primary text-sm flex items-center gap-2"
-          on:click={saveConfig}
+          onclick={saveConfig}
         >
           <Save size={16} />
           Guardar Cambios
@@ -144,7 +144,7 @@
                 recordingKeyFor?.command === cmd}
               class:ring-blue-500={recordingKeyFor?.context === "global" &&
                 recordingKeyFor?.command === cmd}
-              on:click={() =>
+              onclick={() =>
                 (recordingKeyFor = { context: "global", command: cmd })}
             >
               {recordingKeyFor?.context === "global" &&
@@ -184,7 +184,7 @@
                     recordingKeyFor?.command === cmd}
                   class:ring-blue-500={recordingKeyFor?.context === ctxName &&
                     recordingKeyFor?.command === cmd}
-                  on:click={() =>
+                  onclick={() =>
                     (recordingKeyFor = { context: ctxName, command: cmd })}
                 >
                   {recordingKeyFor?.context === ctxName &&

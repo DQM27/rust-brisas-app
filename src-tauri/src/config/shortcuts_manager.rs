@@ -2,7 +2,7 @@
 
 use super::shortcuts::ShortcutsConfig;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 /// Obtiene la ruta del archivo shortcuts.toml
 fn get_shortcuts_path() -> PathBuf {
@@ -18,13 +18,11 @@ pub fn load_shortcuts() -> Result<ShortcutsConfig, Box<dyn std::error::Error>> {
     let path = get_shortcuts_path();
 
     if path.exists() {
-        println!("⌨️  Cargando atajos desde: {}", path.display());
         let content = fs::read_to_string(&path)?;
         let config: ShortcutsConfig = toml::from_str(&content)?;
         return Ok(config);
     }
 
-    println!("⌨️  No se encontraron atajos, creando default...");
     create_default_shortcuts()
 }
 
@@ -45,7 +43,6 @@ pub fn save_shortcuts(config: &ShortcutsConfig) -> Result<(), Box<dyn std::error
 
     let toml_string = toml::to_string_pretty(config)?;
     fs::write(&path, toml_string)?;
-    println!("💾 Atajos guardados en: {}", path.display());
 
     Ok(())
 }

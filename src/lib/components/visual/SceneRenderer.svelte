@@ -338,14 +338,14 @@
 <div
   class="absolute inset-0 transition-all duration-1000 ease-out"
   style="background: {isBirthday ? birthdayGradientCSS : skyGradientCSS};"
-/>
+></div>
 
 <!-- Canvas for all animated elements -->
 <canvas
   bind:this={canvas}
   class="absolute inset-0 w-full h-full"
   style="z-index: 1;"
-/>
+></canvas>
 
 <!-- Slot for MountainLandscape SVG (rendered on top of canvas sky) -->
 <div class="absolute inset-0" style="z-index: 2;">

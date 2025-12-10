@@ -306,6 +306,7 @@
         transition:fade={{ duration: 300 }}
       >
         {#each modules as module, i (i)}
+          {@const Icon = module.icon}
           <div
             in:fly={{
               y: 50,
@@ -328,11 +329,7 @@
                   class="mb-4 inline-flex rounded-lg bg-surface-1 p-3 {module.color ||
                     'text-accent'} transition-all duration-300 group-hover:scale-110 group-hover:bg-accent/10"
                 >
-                  <svelte:component
-                    this={module.icon}
-                    size={28}
-                    strokeWidth={2}
-                  />
+                  <Icon size={28} strokeWidth={2} />
                 </div>
 
                 <h3

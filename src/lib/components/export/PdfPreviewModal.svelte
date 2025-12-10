@@ -40,6 +40,7 @@
     role="dialog"
     aria-modal="true"
     onclick={(e) => e.stopPropagation()}
+    onkeydown={(e) => e.stopPropagation()}
     tabindex="-1"
   >
     <!-- Header -->

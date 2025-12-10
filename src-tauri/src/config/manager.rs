@@ -1,29 +1,29 @@
 // src-tauri/src/config/manager.rs
 
 use super::settings::AppConfig;
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 
 /// Ubicaciones donde buscar el archivo de configuración (en orden de prioridad)
 fn get_config_search_paths() -> Vec<PathBuf> {
     let mut paths = Vec::new();
-    
+
     // 1. Carpeta actual (para desarrollo)
     paths.push(PathBuf::from("./config/brisas.toml"));
-    
+
     // 2. Carpeta de datos de la app
     if let Some(data_dir) = dirs::data_local_dir() {
         paths.push(data_dir.join("Brisas").join("brisas.toml"));
     }
-    
+
     // 3. AppData (Windows) o equivalente
     if let Some(config_dir) = dirs::config_dir() {
         paths.push(config_dir.join("Brisas").join("brisas.toml"));
     }
-    
+
     // 4. ProgramData (Windows)
     paths.push(PathBuf::from("C:/ProgramData/Brisas/brisas.toml"));
-    
+
     paths
 }
 
@@ -41,32 +41,31 @@ pub fn load_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
     // Buscar archivo existente
     for path in get_config_search_paths() {
         if path.exists() {
-            println!("📋 Configuración encontrada: {}", path.display());
             let content = fs::read_to_string(&path)?;
             let mut config: AppConfig = toml::from_str(&content)?;
-            
+
             // Generar ID si está vacío
             if config.terminal.id.is_empty() {
                 config.terminal.id = generate_hardware_id()?;
                 save_config(&config, &path)?;
             }
-            
+
             return Ok(config);
         }
     }
-    
+
     // No se encontró, crear nueva configuración
-    println!("⚙️  No se encontró configuración, creando nueva...");
+
     create_default_config()
 }
 
 /// Crea y guarda una configuración por defecto
 fn create_default_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
     let mut config = AppConfig::default();
-    
+
     // Generar ID único
     config.terminal.id = generate_hardware_id()?;
-    
+
     // Configurar ruta por defecto de la DB
     if let Some(data_dir) = dirs::data_local_dir() {
         config.database.default_path = data_dir
@@ -77,13 +76,11 @@ fn create_default_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
     } else {
         config.database.default_path = "./data/brisas.db".to_string();
     }
-    
+
     // Guardar configuración
     let config_path = get_default_config_path();
     save_config(&config, &config_path)?;
-    
-    println!("✅ Configuración creada en: {}", config_path.display());
-    
+
     Ok(config)
 }
 
@@ -93,10 +90,10 @@ pub fn save_config(config: &AppConfig, path: &PathBuf) -> Result<(), Box<dyn std
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
-    
+
     let toml_string = toml::to_string_pretty(config)?;
     fs::write(path, toml_string)?;
-    
+
     Ok(())
 }
 
@@ -109,9 +106,12 @@ fn generate_hardware_id() -> Result<String, Box<dyn std::error::Error>> {
             return Ok(format!("HW-{}", mac_str));
         }
     }
-    
+
     // Fallback: UUID aleatorio
-    Ok(format!("HW-{}", uuid::Uuid::new_v4().to_string().replace("-", "")))
+    Ok(format!(
+        "HW-{}",
+        uuid::Uuid::new_v4().to_string().replace("-", "")
+    ))
 }
 
 /// Obtiene la ruta de la base de datos según la configuración
@@ -120,26 +120,23 @@ pub fn get_database_path(config: &AppConfig) -> PathBuf {
     for path_str in &config.database.paths {
         let path = expand_path(path_str);
         if path.exists() {
-            println!("💾 Base de datos encontrada: {}", path.display());
             return path;
         }
     }
-    
+
     // No existe ninguna, usar la ruta por defecto
     let default_path = expand_path(&config.database.default_path);
-    println!("💾 Usando ruta por defecto: {}", default_path.display());
-    
+
     // Crear directorio si no existe
     if let Some(parent) = default_path.parent() {
         let _ = fs::create_dir_all(parent);
     }
-    
+
     default_path
 }
 
 /// Expande variables de entorno en rutas
 fn expand_path(path: &str) -> PathBuf {
-    let expanded = shellexpand::env(path)
-        .unwrap_or(std::borrow::Cow::Borrowed(path));
+    let expanded = shellexpand::env(path).unwrap_or(std::borrow::Cow::Borrowed(path));
     PathBuf::from(expanded.as_ref())
 }

@@ -3,8 +3,6 @@
 use crate::config::AppConfig;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::SqlitePool;
-use std::fs;
-use std::path::Path;
 
 pub mod migrate;
 pub mod seed;
@@ -27,10 +25,7 @@ pub async fn init_pool(config: &AppConfig) -> Result<SqlitePool, Box<dyn std::er
     let db_exists = db_path.exists();
     let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
 
-    println!("💾 Base de datos: {}", db_path.display());
-    if !db_exists {
-        println!("🆕 Creando nueva base de datos...");
-    }
+    if !db_exists {}
 
     let pool = SqlitePoolOptions::new()
         .max_connections(5)

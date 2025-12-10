@@ -23,10 +23,6 @@ pub fn run() {
             dotenvy::dotenv().ok();
 
             let app_config = config::load_config()?;
-            println!(
-                "🏢 Terminal: {} (ID: {})",
-                app_config.terminal.nombre, app_config.terminal.id
-            );
 
             // Verificar si hay restauración pendiente ANTES de conectar a la DB
             if let Err(e) = services::backup::check_and_restore_database(&app_config) {
@@ -39,11 +35,8 @@ pub fn run() {
             let search_service = search::init_search_service(&app_config)?;
 
             // Reindexar todo al inicio para asegurar consistencia con la DB
-            println!("🔄 Reindexando base de datos completa...");
             if let Err(e) = search_service.reindex_all(&pool).await {
                 eprintln!("❌ Error al reindexar al inicio: {}", e);
-            } else {
-                println!("✅ Reindexado completado con éxito");
             }
 
             tauri::Builder::default()
