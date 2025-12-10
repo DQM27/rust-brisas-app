@@ -9,7 +9,9 @@ export interface ListaNegra {
   contratistaId?: string;
   cedula: string;
   nombre: string;
+  segundoNombre?: string;
   apellido: string;
+  segundoApellido?: string;
   motivoBloqueo: string;
   fechaInicioBloqueo: string;
   fechaFinBloqueo?: string;
@@ -28,7 +30,9 @@ export interface AddToListaNegraInput {
   contratistaId?: string;
   cedula?: string;
   nombre?: string;
+  segundoNombre?: string;
   apellido?: string;
+  segundoApellido?: string;
   motivoBloqueo: string;
   fechaFinBloqueo?: string;
   bloqueadoPor: string;
@@ -50,7 +54,9 @@ export interface ListaNegraResponse {
   contratistaId?: string;
   cedula: string;
   nombre: string;
+  segundoNombre?: string;
   apellido: string;
+  segundoApellido?: string;
   nombreCompleto: string;
   motivoBloqueo: string;
   fechaInicioBloqueo: string;

@@ -6,7 +6,6 @@ use tauri::{command, State};
 /// Crea una copia de seguridad de la base de datos usando VACUUM INTO
 #[command]
 pub async fn backup_database(
-    config: State<'_, AppConfig>,
     pool: State<'_, sqlx::SqlitePool>,
     destination_path: String,
 ) -> Result<(), String> {

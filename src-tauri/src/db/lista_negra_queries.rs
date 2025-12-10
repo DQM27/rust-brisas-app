@@ -76,7 +76,9 @@ pub async fn insert(
     contratista_id: Option<&str>,
     cedula: &str,
     nombre: &str,
+    segundo_nombre: Option<&str>,
     apellido: &str,
+    segundo_apellido: Option<&str>,
     motivo_bloqueo: &str,
     fecha_inicio_bloqueo: &str,
     fecha_fin_bloqueo: Option<&str>,
@@ -87,15 +89,17 @@ pub async fn insert(
 ) -> Result<(), String> {
     sqlx::query(
         r#"INSERT INTO lista_negra 
-           (id, contratista_id, cedula, nombre, apellido, motivo_bloqueo, fecha_inicio_bloqueo, 
+           (id, contratista_id, cedula, nombre, segundo_nombre, apellido, segundo_apellido, motivo_bloqueo, fecha_inicio_bloqueo, 
             fecha_fin_bloqueo, bloqueado_por, observaciones, is_active, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#,
     )
     .bind(id)
     .bind(contratista_id)
     .bind(cedula)
     .bind(nombre)
+    .bind(segundo_nombre)
     .bind(apellido)
+    .bind(segundo_apellido)
     .bind(motivo_bloqueo)
     .bind(fecha_inicio_bloqueo)
     .bind(fecha_fin_bloqueo)
@@ -273,7 +277,9 @@ fn row_to_lista_negra(row: &sqlx::sqlite::SqliteRow) -> Result<ListaNegra, Strin
         contratista_id: row.get("contratista_id"),
         cedula: row.get("cedula"),
         nombre: row.get("nombre"),
+        segundo_nombre: row.get("segundo_nombre"),
         apellido: row.get("apellido"),
+        segundo_apellido: row.get("segundo_apellido"),
         motivo_bloqueo: row.get("motivo_bloqueo"),
         fecha_inicio_bloqueo: row.get("fecha_inicio_bloqueo"),
         fecha_fin_bloqueo: row.get("fecha_fin_bloqueo"),

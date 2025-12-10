@@ -1,4 +1,3 @@
-use crate::config::manager::get_database_path; // Aunque no se use directo, útil tenerlo referenciado
 use crate::config::manager::save_config;
 use crate::config::{settings::TerminalConfig, AppConfig};
 use tauri::{command, State};

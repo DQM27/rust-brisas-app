@@ -45,7 +45,9 @@
   // Modo manual
   let cedula = $state("");
   let nombre = $state("");
+  let segundoNombre = $state("");
   let apellido = $state("");
+  let segundoApellido = $state("");
 
   // Datos del bloqueo/desbloqueo
   let motivoBloqueo = $state("");
@@ -64,7 +66,9 @@
     checkingBlock = false;
     cedula = "";
     nombre = "";
+    segundoNombre = "";
     apellido = "";
+    segundoApellido = "";
     motivoBloqueo = "";
     observaciones = "";
     showConfirmModal = false;
@@ -164,7 +168,9 @@
     } else {
       data.cedula = cedula;
       data.nombre = nombre;
+      data.segundoNombre = segundoNombre.trim() || undefined;
       data.apellido = apellido;
+      data.segundoApellido = segundoApellido.trim() || undefined;
     }
 
     onSubmit(data);
@@ -257,11 +263,15 @@
               <BlacklistManualInputs
                 {cedula}
                 {nombre}
+                {segundoNombre}
                 {apellido}
+                {segundoApellido}
                 {loading}
                 onCedulaChange={(v) => (cedula = v)}
                 onNombreChange={(v) => (nombre = v)}
+                onSegundoNombreChange={(v) => (segundoNombre = v)}
                 onApellidoChange={(v) => (apellido = v)}
+                onSegundoApellidoChange={(v) => (segundoApellido = v)}
               />
 
               <BlacklistReasonInputs

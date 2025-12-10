@@ -18,7 +18,9 @@ pub struct ListaNegra {
     pub contratista_id: Option<String>,
     pub cedula: String,
     pub nombre: String,
+    pub segundo_nombre: Option<String>,
     pub apellido: String,
+    pub segundo_apellido: Option<String>,
     pub motivo_bloqueo: String,
     pub fecha_inicio_bloqueo: String,
     pub fecha_fin_bloqueo: Option<String>,
@@ -39,7 +41,9 @@ pub struct AddToListaNegraInput {
     pub contratista_id: Option<String>,
     pub cedula: Option<String>,
     pub nombre: Option<String>,
+    pub segundo_nombre: Option<String>,
     pub apellido: Option<String>,
+    pub segundo_apellido: Option<String>,
     pub motivo_bloqueo: String,
     pub fecha_fin_bloqueo: Option<String>,
     pub bloqueado_por: String,
@@ -65,7 +69,9 @@ pub struct ListaNegraResponse {
     pub contratista_id: Option<String>,
     pub cedula: String,
     pub nombre: String,
+    pub segundo_nombre: Option<String>,
     pub apellido: String,
+    pub segundo_apellido: Option<String>,
     pub nombre_completo: String,
     pub motivo_bloqueo: String,
     pub fecha_inicio_bloqueo: String,
@@ -82,20 +88,33 @@ pub struct ListaNegraResponse {
 
 impl From<ListaNegra> for ListaNegraResponse {
     fn from(ln: ListaNegra) -> Self {
-        let nombre_completo = format!("{} {}", ln.nombre, ln.apellido).trim().to_string();
+        let nombre_completo = format!(
+            "{} {} {} {}",
+            ln.nombre,
+            ln.segundo_nombre.clone().unwrap_or_default(),
+            ln.apellido,
+            ln.segundo_apellido.clone().unwrap_or_default()
+        )
+        .split_whitespace()
+        .collect::<Vec<&str>>()
+        .join(" ");
+
         let es_bloqueo_permanente = ln.fecha_fin_bloqueo.is_none();
-        
-        let fecha_inicio = NaiveDateTime::parse_from_str(&ln.fecha_inicio_bloqueo, "%Y-%m-%d %H:%M:%S")
-            .unwrap_or_else(|_| Utc::now().naive_utc());
-        
+
+        let fecha_inicio =
+            NaiveDateTime::parse_from_str(&ln.fecha_inicio_bloqueo, "%Y-%m-%d %H:%M:%S")
+                .unwrap_or_else(|_| Utc::now().naive_utc());
+
         let dias_transcurridos = (Utc::now().naive_utc() - fecha_inicio).num_days();
-        
+
         Self {
             id: ln.id,
             contratista_id: ln.contratista_id,
             cedula: ln.cedula,
             nombre: ln.nombre.clone(),
+            segundo_nombre: ln.segundo_nombre.clone(),
             apellido: ln.apellido.clone(),
+            segundo_apellido: ln.segundo_apellido.clone(),
             nombre_completo,
             motivo_bloqueo: ln.motivo_bloqueo,
             fecha_inicio_bloqueo: ln.fecha_inicio_bloqueo,

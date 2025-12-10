@@ -53,15 +53,21 @@ pub async fn find_basic_info_by_id(
 pub async fn get_basic_data(
     pool: &SqlitePool,
     contratista_id: &str,
-) -> Result<(String, String, String), String> {
-    let row = sqlx::query("SELECT cedula, nombre, apellido FROM contratistas WHERE id = ?")
+) -> Result<(String, String, Option<String>, String, Option<String>), String> {
+    let row = sqlx::query("SELECT cedula, nombre, segundo_nombre, apellido, segundo_apellido FROM contratistas WHERE id = ?")
         .bind(contratista_id)
         .fetch_optional(pool)
         .await
         .map_err(|e| format!("Error buscando contratista: {}", e))?;
 
     if let Some(row) = row {
-        Ok((row.get("cedula"), row.get("nombre"), row.get("apellido")))
+        Ok((
+            row.get("cedula"),
+            row.get("nombre"),
+            row.get("segundo_nombre"),
+            row.get("apellido"),
+            row.get("segundo_apellido"),
+        ))
     } else {
         Err("Contratista no encontrado".to_string())
     }
