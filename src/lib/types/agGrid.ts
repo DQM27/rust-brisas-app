@@ -3,29 +3,23 @@
 import type { ComponentType } from 'svelte';
 import type { GridApi, ColDef } from '@ag-grid-community/core';
 
-/**
- * Temas disponibles de AG Grid Community
- */
+// ============================================
+// Temas y Fuentes
+// ============================================
+
 export type AGGridTheme =
   | 'ag-theme-quartz'
+  | 'ag-theme-quartz-dark'
   | 'ag-theme-alpine'
   | 'ag-theme-alpine-dark'
-  | 'ag-theme-quartz-dark'
   | 'ag-theme-balham';
 
-/**
- * Fuentes disponibles para las grids
- */
-export type AGGridFont =
-  | 'system'
-  | 'inter'
-  | 'roboto'
-  | 'source-sans';
+export type AGGridFont = 'system' | 'inter' | 'roboto' | 'source-sans';
 
-/**
- * IDs de las grids basados en ComponentKey
- * Solo los componentes que usan AG Grid
- */
+// ============================================
+// Grid IDs
+// ============================================
+
 export type GridId =
   | 'contratista-list'
   | 'lista-negra-list'
@@ -35,14 +29,12 @@ export type GridId =
   | 'companies-list'
   | 'users-list';
 
-/**
- * Contextos de la toolbar
- */
+// ============================================
+// Toolbar
+// ============================================
+
 export type ToolbarContext = 'default' | 'singleSelect' | 'multiSelect';
 
-/**
- * Botones comunes de toolbar (operaciones genéricas de grid)
- */
 export type CommonToolbarButton =
   | 'autosize-all'
   | 'autosize-selected'
@@ -61,19 +53,9 @@ export type CommonToolbarButton =
   | 'expand-groups'
   | 'collapse-groups';
 
-/**
- * Variantes de estilo para botones
- */
 export type ButtonVariant = 'default' | 'primary' | 'danger' | 'success';
-
-/**
- * Estados visuales de un botón
- */
 export type ButtonState = 'normal' | 'hover' | 'disabled' | 'loading' | 'success' | 'error';
 
-/**
- * Configuración de un botón personalizado (específico de cada grid)
- */
 export interface CustomToolbarButton {
   id: string;
   label: string;
@@ -86,55 +68,105 @@ export interface CustomToolbarButton {
   useCommonHandler?: boolean;
 }
 
-/**
- * Configuración de botones por contexto
- */
 export interface ToolbarButtonsConfig {
-  order: string[];      // IDs en orden personalizado
-  hidden: string[];     // IDs de botones ocultos
+  order: string[];
+  hidden: string[];
 }
 
-/**
- * Límites de botones por contexto
- */
 export interface ButtonLimits {
   default: number;
   singleSelect: number;
   multiSelect: number;
 }
 
-/**
- * Configuración de una columna
- */
+export interface ToolbarButtonDefinition {
+  id: string;
+  label: string;
+  icon?: ComponentType;
+  variant?: ButtonVariant;
+  tooltip?: string;
+  category?: 'columns' | 'export' | 'selection' | 'data' | 'ui' | 'custom';
+}
+
+// ============================================
+// Columnas
+// ============================================
+
+export type ColumnPinPosition = 'left' | 'right' | null;
+
 export interface AGGridColumnConfig {
   id: string;
   visible: boolean;
   order: number;
   width?: number;
+  pinned?: ColumnPinPosition;
 }
 
-/**
- * Altura de fila
- */
-export type RowHeight = 'compact' | 'normal' | 'comfortable';
+// ============================================
+// Apariencia
+// ============================================
 
-/**
- * Configuración de confirmaciones
- */
+export type RowHeight = 'compact' | 'normal' | 'comfortable';
+export type GridDensity = 'compact' | 'normal' | 'comfortable';
+
+export interface AppearanceConfig {
+  theme: AGGridTheme;
+  font: AGGridFont;
+  rowHeight: RowHeight;
+  headerHeight: number;
+  animateRows: boolean;
+  enableCellTextSelection: boolean;
+}
+
+// ============================================
+// Datos y Filtros
+// ============================================
+
+export interface DataConfig {
+  paginationSize: number;
+  showFloatingFilters: boolean;
+  enableQuickFilter: boolean;
+  quickFilterText: string;
+  enableUndoRedo: boolean;
+  undoRedoCellEditing: boolean;
+}
+
+// ============================================
+// Performance
+// ============================================
+
+export interface PerformanceConfig {
+  suppressColumnVirtualisation: boolean;
+  rowBuffer: number;
+  debounceVerticalScrollbar: boolean;
+  suppressAnimationFrame: boolean;
+  suppressRowHoverHighlight: boolean;
+}
+
+// ============================================
+// Confirmaciones
+// ============================================
+
 export interface ConfirmationsConfig {
   deleteRecords: boolean;
+  bulkOperations: boolean;
   dontAskAgain: boolean;
 }
 
-/**
- * Configuración completa de una grid
- */
+// ============================================
+// Configuración Completa de Grid
+// ============================================
+
 export interface GridConfiguration {
   gridId: GridId;
 
-  // Visual
+  // Apariencia
   theme: AGGridTheme;
   font: AGGridFont;
+  rowHeight: RowHeight;
+  headerHeight: number;
+  animateRows: boolean;
+  enableCellTextSelection: boolean;
 
   // Columnas
   columns: AGGridColumnConfig[];
@@ -146,61 +178,50 @@ export interface GridConfiguration {
     multiSelect: ToolbarButtonsConfig;
   };
 
-  // Avanzado
-  rowHeight: RowHeight;
+  // Datos
   paginationSize: number;
+  showFloatingFilters: boolean;
+  enableQuickFilter: boolean;
+
+  // Features
   enableGrouping: boolean;
   enableFilters: boolean;
   enableSidebar: boolean;
+  enableUndoRedo: boolean;
+
+  // Performance
+  rowBuffer: number;
+  debounceVerticalScrollbar: boolean;
 
   // Confirmaciones
   confirmations: ConfirmationsConfig;
-
-  // Filtros flotantes
-  showFloatingFilters: boolean;
 }
 
-/**
- * Definición de un botón disponible
- */
-export interface ToolbarButtonDefinition {
-  id: string;
-  label: string;
-  icon?: ComponentType;
-  variant?: ButtonVariant;
-  tooltip?: string;
-  category?: 'columns' | 'export' | 'selection' | 'data' | 'ui' | 'custom';
-}
+// ============================================
+// Toolbar Config
+// ============================================
 
-/**
- * Configuración de toolbar para una grid
- */
 export interface AGGridToolbarConfig {
   gridId: GridId;
-
-  // Botones comunes disponibles por contexto
   availableButtons: {
     default: ToolbarButtonDefinition[];
     singleSelect: ToolbarButtonDefinition[];
     multiSelect: ToolbarButtonDefinition[];
   };
-
-  // Botones personalizados (pasados desde el componente)
   customButtons?: {
     default?: CustomToolbarButton[];
     singleSelect?: CustomToolbarButton[];
     multiSelect?: CustomToolbarButton[];
   };
-
-  // Features opcionales
   showColumnSelector?: boolean;
   showThemeSelector?: boolean;
   enableGrouping?: boolean;
 }
 
-/**
- * Props para AGGridWrapper
- */
+// ============================================
+// Props de Componentes
+// ============================================
+
 export interface AGGridWrapperProps<T = any> {
   gridId: GridId;
   columnDefs: ColDef[];
@@ -219,9 +240,6 @@ export interface AGGridWrapperProps<T = any> {
   persistenceKey?: string;
 }
 
-/**
- * Props para AGGridToolbar
- */
 export interface AGGridToolbarProps {
   gridId: GridId;
   context: ToolbarContext;
@@ -235,11 +253,20 @@ export interface AGGridToolbarProps {
   };
 }
 
-/**
- * Modo de organización de botones
- */
 export interface OrganizingMode {
   active: boolean;
   context: ToolbarContext;
   tempOrder: string[];
+}
+
+// ============================================
+// Settings Modal Tab
+// ============================================
+
+export type SettingsTab = 'appearance' | 'columns' | 'toolbar' | 'data' | 'advanced';
+
+export interface SettingsTabDefinition {
+  id: SettingsTab;
+  label: string;
+  icon: string;
 }

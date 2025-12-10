@@ -8,8 +8,13 @@ import type {
   RowHeight,
   ToolbarButtonsConfig,
   AGGridColumnConfig,
-  ConfirmationsConfig
+  ConfirmationsConfig,
+  ToolbarContext
 } from '$lib/types/agGrid';
+
+// ============================================
+// Tipos Internos
+// ============================================
 
 interface AGGridGlobalSettings {
   configurations: Map<GridId, GridConfiguration>;
@@ -21,6 +26,56 @@ interface AGGridGlobalSettings {
     multiSelect: number;
   };
 }
+
+// ============================================
+// Valores por Defecto
+// ============================================
+
+const DEFAULT_CONFIG: Omit<GridConfiguration, 'gridId'> = {
+  // Apariencia
+  theme: 'ag-theme-quartz-dark',
+  font: 'system',
+  rowHeight: 'normal',
+  headerHeight: 40,
+  animateRows: true,
+  enableCellTextSelection: true,
+
+  // Columnas
+  columns: [],
+
+  // Botones
+  buttons: {
+    default: { order: [], hidden: [] },
+    singleSelect: { order: [], hidden: [] },
+    multiSelect: { order: [], hidden: [] }
+  },
+
+  // Datos
+  paginationSize: 50,
+  showFloatingFilters: false,
+  enableQuickFilter: false,
+
+  // Features
+  enableGrouping: false,
+  enableFilters: true,
+  enableSidebar: false,
+  enableUndoRedo: false,
+
+  // Performance
+  rowBuffer: 10,
+  debounceVerticalScrollbar: true,
+
+  // Confirmaciones
+  confirmations: {
+    deleteRecords: true,
+    bulkOperations: true,
+    dontAskAgain: false
+  }
+};
+
+// ============================================
+// Store Class
+// ============================================
 
 class AGGridSettingsStore {
   private settings = $state<AGGridGlobalSettings>({
@@ -34,24 +89,21 @@ class AGGridSettingsStore {
     }
   });
 
-  // NUEVO: Versión para forzar reactividad
   private version = $state(0);
 
   constructor() {
     this.loadFromStorage();
   }
 
-  // NUEVO: Helper para forzar actualización
   private triggerUpdate() {
     this.version++;
   }
 
   // ============================================
-  // Getters de Configuración
+  // Configuración Base
   // ============================================
 
   getConfiguration(gridId: GridId): GridConfiguration | null {
-    // Usar version para forzar reactividad
     this.version;
     return this.settings.configurations.get(gridId) ?? null;
   }
@@ -62,25 +114,8 @@ class AGGridSettingsStore {
     if (existing) return existing;
 
     const defaultConfig: GridConfiguration = {
-      gridId,
-      theme: this.settings.defaultTheme,
-      font: this.settings.defaultFont,
-      columns: [],
-      buttons: {
-        default: { order: [], hidden: [] },
-        singleSelect: { order: [], hidden: [] },
-        multiSelect: { order: [], hidden: [] }
-      },
-      rowHeight: 'normal',
-      paginationSize: 50,
-      enableGrouping: false,
-      enableFilters: true,
-      enableSidebar: false,
-      confirmations: {
-        deleteRecords: true,
-        dontAskAgain: false
-      },
-      showFloatingFilters: false
+      ...DEFAULT_CONFIG,
+      gridId
     };
 
     this.settings.configurations.set(gridId, defaultConfig);
@@ -89,41 +124,70 @@ class AGGridSettingsStore {
     return defaultConfig;
   }
 
+  private updateConfig(gridId: GridId, updates: Partial<GridConfiguration>): void {
+    const config = this.getOrCreateConfiguration(gridId);
+    const newConfig = { ...config, ...updates };
+    this.settings.configurations.set(gridId, newConfig);
+    this.saveToStorage();
+    this.triggerUpdate();
+  }
+
   // ============================================
-  // Visual Settings
+  // Apariencia
   // ============================================
 
   getTheme(gridId: GridId): AGGridTheme {
     this.version;
-    const config = this.getConfiguration(gridId);
-    return config?.theme ?? this.settings.defaultTheme;
+    return this.getConfiguration(gridId)?.theme ?? this.settings.defaultTheme;
   }
 
   setTheme(gridId: GridId, theme: AGGridTheme): void {
-    const config = this.getOrCreateConfiguration(gridId);
-
-    // Crear nuevo objeto para forzar reactividad
-    const newConfig = { ...config, theme };
-    this.settings.configurations.set(gridId, newConfig);
-
-    this.saveToStorage();
-    this.triggerUpdate();
+    this.updateConfig(gridId, { theme });
   }
 
   getFont(gridId: GridId): AGGridFont {
     this.version;
-    const config = this.getConfiguration(gridId);
-    return config?.font ?? this.settings.defaultFont;
+    return this.getConfiguration(gridId)?.font ?? this.settings.defaultFont;
   }
 
   setFont(gridId: GridId, font: AGGridFont): void {
-    const config = this.getOrCreateConfiguration(gridId);
+    this.updateConfig(gridId, { font });
+  }
 
-    const newConfig = { ...config, font };
-    this.settings.configurations.set(gridId, newConfig);
+  getRowHeight(gridId: GridId): RowHeight {
+    this.version;
+    return this.getConfiguration(gridId)?.rowHeight ?? 'normal';
+  }
 
-    this.saveToStorage();
-    this.triggerUpdate();
+  setRowHeight(gridId: GridId, height: RowHeight): void {
+    this.updateConfig(gridId, { rowHeight: height });
+  }
+
+  getHeaderHeight(gridId: GridId): number {
+    this.version;
+    return this.getConfiguration(gridId)?.headerHeight ?? 40;
+  }
+
+  setHeaderHeight(gridId: GridId, height: number): void {
+    this.updateConfig(gridId, { headerHeight: height });
+  }
+
+  getAnimateRows(gridId: GridId): boolean {
+    this.version;
+    return this.getConfiguration(gridId)?.animateRows ?? true;
+  }
+
+  setAnimateRows(gridId: GridId, animate: boolean): void {
+    this.updateConfig(gridId, { animateRows: animate });
+  }
+
+  getCellTextSelection(gridId: GridId): boolean {
+    this.version;
+    return this.getConfiguration(gridId)?.enableCellTextSelection ?? true;
+  }
+
+  setCellTextSelection(gridId: GridId, enable: boolean): void {
+    this.updateConfig(gridId, { enableCellTextSelection: enable });
   }
 
   getThemeClass(gridId: GridId): string {
@@ -141,171 +205,149 @@ class AGGridSettingsStore {
     return fontMap[font];
   }
 
-  // ============================================
-  // Buttons Settings
-  // ============================================
-
-  getButtonsConfig(
-    gridId: GridId,
-    context: 'default' | 'singleSelect' | 'multiSelect'
-  ): ToolbarButtonsConfig {
-    this.version;
-    const config = this.getConfiguration(gridId);
-    if (!config) {
-      return { order: [], hidden: [] };
-    }
-    return config.buttons[context];
-  }
-
-  setButtonOrder(
-    gridId: GridId,
-    context: 'default' | 'singleSelect' | 'multiSelect',
-    order: string[]
-  ): void {
-    const config = this.getOrCreateConfiguration(gridId);
-
-    // Crear nuevo objeto para forzar reactividad
-    const newConfig = {
-      ...config,
-      buttons: {
-        ...config.buttons,
-        [context]: {
-          ...config.buttons[context],
-          order
-        }
-      }
+  getRowHeightPx(gridId: GridId): number {
+    const height = this.getRowHeight(gridId);
+    const heightMap: Record<RowHeight, number> = {
+      'compact': 32,
+      'normal': 40,
+      'comfortable': 48
     };
-
-    this.settings.configurations.set(gridId, newConfig);
-    this.saveToStorage();
-    this.triggerUpdate();
-  }
-
-  setHiddenButtons(
-    gridId: GridId,
-    context: 'default' | 'singleSelect' | 'multiSelect',
-    hidden: string[]
-  ): void {
-    const config = this.getOrCreateConfiguration(gridId);
-
-    // Crear nuevo objeto para forzar reactividad
-    const newConfig = {
-      ...config,
-      buttons: {
-        ...config.buttons,
-        [context]: {
-          ...config.buttons[context],
-          hidden
-        }
-      }
-    };
-
-    this.settings.configurations.set(gridId, newConfig);
-    this.saveToStorage();
-    this.triggerUpdate();
-  }
-
-  getButtonLimit(context: 'default' | 'singleSelect' | 'multiSelect'): number {
-    return this.settings.buttonLimits[context];
-  }
-
-  countVisibleButtons(
-    gridId: GridId,
-    context: 'default' | 'singleSelect' | 'multiSelect'
-  ): number {
-    const config = this.getButtonsConfig(gridId, context);
-    return config.order.filter(id => !config.hidden.includes(id)).length;
+    return heightMap[height];
   }
 
   // ============================================
-  // Columns Settings
+  // Columnas
   // ============================================
 
   getColumnsConfig(gridId: GridId): AGGridColumnConfig[] {
     this.version;
-    const config = this.getConfiguration(gridId);
-    return config?.columns ?? [];
+    return this.getConfiguration(gridId)?.columns ?? [];
   }
 
   setColumnsConfig(gridId: GridId, columns: AGGridColumnConfig[]): void {
-    const config = this.getOrCreateConfiguration(gridId);
-
-    const newConfig = { ...config, columns };
-    this.settings.configurations.set(gridId, newConfig);
-
-    this.saveToStorage();
-    this.triggerUpdate();
+    this.updateConfig(gridId, { columns });
   }
 
   // ============================================
-  // Advanced Settings
+  // Botones de Toolbar
   // ============================================
 
-  getRowHeight(gridId: GridId): RowHeight {
+  getButtonsConfig(gridId: GridId, context: ToolbarContext): ToolbarButtonsConfig {
     this.version;
     const config = this.getConfiguration(gridId);
-    return config?.rowHeight ?? 'normal';
+    return config?.buttons[context] ?? { order: [], hidden: [] };
   }
 
-  setRowHeight(gridId: GridId, height: RowHeight): void {
+  setButtonOrder(gridId: GridId, context: ToolbarContext, order: string[]): void {
     const config = this.getOrCreateConfiguration(gridId);
-
-    const newConfig = { ...config, rowHeight: height };
-    this.settings.configurations.set(gridId, newConfig);
-
-    this.saveToStorage();
-    this.triggerUpdate();
+    this.updateConfig(gridId, {
+      buttons: {
+        ...config.buttons,
+        [context]: { ...config.buttons[context], order }
+      }
+    });
   }
+
+  setHiddenButtons(gridId: GridId, context: ToolbarContext, hidden: string[]): void {
+    const config = this.getOrCreateConfiguration(gridId);
+    this.updateConfig(gridId, {
+      buttons: {
+        ...config.buttons,
+        [context]: { ...config.buttons[context], hidden }
+      }
+    });
+  }
+
+  getButtonLimit(context: ToolbarContext): number {
+    return this.settings.buttonLimits[context];
+  }
+
+  // ============================================
+  // Datos y Filtros
+  // ============================================
 
   getPaginationSize(gridId: GridId): number {
     this.version;
-    const config = this.getConfiguration(gridId);
-    return config?.paginationSize ?? 50;
+    return this.getConfiguration(gridId)?.paginationSize ?? 50;
   }
 
   setPaginationSize(gridId: GridId, size: number): void {
-    const config = this.getOrCreateConfiguration(gridId);
-
-    const newConfig = { ...config, paginationSize: size };
-    this.settings.configurations.set(gridId, newConfig);
-
-    this.saveToStorage();
-    this.triggerUpdate();
+    this.updateConfig(gridId, { paginationSize: size });
   }
-
-  getConfirmations(gridId: GridId): ConfirmationsConfig {
-    this.version;
-    const config = this.getConfiguration(gridId);
-    return config?.confirmations ?? { deleteRecords: true, dontAskAgain: false };
-  }
-
-  setConfirmations(gridId: GridId, confirmations: ConfirmationsConfig): void {
-    const config = this.getOrCreateConfiguration(gridId);
-
-    const newConfig = { ...config, confirmations };
-    this.settings.configurations.set(gridId, newConfig);
-
-    this.saveToStorage();
-    this.triggerUpdate();
-  }
-
-  // ============================================
-  // Reset & Persistence
-  // ============================================
 
   getShowFloatingFilters(gridId: GridId): boolean {
     this.version;
-    const config = this.getConfiguration(gridId);
-    return config?.showFloatingFilters ?? false;
+    return this.getConfiguration(gridId)?.showFloatingFilters ?? false;
   }
 
   setShowFloatingFilters(gridId: GridId, show: boolean): void {
-    const config = this.getOrCreateConfiguration(gridId);
-    const newConfig = { ...config, showFloatingFilters: show };
-    this.settings.configurations.set(gridId, newConfig);
-    this.saveToStorage();
-    this.triggerUpdate();
+    this.updateConfig(gridId, { showFloatingFilters: show });
   }
+
+  getEnableQuickFilter(gridId: GridId): boolean {
+    this.version;
+    return this.getConfiguration(gridId)?.enableQuickFilter ?? false;
+  }
+
+  setEnableQuickFilter(gridId: GridId, enable: boolean): void {
+    this.updateConfig(gridId, { enableQuickFilter: enable });
+  }
+
+  // ============================================
+  // Features
+  // ============================================
+
+  getEnableUndoRedo(gridId: GridId): boolean {
+    this.version;
+    return this.getConfiguration(gridId)?.enableUndoRedo ?? false;
+  }
+
+  setEnableUndoRedo(gridId: GridId, enable: boolean): void {
+    this.updateConfig(gridId, { enableUndoRedo: enable });
+  }
+
+  // ============================================
+  // Performance
+  // ============================================
+
+  getRowBuffer(gridId: GridId): number {
+    this.version;
+    return this.getConfiguration(gridId)?.rowBuffer ?? 10;
+  }
+
+  setRowBuffer(gridId: GridId, buffer: number): void {
+    this.updateConfig(gridId, { rowBuffer: buffer });
+  }
+
+  getDebounceScroll(gridId: GridId): boolean {
+    this.version;
+    return this.getConfiguration(gridId)?.debounceVerticalScrollbar ?? true;
+  }
+
+  setDebounceScroll(gridId: GridId, debounce: boolean): void {
+    this.updateConfig(gridId, { debounceVerticalScrollbar: debounce });
+  }
+
+  // ============================================
+  // Confirmaciones
+  // ============================================
+
+  getConfirmations(gridId: GridId): ConfirmationsConfig {
+    this.version;
+    return this.getConfiguration(gridId)?.confirmations ?? {
+      deleteRecords: true,
+      bulkOperations: true,
+      dontAskAgain: false
+    };
+  }
+
+  setConfirmations(gridId: GridId, confirmations: ConfirmationsConfig): void {
+    this.updateConfig(gridId, { confirmations });
+  }
+
+  // ============================================
+  // Reset
+  // ============================================
 
   resetConfiguration(gridId: GridId): void {
     this.settings.configurations.delete(gridId);
@@ -313,7 +355,23 @@ class AGGridSettingsStore {
     this.triggerUpdate();
   }
 
+  resetToDefaults(gridId: GridId): void {
+    const defaultConfig: GridConfiguration = {
+      ...DEFAULT_CONFIG,
+      gridId
+    };
+    this.settings.configurations.set(gridId, defaultConfig);
+    this.saveToStorage();
+    this.triggerUpdate();
+  }
+
+  // ============================================
+  // Persistencia
+  // ============================================
+
   private loadFromStorage(): void {
+    if (typeof localStorage === 'undefined') return;
+
     const stored = localStorage.getItem('agGridSettings');
     if (stored) {
       try {
@@ -342,6 +400,8 @@ class AGGridSettingsStore {
   }
 
   private saveToStorage(): void {
+    if (typeof localStorage === 'undefined') return;
+
     const toSave = {
       configurations: Object.fromEntries(this.settings.configurations),
       defaultTheme: this.settings.defaultTheme,
@@ -349,6 +409,28 @@ class AGGridSettingsStore {
       buttonLimits: this.settings.buttonLimits
     };
     localStorage.setItem('agGridSettings', JSON.stringify(toSave));
+  }
+
+  // ============================================
+  // Export/Import
+  // ============================================
+
+  exportSettings(gridId: GridId): string {
+    const config = this.getConfiguration(gridId);
+    return JSON.stringify(config, null, 2);
+  }
+
+  importSettings(gridId: GridId, json: string): boolean {
+    try {
+      const config = JSON.parse(json) as GridConfiguration;
+      config.gridId = gridId;
+      this.settings.configurations.set(gridId, config);
+      this.saveToStorage();
+      this.triggerUpdate();
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 

@@ -40,81 +40,74 @@
     onRowDoubleClicked,
     enableGrouping = false,
     getRowId,
-    persistenceKey, // Nuevo prop
+    persistenceKey,
   }: Props = $props();
 
   // Estado
   let gridApi = $state<GridApi | null>(null);
   let selectedRows = $state<T[]>([]);
   let showSettings = $state(false);
-  let isRestoring = false; // Prevents saving during restore
-  let canSaveState = false; // Prevents saving during initialization
+  let isRestoring = false;
+  let canSaveState = false;
 
-  // Determinar contexto actual basado en selección
+  // Contexto de toolbar
   const context = $derived.by((): ToolbarContext => {
     if (selectedRows.length === 0) return "default";
     if (selectedRows.length === 1) return "singleSelect";
     return "multiSelect";
   });
 
-  // Obtener configuración de tema y fuente (REACTIVO)
+  // Configuraciones reactivas del store
   const currentTheme = $derived(agGridSettings.getTheme(gridId));
   const themeClass = $derived(agGridSettings.getThemeClass(gridId));
   const fontClass = $derived(agGridSettings.getFontClass(gridId));
-  const rowHeight = $derived(agGridSettings.getRowHeight(gridId));
-
+  const rowHeightPx = $derived(agGridSettings.getRowHeightPx(gridId));
   const paginationSize = $derived(agGridSettings.getPaginationSize(gridId));
-  const showFloatingFilters = $derived(
-    agGridSettings.getShowFloatingFilters(gridId),
-  );
+  const showFloatingFilters = $derived(agGridSettings.getShowFloatingFilters(gridId));
+  const animateRows = $derived(agGridSettings.getAnimateRows(gridId));
+  const cellTextSelection = $derived(agGridSettings.getCellTextSelection(gridId));
+  const enableUndoRedo = $derived(agGridSettings.getEnableUndoRedo(gridId));
+  const rowBuffer = $derived(agGridSettings.getRowBuffer(gridId));
+  const debounceScroll = $derived(agGridSettings.getDebounceScroll(gridId));
+  const enableQuickFilter = $derived(agGridSettings.getEnableQuickFilter(gridId));
 
-  // Calcular altura de fila según configuración
-  const rowHeightPx = $derived.by(() => {
-    switch (rowHeight) {
-      case "compact":
-        return 32;
-      case "comfortable":
-        return 48;
-      default:
-        return 40;
-    }
-  });
-
-  // Tema personalizado REACTIVO - se recrea cuando cambia currentTheme
+  // Tema personalizado reactivo
   const myTheme = $derived.by(() => {
     const isDark = currentTheme.includes("dark");
     const baseTheme = themeQuartz.withPart(
-      isDark ? colorSchemeDark : colorSchemeLight,
+      isDark ? colorSchemeDark : colorSchemeLight
     );
 
     return baseTheme.withParams({
-      backgroundColor: isDark ? "rgb(30 30 30)" : "rgb(255 255 255)",
+      backgroundColor: isDark ? "rgb(26 26 27)" : "rgb(255 255 255)",
       foregroundColor: isDark ? "rgb(255 255 255)" : "rgb(0 0 0)",
       browserColorScheme: isDark ? "dark" : "light",
       headerBackgroundColor: isDark ? "rgb(37 37 38)" : "rgb(243 244 246)",
       headerTextColor: isDark ? "rgb(209 213 219)" : "rgb(17 24 39)",
-      oddRowBackgroundColor: isDark ? "rgb(30 30 30)" : "rgb(255 255 255)",
+      oddRowBackgroundColor: isDark ? "rgb(26 26 27)" : "rgb(255 255 255)",
       chromeBackgroundColor: isDark ? "rgb(37 37 38)" : "rgb(249 250 251)",
       rowHoverColor: isDark
         ? "rgba(255, 255, 255, 0.05)"
         : "rgba(0, 0, 0, 0.05)",
+      selectedRowBackgroundColor: isDark
+        ? "rgba(59, 130, 246, 0.15)"
+        : "rgba(59, 130, 246, 0.1)",
       columnBorder: true,
       borderColor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
       fontSize: 13,
       headerFontSize: 12,
       spacing: 4,
-      cellHorizontalPadding: 16,
+      cellHorizontalPadding: 12,
     });
   });
 
-  // Effect para actualizar el tema cuando cambia
+  // Effects para actualizar opciones cuando cambian
   $effect(() => {
     if (gridApi && myTheme) {
       gridApi.setGridOption("theme", myTheme);
     }
   });
 
-  // Effect para actualizar rowHeight cuando cambia
   $effect(() => {
     if (gridApi && rowHeightPx) {
       gridApi.setGridOption("rowHeight", rowHeightPx);
@@ -122,14 +115,12 @@
     }
   });
 
-  // Effect para actualizar paginationSize cuando cambia
   $effect(() => {
-    if (gridApi && paginationSize) {
+    if (gridApi) {
       gridApi.setGridOption("paginationPageSize", paginationSize);
     }
   });
 
-  // Effect para actualizar floatingFilters cuando cambia
   $effect(() => {
     if (gridApi) {
       const currentDefaultColDef = gridApi.getGridOption("defaultColDef");
@@ -141,22 +132,51 @@
     }
   });
 
-  // Gestionar persistencia de columnas
+  $effect(() => {
+    if (gridApi) {
+      gridApi.setGridOption("animateRows", animateRows);
+    }
+  });
+
+  $effect(() => {
+    if (gridApi) {
+      gridApi.setGridOption("enableCellTextSelection", cellTextSelection);
+    }
+  });
+
+  $effect(() => {
+    if (gridApi) {
+      gridApi.setGridOption("undoRedoCellEditing", enableUndoRedo);
+    }
+  });
+
+  $effect(() => {
+    if (gridApi) {
+      gridApi.setGridOption("rowBuffer", rowBuffer);
+    }
+  });
+
+  $effect(() => {
+    if (gridApi) {
+      gridApi.setGridOption("debounceVerticalScrollbar", debounceScroll);
+    }
+  });
+
+  // Persistencia de columnas
   function saveColumnState(api: GridApi = gridApi!) {
-    // Solo guardar si ya estamos listos y no estamos restaurando
     if (!api || !persistenceKey || isRestoring || !canSaveState) return;
     try {
       const state = api.getColumnState();
       localStorage.setItem(
         `ag-grid-state-${persistenceKey}`,
-        JSON.stringify(state),
+        JSON.stringify(state)
       );
     } catch (e) {
       console.warn("Error saving grid state:", e);
     }
   }
 
-  function restoreColumnState(api: GridApi) {
+  function restoreColumnState(api: GridApi): boolean {
     if (!api || !persistenceKey) return false;
     const savedState = localStorage.getItem(`ag-grid-state-${persistenceKey}`);
     if (savedState) {
@@ -166,7 +186,6 @@
           state: JSON.parse(savedState),
           applyOrder: true,
         });
-        // Unlock after a short delay to allow events to settle
         setTimeout(() => {
           isRestoring = false;
         }, 500);
@@ -180,29 +199,69 @@
     return false;
   }
 
+  // Debounce para eventos de columna
+  let columnEventTimeout: ReturnType<typeof setTimeout>;
+  function debouncedSaveColumnState(api: GridApi) {
+    clearTimeout(columnEventTimeout);
+    columnEventTimeout = setTimeout(() => saveColumnState(api), 300);
+  }
+
   // Configuración del grid
   const gridOptions: GridOptions<T> = {
     columnDefs: columnDefs,
     localeText: AG_GRID_LOCALE_ES,
+
+    // Default Column Definition
     defaultColDef: {
       sortable: true,
       filter: true,
       resizable: true,
-      minWidth: 100,
-
+      minWidth: 80,
       floatingFilter: showFloatingFilters,
     },
+
+    // Selection
     rowSelection: {
       mode: "multiRow",
       enableClickSelection: false,
       checkboxes: true,
       headerCheckbox: true,
     },
+
+    // Pagination
+    pagination: true,
+    paginationPageSize: paginationSize,
+    paginationPageSizeSelector: [10, 20, 50, 100, 200, 500],
+
+    // Performance
+    animateRows: animateRows,
+    rowBuffer: rowBuffer,
+    debounceVerticalScrollbar: debounceScroll,
+    suppressColumnVirtualisation: false,
+    suppressRowHoverHighlight: false,
+    suppressAnimationFrame: false,
+
+    // Features
+    enableCellTextSelection: cellTextSelection,
+    ensureDomOrder: true,
+    undoRedoCellEditing: enableUndoRedo,
+    undoRedoCellEditingLimit: 20,
+
+    // Clipboard
+    enableRangeSelection: false, // Enterprise only
+    suppressCopyRowsToClipboard: false,
+
+    // Quick Filter
+    cacheQuickFilter: true,
+
+    // Suppress initial animation
+    suppressColumnMoveAnimation: true,
+
+    // Events
     onGridReady: (params) => {
       gridApi = params.api;
       onGridReady?.(params.api);
 
-      // Restaurar estado con un pequeño delay para asegurar que el grid esté listo
       setTimeout(() => {
         if (params.api.isDestroyed()) return;
 
@@ -211,36 +270,26 @@
           restored = restoreColumnState(params.api);
         }
 
-        // Solo auto-size si NO se restauró estado
         if (!restored) {
           params.api.autoSizeAllColumns();
         }
 
-        // Habilitar el guardado DESPUÉS de restaurar o inicializar
-        // Damos un poco más de tiempo para que pasen los eventos iniciales de autoSize
         setTimeout(() => {
           canSaveState = true;
-          // Reactivar animaciones para interacción del usuario
           params.api.setGridOption("suppressColumnMoveAnimation", false);
         }, 500);
       }, 200);
     },
 
-    // Eventos para guardar estado
-    onColumnMoved: (params) => saveColumnState(params.api),
-    onColumnPinned: (params) => saveColumnState(params.api),
+    onColumnMoved: (params) => debouncedSaveColumnState(params.api),
+    onColumnPinned: (params) => debouncedSaveColumnState(params.api),
     onColumnResized: (params) => {
-      // Solo guardar al terminar el resize
-      if (params.finished) saveColumnState(params.api);
+      if (params.finished) debouncedSaveColumnState(params.api);
     },
-    onColumnVisible: (params) => saveColumnState(params.api),
-    onSortChanged: (params) => saveColumnState(params.api),
-
-    // Suprimir animación inicial para evitar el "baile" de columnas al restaurar
-    suppressColumnMoveAnimation: true,
+    onColumnVisible: (params) => debouncedSaveColumnState(params.api),
+    onSortChanged: (params) => debouncedSaveColumnState(params.api),
 
     onCellClicked: (event) => {
-      // Si la columna tiene su propio handler (como botones de acción), usarlo
       if (event.colDef && (event.colDef as any).onCellClicked) {
         (event.colDef as any).onCellClicked(event);
         return;
@@ -269,7 +318,7 @@
   const modules = [ClientSideRowModelModule, CsvExportModule];
 </script>
 
-<div class="flex flex-col w-full h-full bg-gray-950 {fontClass}">
+<div class="flex flex-col w-full h-full bg-[#0d0d0d] {fontClass}">
   <AGGridToolbar
     {gridId}
     {context}
@@ -289,9 +338,7 @@
     />
   {/if}
 
-  <div
-    class="flex-1 overflow-hidden rounded-b-lg border border-white/10 {themeClass}"
-  >
+  <div class="flex-1 overflow-hidden border-x border-b border-white/10 {themeClass}">
     <AgGrid {gridOptions} {rowData} {modules} />
   </div>
 </div>

@@ -290,7 +290,7 @@
       <div class="w-px h-6 bg-white/10"></div>
     {/if}
 
-    <!-- ✅ NUEVO: Slot personalizado para componentes adicionales (ej: DateRangePicker) -->
+    <!-- Slot personalizado para componentes adicionales (ej: DateRangePicker) -->
     {#if customToolbarSlot}
       <div class="flex items-center">
         {@render customToolbarSlot()}

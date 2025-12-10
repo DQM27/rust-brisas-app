@@ -1,8 +1,22 @@
+<!-- src/lib/components/grid/settings/AGGridSettingsAdvanced.svelte -->
 <script lang="ts">
-  import type { GridId, RowHeight } from '$lib/types/agGrid';
   import type { GridApi } from '@ag-grid-community/core';
+  import type { GridId } from '$lib/types/agGrid';
   import { agGridSettings } from '$lib/stores/agGridSettings.svelte';
-  import { Ruler, Hash, AlertTriangle } from 'lucide-svelte';
+  import {
+    AlertTriangle,
+    Trash2,
+    Layers,
+    Undo2,
+    Zap,
+    Download,
+    Upload,
+    Copy,
+    Check,
+    FileDown,
+    FileUp,
+    Info
+  } from 'lucide-svelte';
 
   interface Props {
     gridId: GridId;
@@ -11,140 +25,446 @@
 
   let { gridId, gridApi }: Props = $props();
 
-  // Estado local
-  let rowHeight = $state<RowHeight>(agGridSettings.getRowHeight(gridId));
-  let paginationSize = $state(agGridSettings.getPaginationSize(gridId));
-  let confirmations = $state(agGridSettings.getConfirmations(gridId));
+  // ============================================
+  // Estado de Confirmaciones
+  // ============================================
+  let confirmDelete = $state(agGridSettings.getConfirmDelete?.() ?? true);
+  let confirmBulk = $state(agGridSettings.getConfirmBulkOperations?.() ?? true);
+  let dontAskAgain = $state(false);
 
-  // Opciones
-  const rowHeightOptions: { value: RowHeight; label: string; px: number }[] = [
-    { value: 'compact', label: 'Compacto', px: 32 },
-    { value: 'normal', label: 'Normal', px: 40 },
-    { value: 'comfortable', label: 'Cómodo', px: 48 }
-  ];
+  // ============================================
+  // Estado de Undo/Redo
+  // ============================================
+  let enableUndoRedo = $state(agGridSettings.getEnableUndoRedo?.(gridId) ?? false);
 
-  const paginationOptions = [20, 50, 100, 200, 500];
+  // ============================================
+  // Estado de Performance
+  // ============================================
+  let rowBuffer = $state(agGridSettings.getRowBuffer?.(gridId) ?? 10);
+  let debounceScroll = $state(agGridSettings.getDebounceScroll?.(gridId) ?? true);
 
-  // Handlers
-  function handleRowHeightChange(height: RowHeight) {
-    rowHeight = height;
-    agGridSettings.setRowHeight(gridId, height);
-    
-    // Aplicar a la grid
-    if (gridApi) {
-      const px = rowHeightOptions.find(opt => opt.value === height)?.px || 40;
-      gridApi.setGridOption('rowHeight', px);
-      gridApi.resetRowHeights();
+  const rowBufferOptions = [5, 10, 20, 50];
+
+  // ============================================
+  // Estado de Export/Import
+  // ============================================
+  let exportedConfig = $state('');
+  let importJson = $state('');
+  let copySuccess = $state(false);
+  let importError = $state('');
+  let importSuccess = $state(false);
+
+  // Placeholder para el textarea de importar
+  const importPlaceholder = '{"gridId": "...", "theme": "...", ...}';
+
+  // ============================================
+  // Handlers de Confirmaciones
+  // ============================================
+  function toggleConfirmDelete() {
+    confirmDelete = !confirmDelete;
+    agGridSettings.setConfirmDelete?.(confirmDelete);
+  }
+
+  function toggleConfirmBulk() {
+    confirmBulk = !confirmBulk;
+    agGridSettings.setConfirmBulkOperations?.(confirmBulk);
+  }
+
+  function toggleDontAskAgain() {
+    dontAskAgain = !dontAskAgain;
+    if (dontAskAgain) {
+      confirmDelete = false;
+      confirmBulk = false;
+      agGridSettings.setConfirmDelete?.(false);
+      agGridSettings.setConfirmBulkOperations?.(false);
     }
   }
 
-  function handlePaginationChange(size: number) {
-    paginationSize = size;
-    agGridSettings.setPaginationSize(gridId, size);
+  // ============================================
+  // Handlers de Undo/Redo
+  // ============================================
+  function toggleUndoRedo() {
+    enableUndoRedo = !enableUndoRedo;
+    agGridSettings.setEnableUndoRedo?.(gridId, enableUndoRedo);
     
-    // Aplicar a la grid usando setGridOption (AG Grid v32)
     if (gridApi) {
-      gridApi.setGridOption('paginationPageSize', size);
+      gridApi.setGridOption('undoRedoCellEditing', enableUndoRedo);
+      if (enableUndoRedo) {
+        gridApi.setGridOption('undoRedoCellEditingLimit', 20);
+      }
     }
   }
 
-  function handleConfirmationsChange() {
-    agGridSettings.setConfirmations(gridId, confirmations);
+  // ============================================
+  // Handlers de Performance
+  // ============================================
+  function setRowBuffer(value: number) {
+    rowBuffer = value;
+    agGridSettings.setRowBuffer?.(gridId, value);
+    
+    if (gridApi) {
+      gridApi.setGridOption('rowBuffer', value);
+    }
+  }
+
+  function toggleDebounceScroll() {
+    debounceScroll = !debounceScroll;
+    agGridSettings.setDebounceScroll?.(gridId, debounceScroll);
+    
+    if (gridApi) {
+      gridApi.setGridOption('debounceVerticalScrollbar', debounceScroll);
+    }
+  }
+
+  // ============================================
+  // Handlers de Export/Import
+  // ============================================
+  function exportConfig() {
+    const config = agGridSettings.exportSettings?.(gridId);
+    if (config) {
+      exportedConfig = JSON.stringify(config, null, 2);
+    }
+  }
+
+  function copyToClipboard() {
+    if (exportedConfig) {
+      navigator.clipboard.writeText(exportedConfig);
+      copySuccess = true;
+      setTimeout(() => copySuccess = false, 2000);
+    }
+  }
+
+  function downloadConfig() {
+    if (exportedConfig) {
+      const blob = new Blob([exportedConfig], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `grid-config-${gridId}-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  function importConfig() {
+    importError = '';
+    importSuccess = false;
+
+    if (!importJson.trim()) {
+      importError = 'Por favor, ingresa o pega una configuración JSON';
+      return;
+    }
+
+    try {
+      const config = JSON.parse(importJson);
+      
+      // Validar estructura básica
+      if (!config || typeof config !== 'object') {
+        throw new Error('Configuración inválida');
+      }
+
+      agGridSettings.importSettings?.(gridId, config);
+      importSuccess = true;
+      importJson = '';
+      
+      // Refrescar la grid
+      if (gridApi) {
+        gridApi.refreshCells();
+      }
+
+      setTimeout(() => importSuccess = false, 3000);
+    } catch (e) {
+      importError = e instanceof Error ? e.message : 'Error al parsear JSON';
+    }
+  }
+
+  function handleFileUpload(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        importJson = e.target?.result as string || '';
+      };
+      reader.readAsText(file);
+    }
   }
 </script>
 
 <div class="space-y-6">
-  <!-- Altura de Fila -->
-  <div>
-    <div class="flex items-center gap-2 mb-3">
-      <Ruler size={18} class="text-purple-400" />
-      <h3 class="text-sm font-semibold text-white">Altura de Fila</h3>
+  <!-- ============================================ -->
+  <!-- Sección: Confirmaciones -->
+  <!-- ============================================ -->
+  <div class="space-y-3">
+    <div class="flex items-center gap-2 text-white text-sm font-medium">
+      <AlertTriangle size={16} class="text-amber-400" />
+      Confirmaciones
     </div>
-    
-    <div class="space-y-2">
-      {#each rowHeightOptions as option}
-        <label class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all
-          {rowHeight === option.value
-            ? 'bg-purple-500/10 border-purple-500/30'
-            : 'bg-[#252526] border-white/10 hover:border-white/20'}">
-          <input
-            type="radio"
-            name="rowHeight"
-            value={option.value}
-            checked={rowHeight === option.value}
-            onchange={() => handleRowHeightChange(option.value)}
-            class="w-4 h-4 text-purple-500 bg-[#1e1e1e] border-white/20 focus:ring-purple-500 focus:ring-2"
-          />
-          <span class="flex-1 text-sm text-white">{option.label}</span>
-          <span class="text-xs text-gray-500">{option.px}px</span>
-          {#if rowHeight === option.value}
-            <div class="w-2 h-2 rounded-full bg-purple-500"></div>
-          {/if}
-        </label>
-      {/each}
-    </div>
-  </div>
 
-  <!-- Paginación -->
-  <div>
-    <div class="flex items-center gap-2 mb-3">
-      <Hash size={18} class="text-blue-400" />
-      <h3 class="text-sm font-semibold text-white">Tamaño de Página</h3>
-    </div>
-    
-    <select
-      bind:value={paginationSize}
-      onchange={(e) => handlePaginationChange(Number(e.currentTarget.value))}
-      class="w-full px-3 py-2 bg-[#252526] border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-    >
-      {#each paginationOptions as size}
-        <option value={size}>{size} registros</option>
-      {/each}
-    </select>
-  </div>
-
-  <!-- Confirmaciones -->
-  <div>
-    <div class="flex items-center gap-2 mb-3">
-      <AlertTriangle size={18} class="text-amber-400" />
-      <h3 class="text-sm font-semibold text-white">Confirmaciones</h3>
-    </div>
-    
-    <div class="space-y-3">
-      <label class="flex items-center gap-3 p-3 bg-[#252526] border border-white/10 rounded-lg cursor-pointer hover:border-white/20 transition-all">
-        <input
-          type="checkbox"
-          bind:checked={confirmations.deleteRecords}
-          onchange={handleConfirmationsChange}
-          class="w-4 h-4 text-red-500 bg-[#1e1e1e] border-white/20 rounded focus:ring-red-500 focus:ring-2"
-        />
-        <div class="flex-1">
-          <div class="text-sm text-white font-medium">Confirmar eliminaciones</div>
-          <div class="text-xs text-gray-400 mt-0.5">Mostrar diálogo de confirmación al eliminar registros</div>
-        </div>
-      </label>
-
-      {#if confirmations.deleteRecords}
-        <label class="flex items-center gap-3 p-3 ml-6 bg-[#252526] border border-white/10 rounded-lg cursor-pointer hover:border-white/20 transition-all">
-          <input
-            type="checkbox"
-            bind:checked={confirmations.dontAskAgain}
-            onchange={handleConfirmationsChange}
-            class="w-4 h-4 text-blue-500 bg-[#1e1e1e] border-white/20 rounded focus:ring-blue-500 focus:ring-2"
-          />
-          <div class="flex-1">
-            <div class="text-sm text-white font-medium">No volver a preguntar</div>
-            <div class="text-xs text-gray-400 mt-0.5">Recordar mi elección y no mostrar el diálogo nuevamente</div>
+    <div class="space-y-2 pl-6">
+      <!-- Confirmar eliminación -->
+      <button
+        onclick={toggleConfirmDelete}
+        class="w-full flex items-center justify-between p-3 bg-[#1e1e1e] border border-white/10 rounded-lg
+          hover:border-white/20 transition-colors group"
+      >
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-lg bg-red-500/10">
+            <Trash2 size={16} class="text-red-400" />
           </div>
-        </label>
-      {/if}
+          <div class="text-left">
+            <div class="text-white text-sm">Confirmar eliminación</div>
+            <div class="text-gray-500 text-xs">Pedir confirmación antes de eliminar registros</div>
+          </div>
+        </div>
+        <div class={`w-10 h-6 rounded-full transition-colors ${confirmDelete ? 'bg-blue-500' : 'bg-gray-600'}`}>
+          <div class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${confirmDelete ? 'translate-x-5' : 'translate-x-1'}`}></div>
+        </div>
+      </button>
+
+      <!-- Confirmar operaciones masivas -->
+      <button
+        onclick={toggleConfirmBulk}
+        class="w-full flex items-center justify-between p-3 bg-[#1e1e1e] border border-white/10 rounded-lg
+          hover:border-white/20 transition-colors group"
+      >
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-lg bg-amber-500/10">
+            <Layers size={16} class="text-amber-400" />
+          </div>
+          <div class="text-left">
+            <div class="text-white text-sm">Confirmar operaciones masivas</div>
+            <div class="text-gray-500 text-xs">Pedir confirmación para acciones que afecten múltiples registros</div>
+          </div>
+        </div>
+        <div class={`w-10 h-6 rounded-full transition-colors ${confirmBulk ? 'bg-blue-500' : 'bg-gray-600'}`}>
+          <div class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${confirmBulk ? 'translate-x-5' : 'translate-x-1'}`}></div>
+        </div>
+      </button>
+
+      <!-- No volver a preguntar -->
+      <div class="pl-4 pt-1">
+        <button
+          onclick={toggleDontAskAgain}
+          class="flex items-center gap-2 text-gray-400 text-xs hover:text-gray-300 transition-colors"
+        >
+          <div class={`w-4 h-4 rounded border flex items-center justify-center transition-colors
+            ${dontAskAgain ? 'bg-blue-500 border-blue-500' : 'border-gray-500'}`}
+          >
+            {#if dontAskAgain}
+              <Check size={12} class="text-white" />
+            {/if}
+          </div>
+          No volver a preguntar (desactiva todas las confirmaciones)
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Info -->
-  <div class="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-    <p class="text-xs text-blue-400">
-      <strong>Nota:</strong> Los cambios en esta sección se aplican inmediatamente a la grid.
-    </p>
+  <!-- ============================================ -->
+  <!-- Sección: Undo/Redo -->
+  <!-- ============================================ -->
+  <div class="space-y-3">
+    <div class="flex items-center gap-2 text-white text-sm font-medium">
+      <Undo2 size={16} class="text-purple-400" />
+      Deshacer / Rehacer
+    </div>
+
+    <div class="pl-6">
+      <button
+        onclick={toggleUndoRedo}
+        class="w-full flex items-center justify-between p-3 bg-[#1e1e1e] border border-white/10 rounded-lg
+          hover:border-white/20 transition-colors"
+      >
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-lg bg-purple-500/10">
+            <Undo2 size={16} class="text-purple-400" />
+          </div>
+          <div class="text-left">
+            <div class="text-white text-sm">Habilitar Ctrl+Z / Ctrl+Y</div>
+            <div class="text-gray-500 text-xs">Permite deshacer y rehacer cambios en celdas editables</div>
+          </div>
+        </div>
+        <div class={`w-10 h-6 rounded-full transition-colors ${enableUndoRedo ? 'bg-blue-500' : 'bg-gray-600'}`}>
+          <div class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${enableUndoRedo ? 'translate-x-5' : 'translate-x-1'}`}></div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- Sección: Performance -->
+  <!-- ============================================ -->
+  <div class="space-y-3">
+    <div class="flex items-center gap-2 text-white text-sm font-medium">
+      <Zap size={16} class="text-yellow-400" />
+      Rendimiento
+    </div>
+
+    <div class="space-y-3 pl-6">
+      <!-- Row Buffer -->
+      <div class="p-3 bg-[#1e1e1e] border border-white/10 rounded-lg">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <div class="text-white text-sm">Buffer de filas</div>
+            <div class="text-gray-500 text-xs">Filas pre-renderizadas fuera de la vista</div>
+          </div>
+          <div class="text-blue-400 text-sm font-medium">{rowBuffer}</div>
+        </div>
+        <div class="flex gap-2">
+          {#each rowBufferOptions as option}
+            <button
+              onclick={() => setRowBuffer(option)}
+              class={`flex-1 py-2 text-xs rounded transition-colors
+                ${rowBuffer === option 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-[#252526] text-gray-400 hover:bg-[#2a2a2b] hover:text-white'}`}
+            >
+              {option}
+            </button>
+          {/each}
+        </div>
+        <div class="mt-2 flex items-start gap-1.5 text-gray-500 text-xs">
+          <Info size={12} class="mt-0.5 shrink-0" />
+          <span>Valores más altos mejoran el scroll suave pero usan más memoria</span>
+        </div>
+      </div>
+
+      <!-- Debounce Scroll -->
+      <button
+        onclick={toggleDebounceScroll}
+        class="w-full flex items-center justify-between p-3 bg-[#1e1e1e] border border-white/10 rounded-lg
+          hover:border-white/20 transition-colors"
+      >
+        <div class="text-left">
+          <div class="text-white text-sm">Suavizar scroll vertical</div>
+          <div class="text-gray-500 text-xs">Reduce el parpadeo durante el scroll rápido</div>
+        </div>
+        <div class={`w-10 h-6 rounded-full transition-colors ${debounceScroll ? 'bg-blue-500' : 'bg-gray-600'}`}>
+          <div class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${debounceScroll ? 'translate-x-5' : 'translate-x-1'}`}></div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- Sección: Backup -->
+  <!-- ============================================ -->
+  <div class="space-y-3">
+    <div class="flex items-center gap-2 text-white text-sm font-medium">
+      <Download size={16} class="text-cyan-400" />
+      Respaldo de Configuración
+    </div>
+
+    <div class="space-y-4 pl-6">
+      <!-- Exportar -->
+      <div class="p-3 bg-[#1e1e1e] border border-white/10 rounded-lg space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-white text-sm">Exportar configuración</div>
+            <div class="text-gray-500 text-xs">Guarda tu configuración actual como JSON</div>
+          </div>
+          <button
+            onclick={exportConfig}
+            class="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20 
+              rounded text-cyan-400 text-xs hover:bg-cyan-500/20 transition-colors"
+          >
+            <Download size={14} />
+            Generar
+          </button>
+        </div>
+
+        {#if exportedConfig}
+          <div class="space-y-2">
+            <textarea
+              readonly
+              value={exportedConfig}
+              class="w-full h-32 p-2 text-xs font-mono bg-[#252526] border border-white/10 rounded
+                text-gray-300 resize-none focus:outline-none"
+            ></textarea>
+            <div class="flex gap-2">
+              <button
+                onclick={copyToClipboard}
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#252526] border border-white/10 
+                  rounded text-xs text-gray-300 hover:bg-[#2a2a2b] transition-colors"
+              >
+                {#if copySuccess}
+                  <Check size={14} class="text-green-400" />
+                  <span class="text-green-400">Copiado!</span>
+                {:else}
+                  <Copy size={14} />
+                  Copiar
+                {/if}
+              </button>
+              <button
+                onclick={downloadConfig}
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#252526] border border-white/10 
+                  rounded text-xs text-gray-300 hover:bg-[#2a2a2b] transition-colors"
+              >
+                <FileDown size={14} />
+                Descargar
+              </button>
+            </div>
+          </div>
+        {/if}
+      </div>
+
+      <!-- Importar -->
+      <div class="p-3 bg-[#1e1e1e] border border-white/10 rounded-lg space-y-3">
+        <div>
+          <div class="text-white text-sm">Importar configuración</div>
+          <div class="text-gray-500 text-xs">Restaura una configuración previamente guardada</div>
+        </div>
+
+        <textarea
+          bind:value={importJson}
+          placeholder={importPlaceholder}
+          class="w-full h-32 p-2 text-xs font-mono bg-[#252526] border border-white/10 rounded
+            text-gray-300 resize-none focus:outline-none focus:border-white/30
+            placeholder:text-gray-600"
+        ></textarea>
+
+        {#if importError}
+          <div class="flex items-center gap-2 text-red-400 text-xs">
+            <AlertTriangle size={14} />
+            {importError}
+          </div>
+        {/if}
+
+        {#if importSuccess}
+          <div class="flex items-center gap-2 text-green-400 text-xs">
+            <Check size={14} />
+            Configuración importada correctamente
+          </div>
+        {/if}
+
+        <div class="flex gap-2">
+          <label
+            class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#252526] border border-white/10 
+              rounded text-xs text-gray-300 hover:bg-[#2a2a2b] transition-colors cursor-pointer"
+          >
+            <FileUp size={14} />
+            Cargar archivo
+            <input
+              type="file"
+              accept=".json"
+              onchange={handleFileUpload}
+              class="hidden"
+            />
+          </label>
+          <button
+            onclick={importConfig}
+            disabled={!importJson.trim()}
+            class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-500/10 border border-blue-500/20 
+              rounded text-xs text-blue-400 hover:bg-blue-500/20 transition-colors
+              disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Upload size={14} />
+            Importar
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

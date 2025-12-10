@@ -1,10 +1,15 @@
 <script lang="ts">
-  import type { GridId } from "$lib/types/agGrid";
+  import type { GridId, SettingsTab } from "$lib/types/agGrid";
   import type { GridApi } from "@ag-grid-community/core";
-  import { X } from "lucide-svelte";
-  import AGGridSettingsVisual from "./settings/AGGridSettingsVisual.svelte";
+  import { X, RotateCcw } from "lucide-svelte";
+  import { slide, fade } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  import { agGridSettings } from "$lib/stores/agGridSettings.svelte";
+
+  import AGGridSettingsAppearance from "./settings/AGGridSettingsAppearance.svelte";
   import AGGridSettingsColumns from "./settings/AGGridSettingsColumns.svelte";
-  import AGGridSettingsButtons from "./settings/AGGridSettingsButtons.svelte";
+  import AGGridSettingsToolbar from "./settings/AGGridSettingsToolbar.svelte";
+  import AGGridSettingsData from "./settings/AGGridSettingsData.svelte";
   import AGGridSettingsAdvanced from "./settings/AGGridSettingsAdvanced.svelte";
 
   interface Props {
@@ -20,116 +25,121 @@
 
   let { gridId, gridApi, customButtons, onClose }: Props = $props();
 
-  type TabId = "visual" | "columns" | "buttons" | "advanced";
-
-  let activeTab = $state<TabId>("visual");
-  let isHidden = $state(false);
+  let activeTab = $state<SettingsTab>("appearance");
   let isClosing = $state(false);
+  let showResetConfirm = $state(false);
 
-  const tabs = [
-    { id: "visual" as TabId, label: "Visual", icon: "🎨" },
-    { id: "columns" as TabId, label: "Columnas", icon: "📊" },
-    { id: "buttons" as TabId, label: "Botones", icon: "🔘" },
-    { id: "advanced" as TabId, label: "Avanzado", icon: "⚙️" },
+  const tabs: { id: SettingsTab; label: string; icon: string }[] = [
+    { id: "appearance", label: "Apariencia", icon: "🎨" },
+    { id: "columns", label: "Columnas", icon: "📊" },
+    { id: "toolbar", label: "Toolbar", icon: "🔧" },
+    { id: "data", label: "Datos", icon: "📋" },
+    { id: "advanced", label: "Avanzado", icon: "⚙️" },
   ];
 
   function handleClose() {
     isClosing = true;
-    setTimeout(() => {
-      onClose();
-    }, 150);
+    setTimeout(onClose, 150);
   }
 
   function handleBackdropClick(e: MouseEvent) {
-    if (e.target === e.currentTarget && !isHidden) {
+    if (e.target === e.currentTarget) {
       handleClose();
     }
   }
 
-  function handleStartOrganizing() {
-    isHidden = true;
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape") {
+      if (showResetConfirm) {
+        showResetConfirm = false;
+      } else {
+        handleClose();
+      }
+    }
   }
 
-  function handleEndOrganizing() {
-    isHidden = false;
+  function handleResetAll() {
+    agGridSettings.resetToDefaults(gridId);
+    if (gridApi) {
+      gridApi.resetColumnState();
+      gridApi.setFilterModel(null);
+    }
+    showResetConfirm = false;
   }
 </script>
 
+<svelte:window on:keydown={handleKeydown} />
+
 <div
-  class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-200 {isClosing
-    ? 'opacity-0'
-    : 'opacity-100'}"
-  class:hidden={isHidden}
+  class="fixed inset-0 z-50 flex items-center justify-center p-4
+    {isClosing ? 'opacity-0' : 'opacity-100'} transition-opacity duration-150"
   onclick={handleBackdropClick}
-  role="presentation"
+  role="dialog"
+  aria-modal="true"
 >
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+  <!-- Modal -->
   <div
-    class="bg-[#1e1e1e] border border-white/10 rounded-lg shadow-2xl w-full max-w-3xl flex flex-col max-h-[85vh] transition-all duration-200 {isClosing
-      ? 'scale-95 opacity-0'
-      : 'scale-100 opacity-100'}"
+    class="relative w-full max-w-4xl max-h-[85vh] flex flex-col
+      bg-[#1a1a1b] border border-white/10 rounded-xl shadow-2xl
+      {isClosing ? 'scale-95' : 'scale-100'} transition-transform duration-150"
     onclick={(e) => e.stopPropagation()}
-    onkeydown={(e) => e.stopPropagation()}
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
   >
     <!-- Header -->
-    <div class="flex items-center justify-between p-4 border-b border-white/10">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-white/10">
       <div>
-        <h2 class="text-lg font-semibold text-white">Configuración de Grid</h2>
-        <p class="text-xs text-gray-400 mt-0.5">
-          Personaliza la apariencia y comportamiento
-        </p>
+        <h2 class="text-base font-semibold text-white">Configuración de Grid</h2>
+        <p class="text-xs text-gray-500 mt-0.5">Personaliza la tabla a tu gusto</p>
       </div>
-      <button
-        onclick={handleClose}
-        class="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
-        aria-label="Cerrar"
-      >
-        <X size={18} />
-      </button>
-    </div>
-
-    <!-- Tabs -->
-    <div class="flex border-b border-white/10 bg-[#252526] relative">
-      <div
-        class="absolute bottom-0 h-0.5 bg-blue-500 transition-all duration-200 ease-out"
-        style="left: {activeTab === 'visual'
-          ? '0%'
-          : activeTab === 'columns'
-            ? '25%'
-            : activeTab === 'buttons'
-              ? '50%'
-              : '75%'}; width: 25%;"
-      ></div>
-
-      {#each tabs as tab}
+      <div class="flex items-center gap-2">
         <button
-          onclick={() => (activeTab = tab.id)}
-          class="flex-1 px-4 py-2.5 text-sm font-medium transition-colors relative
-            {activeTab === tab.id
-            ? 'text-blue-400 bg-[#1e1e1e]'
-            : 'text-gray-400 hover:text-white hover:bg-white/5'}"
+          onclick={() => (showResetConfirm = true)}
+          class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400
+            hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+          title="Restaurar valores por defecto"
         >
-          <span class="flex items-center justify-center gap-2">
-            <span class="text-base">{tab.icon}</span>
-            <span>{tab.label}</span>
-          </span>
+          <RotateCcw size={14} />
+          <span class="hidden sm:inline">Reset</span>
         </button>
-      {/each}
+        <button
+          onclick={handleClose}
+          class="p-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+        >
+          <X size={18} />
+        </button>
+      </div>
     </div>
 
     <!-- Content -->
-    <div
-      class="flex-1 overflow-y-auto p-5 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20"
-    >
-      <div class="transition-opacity duration-200">
-        {#if activeTab === "visual"}
-          <AGGridSettingsVisual {gridId} {gridApi} />
+    <div class="flex flex-1 overflow-hidden">
+      <!-- Sidebar Tabs -->
+      <div class="w-44 border-r border-white/10 bg-black/20 p-2 flex flex-col gap-1">
+        {#each tabs as tab}
+          <button
+            onclick={() => (activeTab = tab.id)}
+            class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-all
+              {activeTab === tab.id
+                ? 'bg-white/10 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'}"
+          >
+            <span class="text-base">{tab.icon}</span>
+            <span class="text-sm font-medium">{tab.label}</span>
+          </button>
+        {/each}
+      </div>
+
+      <!-- Tab Content -->
+      <div class="flex-1 overflow-y-auto p-5">
+        {#if activeTab === "appearance"}
+          <AGGridSettingsAppearance {gridId} {gridApi} />
         {:else if activeTab === "columns"}
           <AGGridSettingsColumns {gridId} {gridApi} />
-        {:else if activeTab === "buttons"}
-          <AGGridSettingsButtons {gridId} {gridApi} {customButtons} />
+        {:else if activeTab === "toolbar"}
+          <AGGridSettingsToolbar {gridId} {gridApi} {customButtons} />
+        {:else if activeTab === "data"}
+          <AGGridSettingsData {gridId} {gridApi} />
         {:else if activeTab === "advanced"}
           <AGGridSettingsAdvanced {gridId} {gridApi} />
         {/if}
@@ -137,40 +147,53 @@
     </div>
 
     <!-- Footer -->
-    <div
-      class="flex items-center justify-end gap-2 p-4 border-t border-white/10"
-    >
+    <div class="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-black/20">
+      <p class="text-xs text-gray-500">
+        Los cambios se aplican automáticamente
+      </p>
       <button
         onclick={handleClose}
-        class="px-3 py-1.5 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500
+          rounded-lg transition-colors"
       >
-        Cancelar
-      </button>
-      <button
-        onclick={handleClose}
-        class="px-4 py-1.5 rounded-md text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-      >
-        Guardar
+        Listo
       </button>
     </div>
   </div>
+
+  <!-- Reset Confirmation -->
+  {#if showResetConfirm}
+    <div
+      transition:fade={{ duration: 100 }}
+      class="absolute inset-0 z-10 flex items-center justify-center bg-black/50"
+      onclick={() => (showResetConfirm = false)}
+    >
+      <div
+        transition:slide={{ duration: 150, easing: cubicOut }}
+        class="bg-[#252526] border border-white/10 rounded-xl p-5 max-w-sm mx-4 shadow-2xl"
+        onclick={(e) => e.stopPropagation()}
+      >
+        <h3 class="text-sm font-semibold text-white mb-2">¿Restaurar configuración?</h3>
+        <p class="text-xs text-gray-400 mb-4">
+          Esto restablecerá todas las opciones de esta grid a sus valores por defecto.
+          Esta acción no se puede deshacer.
+        </p>
+        <div class="flex justify-end gap-2">
+          <button
+            onclick={() => (showResetConfirm = false)}
+            class="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onclick={handleResetAll}
+            class="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-500
+              rounded-lg transition-colors"
+          >
+            Restaurar
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
-
-<style>
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .scrollbar-track-transparent::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .scrollbar-thumb-white\/10::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-  }
-
-  .scrollbar-thumb-white\/10:hover::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-  }
-</style>
