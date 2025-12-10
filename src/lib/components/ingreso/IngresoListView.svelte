@@ -28,7 +28,7 @@
   Refactorizada para soportar formulario colapsable
 -->
 
-<div class="h-full p-4 flex gap-6 overflow-hidden relative">
+<div class="h-full flex gap-0 overflow-hidden relative bg-[#1e1e1e]">
   <!-- Panel Izquierdo: Formulario de Entrada (Colapsable) -->
   {#if isFormOpen}
     <div

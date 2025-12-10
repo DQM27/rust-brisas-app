@@ -31,6 +31,11 @@
   import { exportData, downloadBytes } from "$lib/logic/export";
   import type { ExportOptions } from "$lib/logic/export";
 
+  // ✅ NUEVO: Importar SearchBar y store de búsqueda
+  import SearchBar from "$lib/components/shared/SearchBar.svelte";
+  import { selectedSearchStore } from "$lib/stores/searchStore";
+  import type { SearchResult } from "$lib/types/search.types";
+
   // ✅ NUEVO: Importar store de tiempo y utilidad de evaluación
   import { currentTime } from "$lib/stores/timeStore";
   import { evaluateTimeStatus } from "$lib/logic/ingreso/ingresoService";
@@ -99,12 +104,23 @@
     }
   });
 
-  // ✅ Computed: Ingresos procesados con tiempo real
-  // Se recalcula cada vez que cambia $currentTime o ingresos
-  const processedIngresos = $derived.by(() => {
-    if (!showingActive) return ingresos; // En historial no necesitamos tiempo real
+  // ✅ Computed: Ingresos procesados con tiempo real y FILTRADO POR BÚSQUEDA
+  // Suscribirse a cambios en la búsqueda
+  const selectedSearch = $derived($selectedSearchStore.result);
 
-    return ingresos.map((ingreso) => {
+  const processedIngresos = $derived.by(() => {
+    let data = ingresos;
+
+    // 1. Filtrar por búsqueda si hay un resultado seleccionado
+    if (selectedSearch) {
+      data = data.filter((item) => item.contratistaId === selectedSearch.id);
+    }
+
+    // 2. Si no es activo, devolver datos filtrados
+    if (!showingActive) return data;
+
+    // 3. Procesar tiempo real para activos
+    return data.map((ingreso) => {
       // Calcular estado de tiempo en tiempo real
       if (ingreso.estaAdentro && ingreso.fechaHoraIngreso) {
         const entryDate = new Date(ingreso.fechaHoraIngreso);
@@ -710,11 +726,30 @@
   });
 </script>
 
-<div
-  class="flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden h-full"
->
+<div class="flex h-full flex-col relative bg-[#1e1e1e]">
+  <div class="border-b border-white/10 px-6 py-4 bg-[#252526]">
+    <div class="flex items-center justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-100">Control de Ingresos</h2>
+        <p class="mt-1 text-sm text-gray-400">
+          Gestión de entradas y salidas en tiempo real
+        </p>
+      </div>
+
+      <!-- ✅ SearchBar -->
+      <div class="flex-1 max-w-md">
+        <SearchBar
+          placeholder="Buscar persona para ver su ingreso..."
+          limit={5}
+          disabled={loading}
+          on:clear={() => selectedSearchStore.clear()}
+        />
+      </div>
+    </div>
+  </div>
+
   <!-- Tabla o Empty State -->
-  <div class="flex-1 relative">
+  <div class="flex-1 relative overflow-hidden bg-[#1e1e1e]">
     {#if loading}
       <div
         transition:fade
