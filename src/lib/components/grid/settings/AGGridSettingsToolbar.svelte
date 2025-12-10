@@ -113,7 +113,7 @@
           icon: def.icon,
           category: def.category,
           visible: !hiddenSet.has(id),
-        };
+        } as ButtonItem;
       })
       .filter((b): b is ButtonItem => b !== null);
   });
