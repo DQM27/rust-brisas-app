@@ -1,10 +1,14 @@
 <script lang="ts">
   import { fade, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
+  import { activeTabId } from "$lib/stores/tabs";
   import IngresoFormContainer from "./IngresoFormContainer.svelte";
   import IngresosActivosTable from "./IngresosActivosTable.svelte";
 
   let isFormOpen = false;
+
+  // Cerrar formulario automáticamente cuando se cambia de pestaña
+  $: $activeTabId, (isFormOpen = false);
 
   function toggleForm() {
     isFormOpen = !isFormOpen;
@@ -39,6 +43,10 @@
 
   <!-- Panel Derecho: Lista de Activos -->
   <div class="flex-1 h-full min-w-0 transition-all duration-300">
-    <IngresosActivosTable onRegisterClick={openForm} {isFormOpen} />
+    <IngresosActivosTable
+      onRegisterClick={openForm}
+      onCloseForm={closeForm}
+      {isFormOpen}
+    />
   </div>
 </div>

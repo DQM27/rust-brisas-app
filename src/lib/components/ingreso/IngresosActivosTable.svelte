@@ -36,8 +36,13 @@
   import { evaluateTimeStatus } from "$lib/logic/ingreso/ingresoService";
 
   // Props
-  const { onRegisterClick, isFormOpen = false } = $props<{
+  const {
+    onRegisterClick,
+    onCloseForm,
+    isFormOpen = false,
+  } = $props<{
     onRegisterClick?: () => void;
+    onCloseForm?: () => void;
     isFormOpen?: boolean;
   }>();
 
@@ -640,6 +645,7 @@
               },
             ]
           : []),
+
         {
           id: "toggle-view",
           label: showingActive ? "Ver Salidas" : "Ver Activos",
@@ -649,6 +655,9 @@
             ? "Cambiar a vista de personas que ya salieron"
             : "Cambiar a vista de personas adentro",
           onClick: () => {
+            // 0. Cerrar formulario si está abierto
+            onCloseForm?.();
+
             // 1. Guardar estado actual ANTES de cambiar
             if (gridApi) saveColumnState(gridApi);
 
