@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  import type { SearchResult } from '$lib/types/search.types';
-  import SearchBar from '$lib/components/shared/SearchBar.svelte';
+  import { createEventDispatcher } from "svelte";
+  import type { SearchResult } from "$lib/types/search.types";
+  import SearchBar from "$lib/components/shared/SearchBar.svelte";
 
   /**
    * Componente de presentación para búsqueda de contratista
-   * 
+   *
    * Responsabilidades:
    * - Renderizar SearchBar
    * - Mostrar información del contratista validado
    * - Mostrar alertas de gafetes pendientes
    * - Emitir eventos al padre
-   * 
+   *
    * NO hace:
    * - Llamadas al service
    * - Validaciones de negocio
@@ -24,11 +24,11 @@
   // PROPS
   // ==========================================
 
-  export let contratistaId: string = '';
-  export let contratistaNombre: string = '';
+  export let contratistaId: string = "";
+  export let contratistaNombre: string = "";
   export let contratistaData: any | null = null;
   export let puedeIngresar: boolean = false;
-  export let mensajeValidacion: string = '';
+  export let mensajeValidacion: string = "";
 
   // ==========================================
   // ESTADO LOCAL
@@ -44,21 +44,21 @@
     const selected = event.detail;
 
     // Validación simple de tipo (UI level)
-    if (selected.tipo !== 'contratista') {
+    if (selected.tipo !== "contratista") {
       // Emit evento de error para que el padre maneje
-      dispatch('error', { message: 'Por favor selecciona un contratista' });
+      dispatch("error", { message: "Por favor selecciona un contratista" });
       return;
     }
 
     // Emit evento con el ID seleccionado
-    dispatch('select', {
+    dispatch("select", {
       id: selected.id,
-      nombreCompleto: selected.nombreCompleto || selected.id
+      nombreCompleto: selected.nombreCompleto || selected.id,
     });
   }
 
   function handleSearchClear() {
-    dispatch('clear');
+    dispatch("clear");
   }
 
   // ==========================================
@@ -98,7 +98,7 @@
   />
 
   <!-- Tarjeta de información del contratista -->
-  {#if contratistaNombre}
+  {#if contratistaNombre || contratistaData}
     <div
       class="mt-3 p-4 rounded-lg border-2 {puedeIngresar
         ? 'bg-green-50 border-green-300 dark:bg-green-900/20 dark:border-green-700'
@@ -107,7 +107,9 @@
       <div class="flex items-start justify-between">
         <div class="flex-1">
           <p class="font-bold text-lg text-gray-900 dark:text-white">
-            {contratistaNombre}
+            {contratistaNombre ||
+              contratistaData?.nombreCompleto ||
+              "Contratista"}
           </p>
           {#if contratistaData?.cedula}
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -139,7 +141,9 @@
 
       <!-- Mensaje de validación (si no puede ingresar) -->
       {#if !puedeIngresar && mensajeValidacion}
-        <div class="mt-3 p-2 bg-red-100 dark:bg-red-900/30 rounded text-sm text-red-800 dark:text-red-200">
+        <div
+          class="mt-3 p-2 bg-red-100 dark:bg-red-900/30 rounded text-sm text-red-800 dark:text-red-200"
+        >
           {mensajeValidacion}
         </div>
       {/if}

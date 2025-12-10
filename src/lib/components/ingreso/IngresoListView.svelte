@@ -32,7 +32,7 @@
       transition:fly={{ x: -300, duration: 300, opacity: 0, easing: cubicOut }}
     >
       <div class="h-full overflow-y-auto pr-1">
-        <IngresoFormContainer onSuccess={closeForm} />
+        <IngresoFormContainer onSuccess={closeForm} onClose={closeForm} />
       </div>
     </div>
   {/if}

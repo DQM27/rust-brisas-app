@@ -177,15 +177,20 @@
   }
 
   // Validación
+  // Validación
+  let isExistenteValid = $derived(
+    modoRegistro === "existente" && contratistaId.trim() && !checkingBlock,
+  );
+
+  let isManualValid = $derived(
+    modoRegistro === "manual" &&
+      cedula.trim() &&
+      nombre.trim() &&
+      apellido.trim(),
+  );
+
   let isFormValid = $derived(
-    motivoBloqueo.trim() &&
-      ((modoRegistro === "existente" &&
-        contratistaId.trim() &&
-        !checkingBlock) ||
-        (modoRegistro === "manual" &&
-          cedula.trim() &&
-          nombre.trim() &&
-          apellido.trim())),
+    motivoBloqueo.trim() && (isExistenteValid || isManualValid),
   );
 </script>
 
@@ -306,7 +311,7 @@
           <button
             type="submit"
             disabled={loading || !isFormValid}
-            class="btn-danger"
+            class="inline-flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {#if loading}
               <svg

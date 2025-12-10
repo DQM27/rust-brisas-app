@@ -54,26 +54,4 @@
       <option value="correo">Correo/Autorización especial</option>
     </select>
   </div>
-
-  <!-- OBSERVACIONES -->
-  <div>
-    <label
-      for="obs"
-      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-    >
-      Observaciones
-    </label>
-    <textarea
-      id="obs"
-      value={observaciones}
-      on:input={handleObservacionesInput}
-      rows="2"
-      maxlength="500"
-      placeholder="Comentarios adicionales..."
-      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-    ></textarea>
-    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-      {observaciones.length}/500 caracteres
-    </p>
-  </div>
 </div>

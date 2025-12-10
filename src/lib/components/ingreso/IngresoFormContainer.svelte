@@ -13,7 +13,10 @@
   import GafeteInput from "./GafeteInput.svelte";
   import IngresoFormFields from "./IngresoFormFields.svelte";
 
+  import { X } from "lucide-svelte";
+
   export let onSuccess: () => void = () => {};
+  export let onClose: () => void = () => {};
 
   // ==========================================
   // ESTADO LOCAL
@@ -123,6 +126,14 @@
       onSuccess();
     }
   }
+
+  function handleClose() {
+    controller.resetearFormulario();
+    if (contratistaSearchRef) {
+      contratistaSearchRef.reset();
+    }
+    onClose();
+  }
 </script>
 
 <!-- 
@@ -135,10 +146,20 @@
   - Pasar datos a componentes presentacionales
 -->
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-  <h2 class="text-xl font-bold mb-6 text-gray-900 dark:text-white">
-    Registrar Ingreso
-  </h2>
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 relative">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+      Registrar Ingreso
+    </h2>
+    <button
+      on:click={handleClose}
+      class="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+      type="button"
+      aria-label="Cerrar formulario"
+    >
+      <X size={20} />
+    </button>
+  </div>
 
   <form on:submit|preventDefault={handleSubmit} class="space-y-6">
     <!-- BÚSQUEDA DE CONTRATISTA -->
@@ -171,27 +192,38 @@
         />
       {/if}
 
-      <!-- INPUT DE GAFETE -->
-      <GafeteInput
-        gafeteNumero={formState.gafeteNumero}
-        {gafetesDisponibles}
-        on:change={handleGafeteChange}
-      />
+      <!-- CONTROLES COMPACTOS (Gafete + Autorización) -->
+      <div class="grid grid-cols-2 gap-4 items-start">
+        <!-- INPUT DE GAFETE -->
+        <GafeteInput
+          gafeteNumero={formState.gafeteNumero}
+          {gafetesDisponibles}
+          on:change={handleGafeteChange}
+        />
 
-      <!-- CAMPOS ADICIONALES (Autorización y Observaciones) -->
-      <IngresoFormFields
-        tipoAutorizacion={formState.tipoAutorizacion}
-        observaciones={formState.observaciones}
-        on:tipoChange={handleTipoAutorizacionChange}
-        on:observacionesChange={handleObservacionesChange}
-      />
+        <!-- TIPO DE AUTORIZACIÓN -->
+        <IngresoFormFields
+          tipoAutorizacion={formState.tipoAutorizacion}
+          observaciones={formState.observaciones}
+          on:tipoChange={handleTipoAutorizacionChange}
+          on:observacionesChange={handleObservacionesChange}
+        />
+      </div>
 
       <!-- BOTÓN SUBMIT -->
-      <div class="pt-2">
+      <div class="pt-2 flex gap-3">
+        <button
+          type="button"
+          on:click={handleClose}
+          class="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+        >
+          Cancelar
+        </button>
+
         <button
           type="submit"
           disabled={loading || !puedeSubmit}
-          class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="flex-1 sm:flex-[2] flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {#if loading}
             <svg
