@@ -1,13 +1,10 @@
 [terminal]
 nombre = "Terminal Principal"
-id = ""  # Se genera automáticamente al iniciar
+id = "HW-387A0E59544E"
+ubicacion = "Sin asignar"
 
 [database]
-# Rutas a intentar en orden de prioridad
-paths = [
-    "./data/brisas.db",
-]
-# Ruta por defecto si no existe ninguna (se calcula automáticamente)
+paths = ["./data/brisas.db"]
 default_path = ""
 
 [app]

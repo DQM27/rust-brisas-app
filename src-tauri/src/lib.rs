@@ -29,10 +29,13 @@ pub fn run() {
                 eprintln!("❌ Error crítico al restaurar base de datos: {}", e);
             }
 
+            // Inicializar pool y servicio de búsqueda en paralelo
             let pool = db::init_pool(&app_config).await?;
+            let search_service = search::init_search_service(&app_config)?;
+
+            // Migraciones y seed (secuenciales, dependen del pool)
             db::migrate::run_migrations(&pool).await?;
             db::seed::seed_db(&pool).await?;
-            let search_service = search::init_search_service(&app_config)?;
 
             // Solo reindexar si el índice está vacío (primera vez o después de restauración)
             if search_service.is_empty() {

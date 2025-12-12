@@ -32,10 +32,19 @@ pub async fn init_pool(config: &AppConfig) -> Result<SqlitePool, Box<dyn std::er
         .connect(&db_url)
         .await?;
 
-    // Configuración básica de SQLite
-    sqlx::query("PRAGMA foreign_keys = ON;")
-        .execute(&pool)
-        .await?;
+    // Optimizaciones de SQLite para mejor rendimiento
+    sqlx::query(
+        r#"
+        PRAGMA journal_mode = WAL;
+        PRAGMA synchronous = NORMAL;
+        PRAGMA cache_size = -64000;
+        PRAGMA temp_store = MEMORY;
+        PRAGMA mmap_size = 268435456;
+        PRAGMA foreign_keys = ON;
+        "#,
+    )
+    .execute(&pool)
+    .await?;
 
     Ok(pool)
 }
