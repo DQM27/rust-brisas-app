@@ -16,5 +16,6 @@ pub mod shortcuts_commands;
 pub mod templates;
 pub mod user_commands;
 pub mod vehiculo_commands; // ✅ ADD
+pub mod window_commands;
 #[macro_use]
 pub mod handlers;

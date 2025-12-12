@@ -5,20 +5,23 @@
 // Solo delega a la capa de servicio
 
 use crate::models::lista_negra::{
-    ListaNegraResponse, ListaNegraListResponse, BlockCheckResponse,
-    AddToListaNegraInput, UpdateListaNegraInput,
+    AddToListaNegraInput, BlockCheckResponse, ListaNegraListResponse, ListaNegraResponse,
+    UpdateListaNegraInput,
 };
 use crate::services::lista_negra_service;
+use crate::services::search_service::SearchService;
 use sqlx::SqlitePool;
+use std::sync::Arc;
 use tauri::State;
 
 /// Agrega una persona a la lista negra
 #[tauri::command]
 pub async fn add_to_lista_negra(
     pool: State<'_, SqlitePool>,
+    search_service: State<'_, Arc<SearchService>>,
     input: AddToListaNegraInput,
 ) -> Result<ListaNegraResponse, String> {
-    lista_negra_service::add_to_lista_negra(&pool, input).await
+    lista_negra_service::add_to_lista_negra(&pool, &search_service, input).await
 }
 
 /// Obtiene un registro de lista negra por ID
@@ -65,50 +68,56 @@ pub async fn get_blocked_by_cedula(
 }
 
 /// Desactiva un bloqueo (quita de lista negra)
-
 #[tauri::command]
 pub async fn remove_from_lista_negra(
     pool: State<'_, SqlitePool>,
+    search_service: State<'_, Arc<SearchService>>,
     id: String,
-    motivo: String,             // <--- Nuevo parámetro
-    observacion: Option<String> // <--- Nuevo parámetro
+    motivo: String,
+    observacion: Option<String>,
 ) -> Result<ListaNegraResponse, String> {
-    lista_negra_service::remove_from_lista_negra(&pool, id, motivo, observacion).await
+    lista_negra_service::remove_from_lista_negra(&pool, &search_service, id, motivo, observacion)
+        .await
 }
 
 /// Reactiva un bloqueo (re-bloquear persona previamente desbloqueada)
 #[tauri::command]
 pub async fn reactivate_lista_negra(
     pool: State<'_, SqlitePool>,
+    search_service: State<'_, Arc<SearchService>>,
     id: String,
     motivo_bloqueo: String,
     observaciones: Option<String>,
     bloqueado_por: String,
 ) -> Result<ListaNegraResponse, String> {
     lista_negra_service::reactivate_lista_negra(
-        &pool, 
-        id, 
-        motivo_bloqueo, 
-        observaciones, 
-        bloqueado_por
-    ).await
+        &pool,
+        &search_service,
+        id,
+        motivo_bloqueo,
+        observaciones,
+        bloqueado_por,
+    )
+    .await
 }
 
 /// Actualiza información de un bloqueo
 #[tauri::command]
 pub async fn update_lista_negra(
     pool: State<'_, SqlitePool>,
+    search_service: State<'_, Arc<SearchService>>,
     id: String,
     input: UpdateListaNegraInput,
 ) -> Result<ListaNegraResponse, String> {
-    lista_negra_service::update_lista_negra(&pool, id, input).await
+    lista_negra_service::update_lista_negra(&pool, &search_service, id, input).await
 }
 
 /// Elimina permanentemente un registro de lista negra
 #[tauri::command]
 pub async fn delete_lista_negra(
     pool: State<'_, SqlitePool>,
+    search_service: State<'_, Arc<SearchService>>,
     id: String,
 ) -> Result<(), String> {
-    lista_negra_service::delete_lista_negra(&pool, id).await
+    lista_negra_service::delete_lista_negra(&pool, &search_service, id).await
 }

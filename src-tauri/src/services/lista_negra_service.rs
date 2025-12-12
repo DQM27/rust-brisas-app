@@ -11,8 +11,10 @@ use crate::models::lista_negra::{
     AddToListaNegraInput, BlockCheckResponse, ListaNegraListResponse, ListaNegraResponse,
     UpdateListaNegraInput,
 };
+use crate::services::search_service::SearchService;
 use chrono::Utc;
 use sqlx::SqlitePool;
+use std::sync::Arc;
 use uuid::Uuid;
 
 // ==========================================
@@ -21,6 +23,7 @@ use uuid::Uuid;
 
 pub async fn add_to_lista_negra(
     pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
     input: AddToListaNegraInput,
 ) -> Result<ListaNegraResponse, String> {
     // 1. Validar input
@@ -101,7 +104,17 @@ pub async fn add_to_lista_negra(
     )
     .await?;
 
-    // 7. Retornar bloqueo creado con datos completos
+    // 7. Indexar en Tantivy
+    match db::find_by_id(pool, &id).await {
+        Ok(lista_negra) => {
+            if let Err(e) = search_service.add_lista_negra(&lista_negra).await {
+                eprintln!("⚠️ Error al indexar lista negra {}: {}", id, e);
+            }
+        }
+        Err(e) => eprintln!("⚠️ Error al obtener lista negra para indexar {}: {}", id, e),
+    }
+
+    // 8. Retornar bloqueo creado con datos completos
     get_lista_negra_by_id(pool, &id).await
 }
 
@@ -304,6 +317,7 @@ pub async fn get_blocked_by_cedula(
 
 pub async fn remove_from_lista_negra(
     pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
     id: String,
     motivo: String,
     observacion: Option<String>,
@@ -330,7 +344,17 @@ pub async fn remove_from_lista_negra(
     )
     .await?;
 
-    // 4. Retornar actualizado
+    // 4. Actualizar índice
+    match db::find_by_id(pool, &id).await {
+        Ok(lista_negra) => {
+            if let Err(e) = search_service.update_lista_negra(&lista_negra).await {
+                eprintln!("⚠️ Error al actualizar índice lista negra {}: {}", id, e);
+            }
+        }
+        Err(e) => eprintln!("⚠️ Error al obtener lista negra para actualizar índice {}: {}", id, e),
+    }
+
+    // 5. Retornar actualizado
     get_lista_negra_by_id(pool, &id).await
 }
 
@@ -340,6 +364,7 @@ pub async fn remove_from_lista_negra(
 
 pub async fn reactivate_lista_negra(
     pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
     id: String,
     motivo_bloqueo: String,
     observaciones: Option<String>,
@@ -374,7 +399,17 @@ pub async fn reactivate_lista_negra(
     )
     .await?;
 
-    // 5. Retornar actualizado
+    // 5. Actualizar índice
+    match db::find_by_id(pool, &id).await {
+        Ok(lista_negra) => {
+            if let Err(e) = search_service.update_lista_negra(&lista_negra).await {
+                eprintln!("⚠️ Error al actualizar índice lista negra {}: {}", id, e);
+            }
+        }
+        Err(e) => eprintln!("⚠️ Error al obtener lista negra para actualizar índice {}: {}", id, e),
+    }
+
+    // 6. Retornar actualizado
     get_lista_negra_by_id(pool, &id).await
 }
 
@@ -384,6 +419,7 @@ pub async fn reactivate_lista_negra(
 
 pub async fn update_lista_negra(
     pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
     id: String,
     input: UpdateListaNegraInput,
 ) -> Result<ListaNegraResponse, String> {
@@ -420,7 +456,17 @@ pub async fn update_lista_negra(
     )
     .await?;
 
-    // 6. Retornar actualizado
+    // 6. Actualizar índice
+    match db::find_by_id(pool, &id).await {
+        Ok(lista_negra) => {
+            if let Err(e) = search_service.update_lista_negra(&lista_negra).await {
+                eprintln!("⚠️ Error al actualizar índice lista negra {}: {}", id, e);
+            }
+        }
+        Err(e) => eprintln!("⚠️ Error al obtener lista negra para actualizar índice {}: {}", id, e),
+    }
+
+    // 7. Retornar actualizado
     get_lista_negra_by_id(pool, &id).await
 }
 
@@ -428,10 +474,21 @@ pub async fn update_lista_negra(
 // ELIMINAR PERMANENTEMENTE
 // ==========================================
 
-pub async fn delete_lista_negra(pool: &SqlitePool, id: String) -> Result<(), String> {
+pub async fn delete_lista_negra(
+    pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
+    id: String,
+) -> Result<(), String> {
     // Verificar que existe antes de eliminar
     let _ = db::find_by_id(pool, &id).await?;
 
-    // Eliminar
-    db::delete(pool, &id).await
+    // Eliminar de DB
+    db::delete(pool, &id).await?;
+
+    // Eliminar del índice
+    if let Err(e) = search_service.delete_lista_negra(&id).await {
+        eprintln!("⚠️ Error al eliminar lista negra del índice {}: {}", id, e);
+    }
+
+    Ok(())
 }

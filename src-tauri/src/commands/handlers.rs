@@ -138,6 +138,10 @@ macro_rules! register_handlers {
             commands::shortcuts_commands::get_shortcuts,
             commands::shortcuts_commands::update_shortcuts,
             commands::shortcuts_commands::reset_shortcuts,
+            // ==========================================
+            // COMANDOS DE VENTANA
+            // ==========================================
+            commands::window_commands::show_main_window,
         ]
     };
 }

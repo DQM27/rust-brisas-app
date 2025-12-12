@@ -2,6 +2,7 @@
 <script lang="ts">
   import "../app.css";
   import { onMount } from "svelte";
+  import { invoke } from "@tauri-apps/api/core";
   import { isAuthenticated } from "$lib/stores/auth";
   import Sidebar from "$lib/components/layout/sidebar/Sidebar.svelte";
   import StatusBar from "$lib/components/layout/StatusBar.svelte";
@@ -22,6 +23,9 @@
 
   // Inicializar monitor de red y atajos
   onMount(() => {
+    // Mostrar ventana cuando el frontend esté listo
+    invoke("show_main_window").catch(console.error);
+
     // shortcutService se auto-inicializa, pero podemos forzar init explicito si queremos
     shortcutService.init();
     const cleanup = initNetworkMonitor();

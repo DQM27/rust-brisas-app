@@ -4,6 +4,7 @@
 // Funciones para indexar documentos en Tantivy
 
 use crate::models::contratista::Contratista;
+use crate::models::lista_negra::ListaNegra;
 use crate::models::user::User;
 use crate::search::schema::{build_search_schema, fields};
 use std::path::Path;
@@ -222,5 +223,75 @@ pub fn commit_index(writer: &mut IndexWriter) -> Result<(), String> {
     writer
         .commit()
         .map_err(|e| format!("Error al hacer commit: {}", e))?;
+    Ok(())
+}
+
+/// Indexa una entrada de lista negra
+pub fn index_lista_negra(
+    writer: &mut IndexWriter,
+    schema: &Schema,
+    lista_negra: &ListaNegra,
+) -> Result<(), String> {
+    let id_field = schema.get_field(fields::ID).unwrap();
+    let tipo_field = schema.get_field(fields::TIPO).unwrap();
+    let cedula_field = schema.get_field(fields::CEDULA).unwrap();
+    let nombre_field = schema.get_field(fields::NOMBRE).unwrap();
+    let segundo_nombre_field = schema.get_field(fields::SEGUNDO_NOMBRE).unwrap();
+    let apellido_field = schema.get_field(fields::APELLIDO).unwrap();
+    let segundo_apellido_field = schema.get_field(fields::SEGUNDO_APELLIDO).unwrap();
+    let search_text_field = schema.get_field(fields::SEARCH_TEXT).unwrap();
+
+    // Construir texto de búsqueda concatenado
+    let mut search_text_parts = vec![
+        lista_negra.cedula.clone(),
+        lista_negra.nombre.clone(),
+        lista_negra.apellido.clone(),
+        lista_negra.motivo_bloqueo.clone(),
+    ];
+
+    if let Some(ref segundo_nombre) = lista_negra.segundo_nombre {
+        search_text_parts.push(segundo_nombre.clone());
+    }
+
+    if let Some(ref segundo_apellido) = lista_negra.segundo_apellido {
+        search_text_parts.push(segundo_apellido.clone());
+    }
+
+    let search_text = search_text_parts.join(" ");
+
+    // Crear documento
+    let mut doc = TantivyDocument::default();
+    doc.add_text(id_field, &lista_negra.id);
+    doc.add_text(tipo_field, "lista_negra");
+    doc.add_text(cedula_field, &lista_negra.cedula);
+    doc.add_text(nombre_field, &lista_negra.nombre);
+
+    if let Some(ref segundo_nombre) = lista_negra.segundo_nombre {
+        doc.add_text(segundo_nombre_field, segundo_nombre);
+    }
+
+    doc.add_text(apellido_field, &lista_negra.apellido);
+
+    if let Some(ref segundo_apellido) = lista_negra.segundo_apellido {
+        doc.add_text(segundo_apellido_field, segundo_apellido);
+    }
+
+    doc.add_text(search_text_field, &search_text);
+
+    writer
+        .add_document(doc)
+        .map_err(|e| format!("Error al agregar lista negra: {}", e))?;
+
+    Ok(())
+}
+
+/// Actualiza una entrada de lista negra (delete + insert)
+pub fn update_lista_negra_in_index(
+    writer: &mut IndexWriter,
+    schema: &Schema,
+    lista_negra: &ListaNegra,
+) -> Result<(), String> {
+    delete_from_index(writer, schema, &lista_negra.id)?;
+    index_lista_negra(writer, schema, lista_negra)?;
     Ok(())
 }
