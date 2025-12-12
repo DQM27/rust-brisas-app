@@ -260,4 +260,16 @@ impl SearchService {
     pub fn search(&self, query: &str, limit: usize) -> Result<Vec<SearchResult>, String> {
         search_index(&self.index, &self.reader, query, limit)
     }
+
+    /// Verifica si el índice está vacío
+    pub fn is_empty(&self) -> bool {
+        let searcher = self.reader.searcher();
+        searcher.num_docs() == 0
+    }
+
+    /// Obtiene la cantidad de documentos en el índice
+    pub fn doc_count(&self) -> u64 {
+        let searcher = self.reader.searcher();
+        searcher.num_docs()
+    }
 }

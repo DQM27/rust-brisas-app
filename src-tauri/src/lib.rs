@@ -34,9 +34,14 @@ pub fn run() {
             db::seed::seed_db(&pool).await?;
             let search_service = search::init_search_service(&app_config)?;
 
-            // Reindexar todo al inicio para asegurar consistencia con la DB
-            if let Err(e) = search_service.reindex_all(&pool).await {
-                eprintln!("❌ Error al reindexar al inicio: {}", e);
+            // Solo reindexar si el índice está vacío (primera vez o después de restauración)
+            if search_service.is_empty() {
+                println!("📇 Índice vacío, reindexando...");
+                if let Err(e) = search_service.reindex_all(&pool).await {
+                    eprintln!("❌ Error al reindexar al inicio: {}", e);
+                } else {
+                    println!("✅ Reindexado completado: {} documentos", search_service.doc_count());
+                }
             }
 
             tauri::Builder::default()
