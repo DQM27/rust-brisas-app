@@ -1,6 +1,6 @@
 <!-- src/lib/components/layout/sidebar/panels/LogsPanel.svelte -->
 <script lang="ts">
-  import { Search, Activity, Download, Settings } from "lucide-svelte";
+  import { Search, Activity, Download, Settings, MessageSquare } from "lucide-svelte";
   import { openView, activePanel } from "../../../../stores/sidebar";
 
   function handleKeydown(e: KeyboardEvent, action: () => void) {
@@ -52,6 +52,20 @@
     <svelte:component this={Download} size={16} />
     <span>Exportar registros</span>
   </div>
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() =>
+      openView("reportes-list", "Historial de Reportes"),
+    )}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() => openView("reportes-list", "Historial de Reportes")),
+      )}
+  >
+    <svelte:component this={MessageSquare} size={16} />
+    <span>Historial de Reportes</span>
+  </button>
 </div>
 
 <div class="panel-section">

@@ -9,7 +9,7 @@
     Database,
     FileSpreadsheet,
     Keyboard,
-    MessageSquare,
+    Home,
   } from "lucide-svelte";
   import { openView, activePanel } from "../../../../stores/sidebar";
 
@@ -105,6 +105,18 @@
   <div class="panel-section-title">SISTEMA</div>
   <button
     class="panel-item"
+    on:click={executeAndClose(() => openView("welcome", "Bienvenida"))}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() => openView("welcome", "Bienvenida")),
+      )}
+  >
+    <svelte:component this={Home} size={16} />
+    <span>Pantalla de Bienvenida</span>
+  </button>
+  <button
+    class="panel-item"
     on:click={executeAndClose(() =>
       openView("update-settings", "Actualizaciones"),
     )}
@@ -116,20 +128,6 @@
   >
     <svelte:component this={RefreshCw} size={16} />
     <span>Actualizaciones</span>
-  </button>
-  <button
-    class="panel-item"
-    on:click={executeAndClose(() =>
-      openView("reportes-list", "Historial de Reportes"),
-    )}
-    on:keydown={(e) =>
-      handleKeydown(
-        e,
-        executeAndClose(() => openView("reportes-list", "Historial de Reportes")),
-      )}
-  >
-    <svelte:component this={MessageSquare} size={16} />
-    <span>Historial de Reportes</span>
   </button>
   <button
     class="panel-item"
