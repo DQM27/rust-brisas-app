@@ -1,0 +1,261 @@
+// ==========================================
+// src/commands/keyring_commands.rs
+// ==========================================
+// Comandos Tauri para gestión segura de credenciales
+
+use crate::config::{save_config, AppConfig};
+use crate::services::keyring_service::{
+    self, Argon2Params, CredentialStatus, SmtpCredentials,
+};
+use chrono::Utc;
+use serde::{Deserialize, Serialize};
+use tauri::{command, State};
+
+// ==========================================
+// DTOs PARA COMANDOS
+// ==========================================
+
+#[derive(Debug, Deserialize)]
+pub struct SetupCredentialsInput {
+    pub smtp: SmtpCredentials,
+    pub argon2: Argon2Params,
+    pub sqlite_password: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SetupResult {
+    pub success: bool,
+    pub message: String,
+}
+
+// ==========================================
+// COMANDOS DE ESTADO
+// ==========================================
+
+/// Obtiene el estado de configuración de credenciales
+#[command]
+pub fn get_credential_status() -> CredentialStatus {
+    keyring_service::get_credential_status()
+}
+
+/// Verifica si la app está completamente configurada
+#[command]
+pub fn is_app_configured(config: State<'_, AppConfig>) -> bool {
+    config.setup.is_configured && keyring_service::is_fully_configured()
+}
+
+/// Verifica si necesita ejecutar el wizard de configuración
+#[command]
+pub fn needs_setup(config: State<'_, AppConfig>) -> bool {
+    !config.setup.is_configured || !keyring_service::is_fully_configured()
+}
+
+// ==========================================
+// COMANDOS DE SETUP INICIAL
+// ==========================================
+
+/// Configura todas las credenciales en el primer uso
+#[command]
+pub fn setup_credentials(
+    input: SetupCredentialsInput,
+    config: State<'_, AppConfig>,
+) -> Result<SetupResult, String> {
+    // 1. Guardar credenciales SMTP
+    keyring_service::store_smtp_credentials(&input.smtp)?;
+
+    // 2. Guardar parámetros de Argon2
+    keyring_service::store_argon2_params(&input.argon2)?;
+
+    // 3. Guardar contraseña de SQLite si se proporciona
+    if let Some(ref sqlite_pass) = input.sqlite_password {
+        if !sqlite_pass.is_empty() {
+            keyring_service::store_sqlite_password(sqlite_pass)?;
+        }
+    }
+
+    // 4. Actualizar estado de configuración en TOML
+    let mut updated_config = config.inner().clone();
+    updated_config.setup.is_configured = true;
+    updated_config.setup.configured_at = Some(Utc::now().to_rfc3339());
+    updated_config.setup.configured_version = Some(env!("CARGO_PKG_VERSION").to_string());
+
+    // Guardar config actualizada
+    let config_path = if let Some(data_dir) = dirs::data_local_dir() {
+        data_dir.join("Brisas").join("brisas.toml")
+    } else {
+        std::path::PathBuf::from("./config/brisas.toml")
+    };
+
+    save_config(&updated_config, &config_path)
+        .map_err(|e| format!("Error guardando configuración: {}", e))?;
+
+    Ok(SetupResult {
+        success: true,
+        message: "Configuración inicial completada correctamente".to_string(),
+    })
+}
+
+// ==========================================
+// COMANDOS SMTP (Solo admin)
+// ==========================================
+
+/// Obtiene credenciales SMTP (sin la contraseña completa por seguridad)
+#[command]
+pub fn get_smtp_config() -> Option<SmtpCredentialsSafe> {
+    keyring_service::get_smtp_credentials().map(|creds| SmtpCredentialsSafe {
+        host: creds.host,
+        port: creds.port,
+        user: creds.user,
+        has_password: true,
+        feedback_email: creds.feedback_email,
+    })
+}
+
+#[derive(Debug, Serialize)]
+pub struct SmtpCredentialsSafe {
+    pub host: String,
+    pub port: u16,
+    pub user: String,
+    pub has_password: bool,
+    pub feedback_email: String,
+}
+
+/// Actualiza credenciales SMTP
+#[command]
+pub fn update_smtp_credentials(creds: SmtpCredentials) -> Result<(), String> {
+    keyring_service::store_smtp_credentials(&creds)
+}
+
+/// Prueba la conexión SMTP con credenciales guardadas
+#[command]
+pub async fn test_smtp_connection() -> Result<String, String> {
+    let creds = keyring_service::get_smtp_credentials()
+        .ok_or("No hay credenciales SMTP configuradas")?;
+
+    test_smtp_with_credentials(creds).await
+}
+
+/// Prueba la conexión SMTP con credenciales proporcionadas (para el wizard)
+#[command]
+pub async fn test_smtp_connection_with_creds(creds: SmtpCredentials) -> Result<String, String> {
+    test_smtp_with_credentials(creds).await
+}
+
+/// Función interna para probar conexión SMTP
+async fn test_smtp_with_credentials(creds: SmtpCredentials) -> Result<String, String> {
+    use lettre::transport::smtp::authentication::Credentials;
+    use lettre::SmtpTransport;
+
+    let smtp_creds = Credentials::new(creds.user.clone(), creds.password.clone());
+
+    let mailer = SmtpTransport::relay(&creds.host)
+        .map_err(|e| format!("Error conectando: {}", e))?
+        .port(creds.port)
+        .credentials(smtp_creds)
+        .build();
+
+    // Probar conexión
+    mailer
+        .test_connection()
+        .map_err(|e| format!("Error de conexión SMTP: {}", e))?;
+
+    Ok("Conexión SMTP exitosa".to_string())
+}
+
+// ==========================================
+// COMANDOS ARGON2 (Solo admin)
+// ==========================================
+
+/// Obtiene parámetros de Argon2 (sin el secret)
+#[command]
+pub fn get_argon2_config() -> Argon2ParamsSafe {
+    let params = keyring_service::get_argon2_params();
+    Argon2ParamsSafe {
+        memory: params.memory,
+        iterations: params.iterations,
+        parallelism: params.parallelism,
+        has_secret: !params.secret.is_empty(),
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct Argon2ParamsSafe {
+    pub memory: u32,
+    pub iterations: u32,
+    pub parallelism: u32,
+    pub has_secret: bool,
+}
+
+/// Actualiza parámetros de Argon2
+#[command]
+pub fn update_argon2_params(params: Argon2Params) -> Result<(), String> {
+    keyring_service::store_argon2_params(&params)
+}
+
+/// Genera un nuevo secret aleatorio para Argon2
+#[command]
+pub fn generate_argon2_secret() -> String {
+    keyring_service::generate_random_secret()
+}
+
+// ==========================================
+// COMANDOS SQLITE (Solo admin)
+// ==========================================
+
+/// Verifica si hay contraseña de SQLite configurada
+#[command]
+pub fn has_sqlite_password() -> bool {
+    keyring_service::has_sqlite_password()
+}
+
+/// Actualiza contraseña de SQLite
+#[command]
+pub fn update_sqlite_password(password: String) -> Result<(), String> {
+    if password.is_empty() {
+        keyring_service::delete_sqlite_password()
+    } else {
+        keyring_service::store_sqlite_password(&password)
+    }
+}
+
+// ==========================================
+// COMANDOS DE UTILIDAD
+// ==========================================
+
+/// Genera un secret aleatorio para usar en configuración
+#[command]
+pub fn generate_random_secret() -> String {
+    keyring_service::generate_random_secret()
+}
+
+/// Resetea todas las credenciales (usar con cuidado)
+#[command]
+pub fn reset_all_credentials(
+    confirm: bool,
+    config: State<'_, AppConfig>,
+) -> Result<(), String> {
+    if !confirm {
+        return Err("Debes confirmar la operación".to_string());
+    }
+
+    // Eliminar credenciales
+    let _ = keyring_service::delete_smtp_credentials();
+    let _ = keyring_service::delete_sqlite_password();
+
+    // Actualizar estado de configuración
+    let mut updated_config = config.inner().clone();
+    updated_config.setup.is_configured = false;
+    updated_config.setup.configured_at = None;
+    updated_config.setup.configured_version = None;
+
+    let config_path = if let Some(data_dir) = dirs::data_local_dir() {
+        data_dir.join("Brisas").join("brisas.toml")
+    } else {
+        std::path::PathBuf::from("./config/brisas.toml")
+    };
+
+    save_config(&updated_config, &config_path)
+        .map_err(|e| format!("Error guardando configuración: {}", e))?;
+
+    Ok(())
+}

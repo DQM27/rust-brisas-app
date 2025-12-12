@@ -1,89 +1,77 @@
 <script lang="ts">
-  import { DownloadCloud, HardDrive } from "lucide-svelte";
+  import { DownloadCloud, RefreshCw, CheckCircle2 } from "lucide-svelte";
   import { scale } from "svelte/transition";
-  import {
-    checkAndInstallUpdate,
-    installUpdateFromFile,
-  } from "$lib/services/updateService";
+  import { checkAndInstallUpdate } from "$lib/services/updateService";
+
+  let isChecking = $state(false);
+
+  async function handleCheckUpdate() {
+    isChecking = true;
+    try {
+      await checkAndInstallUpdate();
+    } finally {
+      isChecking = false;
+    }
+  }
 </script>
 
 <div
   class="flex h-full flex-col bg-surface-1 p-6 overflow-y-auto"
   in:scale={{ duration: 300, start: 0.95 }}
 >
-  <div class="mb-6">
-    <h2 class="text-2xl font-bold text-primary">Actualizaciones</h2>
-    <p class="text-secondary mt-1">
-      Gestiona las actualizaciones y versiones del sistema.
-    </p>
-  </div>
+  <div class="max-w-2xl">
+    <!-- Header -->
+    <div class="mb-6">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Actualizaciones</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        Verifica si hay nuevas versiones disponibles.
+      </p>
+    </div>
 
-  <div class="grid gap-4 max-w-3xl pb-8">
-    <!-- ================================================================== -->
-    <!-- UPDATES CARD -->
-    <!-- ================================================================== -->
-    <div class="card-base p-5">
-      <div class="flex items-center gap-4 mb-4">
-        <div
-          class="p-3 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-        >
-          <DownloadCloud size={22} />
-        </div>
-        <div>
-          <h3 class="text-lg font-semibold text-primary">
-            Sistema de Actualización
-          </h3>
-          <p class="text-sm text-secondary">
-            Verifica e instala nuevas versiones de Brisas App.
-          </p>
-          <p class="text-xs text-secondary/60 mt-1 italic">
-            Configuración del servidor: tauri.conf.json
-          </p>
-        </div>
+    <!-- Card GitHub Style -->
+    <div class="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0d1117] overflow-hidden">
+      <!-- Header -->
+      <div class="bg-gray-50 dark:bg-[#161b22] px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+        <DownloadCloud class="w-4 h-4 text-gray-500" />
+        <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100">
+          Sistema de Actualizacion
+        </h3>
       </div>
 
-      <div class="flex flex-col gap-3">
-        <button
-          class="flex items-center justify-between p-3 rounded-lg bg-surface-2 hover:bg-surface-3 transition-colors text-left cursor-pointer"
-          onclick={() => checkAndInstallUpdate()}
-        >
+      <!-- Body -->
+      <div class="p-4">
+        <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <DownloadCloud size={18} class="text-blue-500" />
-            <div class="flex flex-col">
-              <span class="text-sm font-medium text-primary"
-                >Buscar Actualización Online</span
-              >
-              <span class="text-xs text-secondary mt-0.5"
-                >Conecta con el servidor para buscar novedades.</span
-              >
+            <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <CheckCircle2 class="w-4 h-4 text-green-500" />
+              <span>Version actual instalada</span>
             </div>
+            <span class="bg-gray-100 dark:bg-[#21262d] text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full text-xs font-mono border border-gray-200 dark:border-gray-600">
+              v1.2.0
+            </span>
           </div>
-          <span
-            class="text-xs text-secondary bg-surface-1 px-2 py-1 rounded border border-white/5"
-            >Remoto</span
-          >
-        </button>
 
-        <button
-          class="flex items-center justify-between p-3 rounded-lg bg-surface-2 hover:bg-surface-3 transition-colors text-left cursor-pointer"
-          onclick={() => installUpdateFromFile()}
-        >
-          <div class="flex items-center gap-3">
-            <HardDrive size={18} class="text-emerald-500" />
-            <div class="flex flex-col">
-              <span class="text-sm font-medium text-primary"
-                >Instrucciones Offline</span
-              >
-              <span class="text-xs text-secondary mt-0.5"
-                >Guía para instalar manualmente un archivo.</span
-              >
-            </div>
-          </div>
-          <span
-            class="text-xs text-secondary bg-surface-1 px-2 py-1 rounded border border-white/5"
-            >Local</span
+          <button
+            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border transition-colors
+              {isChecking
+                ? 'bg-gray-100 dark:bg-[#21262d] text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600 cursor-not-allowed'
+                : 'bg-[#2da44e] hover:bg-[#2c974b] text-white border-[#2da44e] hover:border-[#2c974b]'}"
+            onclick={handleCheckUpdate}
+            disabled={isChecking}
           >
-        </button>
+            {#if isChecking}
+              <RefreshCw class="w-4 h-4 animate-spin" />
+              <span>Buscando...</span>
+            {:else}
+              <RefreshCw class="w-4 h-4" />
+              <span>Buscar actualizacion</span>
+            {/if}
+          </button>
+        </div>
+
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-4">
+          Las actualizaciones se descargan de forma segura desde el servidor oficial.
+        </p>
       </div>
     </div>
   </div>

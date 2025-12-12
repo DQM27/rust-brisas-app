@@ -20,6 +20,7 @@ import UpdateSettingsPanel from '$lib/components/settings/UpdateSettingsPanel.sv
 import BackupSettingsPanel from '$lib/components/settings/BackupSettingsPanel.svelte';
 import DeviceSettingsPanel from '$lib/components/settings/DeviceSettingsPanel.svelte';
 import ShortcutSettings from '$lib/components/settings/ShortcutSettings.svelte';
+import SecuritySettingsPanel from '$lib/components/settings/SecuritySettingsPanel.svelte';
 import ReportesListView from '$lib/components/settings/ReportesListView.svelte';
 import AboutPanel from '$lib/components/settings/AboutPanel.svelte';
 
@@ -49,6 +50,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'backup-settings': BackupSettingsPanel,
   'device-settings': DeviceSettingsPanel,
   'shortcut-settings': ShortcutSettings,
+  'security-settings': SecuritySettingsPanel,
   'reportes-list': ReportesListView,
   'about': AboutPanel,
 

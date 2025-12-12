@@ -15,7 +15,6 @@ use lettre::message::{Attachment, MultiPart, SinglePart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{Message, SmtpTransport, Transport};
 use sqlx::SqlitePool;
-use std::env;
 use uuid::Uuid;
 
 // ==========================================
@@ -229,17 +228,15 @@ async fn enviar_email(
     adjunto_base64: Option<&str>,
     nombre_adjunto: Option<&str>,
 ) -> Result<(), String> {
-    // 1. Cargar variables de entorno
-    let smtp_host = env::var("SMTP_HOST").map_err(|_| "SMTP_HOST no configurado".to_string())?;
-    let smtp_port_str = env::var("SMTP_PORT").unwrap_or_else(|_| "587".to_string());
-    let smtp_port: u16 = smtp_port_str
-        .parse()
-        .map_err(|_| "SMTP_PORT invalido".to_string())?;
-    let smtp_user = env::var("SMTP_USER").map_err(|_| "SMTP_USER no configurado".to_string())?;
-    let smtp_pass =
-        env::var("SMTP_PASSWORD").map_err(|_| "SMTP_PASSWORD no configurado".to_string())?;
-    let feedback_email =
-        env::var("FEEDBACK_EMAIL").map_err(|_| "FEEDBACK_EMAIL no configurado".to_string())?;
+    // 1. Obtener credenciales SMTP desde el keyring del sistema
+    let creds = super::keyring_service::get_smtp_credentials()
+        .ok_or("Credenciales SMTP no configuradas. Ejecuta el wizard de configuración.")?;
+
+    let smtp_host = creds.host;
+    let smtp_port = creds.port;
+    let smtp_user = creds.user;
+    let smtp_pass = creds.password;
+    let feedback_email = creds.feedback_email;
 
     // 2. Formatear cuerpo del email
     let contacto_str = contacto.unwrap_or("Anonimo");

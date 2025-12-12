@@ -12,17 +12,38 @@
   import { themeStore } from "$lib/stores/themeStore"; // Inicializar tema
   import { generalSettings } from "$lib/stores/settingsStore";
   import { shortcutService } from "$lib/services/shortcutService";
+  import SetupWizard from "$lib/components/setup/SetupWizard.svelte";
+  import { needsSetup } from "$lib/services/keyringService";
 
   // Estado de autenticación reactivo
-  $: authenticated = $isAuthenticated;
+  let authenticated = $derived($isAuthenticated);
+
+  // Estado del wizard de setup
+  let showSetupWizard = $state(false);
+  let checkingSetup = $state(true);
 
   // Toggle del panel de inspección
   function toggleInspectionPanel(): void {
     $inspectionPanel.visible = !$inspectionPanel.visible;
   }
 
+  // Handler cuando se completa el setup
+  function handleSetupComplete() {
+    showSetupWizard = false;
+  }
+
   // Inicializar monitor de red y atajos
-  onMount(() => {
+  onMount(async () => {
+    // Verificar si necesita configuración inicial
+    try {
+      showSetupWizard = await needsSetup();
+    } catch (e) {
+      console.error("Error verificando setup:", e);
+      showSetupWizard = false;
+    } finally {
+      checkingSetup = false;
+    }
+
     // Mostrar ventana cuando el frontend esté listo
     invoke("show_main_window").catch(console.error);
 
@@ -32,6 +53,11 @@
     return cleanup;
   });
 </script>
+
+<!-- Setup Wizard (primera ejecución) -->
+{#if showSetupWizard}
+  <SetupWizard onComplete={handleSetupComplete} />
+{/if}
 
 <div
   class="flex flex-col h-screen bg-surface-1 text-primary overflow-hidden font-sans"

@@ -152,6 +152,24 @@ macro_rules! register_handlers {
             commands::email_commands::get_reporte,
             commands::email_commands::get_reportes_by_tipo,
             commands::email_commands::retry_reporte,
+            // ==========================================
+            // COMANDOS DE KEYRING/CREDENCIALES
+            // ==========================================
+            commands::keyring_commands::get_credential_status,
+            commands::keyring_commands::is_app_configured,
+            commands::keyring_commands::needs_setup,
+            commands::keyring_commands::setup_credentials,
+            commands::keyring_commands::get_smtp_config,
+            commands::keyring_commands::update_smtp_credentials,
+            commands::keyring_commands::test_smtp_connection,
+            commands::keyring_commands::test_smtp_connection_with_creds,
+            commands::keyring_commands::get_argon2_config,
+            commands::keyring_commands::update_argon2_params,
+            commands::keyring_commands::generate_argon2_secret,
+            commands::keyring_commands::has_sqlite_password,
+            commands::keyring_commands::update_sqlite_password,
+            commands::keyring_commands::generate_random_secret,
+            commands::keyring_commands::reset_all_credentials,
         ]
     };
 }

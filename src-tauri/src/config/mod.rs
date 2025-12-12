@@ -6,4 +6,4 @@ pub mod shortcuts;
 pub mod shortcuts_manager;
 
 pub use manager::{get_database_path, load_config, save_config};
-pub use settings::AppConfig;
+pub use settings::{AppConfig, SetupState};

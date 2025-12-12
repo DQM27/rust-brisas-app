@@ -4,29 +4,28 @@ use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Algorithm, Argon2, Params, Version,
 };
-use std::env;
+use super::keyring_service;
 
 fn get_argon2_params() -> Params {
-    let m_cost = env::var("ARGON2_MEMORY")
-        .unwrap_or("19456".into())
-        .parse()
-        .unwrap_or(19456);
-    let t_cost = env::var("ARGON2_ITERATIONS")
-        .unwrap_or("2".into())
-        .parse()
-        .unwrap_or(2);
-    let p_cost = env::var("ARGON2_PARALLELISM")
-        .unwrap_or("1".into())
-        .parse()
-        .unwrap_or(1);
+    // Obtener parámetros desde el keyring del sistema
+    let keyring_params = keyring_service::get_argon2_params();
 
-    Params::new(m_cost, t_cost, p_cost, Some(32)).unwrap_or_default()
+    Params::new(
+        keyring_params.memory,
+        keyring_params.iterations,
+        keyring_params.parallelism,
+        Some(32)
+    ).unwrap_or_default()
+}
+
+fn get_password_secret() -> String {
+    keyring_service::get_argon2_params().secret
 }
 
 /// Hashea una contraseña usando Argon2id con un secreto (pepper)
 pub fn hash_password(password: &str) -> Result<String, String> {
     let salt = SaltString::generate(&mut OsRng);
-    let secret = env::var("PASSWORD_SECRET").unwrap_or_default();
+    let secret = get_password_secret();
 
     let argon2 = Argon2::new_with_secret(
         secret.as_bytes(),
@@ -46,7 +45,7 @@ pub fn hash_password(password: &str) -> Result<String, String> {
 pub fn verify_password(password: &str, hash: &str) -> Result<bool, String> {
     let parsed_hash = PasswordHash::new(hash).map_err(|e| format!("Hash inválido: {}", e))?;
 
-    let secret = env::var("PASSWORD_SECRET").unwrap_or_default();
+    let secret = get_password_secret();
 
     let argon2 = Argon2::new_with_secret(
         secret.as_bytes(),

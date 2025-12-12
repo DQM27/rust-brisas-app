@@ -10,6 +10,7 @@
     FileSpreadsheet,
     Keyboard,
     Home,
+    Shield,
   } from "lucide-svelte";
   import { openView, activePanel } from "../../../../stores/sidebar";
 
@@ -114,6 +115,20 @@
   >
     <svelte:component this={Home} size={16} />
     <span>Pantalla de Bienvenida</span>
+  </button>
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() =>
+      openView("security-settings", "Seguridad y Credenciales"),
+    )}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() => openView("security-settings", "Seguridad y Credenciales")),
+      )}
+  >
+    <svelte:component this={Shield} size={16} />
+    <span>Seguridad y Credenciales</span>
   </button>
   <button
     class="panel-item"

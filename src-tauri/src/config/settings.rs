@@ -7,8 +7,23 @@ use serde::{Deserialize, Serialize};
 pub struct AppConfig {
     pub terminal: TerminalConfig,
     pub database: DatabaseConfig,
-
     pub app: AppInfo,
+    #[serde(default)]
+    pub setup: SetupState,
+}
+
+/// Estado de configuración inicial de la app
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SetupState {
+    /// Indica si la app ha sido configurada por primera vez
+    #[serde(default)]
+    pub is_configured: bool,
+    /// Fecha de primera configuración (ISO 8601)
+    #[serde(default)]
+    pub configured_at: Option<String>,
+    /// Versión en la que se configuró
+    #[serde(default)]
+    pub configured_version: Option<String>,
 }
 
 /// Configuración de la terminal
@@ -57,10 +72,10 @@ impl Default for AppConfig {
                 ],
                 default_path: "".to_string(), // Se calculará en runtime
             },
-
             app: AppInfo {
                 version: env!("CARGO_PKG_VERSION").to_string(),
             },
+            setup: SetupState::default(),
         }
     }
 }
