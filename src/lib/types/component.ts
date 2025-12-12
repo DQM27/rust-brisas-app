@@ -17,4 +17,6 @@ export type ComponentKey =
   | 'update-settings'
   | 'backup-settings'
   | 'device-settings'
-  | 'shortcut-settings';
+  | 'shortcut-settings'
+  | 'reportes-list'
+  | 'about';

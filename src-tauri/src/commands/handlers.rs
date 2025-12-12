@@ -143,9 +143,15 @@ macro_rules! register_handlers {
             // ==========================================
             commands::window_commands::show_main_window,
             // ==========================================
-            // COMANDOS DE EMAIL
+            // COMANDOS DE EMAIL/REPORTES
             // ==========================================
             commands::email_commands::send_suggestion,
+            commands::email_commands::send_error_report,
+            commands::email_commands::create_reporte,
+            commands::email_commands::get_all_reportes,
+            commands::email_commands::get_reporte,
+            commands::email_commands::get_reportes_by_tipo,
+            commands::email_commands::retry_reporte,
         ]
     };
 }

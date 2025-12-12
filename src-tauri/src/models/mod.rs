@@ -4,6 +4,7 @@ pub mod export;
 pub mod gafete;
 pub mod ingreso;
 pub mod lista_negra;
+pub mod reporte;
 pub mod template;
 pub mod user;
 pub mod vehiculo;

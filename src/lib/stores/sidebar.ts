@@ -9,6 +9,7 @@ export function openView(componentKey: ComponentKey, title: string) {
   openTab({
     componentKey: componentKey,
     title: title,
+    id: componentKey, // Usar componentKey como ID para evitar duplicados
     focusOnOpen: true
   });
 }

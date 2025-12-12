@@ -9,6 +9,7 @@
     Database,
     FileSpreadsheet,
     Keyboard,
+    MessageSquare,
   } from "lucide-svelte";
   import { openView, activePanel } from "../../../../stores/sidebar";
 
@@ -118,11 +119,25 @@
   </button>
   <button
     class="panel-item"
-    on:click={executeAndClose(() => openView("welcome", "Acerca del Sistema"))}
+    on:click={executeAndClose(() =>
+      openView("reportes-list", "Historial de Reportes"),
+    )}
     on:keydown={(e) =>
       handleKeydown(
         e,
-        executeAndClose(() => openView("welcome", "Acerca del Sistema")),
+        executeAndClose(() => openView("reportes-list", "Historial de Reportes")),
+      )}
+  >
+    <svelte:component this={MessageSquare} size={16} />
+    <span>Historial de Reportes</span>
+  </button>
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() => openView("about", "Acerca del Sistema"))}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() => openView("about", "Acerca del Sistema")),
       )}
   >
     <svelte:component this={Info} size={16} />

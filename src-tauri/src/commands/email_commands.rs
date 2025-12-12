@@ -1,61 +1,93 @@
-use lettre::message::header::ContentType; // ✅ Import ContentType
-use lettre::transport::smtp::authentication::Credentials;
-use lettre::{Message, SmtpTransport, Transport};
-use std::env;
-use tauri::command;
+// ==========================================
+// src/commands/email_commands.rs
+// ==========================================
+// Capa de comandos Tauri: delega al servicio
 
-#[command]
+use crate::models::reporte::{CreateReporteInput, ReporteListResponse, ReporteResponse};
+use crate::services::email_service;
+use sqlx::SqlitePool;
+use tauri::State;
+
+/// Crea y envia un reporte (sugerencia, error o mejora)
+#[tauri::command]
 pub async fn send_suggestion(
+    pool: State<'_, SqlitePool>,
     subject: String,
     message: String,
     contact_info: Option<String>,
-) -> Result<(), String> {
-    // 1. Load env vars (dotenvy should be loaded at app startup, but we can double check or rely on env::var)
-    // Note: In tauri main.rs or lib.rs we should make sure dotenvy::dotenv().ok(); is called.
+    attachment_base64: Option<String>,
+    attachment_name: Option<String>,
+) -> Result<ReporteResponse, String> {
+    // Convertir parametros legacy al nuevo formato
+    let input = CreateReporteInput {
+        tipo: "sugerencia".to_string(),
+        asunto: subject,
+        mensaje: message,
+        contacto: contact_info,
+        adjunto_base64: attachment_base64,
+        nombre_adjunto: attachment_name,
+    };
 
-    let smtp_host = env::var("SMTP_HOST").map_err(|_| "SMTP_HOST not set".to_string())?;
-    let smtp_port_str = env::var("SMTP_PORT").unwrap_or_else(|_| "587".to_string());
-    let smtp_port: u16 = smtp_port_str
-        .parse()
-        .map_err(|_| "Invalid SMTP_PORT".to_string())?;
-    let smtp_user = env::var("SMTP_USER").map_err(|_| "SMTP_USER not set".to_string())?;
-    let smtp_pass = env::var("SMTP_PASSWORD").map_err(|_| "SMTP_PASSWORD not set".to_string())?;
-    let feedback_email =
-        env::var("FEEDBACK_EMAIL").map_err(|_| "FEEDBACK_EMAIL not set".to_string())?;
+    email_service::crear_y_enviar_reporte(&pool, input).await
+}
 
-    // 2. Format the email body
-    let contact_str = contact_info.unwrap_or_else(|| "Anonymous".to_string());
-    let email_body = format!(
-        "New Suggestion/Complaint from Brisas App\n\nFrom: {}\n\nMessage:\n{}",
-        contact_str, message
-    );
+/// Crea y envia un reporte de error
+#[tauri::command]
+pub async fn send_error_report(
+    pool: State<'_, SqlitePool>,
+    subject: String,
+    message: String,
+    contact_info: Option<String>,
+    attachment_base64: Option<String>,
+    attachment_name: Option<String>,
+) -> Result<ReporteResponse, String> {
+    let input = CreateReporteInput {
+        tipo: "error".to_string(),
+        asunto: subject,
+        mensaje: message,
+        contacto: contact_info,
+        adjunto_base64: attachment_base64,
+        nombre_adjunto: attachment_name,
+    };
 
-    // 3. Build email
-    let email = Message::builder()
-        .from(
-            format!("Brisas App <{}>", smtp_user)
-                .parse::<lettre::message::Mailbox>()
-                .map_err(|e| e.to_string())?,
-        )
-        .to(feedback_email
-            .parse::<lettre::message::Mailbox>()
-            .map_err(|e| e.to_string())?)
-        .subject(format!("Brisas App Feedback: {}", subject))
-        .header(ContentType::TEXT_PLAIN) // ✅ Explicit Content-Type
-        .body(email_body)
-        .map_err(|e| e.to_string())?;
+    email_service::crear_y_enviar_reporte(&pool, input).await
+}
 
-    // 4. Setup Transport
-    let creds = Credentials::new(smtp_user, smtp_pass);
-    let mailer = SmtpTransport::relay(&smtp_host)
-        .map_err(|e| e.to_string())?
-        .port(smtp_port)
-        .credentials(creds)
-        .build();
+/// Crea y envia un reporte generico (tipo flexible)
+#[tauri::command]
+pub async fn create_reporte(
+    pool: State<'_, SqlitePool>,
+    input: CreateReporteInput,
+) -> Result<ReporteResponse, String> {
+    email_service::crear_y_enviar_reporte(&pool, input).await
+}
 
-    // 5. Send
-    match mailer.send(&email) {
-        Ok(_) => Ok(()),
-        Err(e) => Err(format!("Failed to send email: {}", e)),
-    }
+/// Obtiene todos los reportes
+#[tauri::command]
+pub async fn get_all_reportes(pool: State<'_, SqlitePool>) -> Result<ReporteListResponse, String> {
+    email_service::get_all_reportes(&pool).await
+}
+
+/// Obtiene un reporte por ID
+#[tauri::command]
+pub async fn get_reporte(pool: State<'_, SqlitePool>, id: String) -> Result<ReporteResponse, String> {
+    email_service::get_reporte_by_id(&pool, &id).await
+}
+
+/// Obtiene reportes filtrados por tipo
+#[tauri::command]
+pub async fn get_reportes_by_tipo(
+    pool: State<'_, SqlitePool>,
+    tipo: String,
+) -> Result<Vec<ReporteResponse>, String> {
+    email_service::get_reportes_by_tipo(&pool, &tipo).await
+}
+
+/// Reintenta el envio de un reporte fallido
+#[tauri::command]
+pub async fn retry_reporte(
+    pool: State<'_, SqlitePool>,
+    id: String,
+) -> Result<ReporteResponse, String> {
+    email_service::reintentar_envio(&pool, &id).await
 }

@@ -14,9 +14,7 @@
     Settings,
     LogOut,
     HardHat,
-    Info, // Added Info icon
   } from "lucide-svelte";
-  import { goto } from "$app/navigation"; // Added goto import
 
   // Componentes
   import SidebarIcon from "./SidebarIcon.svelte";
@@ -68,12 +66,6 @@
       label: "Configuración",
       panelComponent: SettingsPanel,
       role: ["admin"],
-    },
-    {
-      id: "about",
-      icon: Info,
-      label: "Acerca de",
-      action: () => goto("/about"),
     },
   ];
 

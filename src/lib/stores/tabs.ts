@@ -153,6 +153,74 @@ export function closeAllTabs(force: boolean = false): boolean {
 }
 
 /**
+ * Cierra todos los tabs excepto el especificado
+ *
+ * @param id - ID del tab a mantener abierto
+ * @param force - Si es true, cierra sin confirmación
+ * @returns true si se cerraron los tabs, false si se canceló
+ */
+export function closeOtherTabs(id: string, force: boolean = false): boolean {
+  const tabs = get(tabsStorePersisted);
+  const tabsToClose = tabs.filter(t => t.id !== id);
+  const dirtyTabs = tabsToClose.filter(t => t.isDirty);
+
+  if (dirtyTabs.length > 0 && !force) {
+    const tabWord = dirtyTabs.length === 1 ? 'tab tiene' : 'tabs tienen';
+    const confirmed = confirm(
+      `${dirtyTabs.length} ${tabWord} cambios sin guardar. ¿Cerrar de todos modos?`
+    );
+    if (!confirmed) {
+      return false;
+    }
+  }
+
+  const tabToKeep = tabs.find(t => t.id === id);
+  if (tabToKeep) {
+    tabsStorePersisted.set([tabToKeep]);
+    activeTabId.set(id);
+  }
+  return true;
+}
+
+/**
+ * Cierra todos los tabs a la derecha del especificado
+ *
+ * @param id - ID del tab de referencia
+ * @param force - Si es true, cierra sin confirmación
+ * @returns true si se cerraron los tabs, false si se canceló
+ */
+export function closeTabsToRight(id: string, force: boolean = false): boolean {
+  const tabs = get(tabsStorePersisted);
+  const tabIndex = tabs.findIndex(t => t.id === id);
+
+  if (tabIndex === -1) return false;
+
+  const tabsToClose = tabs.slice(tabIndex + 1);
+  const dirtyTabs = tabsToClose.filter(t => t.isDirty);
+
+  if (dirtyTabs.length > 0 && !force) {
+    const tabWord = dirtyTabs.length === 1 ? 'tab tiene' : 'tabs tienen';
+    const confirmed = confirm(
+      `${dirtyTabs.length} ${tabWord} cambios sin guardar. ¿Cerrar de todos modos?`
+    );
+    if (!confirmed) {
+      return false;
+    }
+  }
+
+  const tabsToKeep = tabs.slice(0, tabIndex + 1);
+  tabsStorePersisted.set(tabsToKeep);
+
+  // Si el tab activo fue cerrado, activar el tab de referencia
+  const currentActive = get(activeTabId);
+  if (!tabsToKeep.find(t => t.id === currentActive)) {
+    activeTabId.set(id);
+  }
+
+  return true;
+}
+
+/**
  * Marca un tab como modificado (dirty)
  * 
  * @param id - ID del tab
