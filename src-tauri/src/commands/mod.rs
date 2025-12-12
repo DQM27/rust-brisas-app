@@ -2,6 +2,7 @@ pub mod backup;
 
 pub mod config_commands;
 pub mod contratista_commands;
+pub mod email_commands; // ✅ ADD
 pub mod empresa_commands;
 pub mod entrada_commands;
 pub mod export_commands;
@@ -15,7 +16,7 @@ pub mod search_commands;
 pub mod shortcuts_commands;
 pub mod templates;
 pub mod user_commands;
-pub mod vehiculo_commands; // ✅ ADD
+pub mod vehiculo_commands;
 pub mod window_commands;
 #[macro_use]
 pub mod handlers;
