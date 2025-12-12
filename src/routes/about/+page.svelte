@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, Mail, AlertTriangle, Loader2 } from "lucide-svelte";
+  import { Check, Mail, Info, Loader2, Link } from "lucide-svelte";
   import { invoke } from "@tauri-apps/api/core";
   import { toast } from "svelte-5-french-toast";
 
@@ -50,175 +50,159 @@
   }
 </script>
 
-<div class="p-6 max-w-4xl mx-auto space-y-8">
+<div
+  class="p-6 max-w-5xl mx-auto space-y-8 font-sans text-gray-900 dark:text-gray-100"
+>
   <!-- Header Section -->
-  <div class="text-center space-y-4">
-    <h1
-      class="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"
-    >
-      Acerca de Brisas App
-    </h1>
-    <p class="text-surface-content/70 max-w-2xl mx-auto text-lg">
-      Tu herramienta integral para la gestión y control de accesos.
+  <div class="text-center space-y-4 mb-10">
+    <h1 class="text-4xl font-extrabold tracking-tight">Acerca de Brisas App</h1>
+    <p class="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+      Gestión integral de accesos y control de contratistas.
     </p>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-    <!-- Info Card -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+    <!-- Info Card (GitHub Box Style) -->
     <div
-      class="h-full border border-surface-200/50 dark:border-surface-700/50 shadow-lg backdrop-blur-sm bg-surface-100/50 dark:bg-surface-800/20 rounded-xl overflow-hidden"
+      class="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0d1117] shadow-sm overflow-hidden"
     >
-      <div class="p-6 space-y-6">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="p-3 rounded-xl bg-primary/10 text-primary">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="lucide lucide-info"
+      <!-- Header -->
+      <div
+        class="bg-gray-50 dark:bg-[#161b22] px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2"
+      >
+        <Info class="w-4 h-4 text-gray-500" />
+        <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100">
+          Información del Sistema
+        </h3>
+      </div>
+
+      <!-- Body -->
+      <div class="p-4 space-y-4 text-sm">
+        <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
+          Brisas App es una plataforma robusta construida con tecnologías de
+          alto rendimiento para garantizar la eficiencia operativa.
+        </p>
+
+        <div
+          class="border rounded-md border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700"
+        >
+          <div class="flex justify-between items-center px-3 py-2">
+            <span class="text-gray-500 dark:text-gray-400 font-medium"
+              >Versión</span
             >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" x2="12" y1="16" y2="12" />
-              <line x1="12" x2="12.01" y1="8" y2="8" />
-            </svg>
+            <span
+              class="bg-gray-100 dark:bg-[#21262d] text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full text-xs font-mono border border-gray-200 dark:border-gray-600"
+              >v1.2.0</span
+            >
           </div>
-          <h2
-            class="text-2xl font-semibold text-surface-900 dark:text-surface-50"
-          >
-            Información
-          </h2>
+          <div class="flex justify-between items-center px-3 py-2">
+            <span class="text-gray-500 dark:text-gray-400 font-medium"
+              >Desarrollador</span
+            >
+            <span class="text-gray-900 dark:text-gray-100 font-semibold"
+              >Fempro Brisas</span
+            >
+          </div>
+          <div class="flex justify-between items-center px-3 py-2">
+            <span class="text-gray-500 dark:text-gray-400 font-medium"
+              >Stack</span
+            >
+            <span class="text-[#0969da] dark:text-[#58a6ff]"
+              >Rust • Tauri • Svelte</span
+            >
+          </div>
         </div>
 
-        <div class="space-y-4 text-surface-content/80">
-          <p>
-            Brisas App es una solución moderna diseñada para optimizar el
-            control de acceso y la seguridad en el residencial.
-          </p>
-
-          <div
-            class="py-4 border-t border-b border-surface-200 dark:border-surface-700"
-          >
-            <div class="flex justify-between items-center py-2">
-              <span class="font-medium">Versión</span>
-              <span
-                class="px-2 py-1 rounded-md bg-surface-200 dark:bg-surface-700 text-sm font-mono"
-                >v1.2.0</span
-              >
-            </div>
-            <div class="flex justify-between items-center py-2">
-              <span class="font-medium">Desarrollado por</span>
-              <span>Fempro Brisas</span>
-            </div>
-            <div class="flex justify-between items-center py-2">
-              <span class="font-medium">Tecnología</span>
-              <span class="text-accent">Rust + Svelte + Tauri</span>
-            </div>
-          </div>
-
-          <p class="text-sm italic opacity-70">
-            "Seguridad y eficiencia en un solo lugar."
-          </p>
+        <div class="text-xs text-center text-gray-400 pt-2 italic">
+          "Seguridad sin compromisos"
         </div>
       </div>
     </div>
 
-    <!-- Feedback Form Card -->
+    <!-- Feedback Form Card (GitHub Box Style) -->
     <div
-      class="h-full border border-surface-200/50 dark:border-surface-700/50 shadow-lg backdrop-blur-sm bg-surface-100/50 dark:bg-surface-800/20 rounded-xl"
+      class="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0d1117] shadow-sm"
     >
-      <div class="p-6 space-y-6">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="p-3 rounded-xl bg-accent/10 text-accent">
-            <Mail />
-          </div>
-          <h2
-            class="text-2xl font-semibold text-surface-900 dark:text-surface-50"
-          >
-            Buzón de Sugerencias
-          </h2>
-        </div>
+      <!-- Header -->
+      <div
+        class="bg-gray-50 dark:bg-[#161b22] px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2"
+      >
+        <Mail class="w-4 h-4 text-gray-500" />
+        <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100">
+          Contactar Soporte
+        </h3>
+      </div>
 
-        <p class="text-sm text-surface-content/70 mb-4">
-          Tu opinión es importante. Envíanos tus sugerencias, reportes de
-          errores o comentarios de forma anónima o con contacto.
-        </p>
-
+      <!-- Body -->
+      <div class="p-4">
         <form class="space-y-4" on:submit|preventDefault={handleSubmit}>
-          <!-- Subject -->
-          <div class="space-y-2 relative">
+          <!-- Subject Dropdown -->
+          <div class="space-y-1 relative">
             <label
               for="subject"
-              class="text-sm font-medium text-surface-700 dark:text-surface-300"
+              class="block text-xs font-semibold text-gray-900 dark:text-gray-100"
               >Asunto</label
             >
 
             <button
               type="button"
-              class="w-full px-4 py-2.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 text-left text-sm flex justify-between items-center focus:ring-2 focus:ring-primary/50 outline-none transition-all group"
+              class="w-full text-left bg-white dark:bg-[#0d1117] border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm shadow-sm hover:bg-gray-50 dark:hover:bg-[#161b22] focus:outline-none focus:ring-2 focus:ring-[#0969da] dark:focus:ring-[#58a6ff] focus:border-[#0969da] dark:focus:border-[#58a6ff] transition-all flex justify-between items-center group"
               on:click={() => {
-                const el = document.getElementById("subject-dropdown");
-                if (el) {
-                  el.classList.toggle("hidden");
-                  // Optional: handle overlay
-                }
+                document
+                  .getElementById("gh-dropdown")
+                  ?.classList.toggle("hidden");
               }}
             >
               <span
                 class={!subject
-                  ? "text-surface-400"
-                  : "text-surface-900 dark:text-surface-50"}
+                  ? "text-gray-500"
+                  : "text-gray-900 dark:text-gray-100"}
               >
-                {subject || "Selecciona un asunto..."}
+                {subject || "Selecciona una opción"}
               </span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
+                class="h-4 w-4 text-gray-500 group-focus:text-[#0969da] dark:group-focus:text-[#58a6ff]"
                 fill="none"
+                viewBox="0 0 24 24"
                 stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="lucide lucide-chevron-down text-surface-400 transition-transform group-focus:rotate-180"
               >
-                <path d="m6 9 6 6 6-6" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </button>
 
-            <!-- Dropdown Menu -->
+            <!-- GitHub Style Menu -->
             <!-- svelte-ignore a11y-click-events-have-key-events -->
             <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
             <div
-              id="subject-dropdown"
-              class="hidden absolute z-50 mt-1 w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+              id="gh-dropdown"
+              class="hidden absolute right-0 left-0 z-10 mt-1 origin-top-right bg-white dark:bg-[#161b22] border border-gray-200 dark:border-gray-700 rounded-md shadow-lg outline-none max-h-60 overflow-y-auto"
             >
-              <div class="py-1 max-h-60 overflow-auto custom-scrollbar">
+              <div class="py-1">
                 {#each subjects as s}
                   <div
-                    class="px-4 py-2.5 text-sm cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors flex items-center justify-between
-                      {subject === s
-                      ? 'text-primary font-medium bg-primary/5'
-                      : 'text-surface-600 dark:text-surface-300'}"
-                    on:click|stopPropagation={() => {
+                    class="px-4 py-2 text-sm hover:bg-[#0969da] hover:text-white dark:hover:bg-[#1f6feb] dark:hover:text-white cursor-pointer flex items-center group/item transition-colors
+                    {subject === s
+                      ? 'text-gray-900 dark:text-gray-100 font-semibold bg-gray-50 dark:bg-gray-800'
+                      : 'text-gray-700 dark:text-gray-300'}"
+                    on:click={() => {
                       subject = s;
                       document
-                        .getElementById("subject-dropdown")
+                        .getElementById("gh-dropdown")
                         ?.classList.add("hidden");
                     }}
-                    role="option"
-                    aria-selected={subject === s}
                   >
-                    {s}
                     {#if subject === s}
-                      <Check class="w-4 h-4" />
+                      <Check class="w-4 h-4 mr-2" />
+                    {:else}
+                      <div class="w-4 h-4 mr-2"></div>
                     {/if}
+                    {s}
                   </div>
                 {/each}
               </div>
@@ -226,52 +210,50 @@
           </div>
 
           <!-- Message -->
-          <div class="space-y-2">
+          <div class="space-y-1">
             <label
               for="message"
-              class="text-sm font-medium text-surface-700 dark:text-surface-300"
+              class="block text-xs font-semibold text-gray-900 dark:text-gray-100"
               >Mensaje</label
             >
             <textarea
               id="message"
               bind:value={message}
-              rows="4"
-              placeholder="Escribe tu mensaje aquí..."
-              class="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 focus:ring-2 focus:ring-primary/50 outline-none transition-all resize-none"
+              rows="5"
+              class="w-full bg-white dark:bg-[#0d1117] border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#0969da] dark:focus:ring-[#58a6ff] focus:border-[#0969da] dark:focus:border-[#58a6ff] resize-none placeholder-gray-400"
+              placeholder="Describe tu sugerencia o problema..."
             ></textarea>
           </div>
 
-          <!-- Contact Info (Optional) -->
-          <div class="space-y-2">
+          <!-- Contact -->
+          <div class="space-y-1">
             <label
               for="contact"
-              class="text-sm font-medium text-surface-700 dark:text-surface-300"
+              class="block text-xs font-semibold text-gray-900 dark:text-gray-100"
+              >Contacto <span class="text-gray-500 font-normal">(Opcional)</span
+              ></label
             >
-              Contacto (Opcional)
-            </label>
             <input
               type="text"
               id="contact"
               bind:value={contactInfo}
-              placeholder="Email o teléfono (si deseas respuesta)"
-              class="w-full px-4 py-2 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 focus:ring-2 focus:ring-primary/50 outline-none transition-all"
+              class="w-full bg-white dark:bg-[#0d1117] border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#0969da] dark:focus:ring-[#58a6ff] focus:border-[#0969da] dark:focus:border-[#58a6ff] placeholder-gray-400"
+              placeholder="ejemplo@correo.com"
             />
           </div>
 
+          <!-- Submit -->
           <div class="pt-2">
             <button
               type="submit"
-              class="w-full py-2.5 font-medium flex justify-center items-center gap-2 group bg-primary text-black dark:text-white rounded-lg hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
               disabled={isSending}
+              class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#2da44e] hover:bg-[#2c974b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2da44e] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {#if isSending}
-                <Loader2 class="animate-spin w-5 h-5" />
-                <span>Enviando...</span>
+                <Loader2 class="animate-spin w-4 h-4 mr-2" />
+                Enviando...
               {:else}
-                <span>Enviar Sugerencia</span>
-                <Check
-                  class="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                />
+                Enviar Comentario
               {/if}
             </button>
           </div>

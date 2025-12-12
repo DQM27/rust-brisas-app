@@ -1,3 +1,4 @@
+use lettre::message::header::ContentType; // ✅ Import ContentType
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{Message, SmtpTransport, Transport};
 use std::env;
@@ -40,6 +41,7 @@ pub async fn send_suggestion(
             .parse::<lettre::message::Mailbox>()
             .map_err(|e| e.to_string())?)
         .subject(format!("Brisas App Feedback: {}", subject))
+        .header(ContentType::TEXT_PLAIN) // ✅ Explicit Content-Type
         .body(email_body)
         .map_err(|e| e.to_string())?;
 
