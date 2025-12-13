@@ -150,6 +150,15 @@
     }
   });
 
+  // Reactivity for columnDefs
+  $effect(() => {
+    if (gridApi && columnDefs) {
+      gridApi.setGridOption("columnDefs", columnDefs);
+      // Optional: autosize columns after change to ensure fit
+      // gridApi.autoSizeAllColumns();
+    }
+  });
+
   // Persistencia de columnas
   function saveColumnState(api: GridApi = gridApi!) {
     if (!api || !persistenceKey || isRestoring || !canSaveState) return;

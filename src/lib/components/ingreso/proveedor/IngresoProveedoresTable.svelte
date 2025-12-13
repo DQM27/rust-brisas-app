@@ -55,6 +55,7 @@
         ingresos = await ingresoProveedorService.getActivos();
       } else {
         ingresos = await ingresoProveedorService.getHistorial();
+        console.log("Datos HISTORIAL cargados:", ingresos);
       }
     } catch (e) {
       console.error(e);
