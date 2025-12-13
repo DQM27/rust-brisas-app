@@ -15,10 +15,11 @@ export type ServiceResult<T> = {
  */
 export async function resolverAlerta(
     alertaId: string,
-    notas?: string
+    notas?: string,
+    usuarioId?: string
 ): Promise<ServiceResult<AlertaGafeteResponse>> {
     try {
-        const data = await alertaGafete.resolver(alertaId, notas);
+        const data = await alertaGafete.resolver(alertaId, notas, usuarioId);
         return { ok: true, data };
     } catch (error) {
         return {

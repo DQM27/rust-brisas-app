@@ -3,6 +3,7 @@
 // ==========================================
 // Orquesta dominio y DB - Lógica de negocio completa
 
+use crate::db::alerta_gafete_queries as alerta_db;
 use crate::db::gafete_queries as db;
 use crate::domain::gafete as domain;
 use crate::models::gafete::{
@@ -100,13 +101,26 @@ pub async fn get_gafete(
     let mut response = GafeteResponse::from(gafete.clone());
 
     // Obtener detalles de la alerta si existe
-    if let Ok(Some((alerta_id, fecha, nombre, resuelto))) =
-        db::get_recent_alert_for_gafete_typed(pool, numero, tipo).await
+    if let Ok(Some((
+        alerta_id,
+        fecha,
+        nombre,
+        resuelto,
+        reporte_por,
+        resuelto_por,
+        fecha_res,
+        notas,
+    ))) = db::get_recent_alert_for_gafete_typed(pool, numero, tipo).await
     {
         response.alerta_id = Some(alerta_id);
         response.fecha_perdido = Some(fecha);
         response.quien_perdio = Some(nombre);
         response.alerta_resuelta = Some(resuelto);
+
+        response.reportado_por_nombre = reporte_por;
+        response.resuelto_por_nombre = resuelto_por;
+        response.fecha_resolucion = fecha_res;
+        response.notas = notas;
     }
 
     // Determinar estado global (status) considerando estado físico + uso + alertas
@@ -154,13 +168,25 @@ pub async fn get_all_gafetes(pool: &SqlitePool) -> Result<GafeteListResponse, St
         let mut response = GafeteResponse::from(gafete.clone());
 
         // Obtener detalles de la alerta si existe
-        if let Ok(Some((alerta_id, fecha, nombre, resuelto))) =
-            db::get_recent_alert_for_gafete_typed(pool, &response.numero, tipo_str).await
+        if let Ok(Some((
+            alerta_id,
+            fecha,
+            nombre,
+            resuelto,
+            reporte_por,
+            resuelto_por,
+            fecha_res,
+            notas,
+        ))) = db::get_recent_alert_for_gafete_typed(pool, &response.numero, tipo_str).await
         {
             response.alerta_id = Some(alerta_id);
             response.fecha_perdido = Some(fecha);
             response.quien_perdio = Some(nombre);
             response.alerta_resuelta = Some(resuelto);
+            response.reportado_por_nombre = reporte_por;
+            response.resuelto_por_nombre = resuelto_por;
+            response.fecha_resolucion = fecha_res;
+            response.notas = notas;
         }
 
         // Determinar status
@@ -342,6 +368,7 @@ pub async fn update_gafete_status(
     numero: String,
     tipo: String,
     estado: GafeteEstado,
+    usuario_id: Option<String>,
 ) -> Result<GafeteResponse, String> {
     // Validar estado (Implícita por tipo)
 
@@ -351,6 +378,28 @@ pub async fn update_gafete_status(
     let now = Utc::now().to_rfc3339();
     // Idem: db::update_status debe recibir tipo.
     db::update_status(pool, &numero, &tipo, estado.as_str(), &now).await?;
+
+    // Si el estado es "Activo", resolver alertas pendientes
+    if estado == GafeteEstado::Activo {
+        if let Ok(true) = db::has_unresolved_alert_typed(pool, &numero, &tipo).await {
+            // Buscar la alerta pendiente
+            if let Ok(Some((id, _, _, _, _, _, _, _))) =
+                db::get_recent_alert_for_gafete_typed(pool, &numero, &tipo).await
+            {
+                // Resolverla
+                let resolver_id = usuario_id.unwrap_or_else(|| "sistema".to_string());
+                alerta_db::resolver(
+                    pool,
+                    &id,
+                    &now,
+                    Some("Gafete marcado como activo manualmente"),
+                    &resolver_id,
+                    &now,
+                )
+                .await?;
+            }
+        }
+    }
 
     get_gafete(pool, &numero, &tipo).await
 }

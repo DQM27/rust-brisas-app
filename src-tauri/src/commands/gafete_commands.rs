@@ -74,8 +74,9 @@ pub async fn update_gafete_status(
     numero: String,
     tipo: String,
     input: UpdateGafeteStatusInput,
+    usuario_id: Option<String>,
 ) -> Result<GafeteResponse, String> {
-    gafete_service::update_gafete_status(&pool, numero, tipo, input.estado).await
+    gafete_service::update_gafete_status(&pool, numero, tipo, input.estado, usuario_id).await
 }
 
 #[tauri::command]

@@ -141,10 +141,17 @@ pub struct GafeteResponse {
     pub esta_disponible: bool,
     pub status: String, // "disponible", "en_uso", "perdido", "danado", "extraviado"
     // Información de alerta (si está perdido)
-    pub alerta_id: Option<String>, // UUID de la alerta
-    pub fecha_perdido: Option<String>,
-    pub quien_perdio: Option<String>,
+    pub alerta_id: Option<String>,     // UUID de la alerta
+    pub fecha_perdido: Option<String>, // Maps to fecha_reporte
+    pub quien_perdio: Option<String>,  // Nombre de quien la perdió (contratista/proveedor)
     pub alerta_resuelta: Option<bool>,
+
+    // Detailed info fields
+    pub reportado_por_nombre: Option<String>,
+    pub resuelto_por_nombre: Option<String>,
+    pub fecha_resolucion: Option<String>,
+    pub notas: Option<String>,
+
     pub created_at: String,
     pub updated_at: String,
 }
@@ -162,6 +169,10 @@ impl From<Gafete> for GafeteResponse {
             fecha_perdido: None,
             quien_perdio: None,
             alerta_resuelta: None,
+            reportado_por_nombre: None,
+            resuelto_por_nombre: None,
+            fecha_resolucion: None,
+            notas: None,
             created_at: g.created_at,
             updated_at: g.updated_at,
         }

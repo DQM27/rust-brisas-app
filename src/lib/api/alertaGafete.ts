@@ -7,12 +7,14 @@ export const alertaGafete = {
      */
     resolver: async (
         alertaId: string,
-        notas?: string
+        notas?: string,
+        usuarioId?: string
     ): Promise<AlertaGafeteResponse> => {
         return await invoke("resolver_alerta_gafete", {
             input: {
                 alertaId,
                 notas,
+                usuarioId,
             },
         });
     },

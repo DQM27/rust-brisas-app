@@ -58,6 +58,10 @@ export interface GafeteResponse {
     fechaPerdido?: string;
     quienPerdio?: string;
     alertaResuelta?: boolean;
+    reportadoPorNombre?: string;
+    resueltoPorNombre?: string;
+    fechaResolucion?: string;
+    notas?: string;
     createdAt: string;
     updatedAt: string;
 }

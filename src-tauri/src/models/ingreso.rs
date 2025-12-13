@@ -338,6 +338,7 @@ pub struct AlertaGafete {
     pub fecha_reporte: String,
     pub resuelto: bool,
     pub fecha_resolucion: Option<String>,
+    pub resuelto_por: Option<String>,
     pub notas: Option<String>,
     pub reportado_por: String,
     pub created_at: String,
@@ -349,6 +350,7 @@ pub struct AlertaGafete {
 pub struct ResolverAlertaInput {
     pub alerta_id: String,
     pub notas: Option<String>,
+    pub usuario_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

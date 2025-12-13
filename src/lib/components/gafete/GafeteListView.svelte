@@ -9,8 +9,10 @@
 
   import * as gafeteService from "$lib/logic/gafete/gafeteService";
   import * as alertaGafeteService from "$lib/logic/alertaGafete/alertaGafeteService";
+
   import type { GafeteResponse } from "$lib/types/gafete";
   import { Plus } from "lucide-svelte";
+  import { currentUser } from "$lib/stores/auth";
   import GafeteForm from "./GafeteForm.svelte";
   import ResolveAlertModal from "./ResolveAlertModal.svelte";
   import BulkCreateGafeteModal from "./BulkCreateGafeteModal.svelte";
@@ -174,13 +176,43 @@
       headerName: "Fecha Perdido",
       sortable: true,
       filter: true,
-      width: 150,
-      valueFormatter: (params) => {
-        if (!params.value) return "-";
-        const date = new Date(params.value);
-        return date.toLocaleDateString("es-ES");
+      width: 130,
+      valueFormatter: (params: any) => {
+        if (!params.value) return "";
+        return new Date(params.value).toLocaleString();
       },
-      hide: true, // Ocultar por defecto para limpiar vista
+    },
+    {
+      field: "reportadoPorNombre",
+      headerName: "Reportado Por",
+      sortable: true,
+      filter: true,
+      width: 150,
+    },
+    {
+      field: "resueltoPorNombre",
+      headerName: "Resuelto Por",
+      sortable: true,
+      filter: true,
+      width: 150,
+    },
+    {
+      field: "fechaResolucion",
+      headerName: "Fecha Resolución",
+      sortable: true,
+      filter: true,
+      width: 160,
+      valueFormatter: (params: any) => {
+        if (!params.value) return "";
+        return new Date(params.value).toLocaleString();
+      },
+    },
+    {
+      field: "notas", // Notas de la alerta
+      headerName: "Notas Alerta",
+      sortable: true,
+      filter: true,
+      width: 200,
     },
 
     // ========= ACCIONES =========
@@ -246,11 +278,11 @@
         if (event.target.classList.contains("resolve-btn")) {
           handleResolve(data);
         } else if (event.target.classList.contains("recover-btn")) {
-          changeStatus(data.numero, data.tipo, "activo");
+          changeStatus(data, "disponible"); // Changed from "activo" to "disponible"
         } else if (event.target.classList.contains("lost-btn")) {
-          changeStatus(data.numero, data.tipo, "extraviado");
+          changeStatus(data, "extraviado");
         } else if (event.target.classList.contains("damage-btn")) {
-          changeStatus(data.numero, data.tipo, "danado");
+          changeStatus(data, "danado");
         } else if (event.target.classList.contains("delete-btn")) {
           handleDelete(data);
         }
@@ -297,19 +329,29 @@
     showResolveModal = true;
   }
 
-  async function changeStatus(
-    numero: string,
-    tipo: string,
-    nuevoEstado: string,
-  ) {
-    if (!confirm(`¿Cambiar estado a ${nuevoEstado.toUpperCase()}?`)) return;
-
-    const result = await gafeteService.updateStatus(numero, tipo, nuevoEstado);
-    if (result.ok) {
-      toast.success(`Estado actualizado a ${nuevoEstado}`);
-      loadGafetes();
-    } else {
-      toast.error(result.error);
+  async function changeStatus(data: GafeteResponse, newStatus: string) {
+    try {
+      if (!data) return;
+      loading = true;
+      const userId = $currentUser?.id;
+      // Pass userId to capture who resolved the alert (if applicable)
+      const result = await gafeteService.updateStatus(
+        data.numero,
+        data.tipo,
+        newStatus,
+        userId,
+      );
+      if (result.ok) {
+        toast.success(`Estado actualizado a ${newStatus}`);
+        await loadGafetes();
+      } else {
+        toast.error(result.error);
+      }
+    } catch (error: any) {
+      console.error("Error changing status:", error);
+      toast.error(error.message || "Error al cambiar el estado del gafete.");
+    } finally {
+      loading = false;
     }
   }
 
@@ -321,9 +363,11 @@
 
     formLoading = true;
 
+    const userId = $currentUser?.id;
     const result = await alertaGafeteService.resolverAlerta(
       selectedAlertGafete.alertaId,
       `${notas} - Fecha de devolución/pago: ${fechaDevolucion}`,
+      userId,
     );
 
     if (result.ok) {

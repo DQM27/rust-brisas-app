@@ -15,7 +15,7 @@ pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<AlertaGafete, Str
     let row = sqlx::query(
         "SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
                 ingreso_contratista_id, ingreso_proveedor_id,
-                fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por,
+                fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por, resuelto_por,
                 created_at, updated_at
          FROM alertas_gafetes WHERE id = ?",
     )
@@ -35,7 +35,7 @@ pub async fn find_pendientes_by_cedula(
     let rows = sqlx::query(
         "SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
                 ingreso_contratista_id, ingreso_proveedor_id,
-                fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por,
+                fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por, resuelto_por,
                 created_at, updated_at
          FROM alertas_gafetes WHERE cedula = ? AND resuelto = 0 ORDER BY fecha_reporte DESC",
     )
@@ -57,7 +57,7 @@ pub async fn find_all(
         sqlx::query(
             "SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
                     ingreso_contratista_id, ingreso_proveedor_id,
-                    fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por,
+                    fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por, resuelto_por,
                     created_at, updated_at
              FROM alertas_gafetes WHERE resuelto = ? ORDER BY fecha_reporte DESC",
         )
@@ -68,7 +68,7 @@ pub async fn find_all(
         sqlx::query(
             "SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
                     ingreso_contratista_id, ingreso_proveedor_id,
-                    fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por,
+                    fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por, resuelto_por,
                     created_at, updated_at
              FROM alertas_gafetes ORDER BY fecha_reporte DESC",
         )
@@ -133,6 +133,7 @@ pub async fn resolver(
     id: &str,
     fecha_resolucion: &str,
     notas: Option<&str>,
+    usuario_id: &str, // ID del usuario que resuelve
     updated_at: &str,
 ) -> Result<(), String> {
     sqlx::query(
@@ -140,11 +141,13 @@ pub async fn resolver(
             resuelto = 1,
             fecha_resolucion = ?,
             notas = COALESCE(?, notas),
+            resuelto_por = ?,
             updated_at = ?
         WHERE id = ?"#,
     )
     .bind(fecha_resolucion)
     .bind(notas)
+    .bind(usuario_id)
     .bind(updated_at)
     .bind(id)
     .execute(pool)
@@ -185,6 +188,7 @@ fn row_to_alerta(row: sqlx::sqlite::SqliteRow) -> AlertaGafete {
         fecha_resolucion: row.get("fecha_resolucion"),
         notas: row.get("notas"),
         reportado_por: row.get("reportado_por"),
+        resuelto_por: row.get("resuelto_por"),
         created_at: row.get("created_at"),
         updated_at: row.get("updated_at"),
     }

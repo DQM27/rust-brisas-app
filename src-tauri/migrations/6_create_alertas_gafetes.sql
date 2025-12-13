@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS alertas_gafetes (
     fecha_reporte TEXT NOT NULL,
     resuelto INTEGER DEFAULT 0,  -- 0 = pendiente, 1 = resuelto
     fecha_resolucion TEXT,
-    
+    resuelto_por TEXT,           -- ID del usuario que resolvió
+
     -- Observaciones
     notas TEXT,
     
@@ -37,7 +38,8 @@ CREATE TABLE IF NOT EXISTS alertas_gafetes (
     -- Foreign Keys
     FOREIGN KEY (ingreso_contratista_id) REFERENCES ingresos(id),
     FOREIGN KEY (ingreso_proveedor_id) REFERENCES ingresos_proveedores(id),
-    FOREIGN KEY (reportado_por) REFERENCES users(id)
+    FOREIGN KEY (reportado_por) REFERENCES users(id),
+    FOREIGN KEY (resuelto_por) REFERENCES users(id)
 );
 
 -- Indices

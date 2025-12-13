@@ -393,12 +393,34 @@ pub async fn get_recent_alert_for_gafete_typed(
     pool: &SqlitePool,
     numero: &str,
     tipo: &str,
-) -> Result<Option<(String, String, String, bool)>, String> {
+) -> Result<
+    Option<(
+        String,
+        String,
+        String,
+        bool,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    )>,
+    String,
+> {
     let row = sqlx::query(
-        "SELECT ag.id, ag.fecha_reporte, ag.nombre_completo, ag.resuelto 
+        "SELECT 
+            ag.id, 
+            ag.fecha_reporte, 
+            ag.nombre_completo, 
+            ag.resuelto,
+            u_rep.nombre || ' ' || u_rep.apellido as reporter_name,
+            u_res.nombre || ' ' || u_res.apellido as resolver_name,
+            ag.fecha_resolucion,
+            ag.notas
          FROM alertas_gafetes ag
          LEFT JOIN ingresos i ON ag.ingreso_contratista_id = i.id
          LEFT JOIN ingresos_proveedores ip ON ag.ingreso_proveedor_id = ip.id
+         LEFT JOIN users u_rep ON ag.reportado_por = u_rep.id
+         LEFT JOIN users u_res ON ag.resuelto_por = u_res.id
          WHERE ag.gafete_numero = ? 
          AND (
             ( ? = 'proveedor' AND ag.ingreso_proveedor_id IS NOT NULL )
@@ -422,6 +444,10 @@ pub async fn get_recent_alert_for_gafete_typed(
             r.get("fecha_reporte"),
             r.get("nombre_completo"),
             resuelto_int != 0,
+            r.get("reporter_name"),
+            r.get("resolver_name"),
+            r.get("fecha_resolucion"),
+            r.get("notas"),
         )
     }))
 }

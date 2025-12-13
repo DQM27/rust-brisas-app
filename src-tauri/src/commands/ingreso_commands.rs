@@ -131,7 +131,16 @@ pub async fn resolver_alerta_gafete(
     input: ResolverAlertaInput,
 ) -> Result<AlertaGafeteResponse, String> {
     let now = Utc::now().to_rfc3339();
-    alerta_db::resolver(&pool, &input.alerta_id, &now, input.notas.as_deref(), &now).await?;
+    let resolver_id = input.usuario_id.unwrap_or_else(|| "sistema".to_string());
+    alerta_db::resolver(
+        &pool,
+        &input.alerta_id,
+        &now,
+        input.notas.as_deref(),
+        &resolver_id,
+        &now,
+    )
+    .await?;
 
     let alerta = alerta_db::find_by_id(&pool, &input.alerta_id).await?;
     Ok(AlertaGafeteResponse::from(alerta))

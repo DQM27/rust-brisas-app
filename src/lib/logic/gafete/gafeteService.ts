@@ -163,12 +163,18 @@ export async function isDisponible(numero: string, tipo: string): Promise<Servic
 /**
  * Actualizar estado del gafete
  */
-export async function updateStatus(numero: string, tipo: string, estado: string): Promise<ServiceResult<GafeteResponse>> {
+export async function updateStatus(
+    numero: string,
+    tipo: string,
+    estado: string,
+    usuarioId?: string
+): Promise<ServiceResult<GafeteResponse>> {
     try {
-        const data = await gafete.updateStatus(numero, tipo, estado);
+        const data = await gafete.updateStatus(numero, tipo, estado, usuarioId);
         return { ok: true, data };
     } catch (err: any) {
         console.error('Error al actualizar estado del gafete:', err);
         return { ok: false, error: parseError(err) };
     }
 }
+```
