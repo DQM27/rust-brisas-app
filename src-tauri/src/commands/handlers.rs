@@ -70,7 +70,14 @@ macro_rules! register_handlers {
             // COMANDOS DE INGRESO VISITAS (Nuevo Módulo)
             // ==========================================
             commands::ingreso_visita_commands::get_ingresos_visitas_activos,
+            commands::ingreso_visita_commands::get_ingresos_visitas_activos,
             commands::ingreso_visita_commands::registrar_salida_visita,
+            // ==========================================
+            // COMANDOS DE INGRESO PROVEEDORES (Nuevo Módulo)
+            // ==========================================
+            commands::ingreso_proveedor_commands::crear_ingreso_proveedor_v2,
+            commands::ingreso_proveedor_commands::get_ingresos_proveedores_activos,
+            commands::ingreso_proveedor_commands::registrar_salida_proveedor,
             // ==========================================
             // COMANDOS DE ENTRADA (Fase 1)
             // ==========================================

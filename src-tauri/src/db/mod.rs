@@ -12,6 +12,7 @@ pub mod cita_queries;
 pub mod contratista_queries;
 pub mod empresa_queries;
 pub mod gafete_queries;
+pub mod ingreso_proveedor_queries;
 pub mod ingreso_queries;
 pub mod ingreso_visita_queries;
 pub mod lista_negra_queries;

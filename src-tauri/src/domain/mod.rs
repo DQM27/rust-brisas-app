@@ -1,4 +1,5 @@
 pub mod cita;
+pub mod ingreso_proveedor;
 pub mod ingreso_visita;
 pub mod lista_negra;
 pub mod user;
