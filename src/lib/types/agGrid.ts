@@ -22,6 +22,7 @@ export type AGGridFont = 'system' | 'inter' | 'roboto' | 'source-sans';
 
 export type GridId =
   | 'contratista-list'
+  | 'proveedor-list'
   | 'lista-negra-list'
   | 'vehicles-list'
   | 'badges-list'

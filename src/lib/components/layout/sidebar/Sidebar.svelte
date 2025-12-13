@@ -14,6 +14,7 @@
     Settings,
     LogOut,
     HardHat,
+    Package,
   } from "lucide-svelte";
 
   // Componentes
@@ -26,6 +27,7 @@
   import LogsPanel from "./panels/LogsPanel.svelte";
   import SettingsPanel from "./panels/SettingsPanel.svelte";
   import ContractorsPanel from "./panels/ContractorsPanel.svelte";
+  import ProveedoresPanel from "./panels/ProveedoresPanel.svelte";
 
   // Store y tipos
   import { activePanel } from "$lib/stores/sidebar";
@@ -46,6 +48,12 @@
       icon: HardHat,
       label: "Contratistas",
       panelComponent: ContractorsPanel,
+    },
+    {
+      id: "proveedores",
+      icon: Package,
+      label: "Proveedores",
+      panelComponent: ProveedoresPanel,
     },
     {
       id: "access",

@@ -12,6 +12,8 @@ import UserListView from '$lib/components/user/UserListView.svelte';
 
 import ContratistaView from '$lib/components/contratista/ContratistaView.svelte';
 import ContratistaListView from '$lib/components/contratista/ContratistaListView.svelte';
+import ProveedorView from '$lib/components/proveedor/ProveedorView.svelte';
+import ProveedorListView from '$lib/components/proveedor/ProveedorListView.svelte';
 import ListaNegraView from '$lib/components/listaNegra/ListaNegraView.svelte';
 import ListaNegraListView from '$lib/components/listaNegra/ListaNegraListView.svelte';
 
@@ -43,6 +45,8 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   "user-register": RegisterUserView,
   'contratista': ContratistaView,
   'contratista-list': ContratistaListView,
+  'proveedor': ProveedorView,
+  'proveedor-list': ProveedorListView,
   'lista-negra': ListaNegraView,
   'lista-negra-list': ListaNegraListView,
 

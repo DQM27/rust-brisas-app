@@ -202,10 +202,10 @@
         ? [
             {
               id: "register-ingreso",
-              label: "Registrar Proveedor",
+              label: "Registrar Ingreso",
               icon: UserPlus,
               variant: "primary" as const,
-              tooltip: "Nuevo proveedor",
+              tooltip: "Registrar ingreso de proveedor",
               onClick: () => onRegisterClick?.(),
             },
           ]

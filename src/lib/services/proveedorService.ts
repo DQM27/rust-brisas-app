@@ -1,28 +1,59 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { ProveedorSnapshot } from "$lib/types/ingreso-nuevos";
 
-// Definición de tipos para la respuesta del catálogo (puede ser igual o más rica que el snapshot)
-export interface ProveedorCatalogResponse extends ProveedorSnapshot {
-    id: string; // El snapshot no tenía ID explicito, el modelo de dominio sí
+// Types matching backend models/proveedor.rs
+export interface CreateProveedorInput {
+    cedula: string;
+    nombre: string;
+    segundo_nombre?: string;
+    apellido: string;
+    segundo_apellido?: string;
+    empresa_id: string;
+    // Vehicle (optional)
+    tiene_vehiculo?: boolean;
+    tipo_vehiculo?: string;
+    placa?: string;
+    marca?: string;
+    modelo?: string;
+    color?: string;
+}
+
+export interface ProveedorResponse {
+    id: string;
+    cedula: string;
+    nombre: string;
+    segundoNombre?: string;
+    apellido: string;
+    segundoApellido?: string;
+    empresaId: string;
+    empresaNombre: string;
     estado: string;
     puedeIngresar: boolean;
+    // Vehicle
+    vehiculoTipo?: string;
+    vehiculoPlaca?: string;
+    vehiculoMarca?: string;
+    vehiculoModelo?: string;
+    vehiculoColor?: string;
+    // Timestamps
+    createdAt: string;
+    updatedAt: string;
 }
 
 export const proveedorService = {
-    async create(input: {
-        cedula: string;
-        nombre: string;
-        apellido: string;
-        empresa_id: string;
-    }): Promise<ProveedorCatalogResponse> {
+    async create(input: CreateProveedorInput): Promise<ProveedorResponse> {
         return await invoke("create_proveedor", { input });
     },
 
-    async search(query: string): Promise<ProveedorCatalogResponse[]> {
+    async search(query: string): Promise<ProveedorResponse[]> {
         return await invoke("search_proveedores_catalog", { query });
     },
 
-    async getByCedula(cedula: string): Promise<ProveedorCatalogResponse | null> {
+    async getByCedula(cedula: string): Promise<ProveedorResponse | null> {
         return await invoke("get_proveedor_by_cedula", { cedula });
+    },
+
+    async getAll(): Promise<ProveedorResponse[]> {
+        // Using search with empty string to get all
+        return await invoke("search_proveedores_catalog", { query: "" });
     }
 };
