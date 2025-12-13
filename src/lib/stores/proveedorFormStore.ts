@@ -11,7 +11,18 @@ import { validarDatosProveedor } from '$lib/logic/ingreso/proveedorService';
 // ESTADO INICIAL
 // ==========================================
 
-const initialFormData: ProveedorFormData = {
+// Extended state including validation info
+export interface ProveedorFormState extends ProveedorFormData {
+    // Estado de validación
+    proveedorId: string;
+    proveedorNombre: string;
+    proveedorData: any; // JSON data del backend
+    puedeIngresar: boolean;
+    mensajeValidacion: string;
+    vehiculoId?: string;
+}
+
+const initialFormData: ProveedorFormState = {
     cedula: '',
     nombre: '',
     apellido: '',
@@ -24,9 +35,17 @@ const initialFormData: ProveedorFormData = {
     vehiculoMarca: undefined,
     vehiculoModelo: undefined,
     vehiculoColor: undefined,
-    vehiculoTipo: 'automovil', // Default
+    vehiculoTipo: 'automovil',
     gafeteNumero: undefined,
     observaciones: undefined,
+
+    // Validation state
+    proveedorId: '',
+    proveedorNombre: '',
+    proveedorData: null,
+    puedeIngresar: false,
+    mensajeValidacion: '',
+    vehiculoId: undefined,
 };
 
 // ==========================================
@@ -34,7 +53,7 @@ const initialFormData: ProveedorFormData = {
 // ==========================================
 
 /** Datos del formulario */
-export const proveedorFormData = writable<ProveedorFormData>(initialFormData);
+export const proveedorFormData = writable<ProveedorFormState>(initialFormData);
 
 /** Indica si el formulario está siendo enviado */
 export const isSubmitting = writable<boolean>(false);
@@ -74,9 +93,9 @@ export const shouldShowPlaca = derived(
 // ==========================================
 
 /** Actualiza un campo del formulario */
-export function updateField<K extends keyof ProveedorFormData>(
+export function updateField<K extends keyof ProveedorFormState>(
     field: K,
-    value: ProveedorFormData[K]
+    value: ProveedorFormState[K]
 ) {
     proveedorFormData.update(data => ({
         ...data,
@@ -124,6 +143,56 @@ export function toggleModoIngreso(modo: 'caminando' | 'vehiculo') {
     proveedorFormData.update(data => ({
         ...data,
         modoIngreso: modo,
+        // Si cambiamos a vehículo, tratar de preservar datos si ya existían o usar seleccionado
         vehiculoPlaca: modo === 'caminando' ? undefined : data.vehiculoPlaca
     }));
+}
+
+/** Establece el proveedor validado */
+export function setProveedorValidado(data: {
+    proveedorId: string;
+    proveedorNombre: string;
+    proveedorData: any;
+    puedeIngresar: boolean;
+    mensajeValidacion: string;
+}) {
+    proveedorFormData.update(state => ({
+        ...state,
+        ...data,
+        // Pre-fill fields from provider data
+        cedula: data.proveedorData?.cedula || state.cedula,
+        nombre: data.proveedorData?.nombre || state.nombre,
+        apellido: data.proveedorData?.apellido || state.apellido,
+        empresaId: data.proveedorData?.empresa_id || state.empresaId,
+    }));
+}
+
+/** Selecciona un vehículo del catálogo */
+export function setVehiculoCatalogo(vehiculoId: string | null) {
+    proveedorFormData.update(state => {
+        if (!vehiculoId) {
+            return {
+                ...state,
+                vehiculoId: undefined,
+                vehiculoPlaca: undefined,
+                vehiculoMarca: undefined,
+                vehiculoModelo: undefined,
+                vehiculoColor: undefined
+            };
+        }
+
+        const vehiculo = state.proveedorData?.vehiculos?.find((v: any) => v.id === vehiculoId);
+        if (vehiculo) {
+            return {
+                ...state,
+                vehiculoId,
+                vehiculoPlaca: vehiculo.placa,
+                vehiculoMarca: vehiculo.marca,
+                vehiculoModelo: vehiculo.modelo,
+                vehiculoColor: vehiculo.color,
+                vehiculoTipo: vehiculo.tipo_vehiculo
+            };
+        }
+        return state;
+    });
 }

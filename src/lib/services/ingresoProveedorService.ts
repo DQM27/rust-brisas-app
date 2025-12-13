@@ -16,5 +16,9 @@ export const ingresoProveedorService = {
 
     async searchProveedores(query: string): Promise<import("$lib/types/ingreso-nuevos").ProveedorCatalogItem[]> {
         return await invoke("search_proveedores_catalog", { query });
+    },
+
+    async validarIngreso(proveedorId: string): Promise<import("$lib/types/ingreso-nuevos").ValidacionIngresoProveedorResponse> {
+        return await invoke("validar_ingreso_proveedor", { proveedorId });
     }
 };

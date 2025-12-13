@@ -75,3 +75,12 @@ export interface ProveedorCatalogItem {
     vehiculoModelo?: string;
     vehiculoColor?: string;
 }
+
+export interface ValidacionIngresoProveedorResponse {
+    puedeIngresar: boolean;
+    motivoRechazo?: string;
+    alertas: string[];
+    proveedor?: any; // JSON Value from backend
+    tieneIngresoAbierto: boolean;
+    ingresoAbierto?: IngresoProveedor;
+}

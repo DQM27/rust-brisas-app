@@ -43,3 +43,14 @@ pub async fn search_proveedores(
     let service = IngresoProveedorService::new(pool.inner().clone());
     service.search_proveedores(&query).await
 }
+
+use crate::domain::ingreso_proveedor::ValidacionIngresoProveedorResponse;
+
+#[command]
+pub async fn validar_ingreso_proveedor(
+    pool: State<'_, SqlitePool>,
+    proveedor_id: String,
+) -> Result<ValidacionIngresoProveedorResponse, String> {
+    let service = IngresoProveedorService::new(pool.inner().clone());
+    service.validar_ingreso(proveedor_id).await
+}

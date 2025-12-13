@@ -107,4 +107,67 @@ impl IngresoProveedorService {
             .await
             .map_err(|e| e.to_string())
     }
+
+    pub async fn validar_ingreso(
+        &self,
+        proveedor_id: String,
+    ) -> Result<crate::domain::ingreso_proveedor::ValidacionIngresoProveedorResponse, String> {
+        use crate::domain::ingreso_proveedor::ValidacionIngresoProveedorResponse;
+
+        // 1. Verificar ingreso abierto
+        let ingreso_abierto =
+            ingreso_proveedor_queries::find_open_by_proveedor(&self.pool, &proveedor_id)
+                .await
+                .map_err(|e| e.to_string())?;
+
+        if let Some(ingreso) = ingreso_abierto {
+            return Ok(ValidacionIngresoProveedorResponse {
+                puede_ingresar: false,
+                motivo_rechazo: Some("El proveedor ya tiene un ingreso abierto".to_string()),
+                alertas: vec![],
+                proveedor: None,
+                tiene_ingreso_abierto: true,
+                ingreso_abierto: Some(ingreso),
+            });
+        }
+
+        // 2. Obtener datos del proveedor
+        let proveedor_opt = proveedor_queries::find_by_id(&self.pool, &proveedor_id)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let proveedor = match proveedor_opt {
+            Some(p) => p,
+            None => return Err("Proveedor no encontrado".to_string()),
+        };
+
+        // 3. Obtener vehículos
+        // Necesitamos vehicular_queries::find_by_proveedor (which returns Vec<Vehiculo>)
+        let vehiculos = crate::db::vehiculo_queries::find_by_proveedor(&self.pool, &proveedor_id)
+            .await
+            .unwrap_or_default();
+
+        // 4. Construir respuesta JSON
+        let proveedor_json = serde_json::json!({
+            "id": proveedor.id,
+            "cedula": proveedor.cedula,
+            "nombre": proveedor.nombre,
+            "segundo_nombre": proveedor.segundo_nombre,
+            "apellido": proveedor.apellido,
+            "segundo_apellido": proveedor.segundo_apellido,
+            "empresa_id": proveedor.empresa_id,
+            "estado": proveedor.estado.as_str(),
+            // Incluir lista de vehículos
+            "vehiculos": vehiculos
+        });
+
+        Ok(ValidacionIngresoProveedorResponse {
+            puede_ingresar: true, // Por defecto true para proveedores (no PRAIND check yet)
+            motivo_rechazo: None,
+            alertas: vec![],
+            proveedor: Some(proveedor_json),
+            tiene_ingreso_abierto: false,
+            ingreso_abierto: None,
+        })
+    }
 }

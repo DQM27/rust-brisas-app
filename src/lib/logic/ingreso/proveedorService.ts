@@ -181,3 +181,56 @@ export function requierePlaca(modoIngreso: 'caminando' | 'vehiculo'): boolean {
 export function getLabelTipoAutorizacion(tipo: 'praind' | 'correo'): string {
     return tipo === 'praind' ? 'PRAIND' : 'Correo electrónico';
 }
+
+// ==========================================
+// VALIDACIÓN Y AUTO-SELECCIÓN (Mimic Contratista)
+// ==========================================
+
+import type { AutoSelectionResult } from '$lib/types/ingreso-form.types';
+import type { ValidacionIngresoProveedorResponse } from '$lib/types/ingreso-nuevos';
+
+export interface PrepararProveedorOutput {
+    validacion: ValidacionIngresoProveedorResponse;
+    autoSeleccion: AutoSelectionResult;
+}
+
+/**
+ * Valida al proveedor y calcula autoselección
+ */
+export async function validarProveedor(proveedorId: string): Promise<PrepararProveedorOutput> {
+    const { ingresoProveedorService } = await import('$lib/services/ingresoProveedorService');
+
+    // 1. Llamar al backend
+    const validacion = await ingresoProveedorService.validarIngreso(proveedorId);
+
+    // 2. Calcular autoselección
+    // El proveedor viene como JSON en validacion.proveedor
+    const vehiculos = validacion.proveedor?.vehiculos || [];
+
+    let autoSeleccion: AutoSelectionResult;
+
+    if (vehiculos.length === 0) {
+        autoSeleccion = {
+            suggestedMode: 'caminando',
+            suggestedVehicleId: null,
+            reason: 'no_vehicles'
+        };
+    } else if (vehiculos.length === 1) {
+        autoSeleccion = {
+            suggestedMode: 'vehiculo',
+            suggestedVehicleId: vehiculos[0].id, // Asegurar que el backend mande 'id' en el vehículo
+            reason: 'single_vehicle'
+        };
+    } else {
+        autoSeleccion = {
+            suggestedMode: 'caminando',
+            suggestedVehicleId: null,
+            reason: 'multiple_vehicles'
+        };
+    }
+
+    return {
+        validacion,
+        autoSeleccion
+    };
+}

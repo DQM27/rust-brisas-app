@@ -127,3 +127,15 @@ pub async fn search_distinct_proveedores(
     .fetch_all(pool)
     .await
 }
+
+pub async fn find_open_by_proveedor(
+    pool: &SqlitePool,
+    proveedor_id: &str,
+) -> Result<Option<IngresoProveedor>, sqlx::Error> {
+    sqlx::query_as::<_, IngresoProveedor>(
+        "SELECT * FROM ingresos_proveedores WHERE proveedor_id = ? AND estado = 'ADENTRO' LIMIT 1",
+    )
+    .bind(proveedor_id)
+    .fetch_optional(pool)
+    .await
+}
