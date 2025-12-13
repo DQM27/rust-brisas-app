@@ -71,6 +71,58 @@ pub async fn create(
     })
 }
 
+pub async fn find_by_id(
+    pool: &SqlitePool,
+    id: &str,
+) -> Result<Option<IngresoProveedor>, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        SELECT 
+            ip.*,
+            COALESCE(u.nombre || ' ' || u.apellido, 'N/A') as usuario_ingreso_nombre,
+            COALESCE(e.nombre, 'Sin empresa') as empresa_nombre
+        FROM ingresos_proveedores ip
+        LEFT JOIN users u ON ip.usuario_ingreso_id = u.id
+        LEFT JOIN empresas e ON ip.empresa_id = e.id
+        WHERE ip.id = ?
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
+
+    if let Some(row) = row {
+        use sqlx::Row;
+        Ok(Some(IngresoProveedor {
+            id: row.get("id"),
+            cedula: row.get("cedula"),
+            nombre: row.get("nombre"),
+            apellido: row.get("apellido"),
+            proveedor_id: row.get("proveedor_id"),
+            empresa_id: row.get("empresa_id"),
+            area_visitada: row.get("area_visitada"),
+            motivo: row.get("motivo"),
+            gafete: row.get("gafete"),
+            tipo_autorizacion: row.get("tipo_autorizacion"),
+            modo_ingreso: row.get("modo_ingreso"),
+            placa_vehiculo: row.get("placa_vehiculo"),
+            fecha_ingreso: row.get("fecha_ingreso"),
+            fecha_salida: row.get("fecha_salida"),
+            estado: row.get("estado"),
+            usuario_ingreso_id: row.get("usuario_ingreso_id"),
+            usuario_salida_id: row.get("usuario_salida_id"),
+            observaciones: row.get("observaciones"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+            usuario_ingreso_nombre: row.get("usuario_ingreso_nombre"),
+            usuario_salida_nombre: String::new(),
+            empresa_nombre: row.get("empresa_nombre"),
+        }))
+    } else {
+        Ok(None)
+    }
+}
+
 pub async fn find_actives(pool: &SqlitePool) -> Result<Vec<IngresoProveedor>, sqlx::Error> {
     let rows = sqlx::query(
         r#"

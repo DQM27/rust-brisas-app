@@ -254,7 +254,8 @@ impl From<Ingreso> for IngresoResponse {
             }
         });
 
-        let tipo_ingreso = TipoIngreso::from_str(&i.tipo_ingreso).unwrap_or(TipoIngreso::Contratista);
+        let tipo_ingreso =
+            TipoIngreso::from_str(&i.tipo_ingreso).unwrap_or(TipoIngreso::Contratista);
         let tipo_autorizacion =
             TipoAutorizacion::from_str(&i.tipo_autorizacion).unwrap_or(TipoAutorizacion::Praind);
         let modo_ingreso = ModoIngreso::from_str(&i.modo_ingreso).unwrap_or(ModoIngreso::Caminando);
@@ -332,7 +333,8 @@ pub struct AlertaGafete {
     pub cedula: String,
     pub nombre_completo: String,
     pub gafete_numero: String,
-    pub ingreso_id: String,
+    pub ingreso_contratista_id: Option<String>,
+    pub ingreso_proveedor_id: Option<String>,
     pub fecha_reporte: String,
     pub resuelto: bool,
     pub fecha_resolucion: Option<String>,
@@ -357,7 +359,8 @@ pub struct AlertaGafeteResponse {
     pub cedula: String,
     pub nombre_completo: String,
     pub gafete_numero: String,
-    pub ingreso_id: String,
+    pub ingreso_contratista_id: Option<String>,
+    pub ingreso_proveedor_id: Option<String>,
     pub fecha_reporte: String,
     pub resuelto: bool,
     pub fecha_resolucion: Option<String>,
@@ -376,7 +379,8 @@ impl From<AlertaGafete> for AlertaGafeteResponse {
             cedula: a.cedula,
             nombre_completo: a.nombre_completo,
             gafete_numero: a.gafete_numero,
-            ingreso_id: a.ingreso_id,
+            ingreso_contratista_id: a.ingreso_contratista_id,
+            ingreso_proveedor_id: a.ingreso_proveedor_id,
             fecha_reporte: a.fecha_reporte,
             resuelto: a.resuelto,
             fecha_resolucion: a.fecha_resolucion,

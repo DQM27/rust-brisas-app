@@ -14,8 +14,8 @@ export const ingresoProveedorService = {
         return await invoke<IngresoProveedor[]>("get_ingresos_proveedores_historial");
     },
 
-    async registrarSalida(id: string, usuarioId: string, observaciones?: string): Promise<void> {
-        return await invoke("registrar_salida_proveedor", { id, usuarioId, observaciones });
+    async registrarSalida(id: string, usuarioId: string, observaciones?: string, devolvioGafete: boolean = true): Promise<void> {
+        return await invoke("registrar_salida_proveedor", { id, usuarioId, observaciones, devolvioGafete });
     },
 
     async searchProveedores(query: string): Promise<import("$lib/types/ingreso-nuevos").ProveedorCatalogItem[]> {

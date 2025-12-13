@@ -82,15 +82,76 @@ impl IngresoProveedorService {
         id: String,
         usuario_id: String,
         observaciones: Option<String>,
+        devolvio_gafete: bool,
     ) -> Result<(), String> {
-        ingreso_proveedor_queries::registrar_salida(
-            &self.pool,
-            &id,
-            &usuario_id,
-            observaciones.as_deref(),
+        // 1. Obtener el ingreso para verificar gafete (lectura antes de tx o dentro, da igual en sqlite sin WAL estricto)
+        let ingreso = ingreso_proveedor_queries::find_by_id(&self.pool, &id)
+            .await
+            .map_err(|e| e.to_string())?
+            .ok_or("Ingreso no encontrado")?;
+
+        let now = chrono::Utc::now().to_rfc3339();
+
+        let mut tx = self.pool.begin().await.map_err(|e| e.to_string())?;
+
+        // 2. Registrar salida en DB
+        sqlx::query(
+            r#"
+            UPDATE ingresos_proveedores 
+            SET estado = 'SALIO', 
+                fecha_salida = ?, 
+                usuario_salida_id = ?, 
+                observaciones = COALESCE(?, observaciones),
+                updated_at = ?
+            WHERE id = ?
+            "#,
         )
+        .bind(&now)
+        .bind(&usuario_id)
+        .bind(observaciones.as_deref())
+        .bind(&now)
+        .bind(&id)
+        .execute(&mut *tx)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+        // 3. Verificar Gafete y crear alerta si no se devolvió
+        if let Some(gafete_num) = ingreso.gafete {
+            if !devolvio_gafete {
+                // Generar alerta de Gafete No Devuelto
+                let nombre_completo = format!("{} {}", ingreso.nombre, ingreso.apellido);
+                let alerta_id = uuid::Uuid::new_v4().to_string();
+
+                // Query directa para usar TX
+                sqlx::query(
+                    r#"INSERT INTO alertas_gafetes 
+                    (id, persona_id, cedula, nombre_completo, gafete_numero, 
+                    ingreso_contratista_id, ingreso_proveedor_id,
+                    fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por,
+                    created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?)"#,
+                )
+                .bind(&alerta_id)
+                .bind(None::<&str>)
+                .bind(&ingreso.cedula)
+                .bind(&nombre_completo)
+                .bind(&gafete_num)
+                .bind(None::<&str>) // ingreso_contratista_id
+                .bind(&id) // ingreso_proveedor_id
+                .bind(&now)
+                .bind(Some("Gafete no devuelto por proveedor al salir"))
+                .bind(&usuario_id)
+                .bind(&now)
+                .bind(&now)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| format!("Error creando alerta de gafete: {}", e))?;
+            }
+        }
+
+        tx.commit().await.map_err(|e| e.to_string())?;
+
+        Ok(())
     }
 
     pub async fn get_activos(&self) -> Result<Vec<IngresoProveedor>, String> {

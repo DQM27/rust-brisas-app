@@ -57,7 +57,7 @@
   onMount(() => {
     // 1. Carga de datos asíncrona (Gafetes)
     (async () => {
-      const res = await gafeteService.fetchDisponibles();
+      const res = await gafeteService.fetchDisponibles("proveedor");
       if (res.ok) {
         gafetesDisponibles = res.data.filter((g) => g.tipo === "proveedor");
       }

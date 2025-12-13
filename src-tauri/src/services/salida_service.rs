@@ -156,7 +156,8 @@ pub async fn registrar_salida(
             &ingreso.cedula,
             &nombre_completo,
             &gafete_numero,
-            &input.ingreso_id,
+            Some(&input.ingreso_id), // ingreso_contratista_id
+            None,                    // ingreso_proveedor_id
             &now,
             decision.motivo.as_deref(),
             &usuario_id,
@@ -241,7 +242,8 @@ pub async fn registrar_salida_con_verificacion_gafete(
             &ingreso.cedula,
             &nombre_completo,
             &gafete_numero,
-            &ingreso_id,
+            Some(&ingreso_id), // ingreso_contratista_id
+            None,              // ingreso_proveedor_id
             &now,
             decision.motivo.as_deref(),
             &usuario_id,

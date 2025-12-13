@@ -34,10 +34,11 @@ pub async fn registrar_salida_proveedor(
     id: String,
     usuario_id: String,
     observaciones: Option<String>,
+    devolvio_gafete: bool,
 ) -> Result<(), String> {
     let service = IngresoProveedorService::new(pool.inner().clone());
     service
-        .registrar_salida(id, usuario_id, observaciones)
+        .registrar_salida(id, usuario_id, observaciones, devolvio_gafete)
         .await
 }
 

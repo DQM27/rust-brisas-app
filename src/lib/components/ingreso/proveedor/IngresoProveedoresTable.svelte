@@ -271,13 +271,14 @@
 
   async function handleConfirmSalida(event: CustomEvent) {
     if (!selectedIngreso) return;
-    const { observaciones } = event.detail;
+    const { observaciones, devolvioGafete } = event.detail;
 
     try {
       await ingresoProveedorService.registrarSalida(
         selectedIngreso.id,
         $currentUser?.id || "00000000-0000-0000-0000-000000000000",
         observaciones,
+        devolvioGafete,
       );
       toast.success("Salida de proveedor registrada");
       showSalidaModal = false;
