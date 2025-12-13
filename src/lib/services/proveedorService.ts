@@ -1,16 +1,17 @@
 import { invoke } from "@tauri-apps/api/core";
 
 // Types matching backend models/proveedor.rs
+// Backend uses serde rename_all = "camelCase", so we use camelCase
 export interface CreateProveedorInput {
     cedula: string;
     nombre: string;
-    segundo_nombre?: string;
+    segundoNombre?: string;
     apellido: string;
-    segundo_apellido?: string;
-    empresa_id: string;
+    segundoApellido?: string;
+    empresaId: string;
     // Vehicle (optional)
-    tiene_vehiculo?: boolean;
-    tipo_vehiculo?: string;
+    tieneVehiculo?: boolean;
+    tipoVehiculo?: string;
     placa?: string;
     marca?: string;
     modelo?: string;

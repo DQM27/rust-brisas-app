@@ -350,6 +350,16 @@ const LISTA_NEGRA_CONFIG: Omit<AGGridToolbarConfig, 'customButtons'> = {
  */
 export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButtons'>> = {
   'contratista-list': CONTRATISTA_LIST_CONFIG,
+  'proveedor-list': {
+    gridId: 'proveedor-list',
+    availableButtons: {
+      default: COMMON_DEFAULT_BUTTONS,
+      singleSelect: COMMON_SINGLE_SELECT_BUTTONS,
+      multiSelect: COMMON_MULTI_SELECT_BUTTONS
+    },
+    showColumnSelector: true,
+    showThemeSelector: true
+  },
   'lista-negra-list': LISTA_NEGRA_CONFIG,
 
   // Placeholders para las demás grids
