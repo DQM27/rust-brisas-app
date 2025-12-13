@@ -28,7 +28,7 @@ impl IngresoProveedorService {
 
         // 2. Validar disponibilidad de gafete (si aplica)
         if let Some(ref g) = input.gafete {
-            let disponible = gafete_service::is_gafete_disponible(&self.pool, g)
+            let disponible = gafete_service::is_gafete_disponible(&self.pool, g, "proveedor")
                 .await
                 .map_err(|e| e.to_string())?;
             if !disponible {

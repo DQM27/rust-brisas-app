@@ -30,8 +30,9 @@ pub async fn create_gafete_range(
 pub async fn get_gafete(
     pool: State<'_, SqlitePool>,
     numero: String,
+    tipo: String,
 ) -> Result<GafeteResponse, String> {
-    gafete_service::get_gafete(&pool, &numero).await
+    gafete_service::get_gafete(&pool, &numero, &tipo).await
 }
 
 #[tauri::command]
@@ -52,29 +53,36 @@ pub async fn get_gafetes_disponibles(
 pub async fn is_gafete_disponible(
     pool: State<'_, SqlitePool>,
     numero: String,
+    tipo: String,
 ) -> Result<bool, String> {
-    gafete_service::is_gafete_disponible(&pool, &numero).await
+    gafete_service::is_gafete_disponible(&pool, &numero, &tipo).await
 }
 
 #[tauri::command]
 pub async fn update_gafete(
     pool: State<'_, SqlitePool>,
     numero: String,
+    tipo: String,
     input: UpdateGafeteInput,
 ) -> Result<GafeteResponse, String> {
-    gafete_service::update_gafete(&pool, numero, input).await
+    gafete_service::update_gafete(&pool, numero, tipo, input).await
 }
 
 #[tauri::command]
 pub async fn update_gafete_status(
     pool: State<'_, SqlitePool>,
     numero: String,
+    tipo: String,
     input: UpdateGafeteStatusInput,
 ) -> Result<GafeteResponse, String> {
-    gafete_service::update_gafete_status(&pool, numero, input.estado).await
+    gafete_service::update_gafete_status(&pool, numero, tipo, input.estado).await
 }
 
 #[tauri::command]
-pub async fn delete_gafete(pool: State<'_, SqlitePool>, numero: String) -> Result<(), String> {
-    gafete_service::delete_gafete(&pool, numero).await
+pub async fn delete_gafete(
+    pool: State<'_, SqlitePool>,
+    numero: String,
+    tipo: String,
+) -> Result<(), String> {
+    gafete_service::delete_gafete(&pool, numero, tipo).await
 }

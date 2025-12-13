@@ -159,7 +159,8 @@ pub async fn crear_ingreso_contratista(
         let normalizado = domain::normalizar_numero_gafete(g);
 
         // Validar disponibilidad en DB
-        let disponible = gafete_service::is_gafete_disponible(pool, &normalizado).await?;
+        let disponible =
+            gafete_service::is_gafete_disponible(pool, &normalizado, "contratista").await?;
         if !disponible {
             return Err(format!("Gafete {} no está disponible", normalizado));
         }

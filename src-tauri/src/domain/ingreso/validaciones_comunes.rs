@@ -5,7 +5,7 @@
 
 use crate::db::{alerta_gafete_queries, ingreso_queries, lista_negra_queries};
 use crate::models::ingreso::AlertaGafete;
-use crate::services::gafete_service;
+
 use sqlx::SqlitePool;
 
 // ==========================================
@@ -20,18 +20,12 @@ pub use lista_negra_queries::BlockStatus;
 // ==========================================
 
 /// Verifica si una persona está en la lista negra (por cédula)
-pub async fn verificar_lista_negra(
-    pool: &SqlitePool,
-    cedula: &str,
-) -> Result<BlockStatus, String> {
+pub async fn verificar_lista_negra(pool: &SqlitePool, cedula: &str) -> Result<BlockStatus, String> {
     lista_negra_queries::check_if_blocked_by_cedula(pool, cedula).await
 }
 
 /// Verifica si una persona ya tiene un ingreso abierto (por cédula)
-pub async fn verificar_ingreso_duplicado(
-    pool: &SqlitePool,
-    cedula: &str,
-) -> Result<bool, String> {
+pub async fn verificar_ingreso_duplicado(pool: &SqlitePool, cedula: &str) -> Result<bool, String> {
     let ingreso_opt = ingreso_queries::find_ingreso_abierto_by_cedula(pool, cedula).await?;
     Ok(ingreso_opt.is_some())
 }
@@ -42,14 +36,6 @@ pub async fn verificar_alertas_gafetes(
     cedula: &str,
 ) -> Result<Vec<AlertaGafete>, String> {
     alerta_gafete_queries::find_pendientes_by_cedula(pool, cedula).await
-}
-
-/// Verifica si un gafete está disponible
-pub async fn verificar_disponibilidad_gafete(
-    pool: &SqlitePool,
-    gafete_numero: &str,
-) -> Result<bool, String> {
-    gafete_service::is_gafete_disponible(pool, gafete_numero).await
 }
 
 // ==========================================

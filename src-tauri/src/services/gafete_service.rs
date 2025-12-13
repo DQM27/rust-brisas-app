@@ -46,7 +46,7 @@ pub async fn create_gafete(
     db::insert(pool, &numero_normalizado, tipo.as_str(), &now, &now).await?;
 
     // 7. Retornar
-    get_gafete(pool, &numero_normalizado).await
+    get_gafete(pool, &numero_normalizado, tipo.as_str()).await
 }
 
 pub async fn create_gafete_range(
@@ -88,16 +88,20 @@ pub async fn create_gafete_range(
 // OBTENER GAFETE
 // ==========================================
 
-pub async fn get_gafete(pool: &SqlitePool, numero: &str) -> Result<GafeteResponse, String> {
-    let gafete = db::find_by_numero(pool, numero).await?;
-    let en_uso = db::is_en_uso(pool, numero).await?;
-    let tiene_alerta = db::has_unresolved_alert(pool, numero).await?;
+pub async fn get_gafete(
+    pool: &SqlitePool,
+    numero: &str,
+    tipo: &str,
+) -> Result<GafeteResponse, String> {
+    let gafete = db::find_by_numero_and_tipo(pool, numero, tipo).await?;
+    let en_uso = db::is_en_uso(pool, numero, tipo).await?;
+    let tiene_alerta = db::has_unresolved_alert_typed(pool, numero, tipo).await?;
 
     let mut response = GafeteResponse::from(gafete.clone());
 
     // Obtener detalles de la alerta si existe
     if let Ok(Some((alerta_id, fecha, nombre, resuelto))) =
-        db::get_recent_alert_for_gafete(pool, numero).await
+        db::get_recent_alert_for_gafete_typed(pool, numero, tipo).await
     {
         response.alerta_id = Some(alerta_id);
         response.fecha_perdido = Some(fecha);
@@ -143,14 +147,15 @@ pub async fn get_all_gafetes(pool: &SqlitePool) -> Result<GafeteListResponse, St
     let mut stats_extraviados = 0;
 
     for gafete in gafetes {
-        let en_uso = db::is_en_uso(pool, &gafete.numero).await?;
-        let tiene_alerta = db::has_unresolved_alert(pool, &gafete.numero).await?;
+        let tipo_str = gafete.tipo.as_str();
+        let en_uso = db::is_en_uso(pool, &gafete.numero, tipo_str).await?;
+        let tiene_alerta = db::has_unresolved_alert_typed(pool, &gafete.numero, tipo_str).await?;
 
         let mut response = GafeteResponse::from(gafete.clone());
 
         // Obtener detalles de la alerta si existe
         if let Ok(Some((alerta_id, fecha, nombre, resuelto))) =
-            db::get_recent_alert_for_gafete(pool, &response.numero).await
+            db::get_recent_alert_for_gafete_typed(pool, &response.numero, tipo_str).await
         {
             response.alerta_id = Some(alerta_id);
             response.fecha_perdido = Some(fecha);
@@ -238,7 +243,7 @@ pub async fn get_gafetes_disponibles(
     for numero in numeros {
         // Optimización: find_disponibles_by_tipo ya filtra por estado, uso y alertas
         // Pero necesitamos el objeto completo
-        let gafete = db::find_by_numero(pool, &numero).await?;
+        let gafete = db::find_by_numero_and_tipo(pool, &numero, tipo.as_str()).await?;
         let mut response = GafeteResponse::from(gafete);
         response.esta_disponible = true;
         response.status = "disponible".to_string();
@@ -252,9 +257,17 @@ pub async fn get_gafetes_disponibles(
 // VERIFICAR DISPONIBILIDAD
 // ==========================================
 
-pub async fn is_gafete_disponible(pool: &SqlitePool, numero: &str) -> Result<bool, String> {
-    // Verificar existencia y estado físico
-    match db::find_by_numero(pool, numero).await {
+// ==========================================
+// VERIFICAR DISPONIBILIDAD
+// ==========================================
+
+pub async fn is_gafete_disponible(
+    pool: &SqlitePool,
+    numero: &str,
+    tipo: &str,
+) -> Result<bool, String> {
+    // Verificar existencia y estado físico usando numero Y tipo
+    match db::find_by_numero_and_tipo(pool, numero, tipo).await {
         Ok(g) => {
             if g.estado != GafeteEstado::Activo {
                 return Ok(false);
@@ -263,9 +276,9 @@ pub async fn is_gafete_disponible(pool: &SqlitePool, numero: &str) -> Result<boo
         Err(_) => return Ok(false), // No existe
     }
 
-    // Checking usage and alerts
-    let en_uso = db::is_en_uso(pool, numero).await?;
-    let tiene_alerta = db::has_unresolved_alert(pool, numero).await?;
+    // Checking usage and alerts (Typed)
+    let en_uso = db::is_en_uso(pool, numero, tipo).await?;
+    let tiene_alerta = db::has_unresolved_alert_typed(pool, numero, tipo).await?;
     Ok(!en_uso && !tiene_alerta)
 }
 
@@ -276,15 +289,16 @@ pub async fn is_gafete_disponible(pool: &SqlitePool, numero: &str) -> Result<boo
 pub async fn update_gafete(
     pool: &SqlitePool,
     numero: String,
+    tipo_actual: String,
     input: UpdateGafeteInput,
 ) -> Result<GafeteResponse, String> {
     // 1. Validar input
     domain::validar_update_input(&input)?;
 
     // 2. Verificar que existe
-    let _ = db::find_by_numero(pool, &numero).await?;
+    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo_actual).await?;
 
-    // 3. Parsear tipo si viene
+    // 3. Parsear nuevo tipo si viene
     let tipo_str = if let Some(ref t) = input.tipo {
         Some(TipoGafete::from_str(t)?.as_str().to_string())
     } else {
@@ -294,43 +308,67 @@ pub async fn update_gafete(
     // 4. Timestamp
     let now = Utc::now().to_rfc3339();
 
-    // 5. Actualizar
-    db::update(pool, &numero, tipo_str.as_deref(), &now).await?;
+    // 5. Actualizar (OJO: db::update solo recibe numero, no tipo!!
+    //    Si NUMBER es parte de la PK, update puede necesitar cambiar el tipo.
+    //    Pero 'update' query en db::update usa 'WHERE numero = ?'.
+    //    Esto es AMBIGUO. db::update necesita (numero, tipo_actual) en el WHERE.
+    //    Necesito actualizar db::update tambien.
+    //    Asumiendo que db::update será corregido para recibir tipo_actual.
+    //    db::update(pool, numero, tipo_actual, nuevo_tipo, ...).
+    //    Por ahora, asumimos db::update ESTÁ ROTO.
+    //    Lo dejaremos roto en esta llamada y lo arreglare en db queries.
+    //    Pero aqui llamaremos db::update(pool, &numero, &tipo_actual, ...).
+
+    // Me detengo. Debo arreglar db::update primero o simultaneamente?
+    // db::update ya existe y toma 4 args.
+    // Necesito cambiarlo.
+
+    // Dejaré caer esto si no puedo cambiar db::update aqui.
+    // Asumiré db::update sigue tomando 4 args y actualiza TODOS los numeros?? MAL.
+
+    // Solucion: Agregar parametro 'tipo' a db::update en el siguiente paso.
+    // Aqui solo cambio la llamada para compilar con lo que ESPERO tener.
+
+    db::update(pool, &numero, &tipo_actual, tipo_str.as_deref(), &now).await?;
 
     // 6. Retornar
-    get_gafete(pool, &numero).await
+    // Si cambio el tipo, debo buscar con el NUEVO tipo.
+    let tipo_final = tipo_str.unwrap_or(tipo_actual);
+    get_gafete(pool, &numero, &tipo_final).await
 }
 
 pub async fn update_gafete_status(
     pool: &SqlitePool,
     numero: String,
+    tipo: String,
     estado: GafeteEstado,
 ) -> Result<GafeteResponse, String> {
     // Validar estado (Implícita por tipo)
 
     // Verificar que existe
-    let _ = db::find_by_numero(pool, &numero).await?;
+    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo).await?;
 
     let now = Utc::now().to_rfc3339();
-    db::update_status(pool, &numero, estado.as_str(), &now).await?;
+    // Idem: db::update_status debe recibir tipo.
+    db::update_status(pool, &numero, &tipo, estado.as_str(), &now).await?;
 
-    get_gafete(pool, &numero).await
+    get_gafete(pool, &numero, &tipo).await
 }
 
 // ==========================================
 // ELIMINAR
 // ==========================================
 
-pub async fn delete_gafete(pool: &SqlitePool, numero: String) -> Result<(), String> {
+pub async fn delete_gafete(pool: &SqlitePool, numero: String, tipo: String) -> Result<(), String> {
     // 1. Verificar que existe
-    let _ = db::find_by_numero(pool, &numero).await?;
+    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo).await?;
 
     // 2. Verificar que no esté en uso (si está 'activo' o 'en_uso')
-    let en_uso = db::is_en_uso(pool, &numero).await?;
+    let en_uso = db::is_en_uso(pool, &numero, &tipo).await?;
     if en_uso {
         return Err("No se puede eliminar un gafete que está actualmente en uso".to_string());
     }
 
     // 3. Eliminar
-    db::delete(pool, &numero).await
+    db::delete(pool, &numero, &tipo).await
 }

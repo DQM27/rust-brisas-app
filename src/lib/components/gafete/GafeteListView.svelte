@@ -246,11 +246,11 @@
         if (event.target.classList.contains("resolve-btn")) {
           handleResolve(data);
         } else if (event.target.classList.contains("recover-btn")) {
-          changeStatus(data.numero, "activo");
+          changeStatus(data.numero, data.tipo, "activo");
         } else if (event.target.classList.contains("lost-btn")) {
-          changeStatus(data.numero, "extraviado");
+          changeStatus(data.numero, data.tipo, "extraviado");
         } else if (event.target.classList.contains("damage-btn")) {
-          changeStatus(data.numero, "danado");
+          changeStatus(data.numero, data.tipo, "danado");
         } else if (event.target.classList.contains("delete-btn")) {
           handleDelete(data);
         }
@@ -297,10 +297,14 @@
     showResolveModal = true;
   }
 
-  async function changeStatus(numero: string, nuevoEstado: string) {
+  async function changeStatus(
+    numero: string,
+    tipo: string,
+    nuevoEstado: string,
+  ) {
     if (!confirm(`¿Cambiar estado a ${nuevoEstado.toUpperCase()}?`)) return;
 
-    const result = await gafeteService.updateStatus(numero, nuevoEstado);
+    const result = await gafeteService.updateStatus(numero, tipo, nuevoEstado);
     if (result.ok) {
       toast.success(`Estado actualizado a ${nuevoEstado}`);
       loadGafetes();
@@ -341,7 +345,7 @@
     )
       return;
 
-    const result = await gafeteService.remove(gafete.numero);
+    const result = await gafeteService.remove(gafete.numero, gafete.tipo);
     if (result.ok) {
       toast.success("Gafete eliminado");
       loadGafetes();
@@ -356,7 +360,12 @@
     let result;
 
     if (selectedGafete) {
-      result = await gafeteService.update(selectedGafete.numero, data);
+      // Para update, pasamos el tipo ACTUAL (selectedGafete.tipo) Y el payload (que puede traer nuevo tipo)
+      result = await gafeteService.update(
+        selectedGafete.numero,
+        selectedGafete.tipo,
+        data,
+      );
     } else {
       result = await gafeteService.create(data);
     }

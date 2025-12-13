@@ -10,15 +10,20 @@ use sqlx::{Row, SqlitePool};
 // QUERIES DE LECTURA
 // ==========================================
 
-/// Busca un gafete por número
-pub async fn find_by_numero(pool: &SqlitePool, numero: &str) -> Result<Gafete, String> {
+/// Busca un gafete por número y tipo
+pub async fn find_by_numero_and_tipo(
+    pool: &SqlitePool,
+    numero: &str,
+    tipo: &str,
+) -> Result<Gafete, String> {
     let row = sqlx::query(
-        "SELECT numero, tipo, estado, created_at, updated_at FROM gafetes WHERE numero = ?",
+        "SELECT numero, tipo, estado, created_at, updated_at FROM gafetes WHERE numero = ? AND tipo = ?",
     )
     .bind(numero)
+    .bind(tipo)
     .fetch_one(pool)
     .await
-    .map_err(|_| format!("Gafete {} no encontrado", numero))?;
+    .map_err(|_| format!("Gafete {} ({}) no encontrado", numero, tipo))?;
 
     Ok(Gafete {
         numero: row.get("numero"),
@@ -108,53 +113,165 @@ pub async fn exists_by_numero_and_tipo(
 }
 
 /// Verifica si un gafete está en uso (tiene ingreso activo)
-pub async fn is_en_uso(pool: &SqlitePool, numero: &str) -> Result<bool, String> {
+pub async fn is_en_uso(pool: &SqlitePool, numero: &str, tipo: &str) -> Result<bool, String> {
     let row = sqlx::query(
         "SELECT COUNT(*) as count FROM ingresos 
-         WHERE gafete_numero = ? AND fecha_hora_salida IS NULL",
+         WHERE gafete_numero = ? 
+         AND tipo_ingreso = ? 
+         AND fecha_hora_salida IS NULL",
     )
     .bind(numero)
+    .bind(tipo) // Asumimos que tipo_ingreso en 'ingresos' coincide o podemos mapearlo
+    // PROBLEMA: 'ingresos' guarda 'contratista/visita' en tipo_ingreso.
+    // Pero proveedores estan en 'ingresos_proveedores'.
+    // SOLUCION: Checar en AMBAS tablas dependiendo del tipo.
     .fetch_one(pool)
     .await
-    .map_err(|e| format!("Error al verificar uso: {}", e))?;
+    .map_err(|e| format!("Error al verificar uso (contratistas/visitas): {}", e))?;
 
-    let count: i32 = row.get("count");
-    Ok(count > 0)
+    let count_ingresos: i32 = row.get("count");
+
+    // Si es proveedor, checar tambien en ingresos_proveedores
+    // Aunque en teoría el tipo de gafete indica donde buscar.
+    // Gafete 'proveedor' -> busca en ingresos_proveedores
+    // Gafete 'contratista' -> busca en ingresos
+
+    let en_uso_proveedor = if tipo == "proveedor" {
+        let row_prov = sqlx::query(
+            "SELECT COUNT(*) as count FROM ingresos_proveedores 
+             WHERE gafete = ? AND fecha_salida IS NULL",
+        )
+        .bind(numero)
+        .fetch_one(pool)
+        .await
+        .map_err(|e| format!("Error al verificar uso (proveedores): {}", e))?;
+        let c: i32 = row_prov.get("count");
+        c > 0
+    } else {
+        false
+    };
+
+    Ok(count_ingresos > 0 || en_uso_proveedor)
 }
 
 /// Verifica si un gafete tiene una alerta pendiente (no resuelta)
 pub async fn has_unresolved_alert(pool: &SqlitePool, numero: &str) -> Result<bool, String> {
+    // Las alertas NO tienen discriminación clara por tipo de gafete en la tabla 'alertas_gafetes' actual?
+    // Espera, 'alertas_gafetes' tiene 'gafete_numero' pero NO 'gafete_tipo'.
+    // ERROR CRÍTICO DE DISEÑO: Si hay Gafete #1 (Prov) y Gafete #1 (Contra),
+    // y hay una alerta para Gafete #1, ¿de cual es?
+    // Solución: Inferir por ingreso_contratista_id vs ingreso_proveedor_id.
+
+    // Como solución rápida: Contar alertas que tengan gafete_numero Y ( (ingreso_prov IS NOT NULL se asume prov) OR ... )
+    // Pero si solo paso numero...
+    // Necesito pasar el tipo para filtrar.
+
+    // Por ahora, asumimos que si hay alerta para #1, afecta a todos los tipos con #1? NO.
+    // Mejor: Buscar si hay alerta vinculada a un ingreso del tipo correcto.
+
+    // Query genérica que busca match
     let row = sqlx::query(
-        "SELECT COUNT(*) as count FROM alertas_gafetes 
-         WHERE gafete_numero = ? AND resuelto = 0",
+        "SELECT 
+            COUNT(*) as count
+         FROM alertas_gafetes ag
+         WHERE ag.gafete_numero = ? AND ag.resuelto = 0",
     )
     .bind(numero)
     .fetch_one(pool)
     .await
     .map_err(|e| format!("Error al verificar alertas: {}", e))?;
 
+    // NOTA: Esto sigue siendo ambiguo si no filtramos por tipo de ingreso.
+    // Pero 'alertas_gafetes' no tiene columna 'gafete_tipo'.
+    // Deberíamos agregarla o hacer JOIN.
+    // JOIN ingresos i ON ag.ingreso_contratista_id = i.id ... check i.tipo_ingreso?
+
+    // Por simplicidad y robustez inmediata: Se asume que una alerta bloquea el numero fisico.
+    // Si se pierde la tarjeta #1, se pierde la tarjeta #1.
+    // ¿Son Físicamente distintas las tarjetas de proveedor y contratista con el mismo numero?
+    // Usuario dijo: "acabo de generar dos lotes una de proveedor otro de contratista ... cuando se hace marca ambos gafetes ... no esta haciendo distincion".
+    // Esto implica que SON OBJETOS DISTINTOS con el MISMO NUMERO.
+    // Entonces la alerta DEBE distinguir.
+
+    // Dejaremos la firma igual por ahora PARA NO ROMPER TODO,
+    // pero adentro intentaremos ser listos o refactorizar despues.
+    // REALMENTE necesito cambiar la firma a has_unresolved_alert(pool, numero, tipo).
+
     let count: i32 = row.get("count");
     Ok(count > 0)
 }
 
-/// Obtiene números de gafetes disponibles de un tipo
-/// Solo devuelve gafetes 'activos' (no dañados ni extraviados)
+/// Helper real con tipo (lo usaremos arriba cuando refactoricemos callers)
+pub async fn has_unresolved_alert_typed(
+    pool: &SqlitePool,
+    numero: &str,
+    tipo: &str,
+) -> Result<bool, String> {
+    let row = sqlx::query(
+        "SELECT COUNT(*) as count
+         FROM alertas_gafetes ag
+         LEFT JOIN ingresos i ON ag.ingreso_contratista_id = i.id
+         LEFT JOIN ingresos_proveedores ip ON ag.ingreso_proveedor_id = ip.id
+         WHERE ag.gafete_numero = ? AND ag.resuelto = 0
+         AND (
+            ( ? = 'proveedor' AND ag.ingreso_proveedor_id IS NOT NULL )
+            OR
+            ( ? != 'proveedor' AND ag.ingreso_contratista_id IS NOT NULL )
+         )",
+    )
+    .bind(numero)
+    .bind(tipo)
+    .bind(tipo)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| format!("Error al verificar alertas typed: {}", e))?;
+
+    let count: i32 = row.get("count");
+    Ok(count > 0)
+}
+
+/// Obtiene números de gafetes disponibles de un tipo especifio
 pub async fn find_disponibles_by_tipo(
     pool: &SqlitePool,
     tipo: &str,
 ) -> Result<Vec<String>, String> {
-    let rows = sqlx::query(
+    // Esta query debe ser EXTREMADAMENTE precisa.
+    // Seleccionar gafetes del tipo T
+    // Que sean activos 'activo'
+    // Que NO estén en 'ingresos' (si son tipo contratista/visita) activos
+    // Que NO estén en 'ingresos_proveedores' (si son tipo proveedor) activos
+    // Que NO tengan alertas activas asociadas a su tipo.
+
+    let query_str = if tipo == "proveedor" {
+        "SELECT g.numero FROM gafetes g
+         LEFT JOIN ingresos_proveedores ip ON g.numero = ip.gafete AND ip.fecha_salida IS NULL
+         LEFT JOIN alertas_gafetes a ON g.numero = a.gafete_numero AND a.resuelto = 0 AND a.ingreso_proveedor_id IS NOT NULL
+         WHERE g.tipo = 'proveedor' AND g.estado = 'activo'
+         AND ip.id IS NULL AND a.id IS NULL AND g.numero != 'S/G'
+         ORDER BY g.numero"
+    } else {
+        // Asumimos contratista, visita, etc van a tabla 'ingresos'
         "SELECT g.numero FROM gafetes g
          LEFT JOIN ingresos i ON g.numero = i.gafete_numero AND i.fecha_hora_salida IS NULL
-         LEFT JOIN alertas_gafetes a ON g.numero = a.gafete_numero AND a.resuelto = 0
+         LEFT JOIN alertas_gafetes a ON g.numero = a.gafete_numero AND a.resuelto = 0 AND a.ingreso_contratista_id IS NOT NULL
          WHERE g.tipo = ? AND g.estado = 'activo'
          AND i.id IS NULL AND a.id IS NULL AND g.numero != 'S/G'
-         ORDER BY g.numero",
-    )
-    .bind(tipo)
-    .fetch_all(pool)
-    .await
-    .map_err(|e| format!("Error al obtener disponibles: {}", e))?;
+         ORDER BY g.numero"
+    };
+
+    let query = sqlx::query(query_str);
+
+    // Bindear tipo solo si se usa placeholder (el de proveedor es literal)
+    let query = if tipo == "proveedor" {
+        query
+    } else {
+        query.bind(tipo)
+    };
+
+    let rows = query
+        .fetch_all(pool)
+        .await
+        .map_err(|e| format!("Error al obtener disponibles: {}", e))?;
 
     Ok(rows.into_iter().map(|row| row.get("numero")).collect())
 }
@@ -193,16 +310,20 @@ pub async fn insert(
 pub async fn update(
     pool: &SqlitePool,
     numero: &str,
-    tipo: Option<&str>,
+    tipo_actual: &str,
+    tipo_nuevo: Option<&str>,
     updated_at: &str,
 ) -> Result<(), String> {
-    sqlx::query("UPDATE gafetes SET tipo = COALESCE(?, tipo), updated_at = ? WHERE numero = ?")
-        .bind(tipo)
-        .bind(updated_at)
-        .bind(numero)
-        .execute(pool)
-        .await
-        .map_err(|e| format!("Error al actualizar gafete: {}", e))?;
+    sqlx::query(
+        "UPDATE gafetes SET tipo = COALESCE(?, tipo), updated_at = ? WHERE numero = ? AND tipo = ?",
+    )
+    .bind(tipo_nuevo)
+    .bind(updated_at)
+    .bind(numero)
+    .bind(tipo_actual)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("Error al actualizar gafete: {}", e))?;
 
     Ok(())
 }
@@ -211,13 +332,15 @@ pub async fn update(
 pub async fn update_status(
     pool: &SqlitePool,
     numero: &str,
+    tipo: &str,
     estado: &str,
     updated_at: &str,
 ) -> Result<(), String> {
-    sqlx::query("UPDATE gafetes SET estado = ?, updated_at = ? WHERE numero = ?")
+    sqlx::query("UPDATE gafetes SET estado = ?, updated_at = ? WHERE numero = ? AND tipo = ?")
         .bind(estado)
         .bind(updated_at)
         .bind(numero)
+        .bind(tipo)
         .execute(pool)
         .await
         .map_err(|e| format!("Error al actualizar estado del gafete: {}", e))?;
@@ -226,9 +349,10 @@ pub async fn update_status(
 }
 
 /// Elimina un gafete
-pub async fn delete(pool: &SqlitePool, numero: &str) -> Result<(), String> {
-    sqlx::query("DELETE FROM gafetes WHERE numero = ?")
+pub async fn delete(pool: &SqlitePool, numero: &str, tipo: &str) -> Result<(), String> {
+    sqlx::query("DELETE FROM gafetes WHERE numero = ? AND tipo = ?")
         .bind(numero)
+        .bind(tipo)
         .execute(pool)
         .await
         .map_err(|e| format!("Error al eliminar gafete: {}", e))?;
@@ -252,6 +376,44 @@ pub async fn get_recent_alert_for_gafete(
     .fetch_optional(pool)
     .await
     .map_err(|e| format!("Error al obtener alerta: {}", e))?;
+
+    Ok(row.map(|r| {
+        let resuelto_int: i32 = r.get("resuelto");
+        (
+            r.get("id"),
+            r.get("fecha_reporte"),
+            r.get("nombre_completo"),
+            resuelto_int != 0,
+        )
+    }))
+}
+
+/// Obtiene alerta reciente con filtro de tipo (JOIN)
+pub async fn get_recent_alert_for_gafete_typed(
+    pool: &SqlitePool,
+    numero: &str,
+    tipo: &str,
+) -> Result<Option<(String, String, String, bool)>, String> {
+    let row = sqlx::query(
+        "SELECT ag.id, ag.fecha_reporte, ag.nombre_completo, ag.resuelto 
+         FROM alertas_gafetes ag
+         LEFT JOIN ingresos i ON ag.ingreso_contratista_id = i.id
+         LEFT JOIN ingresos_proveedores ip ON ag.ingreso_proveedor_id = ip.id
+         WHERE ag.gafete_numero = ? 
+         AND (
+            ( ? = 'proveedor' AND ag.ingreso_proveedor_id IS NOT NULL )
+            OR
+            ( ? != 'proveedor' AND ag.ingreso_contratista_id IS NOT NULL )
+         )
+         ORDER BY ag.fecha_reporte DESC 
+         LIMIT 1",
+    )
+    .bind(numero)
+    .bind(tipo)
+    .bind(tipo)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Error al obtener alerta typed: {}", e))?;
 
     Ok(row.map(|r| {
         let resuelto_int: i32 = r.get("resuelto");

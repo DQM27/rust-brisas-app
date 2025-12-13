@@ -92,11 +92,11 @@ export async function fetchDisponibles(tipo: string = 'contratista'): Promise<Se
 }
 
 /**
- * Obtener gafete por Número
+ * Obtener gafete por Número y Tipo
  */
-export async function fetchByNumero(numero: string): Promise<ServiceResult<GafeteResponse>> {
+export async function fetchByNumero(numero: string, tipo: string): Promise<ServiceResult<GafeteResponse>> {
     try {
-        const data = await gafete.get(numero);
+        const data = await gafete.get(numero, tipo);
         return { ok: true, data };
     } catch (err: any) {
         console.error('Error al cargar gafete:', err);
@@ -109,10 +109,11 @@ export async function fetchByNumero(numero: string): Promise<ServiceResult<Gafet
  */
 export async function update(
     numero: string,
+    tipo: string,
     input: UpdateGafeteInput
 ): Promise<ServiceResult<GafeteResponse>> {
     try {
-        const data = await gafete.update(numero, input);
+        const data = await gafete.update(numero, tipo, input);
         return { ok: true, data };
     } catch (err: any) {
         console.error('Error al actualizar gafete:', err);
@@ -123,9 +124,9 @@ export async function update(
 /**
  * Eliminar gafete
  */
-export async function remove(numero: string): Promise<ServiceResult<void>> {
+export async function remove(numero: string, tipo: string): Promise<ServiceResult<void>> {
     try {
-        await gafete.delete(numero);
+        await gafete.delete(numero, tipo);
         return { ok: true, data: undefined };
     } catch (err: any) {
         console.error('Error al eliminar gafete:', err);
@@ -147,11 +148,24 @@ export async function createRange(input: import('$lib/types/gafete').CreateGafet
 }
 
 /**
+ * Verificar disponibilidad de un gafete específico
+ */
+export async function isDisponible(numero: string, tipo: string): Promise<ServiceResult<boolean>> {
+    try {
+        const data = await gafete.isDisponible(numero, tipo);
+        return { ok: true, data };
+    } catch (err: any) {
+        console.error('Error al verificar disponibilidad:', err);
+        return { ok: false, error: parseError(err) };
+    }
+}
+
+/**
  * Actualizar estado del gafete
  */
-export async function updateStatus(numero: string, estado: string): Promise<ServiceResult<GafeteResponse>> {
+export async function updateStatus(numero: string, tipo: string, estado: string): Promise<ServiceResult<GafeteResponse>> {
     try {
-        const data = await gafete.updateStatus(numero, estado);
+        const data = await gafete.updateStatus(numero, tipo, estado);
         return { ok: true, data };
     } catch (err: any) {
         console.error('Error al actualizar estado del gafete:', err);

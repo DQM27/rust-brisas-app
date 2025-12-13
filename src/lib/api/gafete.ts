@@ -15,8 +15,8 @@ export const gafete = {
         return await invoke('create_gafete', { input: validated });
     },
 
-    get: async (numero: string): Promise<GafeteResponse> => {
-        return await invoke('get_gafete', { numero });
+    get: async (numero: string, tipo: string): Promise<GafeteResponse> => {
+        return await invoke('get_gafete', { numero, tipo });
     },
 
     getAll: async (): Promise<GafeteListResponse> => {
@@ -27,24 +27,24 @@ export const gafete = {
         return await invoke('get_gafetes_disponibles', { tipo });
     },
 
-    isDisponible: async (numero: string): Promise<boolean> => {
-        return await invoke('is_gafete_disponible', { numero });
+    isDisponible: async (numero: string, tipo: string): Promise<boolean> => {
+        return await invoke('is_gafete_disponible', { numero, tipo });
     },
 
-    update: async (numero: string, input: UpdateGafeteInput): Promise<GafeteResponse> => {
+    update: async (numero: string, tipo: string, input: UpdateGafeteInput): Promise<GafeteResponse> => {
         const validated = UpdateGafeteSchema.parse(input);
-        return await invoke('update_gafete', { numero, input: validated });
+        return await invoke('update_gafete', { numero, tipo, input: validated });
     },
 
     createRange: async (input: import('$lib/types/gafete').CreateGafeteRangeInput): Promise<string[]> => {
         return await invoke('create_gafete_range', { input });
     },
 
-    updateStatus: async (numero: string, estado: string): Promise<GafeteResponse> => {
-        return await invoke('update_gafete_status', { numero, input: { estado } });
+    updateStatus: async (numero: string, tipo: string, estado: string): Promise<GafeteResponse> => {
+        return await invoke('update_gafete_status', { numero, tipo, input: { estado } });
     },
 
-    delete: async (numero: string): Promise<void> => {
-        return await invoke('delete_gafete', { numero });
+    delete: async (numero: string, tipo: string): Promise<void> => {
+        return await invoke('delete_gafete', { numero, tipo });
     }
 };
