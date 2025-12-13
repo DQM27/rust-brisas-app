@@ -1,4 +1,6 @@
-use crate::domain::ingreso_visita::{CreateIngresoVisitaInput, IngresoVisita};
+use crate::domain::ingreso_visita::{
+    CreateIngresoVisitaInput, IngresoVisita, IngresoVisitaPopulated,
+};
 use chrono::Utc;
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -55,9 +57,20 @@ pub async fn create(
     })
 }
 
-pub async fn find_actives(pool: &SqlitePool) -> Result<Vec<IngresoVisita>, sqlx::Error> {
-    sqlx::query_as::<_, IngresoVisita>(
-        "SELECT * FROM ingresos_visitas WHERE estado = 'ADENTRO' ORDER BY fecha_ingreso DESC",
+pub async fn find_actives(pool: &SqlitePool) -> Result<Vec<IngresoVisitaPopulated>, sqlx::Error> {
+    sqlx::query_as::<_, IngresoVisitaPopulated>(
+        r#"
+        SELECT 
+            iv.*,
+            v.nombre as visitante_nombre,
+            v.apellido as visitante_apellido,
+            v.cedula as visitante_cedula,
+            v.empresa as visitante_empresa
+        FROM ingresos_visitas iv
+        INNER JOIN visitantes v ON iv.visitante_id = v.id
+        WHERE iv.estado = 'ADENTRO' 
+        ORDER BY iv.fecha_ingreso DESC
+        "#,
     )
     .fetch_all(pool)
     .await

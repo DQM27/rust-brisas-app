@@ -8,9 +8,6 @@ pub mod validaciones_entrada;
 pub mod validaciones_permanencia;
 pub mod validaciones_salida;
 
-// Strategy pattern
-pub mod strategy;
-
 // Re-exports de tipos
 pub use tipos::*;
 
@@ -25,6 +22,3 @@ pub use validaciones_permanencia::*;
 
 // Re-exports de funciones de validación salida
 pub use validaciones_salida::*;
-
-// Re-exports de strategy
-pub use strategy::*;

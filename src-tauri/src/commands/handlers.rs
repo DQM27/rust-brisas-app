@@ -71,6 +71,7 @@ macro_rules! register_handlers {
             // ==========================================
             commands::ingreso_visita_commands::get_ingresos_visitas_activos,
             commands::ingreso_visita_commands::get_ingresos_visitas_activos,
+            commands::ingreso_visita_commands::crear_ingreso_visita_v2,
             commands::ingreso_visita_commands::registrar_salida_visita,
             // ==========================================
             // COMANDOS DE INGRESO PROVEEDORES (Nuevo Módulo)
@@ -83,8 +84,6 @@ macro_rules! register_handlers {
             // ==========================================
             commands::entrada_commands::validar_ingreso_contratista,
             commands::entrada_commands::crear_ingreso_contratista,
-            commands::entrada_commands::crear_ingreso_visita,
-            commands::entrada_commands::crear_ingreso_proveedor,
             // ==========================================
             // COMANDOS DE PERMANENCIA (Fase 2)
             // ==========================================

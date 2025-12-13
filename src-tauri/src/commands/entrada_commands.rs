@@ -4,8 +4,7 @@
 // Comandos Tauri para la fase de ENTRADA
 
 use crate::models::ingreso::{
-    CreateIngresoContratistaInput, CreateIngresoProveedorInput, CreateIngresoVisitaInput,
-    IngresoResponse, ValidacionIngresoResponse,
+    CreateIngresoContratistaInput, IngresoResponse, ValidacionIngresoResponse,
 };
 use crate::services::entrada_service;
 use sqlx::SqlitePool;
@@ -41,27 +40,3 @@ pub async fn crear_ingreso_contratista(
 // ==========================================
 // CREAR INGRESO - VISITA
 // ==========================================
-
-/// Crea un nuevo registro de ingreso para una visita
-#[tauri::command]
-pub async fn crear_ingreso_visita(
-    pool: State<'_, SqlitePool>,
-    input: CreateIngresoVisitaInput,
-) -> Result<IngresoResponse, String> {
-    let usuario_id = input.usuario_ingreso_id.clone();
-    entrada_service::crear_ingreso_visita(&pool, input, usuario_id).await
-}
-
-// ==========================================
-// CREAR INGRESO - PROVEEDOR
-// ==========================================
-
-/// Crea un nuevo registro de ingreso para un proveedor
-#[tauri::command]
-pub async fn crear_ingreso_proveedor(
-    pool: State<'_, SqlitePool>,
-    input: CreateIngresoProveedorInput,
-) -> Result<IngresoResponse, String> {
-    let usuario_id = input.usuario_ingreso_id.clone();
-    entrada_service::crear_ingreso_proveedor(&pool, input, usuario_id).await
-}
