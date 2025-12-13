@@ -38,6 +38,9 @@
   let showSalidaModal = $state(false);
   let selectedIngreso = $state<IngresoProveedor | null>(null);
 
+  // View/Filter state
+  let viewMode = $state<"activos" | "historial">("activos");
+
   // Export state
   let showExportDialog = $state(false);
   let exportOnlySelected = $state(false);
@@ -48,92 +51,155 @@
   async function loadData() {
     loading = true;
     try {
-      ingresos = await ingresoProveedorService.getActivos();
+      if (viewMode === "activos") {
+        ingresos = await ingresoProveedorService.getActivos();
+      } else {
+        ingresos = await ingresoProveedorService.getHistorial();
+      }
     } catch (e) {
       console.error(e);
-      toast.error("Error al cargar proveedores activos");
+      toast.error("Error al cargar datos");
     } finally {
       loading = false;
     }
   }
 
-  onMount(() => {
+  // Reload when viewMode changes
+  $effect(() => {
     loadData();
-    const interval = setInterval(loadData, 60000);
+  });
+
+  onMount(() => {
+    // Initial load handled by effect
+    const interval = setInterval(() => {
+      if (viewMode === "activos") loadData();
+    }, 60000);
     return () => clearInterval(interval);
   });
 
-  const columnDefs: ColDef<IngresoProveedor>[] = [
-    {
-      field: "nombre",
-      headerName: "Nombre",
-      valueGetter: (params) =>
-        `${params.data?.nombre || ""} ${params.data?.apellido || ""}`,
-      flex: 1,
-      minWidth: 200,
-    },
-    {
-      field: "cedula",
-      headerName: "Cédula",
-      width: 130,
-    },
-    {
-      field: "empresaNombre",
-      headerName: "Empresa",
-      width: 150,
-      valueFormatter: (p) => p.value || "Sin empresa",
-    },
-    {
-      field: "gafete",
-      headerName: "Gafete",
-      width: 100,
-      cellRenderer: (params: any) =>
-        params.value
-          ? `<span class="font-mono font-bold text-blue-600">${params.value}</span>`
-          : "-",
-    },
-    {
-      field: "areaVisitada",
-      headerName: "Área",
-      width: 130,
-    },
-    {
-      field: "placaVehiculo",
-      headerName: "Vehículo",
-      width: 120,
-      valueFormatter: (p) => p.value || "-",
-    },
-    {
-      field: "usuarioIngresoNombre",
-      headerName: "Registró",
-      width: 150,
-      valueFormatter: (p) => p.value || "N/A",
-    },
-    {
-      field: "fechaIngreso",
-      headerName: "Entrada",
-      width: 110,
-      valueFormatter: (params) =>
-        new Date(params.value).toLocaleTimeString("es-CR", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        }),
-    },
-    {
-      headerName: "Acciones",
-      width: 140,
-      cellRenderer: () => {
-        return `<button class="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-xs font-medium salida-btn">Registrar Salida</button>`;
+  const columnDefs = $derived.by(() => {
+    // Base columns shared by both views
+    const baseCols: ColDef<IngresoProveedor>[] = [
+      {
+        field: "nombre",
+        headerName: "Nombre",
+        valueGetter: (params: any) =>
+          `${params.data?.nombre || ""} ${params.data?.apellido || ""}`,
+        flex: 1,
+        minWidth: 200,
       },
-      onCellClicked: (params: any) => {
-        if (params.event.target.classList.contains("salida-btn")) {
-          selectedIngreso = params.data;
-          showSalidaModal = true;
-        }
+      {
+        field: "cedula",
+        headerName: "Cédula",
+        width: 130,
       },
-    },
-  ];
+      {
+        field: "empresaNombre",
+        headerName: "Empresa",
+        width: 150,
+        valueFormatter: (p: any) => p.value || "Sin empresa",
+      },
+      {
+        field: "areaVisitada",
+        headerName: "Área",
+        width: 130,
+      },
+    ];
+
+    if (viewMode === "activos") {
+      return [
+        ...baseCols,
+        {
+          field: "gafete",
+          headerName: "Gafete",
+          width: 100,
+          cellRenderer: (params: any) =>
+            params.value
+              ? `<span class="font-mono font-bold text-blue-600">${params.value}</span>`
+              : "-",
+        },
+        {
+          field: "placaVehiculo",
+          headerName: "Vehículo",
+          width: 120,
+          valueFormatter: (p: any) => p.value || "-",
+        },
+        {
+          field: "usuarioIngresoNombre",
+          headerName: "Registró",
+          width: 150,
+          valueFormatter: (p: any) => p.value || "N/A",
+        },
+        {
+          field: "fechaIngreso",
+          headerName: "Entrada",
+          width: 110,
+          valueFormatter: (params: any) =>
+            new Date(params.value).toLocaleTimeString("es-CR", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }),
+        },
+        {
+          headerName: "Acciones",
+          width: 140,
+          cellRenderer: () => {
+            return `<button class="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-xs font-medium salida-btn">Registrar Salida</button>`;
+          },
+          onCellClicked: (params: any) => {
+            console.log("Acción click para salir:", params.data);
+            selectedIngreso = params.data;
+            showSalidaModal = true;
+          },
+        },
+      ];
+    } else {
+      // HISTORIAL COLUMNS
+      return [
+        ...baseCols,
+        {
+          field: "fechaIngreso",
+          headerName: "Entró",
+          width: 150,
+          valueFormatter: (params: any) =>
+            new Date(params.value).toLocaleString("es-CR", {
+              day: "2-digit",
+              month: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }),
+        },
+        {
+          field: "fechaSalida",
+          headerName: "Salió",
+          width: 150,
+          valueFormatter: (params: any) =>
+            params.value
+              ? new Date(params.value).toLocaleString("es-CR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                })
+              : "-",
+          sort: "desc" as const,
+        },
+        {
+          field: "usuarioSalidaNombre",
+          headerName: "Salida por",
+          width: 150,
+        },
+        {
+          field: "observaciones",
+          headerName: "Observaciones",
+          flex: 1,
+        },
+      ];
+    }
+  });
 
   async function handleConfirmSalida(event: CustomEvent) {
     if (!selectedIngreso) return;
@@ -210,7 +276,7 @@
   // Custom Buttons
   const customButtons = $derived.by(() => {
     const defaultButtons: CustomToolbarButton[] = [
-      ...(!isFormOpen
+      ...(!isFormOpen && viewMode === "activos"
         ? [
             {
               id: "register-ingreso",
@@ -269,11 +335,40 @@
   <div class="border-b border-white/10 px-6 py-4 bg-[#252526]">
     <div class="flex items-center justify-between gap-4">
       <div>
-        <h2 class="text-xl font-semibold text-gray-100">Proveedores Activos</h2>
+        <h2 class="text-xl font-semibold text-gray-100">
+          {viewMode === "activos"
+            ? "Proveedores Activos"
+            : "Historial de Proveedores"}
+        </h2>
         <p class="mt-1 text-sm text-gray-400">
-          Control de proveedores dentro de las instalaciones
+          {viewMode === "activos"
+            ? "Control de proveedores dentro de las instalaciones"
+            : "Registro histórico de visitas de proveedores"}
         </p>
       </div>
+
+      <!-- View Mode Toggle -->
+      <div class="flex p-1 bg-gray-800 rounded-lg">
+        <button
+          class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors {viewMode ===
+          'activos'
+            ? 'bg-blue-600 text-white shadow-sm'
+            : 'text-gray-400 hover:text-white hover:bg-white/5'}"
+          onclick={() => (viewMode = "activos")}
+        >
+          Activos
+        </button>
+        <button
+          class="px-4 py-1.5 text-sm font-medium rounded-md transition-colors {viewMode ===
+          'historial'
+            ? 'bg-blue-600 text-white shadow-sm'
+            : 'text-gray-400 hover:text-white hover:bg-white/5'}"
+          onclick={() => (viewMode = "historial")}
+        >
+          Historial
+        </button>
+      </div>
+
       <div class="flex-1 max-w-md">
         <SearchBar
           bind:this={searchBarRef}
@@ -288,7 +383,7 @@
 
   <div class="flex-1 relative overflow-hidden bg-[#1e1e1e]">
     <AGGridWrapper
-      gridId="proveedores-activos-grid"
+      gridId="proveedores-grid"
       {columnDefs}
       rowData={ingresos}
       {customButtons}
@@ -305,11 +400,17 @@
     cedula: selectedIngreso.cedula,
     gafeteNumero: selectedIngreso.gafete,
   }}
-  <SalidaModal
-    ingreso={modalData as any}
-    on:cancel={() => (showSalidaModal = false)}
-    on:confirm={handleConfirmSalida}
-  />
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+  >
+    <div class="w-full max-w-md">
+      <SalidaModal
+        ingreso={modalData as any}
+        on:cancel={() => (showSalidaModal = false)}
+        on:confirm={handleConfirmSalida}
+      />
+    </div>
+  </div>
 {/if}
 
 {#if showExportDialog}

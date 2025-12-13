@@ -10,6 +10,10 @@ export const ingresoProveedorService = {
         return await invoke<IngresoProveedor[]>("get_ingresos_proveedores_activos");
     },
 
+    async getHistorial(): Promise<IngresoProveedor[]> {
+        return await invoke<IngresoProveedor[]>("get_ingresos_proveedores_historial");
+    },
+
     async registrarSalida(id: string, usuarioId: string, observaciones?: string): Promise<void> {
         return await invoke("registrar_salida_proveedor", { id, usuarioId, observaciones });
     },

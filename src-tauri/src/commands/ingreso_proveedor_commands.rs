@@ -21,6 +21,14 @@ pub async fn get_ingresos_proveedores_activos(
 }
 
 #[command]
+pub async fn get_ingresos_proveedores_historial(
+    pool: State<'_, SqlitePool>,
+) -> Result<Vec<IngresoProveedor>, String> {
+    let service = IngresoProveedorService::new(pool.inner().clone());
+    service.get_historial().await
+}
+
+#[command]
 pub async fn registrar_salida_proveedor(
     pool: State<'_, SqlitePool>,
     id: String,

@@ -481,6 +481,25 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     showColumnSelector: true,
     showThemeSelector: true,
     enableGrouping: false
+  },
+  'proveedores-grid': {
+    gridId: 'proveedores-grid',
+    availableButtons: {
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b =>
+          ['autosize-all', 'reset-columns', 'refresh', 'toggle-filters'].includes(b.id)
+        )
+      ],
+      singleSelect: [
+        ...COMMON_SINGLE_SELECT_BUTTONS
+      ],
+      multiSelect: [
+        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => b.id !== 'export-selection')
+      ]
+    },
+    showColumnSelector: true,
+    showThemeSelector: true,
+    enableGrouping: false
   }
 };
 

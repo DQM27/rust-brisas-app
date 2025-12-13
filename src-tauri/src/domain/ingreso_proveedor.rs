@@ -28,6 +28,8 @@ pub struct IngresoProveedor {
     #[serde(default)]
     pub usuario_ingreso_nombre: String,
     #[serde(default)]
+    pub usuario_salida_nombre: String,
+    #[serde(default)]
     pub empresa_nombre: String,
 }
 

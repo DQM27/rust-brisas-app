@@ -99,6 +99,12 @@ impl IngresoProveedorService {
             .map_err(|e| e.to_string())
     }
 
+    pub async fn get_historial(&self) -> Result<Vec<IngresoProveedor>, String> {
+        ingreso_proveedor_queries::find_history(&self.pool)
+            .await
+            .map_err(|e| e.to_string())
+    }
+
     pub async fn search_proveedores(
         &self,
         query: &str,
