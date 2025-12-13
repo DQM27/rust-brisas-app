@@ -177,7 +177,7 @@ pub async fn crear_ingreso_contratista(
     let id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
 
-    db::insert_extended(
+    db::insert(
         pool,
         &id,
         Some(input.contratista_id.as_str()),
@@ -185,11 +185,6 @@ pub async fn crear_ingreso_contratista(
         &contratista.nombre,
         &contratista.apellido,
         &contratista.empresa_nombre,
-        None, // empresa_proveedor_id
-        None, // anfitrion
-        None, // area_visitada
-        None, // motivo_visita
-        None, // motivo_proveedor
         TipoIngreso::Contratista.as_str(),
         tipo_autorizacion.as_str(),
         modo_ingreso.as_str(),

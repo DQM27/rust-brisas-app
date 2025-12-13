@@ -38,6 +38,9 @@ export interface IngresoProveedor {
     usuarioIngresoId: string;
     usuarioSalidaId?: string;
     observaciones?: string;
+    // Populated fields
+    usuarioIngresoNombre?: string;
+    empresaNombre?: string;
 }
 
 export interface CreateIngresoProveedorInput {

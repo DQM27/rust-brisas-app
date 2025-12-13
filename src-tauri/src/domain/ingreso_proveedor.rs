@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct IngresoProveedor {
     pub id: String,
@@ -24,6 +24,11 @@ pub struct IngresoProveedor {
     pub observaciones: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+    // Populated fields (from JOINs)
+    #[serde(default)]
+    pub usuario_ingreso_nombre: String,
+    #[serde(default)]
+    pub empresa_nombre: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

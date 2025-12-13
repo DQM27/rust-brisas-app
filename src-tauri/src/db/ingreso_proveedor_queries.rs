@@ -64,15 +64,59 @@ pub async fn create(
         observaciones: input.observaciones,
         created_at: now.clone(),
         updated_at: now,
+        // These are populated by JOINs, use defaults for create
+        usuario_ingreso_nombre: String::new(),
+        empresa_nombre: String::new(),
     })
 }
 
 pub async fn find_actives(pool: &SqlitePool) -> Result<Vec<IngresoProveedor>, sqlx::Error> {
-    sqlx::query_as::<_, IngresoProveedor>(
-        "SELECT * FROM ingresos_proveedores WHERE estado = 'ADENTRO' ORDER BY fecha_ingreso DESC",
+    let rows = sqlx::query(
+        r#"
+        SELECT 
+            ip.*,
+            COALESCE(u.nombre || ' ' || u.apellido, 'N/A') as usuario_ingreso_nombre,
+            COALESCE(e.nombre, 'Sin empresa') as empresa_nombre
+        FROM ingresos_proveedores ip
+        LEFT JOIN users u ON ip.usuario_ingreso_id = u.id
+        LEFT JOIN empresas e ON ip.empresa_id = e.id
+        WHERE ip.estado = 'ADENTRO' 
+        ORDER BY ip.fecha_ingreso DESC
+        "#,
     )
     .fetch_all(pool)
-    .await
+    .await?;
+
+    let mut results = Vec::with_capacity(rows.len());
+    for row in rows {
+        use sqlx::Row;
+        results.push(IngresoProveedor {
+            id: row.get("id"),
+            cedula: row.get("cedula"),
+            nombre: row.get("nombre"),
+            apellido: row.get("apellido"),
+            proveedor_id: row.get("proveedor_id"),
+            empresa_id: row.get("empresa_id"),
+            area_visitada: row.get("area_visitada"),
+            motivo: row.get("motivo"),
+            gafete: row.get("gafete"),
+            tipo_autorizacion: row.get("tipo_autorizacion"),
+            modo_ingreso: row.get("modo_ingreso"),
+            placa_vehiculo: row.get("placa_vehiculo"),
+            fecha_ingreso: row.get("fecha_ingreso"),
+            fecha_salida: row.get("fecha_salida"),
+            estado: row.get("estado"),
+            usuario_ingreso_id: row.get("usuario_ingreso_id"),
+            usuario_salida_id: row.get("usuario_salida_id"),
+            observaciones: row.get("observaciones"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+            usuario_ingreso_nombre: row.get("usuario_ingreso_nombre"),
+            empresa_nombre: row.get("empresa_nombre"),
+        });
+    }
+
+    Ok(results)
 }
 
 pub async fn registrar_salida(
@@ -132,10 +176,40 @@ pub async fn find_open_by_proveedor(
     pool: &SqlitePool,
     proveedor_id: &str,
 ) -> Result<Option<IngresoProveedor>, sqlx::Error> {
-    sqlx::query_as::<_, IngresoProveedor>(
+    let row = sqlx::query(
         "SELECT * FROM ingresos_proveedores WHERE proveedor_id = ? AND estado = 'ADENTRO' LIMIT 1",
     )
     .bind(proveedor_id)
     .fetch_optional(pool)
-    .await
+    .await?;
+
+    if let Some(row) = row {
+        use sqlx::Row;
+        Ok(Some(IngresoProveedor {
+            id: row.get("id"),
+            cedula: row.get("cedula"),
+            nombre: row.get("nombre"),
+            apellido: row.get("apellido"),
+            proveedor_id: row.get("proveedor_id"),
+            empresa_id: row.get("empresa_id"),
+            area_visitada: row.get("area_visitada"),
+            motivo: row.get("motivo"),
+            gafete: row.get("gafete"),
+            tipo_autorizacion: row.get("tipo_autorizacion"),
+            modo_ingreso: row.get("modo_ingreso"),
+            placa_vehiculo: row.get("placa_vehiculo"),
+            fecha_ingreso: row.get("fecha_ingreso"),
+            fecha_salida: row.get("fecha_salida"),
+            estado: row.get("estado"),
+            usuario_ingreso_id: row.get("usuario_ingreso_id"),
+            usuario_salida_id: row.get("usuario_salida_id"),
+            observaciones: row.get("observaciones"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+            usuario_ingreso_nombre: String::new(),
+            empresa_nombre: String::new(),
+        }))
+    } else {
+        Ok(None)
+    }
 }

@@ -172,33 +172,42 @@
   // ==========================================
 
   async function handleSubmit() {
-    if (loading) return;
+    console.log("🚀 handleSubmit called");
+    if (loading) {
+      console.log("⚠️ Already loading, returning");
+      return;
+    }
     if (!$currentUser?.id) {
-      console.error("No hay usuario autenticado");
+      console.error("❌ No hay usuario autenticado");
       return;
     }
 
     loading = true;
+    console.log("📦 Form state:", JSON.stringify(formState, null, 2));
+
+    const payload = {
+      cedula: formState.cedula,
+      nombre: formState.nombre,
+      apellido: formState.apellido,
+      empresaId: formState.empresaId,
+      areaVisitada: formState.areaVisitada,
+      motivo: formState.motivo,
+      gafete: formState.gafeteNumero || undefined,
+      tipoAutorizacion: formState.tipoAutorizacion,
+      modoIngreso: formState.modoIngreso,
+      placaVehiculo: formState.vehiculoPlaca || undefined,
+      marcaVehiculo: formState.vehiculoMarca,
+      modeloVehiculo: formState.vehiculoModelo,
+      colorVehiculo: formState.vehiculoColor,
+      tipoVehiculo: formState.vehiculoTipo,
+      observaciones: formState.observaciones || undefined,
+      usuarioIngresoId: $currentUser.id,
+    };
+    console.log("📤 Payload to send:", JSON.stringify(payload, null, 2));
 
     try {
-      await ingresoProveedorService.createIngreso({
-        cedula: formState.cedula,
-        nombre: formState.nombre,
-        apellido: formState.apellido,
-        empresaId: formState.empresaId,
-        areaVisitada: formState.areaVisitada,
-        motivo: formState.motivo,
-        gafete: formState.gafeteNumero || undefined,
-        tipoAutorizacion: formState.tipoAutorizacion,
-        modoIngreso: formState.modoIngreso,
-        placaVehiculo: formState.vehiculoPlaca || undefined,
-        marcaVehiculo: formState.vehiculoMarca,
-        modeloVehiculo: formState.vehiculoModelo,
-        colorVehiculo: formState.vehiculoColor,
-        tipoVehiculo: formState.vehiculoTipo,
-        observaciones: formState.observaciones || undefined,
-        usuarioIngresoId: $currentUser.id,
-      });
+      const result = await ingresoProveedorService.createIngreso(payload);
+      console.log("✅ Ingreso created:", result);
 
       toast.success("Ingreso de proveedor registrado");
       resetForm();
@@ -207,7 +216,8 @@
       }
       onSuccess();
     } catch (error: any) {
-      toast.error(error.message || "Error al registrar ingreso");
+      console.error("❌ Error creating ingreso:", error);
+      toast.error(error.message || error || "Error al registrar ingreso");
     } finally {
       loading = false;
     }

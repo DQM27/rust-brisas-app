@@ -78,6 +78,12 @@
       width: 130,
     },
     {
+      field: "empresaNombre",
+      headerName: "Empresa",
+      width: 150,
+      valueFormatter: (p) => p.value || "Sin empresa",
+    },
+    {
       field: "gafete",
       headerName: "Gafete",
       width: 100,
@@ -96,6 +102,12 @@
       headerName: "Vehículo",
       width: 120,
       valueFormatter: (p) => p.value || "-",
+    },
+    {
+      field: "usuarioIngresoNombre",
+      headerName: "Registró",
+      width: 150,
+      valueFormatter: (p) => p.value || "N/A",
     },
     {
       field: "fechaIngreso",
