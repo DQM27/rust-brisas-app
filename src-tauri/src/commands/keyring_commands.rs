@@ -209,79 +209,146 @@ pub fn generate_random_secret() -> String {
 /// Comando de diagnóstico para probar el keyring
 #[command]
 pub fn test_keyring() -> Result<String, String> {
-    use keyring::Entry;
+    // Implementación multiplataforma usando el keyring_service
+    #[cfg(target_os = "linux")]
+    use crate::services::keyring_linux as keyring_impl;
 
-    let service = "test-brisas-diagnostic";
-    let username = "test-user";
+    #[cfg(target_os = "windows")]
+    use crate::services::keyring_windows as keyring_impl;
+
+    #[cfg(target_os = "macos")]
+    use crate::services::keyring_service as keyring_impl;
+
+    let test_key = "test-brisas-diagnostic";
     let test_value = "test-password-123";
-
     let mut results = Vec::new();
 
-    // 1. Crear entrada
-    results.push("1. Creando entrada en keyring...".to_string());
-    let entry = match Entry::new(service, username) {
-        Ok(e) => {
-            results.push("   ✓ Entrada creada correctamente".to_string());
-            e
-        }
-        Err(e) => {
-            results.push(format!("   ✗ Error creando entrada: {}", e));
-            return Ok(results.join("\n"));
-        }
-    };
+    // Obtener información del OS
+    results.push(format!("Sistema operativo: {}", std::env::consts::OS));
+    results.push("".to_string());
 
-    // 2. Guardar contraseña
-    results.push("2. Guardando contraseña...".to_string());
-    match entry.set_password(test_value) {
-        Ok(_) => results.push("   ✓ Contraseña guardada correctamente".to_string()),
+    // 1. Guardar credencial
+    results.push("1. Guardando credencial de prueba...".to_string());
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    match keyring_impl::store_secret(test_key, test_value) {
+        Ok(_) => results.push("   ✓ Credencial guardada correctamente".to_string()),
         Err(e) => {
-            results.push(format!("   ✗ Error guardando contraseña: {}", e));
-            results.push(format!("   Detalles: {:?}", e));
+            results.push(format!("   ✗ Error guardando credencial: {}", e));
             return Ok(results.join("\n"));
         }
     }
 
-    // 3. Recuperar contraseña
-    results.push("3. Recuperando contraseña...".to_string());
-    match entry.get_password() {
-        Ok(password) => {
-            results.push(format!("   ✓ Contraseña recuperada: {}", password));
+    #[cfg(target_os = "macos")]
+    {
+        use keyring::Entry;
+        let entry = Entry::new("test-brisas-diagnostic", test_key)
+            .map_err(|e| format!("Error creando entrada: {}", e))?;
+        match entry.set_password(test_value) {
+            Ok(_) => results.push("   ✓ Credencial guardada correctamente".to_string()),
+            Err(e) => {
+                results.push(format!("   ✗ Error guardando credencial: {}", e));
+                return Ok(results.join("\n"));
+            }
+        }
+    }
+
+    // 2. Recuperar credencial
+    results.push("2. Recuperando credencial...".to_string());
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    match keyring_impl::retrieve_secret(test_key) {
+        Some(password) => {
+            results.push(format!("   ✓ Credencial recuperada: {}", password));
             if password == test_value {
-                results.push("   ✓ La contraseña coincide!".to_string());
+                results.push("   ✓ La credencial coincide!".to_string());
             } else {
                 results.push(format!(
-                    "   ✗ La contraseña NO coincide! Esperado: {}, Obtenido: {}",
+                    "   ✗ La credencial NO coincide! Esperado: {}, Obtenido: {}",
                     test_value, password
                 ));
             }
         }
-        Err(e) => {
-            results.push(format!("   ✗ Error recuperando contraseña: {}", e));
+        None => {
+            results.push("   ✗ Error recuperando credencial".to_string());
             return Ok(results.join("\n"));
         }
     }
 
-    // 4. Eliminar contraseña
-    results.push("4. Eliminando contraseña...".to_string());
-    match entry.delete_credential() {
-        Ok(_) => results.push("   ✓ Contraseña eliminada correctamente".to_string()),
+    #[cfg(target_os = "macos")]
+    {
+        use keyring::Entry;
+        let entry = Entry::new("test-brisas-diagnostic", test_key)
+            .map_err(|e| format!("Error creando entrada: {}", e))?;
+        match entry.get_password() {
+            Ok(password) => {
+                results.push(format!("   ✓ Credencial recuperada: {}", password));
+                if password == test_value {
+                    results.push("   ✓ La credencial coincide!".to_string());
+                } else {
+                    results.push(format!(
+                        "   ✗ La credencial NO coincide! Esperado: {}, Obtenido: {}",
+                        test_value, password
+                    ));
+                }
+            }
+            Err(e) => {
+                results.push(format!("   ✗ Error recuperando credencial: {}", e));
+                return Ok(results.join("\n"));
+            }
+        }
+    }
+
+    // 3. Eliminar credencial
+    results.push("3. Eliminando credencial...".to_string());
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    match keyring_impl::delete_secret(test_key) {
+        Ok(_) => results.push("   ✓ Credencial eliminada correctamente".to_string()),
         Err(e) => {
-            results.push(format!("   ✗ Error eliminando contraseña: {}", e));
+            results.push(format!("   ✗ Error eliminando credencial: {}", e));
         }
     }
 
-    // 5. Verificar eliminación
-    results.push("5. Verificando eliminación...".to_string());
-    match entry.get_password() {
-        Ok(password) => {
-            results.push(format!("   ✗ La contraseña aún existe: {}", password));
-        }
-        Err(_) => {
-            results.push("   ✓ La contraseña fue eliminada correctamente".to_string());
+    #[cfg(target_os = "macos")]
+    {
+        use keyring::Entry;
+        let entry = Entry::new("test-brisas-diagnostic", test_key)
+            .map_err(|e| format!("Error creando entrada: {}", e))?;
+        match entry.delete_credential() {
+            Ok(_) => results.push("   ✓ Credencial eliminada correctamente".to_string()),
+            Err(e) => {
+                results.push(format!("   ✗ Error eliminando credencial: {}", e));
+            }
         }
     }
 
-    results.push("\n✓ Test completado exitosamente".to_string());
+    // 4. Verificar eliminación
+    results.push("4. Verificando eliminación...".to_string());
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    match keyring_impl::retrieve_secret(test_key) {
+        Some(password) => {
+            results.push(format!("   ✗ La credencial aún existe: {}", password));
+        }
+        None => {
+            results.push("   ✓ La credencial fue eliminada correctamente".to_string());
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        use keyring::Entry;
+        let entry = Entry::new("test-brisas-diagnostic", test_key)
+            .map_err(|e| format!("Error creando entrada: {}", e))?;
+        match entry.get_password() {
+            Ok(password) => {
+                results.push(format!("   ✗ La credencial aún existe: {}", password));
+            }
+            Err(_) => {
+                results.push("   ✓ La credencial fue eliminada correctamente".to_string());
+            }
+        }
+    }
+
+    results.push("".to_string());
+    results.push("✓ Test completado exitosamente".to_string());
     Ok(results.join("\n"))
 }
 

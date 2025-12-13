@@ -3,16 +3,16 @@
 // ==========================================
 // Servicio para almacenar credenciales de forma segura
 // usando el keyring del sistema operativo:
-// - Windows: Credential Manager
-// - macOS: Keychain
-// - Linux: Secret Service (GNOME Keyring, KWallet)
+// - Windows: Credential Manager (nativo)
+// - macOS: Keychain (librería keyring)
+// - Linux: Secret Service (secret-tool nativo)
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
 use keyring::Entry;
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
 const SERVICE_NAME: &str = "brisas-app";
 
 // ==========================================
@@ -74,7 +74,9 @@ pub struct AllCredentials {
 // FUNCIONES AUXILIARES
 // ==========================================
 
-// Implementación para Linux usando secret-tool directamente
+// ==========================================
+// IMPLEMENTACIÓN LINUX (secret-tool nativo)
+// ==========================================
 #[cfg(target_os = "linux")]
 fn store_value(key: &str, value: &str) -> Result<(), String> {
     use crate::services::keyring_linux;
@@ -93,14 +95,37 @@ fn delete_value(key: &str) -> Result<(), String> {
     keyring_linux::delete_secret(key)
 }
 
-// Implementación para Windows/macOS usando la librería keyring
-#[cfg(not(target_os = "linux"))]
+// ==========================================
+// IMPLEMENTACIÓN WINDOWS (Credential Manager nativo)
+// ==========================================
+#[cfg(target_os = "windows")]
+fn store_value(key: &str, value: &str) -> Result<(), String> {
+    use crate::services::keyring_windows;
+    keyring_windows::store_secret(key, value)
+}
+
+#[cfg(target_os = "windows")]
+fn retrieve_value(key: &str) -> Option<String> {
+    use crate::services::keyring_windows;
+    keyring_windows::retrieve_secret(key)
+}
+
+#[cfg(target_os = "windows")]
+fn delete_value(key: &str) -> Result<(), String> {
+    use crate::services::keyring_windows;
+    keyring_windows::delete_secret(key)
+}
+
+// ==========================================
+// IMPLEMENTACIÓN MACOS (librería keyring)
+// ==========================================
+#[cfg(target_os = "macos")]
 fn get_entry(key: &str) -> Result<Entry, String> {
     Entry::new(SERVICE_NAME, key)
         .map_err(|e| format!("Error creando entrada keyring para '{}': {}", key, e))
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
 fn store_value(key: &str, value: &str) -> Result<(), String> {
     let entry = get_entry(key)?;
     entry
@@ -108,14 +133,14 @@ fn store_value(key: &str, value: &str) -> Result<(), String> {
         .map_err(|e| format!("Error almacenando '{}': {}", key, e))
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
 fn retrieve_value(key: &str) -> Option<String> {
     get_entry(key)
         .ok()
         .and_then(|entry| entry.get_password().ok())
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
 fn delete_value(key: &str) -> Result<(), String> {
     let entry = get_entry(key)?;
     entry

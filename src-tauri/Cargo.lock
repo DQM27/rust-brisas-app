@@ -510,6 +510,7 @@ dependencies = [
  "typst-pdf",
  "unicode-normalization",
  "uuid",
+ "winapi",
 ]
 
 [[package]]
