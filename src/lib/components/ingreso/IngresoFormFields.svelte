@@ -13,6 +13,7 @@
   // ==========================================
 
   export let tipoAutorizacion: string = "praind";
+  export let observaciones: string = "";
 
   // ==========================================
   // HANDLERS
@@ -52,5 +53,23 @@
       <option value="praind">PRAIND</option>
       <option value="correo">Correo/Autorización especial</option>
     </select>
+  </div>
+
+  <!-- OBSERVACIONES -->
+  <div>
+    <label
+      for="observaciones"
+      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+    >
+      Observaciones
+    </label>
+    <textarea
+      id="observaciones"
+      value={observaciones}
+      on:input={handleObservacionesInput}
+      rows="3"
+      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+      placeholder="Observaciones adicionales..."
+    ></textarea>
   </div>
 </div>

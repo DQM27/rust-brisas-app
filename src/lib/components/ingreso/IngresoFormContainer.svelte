@@ -194,7 +194,6 @@
     <!-- BÚSQUEDA DE CONTRATISTA -->
     <ContratistaSearchSection
       bind:this={contratistaSearchRef}
-      contratistaId={formState.contratistaId}
       contratistaNombre={formState.contratistaNombre}
       contratistaData={formState.contratistaData}
       puedeIngresar={formState.puedeIngresar}
