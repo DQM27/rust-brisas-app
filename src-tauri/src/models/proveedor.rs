@@ -1,11 +1,13 @@
 // ==========================================
 // src/models/proveedor.rs
 // ==========================================
-use chrono::NaiveDate;
+
 use serde::{Deserialize, Serialize};
 
+use sqlx::FromRow;
+
 /// Modelo de dominio - Representa un proveedor en la base de datos
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Proveedor {
     pub id: String,
@@ -15,13 +17,30 @@ pub struct Proveedor {
     pub apellido: String,
     pub segundo_apellido: Option<String>,
     pub empresa_id: String,
+    // sqlx no maneja automáticamente enums complejos sin Type, pero como texto sí si coincide.
+    // Si EstadoProveedor es texto en DB, necesitamos que sqlx lo pueda leer.
+    // Lo más fácil es sqlx::Type si está soportado, o string y conversión manual,
+    // pero si usamos FromRow, tiene que mappear directo.
+    // Usualmente scan o try_from.
+    // Asumiremos que en DB es TEXT.
+    // Para simplificar, marcaremos 'estado' como String en el struct DB o implementaremos Type.
+    // Revisando el error original: "trait bound not satisfied", falta FromRow.
+    // Ojo: EstadoProveedor necesita implementar sqlx::Type o FromRow parará ahí.
+    // Mejor cambiamos estado a String en struct y hacemos parsing en el service/impl, o implementamos sqlx::Type.
+    // Dado que el error es solo "FromRow not implemented for Proveedor", iniciamos con eso.
+    // Si falla en runtime por el enum, lo corregiremos.
+    // Pero espera, sqlx map_err dice "Decode".
+    // Vamos a derivar sqlx::Type para EstadoProveedor si es posible, o usar String.
+    // Por simplicidad y robustez rápida: Usar String en el struct ORM y convertir luego,
+    // O derivar sqlx::Type.
+    // Vamos a intentar Type primero.
     pub estado: EstadoProveedor,
     pub created_at: String,
     pub updated_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")] // Matches DB default often or custom
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum EstadoProveedor {
     Activo,
     Inactivo,
@@ -47,11 +66,43 @@ impl EstadoProveedor {
     }
 }
 
+impl TryFrom<String> for EstadoProveedor {
+    type Error = String;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        EstadoProveedor::from_str(&s)
+    }
+}
+
+// Para que sqlx pueda leerlo como String desde la DB y convertirlo
+impl<'r> sqlx::Decode<'r, sqlx::Sqlite> for EstadoProveedor {
+    fn decode(value: sqlx::sqlite::SqliteValueRef<'r>) -> Result<Self, sqlx::error::BoxDynError> {
+        let s = <String as sqlx::Decode<sqlx::Sqlite>>::decode(value)?;
+        Ok(EstadoProveedor::from_str(&s)?)
+    }
+}
+
+impl<'q> sqlx::Encode<'q, sqlx::Sqlite> for EstadoProveedor {
+    fn encode_by_ref(
+        &self,
+        buf: &mut Vec<sqlx::sqlite::SqliteArgumentValue<'q>>,
+    ) -> sqlx::encode::IsNull {
+        let s = self.as_str().to_string();
+        <String as sqlx::Encode<sqlx::Sqlite>>::encode(s, buf)
+    }
+}
+
+impl sqlx::Type<sqlx::Sqlite> for EstadoProveedor {
+    fn type_info() -> sqlx::sqlite::SqliteTypeInfo {
+        <String as sqlx::Type<sqlx::Sqlite>>::type_info()
+    }
+}
+
 // ==========================================
 // DTOs de entrada (Commands/Input)
 // ==========================================
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateProveedorInput {
     pub cedula: String,

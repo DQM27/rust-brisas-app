@@ -1,7 +1,7 @@
 // ==========================================
 // src/commands/proveedor_commands.rs
 // ==========================================
-use crate::models::proveedor::{CreateProveedorInput, ProveedorResponse, UpdateProveedorInput};
+use crate::models::proveedor::{CreateProveedorInput, ProveedorResponse};
 use crate::services::proveedor_service::ProveedorService;
 use sqlx::SqlitePool;
 use tauri::{command, State};

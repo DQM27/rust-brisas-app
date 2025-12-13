@@ -2,9 +2,9 @@
 // src/services/proveedor_service.rs
 // ==========================================
 use crate::db::{empresa_queries, proveedor_queries, vehiculo_queries};
-use crate::models::proveedor::{CreateProveedorInput, ProveedorResponse, UpdateProveedorInput};
+use crate::models::proveedor::{CreateProveedorInput, ProveedorResponse};
 use chrono::Utc;
-use sqlx::{query_as, SqlitePool};
+use sqlx::SqlitePool;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -123,6 +123,7 @@ impl ProveedorService {
             .await
             .map_err(|e| e.to_string())?;
 
+        let proveedor_id = proveedor.id.clone();
         let mut response: ProveedorResponse = proveedor.into();
         if let Some(e) = empresa {
             response.empresa_nombre = e.nombre;
@@ -131,7 +132,7 @@ impl ProveedorService {
         }
 
         // Buscar vehículos
-        let vehiculos = vehiculo_queries::find_by_proveedor(&self.pool, &proveedor.id)
+        let vehiculos = vehiculo_queries::find_by_proveedor(&self.pool, &proveedor_id)
             .await
             .unwrap_or_default();
 

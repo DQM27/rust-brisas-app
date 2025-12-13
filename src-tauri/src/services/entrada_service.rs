@@ -5,7 +5,7 @@
 
 use crate::db::lista_negra_queries;
 use crate::db::{alerta_gafete_queries as alerta_db, contratista_queries, ingreso_queries as db};
-use crate::domain::ingreso::tipos::DatosValidacion;
+
 use crate::domain::ingreso::validaciones_entrada as domain;
 use crate::models::ingreso::{
     CreateIngresoContratistaInput, IngresoResponse, ModoIngreso, TipoAutorizacion, TipoIngreso,

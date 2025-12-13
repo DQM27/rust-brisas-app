@@ -322,7 +322,8 @@ pub async fn update_contratista(
                         vehiculo_queries::insert(
                             pool,
                             &vid,
-                            &id,
+                            Some(&id),
+                            None, // proveedor_id
                             tipo,
                             placa,
                             input.marca.as_deref(),

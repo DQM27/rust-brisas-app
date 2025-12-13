@@ -110,6 +110,17 @@ pub struct VehiculoResponse {
     pub updated_at: String,
 }
 
+// Implementación de Display para TipoVehiculo
+use std::fmt;
+
+impl fmt::Display for TipoVehiculo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.display())
+    }
+}
+
+// ... (CreateVehiculoInput code remains same)
+
 impl From<Vehiculo> for VehiculoResponse {
     fn from(v: Vehiculo) -> Self {
         let marca_str = v.marca.clone().unwrap_or_else(|| "N/A".to_string());
@@ -131,7 +142,7 @@ impl From<Vehiculo> for VehiculoResponse {
 
         Self {
             id: v.id,
-            contratista_id: v.contratista_id,
+            contratista_id: v.contratista_id.unwrap_or_default(), // Handle None as empty string
             contratista_nombre: String::new(),
             contratista_cedula: String::new(),
             empresa_nombre: String::new(),

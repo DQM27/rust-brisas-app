@@ -1,9 +1,8 @@
 use crate::db::{cita_queries, visitante_queries};
 use crate::domain::cita::{Cita, CitaPopulated, CreateCitaInput};
-use crate::domain::visitante::{CreateVisitanteInput, Visitante};
+use crate::domain::visitante::CreateVisitanteInput;
 
 use sqlx::SqlitePool;
-use std::sync::Arc;
 
 pub struct CitaService {
     pool: SqlitePool,
