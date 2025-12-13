@@ -7,10 +7,13 @@
   import type ProveedorFormType from "./ProveedorForm.svelte";
 
   import {
-    proveedorService,
-    type CreateProveedorInput,
-    type ProveedorResponse,
-  } from "$lib/services/proveedorService";
+    createProveedor,
+    fetchProveedorByCedula,
+  } from "$lib/logic/proveedor/proveedorService";
+  import type {
+    CreateProveedorInput,
+    ProveedorResponse,
+  } from "$lib/types/proveedor";
   import { submitFetchActiveEmpresas } from "$lib/logic/empresa/empresaService";
   import { closeTab, activeTabId } from "$lib/stores/tabs";
 
@@ -44,15 +47,11 @@
       proveedorData = data.initialData;
     } else if (data?.proveedorId) {
       loading = true;
-      try {
-        const result = await proveedorService.getByCedula(data.proveedorId);
-        if (result) {
-          proveedorData = result;
-        } else {
-          toast.error("Proveedor no encontrado");
-        }
-      } catch (err: any) {
-        toast.error("Error al cargar datos del proveedor: " + err.message);
+      const result = await fetchProveedorByCedula(data.proveedorId);
+      if (result.ok) {
+        proveedorData = result.data;
+      } else {
+        toast.error(result.error);
       }
       loading = false;
     }
@@ -61,42 +60,41 @@
   async function handleSubmit(formData: any) {
     loading = true;
 
-    try {
-      if (mode === "edit" && data?.proveedorId) {
-        // MODO EDICIÓN - Not implemented yet in backend
-        toast.error("La edición de proveedores aún no está implementada");
-      } else {
-        // MODO CREACIÓN
-        const input: CreateProveedorInput = {
-          cedula: formData.cedula,
-          nombre: formData.nombre,
-          segundoNombre: formData.segundoNombre || undefined,
-          apellido: formData.apellido,
-          segundoApellido: formData.segundoApellido || undefined,
-          empresaId: formData.empresaId,
-          tieneVehiculo: formData.tieneVehiculo,
-          tipoVehiculo: formData.tipoVehiculo || undefined,
-          placa: formData.placa || undefined,
-          marca: formData.marca || undefined,
-          modelo: formData.modelo || undefined,
-          color: formData.color || undefined,
-        };
+    if (mode === "edit" && data?.proveedorId) {
+      // MODO EDICIÓN - Not implemented yet
+      toast.error("La edición de proveedores aún no está implementada");
+    } else {
+      // MODO CREACIÓN
+      const input: CreateProveedorInput = {
+        cedula: formData.cedula,
+        nombre: formData.nombre,
+        segundoNombre: formData.segundoNombre || undefined,
+        apellido: formData.apellido,
+        segundoApellido: formData.segundoApellido || undefined,
+        empresaId: formData.empresaId,
+        tieneVehiculo: formData.tieneVehiculo,
+        tipoVehiculo: formData.tipoVehiculo || undefined,
+        placa: formData.placa || undefined,
+        marca: formData.marca || undefined,
+        modelo: formData.modelo || undefined,
+        color: formData.color || undefined,
+      };
 
-        await proveedorService.create(input);
+      const result = await createProveedor(input);
 
+      if (result.ok) {
         formRef?.reset();
         toast.success("Proveedor registrado exitosamente", {
           icon: "✓",
           duration: 3000,
         });
-        // Cerrar la pestaña actual al finalizar
         closeTab($activeTabId);
+      } else {
+        toast.error(result.error, {
+          icon: "✕",
+          duration: 4000,
+        });
       }
-    } catch (err: any) {
-      toast.error(err.message || "Error al guardar proveedor", {
-        icon: "✕",
-        duration: 4000,
-      });
     }
 
     loading = false;

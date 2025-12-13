@@ -2,7 +2,7 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
   import { AlertCircle, Filter } from "lucide-svelte";
-  import type { ProveedorResponse } from "$lib/services/proveedorService";
+  import type { ProveedorResponse } from "$lib/types/proveedor";
   import type { SearchResult } from "$lib/types/search.types";
   import type { ColDef } from "@ag-grid-community/core";
   import type { CustomToolbarButton } from "$lib/types/agGrid";
