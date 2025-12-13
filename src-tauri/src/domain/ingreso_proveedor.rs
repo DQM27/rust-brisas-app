@@ -64,12 +64,14 @@ pub struct ProveedorSnapshot {
     pub empresa_nombre: Option<String>,
 }
 
+use crate::models::ingreso::AlertaGafeteResponse;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidacionIngresoProveedorResponse {
     pub puede_ingresar: bool,
     pub motivo_rechazo: Option<String>,
-    pub alertas: Vec<String>,
+    pub alertas: Vec<AlertaGafeteResponse>,
     pub proveedor: Option<serde_json::Value>,
     pub tiene_ingreso_abierto: bool,
     pub ingreso_abierto: Option<IngresoProveedor>,

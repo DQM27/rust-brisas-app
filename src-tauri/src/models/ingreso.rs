@@ -351,7 +351,7 @@ pub struct ResolverAlertaInput {
     pub notas: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AlertaGafeteResponse {
     pub id: String,

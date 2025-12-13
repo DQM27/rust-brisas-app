@@ -228,10 +228,21 @@ impl IngresoProveedorService {
             "vehiculos": vehiculos
         });
 
+        // 5. Obtener alertas pendientes
+        let alertas_pendientes = crate::db::alerta_gafete_queries::find_pendientes_by_cedula(
+            &self.pool,
+            &proveedor.cedula,
+        )
+        .await
+        .unwrap_or_default();
+
+        let alertas_response: Vec<crate::models::ingreso::AlertaGafeteResponse> =
+            alertas_pendientes.into_iter().map(|a| a.into()).collect();
+
         Ok(ValidacionIngresoProveedorResponse {
             puede_ingresar: true, // Por defecto true para proveedores (no PRAIND check yet)
             motivo_rechazo: None,
-            alertas: vec![],
+            alertas: alertas_response,
             proveedor: Some(proveedor_json),
             tiene_ingreso_abierto: false,
             ingreso_abierto: None,

@@ -83,7 +83,7 @@ export interface ProveedorCatalogItem {
 export interface ValidacionIngresoProveedorResponse {
     puedeIngresar: boolean;
     motivoRechazo?: string;
-    alertas: string[];
+    alertas: any[]; // AlertaGafeteResponse[]
     proveedor?: any; // JSON Value from backend
     tieneIngresoAbierto: boolean;
     ingresoAbierto?: IngresoProveedor;

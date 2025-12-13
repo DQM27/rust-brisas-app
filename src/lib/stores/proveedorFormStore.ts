@@ -19,6 +19,7 @@ export interface ProveedorFormState extends ProveedorFormData {
     proveedorData: any; // JSON data del backend
     puedeIngresar: boolean;
     mensajeValidacion: string;
+    alertas: any[]; // AlertaGafeteResponse[]
     vehiculoId?: string;
 }
 
@@ -45,6 +46,7 @@ const initialFormData: ProveedorFormState = {
     proveedorData: null,
     puedeIngresar: false,
     mensajeValidacion: '',
+    alertas: [],
     vehiculoId: undefined,
 };
 
@@ -155,6 +157,7 @@ export function setProveedorValidado(data: {
     proveedorData: any;
     puedeIngresar: boolean;
     mensajeValidacion: string;
+    alertas: any[];
 }) {
     proveedorFormData.update(state => ({
         ...state,

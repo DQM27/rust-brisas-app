@@ -103,13 +103,14 @@
         return;
       }
 
-      // Update store with validated data
+      // 2. Actualizar store con resultados (incluyendo alertas)
       setProveedorValidado({
         proveedorId: validacion.proveedor.id,
         proveedorNombre: `${validacion.proveedor.nombre} ${validacion.proveedor.apellido}`,
         proveedorData: validacion.proveedor,
         puedeIngresar: validacion.puedeIngresar,
-        mensajeValidacion: "",
+        mensajeValidacion: validacion.motivoRechazo || "",
+        alertas: validacion.alertas || [],
       });
 
       // Handle auto-selection
@@ -259,6 +260,10 @@
     <!-- BÚSQUEDA DE PROVEEDOR -->
     <ProveedorSearchSection
       bind:this={proveedorSearchRef}
+      proveedorData={formState.proveedorData}
+      puedeIngresar={formState.puedeIngresar}
+      mensajeValidacion={formState.mensajeValidacion}
+      alertas={formState.alertas}
       on:select={handleProveedorSelect}
       on:clear={handleProveedorCleared}
     />
