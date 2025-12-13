@@ -9,6 +9,10 @@ pub mod entrada_service;
 pub mod export_service;
 pub mod gafete_service;
 pub mod keyring_service;
+
+#[cfg(target_os = "linux")]
+pub mod keyring_linux;
+
 pub mod lista_negra_service;
 pub mod permanencia_service;
 pub mod salida_service;

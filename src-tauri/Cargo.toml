@@ -54,6 +54,7 @@ shellexpand = "3.1"
 # SECURE CREDENTIAL STORAGE (OS Keyring)
 # ==========================================
 keyring = "3"
+secret-service = { version = "4.0", features = ["rt-tokio-crypto-rust"], optional = true }
 
 # ==========================================
 # EXCEL IMPORT (existente)

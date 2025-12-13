@@ -169,6 +169,7 @@ macro_rules! register_handlers {
             commands::keyring_commands::has_sqlite_password,
             commands::keyring_commands::update_sqlite_password,
             commands::keyring_commands::generate_random_secret,
+            commands::keyring_commands::test_keyring,
             commands::keyring_commands::reset_all_credentials,
         ]
     };

@@ -228,6 +228,82 @@ pub fn generate_random_secret() -> String {
     keyring_service::generate_random_secret()
 }
 
+/// Comando de diagnóstico para probar el keyring
+#[command]
+pub fn test_keyring() -> Result<String, String> {
+    use keyring::Entry;
+
+    let service = "test-brisas-diagnostic";
+    let username = "test-user";
+    let test_value = "test-password-123";
+
+    let mut results = Vec::new();
+
+    // 1. Crear entrada
+    results.push("1. Creando entrada en keyring...".to_string());
+    let entry = match Entry::new(service, username) {
+        Ok(e) => {
+            results.push("   ✓ Entrada creada correctamente".to_string());
+            e
+        }
+        Err(e) => {
+            results.push(format!("   ✗ Error creando entrada: {}", e));
+            return Ok(results.join("\n"));
+        }
+    };
+
+    // 2. Guardar contraseña
+    results.push("2. Guardando contraseña...".to_string());
+    match entry.set_password(test_value) {
+        Ok(_) => results.push("   ✓ Contraseña guardada correctamente".to_string()),
+        Err(e) => {
+            results.push(format!("   ✗ Error guardando contraseña: {}", e));
+            results.push(format!("   Detalles: {:?}", e));
+            return Ok(results.join("\n"));
+        }
+    }
+
+    // 3. Recuperar contraseña
+    results.push("3. Recuperando contraseña...".to_string());
+    match entry.get_password() {
+        Ok(password) => {
+            results.push(format!("   ✓ Contraseña recuperada: {}", password));
+            if password == test_value {
+                results.push("   ✓ La contraseña coincide!".to_string());
+            } else {
+                results.push(format!("   ✗ La contraseña NO coincide! Esperado: {}, Obtenido: {}", test_value, password));
+            }
+        }
+        Err(e) => {
+            results.push(format!("   ✗ Error recuperando contraseña: {}", e));
+            return Ok(results.join("\n"));
+        }
+    }
+
+    // 4. Eliminar contraseña
+    results.push("4. Eliminando contraseña...".to_string());
+    match entry.delete_credential() {
+        Ok(_) => results.push("   ✓ Contraseña eliminada correctamente".to_string()),
+        Err(e) => {
+            results.push(format!("   ✗ Error eliminando contraseña: {}", e));
+        }
+    }
+
+    // 5. Verificar eliminación
+    results.push("5. Verificando eliminación...".to_string());
+    match entry.get_password() {
+        Ok(password) => {
+            results.push(format!("   ✗ La contraseña aún existe: {}", password));
+        }
+        Err(_) => {
+            results.push("   ✓ La contraseña fue eliminada correctamente".to_string());
+        }
+    }
+
+    results.push("\n✓ Test completado exitosamente".to_string());
+    Ok(results.join("\n"))
+}
+
 /// Resetea todas las credenciales (usar con cuidado)
 #[command]
 pub fn reset_all_credentials(

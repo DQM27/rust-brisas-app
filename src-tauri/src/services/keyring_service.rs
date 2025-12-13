@@ -7,7 +7,9 @@
 // - macOS: Keychain
 // - Linux: Secret Service (GNOME Keyring, KWallet)
 
+#[cfg(not(target_os = "linux"))]
 use keyring::Entry;
+
 use serde::{Deserialize, Serialize};
 
 const SERVICE_NAME: &str = "brisas-app";
@@ -75,23 +77,48 @@ pub struct AllCredentials {
 // FUNCIONES AUXILIARES
 // ==========================================
 
+// Implementación para Linux usando secret-tool directamente
+#[cfg(target_os = "linux")]
+fn store_value(key: &str, value: &str) -> Result<(), String> {
+    use crate::services::keyring_linux;
+    keyring_linux::store_secret(key, value)
+}
+
+#[cfg(target_os = "linux")]
+fn retrieve_value(key: &str) -> Option<String> {
+    use crate::services::keyring_linux;
+    keyring_linux::retrieve_secret(key)
+}
+
+#[cfg(target_os = "linux")]
+fn delete_value(key: &str) -> Result<(), String> {
+    use crate::services::keyring_linux;
+    keyring_linux::delete_secret(key)
+}
+
+// Implementación para Windows/macOS usando la librería keyring
+#[cfg(not(target_os = "linux"))]
 fn get_entry(key: &str) -> Result<Entry, String> {
     Entry::new(SERVICE_NAME, key)
         .map_err(|e| format!("Error creando entrada keyring para '{}': {}", key, e))
 }
 
+#[cfg(not(target_os = "linux"))]
 fn store_value(key: &str, value: &str) -> Result<(), String> {
+    eprintln!("[KEYRING DEBUG] Intentando guardar: service='{}', key='{}', value_len={}", SERVICE_NAME, key, value.len());
     let entry = get_entry(key)?;
     entry.set_password(value)
         .map_err(|e| format!("Error almacenando '{}': {}", key, e))
 }
 
+#[cfg(not(target_os = "linux"))]
 fn retrieve_value(key: &str) -> Option<String> {
     get_entry(key)
         .ok()
         .and_then(|entry| entry.get_password().ok())
 }
 
+#[cfg(not(target_os = "linux"))]
 fn delete_value(key: &str) -> Result<(), String> {
     let entry = get_entry(key)?;
     entry.delete_credential()
