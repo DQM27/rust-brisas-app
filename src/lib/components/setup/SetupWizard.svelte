@@ -235,11 +235,13 @@
           <div class="space-y-4">
             <div>
               <label
+                for="terminalName"
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 Nombre de la Terminal
               </label>
               <input
+                id="terminalName"
                 type="text"
                 bind:value={terminalName}
                 placeholder="Ej: Porteria Principal - Acceso 1"
@@ -248,11 +250,13 @@
             </div>
             <div>
               <label
+                for="terminalLocation"
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 Ubicacion Fisica
               </label>
               <input
+                id="terminalLocation"
                 type="text"
                 bind:value={terminalLocation}
                 placeholder="Ej: Entrada Norte"
@@ -281,11 +285,13 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label
+                  for="smtpHost"
                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >
                   Host SMTP
                 </label>
                 <input
+                  id="smtpHost"
                   type="text"
                   bind:value={smtpCredentials.host}
                   placeholder="smtp.gmail.com"
@@ -294,11 +300,13 @@
               </div>
               <div>
                 <label
+                  for="smtpPort"
                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >
                   Puerto
                 </label>
                 <input
+                  id="smtpPort"
                   type="number"
                   bind:value={smtpCredentials.port}
                   placeholder="587"
@@ -309,11 +317,13 @@
 
             <div>
               <label
+                for="smtpUser"
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 Usuario / Email
               </label>
               <input
+                id="smtpUser"
                 type="email"
                 bind:value={smtpCredentials.user}
                 placeholder="tu@email.com"
@@ -323,12 +333,14 @@
 
             <div>
               <label
+                for="smtpPassword"
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 Contrasena de Aplicacion
               </label>
               <div class="relative">
                 <input
+                  id="smtpPassword"
                   type={showSmtpPassword ? "text" : "password"}
                   bind:value={smtpCredentials.password}
                   placeholder="••••••••••••"
@@ -350,11 +362,13 @@
 
             <div>
               <label
+                for="smtpFeedback"
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 Email de Destino (Feedback)
               </label>
               <input
+                id="smtpFeedback"
                 type="email"
                 bind:value={smtpCredentials.feedback_email}
                 placeholder="soporte@tuempresa.com"
@@ -412,6 +426,7 @@
           <div class="space-y-4">
             <div>
               <label
+                for="argon2Secret"
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 Secret (Pepper)
@@ -419,6 +434,7 @@
               <div class="flex gap-2">
                 <div class="relative flex-1">
                   <input
+                    id="argon2Secret"
                     type={showArgon2Secret ? "text" : "password"}
                     bind:value={argon2Params.secret}
                     placeholder="Secret para hasheo de contraseñas"
@@ -453,11 +469,13 @@
             <div class="grid grid-cols-3 gap-4">
               <div>
                 <label
+                  for="argon2Memory"
                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >
                   Memoria (KB)
                 </label>
                 <input
+                  id="argon2Memory"
                   type="number"
                   bind:value={argon2Params.memory}
                   min="1024"
@@ -467,11 +485,13 @@
               </div>
               <div>
                 <label
+                  for="argon2Iterations"
                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >
                   Iteraciones
                 </label>
                 <input
+                  id="argon2Iterations"
                   type="number"
                   bind:value={argon2Params.iterations}
                   min="1"
@@ -481,11 +501,13 @@
               </div>
               <div>
                 <label
+                  for="argon2Parallelism"
                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                 >
                   Paralelismo
                 </label>
                 <input
+                  id="argon2Parallelism"
                   type="number"
                   bind:value={argon2Params.parallelism}
                   min="1"

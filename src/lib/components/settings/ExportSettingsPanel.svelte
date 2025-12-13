@@ -15,7 +15,7 @@
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import { exportProfileStore } from "$lib/stores/exportProfileStore";
-  import type { ExportProfile } from "$lib/types/exportProfile";
+  import type { ExportProfile, PdfDesign } from "$lib/types/exportProfile";
   import { DEFAULT_PDF_DESIGN } from "$lib/types/exportProfile";
 
   onMount(() => {
@@ -97,6 +97,13 @@
       }
     }
   });
+
+  const colorOptions: { key: keyof PdfDesign["colors"]; label: string }[] = [
+    { key: "header_fill", label: "Fondo Header" },
+    { key: "header_text", label: "Texto Header" },
+    { key: "row_text", label: "Texto Filas" },
+    { key: "border", label: "Bordes" },
+  ];
 </script>
 
 <div class="space-y-6">
@@ -187,9 +194,10 @@
                       <div>
                         {profile.pdf_design.orientation === "landscape"
                           ? "Horizontal"
-                          : "Vertical"}, {profile.pdf_design.page_size}, Márgenes: {profile
-                          .pdf_design.margin_x}{profile.pdf_design.margin_x_unit} × {profile
-                          .pdf_design.margin_y}{profile.pdf_design.margin_y_unit}
+                          : "Vertical"}, {profile.pdf_design.page_size},
+                        Márgenes: {profile.pdf_design.margin_x}{profile
+                          .pdf_design.margin_x_unit} × {profile.pdf_design
+                          .margin_y}{profile.pdf_design.margin_y_unit}
                       </div>
                       <div class="flex items-center gap-2">
                         <div
@@ -199,7 +207,8 @@
                         ></div>
                         <div
                           class="w-4 h-4 rounded border"
-                          style="background: {profile.pdf_design.colors.border};"
+                          style="background: {profile.pdf_design.colors
+                            .border};"
                         ></div>
                       </div>
                     {:else if profile.format === "csv" && profile.csv_options}
@@ -275,10 +284,14 @@
         <!-- Nombre y Formato -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              for="profileName"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
               Nombre
             </label>
             <input
+              id="profileName"
               type="text"
               bind:value={editingProfile.name}
               class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100"
@@ -286,10 +299,14 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              for="profileFormat"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
               Formato
             </label>
             <select
+              id="profileFormat"
               bind:value={editingProfile.format}
               class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117]"
             >
@@ -307,8 +324,9 @@
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm mb-2">Tamaño</label>
+                <label for="pdfSize" class="block text-sm mb-2">Tamaño</label>
                 <select
+                  id="pdfSize"
                   bind:value={editingProfile.pdf_design.page_size}
                   class="w-full px-3 py-2 text-sm rounded-md border bg-white dark:bg-[#0d1117]"
                 >
@@ -319,8 +337,11 @@
               </div>
 
               <div>
-                <label class="block text-sm mb-2">Orientación</label>
+                <label for="pdfOrientation" class="block text-sm mb-2"
+                  >Orientación</label
+                >
                 <select
+                  id="pdfOrientation"
                   bind:value={editingProfile.pdf_design.orientation}
                   class="w-full px-3 py-2 text-sm rounded-md border bg-white dark:bg-[#0d1117]"
                 >
@@ -333,14 +354,18 @@
             <!-- Márgenes -->
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm mb-2">Margen X</label>
+                <label for="pdfMarginX" class="block text-sm mb-2"
+                  >Margen X</label
+                >
                 <div class="flex gap-2">
                   <input
+                    id="pdfMarginX"
                     type="number"
                     bind:value={editingProfile.pdf_design.margin_x}
                     class="flex-1 px-3 py-2 text-sm rounded-md border bg-white dark:bg-[#0d1117]"
                   />
                   <select
+                    aria-label="Unidad Margen X"
                     bind:value={editingProfile.pdf_design.margin_x_unit}
                     class="px-3 py-2 text-sm rounded-md border bg-white dark:bg-[#0d1117]"
                   >
@@ -353,14 +378,18 @@
               </div>
 
               <div>
-                <label class="block text-sm mb-2">Margen Y</label>
+                <label for="pdfMarginY" class="block text-sm mb-2"
+                  >Margen Y</label
+                >
                 <div class="flex gap-2">
                   <input
+                    id="pdfMarginY"
                     type="number"
                     bind:value={editingProfile.pdf_design.margin_y}
                     class="flex-1 px-3 py-2 text-sm rounded-md border bg-white dark:bg-[#0d1117]"
                   />
                   <select
+                    aria-label="Unidad Margen Y"
                     bind:value={editingProfile.pdf_design.margin_y_unit}
                     class="px-3 py-2 text-sm rounded-md border bg-white dark:bg-[#0d1117]"
                   >
@@ -375,12 +404,7 @@
 
             <!-- Colores -->
             <div class="grid grid-cols-2 gap-3">
-              {#each [
-                { key: "header_fill", label: "Fondo Header" },
-                { key: "header_text", label: "Texto Header" },
-                { key: "row_text", label: "Texto Filas" },
-                { key: "border", label: "Bordes" },
-              ] as c}
+              {#each colorOptions as c}
                 <div class="flex items-center gap-2">
                   <input
                     type="color"
@@ -397,8 +421,11 @@
             <h4 class="font-medium">Opciones CSV</h4>
 
             <div>
-              <label class="block text-sm mb-2">Delimitador</label>
+              <label for="csvDelimiter" class="block text-sm mb-2"
+                >Delimitador</label
+              >
               <select
+                id="csvDelimiter"
                 bind:value={editingProfile.csv_options.delimiter}
                 class="w-full px-3 py-2 text-sm rounded-md border bg-white dark:bg-[#0d1117]"
               >

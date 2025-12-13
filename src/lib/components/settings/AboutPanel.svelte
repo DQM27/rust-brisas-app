@@ -91,7 +91,9 @@
     attachmentFile = null;
     attachmentName = "";
     attachmentBase64 = "";
-    const input = document.getElementById("about-file-upload") as HTMLInputElement;
+    const input = document.getElementById(
+      "about-file-upload",
+    ) as HTMLInputElement;
     if (input) input.value = "";
   }
 
@@ -154,7 +156,9 @@
   >
     <!-- Header Section -->
     <div class="text-center space-y-4 mb-10">
-      <h1 class="text-4xl font-extrabold tracking-tight">Acerca de Brisas App</h1>
+      <h1 class="text-4xl font-extrabold tracking-tight">
+        Acerca de Brisas App
+      </h1>
       <p class="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto">
         Gestion integral de accesos y control de contratistas.
       </p>
@@ -217,8 +221,8 @@
           <div
             class="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-3 rounded-md text-xs border border-blue-200 dark:border-blue-800/30"
           >
-            <strong>Novedades?</strong> Las notas de actualizacion detalladas se encuentran
-            en la seccion de actualizaciones del sistema.
+            <strong>Novedades?</strong> Las notas de actualizacion detalladas se
+            encuentran en la seccion de actualizaciones del sistema.
           </div>
         </div>
       </div>
@@ -239,12 +243,20 @@
 
         <!-- Body -->
         <div class="p-4">
-          <form class="space-y-4" onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+          <form
+            class="space-y-4"
+            onsubmit={(e) => {
+              e.preventDefault();
+              handleSubmit();
+            }}
+          >
             <!-- Tipo Selector (Card Style) -->
             <div class="space-y-2">
-              <label class="block text-xs font-semibold text-gray-900 dark:text-gray-100">
+              <span
+                class="block text-xs font-semibold text-gray-900 dark:text-gray-100"
+              >
                 Tipo de Reporte
-              </label>
+              </span>
               <div class="grid grid-cols-3 gap-2">
                 {#each tipoOptions as tipo}
                   {@const Icon = tipo.icon}
@@ -257,7 +269,9 @@
                       : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#161b22]'}"
                   >
                     <Icon
-                      class="w-5 h-5 {selectedTipo === tipo.value ? tipo.color : 'text-gray-400'}"
+                      class="w-5 h-5 {selectedTipo === tipo.value
+                        ? tipo.color
+                        : 'text-gray-400'}"
                     />
                     <span
                       class="text-xs font-medium {selectedTipo === tipo.value
@@ -308,7 +322,9 @@
             <div class="space-y-1">
               <span
                 class="block text-xs font-semibold text-gray-900 dark:text-gray-100"
-                >Adjuntar Imagen <span class="text-gray-500 font-normal">(Opcional)</span></span
+                >Adjuntar Imagen <span class="text-gray-500 font-normal"
+                  >(Opcional)</span
+                ></span
               >
               <div class="flex items-center gap-2">
                 <label
@@ -345,7 +361,8 @@
               <label
                 for="about-contact"
                 class="block text-xs font-semibold text-gray-900 dark:text-gray-100"
-                >Contacto <span class="text-gray-500 font-normal">(Opcional)</span
+                >Contacto <span class="text-gray-500 font-normal"
+                  >(Opcional)</span
                 ></label
               >
               <input

@@ -134,6 +134,7 @@
         <div
           class="tab-item {isActive ? 'active' : ''}"
           role="tab"
+          tabindex="0"
           aria-selected={isActive}
           oncontextmenu={(e) => handleContextMenu(e, id, index)}
         >

@@ -288,10 +288,12 @@
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <label
+                    for="smtpEditHost"
                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                     >Host</label
                   >
                   <input
+                    id="smtpEditHost"
                     type="text"
                     bind:value={smtpForm.host}
                     class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100"
@@ -299,10 +301,12 @@
                 </div>
                 <div>
                   <label
+                    for="smtpEditPort"
                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                     >Puerto</label
                   >
                   <input
+                    id="smtpEditPort"
                     type="number"
                     bind:value={smtpForm.port}
                     class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100"
@@ -311,10 +315,12 @@
               </div>
               <div>
                 <label
+                  for="smtpEditUser"
                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >Usuario</label
                 >
                 <input
+                  id="smtpEditUser"
                   type="email"
                   bind:value={smtpForm.user}
                   class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100"
@@ -322,11 +328,13 @@
               </div>
               <div>
                 <label
+                  for="smtpEditPassword"
                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >Nueva Contrasena</label
                 >
                 <div class="relative">
                   <input
+                    id="smtpEditPassword"
                     type={showSmtpPassword ? "text" : "password"}
                     bind:value={smtpForm.password}
                     placeholder="••••••••••••"
@@ -345,10 +353,12 @@
               </div>
               <div>
                 <label
+                  for="smtpEditFeedback"
                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >Email de Destino</label
                 >
                 <input
+                  id="smtpEditFeedback"
                   type="email"
                   bind:value={smtpForm.feedback_email}
                   class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100"
@@ -455,12 +465,14 @@
             <div class="space-y-4">
               <div>
                 <label
+                  for="argon2EditSecret"
                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                   >Nuevo Secret</label
                 >
                 <div class="flex gap-2">
                   <div class="relative flex-1">
                     <input
+                      id="argon2EditSecret"
                       type={showArgon2Secret ? "text" : "password"}
                       bind:value={argon2Form.secret}
                       placeholder="Ingresa nuevo secret"
@@ -487,10 +499,12 @@
               <div class="grid grid-cols-3 gap-4">
                 <div>
                   <label
+                    for="argon2EditMemory"
                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                     >Memoria (KB)</label
                   >
                   <input
+                    id="argon2EditMemory"
                     type="number"
                     bind:value={argon2Form.memory}
                     min="1024"
@@ -499,10 +513,12 @@
                 </div>
                 <div>
                   <label
+                    for="argon2EditIterations"
                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                     >Iteraciones</label
                   >
                   <input
+                    id="argon2EditIterations"
                     type="number"
                     bind:value={argon2Form.iterations}
                     min="1"
@@ -511,10 +527,12 @@
                 </div>
                 <div>
                   <label
+                    for="argon2EditParallelism"
                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                     >Paralelismo</label
                   >
                   <input
+                    id="argon2EditParallelism"
                     type="number"
                     bind:value={argon2Form.parallelism}
                     min="1"

@@ -17,6 +17,7 @@
 
   // Estado de autenticación reactivo
   let authenticated = $derived($isAuthenticated);
+  let { children } = $props();
 
   // Estado del wizard de setup
   let showSetupWizard = $derived($setupWizardVisible);
@@ -74,7 +75,7 @@
     <div class="flex-1 bg-surface-1 overflow-auto relative flex">
       <Toast />
       <div class="flex-1 w-full">
-        <slot />
+        {@render children()}
       </div>
     </div>
   </div>

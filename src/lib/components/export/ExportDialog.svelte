@@ -149,8 +149,10 @@
     class="bg-white dark:bg-[#0d1117] rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl flex flex-row overflow-hidden max-h-[90vh]"
     transition:fly={{ y: 20, duration: 300 }}
     onclick={(e) => e.stopPropagation()}
+    onkeydown={() => {}}
     role="dialog"
     aria-modal="true"
+    tabindex="-1"
   >
     <!-- Left Panel: Main Config -->
     <div class="w-full max-w-md flex flex-col min-w-[420px]">
@@ -182,11 +184,11 @@
       <div class="flex-1 overflow-y-auto p-6 space-y-5">
         <!-- Selector de formato -->
         <div>
-          <label
+          <span
             class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3"
           >
             Formato de exportación
-          </label>
+          </span>
           <div class="grid grid-cols-3 gap-3">
             {#each formats as format}
               {@const Icon = format.icon}
