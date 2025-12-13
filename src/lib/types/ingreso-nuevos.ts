@@ -44,21 +44,21 @@ export interface CreateIngresoProveedorInput {
     cedula: string;
     nombre: string;
     apellido: string;
-    empresa_id: string;
-    area_visitada: string;
+    empresaId: string;
+    areaVisitada: string;
     motivo: string;
     gafete?: string;
-    tipo_autorizacion: string;
-    modo_ingreso: string;
+    tipoAutorizacion: string;
+    modoIngreso: string;
     // Vehicle fields
-    tipo_vehiculo?: string;
-    placa_vehiculo?: string;
-    marca_vehiculo?: string;
-    modelo_vehiculo?: string;
-    color_vehiculo?: string;
+    tipoVehiculo?: string;
+    placaVehiculo?: string;
+    marcaVehiculo?: string;
+    modeloVehiculo?: string;
+    colorVehiculo?: string;
     // Audit
     observaciones?: string;
-    usuario_ingreso_id: string;
+    usuarioIngresoId: string;
 }
 
 export interface ProveedorCatalogItem {

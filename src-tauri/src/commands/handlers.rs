@@ -79,6 +79,7 @@ macro_rules! register_handlers {
             commands::ingreso_proveedor_commands::crear_ingreso_proveedor_v2,
             commands::ingreso_proveedor_commands::get_ingresos_proveedores_activos,
             commands::ingreso_proveedor_commands::registrar_salida_proveedor,
+            commands::ingreso_proveedor_commands::validar_ingreso_proveedor,
             commands::ingreso_proveedor_commands::search_proveedores, // Deprecated/Legacy search
             // ==========================================
             // COMANDOS DE PROVEEDORES (CATALOGO)

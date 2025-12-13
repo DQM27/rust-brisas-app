@@ -1,13 +1,13 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import type { ProveedorSnapshot } from "$lib/types/ingreso-nuevos";
+  import type { ProveedorCatalogItem } from "$lib/types/ingreso-nuevos";
   import SearchBar from "$lib/components/shared/SearchBar.svelte";
   import { ingresoProveedorService } from "$lib/services/ingresoProveedorService";
   import type { SearchResult } from "$lib/types/search.types";
 
   const dispatch = createEventDispatcher();
 
-  export let selectedProveedor: ProveedorSnapshot | null = null;
+  export let selectedProveedor: ProveedorCatalogItem | null = null;
 
   let searchBar: any = null;
 
@@ -47,6 +47,10 @@
 
   export function reset() {
     searchBar?.clear();
+  }
+
+  export function focus() {
+    searchBar?.focus();
   }
 </script>
 
