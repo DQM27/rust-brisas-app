@@ -56,6 +56,72 @@ pub struct ResultadoValidacionEntrada {
     pub alertas: Vec<String>, // warnings no bloqueantes
 }
 
+// ==========================================
+// TIPOS PARA STRATEGY PATTERN
+// ==========================================
+
+/// Datos necesarios para validar un ingreso (agnóstico del tipo)
+#[derive(Debug, Clone)]
+pub struct DatosValidacion {
+    pub cedula: String,
+    pub nombre: Option<String>,
+    pub apellido: Option<String>,
+    pub tipo_ingreso: String,
+
+    // Para contratistas
+    pub contratista_id: Option<String>,
+
+    // Para visitas
+    pub anfitrion: Option<String>,
+    pub area_visitada: Option<String>,
+    pub motivo_visita: Option<String>,
+
+    // Para proveedores
+    pub empresa_id: Option<String>,
+    pub motivo_proveedor: Option<String>,
+
+    // Comunes
+    pub tipo_autorizacion: String,
+    pub modo_ingreso: String,
+    pub gafete_numero: Option<String>,
+    pub vehiculo_id: Option<String>,
+    pub placa_temporal: Option<String>,
+}
+
+/// Resultado de validación con datos adicionales
+#[derive(Debug, Clone)]
+pub struct ResultadoValidacion {
+    pub puede_ingresar: bool,
+    pub motivo_rechazo: Option<String>,
+    pub alertas: Vec<String>,
+    pub datos_adicionales: Option<serde_json::Value>,
+}
+
+/// Datos preparados para inserción en DB
+#[derive(Debug, Clone)]
+pub struct DatosIngreso {
+    pub id: String,
+    pub contratista_id: Option<String>,
+    pub cedula: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub empresa_nombre: String,
+    pub empresa_proveedor_id: Option<String>,
+    pub anfitrion: Option<String>,
+    pub area_visitada: Option<String>,
+    pub motivo_visita: Option<String>,
+    pub motivo_proveedor: Option<String>,
+    pub tipo_ingreso: String,
+    pub tipo_autorizacion: String,
+    pub modo_ingreso: String,
+    pub vehiculo_id: Option<String>,
+    pub placa_temporal: Option<String>,
+    pub gafete_numero: Option<String>,
+    pub praind_vigente_al_ingreso: Option<bool>,
+    pub estado_contratista_al_ingreso: Option<String>,
+    pub observaciones: Option<String>,
+}
+
 /// Resultado de evaluación de devolución de gafete
 #[derive(Debug, Clone)]
 pub struct DecisionReporteGafete {

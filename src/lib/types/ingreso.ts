@@ -7,7 +7,7 @@ import { z } from 'zod';
 // ESQUEMAS (VALIDACIÓN)
 // ==========================================
 
-export const TipoIngresoEnum = z.enum(['contratista']);
+export const TipoIngresoEnum = z.enum(['contratista', 'visita', 'proveedor']);
 export const TipoAutorizacionEnum = z.enum(['praind', 'correo']);
 export const ModoIngresoEnum = z.enum(['caminando', 'vehiculo']);
 
@@ -22,6 +22,46 @@ export const CreateIngresoContratistaSchema = z.object({
     modoIngreso: z.string().refine((val) => ['caminando', 'vehiculo'].includes(val.toLowerCase()), {
         message: "Modo de ingreso inválido"
     }),
+    observaciones: z.string().max(500).optional().nullable(),
+    usuarioIngresoId: z.string().uuid("ID de usuario inválido"),
+});
+
+// Esquema para crear ingreso de visita
+export const CreateIngresoVisitaSchema = z.object({
+    cedula: z.string().min(1, "Cédula es requerida"),
+    nombre: z.string().min(1, "Nombre es requerido"),
+    apellido: z.string().min(1, "Apellido es requerido"),
+    anfitrion: z.string().min(1, "Anfitrión es requerido"),
+    areaVisitada: z.string().min(1, "Área visitada es requerida"),
+    motivoVisita: z.string().min(1, "Motivo de visita es requerido"),
+    tipoAutorizacion: z.string().refine((val) => ['praind', 'correo'].includes(val.toLowerCase()), {
+        message: "Tipo de autorización inválido"
+    }),
+    modoIngreso: z.string().refine((val) => ['caminando', 'vehiculo'].includes(val.toLowerCase()), {
+        message: "Modo de ingreso inválido"
+    }),
+    vehiculoPlaca: z.string().optional().nullable(),
+    gafeteNumero: z.string().optional().nullable(),
+    observaciones: z.string().max(500).optional().nullable(),
+    usuarioIngresoId: z.string().uuid("ID de usuario inválido"),
+});
+
+// Esquema para crear ingreso de proveedor
+export const CreateIngresoProveedorSchema = z.object({
+    cedula: z.string().min(1, "Cédula es requerida"),
+    nombre: z.string().min(1, "Nombre es requerido"),
+    apellido: z.string().min(1, "Apellido es requerido"),
+    empresaId: z.string().uuid("ID de empresa inválido"),
+    areaVisitada: z.string().min(1, "Área visitada es requerida"),
+    motivo: z.string().min(1, "Motivo es requerido"),
+    tipoAutorizacion: z.string().refine((val) => ['praind', 'correo'].includes(val.toLowerCase()), {
+        message: "Tipo de autorización inválido"
+    }),
+    modoIngreso: z.string().refine((val) => ['caminando', 'vehiculo'].includes(val.toLowerCase()), {
+        message: "Modo de ingreso inválido"
+    }),
+    vehiculoPlaca: z.string().optional().nullable(),
+    gafeteNumero: z.string().optional().nullable(),
     observaciones: z.string().max(500).optional().nullable(),
     usuarioIngresoId: z.string().uuid("ID de usuario inválido"),
 });
@@ -45,6 +85,8 @@ export const ResolverAlertaSchema = z.object({
 // ==========================================
 
 export type CreateIngresoContratistaInput = z.infer<typeof CreateIngresoContratistaSchema>;
+export type CreateIngresoVisitaInput = z.infer<typeof CreateIngresoVisitaSchema>;
+export type CreateIngresoProveedorInput = z.infer<typeof CreateIngresoProveedorSchema>;
 export type RegistrarSalidaInput = z.infer<typeof RegistrarSalidaSchema>;
 export type ResolverAlertaInput = z.infer<typeof ResolverAlertaSchema>;
 

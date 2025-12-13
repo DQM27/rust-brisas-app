@@ -65,6 +65,8 @@ macro_rules! register_handlers {
             // ==========================================
             commands::entrada_commands::validar_ingreso_contratista,
             commands::entrada_commands::crear_ingreso_contratista,
+            commands::entrada_commands::crear_ingreso_visita,
+            commands::entrada_commands::crear_ingreso_proveedor,
             // ==========================================
             // COMANDOS DE PERMANENCIA (Fase 2)
             // ==========================================

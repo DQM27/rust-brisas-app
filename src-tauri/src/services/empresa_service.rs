@@ -49,7 +49,8 @@ pub async fn get_empresa_by_id(
     pool: &SqlitePool,
     id: String,
 ) -> Result<EmpresaResponse, String> {
-    let empresa = db::find_by_id(pool, &id).await?;
+    let empresa_opt = db::find_by_id(pool, &id).await?;
+    let empresa = empresa_opt.ok_or("Empresa no encontrada")?;
     let total_contratistas = db::count_contratistas(pool, &id).await?;
 
     let mut response = EmpresaResponse::from(empresa);
@@ -114,7 +115,7 @@ pub async fn update_empresa(
     domain::validar_update_input(&input)?;
 
     // 2. Verificar que existe
-    let _ = db::find_by_id(pool, &id).await?;
+    let _ = db::find_by_id(pool, &id).await?.ok_or("Empresa no encontrada")?;
 
     // 3. Normalizar y verificar nombre si viene
     let nombre_normalizado = if let Some(ref nombre) = input.nombre {
@@ -144,7 +145,7 @@ pub async fn update_empresa(
 
 pub async fn delete_empresa(pool: &SqlitePool, id: String) -> Result<(), String> {
     // 1. Verificar que existe
-    let _ = db::find_by_id(pool, &id).await?;
+    let _ = db::find_by_id(pool, &id).await?.ok_or("Empresa no encontrada")?;
 
     // 2. Verificar que no tenga contratistas
     let count = db::count_contratistas(pool, &id).await?;

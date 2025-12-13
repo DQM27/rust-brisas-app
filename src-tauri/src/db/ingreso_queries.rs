@@ -277,7 +277,7 @@ pub async fn count_ingresos_abiertos_by_cedula(
 // QUERIES DE ESCRITURA
 // ==========================================
 
-/// Inserta un nuevo ingreso
+/// Inserta un nuevo ingreso (versión extendida con campos multi-tipo)
 #[allow(clippy::too_many_arguments)]
 pub async fn insert(
     pool: &SqlitePool,
@@ -304,7 +304,7 @@ pub async fn insert(
     let praind_int = praind_vigente_al_ingreso.map(|b| if b { 1 } else { 0 });
 
     sqlx::query(
-        r#"INSERT INTO ingresos 
+        r#"INSERT INTO ingresos
            (id, contratista_id, cedula, nombre, apellido, empresa_nombre,
             tipo_ingreso, tipo_autorizacion, modo_ingreso, vehiculo_id, placa_temporal,
             gafete_numero, fecha_hora_ingreso, fecha_hora_salida, tiempo_permanencia_minutos,
@@ -318,6 +318,78 @@ pub async fn insert(
     .bind(nombre)
     .bind(apellido)
     .bind(empresa_nombre)
+    .bind(tipo_ingreso)
+    .bind(tipo_autorizacion)
+    .bind(modo_ingreso)
+    .bind(vehiculo_id)
+    .bind(placa_temporal)
+    .bind(gafete_numero)
+    .bind(fecha_hora_ingreso)
+    .bind(usuario_ingreso_id)
+    .bind(praind_int)
+    .bind(estado_contratista_al_ingreso)
+    .bind(observaciones)
+    .bind(created_at)
+    .bind(updated_at)
+    .execute(pool)
+    .await
+    .map_err(|e| format!("Error al crear ingreso: {}", e))?;
+
+    Ok(())
+}
+
+/// Inserta un nuevo ingreso con campos extendidos (visitas y proveedores)
+#[allow(clippy::too_many_arguments)]
+pub async fn insert_extended(
+    pool: &SqlitePool,
+    id: &str,
+    contratista_id: Option<&str>,
+    cedula: &str,
+    nombre: &str,
+    apellido: &str,
+    empresa_nombre: &str,
+    empresa_proveedor_id: Option<&str>,
+    anfitrion: Option<&str>,
+    area_visitada: Option<&str>,
+    motivo_visita: Option<&str>,
+    motivo_proveedor: Option<&str>,
+    tipo_ingreso: &str,
+    tipo_autorizacion: &str,
+    modo_ingreso: &str,
+    vehiculo_id: Option<&str>,
+    placa_temporal: Option<&str>,
+    gafete_numero: Option<&str>,
+    fecha_hora_ingreso: &str,
+    usuario_ingreso_id: &str,
+    praind_vigente_al_ingreso: Option<bool>,
+    estado_contratista_al_ingreso: Option<&str>,
+    observaciones: Option<&str>,
+    created_at: &str,
+    updated_at: &str,
+) -> Result<(), String> {
+    let praind_int = praind_vigente_al_ingreso.map(|b| if b { 1 } else { 0 });
+
+    sqlx::query(
+        r#"INSERT INTO ingresos
+           (id, contratista_id, cedula, nombre, apellido, empresa_nombre, empresa_proveedor_id,
+            anfitrion, area_visitada, motivo_visita, motivo_proveedor,
+            tipo_ingreso, tipo_autorizacion, modo_ingreso, vehiculo_id, placa_temporal,
+            gafete_numero, fecha_hora_ingreso, fecha_hora_salida, tiempo_permanencia_minutos,
+            usuario_ingreso_id, usuario_salida_id, praind_vigente_al_ingreso,
+            estado_contratista_al_ingreso, observaciones, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, NULL, ?, ?, ?, ?, ?)"#,
+    )
+    .bind(id)
+    .bind(contratista_id)
+    .bind(cedula)
+    .bind(nombre)
+    .bind(apellido)
+    .bind(empresa_nombre)
+    .bind(empresa_proveedor_id)
+    .bind(anfitrion)
+    .bind(area_visitada)
+    .bind(motivo_visita)
+    .bind(motivo_proveedor)
     .bind(tipo_ingreso)
     .bind(tipo_autorizacion)
     .bind(modo_ingreso)

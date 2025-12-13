@@ -13,19 +13,33 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "lowercase")]
 pub enum TipoIngreso {
     Contratista,
+    Visita,
+    Proveedor,
 }
 
 impl TipoIngreso {
     pub fn as_str(&self) -> &str {
         match self {
             TipoIngreso::Contratista => "contratista",
+            TipoIngreso::Visita => "visita",
+            TipoIngreso::Proveedor => "proveedor",
         }
     }
 
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s.to_lowercase().as_str() {
             "contratista" => Ok(TipoIngreso::Contratista),
+            "visita" => Ok(TipoIngreso::Visita),
+            "proveedor" => Ok(TipoIngreso::Proveedor),
             _ => Err(format!("Tipo de ingreso desconocido: {}", s)),
+        }
+    }
+
+    pub fn display(&self) -> &str {
+        match self {
+            TipoIngreso::Contratista => "Contratista",
+            TipoIngreso::Visita => "Visita",
+            TipoIngreso::Proveedor => "Proveedor",
         }
     }
 }
@@ -130,6 +144,49 @@ pub struct CreateIngresoContratistaInput {
     pub modo_ingreso: String,
     pub observaciones: Option<String>,
     pub usuario_ingreso_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateIngresoVisitaInput {
+    pub cedula: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub anfitrion: String,
+    pub area_visitada: String,
+    pub motivo_visita: String,
+    pub tipo_autorizacion: String,
+    pub modo_ingreso: String,
+    pub vehiculo_placa: Option<String>, // Placa temporal
+    pub gafete_numero: Option<String>,
+    pub observaciones: Option<String>,
+    pub usuario_ingreso_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateIngresoProveedorInput {
+    pub cedula: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub empresa_id: String, // FK a tabla empresas
+    pub area_visitada: String,
+    pub motivo: String,
+    pub tipo_autorizacion: String,
+    pub modo_ingreso: String,
+    pub vehiculo_placa: Option<String>, // Placa temporal
+    pub gafete_numero: Option<String>,
+    pub observaciones: Option<String>,
+    pub usuario_ingreso_id: String,
+}
+
+/// Input unificado usando tagged union
+#[derive(Debug, Deserialize)]
+#[serde(tag = "tipo", rename_all = "lowercase")]
+pub enum CreateIngresoInput {
+    Contratista(CreateIngresoContratistaInput),
+    Visita(CreateIngresoVisitaInput),
+    Proveedor(CreateIngresoProveedorInput),
 }
 
 #[derive(Debug, Deserialize)]

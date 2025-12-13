@@ -9,17 +9,17 @@ use sqlx::{Row, SqlitePool};
 // QUERIES DE LECTURA
 // ==========================================
 
-pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<Empresa, String> {
+pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<Option<Empresa>, String> {
     let row = sqlx::query(
-        "SELECT id, nombre, is_active, created_at, updated_at 
+        "SELECT id, nombre, is_active, created_at, updated_at
          FROM empresas WHERE id = ?"
     )
     .bind(id)
-    .fetch_one(pool)
+    .fetch_optional(pool)
     .await
-    .map_err(|_| "Empresa no encontrada".to_string())?;
+    .map_err(|e| format!("Error buscando empresa: {}", e))?;
 
-    Ok(row_to_empresa(row))
+    Ok(row.map(row_to_empresa))
 }
 
 pub async fn exists(pool: &SqlitePool, id: &str) -> Result<bool, String> {

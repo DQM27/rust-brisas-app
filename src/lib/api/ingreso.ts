@@ -1,9 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
 import {
     CreateIngresoContratistaSchema,
+    CreateIngresoVisitaSchema,
+    CreateIngresoProveedorSchema,
     RegistrarSalidaSchema,
     ResolverAlertaSchema,
     type CreateIngresoContratistaInput,
+    type CreateIngresoVisitaInput,
+    type CreateIngresoProveedorInput,
     type RegistrarSalidaInput,
     type ResolverAlertaInput,
     type IngresoResponse,
@@ -34,6 +38,22 @@ export const ingreso = {
     crearIngresoContratista: async (input: CreateIngresoContratistaInput): Promise<IngresoResponse> => {
         const validated = CreateIngresoContratistaSchema.parse(input);
         return await invoke('crear_ingreso_contratista', { input: validated });
+    },
+
+    /**
+     * Crear ingreso de visita
+     */
+    crearIngresoVisita: async (input: CreateIngresoVisitaInput): Promise<IngresoResponse> => {
+        const validated = CreateIngresoVisitaSchema.parse(input);
+        return await invoke('crear_ingreso_visita', { input: validated });
+    },
+
+    /**
+     * Crear ingreso de proveedor
+     */
+    crearIngresoProveedor: async (input: CreateIngresoProveedorInput): Promise<IngresoResponse> => {
+        const validated = CreateIngresoProveedorSchema.parse(input);
+        return await invoke('crear_ingreso_proveedor', { input: validated });
     },
 
     // ==========================================
