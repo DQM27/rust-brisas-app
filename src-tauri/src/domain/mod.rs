@@ -1,8 +1,9 @@
+pub mod cita;
+pub mod ingreso_visita;
 pub mod lista_negra;
 pub mod user;
 pub mod vehiculo;
 pub mod visitante;
-pub mod cita;
 
 pub mod contratista;
 pub mod empresa;

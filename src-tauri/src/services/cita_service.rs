@@ -1,8 +1,7 @@
 use crate::db::{cita_queries, visitante_queries};
 use crate::domain::cita::{Cita, CitaPopulated, CreateCitaInput};
 use crate::domain::visitante::{CreateVisitanteInput, Visitante};
-use crate::models::ingreso::CreateIngresoVisitaInput;
-use crate::services::entrada_service;
+
 use sqlx::SqlitePool;
 use std::sync::Arc;
 
@@ -81,29 +80,22 @@ impl CitaService {
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Visitante asociado no encontrado".to_string())?;
 
-        // 3. Preparar input para crear ingreso visita
-        let input_ingreso = CreateIngresoVisitaInput {
-            cedula: visitante.cedula,
-            nombre: visitante.nombre,
-            apellido: visitante.apellido,
+        // 3. Preparar input para crear ingreso visita (NUEVO MODULO)
+        let input_ingreso = crate::domain::ingreso_visita::CreateIngresoVisitaInput {
+            visitante_id: visitante.id,
+            cita_id: Some(cita.id.clone()),
             anfitrion: cita.anfitrion,
             area_visitada: cita.area_visitada,
-            motivo_visita: cita.motivo,
-            tipo_autorizacion: "correo".to_string(), // Asumimos correo pre-autorizado o similar
-            modo_ingreso: if visitante.has_vehicle {
-                "vehiculo".to_string()
-            } else {
-                "caminando".to_string()
-            },
-            vehiculo_placa: None,
-            gafete_numero: Some(gafete),
+            motivo: cita.motivo,
+            gafete: Some(gafete),
             observaciones: Some("Ingreso desde Cita Pre-registrada".to_string()),
-            usuario_ingreso_id: usuario_id.clone(),
+            usuario_ingreso_id: usuario_id,
         };
 
-        // 4. Delegar creación al servicio de entrada
-        let ingreso =
-            entrada_service::crear_ingreso_visita(&self.pool, input_ingreso, usuario_id).await?;
+        // 4. Delegar creación al NUEVO servicio de ingreso visita
+        let service =
+            crate::services::ingreso_visita_service::IngresoVisitaService::new(self.pool.clone());
+        let ingreso = service.registrar_ingreso(input_ingreso).await?;
 
         // 5. Marcar cita como completada
         cita_queries::marcar_cita_completada(&self.pool, &cita_id)

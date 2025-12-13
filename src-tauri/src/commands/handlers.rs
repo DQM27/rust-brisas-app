@@ -67,6 +67,11 @@ macro_rules! register_handlers {
             commands::cita_commands::get_citas_hoy,
             commands::cita_commands::procesar_ingreso_cita,
             // ==========================================
+            // COMANDOS DE INGRESO VISITAS (Nuevo Módulo)
+            // ==========================================
+            commands::ingreso_visita_commands::get_ingresos_visitas_activos,
+            commands::ingreso_visita_commands::registrar_salida_visita,
+            // ==========================================
             // COMANDOS DE ENTRADA (Fase 1)
             // ==========================================
             commands::entrada_commands::validar_ingreso_contratista,
