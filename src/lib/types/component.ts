@@ -19,5 +19,6 @@ export type ComponentKey =
   | 'device-settings'
   | 'shortcut-settings'
   | 'security-settings'
+  | 'export-settings'
   | 'reportes-list'
   | 'about';

@@ -7,13 +7,15 @@
     FileSpreadsheet,
     Palette,
     ChevronDown,
+    Download,
+    Eye,
   } from "lucide-svelte";
   import type { ExportOptions } from "$lib/logic/export";
   import { onMount } from "svelte";
   import { templateStore } from "$lib/stores/templateStore";
   import type { PdfTemplate } from "$lib/types/template";
   import TemplateManager from "./TemplateManager.svelte";
-  import { slide } from "svelte/transition";
+  import { slide, fade, fly } from "svelte/transition";
 
   interface Props {
     onExport: (
@@ -82,6 +84,7 @@
       icon: FileText,
       description: "Documento profesional con formato",
       available: availableFormats.includes("pdf"),
+      color: "text-red-400",
     },
     {
       id: "excel" as const,
@@ -89,6 +92,7 @@
       icon: FileSpreadsheet,
       description: "Hoja de cálculo con formato",
       available: availableFormats.includes("excel"),
+      color: "text-green-400",
     },
     {
       id: "csv" as const,
@@ -96,6 +100,7 @@
       icon: Table2,
       description: "Datos planos universales",
       available: true, // Siempre disponible
+      color: "text-blue-400",
     },
   ]);
 
@@ -109,7 +114,6 @@
         delimiter: selectedFormat === "csv" ? delimiter : undefined,
         includeBom: selectedFormat === "csv" ? includeBom : undefined,
         showPreview: selectedFormat === "pdf" ? showPreview : undefined,
-        // ✅ Enviar ID del template seleccionado
         templateId:
           selectedFormat === "pdf" && selectedTemplate
             ? selectedTemplate.id
@@ -135,55 +139,61 @@
 </script>
 
 <div
-  class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+  class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+  transition:fade
   onclick={handleBackdropClick}
   role="presentation"
   onkeydown={(e) => e.key === "Escape" && !isExporting && onClose()}
   tabindex="-1"
 >
   <div
-    class="bg-[#1e1e1e] border border-white/10 rounded-lg shadow-2xl w-full max-w-md"
+    class="bg-white dark:bg-[#0d1117] rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col"
+    transition:fly={{ y: 20, duration: 300 }}
     onclick={(e) => e.stopPropagation()}
     role="dialog"
     aria-modal="true"
-    tabindex="-1"
-    onkeydown={(e) => e.stopPropagation()}
   >
     <!-- Header -->
-    <div class="flex items-center justify-between p-4 border-b border-white/10">
-      <div>
-        <h2 class="text-lg font-semibold text-white">Exportar Datos</h2>
-        <p class="text-xs text-gray-400 mt-0.5">
-          Selecciona formato y opciones
-        </p>
+    <div
+      class="bg-gray-50 dark:bg-[#161b22] px-6 py-4 border-b border-gray-200 dark:border-gray-700"
+    >
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Exportar Datos
+          </h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            Selecciona formato y opciones de exportación
+          </p>
+        </div>
+        <button
+          onclick={onClose}
+          disabled={isExporting}
+          class="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#21262d] transition-colors disabled:opacity-50"
+          aria-label="Cerrar"
+        >
+          <X size={20} />
+        </button>
       </div>
-      <button
-        onclick={onClose}
-        disabled={isExporting}
-        class="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
-        aria-label="Cerrar"
-      >
-        <X size={18} />
-      </button>
     </div>
 
     <!-- Content -->
-    <div class="p-5 space-y-5">
+    <div class="flex-1 overflow-y-auto p-6 space-y-5">
       <!-- Selector de formato -->
       <div>
-        <span class="block text-sm font-medium text-gray-400 mb-3">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
           Formato de exportación
-        </span>
-        <div class="grid grid-cols-3 gap-2">
+        </label>
+        <div class="grid grid-cols-3 gap-3">
           {#each formats as format}
             {@const Icon = format.icon}
             <button
               onclick={() => (selectedFormat = format.id)}
               disabled={!format.available || isExporting}
-              class="relative p-3 rounded-lg border-2 transition-all
+              class="relative p-4 rounded-md border-2 transition-all
                 {selectedFormat === format.id
-                ? 'border-blue-500 bg-blue-500/10'
-                : 'border-white/10 bg-[#252526] hover:border-white/20'}
+                ? 'border-[#2da44e] bg-[#2da44e]/5 dark:bg-[#2da44e]/10'
+                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0d1117] hover:border-gray-300 dark:hover:border-gray-600'}
                 {!format.available
                 ? 'opacity-50 cursor-not-allowed'
                 : 'cursor-pointer'}
@@ -191,16 +201,24 @@
               title={format.available ? format.description : "No disponible"}
             >
               <div class="flex flex-col items-center gap-2">
-                <Icon size={24} class="text-white" />
-                <span class="text-xs font-medium text-white"
+                <Icon
+                  size={28}
+                  class="{selectedFormat === format.id
+                    ? 'text-[#2da44e]'
+                    : format.color} transition-colors"
+                />
+                <span
+                  class="text-sm font-medium {selectedFormat === format.id
+                    ? 'text-[#2da44e]'
+                    : 'text-gray-700 dark:text-gray-300'}"
                   >{format.label}</span
                 >
               </div>
               {#if !format.available}
                 <div
-                  class="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg"
+                  class="absolute inset-0 flex items-center justify-center bg-black/10 dark:bg-black/30 rounded-md"
                 >
-                  <span class="text-xs text-gray-400">N/A</span>
+                  <span class="text-xs text-gray-500">N/A</span>
                 </div>
               {/if}
             </button>
@@ -212,7 +230,7 @@
       <div>
         <label
           for="export-title"
-          class="block text-sm font-medium text-gray-400 mb-2"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
         >
           Título del documento
         </label>
@@ -222,19 +240,20 @@
           bind:value={title}
           disabled={isExporting}
           placeholder="Ej: Reporte Mensual"
-          class="w-full px-3 py-2 bg-[#252526] border border-white/10 rounded-lg text-white text-sm
-            focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+          class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent disabled:opacity-50"
         />
       </div>
 
       <!-- Opciones PDF -->
       {#if selectedFormat === "pdf"}
         <div
-          class="space-y-3 p-3 bg-[#252526] border border-white/10 rounded-lg"
+          class="space-y-4 p-4 bg-gray-50 dark:bg-[#161b22] border border-gray-200 dark:border-gray-700 rounded-md"
+          transition:slide={{ duration: 200 }}
         >
           <h3
-            class="text-sm font-medium text-white flex justify-between items-center"
+            class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2"
           >
+            <FileText size={16} class="text-[#2da44e]" />
             Opciones PDF
           </h3>
 
@@ -242,7 +261,7 @@
           <div>
             <label
               for="template-select"
-              class="block text-xs text-gray-400 mb-1"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
             >
               Estilo Visual
             </label>
@@ -250,7 +269,7 @@
               <select
                 id="template-select"
                 bind:value={selectedTemplate}
-                class="flex-1 px-3 py-2 bg-[#1e1e1e] border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="flex-1 px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent"
               >
                 {#each $templateStore.templates as t}
                   <option value={t}
@@ -260,7 +279,7 @@
               </select>
               <button
                 onclick={() => (showTemplateManager = true)}
-                class="p-2 bg-[#1e1e1e] border border-white/10 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+                class="p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#21262d] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#30363d] transition-colors"
                 title="Administrar Estilos"
               >
                 <Palette size={18} />
@@ -269,15 +288,17 @@
           </div>
 
           <div>
-            <label for="orientation" class="block text-xs text-gray-400 mb-1">
+            <label
+              for="orientation"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
               Orientación
             </label>
             <select
               id="orientation"
               bind:value={orientation}
               disabled={isExporting}
-              class="w-full px-3 py-2 bg-[#1e1e1e] border border-white/10 rounded-lg text-white text-sm
-                focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent disabled:opacity-50"
             >
               <option value="landscape">Horizontal (Landscape)</option>
               <option value="portrait">Vertical (Portrait)</option>
@@ -285,16 +306,16 @@
           </div>
 
           <label
-            class="flex items-center gap-2 cursor-pointer mt-2 pt-2 border-t border-white/5"
+            class="flex items-center gap-2 cursor-pointer p-2 rounded-md hover:bg-gray-100 dark:hover:bg-[#21262d] transition-colors"
           >
             <input
               type="checkbox"
               bind:checked={showPreview}
               disabled={isExporting}
-              class="w-4 h-4 text-blue-500 bg-[#1e1e1e] border-white/20 rounded focus:ring-blue-500
-                disabled:opacity-50"
+              class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-[#2da44e] focus:ring-[#2da44e] disabled:opacity-50"
             />
-            <span class="text-sm text-gray-400"
+            <Eye size={16} class="text-gray-500 dark:text-gray-400" />
+            <span class="text-sm text-gray-700 dark:text-gray-300"
               >Vista previa antes de guardar</span
             >
           </label>
@@ -303,22 +324,29 @@
 
       <!-- Opciones CSV -->
       {#if selectedFormat === "csv"}
-        <!-- ... existing CSV options ... -->
         <div
-          class="space-y-3 p-3 bg-[#252526] border border-white/10 rounded-lg"
+          class="space-y-4 p-4 bg-gray-50 dark:bg-[#161b22] border border-gray-200 dark:border-gray-700 rounded-md"
+          transition:slide={{ duration: 200 }}
         >
-          <h3 class="text-sm font-medium text-white">Opciones CSV</h3>
+          <h3
+            class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2"
+          >
+            <Table2 size={16} class="text-[#2da44e]" />
+            Opciones CSV
+          </h3>
 
           <div>
-            <label for="delimiter" class="block text-sm text-gray-400 mb-2">
+            <label
+              for="delimiter"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
               Delimitador
             </label>
             <select
               id="delimiter"
               bind:value={delimiter}
               disabled={isExporting}
-              class="w-full px-3 py-2 bg-[#1e1e1e] border border-white/10 rounded-lg text-white text-sm
-                focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent disabled:opacity-50"
             >
               <option value="comma">Coma (,)</option>
               <option value="semicolon">Punto y coma (;)</option>
@@ -327,15 +355,18 @@
             </select>
           </div>
 
-          <label class="flex items-center gap-2 cursor-pointer">
+          <label
+            class="flex items-center gap-2 cursor-pointer p-2 rounded-md hover:bg-gray-100 dark:hover:bg-[#21262d] transition-colors"
+          >
             <input
               type="checkbox"
               bind:checked={includeBom}
               disabled={isExporting}
-              class="w-4 h-4 text-blue-500 bg-[#1e1e1e] border-white/20 rounded focus:ring-blue-500
-                disabled:opacity-50"
+              class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-[#2da44e] focus:ring-[#2da44e] disabled:opacity-50"
             />
-            <span class="text-sm text-gray-400">UTF-8 BOM (para Excel)</span>
+            <span class="text-sm text-gray-700 dark:text-gray-300"
+              >UTF-8 BOM (recomendado para Excel)</span
+            >
           </label>
         </div>
       {/if}
@@ -343,16 +374,16 @@
       <!-- Selector de Columnas (Collapsible) -->
       {#if columns.length > 0}
         <div
-          class="border border-white/10 rounded-lg overflow-hidden bg-[#252526]"
+          class="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden"
         >
           <button
-            class="w-full flex items-center justify-between p-3 text-sm font-medium text-white hover:bg-white/5 transition-colors"
+            class="w-full flex items-center justify-between p-3 text-sm font-medium text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-[#161b22] hover:bg-gray-100 dark:hover:bg-[#21262d] transition-colors"
             onclick={() => (showColumns = !showColumns)}
           >
             <span class="flex items-center gap-2">
-              <Table2 size={16} class="text-gray-400" />
-              Columnas
-              <span class="text-xs text-gray-400 font-normal">
+              <Table2 size={16} class="text-[#2da44e]" />
+              Columnas a exportar
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">
                 ({columnSelection.filter((c) => c.selected)
                   .length}/{columnSelection.length}
                 seleccionadas)
@@ -360,7 +391,7 @@
             </span>
             <ChevronDown
               size={16}
-              class="text-gray-400 transition-transform duration-200 {showColumns
+              class="text-gray-500 transition-transform duration-200 {showColumns
                 ? 'rotate-180'
                 : ''}"
             />
@@ -369,11 +400,11 @@
           {#if showColumns}
             <div
               transition:slide={{ duration: 200 }}
-              class="p-3 pt-0 border-t border-white/10"
+              class="p-4 bg-white dark:bg-[#0d1117] border-t border-gray-200 dark:border-gray-700"
             >
-              <div class="flex justify-end mb-3 mt-3">
+              <div class="flex justify-end mb-3">
                 <button
-                  class="text-xs text-blue-400 hover:text-blue-300"
+                  class="text-xs text-[#2da44e] hover:underline"
                   onclick={toggleAllColumns}
                 >
                   {allColumnsSelected
@@ -387,10 +418,10 @@
               >
                 {#each columnSelection as col}
                   <label
-                    class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-full border transition-all text-xs
+                    class="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-md border transition-all text-sm
                       {col.selected
-                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-200'
-                      : 'bg-[#1e1e1e] border-white/10 text-gray-400 hover:border-white/30'}"
+                      ? 'bg-[#2da44e]/10 border-[#2da44e]/50 text-[#2da44e]'
+                      : 'bg-gray-50 dark:bg-[#161b22] border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'}"
                   >
                     <input
                       type="checkbox"
@@ -402,7 +433,7 @@
                     </span>
                     {#if col.selected}
                       <div
-                        class="w-1.5 h-1.5 rounded-full bg-blue-400 ml-1"
+                        class="w-1.5 h-1.5 rounded-full bg-[#2da44e]"
                       ></div>
                     {/if}
                   </label>
@@ -416,21 +447,19 @@
 
     <!-- Footer -->
     <div
-      class="flex items-center justify-end gap-2 p-4 border-t border-white/10"
+      class="bg-gray-50 dark:bg-[#161b22] px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3"
     >
       <button
         onclick={onClose}
         disabled={isExporting}
-        class="px-4 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5
-          transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#21262d] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#30363d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Cancelar
       </button>
       <button
         onclick={handleExport}
         disabled={isExporting}
-        class="px-4 py-2 rounded-md text-sm font-medium bg-blue-500 text-white hover:bg-blue-600
-          transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        class="px-4 py-2 text-sm font-medium rounded-md bg-[#2da44e] hover:bg-[#2c974b] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
       >
         {#if isExporting}
           <div
@@ -438,6 +467,7 @@
           ></div>
           Exportando...
         {:else}
+          <Download size={16} />
           Exportar
         {/if}
       </button>

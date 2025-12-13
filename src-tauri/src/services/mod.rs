@@ -6,6 +6,7 @@ pub mod email_service;
 pub mod empresa_service;
 pub mod entrada_service;
 
+pub mod export_profile_service;
 pub mod export_service;
 pub mod gafete_service;
 pub mod keyring_service;

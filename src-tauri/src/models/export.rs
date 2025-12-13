@@ -230,3 +230,30 @@ pub struct ExportData {
     pub csv_config: Option<CsvConfig>,
     pub target_path: Option<String>,
 }
+
+// ==========================================
+// PERFILES DE EXPORTACIÓN
+// ==========================================
+
+/// Perfil de exportación guardado por el usuario
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportProfile {
+    pub id: String,
+    pub name: String,
+    pub format: String, // "pdf" | "excel" | "csv"
+    pub is_default: bool,
+    pub options: serde_json::Value, // Flexible para diferentes formatos
+}
+
+impl ExportProfile {
+    pub fn new(id: String, name: String, format: String) -> Self {
+        Self {
+            id,
+            name,
+            format,
+            is_default: false,
+            options: serde_json::json!({}),
+        }
+    }
+}

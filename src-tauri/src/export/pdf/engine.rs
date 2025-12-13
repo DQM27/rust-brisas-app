@@ -7,6 +7,7 @@ use crate::export::errors::{ExportError, ExportResult};
 use crate::models::export::PdfConfig;
 use crate::models::template::PdfTemplate;
 use std::collections::HashMap;
+use chrono::Datelike;
 
 use super::templates;
 
@@ -29,9 +30,6 @@ pub fn generate_pdf(
     template: &PdfTemplate, // ✅ RECIBE EL TEMPLATE
 ) -> ExportResult<Vec<u8>> {
     let markup = templates::generate_typst_markup(headers, rows, config, template)?;
-
-    // templates::validate_markup(&markup)?; // Validation moved inside debug block if needed, or kept before compile.
-    // Keeping validate_markup active but removing print.
 
     templates::validate_markup(&markup)?;
     let pdf_bytes = compile_typst_to_pdf(&markup)?;
@@ -106,48 +104,23 @@ impl TypstWorld {
 
     fn load_embedded_fonts() -> Vec<Font> {
         let mut fonts = Vec::new();
-        println!("🔍 Loading Typst embedded fonts...");
-
         let assets = typst_assets::fonts();
-        let mut count = 0;
 
-        // ✅ Cargar TODAS las fuentes embebidas de typst-assets
+        // Cargar todas las fuentes embebidas de typst-assets
         for data in assets {
-            count += 1;
-            let buffer = Bytes::new(data.to_vec()); // Converted to Vec for Bytes::new
-                                                    // Actually, let's check what data is.
-            println!(
-                "  Processing font asset #{} (size: {} bytes)",
-                count,
-                data.len()
-            );
-
+            let buffer = Bytes::new(data.to_vec());
             let face_count = ttf_parser::fonts_in_collection(&buffer).unwrap_or(1);
-            println!("    Face count: {}", face_count);
 
             // Cargar todas las fuentes en la colección (para TTC files)
             for face_index in 0..face_count {
-                match Font::new(buffer.clone(), face_index) {
-                    Some(font) => {
-                        let family = font.info().family.clone();
-                        println!("    ✓ Loaded font: {} (face {})", family, face_index);
-                        fonts.push(font);
-                    }
-                    None => {
-                        println!("    ❌ Failed to load font face {}", face_index);
-                    }
+                if let Some(font) = Font::new(buffer.clone(), face_index) {
+                    fonts.push(font);
                 }
             }
         }
 
-        if count == 0 {
-            println!("❌ typst_assets::fonts() returned no items!");
-        }
-
-        println!("🔍 Total fonts loaded: {}", fonts.len());
-
         if fonts.is_empty() {
-            eprintln!("⚠️  WARNING: No fonts were loaded! PDF text will not render.");
+            eprintln!("⚠️ WARNING: No fonts were loaded! PDF text will not render.");
         }
 
         fonts
@@ -186,9 +159,9 @@ impl World for TypstWorld {
         self.fonts.get(index).cloned()
     }
 
-    // ✅ FIX: from_ymd retorna Datetime directamente (no Option)
     fn today(&self, _offset: Option<i64>) -> Option<Datetime> {
-        Datetime::from_ymd(2024, 12, 1)
+        let now = chrono::Local::now();
+        Datetime::from_ymd(now.year(), now.month() as u8, now.day() as u8)
     }
 }
 

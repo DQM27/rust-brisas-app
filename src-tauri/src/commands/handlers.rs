@@ -121,6 +121,14 @@ macro_rules! register_handlers {
             commands::templates::save_template,
             commands::templates::delete_template,
             // ==========================================
+            // COMANDOS DE PERFILES DE EXPORTACIÓN
+            // ==========================================
+            commands::export_profiles::get_export_profiles,
+            commands::export_profiles::save_export_profile,
+            commands::export_profiles::delete_export_profile,
+            commands::export_profiles::set_default_export_profile,
+            commands::export_profiles::get_default_export_profile,
+            // ==========================================
             // COMANDOS DE BACKUP/RESTORE
             // ==========================================
             commands::backup::backup_database,
