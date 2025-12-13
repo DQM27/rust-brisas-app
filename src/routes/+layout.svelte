@@ -6,7 +6,7 @@
   import { isAuthenticated } from "$lib/stores/auth";
   import Sidebar from "$lib/components/layout/sidebar/Sidebar.svelte";
   import StatusBar from "$lib/components/layout/StatusBar.svelte";
-  import { inspectionPanel } from "$lib/stores/ui";
+  import { inspectionPanel, setupWizardVisible } from "$lib/stores/ui";
   import { initNetworkMonitor } from "$lib/stores/network";
   import Toast from "$lib/components/Toast.svelte";
   import { themeStore } from "$lib/stores/themeStore"; // Inicializar tema
@@ -19,7 +19,7 @@
   let authenticated = $derived($isAuthenticated);
 
   // Estado del wizard de setup
-  let showSetupWizard = $state(false);
+  let showSetupWizard = $derived($setupWizardVisible);
   let checkingSetup = $state(true);
 
   // Toggle del panel de inspección
@@ -29,17 +29,17 @@
 
   // Handler cuando se completa el setup
   function handleSetupComplete() {
-    showSetupWizard = false;
+    $setupWizardVisible = false;
   }
 
   // Inicializar monitor de red y atajos
   onMount(async () => {
     // Verificar si necesita configuración inicial
     try {
-      showSetupWizard = await needsSetup();
+      $setupWizardVisible = await needsSetup();
     } catch (e) {
       console.error("Error verificando setup:", e);
-      showSetupWizard = false;
+      $setupWizardVisible = false;
     } finally {
       checkingSetup = false;
     }

@@ -4,9 +4,7 @@
 // Comandos Tauri para gestión segura de credenciales
 
 use crate::config::{save_config, AppConfig};
-use crate::services::keyring_service::{
-    self, Argon2Params, CredentialStatus, SmtpCredentials,
-};
+use crate::services::keyring_service::{self, Argon2Params, CredentialStatus, SmtpCredentials};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use tauri::{command, State};
@@ -19,7 +17,8 @@ use tauri::{command, State};
 pub struct SetupCredentialsInput {
     pub smtp: SmtpCredentials,
     pub argon2: Argon2Params,
-    pub sqlite_password: Option<String>,
+    pub terminal_name: String,
+    pub terminal_location: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -66,18 +65,17 @@ pub fn setup_credentials(
     // 2. Guardar parámetros de Argon2
     keyring_service::store_argon2_params(&input.argon2)?;
 
-    // 3. Guardar contraseña de SQLite si se proporciona
-    if let Some(ref sqlite_pass) = input.sqlite_password {
-        if !sqlite_pass.is_empty() {
-            keyring_service::store_sqlite_password(sqlite_pass)?;
-        }
-    }
-
-    // 4. Actualizar estado de configuración en TOML
+    // 3. Actualizar configuración en TOML
     let mut updated_config = config.inner().clone();
+
+    // Actualizar datos de setup
     updated_config.setup.is_configured = true;
     updated_config.setup.configured_at = Some(Utc::now().to_rfc3339());
     updated_config.setup.configured_version = Some(env!("CARGO_PKG_VERSION").to_string());
+
+    // Actualizar datos de terminal
+    updated_config.terminal.nombre = input.terminal_name;
+    updated_config.terminal.ubicacion = input.terminal_location;
 
     // Guardar config actualizada
     let config_path = if let Some(data_dir) = dirs::data_local_dir() {
@@ -129,8 +127,8 @@ pub fn update_smtp_credentials(creds: SmtpCredentials) -> Result<(), String> {
 /// Prueba la conexión SMTP con credenciales guardadas
 #[command]
 pub async fn test_smtp_connection() -> Result<String, String> {
-    let creds = keyring_service::get_smtp_credentials()
-        .ok_or("No hay credenciales SMTP configuradas")?;
+    let creds =
+        keyring_service::get_smtp_credentials().ok_or("No hay credenciales SMTP configuradas")?;
 
     test_smtp_with_credentials(creds).await
 }
@@ -199,26 +197,6 @@ pub fn generate_argon2_secret() -> String {
 }
 
 // ==========================================
-// COMANDOS SQLITE (Solo admin)
-// ==========================================
-
-/// Verifica si hay contraseña de SQLite configurada
-#[command]
-pub fn has_sqlite_password() -> bool {
-    keyring_service::has_sqlite_password()
-}
-
-/// Actualiza contraseña de SQLite
-#[command]
-pub fn update_sqlite_password(password: String) -> Result<(), String> {
-    if password.is_empty() {
-        keyring_service::delete_sqlite_password()
-    } else {
-        keyring_service::store_sqlite_password(&password)
-    }
-}
-
-// ==========================================
 // COMANDOS DE UTILIDAD
 // ==========================================
 
@@ -271,7 +249,10 @@ pub fn test_keyring() -> Result<String, String> {
             if password == test_value {
                 results.push("   ✓ La contraseña coincide!".to_string());
             } else {
-                results.push(format!("   ✗ La contraseña NO coincide! Esperado: {}, Obtenido: {}", test_value, password));
+                results.push(format!(
+                    "   ✗ La contraseña NO coincide! Esperado: {}, Obtenido: {}",
+                    test_value, password
+                ));
             }
         }
         Err(e) => {
@@ -306,17 +287,13 @@ pub fn test_keyring() -> Result<String, String> {
 
 /// Resetea todas las credenciales (usar con cuidado)
 #[command]
-pub fn reset_all_credentials(
-    confirm: bool,
-    config: State<'_, AppConfig>,
-) -> Result<(), String> {
+pub fn reset_all_credentials(confirm: bool, config: State<'_, AppConfig>) -> Result<(), String> {
     if !confirm {
         return Err("Debes confirmar la operación".to_string());
     }
 
     // Eliminar credenciales
     let _ = keyring_service::delete_smtp_credentials();
-    let _ = keyring_service::delete_sqlite_password();
 
     // Actualizar estado de configuración
     let mut updated_config = config.inner().clone();

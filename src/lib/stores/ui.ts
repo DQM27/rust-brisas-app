@@ -18,3 +18,6 @@ export const sidebar = writable({
 
 // Store para tabs (si no lo tienes en otro archivo)
 export const tabs = writable([]);
+
+// Store para visibilidad del wizard de setup (para debug)
+export const setupWizardVisible = writable(false);

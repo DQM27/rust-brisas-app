@@ -12,6 +12,7 @@ use keyring::Entry;
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(not(target_os = "linux"))]
 const SERVICE_NAME: &str = "brisas-app";
 
 // ==========================================
@@ -30,9 +31,6 @@ const KEY_ARGON2_MEMORY: &str = "argon2_memory";
 const KEY_ARGON2_ITERATIONS: &str = "argon2_iterations";
 const KEY_ARGON2_PARALLELISM: &str = "argon2_parallelism";
 const KEY_PASSWORD_SECRET: &str = "password_secret";
-
-// SQLite
-const KEY_SQLITE_PASSWORD: &str = "sqlite_password";
 
 // ==========================================
 // DTOs
@@ -58,7 +56,7 @@ pub struct Argon2Params {
 impl Default for Argon2Params {
     fn default() -> Self {
         Self {
-            memory: 19456,      // ~19 MB
+            memory: 19456, // ~19 MB
             iterations: 2,
             parallelism: 1,
             secret: String::new(),
@@ -70,7 +68,6 @@ impl Default for Argon2Params {
 pub struct AllCredentials {
     pub smtp: Option<SmtpCredentials>,
     pub argon2: Argon2Params,
-    pub sqlite_password: Option<String>,
 }
 
 // ==========================================
@@ -105,9 +102,9 @@ fn get_entry(key: &str) -> Result<Entry, String> {
 
 #[cfg(not(target_os = "linux"))]
 fn store_value(key: &str, value: &str) -> Result<(), String> {
-    eprintln!("[KEYRING DEBUG] Intentando guardar: service='{}', key='{}', value_len={}", SERVICE_NAME, key, value.len());
     let entry = get_entry(key)?;
-    entry.set_password(value)
+    entry
+        .set_password(value)
         .map_err(|e| format!("Error almacenando '{}': {}", key, e))
 }
 
@@ -121,7 +118,8 @@ fn retrieve_value(key: &str) -> Option<String> {
 #[cfg(not(target_os = "linux"))]
 fn delete_value(key: &str) -> Result<(), String> {
     let entry = get_entry(key)?;
-    entry.delete_credential()
+    entry
+        .delete_credential()
         .map_err(|e| format!("Error eliminando '{}': {}", key, e))
 }
 
@@ -209,26 +207,6 @@ pub fn has_argon2_secret() -> bool {
 }
 
 // ==========================================
-// SQLITE PASSWORD
-// ==========================================
-
-pub fn store_sqlite_password(password: &str) -> Result<(), String> {
-    store_value(KEY_SQLITE_PASSWORD, password)
-}
-
-pub fn get_sqlite_password() -> Option<String> {
-    retrieve_value(KEY_SQLITE_PASSWORD)
-}
-
-pub fn has_sqlite_password() -> bool {
-    retrieve_value(KEY_SQLITE_PASSWORD).is_some()
-}
-
-pub fn delete_sqlite_password() -> Result<(), String> {
-    delete_value(KEY_SQLITE_PASSWORD)
-}
-
-// ==========================================
 // ALL CREDENTIALS
 // ==========================================
 
@@ -236,7 +214,6 @@ pub fn get_all_credentials() -> AllCredentials {
     AllCredentials {
         smtp: get_smtp_credentials(),
         argon2: get_argon2_params(),
-        sqlite_password: get_sqlite_password(),
     }
 }
 
@@ -252,19 +229,16 @@ pub fn is_fully_configured() -> bool {
 pub struct CredentialStatus {
     pub smtp_configured: bool,
     pub argon2_configured: bool,
-    pub sqlite_configured: bool,
     pub fully_configured: bool,
 }
 
 pub fn get_credential_status() -> CredentialStatus {
     let smtp_configured = has_smtp_credentials();
     let argon2_configured = has_argon2_secret();
-    let sqlite_configured = has_sqlite_password();
 
     CredentialStatus {
         smtp_configured,
         argon2_configured,
-        sqlite_configured,
         fully_configured: smtp_configured && argon2_configured,
     }
 }

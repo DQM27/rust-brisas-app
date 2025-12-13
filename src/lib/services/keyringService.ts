@@ -12,7 +12,6 @@ import { invoke } from '@tauri-apps/api/core';
 export interface CredentialStatus {
   smtp_configured: boolean;
   argon2_configured: boolean;
-  sqlite_configured: boolean;
   fully_configured: boolean;
 }
 
@@ -49,7 +48,8 @@ export interface Argon2ParamsSafe {
 export interface SetupCredentialsInput {
   smtp: SmtpCredentials;
   argon2: Argon2Params;
-  sqlite_password?: string;
+  terminal_name: string;
+  terminal_location: string;
 }
 
 export interface SetupResult {
@@ -117,17 +117,6 @@ export async function generateArgon2Secret(): Promise<string> {
   return invoke<string>('generate_argon2_secret');
 }
 
-// ==========================================
-// SQLITE
-// ==========================================
-
-export async function hasSqlitePassword(): Promise<boolean> {
-  return invoke<boolean>('has_sqlite_password');
-}
-
-export async function updateSqlitePassword(password: string): Promise<void> {
-  return invoke('update_sqlite_password', { password });
-}
 
 // ==========================================
 // UTILIDADES
