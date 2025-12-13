@@ -1,7 +1,7 @@
 // src-tauri/src/services/export_profile_service.rs
 
 use crate::config::manager::{get_database_path, load_config};
-use crate::models::export::ExportProfile;
+use crate::models::export::{ExportProfile, PdfDesign, PdfColors, PdfFonts, CsvOptions};
 use std::fs;
 use std::path::PathBuf;
 
@@ -27,38 +27,78 @@ fn get_default_profiles() -> Vec<ExportProfile> {
             name: "PDF Horizontal Rápido".to_string(),
             format: "pdf".to_string(),
             is_default: true,
-            options: serde_json::json!({
-                "title": "Reporte",
-                "orientation": "landscape",
-                "show_preview": false
+            title: Some("Reporte".to_string()),
+            show_preview: Some(false),
+            pdf_design: Some(PdfDesign {
+                page_size: "us-letter".to_string(),
+                orientation: "landscape".to_string(),
+                margin_x: 15.0,
+                margin_x_unit: "mm".to_string(),
+                margin_y: 20.0,
+                margin_y_unit: "mm".to_string(),
+                colors: PdfColors {
+                    header_fill: "#2da44e".to_string(),
+                    header_text: "#ffffff".to_string(),
+                    row_text: "#000000".to_string(),
+                    border: "#cccccc".to_string(),
+                },
+                fonts: PdfFonts {
+                    family: "New Computer Modern".to_string(),
+                    size: 10,
+                    header_size: 12,
+                },
             }),
+            csv_options: None,
         },
         ExportProfile {
             id: "default-pdf-portrait".to_string(),
             name: "PDF Vertical".to_string(),
             format: "pdf".to_string(),
             is_default: false,
-            options: serde_json::json!({
-                "title": "Reporte",
-                "orientation": "portrait",
-                "show_preview": false
+            title: Some("Reporte".to_string()),
+            show_preview: Some(false),
+            pdf_design: Some(PdfDesign {
+                page_size: "us-letter".to_string(),
+                orientation: "portrait".to_string(),
+                margin_x: 15.0,
+                margin_x_unit: "mm".to_string(),
+                margin_y: 20.0,
+                margin_y_unit: "mm".to_string(),
+                colors: PdfColors {
+                    header_fill: "#2da44e".to_string(),
+                    header_text: "#ffffff".to_string(),
+                    row_text: "#000000".to_string(),
+                    border: "#cccccc".to_string(),
+                },
+                fonts: PdfFonts {
+                    family: "New Computer Modern".to_string(),
+                    size: 10,
+                    header_size: 12,
+                },
             }),
+            csv_options: None,
         },
         ExportProfile {
             id: "default-excel".to_string(),
             name: "Excel Estándar".to_string(),
             format: "excel".to_string(),
             is_default: false,
-            options: serde_json::json!({}),
+            title: None,
+            show_preview: None,
+            pdf_design: None,
+            csv_options: None,
         },
         ExportProfile {
             id: "default-csv".to_string(),
             name: "CSV para Excel".to_string(),
             format: "csv".to_string(),
             is_default: false,
-            options: serde_json::json!({
-                "delimiter": "comma",
-                "include_bom": true
+            title: None,
+            show_preview: None,
+            pdf_design: None,
+            csv_options: Some(CsvOptions {
+                delimiter: "comma".to_string(),
+                include_bom: true,
             }),
         },
     ]

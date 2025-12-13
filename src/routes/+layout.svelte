@@ -33,16 +33,18 @@
   }
 
   // Inicializar monitor de red y atajos
-  onMount(async () => {
+  onMount(() => {
     // Verificar si necesita configuración inicial
-    try {
-      $setupWizardVisible = await needsSetup();
-    } catch (e) {
-      console.error("Error verificando setup:", e);
-      $setupWizardVisible = false;
-    } finally {
-      checkingSetup = false;
-    }
+    (async () => {
+      try {
+        $setupWizardVisible = await needsSetup();
+      } catch (e) {
+        console.error("Error verificando setup:", e);
+        $setupWizardVisible = false;
+      } finally {
+        checkingSetup = false;
+      }
+    })();
 
     // Mostrar ventana cuando el frontend esté listo
     invoke("show_main_window").catch(console.error);

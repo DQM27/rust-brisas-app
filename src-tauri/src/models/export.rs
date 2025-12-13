@@ -235,15 +235,67 @@ pub struct ExportData {
 // PERFILES DE EXPORTACIÓN
 // ==========================================
 
-/// Perfil de exportación guardado por el usuario
+/// Diseño completo para PDF
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PdfDesign {
+    pub page_size: String,       // "us-letter" | "a4" | "legal"
+    pub orientation: String,     // "portrait" | "landscape"
+    pub margin_x: f64,
+    pub margin_x_unit: String,   // "mm" | "cm" | "in" | "pt"
+    pub margin_y: f64,
+    pub margin_y_unit: String,   // "mm" | "cm" | "in" | "pt"
+    pub colors: PdfColors,
+    pub fonts: PdfFonts,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PdfColors {
+    pub header_fill: String,
+    pub header_text: String,
+    pub row_text: String,
+    pub border: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PdfFonts {
+    pub family: String,
+    pub size: i32,
+    pub header_size: i32,
+}
+
+/// Opciones específicas para CSV
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CsvOptions {
+    pub delimiter: String,      // "comma" | "semicolon" | "tab" | "pipe"
+    pub include_bom: bool,
+}
+
+/// Perfil de exportación unificado (incluye formato + diseño + opciones)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExportProfile {
     pub id: String,
     pub name: String,
-    pub format: String, // "pdf" | "excel" | "csv"
+    pub format: String,          // "pdf" | "excel" | "csv"
     pub is_default: bool,
-    pub options: serde_json::Value, // Flexible para diferentes formatos
+
+    // Opciones comunes
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub show_preview: Option<bool>,
+
+    // Opciones PDF (incluye diseño completo)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pdf_design: Option<PdfDesign>,
+
+    // Opciones CSV
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub csv_options: Option<CsvOptions>,
 }
 
 impl ExportProfile {
@@ -253,7 +305,10 @@ impl ExportProfile {
             name,
             format,
             is_default: false,
-            options: serde_json::json!({}),
+            title: None,
+            show_preview: None,
+            pdf_design: None,
+            csv_options: None,
         }
     }
 }

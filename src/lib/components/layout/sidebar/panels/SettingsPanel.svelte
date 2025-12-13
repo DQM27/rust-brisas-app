@@ -8,6 +8,7 @@
     Info,
     Database,
     FileSpreadsheet,
+    FileText,
     Keyboard,
     Home,
     Shield,
@@ -78,6 +79,23 @@
   >
     <svelte:component this={Keyboard} size={16} />
     <span>Atajos de Teclado</span>
+  </button>
+
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() =>
+      openView("export-settings", "Configuración de Exportación"),
+    )}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() =>
+          openView("export-settings", "Configuración de Exportación"),
+        ),
+      )}
+  >
+    <svelte:component this={FileText} size={16} />
+    <span>Exportación</span>
   </button>
 
   <div class="panel-item non-clickable">
