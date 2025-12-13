@@ -132,3 +132,29 @@ export async function remove(numero: string): Promise<ServiceResult<void>> {
         return { ok: false, error: parseError(err) };
     }
 }
+
+/**
+ * Crear rango de gafetes
+ */
+export async function createRange(input: import('$lib/types/gafete').CreateGafeteRangeInput): Promise<ServiceResult<string[]>> {
+    try {
+        const data = await gafete.createRange(input);
+        return { ok: true, data };
+    } catch (err: any) {
+        console.error('Error al crear rango de gafetes:', err);
+        return { ok: false, error: parseError(err) };
+    }
+}
+
+/**
+ * Actualizar estado del gafete
+ */
+export async function updateStatus(numero: string, estado: string): Promise<ServiceResult<GafeteResponse>> {
+    try {
+        const data = await gafete.updateStatus(numero, estado);
+        return { ok: true, data };
+    } catch (err: any) {
+        console.error('Error al actualizar estado del gafete:', err);
+        return { ok: false, error: parseError(err) };
+    }
+}

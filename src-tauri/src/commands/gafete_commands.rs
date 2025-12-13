@@ -3,8 +3,8 @@
 // ==========================================
 
 use crate::models::gafete::{
-    CreateGafeteInput, UpdateGafeteInput, GafeteResponse, 
-    GafeteListResponse, TipoGafete
+    CreateGafeteInput, CreateGafeteRangeInput, GafeteListResponse, GafeteResponse, TipoGafete,
+    UpdateGafeteInput, UpdateGafeteStatusInput,
 };
 use crate::services::gafete_service;
 use sqlx::SqlitePool;
@@ -19,6 +19,14 @@ pub async fn create_gafete(
 }
 
 #[tauri::command]
+pub async fn create_gafete_range(
+    pool: State<'_, SqlitePool>,
+    input: CreateGafeteRangeInput,
+) -> Result<Vec<String>, String> {
+    gafete_service::create_gafete_range(&pool, input).await
+}
+
+#[tauri::command]
 pub async fn get_gafete(
     pool: State<'_, SqlitePool>,
     numero: String,
@@ -27,9 +35,7 @@ pub async fn get_gafete(
 }
 
 #[tauri::command]
-pub async fn get_all_gafetes(
-    pool: State<'_, SqlitePool>,
-) -> Result<GafeteListResponse, String> {
+pub async fn get_all_gafetes(pool: State<'_, SqlitePool>) -> Result<GafeteListResponse, String> {
     gafete_service::get_all_gafetes(&pool).await
 }
 
@@ -60,9 +66,15 @@ pub async fn update_gafete(
 }
 
 #[tauri::command]
-pub async fn delete_gafete(
+pub async fn update_gafete_status(
     pool: State<'_, SqlitePool>,
     numero: String,
-) -> Result<(), String> {
+    input: UpdateGafeteStatusInput,
+) -> Result<GafeteResponse, String> {
+    gafete_service::update_gafete_status(&pool, numero, input.estado).await
+}
+
+#[tauri::command]
+pub async fn delete_gafete(pool: State<'_, SqlitePool>, numero: String) -> Result<(), String> {
     gafete_service::delete_gafete(&pool, numero).await
 }

@@ -54,11 +54,13 @@ macro_rules! register_handlers {
             commands::vehiculo_commands::delete_vehiculo,
             // Comandos de gafetes
             commands::gafete_commands::create_gafete,
+            commands::gafete_commands::create_gafete_range,
             commands::gafete_commands::get_gafete,
             commands::gafete_commands::get_all_gafetes,
             commands::gafete_commands::get_gafetes_disponibles,
             commands::gafete_commands::is_gafete_disponible,
             commands::gafete_commands::update_gafete,
+            commands::gafete_commands::update_gafete_status,
             commands::gafete_commands::delete_gafete,
             // ==========================================
             // COMANDOS DE CITAS (Pre-registro)

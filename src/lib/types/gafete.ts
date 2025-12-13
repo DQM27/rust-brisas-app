@@ -30,6 +30,18 @@ export const UpdateGafeteSchema = z.object({
 export type CreateGafeteInput = z.infer<typeof CreateGafeteSchema>;
 export type UpdateGafeteInput = z.infer<typeof UpdateGafeteSchema>;
 
+export interface CreateGafeteRangeInput {
+    start: number;
+    end: number;
+    prefix?: string;
+    padding?: number;
+    tipo: TipoGafete;
+}
+
+export interface UpdateGafeteStatusInput {
+    estado: 'activo' | 'danado' | 'extraviado';
+}
+
 // ==========================================
 // INTERFACES DE RESPUESTA
 // ==========================================
@@ -38,8 +50,9 @@ export interface GafeteResponse {
     numero: string;
     tipo: TipoGafete;
     tipoDisplay: string;
+    estadoFisico: string; // "activo" | "danado" | "extraviado"
     estaDisponible: boolean;
-    status: string; // "disponible" | "en_uso" | "perdido"
+    status: string; // "disponible" | "en_uso" | "perdido" | "danado" | "extraviado"
     // Información de alerta (si está perdido)
     alertaId?: string; // UUID de la alerta
     fechaPerdido?: string;
@@ -56,6 +69,8 @@ export interface GafeteListResponse {
         total: number;
         disponibles: number;
         enUso: number;
+        danados: number;
+        extraviados: number;
         porTipo: {
             contratistas: number;
             proveedores: number;

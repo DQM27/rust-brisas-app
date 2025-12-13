@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 pub struct Gafete {
     pub numero: String,
     pub tipo: TipoGafete,
+    pub estado: String, // "activo", "danado", "extraviado"
     pub created_at: String,
     pub updated_at: String,
 }
@@ -75,8 +76,24 @@ pub struct CreateGafeteInput {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CreateGafeteRangeInput {
+    pub start: u32,
+    pub end: u32,
+    pub prefix: Option<String>,
+    pub padding: Option<usize>, // Default 2
+    pub tipo: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateGafeteInput {
     pub tipo: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateGafeteStatusInput {
+    pub estado: String,
 }
 
 // ==========================================
@@ -89,8 +106,9 @@ pub struct GafeteResponse {
     pub numero: String,
     pub tipo: TipoGafete,
     pub tipo_display: String,
+    pub estado_fisico: String, // "activo", "danado", "extraviado"
     pub esta_disponible: bool,
-    pub status: String, // "disponible", "en_uso", "perdido"
+    pub status: String, // "disponible", "en_uso", "perdido", "danado", "extraviado"
     // Información de alerta (si está perdido)
     pub alerta_id: Option<String>, // UUID de la alerta
     pub fecha_perdido: Option<String>,
@@ -106,6 +124,7 @@ impl From<Gafete> for GafeteResponse {
             numero: g.numero,
             tipo: g.tipo.clone(),
             tipo_display: g.tipo.display().to_string(),
+            estado_fisico: g.estado.clone(),
             esta_disponible: false,             // Se calcula después con query
             status: String::from("disponible"), // Se calcula después
             alerta_id: None,
@@ -132,6 +151,8 @@ pub struct StatsGafetes {
     pub total: usize,
     pub disponibles: usize,
     pub en_uso: usize,
+    pub danados: usize,
+    pub extraviados: usize,
     pub por_tipo: StatsPorTipo,
 }
 
