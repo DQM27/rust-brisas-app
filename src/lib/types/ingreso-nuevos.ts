@@ -40,6 +40,7 @@ export interface IngresoProveedor {
     observaciones?: string;
     // Populated fields
     usuarioIngresoNombre?: string;
+    usuarioSalidaNombre?: string;
     empresaNombre?: string;
 }
 

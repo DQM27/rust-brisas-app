@@ -38,6 +38,14 @@
     isFormOpen = true;
   }
 
+  // Refresh trigger for tables
+  let refreshTrigger = 0;
+
+  function handleProveedorSuccess() {
+    closeForm();
+    refreshTrigger++;
+  }
+
   // Registrar manejador para el comando "new" en el contexto "ingreso-list"
   // Esto escucha cuando se dispara el comando (ej. Ctrl+N)
   onMount(() => {
@@ -65,7 +73,10 @@
         {:else if activeTab === "visitas"}
           <IngresoVisitaForm onSuccess={closeForm} onClose={closeForm} />
         {:else if activeTab === "proveedores"}
-          <IngresoProveedorForm onSuccess={closeForm} onClose={closeForm} />
+          <IngresoProveedorForm
+            onSuccess={handleProveedorSuccess}
+            onClose={closeForm}
+          />
         {:else}
           <!-- Fallback por si acaso -->
           <div class="bg-gray-800 p-4 rounded text-white">
@@ -139,6 +150,7 @@
           onRegisterClick={openForm}
           onCloseForm={closeForm}
           {isFormOpen}
+          {refreshTrigger}
         />
       {:else if activeTab === "citas"}
         <CitasList />

@@ -26,11 +26,20 @@
     onRegisterClick,
     onCloseForm,
     isFormOpen = false,
+    refreshTrigger = 0,
   } = $props<{
     onRegisterClick?: () => void;
     onCloseForm?: () => void;
     isFormOpen?: boolean;
+    refreshTrigger?: number;
   }>();
+
+  $effect(() => {
+    // Watch for changes in refreshTrigger
+    if (refreshTrigger > 0) {
+      loadData();
+    }
+  });
 
   let ingresos = $state<IngresoProveedor[]>([]);
   let loading = $state(false);
@@ -88,11 +97,13 @@
           `${params.data?.nombre || ""} ${params.data?.apellido || ""}`,
         flex: 1,
         minWidth: 200,
+        cellStyle: { fontWeight: "500" },
       },
       {
         field: "cedula",
         headerName: "Cédula",
         width: 130,
+        cellStyle: { fontFamily: "monospace" },
       },
       {
         field: "empresaNombre",
@@ -105,42 +116,97 @@
         headerName: "Área",
         width: 130,
       },
+      {
+        field: "motivo",
+        headerName: "Motivo",
+        width: 150,
+      },
+      {
+        field: "gafete",
+        headerName: "Gafete",
+        width: 100,
+        cellRenderer: (params: any) =>
+          params.value
+            ? `<span class="font-mono font-bold text-blue-600">${params.value}</span>`
+            : "-",
+      },
+      {
+        field: "placaVehiculo",
+        headerName: "Vehículo",
+        width: 120,
+        valueFormatter: (p: any) => p.value || "-",
+      },
+      {
+        field: "tipoAutorizacion",
+        headerName: "Autorización",
+        width: 120,
+        valueFormatter: (p: any) => p.value || "N/A",
+      },
+      {
+        field: "modoIngreso",
+        headerName: "Modo",
+        width: 120,
+        valueFormatter: (p: any) => p.value || "N/A",
+      },
+      {
+        field: "usuarioIngresoNombre",
+        headerName: "Registró Entrada",
+        width: 150,
+        valueFormatter: (p: any) => p.value || "N/A",
+      },
+      {
+        field: "usuarioSalidaNombre",
+        headerName: "Registró Salida",
+        width: 150,
+        valueFormatter: (p: any) => p.value || "-",
+      },
+      {
+        field: "fechaIngreso",
+        headerName: "Fecha Entrada",
+        width: 110,
+        valueFormatter: (params: any) =>
+          new Date(params.value).toLocaleDateString("es-CR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          }),
+      },
+      {
+        field: "fechaIngreso",
+        headerName: "Hora Entrada",
+        width: 100,
+        valueFormatter: (params: any) =>
+          new Date(params.value).toLocaleTimeString("es-CR", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }),
+      },
     ];
 
+    // Helper for duration calculation
+    const calculateDuration = (start: string, end?: string) => {
+      if (!start) return "--:--";
+      const startTime = new Date(start).getTime();
+      const endTime = end ? new Date(end).getTime() : Date.now();
+      const diffMinutes = Math.floor((endTime - startTime) / 60000);
+
+      const hours = Math.floor(diffMinutes / 60);
+      const mins = diffMinutes % 60;
+      return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+    };
+
     if (viewMode === "activos") {
-      return [
-        ...baseCols,
+      // Activos: Calculate duration from entry to NOW
+      const activeCols = [
         {
-          field: "gafete",
-          headerName: "Gafete",
+          headerName: "Tiempo",
           width: 100,
-          cellRenderer: (params: any) =>
-            params.value
-              ? `<span class="font-mono font-bold text-blue-600">${params.value}</span>`
-              : "-",
-        },
-        {
-          field: "placaVehiculo",
-          headerName: "Vehículo",
-          width: 120,
-          valueFormatter: (p: any) => p.value || "-",
-        },
-        {
-          field: "usuarioIngresoNombre",
-          headerName: "Registró",
-          width: 150,
-          valueFormatter: (p: any) => p.value || "N/A",
-        },
-        {
-          field: "fechaIngreso",
-          headerName: "Entrada",
-          width: 110,
-          valueFormatter: (params: any) =>
-            new Date(params.value).toLocaleTimeString("es-CR", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            }),
+          valueGetter: (params: any) =>
+            calculateDuration(params.data?.fechaIngreso),
+          cellRenderer: (params: any) => {
+            return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border font-mono bg-green-50 text-green-700 border-green-200">${params.value}</span>`;
+          },
         },
         {
           headerName: "Acciones",
@@ -155,32 +221,30 @@
           },
         },
       ];
+      return [...baseCols, ...activeCols];
     } else {
-      // HISTORIAL COLUMNS
-      return [
-        ...baseCols,
+      // Historial: Calculate duration from entry to exit
+      const historyCols = [
         {
-          field: "fechaIngreso",
-          headerName: "Entró",
-          width: 150,
+          field: "fechaSalida",
+          headerName: "Fecha Salida",
+          width: 110,
           valueFormatter: (params: any) =>
-            new Date(params.value).toLocaleString("es-CR", {
-              day: "2-digit",
-              month: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            }),
+            params.value
+              ? new Date(params.value).toLocaleDateString("es-CR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })
+              : "-",
         },
         {
           field: "fechaSalida",
-          headerName: "Salió",
-          width: 150,
+          headerName: "Hora Salida",
+          width: 100,
           valueFormatter: (params: any) =>
             params.value
-              ? new Date(params.value).toLocaleString("es-CR", {
-                  day: "2-digit",
-                  month: "2-digit",
+              ? new Date(params.value).toLocaleTimeString("es-CR", {
                   hour: "2-digit",
                   minute: "2-digit",
                   hour12: false,
@@ -189,16 +253,19 @@
           sort: "desc" as const,
         },
         {
-          field: "usuarioSalidaNombre",
-          headerName: "Salida por",
-          width: 150,
-        },
-        {
-          field: "observaciones",
-          headerName: "Observaciones",
-          flex: 1,
+          headerName: "Tiempo",
+          width: 100,
+          valueGetter: (params: any) =>
+            calculateDuration(
+              params.data?.fechaIngreso,
+              params.data?.fechaSalida,
+            ),
+          cellRenderer: (params: any) => {
+            return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border font-mono bg-gray-50 text-gray-700 border-gray-200">${params.value}</span>`;
+          },
         },
       ];
+      return [...baseCols, ...historyCols];
     }
   });
 
