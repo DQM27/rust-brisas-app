@@ -1,108 +1,97 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import IngresoFormLayout from "../common/IngresoFormLayout.svelte";
-  import ProveedorFormFields from "./ProveedorFormFields.svelte";
-  import ProveedorSearchSection from "./ProveedorSearchSection.svelte";
-  import ModoIngresoSelector from "../common/ModoIngresoSelector.svelte";
-  import GafeteInput from "../common/GafeteInput.svelte";
-  import IngresoFormFields from "../common/IngresoFormFields.svelte"; // Autorización
-  import IngresoObservaciones from "../common/IngresoObservaciones.svelte";
-
   import {
     proveedorFormData,
-    formErrors,
-    isFormValid,
-    shouldShowPlaca,
-    updateField,
-    toggleModoIngreso,
     resetForm,
+    updateField,
     setProveedorValidado,
     setVehiculoCatalogo,
+    toggleModoIngreso,
   } from "$lib/stores/proveedorFormStore";
+  import { currentUser } from "$lib/stores/auth";
   import { ingresoProveedorService } from "$lib/services/ingresoProveedorService";
   import { validarProveedor } from "$lib/logic/ingreso/proveedorService";
   import * as gafeteService from "$lib/logic/gafete/gafeteService";
-  import { currentUser } from "$lib/stores/auth";
-  import { toast } from "svelte-5-french-toast";
   import type { GafeteResponse } from "$lib/types/gafete";
-  import VehiculoSelector from "../contratista/VehiculoSelector.svelte";
 
-  export let onClose: () => void;
-  export let onSuccess: () => void;
+  // Common components
+  import ProveedorSearchSection from "./ProveedorSearchSection.svelte";
+  import VehiculoSelector from "../contratista/VehiculoSelector.svelte";
+  import ModoIngresoSelector from "../common/ModoIngresoSelector.svelte";
+  import GafeteInput from "../common/GafeteInput.svelte";
+  import IngresoFormFields from "../common/IngresoFormFields.svelte";
+  import IngresoObservaciones from "../common/IngresoObservaciones.svelte";
+  import { shortcutService } from "$lib/services/shortcutService";
+
+  import { X } from "lucide-svelte";
+  import { toast } from "svelte-5-french-toast";
+
+  export let onSuccess: () => void = () => {};
+  export let onClose: () => void = () => {};
+
+  // ==========================================
+  // ESTADO LOCAL
+  // ==========================================
 
   let loading = false;
   let gafetesDisponibles: GafeteResponse[] = [];
+  let proveedorSearchRef: any;
 
-  onMount(async () => {
-    // Cargar gafetes de proveedor
-    const res = await gafeteService.fetchDisponibles();
-    if (res.ok) {
-      gafetesDisponibles = res.data.filter((g) => g.tipo === "proveedor");
-    }
-    resetForm();
+  // ==========================================
+  // SUBSCRIPCIONES A STORES
+  // ==========================================
+
+  $: formState = $proveedorFormData;
+  $: tieneVehiculos = formState.proveedorData?.vehiculos?.length > 0;
+  $: puedeSubmit =
+    formState.puedeIngresar &&
+    formState.areaVisitada?.trim() &&
+    formState.motivo?.trim() &&
+    (formState.modoIngreso === "caminando" ||
+      (formState.modoIngreso === "vehiculo" && formState.vehiculoId));
+
+  // ==========================================
+  // LIFECYCLE
+  // ==========================================
+
+  onMount(() => {
+    // 1. Carga de datos asíncrona (Gafetes)
+    (async () => {
+      const res = await gafeteService.fetchDisponibles();
+      if (res.ok) {
+        gafetesDisponibles = res.data.filter((g) => g.tipo === "proveedor");
+      }
+    })();
+
+    // 2. Atajos
+    const unregSave = shortcutService.registerHandler(
+      "ingreso-proveedor-form",
+      "save",
+      () => handleSubmit(),
+    );
+    const unregCancel = shortcutService.registerHandler(
+      "ingreso-proveedor-form",
+      "cancel",
+      handleCloseForm,
+    );
+
+    // 3. Auto-focus
+    setTimeout(() => {
+      proveedorSearchRef?.focus();
+    }, 100);
+
+    return () => {
+      unregSave();
+      unregCancel();
+    };
   });
 
-  async function handleSubmit() {
-    if (!$isFormValid || !$currentUser) return;
-    loading = true;
-    try {
-      // NOTE: backend expects specific structure or flat fields?
-      // Check createIngresoProveedor logic in logic/ingreso/proveedorService.ts
-      // It takes ProveedorFormData and maps it.
-      // We need to ensure logic service maps provider fields correctly too.
-      // wait, logic/ingreso/proveedorService.ts creates `input` from `datosNormalizados` which uses `vehiculoPlaca`.
-      // The store handles putting selected vehicle details into `vehiculoPlaca`.
-      // So calling createIngreso should work if store state is correct.
+  // ==========================================
+  // HANDLERS - PROVEEDOR
+  // ==========================================
 
-      // Actually, we should call the LOGIC function wrapper `crearIngresoProveedor` instead of service directly?
-      // The current code calls `ingresoProveedorService.createIngreso` directly with manual mapping.
-      // This duplicates logic. Ideally we should use the wrapper.
-      // But let's stick to existing pattern in this file if works, or refactor to use wrapper.
-      // `ingresoProveedorService.createIngreso` takes `CreateIngresoProveedorInput`.
-
-      const res = await ingresoProveedorService.createIngreso({
-        cedula: $proveedorFormData.cedula,
-        nombre: $proveedorFormData.nombre,
-        apellido: $proveedorFormData.apellido,
-        empresa_id: $proveedorFormData.empresaId,
-        area_visitada: $proveedorFormData.areaVisitada,
-        motivo: $proveedorFormData.motivo,
-        gafete: $proveedorFormData.gafeteNumero || undefined,
-        tipo_autorizacion: $proveedorFormData.tipoAutorizacion,
-        modo_ingreso: $proveedorFormData.modoIngreso,
-        placa_vehiculo: $proveedorFormData.vehiculoPlaca || undefined,
-        // Add new vehicle fields
-        marca_vehiculo: $proveedorFormData.vehiculoMarca,
-        modelo_vehiculo: $proveedorFormData.vehiculoModelo,
-        color_vehiculo: $proveedorFormData.vehiculoColor,
-        tipo_vehiculo: $proveedorFormData.vehiculoTipo,
-
-        observaciones: $proveedorFormData.observaciones || undefined,
-        usuario_ingreso_id: $currentUser.id,
-      });
-
-      toast.success("Proveedor registrado correctamente");
-      resetForm();
-      onSuccess();
-    } catch (error: any) {
-      toast.error(error.message || "Error al registrar proveedor");
-    } finally {
-      loading = false;
-    }
-  }
-
-  function handleModoChange(e: CustomEvent) {
-    toggleModoIngreso(e.detail);
-  }
-
-  function handleVehiculoChange(e: CustomEvent) {
-    const vehiculoId = e.detail;
-    setVehiculoCatalogo(vehiculoId);
-  }
-
-  async function handleSelectProveedor(e: CustomEvent) {
-    const p = e.detail;
-    // Trigger full validation
+  async function handleProveedorSelect(event: CustomEvent) {
+    const p = event.detail;
     loading = true;
     try {
       const { validacion, autoSeleccion } = await validarProveedor(p.id);
@@ -111,9 +100,6 @@
         toast.error(
           validacion.motivoRechazo || "El proveedor no puede ingresar",
         );
-        if (validacion.tieneIngresoAbierto) {
-          // Maybe show alert or something?
-        }
         return;
       }
 
@@ -136,7 +122,7 @@
         setVehiculoCatalogo(null);
       }
 
-      toast.success("Proveedor validado correctamente");
+      toast.success("Proveedor validado");
     } catch (err: any) {
       console.error(err);
       toast.error("Error al validar proveedor: " + err.message);
@@ -144,155 +130,242 @@
       loading = false;
     }
   }
+
+  function handleProveedorCleared() {
+    resetForm();
+  }
+
+  // ==========================================
+  // HANDLERS - MODO DE INGRESO
+  // ==========================================
+
+  function handleModoChange(event: CustomEvent) {
+    toggleModoIngreso(event.detail);
+  }
+
+  function handleVehiculoChange(event: CustomEvent) {
+    setVehiculoCatalogo(event.detail);
+  }
+
+  // ==========================================
+  // HANDLERS - GAFETE
+  // ==========================================
+
+  function handleGafeteChange(event: CustomEvent) {
+    updateField("gafeteNumero", event.detail);
+  }
+
+  // ==========================================
+  // HANDLERS - CAMPOS ADICIONALES
+  // ==========================================
+
+  function handleTipoAutorizacionChange(event: CustomEvent) {
+    updateField("tipoAutorizacion", event.detail);
+  }
+
+  function handleObservacionesChange(event: CustomEvent) {
+    updateField("observaciones", event.detail);
+  }
+
+  // ==========================================
+  // HANDLER - SUBMIT
+  // ==========================================
+
+  async function handleSubmit() {
+    if (loading) return;
+    if (!$currentUser?.id) {
+      console.error("No hay usuario autenticado");
+      return;
+    }
+
+    loading = true;
+
+    try {
+      await ingresoProveedorService.createIngreso({
+        cedula: formState.cedula,
+        nombre: formState.nombre,
+        apellido: formState.apellido,
+        empresa_id: formState.empresaId,
+        area_visitada: formState.areaVisitada,
+        motivo: formState.motivo,
+        gafete: formState.gafeteNumero || undefined,
+        tipo_autorizacion: formState.tipoAutorizacion,
+        modo_ingreso: formState.modoIngreso,
+        placa_vehiculo: formState.vehiculoPlaca || undefined,
+        marca_vehiculo: formState.vehiculoMarca,
+        modelo_vehiculo: formState.vehiculoModelo,
+        color_vehiculo: formState.vehiculoColor,
+        tipo_vehiculo: formState.vehiculoTipo,
+        observaciones: formState.observaciones || undefined,
+        usuario_ingreso_id: $currentUser.id,
+      });
+
+      toast.success("Ingreso de proveedor registrado");
+      resetForm();
+      if (proveedorSearchRef) {
+        proveedorSearchRef.reset();
+      }
+      onSuccess();
+    } catch (error: any) {
+      toast.error(error.message || "Error al registrar ingreso");
+    } finally {
+      loading = false;
+    }
+  }
+
+  function handleCloseForm() {
+    resetForm();
+    if (proveedorSearchRef) {
+      proveedorSearchRef.reset();
+    }
+    onClose();
+  }
 </script>
 
-<IngresoFormLayout
-  title="Registrar Proveedor"
-  {loading}
-  disabled={!$isFormValid}
-  {onClose}
-  onSubmit={handleSubmit}
-  submitLabel="Registrar Proveedor"
+<!-- 
+  Formulario de ingreso de proveedor
+  Estructura idéntica al formulario de contratista
+-->
+
+<div
+  class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 relative"
+  use:shortcutService.useScope={"ingreso-proveedor-form"}
 >
-  <ProveedorSearchSection
-    on:select={handleSelectProveedor}
-    on:clear={() => {
-      resetForm();
-    }}
-  />
-
-  <ProveedorFormFields
-    formData={$proveedorFormData}
-    errors={$formErrors}
-    onChange={updateField}
-  />
-
-  <ModoIngresoSelector
-    modoIngreso={$proveedorFormData.modoIngreso}
-    tieneVehiculos={$proveedorFormData.proveedorData?.vehiculos?.length > 0}
-    on:change={handleModoChange}
-  />
-
-  {#if $proveedorFormData.modoIngreso === "vehiculo"}
-    {#if $proveedorFormData.proveedorData?.vehiculos?.length > 0}
-      <VehiculoSelector
-        vehiculos={$proveedorFormData.proveedorData.vehiculos}
-        vehiculoId={$proveedorFormData.vehiculoId || null}
-        on:change={handleVehiculoChange}
-      />
-    {/if}
-
-    <div class="flex flex-col gap-1 mt-2">
-      <label
-        for="ve-placa-prov"
-        class="text-sm font-medium text-gray-700 dark:text-gray-300"
-        >Placa del Vehículo {$proveedorFormData.vehiculoId
-          ? "(Autocompletado)"
-          : ""}</label
-      >
-      <input
-        id="ve-placa-prov"
-        type="text"
-        class="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 {$proveedorFormData.vehiculoId
-          ? 'bg-gray-100 dark:bg-gray-600'
-          : ''}"
-        placeholder="Ej: ABC-1234"
-        value={$proveedorFormData.vehiculoPlaca || ""}
-        readonly={!!$proveedorFormData.vehiculoId}
-        on:input={(e) => updateField("vehiculoPlaca", e.currentTarget.value)}
-      />
-      {#if $formErrors.vehiculoPlaca}
-        <span class="text-xs text-red-500">{$formErrors.vehiculoPlaca}</span>
-      {/if}
-    </div>
-
-    <!-- Campos adicionales de vehículo (Tipo, Marca, Modelo, Color) -->
-    <div class="grid grid-cols-2 gap-4 mt-2">
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300"
-          >Tipo</label
-        >
-        <select
-          class="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 {$proveedorFormData.vehiculoId
-            ? 'bg-gray-100 dark:bg-gray-600'
-            : ''}"
-          value={$proveedorFormData.vehiculoTipo || "automovil"}
-          disabled={!!$proveedorFormData.vehiculoId}
-          on:change={(e) => updateField("vehiculoTipo", e.currentTarget.value)}
-        >
-          <option value="automovil">Automóvil</option>
-          <option value="motocicleta">Motocicleta</option>
-          <option value="camion">Camión</option>
-          <option value="camioneta">Camioneta</option>
-          <option value="otro">Otro</option>
-        </select>
-      </div>
-
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300"
-          >Marca</label
-        >
-        <input
-          type="text"
-          class="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 {$proveedorFormData.vehiculoId
-            ? 'bg-gray-100 dark:bg-gray-600'
-            : ''}"
-          placeholder="Ej: Toyota"
-          value={$proveedorFormData.vehiculoMarca || ""}
-          readonly={!!$proveedorFormData.vehiculoId}
-          on:input={(e) => updateField("vehiculoMarca", e.currentTarget.value)}
-        />
-      </div>
-
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300"
-          >Modelo</label
-        >
-        <input
-          type="text"
-          class="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 {$proveedorFormData.vehiculoId
-            ? 'bg-gray-100 dark:bg-gray-600'
-            : ''}"
-          placeholder="Ej: Hilux"
-          value={$proveedorFormData.vehiculoModelo || ""}
-          readonly={!!$proveedorFormData.vehiculoId}
-          on:input={(e) => updateField("vehiculoModelo", e.currentTarget.value)}
-        />
-      </div>
-
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300"
-          >Color</label
-        >
-        <input
-          type="text"
-          class="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 {$proveedorFormData.vehiculoId
-            ? 'bg-gray-100 dark:bg-gray-600'
-            : ''}"
-          placeholder="Ej: Blanco"
-          value={$proveedorFormData.vehiculoColor || ""}
-          readonly={!!$proveedorFormData.vehiculoId}
-          on:input={(e) => updateField("vehiculoColor", e.currentTarget.value)}
-        />
-      </div>
-    </div>
-  {/if}
-
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <GafeteInput
-      gafeteNumero={$proveedorFormData.gafeteNumero || ""}
-      {gafetesDisponibles}
-      on:change={(e) => updateField("gafeteNumero", e.detail)}
-    />
-
-    <IngresoFormFields
-      tipoAutorizacion={$proveedorFormData.tipoAutorizacion}
-      on:tipoChange={(e) => updateField("tipoAutorizacion", e.detail)}
-    />
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+      Registrar Ingreso
+    </h2>
+    <button
+      on:click={handleCloseForm}
+      class="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+      type="button"
+      aria-label="Cerrar formulario"
+    >
+      <X size={20} />
+    </button>
   </div>
 
-  <IngresoObservaciones
-    observaciones={$proveedorFormData.observaciones || ""}
-    on:change={(e) => updateField("observaciones", e.detail)}
-  />
-</IngresoFormLayout>
+  <form on:submit|preventDefault={handleSubmit} class="space-y-6">
+    <!-- BÚSQUEDA DE PROVEEDOR -->
+    <ProveedorSearchSection
+      bind:this={proveedorSearchRef}
+      on:select={handleProveedorSelect}
+      on:clear={handleProveedorCleared}
+    />
+
+    <!-- DETALLES DEL INGRESO (Solo si puede ingresar) -->
+    {#if formState.puedeIngresar}
+      <!-- ÁREA Y MOTIVO -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-1">
+          <label
+            for="area"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Área a Visitar <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="area"
+            type="text"
+            value={formState.areaVisitada}
+            on:input={(e) => updateField("areaVisitada", e.currentTarget.value)}
+            placeholder="Ej: Almacén, Producción"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+          />
+        </div>
+        <div class="space-y-1">
+          <label
+            for="motivo"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Motivo <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="motivo"
+            type="text"
+            value={formState.motivo}
+            on:input={(e) => updateField("motivo", e.currentTarget.value)}
+            placeholder="Ej: Entrega de materiales"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+          />
+        </div>
+      </div>
+
+      <!-- MODO DE INGRESO -->
+      <ModoIngresoSelector
+        modoIngreso={formState.modoIngreso}
+        {tieneVehiculos}
+        on:change={handleModoChange}
+      />
+
+      <!-- SELECTOR DE VEHÍCULO (Solo si modo = vehiculo) -->
+      {#if formState.modoIngreso === "vehiculo" && tieneVehiculos}
+        <VehiculoSelector
+          vehiculos={formState.proveedorData.vehiculos}
+          vehiculoId={formState.vehiculoId}
+          on:change={handleVehiculoChange}
+        />
+      {/if}
+
+      <!-- CONTROLES COMPACTOS (Gafete + Autorización) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+        <GafeteInput
+          gafeteNumero={formState.gafeteNumero}
+          {gafetesDisponibles}
+          on:change={handleGafeteChange}
+        />
+        <IngresoFormFields
+          tipoAutorizacion={formState.tipoAutorizacion}
+          on:tipoChange={handleTipoAutorizacionChange}
+        />
+      </div>
+
+      <IngresoObservaciones
+        observaciones={formState.observaciones}
+        on:change={handleObservacionesChange}
+      />
+
+      <!-- BOTÓN SUBMIT -->
+      <div class="pt-2 flex gap-3">
+        <button
+          type="button"
+          on:click={handleCloseForm}
+          class="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          disabled={loading || !puedeSubmit}
+          class="flex-1 sm:flex-[2] flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {#if loading}
+            <svg
+              class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            Registrando...
+          {:else}
+            ✓ Registrar Entrada
+          {/if}
+        </button>
+      </div>
+    {/if}
+  </form>
+</div>
