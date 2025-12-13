@@ -179,15 +179,17 @@
   use:shortcutService.useScope={"contractor-form"}
 >
   <div
-    class="relative z-10 w-full max-w-[90vw] rounded-xl bg-[#1e1e1e] shadow-2xl ring-1 ring-white/10 transition-all duration-500 ease-in-out {tieneVehiculo
-      ? 'max-w-[590px]'
-      : 'max-w-sm'}"
+    class="relative z-10 w-full max-w-[90vw] rounded-lg bg-white dark:bg-[#0d1117] shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-500 ease-in-out {tieneVehiculo
+      ? 'max-w-[650px]'
+      : 'max-w-md'}"
   >
-    <div class="border-b border-white/10 px-6 py-4">
-      <h2 class="text-lg font-semibold text-gray-100">
+    <div
+      class="bg-gray-50 dark:bg-[#161b22] px-6 py-4 border-b border-gray-200 dark:border-gray-700 rounded-t-lg"
+    >
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
         {mode === "edit" ? "Editar Contratista" : "Registrar Contratista"}
       </h2>
-      <p class="mt-1 text-xs text-gray-400">
+      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
         {mode === "edit"
           ? "Modifique los datos necesarios."
           : "Ingresa los datos requeridos para el acceso."}
@@ -199,7 +201,9 @@
         <!-- Columna Principal -->
         <div class="flex-1 space-y-4">
           <div class="space-y-1">
-            <label for="cedula" class="text-xs font-medium text-gray-300"
+            <label
+              for="cedula"
+              class="text-xs font-medium text-gray-700 dark:text-gray-300"
               >Cédula</label
             >
             <input
@@ -208,14 +212,16 @@
               bind:value={cedula}
               placeholder="1-2345-6789"
               disabled={loading}
-              class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all"
+              class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="space-y-1">
-              <label for="nombre" class="text-xs font-medium text-gray-300"
-                >Nombre <span class="text-red-400">*</span></label
+              <label
+                for="nombre"
+                class="text-xs font-medium text-gray-700 dark:text-gray-300"
+                >Nombre <span class="text-red-500">*</span></label
               >
               <input
                 id="nombre"
@@ -223,13 +229,14 @@
                 bind:value={nombre}
                 placeholder="Juan"
                 disabled={loading}
-                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
             <div class="space-y-1">
               <label
                 for="segundoNombre"
-                class="text-xs font-medium text-gray-300">Segundo Nombre</label
+                class="text-xs font-medium text-gray-700 dark:text-gray-300"
+                >Segundo Nombre</label
               >
               <input
                 id="segundoNombre"
@@ -237,15 +244,17 @@
                 bind:value={segundoNombre}
                 placeholder="Carlos"
                 disabled={loading}
-                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="space-y-1">
-              <label for="apellido" class="text-xs font-medium text-gray-300"
-                >Apellido <span class="text-red-400">*</span></label
+              <label
+                for="apellido"
+                class="text-xs font-medium text-gray-700 dark:text-gray-300"
+                >Apellido <span class="text-red-500">*</span></label
               >
               <input
                 id="apellido"
@@ -253,13 +262,13 @@
                 bind:value={apellido}
                 placeholder="Pérez"
                 disabled={loading}
-                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
             <div class="space-y-1">
               <label
                 for="segundoApellido"
-                class="text-xs font-medium text-gray-300"
+                class="text-xs font-medium text-gray-700 dark:text-gray-300"
                 >Segundo Apellido</label
               >
               <input
@@ -268,13 +277,15 @@
                 bind:value={segundoApellido}
                 placeholder="González"
                 disabled={loading}
-                class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
           </div>
 
           <div class="space-y-1">
-            <label for="empresaId" class="text-xs font-medium text-gray-300"
+            <label
+              for="empresaId"
+              class="text-xs font-medium text-gray-700 dark:text-gray-300"
               >Empresa</label
             >
             <div class="flex gap-2">
@@ -283,7 +294,7 @@
                   id="empresaId"
                   bind:value={empresaId}
                   disabled={loading || loadingEmpresas}
-                  class="w-full appearance-none rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:opacity-50"
+                  class="w-full appearance-none rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none disabled:opacity-50"
                 >
                   <option value="" disabled selected>
                     {loadingEmpresas
@@ -295,11 +306,11 @@
                   {/each}
                 </select>
                 <div
-                  class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400"
+                  class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500 dark:text-gray-400"
                 >
                   {#if loadingEmpresas}
                     <svg
-                      class="animate-spin h-3 w-3 text-blue-500"
+                      class="animate-spin h-3 w-3 text-[#2da44e]"
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
@@ -338,7 +349,7 @@
                 type="button"
                 on:click={() => (showEmpresaModal = true)}
                 disabled={loading}
-                class="flex items-center justify-center rounded-lg bg-[#2d2d2d] px-2 text-gray-400 hover:bg-[#3d3d3d] hover:text-white border border-white/10 transition-colors flex-shrink-0"
+                class="flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-[#21262d] px-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#30363d] transition-colors flex-shrink-0"
                 title="Agregar Nueva Empresa"
               >
                 <svg
@@ -362,22 +373,23 @@
           <div class="space-y-1">
             <label
               for="fechaVencimientoPraind"
-              class="text-xs font-medium text-gray-300">Fecha PRAIND</label
+              class="text-xs font-medium text-gray-700 dark:text-gray-300"
+              >Fecha PRAIND</label
             >
             <input
               id="fechaVencimientoPraind"
               type="date"
               bind:value={fechaVencimientoPraind}
               disabled={loading}
-              class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none calendar-icon-white"
+              class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none calendar-icon-themed"
             />
           </div>
 
           <div
-            class="pt-1 flex items-center justify-between rounded-lg border border-white/5 bg-white/5 p-3"
+            class="pt-1 flex items-center justify-between rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#161b22] p-3"
           >
             <div class="flex flex-col">
-              <span class="text-xs font-medium text-gray-200"
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-300"
                 >¿Agregar Vehículo?</span
               >
             </div>
@@ -387,9 +399,9 @@
               aria-checked={tieneVehiculo}
               aria-label="Agregar Vehículo"
               on:click={() => (tieneVehiculo = !tieneVehiculo)}
-              class="group relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#1e1e1e] {tieneVehiculo
-                ? 'bg-blue-600'
-                : 'bg-[#3e3e3e]'}"
+              class="group relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#2da44e] {tieneVehiculo
+                ? 'bg-[#2da44e]'
+                : 'bg-gray-300 dark:bg-gray-600'}"
             >
               <span
                 class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {tieneVehiculo
@@ -402,7 +414,7 @@
 
         {#if tieneVehiculo}
           <div
-            class="hidden lg:block w-px bg-gradient-to-b from-transparent via-white/10 to-transparent self-stretch my-2"
+            class="hidden lg:block w-px bg-gray-200 dark:bg-gray-700 self-stretch my-2"
             transition:fade
           ></div>
 
@@ -413,26 +425,29 @@
           >
             <div class="h-full space-y-4">
               <div class="mb-3">
-                <h3 class="text-base font-medium text-gray-200">
+                <h3
+                  class="text-base font-medium text-gray-900 dark:text-gray-100"
+                >
                   Datos del Vehículo
                 </h3>
-                <p class="text-xs text-gray-500">
+                <p class="text-xs text-gray-500 dark:text-gray-400">
                   Información necesaria para el pase vehicular.
                 </p>
               </div>
 
               <div class="space-y-1">
-                <span class="block text-xs font-medium text-gray-300"
+                <span
+                  class="block text-xs font-medium text-gray-700 dark:text-gray-300"
                   >Tipo de Vehículo</span
                 >
                 <div class="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     on:click={() => (tipoVehiculo = "motocicleta")}
-                    class="flex items-center justify-center gap-1 rounded-lg border px-3 py-2 text-xs font-medium transition-all {tipoVehiculo ===
+                    class="flex items-center justify-center gap-1 rounded-md border px-3 py-2 text-xs font-medium transition-all {tipoVehiculo ===
                     'motocicleta'
-                      ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                      : 'border-white/10 bg-[#252526] text-gray-400 hover:border-white/20 hover:text-gray-300'}"
+                      ? 'border-[#2da44e] bg-[#2da44e]/10 text-[#2da44e]'
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500'}"
                   >
                     <svg
                       class="h-4 w-4"
@@ -452,10 +467,10 @@
                   <button
                     type="button"
                     on:click={() => (tipoVehiculo = "automóvil")}
-                    class="flex items-center justify-center gap-1 rounded-lg border px-3 py-2 text-xs font-medium transition-all {tipoVehiculo ===
+                    class="flex items-center justify-center gap-1 rounded-md border px-3 py-2 text-xs font-medium transition-all {tipoVehiculo ===
                     'automóvil'
-                      ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                      : 'border-white/10 bg-[#252526] text-gray-400 hover:border-white/20 hover:text-gray-300'}"
+                      ? 'border-[#2da44e] bg-[#2da44e]/10 text-[#2da44e]'
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500'}"
                   >
                     <svg
                       class="h-4 w-4"
@@ -476,7 +491,9 @@
               </div>
 
               <div class="space-y-1">
-                <label for="placa" class="text-xs font-medium text-gray-300"
+                <label
+                  for="placa"
+                  class="text-xs font-medium text-gray-700 dark:text-gray-300"
                   >Número de Placa</label
                 >
                 <input
@@ -484,13 +501,15 @@
                   type="text"
                   bind:value={placa}
                   placeholder="ABC-123"
-                  class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2 text-sm text-white uppercase focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 uppercase focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div class="space-y-1">
-                  <label for="marca" class="text-xs font-medium text-gray-300"
+                  <label
+                    for="marca"
+                    class="text-xs font-medium text-gray-700 dark:text-gray-300"
                     >Marca</label
                   >
                   <input
@@ -498,11 +517,13 @@
                     type="text"
                     bind:value={marca}
                     placeholder="Toyota"
-                    class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                    class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
                 <div class="space-y-1">
-                  <label for="modelo" class="text-xs font-medium text-gray-300"
+                  <label
+                    for="modelo"
+                    class="text-xs font-medium text-gray-700 dark:text-gray-300"
                     >Modelo</label
                   >
                   <input
@@ -510,13 +531,15 @@
                     type="text"
                     bind:value={modelo}
                     placeholder="Corolla"
-                    class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                    class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
               </div>
 
               <div class="space-y-1">
-                <label for="color" class="text-xs font-medium text-gray-300"
+                <label
+                  for="color"
+                  class="text-xs font-medium text-gray-700 dark:text-gray-300"
                   >Color</label
                 >
                 <input
@@ -524,12 +547,12 @@
                   type="text"
                   bind:value={color}
                   placeholder="Blanco"
-                  class="w-full rounded-lg border border-white/10 bg-[#252526] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                  class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
 
               <div
-                class="mt-3 rounded bg-blue-500/10 p-2 text-xs text-blue-200 border border-blue-500/20"
+                class="mt-3 rounded-md bg-blue-50 dark:bg-blue-900/20 p-2 text-xs text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
               >
                 Recuerde verificar que la placa coincida con la tarjeta de
                 circulación física.
@@ -540,11 +563,13 @@
       </div>
 
       <!-- Botón centrado y más pequeño -->
-      <div class="pt-6 border-t border-white/5 mt-6 flex justify-center">
+      <div
+        class="pt-6 border-t border-gray-200 dark:border-gray-700 mt-6 flex justify-center"
+      >
         <button
           type="submit"
           disabled={loading || !isFormValid}
-          class="w-auto min-w-[200px] rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+          class="w-auto min-w-[200px] rounded-md bg-[#2da44e] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#2c974b] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading
             ? "Procesando..."
@@ -559,35 +584,41 @@
 
 {#if showEmpresaModal}
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center p-4"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
     transition:fade={{ duration: 200 }}
   >
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div
-      class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      class="absolute inset-0"
       on:click={() => !creatingEmpresa && (showEmpresaModal = false)}
     ></div>
     <div
-      class="relative w-full max-w-sm overflow-hidden rounded-xl bg-[#1e1e1e] shadow-2xl ring-1 ring-white/10"
+      class="relative w-full max-w-md overflow-hidden rounded-lg bg-white dark:bg-[#0d1117] shadow-2xl ring-1 ring-gray-900/5 dark:ring-white/10"
       transition:scale={{ start: 0.95, duration: 200 }}
     >
-      <div class="px-5 py-4 border-b border-white/10">
-        <h3 class="text-base font-semibold text-white">Nueva Empresa</h3>
-        <p class="text-xs text-gray-400 mt-1">
+      <div
+        class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#161b22]"
+      >
+        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
+          Nueva Empresa
+        </h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
           Agrega una nueva empresa al catálogo.
         </p>
       </div>
       <div class="p-5 space-y-3">
         {#if empresaError}
           <div
-            class="rounded bg-red-500/10 border border-red-500/20 p-2 text-xs text-red-400"
+            class="rounded bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-2 text-xs text-red-700 dark:text-red-300"
           >
             {empresaError}
           </div>
         {/if}
         <div class="space-y-1">
-          <label for="newEmpresa" class="text-xs font-medium text-gray-300"
+          <label
+            for="newEmpresa"
+            class="text-xs font-medium text-gray-700 dark:text-gray-300"
             >Nombre de la Empresa</label
           >
           <input
@@ -596,26 +627,26 @@
             bind:value={nuevaEmpresaNombre}
             placeholder="Ej. Servicios Generales S.A."
             disabled={creatingEmpresa}
-            class="w-full rounded-lg border border-white/10 bg-[#2d2d2d] px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+            class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none"
             on:keydown={(e) => e.key === "Enter" && handleCrearEmpresa()}
           />
         </div>
       </div>
       <div
-        class="flex justify-end gap-2 px-5 py-3 bg-[#252526] border-t border-white/10"
+        class="flex justify-end gap-2 px-5 py-3 bg-gray-50 dark:bg-[#161b22] border-t border-gray-200 dark:border-gray-700"
       >
         <button
           type="button"
           disabled={creatingEmpresa}
           on:click={() => (showEmpresaModal = false)}
-          class="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-white/5 transition-colors"
+          class="rounded-md px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#21262d] border border-gray-300 dark:border-gray-600 transition-colors"
           >Cancelar</button
         >
         <button
           type="button"
           disabled={creatingEmpresa || !nuevaEmpresaNombre.trim()}
           on:click={handleCrearEmpresa}
-          class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50 flex items-center gap-1"
+          class="rounded-md bg-[#2da44e] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2c974b] disabled:opacity-50 flex items-center gap-1"
         >
           {creatingEmpresa ? "Guardando..." : "Guardar Empresa"}
         </button>
@@ -625,12 +656,17 @@
 {/if}
 
 <style>
-  .calendar-icon-white::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-    opacity: 0.6;
+  /* Auto-theming for date picker icon */
+  .calendar-icon-themed::-webkit-calendar-picker-indicator {
     cursor: pointer;
   }
-  .calendar-icon-white::-webkit-calendar-picker-indicator:hover {
+  /* Dark mode specific override for calendar icon */
+  :global(.dark) .calendar-icon-themed::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.6;
+  }
+  :global(.dark)
+    .calendar-icon-themed::-webkit-calendar-picker-indicator:hover {
     opacity: 1;
   }
 </style>

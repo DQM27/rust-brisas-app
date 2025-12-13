@@ -220,7 +220,7 @@
       // 3. Update User
       await onUpdate(
         {
-          ...formData, // Send current form data to avoid partial updates if necessary, or just empty object if API supports partial
+          ...formData, // Send current form data to avoid partial updates if necessary
           password: newPass,
           mustChangePassword: true,
         },
@@ -245,23 +245,27 @@
   }
 
   const inputClass =
-    "w-full rounded border border-emphasis bg-surface-1 px-3 py-2 text-sm text-primary placeholder:text-tertiary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-60";
-  const labelClass = "block text-sm font-medium text-primary mb-1";
+    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#2da44e] disabled:opacity-60 transition-all";
+  const labelClass =
+    "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
   const errorClass = "text-xs text-red-500 mt-1";
   const sectionTitleClass =
-    "text-lg font-medium text-accent mb-4 border-b border-surface-tertiary pb-2";
+    "text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2";
 </script>
 
 <div class="flex min-h-full flex-col items-center p-6">
-  <div class="w-full max-w-4xl rounded-lg bg-surface-2 p-8 shadow-xl">
+  <div
+    class="w-full max-w-4xl rounded-lg bg-white dark:bg-[#0d1117] p-8 shadow-xl border border-gray-200 dark:border-gray-700"
+  >
     <div class="flex items-center justify-between mb-8">
       <div class="flex flex-col">
-        <h2 class="text-2xl font-bold text-primary">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
           {isSelf ? "Mi Perfil" : "Edición de Perfil"}
         </h2>
         {#if !isSelf}
-          <p class="text-sm text-tertiary">
-            Editando a: <span class="font-medium text-primary"
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            Editando a: <span
+              class="font-medium text-gray-900 dark:text-gray-100"
               >{user.nombre} {user.apellido}</span
             >
           </p>
@@ -272,7 +276,7 @@
           <!-- Role Selector -->
           <select
             bind:value={formData.role}
-            class="px-2 py-1 rounded bg-surface-1 border border-emphasis text-sm text-primary focus:border-accent focus:outline-none"
+            class="px-2 py-1 rounded bg-gray-50 dark:bg-[#161b22] border border-gray-300 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#2da44e]"
           >
             <option value="admin">Administrador</option>
             <option value="supervisor">Supervisor</option>
@@ -283,7 +287,7 @@
           <button
             type="button"
             onclick={() => onStatusChange?.(!user.isActive)}
-            class={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${user.isActive ? "bg-green-900/20 text-green-400 border-green-900/30 hover:bg-red-900/20 hover:text-red-400 hover:border-red-900/30" : "bg-red-900/20 text-red-400 border-red-900/30 hover:bg-green-900/20 hover:text-green-400 hover:border-green-900/30"}`}
+            class={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${user.isActive ? "bg-green-50 text-green-700 border-green-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/30 dark:hover:bg-red-900/20 dark:hover:text-red-400 dark:hover:border-red-900/30" : "bg-red-50 text-red-700 border-red-200 hover:bg-green-50 hover:text-green-700 hover:border-green-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30 dark:hover:bg-green-900/20 dark:hover:text-green-400 dark:hover:border-green-900/30"}`}
           >
             {user.isActive ? "Activo" : "Inactivo"}
           </button>
@@ -291,12 +295,12 @@
       {:else}
         <div class="flex items-center gap-2">
           <span
-            class="px-3 py-1 rounded-full bg-surface-3 text-sm font-medium text-tertiary border border-surface-tertiary capitalize"
+            class="px-3 py-1 rounded-full bg-gray-100 text-gray-700 border border-gray-200 text-sm font-medium capitalize dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
           >
             {user.roleDisplay}
           </span>
           <span
-            class={`px-3 py-1 rounded-full text-sm font-medium border ${user.isActive ? "bg-green-900/20 text-green-400 border-green-900/30" : "bg-red-900/20 text-red-400 border-red-900/30"}`}
+            class={`px-3 py-1 rounded-full text-sm font-medium border ${user.isActive ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/30" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30"}`}
           >
             {user.isActive ? "Activo" : "Inactivo"}
           </span>
@@ -513,14 +517,14 @@
 
         <!-- Botones de Acción -->
         <div
-          class="flex flex-col-reverse sm:flex-row items-center justify-between gap-4 pt-6 mt-6 border-t border-surface-tertiary"
+          class="flex flex-col-reverse sm:flex-row items-center justify-between gap-4 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700"
         >
           {#if permissions.canChangePassword}
             <!-- User changing their OWN password -->
             <button
               type="button"
               onclick={() => (isEditingPassword = true)}
-              class="text-accent hover:text-accent-hover font-medium text-sm flex items-center gap-2 transition-colors"
+              class="text-[#2da44e] hover:text-[#2c974b] font-medium text-sm flex items-center gap-2 transition-colors hover:underline"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -543,7 +547,7 @@
             <button
               type="button"
               onclick={handleResetPasswordClick}
-              class="text-orange-400 hover:text-orange-300 font-medium text-sm flex items-center gap-2 transition-colors"
+              class="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium text-sm flex items-center gap-2 transition-colors hover:underline"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -571,7 +575,7 @@
           <button
             type="submit"
             disabled={loading}
-            class="w-full sm:w-auto bg-accent hover:bg-accent-hover text-white font-medium py-2 px-6 rounded transition-colors shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full sm:w-auto bg-[#2da44e] hover:bg-[#2c974b] text-white font-medium py-2 px-6 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Guardando..." : "Guardar Cambios"}
           </button>
@@ -593,11 +597,11 @@
     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
   >
     <div
-      class="w-full max-w-md bg-surface-2 rounded-lg shadow-xl border border-green-500/30 p-6 animate-scale-in"
+      class="w-full max-w-md bg-white dark:bg-[#0d1117] rounded-lg shadow-xl border border-green-200 dark:border-green-900/50 p-6 animate-scale-in"
     >
       <div class="text-center">
         <div
-          class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-500/20 text-green-400 mb-4"
+          class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 mb-4"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -611,23 +615,24 @@
             stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
           >
         </div>
-        <h3 class="text-xl font-bold text-white mb-2">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
           Contraseña Restablecida
         </h3>
-        <p class="text-gray-400 text-sm mb-6">
+        <p class="text-gray-500 dark:text-gray-400 text-sm mb-6">
           La contraseña ha sido generada exitosamente. Por favor compártela con
           el usuario.
         </p>
 
         <div
-          class="flex items-center justify-center gap-3 bg-surface-1 p-3 rounded-lg border border-surface-tertiary mb-6"
+          class="flex items-center justify-center gap-3 bg-gray-50 dark:bg-[#161b22] p-3 rounded-md border border-gray-200 dark:border-gray-700 mb-6"
         >
-          <code class="text-lg font-mono font-bold text-accent tracking-wider"
+          <code
+            class="text-lg font-mono font-bold text-gray-900 dark:text-white tracking-wider"
             >{generatedPassword}</code
           >
           <button
             onclick={copyNewPassword}
-            class="p-2 text-gray-400 hover:text-white transition-colors"
+            class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
             title="Copiar"
           >
             <svg
@@ -649,7 +654,7 @@
 
         <button
           onclick={() => (showSuccessModal = false)}
-          class="w-full bg-surface-3 hover:bg-surface-4 text-white font-medium py-2 rounded transition-colors"
+          class="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-medium py-2 rounded-md transition-colors border border-gray-200 dark:border-gray-700"
         >
           Cerrar
         </button>

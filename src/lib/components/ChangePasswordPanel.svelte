@@ -62,27 +62,28 @@
   }
 
   const inputClass =
-    "w-full rounded border border-emphasis bg-surface-1 px-3 py-2 text-sm text-primary placeholder:text-tertiary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-60";
+    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#2da44e] disabled:opacity-60 transition-all";
   const errorClass = "text-xs text-red-500 mt-1";
 </script>
 
 <div
-  class="w-full max-w-sm rounded-lg bg-surface-2 p-8 shadow-xl border border-surface-3"
+  class="w-full max-w-sm rounded-lg bg-white dark:bg-[#0d1117] p-8 shadow-xl border border-gray-200 dark:border-gray-700"
 >
   <div class="mb-6 text-center">
-    <h2 class="text-2xl font-bold text-primary">Cambiar Contraseña</h2>
-    <p class="text-sm text-tertiary mt-2">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+      Cambiar Contraseña
+    </h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
       Por seguridad, debes establecer una nueva contraseña.
     </p>
   </div>
 
   <form onsubmit={handleSubmit} class="space-y-4">
     <!-- Contraseña Actual (Oculta si ya se proveyó) -->
-    <!-- Si no se provee (ej: perfil), se muestra. Pero en flujo login usually viene. -->
     <div class={currentPassword ? "hidden" : "block"}>
       <label
         for="current_password"
-        class="block text-sm font-medium text-primary mb-1"
+        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
         >Contraseña Actual</label
       >
       <input
@@ -101,7 +102,7 @@
     <div>
       <label
         for="new_password"
-        class="block text-sm font-medium text-primary mb-1"
+        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
         >Nueva Contraseña</label
       >
       <input
@@ -121,7 +122,7 @@
     <div>
       <label
         for="confirm_password"
-        class="block text-sm font-medium text-primary mb-1"
+        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
         >Confirmar Contraseña</label
       >
       <input
@@ -142,7 +143,7 @@
       <button
         type="submit"
         disabled={loading}
-        class="w-full rounded bg-accent px-4 py-2 font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+        class="w-full rounded-md bg-[#2da44e] px-4 py-2 font-medium text-white transition-all hover:bg-[#2c974b] disabled:cursor-not-allowed disabled:opacity-60 shadow-sm"
       >
         {loading ? "Actualizando..." : "Confirmar Cambio"}
       </button>
@@ -151,7 +152,7 @@
         type="button"
         onclick={onCancel}
         disabled={loading}
-        class="w-full text-center text-sm text-tertiary hover:text-primary transition-colors"
+        class="w-full text-center text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
       >
         Cancelar
       </button>

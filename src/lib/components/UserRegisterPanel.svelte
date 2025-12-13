@@ -173,6 +173,7 @@
         "ArrowRight",
         "Home",
         "End",
+        "End",
       ].includes(event.key)
     ) {
       return;
@@ -217,37 +218,43 @@
   }
 
   const inputFieldClass =
-    "w-full rounded border border-emphasis bg-surface-1 px-3 py-2 text-sm text-primary placeholder:text-tertiary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-60";
+    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#2da44e] disabled:opacity-60 transition-all";
 
   const errorClass = "text-xs text-red-500 mt-1";
+  const labelClass =
+    "block text-sm font-medium text-gray-700 dark:text-gray-300";
+  const sectionTitleClass =
+    "mb-3 text-lg font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2";
 </script>
 
 <div
   class="flex min-h-full items-center justify-center p-6"
   use:shortcutService.useScope={"user-form"}
 >
-  <div class="w-full max-w-2xl rounded-lg bg-surface-2 p-8 shadow-xl">
+  <div
+    class="w-full max-w-2xl rounded-lg bg-white dark:bg-[#0d1117] p-8 shadow-xl border border-gray-200 dark:border-gray-700"
+  >
     {#if createdUser && createdUser.temporaryPassword}
       <div
-        class="mb-6 rounded-lg border border-green-500/50 bg-green-500/10 p-6 text-center"
+        class="mb-6 rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-6 text-center"
       >
-        <h3 class="mb-2 text-xl font-bold text-green-500">
+        <h3 class="mb-2 text-xl font-bold text-green-700 dark:text-green-400">
           ¡Usuario Creado Exitosamente!
         </h3>
-        <p class="mb-4 text-sm text-primary">
+        <p class="mb-4 text-sm text-gray-600 dark:text-gray-300">
           El usuario se generó con una contraseña temporal. Por favor, cópiala y
           entrégasela al usuario.
         </p>
 
         <div class="flex items-center justify-center gap-3">
           <code
-            class="rounded bg-surface-1 px-4 py-2 text-lg font-mono font-bold tracking-wider text-accent"
+            class="rounded bg-white dark:bg-[#161b22] px-4 py-2 text-lg font-mono font-bold tracking-wider text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
           >
             {createdUser.temporaryPassword}
           </code>
           <button
             onclick={copyPassword}
-            class="rounded bg-surface-1 p-2 text-primary hover:bg-surface-3 transition-colors"
+            class="rounded-md bg-white dark:bg-[#161b22] p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             title="Copiar contraseña"
           >
             {#if copied}
@@ -284,14 +291,14 @@
 
         <button
           onclick={onReset}
-          class="mt-6 text-sm font-medium text-tertiary hover:text-primary underline"
+          class="mt-6 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#2da44e] underline transition-colors"
         >
           Registrar otro usuario
         </button>
       </div>
     {:else}
       <h2
-        class="mb-6 border-b border-accent pb-3 text-2xl font-semibold text-primary"
+        class="mb-6 border-b border-gray-200 dark:border-gray-700 pb-3 text-2xl font-semibold text-gray-900 dark:text-gray-100"
       >
         Registrar Nuevo Usuario
       </h2>
@@ -300,9 +307,7 @@
         <!-- CÉDULA (NUEVO REQUERIDO) -->
         <div>
           <div class="space-y-2">
-            <label for="cedula" class="block text-sm font-medium text-primary"
-              >Cédula *</label
-            >
+            <label for="cedula" class={labelClass}>Cédula *</label>
             <input
               id="cedula"
               type="text"
@@ -318,13 +323,11 @@
 
         <!-- SECCIÓN 1: DATOS PERSONALES -->
         <div>
-          <h3 class="mb-3 text-lg font-medium text-accent">Datos Personales</h3>
+          <h3 class={sectionTitleClass}>Datos Personales</h3>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <!-- Nombre -->
             <div class="space-y-2">
-              <label for="nombre" class="block text-sm font-medium text-primary"
-                >Primer Nombre *</label
-              >
+              <label for="nombre" class={labelClass}>Primer Nombre *</label>
               <input
                 id="nombre"
                 type="text"
@@ -339,9 +342,7 @@
 
             <!-- Segundo Nombre -->
             <div class="space-y-2">
-              <label
-                for="segundoNombre"
-                class="block text-sm font-medium text-primary"
+              <label for="segundoNombre" class={labelClass}
                 >Segundo Nombre</label
               >
               <input
@@ -357,11 +358,7 @@
 
             <!-- Apellido -->
             <div class="space-y-2">
-              <label
-                for="apellido"
-                class="block text-sm font-medium text-primary"
-                >Primer Apellido *</label
-              >
+              <label for="apellido" class={labelClass}>Primer Apellido *</label>
               <input
                 id="apellido"
                 type="text"
@@ -378,9 +375,7 @@
 
             <!-- Segundo Apellido -->
             <div class="space-y-2">
-              <label
-                for="segundoApellido"
-                class="block text-sm font-medium text-primary"
+              <label for="segundoApellido" class={labelClass}
                 >Segundo Apellido</label
               >
               <input
@@ -398,17 +393,11 @@
 
         <!-- SECCIÓN: INFORMACIÓN LABORAL -->
         <div>
-          <h3 class="mb-3 text-lg font-medium text-accent">
-            Información Laboral
-          </h3>
+          <h3 class={sectionTitleClass}>Información Laboral</h3>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <!-- Número de Gafete -->
             <div class="space-y-2">
-              <label
-                for="numeroGafete"
-                class="block text-sm font-medium text-primary"
-                >Número Gafete</label
-              >
+              <label for="numeroGafete" class={labelClass}>Número Gafete</label>
               <input
                 id="numeroGafete"
                 type="text"
@@ -422,9 +411,7 @@
 
             <!-- Fecha Inicio Labores -->
             <div class="space-y-2">
-              <label
-                for="fechaInicioLabores"
-                class="block text-sm font-medium text-primary"
+              <label for="fechaInicioLabores" class={labelClass}
                 >Fecha Inicio Labores</label
               >
               <input
@@ -440,13 +427,11 @@
 
         <!-- SECCIÓN 2: CONTACTO BÁSICO -->
         <div>
-          <h3 class="mb-3 text-lg font-medium text-accent">Cuenta y Acceso</h3>
+          <h3 class={sectionTitleClass}>Cuenta y Acceso</h3>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <!-- Email -->
             <div class="space-y-2">
-              <label for="email" class="block text-sm font-medium text-primary"
-                >Email *</label
-              >
+              <label for="email" class={labelClass}>Email *</label>
               <input
                 id="email"
                 type="email"
@@ -460,9 +445,7 @@
 
             <!-- Rol -->
             <div class="space-y-2">
-              <label for="role" class="block text-sm font-medium text-primary"
-                >Rol *</label
-              >
+              <label for="role" class={labelClass}>Rol *</label>
               <select
                 id="role"
                 bind:value={formData.role}
@@ -479,14 +462,11 @@
 
         <!-- SECCIÓN: CONTACTO -->
         <div>
-          <h3 class="mb-3 text-lg font-medium text-accent">Contacto</h3>
+          <h3 class={sectionTitleClass}>Contacto</h3>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <!-- Teléfono -->
             <div class="space-y-2">
-              <label
-                for="telefono"
-                class="block text-sm font-medium text-primary">Teléfono</label
-              >
+              <label for="telefono" class={labelClass}>Teléfono</label>
               <input
                 id="telefono"
                 type="tel"
@@ -501,10 +481,7 @@
 
             <!-- Dirección -->
             <div class="col-span-1 sm:col-span-2 space-y-2">
-              <label
-                for="direccion"
-                class="block text-sm font-medium text-primary">Dirección</label
-              >
+              <label for="direccion" class={labelClass}>Dirección</label>
               <textarea
                 id="direccion"
                 bind:value={formData.direccion}
@@ -519,15 +496,11 @@
 
         <!-- SECCIÓN: EMERGENCIA -->
         <div>
-          <h3 class="mb-3 text-lg font-medium text-accent">
-            Contacto de Emergencia
-          </h3>
+          <h3 class={sectionTitleClass}>Contacto de Emergencia</h3>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <!-- Nombre Contacto -->
             <div class="space-y-2">
-              <label
-                for="contactoEmergenciaNombre"
-                class="block text-sm font-medium text-primary"
+              <label for="contactoEmergenciaNombre" class={labelClass}
                 >Nombre Contacto</label
               >
               <input
@@ -543,9 +516,7 @@
 
             <!-- Teléfono Contacto -->
             <div class="space-y-2">
-              <label
-                for="contactoEmergenciaTelefono"
-                class="block text-sm font-medium text-primary"
+              <label for="contactoEmergenciaTelefono" class={labelClass}
                 >Teléfono Contacto</label
               >
               <input
@@ -567,8 +538,8 @@
         <button
           type="submit"
           disabled={loading}
-          class="mt-6 w-full rounded bg-accent px-4 py-2.5 font-medium text-white
-                transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+          class="mt-6 w-full rounded-md bg-[#2da44e] px-4 py-2.5 font-medium text-white
+                transition-all hover:bg-[#2c974b] disabled:cursor-not-allowed disabled:opacity-60 shadow-sm"
         >
           {loading ? "Procesando..." : "Registrar Usuario"}
         </button>
