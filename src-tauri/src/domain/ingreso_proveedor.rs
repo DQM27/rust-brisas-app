@@ -38,7 +38,11 @@ pub struct CreateIngresoProveedorInput {
     pub gafete: Option<String>,
     pub tipo_autorizacion: String,
     pub modo_ingreso: String,
+    pub tipo_vehiculo: Option<String>,
     pub placa_vehiculo: Option<String>,
+    pub marca_vehiculo: Option<String>,
+    pub modelo_vehiculo: Option<String>,
+    pub color_vehiculo: Option<String>,
     pub observaciones: Option<String>,
     pub usuario_ingreso_id: String,
 }

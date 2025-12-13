@@ -59,15 +59,11 @@ impl IngresoProveedorService {
                     } else {
                         None
                     },
-                    tipo_vehiculo: if input.placa_vehiculo.is_some() {
-                        Some("automovil".to_string())
-                    } else {
-                        None
-                    }, // Default a automovil si viene por ingreso rápido
+                    tipo_vehiculo: input.tipo_vehiculo.clone(), // Must be captured from input
                     placa: input.placa_vehiculo.clone(),
-                    marca: None,
-                    modelo: None,
-                    color: None,
+                    marca: input.marca_vehiculo.clone(),
+                    modelo: input.modelo_vehiculo.clone(),
+                    color: input.color_vehiculo.clone(),
                 },
             )
             .await

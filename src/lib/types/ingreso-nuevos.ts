@@ -50,7 +50,28 @@ export interface CreateIngresoProveedorInput {
     gafete?: string;
     tipo_autorizacion: string;
     modo_ingreso: string;
+    // Vehicle fields
+    tipo_vehiculo?: string;
     placa_vehiculo?: string;
+    marca_vehiculo?: string;
+    modelo_vehiculo?: string;
+    color_vehiculo?: string;
+    // Audit
     observaciones?: string;
     usuario_ingreso_id: string;
+}
+
+export interface ProveedorCatalogItem {
+    id: string;
+    cedula: string;
+    nombre: string;
+    apellido: string;
+    empresaId: string;
+    empresaNombre: string;
+    // Vehicle info
+    vehiculoTipo?: string;
+    vehiculoPlaca?: string;
+    vehiculoMarca?: string;
+    vehiculoModelo?: string;
+    vehiculoColor?: string;
 }

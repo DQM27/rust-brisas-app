@@ -21,6 +21,10 @@ const initialFormData: ProveedorFormData = {
     tipoAutorizacion: 'correo',
     modoIngreso: 'caminando',
     vehiculoPlaca: undefined,
+    vehiculoMarca: undefined,
+    vehiculoModelo: undefined,
+    vehiculoColor: undefined,
+    vehiculoTipo: 'automovil', // Default
     gafeteNumero: undefined,
     observaciones: undefined,
 };

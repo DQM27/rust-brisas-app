@@ -22,7 +22,11 @@ export interface ProveedorFormData {
     motivo: string;
     tipoAutorizacion: 'praind' | 'correo';
     modoIngreso: 'caminando' | 'vehiculo';
+    vehiculoTipo?: string;
     vehiculoPlaca?: string;
+    vehiculoMarca?: string;
+    vehiculoModelo?: string;
+    vehiculoColor?: string;
     gafeteNumero?: string;
     observaciones?: string;
 }

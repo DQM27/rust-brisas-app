@@ -14,6 +14,9 @@
   export let disabled: boolean = false;
   export let limit: number = 10;
   export let autofocus: boolean = false;
+  export let searchFunction:
+    | ((query: string) => Promise<SearchResult[]>)
+    | null = null;
 
   export function focus() {
     inputRef?.focus();
@@ -45,7 +48,22 @@
     }
 
     debounceTimer = setTimeout(async () => {
-      await performSearch(query, limit);
+      if (searchFunction) {
+        // Custom local search
+        searchStore.setLoading(true);
+        try {
+          const customResults = await searchFunction(query);
+          searchStore.setResults(customResults);
+        } catch (e) {
+          console.error(e);
+          searchStore.setError("Error en la búsqueda");
+        } finally {
+          searchStore.setLoading(false);
+        }
+      } else {
+        // Default global search
+        await performSearch(query, limit);
+      }
       showDropdown = true;
       highlightedIndex = -1;
     }, 300);
@@ -118,15 +136,42 @@
 <div class="relative w-full">
   <!-- Input -->
   <div class="relative">
-    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+    <div
+      class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"
+    >
       {#if isLoading}
-        <svg class="h-4 w-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        <svg
+          class="h-4 w-4 animate-spin text-gray-400"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="3"
+          />
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
         </svg>
       {:else}
-        <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <svg
+          class="h-4 w-4 text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
         </svg>
       {/if}
     </div>
@@ -135,7 +180,8 @@
       bind:this={inputRef}
       bind:value={query}
       on:input={handleInput}
-      on:focus={() => query.trim().length >= 2 && results.length > 0 && (showDropdown = true)}
+      on:focus={() =>
+        query.trim().length >= 2 && results.length > 0 && (showDropdown = true)}
       on:keydown={handleKeyDown}
       type="text"
       placeholder={selectedResult
@@ -147,8 +193,8 @@
         focus:outline-none focus:ring-1
         disabled:opacity-50 disabled:cursor-not-allowed
         {selectedResult
-          ? 'border-blue-500/50 focus:ring-blue-500/30'
-          : 'border-white/10 hover:border-white/20 focus:border-white/30 focus:ring-white/10'}"
+        ? 'border-blue-500/50 focus:ring-blue-500/30'
+        : 'border-white/10 hover:border-white/20 focus:border-white/30 focus:ring-white/10'}"
     />
 
     <div class="absolute inset-y-0 right-0 flex items-center gap-2 pr-3">
@@ -159,8 +205,18 @@
           class="p-1 text-gray-500 hover:text-gray-300 transition-colors"
           title="Limpiar"
         >
-          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          <svg
+            class="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </button>
       {/if}
@@ -199,7 +255,9 @@
               on:click={() => handleSelect(result)}
               on:mouseenter={() => (highlightedIndex = index)}
               class="w-full px-4 py-2.5 text-left transition-colors
-                {highlightedIndex === index ? 'bg-white/5' : 'hover:bg-white/5'}"
+                {highlightedIndex === index
+                ? 'bg-white/5'
+                : 'hover:bg-white/5'}"
             >
               <div class="flex items-center justify-between">
                 <div class="min-w-0 flex-1">
@@ -211,11 +269,15 @@
                       <span class="text-xs text-gray-500">{result.cedula}</span>
                     {/if}
                     {#if result.empresaNombre}
-                      <span class="text-xs text-gray-600">• {result.empresaNombre}</span>
+                      <span class="text-xs text-gray-600"
+                        >• {result.empresaNombre}</span
+                      >
                     {/if}
                   </div>
                 </div>
-                <span class="text-[10px] text-gray-600 uppercase ml-2">{result.tipo}</span>
+                <span class="text-[10px] text-gray-600 uppercase ml-2"
+                  >{result.tipo}</span
+                >
               </div>
             </button>
           {/each}

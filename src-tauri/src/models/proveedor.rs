@@ -152,6 +152,9 @@ pub struct ProveedorResponse {
     pub puede_ingresar: bool,
     pub vehiculo_tipo: Option<String>,
     pub vehiculo_placa: Option<String>,
+    pub vehiculo_marca: Option<String>,
+    pub vehiculo_modelo: Option<String>,
+    pub vehiculo_color: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -186,6 +189,9 @@ impl From<Proveedor> for ProveedorResponse {
             puede_ingresar,
             vehiculo_tipo: None,
             vehiculo_placa: None,
+            vehiculo_marca: None,
+            vehiculo_modelo: None,
+            vehiculo_color: None,
             created_at: p.created_at,
             updated_at: p.updated_at,
         }

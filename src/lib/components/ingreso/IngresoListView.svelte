@@ -129,9 +129,17 @@
           {isFormOpen}
         />
       {:else if activeTab === "visitas"}
-        <IngresoVisitasTable />
+        <IngresoVisitasTable
+          onRegisterClick={openForm}
+          onCloseForm={closeForm}
+          {isFormOpen}
+        />
       {:else if activeTab === "proveedores"}
-        <IngresoProveedoresTable />
+        <IngresoProveedoresTable
+          onRegisterClick={openForm}
+          onCloseForm={closeForm}
+          {isFormOpen}
+        />
       {:else if activeTab === "citas"}
         <CitasList />
       {/if}

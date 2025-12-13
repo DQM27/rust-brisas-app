@@ -139,6 +139,9 @@ impl ProveedorService {
         if let Some(v) = vehiculos.first() {
             response.vehiculo_tipo = Some(v.tipo_vehiculo.to_string());
             response.vehiculo_placa = Some(v.placa.clone());
+            response.vehiculo_marca = v.marca.clone();
+            response.vehiculo_modelo = v.modelo.clone();
+            response.vehiculo_color = v.color.clone();
         }
 
         Ok(response)

@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import IngresoFormLayout from "../common/IngresoFormLayout.svelte";
   import ProveedorFormFields from "./ProveedorFormFields.svelte";
+  import ProveedorSearchSection from "./ProveedorSearchSection.svelte";
   import ModoIngresoSelector from "../common/ModoIngresoSelector.svelte";
   import GafeteInput from "../common/GafeteInput.svelte";
   import IngresoFormFields from "../common/IngresoFormFields.svelte"; // Autorización
@@ -79,6 +80,23 @@
   onSubmit={handleSubmit}
   submitLabel="Registrar Proveedor"
 >
+  <ProveedorSearchSection
+    on:select={(e) => {
+      const p = e.detail;
+      updateField("cedula", p.cedula);
+      updateField("nombre", p.nombre);
+      updateField("apellido", p.apellido);
+      updateField("empresaId", p.empresaId);
+      toast.success("Datos de proveedor cargados");
+    }}
+    on:clear={() => {
+      updateField("cedula", "");
+      updateField("nombre", "");
+      updateField("apellido", "");
+      updateField("empresaId", "");
+    }}
+  />
+
   <ProveedorFormFields
     formData={$proveedorFormData}
     errors={$formErrors}
