@@ -43,6 +43,7 @@
   import VehiculoSelector from "./VehiculoSelector.svelte";
   import GafeteInput from "./GafeteInput.svelte";
   import IngresoFormFields from "./IngresoFormFields.svelte";
+  import IngresoObservaciones from "./IngresoObservaciones.svelte";
 
   import { X, Save } from "lucide-svelte";
   import type { GafeteResponse } from "$lib/types/gafete";
@@ -113,8 +114,8 @@
   // ==========================================
 
   async function handleContratistaSelected(event: CustomEvent) {
-    const contratistaId = event.detail;
-    await controller.buscarYValidarContratista(contratistaId);
+    const { id } = event.detail;
+    await controller.buscarYValidarContratista(id);
   }
 
   function handleModoChange(event: CustomEvent) {
@@ -236,7 +237,6 @@
 
       {#if contratistaFormState.puedeIngresar}
         <!-- Campos de ingreso -->
-        <IngresoFormFields />
 
         <!-- Modo de ingreso -->
         <ModoIngresoSelector
@@ -254,13 +254,29 @@
           />
         {/if}
 
-        <!-- Gafete -->
-        <GafeteInput
-          gafetesDisponibles={gafetesDisponibles.filter(
-            (g) => g.tipo === "contratista",
-          )}
-          gafeteNumero={contratistaFormState.gafeteNumero}
-          on:change={(e) => ingresoFormStore.setGafete(e.detail)}
+        <!-- Grid de Gafete y Autorización -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Gafete -->
+          <GafeteInput
+            gafetesDisponibles={gafetesDisponibles.filter(
+              (g) => g.tipo === "contratista",
+            )}
+            gafeteNumero={contratistaFormState.gafeteNumero}
+            on:change={(e) => ingresoFormStore.setGafete(e.detail)}
+          />
+
+          <!-- Autorización -->
+          <IngresoFormFields
+            tipoAutorizacion={contratistaFormState.tipoAutorizacion}
+            on:tipoChange={(e) =>
+              ingresoFormStore.setTipoAutorizacion(e.detail)}
+          />
+        </div>
+
+        <!-- Observaciones ancho completo -->
+        <IngresoObservaciones
+          observaciones={contratistaFormState.observaciones || ""}
+          on:change={(e) => ingresoFormStore.setObservaciones(e.detail)}
         />
       {/if}
     {:else if tipoIngreso === "visita"}

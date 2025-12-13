@@ -4,10 +4,10 @@
   // ==========================================
   // Campos específicos para registro de PROVEEDORES
 
-  import { onMount } from 'svelte';
-  import { empresa } from '$lib/api/empresa';
-  import type { ProveedorFormData } from '$lib/logic/ingreso/proveedorService';
-  import type { EmpresaResponse } from '$lib/types/empresa';
+  import { onMount } from "svelte";
+  import { fetchEmpresasActivas } from "$lib/api/empresa";
+  import type { ProveedorFormData } from "$lib/logic/ingreso/proveedorService";
+  import type { EmpresaResponse } from "$lib/types/empresa";
 
   export let formData: ProveedorFormData;
   export let errors: Record<string, string> = {};
@@ -19,9 +19,9 @@
   onMount(async () => {
     loadingEmpresas = true;
     try {
-      empresas = await empresa.getActivas();
+      empresas = await fetchEmpresasActivas();
     } catch (error) {
-      console.error('Error cargando empresas:', error);
+      console.error("Error cargando empresas:", error);
     }
     loadingEmpresas = false;
   });
@@ -46,7 +46,7 @@
           id="cedula"
           type="text"
           value={formData.cedula}
-          on:input={handleInput('cedula')}
+          on:input={handleInput("cedula")}
           class:error={errors.cedula}
           placeholder="Ej: 1-1234-5678"
         />
@@ -61,7 +61,7 @@
           id="nombre"
           type="text"
           value={formData.nombre}
-          on:input={handleInput('nombre')}
+          on:input={handleInput("nombre")}
           class:error={errors.nombre}
           placeholder="Nombre del proveedor"
         />
@@ -76,7 +76,7 @@
           id="apellido"
           type="text"
           value={formData.apellido}
-          on:input={handleInput('apellido')}
+          on:input={handleInput("apellido")}
           class:error={errors.apellido}
           placeholder="Apellido del proveedor"
         />
@@ -102,7 +102,7 @@
           <select
             id="empresaId"
             value={formData.empresaId}
-            on:change={handleInput('empresaId')}
+            on:change={handleInput("empresaId")}
             class:error={errors.empresaId}
           >
             <option value="">Seleccione una empresa</option>
@@ -122,7 +122,7 @@
           id="areaVisitada"
           type="text"
           value={formData.areaVisitada}
-          on:input={handleInput('areaVisitada')}
+          on:input={handleInput("areaVisitada")}
           class:error={errors.areaVisitada}
           placeholder="Ej: Almacén, Producción"
         />
@@ -137,11 +137,11 @@
       <textarea
         id="motivo"
         value={formData.motivo}
-        on:input={handleInput('motivo')}
+        on:input={handleInput("motivo")}
         class:error={errors.motivo}
         placeholder="Describa el motivo del ingreso (Ej: Entrega de materiales, Mantenimiento, etc.)"
         rows="3"
-      />
+      ></textarea>
       {#if errors.motivo}
         <span class="error-message">{errors.motivo}</span>
       {/if}
@@ -153,11 +153,11 @@
     <label for="observaciones">Observaciones</label>
     <textarea
       id="observaciones"
-      value={formData.observaciones || ''}
-      on:input={handleInput('observaciones')}
+      value={formData.observaciones || ""}
+      on:input={handleInput("observaciones")}
       placeholder="Observaciones adicionales (opcional)"
       rows="2"
-    />
+    ></textarea>
   </div>
 </div>
 

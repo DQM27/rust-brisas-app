@@ -11,7 +11,9 @@
   import ModoIngresoSelector from "./ModoIngresoSelector.svelte";
   import VehiculoSelector from "./VehiculoSelector.svelte";
   import GafeteInput from "./GafeteInput.svelte";
+
   import IngresoFormFields from "./IngresoFormFields.svelte";
+  import IngresoObservaciones from "./IngresoObservaciones.svelte";
   import { shortcutService } from "$lib/services/shortcutService";
 
   import { X } from "lucide-svelte";
@@ -221,22 +223,22 @@
       {/if}
 
       <!-- CONTROLES COMPACTOS (Gafete + Autorización) -->
-      <div class="grid grid-cols-2 gap-4 items-start">
-        <!-- INPUT DE GAFETE -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
         <GafeteInput
           gafeteNumero={formState.gafeteNumero}
           {gafetesDisponibles}
           on:change={handleGafeteChange}
         />
-
-        <!-- TIPO DE AUTORIZACIÓN -->
         <IngresoFormFields
           tipoAutorizacion={formState.tipoAutorizacion}
-          observaciones={formState.observaciones}
           on:tipoChange={handleTipoAutorizacionChange}
-          on:observacionesChange={handleObservacionesChange}
         />
       </div>
+
+      <IngresoObservaciones
+        observaciones={formState.observaciones}
+        on:change={handleObservacionesChange}
+      />
 
       <!-- BOTÓN SUBMIT -->
       <div class="pt-2 flex gap-3">

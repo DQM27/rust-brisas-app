@@ -5,7 +5,7 @@
   import { shortcutService } from "$lib/services/shortcutService";
   import { cubicOut } from "svelte/easing";
   import { activeTabId } from "$lib/stores/tabs";
-  import IngresoFormContainer from "./IngresoFormContainer.svelte";
+  import IngresoMultiTipoForm from "./IngresoMultiTipoForm.svelte";
   import IngresosActivosTable from "./IngresosActivosTable.svelte";
 
   let isFormOpen = false;
@@ -47,7 +47,7 @@
       transition:fly={{ x: -300, duration: 300, opacity: 0, easing: cubicOut }}
     >
       <div class="h-full overflow-y-auto pr-1">
-        <IngresoFormContainer onSuccess={closeForm} onClose={closeForm} />
+        <IngresoMultiTipoForm onSuccess={closeForm} onClose={closeForm} />
       </div>
     </div>
   {/if}

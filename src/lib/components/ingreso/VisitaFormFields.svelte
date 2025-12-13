@@ -4,7 +4,7 @@
   // ==========================================
   // Campos específicos para registro de VISITAS
 
-  import type { VisitaFormData } from '$lib/logic/ingreso/visitaService';
+  import type { VisitaFormData } from "$lib/logic/ingreso/visitaService";
 
   export let formData: VisitaFormData;
   export let errors: Record<string, string> = {};
@@ -30,7 +30,7 @@
           id="cedula"
           type="text"
           value={formData.cedula}
-          on:input={handleInput('cedula')}
+          on:input={handleInput("cedula")}
           class:error={errors.cedula}
           placeholder="Ej: 1-1234-5678"
         />
@@ -45,7 +45,7 @@
           id="nombre"
           type="text"
           value={formData.nombre}
-          on:input={handleInput('nombre')}
+          on:input={handleInput("nombre")}
           class:error={errors.nombre}
           placeholder="Nombre del visitante"
         />
@@ -60,7 +60,7 @@
           id="apellido"
           type="text"
           value={formData.apellido}
-          on:input={handleInput('apellido')}
+          on:input={handleInput("apellido")}
           class:error={errors.apellido}
           placeholder="Apellido del visitante"
         />
@@ -82,7 +82,7 @@
           id="anfitrion"
           type="text"
           value={formData.anfitrion}
-          on:input={handleInput('anfitrion')}
+          on:input={handleInput("anfitrion")}
           class:error={errors.anfitrion}
           placeholder="Nombre del anfitrión"
         />
@@ -97,7 +97,7 @@
           id="areaVisitada"
           type="text"
           value={formData.areaVisitada}
-          on:input={handleInput('areaVisitada')}
+          on:input={handleInput("areaVisitada")}
           class:error={errors.areaVisitada}
           placeholder="Ej: Administración, Producción"
         />
@@ -112,11 +112,11 @@
       <textarea
         id="motivoVisita"
         value={formData.motivoVisita}
-        on:input={handleInput('motivoVisita')}
+        on:input={handleInput("motivoVisita")}
         class:error={errors.motivoVisita}
         placeholder="Describa el motivo de la visita"
         rows="3"
-      />
+      ></textarea>
       {#if errors.motivoVisita}
         <span class="error-message">{errors.motivoVisita}</span>
       {/if}
@@ -128,11 +128,11 @@
     <label for="observaciones">Observaciones</label>
     <textarea
       id="observaciones"
-      value={formData.observaciones || ''}
-      on:input={handleInput('observaciones')}
+      value={formData.observaciones || ""}
+      on:input={handleInput("observaciones")}
       placeholder="Observaciones adicionales (opcional)"
       rows="2"
-    />
+    ></textarea>
   </div>
 </div>
 
