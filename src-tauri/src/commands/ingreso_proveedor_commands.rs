@@ -32,3 +32,14 @@ pub async fn registrar_salida_proveedor(
         .registrar_salida(id, usuario_id, observaciones)
         .await
 }
+
+use crate::domain::ingreso_proveedor::ProveedorSnapshot;
+
+#[command]
+pub async fn search_proveedores(
+    pool: State<'_, SqlitePool>,
+    query: String,
+) -> Result<Vec<ProveedorSnapshot>, String> {
+    let service = IngresoProveedorService::new(pool.inner().clone());
+    service.search_proveedores(&query).await
+}

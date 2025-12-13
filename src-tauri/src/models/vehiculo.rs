@@ -14,7 +14,8 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Vehiculo {
     pub id: String,
-    pub contratista_id: String,
+    pub contratista_id: Option<String>, // Ahora es Opcional
+    pub proveedor_id: Option<String>,   // Nuevo campo
     pub tipo_vehiculo: TipoVehiculo,
     pub placa: String,
     pub marca: Option<String>,
@@ -43,7 +44,7 @@ impl TipoVehiculo {
             TipoVehiculo::Automóvil => "automóvil",
         }
     }
-    
+
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s.to_lowercase().as_str() {
             "motocicleta" => Ok(TipoVehiculo::Motocicleta),
@@ -51,7 +52,7 @@ impl TipoVehiculo {
             _ => Err(format!("Tipo de vehículo desconocido: {}", s)),
         }
     }
-    
+
     pub fn display(&self) -> &str {
         match self {
             TipoVehiculo::Motocicleta => "Motocicleta",
@@ -114,7 +115,7 @@ impl From<Vehiculo> for VehiculoResponse {
         let marca_str = v.marca.clone().unwrap_or_else(|| "N/A".to_string());
         let modelo_str = v.modelo.clone().unwrap_or_else(|| "N/A".to_string());
         let color_str = v.color.clone().unwrap_or_else(|| "N/A".to_string());
-        
+
         let descripcion_completa = if v.marca.is_some() || v.modelo.is_some() {
             format!(
                 "{} - Placa {} - {} {} ({})",
@@ -127,7 +128,7 @@ impl From<Vehiculo> for VehiculoResponse {
         } else {
             format!("{} - Placa {}", v.tipo_vehiculo.display(), v.placa)
         };
-        
+
         Self {
             id: v.id,
             contratista_id: v.contratista_id,

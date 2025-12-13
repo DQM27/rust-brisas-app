@@ -22,6 +22,7 @@ pub mod ingreso_proveedor_service;
 pub mod ingreso_visita_service;
 pub mod lista_negra_service;
 pub mod permanencia_service;
+pub mod proveedor_service;
 pub mod salida_service;
 pub mod search_service;
 pub mod template_service;

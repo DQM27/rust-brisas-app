@@ -8,6 +8,7 @@ pub struct IngresoProveedor {
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
+    pub proveedor_id: Option<String>,
     pub empresa_id: String,
     pub area_visitada: String,
     pub motivo: String,
@@ -40,4 +41,14 @@ pub struct CreateIngresoProveedorInput {
     pub placa_vehiculo: Option<String>,
     pub observaciones: Option<String>,
     pub usuario_ingreso_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct ProveedorSnapshot {
+    pub cedula: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub empresa_id: String,
+    pub empresa_nombre: Option<String>,
 }

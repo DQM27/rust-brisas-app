@@ -6,6 +6,7 @@ use uuid::Uuid;
 pub async fn create(
     pool: &SqlitePool,
     input: CreateIngresoProveedorInput,
+    proveedor_id: &str,
 ) -> Result<IngresoProveedor, sqlx::Error> {
     let id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
@@ -16,9 +17,9 @@ pub async fn create(
         INSERT INTO ingresos_proveedores (
             id, cedula, nombre, apellido, empresa_id, area_visitada, motivo, gafete,
             tipo_autorizacion, modo_ingreso, placa_vehiculo,
-            fecha_ingreso, estado, usuario_ingreso_id, observaciones, created_at, updated_at
+            fecha_ingreso, estado, usuario_ingreso_id, observaciones, created_at, updated_at, proveedor_id
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
     )
     .bind(&id)
@@ -38,6 +39,7 @@ pub async fn create(
     .bind(&input.observaciones)
     .bind(&now)
     .bind(&now)
+    .bind(proveedor_id)
     .execute(pool)
     .await?;
 
@@ -46,6 +48,7 @@ pub async fn create(
         cedula: input.cedula,
         nombre: input.nombre,
         apellido: input.apellido,
+        proveedor_id: Some(proveedor_id.to_string()),
         empresa_id: input.empresa_id,
         area_visitada: input.area_visitada,
         motivo: input.motivo,
@@ -100,4 +103,27 @@ pub async fn registrar_salida(
     .await?;
 
     Ok(())
+}
+
+use crate::domain::ingreso_proveedor::ProveedorSnapshot;
+
+pub async fn search_distinct_proveedores(
+    pool: &SqlitePool,
+    query: &str,
+) -> Result<Vec<ProveedorSnapshot>, sqlx::Error> {
+    let pattern = format!("%{}%", query);
+    sqlx::query_as::<_, ProveedorSnapshot>(
+        r#"
+        SELECT DISTINCT ip.cedula, ip.nombre, ip.apellido, ip.empresa_id, e.nombre as empresa_nombre
+        FROM ingresos_proveedores ip
+        LEFT JOIN empresas e ON ip.empresa_id = e.id
+        WHERE ip.cedula LIKE ? OR ip.nombre LIKE ? OR ip.apellido LIKE ?
+        LIMIT 20
+        "#,
+    )
+    .bind(&pattern)
+    .bind(&pattern)
+    .bind(&pattern)
+    .fetch_all(pool)
+    .await
 }
