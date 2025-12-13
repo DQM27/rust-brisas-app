@@ -4,7 +4,6 @@
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use std::ptr;
-use winapi::shared::winerror::ERROR_SUCCESS;
 use winapi::um::wincred::{
     CredDeleteW, CredReadW, CredWriteW, CREDENTIALW, CRED_PERSIST_LOCAL_MACHINE, CRED_TYPE_GENERIC,
     PCREDENTIALW,
@@ -18,19 +17,6 @@ fn to_wide_string(s: &str) -> Vec<u16> {
         .encode_wide()
         .chain(std::iter::once(0))
         .collect()
-}
-
-/// Convierte un Vec<u16> (wide string) a String
-fn from_wide_ptr(ptr: *const u16) -> String {
-    if ptr.is_null() {
-        return String::new();
-    }
-
-    unsafe {
-        let len = (0..).take_while(|&i| *ptr.offset(i) != 0).count();
-        let slice = std::slice::from_raw_parts(ptr, len);
-        String::from_utf16_lossy(slice)
-    }
 }
 
 /// Genera el nombre completo del target para la credencial
