@@ -4,34 +4,48 @@
   // ==========================================
   // Formulario unificado para los 3 tipos de ingreso
 
-  import { onMount } from 'svelte';
-  import { currentUser } from '$lib/stores/auth';
-  import { toast } from 'svelte-5-french-toast';
+  import { onMount } from "svelte";
+  import { currentUser } from "$lib/stores/auth";
+  import { toast } from "svelte-5-french-toast";
 
   // Servicios
-  import * as visitaService from '$lib/logic/ingreso/visitaService';
-  import * as proveedorService from '$lib/logic/ingreso/proveedorService';
-  import * as ingresoService from '$lib/logic/ingreso/ingresoService';
-  import * as gafeteService from '$lib/logic/gafete/gafeteService';
+  import * as visitaService from "$lib/logic/ingreso/visitaService";
+  import * as proveedorService from "$lib/logic/ingreso/proveedorService";
+  import * as ingresoService from "$lib/logic/ingreso/ingresoService";
+  import * as gafeteService from "$lib/logic/gafete/gafeteService";
 
   // Stores
-  import * as visitaStore from '$lib/stores/visitaFormStore';
-  import * as proveedorStore from '$lib/stores/proveedorFormStore';
-  import { ingresoFormStore } from '$lib/stores/ingresoFormStore';
-  import * as controller from '$lib/logic/ingreso/ingresoFormController';
+  import * as visitaStore from "$lib/stores/visitaFormStore";
+  import {
+    visitaFormData,
+    formErrors as visitaErrors,
+    isFormValid as visitaValid,
+    shouldShowPlaca as visitaShowPlaca,
+  } from "$lib/stores/visitaFormStore";
+
+  import * as proveedorStore from "$lib/stores/proveedorFormStore";
+  import {
+    proveedorFormData,
+    formErrors as proveedorErrors,
+    isFormValid as proveedorValid,
+    shouldShowPlaca as proveedorShowPlaca,
+  } from "$lib/stores/proveedorFormStore";
+
+  import { ingresoFormStore } from "$lib/stores/ingresoFormStore";
+  import * as controller from "$lib/logic/ingreso/ingresoFormController";
 
   // Componentes
-  import TipoIngresoSelector from './TipoIngresoSelector.svelte';
-  import VisitaFormFields from './VisitaFormFields.svelte';
-  import ProveedorFormFields from './ProveedorFormFields.svelte';
-  import ContratistaSearchSection from './ContratistaSearchSection.svelte';
-  import ModoIngresoSelector from './ModoIngresoSelector.svelte';
-  import VehiculoSelector from './VehiculoSelector.svelte';
-  import GafeteInput from './GafeteInput.svelte';
-  import IngresoFormFields from './IngresoFormFields.svelte';
+  import TipoIngresoSelector from "./TipoIngresoSelector.svelte";
+  import VisitaFormFields from "./VisitaFormFields.svelte";
+  import ProveedorFormFields from "./ProveedorFormFields.svelte";
+  import ContratistaSearchSection from "./ContratistaSearchSection.svelte";
+  import ModoIngresoSelector from "./ModoIngresoSelector.svelte";
+  import VehiculoSelector from "./VehiculoSelector.svelte";
+  import GafeteInput from "./GafeteInput.svelte";
+  import IngresoFormFields from "./IngresoFormFields.svelte";
 
-  import { X, Save } from 'lucide-svelte';
-  import type { GafeteResponse } from '$lib/types/gafete';
+  import { X, Save } from "lucide-svelte";
+  import type { GafeteResponse } from "$lib/types/gafete";
 
   export let onSuccess: () => void = () => {};
   export let onClose: () => void = () => {};
@@ -40,33 +54,35 @@
   // ESTADO LOCAL
   // ==========================================
 
-  let tipoIngreso: 'contratista' | 'visita' | 'proveedor' = 'contratista';
+  let tipoIngreso: "contratista" | "visita" | "proveedor" = "contratista";
   let loading = false;
   let gafetesDisponibles: GafeteResponse[] = [];
 
   // Stores reactivos
-  $: visitaFormData = $visitaStore.visitaFormData;
-  $: visitaErrors = $visitaStore.formErrors;
-  $: visitaValid = $visitaStore.isFormValid;
-  $: visitaShowPlaca = $visitaStore.shouldShowPlaca;
+  $: $visitaFormData;
+  $: $visitaErrors;
+  $: $visitaValid;
+  $: $visitaShowPlaca;
 
-  $: proveedorFormData = $proveedorStore.proveedorFormData;
-  $: proveedorErrors = $proveedorStore.formErrors;
-  $: proveedorValid = $proveedorStore.isFormValid;
-  $: proveedorShowPlaca = $proveedorStore.shouldShowPlaca;
+  $: $proveedorFormData;
+  $: $proveedorErrors;
+  $: $proveedorValid;
+  $: $proveedorShowPlaca;
 
   $: contratistaFormState = $ingresoFormStore;
-  $: tieneVehiculos = contratistaFormState.contratistaData?.vehiculos?.length > 0;
+  $: tieneVehiculos =
+    contratistaFormState.contratistaData?.vehiculos?.length > 0;
   $: contratistaValid =
     contratistaFormState.puedeIngresar &&
-    (contratistaFormState.modoIngreso === 'caminando' ||
-      (contratistaFormState.modoIngreso === 'vehiculo' && contratistaFormState.vehiculoId));
+    (contratistaFormState.modoIngreso === "caminando" ||
+      (contratistaFormState.modoIngreso === "vehiculo" &&
+        contratistaFormState.vehiculoId));
 
   // Validación general según tipo
   $: canSubmit =
-    (tipoIngreso === 'contratista' && contratistaValid) ||
-    (tipoIngreso === 'visita' && visitaValid) ||
-    (tipoIngreso === 'proveedor' && proveedorValid);
+    (tipoIngreso === "contratista" && contratistaValid) ||
+    (tipoIngreso === "visita" && $visitaValid) ||
+    (tipoIngreso === "proveedor" && $proveedorValid);
 
   // ==========================================
   // LIFECYCLE
@@ -87,9 +103,9 @@
   function handleTipoChange(tipo: typeof tipoIngreso) {
     tipoIngreso = tipo;
     // Reset forms
-    if (tipo === 'visita') visitaStore.resetForm();
-    if (tipo === 'proveedor') proveedorStore.resetForm();
-    if (tipo === 'contratista') ingresoFormStore.reset();
+    if (tipo === "visita") visitaStore.resetForm();
+    if (tipo === "proveedor") proveedorStore.resetForm();
+    if (tipo === "contratista") ingresoFormStore.reset();
   }
 
   // ==========================================
@@ -98,25 +114,14 @@
 
   async function handleContratistaSelected(event: CustomEvent) {
     const contratistaId = event.detail;
-    const result = await controller.prepararFormulario(contratistaId);
-
-    if (!result.ok) {
-      toast.error(result.error);
-      return;
-    }
-
-    ingresoFormStore.setContratistaData(result.data.validacion);
-    ingresoFormStore.setModoIngreso(result.data.autoSeleccion.suggestedMode);
-    if (result.data.autoSeleccion.suggestedVehicleId) {
-      ingresoFormStore.setVehiculoId(result.data.autoSeleccion.suggestedVehicleId);
-    }
+    await controller.buscarYValidarContratista(contratistaId);
   }
 
   function handleModoChange(event: CustomEvent) {
-    const modo = event.detail as 'caminando' | 'vehiculo';
-    if (tipoIngreso === 'contratista') {
+    const modo = event.detail as "caminando" | "vehiculo";
+    if (tipoIngreso === "contratista") {
       ingresoFormStore.setModoIngreso(modo);
-    } else if (tipoIngreso === 'visita') {
+    } else if (tipoIngreso === "visita") {
       visitaStore.toggleModoIngreso(modo);
     } else {
       proveedorStore.toggleModoIngreso(modo);
@@ -130,28 +135,30 @@
   async function handleSubmit() {
     if (!canSubmit || loading) return;
     if (!$currentUser) {
-      toast.error('Usuario no autenticado');
+      toast.error("Usuario no autenticado");
       return;
     }
 
     loading = true;
 
     try {
-      if (tipoIngreso === 'contratista') {
+      if (tipoIngreso === "contratista") {
         await handleSubmitContratista();
-      } else if (tipoIngreso === 'visita') {
+      } else if (tipoIngreso === "visita") {
         await handleSubmitVisita();
       } else {
         await handleSubmitProveedor();
       }
     } catch (error: any) {
-      toast.error(error.message || 'Error al registrar ingreso');
+      toast.error(error.message || "Error al registrar ingreso");
     } finally {
       loading = false;
     }
   }
 
   async function handleSubmitContratista() {
+    if (!$currentUser) return;
+
     const result = await ingresoService.registrarEntrada({
       contratistaId: contratistaFormState.contratistaId,
       vehiculoId: contratistaFormState.vehiculoId,
@@ -163,7 +170,7 @@
     });
 
     if (result.ok) {
-      toast.success('Ingreso de contratista registrado');
+      toast.success("Ingreso de contratista registrado");
       ingresoFormStore.reset();
       onSuccess();
     } else {
@@ -172,23 +179,27 @@
   }
 
   async function handleSubmitVisita() {
+    if (!$currentUser) return;
+
     const ingreso = await visitaService.crearIngresoVisita(
-      visitaFormData,
-      $currentUser.id
+      $visitaFormData,
+      $currentUser.id,
     );
 
-    toast.success('Ingreso de visita registrado');
+    toast.success("Ingreso de visita registrado");
     visitaStore.resetForm();
     onSuccess();
   }
 
   async function handleSubmitProveedor() {
+    if (!$currentUser) return;
+
     const ingreso = await proveedorService.crearIngresoProveedor(
-      proveedorFormData,
-      $currentUser.id
+      $proveedorFormData,
+      $currentUser.id,
     );
 
-    toast.success('Ingreso de proveedor registrado');
+    toast.success("Ingreso de proveedor registrado");
     proveedorStore.resetForm();
     onSuccess();
   }
@@ -219,7 +230,7 @@
 
   <!-- Formulario según tipo -->
   <div class="form-body">
-    {#if tipoIngreso === 'contratista'}
+    {#if tipoIngreso === "contratista"}
       <!-- Búsqueda de contratista -->
       <ContratistaSearchSection on:select={handleContratistaSelected} />
 
@@ -229,106 +240,115 @@
 
         <!-- Modo de ingreso -->
         <ModoIngresoSelector
-          modoActual={contratistaFormState.modoIngreso}
-          tieneVehiculos={tieneVehiculos}
+          modoIngreso={contratistaFormState.modoIngreso}
+          {tieneVehiculos}
           on:change={handleModoChange}
         />
 
         <!-- Selector de vehículo -->
-        {#if contratistaFormState.modoIngreso === 'vehiculo' && tieneVehiculos}
+        {#if contratistaFormState.modoIngreso === "vehiculo" && tieneVehiculos}
           <VehiculoSelector
             vehiculos={contratistaFormState.contratistaData?.vehiculos || []}
-            vehiculoSeleccionado={contratistaFormState.vehiculoId}
-            on:select={(e) => ingresoFormStore.setVehiculoId(e.detail)}
+            vehiculoId={contratistaFormState.vehiculoId}
+            on:select={(e) => ingresoFormStore.setVehiculo(e.detail)}
           />
         {/if}
 
         <!-- Gafete -->
         <GafeteInput
-          gafetesDisponibles={gafetesDisponibles.filter(g => g.tipo === 'contratista')}
+          gafetesDisponibles={gafetesDisponibles.filter(
+            (g) => g.tipo === "contratista",
+          )}
           gafeteNumero={contratistaFormState.gafeteNumero}
-          on:change={(e) => ingresoFormStore.setGafeteNumero(e.detail)}
+          on:change={(e) => ingresoFormStore.setGafete(e.detail)}
         />
       {/if}
-
-    {:else if tipoIngreso === 'visita'}
+    {:else if tipoIngreso === "visita"}
       <!-- Formulario de visita -->
       <VisitaFormFields
-        formData={visitaFormData}
-        errors={visitaErrors}
+        formData={$visitaFormData}
+        errors={$visitaErrors}
         onChange={(field, value) => visitaStore.updateField(field, value)}
       />
 
       <!-- Modo de ingreso -->
       <ModoIngresoSelector
-        modoActual={visitaFormData.modoIngreso}
+        modoIngreso={$visitaFormData.modoIngreso}
         tieneVehiculos={true}
         on:change={handleModoChange}
       />
 
       <!-- Placa si modo vehículo -->
-      {#if visitaShowPlaca}
+      {#if $visitaShowPlaca}
         <div class="form-group">
           <label for="vehiculoPlaca">Placa del Vehículo *</label>
           <input
             id="vehiculoPlaca"
             type="text"
-            value={visitaFormData.vehiculoPlaca || ''}
-            on:input={(e) => visitaStore.updateField('vehiculoPlaca', e.target.value)}
-            class:error={visitaErrors.vehiculoPlaca}
+            value={$visitaFormData.vehiculoPlaca || ""}
+            on:input={(e) =>
+              visitaStore.updateField("vehiculoPlaca", e.currentTarget.value)}
+            class:error={$visitaErrors.vehiculoPlaca}
             placeholder="Ej: ABC-1234"
           />
-          {#if visitaErrors.vehiculoPlaca}
-            <span class="error-message">{visitaErrors.vehiculoPlaca}</span>
+          {#if $visitaErrors.vehiculoPlaca}
+            <span class="error-message">{$visitaErrors.vehiculoPlaca}</span>
           {/if}
         </div>
       {/if}
 
       <!-- Gafete -->
       <GafeteInput
-        gafetesDisponibles={gafetesDisponibles.filter(g => g.tipo === 'visitante')}
-        gafeteNumero={visitaFormData.gafeteNumero || ''}
-        on:change={(e) => visitaStore.updateField('gafeteNumero', e.detail)}
+        gafetesDisponibles={gafetesDisponibles.filter(
+          (g) => g.tipo === "visita",
+        )}
+        gafeteNumero={$visitaFormData.gafeteNumero || ""}
+        on:change={(e) => visitaStore.updateField("gafeteNumero", e.detail)}
       />
-
-    {:else if tipoIngreso === 'proveedor'}
+    {:else if tipoIngreso === "proveedor"}
       <!-- Formulario de proveedor -->
       <ProveedorFormFields
-        formData={proveedorFormData}
-        errors={proveedorErrors}
+        formData={$proveedorFormData}
+        errors={$proveedorErrors}
         onChange={(field, value) => proveedorStore.updateField(field, value)}
       />
 
       <!-- Modo de ingreso -->
       <ModoIngresoSelector
-        modoActual={proveedorFormData.modoIngreso}
+        modoIngreso={$proveedorFormData.modoIngreso}
         tieneVehiculos={true}
         on:change={handleModoChange}
       />
 
       <!-- Placa si modo vehículo -->
-      {#if proveedorShowPlaca}
+      {#if $proveedorShowPlaca}
         <div class="form-group">
           <label for="vehiculoPlaca">Placa del Vehículo *</label>
           <input
             id="vehiculoPlaca"
             type="text"
-            value={proveedorFormData.vehiculoPlaca || ''}
-            on:input={(e) => proveedorStore.updateField('vehiculoPlaca', e.target.value)}
-            class:error={proveedorErrors.vehiculoPlaca}
+            value={$proveedorFormData.vehiculoPlaca || ""}
+            on:input={(e) =>
+              proveedorStore.updateField(
+                "vehiculoPlaca",
+                e.currentTarget.value,
+              )}
+            class:error={$proveedorErrors.vehiculoPlaca}
             placeholder="Ej: ABC-1234"
           />
-          {#if proveedorErrors.vehiculoPlaca}
-            <span class="error-message">{proveedorErrors.vehiculoPlaca}</span>
+          {#if $proveedorErrors.vehiculoPlaca}
+            <span class="error-message">{$proveedorErrors.vehiculoPlaca}</span>
           {/if}
         </div>
       {/if}
 
       <!-- Gafete -->
       <GafeteInput
-        gafetesDisponibles={gafetesDisponibles.filter(g => g.tipo === 'proveedor')}
-        gafeteNumero={proveedorFormData.gafeteNumero || ''}
-        on:change={(e) => proveedorStore.updateField('gafeteNumero', e.detail)}
+        gafetesDisponibles={gafetesDisponibles.filter(
+          (g) => g.tipo === "proveedor",
+        )}
+        gafeteNumero={$proveedorFormData.gafeteNumero || ""}
+        on:change={(e) => proveedorStore.updateField("gafeteNumero", e.detail)}
       />
     {/if}
   </div>
