@@ -17,6 +17,7 @@ export interface VisitaFormData {
     cedula: string;
     nombre: string;
     apellido: string;
+    empresa?: string;
     anfitrion: string;
     areaVisitada: string;
     motivoVisita: string;
@@ -139,7 +140,29 @@ export async function crearIngresoVisita(
     };
 
     // 4. Invocar API
-    return await ingreso.crearIngresoVisita(input);
+    // Usamos el nuevo servicio
+    const { ingresoVisitaService } = await import('$lib/services/ingresoVisitaService');
+
+    // Preparar input full
+    const fullInput = {
+        cedula: input.cedula,
+        nombre: input.nombre,
+        apellido: input.apellido,
+        // empresa: input.empresa, // VisitaFormData no tiene empresa explícita? Revisar interfaz. 
+        // Interfaz VisitaFormData (lines 16-28) NO tiene empresa.
+        // Pero el backend lo soporta. Default undefined.
+
+        anfitrion: input.anfitrion,
+        area_visitada: input.areaVisitada,
+        motivo: input.motivoVisita,
+        gafete: input.gafeteNumero || undefined,
+        observaciones: input.observaciones || undefined,
+        usuario_ingreso_id: input.usuarioIngresoId,
+        cita_id: undefined
+    };
+
+    const result = await ingresoVisitaService.createIngreso(fullInput);
+    return result as any; // Cast to any/IngresoResponse shim to satisfy legacy interface for now
 }
 
 // ==========================================

@@ -415,13 +415,50 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     availableButtons: {
       default: [
         ...COMMON_DEFAULT_BUTTONS.filter(b => b.id === 'toggle-filters')
-      ], // Solo toggle-filters, igual que contratistas
+      ],
       singleSelect: [
         ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
-        // Los custom buttons se agregan desde el componente
       ],
       multiSelect: [
         ...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))
+      ]
+    },
+    showColumnSelector: true,
+    showThemeSelector: true,
+    enableGrouping: false
+  },
+  'visitas-activas-grid': {
+    gridId: 'visitas-activas-grid',
+    availableButtons: {
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b =>
+          ['autosize-all', 'reset-columns', 'refresh', 'toggle-filters'].includes(b.id)
+        )
+      ],
+      singleSelect: [
+        ...COMMON_SINGLE_SELECT_BUTTONS
+      ],
+      multiSelect: [
+        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => b.id !== 'export-selection')
+      ]
+    },
+    showColumnSelector: true,
+    showThemeSelector: true,
+    enableGrouping: false
+  },
+  'proveedores-activos-grid': {
+    gridId: 'proveedores-activos-grid',
+    availableButtons: {
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b =>
+          ['autosize-all', 'reset-columns', 'refresh', 'toggle-filters'].includes(b.id)
+        )
+      ],
+      singleSelect: [
+        ...COMMON_SINGLE_SELECT_BUTTONS
+      ],
+      multiSelect: [
+        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => b.id !== 'export-selection')
       ]
     },
     showColumnSelector: true,

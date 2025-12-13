@@ -27,7 +27,9 @@ export type GridId =
   | 'badges-list'
   | 'entries-list'
   | 'companies-list'
-  | 'users-list';
+  | 'users-list'
+  | 'visitas-activas-grid'
+  | 'proveedores-activos-grid';
 
 // ============================================
 // Toolbar

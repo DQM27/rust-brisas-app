@@ -15,6 +15,7 @@ const initialFormData: VisitaFormData = {
     cedula: '',
     nombre: '',
     apellido: '',
+    empresa: '',
     anfitrion: '',
     areaVisitada: '',
     motivoVisita: '',

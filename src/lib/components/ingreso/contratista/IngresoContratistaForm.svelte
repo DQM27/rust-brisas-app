@@ -7,13 +7,15 @@
   import type { GafeteResponse } from "$lib/types/gafete";
 
   // Componentes hijos (presentacionales)
+  // Componentes hijos (presentacionales)
   import ContratistaSearchSection from "./ContratistaSearchSection.svelte";
-  import ModoIngresoSelector from "./ModoIngresoSelector.svelte";
   import VehiculoSelector from "./VehiculoSelector.svelte";
-  import GafeteInput from "./GafeteInput.svelte";
 
-  import IngresoFormFields from "./IngresoFormFields.svelte";
-  import IngresoObservaciones from "./IngresoObservaciones.svelte";
+  // Common components
+  import ModoIngresoSelector from "../common/ModoIngresoSelector.svelte";
+  import GafeteInput from "../common/GafeteInput.svelte";
+  import IngresoFormFields from "../common/IngresoFormFields.svelte";
+  import IngresoObservaciones from "../common/IngresoObservaciones.svelte";
   import { shortcutService } from "$lib/services/shortcutService";
 
   import { X } from "lucide-svelte";

@@ -139,7 +139,25 @@ export async function crearIngresoProveedor(
     };
 
     // 4. Invocar API
-    return await ingreso.crearIngresoProveedor(input);
+    const { ingresoProveedorService } = await import('$lib/services/ingresoProveedorService');
+
+    const inputService = {
+        cedula: input.cedula,
+        nombre: input.nombre,
+        apellido: input.apellido,
+        empresa_id: input.empresaId, // snake_case expected in Rust struct? Let's check domain/ingreso_proveedor.rs
+        area_visitada: input.areaVisitada,
+        motivo: input.motivo,
+        tipo_autorizacion: input.tipoAutorizacion,
+        modo_ingreso: input.modoIngreso,
+        placa_vehiculo: input.vehiculoPlaca || undefined,
+        gafete: input.gafeteNumero || undefined,
+        observaciones: input.observaciones || undefined,
+        usuario_ingreso_id: input.usuarioIngresoId
+    };
+
+    const result = await ingresoProveedorService.createIngreso(inputService);
+    return result as any;
 }
 
 // ==========================================

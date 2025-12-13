@@ -22,7 +22,7 @@
   } from "$lib/types/ingreso";
   import { ingresoStore } from "$lib/stores/ingresoStore";
 
-  import SalidaModal from "./SalidaModal.svelte";
+  import SalidaModal from "../common/SalidaModal.svelte";
   import DateRangePicker from "$lib/components/shared/DateRangePicker.svelte";
 
   // ✅ NUEVO: Importar componentes de exportación
