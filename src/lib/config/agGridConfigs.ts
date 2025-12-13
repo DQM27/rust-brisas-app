@@ -353,12 +353,19 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
   'proveedor-list': {
     gridId: 'proveedor-list',
     availableButtons: {
-      default: COMMON_DEFAULT_BUTTONS,
-      singleSelect: COMMON_SINGLE_SELECT_BUTTONS,
-      multiSelect: COMMON_MULTI_SELECT_BUTTONS
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b => b.id === 'toggle-filters')
+      ], // Los botones comunes se mueven a customButtons en el componente para controlar el orden
+      singleSelect: [
+        ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
+      ],
+      multiSelect: [
+        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))
+      ]
     },
     showColumnSelector: true,
-    showThemeSelector: true
+    showThemeSelector: true,
+    enableGrouping: false
   },
   'lista-negra-list': LISTA_NEGRA_CONFIG,
 
