@@ -17,6 +17,8 @@ pub mod preferences_queries;
 pub mod reporte_queries;
 pub mod user_queries;
 pub mod vehiculo_queries;
+pub mod visitante_queries;
+pub mod cita_queries;
 
 /// Inicializa la conexión a la base de datos (Pool)
 pub async fn init_pool(config: &AppConfig) -> Result<SqlitePool, Box<dyn std::error::Error>> {

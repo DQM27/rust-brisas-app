@@ -44,7 +44,7 @@
         value={observaciones}
         on:input={handleInput}
         rows="3"
-        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+        class="w-full px-3 py-2 border border-gray-300 dark:border-white/20 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-[#252526] text-gray-900 dark:text-white"
         placeholder="Escriba aquí cualquier observación pertinente..."
       ></textarea>
     </div>

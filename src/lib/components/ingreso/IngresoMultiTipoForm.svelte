@@ -313,13 +313,29 @@
         </div>
       {/if}
 
-      <!-- Gafete -->
-      <GafeteInput
-        gafetesDisponibles={gafetesDisponibles.filter(
-          (g) => g.tipo === "visita",
-        )}
-        gafeteNumero={$visitaFormData.gafeteNumero || ""}
-        on:change={(e) => visitaStore.updateField("gafeteNumero", e.detail)}
+      <!-- Grid de Gafete y Autorización -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Gafete -->
+        <GafeteInput
+          gafetesDisponibles={gafetesDisponibles.filter(
+            (g) => g.tipo === "visita",
+          )}
+          gafeteNumero={$visitaFormData.gafeteNumero || ""}
+          on:change={(e) => visitaStore.updateField("gafeteNumero", e.detail)}
+        />
+
+        <!-- Autorización -->
+        <IngresoFormFields
+          tipoAutorizacion={$visitaFormData.tipoAutorizacion}
+          on:tipoChange={(e) =>
+            visitaStore.updateField("tipoAutorizacion", e.detail)}
+        />
+      </div>
+
+      <!-- Observaciones ancho completo -->
+      <IngresoObservaciones
+        observaciones={$visitaFormData.observaciones || ""}
+        on:change={(e) => visitaStore.updateField("observaciones", e.detail)}
       />
     {:else if tipoIngreso === "proveedor"}
       <!-- Formulario de proveedor -->
@@ -358,13 +374,30 @@
         </div>
       {/if}
 
-      <!-- Gafete -->
-      <GafeteInput
-        gafetesDisponibles={gafetesDisponibles.filter(
-          (g) => g.tipo === "proveedor",
-        )}
-        gafeteNumero={$proveedorFormData.gafeteNumero || ""}
-        on:change={(e) => proveedorStore.updateField("gafeteNumero", e.detail)}
+      <!-- Grid de Gafete y Autorización -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Gafete -->
+        <GafeteInput
+          gafetesDisponibles={gafetesDisponibles.filter(
+            (g) => g.tipo === "proveedor",
+          )}
+          gafeteNumero={$proveedorFormData.gafeteNumero || ""}
+          on:change={(e) =>
+            proveedorStore.updateField("gafeteNumero", e.detail)}
+        />
+
+        <!-- Autorización -->
+        <IngresoFormFields
+          tipoAutorizacion={$proveedorFormData.tipoAutorizacion}
+          on:tipoChange={(e) =>
+            proveedorStore.updateField("tipoAutorizacion", e.detail)}
+        />
+      </div>
+
+      <!-- Observaciones ancho completo -->
+      <IngresoObservaciones
+        observaciones={$proveedorFormData.observaciones || ""}
+        on:change={(e) => proveedorStore.updateField("observaciones", e.detail)}
       />
     {/if}
   </div>

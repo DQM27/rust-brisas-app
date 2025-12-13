@@ -84,37 +84,33 @@
       isDark ? colorSchemeDark : colorSchemeLight,
     );
 
-    return baseTheme
-      .withParams({
-        backgroundColor: isDark ? "rgb(26 26 27)" : "rgb(255 255 255)",
-        foregroundColor: isDark ? "rgb(255 255 255)" : "rgb(0 0 0)",
-        browserColorScheme: isDark ? "dark" : "light",
-        headerBackgroundColor: isDark ? "rgb(37 37 38)" : "rgb(243 244 246)",
-        headerTextColor: isDark ? "rgb(209 213 219)" : "rgb(17 24 39)",
-        oddRowBackgroundColor: isDark ? "rgb(26 26 27)" : "rgb(255 255 255)",
-        chromeBackgroundColor: isDark ? "rgb(37 37 38)" : "rgb(249 250 251)",
-        rowHoverColor: isDark
-          ? "rgba(255, 255, 255, 0.05)"
-          : "rgba(0, 0, 0, 0.05)",
-        selectedRowBackgroundColor: isDark
-          ? "rgba(59, 130, 246, 0.15)"
-          : "rgba(59, 130, 246, 0.1)",
-        columnBorder: true,
-        borderColor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
-        fontSize: 13,
-        headerFontSize: 12,
-        spacing: 4,
-        cellHorizontalPadding: 12,
-      })
-      .withParams({
-        loadThemeGoogleFonts: true,
-      } as any);
+    return baseTheme.withParams({
+      backgroundColor: isDark ? "rgb(26 26 27)" : "rgb(255 255 255)",
+      foregroundColor: isDark ? "rgb(255 255 255)" : "rgb(0 0 0)",
+      browserColorScheme: isDark ? "dark" : "light",
+      headerBackgroundColor: isDark ? "rgb(37 37 38)" : "rgb(243 244 246)",
+      headerTextColor: isDark ? "rgb(209 213 219)" : "rgb(17 24 39)",
+      oddRowBackgroundColor: isDark ? "rgb(26 26 27)" : "rgb(255 255 255)",
+      chromeBackgroundColor: isDark ? "rgb(37 37 38)" : "rgb(249 250 251)",
+      rowHoverColor: isDark
+        ? "rgba(255, 255, 255, 0.05)"
+        : "rgba(0, 0, 0, 0.05)",
+      selectedRowBackgroundColor: isDark
+        ? "rgba(59, 130, 246, 0.15)"
+        : "rgba(59, 130, 246, 0.1)",
+      columnBorder: true,
+      borderColor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
+      fontSize: 13,
+      headerFontSize: 12,
+      spacing: 4,
+      cellHorizontalPadding: 12,
+    });
   });
 
   // Effects para actualizar opciones cuando cambian
   $effect(() => {
     if (gridApi && myTheme) {
-      gridApi.setGridOption("theme", myTheme);
+      gridApi.setGridOption("theme", myTheme as any);
     }
   });
 

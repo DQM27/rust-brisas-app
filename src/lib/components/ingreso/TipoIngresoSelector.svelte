@@ -39,15 +39,15 @@
   }
 </script>
 
-<div class="flex items-center gap-2 mb-4">
+<div class="grid grid-cols-3 gap-2 mb-4 w-full">
   {#each tipos as tipo}
-    <div class="relative group">
+    <div class="relative group w-full">
       <button
         type="button"
-        class="flex items-center justify-center w-10 h-10 rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-[#1e1e1e] cursor-pointer {tipoSeleccionado ===
+        class="w-full flex items-center justify-center py-2.5 rounded-md border transition-all duration-200 focus:outline-none cursor-pointer {tipoSeleccionado ===
         tipo.id
-          ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400'
-          : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50 dark:bg-[#252526] dark:border-white/10 dark:text-gray-400 dark:hover:border-white/20 dark:hover:bg-[#2a2a2b]'}"
+          ? 'bg-blue-500/10 border-2 border-blue-500/50 text-blue-500 dark:text-blue-400'
+          : 'bg-transparent border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-white/20 hover:bg-gray-50 dark:hover:bg-[#161b22]'}"
         on:click={() => handleSelect(tipo.id)}
         aria-label={tipo.label}
       >

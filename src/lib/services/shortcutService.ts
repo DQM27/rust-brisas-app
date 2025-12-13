@@ -134,7 +134,7 @@ class ShortcutService {
         if (e.altKey) parts.push("Alt");
         if (e.metaKey) parts.push("Meta");
 
-        // Mapeo básico de teclas
+        if (!e.key) return "";
         let key = e.key;
         if (key === " ") key = "Space";
         if (key === "Control" || key === "Shift" || key === "Alt" || key === "Meta") return ""; // Solo modificador presionado

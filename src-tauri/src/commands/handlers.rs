@@ -61,6 +61,12 @@ macro_rules! register_handlers {
             commands::gafete_commands::update_gafete,
             commands::gafete_commands::delete_gafete,
             // ==========================================
+            // COMANDOS DE CITAS (Pre-registro)
+            // ==========================================
+            commands::cita_commands::create_cita,
+            commands::cita_commands::get_citas_hoy,
+            commands::cita_commands::procesar_ingreso_cita,
+            // ==========================================
             // COMANDOS DE ENTRADA (Fase 1)
             // ==========================================
             commands::entrada_commands::validar_ingreso_contratista,

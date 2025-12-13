@@ -17,6 +17,7 @@ pub mod keyring_linux;
 #[cfg(target_os = "windows")]
 pub mod keyring_windows;
 
+pub mod cita_service;
 pub mod lista_negra_service;
 pub mod permanencia_service;
 pub mod salida_service;
@@ -24,3 +25,4 @@ pub mod search_service;
 pub mod template_service;
 pub mod user_service;
 pub mod vehiculo_service;
+pub mod visitante_service;

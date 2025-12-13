@@ -147,18 +147,6 @@
       {/if}
     </div>
   </div>
-
-  <!-- Observaciones -->
-  <div class="form-group">
-    <label for="observaciones">Observaciones</label>
-    <textarea
-      id="observaciones"
-      value={formData.observaciones || ""}
-      on:input={handleInput("observaciones")}
-      placeholder="Observaciones adicionales (opcional)"
-      rows="2"
-    ></textarea>
-  </div>
 </div>
 
 <style>
@@ -208,9 +196,17 @@
     border: 1px solid var(--border);
     border-radius: 6px;
     font-size: 0.875rem;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    transition: all 0.2s ease;
+    /* High contrast override */
+    background-color: rgb(255 255 255);
+    color: rgb(17 24 39);
+  }
+
+  :global(.dark) input,
+  :global(.dark) select,
+  :global(.dark) textarea {
+    background-color: #252526;
+    color: #f3f4f6;
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
   input:focus,
