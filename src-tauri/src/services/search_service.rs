@@ -1,12 +1,15 @@
 use crate::db::contratista_queries;
 use crate::db::lista_negra_queries;
+use crate::db::proveedor_queries;
 use crate::db::user_queries;
 use crate::models::contratista::Contratista;
 use crate::models::lista_negra::ListaNegra;
+use crate::models::proveedor::Proveedor;
 use crate::models::user::User;
 use crate::search::{
-    commit_index, delete_from_index, index_contratista, index_lista_negra, index_user,
-    update_contratista_in_index, update_lista_negra_in_index, update_user_in_index,
+    commit_index, delete_from_index, index_contratista, index_lista_negra, index_proveedor,
+    index_user, update_contratista_in_index, update_lista_negra_in_index,
+    update_proveedor_in_index, update_user_in_index,
 };
 use crate::search::{get_index_reader, get_index_writer, initialize_index};
 use crate::search::{search_index, SearchResult};
@@ -42,7 +45,7 @@ impl SearchService {
         })
     }
 
-    /// Re-indexa todo (contratistas, usuarios y lista negra) desde la base de datos
+    /// Re-indexa todo (contratistas, usuarios, proveedores y lista negra) desde la base de datos
     pub async fn reindex_all(&self, pool: &SqlitePool) -> Result<(), String> {
         // Obtener todos los contratistas con empresa (Async, sin lock)
         let contratistas = contratista_queries::find_all_with_empresa(pool).await?;
@@ -52,6 +55,9 @@ impl SearchService {
 
         // Obtener todos los registros de lista negra
         let lista_negra = lista_negra_queries::find_all(pool).await?;
+
+        // Obtener todos los proveedores
+        let proveedores = proveedor_queries::find_all_with_empresa(pool).await?;
 
         // Adquirir lock para escribir en el índice
         let _lock = self.writer_mutex.lock().await;
@@ -77,6 +83,11 @@ impl SearchService {
         // Indexar lista negra
         for ln in lista_negra {
             index_lista_negra(&mut writer, &schema, &ln)?;
+        }
+
+        // Indexar proveedores
+        for (proveedor, empresa_nombre) in proveedores {
+            index_proveedor(&mut writer, &schema, &proveedor, &empresa_nombre)?;
         }
 
         // Commit
@@ -256,7 +267,7 @@ impl SearchService {
         Ok(())
     }
 
-    /// Busca en el índice (contratistas, usuarios y lista negra)
+    /// Busca en el índice (contratistas, usuarios, proveedores y lista negra)
     pub fn search(&self, query: &str, limit: usize) -> Result<Vec<SearchResult>, String> {
         search_index(&self.index, &self.reader, query, limit)
     }
@@ -271,5 +282,64 @@ impl SearchService {
     pub fn doc_count(&self) -> u64 {
         let searcher = self.reader.searcher();
         searcher.num_docs()
+    }
+
+    /// Indexa un proveedor nuevo
+    pub async fn add_proveedor(
+        &self,
+        proveedor: &Proveedor,
+        empresa_nombre: &str,
+    ) -> Result<(), String> {
+        let _lock = self.writer_mutex.lock().await;
+
+        let schema = self.index.schema();
+        let mut writer = get_index_writer(&self.index)?;
+
+        index_proveedor(&mut writer, &schema, proveedor, empresa_nombre)?;
+        commit_index(&mut writer)?;
+
+        self.reader
+            .reload()
+            .map_err(|e| format!("Error al recargar reader: {}", e))?;
+
+        Ok(())
+    }
+
+    /// Actualiza un proveedor en el índice
+    pub async fn update_proveedor(
+        &self,
+        proveedor: &Proveedor,
+        empresa_nombre: &str,
+    ) -> Result<(), String> {
+        let _lock = self.writer_mutex.lock().await;
+
+        let schema = self.index.schema();
+        let mut writer = get_index_writer(&self.index)?;
+
+        update_proveedor_in_index(&mut writer, &schema, proveedor, empresa_nombre)?;
+        commit_index(&mut writer)?;
+
+        self.reader
+            .reload()
+            .map_err(|e| format!("Error al recargar reader: {}", e))?;
+
+        Ok(())
+    }
+
+    /// Elimina un proveedor del índice
+    pub async fn delete_proveedor(&self, id: &str) -> Result<(), String> {
+        let _lock = self.writer_mutex.lock().await;
+
+        let schema = self.index.schema();
+        let mut writer = get_index_writer(&self.index)?;
+
+        delete_from_index(&mut writer, &schema, id)?;
+        commit_index(&mut writer)?;
+
+        self.reader
+            .reload()
+            .map_err(|e| format!("Error al recargar reader: {}", e))?;
+
+        Ok(())
     }
 }

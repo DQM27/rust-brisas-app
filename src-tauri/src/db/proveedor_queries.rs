@@ -66,6 +66,73 @@ pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<Option<Proveedor>
         .await
 }
 
+/// Obtiene todos los proveedores con el nombre de su empresa (para reindexación)
+pub async fn find_all_with_empresa(pool: &SqlitePool) -> Result<Vec<(Proveedor, String)>, String> {
+    let rows = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            String,
+            Option<String>,
+            String,
+            Option<String>,
+            String,
+            String,
+            String,
+            String,
+            String,
+        ),
+    >(
+        r#"
+        SELECT 
+            p.id, p.cedula, p.nombre, p.segundo_nombre, p.apellido, p.segundo_apellido, 
+            p.empresa_id, p.estado, p.created_at, p.updated_at,
+            COALESCE(e.nombre, 'Empresa desconocida') as empresa_nombre
+        FROM proveedores p
+        LEFT JOIN empresas e ON p.empresa_id = e.id
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let result: Vec<(Proveedor, String)> = rows
+        .into_iter()
+        .map(
+            |(
+                id,
+                cedula,
+                nombre,
+                segundo_nombre,
+                apellido,
+                segundo_apellido,
+                empresa_id,
+                estado,
+                created_at,
+                updated_at,
+                empresa_nombre,
+            )| {
+                let proveedor = Proveedor {
+                    id,
+                    cedula,
+                    nombre,
+                    segundo_nombre,
+                    apellido,
+                    segundo_apellido,
+                    empresa_id,
+                    estado: EstadoProveedor::from_str(&estado).unwrap_or(EstadoProveedor::Activo),
+                    created_at,
+                    updated_at,
+                };
+                (proveedor, empresa_nombre)
+            },
+        )
+        .collect();
+
+    Ok(result)
+}
+
 pub async fn search(
     pool: &SqlitePool,
     query: &str,

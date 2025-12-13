@@ -5,6 +5,7 @@
 
 use crate::models::contratista::Contratista;
 use crate::models::lista_negra::ListaNegra;
+use crate::models::proveedor::Proveedor;
 use crate::models::user::User;
 use crate::search::schema::{build_search_schema, fields};
 use std::path::Path;
@@ -293,5 +294,81 @@ pub fn update_lista_negra_in_index(
 ) -> Result<(), String> {
     delete_from_index(writer, schema, &lista_negra.id)?;
     index_lista_negra(writer, schema, lista_negra)?;
+    Ok(())
+}
+
+/// Indexa un proveedor con su nombre de empresa
+pub fn index_proveedor(
+    writer: &mut IndexWriter,
+    schema: &Schema,
+    proveedor: &Proveedor,
+    empresa_nombre: &str,
+) -> Result<(), String> {
+    // Obtener handles de campos
+    let id_field = schema.get_field(fields::ID).unwrap();
+    let tipo_field = schema.get_field(fields::TIPO).unwrap();
+    let cedula_field = schema.get_field(fields::CEDULA).unwrap();
+    let nombre_field = schema.get_field(fields::NOMBRE).unwrap();
+    let segundo_nombre_field = schema.get_field(fields::SEGUNDO_NOMBRE).unwrap();
+    let apellido_field = schema.get_field(fields::APELLIDO).unwrap();
+    let segundo_apellido_field = schema.get_field(fields::SEGUNDO_APELLIDO).unwrap();
+    let empresa_nombre_field = schema.get_field(fields::EMPRESA_NOMBRE).unwrap();
+    let search_text_field = schema.get_field(fields::SEARCH_TEXT).unwrap();
+
+    // Construir texto de búsqueda concatenado
+    let mut search_text_parts = vec![
+        proveedor.cedula.clone(),
+        proveedor.nombre.clone(),
+        proveedor.apellido.clone(),
+        empresa_nombre.to_string(),
+    ];
+
+    if let Some(ref segundo_nombre) = proveedor.segundo_nombre {
+        search_text_parts.push(segundo_nombre.clone());
+    }
+
+    if let Some(ref segundo_apellido) = proveedor.segundo_apellido {
+        search_text_parts.push(segundo_apellido.clone());
+    }
+
+    let search_text = search_text_parts.join(" ");
+
+    // Crear documento
+    let mut doc = TantivyDocument::default();
+    doc.add_text(id_field, &proveedor.id);
+    doc.add_text(tipo_field, "proveedor");
+    doc.add_text(cedula_field, &proveedor.cedula);
+    doc.add_text(nombre_field, &proveedor.nombre);
+
+    if let Some(ref segundo_nombre) = proveedor.segundo_nombre {
+        doc.add_text(segundo_nombre_field, segundo_nombre);
+    }
+
+    doc.add_text(apellido_field, &proveedor.apellido);
+
+    if let Some(ref segundo_apellido) = proveedor.segundo_apellido {
+        doc.add_text(segundo_apellido_field, segundo_apellido);
+    }
+
+    doc.add_text(empresa_nombre_field, empresa_nombre);
+    doc.add_text(search_text_field, &search_text);
+
+    // Agregar al índice
+    writer
+        .add_document(doc)
+        .map_err(|e| format!("Error al agregar proveedor: {}", e))?;
+
+    Ok(())
+}
+
+/// Actualiza un proveedor en el índice (delete + insert)
+pub fn update_proveedor_in_index(
+    writer: &mut IndexWriter,
+    schema: &Schema,
+    proveedor: &Proveedor,
+    empresa_nombre: &str,
+) -> Result<(), String> {
+    delete_from_index(writer, schema, &proveedor.id)?;
+    index_proveedor(writer, schema, proveedor, empresa_nombre)?;
     Ok(())
 }
