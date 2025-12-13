@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 pub struct Gafete {
     pub numero: String,
     pub tipo: TipoGafete,
-    pub estado: String, // "activo", "danado", "extraviado"
+    pub estado: GafeteEstado, // Enum: Activo, Danado, Extraviado
     pub created_at: String,
     pub updated_at: String,
 }
@@ -64,6 +64,37 @@ impl TipoGafete {
 }
 
 // ==========================================
+// ENUM DE ESTADO FISICO
+// ==========================================
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum GafeteEstado {
+    Activo,
+    Danado,
+    Extraviado,
+}
+
+impl GafeteEstado {
+    pub fn as_str(&self) -> &str {
+        match self {
+            GafeteEstado::Activo => "activo",
+            GafeteEstado::Danado => "danado",
+            GafeteEstado::Extraviado => "extraviado",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s.to_lowercase().as_str() {
+            "activo" => Ok(GafeteEstado::Activo),
+            "danado" => Ok(GafeteEstado::Danado),
+            "extraviado" => Ok(GafeteEstado::Extraviado),
+            _ => Err(format!("Estado de gafete desconocido: {}", s)),
+        }
+    }
+}
+
+// ==========================================
 // DTOs DE ENTRADA
 // ==========================================
 
@@ -93,7 +124,7 @@ pub struct UpdateGafeteInput {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateGafeteStatusInput {
-    pub estado: String,
+    pub estado: GafeteEstado,
 }
 
 // ==========================================
@@ -106,7 +137,7 @@ pub struct GafeteResponse {
     pub numero: String,
     pub tipo: TipoGafete,
     pub tipo_display: String,
-    pub estado_fisico: String, // "activo", "danado", "extraviado"
+    pub estado_fisico: GafeteEstado,
     pub esta_disponible: bool,
     pub status: String, // "disponible", "en_uso", "perdido", "danado", "extraviado"
     // Información de alerta (si está perdido)

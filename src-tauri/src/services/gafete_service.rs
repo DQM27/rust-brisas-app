@@ -6,8 +6,8 @@
 use crate::db::gafete_queries as db;
 use crate::domain::gafete as domain;
 use crate::models::gafete::{
-    CreateGafeteInput, CreateGafeteRangeInput, GafeteListResponse, GafeteResponse, StatsGafetes,
-    StatsPorTipo, TipoGafete, UpdateGafeteInput,
+    CreateGafeteInput, CreateGafeteRangeInput, GafeteEstado, GafeteListResponse, GafeteResponse,
+    StatsGafetes, StatsPorTipo, TipoGafete, UpdateGafeteInput,
 };
 use chrono::Utc;
 use sqlx::SqlitePool;
@@ -107,10 +107,11 @@ pub async fn get_gafete(pool: &SqlitePool, numero: &str) -> Result<GafeteRespons
 
     // Determinar estado global (status) considerando estado físico + uso + alertas
     // Prioridad: Dañado/Extraviado (Físico) > Perdido (Alerta) > En Uso > Disponible
-    if gafete.estado == "danado" {
+    // Prioridad: Dañado/Extraviado (Físico) > Perdido (Alerta) > En Uso > Disponible
+    if gafete.estado == GafeteEstado::Danado {
         response.status = "danado".to_string();
         response.esta_disponible = false;
-    } else if gafete.estado == "extraviado" {
+    } else if gafete.estado == GafeteEstado::Extraviado {
         response.status = "extraviado".to_string();
         response.esta_disponible = false;
     } else if tiene_alerta {
@@ -158,11 +159,12 @@ pub async fn get_all_gafetes(pool: &SqlitePool) -> Result<GafeteListResponse, St
         }
 
         // Determinar status
-        if gafete.estado == "danado" {
+        // Determinar status
+        if gafete.estado == GafeteEstado::Danado {
             response.status = "danado".to_string();
             response.esta_disponible = false;
             stats_danados += 1;
-        } else if gafete.estado == "extraviado" {
+        } else if gafete.estado == GafeteEstado::Extraviado {
             response.status = "extraviado".to_string();
             response.esta_disponible = false;
             stats_extraviados += 1;
@@ -254,7 +256,7 @@ pub async fn is_gafete_disponible(pool: &SqlitePool, numero: &str) -> Result<boo
     // Verificar existencia y estado físico
     match db::find_by_numero(pool, numero).await {
         Ok(g) => {
-            if g.estado != "activo" {
+            if g.estado != GafeteEstado::Activo {
                 return Ok(false);
             }
         }
@@ -302,18 +304,15 @@ pub async fn update_gafete(
 pub async fn update_gafete_status(
     pool: &SqlitePool,
     numero: String,
-    estado: String,
+    estado: GafeteEstado,
 ) -> Result<GafeteResponse, String> {
-    // Validar estado
-    if !["activo", "danado", "extraviado"].contains(&estado.as_str()) {
-        return Err("Estado inválido. Use: activo, danado, extraviado".to_string());
-    }
+    // Validar estado (Implícita por tipo)
 
     // Verificar que existe
     let _ = db::find_by_numero(pool, &numero).await?;
 
     let now = Utc::now().to_rfc3339();
-    db::update_status(pool, &numero, &estado, &now).await?;
+    db::update_status(pool, &numero, estado.as_str(), &now).await?;
 
     get_gafete(pool, &numero).await
 }

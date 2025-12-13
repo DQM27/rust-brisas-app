@@ -3,7 +3,7 @@
 // ==========================================
 // Queries SQL puras - Sin lógica de negocio
 
-use crate::models::gafete::{Gafete, TipoGafete};
+use crate::models::gafete::{Gafete, GafeteEstado, TipoGafete};
 use sqlx::{Row, SqlitePool};
 
 // ==========================================
@@ -23,7 +23,7 @@ pub async fn find_by_numero(pool: &SqlitePool, numero: &str) -> Result<Gafete, S
     Ok(Gafete {
         numero: row.get("numero"),
         tipo: TipoGafete::from_str(row.get("tipo"))?,
-        estado: row.get("estado"),
+        estado: GafeteEstado::from_str(row.get("estado"))?,
         created_at: row.get("created_at"),
         updated_at: row.get("updated_at"),
     })
@@ -44,7 +44,7 @@ pub async fn find_all(pool: &SqlitePool) -> Result<Vec<Gafete>, String> {
             Some(Gafete {
                 numero: row.get("numero"),
                 tipo: TipoGafete::from_str(row.get("tipo")).ok()?,
-                estado: row.get("estado"),
+                estado: GafeteEstado::from_str(row.get("estado")).ok()?,
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
             })
@@ -70,7 +70,7 @@ pub async fn find_by_tipo(pool: &SqlitePool, tipo: &str) -> Result<Vec<Gafete>, 
             Some(Gafete {
                 numero: row.get("numero"),
                 tipo: TipoGafete::from_str(row.get("tipo")).ok()?,
-                estado: row.get("estado"),
+                estado: GafeteEstado::from_str(row.get("estado")).ok()?,
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
             })

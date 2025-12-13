@@ -49,7 +49,9 @@
             id: "bulk-create",
             label: "Generar Lote",
             icon: Plus, // Using Plus as a placeholder or import a specific one like 'Layers' or 'Copy' if available, but Plus is safe
-            onClick: () => (showBulkModal = true),
+            onClick: () => {
+              showBulkModal = true;
+            },
             classes: "bg-blue-600 hover:bg-blue-700 text-white",
             tooltip: "Generar múltiples gafetes",
             // Note: 'action' was wrong, should be 'onClick'. 'name' -> 'label'. Added 'id'.
@@ -439,7 +441,9 @@
       initialData={selectedGafete}
       loading={formLoading}
       on:submit={handleFormSubmit}
-      on:cancel={() => (showModal = false)}
+      on:cancel={() => {
+        showModal = false;
+      }}
     />
   </div>
 {/if}

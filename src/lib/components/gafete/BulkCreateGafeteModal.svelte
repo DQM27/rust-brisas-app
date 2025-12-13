@@ -8,7 +8,7 @@
     cancel: void;
   }>();
 
-  export let loading = false;
+  let { loading = false } = $props<{ loading?: boolean }>();
 
   let start = 1;
   let end = 50;
