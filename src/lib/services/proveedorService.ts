@@ -56,5 +56,9 @@ export const proveedorService = {
     async getAll(): Promise<ProveedorResponse[]> {
         // Using search with empty string to get all
         return await invoke("search_proveedores_catalog", { query: "" });
+    },
+
+    async changeStatus(id: string, newStatus: string): Promise<ProveedorResponse> {
+        return await invoke("change_proveedor_status", { id, newStatus });
     }
 };

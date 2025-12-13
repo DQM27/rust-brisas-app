@@ -86,6 +86,7 @@ macro_rules! register_handlers {
             commands::proveedor_commands::create_proveedor,
             commands::proveedor_commands::search_proveedores_catalog,
             commands::proveedor_commands::get_proveedor_by_cedula,
+            commands::proveedor_commands::change_proveedor_status,
             // ==========================================
             // COMANDOS DE ENTRADA (Fase 1)
             // ==========================================

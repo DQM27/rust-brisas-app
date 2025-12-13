@@ -146,4 +146,27 @@ impl ProveedorService {
 
         Ok(response)
     }
+
+    pub async fn change_status(
+        &self,
+        id: &str,
+        new_status: &str,
+    ) -> Result<ProveedorResponse, String> {
+        use crate::models::proveedor::UpdateProveedorInput;
+
+        let input = UpdateProveedorInput {
+            nombre: None,
+            segundo_nombre: None,
+            apellido: None,
+            segundo_apellido: None,
+            empresa_id: None,
+            estado: Some(new_status.to_string()),
+        };
+
+        let proveedor = proveedor_queries::update(&self.pool, id, input)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        self.populate_response(proveedor).await
+    }
 }

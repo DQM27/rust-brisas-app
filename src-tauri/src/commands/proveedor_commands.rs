@@ -32,3 +32,13 @@ pub async fn get_proveedor_by_cedula(
     let service = ProveedorService::new(pool.inner().clone());
     service.get_proveedor_by_cedula(&cedula).await
 }
+
+#[command]
+pub async fn change_proveedor_status(
+    pool: State<'_, SqlitePool>,
+    id: String,
+    new_status: String,
+) -> Result<ProveedorResponse, String> {
+    let service = ProveedorService::new(pool.inner().clone());
+    service.change_status(&id, &new_status).await
+}
