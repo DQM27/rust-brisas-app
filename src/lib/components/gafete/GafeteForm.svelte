@@ -1,7 +1,11 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { fade } from "svelte/transition";
-  import type { CreateGafeteInput, UpdateGafeteInput, GafeteResponse } from "$lib/types/gafete";
+  import type {
+    CreateGafeteInput,
+    UpdateGafeteInput,
+    GafeteResponse,
+  } from "$lib/types/gafete";
 
   export let loading = false;
   export let initialData: GafeteResponse | null = null;
@@ -19,7 +23,7 @@
   // Cargar datos iniciales si es edición
   $: if (initialData) {
     numero = initialData.numero;
-    tipo = initialData.tipo;   // initialData.tipo ya tiene el tipo correcto
+    tipo = initialData.tipo; // initialData.tipo ya tiene el tipo correcto
     isEditing = true;
   } else {
     numero = "";
@@ -32,49 +36,51 @@
 
     const data = {
       numero,
-      tipo
+      tipo,
     };
 
     dispatch("submit", data);
   }
+
+  const inputClass =
+    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#2da44e] disabled:opacity-60 transition-all";
+  const labelClass =
+    "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-auto">
-  <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+<div
+  class="bg-white dark:bg-[#0d1117] rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-6 w-full max-w-md mx-auto"
+>
+  <h2
+    class="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2"
+  >
     {isEditing ? "Editar Gafete" : "Nuevo Gafete"}
   </h2>
 
   <form on:submit|preventDefault={handleSubmit} class="space-y-4">
     <!-- Número de Gafete -->
     <div>
-      <label for="numero" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-        Número de Gafete
-      </label>
+      <label for="numero" class={labelClass}> Número de Gafete </label>
       <input
         type="text"
         id="numero"
         bind:value={numero}
         disabled={isEditing || loading}
-        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:cursor-not-allowed"
+        class={inputClass}
         placeholder="Ej: G-101"
         required
       />
       {#if isEditing}
-        <p class="mt-1 text-xs text-gray-500">El número no se puede cambiar una vez creado.</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          El número no se puede cambiar una vez creado.
+        </p>
       {/if}
     </div>
 
     <!-- Tipo de Gafete -->
     <div>
-      <label for="tipo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-        Tipo
-      </label>
-      <select
-        id="tipo"
-        bind:value={tipo}
-        disabled={loading}
-        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-      >
+      <label for="tipo" class={labelClass}> Tipo </label>
+      <select id="tipo" bind:value={tipo} disabled={loading} class={inputClass}>
         <option value="contratista">Contratista</option>
         <option value="proveedor">Proveedor</option>
         <option value="visita">Visita</option>
@@ -83,24 +89,42 @@
     </div>
 
     <!-- Botones de Acción -->
-    <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+    <div
+      class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700"
+    >
       <button
         type="button"
         on:click={() => dispatch("cancel")}
         disabled={loading}
-        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+        class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-transparent rounded-md transition-colors"
       >
         Cancelar
       </button>
       <button
         type="submit"
         disabled={loading || !numero.trim()}
-        class="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-[#2da44e] border border-transparent rounded-md shadow-sm hover:bg-[#2c974b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2da44e] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
       >
         {#if loading}
-          <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          <svg
+            class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
           </svg>
           Guardando...
         {:else}

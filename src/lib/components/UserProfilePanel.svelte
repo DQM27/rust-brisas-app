@@ -271,7 +271,7 @@
           </p>
         {/if}
       </div>
-      {#if permissions.canEditSensitive}
+      {#if permissions.canEditSensitive && !isEditingPassword}
         <div class="flex items-center gap-2">
           <!-- Role Selector -->
           <select
@@ -481,7 +481,7 @@
         </div>
 
         <!-- Sección: Datos Laborales (Admin/Supervisor Only) -->
-        {#if permissions.canEditSensitive}
+        {#if permissions.canEditSensitive && !isEditingPassword}
           <div>
             <h3 class={sectionTitleClass}>Datos Laborales</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
