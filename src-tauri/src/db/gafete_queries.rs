@@ -216,7 +216,7 @@ pub async fn has_unresolved_alert_typed(
          AND (
             ( ? = 'proveedor' AND ag.ingreso_proveedor_id IS NOT NULL )
             OR
-            ( ? != 'proveedor' AND ag.ingreso_contratista_id IS NOT NULL )
+            ( ? = 'contratista' AND ag.ingreso_contratista_id IS NOT NULL )
          )",
     )
     .bind(numero)
@@ -425,7 +425,8 @@ pub async fn get_recent_alert_for_gafete_typed(
          AND (
             ( ? = 'proveedor' AND ag.ingreso_proveedor_id IS NOT NULL )
             OR
-            ( ? != 'proveedor' AND ag.ingreso_contratista_id IS NOT NULL )
+            ( ? = 'contratista' AND ag.ingreso_contratista_id IS NOT NULL )
+            -- Si es 'visita' u otro, por ahora no devolvemos nada o futuras implementaciones
          )
          ORDER BY ag.fecha_reporte DESC 
          LIMIT 1",

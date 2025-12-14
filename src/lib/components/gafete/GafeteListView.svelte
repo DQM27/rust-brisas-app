@@ -179,16 +179,39 @@
       width: 130,
       valueFormatter: (params: any) => {
         if (!params.value) return "";
-        return new Date(params.value).toLocaleString();
+        return new Date(params.value).toLocaleDateString();
       },
     },
     {
-      field: "reportadoPorNombre",
-      headerName: "Reportado Por",
+      field: "fechaPerdido",
+      headerName: "Hora Reporte",
       sortable: true,
       filter: true,
-      width: 150,
+      width: 120,
+      valueFormatter: (params: any) => {
+        if (!params.value) return "";
+        return new Date(params.value).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+      },
     },
+    {
+      field: "quienPerdio",
+      headerName: "Persona que Perdió",
+      sortable: true,
+      filter: true,
+      width: 180,
+    },
+    {
+      field: "reportadoPorNombre",
+      headerName: "Reportado Por (Usuario)",
+      sortable: true,
+      filter: true,
+      width: 160,
+    },
+
     {
       field: "resueltoPorNombre",
       headerName: "Resuelto Por",
@@ -204,7 +227,22 @@
       width: 160,
       valueFormatter: (params: any) => {
         if (!params.value) return "";
-        return new Date(params.value).toLocaleString();
+        return new Date(params.value).toLocaleDateString();
+      },
+    },
+    {
+      field: "fechaResolucion",
+      headerName: "Hora Resolución",
+      sortable: true,
+      filter: true,
+      width: 120,
+      valueFormatter: (params: any) => {
+        if (!params.value) return "";
+        return new Date(params.value).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
       },
     },
     {
@@ -364,9 +402,11 @@
     formLoading = true;
 
     const userId = $currentUser?.id;
+    // Nota: El usuario pidió remover la fecha redundante de la nota
+    // porque ya existen columnas de fecha. Solo guardamos las notas.
     const result = await alertaGafeteService.resolverAlerta(
       selectedAlertGafete.alertaId,
-      `${notas} - Fecha de devolución/pago: ${fechaDevolucion}`,
+      notas,
       userId,
     );
 
