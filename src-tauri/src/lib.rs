@@ -10,7 +10,7 @@ pub mod domain;
 pub mod export;
 pub mod models;
 pub mod search;
-pub mod services; // ✅ AGREGAR ESTO
+pub mod services;
 
 use tauri::Manager;
 

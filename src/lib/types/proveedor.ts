@@ -54,6 +54,12 @@ export interface UpdateProveedorInput {
     segundoApellido?: string;
     empresaId?: string;
     estado?: string;
+    tieneVehiculo?: boolean;
+    tipoVehiculo?: string;
+    placa?: string;
+    marca?: string;
+    modelo?: string;
+    color?: string;
 }
 
 // List response with statistics

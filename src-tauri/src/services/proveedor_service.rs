@@ -2,6 +2,7 @@
 // src/services/proveedor_service.rs
 // ==========================================
 use crate::db::{empresa_queries, proveedor_queries, vehiculo_queries};
+use crate::domain::vehiculo as vehiculo_domain;
 use crate::models::proveedor::{CreateProveedorInput, ProveedorResponse, UpdateProveedorInput};
 use crate::services::search_service::SearchService;
 use chrono::Utc;
@@ -43,6 +44,11 @@ pub async fn create_proveedor(
     if let Some(true) = input.tiene_vehiculo {
         if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
             if !tipo.is_empty() && !placa.is_empty() {
+                // Normalizar tipo
+                let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)?
+                    .as_str()
+                    .to_string();
+
                 let vid = Uuid::new_v4().to_string();
                 let now = Utc::now().to_rfc3339();
 
@@ -51,7 +57,7 @@ pub async fn create_proveedor(
                     &vid,
                     None,                // Contratista ID
                     Some(&proveedor.id), // Proveedor ID
-                    tipo,
+                    &tipo_norm,
                     placa,
                     input.marca.as_deref(),
                     input.modelo.as_deref(),
@@ -248,12 +254,19 @@ pub async fn update_proveedor(
             // Actualizar o Crear
             if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
                 if !tipo.is_empty() && !placa.is_empty() {
+                    // Normalizar antes de usar
+                    // Convertimos Result<TipoVehiculo, String> -> TipoVehiculo -> &str -> String
+                    // El ? propagará el error string si la validación falla
+                    let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)?
+                        .as_str()
+                        .to_string();
+
                     if let Some(v) = vehiculo_existente {
                         // Update
                         vehiculo_queries::update(
                             pool,
                             &v.id,
-                            Some(tipo),
+                            Some(&tipo_norm),
                             input.marca.as_deref(),
                             input.modelo.as_deref(),
                             input.color.as_deref(),
@@ -261,7 +274,7 @@ pub async fn update_proveedor(
                             &now,
                         )
                         .await
-                        .map_err(|e| e.to_string())?;
+                        .map_err(|e| format!("Error al actualizar vehículo: {}", e))?;
                     } else {
                         // Create
                         let vid = Uuid::new_v4().to_string();
@@ -270,7 +283,7 @@ pub async fn update_proveedor(
                             &vid,
                             None,
                             Some(&id),
-                            tipo,
+                            &tipo_norm, // Use normalized type
                             placa,
                             input.marca.as_deref(),
                             input.modelo.as_deref(),
@@ -279,7 +292,7 @@ pub async fn update_proveedor(
                             &now,
                         )
                         .await
-                        .map_err(|e| e.to_string())?;
+                        .map_err(|e| format!("Error al crear vehículo en update: {}", e))?;
                     }
                 }
             }

@@ -8,10 +8,13 @@
 
   import {
     createProveedor,
+    updateProveedor,
+    fetchProveedorById,
     fetchProveedorByCedula,
   } from "$lib/logic/proveedor/proveedorService";
   import type {
     CreateProveedorInput,
+    UpdateProveedorInput,
     ProveedorResponse,
   } from "$lib/types/proveedor";
   import { submitFetchActiveEmpresas } from "$lib/logic/empresa/empresaService";
@@ -47,7 +50,7 @@
       proveedorData = data.initialData;
     } else if (data?.proveedorId) {
       loading = true;
-      const result = await fetchProveedorByCedula(data.proveedorId);
+      const result = await fetchProveedorById(data.proveedorId);
       if (result.ok) {
         proveedorData = result.data;
       } else {
@@ -61,8 +64,34 @@
     loading = true;
 
     if (mode === "edit" && data?.proveedorId) {
-      // MODO EDICIÓN - Not implemented yet
-      toast.error("La edición de proveedores aún no está implementada");
+      // MODO EDICIÓN
+      const input: UpdateProveedorInput = {
+        nombre: formData.nombre,
+        segundoNombre: formData.segundoNombre || undefined,
+        apellido: formData.apellido,
+        segundoApellido: formData.segundoApellido || undefined,
+        empresaId: formData.empresaId,
+        estado: formData.estado, // Ensure form passes this or default to current
+        // Vehículo update
+        tieneVehiculo: formData.tieneVehiculo,
+        tipoVehiculo: formData.tipoVehiculo || undefined,
+        placa: formData.placa || undefined,
+        marca: formData.marca || undefined,
+        modelo: formData.modelo || undefined,
+        color: formData.color || undefined,
+      };
+
+      const result = await updateProveedor(data.proveedorId, input);
+
+      if (result.ok) {
+        toast.success("Proveedor actualizado exitosamente", {
+          icon: "✓",
+          duration: 3000,
+        });
+        closeTab($activeTabId);
+      } else {
+        toast.error(result.error);
+      }
     } else {
       // MODO CREACIÓN
       const input: CreateProveedorInput = {
