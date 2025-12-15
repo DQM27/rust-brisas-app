@@ -68,6 +68,7 @@ macro_rules! register_handlers {
             commands::cita_commands::create_cita,
             commands::cita_commands::get_citas_hoy,
             commands::cita_commands::procesar_ingreso_cita,
+            commands::cita_commands::get_visitante_by_cedula,
             // ==========================================
             // COMANDOS DE INGRESO VISITAS (Nuevo Módulo)
             // ==========================================

@@ -3,8 +3,6 @@
   import IngresoFormLayout from "../common/IngresoFormLayout.svelte";
   import VisitaFormFields from "./VisitaFormFields.svelte";
   import ModoIngresoSelector from "../common/ModoIngresoSelector.svelte";
-  import GafeteInput from "../common/GafeteInput.svelte";
-  import IngresoFormFields from "../common/IngresoFormFields.svelte"; // Autorización
   import IngresoObservaciones from "../common/IngresoObservaciones.svelte";
 
   import {
@@ -17,23 +15,15 @@
     resetForm,
   } from "$lib/stores/visitaFormStore";
   import { ingresoVisitaService } from "$lib/services/ingresoVisitaService";
-  import * as gafeteService from "$lib/logic/gafete/gafeteService";
   import { currentUser } from "$lib/stores/auth";
   import { toast } from "svelte-5-french-toast";
-  import type { GafeteResponse } from "$lib/types/gafete";
 
   export let onClose: () => void;
   export let onSuccess: () => void;
 
   let loading = false;
-  let gafetesDisponibles: GafeteResponse[] = [];
 
-  onMount(async () => {
-    // Cargar gafetes de visita
-    const res = await gafeteService.fetchDisponibles();
-    if (res.ok) {
-      gafetesDisponibles = res.data.filter((g) => g.tipo === "visita");
-    }
+  onMount(() => {
     resetForm();
   });
 
@@ -49,7 +39,7 @@
         anfitrion: $visitaFormData.anfitrion,
         area_visitada: $visitaFormData.areaVisitada,
         motivo: $visitaFormData.motivoVisita,
-        gafete: $visitaFormData.gafeteNumero || undefined,
+        gafete: undefined,
         observaciones: $visitaFormData.observaciones || undefined,
         usuario_ingreso_id: $currentUser.id,
       });
@@ -90,16 +80,14 @@
   />
 
   {#if $shouldShowPlaca}
-    <div class="flex flex-col gap-1">
-      <label
-        for="ve-placa-vis"
-        class="text-sm font-medium text-gray-700 dark:text-gray-300"
+    <div class="flex flex-col gap-1.5">
+      <label for="ve-placa-vis" class="text-xs font-medium text-[#8d96a0]"
         >Placa del Vehículo</label
       >
       <input
         id="ve-placa-vis"
         type="text"
-        class="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+        class="w-full px-3 py-2 bg-[#0d1117] border border-[#30363d] rounded-md text-sm text-[#f0f6fc] placeholder-[#484f58] focus:ring-2 focus:ring-[#388bfd] focus:border-transparent outline-none transition-all"
         placeholder="Ej: ABC-1234"
         value={$visitaFormData.vehiculoPlaca || ""}
         on:input={(e) => updateField("vehiculoPlaca", e.currentTarget.value)}
@@ -109,19 +97,6 @@
       {/if}
     </div>
   {/if}
-
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <GafeteInput
-      gafeteNumero={$visitaFormData.gafeteNumero || ""}
-      {gafetesDisponibles}
-      on:change={(e) => updateField("gafeteNumero", e.detail)}
-    />
-
-    <IngresoFormFields
-      tipoAutorizacion={$visitaFormData.tipoAutorizacion}
-      on:tipoChange={(e) => updateField("tipoAutorizacion", e.detail)}
-    />
-  </div>
 
   <IngresoObservaciones
     observaciones={$visitaFormData.observaciones || ""}

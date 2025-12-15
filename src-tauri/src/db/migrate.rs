@@ -13,6 +13,7 @@ pub async fn run_migrations(pool: &SqlitePool) -> Result<(), Box<dyn std::error:
             Err(e.into())
         }
     }
+    // Touch to force rebuildcompile migrations: Schema changed (Fix Contractor Edit)
 }
 
 // Force recompile migrations: Schema changed (Fix Contractor Edit)

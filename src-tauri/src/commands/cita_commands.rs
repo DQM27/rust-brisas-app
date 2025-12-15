@@ -32,4 +32,15 @@ pub async fn procesar_ingreso_cita(
     service
         .procesar_ingreso_cita(cita_id, gafete, usuario_id)
         .await
+    // .await removed
+}
+
+#[command]
+pub async fn get_visitante_by_cedula(
+    pool: State<'_, SqlitePool>,
+    cedula: String,
+) -> Result<Option<crate::domain::visitante::Visitante>, String> {
+    crate::db::visitante_queries::get_visitante_by_cedula(pool.inner(), &cedula)
+        .await
+        .map_err(|e| e.to_string())
 }

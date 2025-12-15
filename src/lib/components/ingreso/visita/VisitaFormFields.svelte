@@ -1,9 +1,5 @@
 <script lang="ts">
-  // ==========================================
-  // VisitaFormFields.svelte
-  // ==========================================
-  // Campos específicos para registro de VISITAS
-
+  // VisitaFormFields.svelte - GitHub Style
   import type { VisitaFormData } from "$lib/logic/ingreso/visitaService";
 
   export let formData: VisitaFormData;
@@ -12,195 +8,138 @@
 
   function handleInput(field: keyof VisitaFormData) {
     return (e: Event) => {
-      const target = e.target as HTMLInputElement;
+      const target = e.target as HTMLInputElement | HTMLTextAreaElement;
       onChange(field, target.value);
     };
   }
 </script>
 
-<div class="visita-form-fields">
-  <!-- Información personal -->
-  <div class="section">
-    <h3 class="section-title">Información Personal</h3>
+<div class="flex flex-col gap-4">
+  <!-- Visitor Info Row -->
+  <div class="grid grid-cols-3 gap-3">
+    <div class="flex flex-col gap-1.5">
+      <label for="cedula" class="text-xs font-medium text-[#8d96a0]"
+        >Cédula</label
+      >
+      <input
+        id="cedula"
+        type="text"
+        value={formData.cedula}
+        on:input={handleInput("cedula")}
+        class="w-full px-3 py-2 bg-[#0d1117] border rounded-md text-sm text-[#f0f6fc] placeholder-[#484f58] focus:ring-2 focus:ring-[#388bfd] focus:border-transparent outline-none transition-all {errors.cedula
+          ? 'border-[#f85149]'
+          : 'border-[#30363d]'}"
+        placeholder="1-1234-5678"
+      />
+      {#if errors.cedula}
+        <span class="text-xs text-[#f85149]">{errors.cedula}</span>
+      {/if}
+    </div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label for="cedula">Cédula *</label>
-        <input
-          id="cedula"
-          type="text"
-          value={formData.cedula}
-          on:input={handleInput("cedula")}
-          class:error={errors.cedula}
-          placeholder="Ej: 1-1234-5678"
-        />
-        {#if errors.cedula}
-          <span class="error-message">{errors.cedula}</span>
-        {/if}
-      </div>
+    <div class="flex flex-col gap-1.5">
+      <label for="nombre" class="text-xs font-medium text-[#8d96a0]"
+        >Nombre</label
+      >
+      <input
+        id="nombre"
+        type="text"
+        value={formData.nombre}
+        on:input={handleInput("nombre")}
+        class="w-full px-3 py-2 bg-[#0d1117] border rounded-md text-sm text-[#f0f6fc] placeholder-[#484f58] focus:ring-2 focus:ring-[#388bfd] focus:border-transparent outline-none transition-all {errors.nombre
+          ? 'border-[#f85149]'
+          : 'border-[#30363d]'}"
+        placeholder="Nombre"
+      />
+      {#if errors.nombre}
+        <span class="text-xs text-[#f85149]">{errors.nombre}</span>
+      {/if}
+    </div>
 
-      <div class="form-group">
-        <label for="nombre">Nombre *</label>
-        <input
-          id="nombre"
-          type="text"
-          value={formData.nombre}
-          on:input={handleInput("nombre")}
-          class:error={errors.nombre}
-          placeholder="Nombre del visitante"
-        />
-        {#if errors.nombre}
-          <span class="error-message">{errors.nombre}</span>
-        {/if}
-      </div>
-
-      <div class="form-group">
-        <label for="apellido">Apellido *</label>
-        <input
-          id="apellido"
-          type="text"
-          value={formData.apellido}
-          on:input={handleInput("apellido")}
-          class:error={errors.apellido}
-          placeholder="Apellido del visitante"
-        />
-        {#if errors.apellido}
-          <span class="error-message">{errors.apellido}</span>
-        {/if}
-      </div>
+    <div class="flex flex-col gap-1.5">
+      <label for="apellido" class="text-xs font-medium text-[#8d96a0]"
+        >Apellido</label
+      >
+      <input
+        id="apellido"
+        type="text"
+        value={formData.apellido}
+        on:input={handleInput("apellido")}
+        class="w-full px-3 py-2 bg-[#0d1117] border rounded-md text-sm text-[#f0f6fc] placeholder-[#484f58] focus:ring-2 focus:ring-[#388bfd] focus:border-transparent outline-none transition-all {errors.apellido
+          ? 'border-[#f85149]'
+          : 'border-[#30363d]'}"
+        placeholder="Apellido"
+      />
+      {#if errors.apellido}
+        <span class="text-xs text-[#f85149]">{errors.apellido}</span>
+      {/if}
     </div>
   </div>
 
-  <!-- Información de visita -->
-  <div class="section">
-    <h3 class="section-title">Información de Visita</h3>
+  <!-- Visit Details -->
+  <div class="pt-3 border-t border-[#21262d]">
+    <p
+      class="text-xs font-semibold text-[#8d96a0] uppercase tracking-wider mb-3"
+    >
+      Detalles de Visita
+    </p>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label for="anfitrion">Anfitrión *</label>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label for="anfitrion" class="text-xs font-medium text-[#8d96a0]"
+          >Anfitrión</label
+        >
         <input
           id="anfitrion"
           type="text"
           value={formData.anfitrion}
           on:input={handleInput("anfitrion")}
-          class:error={errors.anfitrion}
-          placeholder="Nombre del anfitrión"
+          class="w-full px-3 py-2 bg-[#0d1117] border rounded-md text-sm text-[#f0f6fc] placeholder-[#484f58] focus:ring-2 focus:ring-[#388bfd] focus:border-transparent outline-none transition-all {errors.anfitrion
+            ? 'border-[#f85149]'
+            : 'border-[#30363d]'}"
+          placeholder="Persona que recibe"
         />
         {#if errors.anfitrion}
-          <span class="error-message">{errors.anfitrion}</span>
+          <span class="text-xs text-[#f85149]">{errors.anfitrion}</span>
         {/if}
       </div>
 
-      <div class="form-group">
-        <label for="areaVisitada">Área a Visitar *</label>
+      <div class="flex flex-col gap-1.5">
+        <label for="areaVisitada" class="text-xs font-medium text-[#8d96a0]"
+          >Área</label
+        >
         <input
           id="areaVisitada"
           type="text"
           value={formData.areaVisitada}
           on:input={handleInput("areaVisitada")}
-          class:error={errors.areaVisitada}
-          placeholder="Ej: Administración, Producción"
+          class="w-full px-3 py-2 bg-[#0d1117] border rounded-md text-sm text-[#f0f6fc] placeholder-[#484f58] focus:ring-2 focus:ring-[#388bfd] focus:border-transparent outline-none transition-all {errors.areaVisitada
+            ? 'border-[#f85149]'
+            : 'border-[#30363d]'}"
+          placeholder="Administración, Producción..."
         />
         {#if errors.areaVisitada}
-          <span class="error-message">{errors.areaVisitada}</span>
+          <span class="text-xs text-[#f85149]">{errors.areaVisitada}</span>
         {/if}
       </div>
     </div>
 
-    <div class="form-group">
-      <label for="motivoVisita">Motivo de Visita *</label>
+    <div class="flex flex-col gap-1.5 mt-3">
+      <label for="motivoVisita" class="text-xs font-medium text-[#8d96a0]"
+        >Motivo</label
+      >
       <textarea
         id="motivoVisita"
         value={formData.motivoVisita}
         on:input={handleInput("motivoVisita")}
-        class:error={errors.motivoVisita}
-        placeholder="Describa el motivo de la visita"
-        rows="3"
+        class="w-full px-3 py-2 bg-[#0d1117] border rounded-md text-sm text-[#f0f6fc] placeholder-[#484f58] focus:ring-2 focus:ring-[#388bfd] focus:border-transparent outline-none transition-all resize-none {errors.motivoVisita
+          ? 'border-[#f85149]'
+          : 'border-[#30363d]'}"
+        placeholder="Describa brevemente el motivo de la visita"
+        rows="2"
       ></textarea>
       {#if errors.motivoVisita}
-        <span class="error-message">{errors.motivoVisita}</span>
+        <span class="text-xs text-[#f85149]">{errors.motivoVisita}</span>
       {/if}
     </div>
   </div>
 </div>
-
-<style>
-  .visita-form-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .section {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .section-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin: 0;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-  }
-
-  input,
-  textarea {
-    padding: 0.625rem;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 0.875rem;
-    /* High contrast override */
-    background-color: rgb(255 255 255);
-    color: rgb(17 24 39);
-  }
-
-  :global(.dark) input,
-  :global(.dark) textarea {
-    background-color: #252526;
-    color: #f3f4f6;
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-
-  input:focus,
-  textarea:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--primary-alpha-10);
-  }
-
-  input.error,
-  textarea.error {
-    border-color: var(--error);
-  }
-
-  .error-message {
-    font-size: 0.75rem;
-    color: var(--error);
-  }
-
-  textarea {
-    resize: vertical;
-    min-height: 60px;
-  }
-</style>

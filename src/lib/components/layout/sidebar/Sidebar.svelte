@@ -15,6 +15,7 @@
     LogOut,
     HardHat,
     Package,
+    Calendar,
   } from "lucide-svelte";
 
   // Componentes
@@ -54,6 +55,19 @@
       icon: Package,
       label: "Proveedores",
       panelComponent: ProveedoresPanel,
+    },
+    {
+      id: "citas",
+      icon: Calendar,
+      label: "Visitas",
+      action: () => {
+        openTab({
+          componentKey: "citas-view",
+          title: "Pre-registro Visitas",
+          id: "citas-view",
+          focusOnOpen: true,
+        });
+      },
     },
     {
       id: "access",
