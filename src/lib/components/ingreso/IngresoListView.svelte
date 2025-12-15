@@ -58,16 +58,16 @@
   Usa use:shortcutService.useScope para activar el contexto "ingreso-list"
 -->
 <div
-  class="h-full flex gap-6 overflow-hidden relative bg-[#1e1e1e]"
+  class="h-full flex gap-0 overflow-hidden relative bg-[#0d1117]"
   use:shortcutService.useScope={"ingreso-list"}
 >
   <!-- Panel Izquierdo: Formulario de Entrada (Colapsable) -->
   {#if isFormOpen}
     <div
-      class="w-full lg:w-1/3 h-full shrink-0"
+      class="h-full shrink-0"
       transition:fly={{ x: -300, duration: 300, opacity: 0, easing: cubicOut }}
     >
-      <div class="h-full overflow-y-auto pr-1">
+      <div class="h-full overflow-y-auto">
         {#if activeTab === "contratistas"}
           <IngresoContratistaForm onSuccess={closeForm} onClose={closeForm} />
         {:else if activeTab === "visitas"}
