@@ -76,6 +76,16 @@
     loadData();
   });
 
+  // Reload when form closes (after create/edit)
+  let prevFormOpen = isFormOpen;
+  $effect(() => {
+    // Detect form closing (was open, now closed)
+    if (prevFormOpen && !isFormOpen) {
+      loadData();
+    }
+    prevFormOpen = isFormOpen;
+  });
+
   // Column definitions for each view
   const columnDefsPendientes: ColDef<CitaPopulated>[] = [
     {
@@ -298,13 +308,14 @@
   }
 
   async function handleConfirmSalida(
-    event: CustomEvent<{ observaciones?: string }>,
+    event: CustomEvent<{ devolvioGafete: boolean; observaciones?: string }>,
   ) {
     if (!selectedIngresoParaSalida || !$currentUser) return;
     try {
       await ingresoVisitaService.registrarSalida(
         selectedIngresoParaSalida.id,
         $currentUser.id,
+        event.detail.devolvioGafete,
         event.detail.observaciones,
       );
       toast.success("Salida registrada");

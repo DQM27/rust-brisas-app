@@ -34,7 +34,17 @@ export const ingresoVisitaService = {
         return await invoke<IngresoVisita[]>("get_ingresos_visitas_historial");
     },
 
-    async registrarSalida(id: string, usuarioId: string, observaciones?: string): Promise<void> {
-        return await invoke("registrar_salida_visita", { id, usuarioId, observaciones });
+    async registrarSalida(
+        id: string,
+        usuarioId: string,
+        devolvioGafete: boolean,
+        observaciones?: string
+    ): Promise<void> {
+        return await invoke("registrar_salida_visita", {
+            id,
+            usuarioId,
+            devolvioGafete,
+            observaciones
+        });
     }
 };

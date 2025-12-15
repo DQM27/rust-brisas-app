@@ -27,11 +27,12 @@ pub async fn registrar_salida_visita(
     pool: State<'_, SqlitePool>,
     id: String,
     usuario_id: String,
+    devolvio_gafete: bool,
     observaciones: Option<String>,
 ) -> Result<(), String> {
     let service = IngresoVisitaService::new(pool.inner().clone());
     service
-        .registrar_salida(id, usuario_id, observaciones)
+        .registrar_salida(id, usuario_id, devolvio_gafete, observaciones)
         .await
 }
 

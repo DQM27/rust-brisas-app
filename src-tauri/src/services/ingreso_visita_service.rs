@@ -93,8 +93,27 @@ impl IngresoVisitaService {
         &self,
         id: String,
         usuario_id: String,
+        devolvio_gafete: bool,
         observaciones: Option<String>,
     ) -> Result<(), String> {
+        // 1. Obtener el ingreso para saber el gafete y visitante
+        let ingresos = ingreso_visita_queries::find_actives(&self.pool)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let ingreso = ingresos
+            .iter()
+            .find(|i| i.id == id)
+            .ok_or("Ingreso no encontrado")?;
+
+        let gafete = ingreso.gafete.clone();
+        let visitante_nombre = format!(
+            "{} {}",
+            ingreso.visitante_nombre, ingreso.visitante_apellido
+        );
+        let visitante_cedula = ingreso.visitante_cedula.clone();
+
+        // 2. Registrar salida
         ingreso_visita_queries::registrar_salida(
             &self.pool,
             &id,
@@ -102,7 +121,23 @@ impl IngresoVisitaService {
             observaciones.as_deref(),
         )
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+        // 3. Si no devolvió el gafete, crear alerta
+        if !devolvio_gafete {
+            if let Some(ref gafete_num) = gafete {
+                // Crear alerta de gafete no devuelto
+                // Nota: alertas_gafetes no tiene ingreso_visita_id todavía
+                // Por ahora solo logueamos - requiere migración de BD
+                println!(
+                    "⚠️ ALERTA: Gafete {} no devuelto por visita {} ({})",
+                    gafete_num, visitante_nombre, visitante_cedula
+                );
+                // TODO: Agregar ingreso_visita_id a alertas_gafetes y crear la alerta
+            }
+        }
+
+        Ok(())
     }
 
     pub async fn get_activos(&self) -> Result<Vec<IngresoVisitaPopulated>, String> {
