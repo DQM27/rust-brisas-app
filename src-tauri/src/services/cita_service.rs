@@ -61,6 +61,13 @@ impl CitaService {
             .map_err(|e| e.to_string())
     }
 
+    /// Obtiene todas las citas pendientes (hoy y futuras)
+    pub async fn get_citas_pendientes(&self) -> Result<Vec<CitaPopulated>, String> {
+        cita_queries::get_all_citas_pendientes(&self.pool)
+            .await
+            .map_err(|e| e.to_string())
+    }
+
     pub async fn procesar_ingreso_cita(
         &self,
         cita_id: String,

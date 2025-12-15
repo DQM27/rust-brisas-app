@@ -50,7 +50,7 @@
     loading = true;
     try {
       if (activeView === "pendientes") {
-        citasPendientes = await citaService.getCitasHoy();
+        citasPendientes = await citaService.getCitasPendientes();
       } else if (activeView === "activas") {
         ingresosActivos = await ingresoVisitaService.getActivos();
       } else {

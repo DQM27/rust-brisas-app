@@ -106,3 +106,24 @@ pub async fn registrar_salida(
 
     Ok(())
 }
+
+/// Obtiene el historial de visitas completadas (estado = SALIO)
+pub async fn find_historial(pool: &SqlitePool) -> Result<Vec<IngresoVisitaPopulated>, sqlx::Error> {
+    sqlx::query_as::<_, IngresoVisitaPopulated>(
+        r#"
+        SELECT 
+            iv.*,
+            v.nombre as visitante_nombre,
+            v.apellido as visitante_apellido,
+            v.cedula as visitante_cedula,
+            v.empresa as visitante_empresa
+        FROM ingresos_visitas iv
+        INNER JOIN visitantes v ON iv.visitante_id = v.id
+        WHERE iv.estado = 'SALIO' 
+        ORDER BY iv.fecha_salida DESC
+        LIMIT 500
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+}

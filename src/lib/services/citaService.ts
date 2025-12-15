@@ -10,10 +10,9 @@ export const citaService = {
         return await invoke<CitaPopulated[]>("get_citas_hoy");
     },
 
-    /** Obtiene citas pendientes (por ahora usa get_citas_hoy) */
+    /** Obtiene todas las citas pendientes (hoy y futuras) */
     async getCitasPendientes(): Promise<CitaPopulated[]> {
-        // TODO: Backend debe implementar get_citas_pendientes para incluir fechas futuras
-        return await invoke<CitaPopulated[]>("get_citas_hoy");
+        return await invoke<CitaPopulated[]>("get_citas_pendientes");
     },
 
     async procesarIngresoCita(citaId: string, gafete: string, usuarioId: string): Promise<string> {

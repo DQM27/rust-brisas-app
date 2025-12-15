@@ -22,6 +22,14 @@ pub async fn get_citas_hoy(pool: State<'_, SqlitePool>) -> Result<Vec<CitaPopula
 }
 
 #[command]
+pub async fn get_citas_pendientes(
+    pool: State<'_, SqlitePool>,
+) -> Result<Vec<CitaPopulated>, String> {
+    let service = CitaService::new(pool.inner().clone());
+    service.get_citas_pendientes().await
+}
+
+#[command]
 pub async fn procesar_ingreso_cita(
     pool: State<'_, SqlitePool>,
     cita_id: String,

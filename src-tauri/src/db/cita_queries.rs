@@ -94,3 +94,28 @@ pub async fn marcar_cita_completada(pool: &SqlitePool, cita_id: &str) -> Result<
     .await?;
     Ok(())
 }
+
+/// Obtiene todas las citas pendientes (hoy y futuras)
+pub async fn get_all_citas_pendientes(
+    pool: &SqlitePool,
+) -> Result<Vec<CitaPopulated>, sqlx::Error> {
+    let today = Utc::now().format("%Y-%m-%dT00:00:00").to_string();
+
+    sqlx::query_as::<_, CitaPopulated>(
+        r#"
+        SELECT 
+            c.id, c.fecha_cita, c.anfitrion, c.area_visitada, c.motivo, c.estado,
+            v.id as visitante_id, v.cedula as visitante_cedula, v.nombre as visitante_nombre, v.apellido as visitante_apellido,
+            (v.nombre || ' ' || v.apellido) as visitante_nombre_completo,
+            v.empresa as visitante_empresa
+        FROM citas c
+        JOIN visitantes v ON c.visitante_id = v.id
+        WHERE c.estado = 'PENDIENTE'
+        AND c.fecha_cita >= ?
+        ORDER BY c.fecha_cita ASC
+        "#
+    )
+    .bind(today)
+    .fetch_all(pool)
+    .await
+}

@@ -34,3 +34,11 @@ pub async fn registrar_salida_visita(
         .registrar_salida(id, usuario_id, observaciones)
         .await
 }
+
+#[command]
+pub async fn get_ingresos_visitas_historial(
+    pool: State<'_, SqlitePool>,
+) -> Result<Vec<IngresoVisitaPopulated>, String> {
+    let service = IngresoVisitaService::new(pool.inner().clone());
+    service.get_historial().await
+}

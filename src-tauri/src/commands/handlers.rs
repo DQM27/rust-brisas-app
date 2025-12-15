@@ -67,13 +67,14 @@ macro_rules! register_handlers {
             // ==========================================
             commands::cita_commands::create_cita,
             commands::cita_commands::get_citas_hoy,
+            commands::cita_commands::get_citas_pendientes,
             commands::cita_commands::procesar_ingreso_cita,
             commands::cita_commands::get_visitante_by_cedula,
             // ==========================================
             // COMANDOS DE INGRESO VISITAS (Nuevo Módulo)
             // ==========================================
             commands::ingreso_visita_commands::get_ingresos_visitas_activos,
-            commands::ingreso_visita_commands::get_ingresos_visitas_activos,
+            commands::ingreso_visita_commands::get_ingresos_visitas_historial,
             commands::ingreso_visita_commands::crear_ingreso_visita_v2,
             commands::ingreso_visita_commands::registrar_salida_visita,
             // ==========================================

@@ -110,4 +110,10 @@ impl IngresoVisitaService {
             .await
             .map_err(|e| e.to_string())
     }
+
+    pub async fn get_historial(&self) -> Result<Vec<IngresoVisitaPopulated>, String> {
+        ingreso_visita_queries::find_historial(&self.pool)
+            .await
+            .map_err(|e| e.to_string())
+    }
 }
