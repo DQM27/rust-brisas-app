@@ -121,7 +121,7 @@ pub struct CreateProveedorInput {
     pub color: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateProveedorInput {
     pub nombre: Option<String>,
@@ -130,6 +130,13 @@ pub struct UpdateProveedorInput {
     pub segundo_apellido: Option<String>,
     pub empresa_id: Option<String>,
     pub estado: Option<String>,
+    // Campos para actualización de vehículo
+    pub tiene_vehiculo: Option<bool>,
+    pub tipo_vehiculo: Option<String>,
+    pub placa: Option<String>,
+    pub marca: Option<String>,
+    pub modelo: Option<String>,
+    pub color: Option<String>,
 }
 
 // ==========================================

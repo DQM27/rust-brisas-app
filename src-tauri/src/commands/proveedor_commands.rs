@@ -42,3 +42,21 @@ pub async fn change_proveedor_status(
 ) -> Result<ProveedorResponse, String> {
     proveedor_service::change_status(&pool, &search_service, &id, &new_status).await
 }
+
+#[command]
+pub async fn update_proveedor(
+    pool: State<'_, SqlitePool>,
+    search_service: State<'_, Arc<SearchService>>,
+    id: String,
+    input: crate::models::proveedor::UpdateProveedorInput,
+) -> Result<ProveedorResponse, String> {
+    proveedor_service::update_proveedor(&pool, &search_service, id, input).await
+}
+
+#[command]
+pub async fn get_proveedor_by_id(
+    pool: State<'_, SqlitePool>,
+    id: String,
+) -> Result<ProveedorResponse, String> {
+    proveedor_service::get_proveedor_by_id(&pool, &id).await
+}

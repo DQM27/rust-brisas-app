@@ -125,6 +125,12 @@ pub async fn change_status(
         segundo_apellido: None,
         empresa_id: None,
         estado: Some(new_status.to_string()),
+        tiene_vehiculo: None,
+        tipo_vehiculo: None,
+        placa: None,
+        marca: None,
+        modelo: None,
+        color: None,
     };
 
     let proveedor = proveedor_queries::update(pool, id, input)
@@ -181,4 +187,130 @@ async fn populate_response(
     }
 
     Ok(response)
+}
+
+/// Obtiene un proveedor por ID con todos sus datos
+pub async fn get_proveedor_by_id(pool: &SqlitePool, id: &str) -> Result<ProveedorResponse, String> {
+    let row = proveedor_queries::find_by_id_with_empresa(pool, id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Proveedor no encontrado".to_string())?;
+
+    let mut response = ProveedorResponse::from(row.proveedor);
+    response.empresa_nombre = row.empresa_nombre;
+    response.vehiculo_tipo = row.vehiculo_tipo;
+    response.vehiculo_placa = row.vehiculo_placa;
+    response.vehiculo_marca = row.vehiculo_marca;
+    response.vehiculo_modelo = row.vehiculo_modelo;
+    response.vehiculo_color = row.vehiculo_color;
+
+    Ok(response)
+}
+
+/// Actualiza un proveedor
+pub async fn update_proveedor(
+    pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
+    id: String,
+    input: UpdateProveedorInput,
+) -> Result<ProveedorResponse, String> {
+    // 1. Verificar existencia
+    let _ = proveedor_queries::find_by_id(pool, &id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Proveedor no encontrado".to_string())?;
+
+    // 2. Validar Empresa si cambia
+    if let Some(ref eid) = input.empresa_id {
+        if empresa_queries::find_by_id(pool, eid)
+            .await
+            .map_err(|e| e.to_string())?
+            .is_none()
+        {
+            return Err("La empresa especificada no existe".to_string());
+        }
+    }
+
+    // 3. Actualizar Proveedor en DB
+    let proveedor = proveedor_queries::update(pool, &id, input.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // 4. Gestionar Vehículo
+    if let Some(tiene) = input.tiene_vehiculo {
+        let vehiculos = vehiculo_queries::find_by_proveedor(pool, &id)
+            .await
+            .unwrap_or_default();
+        let vehiculo_existente = vehiculos.first();
+        let now = Utc::now().to_rfc3339();
+
+        if tiene {
+            // Actualizar o Crear
+            if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
+                if !tipo.is_empty() && !placa.is_empty() {
+                    if let Some(v) = vehiculo_existente {
+                        // Update
+                        vehiculo_queries::update(
+                            pool,
+                            &v.id,
+                            Some(tipo),
+                            input.marca.as_deref(),
+                            input.modelo.as_deref(),
+                            input.color.as_deref(),
+                            Some(1),
+                            &now,
+                        )
+                        .await
+                        .map_err(|e| e.to_string())?;
+                    } else {
+                        // Create
+                        let vid = Uuid::new_v4().to_string();
+                        vehiculo_queries::insert(
+                            pool,
+                            &vid,
+                            None,
+                            Some(&id),
+                            tipo,
+                            placa,
+                            input.marca.as_deref(),
+                            input.modelo.as_deref(),
+                            input.color.as_deref(),
+                            &now,
+                            &now,
+                        )
+                        .await
+                        .map_err(|e| e.to_string())?;
+                    }
+                }
+            }
+        } else {
+            // Eliminar si existe
+            if let Some(v) = vehiculo_existente {
+                vehiculo_queries::delete(pool, &v.id)
+                    .await
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+    }
+
+    // 5. Actualizar Search Index
+    // Necesitamos el nombre de la empresa
+    let empresa_nombre = if let Some(e) = empresa_queries::find_by_id(pool, &proveedor.empresa_id)
+        .await
+        .unwrap_or(None)
+    {
+        e.nombre
+    } else {
+        "Desconocida".to_string()
+    };
+
+    if let Err(e) = search_service
+        .update_proveedor(&proveedor, &empresa_nombre)
+        .await
+    {
+        eprintln!("Error actualizando índice: {}", e);
+    }
+
+    // 6. Retornar actualizado
+    get_proveedor_by_id(pool, &id).await
 }

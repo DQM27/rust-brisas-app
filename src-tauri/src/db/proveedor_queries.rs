@@ -7,6 +7,68 @@ use crate::models::proveedor::{
 use chrono::Utc;
 use sqlx::SqlitePool;
 use uuid::Uuid;
+pub struct ProveedorEnhancedRow {
+    pub proveedor: Proveedor,
+    pub empresa_nombre: String,
+    pub vehiculo_tipo: Option<String>,
+    pub vehiculo_placa: Option<String>,
+    pub vehiculo_marca: Option<String>,
+    pub vehiculo_modelo: Option<String>,
+    pub vehiculo_color: Option<String>,
+}
+
+use sqlx::Row;
+
+/// Obtiene un proveedor por ID con su empresa y vehículo asociado
+pub async fn find_by_id_with_empresa(
+    pool: &SqlitePool,
+    id: &str,
+) -> Result<Option<ProveedorEnhancedRow>, String> {
+    let row = sqlx::query(
+        r#"
+        SELECT p.*, e.nombre as empresa_nombre,
+               v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color
+        FROM proveedores p
+        LEFT JOIN empresas e ON p.empresa_id = e.id
+        LEFT JOIN vehiculos v ON p.id = v.proveedor_id
+        WHERE p.id = ?
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| format!("Error en DB: {}", e))?;
+
+    if let Some(row) = row {
+        let estado_str: String = row.get("estado");
+        let estado = EstadoProveedor::from_str(&estado_str).unwrap_or(EstadoProveedor::Activo);
+
+        let proveedor = Proveedor {
+            id: row.get("id"),
+            cedula: row.get("cedula"),
+            nombre: row.get("nombre"),
+            segundo_nombre: row.get("segundo_nombre"),
+            apellido: row.get("apellido"),
+            segundo_apellido: row.get("segundo_apellido"),
+            empresa_id: row.get("empresa_id"),
+            estado,
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+        };
+
+        Ok(Some(ProveedorEnhancedRow {
+            proveedor,
+            empresa_nombre: row.get("empresa_nombre"),
+            vehiculo_tipo: row.try_get("tipo_vehiculo").ok(),
+            vehiculo_placa: row.try_get("placa").ok(),
+            vehiculo_marca: row.try_get("marca").ok(),
+            vehiculo_modelo: row.try_get("modelo").ok(),
+            vehiculo_color: row.try_get("color").ok(),
+        }))
+    } else {
+        Ok(None)
+    }
+}
 
 pub async fn create(
     pool: &SqlitePool,
