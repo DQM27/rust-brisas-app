@@ -296,7 +296,15 @@
             `;
           }
 
-          // Si está dañado -> Eliminar
+          // Si está dañado -> Eliminar o Recuperar (Reparado)
+          if (status === "danado") {
+            buttons += `
+              <button class="mr-2 px-2 py-1 bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 text-xs font-medium recover-btn" title="Marcar como Reparado/Activo">
+                ↻ Reparado
+              </button>
+            `;
+          }
+
           if (status === "danado" || status === "disponible") {
             // Permitir eliminar disponibles también si fue error
             buttons += `
@@ -316,7 +324,7 @@
         if (event.target.classList.contains("resolve-btn")) {
           handleResolve(data);
         } else if (event.target.classList.contains("recover-btn")) {
-          changeStatus(data, "disponible"); // Changed from "activo" to "disponible"
+          changeStatus(data, "activo");
         } else if (event.target.classList.contains("lost-btn")) {
           changeStatus(data, "extraviado");
         } else if (event.target.classList.contains("damage-btn")) {

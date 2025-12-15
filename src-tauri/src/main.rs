@@ -4,3 +4,5 @@
 fn main() {
     brisas_app_lib::run()
 }
+
+// Force recompile: Schema changed
