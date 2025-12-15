@@ -13,11 +13,9 @@
   import IngresosActivosTable from "./contratista/IngresosActivosTable.svelte";
   import IngresoVisitasTable from "./visita/IngresoVisitasTable.svelte";
   import IngresoProveedoresTable from "./proveedor/IngresoProveedoresTable.svelte";
-  import CitasList from "./CitasList.svelte";
 
   let isFormOpen = false;
-  let activeTab: "contratistas" | "visitas" | "proveedores" | "citas" =
-    "contratistas";
+  let activeTab: "contratistas" | "visitas" | "proveedores" = "contratistas";
 
   function setActiveTab(tab: typeof activeTab) {
     activeTab = tab;
@@ -120,15 +118,6 @@
       >
         Proveedores
       </button>
-      <button
-        class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {activeTab ===
-        'citas'
-          ? 'border-blue-500 text-blue-500 bg-white/5'
-          : 'border-transparent text-gray-400 hover:text-gray-200'}"
-        on:click={() => setActiveTab("citas")}
-      >
-        Citas (Hoy)
-      </button>
     </div>
 
     <!-- Tab Content -->
@@ -152,8 +141,6 @@
           {isFormOpen}
           {refreshTrigger}
         />
-      {:else if activeTab === "citas"}
-        <CitasList />
       {/if}
     </div>
   </div>

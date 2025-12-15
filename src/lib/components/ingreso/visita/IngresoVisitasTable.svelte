@@ -6,21 +6,15 @@
   import type { CustomToolbarButton } from "$lib/types/agGrid";
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
   import { ingresoVisitaService } from "$lib/services/ingresoVisitaService";
+  import { citaService } from "$lib/services/citaService";
   import type { IngresoVisita } from "$lib/types/ingreso-nuevos";
+  import type { CitaPopulated } from "$lib/types/cita";
   import SalidaModal from "../common/SalidaModal.svelte";
-  import { Download, FileDown, UserPlus, RotateCw } from "lucide-svelte";
+  import { UserPlus, RotateCw, LogIn, Eye } from "lucide-svelte";
 
-  // Export components
-  import ExportDialog from "$lib/components/export/ExportDialog.svelte";
-  import PdfPreviewModal from "$lib/components/export/PdfPreviewModal.svelte";
-  import { exportData, downloadBytes } from "$lib/logic/export";
-  import type { ExportOptions } from "$lib/logic/export";
-
-  // SearchBar
-  import SearchBar from "$lib/components/shared/SearchBar.svelte";
-  import { selectedSearchStore } from "$lib/stores/searchStore";
-
-  import { shortcutService } from "$lib/services/shortcutService";
+  // Modales
+  import ProcesarIngresoModal from "./ProcesarIngresoModal.svelte";
+  import VisitaDetallesModal from "./VisitaDetallesModal.svelte";
 
   const {
     onRegisterClick,
@@ -32,26 +26,39 @@
     isFormOpen?: boolean;
   }>();
 
-  let ingresos = $state<IngresoVisita[]>([]);
+  // Sub-vista activa
+  type VisitaView = "pendientes" | "activas" | "historial";
+  let activeView = $state<VisitaView>("pendientes");
+
+  // Datos
+  let citasPendientes = $state<CitaPopulated[]>([]);
+  let ingresosActivos = $state<IngresoVisita[]>([]);
+  let ingresosHistorial = $state<IngresoVisita[]>([]);
   let loading = $state(false);
   let gridApi = $state<GridApi | null>(null);
+
+  // Modales state
+  let showProcesarModal = $state(false);
+  let selectedCitaParaProcesar = $state<CitaPopulated | null>(null);
   let showSalidaModal = $state(false);
-  let selectedIngreso = $state<IngresoVisita | null>(null);
+  let selectedIngresoParaSalida = $state<IngresoVisita | null>(null);
+  let showDetallesModal = $state(false);
+  let selectedParaDetalles = $state<any>(null);
 
-  // Export state
-  let showExportDialog = $state(false);
-  let exportOnlySelected = $state(false);
-  let showPdfPreview = $state(false);
-  let pdfPreviewUrl = $state<string | null>(null);
-  let pdfPreviewName = $state("documento.pdf");
-
+  // Load data based on active view
   async function loadData() {
     loading = true;
     try {
-      ingresos = await ingresoVisitaService.getActivos();
-    } catch (e) {
+      if (activeView === "pendientes") {
+        citasPendientes = await citaService.getCitasHoy();
+      } else if (activeView === "activas") {
+        ingresosActivos = await ingresoVisitaService.getActivos();
+      } else {
+        ingresosHistorial = await ingresoVisitaService.getHistorial();
+      }
+    } catch (e: any) {
       console.error(e);
-      toast.error("Error al cargar visitas activas");
+      toast.error("Error al cargar datos");
     } finally {
       loading = false;
     }
@@ -59,264 +66,387 @@
 
   onMount(() => {
     loadData();
-    const interval = setInterval(loadData, 60000);
-    return () => clearInterval(interval);
   });
 
-  const columnDefs: ColDef<IngresoVisita>[] = [
+  // Reload when view changes
+  $effect(() => {
+    activeView;
+    loadData();
+  });
+
+  // Column definitions for each view
+  const columnDefsPendientes: ColDef<CitaPopulated>[] = [
+    {
+      field: "visitante_nombre_completo",
+      headerName: "Nombre",
+      flex: 1,
+      minWidth: 180,
+    },
+    {
+      field: "visitante_cedula",
+      headerName: "Cédula",
+      width: 120,
+    },
+    {
+      field: "fecha_cita",
+      headerName: "Fecha",
+      width: 100,
+      valueFormatter: (p) => new Date(p.value).toLocaleDateString("es-CR"),
+    },
+    {
+      field: "fecha_cita",
+      headerName: "Hora",
+      width: 80,
+      valueFormatter: (p) =>
+        new Date(p.value).toLocaleTimeString("es-CR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+    },
+    {
+      field: "anfitrion",
+      headerName: "Anfitrión",
+      width: 140,
+    },
+    {
+      field: "area_visitada",
+      headerName: "Área",
+      width: 120,
+    },
+    {
+      headerName: "Acciones",
+      width: 200,
+      cellRenderer: () => {
+        return `<div class="flex gap-1">
+          <button class="px-2 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 procesar-btn">Ingresar</button>
+          <button class="px-2 py-1 bg-gray-600 text-white rounded text-xs font-medium hover:bg-gray-700 ver-btn">Ver</button>
+        </div>`;
+      },
+      onCellClicked: (params: any) => {
+        if (params.event.target.classList.contains("procesar-btn")) {
+          selectedCitaParaProcesar = params.data;
+          showProcesarModal = true;
+        } else if (params.event.target.classList.contains("ver-btn")) {
+          selectedParaDetalles = params.data;
+          showDetallesModal = true;
+        }
+      },
+    },
+  ];
+
+  const columnDefsActivas: ColDef<IngresoVisita>[] = [
     {
       field: "visitanteNombre",
       headerName: "Nombre",
-      valueGetter: (params) =>
-        `${params.data?.visitanteNombre || ""} ${params.data?.visitanteApellido || ""}`,
+      valueGetter: (p) =>
+        `${p.data?.visitanteNombre || ""} ${p.data?.visitanteApellido || ""}`,
       flex: 1,
-      minWidth: 200,
+      minWidth: 180,
     },
     {
       field: "visitanteCedula",
       headerName: "Cédula",
-      width: 130,
-    },
-    {
-      field: "visitanteEmpresa",
-      headerName: "Empresa / Proc.",
-      width: 150,
-      valueFormatter: (p) => p.value || "-",
+      width: 120,
     },
     {
       field: "gafete",
       headerName: "Gafete",
-      width: 100,
-      cellRenderer: (params: any) =>
-        params.value
-          ? `<span class="font-mono font-bold text-blue-600">${params.value}</span>`
+      width: 90,
+      cellRenderer: (p: any) =>
+        p.value
+          ? `<span class="font-mono font-bold text-blue-500">${p.value}</span>`
           : "-",
-    },
-    {
-      field: "anfitrion",
-      headerName: "Visita a",
-      width: 150,
-    },
-    {
-      field: "areaVisitada",
-      headerName: "Área",
-      width: 130,
     },
     {
       field: "fechaIngreso",
       headerName: "Entrada",
-      width: 110,
-      valueFormatter: (params) =>
-        new Date(params.value).toLocaleTimeString("es-CR", {
+      width: 90,
+      valueFormatter: (p) =>
+        new Date(p.value).toLocaleTimeString("es-CR", {
           hour: "2-digit",
           minute: "2-digit",
-          hour12: false,
         }),
     },
     {
-      headerName: "Acciones",
+      field: "anfitrion",
+      headerName: "Anfitrión",
       width: 140,
-      cellRenderer: () => {
-        return `<button class="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-xs font-medium salida-btn">Registrar Salida</button>`;
-      },
+    },
+    {
+      field: "areaVisitada",
+      headerName: "Área",
+      width: 120,
+    },
+    {
+      headerName: "Acciones",
+      width: 130,
+      cellRenderer: () =>
+        `<button class="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200 salida-btn">Salida</button>`,
       onCellClicked: (params: any) => {
-        if (params.event.target.classList.contains("salida-btn")) {
-          selectedIngreso = params.data;
+        console.log("Salida cell clicked:", params.event?.target);
+        const target = params.event?.target as HTMLElement;
+        if (
+          target?.classList?.contains("salida-btn") ||
+          target?.closest?.(".salida-btn")
+        ) {
+          console.log("Salida button detected, opening modal");
+          selectedIngresoParaSalida = params.data;
           showSalidaModal = true;
         }
       },
     },
   ];
 
-  async function handleConfirmSalida(event: CustomEvent) {
-    if (!selectedIngreso) return;
-    const { observaciones } = event.detail;
+  const columnDefsHistorial: ColDef<IngresoVisita>[] = [
+    {
+      field: "visitanteNombre",
+      headerName: "Nombre",
+      valueGetter: (p) =>
+        `${p.data?.visitanteNombre || ""} ${p.data?.visitanteApellido || ""}`,
+      flex: 1,
+      minWidth: 180,
+    },
+    {
+      field: "visitanteCedula",
+      headerName: "Cédula",
+      width: 120,
+    },
+    {
+      field: "fechaIngreso",
+      headerName: "Fecha",
+      width: 100,
+      valueFormatter: (p) => new Date(p.value).toLocaleDateString("es-CR"),
+    },
+    {
+      field: "fechaIngreso",
+      headerName: "Entrada",
+      width: 80,
+      valueFormatter: (p) =>
+        new Date(p.value).toLocaleTimeString("es-CR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+    },
+    {
+      field: "fechaSalida",
+      headerName: "Salida",
+      width: 80,
+      valueFormatter: (p) =>
+        p.value
+          ? new Date(p.value).toLocaleTimeString("es-CR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "-",
+    },
+    {
+      field: "anfitrion",
+      headerName: "Anfitrión",
+      width: 140,
+    },
+    {
+      headerName: "",
+      width: 80,
+      cellRenderer: () =>
+        `<button class="px-2 py-1 text-gray-400 hover:text-white text-xs ver-btn">Ver</button>`,
+      onCellClicked: (params: any) => {
+        if (params.event.target.classList.contains("ver-btn")) {
+          selectedParaDetalles = params.data;
+          showDetallesModal = true;
+        }
+      },
+    },
+  ];
 
+  // Dynamic columns based on view
+  const columnDefs = $derived.by(() => {
+    if (activeView === "pendientes")
+      return columnDefsPendientes as ColDef<any>[];
+    if (activeView === "activas") return columnDefsActivas as ColDef<any>[];
+    return columnDefsHistorial as ColDef<any>[];
+  });
+
+  // Dynamic data based on view
+  const rowData = $derived.by((): any[] => {
+    if (activeView === "pendientes") return citasPendientes;
+    if (activeView === "activas") return ingresosActivos;
+    return ingresosHistorial;
+  });
+
+  // Handlers
+  async function handleProcesarIngreso(event: CustomEvent<{ gafete: string }>) {
+    if (!selectedCitaParaProcesar || !$currentUser) return;
+    try {
+      await citaService.procesarIngresoCita(
+        selectedCitaParaProcesar.id,
+        event.detail.gafete,
+        $currentUser.id,
+      );
+      toast.success("Ingreso procesado correctamente");
+      showProcesarModal = false;
+      selectedCitaParaProcesar = null;
+      loadData();
+    } catch (e: any) {
+      toast.error(e.message || "Error al procesar ingreso");
+    }
+  }
+
+  async function handleConfirmSalida(
+    event: CustomEvent<{ observaciones?: string }>,
+  ) {
+    if (!selectedIngresoParaSalida || !$currentUser) return;
     try {
       await ingresoVisitaService.registrarSalida(
-        selectedIngreso.id,
-        $currentUser?.id || "00000000-0000-0000-0000-000000000000",
-        observaciones,
+        selectedIngresoParaSalida.id,
+        $currentUser.id,
+        event.detail.observaciones,
       );
-      toast.success("Salida de visita registrada");
+      toast.success("Salida registrada");
       showSalidaModal = false;
-      selectedIngreso = null;
+      selectedIngresoParaSalida = null;
       loadData();
     } catch (e: any) {
       toast.error(e.message || "Error al registrar salida");
     }
   }
 
-  // Export handlers
-  async function handleExportClick(onlySelected: boolean = false) {
-    if (!gridApi) {
-      toast.error("Grid no está listo");
-      return;
-    }
-    exportOnlySelected = onlySelected;
-    showExportDialog = true;
-  }
-
-  async function handleExport(
-    format: "pdf" | "excel" | "csv",
-    options: ExportOptions,
-  ) {
-    if (!gridApi) return;
-    try {
-      toast.loading("Exportando...");
-      const response = await exportData(
-        gridApi,
-        format,
-        options,
-        exportOnlySelected,
-      );
-
-      if (response.success) {
-        if (response.filePath) {
-          toast.success(`Archivo guardado: ${response.filePath}`);
-        } else if (response.bytes) {
-          if (format === "pdf" && options.showPreview) {
-            const blob = new Blob([new Uint8Array(response.bytes)], {
-              type: "application/pdf",
-            });
-            pdfPreviewUrl = URL.createObjectURL(blob);
-            pdfPreviewName = options.title
-              ? `${options.title}.pdf`
-              : `export.pdf`;
-            showPdfPreview = true;
-          } else {
-            downloadBytes(
-              response.bytes,
-              `export.${format === "excel" ? "xlsx" : format}`,
-            );
-            toast.success("Archivo descargado");
-          }
-        }
-      } else {
-        toast.error(response.message || "Error al exportar");
-      }
-    } catch (error) {
-      toast.error("Error al exportar: " + (error as Error).message);
-    }
-  }
-
-  // Custom Buttons
+  // Toolbar buttons
   const customButtons = $derived.by(() => {
-    const defaultButtons: CustomToolbarButton[] = [
-      ...(!isFormOpen
-        ? [
-            {
-              id: "register-ingreso",
-              label: "Registrar Visita",
-              icon: UserPlus,
-              variant: "primary" as const,
-              tooltip: "Nueva visita",
-              onClick: () => onRegisterClick?.(),
-            },
-          ]
-        : []),
+    const buttons: CustomToolbarButton[] = [
       {
-        id: "refresh-data",
+        id: "refresh",
         label: "Refrescar",
         icon: RotateCw,
-        variant: "default" as const,
+        variant: "default",
         onClick: loadData,
-      },
-      {
-        id: "export-all",
-        label: "Exportar Todo",
-        icon: Download,
-        variant: "primary" as const,
-        onClick: () => handleExportClick(false),
       },
     ];
 
-    return {
-      default: defaultButtons,
-      singleSelect: [
-        {
-          id: "export-single",
-          label: "Exportar",
-          icon: FileDown,
-          variant: "primary" as const,
-          onClick: () => handleExportClick(true),
-        },
-      ],
-      multiSelect: [
-        {
-          id: "export-multi",
-          label: "Exportar Seleccionados",
-          icon: FileDown,
-          variant: "primary" as const,
-          onClick: () => handleExportClick(true),
-        },
-      ],
-    };
+    if (activeView === "pendientes" && !isFormOpen) {
+      buttons.unshift({
+        id: "nueva-visita",
+        label: "Nueva Visita",
+        icon: UserPlus,
+        variant: "primary",
+        onClick: () => onRegisterClick?.(),
+      });
+    }
+
+    return { default: buttons };
   });
 
-  let searchBarRef: SearchBar;
+  // View titles
+  const viewTitles = {
+    pendientes: {
+      title: "Citas Pendientes",
+      desc: "Visitas programadas pendientes de ingreso",
+    },
+    activas: {
+      title: "Visitas Activas",
+      desc: "Visitantes actualmente en las instalaciones",
+    },
+    historial: { title: "Historial", desc: "Registro de visitas completadas" },
+  };
 </script>
 
-<div class="flex h-full flex-col relative bg-[#1e1e1e]">
-  <!-- Header / Search (Simplified compared to Activos, but compatible) -->
-  <div class="border-b border-white/10 px-6 py-4 bg-[#252526]">
-    <div class="flex items-center justify-between gap-4">
+<div class="flex h-full flex-col bg-[#0d1117]">
+  <!-- Header con sub-tabs -->
+  <div class="border-b border-[#30363d] px-4 py-3 bg-[#161b22]">
+    <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-xl font-semibold text-gray-100">Visitas Activas</h2>
-        <p class="mt-1 text-sm text-gray-400">
-          Control de visitantes dentro de las instalaciones
-        </p>
+        <h2 class="text-lg font-semibold text-[#f0f6fc]">
+          {viewTitles[activeView].title}
+        </h2>
+        <p class="text-xs text-[#8d96a0]">{viewTitles[activeView].desc}</p>
       </div>
-      <div class="flex-1 max-w-md">
-        <SearchBar
-          bind:this={searchBarRef}
-          placeholder="Buscar visita..."
-          limit={5}
-          disabled={loading}
-          on:clear={() => selectedSearchStore.clear()}
-        />
+
+      <!-- Sub-tabs -->
+      <div class="flex gap-1 bg-[#0d1117] p-1 rounded-lg">
+        <button
+          class="px-3 py-1.5 text-xs font-medium rounded transition-colors {activeView ===
+          'pendientes'
+            ? 'bg-[#238636] text-white'
+            : 'text-[#8d96a0] hover:text-white hover:bg-[#21262d]'}"
+          onclick={() => (activeView = "pendientes")}
+        >
+          Pendientes
+        </button>
+        <button
+          class="px-3 py-1.5 text-xs font-medium rounded transition-colors {activeView ===
+          'activas'
+            ? 'bg-[#1f6feb] text-white'
+            : 'text-[#8d96a0] hover:text-white hover:bg-[#21262d]'}"
+          onclick={() => (activeView = "activas")}
+        >
+          Activas
+        </button>
+        <button
+          class="px-3 py-1.5 text-xs font-medium rounded transition-colors {activeView ===
+          'historial'
+            ? 'bg-[#6e7681] text-white'
+            : 'text-[#8d96a0] hover:text-white hover:bg-[#21262d]'}"
+          onclick={() => (activeView = "historial")}
+        >
+          Historial
+        </button>
       </div>
     </div>
   </div>
 
-  <div class="flex-1 relative overflow-hidden bg-[#1e1e1e]">
+  <!-- Grid -->
+  <div class="flex-1 relative overflow-hidden">
     <AGGridWrapper
       gridId="visitas-activas-grid"
       {columnDefs}
-      rowData={ingresos}
+      {rowData}
       {customButtons}
       onGridReady={(api) => (gridApi = api)}
     />
   </div>
 </div>
 
-{#if showSalidaModal && selectedIngreso}
-  <!-- Adapter for SalidaModal which expects specific fields -->
+<!-- Modal: Procesar Ingreso -->
+{#if showProcesarModal && selectedCitaParaProcesar}
+  <ProcesarIngresoModal
+    cita={selectedCitaParaProcesar}
+    onCancel={() => {
+      showProcesarModal = false;
+      selectedCitaParaProcesar = null;
+    }}
+    onConfirm={handleProcesarIngreso}
+  />
+{/if}
+
+<!-- Modal: Registrar Salida -->
+{#if showSalidaModal && selectedIngresoParaSalida}
   {@const modalData = {
-    id: selectedIngreso.id,
-    nombreCompleto: `${selectedIngreso.visitanteNombre} ${selectedIngreso.visitanteApellido}`,
-    cedula: selectedIngreso.visitanteCedula,
-    gafeteNumero: selectedIngreso.gafete,
-    // Add other required fields by IngresoResponse if strict, but for modal only these are used
+    id: selectedIngresoParaSalida.id,
+    nombreCompleto: `${selectedIngresoParaSalida.visitanteNombre} ${selectedIngresoParaSalida.visitanteApellido}`,
+    cedula: selectedIngresoParaSalida.visitanteCedula,
+    gafeteNumero: selectedIngresoParaSalida.gafete,
   }}
-  <SalidaModal
-    ingreso={modalData as any}
-    on:cancel={() => (showSalidaModal = false)}
-    on:confirm={handleConfirmSalida}
-  />
+  <!-- Overlay backdrop -->
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+  >
+    <SalidaModal
+      ingreso={modalData as any}
+      on:cancel={() => {
+        showSalidaModal = false;
+        selectedIngresoParaSalida = null;
+      }}
+      on:confirm={handleConfirmSalida}
+    />
+  </div>
 {/if}
 
-{#if showExportDialog}
-  <ExportDialog
-    onClose={() => (showExportDialog = false)}
-    onExport={handleExport}
-  />
-{/if}
-
-{#if showPdfPreview}
-  <PdfPreviewModal
-    onClose={() => (showPdfPreview = false)}
-    pdfUrl={pdfPreviewUrl || ""}
-    fileName={pdfPreviewName}
+<!-- Modal: Ver Detalles -->
+{#if showDetallesModal && selectedParaDetalles}
+  <VisitaDetallesModal
+    data={selectedParaDetalles}
+    onClose={() => {
+      showDetallesModal = false;
+      selectedParaDetalles = null;
+    }}
   />
 {/if}

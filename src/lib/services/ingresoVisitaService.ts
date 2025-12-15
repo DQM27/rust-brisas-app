@@ -29,6 +29,18 @@ export const ingresoVisitaService = {
         return await invoke<IngresoVisita[]>("get_ingresos_visitas_activos");
     },
 
+    /** Obtiene historial de visitas completadas */
+    async getHistorial(): Promise<IngresoVisita[]> {
+        // TODO: Backend debe implementar get_ingresos_visitas_historial
+        // Por ahora retorna array vacío
+        try {
+            return await invoke<IngresoVisita[]>("get_ingresos_visitas_historial");
+        } catch {
+            console.warn("get_ingresos_visitas_historial no implementado en backend");
+            return [];
+        }
+    },
+
     async registrarSalida(id: string, usuarioId: string, observaciones?: string): Promise<void> {
         return await invoke("registrar_salida_visita", { id, usuarioId, observaciones });
     }
