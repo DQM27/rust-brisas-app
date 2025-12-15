@@ -22,5 +22,24 @@ export const citaService = {
     /** Cancela una cita pendiente */
     async cancelarCita(citaId: string): Promise<void> {
         return await invoke<void>("cancelar_cita", { citaId });
+    },
+
+    /** Actualiza los detalles de una cita pendiente */
+    async actualizarCita(
+        id: string,
+        data: {
+            fecha_cita: string;
+            anfitrion: string;
+            area_visitada: string;
+            motivo?: string;
+        }
+    ): Promise<void> {
+        return await invoke<void>("update_cita", {
+            id,
+            fechaCita: data.fecha_cita,
+            anfitrion: data.anfitrion,
+            areaVisitada: data.area_visitada,
+            motivo: data.motivo || null,
+        });
     }
 };

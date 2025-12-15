@@ -119,3 +119,33 @@ pub async fn get_all_citas_pendientes(
     .fetch_all(pool)
     .await
 }
+
+/// Actualiza los detalles de una cita pendiente
+pub async fn update_cita(
+    pool: &SqlitePool,
+    id: &str,
+    fecha_cita: &str,
+    anfitrion: &str,
+    area_visitada: &str,
+    motivo: Option<&str>,
+) -> Result<(), sqlx::Error> {
+    let now = Utc::now().to_rfc3339();
+
+    sqlx::query(
+        r#"
+        UPDATE citas 
+        SET fecha_cita = ?, anfitrion = ?, area_visitada = ?, motivo = ?, updated_at = ?
+        WHERE id = ? AND estado = 'PENDIENTE'
+        "#,
+    )
+    .bind(fecha_cita)
+    .bind(anfitrion)
+    .bind(area_visitada)
+    .bind(motivo)
+    .bind(&now)
+    .bind(id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}

@@ -68,6 +68,27 @@ impl CitaService {
             .map_err(|e| e.to_string())
     }
 
+    /// Actualiza los detalles de una cita pendiente
+    pub async fn update_cita(
+        &self,
+        id: String,
+        fecha_cita: String,
+        anfitrion: String,
+        area_visitada: String,
+        motivo: Option<String>,
+    ) -> Result<(), String> {
+        cita_queries::update_cita(
+            &self.pool,
+            &id,
+            &fecha_cita,
+            &anfitrion,
+            &area_visitada,
+            motivo.as_deref(),
+        )
+        .await
+        .map_err(|e| e.to_string())
+    }
+
     pub async fn procesar_ingreso_cita(
         &self,
         cita_id: String,

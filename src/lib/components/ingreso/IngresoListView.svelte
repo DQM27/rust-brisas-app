@@ -5,6 +5,7 @@
   import { shortcutService } from "$lib/services/shortcutService";
   import { cubicOut } from "svelte/easing";
   import { activeTabId } from "$lib/stores/tabs";
+  import type { CitaPopulated } from "$lib/types/cita";
 
   import IngresoContratistaForm from "./contratista/IngresoContratistaForm.svelte";
   import IngresoVisitaForm from "./visita/IngresoVisitaForm.svelte";
@@ -17,12 +18,15 @@
   let isFormOpen = false;
   let activeTab: "contratistas" | "visitas" | "proveedores" = "contratistas";
 
+  // Estado para edición de citas
+  let editingCita: CitaPopulated | null = null;
+
   function setActiveTab(tab: typeof activeTab) {
     activeTab = tab;
   }
 
   // Cerrar formulario automáticamente cuando se cambia de pestaña
-  $: $activeTabId, (isFormOpen = false);
+  $: $activeTabId, ((isFormOpen = false), (editingCita = null));
 
   function toggleForm() {
     isFormOpen = !isFormOpen;
@@ -30,9 +34,16 @@
 
   function closeForm() {
     isFormOpen = false;
+    editingCita = null;
   }
 
   function openForm() {
+    editingCita = null;
+    isFormOpen = true;
+  }
+
+  function handleEditCita(cita: CitaPopulated) {
+    editingCita = cita;
     isFormOpen = true;
   }
 
@@ -69,7 +80,11 @@
         {#if activeTab === "contratistas"}
           <IngresoContratistaForm onSuccess={closeForm} onClose={closeForm} />
         {:else if activeTab === "visitas"}
-          <IngresoVisitaForm onSuccess={closeForm} onClose={closeForm} />
+          <IngresoVisitaForm
+            onSuccess={closeForm}
+            onClose={closeForm}
+            {editingCita}
+          />
         {:else if activeTab === "proveedores"}
           <IngresoProveedorForm
             onSuccess={handleProveedorSuccess}
@@ -131,6 +146,7 @@
       {:else if activeTab === "visitas"}
         <IngresoVisitasTable
           onRegisterClick={openForm}
+          onEditClick={handleEditCita}
           onCloseForm={closeForm}
           {isFormOpen}
         />

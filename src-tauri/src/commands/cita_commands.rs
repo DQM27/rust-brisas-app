@@ -52,3 +52,18 @@ pub async fn get_visitante_by_cedula(
         .await
         .map_err(|e| e.to_string())
 }
+
+#[command]
+pub async fn update_cita(
+    pool: State<'_, SqlitePool>,
+    id: String,
+    fecha_cita: String,
+    anfitrion: String,
+    area_visitada: String,
+    motivo: Option<String>,
+) -> Result<(), String> {
+    let service = CitaService::new(pool.inner().clone());
+    service
+        .update_cita(id, fecha_cita, anfitrion, area_visitada, motivo)
+        .await
+}

@@ -18,10 +18,12 @@
 
   const {
     onRegisterClick,
+    onEditClick,
     onCloseForm,
     isFormOpen = false,
   } = $props<{
     onRegisterClick?: () => void;
+    onEditClick?: (cita: CitaPopulated) => void;
     onCloseForm?: () => void;
     isFormOpen?: boolean;
   }>();
@@ -115,18 +117,22 @@
     },
     {
       headerName: "Acciones",
-      width: 200,
+      width: 260,
       cellRenderer: () => {
         return `<div class="flex gap-1">
           <button class="px-2 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 procesar-btn">Ingresar</button>
+          <button class="px-2 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 editar-btn">Editar</button>
           <button class="px-2 py-1 bg-gray-600 text-white rounded text-xs font-medium hover:bg-gray-700 ver-btn">Ver</button>
         </div>`;
       },
       onCellClicked: (params: any) => {
-        if (params.event.target.classList.contains("procesar-btn")) {
+        const target = params.event?.target as HTMLElement;
+        if (target?.classList?.contains("procesar-btn")) {
           selectedCitaParaProcesar = params.data;
           showProcesarModal = true;
-        } else if (params.event.target.classList.contains("ver-btn")) {
+        } else if (target?.classList?.contains("editar-btn")) {
+          onEditClick?.(params.data);
+        } else if (target?.classList?.contains("ver-btn")) {
           selectedParaDetalles = params.data;
           showDetallesModal = true;
         }
