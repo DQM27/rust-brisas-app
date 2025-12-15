@@ -113,6 +113,9 @@ pub struct ContratistaResponse {
     pub requiere_atencion: bool,
     pub vehiculo_tipo: Option<String>,
     pub vehiculo_placa: Option<String>,
+    pub vehiculo_marca: Option<String>,
+    pub vehiculo_modelo: Option<String>,
+    pub vehiculo_color: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -159,6 +162,9 @@ impl From<Contratista> for ContratistaResponse {
             requiere_atencion,
             vehiculo_tipo: None,
             vehiculo_placa: None,
+            vehiculo_marca: None,
+            vehiculo_modelo: None,
+            vehiculo_color: None,
             created_at: c.created_at,
             updated_at: c.updated_at,
         }

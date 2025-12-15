@@ -94,14 +94,16 @@
       fechaVencimientoPraind = initialData.fechaVencimientoPraind.split("T")[0];
     }
 
-    // Datos de vehículo si existen
-    // Ajustar según como venga del backend. Suponiendo que el backend devuelva datos de vehículo relacionados
-    // Si el backend NO devuelve esto, habrá que hacer un fetch extra o ajustar el endpoint get_contratista
-    /* 
-       TODO: Verificar estructura de respuesta real para vehículo.
-       Por ahora, mapeamos si existen las propiedades.
-    */
-    if (initialData.vehiculo) {
+    // Datos de vehículo (backend devuelve campos planos: vehiculoTipo, vehiculoPlaca, etc.)
+    if (initialData.vehiculoTipo || initialData.vehiculoPlaca) {
+      tieneVehiculo = true;
+      tipoVehiculo = initialData.vehiculoTipo || "";
+      placa = initialData.vehiculoPlaca || "";
+      marca = initialData.vehiculoMarca || "";
+      modelo = initialData.vehiculoModelo || "";
+      color = initialData.vehiculoColor || "";
+    } else if (initialData.vehiculo) {
+      // Soporte legado por si acaso (o si el tipo TS lo reclama)
       tieneVehiculo = true;
       tipoVehiculo = initialData.vehiculo.tipo || "";
       placa = initialData.vehiculo.placa || "";
@@ -466,9 +468,9 @@
                   </button>
                   <button
                     type="button"
-                    on:click={() => (tipoVehiculo = "automóvil")}
+                    on:click={() => (tipoVehiculo = "automovil")}
                     class="flex items-center justify-center gap-1 rounded-md border px-3 py-2 text-xs font-medium transition-all {tipoVehiculo ===
-                    'automóvil'
+                    'automovil'
                       ? 'border-[#2da44e] bg-[#2da44e]/10 text-[#2da44e]'
                       : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500'}"
                   >

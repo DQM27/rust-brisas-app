@@ -1,4 +1,4 @@
-// src/db/contratista_queries.rs
+// src/db/contratista_queries.rs - Modified to return structs
 
 use crate::models::contratista::Contratista;
 use serde::Serialize;
@@ -13,6 +13,17 @@ pub struct ContratistaInfo {
     pub empresa_nombre: String,
     pub estado: String,
     pub fecha_vencimiento_praind: String,
+}
+
+pub struct ContratistaEnhancedRow {
+    pub contratista: Contratista,
+    pub empresa_nombre: String,
+    pub vehiculo_tipo: Option<String>,
+    pub vehiculo_placa: Option<String>,
+    pub vehiculo_marca: Option<String>,
+    pub vehiculo_modelo: Option<String>,
+    pub vehiculo_color: Option<String>,
+    pub is_blocked: bool,
 }
 
 /// Busca información básica de un contratista por ID
@@ -158,12 +169,14 @@ pub async fn insert(
 }
 
 /// Busca contratista por ID con nombre de empresa
+/// Busca contratista por ID con nombre de empresa y datos de vehículo
 pub async fn find_by_id_with_empresa(
     pool: &SqlitePool,
     id: &str,
-) -> Result<(Contratista, String, Option<String>, Option<String>, bool), String> {
+) -> Result<ContratistaEnhancedRow, String> {
     let row = sqlx::query(
-        r#"SELECT c.*, e.nombre as empresa_nombre, v.tipo_vehiculo, v.placa,
+        r#"SELECT c.*, e.nombre as empresa_nombre, 
+           v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
            EXISTS (SELECT 1 FROM lista_negra ln WHERE ln.cedula = c.cedula AND ln.is_active = 1) as is_blocked
            FROM contratistas c
            LEFT JOIN empresas e ON c.empresa_id = e.id
@@ -176,30 +189,30 @@ pub async fn find_by_id_with_empresa(
     .map_err(|e| format!("Error buscando contratista: {}", e))?;
 
     if let Some(row) = row {
-        let contratista = row_to_contratista(&row)?;
-        let empresa_nombre: String = row.get("empresa_nombre");
-        let vehiculo_tipo: Option<String> = row.try_get("tipo_vehiculo").ok();
-        let vehiculo_placa: Option<String> = row.try_get("placa").ok();
-        let is_blocked: bool = row.get("is_blocked");
-        Ok((
-            contratista,
-            empresa_nombre,
-            vehiculo_tipo,
-            vehiculo_placa,
-            is_blocked,
-        ))
+        Ok(ContratistaEnhancedRow {
+            contratista: row_to_contratista(&row)?,
+            empresa_nombre: row.get("empresa_nombre"),
+            vehiculo_tipo: row.try_get("tipo_vehiculo").ok(),
+            vehiculo_placa: row.try_get("placa").ok(),
+            vehiculo_marca: row.try_get("marca").ok(),
+            vehiculo_modelo: row.try_get("modelo").ok(),
+            vehiculo_color: row.try_get("color").ok(),
+            is_blocked: row.get("is_blocked"),
+        })
     } else {
         Err("Contratista no encontrado".to_string())
     }
 }
 
 /// Busca contratista por cédula con nombre de empresa
+/// Busca contratista por cédula con nombre de empresa y datos de vehículo
 pub async fn find_by_cedula_with_empresa(
     pool: &SqlitePool,
     cedula: &str,
-) -> Result<(Contratista, String, Option<String>, Option<String>, bool), String> {
+) -> Result<ContratistaEnhancedRow, String> {
     let row = sqlx::query(
-        r#"SELECT c.*, e.nombre as empresa_nombre, v.tipo_vehiculo, v.placa,
+        r#"SELECT c.*, e.nombre as empresa_nombre, 
+           v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
            EXISTS (SELECT 1 FROM lista_negra ln WHERE ln.cedula = c.cedula AND ln.is_active = 1) as is_blocked
            FROM contratistas c
            LEFT JOIN empresas e ON c.empresa_id = e.id
@@ -212,18 +225,16 @@ pub async fn find_by_cedula_with_empresa(
     .map_err(|e| format!("Error buscando contratista: {}", e))?;
 
     if let Some(row) = row {
-        let contratista = row_to_contratista(&row)?;
-        let empresa_nombre: String = row.get("empresa_nombre");
-        let vehiculo_tipo: Option<String> = row.try_get("tipo_vehiculo").ok();
-        let vehiculo_placa: Option<String> = row.try_get("placa").ok();
-        let is_blocked: bool = row.get("is_blocked");
-        Ok((
-            contratista,
-            empresa_nombre,
-            vehiculo_tipo,
-            vehiculo_placa,
-            is_blocked,
-        ))
+        Ok(ContratistaEnhancedRow {
+            contratista: row_to_contratista(&row)?,
+            empresa_nombre: row.get("empresa_nombre"),
+            vehiculo_tipo: row.try_get("tipo_vehiculo").ok(),
+            vehiculo_placa: row.try_get("placa").ok(),
+            vehiculo_marca: row.try_get("marca").ok(),
+            vehiculo_modelo: row.try_get("modelo").ok(),
+            vehiculo_color: row.try_get("color").ok(),
+            is_blocked: row.get("is_blocked"),
+        })
     } else {
         Err("Contratista no encontrado".to_string())
     }

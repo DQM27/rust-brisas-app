@@ -1,6 +1,6 @@
 // src/lib/types/vehiculo.ts
 
-export type TipoVehiculo = 'motocicleta' | 'automóvil';
+export type TipoVehiculo = 'motocicleta' | 'automovil';
 
 export interface Vehiculo {
   id: string;
@@ -40,7 +40,7 @@ export interface VehiculoListResponse {
   inactivos: number;
   porTipo: {
     motocicletas: number;
-    automóviles: number;
+    automoviles: number;
   };
 }
 

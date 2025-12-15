@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS vehiculos (
     id TEXT PRIMARY KEY NOT NULL,
     contratista_id TEXT,
     proveedor_id TEXT,
-    tipo_vehiculo TEXT NOT NULL CHECK(tipo_vehiculo IN ('motocicleta', 'automóvil')),
+    tipo_vehiculo TEXT NOT NULL CHECK(tipo_vehiculo IN ('motocicleta', 'automovil')),
     placa TEXT NOT NULL UNIQUE,
     marca TEXT,
     modelo TEXT,

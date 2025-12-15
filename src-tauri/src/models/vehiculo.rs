@@ -34,21 +34,21 @@ pub struct Vehiculo {
 #[serde(rename_all = "lowercase")]
 pub enum TipoVehiculo {
     Motocicleta,
-    Automóvil,
+    Automovil,
 }
 
 impl TipoVehiculo {
     pub fn as_str(&self) -> &str {
         match self {
             TipoVehiculo::Motocicleta => "motocicleta",
-            TipoVehiculo::Automóvil => "automóvil",
+            TipoVehiculo::Automovil => "automovil",
         }
     }
 
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s.to_lowercase().as_str() {
             "motocicleta" => Ok(TipoVehiculo::Motocicleta),
-            "automóvil" | "automovil" => Ok(TipoVehiculo::Automóvil),
+            "automóvil" | "automovil" => Ok(TipoVehiculo::Automovil),
             _ => Err(format!("Tipo de vehículo desconocido: {}", s)),
         }
     }
@@ -56,7 +56,7 @@ impl TipoVehiculo {
     pub fn display(&self) -> &str {
         match self {
             TipoVehiculo::Motocicleta => "Motocicleta",
-            TipoVehiculo::Automóvil => "Automóvil",
+            TipoVehiculo::Automovil => "Automóvil",
         }
     }
 }
@@ -174,5 +174,5 @@ pub struct VehiculoListResponse {
 #[serde(rename_all = "camelCase")]
 pub struct TipoVehiculoStats {
     pub motocicletas: usize,
-    pub automóviles: usize,
+    pub automoviles: usize,
 }

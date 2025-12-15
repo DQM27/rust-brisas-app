@@ -210,7 +210,7 @@ pub async fn get_all_vehiculos(pool: &SqlitePool) -> Result<VehiculoListResponse
         .count();
     let automóviles = vehiculo_responses
         .iter()
-        .filter(|v| v.tipo_vehiculo == TipoVehiculo::Automóvil)
+        .filter(|v| v.tipo_vehiculo == TipoVehiculo::Automovil)
         .count();
 
     Ok(VehiculoListResponse {
@@ -220,7 +220,7 @@ pub async fn get_all_vehiculos(pool: &SqlitePool) -> Result<VehiculoListResponse
         inactivos,
         por_tipo: TipoVehiculoStats {
             motocicletas,
-            automóviles,
+            automoviles: automóviles,
         },
     })
 }

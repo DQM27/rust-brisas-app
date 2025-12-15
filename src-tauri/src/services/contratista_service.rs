@@ -89,10 +89,10 @@ pub async fn create_contratista(
     let response = get_contratista_by_id(pool, &id).await?;
 
     // 9. Indexar en Tantivy (automático)
-    if let Ok((contratista, empresa_nombre, _, _, _)) = db::find_by_id_with_empresa(pool, &id).await
-    {
+    // 9. Indexar en Tantivy (automático)
+    if let Ok(row) = db::find_by_id_with_empresa(pool, &id).await {
         if let Err(e) = search_service
-            .add_contratista(&contratista, &empresa_nombre)
+            .add_contratista(&row.contratista, &row.empresa_nombre)
             .await
         {
             eprintln!("⚠️ Error al indexar contratista {}: {}", id, e);
@@ -111,16 +111,18 @@ pub async fn get_contratista_by_id(
     pool: &SqlitePool,
     id: &str,
 ) -> Result<ContratistaResponse, String> {
-    let (contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa, is_blocked) =
-        db::find_by_id_with_empresa(pool, id).await?;
+    let row: db::ContratistaEnhancedRow = db::find_by_id_with_empresa(pool, id).await?;
 
-    let mut response = ContratistaResponse::from(contratista);
-    response.empresa_nombre = empresa_nombre;
-    response.vehiculo_tipo = vehiculo_tipo;
-    response.vehiculo_placa = vehiculo_placa;
-    response.esta_bloqueado = is_blocked;
+    let mut response = ContratistaResponse::from(row.contratista);
+    response.empresa_nombre = row.empresa_nombre;
+    response.vehiculo_tipo = row.vehiculo_tipo;
+    response.vehiculo_placa = row.vehiculo_placa;
+    response.vehiculo_marca = row.vehiculo_marca;
+    response.vehiculo_modelo = row.vehiculo_modelo;
+    response.vehiculo_color = row.vehiculo_color;
+    response.esta_bloqueado = row.is_blocked;
 
-    if is_blocked {
+    if row.is_blocked {
         response.puede_ingresar = false;
     }
 
@@ -135,16 +137,18 @@ pub async fn get_contratista_by_cedula(
     pool: &SqlitePool,
     cedula: &str,
 ) -> Result<ContratistaResponse, String> {
-    let (contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa, is_blocked) =
-        db::find_by_cedula_with_empresa(pool, cedula).await?;
+    let row = db::find_by_cedula_with_empresa(pool, cedula).await?;
 
-    let mut response = ContratistaResponse::from(contratista);
-    response.empresa_nombre = empresa_nombre;
-    response.vehiculo_tipo = vehiculo_tipo;
-    response.vehiculo_placa = vehiculo_placa;
-    response.esta_bloqueado = is_blocked;
+    let mut response = ContratistaResponse::from(row.contratista);
+    response.empresa_nombre = row.empresa_nombre;
+    response.vehiculo_tipo = row.vehiculo_tipo;
+    response.vehiculo_placa = row.vehiculo_placa;
+    response.vehiculo_marca = row.vehiculo_marca;
+    response.vehiculo_modelo = row.vehiculo_modelo;
+    response.vehiculo_color = row.vehiculo_color;
+    response.esta_bloqueado = row.is_blocked;
 
-    if is_blocked {
+    if row.is_blocked {
         response.puede_ingresar = false;
     }
 
@@ -349,10 +353,9 @@ pub async fn update_contratista(
     let response = get_contratista_by_id(pool, &id).await?;
 
     // 9. Actualizar índice de Tantivy (automático)
-    if let Ok((contratista, empresa_nombre, _, _, _)) = db::find_by_id_with_empresa(pool, &id).await
-    {
+    if let Ok(row) = db::find_by_id_with_empresa(pool, &id).await {
         if let Err(e) = search_service
-            .update_contratista(&contratista, &empresa_nombre)
+            .update_contratista(&row.contratista, &row.empresa_nombre)
             .await
         {
             eprintln!(
@@ -391,10 +394,9 @@ pub async fn cambiar_estado_contratista(
     let response = get_contratista_by_id(pool, &id).await?;
 
     // 6. Actualizar índice de Tantivy (automático)
-    if let Ok((contratista, empresa_nombre, _, _, _)) = db::find_by_id_with_empresa(pool, &id).await
-    {
+    if let Ok(row) = db::find_by_id_with_empresa(pool, &id).await {
         if let Err(e) = search_service
-            .update_contratista(&contratista, &empresa_nombre)
+            .update_contratista(&row.contratista, &row.empresa_nombre)
             .await
         {
             eprintln!(

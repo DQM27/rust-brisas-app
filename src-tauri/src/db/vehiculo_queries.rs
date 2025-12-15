@@ -44,7 +44,7 @@ pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<Vehiculo, String>
 pub async fn find_by_placa(pool: &SqlitePool, placa: &str) -> Result<Vehiculo, String> {
     let row = sqlx::query(
         r#"SELECT 
-            v.id, v.contratista_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
+            v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
             v.is_active, v.created_at, v.updated_at
            FROM vehiculos v
            WHERE v.placa = ?"#,
@@ -73,7 +73,7 @@ pub async fn find_by_placa(pool: &SqlitePool, placa: &str) -> Result<Vehiculo, S
 pub async fn find_all(pool: &SqlitePool) -> Result<Vec<Vehiculo>, String> {
     let rows = sqlx::query(
         r#"SELECT 
-            v.id, v.contratista_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
+            v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
             v.is_active, v.created_at, v.updated_at
            FROM vehiculos v
            ORDER BY v.created_at DESC"#,
@@ -108,7 +108,7 @@ pub async fn find_all(pool: &SqlitePool) -> Result<Vec<Vehiculo>, String> {
 pub async fn find_activos(pool: &SqlitePool) -> Result<Vec<Vehiculo>, String> {
     let rows = sqlx::query(
         r#"SELECT 
-            v.id, v.contratista_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
+            v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
             v.is_active, v.created_at, v.updated_at
            FROM vehiculos v
            WHERE v.is_active = 1
@@ -147,7 +147,7 @@ pub async fn find_by_contratista(
 ) -> Result<Vec<Vehiculo>, String> {
     let rows = sqlx::query(
         r#"SELECT 
-            v.id, v.contratista_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
+            v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
             v.is_active, v.created_at, v.updated_at
            FROM vehiculos v
            WHERE v.contratista_id = ?

@@ -3,15 +3,15 @@
 // ==========================================
 // Validaciones y reglas de negocio PURAS para la fase de ENTRADA
 
-use crate::models::ingreso::CreateIngresoContratistaInput;
 use super::tipos::ResultadoValidacionEntrada;
+use crate::models::ingreso::CreateIngresoContratistaInput;
 
 // ==========================================
 // VALIDACIONES DE CAMPOS
 // ==========================================
 
 /// Valida el formato de un número de gafete
-/// 
+///
 /// Reglas:
 /// - No puede estar vacío (después de trim)
 /// - No puede exceder 20 caracteres
@@ -34,7 +34,7 @@ pub fn validar_formato_gafete(numero: &str) -> Result<(), String> {
 // ==========================================
 
 /// Normaliza un número de gafete a formato estándar (trim + uppercase)
-/// 
+///
 /// Ejemplos:
 /// - "  a-15  " → "A-15"
 /// - "c-25" → "C-25"
@@ -62,21 +62,23 @@ pub fn validar_input_entrada(input: &CreateIngresoContratistaInput) -> Result<()
 // ==========================================
 
 /// Verifica si un PRAIND está vigente comparando contra fecha actual
-/// 
+///
 /// Formato esperado: "YYYY-MM-DD"
 /// Retorna true si fecha_vencimiento >= hoy
 pub fn verificar_praind_vigente(fecha_vencimiento: &str) -> Result<bool, String> {
     use chrono::{NaiveDate, Utc};
 
-    let fecha_venc = NaiveDate::parse_from_str(fecha_vencimiento, "%Y-%m-%d")
-        .map_err(|_| format!("Formato de fecha PRAIND inválido: {}", fecha_vencimiento))?;
+    let fecha_venc = match NaiveDate::parse_from_str(fecha_vencimiento, "%Y-%m-%d") {
+        Ok(d) => d,
+        Err(_) => return Ok(false), // Invalid format treated as expired/not valid
+    };
 
     let hoy = Utc::now().date_naive();
     Ok(fecha_venc >= hoy)
 }
 
 /// Calcula días restantes hasta vencimiento de PRAIND
-/// 
+///
 /// Retorna número negativo si ya venció
 pub fn dias_hasta_vencimiento_praind(fecha_vencimiento: &str) -> Result<i64, String> {
     use chrono::{NaiveDate, Utc};
@@ -95,7 +97,7 @@ pub fn dias_hasta_vencimiento_praind(fecha_vencimiento: &str) -> Result<i64, Str
 // ==========================================
 
 /// Evalúa si un contratista puede ingresar basado en todas las validaciones
-/// 
+///
 /// Esta es la función CORE que concentra toda la lógica de elegibilidad
 pub fn evaluar_elegibilidad_entrada(
     bloqueado: bool,
@@ -211,7 +213,7 @@ mod tests {
     fn test_verificar_praind_vigente() {
         // Fecha futura (2030)
         assert_eq!(verificar_praind_vigente("2030-12-31").unwrap(), true);
-        
+
         // Fecha pasada
         assert_eq!(verificar_praind_vigente("2020-01-01").unwrap(), false);
     }
@@ -240,12 +242,12 @@ mod tests {
     #[test]
     fn test_elegibilidad_todo_correcto() {
         let resultado = evaluar_elegibilidad_entrada(
-            false,           // no bloqueado
-            None,            // sin motivo
-            false,           // no tiene ingreso abierto
-            "Activo",        // estado activo
-            true,            // praind vigente
-            0,               // sin alertas previas
+            false,    // no bloqueado
+            None,     // sin motivo
+            false,    // no tiene ingreso abierto
+            "Activo", // estado activo
+            true,     // praind vigente
+            0,        // sin alertas previas
         );
 
         assert!(resultado.puede_ingresar);
@@ -256,7 +258,7 @@ mod tests {
     #[test]
     fn test_elegibilidad_bloqueado() {
         let resultado = evaluar_elegibilidad_entrada(
-            true,                              // BLOQUEADO
+            true, // BLOQUEADO
             Some("Deuda pendiente".to_string()),
             false,
             "Activo",
@@ -272,27 +274,22 @@ mod tests {
     #[test]
     fn test_elegibilidad_ingreso_duplicado() {
         let resultado = evaluar_elegibilidad_entrada(
-            false,
-            None,
-            true,            // YA TIENE INGRESO ABIERTO
-            "Activo",
-            true,
-            0,
+            false, None, true, // YA TIENE INGRESO ABIERTO
+            "Activo", true, 0,
         );
 
         assert!(!resultado.puede_ingresar);
-        assert!(resultado.motivo_rechazo.unwrap().contains("ingreso abierto"));
+        assert!(resultado
+            .motivo_rechazo
+            .unwrap()
+            .contains("ingreso abierto"));
     }
 
     #[test]
     fn test_elegibilidad_estado_inactivo() {
         let resultado = evaluar_elegibilidad_entrada(
-            false,
-            None,
-            false,
-            "Inactivo",      // ESTADO INACTIVO
-            true,
-            0,
+            false, None, false, "Inactivo", // ESTADO INACTIVO
+            true, 0,
         );
 
         assert!(!resultado.puede_ingresar);
@@ -302,11 +299,7 @@ mod tests {
     #[test]
     fn test_elegibilidad_praind_vencido() {
         let resultado = evaluar_elegibilidad_entrada(
-            false,
-            None,
-            false,
-            "Activo",
-            false,           // PRAIND VENCIDO
+            false, None, false, "Activo", false, // PRAIND VENCIDO
             0,
         );
 
@@ -317,18 +310,13 @@ mod tests {
     #[test]
     fn test_elegibilidad_con_alertas_previas() {
         let resultado = evaluar_elegibilidad_entrada(
-            false,
-            None,
-            false,
-            "Activo",
-            true,
-            2,               // TIENE 2 ALERTAS PREVIAS
+            false, None, false, "Activo", true, 2, // TIENE 2 ALERTAS PREVIAS
         );
 
         // PUEDE ingresar (es warning, no bloqueante)
         assert!(resultado.puede_ingresar);
         assert!(resultado.motivo_rechazo.is_none());
-        
+
         // PERO debe tener alertas
         assert_eq!(resultado.alertas.len(), 1);
         assert!(resultado.alertas[0].contains("gafete"));
@@ -338,11 +326,11 @@ mod tests {
     fn test_elegibilidad_multiples_problemas() {
         // Si hay múltiples problemas, debe retornar el primero en orden de prioridad
         let resultado = evaluar_elegibilidad_entrada(
-            true,            // bloqueado (mayor prioridad)
+            true, // bloqueado (mayor prioridad)
             Some("Deuda".to_string()),
-            true,            // también tiene ingreso abierto
-            "Inactivo",      // también está inactivo
-            false,           // también praind vencido
+            true,       // también tiene ingreso abierto
+            "Inactivo", // también está inactivo
+            false,      // también praind vencido
             3,
         );
 
