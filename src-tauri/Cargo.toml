@@ -57,13 +57,6 @@ shellexpand = "3.1"
 # secret-service no se usa actualmente, pero se mantiene por si acaso
 secret-service = { version = "4.0", features = ["rt-tokio-crypto-rust"], optional = true }
 
-# macOS Keychain API
-[target.'cfg(target_os = "macos")'.dependencies]
-keyring = "3"
-
-# Windows Credential Manager API
-[target.'cfg(target_os = "windows")'.dependencies]
-winapi = { version = "0.3", features = ["wincred", "winerror"] }
 
 # ==========================================
 # EXCEL IMPORT (existente)
@@ -97,7 +90,17 @@ ttf-parser = { version = "0.24", optional = true }
 # Excel export
 rust_xlsxwriter = { version = "0.69", optional = true }
 rand = "0.8.5"
-tauri-plugin-updater = "2.9.0"
+tauri-plugin-updater = "2"
+
+# macOS Keychain API
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = "3"
+
+# Windows Credential Manager API
+[target.'cfg(target_os = "windows")'.dependencies]
+winapi = { version = "0.3", features = ["wincred", "winerror"] }
+
+
 
 # CSV export - sin dependencias (usa std)
 

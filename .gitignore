@@ -15,4 +15,7 @@ vite.config.ts.timestamp-*
 /.vscode/
 /mingw64/
 /Nueva carpeta/
+/dist/
+/src/.angular/
+
 
