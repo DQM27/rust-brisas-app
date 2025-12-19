@@ -53,8 +53,20 @@
     };
   }
 
-  // Estado del formulario de edición
-  let formData = $state<UpdateUserForm>(getFormData(user));
+  // Estado del formulario de edición - inicializar vacío, $effect sincroniza
+  let formData = $state<UpdateUserForm>({
+    email: "",
+    username: "",
+    nombre: "",
+    apellido: "",
+    telefono: "",
+    direccion: "",
+    contactoEmergenciaNombre: "",
+    contactoEmergenciaTelefono: "",
+    fechaInicioLabores: undefined,
+    numeroGafete: undefined,
+    fechaNacimiento: undefined,
+  });
 
   // Sincronizar si cambia el usuario prop
   $effect(() => {

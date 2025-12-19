@@ -27,10 +27,12 @@
     };
   }
 
-  // Estado del formulario
-  let formData = $state<ChangePasswordForm>(
-    getInitialFormData(currentPassword),
-  );
+  // Estado del formulario - inicializar vacío, $effect sincroniza
+  let formData = $state<ChangePasswordForm>({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
 
   // Sync if currentPassword prop changes
   $effect(() => {
