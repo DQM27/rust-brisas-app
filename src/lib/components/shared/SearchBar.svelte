@@ -188,6 +188,7 @@
         query.trim().length >= 2 && results.length > 0 && (showDropdown = true)}
       on:keydown={handleKeyDown}
       type="text"
+      autocomplete="off"
       placeholder={selectedResult
         ? `Filtrando: ${selectedResult.nombreCompleto || selectedResult.id}`
         : placeholder}
