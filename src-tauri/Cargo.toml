@@ -26,7 +26,12 @@ serde_json = "1"
 # ==========================================
 # DATABASE
 # ==========================================
-sqlx = { version = "0.7", features = ["sqlite", "runtime-tokio-rustls", "macros", "migrate"], default-features = false }
+sqlx = { version = "0.7", features = [
+    "sqlite",
+    "runtime-tokio-rustls",
+    "macros",
+    "migrate",
+], default-features = false }
 
 # ==========================================
 # ASYNC RUNTIME
@@ -55,8 +60,9 @@ shellexpand = "3.1"
 # SECURE CREDENTIAL STORAGE (OS Keyring)
 # ==========================================
 # secret-service no se usa actualmente, pero se mantiene por si acaso
-secret-service = { version = "4.0", features = ["rt-tokio-crypto-rust"], optional = true }
-
+secret-service = { version = "4.0", features = [
+    "rt-tokio-crypto-rust",
+], optional = true }
 
 # ==========================================
 # EXCEL IMPORT (existente)
@@ -64,9 +70,7 @@ secret-service = { version = "4.0", features = ["rt-tokio-crypto-rust"], optiona
 calamine = "0.26"
 unicode-normalization = "0.1"
 
-# ==========================================
-# SEARCH
-# ==========================================
+
 # ==========================================
 # SEARCH
 # ==========================================
@@ -75,7 +79,13 @@ tantivy = "0.22"
 # ==========================================
 # EMAIL
 # ==========================================
-lettre = { version = "0.11", default-features = false, features = ["smtp-transport", "pool", "tokio1", "tokio1-rustls-tls", "builder"] }
+lettre = { version = "0.11", default-features = false, features = [
+    "smtp-transport",
+    "pool",
+    "tokio1",
+    "tokio1-rustls-tls",
+    "builder",
+] }
 
 # ==========================================
 # UTILS
@@ -102,7 +112,6 @@ keyring = "3"
 winapi = { version = "0.3", features = ["wincred", "winerror"] }
 
 
-
 # CSV export - sin dependencias (usa std)
 
 [features]
@@ -120,8 +129,8 @@ export-excel = ["rust_xlsxwriter"]
 # BUILD PROFILES (OPTIMIZATIONS)
 # ==========================================
 [profile.release]
-opt-level = "z"     # Optimizar para tamaño (Size)
-lto = true          # Link Time Optimization
-codegen-units = 1   # Código más compacto (compilación más lenta)
-panic = "abort"     # Ahorra espacio quitando unwind symbols
-strip = true        # Quita símbolos de debug
+opt-level = "z"   # Optimizar para tamaño (Size)
+lto = true        # Link Time Optimization
+codegen-units = 1 # Código más compacto (compilación más lenta)
+panic = "abort"   # Ahorra espacio quitando unwind symbols
+strip = true      # Quita símbolos de debug

@@ -31,13 +31,14 @@ pub fn run() {
 
             // Inicializar pool y servicio de búsqueda en paralelo
             let pool = db::init_pool(&app_config).await?;
-            let search_service = search::init_search_service(&app_config)?;
+            // let search_service = search::init_search_service(&app_config)?;
 
             // Migraciones y seed (secuenciales, dependen del pool)
             db::migrate::run_migrations(&pool).await?;
             db::seed::seed_db(&pool).await?;
 
             // Solo reindexar si el índice está vacío (primera vez o después de restauración)
+            /*
             if search_service.is_empty() {
                 println!("📇 Índice vacío, reindexando...");
                 if let Err(e) = search_service.reindex_all(&pool).await {
@@ -46,11 +47,12 @@ pub fn run() {
                     println!("✅ Reindexado completado: {} documentos", search_service.doc_count());
                 }
             }
+            */
 
             tauri::Builder::default()
                 .manage(pool)
                 .manage(app_config)
-                .manage(search_service)
+                // .manage(search_service)
                 .plugin(tauri_plugin_dialog::init())
                 .plugin(tauri_plugin_opener::init())
                 .plugin(tauri_plugin_updater::Builder::new().build())
