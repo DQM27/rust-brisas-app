@@ -2,12 +2,14 @@
 // src/export/pdf/engine.rs
 // ==========================================
 // Wrapper de Typst 0.14 para compilación de PDF
+// Con soporte para packages locales (offline)
 
 use crate::export::errors::{ExportError, ExportResult};
 
 use crate::models::export::{PdfConfig, PdfDesign};
 use chrono::Datelike;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use super::templates;
 
@@ -80,11 +82,11 @@ struct TypstWorld {
     fonts: Vec<Font>,
     source: Source,
     main_id: FileId,
+    packages_root: PathBuf, // Carpeta de packages locales
 }
 
 impl TypstWorld {
     fn new(markup: &str) -> ExportResult<Self> {
-        // ✅ FIX: Usar LibraryExt para default()
         let library = LazyHash::new(Library::default());
 
         let fonts = Self::load_system_fonts();
@@ -93,13 +95,64 @@ impl TypstWorld {
         let main_id = FileId::new(None, VirtualPath::new("main.typ"));
         let source = Source::new(main_id, markup.to_string());
 
+        // Buscar carpeta de packages relativa al ejecutable
+        let packages_root = Self::find_packages_root();
+
         Ok(Self {
             library,
             book,
             fonts,
             source,
             main_id,
+            packages_root,
         })
+    }
+
+    /// Busca la carpeta de packages locales
+    fn find_packages_root() -> PathBuf {
+        // Intentar primero en el directorio del ejecutable (para producción)
+        if let Ok(exe_path) = std::env::current_exe() {
+            if let Some(exe_dir) = exe_path.parent() {
+                let packages_dir = exe_dir.join("packages");
+                if packages_dir.exists() {
+                    return packages_dir;
+                }
+            }
+        }
+
+        // Fallback: buscar en src-tauri/packages (para desarrollo)
+        let dev_paths = [
+            PathBuf::from("packages"),
+            PathBuf::from("src-tauri/packages"),
+            PathBuf::from("../src-tauri/packages"),
+        ];
+
+        for path in &dev_paths {
+            if path.exists() {
+                return path.clone();
+            }
+        }
+
+        // Default: carpeta packages en el directorio actual
+        PathBuf::from("packages")
+    }
+
+    /// Resuelve la ruta de un archivo dentro de un package
+    fn resolve_package_file(&self, id: FileId) -> Option<PathBuf> {
+        let package = id.package()?;
+        let namespace = package.namespace.as_str();
+        let name = package.name.as_str();
+        let version = package.version.to_string();
+
+        let package_dir = self.packages_root.join(namespace).join(name).join(&version);
+
+        let file_path = package_dir.join(id.vpath().as_rootless_path());
+
+        if file_path.exists() {
+            Some(file_path)
+        } else {
+            None
+        }
     }
 
     /// Carga fuentes del sistema (Windows) manualmente para ahorrar memoria
@@ -167,13 +220,24 @@ impl World for TypstWorld {
     fn source(&self, id: FileId) -> FileResult<Source> {
         if id == self.main_id {
             Ok(self.source.clone())
+        } else if let Some(path) = self.resolve_package_file(id) {
+            // Cargar archivo de package local
+            let content =
+                std::fs::read_to_string(&path).map_err(|_| FileError::NotFound(path.clone()))?;
+            Ok(Source::new(id, content))
         } else {
             Err(FileError::NotFound(id.vpath().as_rootless_path().into()))
         }
     }
 
-    fn file(&self, _id: FileId) -> FileResult<Bytes> {
-        Err(FileError::NotFound("file not available".into()))
+    fn file(&self, id: FileId) -> FileResult<Bytes> {
+        if let Some(path) = self.resolve_package_file(id) {
+            // Cargar archivo binario de package local
+            let data = std::fs::read(&path).map_err(|_| FileError::NotFound(path))?;
+            Ok(Bytes::new(data))
+        } else {
+            Err(FileError::NotFound(id.vpath().as_rootless_path().into()))
+        }
     }
 
     fn font(&self, index: usize) -> Option<Font> {
