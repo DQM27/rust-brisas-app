@@ -45,9 +45,9 @@ pub fn initialize_index(index_path: &Path) -> Result<Index, String> {
 
 /// Obtiene un writer para el índice
 pub fn get_index_writer(index: &Index) -> Result<IndexWriter, String> {
-    // Budget reducido a 3MB para ahorrar memoria (Optimización final)
+    // Budget ajustado a 20MB para cumplir con requerimiento mínimo de Tantivy (15MB)
     index
-        .writer(3_000_000)
+        .writer(20_000_000)
         .map_err(|e| format!("Error al crear writer: {}", e))
 }
 
