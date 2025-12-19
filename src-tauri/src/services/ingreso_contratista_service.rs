@@ -16,7 +16,7 @@ use crate::services::gafete_service;
 use chrono::Utc;
 use serde::Serialize;
 use sqlx::SqlitePool;
-use std::str::FromStr;
+
 use uuid::Uuid;
 
 // ==========================================
@@ -50,6 +50,13 @@ pub struct AlertaTiempoExcedido {
     pub minutos_transcurridos: i64,
     pub minutos_excedidos: i64,
     pub estado: domain::EstadoPermanencia,
+}
+
+// Implementación del trait helper para validación
+impl domain::InputEntrada for CreateIngresoContratistaInput {
+    fn tipo_ingreso(&self) -> &str {
+        "contratista"
+    }
 }
 
 // ==========================================
@@ -148,11 +155,6 @@ pub async fn crear_ingreso_contratista(
     usuario_id: String,
 ) -> Result<IngresoResponse, String> {
     // 1. Validar input básico
-    impl domain::InputEntrada for CreateIngresoContratistaInput {
-        fn tipo_ingreso(&self) -> &str {
-            "contratista"
-        }
-    }
     domain::validar_input_entrada(&input)?;
 
     // 2. Verificar duplicados (DB check final)

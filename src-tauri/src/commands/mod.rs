@@ -13,7 +13,7 @@ pub mod gafete_commands;
 // NUEVO UNIFICADO:
 pub mod ingreso_contratista_commands;
 
-// pub mod ingreso_commands; -> MIGRADO a ingreso_contratista_commands (para general, usaremos queries especificos si hace falta)
+pub mod ingreso_commands;
 pub mod ingreso_proveedor_commands;
 pub mod ingreso_visita_commands;
 pub mod keyring_commands;

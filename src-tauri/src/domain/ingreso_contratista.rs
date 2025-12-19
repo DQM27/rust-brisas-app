@@ -85,8 +85,8 @@ pub fn evaluar_elegibilidad_entrada(
     praind_vigente: bool,
     cantidad_alertas_gafete: usize,
 ) -> ResultadoValidacionEntrada {
-    let mut puede_ingresar = true;
-    let mut motivo_rechazo = None;
+    let puede_ingresar = true;
+    let motivo_rechazo = None;
     let mut alertas = Vec::new();
 
     // 1. REGLA BLOQUEANTE: Lista Negra
