@@ -1,4 +1,5 @@
 <script lang="ts">
+  // @ts-nocheck - Svelte 5 runes are not recognized by TS
   import type {
     GridId,
     ToolbarContext,
@@ -34,7 +35,7 @@
   let showContextMenu = $state(false);
 
   // Configuración
-  const gridConfig = getGridConfig(gridId);
+  const gridConfig = $derived(getGridConfig(gridId));
 
   // Labels de contexto
   const contextLabels: Record<ToolbarContext, string> = {
