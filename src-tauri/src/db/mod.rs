@@ -21,7 +21,6 @@ pub mod ingreso_visita_queries; // Visitas
 pub mod lista_negra_queries;
 pub mod preferences_queries;
 pub mod proveedor_queries;
-pub mod reporte_queries;
 pub mod user_queries;
 pub mod vehiculo_queries;
 pub mod visitante_queries;
