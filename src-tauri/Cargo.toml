@@ -42,7 +42,6 @@ tokio = { version = "1", features = ["full"] }
 # UTILITIES
 # ==========================================
 chrono = { version = "0.4", features = ["serde"] }
-reqwest = { version = "0.12", features = ["json"] }
 dotenvy = "0.15"
 argon2 = { version = "0.5", features = ["std"] }
 uuid = { version = "1.0", features = ["v4"] }
@@ -94,7 +93,6 @@ base64 = "0.21"
 # PDF generation - typst 0.14
 typst = { version = "0.14", optional = true }
 typst-pdf = { version = "0.14", optional = true }
-typst-assets = { version = "0.14", features = ["fonts"], optional = true }
 ttf-parser = { version = "0.24", optional = true }
 
 # Excel export
@@ -102,6 +100,7 @@ rust_xlsxwriter = { version = "0.69", optional = true }
 rand = "0.8.5"
 tauri-plugin-updater = "2"
 sysinfo = "0.30"
+mimalloc = { version = "0.1", default-features = false }
 
 # macOS Keychain API
 [target.'cfg(target_os = "macos")'.dependencies]
@@ -122,7 +121,7 @@ default = ["export"]
 export = ["export-pdf", "export-excel"]
 
 # Features individuales por formato
-export-pdf = ["typst", "typst-pdf", "typst-assets", "ttf-parser"]
+export-pdf = ["typst", "typst-pdf", "ttf-parser"]
 export-excel = ["rust_xlsxwriter"]
 
 # ==========================================

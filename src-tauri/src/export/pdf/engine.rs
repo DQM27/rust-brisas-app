@@ -6,8 +6,8 @@
 use crate::export::errors::{ExportError, ExportResult};
 use crate::models::export::PdfConfig;
 use crate::models::template::PdfTemplate;
-use std::collections::HashMap;
 use chrono::Datelike;
+use std::collections::HashMap;
 
 use super::templates;
 
@@ -87,7 +87,7 @@ impl TypstWorld {
         // ✅ FIX: Usar LibraryExt para default()
         let library = LazyHash::new(Library::default());
 
-        let fonts = Self::load_embedded_fonts();
+        let fonts = Self::load_system_fonts();
         let book = LazyHash::new(FontBook::from_fonts(&fonts));
 
         let main_id = FileId::new(None, VirtualPath::new("main.typ"));
@@ -102,25 +102,46 @@ impl TypstWorld {
         })
     }
 
-    fn load_embedded_fonts() -> Vec<Font> {
+    /// Carga fuentes del sistema (Windows) manualmente para ahorrar memoria
+    /// Solo carga las esenciales (Arial, Segoe UI) en lugar de todas las disponibles o assets embebidos
+    fn load_system_fonts() -> Vec<Font> {
         let mut fonts = Vec::new();
-        let assets = typst_assets::fonts();
+        let font_dir = "C:\\Windows\\Fonts";
 
-        // Cargar todas las fuentes embebidas de typst-assets
-        for data in assets {
-            let buffer = Bytes::new(data.to_vec());
-            let face_count = ttf_parser::fonts_in_collection(&buffer).unwrap_or(1);
+        // Lista curada de fuentes para UI y reportes
+        // Minimiza el uso de RAM cargando solo lo necesario
+        let target_fonts = vec![
+            "arial.ttf",
+            "arialbd.ttf",
+            "arialbi.ttf",
+            "ariali.ttf",
+            "segoeui.ttf",
+            "segoeuib.ttf",
+            "segoeuil.ttf",
+            "times.ttf",
+            "timesbd.ttf",
+            "calibri.ttf",
+            "calibrib.ttf",
+        ];
 
-            // Cargar todas las fuentes en la colección (para TTC files)
-            for face_index in 0..face_count {
-                if let Some(font) = Font::new(buffer.clone(), face_index) {
-                    fonts.push(font);
+        for filename in target_fonts {
+            let path = std::path::Path::new(font_dir).join(filename);
+            if path.exists() {
+                if let Ok(data) = std::fs::read(&path) {
+                    let buffer = Bytes::new(data);
+                    let face_count = ttf_parser::fonts_in_collection(&buffer).unwrap_or(1);
+
+                    for face_index in 0..face_count {
+                        if let Some(font) = Font::new(buffer.clone(), face_index) {
+                            fonts.push(font);
+                        }
+                    }
                 }
             }
         }
 
         if fonts.is_empty() {
-            eprintln!("⚠️ WARNING: No fonts were loaded! PDF text will not render.");
+            eprintln!("⚠️ WARN: No se encontraron fuentes del sistema (Arial/SegoeUI). El PDF podría no mostrar texto.");
         }
 
         fonts
