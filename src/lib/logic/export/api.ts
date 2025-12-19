@@ -57,7 +57,7 @@ export async function exportData(
             delimiter: options.delimiter || 'comma',
             includeBom: options.includeBom ?? true,
             showPreview: options.showPreview || false,
-            templateId: options.templateId, // ✅ Pass templateId
+            templateId: options.templateId, // ✅ Pass templateId as profile_id for compatibility
             targetPath: targetPath || undefined,
         };
 

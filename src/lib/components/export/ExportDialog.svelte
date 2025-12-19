@@ -11,9 +11,8 @@
   } from "lucide-svelte";
   import type { ExportOptions } from "$lib/logic/export";
   import { onMount } from "svelte";
-  import { templateStore } from "$lib/stores/templateStore";
-  import type { PdfTemplate } from "$lib/types/template";
-  import TemplateManager from "./TemplateManager.svelte";
+  import { exportProfileStore } from "$lib/stores/exportProfileStore";
+  import type { ExportProfile } from "$lib/types/exportProfile";
   import { slide, fade, fly } from "svelte/transition";
 
   interface Props {
@@ -62,18 +61,27 @@
   let showPreview = $state(false);
   let isExporting = $state(false);
 
-  // Template State
-  let showTemplateManager = $state(false);
-  let selectedTemplate = $state<PdfTemplate | null>(null);
+  // Profile State
+  let selectedProfile = $state<ExportProfile | null>(null);
 
-  // Cargar templates al montar
+  // Cargar profiles al montar
   onMount(async () => {
-    await templateStore.load();
-    // Seleccionar default si existe
-    if ($templateStore.templates.length > 0) {
-      selectedTemplate = $templateStore.templates[0];
+    await exportProfileStore.load();
+    // Seleccionar default
+    const defaultProfile =
+      $exportProfileStore.profiles.find(
+        (p) => p.is_default && p.format === "pdf",
+      ) || $exportProfileStore.profiles.find((p) => p.format === "pdf");
+
+    if (defaultProfile) {
+      selectedProfile = defaultProfile;
     }
   });
+
+  // Filtrar perfiles PDF disponibles para el selector
+  let pdfProfiles = $derived(
+    $exportProfileStore.profiles.filter((p) => p.format === "pdf"),
+  );
 
   // Formatos disponibles con metadata
   const formats = $derived([
@@ -114,8 +122,8 @@
         includeBom: selectedFormat === "csv" ? includeBom : undefined,
         showPreview: selectedFormat === "pdf" ? showPreview : undefined,
         templateId:
-          selectedFormat === "pdf" && selectedTemplate
-            ? selectedTemplate.id
+          selectedFormat === "pdf" && selectedProfile
+            ? selectedProfile.id
             : undefined,
         columnIds: columnSelection.filter((c) => c.selected).map((c) => c.id),
       };
@@ -262,33 +270,27 @@
               Opciones PDF
             </h3>
 
-            <!-- Selector de Template -->
+            <!-- Selector de Profile (antes Template) -->
             <div>
               <label
-                for="template-select"
+                for="profile-select"
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
               >
-                Estilo Visual
+                Estilo Visual (Perfil)
               </label>
               <div class="flex gap-2">
                 <select
-                  id="template-select"
-                  bind:value={selectedTemplate}
+                  id="profile-select"
+                  bind:value={selectedProfile}
                   class="flex-1 px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent"
                 >
-                  {#each $templateStore.templates as t}
-                    <option value={t}
-                      >{t.name} {t.is_predefined ? "(Oficial)" : ""}</option
+                  {#each pdfProfiles as p}
+                    <option value={p}
+                      >{p.name} {p.is_default ? "(Predeterminado)" : ""}</option
                     >
                   {/each}
                 </select>
-                <button
-                  onclick={() => (showTemplateManager = true)}
-                  class="p-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#21262d] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#30363d] transition-colors"
-                  title="Administrar Estilos"
-                >
-                  <Palette size={18} />
-                </button>
+                <!-- Botón de administración removido -->
               </div>
             </div>
 
@@ -526,13 +528,3 @@
     {/if}
   </div>
 </div>
-{#if showTemplateManager}
-  <TemplateManager
-    onClose={() => (showTemplateManager = false)}
-    onSelect={(template) => {
-      selectedTemplate = template;
-      showTemplateManager = false;
-    }}
-    currentTemplateId={selectedTemplate?.id}
-  />
-{/if}

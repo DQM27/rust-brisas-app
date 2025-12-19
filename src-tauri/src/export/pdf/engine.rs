@@ -4,8 +4,8 @@
 // Wrapper de Typst 0.14 para compilación de PDF
 
 use crate::export::errors::{ExportError, ExportResult};
-use crate::models::export::PdfConfig;
-use crate::models::template::PdfTemplate;
+
+use crate::models::export::{PdfConfig, PdfDesign};
 use chrono::Datelike;
 use std::collections::HashMap;
 
@@ -27,9 +27,9 @@ pub fn generate_pdf(
     headers: &[String],
     rows: &[HashMap<String, String>],
     config: &PdfConfig,
-    template: &PdfTemplate, // ✅ RECIBE EL TEMPLATE
+    design: &PdfDesign, // ✅ USA PDF DESIGN
 ) -> ExportResult<Vec<u8>> {
-    let markup = templates::generate_typst_markup(headers, rows, config, template)?;
+    let markup = templates::generate_typst_markup(headers, rows, config, design)?;
 
     templates::validate_markup(&markup)?;
     let pdf_bytes = compile_typst_to_pdf(&markup)?;

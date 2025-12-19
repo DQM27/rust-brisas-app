@@ -133,12 +133,6 @@ macro_rules! register_handlers {
             commands::export_commands::export_to_excel,
             commands::export_commands::export_to_csv,
             // ==========================================
-            // COMANDOS DE TEMPLATES
-            // ==========================================
-            commands::templates::get_templates,
-            commands::templates::save_template,
-            commands::templates::delete_template,
-            // ==========================================
             // COMANDOS DE PERFILES DE EXPORTACIÓN
             // ==========================================
             commands::export_profiles::get_export_profiles,

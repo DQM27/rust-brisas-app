@@ -158,35 +158,50 @@ fn construir_csv_config(request: &ExportRequest) -> ExportResult<CsvConfig> {
 // ==========================================
 
 /// Exporta a PDF usando Typst
+// Exporta a PDF usando Typst
 #[cfg(feature = "export")]
 async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse> {
     use crate::export::pdf;
-    use crate::services::template_service;
+    use crate::models::export::{PdfColors, PdfDesign, PdfFonts};
+    use crate::services::export_profile_service;
 
     let config = data
         .pdf_config
         .ok_or_else(|| ExportError::Unknown("Config PDF no encontrada".to_string()))?;
 
-    // ✅ Obtener template (o default si no existe ID)
-    let template = if let Some(ref id) = config.template_id {
-        template_service::get_template_by_id(id).unwrap_or_else(|| {
-            template_service::get_all_templates()
-                .unwrap()
-                .first()
-                .unwrap()
-                .clone()
-        })
+    // ✅ Obtener PERFIL (usando template_id como profile_id por compatibilidad o default)
+    let profile = if let Some(ref id) = config.template_id {
+        export_profile_service::get_profile_by_id(id)
+            .or_else(|| export_profile_service::get_default_profile())
     } else {
-        // Usar el primero (Default)
-        template_service::get_all_templates()
-            .unwrap_or_default()
-            .first()
-            .cloned()
-            .unwrap_or_default()
+        export_profile_service::get_default_profile()
     };
 
+    // Obtener diseño del perfil o usar uno default al vuelo
+    let design = profile
+        .and_then(|p| p.pdf_design)
+        .unwrap_or_else(|| PdfDesign {
+            page_size: "us-letter".to_string(),
+            orientation: "landscape".to_string(),
+            margin_x: 1.5,
+            margin_x_unit: "cm".to_string(),
+            margin_y: 2.0,
+            margin_y_unit: "cm".to_string(),
+            colors: PdfColors {
+                header_fill: "#e8e8e8".to_string(),
+                header_text: "#000000".to_string(),
+                row_text: "#000000".to_string(),
+                border: "#000000".to_string(),
+            },
+            fonts: PdfFonts {
+                family: "New Computer Modern".to_string(),
+                size: 10,
+                header_size: 11,
+            },
+        });
+
     // Generar PDF
-    let pdf_bytes = pdf::generate_pdf(&data.headers, &data.rows, &config, &template)?;
+    let pdf_bytes = pdf::generate_pdf(&data.headers, &data.rows, &config, &design)?;
 
     // Determinar si guardar en disco
     let file_path = if let Some(path) = data.target_path {
