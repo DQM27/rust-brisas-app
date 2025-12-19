@@ -47,6 +47,10 @@
     })();
 
     const cleanup = initNetworkMonitor();
+
+    // Mostrar ventana cuando el frontend esté listo
+    invoke("show_main_window").catch(console.error);
+
     return cleanup;
   });
 </script>
