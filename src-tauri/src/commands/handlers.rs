@@ -1,7 +1,4 @@
-// ==========================================
 // src/commands/handlers.rs
-// ==========================================
-// Macro centralizada para registrar todos los comandos
 
 #[macro_export]
 macro_rules! register_handlers {
@@ -72,21 +69,21 @@ macro_rules! register_handlers {
             commands::cita_commands::procesar_ingreso_cita,
             commands::cita_commands::get_visitante_by_cedula,
             // ==========================================
-            // COMANDOS DE INGRESO VISITAS (Nuevo Módulo)
+            // COMANDOS DE INGRESO VISITAS
             // ==========================================
             commands::ingreso_visita_commands::get_ingresos_visitas_activos,
             commands::ingreso_visita_commands::get_ingresos_visitas_historial,
             commands::ingreso_visita_commands::crear_ingreso_visita_v2,
             commands::ingreso_visita_commands::registrar_salida_visita,
             // ==========================================
-            // COMANDOS DE INGRESO PROVEEDORES (Nuevo Módulo)
+            // COMANDOS DE INGRESO PROVEEDORES
             // ==========================================
             commands::ingreso_proveedor_commands::crear_ingreso_proveedor_v2,
             commands::ingreso_proveedor_commands::get_ingresos_proveedores_activos,
             commands::ingreso_proveedor_commands::get_ingresos_proveedores_historial,
             commands::ingreso_proveedor_commands::registrar_salida_proveedor,
             commands::ingreso_proveedor_commands::validar_ingreso_proveedor,
-            commands::ingreso_proveedor_commands::search_proveedores, // Deprecated/Legacy search
+            commands::ingreso_proveedor_commands::search_proveedores,
             // ==========================================
             // COMANDOS DE PROVEEDORES (CATALOGO)
             // ==========================================
@@ -97,32 +94,19 @@ macro_rules! register_handlers {
             commands::proveedor_commands::update_proveedor,
             commands::proveedor_commands::get_proveedor_by_id,
             // ==========================================
-            // COMANDOS DE ENTRADA (Fase 1)
+            // COMANDOS DE INGRESO CONTRATISTA (UNIFICADO)
             // ==========================================
-            commands::entrada_commands::validar_ingreso_contratista,
-            commands::entrada_commands::crear_ingreso_contratista,
-            // ==========================================
-            // COMANDOS DE PERMANENCIA (Fase 2)
-            // ==========================================
-            commands::permanencia_commands::get_ingreso_con_estado,
-            commands::permanencia_commands::get_ingresos_abiertos_con_alertas,
-            commands::permanencia_commands::verificar_tiempos_excedidos,
-            commands::permanencia_commands::verificar_alertas_tempranas,
-            commands::permanencia_commands::verificar_cambio_lista_negra,
-            commands::permanencia_commands::verificar_cambios_lista_negra_masivo,
-            commands::permanencia_commands::get_resumen_permanencias,
-            // ==========================================
-            // COMANDOS DE SALIDA (Fase 3)
-            // ==========================================
-            commands::salida_commands::validar_puede_salir,
-            commands::salida_commands::registrar_salida,
-            commands::salida_commands::registrar_salida_con_verificacion_gafete,
-            commands::salida_commands::get_salidas_del_dia,
-            commands::salida_commands::get_salidas_en_rango,
-            commands::salida_commands::get_estadisticas_salidas,
+            commands::ingreso_contratista_commands::validate_ingreso_contratista,
+            commands::ingreso_contratista_commands::create_ingreso_contratista,
+            commands::ingreso_contratista_commands::validate_exit_contratista,
+            commands::ingreso_contratista_commands::register_exit_contratista,
+            // Monitoreo
+            commands::ingreso_contratista_commands::get_permanencia_status,
+            commands::ingreso_contratista_commands::check_time_alerts,
             // ==========================================
             // COMANDOS GENERALES DE CONSULTA DE INGRESOS
             // ==========================================
+            // "Legacy" queries genéricas
             commands::ingreso_commands::get_ingreso_by_id,
             commands::ingreso_commands::get_all_ingresos,
             commands::ingreso_commands::get_ingresos_abiertos,
@@ -137,16 +121,12 @@ macro_rules! register_handlers {
             commands::search_commands::search_contratistas,
             commands::search_commands::reindex_all_contratistas,
             // ==========================================
-            // COMANDOS DE EXPORTACIÓN (NUEVO)
+            // COMANDOS DE EXPORTACIÓN
             // ==========================================
-
-            // Comando principal unificado
             commands::export_commands::export_data,
-            // Comandos de verificación de disponibilidad
             commands::export_commands::check_export_available,
             commands::export_commands::get_available_export_formats,
             commands::export_commands::is_export_format_available,
-            // Comandos específicos por formato (opcionales)
             commands::export_commands::export_to_pdf,
             commands::export_commands::export_to_excel,
             commands::export_commands::export_to_csv,
@@ -175,7 +155,7 @@ macro_rules! register_handlers {
             commands::config_commands::get_app_config,
             commands::config_commands::update_terminal_config,
             // ==========================================
-            // COMANDOS DE PREFERENCIAS (NUEVO)
+            // COMANDOS DE PREFERENCIAS
             // ==========================================
             commands::preferences_commands::get_user_preferences,
             commands::preferences_commands::set_user_preference,

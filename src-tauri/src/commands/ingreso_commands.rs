@@ -5,7 +5,7 @@
 // (Los comandos de entrada/salida están en sus propios módulos)
 
 use crate::db::alerta_gafete_queries as alerta_db;
-use crate::db::ingreso_queries as db;
+use crate::db::ingreso_general_queries as db;
 use crate::models::ingreso::{
     AlertaGafeteResponse, IngresoListResponse, IngresoResponse, ResolverAlertaInput,
 };

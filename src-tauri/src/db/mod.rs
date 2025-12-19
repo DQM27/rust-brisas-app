@@ -12,9 +12,12 @@ pub mod cita_queries;
 pub mod contratista_queries;
 pub mod empresa_queries;
 pub mod gafete_queries;
-pub mod ingreso_proveedor_queries;
-pub mod ingreso_queries;
-pub mod ingreso_visita_queries;
+
+pub mod ingreso_contratista_queries; // Contratistas
+pub mod ingreso_general_queries; // General (Logs, Historial completo)
+pub mod ingreso_proveedor_queries; // Proveedores
+pub mod ingreso_visita_queries; // Visitas
+
 pub mod lista_negra_queries;
 pub mod preferences_queries;
 pub mod proveedor_queries;

@@ -1,4 +1,5 @@
 pub mod cita;
+pub mod ingreso_contratista; // NUEVO
 pub mod ingreso_proveedor;
 pub mod ingreso_visita;
 pub mod lista_negra;
@@ -10,4 +11,3 @@ pub mod contratista;
 pub mod empresa;
 pub mod export;
 pub mod gafete;
-pub mod ingreso;

@@ -5,20 +5,24 @@ pub mod config_commands;
 pub mod contratista_commands;
 pub mod email_commands;
 pub mod empresa_commands;
-pub mod entrada_commands;
+// REEMPLAZADO: pub mod entrada_commands;
 pub mod export_commands;
 pub mod export_profiles;
 pub mod gafete_commands;
-pub mod ingreso_commands;
+
+// NUEVO UNIFICADO:
+pub mod ingreso_contratista_commands;
+
+// pub mod ingreso_commands; -> MIGRADO a ingreso_contratista_commands (para general, usaremos queries especificos si hace falta)
 pub mod ingreso_proveedor_commands;
 pub mod ingreso_visita_commands;
 pub mod keyring_commands;
 pub mod lista_negra_commands;
-pub mod permanencia_commands;
+// REEMPLAZADO: pub mod permanencia_commands;
 pub mod preferences_commands;
 pub mod proveedor_commands;
 
-pub mod salida_commands;
+// REEMPLAZADO: pub mod salida_commands;
 pub mod search_commands;
 pub mod shortcuts_commands;
 pub mod templates;
