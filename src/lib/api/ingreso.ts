@@ -106,8 +106,8 @@ export const ingreso = {
      */
     getSalidasEnRango: async (fechaInicio: string, fechaFin: string): Promise<IngresoResponse[]> => {
         return await invoke('get_salidas_en_rango', {
-            fecha_inicio: fechaInicio,
-            fecha_fin: fechaFin
+            fechaInicio,
+            fechaFin
         });
     },
 
