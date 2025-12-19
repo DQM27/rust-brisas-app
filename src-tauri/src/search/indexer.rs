@@ -45,9 +45,9 @@ pub fn initialize_index(index_path: &Path) -> Result<Index, String> {
 
 /// Obtiene un writer para el índice
 pub fn get_index_writer(index: &Index) -> Result<IndexWriter, String> {
-    // Budget de 50MB para el writer (ajustable según necesidad)
+    // Budget reducido a 3MB para ahorrar memoria (antes 50MB)
     index
-        .writer(50_000_000)
+        .writer(3_000_000)
         .map_err(|e| format!("Error al crear writer: {}", e))
 }
 
