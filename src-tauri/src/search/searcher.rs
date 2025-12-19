@@ -27,7 +27,7 @@ pub struct SearchResult {
 pub fn get_index_reader(index: &Index) -> Result<IndexReader, String> {
     index
         .reader_builder()
-        .reload_policy(ReloadPolicy::OnCommitWithDelay)
+        .reload_policy(ReloadPolicy::Manual)
         .try_into()
         .map_err(|e| format!("Error al crear reader: {}", e))
 }
