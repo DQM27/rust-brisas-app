@@ -618,19 +618,3 @@
     </div>
   </div>
 {/if}
-
-<style>
-  /* Auto-theming for date picker icon */
-  .calendar-icon-themed::-webkit-calendar-picker-indicator {
-    cursor: pointer;
-  }
-  /* Dark mode specific override for calendar icon */
-  :global(.dark) .calendar-icon-themed::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-    opacity: 0.6;
-  }
-  :global(.dark)
-    .calendar-icon-themed::-webkit-calendar-picker-indicator:hover {
-    opacity: 1;
-  }
-</style>
