@@ -131,6 +131,51 @@ pub async fn find_ingreso_by_gafete(
     Ok(row_to_ingreso(&row)?)
 }
 
+/// Busca SALIDAS en un rango de fechas (Cualquier tipo)
+pub async fn find_salidas_in_range_with_details(
+    pool: &SqlitePool,
+    fecha_inicio: &str,
+    fecha_fin: &str,
+) -> Result<Vec<(Ingreso, IngresoDetails)>, String> {
+    // Añadimos hora inicio y fin para cubrir todo el día
+    let start = format!("{}T00:00:00", fecha_inicio);
+    let end = format!("{}T23:59:59", fecha_fin);
+
+    let rows = sqlx::query(
+        "SELECT i.*,
+                u_ingreso.nombre as usuario_ingreso_nombre,
+                u_salida.nombre as usuario_salida_nombre,
+                v.placa as vehiculo_placa
+         FROM ingresos i
+         LEFT JOIN users u_ingreso ON i.usuario_ingreso_id = u_ingreso.id
+         LEFT JOIN users u_salida ON i.usuario_salida_id = u_salida.id
+         LEFT JOIN vehiculos v ON i.vehiculo_id = v.id
+         WHERE i.fecha_hora_salida >= ? AND i.fecha_hora_salida <= ?
+         ORDER BY i.fecha_hora_salida DESC",
+    )
+    .bind(start)
+    .bind(end)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| format!("Error al buscar salidas por rango: {}", e))?;
+
+    let mut results = Vec::new();
+    for row in rows {
+        let ingreso = row_to_ingreso(&row)?;
+        let details = extract_details(&row);
+        results.push((ingreso, details));
+    }
+    Ok(results)
+}
+
+/// Busca SALIDAS de un día específico
+pub async fn find_salidas_by_date_with_details(
+    pool: &SqlitePool,
+    fecha: &str,
+) -> Result<Vec<(Ingreso, IngresoDetails)>, String> {
+    find_salidas_in_range_with_details(pool, fecha, fecha).await
+}
+
 // ==========================================
 // HELPERS
 // ==========================================

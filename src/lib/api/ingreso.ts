@@ -40,7 +40,10 @@ export const ingreso = {
      */
     crearIngresoContratista: async (input: CreateIngresoContratistaInput): Promise<IngresoResponse> => {
         const validated = CreateIngresoContratistaSchema.parse(input);
-        return await invoke('create_ingreso_contratista', { input: validated });
+        return await invoke('create_ingreso_contratista', {
+            input: validated,
+            usuarioId: validated.usuarioIngresoId
+        });
     },
 
     /**
@@ -95,9 +98,17 @@ export const ingreso = {
      */
     getSalidasDelDia: async (fecha?: string): Promise<IngresoResponse[]> => {
         const targetDate = fecha || new Date().toISOString().split('T')[0];
-        // Nota: get_salidas_del_dia no fue migrado explícitamente en ingreso_contratista_commands
-        // Si no existe, esto fallará. Asumimos que ingreso_commands lo mantiene o fallará.
         return await invoke('get_salidas_del_dia', { fecha: targetDate });
+    },
+
+    /**
+     * Obtener salidas en un rango de fechas
+     */
+    getSalidasEnRango: async (fechaInicio: string, fechaFin: string): Promise<IngresoResponse[]> => {
+        return await invoke('get_salidas_en_rango', {
+            fecha_inicio: fechaInicio,
+            fecha_fin: fechaFin
+        });
     },
 
     // ...

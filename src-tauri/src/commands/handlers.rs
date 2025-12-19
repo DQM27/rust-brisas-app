@@ -111,6 +111,8 @@ macro_rules! register_handlers {
             commands::ingreso_commands::get_all_ingresos,
             commands::ingreso_commands::get_ingresos_abiertos,
             commands::ingreso_commands::get_ingreso_by_gafete,
+            commands::ingreso_commands::get_salidas_en_rango,
+            commands::ingreso_commands::get_salidas_del_dia,
             // ==========================================
             // COMANDOS DE ALERTAS DE GAFETES
             // ==========================================

@@ -93,6 +93,43 @@ pub async fn get_ingreso_by_gafete(
     Ok(response)
 }
 
+/// Obtiene salidas en rango de fechas (YYYY-MM-DD)
+#[tauri::command]
+pub async fn get_salidas_en_rango(
+    pool: State<'_, SqlitePool>,
+    fecha_inicio: String,
+    fecha_fin: String,
+) -> Result<Vec<IngresoResponse>, String> {
+    let results = db::find_salidas_in_range_with_details(&pool, &fecha_inicio, &fecha_fin).await?;
+    let mut responses = Vec::new();
+    for (ingreso, details) in results {
+        let mut response = IngresoResponse::from(ingreso);
+        response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
+        response.usuario_salida_nombre = details.usuario_salida_nombre;
+        response.vehiculo_placa = details.vehiculo_placa;
+        responses.push(response);
+    }
+    Ok(responses)
+}
+
+/// Obtiene salidas de un día (YYYY-MM-DD)
+#[tauri::command]
+pub async fn get_salidas_del_dia(
+    pool: State<'_, SqlitePool>,
+    fecha: String,
+) -> Result<Vec<IngresoResponse>, String> {
+    let results = db::find_salidas_by_date_with_details(&pool, &fecha).await?;
+    let mut responses = Vec::new();
+    for (ingreso, details) in results {
+        let mut response = IngresoResponse::from(ingreso);
+        response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
+        response.usuario_salida_nombre = details.usuario_salida_nombre;
+        response.vehiculo_placa = details.vehiculo_placa;
+        responses.push(response);
+    }
+    Ok(responses)
+}
+
 // ==========================================
 // GESTIÓN DE ALERTAS DE GAFETES
 // ==========================================
