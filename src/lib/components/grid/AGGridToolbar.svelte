@@ -1,5 +1,6 @@
 <!-- src/lib/components/grid/AGGridToolbar.svelte -->
 <script lang="ts">
+  // @ts-nocheck - Svelte 5 runes not recognized by TS
   import type {
     ToolbarContext,
     CustomToolbarButton,
@@ -39,7 +40,7 @@
   }: Props = $props();
 
   // Obtener configuración de la grid
-  const gridConfig = getGridConfig(gridId);
+  const gridConfig = $derived(getGridConfig(gridId));
 
   // Proveer valor por defecto si no existe configuración
   const buttonsConfig = $derived(

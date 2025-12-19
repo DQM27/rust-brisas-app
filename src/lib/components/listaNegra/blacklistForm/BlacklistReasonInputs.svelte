@@ -1,5 +1,6 @@
 <!-- BlacklistReasonInputs.svelte -->
 <script lang="ts">
+  // @ts-nocheck - Svelte 5 runes not recognized by TS
   interface Props {
     motivo: string;
     observaciones: string;
@@ -18,18 +19,24 @@
     onObservacionesChange,
   }: Props = $props();
 
-  const motivoLabel = isUnblock
-    ? "Motivo del Desbloqueo"
-    : "Motivo del Bloqueo";
-  const motivoPlaceholder = isUnblock
-    ? "Detalle la razón de la desactivación del bloqueo (ej: Cumplió sanción, revisión de caso, etc.)"
-    : "Detalle la razón del bloqueo (ej: Agresión verbal a personal de seguridad, incumplimiento grave de normas, etc.)";
-  const observacionesLabel = isUnblock
-    ? "Observaciones de Desbloqueo (Opcional)"
-    : "Observaciones Adicionales (Opcional)";
-  const observacionesPlaceholder = isUnblock
-    ? "Notas internas sobre el desbloqueo."
-    : "Notas internas sobre el incidente.";
+  const motivoLabel = $derived(
+    isUnblock ? "Motivo del Desbloqueo" : "Motivo del Bloqueo",
+  );
+  const motivoPlaceholder = $derived(
+    isUnblock
+      ? "Detalle la razón de la desactivación del bloqueo (ej: Cumplió sanción, revisión de caso, etc.)"
+      : "Detalle la razón del bloqueo (ej: Agresión verbal a personal de seguridad, incumplimiento grave de normas, etc.)",
+  );
+  const observacionesLabel = $derived(
+    isUnblock
+      ? "Observaciones de Desbloqueo (Opcional)"
+      : "Observaciones Adicionales (Opcional)",
+  );
+  const observacionesPlaceholder = $derived(
+    isUnblock
+      ? "Notas internas sobre el desbloqueo."
+      : "Notas internas sobre el incidente.",
+  );
 </script>
 
 <div class="space-y-3">

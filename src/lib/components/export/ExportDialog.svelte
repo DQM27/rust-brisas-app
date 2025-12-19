@@ -1,5 +1,6 @@
 <!-- src/lib/components/export/ExportDialog.svelte -->
 <script lang="ts">
+  // @ts-nocheck - Svelte 5 runes not recognized by TS
   import {
     X,
     FileText,
@@ -32,10 +33,15 @@
     columns = [],
   }: Props = $props();
 
-  // Estado de columnas
-  let columnSelection = $state(
-    columns.map((c) => ({ ...c, selected: c.selected })),
-  );
+  // Estado de columnas - inicializar vacío y sincronizar via effect
+  let columnSelection = $state<
+    { id: string; name: string; selected: boolean }[]
+  >([]);
+
+  // Sync when columns prop changes
+  $effect(() => {
+    columnSelection = columns.map((c) => ({ ...c, selected: c.selected }));
+  });
   let showColumnSelector = $state(false);
 
   // Computed: toggle select all

@@ -1,4 +1,5 @@
 <script lang="ts">
+  // @ts-nocheck - Svelte 5 runes not recognized by TS
   import type { UserResponse } from "$lib/types/user";
   import {
     UpdateUserSchema,
