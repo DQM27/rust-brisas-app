@@ -12,7 +12,7 @@ use crate::search::{
     update_proveedor_in_index, update_user_in_index,
 };
 use crate::search::{get_index_reader, get_index_writer, initialize_index};
-use crate::search::{search_index, SearchResult};
+use crate::search::{search_index, SearchFields, SearchResult};
 use sqlx::SqlitePool;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -23,6 +23,7 @@ use tokio::sync::Mutex;
 pub struct SearchService {
     pub index: Arc<Index>,
     pub reader: Arc<IndexReader>,
+    pub fields: Arc<SearchFields>, // Cache de campos
     pub writer_mutex: Mutex<()>,
     #[allow(dead_code)]
     index_path: PathBuf,
@@ -37,9 +38,13 @@ impl SearchService {
         let index = initialize_index(&index_path)?;
         let reader = get_index_reader(&index)?;
 
+        // Pre-calcular campos (Zero-Cost Abstraction)
+        let fields = Arc::new(SearchFields::new(&index.schema()));
+
         Ok(Self {
             index: Arc::new(index),
             reader: Arc::new(reader),
+            fields,
             writer_mutex: Mutex::new(()),
             index_path,
         })
@@ -289,7 +294,8 @@ impl SearchService {
 
     /// Busca en el índice (contratistas, usuarios, proveedores y lista negra)
     pub fn search(&self, query: &str, limit: usize) -> Result<Vec<SearchResult>, String> {
-        search_index(&self.index, &self.reader, query, limit)
+        // Pasamos self.fields en lugar de buscar por strings (Hot Path Optimizado)
+        search_index(&self.index, &self.reader, &self.fields, query, limit)
     }
 
     /// Verifica si el índice está vacío
