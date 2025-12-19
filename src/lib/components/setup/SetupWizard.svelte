@@ -1,7 +1,6 @@
 <script lang="ts">
   import {
     Shield,
-    Mail,
     Key,
     Monitor,
     ChevronRight,
@@ -16,8 +15,6 @@
   import {
     setupCredentials,
     generateRandomSecret,
-    testSmtpConnectionWithCreds,
-    type SmtpCredentials,
     type Argon2Params,
   } from "$lib/services/keyringService";
 
@@ -31,23 +28,9 @@
   let currentStep = $state(1);
   let isSubmitting = $state(false);
   let error = $state("");
-  let testingSmtp = $state(false);
-  let smtpTestResult = $state<{ success: boolean; message: string } | null>(
-    null,
-  );
 
   // Visibility toggles
-  let showSmtpPassword = $state(false);
   let showArgon2Secret = $state(false);
-
-  // Datos del formulario
-  let smtpCredentials = $state<SmtpCredentials>({
-    host: "",
-    port: 587,
-    user: "",
-    password: "",
-    feedback_email: "",
-  });
 
   let argon2Params = $state<Argon2Params>({
     memory: 19456,
@@ -65,13 +48,6 @@
   );
 
   let step2Valid = $derived(
-    smtpCredentials.host.trim() !== "" &&
-      smtpCredentials.user.trim() !== "" &&
-      smtpCredentials.password.trim() !== "" &&
-      smtpCredentials.feedback_email.trim() !== "",
-  );
-
-  let step3Valid = $derived(
     argon2Params.secret.trim() !== "" &&
       argon2Params.memory >= 1024 &&
       argon2Params.iterations >= 1 &&
@@ -87,22 +63,8 @@
     }
   }
 
-  async function testSmtp() {
-    testingSmtp = true;
-    smtpTestResult = null;
-    try {
-      // Usar las credenciales del formulario directamente
-      const result = await testSmtpConnectionWithCreds(smtpCredentials);
-      smtpTestResult = { success: true, message: result };
-    } catch (e) {
-      smtpTestResult = { success: false, message: `${e}` };
-    } finally {
-      testingSmtp = false;
-    }
-  }
-
   function nextStep() {
-    if (currentStep < 3) {
+    if (currentStep < 2) {
       currentStep++;
       error = "";
     }
@@ -120,7 +82,6 @@
     error = "";
     try {
       await setupCredentials({
-        smtp: smtpCredentials,
         argon2: argon2Params,
         terminal_name: terminalName,
         terminal_location: terminalLocation,
@@ -162,7 +123,7 @@
 
       <!-- Progress Steps -->
       <div class="flex items-center gap-2 mt-4">
-        {#each [1, 2, 3] as step}
+        {#each [1, 2] as step}
           <div class="flex items-center gap-2 flex-1">
             <div
               class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors {step <
@@ -176,7 +137,7 @@
                 {step}
               {/if}
             </div>
-            {#if step < 3}
+            {#if step < 2}
               <div
                 class="flex-1 h-1 rounded-full {step < currentStep
                   ? 'bg-[#2da44e]'
@@ -193,11 +154,6 @@
           >
           <span
             class="text-xs text-gray-500 {currentStep >= 2
-              ? 'font-medium text-[#2da44e]'
-              : ''}">SMTP</span
-          >
-          <span
-            class="text-xs text-gray-500 {currentStep >= 3
               ? 'font-medium text-[#2da44e]'
               : ''}">Seguridad</span
           >
@@ -267,150 +223,8 @@
         </div>
       {/if}
 
-      <!-- Step 2: SMTP -->
+      <!-- Step 2: Argon2 (Final) -->
       {#if currentStep === 2}
-        <div transition:fade={{ duration: 200 }}>
-          <div class="flex items-center gap-2 mb-4">
-            <Mail class="w-5 h-5 text-[#2da44e]" />
-            <h3 class="font-semibold text-gray-900 dark:text-gray-100">
-              Configuracion SMTP
-            </h3>
-          </div>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
-            Configura el servidor de correo para recibir notificaciones de
-            errores y sugerencias.
-          </p>
-
-          <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label
-                  for="smtpHost"
-                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >
-                  Host SMTP
-                </label>
-                <input
-                  id="smtpHost"
-                  type="text"
-                  bind:value={smtpCredentials.host}
-                  placeholder="smtp.gmail.com"
-                  class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label
-                  for="smtpPort"
-                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                >
-                  Puerto
-                </label>
-                <input
-                  id="smtpPort"
-                  type="number"
-                  bind:value={smtpCredentials.port}
-                  placeholder="587"
-                  class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label
-                for="smtpUser"
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Usuario / Email
-              </label>
-              <input
-                id="smtpUser"
-                type="email"
-                bind:value={smtpCredentials.user}
-                placeholder="tu@email.com"
-                class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label
-                for="smtpPassword"
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Contrasena de Aplicacion
-              </label>
-              <div class="relative">
-                <input
-                  id="smtpPassword"
-                  type={showSmtpPassword ? "text" : "password"}
-                  bind:value={smtpCredentials.password}
-                  placeholder="••••••••••••"
-                  class="w-full px-3 py-2 pr-10 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent"
-                />
-                <button
-                  type="button"
-                  onclick={() => (showSmtpPassword = !showSmtpPassword)}
-                  class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
-                >
-                  {#if showSmtpPassword}
-                    <EyeOff class="w-4 h-4" />
-                  {:else}
-                    <Eye class="w-4 h-4" />
-                  {/if}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label
-                for="smtpFeedback"
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Email de Destino (Feedback)
-              </label>
-              <input
-                id="smtpFeedback"
-                type="email"
-                bind:value={smtpCredentials.feedback_email}
-                placeholder="soporte@tuempresa.com"
-                class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent"
-              />
-            </div>
-
-            <!-- Test Connection -->
-            {#if step2Valid}
-              <div class="pt-2">
-                <button
-                  type="button"
-                  onclick={testSmtp}
-                  disabled={testingSmtp}
-                  class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#21262d] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#30363d] disabled:opacity-50"
-                >
-                  {#if testingSmtp}
-                    <RefreshCw class="w-4 h-4 animate-spin" />
-                    <span>Probando...</span>
-                  {:else}
-                    <Mail class="w-4 h-4" />
-                    <span>Probar conexion</span>
-                  {/if}
-                </button>
-
-                {#if smtpTestResult}
-                  <span
-                    class="ml-3 text-sm {smtpTestResult.success
-                      ? 'text-green-600'
-                      : 'text-red-600'}"
-                  >
-                    {smtpTestResult.message}
-                  </span>
-                {/if}
-              </div>
-            {/if}
-          </div>
-        </div>
-      {/if}
-
-      <!-- Step 3: Argon2 (Final) -->
-      {#if currentStep === 3}
         <div transition:fade={{ duration: 200 }}>
           <div class="flex items-center gap-2 mb-4">
             <Key class="w-5 h-5 text-[#2da44e]" />
@@ -534,12 +348,6 @@
                 <li class="flex items-center gap-2">
                   <Check class="w-4 h-4 text-[#2da44e]" />
                   <span class="text-gray-600 dark:text-gray-300"
-                    >SMTP: {smtpCredentials.host}:{smtpCredentials.port}</span
-                  >
-                </li>
-                <li class="flex items-center gap-2">
-                  <Check class="w-4 h-4 text-[#2da44e]" />
-                  <span class="text-gray-600 dark:text-gray-300"
                     >Argon2: {argon2Params.memory}KB, {argon2Params.iterations} iter</span
                   >
                 </li>
@@ -564,12 +372,11 @@
         <span>Anterior</span>
       </button>
 
-      {#if currentStep < 3}
+      {#if currentStep < 2}
         <button
           type="button"
           onclick={nextStep}
-          disabled={(currentStep === 1 && !step1Valid) ||
-            (currentStep === 2 && !step2Valid)}
+          disabled={currentStep === 1 && !step1Valid}
           class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-[#2da44e] hover:bg-[#2c974b] text-white disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span>Siguiente</span>

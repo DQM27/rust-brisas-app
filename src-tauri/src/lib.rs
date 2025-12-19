@@ -12,7 +12,12 @@ pub mod models;
 pub mod search;
 pub mod services;
 
+use std::sync::atomic::AtomicBool;
 use tauri::Manager;
+
+pub struct AppState {
+    pub backend_ready: AtomicBool,
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -50,10 +55,16 @@ pub fn run() {
                 }
             }
 
+            // Estado de la aplicación
+            let app_state = AppState {
+                backend_ready: AtomicBool::new(true), // Backend listo tras inicialización
+            };
+
             tauri::Builder::default()
                 .manage(pool)
                 .manage(app_config)
                 .manage(search_service)
+                .manage(app_state)
                 .plugin(tauri_plugin_dialog::init())
                 .plugin(tauri_plugin_opener::init())
                 .plugin(tauri_plugin_updater::Builder::new().build())

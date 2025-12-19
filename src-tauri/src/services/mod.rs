@@ -2,7 +2,6 @@ pub mod auth;
 pub mod backup;
 
 pub mod contratista_service;
-pub mod email_service;
 pub mod empresa_service;
 // pub mod entrada_service; // ELIMINADO
 

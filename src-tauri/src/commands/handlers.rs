@@ -168,16 +168,7 @@ macro_rules! register_handlers {
             // COMANDOS DE VENTANA
             // ==========================================
             commands::window_commands::show_main_window,
-            // ==========================================
-            // COMANDOS DE EMAIL/REPORTES
-            // ==========================================
-            commands::email_commands::send_suggestion,
-            commands::email_commands::send_error_report,
-            commands::email_commands::create_reporte,
-            commands::email_commands::get_all_reportes,
-            commands::email_commands::get_reporte,
-            commands::email_commands::get_reportes_by_tipo,
-            commands::email_commands::retry_reporte,
+            commands::app_commands::app_ready,
             // ==========================================
             // COMANDOS DE KEYRING/CREDENCIALES
             // ==========================================
@@ -185,10 +176,6 @@ macro_rules! register_handlers {
             commands::keyring_commands::is_app_configured,
             commands::keyring_commands::needs_setup,
             commands::keyring_commands::setup_credentials,
-            commands::keyring_commands::get_smtp_config,
-            commands::keyring_commands::update_smtp_credentials,
-            commands::keyring_commands::test_smtp_connection,
-            commands::keyring_commands::test_smtp_connection_with_creds,
             commands::keyring_commands::get_argon2_config,
             commands::keyring_commands::update_argon2_params,
             commands::keyring_commands::generate_argon2_secret,

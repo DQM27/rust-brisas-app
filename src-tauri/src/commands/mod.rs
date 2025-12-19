@@ -1,10 +1,11 @@
+pub mod app_commands;
 pub mod backup;
 
 pub mod cita_commands;
 pub mod config_commands;
 pub mod contratista_commands;
 pub mod debug_commands;
-pub mod email_commands;
+
 pub mod empresa_commands;
 // REEMPLAZADO: pub mod entrada_commands;
 pub mod export_commands;

@@ -3,6 +3,7 @@ use tauri::{AppHandle, Manager}; // We will define this in lib.rs
 
 #[tauri::command]
 pub async fn app_ready(app: AppHandle, state: tauri::State<'_, AppState>) -> Result<(), String> {
+    println!("🚀 app_ready command received!");
     // If backend is ready, close splash and show main
     // If not, we do nothing (frontend should listen for event)
     // Actually, to be safe, we can enforce consistency here.

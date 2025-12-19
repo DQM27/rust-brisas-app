@@ -10,25 +10,8 @@ import { invoke } from '@tauri-apps/api/core';
 // ==========================================
 
 export interface CredentialStatus {
-  smtp_configured: boolean;
   argon2_configured: boolean;
   fully_configured: boolean;
-}
-
-export interface SmtpCredentials {
-  host: string;
-  port: number;
-  user: string;
-  password: string;
-  feedback_email: string;
-}
-
-export interface SmtpCredentialsSafe {
-  host: string;
-  port: number;
-  user: string;
-  has_password: boolean;
-  feedback_email: string;
 }
 
 export interface Argon2Params {
@@ -46,7 +29,6 @@ export interface Argon2ParamsSafe {
 }
 
 export interface SetupCredentialsInput {
-  smtp: SmtpCredentials;
   argon2: Argon2Params;
   terminal_name: string;
   terminal_location: string;
@@ -81,25 +63,7 @@ export async function setupCredentials(input: SetupCredentialsInput): Promise<Se
   return invoke<SetupResult>('setup_credentials', { input });
 }
 
-// ==========================================
-// SMTP
-// ==========================================
 
-export async function getSmtpConfig(): Promise<SmtpCredentialsSafe | null> {
-  return invoke<SmtpCredentialsSafe | null>('get_smtp_config');
-}
-
-export async function updateSmtpCredentials(creds: SmtpCredentials): Promise<void> {
-  return invoke('update_smtp_credentials', { creds });
-}
-
-export async function testSmtpConnection(): Promise<string> {
-  return invoke<string>('test_smtp_connection');
-}
-
-export async function testSmtpConnectionWithCreds(creds: SmtpCredentials): Promise<string> {
-  return invoke<string>('test_smtp_connection_with_creds', { creds });
-}
 
 // ==========================================
 // ARGON2
