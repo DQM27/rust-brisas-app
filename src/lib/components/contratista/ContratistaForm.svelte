@@ -6,7 +6,7 @@
     submitFetchActiveEmpresas,
   } from "$lib/logic/empresa/empresaService";
   import type { TipoVehiculo } from "$lib/types/vehiculo";
-  import { shortcutService } from "$lib/services/shortcutService";
+  import { X } from "lucide-svelte";
 
   export let loading = false;
   export let onSubmit: (data: any) => void;
@@ -37,6 +37,7 @@
   let nuevaEmpresaNombre = "";
   let creatingEmpresa = false;
   let empresaError = "";
+  let cedulaInputRef: HTMLInputElement | undefined;
 
   // --- CARGA INICIAL ---
   onMount(() => {
@@ -51,23 +52,10 @@
       loadingEmpresas = false;
     })();
 
-    // 2. Registro de Atajos (Síncrono)
-    const unregSave = shortcutService.registerHandler(
-      "contractor-form",
-      "save",
-      () => handleSubmit(new Event("submit")),
-    );
-    const unregCancel = shortcutService.registerHandler(
-      "contractor-form",
-      "cancel",
-      reset,
-    );
-
-    // Retornamos cleanup síncrono
-    return () => {
-      unregSave();
-      unregCancel();
-    };
+    // 2. Auto-focus
+    setTimeout(() => {
+      cedulaInputRef?.focus();
+    }, 100);
   });
 
   // Reaccionar a cambios en initialData para modo edición
@@ -176,10 +164,7 @@
   }
 </script>
 
-<div
-  class="flex min-h-full items-center justify-center p-4 sm:p-6"
-  use:shortcutService.useScope={"contractor-form"}
->
+<div class="flex min-h-full items-center justify-center p-4 sm:p-6">
   <div
     class="relative z-10 w-full max-w-[90vw] rounded-lg bg-white dark:bg-[#0d1117] shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-500 ease-in-out {tieneVehiculo
       ? 'max-w-[650px]'
@@ -212,6 +197,7 @@
               id="cedula"
               type="text"
               bind:value={cedula}
+              bind:this={cedulaInputRef}
               placeholder="1-2345-6789"
               disabled={loading}
               class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"

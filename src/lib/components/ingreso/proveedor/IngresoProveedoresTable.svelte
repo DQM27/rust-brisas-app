@@ -20,8 +20,6 @@
   import SearchBar from "$lib/components/shared/SearchBar.svelte";
   import { selectedSearchStore } from "$lib/stores/searchStore";
 
-  import { shortcutService } from "$lib/services/shortcutService";
-
   const {
     onRegisterClick,
     onCloseForm,

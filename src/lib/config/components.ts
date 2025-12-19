@@ -21,7 +21,6 @@ import GeneralSettingsPanel from '$lib/components/settings/GeneralSettingsPanel.
 import UpdateSettingsPanel from '$lib/components/settings/UpdateSettingsPanel.svelte';
 import BackupSettingsPanel from '$lib/components/settings/BackupSettingsPanel.svelte';
 import DeviceSettingsPanel from '$lib/components/settings/DeviceSettingsPanel.svelte';
-import ShortcutSettings from '$lib/components/settings/ShortcutSettings.svelte';
 import SecuritySettingsPanel from '$lib/components/settings/SecuritySettingsPanel.svelte';
 import ExportSettingsPanel from '$lib/components/settings/ExportSettingsPanel.svelte';
 import ReportesListView from '$lib/components/settings/ReportesListView.svelte';
@@ -54,7 +53,6 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'update-settings': UpdateSettingsPanel,
   'backup-settings': BackupSettingsPanel,
   'device-settings': DeviceSettingsPanel,
-  'shortcut-settings': ShortcutSettings,
   'security-settings': SecuritySettingsPanel,
   'export-settings': ExportSettingsPanel,
   'reportes-list': ReportesListView,

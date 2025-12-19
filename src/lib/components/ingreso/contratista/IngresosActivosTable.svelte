@@ -39,7 +39,6 @@
   // ✅ NUEVO: Importar store de tiempo y utilidad de evaluación
   import { currentTime } from "$lib/stores/timeStore";
   import { evaluateTimeStatus } from "$lib/logic/ingreso/ingresoService";
-  import { shortcutService } from "$lib/services/shortcutService";
 
   // Props
   const {
@@ -728,6 +727,7 @@
 
   let searchBarRef: SearchBar;
 
+  /* Atajo de búsqueda eliminado
   onMount(() => {
     return shortcutService.registerHandler(
       "ingreso-list",
@@ -737,6 +737,7 @@
       },
     );
   });
+  */
 </script>
 
 <div class="flex h-full flex-col relative bg-[#1e1e1e]">

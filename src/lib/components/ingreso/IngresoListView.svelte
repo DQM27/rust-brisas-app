@@ -2,7 +2,6 @@
   import { fade, fly } from "svelte/transition";
   import { onMount } from "svelte";
   import { preventDefault } from "svelte/legacy";
-  import { shortcutService } from "$lib/services/shortcutService";
   import { cubicOut } from "svelte/easing";
   import { activeTabId } from "$lib/stores/tabs";
   import type { CitaPopulated } from "$lib/types/cita";
@@ -57,19 +56,18 @@
 
   // Registrar manejador para el comando "new" en el contexto "ingreso-list"
   // Esto escucha cuando se dispara el comando (ej. Ctrl+N)
+  /* Atajos eliminados
   onMount(() => {
     return shortcutService.registerHandler("ingreso-list", "new", openForm);
   });
+  */
 </script>
 
 <!--
   Vista principal del módulo de Ingreso
   Usa use:shortcutService.useScope para activar el contexto "ingreso-list"
 -->
-<div
-  class="h-full flex gap-0 overflow-hidden relative bg-[#0d1117]"
-  use:shortcutService.useScope={"ingreso-list"}
->
+<div class="h-full flex gap-0 overflow-hidden relative bg-[#0d1117]">
   <!-- Panel Izquierdo: Formulario de Entrada (Colapsable) -->
   {#if isFormOpen}
     <div

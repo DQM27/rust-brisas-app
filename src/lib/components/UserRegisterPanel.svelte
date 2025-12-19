@@ -5,7 +5,7 @@
     type CreateUserForm,
   } from "$lib/schemas/userSchema";
   import { z } from "zod";
-  import { shortcutService } from "$lib/services/shortcutService";
+  import { X } from "lucide-svelte";
   import { onMount } from "svelte";
 
   interface Props {
@@ -60,28 +60,6 @@
         errors = {};
       }
     }
-  });
-
-  // Atajos de teclado
-  onMount(() => {
-    const unregSave = shortcutService.registerHandler(
-      "user-form",
-      "save",
-      () => {
-        // Simular evento de submit
-        handleSubmit(new Event("submit"));
-      },
-    );
-    const unregCancel = shortcutService.registerHandler(
-      "user-form",
-      "cancel",
-      onReset,
-    );
-
-    return () => {
-      unregSave();
-      unregCancel();
-    };
   });
 
   function handleSubmit(event: Event) {
@@ -227,10 +205,7 @@
     "mb-3 text-lg font-medium text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2";
 </script>
 
-<div
-  class="flex min-h-full items-center justify-center p-6"
-  use:shortcutService.useScope={"user-form"}
->
+<div class="flex min-h-full items-center justify-center p-6">
   <div
     class="w-full max-w-2xl rounded-lg bg-white dark:bg-[#0d1117] p-8 shadow-xl border border-gray-200 dark:border-gray-700"
   >

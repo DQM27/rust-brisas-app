@@ -4,7 +4,6 @@
   import { currentUser } from "$lib/stores/auth";
   import { toast } from "svelte-5-french-toast";
   import { X, Calendar, Clock } from "lucide-svelte";
-  import { shortcutService } from "$lib/services/shortcutService";
   import type {
     CreateCitaInput,
     CreateVisitanteInput,
@@ -127,7 +126,6 @@
 
 <div
   class="bg-[#0d1117] px-4 py-3 h-full flex flex-col border-r border-[#30363d] w-[340px] shrink-0"
-  use:shortcutService.useScope={"ingreso-visita-form"}
 >
   <!-- Header -->
   <div class="flex justify-between items-center mb-3 shrink-0">

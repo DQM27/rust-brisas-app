@@ -21,7 +21,6 @@
   import GafeteInput from "../common/GafeteInput.svelte";
   import IngresoFormFields from "../common/IngresoFormFields.svelte";
   import IngresoObservaciones from "../common/IngresoObservaciones.svelte";
-  import { shortcutService } from "$lib/services/shortcutService";
 
   import { X } from "lucide-svelte";
   import { toast } from "svelte-5-french-toast";
@@ -63,27 +62,10 @@
       }
     })();
 
-    // 2. Atajos
-    const unregSave = shortcutService.registerHandler(
-      "ingreso-proveedor-form",
-      "save",
-      () => handleSubmit(),
-    );
-    const unregCancel = shortcutService.registerHandler(
-      "ingreso-proveedor-form",
-      "cancel",
-      handleCloseForm,
-    );
-
-    // 3. Auto-focus
+    // 2. Auto-focus
     setTimeout(() => {
       proveedorSearchRef?.focus();
     }, 100);
-
-    return () => {
-      unregSave();
-      unregCancel();
-    };
   });
 
   // ==========================================
@@ -238,10 +220,7 @@
   Estructura idéntica al formulario de contratista
 -->
 
-<div
-  class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 relative"
-  use:shortcutService.useScope={"ingreso-proveedor-form"}
->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 relative">
   <div class="flex justify-between items-center mb-6">
     <h2 class="text-xl font-bold text-gray-900 dark:text-white">
       Registrar Ingreso

@@ -11,7 +11,6 @@
   import Toast from "$lib/components/Toast.svelte";
   import { themeStore } from "$lib/stores/themeStore"; // Inicializar tema
   import { generalSettings } from "$lib/stores/settingsStore";
-  import { shortcutService } from "$lib/services/shortcutService";
   import SetupWizard from "$lib/components/setup/SetupWizard.svelte";
   import { needsSetup } from "$lib/services/keyringService";
 
@@ -50,8 +49,6 @@
     // Mostrar ventana cuando el frontend esté listo
     invoke("show_main_window").catch(console.error);
 
-    // shortcutService se auto-inicializa, pero podemos forzar init explicito si queremos
-    shortcutService.init();
     const cleanup = initNetworkMonitor();
     return cleanup;
   });
