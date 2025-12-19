@@ -20,6 +20,7 @@ Cargo.lock text eol=lf
 
 .gitignore text eol=lf
 .gitattributes text eol=lf
+.cursorrules text eol=lf
 *.config.* text eol=lf
 package.json text eol=lf
 package-lock.json text eol=lf
@@ -33,7 +34,8 @@ package-lock.json text eol=lf
 *.jpeg binary
 *.gif binary
 *.ico binary
-*.svg binary
+*.svg text eol=lf
+*.xml text eol=lf
 *.woff binary
 *.woff2 binary
 *.ttf binary
