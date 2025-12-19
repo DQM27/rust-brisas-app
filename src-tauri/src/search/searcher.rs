@@ -112,7 +112,7 @@ pub fn search_contratistas(
     limit: usize,
 ) -> Result<Vec<SearchResult>, String> {
     // Agregar filtro de tipo
-    let filtered_query = format!("{} AND tipo:contratista", query_str);
+    let filtered_query = format!("({}) AND tipo:contratista", query_str);
     search_index(index, reader, &filtered_query, limit)
 }
 

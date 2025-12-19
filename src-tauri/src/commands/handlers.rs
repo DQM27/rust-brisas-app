@@ -195,6 +195,10 @@ macro_rules! register_handlers {
             commands::keyring_commands::generate_random_secret,
             commands::keyring_commands::test_keyring,
             commands::keyring_commands::reset_all_credentials,
+            // ==========================================
+            // COMANDOS DE DEBUG / SISTEMA
+            // ==========================================
+            commands::debug_commands::get_app_memory_usage,
         ]
     };
 }

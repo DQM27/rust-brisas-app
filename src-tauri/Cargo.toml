@@ -91,6 +91,7 @@ ttf-parser = { version = "0.24", optional = true }
 rust_xlsxwriter = { version = "0.69", optional = true }
 rand = "0.8.5"
 tauri-plugin-updater = "2"
+sysinfo = "0.30"
 
 # macOS Keychain API
 [target.'cfg(target_os = "macos")'.dependencies]
@@ -114,3 +115,13 @@ export = ["export-pdf", "export-excel"]
 # Features individuales por formato
 export-pdf = ["typst", "typst-pdf", "typst-assets", "ttf-parser"]
 export-excel = ["rust_xlsxwriter"]
+
+# ==========================================
+# BUILD PROFILES (OPTIMIZATIONS)
+# ==========================================
+[profile.release]
+opt-level = "z"     # Optimizar para tamaño (Size)
+lto = true          # Link Time Optimization
+codegen-units = 1   # Código más compacto (compilación más lenta)
+panic = "abort"     # Ahorra espacio quitando unwind symbols
+strip = true        # Quita símbolos de debug
