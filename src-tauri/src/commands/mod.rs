@@ -20,7 +20,6 @@ pub mod ingreso_visita_commands;
 pub mod keyring_commands;
 pub mod lista_negra_commands;
 // REEMPLAZADO: pub mod permanencia_commands;
-pub mod preferences_commands;
 pub mod proveedor_commands;
 
 // REEMPLAZADO: pub mod salida_commands;

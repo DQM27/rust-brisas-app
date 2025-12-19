@@ -152,14 +152,6 @@ macro_rules! register_handlers {
             commands::config_commands::get_app_config,
             commands::config_commands::update_terminal_config,
             // ==========================================
-            // COMANDOS DE PREFERENCIAS
-            // ==========================================
-            commands::preferences_commands::get_user_preferences,
-            commands::preferences_commands::set_user_preference,
-            commands::preferences_commands::get_user_preferences,
-            commands::preferences_commands::set_user_preference,
-            // ==========================================
-            // ==========================================
             // COMANDOS DE VENTANA
             // ==========================================
             commands::window_commands::show_main_window,

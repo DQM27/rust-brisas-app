@@ -65,7 +65,14 @@ pub fn retrieve_secret(key: &str) -> Option<String> {
     let target_wide = to_wide_string(&target_name);
     let mut credential_ptr: PCREDENTIALW = ptr::null_mut();
 
-    let result = unsafe { CredReadW(target_wide.as_ptr(), CRED_TYPE_GENERIC, 0, &mut credential_ptr) };
+    let result = unsafe {
+        CredReadW(
+            target_wide.as_ptr(),
+            CRED_TYPE_GENERIC,
+            0,
+            &mut credential_ptr,
+        )
+    };
 
     if result == 0 {
         return None;
@@ -73,11 +80,17 @@ pub fn retrieve_secret(key: &str) -> Option<String> {
 
     unsafe {
         let credential = &*credential_ptr;
-        let blob_slice = std::slice::from_raw_parts(
-            credential.CredentialBlob,
-            credential.CredentialBlobSize as usize,
-        );
-        let value = String::from_utf8_lossy(blob_slice).to_string();
+
+        // Validar que el puntero y tamaño son válidos antes de crear el slice
+        let value = if credential.CredentialBlob.is_null() || credential.CredentialBlobSize == 0 {
+            String::new()
+        } else {
+            let blob_slice = std::slice::from_raw_parts(
+                credential.CredentialBlob,
+                credential.CredentialBlobSize as usize,
+            );
+            String::from_utf8_lossy(blob_slice).to_string()
+        };
 
         // Liberar la credencial
         winapi::um::wincred::CredFree(credential_ptr as *mut _);
