@@ -47,10 +47,7 @@
     })();
 
     // Mostrar ventana cuando el frontend esté listo
-    console.log("Calling app_ready from frontend...");
-    invoke("app_ready")
-      .then(() => console.log("app_ready invoked successfully"))
-      .catch((err) => console.error("Error invoking app_ready:", err));
+    invoke("app_ready").catch(console.error);
 
     const cleanup = initNetworkMonitor();
     return cleanup;
