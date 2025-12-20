@@ -1,0 +1,38 @@
+    Checking brisas-app v0.1.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+error: prefix `e6edf3` is unknown
+  --> src\export\pdf\templates.rs:69:15
+   |
+69 |   fill: rgb("#e6edf3"),
+   |               ^^^^^^ unknown prefix
+   |
+   = note: prefixed identifiers and literals are reserved since Rust 2021
+help: consider inserting whitespace here
+   |
+69 |   fill: rgb("#e6edf3 "),
+   |                     +
+
+error: expected at least one digit in exponent
+   --> src\export\pdf\templates.rs:112:24
+    |
+112 |     title-color: rgb("#2563eb"),
+    |                        ^^^^^^
+
+error: expected `,`, found `0d1117`
+  --> src\export\pdf\templates.rs:62:15
+   |
+62 |   fill: rgb("#0d1117"),
+   |               ^^^^^^ expected `,`
+
+error: expected `,`, found `2563eb`
+   --> src\export\pdf\templates.rs:112:24
+    |
+112 |     title-color: rgb("#2563eb"),
+    |                        ^^^^^^ expected `,`
+
+error: expected `,`, found `30363d`
+   --> src\export\pdf\templates.rs:158:27
+    |
+158 |     stroke: 0.5pt + rgb("#30363d"),
+    |                           ^^^^^^ expected `,`
+
+error: could not compile `brisas-app` (lib) due to 5 previous errors

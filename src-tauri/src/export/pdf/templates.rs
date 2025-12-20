@@ -1,8 +1,8 @@
 // ==========================================
 // src/export/pdf/templates.rs
 // ==========================================
-// Generación de markup Typst dinámico
-// Crea el código Typst que será compilado a PDF
+// Generación de markup Typst dinámico con showybox
+// Usa el package showybox para cajas decorativas
 
 use crate::export::errors::{ExportError, ExportResult};
 use crate::models::export::{PageOrientation, PdfConfig, PdfDesign};
@@ -17,21 +17,18 @@ pub fn generate_typst_markup(
     headers: &[String],
     rows: &[HashMap<String, String>],
     config: &PdfConfig,
-    design: &PdfDesign, // ✅ USA PDF DESIGN (Perfil)
+    design: &PdfDesign,
 ) -> ExportResult<String> {
     let mut markup = String::new();
 
-    // 1. Imports y configuración de página
+    // 1. Imports (showybox)
+    markup.push_str(&generate_imports());
+
+    // 2. Configuración de página
     markup.push_str(&generate_page_setup(config, design)?);
 
-    // 2. Título del documento
-    markup.push_str(&generate_title(&config.title, design));
-
-    // 3. Tabla con datos
-    markup.push_str(&generate_table(headers, rows, design)?);
-
-    // 4. Footer con metadata
-    markup.push_str(&generate_footer(design));
+    // 3. Contenido dentro de showybox
+    markup.push_str(&generate_showybox_content(headers, rows, config, design)?);
 
     Ok(markup)
 }
@@ -39,9 +36,14 @@ pub fn generate_typst_markup(
 // ==========================================
 // SECCIONES DEL TEMPLATE
 // ==========================================
-/// Genera configuración de página y imports
+
+/// Genera imports de packages
+fn generate_imports() -> String {
+    "#import \"@preview/showybox:2.0.4\": showybox\n\n".to_string()
+}
+
+/// Genera configuración de página
 fn generate_page_setup(config: &PdfConfig, design: &PdfDesign) -> ExportResult<String> {
-    // La orientación del config tiene prioridad
     let orientation = match config.orientation {
         PageOrientation::Portrait => "false",
         PageOrientation::Landscape => "true",
@@ -55,50 +57,25 @@ fn generate_page_setup(config: &PdfConfig, design: &PdfDesign) -> ExportResult<S
   paper: \"{}\",\n\
   flipped: {},\n\
   margin: (x: {}, y: {}),\n\
+  fill: rgb(\"#0d1117\"),\n\
 )\n\n\
 #set text(\n\
   font: \"{}\",\n\
   size: {}pt,\n\
   lang: \"es\",\n\
-)\n\n\
-#set table(\n\
-  stroke: 0.5pt + rgb(\"{}\"),\n\
-  fill: (x, y) => if y == 0 {{ rgb(\"{}\") }} else {{ none }},\n\
-  align: (x, y) => if y == 0 {{ center }} else {{ left }},\n\
+  fill: rgb(\"#e6edf3\"),\n\
 )\n\n",
-        design.page_size,
-        orientation,
-        margin_x,
-        margin_y,
-        design.fonts.family,
-        design.fonts.size,
-        design.colors.border,
-        design.colors.header_fill
+        design.page_size, orientation, margin_x, margin_y, design.fonts.family, design.fonts.size,
     );
 
     Ok(setup)
 }
 
-/// Genera el título del documento
-fn generate_title(title: &str, _design: &PdfDesign) -> String {
-    let escaped_title = escape_typst_string(title);
-
-    format!(
-        r#"#align(center)[
-  #text(size: 16pt, weight: "bold")[{}]
-]
-
-#v(0.5cm)
-
-"#,
-        escaped_title
-    )
-}
-
-/// Genera la tabla con headers y datos
-fn generate_table(
+/// Genera el contenido dentro de un showybox decorativo
+fn generate_showybox_content(
     headers: &[String],
     rows: &[HashMap<String, String>],
+    config: &PdfConfig,
     design: &PdfDesign,
 ) -> ExportResult<String> {
     if headers.is_empty() {
@@ -107,51 +84,92 @@ fn generate_table(
         ));
     }
 
-    let mut markup = String::from("#table(\n");
-    markup.push_str(&format!("  columns: {},\n", headers.len()));
-    markup.push_str("  inset: 8pt,\n");
+    let escaped_title = escape_typst_string(&config.title);
+    let now = chrono::Local::now().format("%d/%m/%Y %H:%M");
+    let row_count = rows.len();
+
+    // Generar la tabla
+    let table_content = generate_table(headers, rows, design)?;
+
+    let content = format!(
+        "#showybox(\n\
+  title-style: (\n\
+    weight: \"bold\",\n\
+    color: white,\n\
+    sep-thickness: 0pt,\n\
+  ),\n\
+  frame: (\n\
+    title-color: rgb(\"#2563eb\"),\n\
+    border-color: rgb(\"#3b82f6\"),\n\
+    body-color: rgb(\"#161b22\"),\n\
+    thickness: 1.5pt,\n\
+    radius: 6pt,\n\
+    inset: (x: 12pt, y: 10pt),\n\
+  ),\n\
+  title: [\n\
+    #text(size: 14pt)[{}]\n\
+    #h(1fr)\n\
+    #text(size: 9pt, weight: \"regular\")[{} registros]\n\
+  ],\n\
+  breakable: true,\n\
+)[\n\
+  {}\n\n\
+  #v(8pt)\n\
+  \n\
+  #align(right)[\n\
+    #text(size: 8pt, fill: rgb(\"#8b949e\"))[\n\
+      Generado: {}\n\
+    ]\n\
+  ]\n\
+]\n",
+        escaped_title, row_count, table_content, now
+    );
+
+    Ok(content)
+}
+
+/// Genera la tabla con headers y datos
+fn generate_table(
+    headers: &[String],
+    rows: &[HashMap<String, String>],
+    _design: &PdfDesign,
+) -> ExportResult<String> {
+    let col_count = headers.len();
+
+    let mut markup = format!(
+        "#table(\n\
+    columns: {},\n\
+    inset: 8pt,\n\
+    stroke: 0.5pt + rgb(\"#30363d\"),\n\
+    fill: (x, y) => if y == 0 {{ rgb(\"#21262d\") }} else if calc.odd(y) {{ rgb(\"#161b22\") }} else {{ rgb(\"#0d1117\") }},\n\
+    align: (x, y) => if y == 0 {{ center }} else {{ left }},\n",
+        col_count
+    );
 
     // Headers
     for header in headers {
         let escaped_header = escape_typst_string(header);
         markup.push_str(&format!(
-            "  [*#text(fill: rgb(\"{}\"))[{}]*],\n",
-            design.colors.header_text, escaped_header
+            "    [*#text(fill: rgb(\"#58a6ff\"), size: 10pt)[{}]*],\n",
+            escaped_header
         ));
     }
 
     // Rows
     for row in rows {
         for header in headers {
-            let value = row.get(header).map(|s| s.as_str()).unwrap_or("");
+            let value = row.get(header).map(|s| s.as_str()).unwrap_or("-");
             let escaped_value = escape_typst_string(value);
             markup.push_str(&format!(
-                "  [#text(fill: rgb(\"{}\"))[{}]],\n",
-                design.colors.row_text, escaped_value
+                "    [#text(fill: rgb(\"#e6edf3\"), size: 9pt)[{}]],\n",
+                escaped_value
             ));
         }
     }
 
-    markup.push_str(")\n\n");
+    markup.push_str("  )");
 
     Ok(markup)
-}
-
-/// Genera footer con metadata
-fn generate_footer(_design: &PdfDesign) -> String {
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC");
-
-    format!(
-        r#"#v(1cm)
-
-#align(right)[
-  #text(size: 8pt, fill: gray)[
-    Generado: {}
-  ]
-]
-"#,
-        now
-    )
 }
 
 // ==========================================
