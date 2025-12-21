@@ -12,13 +12,14 @@ pub mod cita_queries;
 pub mod contratista_queries;
 pub mod empresa_queries;
 pub mod gafete_queries;
-pub mod ingreso_proveedor_queries;
-pub mod ingreso_queries;
-pub mod ingreso_visita_queries;
+
+pub mod ingreso_contratista_queries; // Contratistas
+pub mod ingreso_general_queries; // General (Logs, Historial completo)
+pub mod ingreso_proveedor_queries; // Proveedores
+pub mod ingreso_visita_queries; // Visitas
+
 pub mod lista_negra_queries;
-pub mod preferences_queries;
 pub mod proveedor_queries;
-pub mod reporte_queries;
 pub mod user_queries;
 pub mod vehiculo_queries;
 pub mod visitante_queries;
@@ -34,18 +35,20 @@ pub async fn init_pool(config: &AppConfig) -> Result<SqlitePool, Box<dyn std::er
     if !db_exists {}
 
     let pool = SqlitePoolOptions::new()
-        .max_connections(5)
+        .max_connections(1) // Desktop Optimization
+        .min_connections(0)
+        .idle_timeout(std::time::Duration::from_secs(60))
         .connect(&db_url)
         .await?;
 
-    // Optimizaciones de SQLite para mejor rendimiento
+    // Optimizaciones de SQLite para mejor rendimiento y menor memoria
     sqlx::query(
         r#"
         PRAGMA journal_mode = WAL;
         PRAGMA synchronous = NORMAL;
-        PRAGMA cache_size = -64000;
+        PRAGMA cache_size = -2000;      -- Reduce a ~2MB (antes -64000 ~64MB)
         PRAGMA temp_store = MEMORY;
-        PRAGMA mmap_size = 268435456;
+        PRAGMA mmap_size = 0;           -- Desactiva mmap de SQLite (libera RAM)
         PRAGMA foreign_keys = ON;
         "#,
     )

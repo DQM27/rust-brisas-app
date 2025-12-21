@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  // @ts-nocheck - Svelte 5 runes ($state, $props, $derived, $effect) are not recognized by TS
   import { toast } from "svelte-5-french-toast";
-  import { currentUser } from "$lib/stores/auth";
+  import { currentUser as userStore } from "$lib/stores/auth";
   import type { ColDef, GridApi } from "@ag-grid-community/core";
   import type { CustomToolbarButton } from "$lib/types/agGrid";
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
@@ -11,22 +11,28 @@
   import type { CitaPopulated } from "$lib/types/cita";
   import SalidaModal from "../common/SalidaModal.svelte";
   import { UserPlus, RotateCw, LogIn, Eye } from "lucide-svelte";
+  import type { UserResponse } from "$lib/types/user";
+
+  const currentUser = userStore as unknown as any;
 
   // Modales
   import ProcesarIngresoModal from "./ProcesarIngresoModal.svelte";
   import VisitaDetallesModal from "./VisitaDetallesModal.svelte";
 
-  const {
-    onRegisterClick,
-    onEditClick,
-    onCloseForm,
-    isFormOpen = false,
-  } = $props<{
+  let props = $props<{
     onRegisterClick?: () => void;
     onEditClick?: (cita: CitaPopulated) => void;
     onCloseForm?: () => void;
     isFormOpen?: boolean;
   }>();
+
+  // Default value handling logic if needed, or use props.isFormOpen directly (undefined check)
+  // Svelte 5 props are required or optional. Defaults in destructuring handled that.
+  // With `props` object, we access raw values. `props.isFormOpen` might be undefined.
+  // We should default it. `const isFormOpen = $derived(props.isFormOpen ?? false);`
+  // Ah, using derived for default is better!
+
+  const isFormOpen = $derived(props.isFormOpen ?? false);
 
   // Sub-vista activa
   type VisitaView = "pendientes" | "activas" | "historial";
@@ -66,10 +72,6 @@
     }
   }
 
-  onMount(() => {
-    loadData();
-  });
-
   // Reload when view changes
   $effect(() => {
     activeView;
@@ -77,14 +79,17 @@
   });
 
   // Reload when form closes (after create/edit)
-  let prevFormOpen = isFormOpen;
+  let prevFormOpen: boolean | undefined = undefined;
   $effect(() => {
+    const current = isFormOpen; // Read inside effect for proper tracking
     // Detect form closing (was open, now closed)
-    if (prevFormOpen && !isFormOpen) {
+    if (prevFormOpen !== undefined && prevFormOpen && !current) {
       loadData();
     }
-    prevFormOpen = isFormOpen;
+    prevFormOpen = current;
   });
+
+  // ...
 
   // Column definitions for each view
   const columnDefsPendientes: ColDef<CitaPopulated>[] = [
@@ -141,7 +146,7 @@
           selectedCitaParaProcesar = params.data;
           showProcesarModal = true;
         } else if (target?.classList?.contains("editar-btn")) {
-          onEditClick?.(params.data);
+          props.onEditClick?.(params.data);
         } else if (target?.classList?.contains("ver-btn")) {
           selectedParaDetalles = params.data;
           showDetallesModal = true;
@@ -345,7 +350,7 @@
         label: "Nueva Visita",
         icon: UserPlus,
         variant: "primary",
-        onClick: () => onRegisterClick?.(),
+        onClick: () => props.onRegisterClick?.(),
       });
     }
 

@@ -101,10 +101,17 @@ pub struct ExportRequest {
     pub rows: Vec<HashMap<String, serde_json::Value>>, // Datos (flexible)
 
     // Opcionales para PDF
-    pub title: Option<String>,       // Título del documento
-    pub orientation: Option<String>, // "portrait" | "landscape"
-    pub show_preview: Option<bool>,  // Si mostrar preview (PDF.js)
-    pub template_id: Option<String>, // ID del template a usar
+    pub title: Option<String>,        // Título del documento
+    pub orientation: Option<String>,  // "portrait" | "landscape"
+    pub show_preview: Option<bool>,   // Si mostrar preview (PDF.js)
+    pub template_id: Option<String>,  // ID del template a usar
+    pub font_size: Option<i32>,       // 8-20 pts
+    pub font_family: Option<String>,  // "Inter", "Arial", etc.
+    pub margin_top: Option<f32>,      // Márgen superior (cm)
+    pub margin_bottom: Option<f32>,   // Márgen inferior (cm)
+    pub margin_left: Option<f32>,     // Márgen izquierdo (cm)
+    pub margin_right: Option<f32>,    // Márgen derecho (cm)
+    pub banner_color: Option<String>, // Color del banner hex
 
     // Opcionales para CSV
     pub delimiter: Option<String>, // "comma" | "semicolon" | "tab" | "pipe"
@@ -112,6 +119,7 @@ pub struct ExportRequest {
 
     // Opcionales generales
     pub target_path: Option<String>, // Path absoluto donde guardar el archivo
+    pub generated_by: Option<String>, // Nombre del usuario que genera el reporte
 }
 
 /// Configuración específica para PDF
@@ -122,6 +130,14 @@ pub struct PdfConfig {
     pub headers: Vec<String>,
     pub show_preview: bool,
     pub template_id: Option<String>,
+    pub font_size: i32,       // 8-20 pts
+    pub font_family: String,  // Nombre de la fuente
+    pub margin_top: f32,      // Márgen superior (cm)
+    pub margin_bottom: f32,   // Márgen inferior (cm)
+    pub margin_left: f32,     // Márgen izquierdo (cm)
+    pub margin_right: f32,    // Márgen derecho (cm)
+    pub banner_color: String, // Color hex del banner
+    pub generated_by: String, // Nombre del usuario
 }
 
 impl Default for PdfConfig {
@@ -132,6 +148,14 @@ impl Default for PdfConfig {
             headers: Vec::new(),
             show_preview: false,
             template_id: None,
+            font_size: 10,
+            font_family: "Inter".to_string(),
+            margin_top: 2.0,
+            margin_bottom: 2.0,
+            margin_left: 1.5,
+            margin_right: 1.5,
+            banner_color: "#059669".to_string(),
+            generated_by: "".to_string(),
         }
     }
 }
@@ -239,12 +263,12 @@ pub struct ExportData {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PdfDesign {
-    pub page_size: String,       // "us-letter" | "a4" | "legal"
-    pub orientation: String,     // "portrait" | "landscape"
+    pub page_size: String,   // "us-letter" | "a4" | "legal"
+    pub orientation: String, // "portrait" | "landscape"
     pub margin_x: f64,
-    pub margin_x_unit: String,   // "mm" | "cm" | "in" | "pt"
+    pub margin_x_unit: String, // "mm" | "cm" | "in" | "pt"
     pub margin_y: f64,
-    pub margin_y_unit: String,   // "mm" | "cm" | "in" | "pt"
+    pub margin_y_unit: String, // "mm" | "cm" | "in" | "pt"
     pub colors: PdfColors,
     pub fonts: PdfFonts,
 }
@@ -270,7 +294,7 @@ pub struct PdfFonts {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CsvOptions {
-    pub delimiter: String,      // "comma" | "semicolon" | "tab" | "pipe"
+    pub delimiter: String, // "comma" | "semicolon" | "tab" | "pipe"
     pub include_bom: bool,
 }
 
@@ -280,7 +304,7 @@ pub struct CsvOptions {
 pub struct ExportProfile {
     pub id: String,
     pub name: String,
-    pub format: String,          // "pdf" | "excel" | "csv"
+    pub format: String, // "pdf" | "excel" | "csv"
     pub is_default: bool,
 
     // Opciones comunes

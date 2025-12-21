@@ -3,7 +3,6 @@
   import { activeView } from "$lib/stores/ui";
   import { isAuthenticated, logout, currentUser } from "$lib/stores/auth";
   import { resetTabs, openTab } from "$lib/stores/tabs";
-  import { shortcutService } from "$lib/services/shortcutService";
   import { onMount } from "svelte";
 
   // Importar iconos directamente
@@ -161,45 +160,7 @@
 
   onMount(() => {
     // Registrar handlers globales para navegación de módulos
-    const unregs = [
-      shortcutService.registerHandler("root", "module.users", () => {
-        // activePanel.set("users"); // Solo abre sidebar
-        openTab({
-          componentKey: "user-list",
-          title: "Lista de Usuarios",
-          id: "user-list",
-          focusOnOpen: true,
-        });
-      }),
-      shortcutService.registerHandler("root", "module.contractors", () => {
-        openTab({
-          componentKey: "contratista-list",
-          title: "Lista de Contratistas",
-          id: "contratista-list",
-          focusOnOpen: true,
-        });
-      }),
-      shortcutService.registerHandler("root", "module.access", () =>
-        activePanel.set("access"),
-      ), // Access suele ser solo panel? Verificar si tiene Tab
-      shortcutService.registerHandler("root", "module.logs", () =>
-        activePanel.set("logs"),
-      ),
-      shortcutService.registerHandler("root", "module.ingreso", () => {
-        openTab({
-          componentKey: "ingreso-list",
-          title: "Control de Ingresos",
-          id: "ingreso-list",
-          focusOnOpen: true,
-        });
-      }),
-      shortcutService.registerHandler("root", "app.settings", () =>
-        activePanel.set("settings"),
-      ),
-      shortcutService.registerHandler("root", "user.profile", openProfile),
-    ];
-
-    return () => unregs.forEach((u) => u());
+    // (Atajos eliminados a petición del usuario)
   });
 </script>
 

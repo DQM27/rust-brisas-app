@@ -1,9 +1,7 @@
 <script lang="ts">
   import {
     Shield,
-    Mail,
     Key,
-    Database,
     RefreshCw,
     Check,
     AlertCircle,
@@ -11,29 +9,22 @@
     EyeOff,
     AlertTriangle,
     Save,
-    Play,
   } from "lucide-svelte";
   import { setupWizardVisible } from "$lib/stores/ui";
   import { scale } from "svelte/transition";
   import { onMount } from "svelte";
   import {
     getCredentialStatus,
-    getSmtpConfig,
     getArgon2Config,
-    updateSmtpCredentials,
     updateArgon2Params,
-    testSmtpConnection,
     generateRandomSecret,
     type CredentialStatus,
-    type SmtpCredentialsSafe,
     type Argon2ParamsSafe,
-    type SmtpCredentials,
     type Argon2Params,
   } from "$lib/services/keyringService";
 
   // Estado
   let status = $state<CredentialStatus | null>(null);
-  let smtpConfig = $state<SmtpCredentialsSafe | null>(null);
   let argon2Config = $state<Argon2ParamsSafe | null>(null);
 
   let loading = $state(true);
@@ -41,23 +32,7 @@
   let successMessage = $state("");
 
   // Formularios
-  let editingSmtp = $state(false);
   let editingArgon2 = $state(false);
-
-  // SMTP Form
-  let smtpForm = $state<SmtpCredentials>({
-    host: "",
-    port: 587,
-    user: "",
-    password: "",
-    feedback_email: "",
-  });
-  let showSmtpPassword = $state(false);
-  let testingSmtp = $state(false);
-  let smtpTestResult = $state<{ success: boolean; message: string } | null>(
-    null,
-  );
-  let savingSmtp = $state(false);
 
   // Argon2 Form
   let argon2Form = $state<Argon2Params>({
@@ -77,22 +52,10 @@
     loading = true;
     error = "";
     try {
-      [status, smtpConfig, argon2Config] = await Promise.all([
+      [status, argon2Config] = await Promise.all([
         getCredentialStatus(),
-        getSmtpConfig(),
         getArgon2Config(),
       ]);
-
-      // Inicializar formularios con datos existentes
-      if (smtpConfig) {
-        smtpForm = {
-          host: smtpConfig.host,
-          port: smtpConfig.port,
-          user: smtpConfig.user,
-          password: "",
-          feedback_email: smtpConfig.feedback_email,
-        };
-      }
 
       if (argon2Config) {
         argon2Form = {
@@ -112,39 +75,6 @@
   function showSuccess(msg: string) {
     successMessage = msg;
     setTimeout(() => (successMessage = ""), 3000);
-  }
-
-  // SMTP Functions
-  async function handleTestSmtp() {
-    testingSmtp = true;
-    smtpTestResult = null;
-    try {
-      const result = await testSmtpConnection();
-      smtpTestResult = { success: true, message: result };
-    } catch (e) {
-      smtpTestResult = { success: false, message: `${e}` };
-    } finally {
-      testingSmtp = false;
-    }
-  }
-
-  async function handleSaveSmtp() {
-    if (!smtpForm.password) {
-      error = "Debes ingresar la contrasena SMTP";
-      return;
-    }
-    savingSmtp = true;
-    error = "";
-    try {
-      await updateSmtpCredentials(smtpForm);
-      editingSmtp = false;
-      showSuccess("Credenciales SMTP actualizadas");
-      await loadData();
-    } catch (e) {
-      error = `Error guardando SMTP: ${e}`;
-    } finally {
-      savingSmtp = false;
-    }
   }
 
   // Argon2 Functions
@@ -236,16 +166,6 @@
           <div class="p-4">
             <div class="grid grid-cols-3 gap-4">
               <div class="flex items-center gap-2">
-                {#if status.smtp_configured}
-                  <Check class="w-4 h-4 text-green-500" />
-                {:else}
-                  <AlertCircle class="w-4 h-4 text-yellow-500" />
-                {/if}
-                <span class="text-sm text-gray-600 dark:text-gray-300"
-                  >SMTP</span
-                >
-              </div>
-              <div class="flex items-center gap-2">
                 {#if status.argon2_configured}
                   <Check class="w-4 h-4 text-green-500" />
                 {:else}
@@ -259,172 +179,6 @@
           </div>
         </div>
       {/if}
-
-      <!-- SMTP Card -->
-      <div
-        class="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0d1117] overflow-hidden"
-      >
-        <div
-          class="bg-gray-50 dark:bg-[#161b22] px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
-        >
-          <div class="flex items-center gap-2">
-            <Mail class="w-4 h-4 text-gray-500" />
-            <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100">
-              Credenciales SMTP
-            </h3>
-          </div>
-          {#if !editingSmtp}
-            <button
-              onclick={() => (editingSmtp = true)}
-              class="text-sm text-[#2da44e] hover:underline"
-            >
-              Editar
-            </button>
-          {/if}
-        </div>
-        <div class="p-4">
-          {#if editingSmtp}
-            <div class="space-y-4">
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    for="smtpEditHost"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                    >Host</label
-                  >
-                  <input
-                    id="smtpEditHost"
-                    type="text"
-                    bind:value={smtpForm.host}
-                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-                <div>
-                  <label
-                    for="smtpEditPort"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                    >Puerto</label
-                  >
-                  <input
-                    id="smtpEditPort"
-                    type="number"
-                    bind:value={smtpForm.port}
-                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-              </div>
-              <div>
-                <label
-                  for="smtpEditUser"
-                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >Usuario</label
-                >
-                <input
-                  id="smtpEditUser"
-                  type="email"
-                  bind:value={smtpForm.user}
-                  class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100"
-                />
-              </div>
-              <div>
-                <label
-                  for="smtpEditPassword"
-                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >Nueva Contrasena</label
-                >
-                <div class="relative">
-                  <input
-                    id="smtpEditPassword"
-                    type={showSmtpPassword ? "text" : "password"}
-                    bind:value={smtpForm.password}
-                    placeholder="••••••••••••"
-                    class="w-full px-3 py-2 pr-10 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100"
-                  />
-                  <button
-                    type="button"
-                    onclick={() => (showSmtpPassword = !showSmtpPassword)}
-                    class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
-                  >
-                    {#if showSmtpPassword}<EyeOff class="w-4 h-4" />{:else}<Eye
-                        class="w-4 h-4"
-                      />{/if}
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label
-                  for="smtpEditFeedback"
-                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >Email de Destino</label
-                >
-                <input
-                  id="smtpEditFeedback"
-                  type="email"
-                  bind:value={smtpForm.feedback_email}
-                  class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100"
-                />
-              </div>
-              <div class="flex items-center gap-2 pt-2">
-                <button
-                  onclick={handleSaveSmtp}
-                  disabled={savingSmtp}
-                  class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-[#2da44e] hover:bg-[#2c974b] text-white disabled:opacity-50"
-                >
-                  {#if savingSmtp}<RefreshCw
-                      class="w-4 h-4 animate-spin"
-                    />{:else}<Save class="w-4 h-4" />{/if}
-                  <span>Guardar</span>
-                </button>
-                <button
-                  onclick={() => {
-                    editingSmtp = false;
-                    error = "";
-                  }}
-                  class="px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#30363d]"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onclick={handleTestSmtp}
-                  disabled={testingSmtp}
-                  class="ml-auto inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#30363d] disabled:opacity-50"
-                >
-                  {#if testingSmtp}<RefreshCw
-                      class="w-4 h-4 animate-spin"
-                    />{:else}<Mail class="w-4 h-4" />{/if}
-                  <span>Probar</span>
-                </button>
-              </div>
-              {#if smtpTestResult}
-                <p
-                  class="text-sm {smtpTestResult.success
-                    ? 'text-green-600'
-                    : 'text-red-600'}"
-                >
-                  {smtpTestResult.message}
-                </p>
-              {/if}
-            </div>
-          {:else if smtpConfig}
-            <div class="space-y-2 text-sm">
-              <p class="text-gray-600 dark:text-gray-300">
-                <span class="font-medium">Host:</span>
-                {smtpConfig.host}:{smtpConfig.port}
-              </p>
-              <p class="text-gray-600 dark:text-gray-300">
-                <span class="font-medium">Usuario:</span>
-                {smtpConfig.user}
-              </p>
-              <p class="text-gray-600 dark:text-gray-300">
-                <span class="font-medium">Destino:</span>
-                {smtpConfig.feedback_email}
-              </p>
-            </div>
-          {:else}
-            <p class="text-sm text-gray-500">No configurado</p>
-          {/if}
-        </div>
-      </div>
 
       <!-- Argon2 Card -->
       <div

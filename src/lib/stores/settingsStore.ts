@@ -29,6 +29,7 @@ export interface GeneralSettings {
   overrideSeason: Season | null;  // null = estación real, string = estación fija
   overrideBirthday: boolean;      // Forzar modo cumpleaños para testing
   isKioskMode: boolean;           // Modo quiosco (oculta todo excepto el panel)
+  disableSetupWizard: boolean;    // Deshabilitar Setup Wizard al inicio
 }
 
 // =============================================================================
@@ -57,6 +58,7 @@ const DEFAULT_SETTINGS: GeneralSettings = {
   overrideBirthday: false,
 
   isKioskMode: false,
+  disableSetupWizard: false,
 };
 
 // =============================================================================
@@ -115,6 +117,7 @@ export interface GeneralSettingsStore extends Writable<GeneralSettings> {
 
   toggleBirthdayTest: () => void;
   setLandscapeType: (type: 'mountains' | 'forest' | 'city' | 'desert' | 'beach' | 'moon') => void;
+  toggleSetupWizard: () => void;
 }
 
 function createGeneralSettingsStore(): GeneralSettingsStore {
@@ -164,6 +167,7 @@ function createGeneralSettingsStore(): GeneralSettingsStore {
 
     toggleBirthdayTest: () => update(s => ({ ...s, overrideBirthday: !s.overrideBirthday })),
     setLandscapeType: (type) => update(s => ({ ...s, landscapeType: type })),
+    toggleSetupWizard: () => update(s => ({ ...s, disableSetupWizard: !s.disableSetupWizard })),
   };
 }
 

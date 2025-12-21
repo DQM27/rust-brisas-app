@@ -1,12 +1,11 @@
 // ==========================================
 // src/export/pdf/templates.rs
 // ==========================================
-// Generación de markup Typst dinámico
-// Crea el código Typst que será compilado a PDF
+// Generación de markup Typst dinámico con showybox
+// Tema claro optimizado para impresión (ahorro de tinta)
 
 use crate::export::errors::{ExportError, ExportResult};
-use crate::models::export::{PageOrientation, PdfConfig};
-use crate::models::template::PdfTemplate;
+use crate::models::export::{PageOrientation, PdfConfig, PdfDesign};
 use std::collections::HashMap;
 
 // ==========================================
@@ -18,21 +17,18 @@ pub fn generate_typst_markup(
     headers: &[String],
     rows: &[HashMap<String, String>],
     config: &PdfConfig,
-    template: &PdfTemplate, // ✅ RECIBE EL TEMPLATE
+    design: &PdfDesign,
 ) -> ExportResult<String> {
     let mut markup = String::new();
 
-    // 1. Imports y configuración de página
-    markup.push_str(&generate_page_setup(config, template)?);
+    // 1. Imports (showybox)
+    markup.push_str(&generate_imports());
 
-    // 2. Título del documento
-    markup.push_str(&generate_title(&config.title, template));
+    // 2. Configuración de página
+    markup.push_str(&generate_page_setup(config, design)?);
 
-    // 3. Tabla con datos
-    markup.push_str(&generate_table(headers, rows, template)?);
-
-    // 4. Footer con metadata
-    markup.push_str(&generate_footer(template));
+    // 3. Contenido dentro de showybox
+    markup.push_str(&generate_showybox_content(headers, rows, config, design)?);
 
     Ok(markup)
 }
@@ -40,69 +36,56 @@ pub fn generate_typst_markup(
 // ==========================================
 // SECCIONES DEL TEMPLATE
 // ==========================================
-/// Genera configuración de página y imports
-fn generate_page_setup(config: &PdfConfig, template: &PdfTemplate) -> ExportResult<String> {
-    // La orientación del config tiene prioridad, si no usa la del template
-    // (Aunque en este caso la UI probablemente fuerce a usar la del config)
+
+/// Genera imports de packages
+fn generate_imports() -> String {
+    "#import \"@preview/showybox:2.0.4\": showybox\n\n".to_string()
+}
+
+/// Genera configuración de página (tema claro para impresión)
+fn generate_page_setup(config: &PdfConfig, design: &PdfDesign) -> ExportResult<String> {
     let orientation = match config.orientation {
         PageOrientation::Portrait => "false",
         PageOrientation::Landscape => "true",
     };
 
-    // Si la configuración del template dice "portrait" pero el usuario pidió "landscape",
-    // el config manda.
-    // Pero si el template define margenes, etc, los usamos.
+    // Usar márgenes del config (seleccionados por usuario) o fallback a design
+    let margin_top = format!("{}cm", config.margin_top);
+    let margin_bottom = format!("{}cm", config.margin_bottom);
+    let margin_left = format!("{}cm", config.margin_left);
+    let margin_right = format!("{}cm", config.margin_right);
 
     let setup = format!(
         "#set page(\n\
   paper: \"{}\",\n\
   flipped: {},\n\
-  margin: (x: {}, y: {}),\n\
+  margin: (top: {}, bottom: {}, left: {}, right: {}),\n\
 )\n\n\
 #set text(\n\
   font: \"{}\",\n\
   size: {}pt,\n\
   lang: \"es\",\n\
-)\n\n\
-#set table(\n\
-  stroke: 0.5pt + rgb(\"{}\"),\n\
-  fill: (x, y) => if y == 0 {{ rgb(\"{}\") }} else {{ none }},\n\
-  align: (x, y) => if y == 0 {{ center }} else {{ left }},\n\
+  fill: rgb(\"#1f2328\"),\n\
 )\n\n",
-        template.layout.page_size,
+        design.page_size,
         orientation,
-        template.layout.margin_x,
-        template.layout.margin_y,
-        template.fonts.family,
-        template.fonts.size,
-        template.colors.border,
-        template.colors.header_fill
+        margin_top,
+        margin_bottom,
+        margin_left,
+        margin_right,
+        config.font_family,
+        config.font_size,
     );
 
     Ok(setup)
 }
 
-/// Genera el título del documento
-fn generate_title(title: &str, _template: &PdfTemplate) -> String {
-    let escaped_title = escape_typst_string(title);
-
-    format!(
-        r#"#align(center)[
-  #text(size: 16pt, weight: "bold")[{}]
-]
-
-#v(0.5cm)
-
-"#,
-        escaped_title
-    )
-}
-
-/// Genera la tabla con headers y datos
-fn generate_table(
+/// Genera el contenido dentro de un showybox decorativo (tema claro)
+fn generate_showybox_content(
     headers: &[String],
     rows: &[HashMap<String, String>],
-    template: &PdfTemplate,
+    config: &PdfConfig,
+    _design: &PdfDesign,
 ) -> ExportResult<String> {
     if headers.is_empty() {
         return Err(ExportError::TemplateGenerationError(
@@ -110,53 +93,210 @@ fn generate_table(
         ));
     }
 
-    let mut markup = String::from("#table(\n");
-    markup.push_str(&format!("  columns: {},\n", headers.len()));
-    markup.push_str("  inset: 8pt,\n");
+    let escaped_title = escape_typst_string(&config.title);
+    let now = chrono::Local::now().format("%d/%m/%Y %H:%M");
 
-    // Headers
+    // Generar la tabla con font_size
+    let table_content = generate_table(headers, rows, config)?;
+
+    // Texto footer
+    let footer_text = if !config.generated_by.is_empty() {
+        format!("Generado por: {} | Fecha: {}", config.generated_by, now)
+    } else {
+        format!("Generado: {}", now)
+    };
+
+    // Tema claro con borde personalizable - centrado
+    let content = format!(
+        "#align(center)[\n\
+#showybox(\n\
+  title-style: (\n\
+    weight: \"bold\",\n\
+    color: white,\n\
+    sep-thickness: 0pt,\n\
+  ),\n\
+  frame: (\n\
+    title-color: rgb(\"{}\"),\n\
+    border-color: rgb(\"#d0d7de\"),\n\
+    body-color: white,\n\
+    thickness: 1pt,\n\
+    radius: 4pt,\n\
+    inset: (x: 2pt, y: 10pt),\n\
+  ),\n\
+  title: [\n\
+    #text(size: 12pt)[{}]\n\
+  ],\n\
+  breakable: true,\n\
+)[\n\
+  #align(center)[\n\
+    {}\n\
+  ]\n\n\
+  #v(6pt)\n\
+  \n\
+  #align(right)[\n\
+    #text(size: 7pt, fill: rgb(\"#656d76\"))[\n\
+      {}\n\
+    ]\n\
+  ]\n\
+]\n\
+]\n",
+        config.banner_color, escaped_title, table_content, footer_text
+    );
+
+    Ok(content)
+}
+
+/// Genera la tabla con headers y datos (tema claro)
+fn generate_table(
+    headers: &[String],
+    rows: &[HashMap<String, String>],
+    config: &PdfConfig,
+) -> ExportResult<String> {
+    // Usar el font_size numérico del config (header es 1pt más grande)
+    let body_size = format!("{}pt", config.font_size);
+    let header_size = format!("{}pt", config.font_size + 1);
+
+    // Columnas fraccionadas CON PESOS INTELIGENTES
+    // Esto evita que columnas como "Cédula" se rompan
+    let columns_spec = headers
+        .iter()
+        .map(|h| {
+            let lower = h.to_lowercase();
+            if lower.contains("nombre")
+                || lower.contains("empresa")
+                || lower.contains("motivo")
+                || lower.contains("detalle")
+            {
+                "1.3fr" // Texto largo principal - Reducido levemente
+            } else if lower.contains("guarda") // GuardaE, GuardaS
+                || lower.contains("usuario")
+                || lower.contains("registró")
+            {
+                "1.3fr" // Nombres de usuario (Daniel, etc.)
+            } else if lower.contains("modo") {
+                "1.2fr" // "Caminando" ocupa espacio
+            } else if lower.contains("cédula")
+                || lower.contains("cedula")
+                || lower.contains("placa") // Incluye vehículo/placa
+                || lower.contains("vehículo")
+            {
+                "1.2fr" // Identificadores medianos
+            } else if lower.contains("gafete")
+                || lower.contains("gf")
+                || lower.contains("aut.")
+                || lower.contains("autoriza")
+            {
+                "0.9fr" // Identificadores cortos
+            } else if lower.contains("fecha")
+                || lower.contains("hora")
+                || lower.contains("tiempo")
+                || lower.contains("dur.")
+            {
+                "0.9fr" // Fechas/Horas
+            } else if lower == "id" || lower == "#" || lower == "no" {
+                "0.4fr" // Muy corto
+            } else {
+                "1fr" // Default
+            }
+        })
+        .collect::<Vec<&str>>()
+        .join(", ");
+
+    // Tabla con tema claro - filas alternadas suaves
+    // Usamos columns con fracciones para evitar desbordamiento
+    let mut markup = format!(
+        "#table(\n\
+    columns: ({}),\n\
+    inset: 4pt,\n\
+    stroke: 0.5pt + rgb(\"#d0d7de\"),\n\
+    fill: (x, y) => if y == 0 {{ rgb(\"#f6f8fa\") }} else if calc.odd(y) {{ white }} else {{ rgb(\"#f6f8fa\") }},\n\
+    align: (x, y) => center + horizon,\n",
+        columns_spec
+    );
+
+    // Headers con hyphenate: true (Usuario pide explícitamente que todo se pueda dividir)
     for header in headers {
-        let escaped_header = escape_typst_string(header);
-        // ✅ Usar color de texto para headers del template
+        let short_header = shorten_header(header);
+        let escaped_header = escape_typst_string(&short_header);
         markup.push_str(&format!(
-            "  [*#text(fill: rgb(\"{}\"))[{}]*],\n",
-            template.colors.header_text, escaped_header
+            "    [#set par(justify: false); *#text(fill: rgb(\"#1f2328\"), size: {}, hyphenate: true)[{}]*],\n",
+            header_size, escaped_header
         ));
     }
 
-    // Rows
+    // Rows con word-break ON
     for row in rows {
         for header in headers {
-            let value = row.get(header).map(|s| s.as_str()).unwrap_or("");
-            let escaped_value = escape_typst_string(value);
-            // ✅ Usar color de texto para filas
+            let value = row.get(header).map(|s| s.as_str()).unwrap_or("-");
+            let lower_header = header.to_lowercase();
+
+            // Para identificadores largos sin espacios, forzamos quiebre
+            let processed_value = if lower_header.contains("cédula") 
+                || lower_header.contains("cedula") 
+                || lower_header.contains("placa") 
+                || lower_header.contains("gafete")
+                || lower_header.contains("aut.") // Autorización abreviada
+                || lower_header.contains("autoriza")
+            {
+                force_break_string(value)
+            } else {
+                value.to_string()
+            };
+
+            let escaped_value = escape_typst_string(&processed_value);
             markup.push_str(&format!(
-                "  [#text(fill: rgb(\"{}\"))[{}]],\n",
-                template.colors.row_text, escaped_value
+                "    [#set par(justify: false); #text(fill: rgb(\"#1f2328\"), size: {}, hyphenate: true)[{}]],\n",
+                body_size, escaped_value
             ));
         }
     }
 
-    markup.push_str(")\n\n");
+    markup.push_str("  )");
 
     Ok(markup)
 }
 
-/// Genera footer con metadata
-fn generate_footer(_template: &PdfTemplate) -> String {
-    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC");
+// ==========================================
+// UTILIDADES DE TEXTO
+// ==========================================
 
-    format!(
-        r#"#v(1cm)
+/// Acorta los nombres de las columnas para ahorrar espacio en el PDF
+fn shorten_header(header: &str) -> String {
+    let lower = header.to_lowercase();
 
-#align(right)[
-  #text(size: 8pt, fill: gray)[
-    Generado: {}
-  ]
-]
-"#,
-        now
-    )
+    if lower.contains("gafete") {
+        return "GF".to_string();
+    } else if lower.contains("registró entrada") || lower.contains("registro entrada") {
+        return "GuardaE".to_string();
+    } else if lower.contains("registró salida") || lower.contains("registro salida") {
+        return "GuardaS".to_string();
+    } else if lower.contains("fecha entrada") {
+        return "FechaE".to_string();
+    } else if lower.contains("fecha salida") || lower.contains("fecha de salida") {
+        return "FechaS".to_string();
+    } else if lower.contains("hora entrada") {
+        return "HoraE".to_string();
+    } else if lower.contains("hora salida") || lower.contains("hora de salida") {
+        return "HoraS".to_string();
+    } else if lower.contains("vehículo") || lower.contains("vehiculo") {
+        return "Placa".to_string();
+    } else if lower.contains("autorización") || lower.contains("autorizacion") {
+        return "Aut.".to_string();
+    } else if lower == "tiempo" {
+        return "Dur.".to_string(); // "Duración" abreviado
+    }
+
+    header.to_string()
+}
+
+/// Inserta espacios de ancho cero para forzar quiebre en cualquier caracter
+fn force_break_string(input: &str) -> String {
+    // Insertar \u{200B} (Zero Width Space) después de cada caracter
+    input
+        .chars()
+        .map(|c| c.to_string())
+        .collect::<Vec<String>>()
+        .join("\u{200B}")
 }
 
 // ==========================================

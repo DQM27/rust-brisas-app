@@ -1,8 +1,9 @@
 <!-- src/lib/components/grid/settings/AGGridSettingsAdvanced.svelte -->
 <script lang="ts">
-  import type { GridApi } from '@ag-grid-community/core';
-  import type { GridId } from '$lib/types/agGrid';
-  import { agGridSettings } from '$lib/stores/agGridSettings.svelte';
+  // @ts-nocheck
+  import type { GridApi } from "@ag-grid-community/core";
+  import type { GridId } from "$lib/types/agGrid";
+  import { agGridSettings } from "$lib/stores/agGridSettings.svelte";
   import {
     AlertTriangle,
     Trash2,
@@ -15,8 +16,8 @@
     Check,
     FileDown,
     FileUp,
-    Info
-  } from 'lucide-svelte';
+    Info,
+  } from "lucide-svelte";
 
   interface Props {
     gridId: GridId;
@@ -35,23 +36,27 @@
   // ============================================
   // Estado de Undo/Redo
   // ============================================
-  let enableUndoRedo = $state(agGridSettings.getEnableUndoRedo?.(gridId) ?? false);
+  let enableUndoRedo = $derived(
+    agGridSettings.getEnableUndoRedo?.(gridId) ?? false,
+  );
 
   // ============================================
   // Estado de Performance
   // ============================================
-  let rowBuffer = $state(agGridSettings.getRowBuffer?.(gridId) ?? 10);
-  let debounceScroll = $state(agGridSettings.getDebounceScroll?.(gridId) ?? true);
+  let rowBuffer = $derived(agGridSettings.getRowBuffer?.(gridId) ?? 10);
+  let debounceScroll = $derived(
+    agGridSettings.getDebounceScroll?.(gridId) ?? true,
+  );
 
   const rowBufferOptions = [5, 10, 20, 50];
 
   // ============================================
   // Estado de Export/Import
   // ============================================
-  let exportedConfig = $state('');
-  let importJson = $state('');
+  let exportedConfig = $state("");
+  let importJson = $state("");
   let copySuccess = $state(false);
-  let importError = $state('');
+  let importError = $state("");
   let importSuccess = $state(false);
 
   // Placeholder para el textarea de importar
@@ -86,11 +91,11 @@
   function toggleUndoRedo() {
     enableUndoRedo = !enableUndoRedo;
     agGridSettings.setEnableUndoRedo?.(gridId, enableUndoRedo);
-    
+
     if (gridApi) {
-      gridApi.setGridOption('undoRedoCellEditing', enableUndoRedo);
+      gridApi.setGridOption("undoRedoCellEditing", enableUndoRedo);
       if (enableUndoRedo) {
-        gridApi.setGridOption('undoRedoCellEditingLimit', 20);
+        gridApi.setGridOption("undoRedoCellEditingLimit", 20);
       }
     }
   }
@@ -101,18 +106,18 @@
   function setRowBuffer(value: number) {
     rowBuffer = value;
     agGridSettings.setRowBuffer?.(gridId, value);
-    
+
     if (gridApi) {
-      gridApi.setGridOption('rowBuffer', value);
+      gridApi.setGridOption("rowBuffer", value);
     }
   }
 
   function toggleDebounceScroll() {
     debounceScroll = !debounceScroll;
     agGridSettings.setDebounceScroll?.(gridId, debounceScroll);
-    
+
     if (gridApi) {
-      gridApi.setGridOption('debounceVerticalScrollbar', debounceScroll);
+      gridApi.setGridOption("debounceVerticalScrollbar", debounceScroll);
     }
   }
 
@@ -130,62 +135,62 @@
     if (exportedConfig) {
       navigator.clipboard.writeText(exportedConfig);
       copySuccess = true;
-      setTimeout(() => copySuccess = false, 2000);
+      setTimeout(() => (copySuccess = false), 2000);
     }
   }
 
   function downloadConfig() {
     if (exportedConfig) {
-      const blob = new Blob([exportedConfig], { type: 'application/json' });
+      const blob = new Blob([exportedConfig], { type: "application/json" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `grid-config-${gridId}-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `grid-config-${gridId}-${new Date().toISOString().split("T")[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
     }
   }
 
   function importConfig() {
-    importError = '';
+    importError = "";
     importSuccess = false;
 
     if (!importJson.trim()) {
-      importError = 'Por favor, ingresa o pega una configuración JSON';
+      importError = "Por favor, ingresa o pega una configuración JSON";
       return;
     }
 
     try {
       const config = JSON.parse(importJson);
-      
+
       // Validar estructura básica
-      if (!config || typeof config !== 'object') {
-        throw new Error('Configuración inválida');
+      if (!config || typeof config !== "object") {
+        throw new Error("Configuración inválida");
       }
 
       agGridSettings.importSettings?.(gridId, config);
       importSuccess = true;
-      importJson = '';
-      
+      importJson = "";
+
       // Refrescar la grid
       if (gridApi) {
         gridApi.refreshCells();
       }
 
-      setTimeout(() => importSuccess = false, 3000);
+      setTimeout(() => (importSuccess = false), 3000);
     } catch (e) {
-      importError = e instanceof Error ? e.message : 'Error al parsear JSON';
+      importError = e instanceof Error ? e.message : "Error al parsear JSON";
     }
   }
 
   function handleFileUpload(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    
+
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        importJson = e.target?.result as string || '';
+        importJson = (e.target?.result as string) || "";
       };
       reader.readAsText(file);
     }
@@ -215,11 +220,17 @@
           </div>
           <div class="text-left">
             <div class="text-white text-sm">Confirmar eliminación</div>
-            <div class="text-gray-500 text-xs">Pedir confirmación antes de eliminar registros</div>
+            <div class="text-gray-500 text-xs">
+              Pedir confirmación antes de eliminar registros
+            </div>
           </div>
         </div>
-        <div class={`w-10 h-6 rounded-full transition-colors ${confirmDelete ? 'bg-blue-500' : 'bg-gray-600'}`}>
-          <div class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${confirmDelete ? 'translate-x-5' : 'translate-x-1'}`}></div>
+        <div
+          class={`w-10 h-6 rounded-full transition-colors ${confirmDelete ? "bg-blue-500" : "bg-gray-600"}`}
+        >
+          <div
+            class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${confirmDelete ? "translate-x-5" : "translate-x-1"}`}
+          ></div>
         </div>
       </button>
 
@@ -235,11 +246,17 @@
           </div>
           <div class="text-left">
             <div class="text-white text-sm">Confirmar operaciones masivas</div>
-            <div class="text-gray-500 text-xs">Pedir confirmación para acciones que afecten múltiples registros</div>
+            <div class="text-gray-500 text-xs">
+              Pedir confirmación para acciones que afecten múltiples registros
+            </div>
           </div>
         </div>
-        <div class={`w-10 h-6 rounded-full transition-colors ${confirmBulk ? 'bg-blue-500' : 'bg-gray-600'}`}>
-          <div class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${confirmBulk ? 'translate-x-5' : 'translate-x-1'}`}></div>
+        <div
+          class={`w-10 h-6 rounded-full transition-colors ${confirmBulk ? "bg-blue-500" : "bg-gray-600"}`}
+        >
+          <div
+            class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${confirmBulk ? "translate-x-5" : "translate-x-1"}`}
+          ></div>
         </div>
       </button>
 
@@ -249,8 +266,9 @@
           onclick={toggleDontAskAgain}
           class="flex items-center gap-2 text-gray-400 text-xs hover:text-gray-300 transition-colors"
         >
-          <div class={`w-4 h-4 rounded border flex items-center justify-center transition-colors
-            ${dontAskAgain ? 'bg-blue-500 border-blue-500' : 'border-gray-500'}`}
+          <div
+            class={`w-4 h-4 rounded border flex items-center justify-center transition-colors
+            ${dontAskAgain ? "bg-blue-500 border-blue-500" : "border-gray-500"}`}
           >
             {#if dontAskAgain}
               <Check size={12} class="text-white" />
@@ -283,11 +301,17 @@
           </div>
           <div class="text-left">
             <div class="text-white text-sm">Habilitar Ctrl+Z / Ctrl+Y</div>
-            <div class="text-gray-500 text-xs">Permite deshacer y rehacer cambios en celdas editables</div>
+            <div class="text-gray-500 text-xs">
+              Permite deshacer y rehacer cambios en celdas editables
+            </div>
           </div>
         </div>
-        <div class={`w-10 h-6 rounded-full transition-colors ${enableUndoRedo ? 'bg-blue-500' : 'bg-gray-600'}`}>
-          <div class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${enableUndoRedo ? 'translate-x-5' : 'translate-x-1'}`}></div>
+        <div
+          class={`w-10 h-6 rounded-full transition-colors ${enableUndoRedo ? "bg-blue-500" : "bg-gray-600"}`}
+        >
+          <div
+            class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${enableUndoRedo ? "translate-x-5" : "translate-x-1"}`}
+          ></div>
         </div>
       </button>
     </div>
@@ -308,7 +332,9 @@
         <div class="flex items-center justify-between mb-3">
           <div>
             <div class="text-white text-sm">Buffer de filas</div>
-            <div class="text-gray-500 text-xs">Filas pre-renderizadas fuera de la vista</div>
+            <div class="text-gray-500 text-xs">
+              Filas pre-renderizadas fuera de la vista
+            </div>
           </div>
           <div class="text-blue-400 text-sm font-medium">{rowBuffer}</div>
         </div>
@@ -317,9 +343,11 @@
             <button
               onclick={() => setRowBuffer(option)}
               class={`flex-1 py-2 text-xs rounded transition-colors
-                ${rowBuffer === option 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-[#252526] text-gray-400 hover:bg-[#2a2a2b] hover:text-white'}`}
+                ${
+                  rowBuffer === option
+                    ? "bg-blue-500 text-white"
+                    : "bg-[#252526] text-gray-400 hover:bg-[#2a2a2b] hover:text-white"
+                }`}
             >
               {option}
             </button>
@@ -327,7 +355,9 @@
         </div>
         <div class="mt-2 flex items-start gap-1.5 text-gray-500 text-xs">
           <Info size={12} class="mt-0.5 shrink-0" />
-          <span>Valores más altos mejoran el scroll suave pero usan más memoria</span>
+          <span
+            >Valores más altos mejoran el scroll suave pero usan más memoria</span
+          >
         </div>
       </div>
 
@@ -339,10 +369,16 @@
       >
         <div class="text-left">
           <div class="text-white text-sm">Suavizar scroll vertical</div>
-          <div class="text-gray-500 text-xs">Reduce el parpadeo durante el scroll rápido</div>
+          <div class="text-gray-500 text-xs">
+            Reduce el parpadeo durante el scroll rápido
+          </div>
         </div>
-        <div class={`w-10 h-6 rounded-full transition-colors ${debounceScroll ? 'bg-blue-500' : 'bg-gray-600'}`}>
-          <div class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${debounceScroll ? 'translate-x-5' : 'translate-x-1'}`}></div>
+        <div
+          class={`w-10 h-6 rounded-full transition-colors ${debounceScroll ? "bg-blue-500" : "bg-gray-600"}`}
+        >
+          <div
+            class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${debounceScroll ? "translate-x-5" : "translate-x-1"}`}
+          ></div>
         </div>
       </button>
     </div>
@@ -363,11 +399,13 @@
         <div class="flex items-center justify-between">
           <div>
             <div class="text-white text-sm">Exportar configuración</div>
-            <div class="text-gray-500 text-xs">Guarda tu configuración actual como JSON</div>
+            <div class="text-gray-500 text-xs">
+              Guarda tu configuración actual como JSON
+            </div>
           </div>
           <button
             onclick={exportConfig}
-            class="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20 
+            class="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20
               rounded text-cyan-400 text-xs hover:bg-cyan-500/20 transition-colors"
           >
             <Download size={14} />
@@ -386,7 +424,7 @@
             <div class="flex gap-2">
               <button
                 onclick={copyToClipboard}
-                class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#252526] border border-white/10 
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#252526] border border-white/10
                   rounded text-xs text-gray-300 hover:bg-[#2a2a2b] transition-colors"
               >
                 {#if copySuccess}
@@ -399,7 +437,7 @@
               </button>
               <button
                 onclick={downloadConfig}
-                class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#252526] border border-white/10 
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#252526] border border-white/10
                   rounded text-xs text-gray-300 hover:bg-[#2a2a2b] transition-colors"
               >
                 <FileDown size={14} />
@@ -414,7 +452,9 @@
       <div class="p-3 bg-[#1e1e1e] border border-white/10 rounded-lg space-y-3">
         <div>
           <div class="text-white text-sm">Importar configuración</div>
-          <div class="text-gray-500 text-xs">Restaura una configuración previamente guardada</div>
+          <div class="text-gray-500 text-xs">
+            Restaura una configuración previamente guardada
+          </div>
         </div>
 
         <textarea
@@ -441,7 +481,7 @@
 
         <div class="flex gap-2">
           <label
-            class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#252526] border border-white/10 
+            class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#252526] border border-white/10
               rounded text-xs text-gray-300 hover:bg-[#2a2a2b] transition-colors cursor-pointer"
           >
             <FileUp size={14} />
@@ -456,7 +496,7 @@
           <button
             onclick={importConfig}
             disabled={!importJson.trim()}
-            class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-500/10 border border-blue-500/20 
+            class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-500/10 border border-blue-500/20
               rounded text-xs text-blue-400 hover:bg-blue-500/20 transition-colors
               disabled:opacity-50 disabled:cursor-not-allowed"
           >

@@ -10,11 +10,11 @@
 
   let { loading = false } = $props<{ loading?: boolean }>();
 
-  let start = 1;
-  let end = 50;
-  let prefix = "";
-  let padding = 2; // e.g. 01 vs 001
-  let tipo: "contratista" | "proveedor" | "visita" | "otro" = "contratista";
+  let start = $state(1);
+  let end = $state(50);
+  let prefix = $state("");
+  let padding = $state(2); // e.g. 01 vs 001
+  let tipo = $state<"contratista" | "proveedor" | "visita" | "otro">("contratista");
 
   // Calcular vista previa
   const previewStart = $derived(

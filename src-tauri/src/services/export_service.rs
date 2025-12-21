@@ -105,12 +105,41 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
     // Preview
     let show_preview = request.show_preview.unwrap_or(false);
 
+    // Font size (clamp entre 8 y 20)
+    let font_size = request.font_size.unwrap_or(10).clamp(8, 20);
+
+    // Font family
+    let font_family = request
+        .font_family
+        .clone()
+        .unwrap_or_else(|| "Inter".to_string());
+
+    // Márgenes (con defaults razonables)
+    let margin_top = request.margin_top.unwrap_or(2.0);
+    let margin_bottom = request.margin_bottom.unwrap_or(2.0);
+    let margin_left = request.margin_left.unwrap_or(1.5);
+    let margin_right = request.margin_right.unwrap_or(1.5);
+
+    // Color del banner
+    let banner_color = request
+        .banner_color
+        .clone()
+        .unwrap_or_else(|| "#059669".to_string());
+
     Ok(PdfConfig {
         title,
         orientation,
         headers: request.headers.clone(),
         show_preview,
         template_id: request.template_id.clone(),
+        font_size,
+        font_family,
+        margin_top,
+        margin_bottom,
+        margin_left,
+        margin_right,
+        banner_color,
+        generated_by: request.generated_by.clone().unwrap_or_default(),
     })
 }
 
@@ -158,35 +187,50 @@ fn construir_csv_config(request: &ExportRequest) -> ExportResult<CsvConfig> {
 // ==========================================
 
 /// Exporta a PDF usando Typst
+// Exporta a PDF usando Typst
 #[cfg(feature = "export")]
 async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse> {
     use crate::export::pdf;
-    use crate::services::template_service;
+    use crate::models::export::{PdfColors, PdfDesign, PdfFonts};
+    use crate::services::export_profile_service;
 
     let config = data
         .pdf_config
         .ok_or_else(|| ExportError::Unknown("Config PDF no encontrada".to_string()))?;
 
-    // ✅ Obtener template (o default si no existe ID)
-    let template = if let Some(ref id) = config.template_id {
-        template_service::get_template_by_id(id).unwrap_or_else(|| {
-            template_service::get_all_templates()
-                .unwrap()
-                .first()
-                .unwrap()
-                .clone()
-        })
+    // ✅ Obtener PERFIL (usando template_id como profile_id por compatibilidad o default)
+    let profile = if let Some(ref id) = config.template_id {
+        export_profile_service::get_profile_by_id(id)
+            .or_else(|| export_profile_service::get_default_profile())
     } else {
-        // Usar el primero (Default)
-        template_service::get_all_templates()
-            .unwrap_or_default()
-            .first()
-            .cloned()
-            .unwrap_or_default()
+        export_profile_service::get_default_profile()
     };
 
+    // Obtener diseño del perfil o usar uno default al vuelo
+    let design = profile
+        .and_then(|p| p.pdf_design)
+        .unwrap_or_else(|| PdfDesign {
+            page_size: "us-letter".to_string(),
+            orientation: "landscape".to_string(),
+            margin_x: 1.5,
+            margin_x_unit: "cm".to_string(),
+            margin_y: 2.0,
+            margin_y_unit: "cm".to_string(),
+            colors: PdfColors {
+                header_fill: "#e8e8e8".to_string(),
+                header_text: "#000000".to_string(),
+                row_text: "#000000".to_string(),
+                border: "#000000".to_string(),
+            },
+            fonts: PdfFonts {
+                family: "Inter".to_string(),
+                size: 10,
+                header_size: 11,
+            },
+        });
+
     // Generar PDF
-    let pdf_bytes = pdf::generate_pdf(&data.headers, &data.rows, &config, &template)?;
+    let pdf_bytes = pdf::generate_pdf(&data.headers, &data.rows, &config, &design)?;
 
     // Determinar si guardar en disco
     let file_path = if let Some(path) = data.target_path {

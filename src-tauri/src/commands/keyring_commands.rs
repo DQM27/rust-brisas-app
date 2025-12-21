@@ -4,7 +4,7 @@
 // Comandos Tauri para gestión segura de credenciales
 
 use crate::config::{save_config, AppConfig};
-use crate::services::keyring_service::{self, Argon2Params, CredentialStatus, SmtpCredentials};
+use crate::services::keyring_service::{self, Argon2Params, CredentialStatus};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use tauri::{command, State};
@@ -15,7 +15,6 @@ use tauri::{command, State};
 
 #[derive(Debug, Deserialize)]
 pub struct SetupCredentialsInput {
-    pub smtp: SmtpCredentials,
     pub argon2: Argon2Params,
     pub terminal_name: String,
     pub terminal_location: String,
@@ -59,8 +58,7 @@ pub fn setup_credentials(
     input: SetupCredentialsInput,
     config: State<'_, AppConfig>,
 ) -> Result<SetupResult, String> {
-    // 1. Guardar credenciales SMTP
-    keyring_service::store_smtp_credentials(&input.smtp)?;
+    // 1. (Eliminado: Guardar credenciales SMTP)
 
     // 2. Guardar parámetros de Argon2
     keyring_service::store_argon2_params(&input.argon2)?;
@@ -91,73 +89,6 @@ pub fn setup_credentials(
         success: true,
         message: "Configuración inicial completada correctamente".to_string(),
     })
-}
-
-// ==========================================
-// COMANDOS SMTP (Solo admin)
-// ==========================================
-
-/// Obtiene credenciales SMTP (sin la contraseña completa por seguridad)
-#[command]
-pub fn get_smtp_config() -> Option<SmtpCredentialsSafe> {
-    keyring_service::get_smtp_credentials().map(|creds| SmtpCredentialsSafe {
-        host: creds.host,
-        port: creds.port,
-        user: creds.user,
-        has_password: true,
-        feedback_email: creds.feedback_email,
-    })
-}
-
-#[derive(Debug, Serialize)]
-pub struct SmtpCredentialsSafe {
-    pub host: String,
-    pub port: u16,
-    pub user: String,
-    pub has_password: bool,
-    pub feedback_email: String,
-}
-
-/// Actualiza credenciales SMTP
-#[command]
-pub fn update_smtp_credentials(creds: SmtpCredentials) -> Result<(), String> {
-    keyring_service::store_smtp_credentials(&creds)
-}
-
-/// Prueba la conexión SMTP con credenciales guardadas
-#[command]
-pub async fn test_smtp_connection() -> Result<String, String> {
-    let creds =
-        keyring_service::get_smtp_credentials().ok_or("No hay credenciales SMTP configuradas")?;
-
-    test_smtp_with_credentials(creds).await
-}
-
-/// Prueba la conexión SMTP con credenciales proporcionadas (para el wizard)
-#[command]
-pub async fn test_smtp_connection_with_creds(creds: SmtpCredentials) -> Result<String, String> {
-    test_smtp_with_credentials(creds).await
-}
-
-/// Función interna para probar conexión SMTP
-async fn test_smtp_with_credentials(creds: SmtpCredentials) -> Result<String, String> {
-    use lettre::transport::smtp::authentication::Credentials;
-    use lettre::SmtpTransport;
-
-    let smtp_creds = Credentials::new(creds.user.clone(), creds.password.clone());
-
-    let mailer = SmtpTransport::relay(&creds.host)
-        .map_err(|e| format!("Error conectando: {}", e))?
-        .port(creds.port)
-        .credentials(smtp_creds)
-        .build();
-
-    // Probar conexión
-    mailer
-        .test_connection()
-        .map_err(|e| format!("Error de conexión SMTP: {}", e))?;
-
-    Ok("Conexión SMTP exitosa".to_string())
 }
 
 // ==========================================
@@ -360,7 +291,7 @@ pub fn reset_all_credentials(confirm: bool, config: State<'_, AppConfig>) -> Res
     }
 
     // Eliminar credenciales
-    let _ = keyring_service::delete_smtp_credentials();
+    // let _ = keyring_service::delete_smtp_credentials();
 
     // Actualizar estado de configuración
     let mut updated_config = config.inner().clone();

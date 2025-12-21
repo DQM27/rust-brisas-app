@@ -1,4 +1,5 @@
 <script lang="ts">
+  // @ts-nocheck - Svelte 5 runes are not recognized by TS
   import type { GridId } from "$lib/types/agGrid";
   import type { GridApi } from "@ag-grid-community/core";
   import { agGridSettings } from "$lib/stores/agGridSettings.svelte";
@@ -12,9 +13,11 @@
   let { gridId, gridApi }: Props = $props();
 
   // Estado
-  let paginationSize = $state(agGridSettings.getPaginationSize(gridId));
-  let showFloatingFilters = $state(agGridSettings.getShowFloatingFilters(gridId));
-  let enableQuickFilter = $state(agGridSettings.getEnableQuickFilter(gridId));
+  let paginationSize = $derived(agGridSettings.getPaginationSize(gridId));
+  let showFloatingFilters = $derived(
+    agGridSettings.getShowFloatingFilters(gridId),
+  );
+  let enableQuickFilter = $derived(agGridSettings.getEnableQuickFilter(gridId));
   let quickFilterText = $state("");
 
   // Opciones de paginación
@@ -96,17 +99,15 @@
           onclick={() => handlePaginationChange(size)}
           class="py-2 px-3 text-sm rounded-lg border transition-all
             {paginationSize === size
-              ? 'border-blue-500 bg-blue-500/10 text-blue-400 font-medium'
-              : 'border-white/10 bg-[#252526] text-gray-300 hover:border-white/20'}"
+            ? 'border-blue-500 bg-blue-500/10 text-blue-400 font-medium'
+            : 'border-white/10 bg-[#252526] text-gray-300 hover:border-white/20'}"
         >
           {size}
         </button>
       {/each}
     </div>
 
-    <p class="text-xs text-gray-500 mt-2">
-      Registros por página en la tabla
-    </p>
+    <p class="text-xs text-gray-500 mt-2">Registros por página en la tabla</p>
   </section>
 
   <!-- Quick Filter -->
@@ -131,7 +132,10 @@
 
     {#if enableQuickFilter}
       <div class="relative">
-        <Search size={14} class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+        <Search
+          size={14}
+          class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+        />
         <input
           type="text"
           bind:value={quickFilterText}
@@ -156,7 +160,9 @@
         Filtra instantáneamente en todas las columnas visibles
       </p>
     {:else}
-      <div class="p-4 rounded-lg bg-[#252526] border border-white/10 text-center">
+      <div
+        class="p-4 rounded-lg bg-[#252526] border border-white/10 text-center"
+      >
         <p class="text-sm text-gray-400">
           Activa la búsqueda rápida para filtrar en todas las columnas
         </p>
@@ -226,8 +232,8 @@
   <!-- Info -->
   <div class="p-3 rounded-lg bg-[#252526] border border-white/10">
     <p class="text-xs text-gray-400">
-      <strong class="text-gray-300">Tip:</strong> Usa Shift+Click en los encabezados para ordenar
-      por múltiples columnas. Los filtros se combinan con AND.
+      <strong class="text-gray-300">Tip:</strong> Usa Shift+Click en los encabezados
+      para ordenar por múltiples columnas. Los filtros se combinan con AND.
     </p>
   </div>
 </div>

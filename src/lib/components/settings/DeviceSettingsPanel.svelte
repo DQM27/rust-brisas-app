@@ -56,6 +56,23 @@
     }
   }
 
+  let memoryUsage = "";
+  let checkingMemory = false;
+
+  async function checkMemory() {
+    checkingMemory = true;
+    try {
+      const bytes: number = await invoke("get_app_memory_usage");
+      const mb = (bytes / 1024 / 1024).toFixed(2);
+      memoryUsage = `${mb} MB`;
+    } catch (err) {
+      console.error("Error Checking Memory:", err);
+      memoryUsage = "Error";
+    } finally {
+      checkingMemory = false;
+    }
+  }
+
   function copyId() {
     navigator.clipboard.writeText(terminalId);
     // Opcional: Toast simple
@@ -101,6 +118,44 @@
             >
               <Copy size={16} />
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMORY CARD (NEW) -->
+    <div class="card-base p-5 bg-surface-2/50 border border-white/5">
+      <div class="flex items-start gap-4">
+        <div class="p-3 rounded-lg bg-green-500/10 text-green-400">
+          <Cpu size={24} />
+        </div>
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold text-primary mb-1">
+            Recursos del Sistema
+          </h3>
+          <p class="text-xs text-secondary mb-3">
+            Monitoreo en tiempo real del uso de memoria de la aplicación.
+          </p>
+
+          <div class="flex items-center gap-4">
+            <button
+              class="btn-secondary text-xs px-4 py-2"
+              onclick={checkMemory}
+              disabled={checkingMemory}
+            >
+              {checkingMemory ? "Midiendo..." : "Verificar Memoria"}
+            </button>
+
+            {#if memoryUsage}
+              <div class="flex flex-col">
+                <span class="text-xs text-secondary uppercase tracking-wider"
+                  >Memoria RAM</span
+                >
+                <span class="text-xl font-mono text-green-400 font-bold"
+                  >{memoryUsage}</span
+                >
+              </div>
+            {/if}
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  // @ts-nocheck - Svelte 5 runes not recognized by TS
   import type { UserResponse } from "$lib/types/user";
   import {
     UpdateUserSchema,
@@ -32,23 +33,44 @@
     onStatusChange,
   }: Props = $props();
 
-  // Estado del formulario de edición
+  // Helper para inicializar datos
+  function getFormData(u: UserResponse): UpdateUserForm {
+    return {
+      nombre: u.nombre,
+      apellido: u.apellido,
+      email: u.email,
+      cedula: u.cedula,
+      role: u.role,
+      segundoNombre: u.segundoNombre || "",
+      segundoApellido: u.segundoApellido || "",
+      telefono: u.telefono || "",
+      direccion: u.direccion || "",
+      contactoEmergenciaNombre: u.contactoEmergenciaNombre || "",
+      contactoEmergenciaTelefono: u.contactoEmergenciaTelefono || "",
+      fechaInicioLabores: u.fechaInicioLabores ?? undefined,
+      numeroGafete: u.numeroGafete ?? undefined,
+      fechaNacimiento: u.fechaNacimiento ?? undefined,
+    };
+  }
+
+  // Estado del formulario de edición - inicializar vacío, $effect sincroniza
   let formData = $state<UpdateUserForm>({
-    nombre: user.nombre,
-    apellido: user.apellido,
-    email: user.email,
-    cedula: user.cedula,
-    role: user.role, // Ahora relevante para admins
-    segundoNombre: user.segundoNombre || "",
-    segundoApellido: user.segundoApellido || "",
-    telefono: user.telefono || "",
-    direccion: user.direccion || "",
-    contactoEmergenciaNombre: user.contactoEmergenciaNombre || "",
-    contactoEmergenciaTelefono: user.contactoEmergenciaTelefono || "",
-    // Campos no editables se omiten
-    fechaInicioLabores: user.fechaInicioLabores ?? undefined,
-    numeroGafete: user.numeroGafete ?? undefined,
-    fechaNacimiento: user.fechaNacimiento ?? undefined,
+    email: "",
+    username: "",
+    nombre: "",
+    apellido: "",
+    telefono: "",
+    direccion: "",
+    contactoEmergenciaNombre: "",
+    contactoEmergenciaTelefono: "",
+    fechaInicioLabores: undefined,
+    numeroGafete: undefined,
+    fechaNacimiento: undefined,
+  });
+
+  // Sincronizar si cambia el usuario prop
+  $effect(() => {
+    formData = getFormData(user);
   });
 
   let errors = $state<Record<string, string>>({});

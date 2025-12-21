@@ -4,9 +4,7 @@
 // Capa de dominio: validaciones y reglas de negocio puras
 // Sin dependencias de DB ni servicios externos
 
-use crate::models::export::{
-    CsvDelimiter, ExportFormat, ExportRequest, PageOrientation,
-};
+use crate::models::export::{CsvDelimiter, ExportFormat, ExportRequest, PageOrientation};
 use std::collections::HashMap;
 
 // ==========================================
@@ -188,6 +186,8 @@ pub fn json_value_to_string(value: &serde_json::Value) -> String {
     }
 }
 
+use chrono::DateTime;
+
 /// Normaliza una fila completa (convierte todos los valores a String)
 pub fn normalizar_row(
     row: &HashMap<String, serde_json::Value>,
@@ -196,15 +196,45 @@ pub fn normalizar_row(
     let mut normalized = HashMap::new();
 
     for header in headers {
-        let value = row
+        let raw_value = row
             .get(header)
             .map(json_value_to_string)
             .unwrap_or_default();
+
+        // Intentar formatear si parece una fecha
+        let value = try_format_date(&raw_value, header);
 
         normalized.insert(header.clone(), value);
     }
 
     normalized
+}
+
+/// Intenta formatear una cadena si es una fecha válida ISO 8601
+fn try_format_date(value: &str, header: &str) -> String {
+    // Optimización: si no tiene longitud de fecha mínima o separador, retornar original
+    if value.len() < 10 || !value.contains('-') {
+        return value.to_string();
+    }
+
+    // Intentar parsear como DateTime RFC3339 (formato estándar de JSON/JS)
+    if let Ok(dt) = DateTime::parse_from_rfc3339(value) {
+        let local_dt = dt.with_timezone(&chrono::Local);
+        let header_lower = header.to_lowercase();
+
+        if header_lower.contains("hora") {
+            // Solo hora: 14:30
+            return local_dt.format("%H:%M").to_string();
+        } else if header_lower.contains("fecha") {
+            // Solo fecha: 21/12/2025
+            return local_dt.format("%d/%m/%Y").to_string();
+        } else {
+            // Fecha y Hora: 21/12/2025 14:30
+            return local_dt.format("%d/%m/%Y %H:%M").to_string();
+        }
+    }
+
+    value.to_string()
 }
 
 // ==========================================
@@ -215,7 +245,7 @@ pub fn normalizar_row(
 pub fn validar_tamano_total(request: &ExportRequest) -> Result<(), String> {
     // Estimar tamaño aproximado en bytes
     let headers_size: usize = request.headers.iter().map(|h| h.len()).sum();
-    
+
     let mut rows_size: usize = 0;
     for row in &request.rows {
         for value in row.values() {

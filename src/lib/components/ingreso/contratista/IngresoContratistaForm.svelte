@@ -16,7 +16,6 @@
   import GafeteInput from "../common/GafeteInput.svelte";
   import IngresoFormFields from "../common/IngresoFormFields.svelte";
   import IngresoObservaciones from "../common/IngresoObservaciones.svelte";
-  import { shortcutService } from "$lib/services/shortcutService";
 
   import { X } from "lucide-svelte";
 
@@ -55,27 +54,10 @@
       }
     })();
 
-    // 2. Atajos
-    const unregSave = shortcutService.registerHandler(
-      "ingreso-form",
-      "save",
-      () => handleSubmit(),
-    );
-    const unregCancel = shortcutService.registerHandler(
-      "ingreso-form",
-      "cancel",
-      handleCloseForm,
-    );
-
-    // 3. Auto-focus (dar tiempo para renderizado)
+    // 2. Auto-focus (dar tiempo para renderizado)
     setTimeout(() => {
       contratistaSearchRef?.focus();
     }, 100);
-
-    return () => {
-      unregSave();
-      unregCancel();
-    };
   });
 
   // ==========================================
@@ -176,10 +158,7 @@
   - Pasar datos a componentes presentacionales
 -->
 
-<div
-  class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 relative"
-  use:shortcutService.useScope={"ingreso-form"}
->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 relative">
   <div class="flex justify-between items-center mb-6">
     <h2 class="text-xl font-bold text-gray-900 dark:text-white">
       Registrar Ingreso

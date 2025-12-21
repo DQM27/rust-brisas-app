@@ -12,7 +12,7 @@ use crate::search::{
     update_proveedor_in_index, update_user_in_index,
 };
 use crate::search::{get_index_reader, get_index_writer, initialize_index};
-use crate::search::{search_index, SearchResult};
+use crate::search::{search_index, SearchFields, SearchResult};
 use sqlx::SqlitePool;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -23,6 +23,7 @@ use tokio::sync::Mutex;
 pub struct SearchService {
     pub index: Arc<Index>,
     pub reader: Arc<IndexReader>,
+    pub fields: Arc<SearchFields>, // Cache de campos
     pub writer_mutex: Mutex<()>,
     #[allow(dead_code)]
     index_path: PathBuf,
@@ -37,9 +38,13 @@ impl SearchService {
         let index = initialize_index(&index_path)?;
         let reader = get_index_reader(&index)?;
 
+        // Pre-calcular campos (Zero-Cost Abstraction)
+        let fields = Arc::new(SearchFields::new(&index.schema()));
+
         Ok(Self {
             index: Arc::new(index),
             reader: Arc::new(reader),
+            fields,
             writer_mutex: Mutex::new(()),
             index_path,
         })
@@ -62,36 +67,38 @@ impl SearchService {
         // Adquirir lock para escribir en el índice
         let _lock = self.writer_mutex.lock().await;
 
-        let schema = self.index.schema();
-        let mut writer = get_index_writer(&self.index)?;
+        {
+            let schema = self.index.schema();
+            let mut writer = get_index_writer(&self.index)?;
 
-        // Limpiar índice existente
-        writer
-            .delete_all_documents()
-            .map_err(|e| format!("Error al limpiar índice: {}", e))?;
+            // Limpiar índice existente
+            writer
+                .delete_all_documents()
+                .map_err(|e| format!("Error al limpiar índice: {}", e))?;
 
-        // Indexar contratistas
-        for (contratista, empresa_nombre, _, _, _) in contratistas {
-            index_contratista(&mut writer, &schema, &contratista, &empresa_nombre)?;
+            // Indexar contratistas
+            for (contratista, empresa_nombre, _, _, _) in contratistas {
+                index_contratista(&mut writer, &schema, &contratista, &empresa_nombre)?;
+            }
+
+            // Indexar usuarios
+            for user in users {
+                index_user(&mut writer, &schema, &user)?;
+            }
+
+            // Indexar lista negra
+            for ln in lista_negra {
+                index_lista_negra(&mut writer, &schema, &ln)?;
+            }
+
+            // Indexar proveedores
+            for (proveedor, empresa_nombre) in proveedores {
+                index_proveedor(&mut writer, &schema, &proveedor, &empresa_nombre)?;
+            }
+
+            // Commit
+            commit_index(&mut writer)?;
         }
-
-        // Indexar usuarios
-        for user in users {
-            index_user(&mut writer, &schema, &user)?;
-        }
-
-        // Indexar lista negra
-        for ln in lista_negra {
-            index_lista_negra(&mut writer, &schema, &ln)?;
-        }
-
-        // Indexar proveedores
-        for (proveedor, empresa_nombre) in proveedores {
-            index_proveedor(&mut writer, &schema, &proveedor, &empresa_nombre)?;
-        }
-
-        // Commit
-        commit_index(&mut writer)?;
 
         // Reload reader
         self.reader
@@ -114,11 +121,13 @@ impl SearchService {
     ) -> Result<(), String> {
         let _lock = self.writer_mutex.lock().await;
 
-        let schema = self.index.schema();
-        let mut writer = get_index_writer(&self.index)?;
+        {
+            let schema = self.index.schema();
+            let mut writer = get_index_writer(&self.index)?;
 
-        index_contratista(&mut writer, &schema, contratista, empresa_nombre)?;
-        commit_index(&mut writer)?;
+            index_contratista(&mut writer, &schema, contratista, empresa_nombre)?;
+            commit_index(&mut writer)?;
+        }
 
         self.reader
             .reload()
@@ -135,11 +144,13 @@ impl SearchService {
     ) -> Result<(), String> {
         let _lock = self.writer_mutex.lock().await;
 
-        let schema = self.index.schema();
-        let mut writer = get_index_writer(&self.index)?;
+        {
+            let schema = self.index.schema();
+            let mut writer = get_index_writer(&self.index)?;
 
-        update_contratista_in_index(&mut writer, &schema, contratista, empresa_nombre)?;
-        commit_index(&mut writer)?;
+            update_contratista_in_index(&mut writer, &schema, contratista, empresa_nombre)?;
+            commit_index(&mut writer)?;
+        }
 
         self.reader
             .reload()
@@ -152,11 +163,13 @@ impl SearchService {
     pub async fn delete_contratista(&self, id: &str) -> Result<(), String> {
         let _lock = self.writer_mutex.lock().await;
 
-        let schema = self.index.schema();
-        let mut writer = get_index_writer(&self.index)?;
+        {
+            let schema = self.index.schema();
+            let mut writer = get_index_writer(&self.index)?;
 
-        delete_from_index(&mut writer, &schema, id)?;
-        commit_index(&mut writer)?;
+            delete_from_index(&mut writer, &schema, id)?;
+            commit_index(&mut writer)?;
+        }
 
         self.reader
             .reload()
@@ -169,11 +182,13 @@ impl SearchService {
     pub async fn add_user(&self, user: &User) -> Result<(), String> {
         let _lock = self.writer_mutex.lock().await;
 
-        let schema = self.index.schema();
-        let mut writer = get_index_writer(&self.index)?;
+        {
+            let schema = self.index.schema();
+            let mut writer = get_index_writer(&self.index)?;
 
-        index_user(&mut writer, &schema, user)?;
-        commit_index(&mut writer)?;
+            index_user(&mut writer, &schema, user)?;
+            commit_index(&mut writer)?;
+        }
 
         self.reader
             .reload()
@@ -186,11 +201,13 @@ impl SearchService {
     pub async fn update_user(&self, user: &User) -> Result<(), String> {
         let _lock = self.writer_mutex.lock().await;
 
-        let schema = self.index.schema();
-        let mut writer = get_index_writer(&self.index)?;
+        {
+            let schema = self.index.schema();
+            let mut writer = get_index_writer(&self.index)?;
 
-        update_user_in_index(&mut writer, &schema, user)?;
-        commit_index(&mut writer)?;
+            update_user_in_index(&mut writer, &schema, user)?;
+            commit_index(&mut writer)?;
+        }
 
         self.reader
             .reload()
@@ -203,11 +220,13 @@ impl SearchService {
     pub async fn delete_user(&self, id: &str) -> Result<(), String> {
         let _lock = self.writer_mutex.lock().await;
 
-        let schema = self.index.schema();
-        let mut writer = get_index_writer(&self.index)?;
+        {
+            let schema = self.index.schema();
+            let mut writer = get_index_writer(&self.index)?;
 
-        delete_from_index(&mut writer, &schema, id)?;
-        commit_index(&mut writer)?;
+            delete_from_index(&mut writer, &schema, id)?;
+            commit_index(&mut writer)?;
+        }
 
         self.reader
             .reload()
@@ -220,11 +239,13 @@ impl SearchService {
     pub async fn add_lista_negra(&self, lista_negra: &ListaNegra) -> Result<(), String> {
         let _lock = self.writer_mutex.lock().await;
 
-        let schema = self.index.schema();
-        let mut writer = get_index_writer(&self.index)?;
+        {
+            let schema = self.index.schema();
+            let mut writer = get_index_writer(&self.index)?;
 
-        index_lista_negra(&mut writer, &schema, lista_negra)?;
-        commit_index(&mut writer)?;
+            index_lista_negra(&mut writer, &schema, lista_negra)?;
+            commit_index(&mut writer)?;
+        }
 
         self.reader
             .reload()
@@ -237,11 +258,13 @@ impl SearchService {
     pub async fn update_lista_negra(&self, lista_negra: &ListaNegra) -> Result<(), String> {
         let _lock = self.writer_mutex.lock().await;
 
-        let schema = self.index.schema();
-        let mut writer = get_index_writer(&self.index)?;
+        {
+            let schema = self.index.schema();
+            let mut writer = get_index_writer(&self.index)?;
 
-        update_lista_negra_in_index(&mut writer, &schema, lista_negra)?;
-        commit_index(&mut writer)?;
+            update_lista_negra_in_index(&mut writer, &schema, lista_negra)?;
+            commit_index(&mut writer)?;
+        }
 
         self.reader
             .reload()
@@ -254,11 +277,13 @@ impl SearchService {
     pub async fn delete_lista_negra(&self, id: &str) -> Result<(), String> {
         let _lock = self.writer_mutex.lock().await;
 
-        let schema = self.index.schema();
-        let mut writer = get_index_writer(&self.index)?;
+        {
+            let schema = self.index.schema();
+            let mut writer = get_index_writer(&self.index)?;
 
-        delete_from_index(&mut writer, &schema, id)?;
-        commit_index(&mut writer)?;
+            delete_from_index(&mut writer, &schema, id)?;
+            commit_index(&mut writer)?;
+        }
 
         self.reader
             .reload()
@@ -269,7 +294,8 @@ impl SearchService {
 
     /// Busca en el índice (contratistas, usuarios, proveedores y lista negra)
     pub fn search(&self, query: &str, limit: usize) -> Result<Vec<SearchResult>, String> {
-        search_index(&self.index, &self.reader, query, limit)
+        // Pasamos self.fields en lugar de buscar por strings (Hot Path Optimizado)
+        search_index(&self.index, &self.reader, &self.fields, query, limit)
     }
 
     /// Verifica si el índice está vacío
@@ -292,11 +318,13 @@ impl SearchService {
     ) -> Result<(), String> {
         let _lock = self.writer_mutex.lock().await;
 
-        let schema = self.index.schema();
-        let mut writer = get_index_writer(&self.index)?;
+        {
+            let schema = self.index.schema();
+            let mut writer = get_index_writer(&self.index)?;
 
-        index_proveedor(&mut writer, &schema, proveedor, empresa_nombre)?;
-        commit_index(&mut writer)?;
+            index_proveedor(&mut writer, &schema, proveedor, empresa_nombre)?;
+            commit_index(&mut writer)?;
+        }
 
         self.reader
             .reload()
@@ -313,11 +341,13 @@ impl SearchService {
     ) -> Result<(), String> {
         let _lock = self.writer_mutex.lock().await;
 
-        let schema = self.index.schema();
-        let mut writer = get_index_writer(&self.index)?;
+        {
+            let schema = self.index.schema();
+            let mut writer = get_index_writer(&self.index)?;
 
-        update_proveedor_in_index(&mut writer, &schema, proveedor, empresa_nombre)?;
-        commit_index(&mut writer)?;
+            update_proveedor_in_index(&mut writer, &schema, proveedor, empresa_nombre)?;
+            commit_index(&mut writer)?;
+        }
 
         self.reader
             .reload()
@@ -330,11 +360,13 @@ impl SearchService {
     pub async fn delete_proveedor(&self, id: &str) -> Result<(), String> {
         let _lock = self.writer_mutex.lock().await;
 
-        let schema = self.index.schema();
-        let mut writer = get_index_writer(&self.index)?;
+        {
+            let schema = self.index.schema();
+            let mut writer = get_index_writer(&self.index)?;
 
-        delete_from_index(&mut writer, &schema, id)?;
-        commit_index(&mut writer)?;
+            delete_from_index(&mut writer, &schema, id)?;
+            commit_index(&mut writer)?;
+        }
 
         self.reader
             .reload()

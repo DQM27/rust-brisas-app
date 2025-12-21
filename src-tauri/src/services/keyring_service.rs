@@ -19,13 +19,6 @@ const SERVICE_NAME: &str = "brisas-app";
 // CONSTANTES PARA CLAVES
 // ==========================================
 
-// SMTP
-const KEY_SMTP_HOST: &str = "smtp_host";
-const KEY_SMTP_PORT: &str = "smtp_port";
-const KEY_SMTP_USER: &str = "smtp_user";
-const KEY_SMTP_PASSWORD: &str = "smtp_password";
-const KEY_FEEDBACK_EMAIL: &str = "feedback_email";
-
 // Argon2
 const KEY_ARGON2_MEMORY: &str = "argon2_memory";
 const KEY_ARGON2_ITERATIONS: &str = "argon2_iterations";
@@ -35,15 +28,6 @@ const KEY_PASSWORD_SECRET: &str = "password_secret";
 // ==========================================
 // DTOs
 // ==========================================
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SmtpCredentials {
-    pub host: String,
-    pub port: u16,
-    pub user: String,
-    pub password: String,
-    pub feedback_email: String,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Argon2Params {
@@ -66,7 +50,6 @@ impl Default for Argon2Params {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AllCredentials {
-    pub smtp: Option<SmtpCredentials>,
     pub argon2: Argon2Params,
 }
 
@@ -110,12 +93,6 @@ fn retrieve_value(key: &str) -> Option<String> {
     keyring_windows::retrieve_secret(key)
 }
 
-#[cfg(target_os = "windows")]
-fn delete_value(key: &str) -> Result<(), String> {
-    use crate::services::keyring_windows;
-    keyring_windows::delete_secret(key)
-}
-
 // ==========================================
 // IMPLEMENTACIÓN MACOS (librería keyring)
 // ==========================================
@@ -138,59 +115,6 @@ fn retrieve_value(key: &str) -> Option<String> {
     get_entry(key)
         .ok()
         .and_then(|entry| entry.get_password().ok())
-}
-
-#[cfg(target_os = "macos")]
-fn delete_value(key: &str) -> Result<(), String> {
-    let entry = get_entry(key)?;
-    entry
-        .delete_credential()
-        .map_err(|e| format!("Error eliminando '{}': {}", key, e))
-}
-
-// ==========================================
-// SMTP CREDENTIALS
-// ==========================================
-
-pub fn store_smtp_credentials(creds: &SmtpCredentials) -> Result<(), String> {
-    store_value(KEY_SMTP_HOST, &creds.host)?;
-    store_value(KEY_SMTP_PORT, &creds.port.to_string())?;
-    store_value(KEY_SMTP_USER, &creds.user)?;
-    store_value(KEY_SMTP_PASSWORD, &creds.password)?;
-    store_value(KEY_FEEDBACK_EMAIL, &creds.feedback_email)?;
-    Ok(())
-}
-
-pub fn get_smtp_credentials() -> Option<SmtpCredentials> {
-    let host = retrieve_value(KEY_SMTP_HOST)?;
-    let port_str = retrieve_value(KEY_SMTP_PORT)?;
-    let port = port_str.parse().ok()?;
-    let user = retrieve_value(KEY_SMTP_USER)?;
-    let password = retrieve_value(KEY_SMTP_PASSWORD)?;
-    let feedback_email = retrieve_value(KEY_FEEDBACK_EMAIL)?;
-
-    Some(SmtpCredentials {
-        host,
-        port,
-        user,
-        password,
-        feedback_email,
-    })
-}
-
-pub fn has_smtp_credentials() -> bool {
-    retrieve_value(KEY_SMTP_HOST).is_some()
-        && retrieve_value(KEY_SMTP_USER).is_some()
-        && retrieve_value(KEY_SMTP_PASSWORD).is_some()
-}
-
-pub fn delete_smtp_credentials() -> Result<(), String> {
-    let _ = delete_value(KEY_SMTP_HOST);
-    let _ = delete_value(KEY_SMTP_PORT);
-    let _ = delete_value(KEY_SMTP_USER);
-    let _ = delete_value(KEY_SMTP_PASSWORD);
-    let _ = delete_value(KEY_FEEDBACK_EMAIL);
-    Ok(())
 }
 
 // ==========================================
@@ -237,13 +161,12 @@ pub fn has_argon2_secret() -> bool {
 
 pub fn get_all_credentials() -> AllCredentials {
     AllCredentials {
-        smtp: get_smtp_credentials(),
         argon2: get_argon2_params(),
     }
 }
 
 pub fn is_fully_configured() -> bool {
-    has_smtp_credentials() && has_argon2_secret()
+    has_argon2_secret()
 }
 
 // ==========================================
@@ -252,19 +175,16 @@ pub fn is_fully_configured() -> bool {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CredentialStatus {
-    pub smtp_configured: bool,
     pub argon2_configured: bool,
     pub fully_configured: bool,
 }
 
 pub fn get_credential_status() -> CredentialStatus {
-    let smtp_configured = has_smtp_credentials();
     let argon2_configured = has_argon2_secret();
 
     CredentialStatus {
-        smtp_configured,
         argon2_configured,
-        fully_configured: smtp_configured && argon2_configured,
+        fully_configured: argon2_configured,
     }
 }
 

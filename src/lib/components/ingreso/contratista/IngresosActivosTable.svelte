@@ -27,7 +27,6 @@
 
   // ✅ NUEVO: Importar componentes de exportación
   import ExportDialog from "$lib/components/export/ExportDialog.svelte";
-  import PdfPreviewModal from "$lib/components/export/PdfPreviewModal.svelte";
   import { exportData, downloadBytes } from "$lib/logic/export";
   import type { ExportOptions } from "$lib/logic/export";
 
@@ -39,7 +38,6 @@
   // ✅ NUEVO: Importar store de tiempo y utilidad de evaluación
   import { currentTime } from "$lib/stores/timeStore";
   import { evaluateTimeStatus } from "$lib/logic/ingreso/ingresoService";
-  import { shortcutService } from "$lib/services/shortcutService";
 
   // Props
   const {
@@ -164,8 +162,8 @@
       },
       {
         field: "gafeteNumero",
-        headerName: "Gafete",
-        width: 100,
+        headerName: "GF",
+        width: 70,
         cellRenderer: (params: any) =>
           params.value
             ? `<span class="font-mono font-bold text-blue-600">${params.value}</span>`
@@ -173,14 +171,14 @@
       },
       {
         field: "vehiculoPlaca",
-        headerName: "Vehículo",
-        width: 120,
+        headerName: "Placa",
+        width: 100,
         valueFormatter: (params) => params.value || "-",
       },
       {
         field: "tipoAutorizacionDisplay",
-        headerName: "Autorización",
-        width: 120,
+        headerName: "Aut.",
+        width: 100,
       },
       {
         field: "modoIngresoDisplay",
@@ -189,18 +187,18 @@
       },
       {
         field: "usuarioIngresoNombre",
-        headerName: "Registró Entrada",
+        headerName: "GuardaE",
         width: 150,
       },
       {
         field: "usuarioSalidaNombre",
-        headerName: "Registró Salida",
+        headerName: "GuardaS",
         width: 150,
         valueFormatter: (params) => params.value || "-",
       },
       {
         field: "fechaHoraIngreso",
-        headerName: "Fecha Entrada",
+        headerName: "FechaE",
         width: 110,
         valueFormatter: (params) =>
           new Date(params.value).toLocaleDateString("es-CR", {
@@ -222,7 +220,7 @@
       },
       {
         field: "fechaHoraIngreso",
-        headerName: "Hora Entrada",
+        headerName: "HoraE",
         width: 90,
         valueFormatter: (params) =>
           new Date(params.value).toLocaleTimeString("es-CR", {
@@ -249,7 +247,7 @@
       // Modo historial: agregar columnas de fecha y hora de salida
       baseColumns.push({
         field: "fechaHoraSalida" as any,
-        headerName: "Fecha Salida",
+        headerName: "FechaS",
         width: 110,
         valueFormatter: (params) =>
           params.value
@@ -274,7 +272,7 @@
 
       baseColumns.push({
         field: "fechaHoraSalida" as any,
-        headerName: "Hora Salida",
+        headerName: "HoraS",
         width: 90,
         valueFormatter: (params) =>
           params.value
@@ -728,6 +726,7 @@
 
   let searchBarRef: SearchBar;
 
+  /* Atajo de búsqueda eliminado
   onMount(() => {
     return shortcutService.registerHandler(
       "ingreso-list",
@@ -737,6 +736,7 @@
       },
     );
   });
+  */
 </script>
 
 <div class="flex h-full flex-col relative bg-[#1e1e1e]">
@@ -844,26 +844,49 @@
   <ExportDialog
     onExport={handleExport}
     onClose={() => (showExportDialog = false)}
-    columns={gridApi?.getColumns()?.map((col) => ({
-      id: col.getColId(),
-      name: col.getColDef().headerName || col.getColId(),
-      selected: col.isVisible(),
-    })) || []}
-  />
-{/if}
+    columns={gridApi
+      ?.getColumns()
+      ?.filter((col) => col.getColDef().headerName !== "Acciones")
+      .map((col) => ({
+        id: col.getColId(),
+        name: col.getColDef().headerName || col.getColId(),
+        selected: col.isVisible(),
+      })) || []}
+    rows={(() => {
+      // Obtener mapeo field -> headerName para transformar datos
+      const columns =
+        gridApi
+          ?.getColumns()
+          ?.filter(
+            (col) =>
+              col.isVisible() && col.getColDef().headerName !== "Acciones",
+          ) || [];
+      const fieldToHeader: Record<string, string> = {};
+      columns.forEach((col) => {
+        const field = col.getColDef().field || col.getColId();
+        const headerName = col.getColDef().headerName || col.getColId();
+        fieldToHeader[field] = headerName;
+      });
 
-<!-- ✅ NUEVO: Modal de Preview PDF -->
-{#if showPdfPreview && pdfPreviewUrl}
-  <PdfPreviewModal
-    pdfUrl={pdfPreviewUrl}
-    fileName={pdfPreviewName}
-    onClose={() => {
-      showPdfPreview = false;
-      // Revocar URL para liberar memoria
-      if (pdfPreviewUrl) {
-        URL.revokeObjectURL(pdfPreviewUrl);
-        pdfPreviewUrl = null;
-      }
-    }}
+      // Transformar cada fila para usar headerName como clave
+      const rowData: Record<string, any>[] = [];
+      gridApi?.forEachNodeAfterFilterAndSort((node) => {
+        if (node.data) {
+          const transformedRow: Record<string, any> = {};
+          for (const [field, value] of Object.entries(node.data)) {
+            const headerName = fieldToHeader[field] || field;
+            transformedRow[headerName] = value;
+          }
+          rowData.push(transformedRow);
+        }
+      });
+      return rowData;
+    })()}
+    headers={gridApi
+      ?.getColumns()
+      ?.filter(
+        (col) => col.isVisible() && col.getColDef().headerName !== "Acciones",
+      )
+      .map((col) => col.getColDef().headerName || col.getColId()) || []}
   />
 {/if}

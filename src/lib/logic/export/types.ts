@@ -8,6 +8,13 @@ export interface ExportRequest {
     orientation?: 'portrait' | 'landscape';
     showPreview?: boolean;
     templateId?: string;
+    fontSize?: number;
+    fontFamily?: string;
+    marginTop?: number;
+    marginBottom?: number;
+    marginLeft?: number;
+    marginRight?: number;
+    bannerColor?: string;
 
     // Opcionales para CSV
     delimiter?: 'comma' | 'semicolon' | 'tab' | 'pipe';
@@ -15,6 +22,7 @@ export interface ExportRequest {
 
     // Opcionales generales
     targetPath?: string;
+    generatedBy?: string;
 }
 
 export interface ExportResponse {
@@ -33,4 +41,16 @@ export interface ExportOptions {
     showPreview?: boolean;
     templateId?: string;
     columnIds?: string[];
+    fontSize?: number;
+    fontFamily?: string;
+    marginTop?: number;
+    marginBottom?: number;
+    marginLeft?: number;
+    marginRight?: number;
+    bannerColor?: string;
+    generatedBy?: string;
 }
+
+
+
+

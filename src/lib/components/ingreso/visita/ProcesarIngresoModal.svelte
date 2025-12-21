@@ -20,6 +20,9 @@
       new CustomEvent("confirm", { detail: { gafete: gafete.trim() } }),
     );
   }
+  function focusOnMount(node: HTMLElement) {
+    node.focus();
+  }
 </script>
 
 <!-- Modal backdrop -->
@@ -90,7 +93,7 @@
           bind:value={gafete}
           class="w-full px-4 py-3 bg-[#0d1117] border border-[#30363d] rounded-lg text-2xl font-mono text-center text-[#f0f6fc] placeholder-[#484f58] focus:border-[#388bfd] outline-none"
           placeholder="000"
-          autofocus
+          use:focusOnMount
         />
       </div>
     </div>

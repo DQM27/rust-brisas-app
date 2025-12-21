@@ -12,7 +12,12 @@ pub mod models;
 pub mod search;
 pub mod services;
 
+use std::sync::atomic::AtomicBool;
 use tauri::Manager;
+
+pub struct AppState {
+    pub backend_ready: AtomicBool,
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -39,18 +44,33 @@ pub fn run() {
 
             // Solo reindexar si el índice está vacío (primera vez o después de restauración)
             if search_service.is_empty() {
-                println!("📇 Índice vacío, reindexando...");
-                if let Err(e) = search_service.reindex_all(&pool).await {
-                    eprintln!("❌ Error al reindexar al inicio: {}", e);
-                } else {
-                    println!("✅ Reindexado completado: {} documentos", search_service.doc_count());
-                }
+                println!("📇 Índice vacío, detectado. Iniciando reindexado en segundo plano...");
+                let pool_clone = pool.clone();
+                let search_service_clone = search_service.clone();
+
+                tokio::spawn(async move {
+                    println!("🔄 Iniciando reindexado background task...");
+                    if let Err(e) = search_service_clone.reindex_all(&pool_clone).await {
+                        eprintln!("❌ Error al reindexar en background: {}", e);
+                    } else {
+                        println!(
+                            "✅ Reindexado background completado: {} documentos",
+                            search_service_clone.doc_count()
+                        );
+                    }
+                });
             }
+
+            // Estado de la aplicación
+            let app_state = AppState {
+                backend_ready: AtomicBool::new(true), // Backend listo tras inicialización
+            };
 
             tauri::Builder::default()
                 .manage(pool)
                 .manage(app_config)
                 .manage(search_service)
+                .manage(app_state)
                 .plugin(tauri_plugin_dialog::init())
                 .plugin(tauri_plugin_opener::init())
                 .plugin(tauri_plugin_updater::Builder::new().build())
