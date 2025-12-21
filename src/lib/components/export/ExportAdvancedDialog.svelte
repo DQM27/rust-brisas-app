@@ -265,7 +265,9 @@
     tabindex="-1"
   >
     <!-- Panel Izquierdo: Configuración -->
-    <div class="w-[320px] flex flex-col border-r border-[#30363d]">
+    <div
+      class="w-[320px] flex flex-col border-r border-[#30363d] bg-[#161b22] z-10 relative"
+    >
       <!-- Header -->
       <div
         class="px-4 py-3 border-b border-[#30363d] flex items-center justify-between"
@@ -534,7 +536,9 @@
     </div>
 
     <!-- Panel Derecho: Vista Previa con pdf.js -->
-    <div class="flex-1 flex flex-col bg-[#0d1117] overflow-hidden">
+    <div
+      class="flex-1 min-w-0 flex flex-col bg-[#0d1117] overflow-hidden isolate"
+    >
       <!-- Header Preview -->
       <div
         class="px-4 py-2 border-b border-[#30363d] flex items-center justify-between"
@@ -554,7 +558,7 @@
       </div>
 
       <!-- PdfViewer o estados alternativos -->
-      <div class="flex-1 relative">
+      <div class="flex-1 relative overflow-hidden">
         {#if previewData}
           <PdfViewer
             pdfData={previewData}

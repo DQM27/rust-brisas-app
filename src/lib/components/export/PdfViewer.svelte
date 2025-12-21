@@ -109,17 +109,22 @@
 
   // Keyboard events para spacebar pan
   function handleKeyDown(event: KeyboardEvent) {
-    if (event.code === "Space" && !isSpacePressed) {
+    if (event.code === "Space") {
       event.preventDefault();
-      isSpacePressed = true;
-      if (containerRef) {
-        containerRef.style.cursor = "grab";
+      event.stopPropagation();
+      if (!isSpacePressed) {
+        isSpacePressed = true;
+        if (containerRef) {
+          containerRef.style.cursor = "grab";
+        }
       }
     }
   }
 
   function handleKeyUp(event: KeyboardEvent) {
     if (event.code === "Space") {
+      event.preventDefault();
+      event.stopPropagation();
       isSpacePressed = false;
       isPanning = false;
       if (containerRef) {
@@ -218,7 +223,7 @@
   });
 </script>
 
-<div class="pdf-viewer-container flex flex-col h-full">
+<div class="pdf-viewer-container flex flex-col h-full overflow-hidden">
   <!-- Toolbar -->
   <div
     class="pdf-toolbar flex items-center justify-between px-3 py-2 bg-[#21262d] border-b border-[#30363d]"
@@ -298,48 +303,52 @@
     </div>
   </div>
 
-  <!-- Canvas container -->
-  <div
-    bind:this={containerRef}
-    class="pdf-canvas-container flex-1 overflow-auto bg-[#1c2128] flex items-start justify-center p-4 relative"
-    tabindex="0"
-    role="application"
-    aria-label="Visor PDF"
-    onwheel={handleWheel}
-    onkeydown={handleKeyDown}
-    onkeyup={handleKeyUp}
-    onmousedown={handleMouseDown}
-    onmousemove={handleMouseMove}
-    onmouseup={handleMouseUp}
-    onmouseleave={handleMouseUp}
-  >
-    <!-- Canvas siempre en DOM para que bind funcione -->
-    <canvas
-      bind:this={canvasRef}
-      class="shadow-lg rounded"
-      class:invisible={!isRendered}
-      style="max-width: none;"
-    ></canvas>
+  <!-- Canvas container wrapper para clipping -->
+  <div class="flex-1 overflow-hidden relative">
+    <div
+      bind:this={containerRef}
+      class="pdf-canvas-container absolute inset-0 overflow-auto bg-[#1c2128] p-4"
+      tabindex="0"
+      role="application"
+      aria-label="Visor PDF"
+      onwheel={handleWheel}
+      onkeydown={handleKeyDown}
+      onkeyup={handleKeyUp}
+      onmousedown={handleMouseDown}
+      onmousemove={handleMouseMove}
+      onmouseup={handleMouseUp}
+      onmouseleave={handleMouseUp}
+    >
+      <!-- Wrapper para centrar con margin:auto (permite scroll en todas direcciones) -->
+      <div class="min-w-fit min-h-fit w-fit h-fit mx-auto">
+        <canvas
+          bind:this={canvasRef}
+          class="shadow-lg rounded block"
+          class:invisible={!isRendered}
+          style="max-width: none;"
+        ></canvas>
+      </div>
 
-    <!-- Loading overlay -->
-    {#if isLoading || (!isRendered && pdfData)}
-      <div
-        class="absolute inset-0 flex items-center justify-center bg-[#1c2128]"
-      >
+      <!-- Loading overlay -->
+      {#if isLoading || (!isRendered && pdfData)}
         <div
-          class="w-8 h-8 border-2 border-[#30363d] border-t-[#2563eb] rounded-full animate-spin"
-        ></div>
-      </div>
-    {/if}
+          class="absolute inset-0 flex items-center justify-center bg-[#1c2128]"
+        >
+          <div
+            class="w-8 h-8 border-2 border-[#30363d] border-t-[#2563eb] rounded-full animate-spin"
+          ></div>
+        </div>
+      {/if}
 
-    <!-- Sin documento -->
-    {#if !pdfData && !isLoading}
-      <div
-        class="absolute inset-0 flex items-center justify-center text-center text-[#8b949e]"
-      >
-        <p class="text-sm">Sin documento</p>
-      </div>
-    {/if}
+      <!-- Sin documento -->
+      {#if !pdfData && !isLoading}
+        <div
+          class="absolute inset-0 flex items-center justify-center text-center text-[#8b949e]"
+        >
+          <p class="text-sm">Sin documento</p>
+        </div>
+      {/if}
+    </div>
   </div>
 </div>
 
