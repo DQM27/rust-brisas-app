@@ -37,7 +37,9 @@
     // Verificar si necesita configuración inicial
     (async () => {
       try {
-        $setupWizardVisible = await needsSetup();
+        if (!$generalSettings.disableSetupWizard) {
+          $setupWizardVisible = await needsSetup();
+        }
       } catch (e) {
         console.error("Error verificando setup:", e);
         $setupWizardVisible = false;

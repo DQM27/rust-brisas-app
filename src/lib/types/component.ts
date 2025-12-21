@@ -16,10 +16,12 @@ export type ComponentKey =
   | 'gafete-list'
   | 'ingreso-list'
   | 'general-settings'
+  | 'visual-settings'
   | 'update-settings'
   | 'backup-settings'
   | 'device-settings'
   | 'security-settings'
   | 'export-settings'
   | 'reportes-list'
+  | 'shortcut-settings'
   | 'about';

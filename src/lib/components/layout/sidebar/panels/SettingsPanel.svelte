@@ -12,6 +12,7 @@
     Keyboard,
     Home,
     Shield,
+    Palette,
   } from "lucide-svelte";
   import { openView, activePanel } from "../../../../stores/sidebar";
 
@@ -35,12 +36,14 @@
   <button
     class="panel-item"
     on:click={executeAndClose(() =>
-      openView("device-settings", "Ajustes Generales"),
+      openView("general-settings", "Ajustes Generales"),
     )}
     on:keydown={(e) =>
       handleKeydown(
         e,
-        executeAndClose(() => openView("device-settings", "Ajustes Generales")),
+        executeAndClose(() =>
+          openView("general-settings", "Ajustes Generales"),
+        ),
       )}
   >
     <svelte:component this={Settings} size={16} />
@@ -50,17 +53,15 @@
   <button
     class="panel-item"
     on:click={executeAndClose(() =>
-      openView("general-settings", "Ajustes Gráficos"),
+      openView("visual-settings", "Ajustes Gráficos"),
     )}
     on:keydown={(e) =>
       handleKeydown(
         e,
-        executeAndClose(() => openView("general-settings", "Ajustes Gráficos")),
+        executeAndClose(() => openView("visual-settings", "Ajustes Gráficos")),
       )}
   >
-    <!-- Usamos FileSpreadsheet temporalmente como icono de visual/paleta si no hay otro, o mantenemos Settings pero cambiamos texto -->
-    <!-- Mejor: Usar el mismo Settings para ambos por ahora o buscar uno de paleta si estuviera impoortado -->
-    <svelte:component this={Settings} size={16} />
+    <svelte:component this={Palette} size={16} />
     <span>Ajustes Gráficos</span>
   </button>
 
@@ -142,7 +143,9 @@
     on:keydown={(e) =>
       handleKeydown(
         e,
-        executeAndClose(() => openView("security-settings", "Seguridad y Credenciales")),
+        executeAndClose(() =>
+          openView("security-settings", "Seguridad y Credenciales"),
+        ),
       )}
   >
     <svelte:component this={Shield} size={16} />

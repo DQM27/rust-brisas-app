@@ -18,6 +18,7 @@ import ListaNegraView from '$lib/components/listaNegra/ListaNegraView.svelte';
 import ListaNegraListView from '$lib/components/listaNegra/ListaNegraListView.svelte';
 
 import GeneralSettingsPanel from '$lib/components/settings/GeneralSettingsPanel.svelte';
+import VisualSettingsPanel from '$lib/components/settings/VisualSettingsPanel.svelte'; // Nuevo panel visual
 import UpdateSettingsPanel from '$lib/components/settings/UpdateSettingsPanel.svelte';
 import BackupSettingsPanel from '$lib/components/settings/BackupSettingsPanel.svelte';
 import DeviceSettingsPanel from '$lib/components/settings/DeviceSettingsPanel.svelte';
@@ -49,12 +50,14 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'lista-negra': ListaNegraView,
   'lista-negra-list': ListaNegraListView,
 
-  'general-settings': GeneralSettingsPanel,
+  'general-settings': GeneralSettingsPanel as any,
+  'visual-settings': VisualSettingsPanel as any,
   'update-settings': UpdateSettingsPanel,
   'backup-settings': BackupSettingsPanel,
   'device-settings': DeviceSettingsPanel,
   'security-settings': SecuritySettingsPanel,
   'export-settings': ExportSettingsPanel,
+  'shortcut-settings': WelcomePanel, // Placeholder hasta que se cree el panel real
   'reportes-list': ReportesListView,
   'about': AboutPanel,
 
