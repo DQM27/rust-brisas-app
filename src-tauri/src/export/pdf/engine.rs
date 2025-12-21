@@ -234,10 +234,6 @@ impl TypstWorld {
             }
         }
 
-        if !fonts.is_empty() {
-            eprintln!("✅ Cargadas {} fuentes Inter bundleadas", fonts.len());
-        }
-
         fonts
     }
 

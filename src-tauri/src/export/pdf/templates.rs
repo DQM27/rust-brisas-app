@@ -159,21 +159,33 @@ fn generate_table(
                 || lower.contains("empresa")
                 || lower.contains("motivo")
                 || lower.contains("detalle")
-                || lower.contains("registró") // GuardaE/S son nombres largos
-                || lower.contains("usuario")
             {
-                "1.4fr" // Texto largo
+                "1.3fr" // Texto largo principal - Reducido levemente
+            } else if lower.contains("guarda") // GuardaE, GuardaS
+                || lower.contains("usuario")
+                || lower.contains("registró")
+            {
+                "1.3fr" // Nombres de usuario (Daniel, etc.)
+            } else if lower.contains("modo") {
+                "1.2fr" // "Caminando" ocupa espacio
             } else if lower.contains("cédula")
                 || lower.contains("cedula")
                 || lower.contains("placa") // Incluye vehículo/placa
                 || lower.contains("vehículo")
-                || lower.contains("gafete")
+            {
+                "1.2fr" // Identificadores medianos
+            } else if lower.contains("gafete")
+                || lower.contains("gf")
+                || lower.contains("aut.")
                 || lower.contains("autoriza")
             {
-                "1.1fr" // Identificadores
-            } else if lower.contains("fecha") || lower.contains("hora") || lower.contains("tiempo")
+                "0.9fr" // Identificadores cortos
+            } else if lower.contains("fecha")
+                || lower.contains("hora")
+                || lower.contains("tiempo")
+                || lower.contains("dur.")
             {
-                "1.0fr" // Aumentado de 0.8fr porque quedaba muy apretado
+                "0.9fr" // Fechas/Horas
             } else if lower == "id" || lower == "#" || lower == "no" {
                 "0.4fr" // Muy corto
             } else {
@@ -209,7 +221,22 @@ fn generate_table(
     for row in rows {
         for header in headers {
             let value = row.get(header).map(|s| s.as_str()).unwrap_or("-");
-            let escaped_value = escape_typst_string(value);
+            let lower_header = header.to_lowercase();
+
+            // Para identificadores largos sin espacios, forzamos quiebre
+            let processed_value = if lower_header.contains("cédula") 
+                || lower_header.contains("cedula") 
+                || lower_header.contains("placa") 
+                || lower_header.contains("gafete")
+                || lower_header.contains("aut.") // Autorización abreviada
+                || lower_header.contains("autoriza")
+            {
+                force_break_string(value)
+            } else {
+                value.to_string()
+            };
+
+            let escaped_value = escape_typst_string(&processed_value);
             markup.push_str(&format!(
                 "    [#set par(justify: false); #text(fill: rgb(\"#1f2328\"), size: {}, hyphenate: true)[{}]],\n",
                 body_size, escaped_value
@@ -253,6 +280,16 @@ fn shorten_header(header: &str) -> String {
     }
 
     header.to_string()
+}
+
+/// Inserta espacios de ancho cero para forzar quiebre en cualquier caracter
+fn force_break_string(input: &str) -> String {
+    // Insertar \u{200B} (Zero Width Space) después de cada caracter
+    input
+        .chars()
+        .map(|c| c.to_string())
+        .collect::<Vec<String>>()
+        .join("\u{200B}")
 }
 
 // ==========================================
