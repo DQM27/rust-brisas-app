@@ -36,10 +36,19 @@
     onClose,
     onBack,
     columns,
-    initialOptions,
+    initialOptions = {},
     rows,
     headers,
   }: Props = $props();
+
+  // Extraer valores iniciales inmediatamente (evita advertencia state_referenced_locally)
+  // svelte-ignore state_referenced_locally
+  const {
+    title: initTitle = "Reporte",
+    orientation: initOrientation = "landscape",
+    fontSize: initFontSize = 10,
+    fontFamily: initFontFamily = "Inter",
+  } = initialOptions;
 
   // Estado de columnas
   let columnSelection = $state<
@@ -51,12 +60,10 @@
   });
 
   // Configuración
-  let title = $state(initialOptions.title || "Reporte");
-  let orientation = $state<"portrait" | "landscape">(
-    initialOptions.orientation || "landscape",
-  );
-  let fontSize = $state(initialOptions.fontSize || 10);
-  let fontFamily = $state(initialOptions.fontFamily || "Inter");
+  let title = $state(initTitle);
+  let orientation = $state<"portrait" | "landscape">(initOrientation);
+  let fontSize = $state(initFontSize);
+  let fontFamily = $state(initFontFamily);
   let marginTop = $state(20); // En mm
   let marginBottom = $state(20);
   let marginLeft = $state(15);
