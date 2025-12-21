@@ -145,8 +145,6 @@ fn generate_table(
     rows: &[HashMap<String, String>],
     config: &PdfConfig,
 ) -> ExportResult<String> {
-    let col_count = headers.len();
-
     // Usar el font_size numérico del config (header es 1pt más grande)
     let body_size = format!("{}pt", config.font_size);
     let header_size = format!("{}pt", config.font_size + 1);
@@ -162,14 +160,17 @@ fn generate_table(
                 || lower.contains("motivo")
                 || lower.contains("detalle")
             {
-                "2fr" // Dar más espacio a texto largo
+                "1.5fr" // Reducido de 2fr para no desperdiciar tanto espacio
             } else if lower.contains("cédula")
                 || lower.contains("cedula")
                 || lower.contains("placa")
                 || lower.contains("gafete")
                 || lower.contains("autoriza")
             {
-                "1.25fr" // Espacio extra para identificadores largos
+                "1.2fr" // Ajuste fino
+            } else if lower.contains("fecha") || lower.contains("hora") || lower.contains("tiempo")
+            {
+                "0.8fr" // Fechas y horas son compactas ahora, ahorrar espacio
             } else if lower == "id" || lower == "#" || lower == "no" {
                 "0.5fr" // Columnas muy cortas
             } else {
