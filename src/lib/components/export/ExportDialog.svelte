@@ -96,7 +96,7 @@
         orientation: selectedFormat === "pdf" ? orientation : undefined,
         delimiter: selectedFormat === "csv" ? delimiter : undefined,
         includeBom: selectedFormat === "csv" ? includeBom : undefined,
-        showPreview: true,
+        showPreview: false,
         columnIds: columnSelection.filter((c) => c.selected).map((c) => c.id),
       };
 
