@@ -850,6 +850,17 @@
       name: col.getColDef().headerName || col.getColId(),
       selected: col.isVisible(),
     })) || []}
+    rows={(() => {
+      const rowData: Record<string, any>[] = [];
+      gridApi?.forEachNodeAfterFilterAndSort((node) => {
+        if (node.data) rowData.push(node.data);
+      });
+      return rowData;
+    })()}
+    headers={gridApi
+      ?.getColumns()
+      ?.filter((col) => col.isVisible())
+      .map((col) => col.getColDef().headerName || col.getColId()) || []}
   />
 {/if}
 

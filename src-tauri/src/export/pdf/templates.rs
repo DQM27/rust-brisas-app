@@ -49,14 +49,17 @@ fn generate_page_setup(config: &PdfConfig, design: &PdfDesign) -> ExportResult<S
         PageOrientation::Landscape => "true",
     };
 
-    let margin_x = format!("{}{}", design.margin_x, design.margin_x_unit);
-    let margin_y = format!("{}{}", design.margin_y, design.margin_y_unit);
+    // Usar márgenes del config (seleccionados por usuario) o fallback a design
+    let margin_top = format!("{}cm", config.margin_top);
+    let margin_bottom = format!("{}cm", config.margin_bottom);
+    let margin_left = format!("{}cm", config.margin_left);
+    let margin_right = format!("{}cm", config.margin_right);
 
     let setup = format!(
         "#set page(\n\
   paper: \"{}\",\n\
   flipped: {},\n\
-  margin: (x: {}, y: {}),\n\
+  margin: (top: {}, bottom: {}, left: {}, right: {}),\n\
 )\n\n\
 #set text(\n\
   font: \"{}\",\n\
@@ -64,7 +67,14 @@ fn generate_page_setup(config: &PdfConfig, design: &PdfDesign) -> ExportResult<S
   lang: \"es\",\n\
   fill: rgb(\"#1f2328\"),\n\
 )\n\n",
-        design.page_size, orientation, margin_x, margin_y, config.font_family, config.font_size,
+        design.page_size,
+        orientation,
+        margin_top,
+        margin_bottom,
+        margin_left,
+        margin_right,
+        config.font_family,
+        config.font_size,
     );
 
     Ok(setup)
@@ -141,33 +151,37 @@ fn generate_table(
     let body_size = format!("{}pt", config.font_size);
     let header_size = format!("{}pt", config.font_size + 1);
 
+    // Columnas fraccionadas para distribuir el espacio uniformemente
+    let columns_spec = vec!["1fr"; col_count].join(", ");
+
     // Tabla con tema claro - filas alternadas suaves
+    // Usamos columns con fracciones para evitar desbordamiento
     let mut markup = format!(
         "#table(\n\
-    columns: {},\n\
+    columns: ({}),\n\
     inset: 6pt,\n\
     stroke: 0.5pt + rgb(\"#d0d7de\"),\n\
     fill: (x, y) => if y == 0 {{ rgb(\"#f6f8fa\") }} else if calc.odd(y) {{ white }} else {{ rgb(\"#f6f8fa\") }},\n\
     align: (x, y) => if y == 0 {{ center }} else {{ left }},\n",
-        col_count
+        columns_spec
     );
 
-    // Headers
+    // Headers con word-break
     for header in headers {
         let escaped_header = escape_typst_string(header);
         markup.push_str(&format!(
-            "    [*#text(fill: rgb(\"#1f2328\"), size: {})[{}]*],\n",
+            "    [#set par(justify: false); *#text(fill: rgb(\"#1f2328\"), size: {}, hyphenate: true)[{}]*],\n",
             header_size, escaped_header
         ));
     }
 
-    // Rows
+    // Rows con word-break
     for row in rows {
         for header in headers {
             let value = row.get(header).map(|s| s.as_str()).unwrap_or("-");
             let escaped_value = escape_typst_string(value);
             markup.push_str(&format!(
-                "    [#text(fill: rgb(\"#1f2328\"), size: {})[{}]],\n",
+                "    [#set par(justify: false); #text(fill: rgb(\"#1f2328\"), size: {}, hyphenate: true)[{}]],\n",
                 body_size, escaped_value
             ));
         }

@@ -107,6 +107,10 @@ pub struct ExportRequest {
     pub template_id: Option<String>, // ID del template a usar
     pub font_size: Option<i32>,      // 8-20 pts
     pub font_family: Option<String>, // "Inter", "Arial", etc.
+    pub margin_top: Option<f32>,     // Márgen superior (cm)
+    pub margin_bottom: Option<f32>,  // Márgen inferior (cm)
+    pub margin_left: Option<f32>,    // Márgen izquierdo (cm)
+    pub margin_right: Option<f32>,   // Márgen derecho (cm)
 
     // Opcionales para CSV
     pub delimiter: Option<String>, // "comma" | "semicolon" | "tab" | "pipe"
@@ -126,6 +130,10 @@ pub struct PdfConfig {
     pub template_id: Option<String>,
     pub font_size: i32,      // 8-20 pts
     pub font_family: String, // Nombre de la fuente
+    pub margin_top: f32,     // Márgen superior (cm)
+    pub margin_bottom: f32,  // Márgen inferior (cm)
+    pub margin_left: f32,    // Márgen izquierdo (cm)
+    pub margin_right: f32,   // Márgen derecho (cm)
 }
 
 impl Default for PdfConfig {
@@ -138,6 +146,10 @@ impl Default for PdfConfig {
             template_id: None,
             font_size: 10,
             font_family: "Inter".to_string(),
+            margin_top: 2.0,
+            margin_bottom: 2.0,
+            margin_left: 1.5,
+            margin_right: 1.5,
         }
     }
 }

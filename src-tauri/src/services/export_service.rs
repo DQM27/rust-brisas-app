@@ -114,6 +114,12 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
         .clone()
         .unwrap_or_else(|| "Inter".to_string());
 
+    // Márgenes (con defaults razonables)
+    let margin_top = request.margin_top.unwrap_or(2.0);
+    let margin_bottom = request.margin_bottom.unwrap_or(2.0);
+    let margin_left = request.margin_left.unwrap_or(1.5);
+    let margin_right = request.margin_right.unwrap_or(1.5);
+
     Ok(PdfConfig {
         title,
         orientation,
@@ -122,6 +128,10 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
         template_id: request.template_id.clone(),
         font_size,
         font_family,
+        margin_top,
+        margin_bottom,
+        margin_left,
+        margin_right,
     })
 }
 

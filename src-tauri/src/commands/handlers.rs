@@ -133,6 +133,7 @@ macro_rules! register_handlers {
             commands::export_commands::export_to_pdf,
             commands::export_commands::export_to_excel,
             commands::export_commands::export_to_csv,
+            commands::export_commands::export_preview,
             // ==========================================
             // COMANDOS DE PERFILES DE EXPORTACIÓN
             // ==========================================

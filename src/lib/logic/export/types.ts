@@ -10,6 +10,10 @@ export interface ExportRequest {
     templateId?: string;
     fontSize?: number;
     fontFamily?: string;
+    marginTop?: number;
+    marginBottom?: number;
+    marginLeft?: number;
+    marginRight?: number;
 
     // Opcionales para CSV
     delimiter?: 'comma' | 'semicolon' | 'tab' | 'pipe';
@@ -37,6 +41,11 @@ export interface ExportOptions {
     columnIds?: string[];
     fontSize?: number;
     fontFamily?: string;
+    marginTop?: number;
+    marginBottom?: number;
+    marginLeft?: number;
+    marginRight?: number;
 }
+
 
 
