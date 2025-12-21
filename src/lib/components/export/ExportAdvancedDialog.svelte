@@ -126,7 +126,7 @@
     Arial: ["Arial", "Arial Bold"],
     "Segoe UI": ["Segoe UI", "Segoe UI Light", "Segoe UI Semibold"],
     Calibri: ["Calibri", "Calibri Light", "Calibri Bold"],
-    Times: ["Times", "Times Bold"],
+    "Times New Roman": ["Times New Roman", "Times New Roman Bold"],
   };
 
   const paperSizes = [
