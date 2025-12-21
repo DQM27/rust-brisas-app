@@ -151,8 +151,33 @@ fn generate_table(
     let body_size = format!("{}pt", config.font_size);
     let header_size = format!("{}pt", config.font_size + 1);
 
-    // Columnas fraccionadas para distribuir el espacio uniformemente
-    let columns_spec = vec!["1fr"; col_count].join(", ");
+    // Columnas fraccionadas CON PESOS INTELIGENTES
+    // Esto evita que columnas como "Cédula" se rompan
+    let columns_spec = headers
+        .iter()
+        .map(|h| {
+            let lower = h.to_lowercase();
+            if lower.contains("nombre")
+                || lower.contains("empresa")
+                || lower.contains("motivo")
+                || lower.contains("detalle")
+            {
+                "2fr" // Dar más espacio a texto largo
+            } else if lower.contains("cédula")
+                || lower.contains("cedula")
+                || lower.contains("placa")
+                || lower.contains("gafete")
+                || lower.contains("autoriza")
+            {
+                "1.25fr" // Espacio extra para identificadores largos
+            } else if lower == "id" || lower == "#" || lower == "no" {
+                "0.5fr" // Columnas muy cortas
+            } else {
+                "1fr" // Default
+            }
+        })
+        .collect::<Vec<&str>>()
+        .join(", ");
 
     // Tabla con tema claro - filas alternadas suaves
     // Usamos columns con fracciones para evitar desbordamiento
