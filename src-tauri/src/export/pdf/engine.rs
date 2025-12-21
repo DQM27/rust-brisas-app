@@ -198,15 +198,6 @@ impl TypstWorld {
             eprintln!("⚠️ WARN: No se encontraron fuentes. El PDF podría no mostrar texto.");
         }
 
-        if !fonts.is_empty() {
-            eprintln!("✅ Total fuentes cargadas: {}", fonts.len());
-            for (i, font) in fonts.iter().enumerate() {
-                if i < 30 {
-                    eprintln!("   🎨 Font: {:?}", font.info().family);
-                }
-            }
-        }
-
         fonts
     }
 

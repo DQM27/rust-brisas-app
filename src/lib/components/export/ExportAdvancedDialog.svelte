@@ -12,6 +12,7 @@
     RefreshCw,
   } from "lucide-svelte";
   import type { ExportOptions } from "$lib/logic/export";
+  import { currentUser } from "$lib/stores/auth";
   import { fade, fly } from "svelte/transition";
   import { invoke } from "@tauri-apps/api/core";
   import PdfViewer from "./PdfViewer.svelte";
@@ -184,6 +185,7 @@
             marginLeft: marginToCm(marginLeft),
             marginRight: marginToCm(marginRight),
             bannerColor,
+            generatedBy: $currentUser?.nombreCompleto || "",
             showPreview: true,
           },
         });
@@ -236,6 +238,7 @@
         marginLeft: marginToCm(marginLeft),
         marginRight: marginToCm(marginRight),
         bannerColor,
+        generatedBy: $currentUser?.nombreCompleto || "",
       };
 
       await onExport(options);

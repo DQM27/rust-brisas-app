@@ -119,6 +119,7 @@ pub struct ExportRequest {
 
     // Opcionales generales
     pub target_path: Option<String>, // Path absoluto donde guardar el archivo
+    pub generated_by: Option<String>, // Nombre del usuario que genera el reporte
 }
 
 /// Configuración específica para PDF
@@ -136,6 +137,7 @@ pub struct PdfConfig {
     pub margin_left: f32,     // Márgen izquierdo (cm)
     pub margin_right: f32,    // Márgen derecho (cm)
     pub banner_color: String, // Color hex del banner
+    pub generated_by: String, // Nombre del usuario
 }
 
 impl Default for PdfConfig {
@@ -153,6 +155,7 @@ impl Default for PdfConfig {
             margin_left: 1.5,
             margin_right: 1.5,
             banner_color: "#059669".to_string(),
+            generated_by: "".to_string(),
         }
     }
 }

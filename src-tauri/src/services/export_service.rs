@@ -139,6 +139,7 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
         margin_left,
         margin_right,
         banner_color,
+        generated_by: request.generated_by.clone().unwrap_or_default(),
     })
 }
 

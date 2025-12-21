@@ -99,6 +99,13 @@ fn generate_showybox_content(
     // Generar la tabla con font_size
     let table_content = generate_table(headers, rows, config)?;
 
+    // Texto footer
+    let footer_text = if !config.generated_by.is_empty() {
+        format!("Generado por: {} | Fecha: {}", config.generated_by, now)
+    } else {
+        format!("Generado: {}", now)
+    };
+
     // Tema claro con borde personalizable - centrado
     let content = format!(
         "#align(center)[\n\
@@ -128,12 +135,12 @@ fn generate_showybox_content(
   \n\
   #align(right)[\n\
     #text(size: 7pt, fill: rgb(\"#656d76\"))[\n\
-      Generado: {}\n\
+      {}\n\
     ]\n\
   ]\n\
 ]\n\
 ]\n",
-        config.banner_color, escaped_title, table_content, now
+        config.banner_color, escaped_title, table_content, footer_text
     );
 
     Ok(content)

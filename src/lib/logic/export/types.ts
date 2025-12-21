@@ -22,6 +22,7 @@ export interface ExportRequest {
 
     // Opcionales generales
     targetPath?: string;
+    generatedBy?: string;
 }
 
 export interface ExportResponse {
@@ -47,6 +48,7 @@ export interface ExportOptions {
     marginLeft?: number;
     marginRight?: number;
     bannerColor?: string;
+    generatedBy?: string;
 }
 
 
