@@ -95,20 +95,71 @@
   }
 
   // Zoom con mouse wheel
-  function handleWheel(event: WheelEvent) {
-    event.preventDefault();
+  async function handleWheel(event: WheelEvent) {
+    // Ctrl + Scroll = Zoom
+    if (event.ctrlKey) {
+      event.preventDefault();
+      event.stopPropagation();
 
-    const delta = event.deltaY > 0 ? -SCALE_STEP : SCALE_STEP;
-    const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale + delta));
+      const delta = event.deltaY > 0 ? -SCALE_STEP : SCALE_STEP;
+      const oldScale = scale;
+      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale + delta));
 
-    if (newScale !== scale) {
-      scale = newScale;
-      renderPage(currentPage);
+      if (newScale !== oldScale) {
+        // Calcular posición relativa del mouse en el contenido
+        const rect = containerRef.getBoundingClientRect();
+        // Coordenadas del mouse relativas al viewport del contenedor
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+
+        // Coordenadas del mouse relativas al contenido escalado actual (incluyendo scroll)
+        const contentX = mouseX + containerRef.scrollLeft;
+        const contentY = mouseY + containerRef.scrollTop;
+
+        // Ratio del punto bajo el mouse (0-1 relativo al tamaño total) no es necesario,
+        // simplemente escalamos la posición del contenido.
+        // Nueva posición del punto bajo el mouse después del escalado
+        const newContentX = contentX * (newScale / oldScale);
+        const newContentY = contentY * (newScale / oldScale);
+
+        // Actualizar escala
+        scale = newScale;
+        await renderPage(currentPage);
+
+        // Ajustar scroll para mantener el punto bajo el mouse estable
+        // Nuevo scroll = NuevaPosiciónContenido - PosiciónMouseViewport
+        if (containerRef) {
+          containerRef.scrollLeft = newContentX - mouseX;
+          containerRef.scrollTop = newContentY - mouseY;
+        }
+      }
+      return;
     }
+
+    // Alt + Scroll = Horizontal Scroll
+    if (event.altKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (containerRef) {
+        containerRef.scrollLeft += event.deltaY;
+      }
+      return;
+    }
+
+    // Shift + Scroll = Horizontal Scroll (Nativo en navegadores, pero aseguramos)
+    if (event.shiftKey) {
+      // Dejar comportamiento nativo o forzarlo si es necesario.
+      // Generalmente el navegador maneja shift+wheel como horizontal scroll.
+      return;
+    }
+
+    // Default: Vertical scroll (no preventDefault)
+    // El navegador manejará el scroll vertical normalmente
   }
 
-  // Keyboard events para spacebar pan
+  // Keyboard events para spacebar pan y prevenir focus loss con Alt
   function handleKeyDown(event: KeyboardEvent) {
+    // Spacebar pan logic
     if (event.code === "Space") {
       event.preventDefault();
       event.stopPropagation();
@@ -118,6 +169,12 @@
           containerRef.style.cursor = "grab";
         }
       }
+      return;
+    }
+
+    // Prevenir que Alt enfoque el menú del navegador (Windows)
+    if (event.key === "Alt") {
+      event.preventDefault();
     }
   }
 
