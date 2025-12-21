@@ -10,6 +10,10 @@
     Maximize,
     Columns,
     RefreshCw,
+    Link2,
+    Unlink,
+    Lock,
+    Unlock,
   } from "lucide-svelte";
   import type { ExportOptions } from "$lib/logic/export";
   import { currentUser } from "$lib/stores/auth";
@@ -94,6 +98,46 @@
       default:
         return value; // cm
     }
+  }
+
+  // Estado de vinculación de márgenes
+  let linkVertical = $state(false); // Top <-> Bottom
+  let linkHorizontal = $state(false); // Left <-> Right
+  let linkAll = $state(false); // All 4
+
+  // Actualizar márgenes con lógica de vinculación
+  function updateMargin(
+    type: "top" | "bottom" | "left" | "right",
+    value: number,
+  ) {
+    // 1. Si "Link All" está activo, actualizar todos
+    if (linkAll) {
+      marginTop = value;
+      marginBottom = value;
+      marginLeft = value;
+      marginRight = value;
+      return;
+    }
+
+    // 2. Si es vertical y está vinculado
+    if (linkVertical && (type === "top" || type === "bottom")) {
+      marginTop = value;
+      marginBottom = value;
+      return;
+    }
+
+    // 3. Si es horizontal y está vinculado
+    if (linkHorizontal && (type === "left" || type === "right")) {
+      marginLeft = value;
+      marginRight = value;
+      return;
+    }
+
+    // 4. Individual
+    if (type === "top") marginTop = value;
+    if (type === "bottom") marginBottom = value;
+    if (type === "left") marginLeft = value;
+    if (type === "right") marginRight = value;
   }
 
   // Step y max según unidad
@@ -428,62 +472,140 @@
         </div>
 
         <!-- Márgenes -->
+        <!-- Márgenes -->
         <div>
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-medium text-[#8b949e]"> Márgenes </span>
-            <select
-              bind:value={marginUnit}
-              class="px-2 py-0.5 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3]"
-            >
-              {#each marginUnits as unit}
-                <option value={unit.id}>{unit.id}</option>
-              {/each}
-            </select>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-[#8b949e]">Unidad:</span>
+              <select
+                bind:value={marginUnit}
+                class="px-2 py-0.5 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3]"
+              >
+                {#each marginUnits as unit}
+                  <option value={unit.id}>{unit.id}</option>
+                {/each}
+              </select>
+            </div>
           </div>
-          <div class="grid grid-cols-2 gap-2">
-            <div class="flex items-center gap-1">
-              <span class="text-xs text-[#8b949e] w-8">Arr:</span>
-              <input
-                type="number"
-                step={marginStep}
-                min="0"
-                max={marginMax}
-                bind:value={marginTop}
-                class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] w-16"
-              />
+
+          <div class="flex flex-col gap-2">
+            <!-- Row 1: Vertical (Top - Link - Bottom) -->
+            <div class="flex items-center justify-between gap-2">
+              <!-- Top -->
+              <div class="flex items-center gap-1 flex-1">
+                <span class="text-xs text-[#8b949e] w-8">Arr:</span>
+                <input
+                  type="number"
+                  step={marginStep}
+                  min="0"
+                  max={marginMax}
+                  bind:value={marginTop}
+                  oninput={(e) => updateMargin("top", +e.currentTarget.value)}
+                  class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] min-w-0"
+                />
+              </div>
+
+              <!-- Link Vertical Btn -->
+              <button
+                class="p-1 rounded text-[#8b949e] hover:bg-[#21262d] transition-colors"
+                class:text-[#2563eb]={linkVertical && !linkAll}
+                class:opacity-30={linkAll}
+                disabled={linkAll}
+                onclick={() => (linkVertical = !linkVertical)}
+                title="Vincular Vertical"
+              >
+                {#if linkVertical && !linkAll}
+                  <Link2 size={14} />
+                {:else}
+                  <Unlink size={14} />
+                {/if}
+              </button>
+
+              <!-- Bottom -->
+              <div class="flex items-center gap-1 flex-1">
+                <span class="text-xs text-[#8b949e] w-8">Aba:</span>
+                <input
+                  type="number"
+                  step={marginStep}
+                  min="0"
+                  max={marginMax}
+                  bind:value={marginBottom}
+                  oninput={(e) =>
+                    updateMargin("bottom", +e.currentTarget.value)}
+                  class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] min-w-0"
+                />
+              </div>
             </div>
-            <div class="flex items-center gap-1">
-              <span class="text-xs text-[#8b949e] w-8">Aba:</span>
-              <input
-                type="number"
-                step={marginStep}
-                min="0"
-                max={marginMax}
-                bind:value={marginBottom}
-                class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] w-16"
-              />
+
+            <!-- Row 2: Link All (Center) -->
+            <div class="flex justify-center -my-1 relative z-10">
+              <button
+                class="p-1 rounded-full bg-[#161b22] border border-[#30363d] text-[#8b949e] hover:text-[#e6edf3] hover:border-[#8b949e] transition-colors"
+                class:text-[#2563eb]={linkAll}
+                class:border-[#2563eb]={linkAll}
+                onclick={() => {
+                  linkAll = !linkAll;
+                  if (linkAll) {
+                    // Sync all to Top
+                    updateMargin("top", marginTop);
+                  }
+                }}
+                title="Vincular Todos"
+              >
+                {#if linkAll}
+                  <Lock size={12} />
+                {:else}
+                  <Unlock size={12} />
+                {/if}
+              </button>
             </div>
-            <div class="flex items-center gap-1">
-              <span class="text-xs text-[#8b949e] w-8">Izq:</span>
-              <input
-                type="number"
-                step={marginStep}
-                min="0"
-                max={marginMax}
-                bind:value={marginLeft}
-                class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] w-16"
-              />
-            </div>
-            <div class="flex items-center gap-1">
-              <span class="text-xs text-[#8b949e] w-8">Der:</span>
-              <input
-                type="number"
-                step={marginStep}
-                min="0"
-                max={marginMax}
-                bind:value={marginRight}
-                class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] w-16"
-              />
+
+            <!-- Row 3: Horizontal (Left - Link - Right) -->
+            <div class="flex items-center justify-between gap-2">
+              <!-- Left -->
+              <div class="flex items-center gap-1 flex-1">
+                <span class="text-xs text-[#8b949e] w-8">Izq:</span>
+                <input
+                  type="number"
+                  step={marginStep}
+                  min="0"
+                  max={marginMax}
+                  bind:value={marginLeft}
+                  oninput={(e) => updateMargin("left", +e.currentTarget.value)}
+                  class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] min-w-0"
+                />
+              </div>
+
+              <!-- Link Horizontal Btn -->
+              <button
+                class="p-1 rounded text-[#8b949e] hover:bg-[#21262d] transition-colors"
+                class:text-[#2563eb]={linkHorizontal && !linkAll}
+                class:opacity-30={linkAll}
+                disabled={linkAll}
+                onclick={() => (linkHorizontal = !linkHorizontal)}
+                title="Vincular Horizontal"
+              >
+                {#if linkHorizontal && !linkAll}
+                  <Link2 size={14} />
+                {:else}
+                  <Unlink size={14} />
+                {/if}
+              </button>
+
+              <!-- Right -->
+              <div class="flex items-center gap-1 flex-1">
+                <span class="text-xs text-[#8b949e] w-8">Der:</span>
+                <input
+                  type="number"
+                  step={marginStep}
+                  min="0"
+                  max={marginMax}
+                  bind:value={marginRight}
+                  oninput={(e) => updateMargin("right", +e.currentTarget.value)}
+                  class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] min-w-0"
+                />
+              </div>
             </div>
           </div>
         </div>
