@@ -105,11 +105,14 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
     // Preview
     let show_preview = request.show_preview.unwrap_or(false);
 
-    // Font size
-    let font_size = request
-        .font_size
+    // Font size (clamp entre 8 y 20)
+    let font_size = request.font_size.unwrap_or(10).clamp(8, 20);
+
+    // Font family
+    let font_family = request
+        .font_family
         .clone()
-        .unwrap_or_else(|| "medium".to_string());
+        .unwrap_or_else(|| "Inter".to_string());
 
     Ok(PdfConfig {
         title,
@@ -118,6 +121,7 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
         show_preview,
         template_id: request.template_id.clone(),
         font_size,
+        font_family,
     })
 }
 
@@ -201,7 +205,7 @@ async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse
                 border: "#000000".to_string(),
             },
             fonts: PdfFonts {
-                family: "New Computer Modern".to_string(),
+                family: "Inter".to_string(),
                 size: 10,
                 header_size: 11,
             },

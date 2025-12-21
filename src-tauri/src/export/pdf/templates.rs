@@ -64,7 +64,7 @@ fn generate_page_setup(config: &PdfConfig, design: &PdfDesign) -> ExportResult<S
   lang: \"es\",\n\
   fill: rgb(\"#1f2328\"),\n\
 )\n\n",
-        design.page_size, orientation, margin_x, margin_y, design.fonts.family, design.fonts.size,
+        design.page_size, orientation, margin_x, margin_y, config.font_family, config.font_size,
     );
 
     Ok(setup)
@@ -137,12 +137,9 @@ fn generate_table(
 ) -> ExportResult<String> {
     let col_count = headers.len();
 
-    // Determinar tamaños de fuente según config.font_size
-    let (header_size, body_size) = match config.font_size.as_str() {
-        "small" => ("8pt", "7pt"),
-        "large" => ("11pt", "10pt"),
-        _ => ("9pt", "8pt"), // medium default
-    };
+    // Usar el font_size numérico del config (header es 1pt más grande)
+    let body_size = format!("{}pt", config.font_size);
+    let header_size = format!("{}pt", config.font_size + 1);
 
     // Tabla con tema claro - filas alternadas suaves
     let mut markup = format!(

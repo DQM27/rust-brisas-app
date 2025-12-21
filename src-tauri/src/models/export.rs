@@ -105,7 +105,8 @@ pub struct ExportRequest {
     pub orientation: Option<String>, // "portrait" | "landscape"
     pub show_preview: Option<bool>,  // Si mostrar preview (PDF.js)
     pub template_id: Option<String>, // ID del template a usar
-    pub font_size: Option<String>,   // "small" | "medium" | "large"
+    pub font_size: Option<i32>,      // 8-20 pts
+    pub font_family: Option<String>, // "Inter", "Arial", etc.
 
     // Opcionales para CSV
     pub delimiter: Option<String>, // "comma" | "semicolon" | "tab" | "pipe"
@@ -123,7 +124,8 @@ pub struct PdfConfig {
     pub headers: Vec<String>,
     pub show_preview: bool,
     pub template_id: Option<String>,
-    pub font_size: String, // "small" | "medium" | "large"
+    pub font_size: i32,      // 8-20 pts
+    pub font_family: String, // Nombre de la fuente
 }
 
 impl Default for PdfConfig {
@@ -134,7 +136,8 @@ impl Default for PdfConfig {
             headers: Vec::new(),
             show_preview: false,
             template_id: None,
-            font_size: "medium".to_string(),
+            font_size: 10,
+            font_family: "Inter".to_string(),
         }
     }
 }

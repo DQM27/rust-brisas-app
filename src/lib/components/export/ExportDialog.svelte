@@ -55,11 +55,15 @@
   let selectedFormat = $state<"pdf" | "excel" | "csv">("pdf");
   let title = $state("Reporte");
   let orientation = $state<"portrait" | "landscape">("landscape");
-  let fontSize = $state<"small" | "medium" | "large">("medium");
+  let fontSize = $state(10); // 8-20 pts
+  let fontFamily = $state("Inter"); // Inter, Arial, Segoe UI
   let delimiter = $state<"comma" | "semicolon" | "tab" | "pipe">("comma");
   let includeBom = $state(true);
   let showPreview = $state(true); // Default activado
   let isExporting = $state(false);
+
+  // Fuentes disponibles
+  const availableFonts = ["Inter", "Arial", "Segoe UI", "Calibri", "Times"];
 
   // Formatos disponibles
   const formats = $derived([
@@ -91,6 +95,7 @@
         title: title.trim() || "Reporte",
         orientation: selectedFormat === "pdf" ? orientation : undefined,
         fontSize: selectedFormat === "pdf" ? fontSize : undefined,
+        fontFamily: selectedFormat === "pdf" ? fontFamily : undefined,
         delimiter: selectedFormat === "csv" ? delimiter : undefined,
         includeBom: selectedFormat === "csv" ? includeBom : undefined,
         showPreview: selectedFormat === "pdf" ? showPreview : undefined,
@@ -107,19 +112,13 @@
     }
   }
 
-  function handleBackdropClick(e: MouseEvent) {
-    if (e.target === e.currentTarget && !isExporting) {
-      onClose();
-    }
-  }
+  // Ya no cerramos con click afuera ni Escape - solo con la X
 </script>
 
 <div
   class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
   transition:fade={{ duration: 150 }}
-  onclick={handleBackdropClick}
   role="presentation"
-  onkeydown={(e) => e.key === "Escape" && !isExporting && onClose()}
   tabindex="-1"
 >
   <div
@@ -228,21 +227,53 @@
 
             <div>
               <label
-                for="fontSize"
+                for="fontFamily"
                 class="block text-xs font-medium text-[#8b949e] mb-1.5"
               >
-                Tamaño de texto
+                Fuente
               </label>
               <select
-                id="fontSize"
-                bind:value={fontSize}
+                id="fontFamily"
+                bind:value={fontFamily}
                 disabled={isExporting}
                 class="w-full px-3 py-2 text-sm rounded-md border border-[#30363d] bg-[#161b22] text-[#e6edf3] focus:ring-1 focus:ring-[#2563eb] focus:border-[#2563eb] disabled:opacity-50"
               >
-                <option value="small">Pequeño (7pt)</option>
-                <option value="medium">Mediano (9pt)</option>
-                <option value="large">Grande (11pt)</option>
+                {#each availableFonts as font}
+                  <option value={font}>{font}</option>
+                {/each}
               </select>
+            </div>
+
+            <div>
+              <label
+                for="fontSize"
+                class="block text-xs font-medium text-[#8b949e] mb-1.5"
+              >
+                Tamaño de texto ({fontSize}pt)
+              </label>
+              <input
+                id="fontSize"
+                type="range"
+                min="8"
+                max="20"
+                bind:value={fontSize}
+                disabled={isExporting}
+                class="w-full h-2 bg-[#30363d] rounded-lg appearance-none cursor-pointer accent-[#2563eb]"
+              />
+              <div class="flex justify-between text-xs text-[#8b949e] mt-1">
+                <span>8pt</span>
+                <span>20pt</span>
+              </div>
+            </div>
+
+            <!-- Preview de fuente -->
+            <div class="mt-2 p-3 bg-white border border-[#d0d7de] rounded-md">
+              <p
+                class="text-[#1f2328] leading-relaxed"
+                style="font-family: {fontFamily}, sans-serif; font-size: {fontSize}pt;"
+              >
+                Abc 123 - Vista previa de texto
+              </p>
             </div>
 
             <label class="flex items-center gap-2 cursor-pointer py-1.5">
@@ -253,7 +284,7 @@
                 class="w-4 h-4 rounded border-[#30363d] bg-[#0d1117] text-[#2563eb] focus:ring-[#2563eb] focus:ring-offset-0 disabled:opacity-50"
               />
               <Eye size={14} class="text-[#8b949e]" />
-              <span class="text-sm text-[#e6edf3]">Vista previa</span>
+              <span class="text-sm text-[#e6edf3]">Vista previa PDF</span>
             </label>
           </div>
         {/if}

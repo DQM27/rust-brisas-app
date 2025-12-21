@@ -155,14 +155,15 @@ impl TypstWorld {
         }
     }
 
-    /// Carga fuentes del sistema (Windows) manualmente para ahorrar memoria
-    /// Solo carga las esenciales (Arial, Segoe UI) en lugar de todas las disponibles o assets embebidos
+    /// Carga fuentes del sistema (Windows) + fuentes bundleadas (Inter)
     fn load_system_fonts() -> Vec<Font> {
         let mut fonts = Vec::new();
-        let font_dir = "C:\\Windows\\Fonts";
 
-        // Lista curada de fuentes para UI y reportes
-        // Minimiza el uso de RAM cargando solo lo necesario
+        // 1. Cargar fuentes bundleadas (Inter) - PRIORIDAD
+        fonts.extend(Self::load_bundled_fonts());
+
+        // 2. Cargar fuentes del sistema (fallback)
+        let font_dir = "C:\\Windows\\Fonts";
         let target_fonts = vec![
             "arial.ttf",
             "arialbd.ttf",
@@ -194,10 +195,73 @@ impl TypstWorld {
         }
 
         if fonts.is_empty() {
-            eprintln!("⚠️ WARN: No se encontraron fuentes del sistema (Arial/SegoeUI). El PDF podría no mostrar texto.");
+            eprintln!("⚠️ WARN: No se encontraron fuentes. El PDF podría no mostrar texto.");
         }
 
         fonts
+    }
+
+    /// Carga fuentes bundleadas desde fonts/
+    fn load_bundled_fonts() -> Vec<Font> {
+        let mut fonts = Vec::new();
+
+        // Buscar carpeta fonts/ en ubicación relativa a packages/
+        let fonts_root = Self::find_fonts_root();
+
+        // Inter - solo los esenciales para no usar demasiada RAM
+        let inter_fonts = vec![
+            "inter/Inter-Regular.ttf",
+            "inter/Inter-Bold.ttf",
+            "inter/Inter-Medium.ttf",
+            "inter/Inter-SemiBold.ttf",
+            "inter/Inter-Light.ttf",
+            "inter/Inter-Italic.ttf",
+        ];
+
+        for font_path in inter_fonts {
+            let full_path = fonts_root.join(font_path);
+            if full_path.exists() {
+                if let Ok(data) = std::fs::read(&full_path) {
+                    let buffer = Bytes::new(data);
+                    let face_count = ttf_parser::fonts_in_collection(&buffer).unwrap_or(1);
+
+                    for face_index in 0..face_count {
+                        if let Some(font) = Font::new(buffer.clone(), face_index) {
+                            fonts.push(font);
+                        }
+                    }
+                }
+            }
+        }
+
+        if !fonts.is_empty() {
+            eprintln!("✅ Cargadas {} fuentes Inter bundleadas", fonts.len());
+        }
+
+        fonts
+    }
+
+    /// Encuentra la carpeta fonts/ (similar a packages/)
+    fn find_fonts_root() -> PathBuf {
+        // Primero buscar en dev (src-tauri/fonts/)
+        let dev_path = std::env::current_dir().unwrap_or_default().join("fonts");
+
+        if dev_path.exists() {
+            return dev_path;
+        }
+
+        // En producción buscar junto al ejecutable
+        if let Ok(exe_path) = std::env::current_exe() {
+            if let Some(exe_dir) = exe_path.parent() {
+                let prod_path = exe_dir.join("fonts");
+                if prod_path.exists() {
+                    return prod_path;
+                }
+            }
+        }
+
+        // Fallback
+        PathBuf::from("fonts")
     }
 }
 
