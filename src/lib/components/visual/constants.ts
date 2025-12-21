@@ -112,30 +112,30 @@ export const STAR_CONFIG = {
 // -----------------------------------------------------------------------------
 
 export const CLOUD_CONFIG = {
-  COUNT: 5,
+  COUNT: 7, // More clouds for fuller sky
   LAYERS: 3,
 
-  // Speed per layer (parallax - back layers slower)
-  LAYER_SPEEDS: [0.005, 0.01, 0.02],
+  // Speed per layer (MUCH slower for natural drift)
+  LAYER_SPEEDS: [0.002, 0.004, 0.008],
 
   // Scale range per layer
   LAYER_SCALES: [
-    [0.6, 0.8],   // Back - smaller
-    [0.8, 1.0],   // Mid
-    [1.0, 1.3],   // Front - larger
+    [0.5, 0.7],   // Back - smaller, wispy
+    [0.7, 1.0],   // Mid
+    [0.9, 1.4],   // Front - larger
   ] as [number, number][],
 
-  // Y position range (percentage from top)
-  Y_RANGE: [5, 35] as [number, number],
+  // Y position range (percentage from top) - wider distribution
+  Y_RANGE: [3, 40] as [number, number],
 
-  // Color tints based on time
+  // Color tints based on time - LOWER OPACITY for atmospheric feel
   TINTS: {
-    night: 'rgba(40, 50, 70, 0.3)',
-    dawn: 'rgba(255, 180, 150, 0.6)',
-    morning: 'rgba(255, 255, 255, 0.8)',
-    day: 'rgba(255, 255, 255, 0.9)',
-    dusk: 'rgba(255, 150, 120, 0.7)',
-    evening: 'rgba(100, 80, 120, 0.4)',
+    night: 'rgba(35, 45, 65, 0.2)',
+    dawn: 'rgba(255, 180, 150, 0.35)',
+    morning: 'rgba(255, 255, 255, 0.5)',
+    day: 'rgba(255, 255, 255, 0.6)',
+    dusk: 'rgba(255, 150, 120, 0.4)',
+    evening: 'rgba(90, 70, 110, 0.25)',
   } as Record<TimeOfDay, string>,
 };
 
