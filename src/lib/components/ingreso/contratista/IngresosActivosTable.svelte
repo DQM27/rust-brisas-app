@@ -27,7 +27,6 @@
 
   // ✅ NUEVO: Importar componentes de exportación
   import ExportDialog from "$lib/components/export/ExportDialog.svelte";
-  import PdfPreviewModal from "$lib/components/export/PdfPreviewModal.svelte";
   import { exportData, downloadBytes } from "$lib/logic/export";
   import type { ExportOptions } from "$lib/logic/export";
 
@@ -851,9 +850,27 @@
       selected: col.isVisible(),
     })) || []}
     rows={(() => {
+      // Obtener mapeo field -> headerName para transformar datos
+      const columns =
+        gridApi?.getColumns()?.filter((col) => col.isVisible()) || [];
+      const fieldToHeader: Record<string, string> = {};
+      columns.forEach((col) => {
+        const field = col.getColDef().field || col.getColId();
+        const headerName = col.getColDef().headerName || col.getColId();
+        fieldToHeader[field] = headerName;
+      });
+
+      // Transformar cada fila para usar headerName como clave
       const rowData: Record<string, any>[] = [];
       gridApi?.forEachNodeAfterFilterAndSort((node) => {
-        if (node.data) rowData.push(node.data);
+        if (node.data) {
+          const transformedRow: Record<string, any> = {};
+          for (const [field, value] of Object.entries(node.data)) {
+            const headerName = fieldToHeader[field] || field;
+            transformedRow[headerName] = value;
+          }
+          rowData.push(transformedRow);
+        }
       });
       return rowData;
     })()}
@@ -861,21 +878,5 @@
       ?.getColumns()
       ?.filter((col) => col.isVisible())
       .map((col) => col.getColDef().headerName || col.getColId()) || []}
-  />
-{/if}
-
-<!-- ✅ NUEVO: Modal de Preview PDF -->
-{#if showPdfPreview && pdfPreviewUrl}
-  <PdfPreviewModal
-    pdfUrl={pdfPreviewUrl}
-    fileName={pdfPreviewName}
-    onClose={() => {
-      showPdfPreview = false;
-      // Revocar URL para liberar memoria
-      if (pdfPreviewUrl) {
-        URL.revokeObjectURL(pdfPreviewUrl);
-        pdfPreviewUrl = null;
-      }
-    }}
   />
 {/if}

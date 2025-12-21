@@ -12,7 +12,6 @@
 
   // Export components
   import ExportDialog from "$lib/components/export/ExportDialog.svelte";
-  import PdfPreviewModal from "$lib/components/export/PdfPreviewModal.svelte";
   import { exportData, downloadBytes } from "$lib/logic/export";
   import type { ExportOptions } from "$lib/logic/export";
 
@@ -484,13 +483,5 @@
   <ExportDialog
     onClose={() => (showExportDialog = false)}
     onExport={handleExport}
-  />
-{/if}
-
-{#if showPdfPreview}
-  <PdfPreviewModal
-    onClose={() => (showPdfPreview = false)}
-    pdfUrl={pdfPreviewUrl || ""}
-    fileName={pdfPreviewName}
   />
 {/if}

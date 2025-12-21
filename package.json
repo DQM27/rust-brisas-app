@@ -24,6 +24,7 @@
     "@tauri-apps/plugin-updater": "^2.9.0",
     "ag-grid-svelte5-extended": "^0.0.13",
     "lucide-svelte": "^0.553.0",
+    "pdfjs-dist": "^5.4.449",
     "svelte-5-french-toast": "^2.0.6",
     "svelte-dnd-action": "^0.9.67",
     "svelte-persisted-store": "^0.12.0",

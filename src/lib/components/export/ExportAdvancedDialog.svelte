@@ -14,6 +14,7 @@
   import type { ExportOptions } from "$lib/logic/export";
   import { fade, fly } from "svelte/transition";
   import { invoke } from "@tauri-apps/api/core";
+  import PdfViewer from "./PdfViewer.svelte";
 
   interface Props {
     onExport: (options: ExportOptions) => Promise<void>;
@@ -110,7 +111,7 @@
 
   let isExporting = $state(false);
   let isGeneratingPreview = $state(false);
-  let previewUrl = $state<string | null>(null);
+  let previewData = $state<Uint8Array | null>(null);
   let previewError = $state<string | null>(null);
 
   // Fuentes disponibles con variantes
@@ -188,11 +189,8 @@
         });
 
         if (result.bytes && result.bytes.length > 0) {
-          const blob = new Blob([new Uint8Array(result.bytes)], {
-            type: "application/pdf",
-          });
-          if (previewUrl) URL.revokeObjectURL(previewUrl);
-          previewUrl = URL.createObjectURL(blob);
+          // Guardar bytes directamente para pdf.js
+          previewData = new Uint8Array(result.bytes);
         } else {
           previewError = result.message || "Error generando PDF";
         }
@@ -535,11 +533,11 @@
       </div>
     </div>
 
-    <!-- Panel Derecho: Vista Previa -->
-    <div class="flex-1 flex flex-col bg-[#0d1117]">
+    <!-- Panel Derecho: Vista Previa con pdf.js -->
+    <div class="flex-1 flex flex-col bg-[#0d1117] overflow-hidden">
       <!-- Header Preview -->
       <div
-        class="px-4 py-3 border-b border-[#30363d] flex items-center justify-between"
+        class="px-4 py-2 border-b border-[#30363d] flex items-center justify-between"
       >
         <span class="text-sm font-medium text-[#8b949e]">Vista Previa</span>
         <button
@@ -555,52 +553,55 @@
         </button>
       </div>
 
-      <!-- Preview Content -->
-      <div class="flex-1 flex items-center justify-center p-4 relative">
-        <!-- Iframe siempre visible si hay URL -->
-        {#if previewUrl}
-          <iframe
-            src={previewUrl}
-            class="w-full h-full rounded-md border border-[#30363d] bg-white transition-opacity duration-200"
-            class:opacity-50={isGeneratingPreview}
-            title="Vista previa del PDF"
-          ></iframe>
-        {/if}
-
-        <!-- Spinner superpuesto mientras genera -->
-        {#if isGeneratingPreview}
-          <div
-            class="absolute inset-0 flex items-center justify-center bg-[#0d1117]/50 rounded-md"
-          >
-            <div
-              class="text-center bg-[#161b22] px-4 py-3 rounded-lg border border-[#30363d] shadow-lg"
-            >
+      <!-- PdfViewer o estados alternativos -->
+      <div class="flex-1 relative">
+        {#if previewData}
+          <PdfViewer
+            pdfData={previewData}
+            onError={(err) => (previewError = err)}
+          />
+        {:else if isGeneratingPreview}
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="text-center">
               <div
-                class="w-6 h-6 border-2 border-[#30363d] border-t-[#2563eb] rounded-full animate-spin mx-auto mb-2"
+                class="w-8 h-8 border-2 border-[#30363d] border-t-[#2563eb] rounded-full animate-spin mx-auto mb-2"
               ></div>
-              <p class="text-xs text-[#8b949e]">Actualizando...</p>
+              <p class="text-xs text-[#8b949e]">Generando preview...</p>
+            </div>
+          </div>
+        {:else if previewError}
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="text-center">
+              <p class="text-sm text-[#f85149]">{previewError}</p>
+              <button
+                onclick={generatePreview}
+                class="mt-2 text-xs text-[#58a6ff] hover:underline"
+              >
+                Reintentar
+              </button>
+            </div>
+          </div>
+        {:else}
+          <div
+            class="absolute inset-0 flex items-center justify-center text-center text-[#8b949e]"
+          >
+            <div>
+              <FileText size={48} class="mx-auto mb-2 opacity-30" />
+              <p class="text-sm">Vista previa del documento</p>
+              <p class="text-xs mt-1 opacity-60">
+                Scroll: zoom · Espacio+drag: mover
+              </p>
             </div>
           </div>
         {/if}
 
-        <!-- Mensaje de error -->
-        {#if previewError && !previewUrl}
-          <div class="text-center">
-            <p class="text-sm text-[#f85149]">{previewError}</p>
-            <button
-              onclick={generatePreview}
-              class="mt-2 text-xs text-[#58a6ff] hover:underline"
-            >
-              Reintentar
-            </button>
-          </div>
-        {/if}
-
-        <!-- Estado inicial sin preview -->
-        {#if !previewUrl && !isGeneratingPreview && !previewError}
-          <div class="text-center text-[#8b949e]">
-            <FileText size={48} class="mx-auto mb-2 opacity-30" />
-            <p class="text-sm">Vista previa del documento</p>
+        <!-- Overlay de actualización -->
+        {#if isGeneratingPreview && previewData}
+          <div
+            class="absolute top-2 right-2 px-2 py-1 bg-[#161b22] rounded text-xs text-[#8b949e] border border-[#30363d]"
+          >
+            <RefreshCw size={12} class="inline animate-spin mr-1" />
+            Actualizando...
           </div>
         {/if}
       </div>
