@@ -11,6 +11,7 @@
     Columns,
   } from "lucide-svelte";
   import type { ExportOptions } from "$lib/logic/export";
+  import { currentUser } from "$lib/stores/auth";
   import { slide, fade, fly } from "svelte/transition";
   import ExportAdvancedDialog from "./ExportAdvancedDialog.svelte";
 
@@ -98,6 +99,7 @@
         includeBom: selectedFormat === "csv" ? includeBom : undefined,
         showPreview: false,
         columnIds: columnSelection.filter((c) => c.selected).map((c) => c.id),
+        generatedBy: $currentUser?.nombreCompleto || "",
       };
 
       await onExport(selectedFormat, options);

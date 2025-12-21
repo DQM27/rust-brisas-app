@@ -57,8 +57,17 @@ export async function exportData(
             delimiter: options.delimiter || 'comma',
             includeBom: options.includeBom ?? true,
             showPreview: options.showPreview || false,
-            templateId: options.templateId, // ✅ Pass templateId as profile_id for compatibility
+            templateId: options.templateId,
             targetPath: targetPath || undefined,
+            // PDF specific options
+            fontSize: options.fontSize,
+            fontFamily: options.fontFamily,
+            marginTop: options.marginTop,
+            marginBottom: options.marginBottom,
+            marginLeft: options.marginLeft,
+            marginRight: options.marginRight,
+            bannerColor: options.bannerColor,
+            generatedBy: options.generatedBy,
         };
 
         // Invocar comando Tauri
