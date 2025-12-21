@@ -26,6 +26,8 @@
   let scale = $state(1.0);
   let isLoading = $state(false);
   let isRendered = $state(false);
+  let renderScale = $state(1.0); // Scala actual del renderizado (para comparar con scale visual)
+  let zoomTimeout: any = null;
 
   // Pan state
   let isPanning = $state(false);
@@ -59,6 +61,8 @@
       }
 
       if (canvasRef) {
+        // Reset scales
+        renderScale = scale;
         await renderPage(currentPage);
         isRendered = true;
       }
@@ -75,7 +79,8 @@
 
     try {
       const page = await pdfDoc.getPage(pageNum);
-      const viewport = page.getViewport({ scale });
+      // Usar renderScale para el renderizado real del canvas
+      const viewport = page.getViewport({ scale: renderScale });
 
       const canvas = canvasRef;
       const context = canvas.getContext("2d");
@@ -122,16 +127,21 @@
         const newContentX = contentX * (newScale / oldScale);
         const newContentY = contentY * (newScale / oldScale);
 
-        // Actualizar escala
+        // Actualizar escala visual
         scale = newScale;
-        await renderPage(currentPage);
 
         // Ajustar scroll para mantener el punto bajo el mouse estable
-        // Nuevo scroll = NuevaPosiciónContenido - PosiciónMouseViewport
         if (containerRef) {
           containerRef.scrollLeft = newContentX - mouseX;
           containerRef.scrollTop = newContentY - mouseY;
         }
+
+        // Debounce el renderizado costoso
+        if (zoomTimeout) clearTimeout(zoomTimeout);
+        zoomTimeout = setTimeout(async () => {
+          renderScale = newScale;
+          await renderPage(currentPage);
+        }, 150);
       }
       return;
     }
@@ -380,8 +390,9 @@
       <div class="min-w-fit min-h-fit w-fit h-fit mx-auto">
         <canvas
           bind:this={canvasRef}
-          class="shadow-lg rounded block"
+          class="shadow-lg rounded block origin-top-left"
           class:invisible={!isRendered}
+          style:transform={`scale(${scale / renderScale})`}
           style="max-width: none;"
         ></canvas>
       </div>
