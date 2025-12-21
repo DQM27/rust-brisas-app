@@ -55,6 +55,7 @@
   let selectedFormat = $state<"pdf" | "excel" | "csv">("pdf");
   let title = $state("Reporte");
   let orientation = $state<"portrait" | "landscape">("landscape");
+  let fontSize = $state<"small" | "medium" | "large">("medium");
   let delimiter = $state<"comma" | "semicolon" | "tab" | "pipe">("comma");
   let includeBom = $state(true);
   let showPreview = $state(true); // Default activado
@@ -89,6 +90,7 @@
       const options: ExportOptions = {
         title: title.trim() || "Reporte",
         orientation: selectedFormat === "pdf" ? orientation : undefined,
+        fontSize: selectedFormat === "pdf" ? fontSize : undefined,
         delimiter: selectedFormat === "csv" ? delimiter : undefined,
         includeBom: selectedFormat === "csv" ? includeBom : undefined,
         showPreview: selectedFormat === "pdf" ? showPreview : undefined,
@@ -221,6 +223,25 @@
               >
                 <option value="landscape">Horizontal</option>
                 <option value="portrait">Vertical</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                for="fontSize"
+                class="block text-xs font-medium text-[#8b949e] mb-1.5"
+              >
+                Tamaño de texto
+              </label>
+              <select
+                id="fontSize"
+                bind:value={fontSize}
+                disabled={isExporting}
+                class="w-full px-3 py-2 text-sm rounded-md border border-[#30363d] bg-[#161b22] text-[#e6edf3] focus:ring-1 focus:ring-[#2563eb] focus:border-[#2563eb] disabled:opacity-50"
+              >
+                <option value="small">Pequeño (7pt)</option>
+                <option value="medium">Mediano (9pt)</option>
+                <option value="large">Grande (11pt)</option>
               </select>
             </div>
 

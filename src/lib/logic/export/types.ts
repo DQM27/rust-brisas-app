@@ -8,6 +8,7 @@ export interface ExportRequest {
     orientation?: 'portrait' | 'landscape';
     showPreview?: boolean;
     templateId?: string;
+    fontSize?: 'small' | 'medium' | 'large';
 
     // Opcionales para CSV
     delimiter?: 'comma' | 'semicolon' | 'tab' | 'pipe';
@@ -33,4 +34,6 @@ export interface ExportOptions {
     showPreview?: boolean;
     templateId?: string;
     columnIds?: string[];
+    fontSize?: 'small' | 'medium' | 'large';
 }
+

@@ -105,12 +105,19 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
     // Preview
     let show_preview = request.show_preview.unwrap_or(false);
 
+    // Font size
+    let font_size = request
+        .font_size
+        .clone()
+        .unwrap_or_else(|| "medium".to_string());
+
     Ok(PdfConfig {
         title,
         orientation,
         headers: request.headers.clone(),
         show_preview,
         template_id: request.template_id.clone(),
+        font_size,
     })
 }
 

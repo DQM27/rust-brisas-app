@@ -2,7 +2,7 @@
 // src/export/pdf/templates.rs
 // ==========================================
 // Generación de markup Typst dinámico con showybox
-// Usa el package showybox para cajas decorativas
+// Tema claro optimizado para impresión (ahorro de tinta)
 
 use crate::export::errors::{ExportError, ExportResult};
 use crate::models::export::{PageOrientation, PdfConfig, PdfDesign};
@@ -42,7 +42,7 @@ fn generate_imports() -> String {
     "#import \"@preview/showybox:2.0.4\": showybox\n\n".to_string()
 }
 
-/// Genera configuración de página
+/// Genera configuración de página (tema claro para impresión)
 fn generate_page_setup(config: &PdfConfig, design: &PdfDesign) -> ExportResult<String> {
     let orientation = match config.orientation {
         PageOrientation::Portrait => "false",
@@ -57,13 +57,12 @@ fn generate_page_setup(config: &PdfConfig, design: &PdfDesign) -> ExportResult<S
   paper: \"{}\",\n\
   flipped: {},\n\
   margin: (x: {}, y: {}),\n\
-  fill: rgb(\"#0d1117\"),\n\
 )\n\n\
 #set text(\n\
   font: \"{}\",\n\
   size: {}pt,\n\
   lang: \"es\",\n\
-  fill: rgb(\"#e6edf3\"),\n\
+  fill: rgb(\"#1f2328\"),\n\
 )\n\n",
         design.page_size, orientation, margin_x, margin_y, design.fonts.family, design.fonts.size,
     );
@@ -71,12 +70,12 @@ fn generate_page_setup(config: &PdfConfig, design: &PdfDesign) -> ExportResult<S
     Ok(setup)
 }
 
-/// Genera el contenido dentro de un showybox decorativo
+/// Genera el contenido dentro de un showybox decorativo (tema claro)
 fn generate_showybox_content(
     headers: &[String],
     rows: &[HashMap<String, String>],
     config: &PdfConfig,
-    design: &PdfDesign,
+    _design: &PdfDesign,
 ) -> ExportResult<String> {
     if headers.is_empty() {
         return Err(ExportError::TemplateGenerationError(
@@ -86,13 +85,14 @@ fn generate_showybox_content(
 
     let escaped_title = escape_typst_string(&config.title);
     let now = chrono::Local::now().format("%d/%m/%Y %H:%M");
-    let row_count = rows.len();
 
-    // Generar la tabla
-    let table_content = generate_table(headers, rows, design)?;
+    // Generar la tabla con font_size
+    let table_content = generate_table(headers, rows, config)?;
 
+    // Tema claro con borde azul - centrado
     let content = format!(
-        "#showybox(\n\
+        "#align(center)[\n\
+#showybox(\n\
   title-style: (\n\
     weight: \"bold\",\n\
     color: white,\n\
@@ -100,48 +100,57 @@ fn generate_showybox_content(
   ),\n\
   frame: (\n\
     title-color: rgb(\"#2563eb\"),\n\
-    border-color: rgb(\"#3b82f6\"),\n\
-    body-color: rgb(\"#161b22\"),\n\
-    thickness: 1.5pt,\n\
-    radius: 6pt,\n\
+    border-color: rgb(\"#d0d7de\"),\n\
+    body-color: white,\n\
+    thickness: 1pt,\n\
+    radius: 4pt,\n\
     inset: (x: 12pt, y: 10pt),\n\
   ),\n\
   title: [\n\
-    #text(size: 14pt)[{}]\n\
-    #h(1fr)\n\
-    #text(size: 9pt, weight: \"regular\")[{} registros]\n\
+    #text(size: 12pt)[{}]\n\
   ],\n\
   breakable: true,\n\
 )[\n\
-  {}\n\n\
-  #v(8pt)\n\
+  #align(center)[\n\
+    {}\n\
+  ]\n\n\
+  #v(6pt)\n\
   \n\
   #align(right)[\n\
-    #text(size: 8pt, fill: rgb(\"#8b949e\"))[\n\
+    #text(size: 7pt, fill: rgb(\"#656d76\"))[\n\
       Generado: {}\n\
     ]\n\
   ]\n\
+]\n\
 ]\n",
-        escaped_title, row_count, table_content, now
+        escaped_title, table_content, now
     );
 
     Ok(content)
 }
 
-/// Genera la tabla con headers y datos
+/// Genera la tabla con headers y datos (tema claro)
 fn generate_table(
     headers: &[String],
     rows: &[HashMap<String, String>],
-    _design: &PdfDesign,
+    config: &PdfConfig,
 ) -> ExportResult<String> {
     let col_count = headers.len();
 
+    // Determinar tamaños de fuente según config.font_size
+    let (header_size, body_size) = match config.font_size.as_str() {
+        "small" => ("8pt", "7pt"),
+        "large" => ("11pt", "10pt"),
+        _ => ("9pt", "8pt"), // medium default
+    };
+
+    // Tabla con tema claro - filas alternadas suaves
     let mut markup = format!(
         "#table(\n\
     columns: {},\n\
-    inset: 8pt,\n\
-    stroke: 0.5pt + rgb(\"#30363d\"),\n\
-    fill: (x, y) => if y == 0 {{ rgb(\"#21262d\") }} else if calc.odd(y) {{ rgb(\"#161b22\") }} else {{ rgb(\"#0d1117\") }},\n\
+    inset: 6pt,\n\
+    stroke: 0.5pt + rgb(\"#d0d7de\"),\n\
+    fill: (x, y) => if y == 0 {{ rgb(\"#f6f8fa\") }} else if calc.odd(y) {{ white }} else {{ rgb(\"#f6f8fa\") }},\n\
     align: (x, y) => if y == 0 {{ center }} else {{ left }},\n",
         col_count
     );
@@ -150,8 +159,8 @@ fn generate_table(
     for header in headers {
         let escaped_header = escape_typst_string(header);
         markup.push_str(&format!(
-            "    [*#text(fill: rgb(\"#58a6ff\"), size: 10pt)[{}]*],\n",
-            escaped_header
+            "    [*#text(fill: rgb(\"#1f2328\"), size: {})[{}]*],\n",
+            header_size, escaped_header
         ));
     }
 
@@ -161,8 +170,8 @@ fn generate_table(
             let value = row.get(header).map(|s| s.as_str()).unwrap_or("-");
             let escaped_value = escape_typst_string(value);
             markup.push_str(&format!(
-                "    [#text(fill: rgb(\"#e6edf3\"), size: 9pt)[{}]],\n",
-                escaped_value
+                "    [#text(fill: rgb(\"#1f2328\"), size: {})[{}]],\n",
+                body_size, escaped_value
             ));
         }
     }

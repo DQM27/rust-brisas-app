@@ -105,6 +105,7 @@ pub struct ExportRequest {
     pub orientation: Option<String>, // "portrait" | "landscape"
     pub show_preview: Option<bool>,  // Si mostrar preview (PDF.js)
     pub template_id: Option<String>, // ID del template a usar
+    pub font_size: Option<String>,   // "small" | "medium" | "large"
 
     // Opcionales para CSV
     pub delimiter: Option<String>, // "comma" | "semicolon" | "tab" | "pipe"
@@ -122,6 +123,7 @@ pub struct PdfConfig {
     pub headers: Vec<String>,
     pub show_preview: bool,
     pub template_id: Option<String>,
+    pub font_size: String, // "small" | "medium" | "large"
 }
 
 impl Default for PdfConfig {
@@ -132,6 +134,7 @@ impl Default for PdfConfig {
             headers: Vec::new(),
             show_preview: false,
             template_id: None,
+            font_size: "medium".to_string(),
         }
     }
 }
@@ -239,12 +242,12 @@ pub struct ExportData {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PdfDesign {
-    pub page_size: String,       // "us-letter" | "a4" | "legal"
-    pub orientation: String,     // "portrait" | "landscape"
+    pub page_size: String,   // "us-letter" | "a4" | "legal"
+    pub orientation: String, // "portrait" | "landscape"
     pub margin_x: f64,
-    pub margin_x_unit: String,   // "mm" | "cm" | "in" | "pt"
+    pub margin_x_unit: String, // "mm" | "cm" | "in" | "pt"
     pub margin_y: f64,
-    pub margin_y_unit: String,   // "mm" | "cm" | "in" | "pt"
+    pub margin_y_unit: String, // "mm" | "cm" | "in" | "pt"
     pub colors: PdfColors,
     pub fonts: PdfFonts,
 }
@@ -270,7 +273,7 @@ pub struct PdfFonts {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CsvOptions {
-    pub delimiter: String,      // "comma" | "semicolon" | "tab" | "pipe"
+    pub delimiter: String, // "comma" | "semicolon" | "tab" | "pipe"
     pub include_bom: bool,
 }
 
@@ -280,7 +283,7 @@ pub struct CsvOptions {
 pub struct ExportProfile {
     pub id: String,
     pub name: String,
-    pub format: String,          // "pdf" | "excel" | "csv"
+    pub format: String, // "pdf" | "excel" | "csv"
     pub is_default: bool,
 
     // Opciones comunes
