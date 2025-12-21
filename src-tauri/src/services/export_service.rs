@@ -120,6 +120,12 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
     let margin_left = request.margin_left.unwrap_or(1.5);
     let margin_right = request.margin_right.unwrap_or(1.5);
 
+    // Color del banner
+    let banner_color = request
+        .banner_color
+        .clone()
+        .unwrap_or_else(|| "#059669".to_string());
+
     Ok(PdfConfig {
         title,
         orientation,
@@ -132,6 +138,7 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
         margin_bottom,
         margin_left,
         margin_right,
+        banner_color,
     })
 }
 

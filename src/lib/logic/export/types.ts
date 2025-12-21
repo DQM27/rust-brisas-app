@@ -14,6 +14,7 @@ export interface ExportRequest {
     marginBottom?: number;
     marginLeft?: number;
     marginRight?: number;
+    bannerColor?: string;
 
     // Opcionales para CSV
     delimiter?: 'comma' | 'semicolon' | 'tab' | 'pipe';
@@ -45,7 +46,9 @@ export interface ExportOptions {
     marginBottom?: number;
     marginLeft?: number;
     marginRight?: number;
+    bannerColor?: string;
 }
+
 
 
 

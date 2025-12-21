@@ -51,12 +51,62 @@
   );
   let fontSize = $state(initialOptions.fontSize || 10);
   let fontFamily = $state(initialOptions.fontFamily || "Inter");
-  let marginTop = $state(2.0);
-  let marginBottom = $state(2.0);
-  let marginLeft = $state(1.5);
-  let marginRight = $state(1.5);
+  let marginTop = $state(20); // En mm
+  let marginBottom = $state(20);
+  let marginLeft = $state(15);
+  let marginRight = $state(15);
+  let marginUnit = $state<"mm" | "cm" | "in" | "pt">("mm"); // Unidad de medida
   let paperSize = $state<"us-letter" | "a4" | "legal">("us-letter");
   let showPreview = $state(true);
+  let bannerColor = $state("#059669"); // Color del banner
+
+  // Unidades de medida disponibles
+  const marginUnits = [
+    { id: "mm", label: "mm" },
+    { id: "cm", label: "cm" },
+    { id: "in", label: "in" },
+    { id: "pt", label: "pt" },
+  ];
+
+  // Colores predefinidos para el banner
+  const bannerColors = [
+    { id: "#059669", label: "Verde" },
+    { id: "#2563eb", label: "Azul" },
+    { id: "#7c3aed", label: "Violeta" },
+    { id: "#dc2626", label: "Rojo" },
+    { id: "#ea580c", label: "Naranja" },
+    { id: "#0891b2", label: "Cyan" },
+    { id: "#374151", label: "Gris" },
+    { id: "#000000", label: "Negro" },
+  ];
+
+  // Convertir márgenes a cm para el backend
+  function marginToCm(value: number): number {
+    switch (marginUnit) {
+      case "mm":
+        return value / 10;
+      case "in":
+        return value * 2.54;
+      case "pt":
+        return value / 28.35; // 1cm = 28.35pt
+      default:
+        return value; // cm
+    }
+  }
+
+  // Step y max según unidad
+  const marginStep = $derived(
+    marginUnit === "mm" ? 1 : marginUnit === "pt" ? 5 : 0.1,
+  );
+  const marginMax = $derived(
+    marginUnit === "mm"
+      ? 50
+      : marginUnit === "pt"
+        ? 150
+        : marginUnit === "in"
+          ? 2
+          : 5,
+  );
 
   let isExporting = $state(false);
   let isGeneratingPreview = $state(false);
@@ -128,6 +178,11 @@
             orientation,
             fontSize,
             fontFamily,
+            marginTop: marginToCm(marginTop),
+            marginBottom: marginToCm(marginBottom),
+            marginLeft: marginToCm(marginLeft),
+            marginRight: marginToCm(marginRight),
+            bannerColor,
             showPreview: true,
           },
         });
@@ -158,6 +213,10 @@
     fontSize;
     fontFamily;
     marginTop;
+    marginLeft;
+    marginRight;
+    marginBottom;
+    bannerColor;
     paperSize;
     columnSelection.filter((c) => c.selected).length;
     generatePreview();
@@ -174,10 +233,11 @@
         fontFamily,
         showPreview,
         columnIds: columnSelection.filter((c) => c.selected).map((c) => c.id),
-        marginTop,
-        marginBottom,
-        marginLeft,
-        marginRight,
+        marginTop: marginToCm(marginTop),
+        marginBottom: marginToCm(marginBottom),
+        marginLeft: marginToCm(marginLeft),
+        marginRight: marginToCm(marginRight),
+        bannerColor,
       };
 
       await onExport(options);
@@ -317,6 +377,34 @@
           </select>
         </div>
 
+        <!-- Color del Banner -->
+        <div>
+          <label
+            for="adv-banner-color"
+            class="block text-xs font-medium text-[#8b949e] mb-1"
+          >
+            Color del banner
+          </label>
+          <div class="flex items-center gap-2">
+            <input
+              type="color"
+              id="adv-banner-color"
+              bind:value={bannerColor}
+              disabled={isExporting}
+              class="w-8 h-8 rounded border border-[#30363d] cursor-pointer"
+            />
+            <select
+              bind:value={bannerColor}
+              disabled={isExporting}
+              class="flex-1 px-2 py-1.5 text-sm rounded-md border border-[#30363d] bg-[#0d1117] text-[#e6edf3]"
+            >
+              {#each bannerColors as color}
+                <option value={color.id}>{color.label}</option>
+              {/each}
+            </select>
+          </div>
+        </div>
+
         <!-- Tamaño de texto -->
         <div>
           <label
@@ -338,17 +426,25 @@
 
         <!-- Márgenes -->
         <div>
-          <span class="block text-xs font-medium text-[#8b949e] mb-2">
-            Márgenes (cm)
-          </span>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-medium text-[#8b949e]"> Márgenes </span>
+            <select
+              bind:value={marginUnit}
+              class="px-2 py-0.5 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3]"
+            >
+              {#each marginUnits as unit}
+                <option value={unit.id}>{unit.id}</option>
+              {/each}
+            </select>
+          </div>
           <div class="grid grid-cols-2 gap-2">
             <div class="flex items-center gap-1">
               <span class="text-xs text-[#8b949e] w-8">Arr:</span>
               <input
                 type="number"
-                step="0.1"
+                step={marginStep}
                 min="0"
-                max="5"
+                max={marginMax}
                 bind:value={marginTop}
                 class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] w-16"
               />
@@ -357,9 +453,9 @@
               <span class="text-xs text-[#8b949e] w-8">Aba:</span>
               <input
                 type="number"
-                step="0.1"
+                step={marginStep}
                 min="0"
-                max="5"
+                max={marginMax}
                 bind:value={marginBottom}
                 class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] w-16"
               />
@@ -368,9 +464,9 @@
               <span class="text-xs text-[#8b949e] w-8">Izq:</span>
               <input
                 type="number"
-                step="0.1"
+                step={marginStep}
                 min="0"
-                max="5"
+                max={marginMax}
                 bind:value={marginLeft}
                 class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] w-16"
               />
@@ -379,9 +475,9 @@
               <span class="text-xs text-[#8b949e] w-8">Der:</span>
               <input
                 type="number"
-                step="0.1"
+                step={marginStep}
                 min="0"
-                max="5"
+                max={marginMax}
                 bind:value={marginRight}
                 class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] w-16"
               />

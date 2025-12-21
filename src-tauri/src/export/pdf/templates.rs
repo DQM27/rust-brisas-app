@@ -99,7 +99,7 @@ fn generate_showybox_content(
     // Generar la tabla con font_size
     let table_content = generate_table(headers, rows, config)?;
 
-    // Tema claro con borde azul - centrado
+    // Tema claro con borde personalizable - centrado
     let content = format!(
         "#align(center)[\n\
 #showybox(\n\
@@ -109,7 +109,7 @@ fn generate_showybox_content(
     sep-thickness: 0pt,\n\
   ),\n\
   frame: (\n\
-    title-color: rgb(\"#2563eb\"),\n\
+    title-color: rgb(\"{}\"),\n\
     border-color: rgb(\"#d0d7de\"),\n\
     body-color: white,\n\
     thickness: 1pt,\n\
@@ -133,7 +133,7 @@ fn generate_showybox_content(
   ]\n\
 ]\n\
 ]\n",
-        escaped_title, table_content, now
+        config.banner_color, escaped_title, table_content, now
     );
 
     Ok(content)

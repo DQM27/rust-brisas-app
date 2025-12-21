@@ -101,16 +101,17 @@ pub struct ExportRequest {
     pub rows: Vec<HashMap<String, serde_json::Value>>, // Datos (flexible)
 
     // Opcionales para PDF
-    pub title: Option<String>,       // Título del documento
-    pub orientation: Option<String>, // "portrait" | "landscape"
-    pub show_preview: Option<bool>,  // Si mostrar preview (PDF.js)
-    pub template_id: Option<String>, // ID del template a usar
-    pub font_size: Option<i32>,      // 8-20 pts
-    pub font_family: Option<String>, // "Inter", "Arial", etc.
-    pub margin_top: Option<f32>,     // Márgen superior (cm)
-    pub margin_bottom: Option<f32>,  // Márgen inferior (cm)
-    pub margin_left: Option<f32>,    // Márgen izquierdo (cm)
-    pub margin_right: Option<f32>,   // Márgen derecho (cm)
+    pub title: Option<String>,        // Título del documento
+    pub orientation: Option<String>,  // "portrait" | "landscape"
+    pub show_preview: Option<bool>,   // Si mostrar preview (PDF.js)
+    pub template_id: Option<String>,  // ID del template a usar
+    pub font_size: Option<i32>,       // 8-20 pts
+    pub font_family: Option<String>,  // "Inter", "Arial", etc.
+    pub margin_top: Option<f32>,      // Márgen superior (cm)
+    pub margin_bottom: Option<f32>,   // Márgen inferior (cm)
+    pub margin_left: Option<f32>,     // Márgen izquierdo (cm)
+    pub margin_right: Option<f32>,    // Márgen derecho (cm)
+    pub banner_color: Option<String>, // Color del banner hex
 
     // Opcionales para CSV
     pub delimiter: Option<String>, // "comma" | "semicolon" | "tab" | "pipe"
@@ -128,12 +129,13 @@ pub struct PdfConfig {
     pub headers: Vec<String>,
     pub show_preview: bool,
     pub template_id: Option<String>,
-    pub font_size: i32,      // 8-20 pts
-    pub font_family: String, // Nombre de la fuente
-    pub margin_top: f32,     // Márgen superior (cm)
-    pub margin_bottom: f32,  // Márgen inferior (cm)
-    pub margin_left: f32,    // Márgen izquierdo (cm)
-    pub margin_right: f32,   // Márgen derecho (cm)
+    pub font_size: i32,       // 8-20 pts
+    pub font_family: String,  // Nombre de la fuente
+    pub margin_top: f32,      // Márgen superior (cm)
+    pub margin_bottom: f32,   // Márgen inferior (cm)
+    pub margin_left: f32,     // Márgen izquierdo (cm)
+    pub margin_right: f32,    // Márgen derecho (cm)
+    pub banner_color: String, // Color hex del banner
 }
 
 impl Default for PdfConfig {
@@ -150,6 +152,7 @@ impl Default for PdfConfig {
             margin_bottom: 2.0,
             margin_left: 1.5,
             margin_right: 1.5,
+            banner_color: "#059669".to_string(),
         }
     }
 }
