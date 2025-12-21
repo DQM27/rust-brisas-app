@@ -162,8 +162,8 @@
       },
       {
         field: "gafeteNumero",
-        headerName: "Gafete",
-        width: 100,
+        headerName: "GF",
+        width: 70,
         cellRenderer: (params: any) =>
           params.value
             ? `<span class="font-mono font-bold text-blue-600">${params.value}</span>`
@@ -171,14 +171,14 @@
       },
       {
         field: "vehiculoPlaca",
-        headerName: "Vehículo",
-        width: 120,
+        headerName: "Placa",
+        width: 100,
         valueFormatter: (params) => params.value || "-",
       },
       {
         field: "tipoAutorizacionDisplay",
-        headerName: "Autorización",
-        width: 120,
+        headerName: "Aut.",
+        width: 100,
       },
       {
         field: "modoIngresoDisplay",
@@ -187,18 +187,18 @@
       },
       {
         field: "usuarioIngresoNombre",
-        headerName: "Registró Entrada",
+        headerName: "GuardaE",
         width: 150,
       },
       {
         field: "usuarioSalidaNombre",
-        headerName: "Registró Salida",
+        headerName: "GuardaS",
         width: 150,
         valueFormatter: (params) => params.value || "-",
       },
       {
         field: "fechaHoraIngreso",
-        headerName: "Fecha Entrada",
+        headerName: "FechaE",
         width: 110,
         valueFormatter: (params) =>
           new Date(params.value).toLocaleDateString("es-CR", {
@@ -220,7 +220,7 @@
       },
       {
         field: "fechaHoraIngreso",
-        headerName: "Hora Entrada",
+        headerName: "HoraE",
         width: 90,
         valueFormatter: (params) =>
           new Date(params.value).toLocaleTimeString("es-CR", {
@@ -247,7 +247,7 @@
       // Modo historial: agregar columnas de fecha y hora de salida
       baseColumns.push({
         field: "fechaHoraSalida" as any,
-        headerName: "Fecha Salida",
+        headerName: "FechaS",
         width: 110,
         valueFormatter: (params) =>
           params.value
@@ -272,7 +272,7 @@
 
       baseColumns.push({
         field: "fechaHoraSalida" as any,
-        headerName: "Hora Salida",
+        headerName: "HoraS",
         width: 90,
         valueFormatter: (params) =>
           params.value
@@ -844,15 +844,23 @@
   <ExportDialog
     onExport={handleExport}
     onClose={() => (showExportDialog = false)}
-    columns={gridApi?.getColumns()?.map((col) => ({
-      id: col.getColId(),
-      name: col.getColDef().headerName || col.getColId(),
-      selected: col.isVisible(),
-    })) || []}
+    columns={gridApi
+      ?.getColumns()
+      ?.filter((col) => col.getColDef().headerName !== "Acciones")
+      .map((col) => ({
+        id: col.getColId(),
+        name: col.getColDef().headerName || col.getColId(),
+        selected: col.isVisible(),
+      })) || []}
     rows={(() => {
       // Obtener mapeo field -> headerName para transformar datos
       const columns =
-        gridApi?.getColumns()?.filter((col) => col.isVisible()) || [];
+        gridApi
+          ?.getColumns()
+          ?.filter(
+            (col) =>
+              col.isVisible() && col.getColDef().headerName !== "Acciones",
+          ) || [];
       const fieldToHeader: Record<string, string> = {};
       columns.forEach((col) => {
         const field = col.getColDef().field || col.getColId();
@@ -876,7 +884,9 @@
     })()}
     headers={gridApi
       ?.getColumns()
-      ?.filter((col) => col.isVisible())
+      ?.filter(
+        (col) => col.isVisible() && col.getColDef().headerName !== "Acciones",
+      )
       .map((col) => col.getColDef().headerName || col.getColId()) || []}
   />
 {/if}

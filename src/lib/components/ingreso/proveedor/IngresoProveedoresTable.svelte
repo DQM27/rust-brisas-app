@@ -120,8 +120,8 @@
       },
       {
         field: "gafete",
-        headerName: "Gafete",
-        width: 100,
+        headerName: "GF",
+        width: 80,
         cellRenderer: (params: any) =>
           params.value
             ? `<span class="font-mono font-bold text-blue-600">${params.value}</span>`
@@ -129,14 +129,14 @@
       },
       {
         field: "placaVehiculo",
-        headerName: "Vehículo",
-        width: 120,
+        headerName: "Placa",
+        width: 100,
         valueFormatter: (p: any) => p.value || "-",
       },
       {
         field: "tipoAutorizacion",
-        headerName: "Autorización",
-        width: 120,
+        headerName: "Aut.",
+        width: 100,
         valueFormatter: (p: any) => p.value || "N/A",
       },
       {
@@ -147,19 +147,19 @@
       },
       {
         field: "usuarioIngresoNombre",
-        headerName: "Registró Entrada",
+        headerName: "GuardaE",
         width: 150,
         valueFormatter: (p: any) => p.value || "N/A",
       },
       {
         field: "usuarioSalidaNombre",
-        headerName: "Registró Salida",
+        headerName: "GuardaS",
         width: 150,
         valueFormatter: (p: any) => p.value || "-",
       },
       {
         field: "fechaIngreso",
-        headerName: "Fecha Entrada",
+        headerName: "FechaE",
         width: 110,
         valueFormatter: (params: any) =>
           new Date(params.value).toLocaleDateString("es-CR", {
@@ -170,7 +170,7 @@
       },
       {
         field: "fechaIngreso",
-        headerName: "Hora Entrada",
+        headerName: "HoraE",
         width: 100,
         valueFormatter: (params: any) =>
           new Date(params.value).toLocaleTimeString("es-CR", {
@@ -197,8 +197,8 @@
       // Activos: Calculate duration from entry to NOW
       const activeCols = [
         {
-          headerName: "Tiempo",
-          width: 100,
+          headerName: "Dur.",
+          width: 80,
           valueGetter: (params: any) =>
             calculateDuration(params.data?.fechaIngreso),
           cellRenderer: (params: any) => {
@@ -224,7 +224,7 @@
       const historyCols = [
         {
           field: "fechaSalida",
-          headerName: "Fecha Salida",
+          headerName: "FechaS",
           width: 110,
           valueFormatter: (params: any) =>
             params.value
@@ -237,7 +237,7 @@
         },
         {
           field: "fechaSalida",
-          headerName: "Hora Salida",
+          headerName: "HoraS",
           width: 100,
           valueFormatter: (params: any) =>
             params.value
@@ -483,5 +483,49 @@
   <ExportDialog
     onClose={() => (showExportDialog = false)}
     onExport={handleExport}
+    columns={gridApi
+      ?.getColumns()
+      ?.filter((col) => col.getColDef().headerName !== "Acciones")
+      .map((col) => ({
+        id: col.getColId(),
+        name: col.getColDef().headerName || col.getColId(),
+        selected: col.isVisible(),
+      })) || []}
+    rows={(() => {
+      // Obtener mapeo field -> headerName para transformar datos
+      const columns =
+        gridApi
+          ?.getColumns()
+          ?.filter(
+            (col) =>
+              col.isVisible() && col.getColDef().headerName !== "Acciones",
+          ) || [];
+      const fieldToHeader: Record<string, string> = {};
+      columns.forEach((col) => {
+        const field = col.getColDef().field || col.getColId();
+        const headerName = col.getColDef().headerName || col.getColId();
+        fieldToHeader[field] = headerName;
+      });
+
+      // Transformar cada fila para usar headerName como clave
+      const rowData: Record<string, any>[] = [];
+      gridApi?.forEachNodeAfterFilterAndSort((node) => {
+        if (node.data) {
+          const transformedRow: Record<string, any> = {};
+          for (const [field, value] of Object.entries(node.data)) {
+            const headerName = fieldToHeader[field] || field;
+            transformedRow[headerName] = value;
+          }
+          rowData.push(transformedRow);
+        }
+      });
+      return rowData;
+    })()}
+    headers={gridApi
+      ?.getColumns()
+      ?.filter(
+        (col) => col.isVisible() && col.getColDef().headerName !== "Acciones",
+      )
+      .map((col) => col.getColDef().headerName || col.getColId()) || []}
   />
 {/if}

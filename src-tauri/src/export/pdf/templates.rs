@@ -114,7 +114,7 @@ fn generate_showybox_content(
     body-color: white,\n\
     thickness: 1pt,\n\
     radius: 4pt,\n\
-    inset: (x: 12pt, y: 10pt),\n\
+    inset: (x: 2pt, y: 10pt),\n\
   ),\n\
   title: [\n\
     #text(size: 12pt)[{}]\n\
@@ -159,20 +159,23 @@ fn generate_table(
                 || lower.contains("empresa")
                 || lower.contains("motivo")
                 || lower.contains("detalle")
+                || lower.contains("registró") // GuardaE/S son nombres largos
+                || lower.contains("usuario")
             {
-                "1.5fr" // Reducido de 2fr para no desperdiciar tanto espacio
+                "1.4fr" // Texto largo
             } else if lower.contains("cédula")
                 || lower.contains("cedula")
-                || lower.contains("placa")
+                || lower.contains("placa") // Incluye vehículo/placa
+                || lower.contains("vehículo")
                 || lower.contains("gafete")
                 || lower.contains("autoriza")
             {
-                "1.2fr" // Ajuste fino
+                "1.1fr" // Identificadores
             } else if lower.contains("fecha") || lower.contains("hora") || lower.contains("tiempo")
             {
-                "0.8fr" // Fechas y horas son compactas ahora, ahorrar espacio
+                "1.0fr" // Aumentado de 0.8fr porque quedaba muy apretado
             } else if lower == "id" || lower == "#" || lower == "no" {
-                "0.5fr" // Columnas muy cortas
+                "0.4fr" // Muy corto
             } else {
                 "1fr" // Default
             }
@@ -185,23 +188,24 @@ fn generate_table(
     let mut markup = format!(
         "#table(\n\
     columns: ({}),\n\
-    inset: 6pt,\n\
+    inset: 4pt,\n\
     stroke: 0.5pt + rgb(\"#d0d7de\"),\n\
     fill: (x, y) => if y == 0 {{ rgb(\"#f6f8fa\") }} else if calc.odd(y) {{ white }} else {{ rgb(\"#f6f8fa\") }},\n\
-    align: (x, y) => if y == 0 {{ center }} else {{ left }},\n",
+    align: (x, y) => center + horizon,\n",
         columns_spec
     );
 
-    // Headers con word-break
+    // Headers con hyphenate: true (Usuario pide explícitamente que todo se pueda dividir)
     for header in headers {
-        let escaped_header = escape_typst_string(header);
+        let short_header = shorten_header(header);
+        let escaped_header = escape_typst_string(&short_header);
         markup.push_str(&format!(
             "    [#set par(justify: false); *#text(fill: rgb(\"#1f2328\"), size: {}, hyphenate: true)[{}]*],\n",
             header_size, escaped_header
         ));
     }
 
-    // Rows con word-break
+    // Rows con word-break ON
     for row in rows {
         for header in headers {
             let value = row.get(header).map(|s| s.as_str()).unwrap_or("-");
@@ -216,6 +220,39 @@ fn generate_table(
     markup.push_str("  )");
 
     Ok(markup)
+}
+
+// ==========================================
+// UTILIDADES DE TEXTO
+// ==========================================
+
+/// Acorta los nombres de las columnas para ahorrar espacio en el PDF
+fn shorten_header(header: &str) -> String {
+    let lower = header.to_lowercase();
+
+    if lower.contains("gafete") {
+        return "GF".to_string();
+    } else if lower.contains("registró entrada") || lower.contains("registro entrada") {
+        return "GuardaE".to_string();
+    } else if lower.contains("registró salida") || lower.contains("registro salida") {
+        return "GuardaS".to_string();
+    } else if lower.contains("fecha entrada") {
+        return "FechaE".to_string();
+    } else if lower.contains("fecha salida") || lower.contains("fecha de salida") {
+        return "FechaS".to_string();
+    } else if lower.contains("hora entrada") {
+        return "HoraE".to_string();
+    } else if lower.contains("hora salida") || lower.contains("hora de salida") {
+        return "HoraS".to_string();
+    } else if lower.contains("vehículo") || lower.contains("vehiculo") {
+        return "Placa".to_string();
+    } else if lower.contains("autorización") || lower.contains("autorizacion") {
+        return "Aut.".to_string();
+    } else if lower == "tiempo" {
+        return "Dur.".to_string(); // "Duración" abreviado
+    }
+
+    header.to_string()
 }
 
 // ==========================================
