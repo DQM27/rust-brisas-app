@@ -275,7 +275,7 @@
         orientation,
         fontSize,
         fontFamily,
-        showPreview,
+        showPreview: false,
         columnIds: columnSelection.filter((c) => c.selected).map((c) => c.id),
         marginTop: marginToCm(marginTop),
         marginBottom: marginToCm(marginBottom),
