@@ -155,18 +155,10 @@
   // ==========================================
 
   async function handleSubmit() {
-    console.log("🚀 handleSubmit called");
-    if (loading) {
-      console.log("⚠️ Already loading, returning");
-      return;
-    }
-    if (!$currentUser?.id) {
-      console.error("❌ No hay usuario autenticado");
-      return;
-    }
+    if (loading) return;
+    if (!$currentUser?.id) return;
 
     loading = true;
-    console.log("📦 Form state:", JSON.stringify(formState, null, 2));
 
     const payload = {
       cedula: formState.cedula,
@@ -186,11 +178,8 @@
       observaciones: formState.observaciones || undefined,
       usuarioIngresoId: $currentUser.id,
     };
-    console.log("📤 Payload to send:", JSON.stringify(payload, null, 2));
-
     try {
       const result = await ingresoProveedorService.createIngreso(payload);
-      console.log("✅ Ingreso created:", result);
 
       toast.success("Ingreso de proveedor registrado");
       resetForm();
@@ -199,7 +188,6 @@
       }
       onSuccess();
     } catch (error: any) {
-      console.error("❌ Error creating ingreso:", error);
       toast.error(error.message || error || "Error al registrar ingreso");
     } finally {
       loading = false;

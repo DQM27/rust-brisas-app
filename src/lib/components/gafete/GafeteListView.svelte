@@ -29,12 +29,6 @@
   let showResolveModal = $state(false);
   let selectedAlertGafete = $state<GafeteResponse | null>(null);
 
-  // Debug check
-  $effect(() => {
-    console.log("GafeteListView: mounted");
-    console.log("createCustomButton:", createCustomButton);
-  });
-
   // Custom buttons para la toolbar
   const customButtons = $derived.by(() => {
     try {

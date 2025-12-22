@@ -29,12 +29,8 @@
     onEstadoFilterChange: (filter: string) => void;
     onTipoFilterChange: (filter: string) => void;
     onClearAllFilters: () => void;
-    onSearchSelect: (e: CustomEvent<SearchResult>) => void;
-    onSearchClear: () => void;
     onAddToBlacklist?: () => void;
     onUnblock?: (bloqueado: ListaNegraResponse) => void;
-    onViewInfo?: (bloqueado: ListaNegraResponse) => void;
-    onViewHistory?: (bloqueado: ListaNegraResponse) => void;
   }
 
   let {
@@ -49,12 +45,8 @@
     onEstadoFilterChange,
     onTipoFilterChange,
     onClearAllFilters,
-    onSearchSelect,
-    onSearchClear,
     onAddToBlacklist,
     onUnblock,
-    onViewInfo,
-    onViewHistory,
   }: Props = $props();
 
   // Estado para selección
@@ -184,12 +176,6 @@
               },
             ]
           : []),
-        createCustomButton.verInformacion(() => {
-          if (selected) onViewInfo?.(selected);
-        }),
-        createCustomButton.historial(() => {
-          if (selected) onViewHistory?.(selected);
-        }),
       ],
 
       multiSelect: [],
@@ -235,8 +221,6 @@
         <SearchBar
           placeholder="Buscar por nombre, cédula o empresa..."
           limit={10}
-          on:select={onSearchSelect}
-          on:clear={onSearchClear}
         />
       </div>
     </div>

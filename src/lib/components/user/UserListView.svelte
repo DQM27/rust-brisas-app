@@ -195,15 +195,6 @@
     listState.estadoFilter = "todos";
   }
 
-  // --- Búsqueda ---
-  function handleSearchSelect(e: CustomEvent<SearchResult>) {
-    console.log("Usuario seleccionado:", e.detail);
-  }
-
-  function handleSearchClear() {
-    console.log("Búsqueda limpiada");
-  }
-
   onMount(() => {
     loadUsers();
   });
@@ -221,8 +212,6 @@
   onRoleFilterChange={handleRoleFilterChange}
   onEstadoFilterChange={handleEstadoFilterChange}
   onClearAllFilters={handleClearAllFilters}
-  onSearchSelect={handleSearchSelect}
-  onSearchClear={handleSearchClear}
   onNewUser={handleNewUser}
   onEditUser={handleEditUser}
   onViewInfo={handleViewInfo}

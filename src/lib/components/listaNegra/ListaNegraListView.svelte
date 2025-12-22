@@ -172,17 +172,6 @@
       toast.error(result.error || "Error en la operación");
     }
   }
-
-  function handleViewInfo(bloqueado: ListaNegraResponse) {
-    console.log("Ver información de:", bloqueado);
-    // TODO: Abrir panel lateral o modal con información detallada
-  }
-
-  function handleViewHistory(bloqueado: ListaNegraResponse) {
-    console.log("Ver historial de:", bloqueado);
-    // TODO: Abrir tab o modal con historial
-  }
-
   // --- Filtros ---
   function handleEstadoFilterChange(filter: string) {
     listLogic.setEstadoFilter(filter as any);
@@ -198,15 +187,6 @@
     listLogic.clearAllFilters();
     listState.estadoFilter = "todos";
     listState.tipoFilter = "todos";
-  }
-
-  // --- Búsqueda ---
-  function handleSearchSelect(e: CustomEvent<SearchResult>) {
-    console.log("Bloqueado seleccionado:", e.detail);
-  }
-
-  function handleSearchClear() {
-    console.log("Búsqueda limpiada");
   }
 
   // --- Form helpers ---
@@ -265,12 +245,8 @@
   onEstadoFilterChange={handleEstadoFilterChange}
   onTipoFilterChange={handleTipoFilterChange}
   onClearAllFilters={handleClearAllFilters}
-  onSearchSelect={handleSearchSelect}
-  onSearchClear={handleSearchClear}
   onAddToBlacklist={canManage ? handleAddToBlacklist : undefined}
   onUnblock={canManage ? handleUnblock : undefined}
-  onViewInfo={handleViewInfo}
-  onViewHistory={handleViewHistory}
 />
 
 <!-- Modal para agregar a lista negra -->

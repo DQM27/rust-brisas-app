@@ -1,5 +1,4 @@
 <script lang="ts">
-  console.log("RegisterUserView montado");
   import RegisterUserForm from "$lib/components/UserRegisterPanel.svelte";
   import { submitRegisterUser } from "$lib/logic/user/submitRegisterUser";
   import { toast } from "svelte-5-french-toast";

@@ -25,8 +25,6 @@
     onRoleFilterChange: (filter: string) => void;
     onEstadoFilterChange: (filter: string) => void;
     onClearAllFilters: () => void;
-    onSearchSelect: (e: CustomEvent<SearchResult>) => void;
-    onSearchClear: () => void;
     onNewUser?: () => void;
     onEditUser?: (user: UserResponse) => void;
     onViewInfo?: (user: UserResponse) => void;
@@ -46,8 +44,6 @@
     onRoleFilterChange,
     onEstadoFilterChange,
     onClearAllFilters,
-    onSearchSelect,
-    onSearchClear,
     onNewUser,
     onEditUser,
     onViewInfo,
@@ -202,8 +198,6 @@
         <SearchBar
           placeholder="Buscar por nombre, cédula o email..."
           limit={10}
-          on:select={onSearchSelect}
-          on:clear={onSearchClear}
         />
       </div>
     </div>
