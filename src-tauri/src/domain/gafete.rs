@@ -36,9 +36,7 @@ pub fn validar_numero(numero: &str) -> Result<(), GafeteError> {
 }
 
 pub fn validar_tipo(tipo_str: &str) -> Result<TipoGafete, GafeteError> {
-    tipo_str
-        .parse()
-        .map_err(|_| GafeteError::InvalidType(tipo_str.to_string()))
+    tipo_str.parse().map_err(|_| GafeteError::InvalidType(tipo_str.to_string()))
 }
 
 // ==========================================
@@ -110,10 +108,7 @@ mod tests {
     #[test]
     fn test_validar_tipo_valido() {
         assert!(validar_tipo("contratista").is_ok());
-        assert!(matches!(
-            validar_tipo("contratista").unwrap(),
-            TipoGafete::Contratista
-        ));
+        assert!(matches!(validar_tipo("contratista").unwrap(), TipoGafete::Contratista));
     }
 
     #[test]
@@ -125,16 +120,11 @@ mod tests {
 
     #[test]
     fn test_validar_create_input() {
-        let input = CreateGafeteInput {
-            numero: "101".to_string(),
-            tipo: "visita".to_string(),
-        };
+        let input = CreateGafeteInput { numero: "101".to_string(), tipo: "visita".to_string() };
         assert!(validar_create_input(&input).is_ok());
 
-        let invalid_input = CreateGafeteInput {
-            numero: "".to_string(),
-            tipo: "visita".to_string(),
-        };
+        let invalid_input =
+            CreateGafeteInput { numero: "".to_string(), tipo: "visita".to_string() };
         assert!(validar_create_input(&invalid_input).is_err());
     }
 

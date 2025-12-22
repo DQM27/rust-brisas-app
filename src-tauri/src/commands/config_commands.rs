@@ -15,10 +15,7 @@ pub async fn update_terminal_config(
     nombre: String,
     ubicacion: String,
 ) -> Result<TerminalConfig, String> {
-    println!(
-        "⚙️ Actualizando configuración de terminal: {} - {}",
-        nombre, ubicacion
-    );
+    println!("⚙️ Actualizando configuración de terminal: {} - {}", nombre, ubicacion);
 
     // Clonar config actual para modificarla
     // Nota: El State de Tauri es inmutable por defecto durante la ejecución para seguridad de hilos.

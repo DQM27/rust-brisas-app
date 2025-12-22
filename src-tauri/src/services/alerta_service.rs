@@ -8,27 +8,21 @@ use crate::models::ingreso::AlertaGafete;
 use sqlx::SqlitePool;
 
 pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<AlertaGafete, AlertaError> {
-    db::find_by_id(pool, id)
-        .await
-        .map_err(AlertaError::Database)
+    db::find_by_id(pool, id).await.map_err(AlertaError::Database)
 }
 
 pub async fn find_pendientes_by_cedula(
     pool: &SqlitePool,
     cedula: &str,
 ) -> Result<Vec<AlertaGafete>, AlertaError> {
-    db::find_pendientes_by_cedula(pool, cedula)
-        .await
-        .map_err(AlertaError::Database)
+    db::find_pendientes_by_cedula(pool, cedula).await.map_err(AlertaError::Database)
 }
 
 pub async fn find_all(
     pool: &SqlitePool,
     resuelto: Option<bool>,
 ) -> Result<Vec<AlertaGafete>, AlertaError> {
-    db::find_all(pool, resuelto)
-        .await
-        .map_err(AlertaError::Database)
+    db::find_all(pool, resuelto).await.map_err(AlertaError::Database)
 }
 
 #[allow(clippy::too_many_arguments)]

@@ -46,9 +46,7 @@ pub async fn create_contratista(
         .map_err(|e| ContratistaError::Validation(e.to_string()))?;
 
     if block_status.blocked {
-        let motivo = block_status
-            .motivo
-            .unwrap_or_else(|| "Sin motivo especificado".to_string());
+        let motivo = block_status.motivo.unwrap_or_else(|| "Sin motivo especificado".to_string());
         return Err(ContratistaError::Validation(format!(
             "No se puede registrar. La persona con cédula {} está en lista negra. Motivo: {}",
             cedula_normalizada, motivo
@@ -93,9 +91,7 @@ pub async fn create_contratista(
 
     // 9. Indexar en Tantivy
     if let Some(row) = db::find_by_id_with_empresa(pool, &id).await? {
-        if let Err(e) = search_service
-            .add_contratista(&row.contratista, &row.empresa_nombre)
-            .await
+        if let Err(e) = search_service.add_contratista(&row.contratista, &row.empresa_nombre).await
         {
             eprintln!("⚠️ Error al indexar contratista {}: {}", id, e);
         }
@@ -112,9 +108,7 @@ pub async fn get_contratista_by_id(
     pool: &SqlitePool,
     id: &str,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    let row = db::find_by_id_with_empresa(pool, id)
-        .await?
-        .ok_or(ContratistaError::NotFound)?;
+    let row = db::find_by_id_with_empresa(pool, id).await?.ok_or(ContratistaError::NotFound)?;
 
     let mut response = ContratistaResponse::from(row.contratista);
     response.empresa_nombre = row.empresa_nombre;
@@ -140,9 +134,8 @@ pub async fn get_contratista_by_cedula(
     pool: &SqlitePool,
     cedula: &str,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    let row = db::find_by_cedula_with_empresa(pool, cedula)
-        .await?
-        .ok_or(ContratistaError::NotFound)?;
+    let row =
+        db::find_by_cedula_with_empresa(pool, cedula).await?.ok_or(ContratistaError::NotFound)?;
 
     let mut response = ContratistaResponse::from(row.contratista);
     response.empresa_nombre = row.empresa_nombre;
@@ -171,28 +164,23 @@ pub async fn get_all_contratistas(
 
     let contratistas: Vec<ContratistaResponse> = contratistas_with_empresa
         .into_iter()
-        .map(
-            |(contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa, is_blocked)| {
-                let mut response = ContratistaResponse::from(contratista);
-                response.empresa_nombre = empresa_nombre;
-                response.vehiculo_tipo = vehiculo_tipo;
-                response.vehiculo_placa = vehiculo_placa;
-                response.esta_bloqueado = is_blocked;
+        .map(|(contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa, is_blocked)| {
+            let mut response = ContratistaResponse::from(contratista);
+            response.empresa_nombre = empresa_nombre;
+            response.vehiculo_tipo = vehiculo_tipo;
+            response.vehiculo_placa = vehiculo_placa;
+            response.esta_bloqueado = is_blocked;
 
-                if is_blocked {
-                    response.puede_ingresar = false;
-                }
+            if is_blocked {
+                response.puede_ingresar = false;
+            }
 
-                response
-            },
-        )
+            response
+        })
         .collect();
 
     let total = contratistas.len();
-    let activos = contratistas
-        .iter()
-        .filter(|c| c.estado == EstadoContratista::Activo)
-        .count();
+    let activos = contratistas.iter().filter(|c| c.estado == EstadoContratista::Activo).count();
     let con_praind_vencido = contratistas.iter().filter(|c| c.praind_vencido).count();
     let requieren_atencion = contratistas.iter().filter(|c| c.requiere_atencion).count();
 
@@ -216,21 +204,19 @@ pub async fn get_contratistas_activos(
 
     let contratistas = contratistas_with_empresa
         .into_iter()
-        .map(
-            |(contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa, is_blocked)| {
-                let mut response = ContratistaResponse::from(contratista);
-                response.empresa_nombre = empresa_nombre;
-                response.vehiculo_tipo = vehiculo_tipo;
-                response.vehiculo_placa = vehiculo_placa;
-                response.esta_bloqueado = is_blocked;
+        .map(|(contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa, is_blocked)| {
+            let mut response = ContratistaResponse::from(contratista);
+            response.empresa_nombre = empresa_nombre;
+            response.vehiculo_tipo = vehiculo_tipo;
+            response.vehiculo_placa = vehiculo_placa;
+            response.esta_bloqueado = is_blocked;
 
-                if is_blocked {
-                    response.puede_ingresar = false;
-                }
+            if is_blocked {
+                response.puede_ingresar = false;
+            }
 
-                response
-            },
-        )
+            response
+        })
         .collect();
 
     Ok(contratistas)
@@ -250,22 +236,15 @@ pub async fn update_contratista(
     domain::validar_update_input(&input)?;
 
     // 2. Verificar que el contratista existe
-    let _ = db::find_by_id_with_empresa(pool, &id)
-        .await?
-        .ok_or(ContratistaError::NotFound)?;
+    let _ = db::find_by_id_with_empresa(pool, &id).await?.ok_or(ContratistaError::NotFound)?;
 
     // 3. Normalizar datos si vienen
     let nombre_normalizado = input.nombre.as_ref().map(|n| domain::normalizar_nombre(n));
 
-    let segundo_nombre_normalizado = input
-        .segundo_nombre
-        .as_ref()
-        .and_then(|sn| domain::normalizar_segundo_nombre(Some(sn)));
+    let segundo_nombre_normalizado =
+        input.segundo_nombre.as_ref().and_then(|sn| domain::normalizar_segundo_nombre(Some(sn)));
 
-    let apellido_normalizado = input
-        .apellido
-        .as_ref()
-        .map(|a| domain::normalizar_apellido(a));
+    let apellido_normalizado = input.apellido.as_ref().map(|a| domain::normalizar_apellido(a));
 
     let segundo_apellido_normalizado = input
         .segundo_apellido
@@ -300,9 +279,7 @@ pub async fn update_contratista(
     // 7. Gestionar Vehículo
     if let Some(tiene) = input.tiene_vehiculo {
         use crate::db::vehiculo_queries;
-        let vehiculos = vehiculo_queries::find_by_contratista(pool, &id)
-            .await
-            .unwrap_or_default();
+        let vehiculos = vehiculo_queries::find_by_contratista(pool, &id).await.unwrap_or_default();
         let vehiculo_existente = vehiculos.first();
 
         if tiene {
@@ -349,14 +326,10 @@ pub async fn update_contratista(
 
     // 9. Actualizar índice de Tantivy
     if let Some(row) = db::find_by_id_with_empresa(pool, &id).await? {
-        if let Err(e) = search_service
-            .update_contratista(&row.contratista, &row.empresa_nombre)
-            .await
+        if let Err(e) =
+            search_service.update_contratista(&row.contratista, &row.empresa_nombre).await
         {
-            eprintln!(
-                "⚠️ Error al actualizar índice del contratista {}: {}",
-                id, e
-            );
+            eprintln!("⚠️ Error al actualizar índice del contratista {}: {}", id, e);
         }
     }
 
@@ -377,9 +350,7 @@ pub async fn cambiar_estado_contratista(
     let estado = domain::validar_estado(&input.estado)?;
 
     // 2. Verificar que el contratista existe
-    let _ = db::find_by_id_with_empresa(pool, &id)
-        .await?
-        .ok_or(ContratistaError::NotFound)?;
+    let _ = db::find_by_id_with_empresa(pool, &id).await?.ok_or(ContratistaError::NotFound)?;
 
     // 3. Timestamp de actualización
     let now = Utc::now().to_rfc3339();
@@ -392,14 +363,10 @@ pub async fn cambiar_estado_contratista(
 
     // 6. Actualizar índice de Tantivy
     if let Some(row) = db::find_by_id_with_empresa(pool, &id).await? {
-        if let Err(e) = search_service
-            .update_contratista(&row.contratista, &row.empresa_nombre)
-            .await
+        if let Err(e) =
+            search_service.update_contratista(&row.contratista, &row.empresa_nombre).await
         {
-            eprintln!(
-                "⚠️ Error al actualizar índice del contratista {}: {}",
-                id, e
-            );
+            eprintln!("⚠️ Error al actualizar índice del contratista {}: {}", id, e);
         }
     }
 
@@ -416,19 +383,14 @@ pub async fn delete_contratista(
     id: String,
 ) -> Result<(), ContratistaError> {
     // Verificar que existe
-    let _ = db::find_by_id_with_empresa(pool, &id)
-        .await?
-        .ok_or(ContratistaError::NotFound)?;
+    let _ = db::find_by_id_with_empresa(pool, &id).await?.ok_or(ContratistaError::NotFound)?;
 
     // Eliminar de DB
     db::delete(pool, &id).await?;
 
     // Eliminar del índice de Tantivy
     if let Err(e) = search_service.delete_contratista(&id).await {
-        eprintln!(
-            "⚠️ Error al eliminar del índice el contratista {}: {}",
-            id, e
-        );
+        eprintln!("⚠️ Error al eliminar del índice el contratista {}: {}", id, e);
     }
 
     Ok(())

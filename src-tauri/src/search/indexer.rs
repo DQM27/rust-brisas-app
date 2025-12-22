@@ -120,12 +120,8 @@ pub fn index_user(
     user: &User,
 ) -> Result<(), SearchError> {
     // Construir texto de búsqueda concatenado
-    let mut search_text_parts = vec![
-        user.cedula.clone(),
-        user.nombre.clone(),
-        user.apellido.clone(),
-        user.email.clone(),
-    ];
+    let mut search_text_parts =
+        vec![user.cedula.clone(), user.nombre.clone(), user.apellido.clone(), user.email.clone()];
 
     if let Some(ref segundo_nombre) = user.segundo_nombre {
         search_text_parts.push(segundo_nombre.clone());

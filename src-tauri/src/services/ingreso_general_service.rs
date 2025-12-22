@@ -32,18 +32,10 @@ pub async fn get_all_ingresos_with_stats(
     }
 
     let total = responses.len();
-    let adentro = responses
-        .iter()
-        .filter(|i| i.fecha_hora_salida.is_none())
-        .count();
+    let adentro = responses.iter().filter(|i| i.fecha_hora_salida.is_none()).count();
     let salieron = total - adentro;
 
-    Ok(IngresoListResponse {
-        ingresos: responses,
-        total,
-        adentro,
-        salieron,
-    })
+    Ok(IngresoListResponse { ingresos: responses, total, adentro, salieron })
 }
 
 /// Obtiene ingresos abiertos (personas adentro)
@@ -74,13 +66,11 @@ pub async fn get_ingreso_by_id(
         None => return Ok(None),
     };
 
-    let details = db::find_details_by_id(pool, id)
-        .await?
-        .unwrap_or(db::IngresoDetails {
-            usuario_ingreso_nombre: None,
-            usuario_salida_nombre: None,
-            vehiculo_placa: None,
-        });
+    let details = db::find_details_by_id(pool, id).await?.unwrap_or(db::IngresoDetails {
+        usuario_ingreso_nombre: None,
+        usuario_salida_nombre: None,
+        vehiculo_placa: None,
+    });
 
     let mut response =
         IngresoResponse::try_from(ingreso).map_err(|e| IngresoGeneralError::DataProcessing(e))?;

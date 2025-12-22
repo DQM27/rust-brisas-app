@@ -15,9 +15,7 @@ pub fn validar_email(email: &str) -> Result<(), UserError> {
     let limpio = email.trim();
 
     if limpio.is_empty() {
-        return Err(UserError::Validation(
-            "El email no puede estar vacío".to_string(),
-        ));
+        return Err(UserError::Validation("El email no puede estar vacío".to_string()));
     }
 
     if !limpio.contains('@') {
@@ -25,9 +23,7 @@ pub fn validar_email(email: &str) -> Result<(), UserError> {
     }
 
     if limpio.len() > 100 {
-        return Err(UserError::Validation(
-            "El email no puede exceder 100 caracteres".to_string(),
-        ));
+        return Err(UserError::Validation("El email no puede exceder 100 caracteres".to_string()));
     }
 
     Ok(())
@@ -37,15 +33,11 @@ pub fn validar_nombre(nombre: &str) -> Result<(), UserError> {
     let limpio = nombre.trim();
 
     if limpio.is_empty() {
-        return Err(UserError::Validation(
-            "El nombre no puede estar vacío".to_string(),
-        ));
+        return Err(UserError::Validation("El nombre no puede estar vacío".to_string()));
     }
 
     if limpio.len() > 50 {
-        return Err(UserError::Validation(
-            "El nombre no puede exceder 50 caracteres".to_string(),
-        ));
+        return Err(UserError::Validation("El nombre no puede exceder 50 caracteres".to_string()));
     }
 
     Ok(())
@@ -55,9 +47,7 @@ pub fn validar_apellido(apellido: &str) -> Result<(), UserError> {
     let limpio = apellido.trim();
 
     if limpio.is_empty() {
-        return Err(UserError::Validation(
-            "El apellido no puede estar vacío".to_string(),
-        ));
+        return Err(UserError::Validation("El apellido no puede estar vacío".to_string()));
     }
 
     if limpio.len() > 50 {
@@ -73,15 +63,11 @@ pub fn validar_cedula(cedula: &str) -> Result<(), UserError> {
     let limpio = cedula.trim();
 
     if limpio.is_empty() {
-        return Err(UserError::Validation(
-            "La cédula no puede estar vacía".to_string(),
-        ));
+        return Err(UserError::Validation("La cédula no puede estar vacía".to_string()));
     }
 
     if limpio.len() > 20 {
-        return Err(UserError::Validation(
-            "La cédula no puede exceder 20 caracteres".to_string(),
-        ));
+        return Err(UserError::Validation("La cédula no puede exceder 20 caracteres".to_string()));
     }
 
     // Validar caracteres validos? Numeros y guiones?

@@ -81,12 +81,9 @@ pub async fn find_by_tipo(pool: &SqlitePool, tipo: &str) -> sqlx::Result<Vec<Gaf
 
 /// Cuenta gafetes por número
 pub async fn count_by_numero(pool: &SqlitePool, numero: &str) -> sqlx::Result<i64> {
-    let result = sqlx::query!(
-        "SELECT COUNT(*) as count FROM gafetes WHERE numero = ?",
-        numero
-    )
-    .fetch_one(pool)
-    .await?;
+    let result = sqlx::query!("SELECT COUNT(*) as count FROM gafetes WHERE numero = ?", numero)
+        .fetch_one(pool)
+        .await?;
 
     Ok(result.count as i64)
 }
@@ -267,13 +264,9 @@ pub async fn update_status(
 }
 
 pub async fn delete(pool: &SqlitePool, numero: &str, tipo: &str) -> sqlx::Result<()> {
-    sqlx::query!(
-        "DELETE FROM gafetes WHERE numero = ? AND tipo = ?",
-        numero,
-        tipo
-    )
-    .execute(pool)
-    .await?;
+    sqlx::query!("DELETE FROM gafetes WHERE numero = ? AND tipo = ?", numero, tipo)
+        .execute(pool)
+        .await?;
 
     Ok(())
 }
@@ -441,9 +434,7 @@ mod tests {
         assert_eq!(g.numero, num);
 
         // 4. Update status
-        update_status(&pool, num, tipo, "extraviado", "updated")
-            .await
-            .unwrap();
+        update_status(&pool, num, tipo, "extraviado", "updated").await.unwrap();
         let g2 = find_by_numero_and_tipo(&pool, num, tipo).await.unwrap();
         assert!(matches!(g2.estado, GafeteEstado::Extraviado));
 
@@ -455,20 +446,14 @@ mod tests {
     #[tokio::test]
     async fn test_find_disponibles() {
         let pool = setup_test_env().await;
-        insert(&pool, "G-1", "contratista", "now", "now")
-            .await
-            .unwrap();
-        insert(&pool, "G-2", "contratista", "now", "now")
-            .await
-            .unwrap();
+        insert(&pool, "G-1", "contratista", "now", "now").await.unwrap();
+        insert(&pool, "G-2", "contratista", "now", "now").await.unwrap();
 
         // G-1 en uso (ingreso abierto)
         pool.execute("INSERT INTO ingresos (id, contratista_id, cedula, nombre, apellido, empresa_nombre, tipo_ingreso, tipo_autorizacion, modo_ingreso, gafete_numero, fecha_hora_ingreso, usuario_ingreso_id, created_at, updated_at)
                       VALUES ('i-1', 'c-1', '123', 'J', 'P', 'E', 'contratista', 'praind', 'caminando', 'G-1', 'now', 'u-1', 'now', 'now')").await.unwrap();
 
-        let disp = find_disponibles_by_tipo(&pool, "contratista")
-            .await
-            .unwrap();
+        let disp = find_disponibles_by_tipo(&pool, "contratista").await.unwrap();
         assert_eq!(disp.len(), 1);
         assert_eq!(disp[0], "G-2");
     }
@@ -476,9 +461,7 @@ mod tests {
     #[tokio::test]
     async fn test_gafete_alerts() {
         let pool = setup_test_env().await;
-        insert(&pool, "G-1", "contratista", "now", "now")
-            .await
-            .unwrap();
+        insert(&pool, "G-1", "contratista", "now", "now").await.unwrap();
 
         // Crear alerta sin resolver
         pool.execute("INSERT INTO alertas_gafetes (id, cedula, nombre_completo, gafete_numero, ingreso_contratista_id, fecha_reporte, resuelto, reportado_por, created_at, updated_at)
@@ -486,9 +469,8 @@ mod tests {
 
         assert!(has_unresolved_alert(&pool, "G-1").await.unwrap());
 
-        let alert_opt = get_recent_alert_for_gafete_typed(&pool, "G-1", "contratista")
-            .await
-            .unwrap();
+        let alert_opt =
+            get_recent_alert_for_gafete_typed(&pool, "G-1", "contratista").await.unwrap();
         assert!(alert_opt.is_some());
 
         let (_, _, name, resuelto, ..) = alert_opt.unwrap();

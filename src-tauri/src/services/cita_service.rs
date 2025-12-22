@@ -48,9 +48,7 @@ impl CitaService {
         let mut input_final = cita_input;
         input_final.visitante_id = visitante_id;
 
-        cita_queries::create_cita(&self.pool, input_final)
-            .await
-            .map_err(|e| e.to_string())
+        cita_queries::create_cita(&self.pool, input_final).await.map_err(|e| e.to_string())
     }
 
     pub async fn get_citas_hoy(&self) -> Result<Vec<CitaPopulated>, String> {
@@ -63,9 +61,7 @@ impl CitaService {
 
     /// Obtiene todas las citas pendientes (hoy y futuras)
     pub async fn get_citas_pendientes(&self) -> Result<Vec<CitaPopulated>, String> {
-        cita_queries::get_all_citas_pendientes(&self.pool)
-            .await
-            .map_err(|e| e.to_string())
+        cita_queries::get_all_citas_pendientes(&self.pool).await.map_err(|e| e.to_string())
     }
 
     /// Actualiza los detalles de una cita pendiente

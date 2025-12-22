@@ -108,12 +108,10 @@ pub async fn get_gafete(
     // Frontend could check code/string.
     // Better: Helper map_not_found?
     // Using simple propagation first.
-    let gafete = db::find_by_numero_and_tipo(pool, numero, tipo)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::RowNotFound => GafeteError::NotFound,
-            _ => GafeteError::Database(e),
-        })?;
+    let gafete = db::find_by_numero_and_tipo(pool, numero, tipo).await.map_err(|e| match e {
+        sqlx::Error::RowNotFound => GafeteError::NotFound,
+        _ => GafeteError::Database(e),
+    })?;
 
     let en_uso = db::is_en_uso(pool, numero, tipo).await?;
     let tiene_alerta = db::has_unresolved_alert_typed(pool, numero, tipo).await?;
@@ -232,22 +230,10 @@ pub async fn get_all_gafetes(pool: &SqlitePool) -> Result<GafeteListResponse, Ga
     let disponibles = responses.iter().filter(|g| g.esta_disponible).count();
     let en_uso = responses.iter().filter(|r| r.status == "en_uso").count();
 
-    let contratistas = responses
-        .iter()
-        .filter(|g| g.tipo == TipoGafete::Contratista)
-        .count();
-    let proveedores = responses
-        .iter()
-        .filter(|g| g.tipo == TipoGafete::Proveedor)
-        .count();
-    let visitas = responses
-        .iter()
-        .filter(|g| g.tipo == TipoGafete::Visita)
-        .count();
-    let otros = responses
-        .iter()
-        .filter(|g| g.tipo == TipoGafete::Otro)
-        .count();
+    let contratistas = responses.iter().filter(|g| g.tipo == TipoGafete::Contratista).count();
+    let proveedores = responses.iter().filter(|g| g.tipo == TipoGafete::Proveedor).count();
+    let visitas = responses.iter().filter(|g| g.tipo == TipoGafete::Visita).count();
+    let otros = responses.iter().filter(|g| g.tipo == TipoGafete::Otro).count();
 
     Ok(GafeteListResponse {
         gafetes: responses,
@@ -258,12 +244,7 @@ pub async fn get_all_gafetes(pool: &SqlitePool) -> Result<GafeteListResponse, Ga
             en_uso,
             danados: stats_danados,
             extraviados: stats_extraviados,
-            por_tipo: StatsPorTipo {
-                contratistas,
-                proveedores,
-                visitas,
-                otros,
-            },
+            por_tipo: StatsPorTipo { contratistas, proveedores, visitas, otros },
         },
     })
 }
@@ -326,20 +307,14 @@ pub async fn update_gafete(
 ) -> Result<GafeteResponse, GafeteError> {
     domain::validar_update_input(&input)?;
 
-    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo_actual)
-        .await
-        .map_err(|e| match e {
+    let _ =
+        db::find_by_numero_and_tipo(pool, &numero, &tipo_actual).await.map_err(|e| match e {
             sqlx::Error::RowNotFound => GafeteError::NotFound,
             _ => GafeteError::Database(e),
         })?;
 
     let tipo_str = if let Some(ref t) = input.tipo {
-        Some(
-            t.parse::<TipoGafete>()
-                .map_err(GafeteError::Validation)?
-                .as_str()
-                .to_string(),
-        )
+        Some(t.parse::<TipoGafete>().map_err(GafeteError::Validation)?.as_str().to_string())
     } else {
         None
     };
@@ -359,12 +334,10 @@ pub async fn update_gafete_status(
     estado: GafeteEstado,
     usuario_id: Option<String>,
 ) -> Result<GafeteResponse, GafeteError> {
-    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::RowNotFound => GafeteError::NotFound,
-            _ => GafeteError::Database(e),
-        })?;
+    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo).await.map_err(|e| match e {
+        sqlx::Error::RowNotFound => GafeteError::NotFound,
+        _ => GafeteError::Database(e),
+    })?;
 
     let now = Utc::now().to_rfc3339();
     db::update_status(pool, &numero, &tipo, estado.as_str(), &now).await?;
@@ -401,12 +374,10 @@ pub async fn delete_gafete(
     numero: String,
     tipo: String,
 ) -> Result<(), GafeteError> {
-    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::RowNotFound => GafeteError::NotFound,
-            _ => GafeteError::Database(e),
-        })?;
+    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo).await.map_err(|e| match e {
+        sqlx::Error::RowNotFound => GafeteError::NotFound,
+        _ => GafeteError::Database(e),
+    })?;
 
     let en_uso = db::is_en_uso(pool, &numero, &tipo).await?;
     if en_uso {
@@ -466,10 +437,7 @@ mod tests {
     async fn test_create_gafete_integration() {
         let pool = setup_test_env().await;
 
-        let input = CreateGafeteInput {
-            numero: "G-101".into(),
-            tipo: "contratista".into(),
-        };
+        let input = CreateGafeteInput { numero: "G-101".into(), tipo: "contratista".into() };
 
         let res = create_gafete(&pool, input)
             .await
@@ -478,10 +446,7 @@ mod tests {
         assert_eq!(res.status, "disponible");
 
         // Intentar duplicado
-        let input2 = CreateGafeteInput {
-            numero: "G-101".into(),
-            tipo: "contratista".into(),
-        };
+        let input2 = CreateGafeteInput { numero: "G-101".into(), tipo: "contratista".into() };
         let err = create_gafete(&pool, input2).await;
         assert!(matches!(err, Err(GafeteError::AlreadyExists)));
     }
@@ -493,15 +458,9 @@ mod tests {
         // 1. Crear gafete
         let numero = "G-202";
         let tipo = "contratista";
-        create_gafete(
-            &pool,
-            CreateGafeteInput {
-                numero: numero.into(),
-                tipo: tipo.into(),
-            },
-        )
-        .await
-        .unwrap_or_else(|e| panic!("Error creating gafete in availability test: {:?}", e));
+        create_gafete(&pool, CreateGafeteInput { numero: numero.into(), tipo: tipo.into() })
+            .await
+            .unwrap_or_else(|e| panic!("Error creating gafete in availability test: {:?}", e));
 
         // 2. Verificar disponible
         let res = get_gafete(&pool, numero, tipo).await.unwrap();

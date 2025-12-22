@@ -82,15 +82,7 @@ pub async fn get_basic_data(
     .fetch_optional(pool)
     .await?;
 
-    Ok(row.map(|r| {
-        (
-            r.cedula,
-            r.nombre,
-            r.segundo_nombre,
-            r.apellido,
-            r.segundo_apellido,
-        )
-    }))
+    Ok(row.map(|r| (r.cedula, r.nombre, r.segundo_nombre, r.apellido, r.segundo_apellido)))
 }
 
 /// Helper para detalles de lista negra
@@ -122,12 +114,9 @@ pub async fn count_cedula_in_blacklist(pool: &SqlitePool, cedula: &str) -> sqlx:
 
 /// Cuenta contratistas por cédula
 pub async fn count_by_cedula(pool: &SqlitePool, cedula: &str) -> sqlx::Result<i64> {
-    let row = sqlx::query!(
-        "SELECT COUNT(*) as count FROM contratistas WHERE cedula = ?",
-        cedula
-    )
-    .fetch_one(pool)
-    .await?;
+    let row = sqlx::query!("SELECT COUNT(*) as count FROM contratistas WHERE cedula = ?", cedula)
+        .fetch_one(pool)
+        .await?;
 
     Ok(row.count as i64)
 }
@@ -473,9 +462,7 @@ pub async fn update_estado(
 
 /// Elimina un contratista
 pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
-    sqlx::query!("DELETE FROM contratistas WHERE id = ?", id)
-        .execute(pool)
-        .await?;
+    sqlx::query!("DELETE FROM contratistas WHERE id = ?", id).execute(pool).await?;
 
     Ok(())
 }
@@ -530,10 +517,7 @@ mod tests {
     #[tokio::test]
     async fn test_find_by_id_with_empresa() {
         let pool = setup_test_env().await;
-        let res = find_by_id_with_empresa(&pool, "c-1")
-            .await
-            .unwrap()
-            .unwrap();
+        let res = find_by_id_with_empresa(&pool, "c-1").await.unwrap().unwrap();
         assert_eq!(res.empresa_nombre, "Test Corp");
         assert_eq!(res.vehiculo_placa, Some("ABC-123".to_string()));
         assert!(!res.is_blocked);
@@ -545,10 +529,7 @@ mod tests {
         pool.execute("INSERT INTO lista_negra (id, cedula, nombre, apellido, motivo_bloqueo, fecha_inicio_bloqueo, bloqueado_por, is_active, created_at, updated_at) 
                       VALUES ('bl-1', '12345', 'Juan', 'Perez', 'Robo', '2025-01-01', 'Admin', 1, '2025-01-01', '2025-01-01')").await.unwrap();
 
-        let res = find_by_id_with_empresa(&pool, "c-1")
-            .await
-            .unwrap()
-            .unwrap();
+        let res = find_by_id_with_empresa(&pool, "c-1").await.unwrap().unwrap();
         assert!(res.is_blocked);
     }
 
@@ -578,19 +559,9 @@ mod tests {
         assert_eq!(c.nombre, "Maria");
 
         // Update
-        update(
-            &pool,
-            "c-2",
-            Some("Maria Updated"),
-            None,
-            None,
-            None,
-            None,
-            None,
-            "new-now",
-        )
-        .await
-        .unwrap();
+        update(&pool, "c-2", Some("Maria Updated"), None, None, None, None, None, "new-now")
+            .await
+            .unwrap();
         let c2 = find_basic_info_by_id(&pool, "c-2").await.unwrap().unwrap();
         assert_eq!(c2.nombre, "Maria Updated");
 

@@ -125,9 +125,8 @@ pub fn search_index(
     let mut results = Vec::with_capacity(top_docs.len());
 
     for (score, doc_addr) in top_docs {
-        let doc: TantivyDocument = searcher
-            .doc(doc_addr)
-            .map_err(|e| SearchError::TantivyError(e.to_string()))?;
+        let doc: TantivyDocument =
+            searcher.doc(doc_addr).map_err(|e| SearchError::TantivyError(e.to_string()))?;
 
         // 3. Extracción optimizada usando los IDs cacheados
         results.push(SearchResultDto {
@@ -266,16 +265,9 @@ mod tests {
         println!("Searching for 'Doe' with contractor filter...");
         let res = search_contratistas(&index, &reader, &fields, "Doe", 10).unwrap();
         for r in &res {
-            println!(
-                "MATCH FOUND - ID: {}, Tipo: {}, Name: {:?}",
-                r.id, r.tipo, r.nombre_completo
-            );
+            println!("MATCH FOUND - ID: {}, Tipo: {}, Name: {:?}", r.id, r.tipo, r.nombre_completo);
         }
-        assert_eq!(
-            res.len(),
-            0,
-            "Should NOT find User 'Doe' when filtering for contractors"
-        );
+        assert_eq!(res.len(), 0, "Should NOT find User 'Doe' when filtering for contractors");
 
         // "Alexander" matches contratista
         println!("Searching for 'Alexander' with contractor filter...");

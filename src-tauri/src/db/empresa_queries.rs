@@ -79,12 +79,9 @@ pub async fn find_activas(pool: &SqlitePool) -> sqlx::Result<Vec<Empresa>> {
 
 /// Cuenta empresas con un nombre específico (para validación de duplicados)
 pub async fn count_by_nombre(pool: &SqlitePool, nombre: &str) -> sqlx::Result<i64> {
-    let row = sqlx::query!(
-        "SELECT COUNT(*) as count FROM empresas WHERE nombre = ?",
-        nombre
-    )
-    .fetch_one(pool)
-    .await?;
+    let row = sqlx::query!("SELECT COUNT(*) as count FROM empresas WHERE nombre = ?", nombre)
+        .fetch_one(pool)
+        .await?;
 
     Ok(row.count as i64)
 }
@@ -108,12 +105,10 @@ pub async fn count_by_nombre_excluding_id(
 
 /// Cuenta contratistas asociados a una empresa
 pub async fn count_contratistas(pool: &SqlitePool, empresa_id: &str) -> sqlx::Result<i64> {
-    let row = sqlx::query!(
-        "SELECT COUNT(*) as count FROM contratistas WHERE empresa_id = ?",
-        empresa_id
-    )
-    .fetch_one(pool)
-    .await?;
+    let row =
+        sqlx::query!("SELECT COUNT(*) as count FROM contratistas WHERE empresa_id = ?", empresa_id)
+            .fetch_one(pool)
+            .await?;
 
     Ok(row.count as i64)
 }
@@ -180,9 +175,7 @@ pub async fn update(
 
 /// Elimina una empresa
 pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
-    sqlx::query!("DELETE FROM empresas WHERE id = ?", id)
-        .execute(pool)
-        .await?;
+    sqlx::query!("DELETE FROM empresas WHERE id = ?", id).execute(pool).await?;
 
     Ok(())
 }

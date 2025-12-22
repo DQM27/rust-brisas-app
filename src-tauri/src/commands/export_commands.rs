@@ -14,9 +14,7 @@ use crate::services::export_service;
 /// Exporta datos a PDF, Excel o CSV según el formato especificado
 #[tauri::command]
 pub async fn export_data(request: ExportRequest) -> Result<ExportResponse, String> {
-    export_service::export_data(request)
-        .await
-        .map_err(|e| e.to_string())
+    export_service::export_data(request).await.map_err(|e| e.to_string())
 }
 
 // ==========================================
@@ -34,10 +32,7 @@ pub async fn check_export_available() -> Result<bool, String> {
 pub async fn get_available_export_formats() -> Result<Vec<String>, String> {
     use crate::export;
 
-    let formats = export::available_formats()
-        .iter()
-        .map(|&s| s.to_string())
-        .collect();
+    let formats = export::available_formats().iter().map(|&s| s.to_string()).collect();
 
     Ok(formats)
 }
@@ -65,9 +60,7 @@ pub async fn export_to_pdf(request: ExportRequest) -> Result<ExportResponse, Str
     let mut pdf_request = request;
     pdf_request.format = "pdf".to_string();
 
-    export_service::export_data(pdf_request)
-        .await
-        .map_err(|e| e.to_string())
+    export_service::export_data(pdf_request).await.map_err(|e| e.to_string())
 }
 
 /// Exporta específicamente a Excel
@@ -78,9 +71,7 @@ pub async fn export_to_excel(request: ExportRequest) -> Result<ExportResponse, S
     let mut excel_request = request;
     excel_request.format = "excel".to_string();
 
-    export_service::export_data(excel_request)
-        .await
-        .map_err(|e| e.to_string())
+    export_service::export_data(excel_request).await.map_err(|e| e.to_string())
 }
 
 /// Exporta específicamente a CSV
@@ -90,9 +81,7 @@ pub async fn export_to_csv(request: ExportRequest) -> Result<ExportResponse, Str
     let mut csv_request = request;
     csv_request.format = "csv".to_string();
 
-    export_service::export_data(csv_request)
-        .await
-        .map_err(|e| e.to_string())
+    export_service::export_data(csv_request).await.map_err(|e| e.to_string())
 }
 
 // ==========================================
@@ -108,9 +97,7 @@ pub async fn export_preview(request: ExportRequest) -> Result<ExportResponse, St
     preview_request.show_preview = Some(true);
     preview_request.target_path = None; // No guardar
 
-    export_service::export_data(preview_request)
-        .await
-        .map_err(|e| e.to_string())
+    export_service::export_data(preview_request).await.map_err(|e| e.to_string())
 }
 
 // ==========================================

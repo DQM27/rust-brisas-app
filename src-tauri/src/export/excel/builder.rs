@@ -167,11 +167,9 @@ fn autofit_columns(
         // Aplicar ancho (con límites razonables)
         let width = max_width.clamp(10.0, 50.0);
 
-        worksheet
-            .set_column_width(col_idx as u16, width)
-            .map_err(|e| {
-                ExportError::XlsxFormatError(format!("Error ajustando columna {}: {}", col_idx, e))
-            })?;
+        worksheet.set_column_width(col_idx as u16, width).map_err(|e| {
+            ExportError::XlsxFormatError(format!("Error ajustando columna {}: {}", col_idx, e))
+        })?;
     }
 
     Ok(())
@@ -293,10 +291,7 @@ mod tests {
         row1.insert("Name".to_string(), ExportValue::Text("John".to_string()));
 
         let mut row2 = HashMap::new();
-        row2.insert(
-            "Name".to_string(),
-            ExportValue::Text("Alexander".to_string()),
-        );
+        row2.insert("Name".to_string(), ExportValue::Text("Alexander".to_string()));
 
         let rows = vec![row1, row2];
 

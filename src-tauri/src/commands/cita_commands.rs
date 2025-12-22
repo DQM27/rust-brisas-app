@@ -37,9 +37,7 @@ pub async fn procesar_ingreso_cita(
     usuario_id: String,
 ) -> Result<String, String> {
     let service = CitaService::new(pool.inner().clone());
-    service
-        .procesar_ingreso_cita(cita_id, gafete, usuario_id)
-        .await
+    service.procesar_ingreso_cita(cita_id, gafete, usuario_id).await
     // .await removed
 }
 
@@ -63,7 +61,5 @@ pub async fn update_cita(
     motivo: Option<String>,
 ) -> Result<(), String> {
     let service = CitaService::new(pool.inner().clone());
-    service
-        .update_cita(id, fecha_cita, anfitrion, area_visitada, motivo)
-        .await
+    service.update_cita(id, fecha_cita, anfitrion, area_visitada, motivo).await
 }

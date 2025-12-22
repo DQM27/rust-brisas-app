@@ -34,9 +34,8 @@ pub async fn create_proveedor(
     }
 
     // 3. Crear
-    let proveedor = proveedor_queries::create(pool, input.clone())
-        .await
-        .map_err(|e| e.to_string())?;
+    let proveedor =
+        proveedor_queries::create(pool, input.clone()).await.map_err(|e| e.to_string())?;
 
     // 4. Crear Vehículo si aplica
     if let Some(true) = input.tiene_vehiculo {
@@ -71,10 +70,7 @@ pub async fn create_proveedor(
     }
 
     // 5. Indexar en búsqueda
-    if let Err(e) = search_service
-        .add_proveedor(&proveedor, &empresa_nombre)
-        .await
-    {
+    if let Err(e) = search_service.add_proveedor(&proveedor, &empresa_nombre).await {
         eprintln!("Error indexando proveedor: {}", e);
         // No falla la operación, solo logging
     }
@@ -88,9 +84,8 @@ pub async fn search_proveedores(
     pool: &SqlitePool,
     query: &str,
 ) -> Result<Vec<ProveedorResponse>, String> {
-    let proveedores = proveedor_queries::search(pool, query, 100)
-        .await
-        .map_err(|e| e.to_string())?;
+    let proveedores =
+        proveedor_queries::search(pool, query, 100).await.map_err(|e| e.to_string())?;
 
     let mut responses = Vec::with_capacity(proveedores.len());
     for prov in proveedores {
@@ -105,9 +100,7 @@ pub async fn get_proveedor_by_cedula(
     pool: &SqlitePool,
     cedula: &str,
 ) -> Result<Option<ProveedorResponse>, String> {
-    let p = proveedor_queries::find_by_cedula(pool, cedula)
-        .await
-        .map_err(|e| e.to_string())?;
+    let p = proveedor_queries::find_by_cedula(pool, cedula).await.map_err(|e| e.to_string())?;
 
     if let Some(proveedor) = p {
         Ok(Some(populate_response(pool, proveedor).await?))
@@ -138,23 +131,16 @@ pub async fn change_status(
         color: None,
     };
 
-    let proveedor = proveedor_queries::update(pool, id, input)
-        .await
-        .map_err(|e| e.to_string())?;
+    let proveedor = proveedor_queries::update(pool, id, input).await.map_err(|e| e.to_string())?;
 
     // Obtener nombre de empresa para indexación
     let empresa = empresa_queries::find_by_id(pool, &proveedor.empresa_id)
         .await
         .map_err(|e| e.to_string())?;
-    let empresa_nombre = empresa
-        .map(|e| e.nombre)
-        .unwrap_or_else(|| "Desconocida".to_string());
+    let empresa_nombre = empresa.map(|e| e.nombre).unwrap_or_else(|| "Desconocida".to_string());
 
     // Actualizar en índice de búsqueda
-    if let Err(e) = search_service
-        .update_proveedor(&proveedor, &empresa_nombre)
-        .await
-    {
+    if let Err(e) = search_service.update_proveedor(&proveedor, &empresa_nombre).await {
         eprintln!("Error actualizando proveedor en índice: {}", e);
     }
 
@@ -179,9 +165,8 @@ async fn populate_response(
     }
 
     // Buscar vehículos
-    let vehiculos = vehiculo_queries::find_by_proveedor(pool, &proveedor_id)
-        .await
-        .unwrap_or_default();
+    let vehiculos =
+        vehiculo_queries::find_by_proveedor(pool, &proveedor_id).await.unwrap_or_default();
 
     if let Some(v) = vehiculos.first() {
         response.vehiculo_tipo = Some(v.tipo_vehiculo.to_string());
@@ -227,25 +212,18 @@ pub async fn update_proveedor(
 
     // 2. Validar Empresa si cambia
     if let Some(ref eid) = input.empresa_id {
-        if empresa_queries::find_by_id(pool, eid)
-            .await
-            .map_err(|e| e.to_string())?
-            .is_none()
-        {
+        if empresa_queries::find_by_id(pool, eid).await.map_err(|e| e.to_string())?.is_none() {
             return Err("La empresa especificada no existe".to_string());
         }
     }
 
     // 3. Actualizar Proveedor en DB
-    let proveedor = proveedor_queries::update(pool, &id, input.clone())
-        .await
-        .map_err(|e| e.to_string())?;
+    let proveedor =
+        proveedor_queries::update(pool, &id, input.clone()).await.map_err(|e| e.to_string())?;
 
     // 4. Gestionar Vehículo
     if let Some(tiene) = input.tiene_vehiculo {
-        let vehiculos = vehiculo_queries::find_by_proveedor(pool, &id)
-            .await
-            .unwrap_or_default();
+        let vehiculos = vehiculo_queries::find_by_proveedor(pool, &id).await.unwrap_or_default();
         let vehiculo_existente = vehiculos.first();
         let now = Utc::now().to_rfc3339();
 
@@ -299,28 +277,22 @@ pub async fn update_proveedor(
         } else {
             // Eliminar si existe
             if let Some(v) = vehiculo_existente {
-                vehiculo_queries::delete(pool, &v.id)
-                    .await
-                    .map_err(|e| e.to_string())?;
+                vehiculo_queries::delete(pool, &v.id).await.map_err(|e| e.to_string())?;
             }
         }
     }
 
     // 5. Actualizar Search Index
     // Necesitamos el nombre de la empresa
-    let empresa_nombre = if let Some(e) = empresa_queries::find_by_id(pool, &proveedor.empresa_id)
-        .await
-        .unwrap_or(None)
+    let empresa_nombre = if let Some(e) =
+        empresa_queries::find_by_id(pool, &proveedor.empresa_id).await.unwrap_or(None)
     {
         e.nombre
     } else {
         "Desconocida".to_string()
     };
 
-    if let Err(e) = search_service
-        .update_proveedor(&proveedor, &empresa_nombre)
-        .await
-    {
+    if let Err(e) = search_service.update_proveedor(&proveedor, &empresa_nombre).await {
         eprintln!("Error actualizando índice: {}", e);
     }
 

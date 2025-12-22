@@ -170,10 +170,7 @@ mod tests {
 
     #[test]
     fn test_escape_csv_field_with_quotes() {
-        assert_eq!(
-            escape_csv_field("say \"hello\"", ','),
-            "\"say \"\"hello\"\"\""
-        );
+        assert_eq!(escape_csv_field("say \"hello\"", ','), "\"say \"\"hello\"\"\"");
     }
 
     #[test]

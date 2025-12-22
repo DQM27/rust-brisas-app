@@ -16,9 +16,7 @@ pub fn validar_cedula(cedula: &str) -> Result<(), ListaNegraError> {
     let limpia = cedula.trim();
 
     if limpia.is_empty() {
-        return Err(ListaNegraError::Validation(
-            "La cédula no puede estar vacía".to_string(),
-        ));
+        return Err(ListaNegraError::Validation("La cédula no puede estar vacía".to_string()));
     }
 
     if !limpia.chars().all(|c| c.is_numeric() || c == '-') {
@@ -40,9 +38,7 @@ pub fn validar_nombre(nombre: &str) -> Result<(), ListaNegraError> {
     let limpio = nombre.trim();
 
     if limpio.is_empty() {
-        return Err(ListaNegraError::Validation(
-            "El nombre no puede estar vacío".to_string(),
-        ));
+        return Err(ListaNegraError::Validation("El nombre no puede estar vacío".to_string()));
     }
 
     if limpio.len() > 100 {

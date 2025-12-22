@@ -9,10 +9,7 @@ pub fn check_and_restore_database(config: &AppConfig) -> Result<(), Box<dyn std:
 
     // Si existe archivo .restore, proceder con la restauración
     if verify_restore_path.exists() {
-        println!(
-            "🔄 Restauración pendiente detectada: {}",
-            verify_restore_path.display()
-        );
+        println!("🔄 Restauración pendiente detectada: {}", verify_restore_path.display());
 
         // 1. Crear backup de seguridad de la actual (rollback)
         let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");

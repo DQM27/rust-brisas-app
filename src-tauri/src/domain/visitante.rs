@@ -15,9 +15,7 @@ pub fn validar_cedula(cedula: &str) -> Result<(), VisitanteError> {
     let limpio = cedula.trim();
 
     if limpio.is_empty() {
-        return Err(VisitanteError::Validation(
-            "La cédula no puede estar vacía".to_string(),
-        ));
+        return Err(VisitanteError::Validation("La cédula no puede estar vacía".to_string()));
     }
 
     if limpio.len() > 20 {
@@ -33,9 +31,7 @@ pub fn validar_nombre(nombre: &str) -> Result<(), VisitanteError> {
     let limpio = nombre.trim();
 
     if limpio.is_empty() {
-        return Err(VisitanteError::Validation(
-            "El nombre no puede estar vacío".to_string(),
-        ));
+        return Err(VisitanteError::Validation("El nombre no puede estar vacío".to_string()));
     }
 
     if limpio.len() > 50 {
@@ -51,9 +47,7 @@ pub fn validar_apellido(apellido: &str) -> Result<(), VisitanteError> {
     let limpio = apellido.trim();
 
     if limpio.is_empty() {
-        return Err(VisitanteError::Validation(
-            "El apellido no puede estar vacío".to_string(),
-        ));
+        return Err(VisitanteError::Validation("El apellido no puede estar vacío".to_string()));
     }
 
     if limpio.len() > 50 {

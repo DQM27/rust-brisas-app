@@ -126,3 +126,21 @@ lto = true        # Link Time Optimization
 codegen-units = 1 # Código más compacto (compilación más lenta)
 panic = "abort"   # Ahorra espacio quitando unwind symbols
 strip = true      # Quita símbolos de debug
+
+# ==========================================
+# CLIPPY LINTS (Code Quality)
+# ==========================================
+[lints.clippy]
+# Groups with lower priority so individual overrides work
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+# Individual overrides (higher priority)
+module_name_repetitions = "allow"
+too_many_arguments = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[lints.rust]
+unsafe_code = "warn"

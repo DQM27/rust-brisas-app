@@ -97,10 +97,7 @@ fn get_default_profiles() -> Vec<ExportProfile> {
             title: None,
             show_preview: None,
             pdf_design: None,
-            csv_options: Some(CsvOptions {
-                delimiter: "comma".to_string(),
-                include_bom: true,
-            }),
+            csv_options: Some(CsvOptions { delimiter: "comma".to_string(), include_bom: true }),
         },
     ]
 }

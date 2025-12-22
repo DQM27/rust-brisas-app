@@ -23,9 +23,7 @@ pub async fn registrar_ingreso(
         .map_err(IngresoProveedorError::Database)?
         .is_none()
     {
-        return Err(IngresoProveedorError::Validation(
-            "La empresa no existe".to_string(),
-        ));
+        return Err(IngresoProveedorError::Validation("La empresa no existe".to_string()));
     }
 
     // 2. Validar disponibilidad de gafete (si aplica)
@@ -59,11 +57,7 @@ pub async fn registrar_ingreso(
                 apellido: input.apellido.clone(),
                 segundo_apellido: None,
                 empresa_id: input.empresa_id.clone(),
-                tiene_vehiculo: if input.placa_vehiculo.is_some() {
-                    Some(true)
-                } else {
-                    None
-                },
+                tiene_vehiculo: if input.placa_vehiculo.is_some() { Some(true) } else { None },
                 tipo_vehiculo: input.tipo_vehiculo.clone(),
                 placa: input.placa_vehiculo.clone(),
                 marca: input.marca_vehiculo.clone(),
@@ -113,10 +107,7 @@ pub async fn registrar_salida(
     )?;
 
     // Start TX
-    let mut tx = pool
-        .begin()
-        .await
-        .map_err(IngresoProveedorError::Database)?;
+    let mut tx = pool.begin().await.map_err(IngresoProveedorError::Database)?;
 
     // 2. Registrar salida en DB
     sqlx::query(
@@ -173,17 +164,13 @@ pub async fn registrar_salida(
 pub async fn get_activos(
     pool: &SqlitePool,
 ) -> Result<Vec<IngresoProveedor>, IngresoProveedorError> {
-    ingreso_proveedor_queries::find_actives(pool)
-        .await
-        .map_err(IngresoProveedorError::Database)
+    ingreso_proveedor_queries::find_actives(pool).await.map_err(IngresoProveedorError::Database)
 }
 
 pub async fn get_historial(
     pool: &SqlitePool,
 ) -> Result<Vec<IngresoProveedor>, IngresoProveedorError> {
-    ingreso_proveedor_queries::find_history(pool)
-        .await
-        .map_err(IngresoProveedorError::Database)
+    ingreso_proveedor_queries::find_history(pool).await.map_err(IngresoProveedorError::Database)
 }
 
 pub async fn search_proveedores(
@@ -253,8 +240,8 @@ pub async fn validar_ingreso(
         crate::services::alerta_service::find_pendientes_by_cedula(pool, &proveedor.cedula)
             .await
             .map_err(|e| {
-                IngresoProveedorError::Validation(format!("Error obteniendo alertas: {}", e))
-            })?;
+            IngresoProveedorError::Validation(format!("Error obteniendo alertas: {}", e))
+        })?;
     // Wait, alerta_service returns Result<Vec<AlertaGafete>, sqlx::Error>? No, AlertaError?
     // Previous refactor: check alerta_service.rs.
     // Usually it mapped to String. But I should check.

@@ -134,17 +134,10 @@ pub fn evaluar_elegibilidad_entrada(
 
     // 5. REGLA NO BLOQUEANTE: Alertas de Gafete
     if cantidad_alertas_gafete > 0 {
-        alertas.push(format!(
-            "Tiene {} alerta(s) de gafete pendiente",
-            cantidad_alertas_gafete
-        ));
+        alertas.push(format!("Tiene {} alerta(s) de gafete pendiente", cantidad_alertas_gafete));
     }
 
-    ResultadoValidacionEntrada {
-        puede_ingresar,
-        motivo_rechazo,
-        alertas,
-    }
+    ResultadoValidacionEntrada { puede_ingresar, motivo_rechazo, alertas }
 }
 
 pub fn verificar_praind_vigente(
@@ -226,22 +219,16 @@ pub fn construir_alerta_tiempo(minutos_transcurridos: i64) -> AlertaTiempo {
     let minutos_restantes = calcular_minutos_restantes(minutos_transcurridos);
 
     let mensaje = match estado {
-        EstadoPermanencia::TiempoExcedido => Some(format!(
-            "TIEMPO EXCEDIDO por {} min",
-            minutos_restantes.abs()
-        )),
+        EstadoPermanencia::TiempoExcedido => {
+            Some(format!("TIEMPO EXCEDIDO por {} min", minutos_restantes.abs()))
+        }
         EstadoPermanencia::AlertaTemprana => {
             Some(format!("Alerta: Quedan {} min", minutos_restantes))
         }
         EstadoPermanencia::Normal => None,
     };
 
-    AlertaTiempo {
-        estado,
-        minutos_transcurridos,
-        minutos_restantes,
-        mensaje,
-    }
+    AlertaTiempo { estado, minutos_transcurridos, minutos_restantes, mensaje }
 }
 
 // ==========================================
@@ -337,21 +324,14 @@ pub fn evaluar_devolucion_gafete(
             // Esto debería haber fallado antes en `validar_gafete_coincide`, pero por seguridad:
             return Ok(DecisionReporteGafete {
                 debe_generar_reporte: true,
-                motivo: Some(format!(
-                    "Devolvió gafete incorrecto: {} vs {}",
-                    devuelto, asignado
-                )),
+                motivo: Some(format!("Devolvió gafete incorrecto: {} vs {}", devuelto, asignado)),
                 gafete_numero: Some(asignado.to_string()),
             });
         }
     }
 
     // Caso 3: Todo OK
-    Ok(DecisionReporteGafete {
-        debe_generar_reporte: false,
-        motivo: None,
-        gafete_numero: None,
-    })
+    Ok(DecisionReporteGafete { debe_generar_reporte: false, motivo: None, gafete_numero: None })
 }
 #[cfg(test)]
 mod tests {
@@ -396,14 +376,8 @@ mod tests {
     #[test]
     fn test_evaluar_estado_permanencia() {
         assert_eq!(evaluar_estado_permanencia(100), EstadoPermanencia::Normal);
-        assert_eq!(
-            evaluar_estado_permanencia(820),
-            EstadoPermanencia::AlertaTemprana
-        );
-        assert_eq!(
-            evaluar_estado_permanencia(850),
-            EstadoPermanencia::TiempoExcedido
-        );
+        assert_eq!(evaluar_estado_permanencia(820), EstadoPermanencia::AlertaTemprana);
+        assert_eq!(evaluar_estado_permanencia(850), EstadoPermanencia::TiempoExcedido);
     }
 
     #[test]

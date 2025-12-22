@@ -88,9 +88,7 @@ fn generate_showybox_content(
     _design: &PdfDesign,
 ) -> ExportResult<String> {
     if headers.is_empty() {
-        return Err(ExportError::TemplateGenerationError(
-            "Headers vacíos".to_string(),
-        ));
+        return Err(ExportError::TemplateGenerationError("Headers vacíos".to_string()));
     }
 
     let escaped_title = escape_typst_string(&config.title);
@@ -226,10 +224,7 @@ fn generate_table(
     // Rows con word-break ON
     for row in rows {
         for header in headers {
-            let value = row
-                .get(header)
-                .map(|v| v.to_string())
-                .unwrap_or_else(|| "-".to_string());
+            let value = row.get(header).map(|v| v.to_string()).unwrap_or_else(|| "-".to_string());
             let lower_header = header.to_lowercase();
 
             // Para identificadores largos sin espacios, forzamos quiebre
@@ -294,11 +289,7 @@ fn shorten_header(header: &str) -> String {
 /// Inserta espacios de ancho cero para forzar quiebre en cualquier caracter
 fn force_break_string(input: &str) -> String {
     // Insertar \u{200B} (Zero Width Space) después de cada caracter
-    input
-        .chars()
-        .map(|c| c.to_string())
-        .collect::<Vec<String>>()
-        .join("\u{200B}")
+    input.chars().map(|c| c.to_string()).collect::<Vec<String>>().join("\u{200B}")
 }
 
 // ==========================================
@@ -327,9 +318,7 @@ fn escape_typst_string(input: &str) -> String {
 /// Valida que el markup generado sea válido
 pub fn validate_markup(markup: &str) -> ExportResult<()> {
     if markup.is_empty() {
-        return Err(ExportError::TemplateGenerationError(
-            "Markup vacío".to_string(),
-        ));
+        return Err(ExportError::TemplateGenerationError("Markup vacío".to_string()));
     }
 
     // Verificar balance de brackets

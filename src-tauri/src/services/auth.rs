@@ -56,9 +56,7 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, String> {
     )
     .map_err(|e| format!("Error al configurar Argon2: {}", e))?;
 
-    Ok(argon2
-        .verify_password(password.as_bytes(), &parsed_hash)
-        .is_ok())
+    Ok(argon2.verify_password(password.as_bytes(), &parsed_hash).is_ok())
 }
 
 #[cfg(test)]

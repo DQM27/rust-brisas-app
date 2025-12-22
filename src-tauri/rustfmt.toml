@@ -1,0 +1,23 @@
+# ==========================================
+# Rustfmt Configuration for brisas-app
+# ==========================================
+# Run with: cargo fmt
+# Check with: cargo fmt -- --check
+
+# Maximum width of each line
+max_width = 100
+
+# Use larger heuristics for better formatting
+use_small_heuristics = "Max"
+
+# Reorder imports alphabetically
+reorder_imports = true
+
+# Reorder modules alphabetically  
+reorder_modules = true
+
+# Use Unix line endings
+newline_style = "Unix"
+
+# Edition (match Cargo.toml)
+edition = "2021"

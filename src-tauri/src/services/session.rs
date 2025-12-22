@@ -34,9 +34,7 @@ pub struct SessionState {
 
 impl SessionState {
     pub fn new() -> Self {
-        Self {
-            current_user: RwLock::new(None),
-        }
+        Self { current_user: RwLock::new(None) }
     }
 
     /// Establece el usuario de la sesión actual

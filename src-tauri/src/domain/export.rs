@@ -52,11 +52,7 @@ pub fn validar_rows(rows: &[HashMap<String, serde_json::Value>]) -> Result<(), S
     // Límite razonable para evitar crashes de memoria
     const MAX_ROWS: usize = 100_000;
     if rows.len() > MAX_ROWS {
-        return Err(format!(
-            "Demasiadas filas. Máximo: {}, recibido: {}",
-            MAX_ROWS,
-            rows.len()
-        ));
+        return Err(format!("Demasiadas filas. Máximo: {}, recibido: {}", MAX_ROWS, rows.len()));
     }
 
     Ok(())

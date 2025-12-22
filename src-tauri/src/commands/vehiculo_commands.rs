@@ -15,9 +15,7 @@ pub async fn create_vehiculo(
     pool: State<'_, SqlitePool>,
     input: CreateVehiculoInput,
 ) -> Result<VehiculoResponse, String> {
-    vehiculo_service::create_vehiculo(&pool, input)
-        .await
-        .map_err(|e| e.to_string())
+    vehiculo_service::create_vehiculo(&pool, input).await.map_err(|e| e.to_string())
 }
 
 /// Obtiene un vehículo por ID
@@ -26,9 +24,7 @@ pub async fn get_vehiculo_by_id(
     pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<VehiculoResponse, String> {
-    vehiculo_service::get_vehiculo_by_id(&pool, &id)
-        .await
-        .map_err(|e| e.to_string())
+    vehiculo_service::get_vehiculo_by_id(&pool, &id).await.map_err(|e| e.to_string())
 }
 
 /// Obtiene un vehículo por placa
@@ -37,9 +33,7 @@ pub async fn get_vehiculo_by_placa(
     pool: State<'_, SqlitePool>,
     placa: String,
 ) -> Result<VehiculoResponse, String> {
-    vehiculo_service::get_vehiculo_by_placa(&pool, placa)
-        .await
-        .map_err(|e| e.to_string())
+    vehiculo_service::get_vehiculo_by_placa(&pool, placa).await.map_err(|e| e.to_string())
 }
 
 /// Obtiene todos los vehículos del sistema
@@ -47,9 +41,7 @@ pub async fn get_vehiculo_by_placa(
 pub async fn get_all_vehiculos(
     pool: State<'_, SqlitePool>,
 ) -> Result<VehiculoListResponse, String> {
-    vehiculo_service::get_all_vehiculos(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    vehiculo_service::get_all_vehiculos(&pool).await.map_err(|e| e.to_string())
 }
 
 /// Obtiene todos los vehículos activos
@@ -57,9 +49,7 @@ pub async fn get_all_vehiculos(
 pub async fn get_vehiculos_activos(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<VehiculoResponse>, String> {
-    vehiculo_service::get_vehiculos_activos(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    vehiculo_service::get_vehiculos_activos(&pool).await.map_err(|e| e.to_string())
 }
 
 /// Obtiene todos los vehículos de un contratista específico
@@ -80,15 +70,11 @@ pub async fn update_vehiculo(
     id: String,
     input: UpdateVehiculoInput,
 ) -> Result<VehiculoResponse, String> {
-    vehiculo_service::update_vehiculo(&pool, id, input)
-        .await
-        .map_err(|e| e.to_string())
+    vehiculo_service::update_vehiculo(&pool, id, input).await.map_err(|e| e.to_string())
 }
 
 /// Elimina un vehículo (eliminación física)
 #[tauri::command]
 pub async fn delete_vehiculo(pool: State<'_, SqlitePool>, id: String) -> Result<(), String> {
-    vehiculo_service::delete_vehiculo(&pool, id)
-        .await
-        .map_err(|e| e.to_string())
+    vehiculo_service::delete_vehiculo(&pool, id).await.map_err(|e| e.to_string())
 }

@@ -206,10 +206,7 @@ pub async fn delete_role(pool: &SqlitePool, id: &str) -> Result<(), RoleError> {
         return Err(RoleError::CannotDeleteSystemRole);
     }
 
-    sqlx::query("DELETE FROM roles WHERE id = ?")
-        .bind(id)
-        .execute(pool)
-        .await?;
+    sqlx::query("DELETE FROM roles WHERE id = ?").bind(id).execute(pool).await?;
 
     Ok(())
 }

@@ -181,31 +181,21 @@ mod tests {
     async fn test_role_has_permission() {
         let pool = setup_test_env().await;
 
-        assert!(
-            role_has_permission(&pool, "admin", Module::Contratistas, Action::View)
-                .await
-                .unwrap()
-        );
-        assert!(
-            role_has_permission(&pool, "admin", Module::Contratistas, Action::Create)
-                .await
-                .unwrap()
-        );
-        assert!(
-            role_has_permission(&pool, "user", Module::Contratistas, Action::View)
-                .await
-                .unwrap()
-        );
-        assert!(
-            !role_has_permission(&pool, "user", Module::Contratistas, Action::Create)
-                .await
-                .unwrap()
-        );
-        assert!(
-            !role_has_permission(&pool, "guest", Module::Contratistas, Action::View)
-                .await
-                .unwrap()
-        );
+        assert!(role_has_permission(&pool, "admin", Module::Contratistas, Action::View)
+            .await
+            .unwrap());
+        assert!(role_has_permission(&pool, "admin", Module::Contratistas, Action::Create)
+            .await
+            .unwrap());
+        assert!(role_has_permission(&pool, "user", Module::Contratistas, Action::View)
+            .await
+            .unwrap());
+        assert!(!role_has_permission(&pool, "user", Module::Contratistas, Action::Create)
+            .await
+            .unwrap());
+        assert!(!role_has_permission(&pool, "guest", Module::Contratistas, Action::View)
+            .await
+            .unwrap());
     }
 
     #[tokio::test]

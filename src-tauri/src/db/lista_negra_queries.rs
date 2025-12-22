@@ -74,10 +74,7 @@ pub async fn check_if_blocked(
     .fetch_one(pool)
     .await?;
 
-    Ok(BlockStatus {
-        blocked: row.count > 0,
-        motivo: row.motivo_bloqueo,
-    })
+    Ok(BlockStatus { blocked: row.count > 0, motivo: row.motivo_bloqueo })
 }
 
 /// Verifica si una cédula está bloqueada
@@ -94,10 +91,7 @@ pub async fn check_if_blocked_by_cedula(
     .fetch_one(pool)
     .await?;
 
-    Ok(BlockStatus {
-        blocked: row.count > 0,
-        motivo: row.motivo_bloqueo,
-    })
+    Ok(BlockStatus { blocked: row.count > 0, motivo: row.motivo_bloqueo })
 }
 
 /// Cuenta bloqueos activos por cédula
@@ -123,12 +117,9 @@ pub async fn find_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<ListaNegra>
 
 /// Busca todos los registros
 pub async fn find_all(pool: &SqlitePool) -> sqlx::Result<Vec<ListaNegra>> {
-    let rows = sqlx::query_as!(
-        ListaNegraRow,
-        "SELECT * FROM lista_negra ORDER BY created_at DESC"
-    )
-    .fetch_all(pool)
-    .await?;
+    let rows = sqlx::query_as!(ListaNegraRow, "SELECT * FROM lista_negra ORDER BY created_at DESC")
+        .fetch_all(pool)
+        .await?;
 
     Ok(rows.into_iter().map(ListaNegra::from).collect())
 }
@@ -295,9 +286,7 @@ pub async fn update(
 
 /// Elimina un registro
 pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
-    sqlx::query!("DELETE FROM lista_negra WHERE id = ?", id)
-        .execute(pool)
-        .await?;
+    sqlx::query!("DELETE FROM lista_negra WHERE id = ?", id).execute(pool).await?;
 
     Ok(())
 }

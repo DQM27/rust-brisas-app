@@ -31,32 +31,21 @@ pub async fn create_vehiculo(
     let placa_normalizada = domain::normalizar_placa(&input.placa);
     let tipo_vehiculo = domain::validar_tipo_vehiculo(&input.tipo_vehiculo)?;
 
-    let marca_normalizada = input
-        .marca
-        .as_ref()
-        .map(|m| domain::normalizar_texto(m))
-        .filter(|m| !m.is_empty());
+    let marca_normalizada =
+        input.marca.as_ref().map(|m| domain::normalizar_texto(m)).filter(|m| !m.is_empty());
 
-    let modelo_normalizado = input
-        .modelo
-        .as_ref()
-        .map(|m| domain::normalizar_texto(m))
-        .filter(|m| !m.is_empty());
+    let modelo_normalizado =
+        input.modelo.as_ref().map(|m| domain::normalizar_texto(m)).filter(|m| !m.is_empty());
 
-    let color_normalizado = input
-        .color
-        .as_ref()
-        .map(|c| domain::normalizar_texto(c))
-        .filter(|c| !c.is_empty());
+    let color_normalizado =
+        input.color.as_ref().map(|c| domain::normalizar_texto(c)).filter(|c| !c.is_empty());
 
     // 3. Verificar que el contratista exista
     let exists = db::contratista_exists(pool, &input.contratista_id).await?;
     if !exists {
         // Podríamos usar ContratistaError::NotFound pero la firma retorna VehiculoError.
         // Convertimos a Validation por ahora.
-        return Err(VehiculoError::Validation(
-            "El contratista especificado no existe".to_string(),
-        ));
+        return Err(VehiculoError::Validation("El contratista especificado no existe".to_string()));
     }
 
     // 4. Verificar que la placa no exista
@@ -98,9 +87,7 @@ pub async fn get_vehiculo_by_id(
     id: &str,
 ) -> Result<VehiculoResponse, VehiculoError> {
     // Obtener vehículo de DB
-    let vehiculo = db::find_by_id(pool, id)
-        .await?
-        .ok_or(VehiculoError::NotFound)?;
+    let vehiculo = db::find_by_id(pool, id).await?.ok_or(VehiculoError::NotFound)?;
 
     // Obtener datos del contratista usando queries ya existentes
     // Nota: find_by_id_with_empresa retorna Option
@@ -135,9 +122,8 @@ pub async fn get_vehiculo_by_placa(
     let placa_normalizada = domain::normalizar_placa(&placa);
 
     // Obtener vehículo de DB
-    let vehiculo = db::find_by_placa(pool, &placa_normalizada)
-        .await?
-        .ok_or(VehiculoError::NotFound)?;
+    let vehiculo =
+        db::find_by_placa(pool, &placa_normalizada).await?.ok_or(VehiculoError::NotFound)?;
 
     let contratista_info = if let Some(cid) = &vehiculo.contratista_id {
         contratista_queries::find_by_id_with_empresa(pool, cid)
@@ -197,24 +183,17 @@ pub async fn get_all_vehiculos(pool: &SqlitePool) -> Result<VehiculoListResponse
     let total = vehiculo_responses.len();
     let activos = vehiculo_responses.iter().filter(|v| v.is_active).count();
     let inactivos = total - activos;
-    let motocicletas = vehiculo_responses
-        .iter()
-        .filter(|v| v.tipo_vehiculo == TipoVehiculo::Motocicleta)
-        .count();
-    let automóviles = vehiculo_responses
-        .iter()
-        .filter(|v| v.tipo_vehiculo == TipoVehiculo::Automovil)
-        .count();
+    let motocicletas =
+        vehiculo_responses.iter().filter(|v| v.tipo_vehiculo == TipoVehiculo::Motocicleta).count();
+    let automóviles =
+        vehiculo_responses.iter().filter(|v| v.tipo_vehiculo == TipoVehiculo::Automovil).count();
 
     Ok(VehiculoListResponse {
         vehiculos: vehiculo_responses,
         total,
         activos,
         inactivos,
-        por_tipo: TipoVehiculoStats {
-            motocicletas,
-            automoviles: automóviles,
-        },
+        por_tipo: TipoVehiculoStats { motocicletas, automoviles: automóviles },
     })
 }
 
@@ -291,9 +270,7 @@ pub async fn update_vehiculo(
     domain::validar_update_input(&input)?;
 
     // 2. Verificar que el vehículo existe
-    let _ = db::find_by_id(pool, &id)
-        .await?
-        .ok_or(VehiculoError::NotFound)?;
+    let _ = db::find_by_id(pool, &id).await?.ok_or(VehiculoError::NotFound)?;
 
     // 3. Normalizar y convertir tipo si viene
     let tipo_str = if let Some(ref t) = input.tipo_vehiculo {
@@ -303,23 +280,14 @@ pub async fn update_vehiculo(
     };
 
     // 4. Normalizar textos si vienen
-    let marca_normalizada = input
-        .marca
-        .as_ref()
-        .map(|m| domain::normalizar_texto(m))
-        .filter(|m| !m.is_empty());
+    let marca_normalizada =
+        input.marca.as_ref().map(|m| domain::normalizar_texto(m)).filter(|m| !m.is_empty());
 
-    let modelo_normalizado = input
-        .modelo
-        .as_ref()
-        .map(|m| domain::normalizar_texto(m))
-        .filter(|m| !m.is_empty());
+    let modelo_normalizado =
+        input.modelo.as_ref().map(|m| domain::normalizar_texto(m)).filter(|m| !m.is_empty());
 
-    let color_normalizado = input
-        .color
-        .as_ref()
-        .map(|c| domain::normalizar_texto(c))
-        .filter(|c| !c.is_empty());
+    let color_normalizado =
+        input.color.as_ref().map(|c| domain::normalizar_texto(c)).filter(|c| !c.is_empty());
 
     // 5. Timestamp de actualización
     let now = Utc::now().to_rfc3339();
@@ -352,9 +320,7 @@ pub async fn update_vehiculo(
 
 pub async fn delete_vehiculo(pool: &SqlitePool, id: String) -> Result<(), VehiculoError> {
     // Verificar que existe antes de eliminar
-    let _ = db::find_by_id(pool, &id)
-        .await?
-        .ok_or(VehiculoError::NotFound)?;
+    let _ = db::find_by_id(pool, &id).await?.ok_or(VehiculoError::NotFound)?;
 
     // Eliminar
     db::delete(pool, &id).await?;

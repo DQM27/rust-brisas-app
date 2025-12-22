@@ -41,39 +41,24 @@ pub async fn export_data(request: ExportRequest) -> ExportResult<ExportResponse>
 /// Convierte ExportRequest en ExportData normalizado
 fn normalizar_export_data(request: &ExportRequest) -> ExportResult<ExportData> {
     // 1. Parsear formato
-    let format = request
-        .format
-        .parse()
-        .map_err(|e| ExportError::InvalidFormat(e))?;
+    let format = request.format.parse().map_err(|e| ExportError::InvalidFormat(e))?;
 
     // 2. Clonar headers
     let headers = request.headers.clone();
 
     // 3. Normalizar todas las rows (JSON → ExportValue)
-    let rows: Vec<std::collections::HashMap<String, crate::models::export::ExportValue>> = request
-        .rows
-        .iter()
-        .map(|row| domain::normalizar_row(row, &headers))
-        .collect();
+    let rows: Vec<std::collections::HashMap<String, crate::models::export::ExportValue>> =
+        request.rows.iter().map(|row| domain::normalizar_row(row, &headers)).collect();
 
     // 4. Construir config según formato
-    let pdf_config = if format == ExportFormat::Pdf {
-        Some(construir_pdf_config(request)?)
-    } else {
-        None
-    };
+    let pdf_config =
+        if format == ExportFormat::Pdf { Some(construir_pdf_config(request)?) } else { None };
 
-    let excel_config = if format == ExportFormat::Excel {
-        Some(construir_excel_config(request))
-    } else {
-        None
-    };
+    let excel_config =
+        if format == ExportFormat::Excel { Some(construir_excel_config(request)) } else { None };
 
-    let csv_config = if format == ExportFormat::Csv {
-        Some(construir_csv_config(request)?)
-    } else {
-        None
-    };
+    let csv_config =
+        if format == ExportFormat::Csv { Some(construir_csv_config(request)?) } else { None };
 
     Ok(ExportData {
         format,
@@ -110,10 +95,7 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
     let font_size = request.font_size.unwrap_or(10).clamp(8, 20);
 
     // Font family
-    let font_family = request
-        .font_family
-        .clone()
-        .unwrap_or_else(|| "Inter".to_string());
+    let font_family = request.font_family.clone().unwrap_or_else(|| "Inter".to_string());
 
     // Márgenes (con defaults razonables)
     let margin_top = request.margin_top.unwrap_or(2.0);
@@ -122,10 +104,7 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
     let margin_right = request.margin_right.unwrap_or(1.5);
 
     // Color del banner
-    let banner_color = request
-        .banner_color
-        .clone()
-        .unwrap_or_else(|| "#059669".to_string());
+    let banner_color = request.banner_color.clone().unwrap_or_else(|| "#059669".to_string());
 
     Ok(PdfConfig {
         title,
@@ -146,10 +125,7 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
 
 /// Construye configuración para Excel
 fn construir_excel_config(request: &ExportRequest) -> ExcelConfig {
-    let filename = request
-        .title
-        .clone()
-        .unwrap_or_else(|| "export".to_string());
+    let filename = request.title.clone().unwrap_or_else(|| "export".to_string());
 
     ExcelConfig {
         filename: format!("{}.xlsx", sanitizar_filename(&filename)),
@@ -160,10 +136,7 @@ fn construir_excel_config(request: &ExportRequest) -> ExcelConfig {
 /// Construye configuración para CSV
 fn construir_csv_config(request: &ExportRequest) -> ExportResult<CsvConfig> {
     // Filename
-    let filename = request
-        .title
-        .clone()
-        .unwrap_or_else(|| "export".to_string());
+    let filename = request.title.clone().unwrap_or_else(|| "export".to_string());
 
     // Delimitador
     let delimiter = if let Some(ref d) = request.delimiter {
@@ -208,27 +181,21 @@ async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse
     };
 
     // Obtener diseño del perfil o usar uno default al vuelo
-    let design = profile
-        .and_then(|p| p.pdf_design)
-        .unwrap_or_else(|| PdfDesign {
-            page_size: "us-letter".to_string(),
-            orientation: "landscape".to_string(),
-            margin_x: 1.5,
-            margin_x_unit: "cm".to_string(),
-            margin_y: 2.0,
-            margin_y_unit: "cm".to_string(),
-            colors: PdfColors {
-                header_fill: "#e8e8e8".to_string(),
-                header_text: "#000000".to_string(),
-                row_text: "#000000".to_string(),
-                border: "#000000".to_string(),
-            },
-            fonts: PdfFonts {
-                family: "Inter".to_string(),
-                size: 10,
-                header_size: 11,
-            },
-        });
+    let design = profile.and_then(|p| p.pdf_design).unwrap_or_else(|| PdfDesign {
+        page_size: "us-letter".to_string(),
+        orientation: "landscape".to_string(),
+        margin_x: 1.5,
+        margin_x_unit: "cm".to_string(),
+        margin_y: 2.0,
+        margin_y_unit: "cm".to_string(),
+        colors: PdfColors {
+            header_fill: "#e8e8e8".to_string(),
+            header_text: "#000000".to_string(),
+            row_text: "#000000".to_string(),
+            border: "#000000".to_string(),
+        },
+        fonts: PdfFonts { family: "Inter".to_string(), size: 10, header_size: 11 },
+    });
 
     // Generar PDF
     let pdf_bytes = pdf::generate_pdf(&data.headers, &data.rows, &config, &design)?;
@@ -243,11 +210,7 @@ async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse
     };
 
     // Si hay preview, devolver bytes aunque se haya guardado
-    let bytes = if config.show_preview || file_path.is_none() {
-        Some(pdf_bytes)
-    } else {
-        None
-    };
+    let bytes = if config.show_preview || file_path.is_none() { Some(pdf_bytes) } else { None };
 
     Ok(ExportResponse {
         success: true,
@@ -260,9 +223,7 @@ async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse
 
 #[cfg(not(feature = "export"))]
 async fn export_to_pdf_internal(_data: ExportData) -> ExportResult<ExportResponse> {
-    Err(ExportError::Unknown(
-        "Función de exportación PDF no disponible en esta build".to_string(),
-    ))
+    Err(ExportError::Unknown("Función de exportación PDF no disponible en esta build".to_string()))
 }
 
 /// Exporta a Excel usando rust_xlsxwriter

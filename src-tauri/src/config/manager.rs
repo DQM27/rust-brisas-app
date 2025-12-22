@@ -68,11 +68,8 @@ fn create_default_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
 
     // Configurar ruta por defecto de la DB
     if let Some(data_dir) = dirs::data_local_dir() {
-        config.database.default_path = data_dir
-            .join("Brisas")
-            .join("brisas.db")
-            .to_string_lossy()
-            .to_string();
+        config.database.default_path =
+            data_dir.join("Brisas").join("brisas.db").to_string_lossy().to_string();
     } else {
         config.database.default_path = "./data/brisas.db".to_string();
     }
@@ -108,10 +105,7 @@ fn generate_hardware_id() -> Result<String, Box<dyn std::error::Error>> {
     }
 
     // Fallback: UUID aleatorio
-    Ok(format!(
-        "HW-{}",
-        uuid::Uuid::new_v4().to_string().replace("-", "")
-    ))
+    Ok(format!("HW-{}", uuid::Uuid::new_v4().to_string().replace("-", "")))
 }
 
 /// Obtiene la ruta de la base de datos según la configuración

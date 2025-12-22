@@ -315,14 +315,10 @@ pub async fn update(
     .await?;
 
     // Fetch the updated record
-    find_by_id(pool, id)
-        .await?
-        .ok_or_else(|| sqlx::Error::RowNotFound)
+    find_by_id(pool, id).await?.ok_or_else(|| sqlx::Error::RowNotFound)
 }
 
 pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
-    sqlx::query!("DELETE FROM proveedores WHERE id = ?", id)
-        .execute(pool)
-        .await?;
+    sqlx::query!("DELETE FROM proveedores WHERE id = ?", id).execute(pool).await?;
     Ok(())
 }

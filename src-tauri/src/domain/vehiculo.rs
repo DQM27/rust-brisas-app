@@ -15,34 +15,25 @@ pub fn validar_contratista_id(contratista_id: &str) -> Result<(), VehiculoError>
     let limpio = contratista_id.trim();
 
     if limpio.is_empty() {
-        return Err(VehiculoError::Validation(
-            "Debe especificar un contratista".to_string(),
-        ));
+        return Err(VehiculoError::Validation("Debe especificar un contratista".to_string()));
     }
 
     Ok(())
 }
 
 pub fn validar_tipo_vehiculo(tipo_str: &str) -> Result<TipoVehiculo, VehiculoError> {
-    tipo_str
-        .parse()
-        .map_err(|_| VehiculoError::InvalidType(tipo_str.to_string()))
+    tipo_str.parse().map_err(|_| VehiculoError::InvalidType(tipo_str.to_string()))
 }
 
 pub fn validar_placa(placa: &str) -> Result<(), VehiculoError> {
     let limpia = placa.trim().to_uppercase();
 
     if limpia.is_empty() {
-        return Err(VehiculoError::Validation(
-            "La placa no puede estar vacía".to_string(),
-        ));
+        return Err(VehiculoError::Validation("La placa no puede estar vacía".to_string()));
     }
 
     // Validación flexible: solo alfanuméricos, guiones y espacios
-    if !limpia
-        .chars()
-        .all(|c| c.is_alphanumeric() || c == '-' || c == ' ')
-    {
+    if !limpia.chars().all(|c| c.is_alphanumeric() || c == '-' || c == ' ') {
         return Err(VehiculoError::Validation(
             "La placa solo puede contener letras, números, guiones y espacios".to_string(),
         ));
@@ -61,9 +52,7 @@ pub fn validar_marca(marca: &str) -> Result<(), VehiculoError> {
     let limpia = marca.trim();
 
     if limpia.is_empty() {
-        return Err(VehiculoError::Validation(
-            "La marca no puede estar vacía".to_string(),
-        ));
+        return Err(VehiculoError::Validation("La marca no puede estar vacía".to_string()));
     }
 
     if limpia.len() > 50 {

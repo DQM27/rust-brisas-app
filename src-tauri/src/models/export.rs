@@ -167,10 +167,7 @@ pub struct ExcelConfig {
 
 impl Default for ExcelConfig {
     fn default() -> Self {
-        Self {
-            filename: "export.xlsx".to_string(),
-            headers: Vec::new(),
-        }
+        Self { filename: "export.xlsx".to_string(), headers: Vec::new() }
     }
 }
 

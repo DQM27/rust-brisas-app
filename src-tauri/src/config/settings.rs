@@ -72,9 +72,7 @@ impl Default for AppConfig {
                 ],
                 default_path: "".to_string(), // Se calculará en runtime
             },
-            app: AppInfo {
-                version: env!("CARGO_PKG_VERSION").to_string(),
-            },
+            app: AppInfo { version: env!("CARGO_PKG_VERSION").to_string() },
             setup: SetupState::default(),
         }
     }

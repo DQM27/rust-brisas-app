@@ -476,10 +476,7 @@ mod tests {
         assert!(ing.praind_vigente_al_ingreso.unwrap_or(false));
 
         // 3. Find abierto
-        let abierto = find_ingreso_abierto_by_contratista(&pool, "c-1")
-            .await
-            .unwrap()
-            .unwrap();
+        let abierto = find_ingreso_abierto_by_contratista(&pool, "c-1").await.unwrap().unwrap();
         assert_eq!(abierto.id, id);
 
         // 4. Registrar salida
@@ -500,9 +497,7 @@ mod tests {
         assert_eq!(ing_fin.tiempo_permanencia_minutos, Some(120));
 
         // 5. Check abierto again (should be none)
-        let none = find_ingreso_abierto_by_contratista(&pool, "c-1")
-            .await
-            .unwrap();
+        let none = find_ingreso_abierto_by_contratista(&pool, "c-1").await.unwrap();
         assert!(none.is_none());
     }
 

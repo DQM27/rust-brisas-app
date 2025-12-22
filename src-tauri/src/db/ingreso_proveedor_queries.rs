@@ -66,15 +66,9 @@ impl From<IngresoProveedorRow> for IngresoProveedor {
             observaciones: row.observaciones,
             created_at: row.created_at.unwrap_or_default(),
             updated_at: row.updated_at.unwrap_or_default(),
-            usuario_ingreso_nombre: row
-                .usuario_ingreso_nombre
-                .unwrap_or_else(|| "N/A".to_string()),
-            usuario_salida_nombre: row
-                .usuario_salida_nombre
-                .unwrap_or_else(|| "N/A".to_string()),
-            empresa_nombre: row
-                .empresa_nombre
-                .unwrap_or_else(|| "Sin empresa".to_string()),
+            usuario_ingreso_nombre: row.usuario_ingreso_nombre.unwrap_or_else(|| "N/A".to_string()),
+            usuario_salida_nombre: row.usuario_salida_nombre.unwrap_or_else(|| "N/A".to_string()),
+            empresa_nombre: row.empresa_nombre.unwrap_or_else(|| "Sin empresa".to_string()),
         }
     }
 }

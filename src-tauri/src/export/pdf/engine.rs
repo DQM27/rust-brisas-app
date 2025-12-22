@@ -37,9 +37,7 @@ pub fn generate_pdf(
     let pdf_bytes = compile_typst_to_pdf(&markup)?;
 
     if pdf_bytes.is_empty() {
-        return Err(ExportError::TypstCompilationError(
-            "PDF resultante está vacío".to_string(),
-        ));
+        return Err(ExportError::TypstCompilationError("PDF resultante está vacío".to_string()));
     }
 
     Ok(pdf_bytes)
@@ -98,14 +96,7 @@ impl TypstWorld {
         // Buscar carpeta de packages relativa al ejecutable
         let packages_root = Self::find_packages_root();
 
-        Ok(Self {
-            library,
-            book,
-            fonts,
-            source,
-            main_id,
-            packages_root,
-        })
+        Ok(Self { library, book, fonts, source, main_id, packages_root })
     }
 
     /// Busca la carpeta de packages locales

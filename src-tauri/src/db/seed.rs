@@ -50,11 +50,7 @@ async fn seed_roles(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>>
 
     let roles = [
         (ROLE_ADMIN_ID, "Administrador", "Acceso completo al sistema"),
-        (
-            ROLE_SUPERVISOR_ID,
-            "Supervisor",
-            "Supervisión de operaciones",
-        ),
+        (ROLE_SUPERVISOR_ID, "Supervisor", "Supervisión de operaciones"),
         (ROLE_GUARDIA_ID, "Guardia", "Registro de ingresos"),
     ];
 

@@ -209,9 +209,8 @@ pub async fn count_by_email_excluding_id(
 
 /// Obtiene el nombre de un rol por ID
 pub async fn get_role_name(pool: &SqlitePool, role_id: &str) -> sqlx::Result<String> {
-    let result = sqlx::query!("SELECT name FROM roles WHERE id = ?", role_id)
-        .fetch_one(pool)
-        .await?;
+    let result =
+        sqlx::query!("SELECT name FROM roles WHERE id = ?", role_id).fetch_one(pool).await?;
 
     Ok(result.name)
 }
@@ -341,9 +340,7 @@ pub async fn update(
 /// Soft delete de usuario
 pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
     let now = chrono::Utc::now().to_rfc3339();
-    sqlx::query!("UPDATE users SET deleted_at = ? WHERE id = ?", now, id)
-        .execute(pool)
-        .await?;
+    sqlx::query!("UPDATE users SET deleted_at = ? WHERE id = ?", now, id).execute(pool).await?;
 
     Ok(())
 }
@@ -474,12 +471,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(count_by_email(&pool, "user1@test.com").await.unwrap(), 1);
-        assert_eq!(
-            count_by_email_excluding_id(&pool, "user1@test.com", "u-1")
-                .await
-                .unwrap(),
-            0
-        );
+        assert_eq!(count_by_email_excluding_id(&pool, "user1@test.com", "u-1").await.unwrap(), 0);
 
         let role_name = get_role_name(&pool, "admin").await.unwrap();
         assert_eq!(role_name, "Administrador");

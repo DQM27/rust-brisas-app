@@ -32,9 +32,7 @@ pub async fn get_lista_negra_by_id(
     pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<ListaNegraResponse, String> {
-    lista_negra_service::get_lista_negra_by_id(&pool, &id)
-        .await
-        .map_err(|e| e.to_string())
+    lista_negra_service::get_lista_negra_by_id(&pool, &id).await.map_err(|e| e.to_string())
 }
 
 /// Obtiene todos los registros de lista negra
@@ -42,9 +40,7 @@ pub async fn get_lista_negra_by_id(
 pub async fn get_all_lista_negra(
     pool: State<'_, SqlitePool>,
 ) -> Result<ListaNegraListResponse, String> {
-    lista_negra_service::get_all_lista_negra(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    lista_negra_service::get_all_lista_negra(&pool).await.map_err(|e| e.to_string())
 }
 
 /// Obtiene solo los registros activos de lista negra
@@ -52,9 +48,7 @@ pub async fn get_all_lista_negra(
 pub async fn get_lista_negra_activos(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<ListaNegraResponse>, String> {
-    lista_negra_service::get_lista_negra_activos(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    lista_negra_service::get_lista_negra_activos(&pool).await.map_err(|e| e.to_string())
 }
 
 /// Verifica si una cédula está bloqueada (CRÍTICO para validaciones)
@@ -63,9 +57,7 @@ pub async fn check_is_blocked(
     pool: State<'_, SqlitePool>,
     cedula: String,
 ) -> Result<BlockCheckResponse, String> {
-    lista_negra_service::check_is_blocked(&pool, cedula)
-        .await
-        .map_err(|e| e.to_string())
+    lista_negra_service::check_is_blocked(&pool, cedula).await.map_err(|e| e.to_string())
 }
 
 /// Obtiene información de bloqueo por cédula
@@ -74,9 +66,7 @@ pub async fn get_blocked_by_cedula(
     pool: State<'_, SqlitePool>,
     cedula: String,
 ) -> Result<Option<ListaNegraResponse>, String> {
-    lista_negra_service::get_blocked_by_cedula(&pool, cedula)
-        .await
-        .map_err(|e| e.to_string())
+    lista_negra_service::get_blocked_by_cedula(&pool, cedula).await.map_err(|e| e.to_string())
 }
 
 /// Desactiva un bloqueo (quita de lista negra)

@@ -173,12 +173,9 @@ pub async fn find_by_proveedor(
 
 /// Cuenta vehículos por placa
 pub async fn count_by_placa(pool: &SqlitePool, placa: &str) -> sqlx::Result<i64> {
-    let row = sqlx::query!(
-        "SELECT COUNT(*) as count FROM vehiculos WHERE placa = ?",
-        placa
-    )
-    .fetch_one(pool)
-    .await?;
+    let row = sqlx::query!("SELECT COUNT(*) as count FROM vehiculos WHERE placa = ?", placa)
+        .fetch_one(pool)
+        .await?;
 
     Ok(row.count as i64)
 }
@@ -202,12 +199,10 @@ pub async fn count_by_placa_excluding_id(
 
 /// Verifica si un contratista existe
 pub async fn contratista_exists(pool: &SqlitePool, contratista_id: &str) -> sqlx::Result<bool> {
-    let row = sqlx::query!(
-        "SELECT COUNT(*) as count FROM contratistas WHERE id = ?",
-        contratista_id
-    )
-    .fetch_one(pool)
-    .await?;
+    let row =
+        sqlx::query!("SELECT COUNT(*) as count FROM contratistas WHERE id = ?", contratista_id)
+            .fetch_one(pool)
+            .await?;
 
     Ok(row.count > 0)
 }
@@ -287,9 +282,7 @@ pub async fn update(
 
 /// Elimina un vehículo
 pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
-    sqlx::query!("DELETE FROM vehiculos WHERE id = ?", id)
-        .execute(pool)
-        .await?;
+    sqlx::query!("DELETE FROM vehiculos WHERE id = ?", id).execute(pool).await?;
 
     Ok(())
 }
@@ -310,10 +303,8 @@ mod tests {
 
         pool.execute("PRAGMA foreign_keys = OFF;").await.unwrap();
 
-        let schemas = vec![
-            "migrations/2_create_contratista.sql",
-            "migrations/4_create_vehiculo.sql",
-        ];
+        let schemas =
+            vec!["migrations/2_create_contratista.sql", "migrations/4_create_vehiculo.sql"];
 
         for path in schemas {
             let sql = std::fs::read_to_string(path).unwrap();
@@ -358,18 +349,9 @@ mod tests {
         assert_eq!(v2.id, "v-1");
 
         // 4. Update
-        update(
-            &pool,
-            "v-1",
-            None,
-            None,
-            None,
-            Some("Negro"),
-            Some(false),
-            "2025-01-02",
-        )
-        .await
-        .unwrap();
+        update(&pool, "v-1", None, None, None, Some("Negro"), Some(false), "2025-01-02")
+            .await
+            .unwrap();
         let v3 = find_by_id(&pool, "v-1").await.unwrap().unwrap();
         assert_eq!(v3.color, Some("Negro".to_string()));
         assert!(!v3.is_active);
@@ -407,40 +389,14 @@ mod tests {
     #[tokio::test]
     async fn test_find_activos() {
         let pool = setup_test_env().await;
-        insert(
-            &pool,
-            "v-1",
-            Some("c-1"),
-            None,
-            "automovil",
-            "A1",
-            None,
-            None,
-            None,
-            "now",
-            "now",
-        )
-        .await
-        .unwrap();
-        insert(
-            &pool,
-            "v-2",
-            Some("c-1"),
-            None,
-            "automovil",
-            "A2",
-            None,
-            None,
-            None,
-            "now",
-            "now",
-        )
-        .await
-        .unwrap();
-
-        update(&pool, "v-2", None, None, None, None, Some(false), "now")
+        insert(&pool, "v-1", Some("c-1"), None, "automovil", "A1", None, None, None, "now", "now")
             .await
             .unwrap();
+        insert(&pool, "v-2", Some("c-1"), None, "automovil", "A2", None, None, None, "now", "now")
+            .await
+            .unwrap();
+
+        update(&pool, "v-2", None, None, None, None, Some(false), "now").await.unwrap();
 
         let activos = find_activos(&pool).await.unwrap();
         assert_eq!(activos.len(), 1);

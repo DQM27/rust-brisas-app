@@ -29,9 +29,7 @@ pub async fn get_contratista_by_id(
     pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<ContratistaResponse, String> {
-    contratista_service::get_contratista_by_id(&pool, &id)
-        .await
-        .map_err(|e| e.to_string())
+    contratista_service::get_contratista_by_id(&pool, &id).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -39,27 +37,21 @@ pub async fn get_contratista_by_cedula(
     pool: State<'_, SqlitePool>,
     cedula: String,
 ) -> Result<ContratistaResponse, String> {
-    contratista_service::get_contratista_by_cedula(&pool, &cedula)
-        .await
-        .map_err(|e| e.to_string())
+    contratista_service::get_contratista_by_cedula(&pool, &cedula).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn get_all_contratistas(
     pool: State<'_, SqlitePool>,
 ) -> Result<ContratistaListResponse, String> {
-    contratista_service::get_all_contratistas(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    contratista_service::get_all_contratistas(&pool).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn get_contratistas_activos(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<ContratistaResponse>, String> {
-    contratista_service::get_contratistas_activos(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    contratista_service::get_contratistas_activos(&pool).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]

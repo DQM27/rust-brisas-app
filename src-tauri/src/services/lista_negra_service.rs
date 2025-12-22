@@ -73,24 +73,17 @@ pub async fn add_to_lista_negra(
     // 4. Normalizar datos
     let cedula_normalizada = domain::normalizar_texto(&cedula);
     let nombre_normalizado = domain::normalizar_texto(&nombre);
-    let segundo_nombre_normalizado = segundo_nombre
-        .as_ref()
-        .map(|s| domain::normalizar_texto(s))
-        .filter(|s| !s.is_empty());
+    let segundo_nombre_normalizado =
+        segundo_nombre.as_ref().map(|s| domain::normalizar_texto(s)).filter(|s| !s.is_empty());
     let apellido_normalizado = domain::normalizar_texto(&apellido);
-    let segundo_apellido_normalizado = segundo_apellido
-        .as_ref()
-        .map(|s| domain::normalizar_texto(s))
-        .filter(|s| !s.is_empty());
+    let segundo_apellido_normalizado =
+        segundo_apellido.as_ref().map(|s| domain::normalizar_texto(s)).filter(|s| !s.is_empty());
 
     let motivo_normalizado = domain::normalizar_texto(&input.motivo_bloqueo);
     let bloqueado_por_normalizado = domain::normalizar_texto(&input.bloqueado_por);
 
-    let observaciones_normalizadas = input
-        .observaciones
-        .as_ref()
-        .map(|o| domain::normalizar_texto(o))
-        .filter(|o| !o.is_empty());
+    let observaciones_normalizadas =
+        input.observaciones.as_ref().map(|o| domain::normalizar_texto(o)).filter(|o| !o.is_empty());
 
     // 5. Generar ID y timestamps
     let id = Uuid::new_v4().to_string();
@@ -206,22 +199,10 @@ pub async fn get_all_lista_negra(
     // Calcular estadísticas
     let total = bloqueados.len();
     let activos = bloqueados.iter().filter(|b| b.is_active).count();
-    let permanentes = bloqueados
-        .iter()
-        .filter(|b| b.is_active && b.es_bloqueo_permanente)
-        .count();
-    let temporales = bloqueados
-        .iter()
-        .filter(|b| b.is_active && !b.es_bloqueo_permanente)
-        .count();
+    let permanentes = bloqueados.iter().filter(|b| b.is_active && b.es_bloqueo_permanente).count();
+    let temporales = bloqueados.iter().filter(|b| b.is_active && !b.es_bloqueo_permanente).count();
 
-    Ok(ListaNegraListResponse {
-        bloqueados,
-        total,
-        activos,
-        permanentes,
-        temporales,
-    })
+    Ok(ListaNegraListResponse { bloqueados, total, activos, permanentes, temporales })
 }
 
 // ==========================================
@@ -344,21 +325,14 @@ pub async fn remove_from_lista_negra(
     // 2. Normalizar datos
     let motivo_normalizado = domain::normalizar_texto(&motivo);
 
-    let observacion_normalizada = observacion
-        .map(|o| domain::normalizar_texto(&o))
-        .filter(|o| !o.is_empty());
+    let observacion_normalizada =
+        observacion.map(|o| domain::normalizar_texto(&o)).filter(|o| !o.is_empty());
 
     let now = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
     // 3. Desactivar y actualizar motivo/observaciones
-    db::deactivate(
-        pool,
-        &id,
-        &motivo_normalizado,
-        observacion_normalizada.as_deref(),
-        &now,
-    )
-    .await?;
+    db::deactivate(pool, &id, &motivo_normalizado, observacion_normalizada.as_deref(), &now)
+        .await?;
 
     // 4. Actualizar índice
     match db::find_by_id(pool, &id).await {
@@ -367,10 +341,7 @@ pub async fn remove_from_lista_negra(
                 eprintln!("⚠️ Error al actualizar índice lista negra {}: {}", id, e);
             }
         }
-        Err(e) => eprintln!(
-            "⚠️ Error al obtener lista negra para actualizar índice {}: {}",
-            id, e
-        ),
+        Err(e) => eprintln!("⚠️ Error al obtener lista negra para actualizar índice {}: {}", id, e),
     }
 
     // 5. Retornar actualizado
@@ -406,9 +377,8 @@ pub async fn reactivate_lista_negra(
     let motivo_normalizado = domain::normalizar_texto(&motivo_bloqueo);
     let bloqueado_por_normalizado = domain::normalizar_texto(&bloqueado_por);
 
-    let observaciones_normalizadas = observaciones
-        .map(|o| domain::normalizar_texto(&o))
-        .filter(|o| !o.is_empty());
+    let observaciones_normalizadas =
+        observaciones.map(|o| domain::normalizar_texto(&o)).filter(|o| !o.is_empty());
 
     let now = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
@@ -430,10 +400,7 @@ pub async fn reactivate_lista_negra(
                 eprintln!("⚠️ Error al actualizar índice lista negra {}: {}", id, e);
             }
         }
-        Err(e) => eprintln!(
-            "⚠️ Error al obtener lista negra para actualizar índice {}: {}",
-            id, e
-        ),
+        Err(e) => eprintln!("⚠️ Error al obtener lista negra para actualizar índice {}: {}", id, e),
     }
 
     // 6. Retornar actualizado
@@ -466,11 +433,8 @@ pub async fn update_lista_negra(
         .map(|m| domain::normalizar_texto(m))
         .filter(|m| !m.is_empty());
 
-    let observaciones_normalizadas = input
-        .observaciones
-        .as_ref()
-        .map(|o| domain::normalizar_texto(o))
-        .filter(|o| !o.is_empty());
+    let observaciones_normalizadas =
+        input.observaciones.as_ref().map(|o| domain::normalizar_texto(o)).filter(|o| !o.is_empty());
 
     // 4. Timestamp de actualización
     let now = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
@@ -493,10 +457,7 @@ pub async fn update_lista_negra(
                 eprintln!("⚠️ Error al actualizar índice lista negra {}: {}", id, e);
             }
         }
-        Err(e) => eprintln!(
-            "⚠️ Error al obtener lista negra para actualizar índice {}: {}",
-            id, e
-        ),
+        Err(e) => eprintln!("⚠️ Error al obtener lista negra para actualizar índice {}: {}", id, e),
     }
 
     // 7. Retornar actualizado

@@ -267,11 +267,7 @@ pub async fn validar_puede_salir(
         Err(e) => errores.push(e.to_string()),
     }
 
-    Ok(ResultadoValidacionSalida {
-        puede_salir: errores.is_empty(),
-        errores,
-        advertencias: vec![],
-    })
+    Ok(ResultadoValidacionSalida { puede_salir: errores.is_empty(), errores, advertencias: vec![] })
 }
 
 pub async fn registrar_salida(
@@ -279,9 +275,8 @@ pub async fn registrar_salida(
     input: RegistrarSalidaInput,
     usuario_id: String,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
-    let ingreso = db::find_by_id(pool, &input.ingreso_id)
-        .await?
-        .ok_or(IngresoContratistaError::NotFound)?;
+    let ingreso =
+        db::find_by_id(pool, &input.ingreso_id).await?.ok_or(IngresoContratistaError::NotFound)?;
     domain::validar_ingreso_abierto(&ingreso.fecha_hora_salida)?;
 
     let now = Utc::now().to_rfc3339();
@@ -302,11 +297,7 @@ pub async fn registrar_salida(
         ingreso.gafete_numero.is_some(),
         ingreso.gafete_numero.as_deref(),
         input.devolvio_gafete,
-        if input.devolvio_gafete {
-            ingreso.gafete_numero.as_deref()
-        } else {
-            None
-        },
+        if input.devolvio_gafete { ingreso.gafete_numero.as_deref() } else { None },
     )
     .map_err(|e| IngresoContratistaError::Validation(e))?; // This function returns DecisionReporteGafete struct, NOT Result. Wait, let me check.
                                                            // Step 1308: DecisionReporteGafete struct. It is not a result.
@@ -389,10 +380,7 @@ pub async fn get_ingresos_abiertos_con_alertas(
         response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
         response.vehiculo_placa = details.vehiculo_placa;
 
-        responses.push(IngresoConEstadoResponse {
-            ingreso: response,
-            alerta_tiempo,
-        });
+        responses.push(IngresoConEstadoResponse { ingreso: response, alerta_tiempo });
     }
     Ok(responses)
 }
@@ -434,16 +422,12 @@ async fn get_ingreso_by_id(
     pool: &SqlitePool,
     id: String,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
-    let ingreso = db::find_by_id(pool, &id)
-        .await?
-        .ok_or(IngresoContratistaError::NotFound)?;
-    let details = db::find_details_by_id(pool, &id)
-        .await?
-        .unwrap_or(db::IngresoDetails {
-            usuario_ingreso_nombre: None,
-            usuario_salida_nombre: None,
-            vehiculo_placa: None,
-        });
+    let ingreso = db::find_by_id(pool, &id).await?.ok_or(IngresoContratistaError::NotFound)?;
+    let details = db::find_details_by_id(pool, &id).await?.unwrap_or(db::IngresoDetails {
+        usuario_ingreso_nombre: None,
+        usuario_salida_nombre: None,
+        vehiculo_placa: None,
+    });
 
     let mut resp = IngresoResponse::try_from(ingreso).map_err(|e| {
         IngresoContratistaError::Validation(format!("Error parsing ingreso: {}", e))
@@ -507,9 +491,7 @@ mod tests {
         let usuario_id = "u-1";
 
         // 1. Validar elegibilidad
-        let val = validar_ingreso_contratista(&pool, contratista_id.to_string())
-            .await
-            .unwrap();
+        let val = validar_ingreso_contratista(&pool, contratista_id.to_string()).await.unwrap();
         assert!(val.puede_ingresar);
         assert!(val.ingreso_abierto.is_none());
 
@@ -524,9 +506,8 @@ mod tests {
             usuario_ingreso_id: usuario_id.to_string(),
         };
 
-        let ingreso = crear_ingreso_contratista(&pool, input, usuario_id.to_string())
-            .await
-            .unwrap();
+        let ingreso =
+            crear_ingreso_contratista(&pool, input, usuario_id.to_string()).await.unwrap();
         assert_eq!(ingreso.gafete_numero, Some("G-100".to_string()));
         assert!(ingreso.esta_adentro);
 
@@ -541,10 +522,7 @@ mod tests {
             usuario_ingreso_id: usuario_id.to_string(),
         };
         let err_dup = crear_ingreso_contratista(&pool, input_dup, usuario_id.to_string()).await;
-        assert!(matches!(
-            err_dup,
-            Err(IngresoContratistaError::AlreadyInside)
-        ));
+        assert!(matches!(err_dup, Err(IngresoContratistaError::AlreadyInside)));
 
         // 4. Registrar salida (Correcta)
         let salida_input = RegistrarSalidaInput {
@@ -553,9 +531,8 @@ mod tests {
             usuario_salida_id: usuario_id.to_string(),
             observaciones_salida: None,
         };
-        let ingreso_salida = registrar_salida(&pool, salida_input, usuario_id.to_string())
-            .await
-            .unwrap();
+        let ingreso_salida =
+            registrar_salida(&pool, salida_input, usuario_id.to_string()).await.unwrap();
         assert!(!ingreso_salida.esta_adentro);
         assert!(ingreso_salida.fecha_hora_salida.is_some());
     }
@@ -576,9 +553,8 @@ mod tests {
             observaciones: None,
             usuario_ingreso_id: usuario_id.to_string(),
         };
-        let ingreso = crear_ingreso_contratista(&pool, input, usuario_id.to_string())
-            .await
-            .unwrap();
+        let ingreso =
+            crear_ingreso_contratista(&pool, input, usuario_id.to_string()).await.unwrap();
 
         // 2. Registrar salida indicando que NO devolvió gafete
         let salida_input = RegistrarSalidaInput {
@@ -587,9 +563,7 @@ mod tests {
             usuario_salida_id: usuario_id.to_string(),
             observaciones_salida: Some("Perdió el gafete".to_string()),
         };
-        let _ = registrar_salida(&pool, salida_input, usuario_id.to_string())
-            .await
-            .unwrap();
+        let _ = registrar_salida(&pool, salida_input, usuario_id.to_string()).await.unwrap();
 
         // 3. Verificar que se generó una alerta
         let alertas = crate::services::alerta_service::find_pendientes_by_cedula(&pool, "12345")
@@ -608,9 +582,7 @@ mod tests {
                       VALUES ('bl-1', '12345', 'Juan', 'Perez', 'Robo', '2025-01-01', 'Admin', 1, '2025-01-01', '2025-01-01')").await.unwrap();
 
         // 2. Validar (Debe fallar por bloqueo)
-        let val = validar_ingreso_contratista(&pool, "c-1".into())
-            .await
-            .unwrap();
+        let val = validar_ingreso_contratista(&pool, "c-1".into()).await.unwrap();
 
         println!(
             "DEBUG: Test Validation Result: puede_ingresar={}, motivo={:?}",
@@ -618,10 +590,6 @@ mod tests {
         );
 
         assert!(!val.puede_ingresar);
-        assert!(val
-            .motivo_rechazo
-            .unwrap()
-            .to_lowercase()
-            .contains("bloqueado"));
+        assert!(val.motivo_rechazo.unwrap().to_lowercase().contains("bloqueado"));
     }
 }

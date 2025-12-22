@@ -59,13 +59,13 @@ pub fn available_formats() -> Vec<&'static str> {
 pub fn is_format_available(format: &str) -> bool {
     match format.to_lowercase().as_str() {
         "csv" => true, // Siempre disponible
-        
+
         #[cfg(feature = "export-pdf")]
         "pdf" => true,
-        
+
         #[cfg(feature = "export-excel")]
         "excel" => true,
-        
+
         _ => false,
     }
 }

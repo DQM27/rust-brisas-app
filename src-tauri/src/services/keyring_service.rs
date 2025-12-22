@@ -124,16 +124,12 @@ fn get_entry(key: &str) -> KeyringResult<Entry> {
 #[cfg(target_os = "macos")]
 fn store_value(key: &str, value: &str) -> KeyringResult<()> {
     let entry = get_entry(key)?;
-    entry
-        .set_password(value)
-        .map_err(|e| KeyringError::StorageError(e.to_string()))
+    entry.set_password(value).map_err(|e| KeyringError::StorageError(e.to_string()))
 }
 
 #[cfg(target_os = "macos")]
 fn retrieve_value(key: &str) -> Option<String> {
-    get_entry(key)
-        .ok()
-        .and_then(|entry| entry.get_password().ok())
+    get_entry(key).ok().and_then(|entry| entry.get_password().ok())
 }
 
 // ==========================================
@@ -149,29 +145,18 @@ pub fn store_argon2_params(params: &Argon2Params) -> KeyringResult<()> {
 }
 
 pub fn get_argon2_params() -> Argon2Params {
-    let memory = retrieve_value(KEY_ARGON2_MEMORY)
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(19456);
-    let iterations = retrieve_value(KEY_ARGON2_ITERATIONS)
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(2);
-    let parallelism = retrieve_value(KEY_ARGON2_PARALLELISM)
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(1);
+    let memory = retrieve_value(KEY_ARGON2_MEMORY).and_then(|v| v.parse().ok()).unwrap_or(19456);
+    let iterations =
+        retrieve_value(KEY_ARGON2_ITERATIONS).and_then(|v| v.parse().ok()).unwrap_or(2);
+    let parallelism =
+        retrieve_value(KEY_ARGON2_PARALLELISM).and_then(|v| v.parse().ok()).unwrap_or(1);
     let secret = retrieve_value(KEY_PASSWORD_SECRET).unwrap_or_default();
 
-    Argon2Params {
-        memory,
-        iterations,
-        parallelism,
-        secret,
-    }
+    Argon2Params { memory, iterations, parallelism, secret }
 }
 
 pub fn has_argon2_secret() -> bool {
-    retrieve_value(KEY_PASSWORD_SECRET)
-        .map(|s| !s.is_empty())
-        .unwrap_or(false)
+    retrieve_value(KEY_PASSWORD_SECRET).map(|s| !s.is_empty()).unwrap_or(false)
 }
 
 // ==========================================
@@ -179,9 +164,7 @@ pub fn has_argon2_secret() -> bool {
 // ==========================================
 
 pub fn get_all_credentials() -> AllCredentials {
-    AllCredentials {
-        argon2: get_argon2_params(),
-    }
+    AllCredentials { argon2: get_argon2_params() }
 }
 
 pub fn is_fully_configured() -> bool {
@@ -201,10 +184,7 @@ pub struct CredentialStatus {
 pub fn get_credential_status() -> CredentialStatus {
     let argon2_configured = has_argon2_secret();
 
-    CredentialStatus {
-        argon2_configured,
-        fully_configured: argon2_configured,
-    }
+    CredentialStatus { argon2_configured, fully_configured: argon2_configured }
 }
 
 // ==========================================

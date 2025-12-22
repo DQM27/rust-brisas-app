@@ -18,9 +18,7 @@ pub fn validar_cedula(cedula: &str) -> Result<(), ContratistaError> {
     let limpia = cedula.trim();
 
     if limpia.is_empty() {
-        return Err(ContratistaError::Validation(
-            "La cédula no puede estar vacía".to_string(),
-        ));
+        return Err(ContratistaError::Validation("La cédula no puede estar vacía".to_string()));
     }
 
     if !limpia.chars().all(|c| c.is_numeric() || c == '-') {
@@ -42,9 +40,7 @@ pub fn validar_nombre(nombre: &str) -> Result<(), ContratistaError> {
     let limpio = nombre.trim();
 
     if limpio.is_empty() {
-        return Err(ContratistaError::Validation(
-            "El nombre no puede estar vacío".to_string(),
-        ));
+        return Err(ContratistaError::Validation("El nombre no puede estar vacío".to_string()));
     }
 
     if limpio.len() > 50 {
@@ -74,9 +70,7 @@ pub fn validar_apellido(apellido: &str) -> Result<(), ContratistaError> {
     let limpio = apellido.trim();
 
     if limpio.is_empty() {
-        return Err(ContratistaError::Validation(
-            "El apellido no puede estar vacío".to_string(),
-        ));
+        return Err(ContratistaError::Validation("El apellido no puede estar vacío".to_string()));
     }
 
     if limpio.len() > 50 {
@@ -106,9 +100,7 @@ pub fn validar_empresa_id(empresa_id: &str) -> Result<(), ContratistaError> {
     let limpia = empresa_id.trim();
 
     if limpia.is_empty() {
-        return Err(ContratistaError::Validation(
-            "Debe seleccionar una empresa".to_string(),
-        ));
+        return Err(ContratistaError::Validation("Debe seleccionar una empresa".to_string()));
     }
 
     Ok(())

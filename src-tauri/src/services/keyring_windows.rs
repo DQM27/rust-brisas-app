@@ -13,10 +13,7 @@ const TARGET_PREFIX: &str = "brisas-app";
 
 /// Convierte un &str a un Vec<u16> (wide string) para Windows API
 fn to_wide_string(s: &str) -> Vec<u16> {
-    OsStr::new(s)
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect()
+    OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect()
 }
 
 /// Genera el nombre completo del target para la credencial
@@ -65,14 +62,8 @@ pub fn retrieve_secret(key: &str) -> Option<String> {
     let target_wide = to_wide_string(&target_name);
     let mut credential_ptr: PCREDENTIALW = ptr::null_mut();
 
-    let result = unsafe {
-        CredReadW(
-            target_wide.as_ptr(),
-            CRED_TYPE_GENERIC,
-            0,
-            &mut credential_ptr,
-        )
-    };
+    let result =
+        unsafe { CredReadW(target_wide.as_ptr(), CRED_TYPE_GENERIC, 0, &mut credential_ptr) };
 
     if result == 0 {
         return None;

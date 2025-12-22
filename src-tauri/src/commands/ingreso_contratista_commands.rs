@@ -17,9 +17,7 @@ pub async fn validate_ingreso_contratista(
     pool: State<'_, SqlitePool>,
     contratista_id: String,
 ) -> Result<ValidacionIngresoResponse, String> {
-    service::validar_ingreso_contratista(&pool, contratista_id)
-        .await
-        .map_err(|e| e.to_string())
+    service::validar_ingreso_contratista(&pool, contratista_id).await.map_err(|e| e.to_string())
 }
 
 /// Crea el ingreso de un contratista
@@ -29,9 +27,7 @@ pub async fn create_ingreso_contratista(
     input: CreateIngresoContratistaInput,
     usuario_id: String,
 ) -> Result<IngresoResponse, String> {
-    service::crear_ingreso_contratista(&pool, input, usuario_id)
-        .await
-        .map_err(|e| e.to_string())
+    service::crear_ingreso_contratista(&pool, input, usuario_id).await.map_err(|e| e.to_string())
 }
 
 // ==========================================
@@ -55,9 +51,7 @@ pub async fn register_exit_contratista(
     input: RegistrarSalidaInput,
     usuario_id: String,
 ) -> Result<IngresoResponse, String> {
-    service::registrar_salida(&pool, input, usuario_id)
-        .await
-        .map_err(|e| e.to_string())
+    service::registrar_salida(&pool, input, usuario_id).await.map_err(|e| e.to_string())
 }
 
 // ==========================================
@@ -69,9 +63,7 @@ pub async fn register_exit_contratista(
 pub async fn get_permanencia_status(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<service::IngresoConEstadoResponse>, String> {
-    service::get_ingresos_abiertos_con_alertas(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    service::get_ingresos_abiertos_con_alertas(&pool).await.map_err(|e| e.to_string())
 }
 
 /// Verifica alertas de tiempo excedido (para notificaciones)
@@ -79,7 +71,5 @@ pub async fn get_permanencia_status(
 pub async fn check_time_alerts(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<service::AlertaTiempoExcedido>, String> {
-    service::verificar_tiempos_excedidos(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    service::verificar_tiempos_excedidos(&pool).await.map_err(|e| e.to_string())
 }

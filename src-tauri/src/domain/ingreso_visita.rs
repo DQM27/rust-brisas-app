@@ -164,20 +164,13 @@ pub fn evaluar_devolucion_gafete(
         if normalizar_numero_gafete(asignado) != normalizar_numero_gafete(devuelto) {
             return Ok(DecisionReporteGafete {
                 debe_generar_reporte: true,
-                motivo: Some(format!(
-                    "Devolvió gafete incorrecto: {} vs {}",
-                    devuelto, asignado
-                )),
+                motivo: Some(format!("Devolvió gafete incorrecto: {} vs {}", devuelto, asignado)),
                 gafete_numero: Some(asignado.to_string()),
             });
         }
     }
 
-    Ok(DecisionReporteGafete {
-        debe_generar_reporte: false,
-        motivo: None,
-        gafete_numero: None,
-    })
+    Ok(DecisionReporteGafete { debe_generar_reporte: false, motivo: None, gafete_numero: None })
 }
 #[cfg(test)]
 mod tests {

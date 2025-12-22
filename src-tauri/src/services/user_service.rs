@@ -79,11 +79,7 @@ pub async fn create_user(
         }
         None => {
             let rng = rand::thread_rng();
-            let temp: String = rng
-                .sample_iter(&Alphanumeric)
-                .take(12)
-                .map(char::from)
-                .collect();
+            let temp: String = rng.sample_iter(&Alphanumeric).take(12).map(char::from).collect();
             (temp, true)
         }
     };
@@ -144,9 +140,8 @@ pub async fn create_user(
 
 pub async fn get_user_by_id(pool: &SqlitePool, id: &str) -> Result<UserResponse, UserError> {
     let user = db::find_by_id(pool, id).await.map_err(UserError::from)?;
-    let role_name = db::get_role_name(pool, &user.role_id)
-        .await
-        .unwrap_or_else(|_| "Desconocido".to_string());
+    let role_name =
+        db::get_role_name(pool, &user.role_id).await.unwrap_or_else(|_| "Desconocido".to_string());
 
     Ok(UserResponse::from_user_with_role(user, role_name))
 }
@@ -170,11 +165,7 @@ pub async fn get_all_users(pool: &SqlitePool) -> Result<UserListResponse, UserEr
     let total = user_responses.len();
     let activos = user_responses.iter().filter(|u| u.is_active).count();
 
-    Ok(UserListResponse {
-        users: user_responses,
-        total,
-        activos,
-    })
+    Ok(UserListResponse { users: user_responses, total, activos })
 }
 
 // ==========================================
@@ -214,10 +205,7 @@ pub async fn update_user(
 
     // 4. Normalizar nombres
     let nombre_normalizado = input.nombre.as_ref().map(|n| domain::normalizar_nombre(n));
-    let apellido_normalizado = input
-        .apellido
-        .as_ref()
-        .map(|a| domain::normalizar_nombre(a));
+    let apellido_normalizado = input.apellido.as_ref().map(|a| domain::normalizar_nombre(a));
 
     // 5. Hashear contraseña si viene
     let password_hash = if let Some(ref pwd) = input.password {
@@ -266,10 +254,7 @@ pub async fn update_user(
                 eprintln!("⚠️ Error al actualizar índice del usuario {}: {}", id, e);
             }
         }
-        Err(e) => eprintln!(
-            "⚠️ Error al obtener usuario para actualizar índice {}: {}",
-            id, e
-        ),
+        Err(e) => eprintln!("⚠️ Error al obtener usuario para actualizar índice {}: {}", id, e),
     }
 
     Ok(response)
@@ -372,9 +357,8 @@ pub async fn login(
         return Err(UserError::InactiveUser);
     }
 
-    let role_name = db::get_role_name(pool, &user.role_id)
-        .await
-        .unwrap_or_else(|_| "Desconocido".to_string());
+    let role_name =
+        db::get_role_name(pool, &user.role_id).await.unwrap_or_else(|_| "Desconocido".to_string());
 
     Ok(UserResponse::from_user_with_role(user, role_name))
 }
@@ -469,9 +453,7 @@ mod tests {
         create_user(&pool, &search_service, input).await.unwrap();
 
         // 2. Intentar login correcto
-        let res = login(&pool, "login@example.com".into(), "Pass123!".into())
-            .await
-            .unwrap();
+        let res = login(&pool, "login@example.com".into(), "Pass123!".into()).await.unwrap();
         assert_eq!(res.email, "login@example.com");
 
         // 3. Intentar login incorrecto
@@ -508,14 +490,10 @@ mod tests {
             new_password: "NewPass123!".into(),
         };
 
-        change_password(&pool, user.id.clone(), change_input)
-            .await
-            .unwrap();
+        change_password(&pool, user.id.clone(), change_input).await.unwrap();
 
         // Verificar login con nueva clave
-        let res = login(&pool, "pwd@example.com".into(), "NewPass123!".into())
-            .await
-            .unwrap();
+        let res = login(&pool, "pwd@example.com".into(), "NewPass123!".into()).await.unwrap();
         assert_eq!(res.id, user.id);
     }
 
@@ -563,9 +541,7 @@ mod tests {
             must_change_password: None,
         };
 
-        update_user(&pool, &search_service, user.id.clone(), update_input)
-            .await
-            .unwrap();
+        update_user(&pool, &search_service, user.id.clone(), update_input).await.unwrap();
 
         let fetched = get_user_by_id(&pool, &user.id).await.unwrap();
         assert_eq!(fetched.email, "new@example.com");

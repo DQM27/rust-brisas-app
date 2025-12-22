@@ -78,11 +78,7 @@ pub async fn get_all_empresas(pool: &SqlitePool) -> Result<EmpresaListResponse, 
     let total = responses.len();
     let activas = responses.iter().filter(|e| e.is_active).count();
 
-    Ok(EmpresaListResponse {
-        empresas: responses,
-        total,
-        activas,
-    })
+    Ok(EmpresaListResponse { empresas: responses, total, activas })
 }
 
 // ==========================================
@@ -116,9 +112,7 @@ pub async fn update_empresa(
     domain::validar_update_input(&input)?;
 
     // 2. Verificar que existe
-    let _ = db::find_by_id(pool, &id)
-        .await?
-        .ok_or(EmpresaError::NotFound)?;
+    let _ = db::find_by_id(pool, &id).await?.ok_or(EmpresaError::NotFound)?;
 
     // 3. Normalizar y verificar nombre si viene
     let nombre_normalizado = if let Some(ref nombre) = input.nombre {
@@ -136,14 +130,7 @@ pub async fn update_empresa(
 
     // 4. Actualizar
     let now = Utc::now().to_rfc3339();
-    db::update(
-        pool,
-        &id,
-        nombre_normalizado.as_deref(),
-        input.is_active,
-        &now,
-    )
-    .await?;
+    db::update(pool, &id, nombre_normalizado.as_deref(), input.is_active, &now).await?;
 
     // 5. Retornar
     get_empresa_by_id(pool, id).await
@@ -155,9 +142,7 @@ pub async fn update_empresa(
 
 pub async fn delete_empresa(pool: &SqlitePool, id: String) -> Result<(), EmpresaError> {
     // 1. Verificar que existe
-    let _ = db::find_by_id(pool, &id)
-        .await?
-        .ok_or(EmpresaError::NotFound)?;
+    let _ = db::find_by_id(pool, &id).await?.ok_or(EmpresaError::NotFound)?;
 
     // 2. Verificar que no tenga contratistas
     let count = db::count_contratistas(pool, &id).await?;

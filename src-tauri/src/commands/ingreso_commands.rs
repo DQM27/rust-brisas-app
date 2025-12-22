@@ -32,9 +32,7 @@ pub async fn get_ingreso_by_id(
 /// Obtiene todos los ingresos (limitado a 500)
 #[tauri::command]
 pub async fn get_all_ingresos(pool: State<'_, SqlitePool>) -> Result<IngresoListResponse, String> {
-    service::get_all_ingresos_with_stats(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    service::get_all_ingresos_with_stats(&pool).await.map_err(|e| e.to_string())
 }
 
 /// Obtiene solo ingresos abiertos (personas adentro)
@@ -42,9 +40,7 @@ pub async fn get_all_ingresos(pool: State<'_, SqlitePool>) -> Result<IngresoList
 pub async fn get_ingresos_abiertos(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<IngresoResponse>, String> {
-    service::get_ingresos_abiertos(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    service::get_ingresos_abiertos(&pool).await.map_err(|e| e.to_string())
 }
 
 /// Busca ingreso abierto por número de gafete
@@ -66,9 +62,7 @@ pub async fn get_salidas_en_rango(
     fecha_inicio: String,
     fecha_fin: String,
 ) -> Result<Vec<IngresoResponse>, String> {
-    service::get_salidas_en_rango(&pool, &fecha_inicio, &fecha_fin)
-        .await
-        .map_err(|e| e.to_string())
+    service::get_salidas_en_rango(&pool, &fecha_inicio, &fecha_fin).await.map_err(|e| e.to_string())
 }
 
 /// Obtiene salidas de un día (YYYY-MM-DD)
@@ -77,9 +71,7 @@ pub async fn get_salidas_del_dia(
     pool: State<'_, SqlitePool>,
     fecha: String,
 ) -> Result<Vec<IngresoResponse>, String> {
-    service::get_salidas_en_rango(&pool, &fecha, &fecha)
-        .await
-        .map_err(|e| e.to_string())
+    service::get_salidas_en_rango(&pool, &fecha, &fecha).await.map_err(|e| e.to_string())
 }
 
 // ==========================================
@@ -95,12 +87,7 @@ pub async fn get_alertas_pendientes_by_cedula(
     alerta_service::find_pendientes_by_cedula(&pool, &cedula)
         .await
         .map_err(|e| e.to_string())
-        .map(|alertas| {
-            alertas
-                .into_iter()
-                .map(AlertaGafeteResponse::from)
-                .collect()
-        })
+        .map(|alertas| alertas.into_iter().map(AlertaGafeteResponse::from).collect())
 }
 
 /// Obtiene todas las alertas de gafetes
@@ -111,12 +98,7 @@ pub async fn get_all_alertas_gafetes(
     alerta_service::find_all(&pool, None)
         .await
         .map_err(|e| e.to_string())
-        .map(|alertas| {
-            alertas
-                .into_iter()
-                .map(AlertaGafeteResponse::from)
-                .collect()
-        })
+        .map(|alertas| alertas.into_iter().map(AlertaGafeteResponse::from).collect())
 }
 
 /// Marca una alerta de gafete como resuelta
@@ -139,9 +121,8 @@ pub async fn resolver_alerta_gafete(
     .await
     .map_err(|e| e.to_string())?;
 
-    let alerta = alerta_service::find_by_id(&pool, &input.alerta_id)
-        .await
-        .map_err(|e| e.to_string())?;
+    let alerta =
+        alerta_service::find_by_id(&pool, &input.alerta_id).await.map_err(|e| e.to_string())?;
 
     Ok(AlertaGafeteResponse::from(alerta))
 }

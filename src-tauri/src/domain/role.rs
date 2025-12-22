@@ -35,9 +35,7 @@ pub fn validar_nombre(nombre: &str) -> Result<(), RoleError> {
     let limpio = nombre.trim();
 
     if limpio.is_empty() {
-        return Err(RoleError::Validation(
-            "El nombre del rol no puede estar vacío".to_string(),
-        ));
+        return Err(RoleError::Validation("El nombre del rol no puede estar vacío".to_string()));
     }
 
     if limpio.len() > 50 {

@@ -18,13 +18,8 @@ pub async fn registrar_ingreso(
     input: CreateIngresoVisitaInput,
 ) -> Result<IngresoVisita, IngresoVisitaError> {
     // 1. Validar existencia del visitante
-    if visitante_queries::get_visitante_by_id(pool, &input.visitante_id)
-        .await?
-        .is_none()
-    {
-        return Err(IngresoVisitaError::Validation(
-            "El visitante no existe".to_string(),
-        ));
+    if visitante_queries::get_visitante_by_id(pool, &input.visitante_id).await?.is_none() {
+        return Err(IngresoVisitaError::Validation("El visitante no existe".to_string()));
     }
 
     // 2. Validar disponibilidad de gafete (si aplica)
@@ -41,9 +36,7 @@ pub async fn registrar_ingreso(
     }
 
     // 3. Crear ingreso
-    ingreso_visita_queries::create(pool, input)
-        .await
-        .map_err(IngresoVisitaError::Database)
+    ingreso_visita_queries::create(pool, input).await.map_err(IngresoVisitaError::Database)
 }
 
 pub async fn registrar_ingreso_full(
@@ -98,14 +91,10 @@ pub async fn registrar_salida(
     observaciones: Option<String>,
 ) -> Result<(), IngresoVisitaError> {
     // 1. Obtener el ingreso
-    let actives = ingreso_visita_queries::find_actives(pool)
-        .await
-        .map_err(IngresoVisitaError::Database)?;
+    let actives =
+        ingreso_visita_queries::find_actives(pool).await.map_err(IngresoVisitaError::Database)?;
 
-    let ingreso = actives
-        .iter()
-        .find(|i| i.id == id)
-        .ok_or(IngresoVisitaError::NotFound)?;
+    let ingreso = actives.iter().find(|i| i.id == id).ok_or(IngresoVisitaError::NotFound)?;
 
     domain::validar_ingreso_abierto(&ingreso.fecha_salida)?;
 
@@ -115,11 +104,7 @@ pub async fn registrar_salida(
         ingreso.gafete.is_some(),
         ingreso.gafete.as_deref(),
         devolvio_gafete,
-        if devolvio_gafete {
-            ingreso.gafete.as_deref()
-        } else {
-            None
-        },
+        if devolvio_gafete { ingreso.gafete.as_deref() } else { None },
     )?;
 
     // 2. Registrar salida
@@ -130,10 +115,8 @@ pub async fn registrar_salida(
     // 3. Crear alerta si aplica
     if decision.debe_generar_reporte {
         if let Some(num) = decision.gafete_numero {
-            let nombre_completo = format!(
-                "{} {}",
-                ingreso.visitante_nombre, ingreso.visitante_apellido
-            );
+            let nombre_completo =
+                format!("{} {}", ingreso.visitante_nombre, ingreso.visitante_apellido);
 
             // Note: ingreso_visita logic might need a dedicated field in AlertGafete table or generic persona_id usage?
             // alerta_service::insert takes ingreso_proveedor_id and ingreso_contratista_id optional args.
@@ -176,15 +159,11 @@ pub async fn registrar_salida(
 pub async fn get_activos(
     pool: &SqlitePool,
 ) -> Result<Vec<IngresoVisitaPopulated>, IngresoVisitaError> {
-    ingreso_visita_queries::find_actives(pool)
-        .await
-        .map_err(IngresoVisitaError::Database)
+    ingreso_visita_queries::find_actives(pool).await.map_err(IngresoVisitaError::Database)
 }
 
 pub async fn get_historial(
     pool: &SqlitePool,
 ) -> Result<Vec<IngresoVisitaPopulated>, IngresoVisitaError> {
-    ingreso_visita_queries::find_historial(pool)
-        .await
-        .map_err(IngresoVisitaError::Database)
+    ingreso_visita_queries::find_historial(pool).await.map_err(IngresoVisitaError::Database)
 }

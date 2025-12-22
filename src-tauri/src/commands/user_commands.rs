@@ -58,16 +58,12 @@ pub async fn get_user_by_id(
     pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<UserResponse, String> {
-    user_service::get_user_by_id(&pool, &id)
-        .await
-        .map_err(|e| e.to_string())
+    user_service::get_user_by_id(&pool, &id).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn get_all_users(pool: State<'_, SqlitePool>) -> Result<UserListResponse, String> {
-    user_service::get_all_users(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    user_service::get_all_users(&pool).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -76,9 +72,7 @@ pub async fn login(
     email: String,
     password: String,
 ) -> Result<UserResponse, String> {
-    user_service::login(&pool, email, password)
-        .await
-        .map_err(|e| e.to_string())
+    user_service::login(&pool, email, password).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -87,7 +81,5 @@ pub async fn change_password(
     id: String,
     input: ChangePasswordInput,
 ) -> Result<(), String> {
-    user_service::change_password(&pool, id, input)
-        .await
-        .map_err(|e| e.to_string())
+    user_service::change_password(&pool, id, input).await.map_err(|e| e.to_string())
 }

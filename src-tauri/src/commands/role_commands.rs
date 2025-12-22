@@ -17,9 +17,7 @@ use tauri::State;
 /// Obtiene todos los roles
 #[tauri::command]
 pub async fn get_all_roles(pool: State<'_, SqlitePool>) -> Result<RoleListResponse, String> {
-    role_service::get_all_roles(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    role_service::get_all_roles(&pool).await.map_err(|e| e.to_string())
 }
 
 /// Obtiene un rol por ID
@@ -28,17 +26,13 @@ pub async fn get_role_by_id(
     pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<RoleResponse, String> {
-    role_service::get_role_by_id(&pool, &id)
-        .await
-        .map_err(|e| e.to_string())
+    role_service::get_role_by_id(&pool, &id).await.map_err(|e| e.to_string())
 }
 
 /// Obtiene todos los permisos disponibles
 #[tauri::command]
 pub async fn get_all_permissions(pool: State<'_, SqlitePool>) -> Result<Vec<Permission>, String> {
-    role_service::get_all_permissions(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    role_service::get_all_permissions(&pool).await.map_err(|e| e.to_string())
 }
 
 /// Obtiene los módulos visibles para el usuario actual
@@ -71,9 +65,7 @@ pub async fn create_role(
     // Por ahora permitimos a cualquier admin crear roles
     // TODO: Verificar permiso roles:create
 
-    role_service::create_role(&pool, input)
-        .await
-        .map_err(|e| e.to_string())
+    role_service::create_role(&pool, input).await.map_err(|e| e.to_string())
 }
 
 /// Actualiza un rol existente
@@ -86,9 +78,7 @@ pub async fn update_role(
 ) -> Result<RoleResponse, String> {
     let user = session.get_user().ok_or("Sesión requerida")?;
 
-    role_service::update_role(&pool, &id, input, &user.id)
-        .await
-        .map_err(|e| e.to_string())
+    role_service::update_role(&pool, &id, input, &user.id).await.map_err(|e| e.to_string())
 }
 
 /// Elimina un rol (solo roles custom, no del sistema)
@@ -100,7 +90,5 @@ pub async fn delete_role(
 ) -> Result<(), String> {
     let _user = session.get_user().ok_or("Sesión requerida")?;
 
-    role_service::delete_role(&pool, &id)
-        .await
-        .map_err(|e| e.to_string())
+    role_service::delete_role(&pool, &id).await.map_err(|e| e.to_string())
 }

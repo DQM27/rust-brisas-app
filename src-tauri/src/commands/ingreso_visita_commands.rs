@@ -15,18 +15,14 @@ pub async fn crear_ingreso_visita_v2(
     pool: State<'_, SqlitePool>,
     input: CreateIngresoVisitaFullInput,
 ) -> Result<IngresoVisita, String> {
-    ingreso_visita_service::registrar_ingreso_full(&pool, input)
-        .await
-        .map_err(|e| e.to_string())
+    ingreso_visita_service::registrar_ingreso_full(&pool, input).await.map_err(|e| e.to_string())
 }
 
 #[command]
 pub async fn get_ingresos_visitas_activos(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<IngresoVisitaPopulated>, String> {
-    ingreso_visita_service::get_activos(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    ingreso_visita_service::get_activos(&pool).await.map_err(|e| e.to_string())
 }
 
 #[command]
@@ -46,7 +42,5 @@ pub async fn registrar_salida_visita(
 pub async fn get_ingresos_visitas_historial(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<IngresoVisitaPopulated>, String> {
-    ingreso_visita_service::get_historial(&pool)
-        .await
-        .map_err(|e| e.to_string())
+    ingreso_visita_service::get_historial(&pool).await.map_err(|e| e.to_string())
 }

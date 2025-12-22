@@ -40,9 +40,7 @@ impl From<AlertaGafeteRow> for AlertaGafete {
             gafete_numero: row.gafete_numero.unwrap_or_default(),
             ingreso_contratista_id: row.ingreso_contratista_id,
             ingreso_proveedor_id: row.ingreso_proveedor_id,
-            fecha_reporte: row
-                .fecha_reporte
-                .unwrap_or_else(|| chrono::Utc::now().to_rfc3339()),
+            fecha_reporte: row.fecha_reporte.unwrap_or_else(|| chrono::Utc::now().to_rfc3339()),
             resuelto: row.resuelto.unwrap_or(false),
             fecha_resolucion: row.fecha_resolucion,
             notas: row.notas,
@@ -205,9 +203,7 @@ pub async fn resolver(
 
 /// Elimina una alerta (solo admin)
 pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
-    sqlx::query!("DELETE FROM alertas_gafetes WHERE id = ?", id)
-        .execute(pool)
-        .await?;
+    sqlx::query!("DELETE FROM alertas_gafetes WHERE id = ?", id).execute(pool).await?;
 
     Ok(())
 }
