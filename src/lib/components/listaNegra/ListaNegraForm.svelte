@@ -176,16 +176,21 @@
     onSubmit(data);
   }
 
-  // Validación
+  // Validación - usando función para evitar problemas de type narrowing
+  function checkManualMode(): boolean {
+    return modoRegistro === "manual";
+  }
+
+  function checkExistenteMode(): boolean {
+    return modoRegistro === "existente";
+  }
+
   let isManualValid = $derived(
-    modoRegistro === "manual" &&
-      cedula.trim() &&
-      nombre.trim() &&
-      apellido.trim(),
+    checkManualMode() && cedula.trim() && nombre.trim() && apellido.trim(),
   );
 
   let isExistenteValid = $derived(
-    modoRegistro === "existente" && contratistaId.trim() && !checkingBlock,
+    checkExistenteMode() && contratistaId.trim() && !checkingBlock,
   );
 
   let isFormValid = $derived(
