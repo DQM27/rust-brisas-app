@@ -119,6 +119,20 @@
     <svelte:component this={Download} size={16} />
     <span>Backup y restore</span>
   </button>
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() =>
+      openView("roles-settings", "Roles y Permisos"),
+    )}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() => openView("roles-settings", "Roles y Permisos")),
+      )}
+  >
+    <svelte:component this={Shield} size={16} />
+    <span>Roles y Permisos</span>
+  </button>
 </div>
 
 <div class="panel-section">

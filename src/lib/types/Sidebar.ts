@@ -7,7 +7,7 @@ export interface SidebarItem {
   panelComponent?: any; // Componente del panel (opcional)
   action?: () => void; // Acción directa (si no tiene panel)
   permission?: Action;
-  role?: string[];
+  roleId?: string[];  // Role IDs permitidos
 }
 
 export type { ComponentKey } from './component';

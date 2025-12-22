@@ -32,6 +32,7 @@
   import { activePanel } from "$lib/stores/sidebar";
   import type { SidebarItem } from "../../../types/Sidebar";
   import { can } from "$lib/logic/permissions";
+  import { ROLE_ADMIN_ID, ROLE_SUPERVISOR_ID } from "$lib/types/role";
   import UserFormModal from "$lib/components/user/UserFormModal.svelte";
   import * as userService from "$lib/logic/user/userService";
   import type { CreateUserInput, UpdateUserInput } from "$lib/types/user";
@@ -89,14 +90,14 @@
       icon: FileText,
       label: "Logs",
       panelComponent: LogsPanel,
-      role: ["admin", "supervisor"], // Explicit role check fallback or new permission
+      roleId: [ROLE_ADMIN_ID, ROLE_SUPERVISOR_ID],
     },
     {
       id: "settings",
       icon: Settings,
       label: "Configuración",
       panelComponent: SettingsPanel,
-      role: ["admin"],
+      roleId: [ROLE_ADMIN_ID],
     },
   ];
 
@@ -111,11 +112,11 @@
         return false;
       }
 
-      // 2. Check strict role if defined (legacy/simple way)
+      // 2. Check roleId if defined
       // @ts-ignore
-      if (item.role && $currentUser) {
+      if (item.roleId && $currentUser) {
         // @ts-ignore
-        if (!item.role.includes($currentUser.role)) {
+        if (!item.roleId.includes($currentUser.roleId)) {
           return false;
         }
       }

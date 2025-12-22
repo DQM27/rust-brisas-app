@@ -13,6 +13,11 @@
     UpdateUserSchema,
     type CreateUserForm,
   } from "$lib/schemas/userSchema";
+  import {
+    ROLE_ADMIN_ID,
+    ROLE_SUPERVISOR_ID,
+    ROLE_GUARDIA_ID,
+  } from "$lib/types/role";
   import AdminConfirmModal from "$lib/components/AdminConfirmModal.svelte";
   import { auth } from "$lib/api/auth";
   import { currentUser } from "$lib/stores/auth";
@@ -49,7 +54,7 @@
     segundoApellido: "",
     email: "",
     password: "",
-    role: "guardia",
+    roleId: ROLE_GUARDIA_ID,
     telefono: "",
     direccion: "",
     fechaInicioLabores: "",
@@ -85,7 +90,7 @@
         segundoApellido: user.segundoApellido || "",
         email: user.email || "",
         password: "", // No mostramos password existente
-        role: user.role || "guardia",
+        roleId: user.roleId || ROLE_GUARDIA_ID,
         telefono: user.telefono || "",
         direccion: user.direccion || "",
         fechaInicioLabores: user.fechaInicioLabores || "",
@@ -105,7 +110,7 @@
         segundoApellido: "",
         email: "",
         password: "",
-        role: "guardia",
+        roleId: ROLE_GUARDIA_ID,
         telefono: "",
         direccion: "",
         fechaInicioLabores: "",
@@ -487,16 +492,16 @@
               <!-- Roles (Solo si no es self y es admin/supervisor) -->
               {#if !isSelf}
                 <div>
-                  <label for="role" class={labelClass}>Rol *</label>
+                  <label for="roleId" class={labelClass}>Rol *</label>
                   <select
-                    id="role"
-                    bind:value={formData.role}
+                    id="roleId"
+                    bind:value={formData.roleId}
                     disabled={loading}
                     class={inputClass}
                   >
-                    <option value="guardia">Guardia</option>
-                    <option value="supervisor">Supervisor</option>
-                    <option value="admin">Administrador</option>
+                    <option value={ROLE_GUARDIA_ID}>Guardia</option>
+                    <option value={ROLE_SUPERVISOR_ID}>Supervisor</option>
+                    <option value={ROLE_ADMIN_ID}>Administrador</option>
                   </select>
                 </div>
               {/if}
@@ -616,7 +621,7 @@
               </button>
             {/if}
 
-            {#if isEditMode && !isSelf && $currentUser?.role === "admin"}
+            {#if isEditMode && !isSelf && $currentUser?.roleId === ROLE_ADMIN_ID}
               <button
                 type="button"
                 onclick={handleResetPasswordClick}
