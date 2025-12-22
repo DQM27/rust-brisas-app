@@ -1,7 +1,8 @@
 // src/services/ingreso_contratista_service.rs
 
+use crate::db::contratista_queries;
 use crate::db::lista_negra_queries;
-use crate::db::{alerta_gafete_queries as alerta_db, contratista_queries};
+use crate::services::alerta_service;
 // Usamos nuestro nuevo modulo de queries
 use crate::db::ingreso_contratista_queries as db;
 
@@ -107,7 +108,9 @@ pub async fn validar_ingreso_contratista(
 
     // D. Validaciones de Dominio
     let praind_vigente = domain::verificar_praind_vigente(&contratista.fecha_vencimiento_praind)?;
-    let alertas_db = alerta_db::find_pendientes_by_cedula(pool, &contratista.cedula).await?;
+    let alertas_db = alerta_service::find_pendientes_by_cedula(pool, &contratista.cedula)
+        .await
+        .map_err(|e| e.to_string())?;
 
     let resultado = domain::evaluar_elegibilidad_entrada(
         block_status.blocked,
@@ -299,7 +302,7 @@ pub async fn registrar_salida(
         if let Some(num) = decision.gafete_numero {
             let alerta_id = Uuid::new_v4().to_string();
             let nombre_completo = format!("{} {}", ingreso.nombre, ingreso.apellido);
-            alerta_db::insert(
+            alerta_service::insert(
                 pool,
                 &alerta_id,
                 ingreso.contratista_id.as_deref(),
@@ -314,7 +317,8 @@ pub async fn registrar_salida(
                 &now,
                 &now,
             )
-            .await?;
+            .await
+            .map_err(|e| e.to_string())?;
         }
     }
 

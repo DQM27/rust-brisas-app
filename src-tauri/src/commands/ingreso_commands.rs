@@ -4,11 +4,11 @@
 // Comandos generales de consulta de ingresos
 // (Los comandos de entrada/salida están en sus propios módulos)
 
-use crate::db::alerta_gafete_queries as alerta_db;
 use crate::db::ingreso_general_queries as db;
 use crate::models::ingreso::{
     AlertaGafeteResponse, IngresoListResponse, IngresoResponse, ResolverAlertaInput,
 };
+use crate::services::alerta_service;
 use chrono::Utc;
 use sqlx::SqlitePool;
 use tauri::State;
@@ -140,7 +140,9 @@ pub async fn get_alertas_pendientes_by_cedula(
     pool: State<'_, SqlitePool>,
     cedula: String,
 ) -> Result<Vec<AlertaGafeteResponse>, String> {
-    let alertas = alerta_db::find_pendientes_by_cedula(&pool, &cedula).await?;
+    let alertas = alerta_service::find_pendientes_by_cedula(&pool, &cedula)
+        .await
+        .map_err(|e| e.to_string())?;
     let responses: Vec<_> = alertas
         .into_iter()
         .map(AlertaGafeteResponse::from)
@@ -153,7 +155,9 @@ pub async fn get_alertas_pendientes_by_cedula(
 pub async fn get_all_alertas_gafetes(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<AlertaGafeteResponse>, String> {
-    let alertas = alerta_db::find_all(&pool, None).await?;
+    let alertas = alerta_service::find_all(&pool, None)
+        .await
+        .map_err(|e| e.to_string())?;
     let responses: Vec<_> = alertas
         .into_iter()
         .map(AlertaGafeteResponse::from)
@@ -169,7 +173,7 @@ pub async fn resolver_alerta_gafete(
 ) -> Result<AlertaGafeteResponse, String> {
     let now = Utc::now().to_rfc3339();
     let resolver_id = input.usuario_id.unwrap_or_else(|| "sistema".to_string());
-    alerta_db::resolver(
+    alerta_service::resolver(
         &pool,
         &input.alerta_id,
         &now,
@@ -177,8 +181,11 @@ pub async fn resolver_alerta_gafete(
         &resolver_id,
         &now,
     )
-    .await?;
+    .await
+    .map_err(|e| e.to_string())?;
 
-    let alerta = alerta_db::find_by_id(&pool, &input.alerta_id).await?;
+    let alerta = alerta_service::find_by_id(&pool, &input.alerta_id)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(AlertaGafeteResponse::from(alerta))
 }

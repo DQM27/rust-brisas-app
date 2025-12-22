@@ -1,3 +1,4 @@
+pub mod alerta_service;
 pub mod auth;
 pub mod authorization;
 pub mod backup;

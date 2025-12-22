@@ -1,0 +1,252 @@
+    Checking brisas-app v0.1.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+  --> src\db\alerta_gafete_queries.rs:61:15
+   |
+61 |       let row = sqlx::query_as!(
+   |  _______________^
+62 | |         AlertaGafeteRow,
+63 | |         r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+64 | |                 ingreso_contratista_id, ingreso_proveedor_id,
+...  |
+68 | |         id
+69 | |     )
+   | |_____^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+   |
+   = help: the following other types implement trait `From<T>`:
+             `std::string::String` implements `From<&EcoString>`
+             `std::string::String` implements `From<&mut str>`
+             `std::string::String` implements `From<&std::string::String>`
+             `std::string::String` implements `From<&str>`
+             `std::string::String` implements `From<AssetKey>`
+             `std::string::String` implements `From<Box<str>>`
+             `std::string::String` implements `From<Cow<'_, str>>`
+             `std::string::String` implements `From<EcoString>`
+           and 14 others
+   = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `bool: From<std::option::Option<bool>>` is not satisfied
+  --> src\db\alerta_gafete_queries.rs:61:15
+   |
+61 |       let row = sqlx::query_as!(
+   |  _______________^
+62 | |         AlertaGafeteRow,
+63 | |         r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+64 | |                 ingreso_contratista_id, ingreso_proveedor_id,
+...  |
+68 | |         id
+69 | |     )
+   | |_____^ the trait `From<std::option::Option<bool>>` is not implemented for `bool`
+   |
+   = help: the following other types implement trait `From<T>`:
+             `bool` implements `From<&windows::Win32::Foundation::BOOL>`
+             `bool` implements `From<&windows::Win32::Foundation::BOOLEAN>`
+             `bool` implements `From<&windows::Win32::Foundation::VARIANT_BOOL>`
+             `bool` implements `From<&windows::Win32::Foundation::VARIANT_BOOL>`
+             `bool` implements `From<&windows_result::bool::BOOL>`
+             `bool` implements `From<format_description::parse::format_item::HourBase>`
+             `bool` implements `From<format_description::parse::format_item::MonthCaseSensitive>`
+             `bool` implements `From<format_description::parse::format_item::PeriodCase>`
+           and 17 others
+   = note: required for `std::option::Option<bool>` to implement `Into<bool>`
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+  --> src\db\alerta_gafete_queries.rs:81:16
+   |
+81 |       let rows = sqlx::query_as!(
+   |  ________________^
+82 | |         AlertaGafeteRow,
+83 | |         r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+84 | |                 ingreso_contratista_id, ingreso_proveedor_id,
+...  |
+88 | |         cedula
+89 | |     )
+   | |_____^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+   |
+   = help: the following other types implement trait `From<T>`:
+             `std::string::String` implements `From<&EcoString>`
+             `std::string::String` implements `From<&mut str>`
+             `std::string::String` implements `From<&std::string::String>`
+             `std::string::String` implements `From<&str>`
+             `std::string::String` implements `From<AssetKey>`
+             `std::string::String` implements `From<Box<str>>`
+             `std::string::String` implements `From<Cow<'_, str>>`
+             `std::string::String` implements `From<EcoString>`
+           and 14 others
+   = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `bool: From<std::option::Option<bool>>` is not satisfied
+  --> src\db\alerta_gafete_queries.rs:81:16
+   |
+81 |       let rows = sqlx::query_as!(
+   |  ________________^
+82 | |         AlertaGafeteRow,
+83 | |         r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+84 | |                 ingreso_contratista_id, ingreso_proveedor_id,
+...  |
+88 | |         cedula
+89 | |     )
+   | |_____^ the trait `From<std::option::Option<bool>>` is not implemented for `bool`
+   |
+   = help: the following other types implement trait `From<T>`:
+             `bool` implements `From<&windows::Win32::Foundation::BOOL>`
+             `bool` implements `From<&windows::Win32::Foundation::BOOLEAN>`
+             `bool` implements `From<&windows::Win32::Foundation::VARIANT_BOOL>`
+             `bool` implements `From<&windows::Win32::Foundation::VARIANT_BOOL>`
+             `bool` implements `From<&windows_result::bool::BOOL>`
+             `bool` implements `From<format_description::parse::format_item::HourBase>`
+             `bool` implements `From<format_description::parse::format_item::MonthCaseSensitive>`
+             `bool` implements `From<format_description::parse::format_item::PeriodCase>`
+           and 17 others
+   = note: required for `std::option::Option<bool>` to implement `Into<bool>`
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+   --> src\db\alerta_gafete_queries.rs:104:9
+    |
+104 | /         sqlx::query_as!(
+105 | |             AlertaGafeteRow,
+106 | |             r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+107 | |                     ingreso_contratista_id, ingreso_proveedor_id,
+...   |
+111 | |             resuelto_val
+112 | |         )
+    | |_________^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+    = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `bool: From<std::option::Option<bool>>` is not satisfied
+   --> src\db\alerta_gafete_queries.rs:104:9
+    |
+104 | /         sqlx::query_as!(
+105 | |             AlertaGafeteRow,
+106 | |             r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+107 | |                     ingreso_contratista_id, ingreso_proveedor_id,
+...   |
+111 | |             resuelto_val
+112 | |         )
+    | |_________^ the trait `From<std::option::Option<bool>>` is not implemented for `bool`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `bool` implements `From<&windows::Win32::Foundation::BOOL>`
+              `bool` implements `From<&windows::Win32::Foundation::BOOLEAN>`
+              `bool` implements `From<&windows::Win32::Foundation::VARIANT_BOOL>`
+              `bool` implements `From<&windows::Win32::Foundation::VARIANT_BOOL>`
+              `bool` implements `From<&windows_result::bool::BOOL>`
+              `bool` implements `From<format_description::parse::format_item::HourBase>`
+              `bool` implements `From<format_description::parse::format_item::MonthCaseSensitive>`
+              `bool` implements `From<format_description::parse::format_item::PeriodCase>`
+            and 17 others
+    = note: required for `std::option::Option<bool>` to implement `Into<bool>`
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+   --> src\db\alerta_gafete_queries.rs:116:9
+    |
+116 | /         sqlx::query_as!(
+117 | |             AlertaGafeteRow,
+118 | |             r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+119 | |                     ingreso_contratista_id, ingreso_proveedor_id,
+...   |
+122 | |              FROM alertas_gafetes ORDER BY fecha_reporte DESC"#
+123 | |         )
+    | |_________^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+    = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `bool: From<std::option::Option<bool>>` is not satisfied
+   --> src\db\alerta_gafete_queries.rs:116:9
+    |
+116 | /         sqlx::query_as!(
+117 | |             AlertaGafeteRow,
+118 | |             r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+119 | |                     ingreso_contratista_id, ingreso_proveedor_id,
+...   |
+122 | |              FROM alertas_gafetes ORDER BY fecha_reporte DESC"#
+123 | |         )
+    | |_________^ the trait `From<std::option::Option<bool>>` is not implemented for `bool`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `bool` implements `From<&windows::Win32::Foundation::BOOL>`
+              `bool` implements `From<&windows::Win32::Foundation::BOOLEAN>`
+              `bool` implements `From<&windows::Win32::Foundation::VARIANT_BOOL>`
+              `bool` implements `From<&windows::Win32::Foundation::VARIANT_BOOL>`
+              `bool` implements `From<&windows_result::bool::BOOL>`
+              `bool` implements `From<format_description::parse::format_item::HourBase>`
+              `bool` implements `From<format_description::parse::format_item::MonthCaseSensitive>`
+              `bool` implements `From<format_description::parse::format_item::PeriodCase>`
+            and 17 others
+    = note: required for `std::option::Option<bool>` to implement `Into<bool>`
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: `?` couldn't convert the error to `std::string::String`
+   --> src\services\ingreso_contratista_service.rs:110:91
+    |
+110 |     let alertas_db = alerta_db::find_pendientes_by_cedula(pool, &contratista.cedula).await?;
+    |                      ---------------------------------------------------------------------^ the trait `From<sqlx::Error>` is not implemented for `std::string::String`
+    |                      |
+    |                      this can't be annotated with `?` because it has type `Result<_, sqlx::Error>`
+    |
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+
+error[E0277]: `?` couldn't convert the error to `std::string::String`
+   --> src\services\ingreso_contratista_service.rs:317:19
+    |
+302 | /             alerta_db::insert(
+303 | |                 pool,
+304 | |                 &alerta_id,
+305 | |                 ingreso.contratista_id.as_deref(),
+...   |
+317 | |             .await?;
+    | |                  -^ the trait `From<sqlx::Error>` is not implemented for `std::string::String`
+    | |__________________|
+    |                    this can't be annotated with `?` because it has type `Result<_, sqlx::Error>`
+    |
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `brisas-app` (lib) due to 10 previous errors

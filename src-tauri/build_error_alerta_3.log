@@ -1,0 +1,11 @@
+    Checking brisas-app v0.1.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `alerta_db`
+   --> src\commands\ingreso_commands.rs:187:18
+    |
+187 |     let alerta = alerta_db::find_by_id(&pool, &input.alerta_id)
+    |                  ^^^^^^^^^ use of unresolved module or unlinked crate `alerta_db`
+    |
+    = help: if you wanted to use a crate named `alerta_db`, use `cargo add alerta_db` to add it to your `Cargo.toml`
+
+For more information about this error, try `rustc --explain E0433`.
+error: could not compile `brisas-app` (lib) due to 1 previous error

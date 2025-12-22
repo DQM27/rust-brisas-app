@@ -229,7 +229,7 @@ impl IngresoProveedorService {
         });
 
         // 5. Obtener alertas pendientes
-        let alertas_pendientes = crate::db::alerta_gafete_queries::find_pendientes_by_cedula(
+        let alertas_pendientes = crate::services::alerta_service::find_pendientes_by_cedula(
             &self.pool,
             &proveedor.cedula,
         )

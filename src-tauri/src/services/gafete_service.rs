@@ -3,13 +3,13 @@
 // ==========================================
 // Orquesta dominio y DB - Lógica de negocio completa
 
-use crate::db::alerta_gafete_queries as alerta_db;
 use crate::db::gafete_queries as db;
 use crate::domain::gafete as domain;
 use crate::models::gafete::{
     CreateGafeteInput, CreateGafeteRangeInput, GafeteEstado, GafeteListResponse, GafeteResponse,
     StatsGafetes, StatsPorTipo, TipoGafete, UpdateGafeteInput,
 };
+use crate::services::alerta_service;
 use chrono::Utc;
 use sqlx::SqlitePool;
 
@@ -388,7 +388,7 @@ pub async fn update_gafete_status(
             {
                 // Resolverla
                 let resolver_id = usuario_id.unwrap_or_else(|| "sistema".to_string());
-                alerta_db::resolver(
+                alerta_service::resolver(
                     pool,
                     &id,
                     &now,
@@ -396,7 +396,8 @@ pub async fn update_gafete_status(
                     &resolver_id,
                     &now,
                 )
-                .await?;
+                .await
+                .map_err(|e| format!("Error al resolver alerta automática: {}", e))?;
             }
         }
     }

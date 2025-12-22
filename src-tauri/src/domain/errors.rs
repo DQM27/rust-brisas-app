@@ -102,8 +102,21 @@ pub enum VehiculoError {
     #[error("Ya existe un vehículo con esta placa")]
     PlacaExists,
 
-    #[error("Tipo de vehículo desconocido: {0}")]
-    InvalidType(String),
+    #[error("Error de base de datos: {0}")]
+    Database(#[from] sqlx::Error),
+
+    #[error("Error de validación: {0}")]
+    Validation(String),
+}
+
+// ==========================================
+// ALERTA ERRORS
+// ==========================================
+
+#[derive(Error, Debug)]
+pub enum AlertaError {
+    #[error("Alerta no encontrada")]
+    NotFound,
 
     #[error("Error de base de datos: {0}")]
     Database(#[from] sqlx::Error),

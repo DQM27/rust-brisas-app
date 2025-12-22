@@ -1,0 +1,105 @@
+    Checking brisas-app v0.1.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+  --> src\db\alerta_gafete_queries.rs:63:15
+   |
+63 |       let row = sqlx::query_as!(
+   |  _______________^
+64 | |         AlertaGafeteRow,
+65 | |         r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+66 | |                 ingreso_contratista_id, ingreso_proveedor_id,
+...  |
+70 | |         id
+71 | |     )
+   | |_____^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+   |
+   = help: the following other types implement trait `From<T>`:
+             `std::string::String` implements `From<&EcoString>`
+             `std::string::String` implements `From<&mut str>`
+             `std::string::String` implements `From<&std::string::String>`
+             `std::string::String` implements `From<&str>`
+             `std::string::String` implements `From<AssetKey>`
+             `std::string::String` implements `From<Box<str>>`
+             `std::string::String` implements `From<Cow<'_, str>>`
+             `std::string::String` implements `From<EcoString>`
+           and 14 others
+   = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+  --> src\db\alerta_gafete_queries.rs:83:16
+   |
+83 |       let rows = sqlx::query_as!(
+   |  ________________^
+84 | |         AlertaGafeteRow,
+85 | |         r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+86 | |                 ingreso_contratista_id, ingreso_proveedor_id,
+...  |
+90 | |         cedula
+91 | |     )
+   | |_____^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+   |
+   = help: the following other types implement trait `From<T>`:
+             `std::string::String` implements `From<&EcoString>`
+             `std::string::String` implements `From<&mut str>`
+             `std::string::String` implements `From<&std::string::String>`
+             `std::string::String` implements `From<&str>`
+             `std::string::String` implements `From<AssetKey>`
+             `std::string::String` implements `From<Box<str>>`
+             `std::string::String` implements `From<Cow<'_, str>>`
+             `std::string::String` implements `From<EcoString>`
+           and 14 others
+   = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+   --> src\db\alerta_gafete_queries.rs:104:9
+    |
+104 | /         sqlx::query_as!(
+105 | |             AlertaGafeteRow,
+106 | |             r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+107 | |                     ingreso_contratista_id, ingreso_proveedor_id,
+...   |
+111 | |             resuelto_val
+112 | |         )
+    | |_________^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+    = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+   --> src\db\alerta_gafete_queries.rs:116:9
+    |
+116 | /         sqlx::query_as!(
+117 | |             AlertaGafeteRow,
+118 | |             r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+119 | |                     ingreso_contratista_id, ingreso_proveedor_id,
+...   |
+122 | |              FROM alertas_gafetes ORDER BY fecha_reporte DESC"#
+123 | |         )
+    | |_________^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+    = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `brisas-app` (lib) due to 4 previous errors

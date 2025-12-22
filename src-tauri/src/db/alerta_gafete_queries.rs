@@ -2,82 +2,130 @@
 // src/db/alerta_gafete_queries.rs
 // ==========================================
 // Queries SQL puras para alertas de gafetes - Sin lógica de negocio
+// Strict Mode: Uso de query! para validación en tiempo de compilación
 
 use crate::models::ingreso::AlertaGafete;
-use sqlx::{Row, SqlitePool};
+use sqlx::SqlitePool;
+
+// ==========================================
+// DTO INTERMEDIO PARA MAPEO SEGURO
+// ==========================================
+
+#[derive(sqlx::FromRow)]
+struct AlertaGafeteRow {
+    id: Option<String>,
+    persona_id: Option<String>,
+    cedula: Option<String>,
+    nombre_completo: Option<String>,
+    gafete_numero: Option<String>,
+    ingreso_contratista_id: Option<String>,
+    ingreso_proveedor_id: Option<String>,
+    fecha_reporte: Option<String>,
+    resuelto: Option<bool>,
+    fecha_resolucion: Option<String>,
+    notas: Option<String>,
+    reportado_por: Option<String>,
+    resuelto_por: Option<String>,
+    created_at: Option<String>,
+    updated_at: Option<String>,
+}
+
+impl From<AlertaGafeteRow> for AlertaGafete {
+    fn from(row: AlertaGafeteRow) -> Self {
+        AlertaGafete {
+            id: row.id.unwrap_or_default(),
+            persona_id: row.persona_id,
+            cedula: row.cedula.unwrap_or_default(),
+            nombre_completo: row.nombre_completo.unwrap_or_default(),
+            gafete_numero: row.gafete_numero.unwrap_or_default(),
+            ingreso_contratista_id: row.ingreso_contratista_id,
+            ingreso_proveedor_id: row.ingreso_proveedor_id,
+            fecha_reporte: row
+                .fecha_reporte
+                .unwrap_or_else(|| chrono::Utc::now().to_rfc3339()),
+            resuelto: row.resuelto.unwrap_or(false),
+            fecha_resolucion: row.fecha_resolucion,
+            notas: row.notas,
+            reportado_por: row.reportado_por.unwrap_or_default(),
+            resuelto_por: row.resuelto_por,
+            created_at: row.created_at.unwrap_or_default(),
+            updated_at: row.updated_at.unwrap_or_default(),
+        }
+    }
+}
 
 // ==========================================
 // QUERIES DE LECTURA
 // ==========================================
 
 /// Busca una alerta por ID
-pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<AlertaGafete, String> {
-    let row = sqlx::query(
-        "SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+pub async fn find_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<AlertaGafete> {
+    let row = sqlx::query_as!(
+        AlertaGafeteRow,
+        r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
                 ingreso_contratista_id, ingreso_proveedor_id,
-                fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por, resuelto_por,
+                fecha_reporte, resuelto as "resuelto: bool", fecha_resolucion, notas, reportado_por, resuelto_por,
                 created_at, updated_at
-         FROM alertas_gafetes WHERE id = ?",
+         FROM alertas_gafetes WHERE id = ?"#,
+        id
     )
-    .bind(id)
     .fetch_one(pool)
-    .await
-    .map_err(|_| "Alerta no encontrada".to_string())?;
+    .await?;
 
-    Ok(row_to_alerta(row))
+    Ok(row.into())
 }
 
 /// Obtiene alertas pendientes de una cédula
 pub async fn find_pendientes_by_cedula(
     pool: &SqlitePool,
     cedula: &str,
-) -> Result<Vec<AlertaGafete>, String> {
-    let rows = sqlx::query(
-        "SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+) -> sqlx::Result<Vec<AlertaGafete>> {
+    let rows = sqlx::query_as!(
+        AlertaGafeteRow,
+        r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
                 ingreso_contratista_id, ingreso_proveedor_id,
-                fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por, resuelto_por,
+                fecha_reporte, resuelto as "resuelto: bool", fecha_resolucion, notas, reportado_por, resuelto_por,
                 created_at, updated_at
-         FROM alertas_gafetes WHERE cedula = ? AND resuelto = 0 ORDER BY fecha_reporte DESC",
+         FROM alertas_gafetes WHERE cedula = ? AND resuelto = 0 ORDER BY fecha_reporte DESC"#,
+        cedula
     )
-    .bind(cedula)
     .fetch_all(pool)
-    .await
-    .map_err(|e| format!("Error al obtener alertas: {}", e))?;
+    .await?;
 
-    Ok(rows.into_iter().map(row_to_alerta).collect())
+    Ok(rows.into_iter().map(AlertaGafete::from).collect())
 }
 
 /// Obtiene todas las alertas (con filtro opcional de resuelto)
 pub async fn find_all(
     pool: &SqlitePool,
     resuelto: Option<bool>,
-) -> Result<Vec<AlertaGafete>, String> {
+) -> sqlx::Result<Vec<AlertaGafete>> {
     let rows = if let Some(resuelto_val) = resuelto {
-        let resuelto_int = if resuelto_val { 1 } else { 0 };
-        sqlx::query(
-            "SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+        sqlx::query_as!(
+            AlertaGafeteRow,
+            r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
                     ingreso_contratista_id, ingreso_proveedor_id,
-                    fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por, resuelto_por,
+                    fecha_reporte, resuelto as "resuelto: bool", fecha_resolucion, notas, reportado_por, resuelto_por,
                     created_at, updated_at
-             FROM alertas_gafetes WHERE resuelto = ? ORDER BY fecha_reporte DESC",
+             FROM alertas_gafetes WHERE resuelto = ? ORDER BY fecha_reporte DESC"#,
+            resuelto_val
         )
-        .bind(resuelto_int)
         .fetch_all(pool)
-        .await
+        .await?
     } else {
-        sqlx::query(
-            "SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
+        sqlx::query_as!(
+            AlertaGafeteRow,
+            r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
                     ingreso_contratista_id, ingreso_proveedor_id,
-                    fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por, resuelto_por,
+                    fecha_reporte, resuelto as "resuelto: bool", fecha_resolucion, notas, reportado_por, resuelto_por,
                     created_at, updated_at
-             FROM alertas_gafetes ORDER BY fecha_reporte DESC",
+             FROM alertas_gafetes ORDER BY fecha_reporte DESC"#
         )
         .fetch_all(pool)
-        .await
+        .await?
     };
 
-    let rows = rows.map_err(|e| format!("Error al obtener alertas: {}", e))?;
-    Ok(rows.into_iter().map(row_to_alerta).collect())
+    Ok(rows.into_iter().map(AlertaGafete::from).collect())
 }
 
 // ==========================================
@@ -99,30 +147,29 @@ pub async fn insert(
     reportado_por: &str,
     created_at: &str,
     updated_at: &str,
-) -> Result<(), String> {
-    sqlx::query(
+) -> sqlx::Result<()> {
+    sqlx::query!(
         r#"INSERT INTO alertas_gafetes 
            (id, persona_id, cedula, nombre_completo, gafete_numero, 
             ingreso_contratista_id, ingreso_proveedor_id,
             fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por,
             created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?)"#,
+        id,
+        persona_id,
+        cedula,
+        nombre_completo,
+        gafete_numero,
+        ingreso_contratista_id,
+        ingreso_proveedor_id,
+        fecha_reporte,
+        notas,
+        reportado_por,
+        created_at,
+        updated_at
     )
-    .bind(id)
-    .bind(persona_id)
-    .bind(cedula)
-    .bind(nombre_completo)
-    .bind(gafete_numero)
-    .bind(ingreso_contratista_id)
-    .bind(ingreso_proveedor_id)
-    .bind(fecha_reporte)
-    .bind(notas)
-    .bind(reportado_por)
-    .bind(created_at)
-    .bind(updated_at)
     .execute(pool)
-    .await
-    .map_err(|e| format!("Error al crear alerta: {}", e))?;
+    .await?;
 
     Ok(())
 }
@@ -135,8 +182,8 @@ pub async fn resolver(
     notas: Option<&str>,
     usuario_id: &str, // ID del usuario que resuelve
     updated_at: &str,
-) -> Result<(), String> {
-    sqlx::query(
+) -> sqlx::Result<()> {
+    sqlx::query!(
         r#"UPDATE alertas_gafetes SET
             resuelto = 1,
             fecha_resolucion = ?,
@@ -144,52 +191,23 @@ pub async fn resolver(
             resuelto_por = ?,
             updated_at = ?
         WHERE id = ?"#,
+        fecha_resolucion,
+        notas,
+        usuario_id,
+        updated_at,
+        id
     )
-    .bind(fecha_resolucion)
-    .bind(notas)
-    .bind(usuario_id)
-    .bind(updated_at)
-    .bind(id)
     .execute(pool)
-    .await
-    .map_err(|e| format!("Error al resolver alerta: {}", e))?;
+    .await?;
 
     Ok(())
 }
 
 /// Elimina una alerta (solo admin)
-pub async fn delete(pool: &SqlitePool, id: &str) -> Result<(), String> {
-    sqlx::query("DELETE FROM alertas_gafetes WHERE id = ?")
-        .bind(id)
+pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
+    sqlx::query!("DELETE FROM alertas_gafetes WHERE id = ?", id)
         .execute(pool)
-        .await
-        .map_err(|e| format!("Error al eliminar alerta: {}", e))?;
+        .await?;
 
     Ok(())
-}
-
-// ==========================================
-// HELPERS INTERNOS
-// ==========================================
-
-fn row_to_alerta(row: sqlx::sqlite::SqliteRow) -> AlertaGafete {
-    let resuelto_int: i32 = row.get("resuelto");
-
-    AlertaGafete {
-        id: row.get("id"),
-        persona_id: row.get("persona_id"),
-        cedula: row.get("cedula"),
-        nombre_completo: row.get("nombre_completo"),
-        gafete_numero: row.get("gafete_numero"),
-        ingreso_contratista_id: row.get("ingreso_contratista_id"),
-        ingreso_proveedor_id: row.get("ingreso_proveedor_id"),
-        fecha_reporte: row.get("fecha_reporte"),
-        resuelto: resuelto_int != 0,
-        fecha_resolucion: row.get("fecha_resolucion"),
-        notas: row.get("notas"),
-        reportado_por: row.get("reportado_por"),
-        resuelto_por: row.get("resuelto_por"),
-        created_at: row.get("created_at"),
-        updated_at: row.get("updated_at"),
-    }
 }
