@@ -8,7 +8,6 @@ import type { ComponentKey } from '$lib/types/component';
 import WelcomePanel from '$lib/components/WelcomePanel.svelte';
 import UserListView from '$lib/components/user/UserListView.svelte';
 
-import ContratistaView from '$lib/components/contratista/ContratistaView.svelte';
 import ContratistaListView from '$lib/components/contratista/ContratistaListView.svelte';
 import ProveedorView from '$lib/components/proveedor/ProveedorView.svelte';
 import ProveedorListView from '$lib/components/proveedor/ProveedorListView.svelte';
@@ -42,7 +41,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'dashboard': WelcomePanel,
   'citas-view': CitasList,
 
-  'contratista': ContratistaView,
+  'contratista': ContratistaListView,
   'contratista-list': ContratistaListView,
   'proveedor': ProveedorView,
   'proveedor-list': ProveedorListView,
