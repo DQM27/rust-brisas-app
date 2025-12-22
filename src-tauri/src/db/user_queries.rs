@@ -12,7 +12,7 @@ use sqlx::{Row, SqlitePool};
 // ==========================================
 
 /// Busca un usuario por ID (Solo activos)
-pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<User, String> {
+pub async fn find_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<User> {
     let row = sqlx::query(
         "SELECT id, email, nombre, apellido, role, is_active, created_at, updated_at,
                 cedula, segundo_nombre, segundo_apellido,
@@ -22,15 +22,19 @@ pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<User, String> {
     )
     .bind(id)
     .fetch_one(pool)
-    .await
-    .map_err(|e| format!("Usuario no encontrado: {}", e))?;
+    .await?;
 
     Ok(User {
         id: row.get("id"),
         email: row.get("email"),
         nombre: row.get("nombre"),
         apellido: row.get("apellido"),
-        role: UserRole::from_str(row.get("role"))?,
+        role: UserRole::from_str(row.get("role")).map_err(|e| {
+            sqlx::Error::Decode(Box::new(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                e,
+            )))
+        })?,
         is_active: row.get::<i32, _>("is_active") != 0,
         created_at: row.get("created_at"),
         updated_at: row.get("updated_at"),
@@ -56,7 +60,7 @@ pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<User, String> {
 pub async fn find_by_email_with_password(
     pool: &SqlitePool,
     email: &str,
-) -> Result<(User, String), String> {
+) -> sqlx::Result<(User, String)> {
     let row = sqlx::query(
         "SELECT id, email, nombre, apellido, role, is_active, created_at, updated_at, password_hash,
                 cedula, segundo_nombre, segundo_apellido,
@@ -66,15 +70,19 @@ pub async fn find_by_email_with_password(
     )
     .bind(email)
     .fetch_one(pool)
-    .await
-    .map_err(|_| "Credenciales inválidas".to_string())?;
+    .await?;
 
     let user = User {
         id: row.get("id"),
         email: row.get("email"),
         nombre: row.get("nombre"),
         apellido: row.get("apellido"),
-        role: UserRole::from_str(row.get("role"))?,
+        role: UserRole::from_str(row.get("role")).map_err(|e| {
+            sqlx::Error::Decode(Box::new(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                e,
+            )))
+        })?,
         is_active: row.get::<i32, _>("is_active") != 0,
         created_at: row.get("created_at"),
         updated_at: row.get("updated_at"),
@@ -101,7 +109,7 @@ pub async fn find_by_email_with_password(
 }
 
 /// Obtiene todos los usuarios activos ordenados por fecha de creación
-pub async fn find_all(pool: &SqlitePool) -> Result<Vec<User>, String> {
+pub async fn find_all(pool: &SqlitePool) -> sqlx::Result<Vec<User>> {
     let rows = sqlx::query(
         "SELECT id, email, nombre, apellido, role, is_active, created_at, updated_at,
                 cedula, segundo_nombre, segundo_apellido,
@@ -110,8 +118,7 @@ pub async fn find_all(pool: &SqlitePool) -> Result<Vec<User>, String> {
          FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC",
     )
     .fetch_all(pool)
-    .await
-    .map_err(|e| format!("Error al obtener usuarios: {}", e))?;
+    .await?;
 
     let users: Vec<User> = rows
         .into_iter()
@@ -148,12 +155,11 @@ pub async fn find_all(pool: &SqlitePool) -> Result<Vec<User>, String> {
 }
 
 /// Cuenta cuántos usuarios tienen un email específico (para verificar unicidad)
-pub async fn count_by_email(pool: &SqlitePool, email: &str) -> Result<i32, String> {
+pub async fn count_by_email(pool: &SqlitePool, email: &str) -> sqlx::Result<i32> {
     let row = sqlx::query("SELECT COUNT(*) as count FROM users WHERE email = ?")
         .bind(email)
         .fetch_one(pool)
-        .await
-        .map_err(|e| format!("Error al verificar email: {}", e))?;
+        .await?;
 
     Ok(row.get("count"))
 }
@@ -164,13 +170,12 @@ pub async fn count_by_email_excluding_id(
     pool: &SqlitePool,
     email: &str,
     exclude_id: &str,
-) -> Result<i32, String> {
+) -> sqlx::Result<i32> {
     let row = sqlx::query("SELECT COUNT(*) as count FROM users WHERE email = ? AND id != ?")
         .bind(email)
         .bind(exclude_id)
         .fetch_one(pool)
-        .await
-        .map_err(|e| format!("Error al verificar email: {}", e))?;
+        .await?;
 
     Ok(row.get("count"))
 }
@@ -202,7 +207,7 @@ pub async fn insert(
     contacto_emergencia_nombre: Option<&str>,
     contacto_emergencia_telefono: Option<&str>,
     must_change_password: bool,
-) -> Result<(), String> {
+) -> sqlx::Result<()> {
     let must_change_password_int = if must_change_password { 1 } else { 0 };
 
     sqlx::query(
@@ -235,8 +240,7 @@ pub async fn insert(
     .bind(contacto_emergencia_telefono)
     .bind(must_change_password_int)
     .execute(pool)
-    .await
-    .map_err(|e| format!("Error al crear usuario: {}", e))?;
+    .await?;
 
     Ok(())
 }
@@ -264,7 +268,7 @@ pub async fn update(
     contacto_emergencia_nombre: Option<&str>,
     contacto_emergencia_telefono: Option<&str>,
     must_change_password: Option<bool>,
-) -> Result<(), String> {
+) -> sqlx::Result<()> {
     let must_change_password_int = must_change_password.map(|b| if b { 1 } else { 0 });
 
     sqlx::query(
@@ -310,21 +314,19 @@ pub async fn update(
     .bind(must_change_password_int)
     .bind(id)
     .execute(pool)
-    .await
-    .map_err(|e| format!("Error al actualizar usuario: {}", e))?;
+    .await?;
 
     Ok(())
 }
 
 /// Elimina un usuario por ID (Soft Delete)
-pub async fn delete(pool: &SqlitePool, id: &str) -> Result<(), String> {
+pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
     let now = chrono::Utc::now().to_rfc3339();
     sqlx::query("UPDATE users SET deleted_at = ? WHERE id = ?")
         .bind(now)
         .bind(id)
         .execute(pool)
-        .await
-        .map_err(|e| format!("Error al eliminar usuario (soft): {}", e))?;
+        .await?;
 
     Ok(())
 }

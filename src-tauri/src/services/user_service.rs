@@ -7,6 +7,7 @@
 use crate::domain::user as domain;
 
 use crate::db::user_queries as db;
+use crate::domain::errors::UserError;
 use crate::models::user::{
     ChangePasswordInput, CreateUserInput, RoleStats, UpdateUserInput, UserListResponse,
     UserResponse, UserRole,
@@ -29,7 +30,7 @@ pub async fn create_user(
     pool: &SqlitePool,
     search_service: &Arc<SearchService>,
     mut input: CreateUserInput,
-) -> Result<UserResponse, String> {
+) -> Result<UserResponse, UserError> {
     // 0. Normalizar input: Si campos opcionales vienen vacíos, convertirlos a None
     if let Some(ref p) = input.password {
         if p.trim().is_empty() {
@@ -57,7 +58,7 @@ pub async fn create_user(
     clean_opt(&mut input.contacto_emergencia_telefono);
 
     // 1. Validar input
-    domain::validar_create_input(&input)?;
+    domain::validar_create_input(&input).map_err(UserError::Validation)?;
 
     // 2. Normalizar datos
     let email_normalizado = domain::normalizar_email(&input.email);
@@ -67,12 +68,12 @@ pub async fn create_user(
     // 3. Verificar que el email no exista
     let count = db::count_by_email(pool, &email_normalizado).await?;
     if count > 0 {
-        return Err("Ya existe un usuario con este email".to_string());
+        return Err(UserError::EmailExists);
     }
 
     // 4. Determinar rol (default: Guardia)
     let role = if let Some(ref r) = input.role {
-        UserRole::from_str(r)?
+        UserRole::from_str(r).map_err(UserError::Validation)?
     } else {
         UserRole::Guardia
     };
@@ -92,7 +93,7 @@ pub async fn create_user(
         }
     };
 
-    let password_hash = auth::hash_password(&password_str)?;
+    let password_hash = auth::hash_password(&password_str).map_err(UserError::Auth)?;
 
     // 6. Generar ID y timestamps
     let id = Uuid::new_v4().to_string();
@@ -148,8 +149,8 @@ pub async fn create_user(
 // OBTENER USUARIO POR ID
 // ==========================================
 
-pub async fn get_user_by_id(pool: &SqlitePool, id: &str) -> Result<UserResponse, String> {
-    let user = db::find_by_id(pool, id).await?;
+pub async fn get_user_by_id(pool: &SqlitePool, id: &str) -> Result<UserResponse, UserError> {
+    let user = db::find_by_id(pool, id).await.map_err(UserError::from)?;
     Ok(UserResponse::from(user))
 }
 
@@ -157,7 +158,7 @@ pub async fn get_user_by_id(pool: &SqlitePool, id: &str) -> Result<UserResponse,
 // OBTENER TODOS LOS USUARIOS
 // ==========================================
 
-pub async fn get_all_users(pool: &SqlitePool) -> Result<UserListResponse, String> {
+pub async fn get_all_users(pool: &SqlitePool) -> Result<UserListResponse, UserError> {
     let users = db::find_all(pool).await?;
 
     // Convertir a UserResponse
@@ -200,7 +201,7 @@ pub async fn update_user(
     search_service: &Arc<SearchService>,
     id: String,
     mut input: UpdateUserInput,
-) -> Result<UserResponse, String> {
+) -> Result<UserResponse, UserError> {
     // Función helper interna para limpiar opciones
     let clean_opt = |opt: &mut Option<String>| {
         if let Some(s) = opt {
@@ -223,7 +224,7 @@ pub async fn update_user(
     clean_opt(&mut input.password);
 
     // 1. Validar input
-    domain::validar_update_input(&input)?;
+    domain::validar_update_input(&input).map_err(UserError::Validation)?;
 
     // 2. Verificar que el usuario existe
     let _ = db::find_by_id(pool, &id).await?;
@@ -235,7 +236,7 @@ pub async fn update_user(
         // Verificar email único
         let count = db::count_by_email_excluding_id(pool, &normalizado, &id).await?;
         if count > 0 {
-            return Err("Ya existe otro usuario con este email".to_string());
+            return Err(UserError::EmailExists);
         }
 
         Some(normalizado)
@@ -253,14 +254,19 @@ pub async fn update_user(
 
     // 5. Convertir rol si viene
     let role_str = if let Some(ref r) = input.role {
-        Some(UserRole::from_str(r)?.as_str().to_string())
+        Some(
+            UserRole::from_str(r)
+                .map_err(UserError::Validation)?
+                .as_str()
+                .to_string(),
+        )
     } else {
         None
     };
 
     // 6. Hashear contraseña si viene
     let password_hash = if let Some(ref pwd) = input.password {
-        Some(auth::hash_password(pwd)?)
+        Some(auth::hash_password(pwd).map_err(UserError::Auth)?)
     } else {
         None
     };
@@ -324,7 +330,7 @@ pub async fn delete_user(
     pool: &SqlitePool,
     search_service: &Arc<SearchService>,
     id: String,
-) -> Result<(), String> {
+) -> Result<(), UserError> {
     // Verificar que existe antes de eliminar
     let _ = db::find_by_id(pool, &id).await?;
 
@@ -348,16 +354,16 @@ pub async fn change_password(
     pool: &SqlitePool,
     id: String,
     input: ChangePasswordInput,
-) -> Result<(), String> {
+) -> Result<(), UserError> {
     // 1. Obtener usuario (incluye password hash para verificar si es necesario)
     let (_, current_hash) =
         db::find_by_email_with_password(pool, &get_user_by_id(pool, &id).await?.email).await?;
 
     // 2. Verificar contraseña actual si se provee (obligatorio para usuario normal)
     if let Some(current) = input.current_password {
-        let is_valid = auth::verify_password(&current, &current_hash)?;
+        let is_valid = auth::verify_password(&current, &current_hash).map_err(UserError::Auth)?;
         if !is_valid {
-            return Err("La contraseña actual es incorrecta".to_string());
+            return Err(UserError::InvalidCurrentPassword);
         }
     } else {
         // Si no se provee current, asumir que es admin reset (validar permisos en capa superior si es necesario)
@@ -365,10 +371,10 @@ pub async fn change_password(
     }
 
     // 3. Validar nueva contraseña
-    domain::validar_password(&input.new_password)?;
+    domain::validar_password(&input.new_password).map_err(UserError::Validation)?;
 
     // 4. Hashear nueva
-    let new_hash = auth::hash_password(&input.new_password)?;
+    let new_hash = auth::hash_password(&input.new_password).map_err(UserError::Auth)?;
 
     // 5. Actualizar en DB y QUITAR flag de must_change_password
     let now = Utc::now().to_rfc3339();
@@ -409,7 +415,7 @@ pub async fn login(
     pool: &SqlitePool,
     email: String,
     password: String,
-) -> Result<UserResponse, String> {
+) -> Result<UserResponse, UserError> {
     // 1. Normalizar email
     let email_normalizado = domain::normalizar_email(&email);
 
@@ -417,14 +423,14 @@ pub async fn login(
     let (user, password_hash) = db::find_by_email_with_password(pool, &email_normalizado).await?;
 
     // 3. Verificar contraseña
-    let is_valid = auth::verify_password(&password, &password_hash)?;
+    let is_valid = auth::verify_password(&password, &password_hash).map_err(UserError::Auth)?;
     if !is_valid {
-        return Err("Credenciales inválidas".to_string());
+        return Err(UserError::InvalidCredentials);
     }
 
     // 4. Verificar que esté activo
     if !user.is_active {
-        return Err("Usuario inactivo".to_string());
+        return Err(UserError::InactiveUser);
     }
 
     // 5. Retornar usuario

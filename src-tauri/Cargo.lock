@@ -503,6 +503,7 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
+ "thiserror 2.0.17",
  "tokio",
  "toml 0.8.2",
  "ttf-parser 0.24.1",

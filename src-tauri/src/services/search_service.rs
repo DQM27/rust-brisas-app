@@ -62,7 +62,9 @@ impl SearchService {
         let contratistas = contratista_queries::find_all_with_empresa(pool).await?;
 
         // Obtener todos los usuarios
-        let users = user_queries::find_all(pool).await?;
+        let users = user_queries::find_all(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
         // Obtener todos los registros de lista negra
         let lista_negra = lista_negra_queries::find_all(pool).await?;
