@@ -332,3 +332,86 @@ pub fn update_proveedor_in_index(
     index_proveedor(writer, handles, proveedor, empresa_nombre)?;
     Ok(())
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::contratista::EstadoContratista;
+    use crate::search::schema::build_search_schema;
+    use tantivy::Index;
+
+    fn setup_test_index() -> (Index, FieldHandles) {
+        let schema = build_search_schema();
+        let index = Index::create_in_ram(schema.clone());
+        let handles = FieldHandles::new(&schema).unwrap();
+        (index, handles)
+    }
+
+    #[test]
+    fn test_index_contratista() {
+        let (index, handles) = setup_test_index();
+        let mut writer = get_index_writer(&index).unwrap();
+
+        let contratista = Contratista {
+            id: "1".to_string(),
+            cedula: "123".to_string(),
+            nombre: "John".to_string(),
+            segundo_nombre: None,
+            apellido: "Doe".to_string(),
+            segundo_apellido: None,
+            empresa_id: "emp-1".to_string(),
+            fecha_vencimiento_praind: "2025-01-01".to_string(),
+            estado: EstadoContratista::Activo,
+            created_at: "".to_string(),
+            updated_at: "".to_string(),
+        };
+
+        index_contratista(&mut writer, &handles, &contratista, "Empresa A").unwrap();
+        commit_index(&mut writer).unwrap();
+
+        let reader = index.reader().unwrap();
+        let searcher = reader.searcher();
+        assert_eq!(searcher.num_docs(), 1);
+    }
+
+    #[test]
+    fn test_index_and_delete() {
+        let (index, handles) = setup_test_index();
+        let mut writer = get_index_writer(&index).unwrap();
+
+        let user = User {
+            id: "user-1".to_string(),
+            cedula: "456".to_string(),
+            nombre: "Jane".to_string(),
+            segundo_nombre: None,
+            apellido: "Doe".to_string(),
+            segundo_apellido: None,
+            email: "jane@example.com".to_string(),
+            role_id: "role-1".to_string(),
+            is_active: true,
+            must_change_password: false,
+            fecha_inicio_labores: None,
+            numero_gafete: None,
+            fecha_nacimiento: None,
+            telefono: None,
+            direccion: None,
+            contacto_emergencia_nombre: None,
+            contacto_emergencia_telefono: None,
+            deleted_at: None,
+            created_at: "".to_string(),
+            updated_at: "".to_string(),
+        };
+
+        index_user(&mut writer, &handles, &user).unwrap();
+        commit_index(&mut writer).unwrap();
+
+        let reader = index.reader().unwrap();
+        assert_eq!(reader.searcher().num_docs(), 1);
+
+        // Delete
+        delete_from_index(&mut writer, &handles, "user-1").unwrap();
+        commit_index(&mut writer).unwrap();
+
+        reader.reload().unwrap();
+        assert_eq!(reader.searcher().num_docs(), 0);
+    }
+}

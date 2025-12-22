@@ -59,6 +59,25 @@ impl SearchService {
         })
     }
 
+    /// Crea una instancia en memoria para tests
+    pub fn test_instance() -> Self {
+        use crate::search::schema::build_search_schema;
+        let schema = build_search_schema();
+        let index = Index::create_in_ram(schema.clone());
+        let reader = get_index_reader(&index).unwrap();
+        let fields = Arc::new(SearchFields::new(&schema));
+        let handles = create_field_handles(&schema).unwrap();
+
+        Self {
+            index: Arc::new(index),
+            reader: Arc::new(reader),
+            fields,
+            handles,
+            writer_mutex: Mutex::new(()),
+            index_path: PathBuf::from("/tmp"),
+        }
+    }
+
     /// Re-indexa todo (contratistas, usuarios, proveedores y lista negra) desde la base de datos
     pub async fn reindex_all(&self, pool: &SqlitePool) -> Result<(), SearchError> {
         // Obtener todos los contratistas con empresa (Async, sin lock)

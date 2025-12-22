@@ -164,10 +164,11 @@ pub async fn find_by_id_with_empresa(
                v.marca as "marca?", 
                v.modelo as "modelo?", 
                v.color as "color?",
-               EXISTS (SELECT 1 FROM lista_negra ln WHERE ln.cedula = c.cedula AND ln.is_active = 1) as "is_blocked: bool"
+               (ln.id IS NOT NULL) as "is_blocked: bool"
         FROM contratistas c
         LEFT JOIN empresas e ON c.empresa_id = e.id
         LEFT JOIN vehiculos v ON c.id = v.contratista_id
+        LEFT JOIN lista_negra ln ON c.cedula = ln.cedula AND ln.is_active = 1
         WHERE c.id = ?
         "#,
         id
@@ -199,7 +200,7 @@ pub async fn find_by_id_with_empresa(
                 vehiculo_marca: r.marca,
                 vehiculo_modelo: r.modelo,
                 vehiculo_color: r.color,
-                is_blocked: r.is_blocked.unwrap_or(false),
+                is_blocked: r.is_blocked,
             }))
         }
         None => Ok(None),
@@ -221,10 +222,11 @@ pub async fn find_by_cedula_with_empresa(
                v.marca as "marca?", 
                v.modelo as "modelo?", 
                v.color as "color?",
-               EXISTS (SELECT 1 FROM lista_negra ln WHERE ln.cedula = c.cedula AND ln.is_active = 1) as "is_blocked: bool"
+               (ln.id IS NOT NULL) as "is_blocked: bool"
         FROM contratistas c
         LEFT JOIN empresas e ON c.empresa_id = e.id
         LEFT JOIN vehiculos v ON c.id = v.contratista_id
+        LEFT JOIN lista_negra ln ON c.cedula = ln.cedula AND ln.is_active = 1
         WHERE c.cedula = ?
         "#,
         cedula
@@ -256,7 +258,7 @@ pub async fn find_by_cedula_with_empresa(
                 vehiculo_marca: r.marca,
                 vehiculo_modelo: r.modelo,
                 vehiculo_color: r.color,
-                is_blocked: r.is_blocked.unwrap_or(false),
+                is_blocked: r.is_blocked,
             }))
         }
         None => Ok(None),
@@ -274,10 +276,11 @@ pub async fn find_all_with_empresa(
                e.nombre as "empresa_nombre?", 
                v.tipo_vehiculo as "tipo_vehiculo?", 
                v.placa as "placa?", 
-               EXISTS (SELECT 1 FROM lista_negra ln WHERE ln.cedula = c.cedula AND ln.is_active = 1) as "is_blocked: bool"
+               (ln.id IS NOT NULL) as "is_blocked: bool"
         FROM contratistas c
         LEFT JOIN empresas e ON c.empresa_id = e.id
         LEFT JOIN vehiculos v ON c.id = v.contratista_id
+        LEFT JOIN lista_negra ln ON c.cedula = ln.cedula AND ln.is_active = 1
         ORDER BY c.updated_at DESC
         "#
     )
@@ -305,7 +308,7 @@ pub async fn find_all_with_empresa(
                 r.empresa_nombre.unwrap_or_default(),
                 r.tipo_vehiculo,
                 r.placa,
-                r.is_blocked.unwrap_or(false),
+                r.is_blocked,
             )
         })
         .collect();
@@ -324,10 +327,11 @@ pub async fn find_activos_with_empresa(
                e.nombre as "empresa_nombre?", 
                v.tipo_vehiculo as "tipo_vehiculo?", 
                v.placa as "placa?", 
-               EXISTS (SELECT 1 FROM lista_negra ln WHERE ln.cedula = c.cedula AND ln.is_active = 1) as "is_blocked: bool"
+               (ln.id IS NOT NULL) as "is_blocked: bool"
         FROM contratistas c
         LEFT JOIN empresas e ON c.empresa_id = e.id
         LEFT JOIN vehiculos v ON c.id = v.contratista_id
+        LEFT JOIN lista_negra ln ON c.cedula = ln.cedula AND ln.is_active = 1
         WHERE c.estado = 'activo'
         ORDER BY c.nombre ASC
         "#
@@ -356,7 +360,7 @@ pub async fn find_activos_with_empresa(
                 r.empresa_nombre.unwrap_or_default(),
                 r.tipo_vehiculo,
                 r.placa,
-                r.is_blocked.unwrap_or(false),
+                r.is_blocked,
             )
         })
         .collect();
@@ -474,4 +478,125 @@ pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
         .await?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::sqlite::SqlitePoolOptions;
+    use sqlx::Executor;
+
+    async fn setup_test_env() -> SqlitePool {
+        let db_id = uuid::Uuid::new_v4().to_string();
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect(&format!("sqlite:file:{}?mode=memory&cache=shared", db_id))
+            .await
+            .unwrap();
+
+        pool.execute("PRAGMA foreign_keys = OFF;").await.unwrap();
+
+        let schemas = vec![
+            "migrations/2_create_contratista.sql",
+            "migrations/4_create_vehiculo.sql",
+            "migrations/3_create_lista_negra.sql",
+        ];
+
+        for path in schemas {
+            let sql = std::fs::read_to_string(path).unwrap();
+            pool.execute(sql.as_str()).await.unwrap();
+        }
+
+        // Seed data
+        pool.execute("INSERT INTO empresas (id, nombre, created_at, updated_at) VALUES ('e-1', 'Test Corp', '2025-01-01', '2025-01-01')").await.unwrap();
+
+        pool.execute("INSERT INTO contratistas (id, cedula, nombre, apellido, empresa_id, fecha_vencimiento_praind, estado, created_at, updated_at)
+                      VALUES ('c-1', '12345', 'Juan', 'Perez', 'e-1', '2030-01-01', 'activo', '2025-01-01', '2025-01-01')").await.unwrap();
+
+        pool.execute("INSERT INTO vehiculos (id, contratista_id, tipo_vehiculo, placa, marca, modelo, color, created_at, updated_at)
+                      VALUES ('v-1', 'c-1', 'automovil', 'ABC-123', 'Toyota', 'Corolla', 'Blanco', '2025-01-01', '2025-01-01')").await.unwrap();
+
+        pool
+    }
+
+    #[tokio::test]
+    async fn test_find_basic_info_by_id() {
+        let pool = setup_test_env().await;
+        let res = find_basic_info_by_id(&pool, "c-1").await.unwrap().unwrap();
+        assert_eq!(res.cedula, "12345");
+        assert_eq!(res.empresa_nombre, "Test Corp");
+    }
+
+    #[tokio::test]
+    async fn test_find_by_id_with_empresa() {
+        let pool = setup_test_env().await;
+        let res = find_by_id_with_empresa(&pool, "c-1")
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(res.empresa_nombre, "Test Corp");
+        assert_eq!(res.vehiculo_placa, Some("ABC-123".to_string()));
+        assert!(!res.is_blocked);
+    }
+
+    #[tokio::test]
+    async fn test_find_by_id_with_empresa_blocked() {
+        let pool = setup_test_env().await;
+        pool.execute("INSERT INTO lista_negra (id, cedula, nombre, apellido, motivo_bloqueo, fecha_inicio_bloqueo, bloqueado_por, is_active, created_at, updated_at) 
+                      VALUES ('bl-1', '12345', 'Juan', 'Perez', 'Robo', '2025-01-01', 'Admin', 1, '2025-01-01', '2025-01-01')").await.unwrap();
+
+        let res = find_by_id_with_empresa(&pool, "c-1")
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(res.is_blocked);
+    }
+
+    #[tokio::test]
+    async fn test_crud_contratista() {
+        let pool = setup_test_env().await;
+
+        // Insert
+        insert(
+            &pool,
+            "c-2",
+            "999",
+            "Maria",
+            None,
+            "Lopez",
+            None,
+            "e-1",
+            "2029-01-01",
+            "activo",
+            "now",
+            "now",
+        )
+        .await
+        .unwrap();
+
+        let c = find_basic_info_by_id(&pool, "c-2").await.unwrap().unwrap();
+        assert_eq!(c.nombre, "Maria");
+
+        // Update
+        update(
+            &pool,
+            "c-2",
+            Some("Maria Updated"),
+            None,
+            None,
+            None,
+            None,
+            None,
+            "new-now",
+        )
+        .await
+        .unwrap();
+        let c2 = find_basic_info_by_id(&pool, "c-2").await.unwrap().unwrap();
+        assert_eq!(c2.nombre, "Maria Updated");
+
+        // Delete
+        delete(&pool, "c-2").await.unwrap();
+        let c3 = find_basic_info_by_id(&pool, "c-2").await.unwrap();
+        assert!(c3.is_none());
+    }
 }

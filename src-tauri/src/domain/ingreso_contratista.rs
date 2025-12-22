@@ -353,3 +353,83 @@ pub fn evaluar_devolucion_gafete(
         gafete_numero: None,
     })
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_evaluar_elegibilidad_bloqueado() {
+        let res =
+            evaluar_elegibilidad_entrada(true, Some("Robo".to_string()), false, "activo", true, 0);
+        assert!(!res.puede_ingresar);
+        assert!(res.motivo_rechazo.unwrap().contains("BLOQUEADO"));
+    }
+
+    #[test]
+    fn test_evaluar_elegibilidad_ingreso_abierto() {
+        let res = evaluar_elegibilidad_entrada(false, None, true, "activo", true, 0);
+        assert!(!res.puede_ingresar);
+        assert!(res.motivo_rechazo.unwrap().contains("activo"));
+    }
+
+    #[test]
+    fn test_evaluar_elegibilidad_praind_vencido() {
+        let res = evaluar_elegibilidad_entrada(false, None, false, "activo", false, 0);
+        assert!(!res.puede_ingresar);
+        assert!(res.motivo_rechazo.unwrap().contains("PRAIND"));
+    }
+
+    #[test]
+    fn test_evaluar_elegibilidad_valida() {
+        let res = evaluar_elegibilidad_entrada(false, None, false, "activo", true, 2);
+        assert!(res.puede_ingresar);
+        assert_eq!(res.alertas.len(), 1); // Tiene 2 alertas de gafete
+    }
+
+    #[test]
+    fn test_verificar_praind_vigente() {
+        let hoy = Utc::now().date_naive().format("%Y-%m-%d").to_string();
+        assert!(verificar_praind_vigente(&hoy).unwrap());
+        assert!(!verificar_praind_vigente("2000-01-01").unwrap());
+    }
+
+    #[test]
+    fn test_evaluar_estado_permanencia() {
+        assert_eq!(evaluar_estado_permanencia(100), EstadoPermanencia::Normal);
+        assert_eq!(
+            evaluar_estado_permanencia(820),
+            EstadoPermanencia::AlertaTemprana
+        );
+        assert_eq!(
+            evaluar_estado_permanencia(850),
+            EstadoPermanencia::TiempoExcedido
+        );
+    }
+
+    #[test]
+    fn test_validar_tiempo_salida() {
+        let ingreso = "2023-12-22T08:00:00Z";
+        let salida_valida = "2023-12-22T10:00:00Z";
+        let salida_invalida = "2023-12-22T07:00:00Z";
+
+        assert!(validar_tiempo_salida(ingreso, salida_valida).is_ok());
+        assert!(validar_tiempo_salida(ingreso, salida_invalida).is_err());
+    }
+
+    #[test]
+    fn test_evaluar_devolucion_gafete() {
+        // Todo OK
+        let res = evaluar_devolucion_gafete(true, Some("G-1"), true, Some("G-1")).unwrap();
+        assert!(!res.debe_generar_reporte);
+
+        // No lo devolvió
+        let res = evaluar_devolucion_gafete(true, Some("G-1"), false, None).unwrap();
+        assert!(res.debe_generar_reporte);
+        assert!(res.motivo.unwrap().contains("sin devolver"));
+
+        // Devolvió uno distinto
+        let res = evaluar_devolucion_gafete(true, Some("G-1"), true, Some("G-2")).unwrap();
+        assert!(res.debe_generar_reporte);
+        assert!(res.motivo.unwrap().contains("incorrecto"));
+    }
+}

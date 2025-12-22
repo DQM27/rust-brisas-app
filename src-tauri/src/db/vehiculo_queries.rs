@@ -293,3 +293,157 @@ pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::sqlite::SqlitePoolOptions;
+    use sqlx::Executor;
+
+    async fn setup_test_env() -> SqlitePool {
+        let db_id = uuid::Uuid::new_v4().to_string();
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect(&format!("sqlite:file:{}?mode=memory&cache=shared", db_id))
+            .await
+            .unwrap();
+
+        pool.execute("PRAGMA foreign_keys = OFF;").await.unwrap();
+
+        let schemas = vec![
+            "migrations/2_create_contratista.sql",
+            "migrations/4_create_vehiculo.sql",
+        ];
+
+        for path in schemas {
+            let sql = std::fs::read_to_string(path).unwrap();
+            pool.execute(sql.as_str()).await.unwrap();
+        }
+
+        // Seed
+        pool.execute("INSERT INTO contratistas (id, cedula, nombre, apellido, empresa_id, fecha_vencimiento_praind, estado, created_at, updated_at) 
+                      VALUES ('c-1', '12345', 'Juan', 'Perez', 'e-1', '2030-01-01', 'activo', '2025-01-01', '2025-01-01')").await.unwrap();
+
+        pool
+    }
+
+    #[tokio::test]
+    async fn test_crud_vehiculo() {
+        let pool = setup_test_env().await;
+
+        // 1. Insert
+        insert(
+            &pool,
+            "v-1",
+            Some("c-1"),
+            None,
+            "automovil",
+            "ABC-123",
+            Some("Toyota"),
+            Some("Corolla"),
+            Some("Blanco"),
+            "2025-01-01",
+            "2025-01-01",
+        )
+        .await
+        .unwrap();
+
+        // 2. Find by ID
+        let v = find_by_id(&pool, "v-1").await.unwrap().unwrap();
+        assert_eq!(v.placa, "ABC-123");
+        assert_eq!(v.marca, Some("Toyota".to_string()));
+
+        // 3. Find by Placa
+        let v2 = find_by_placa(&pool, "ABC-123").await.unwrap().unwrap();
+        assert_eq!(v2.id, "v-1");
+
+        // 4. Update
+        update(
+            &pool,
+            "v-1",
+            None,
+            None,
+            None,
+            Some("Negro"),
+            Some(false),
+            "2025-01-02",
+        )
+        .await
+        .unwrap();
+        let v3 = find_by_id(&pool, "v-1").await.unwrap().unwrap();
+        assert_eq!(v3.color, Some("Negro".to_string()));
+        assert!(!v3.is_active);
+
+        // 5. Delete
+        delete(&pool, "v-1").await.unwrap();
+        let v4 = find_by_id(&pool, "v-1").await.unwrap();
+        assert!(v4.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_find_by_contratista() {
+        let pool = setup_test_env().await;
+        insert(
+            &pool,
+            "v-1",
+            Some("c-1"),
+            None,
+            "motocicleta",
+            "XYZ-789",
+            None,
+            None,
+            None,
+            "2025-01-01",
+            "2025-01-01",
+        )
+        .await
+        .unwrap();
+
+        let list = find_by_contratista(&pool, "c-1").await.unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].placa, "XYZ-789");
+    }
+
+    #[tokio::test]
+    async fn test_find_activos() {
+        let pool = setup_test_env().await;
+        insert(
+            &pool,
+            "v-1",
+            Some("c-1"),
+            None,
+            "automovil",
+            "A1",
+            None,
+            None,
+            None,
+            "now",
+            "now",
+        )
+        .await
+        .unwrap();
+        insert(
+            &pool,
+            "v-2",
+            Some("c-1"),
+            None,
+            "automovil",
+            "A2",
+            None,
+            None,
+            None,
+            "now",
+            "now",
+        )
+        .await
+        .unwrap();
+
+        update(&pool, "v-2", None, None, None, None, Some(false), "now")
+            .await
+            .unwrap();
+
+        let activos = find_activos(&pool).await.unwrap();
+        assert_eq!(activos.len(), 1);
+        assert_eq!(activos[0].placa, "A1");
+    }
+}

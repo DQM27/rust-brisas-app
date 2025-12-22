@@ -347,3 +347,141 @@ pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::sqlite::SqlitePoolOptions;
+    use sqlx::Executor;
+
+    async fn setup_test_env() -> SqlitePool {
+        let db_id = uuid::Uuid::new_v4().to_string();
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect(&format!("sqlite:file:{}?mode=memory&cache=shared", db_id))
+            .await
+            .unwrap();
+
+        pool.execute("PRAGMA foreign_keys = OFF;").await.unwrap();
+
+        let schemas = vec!["migrations/1_create_users.sql"];
+
+        for path in schemas {
+            let sql = std::fs::read_to_string(path).unwrap();
+            pool.execute(sql.as_str()).await.unwrap();
+        }
+
+        // Seed roles (schema is in migration 1 usually)
+        pool.execute("INSERT INTO roles (id, name, description, created_at, updated_at) VALUES ('admin', 'Administrador', 'Root', 'now', 'now')").await.unwrap();
+
+        pool
+    }
+
+    #[tokio::test]
+    async fn test_user_crud() {
+        let pool = setup_test_env().await;
+        let id = "u-1";
+        let email = "test@user.com";
+
+        // 1. Insert
+        insert(
+            &pool, id, email, "hash", "Juan", "Perez", "admin", "now", "now", "123", None, None,
+            None, None, None, None, None, None, None, false,
+        )
+        .await
+        .unwrap();
+
+        // 2. Find by id
+        let user = find_by_id(&pool, id).await.unwrap();
+        assert_eq!(user.email, email);
+        assert_eq!(user.nombre, "Juan");
+
+        // 3. Find with password
+        let (u, hash) = find_by_email_with_password(&pool, email).await.unwrap();
+        assert_eq!(u.id, id);
+        assert_eq!(hash, "hash");
+
+        // 4. Update
+        update(
+            &pool,
+            id,
+            Some("new@email.com"),
+            None,
+            Some("Carlos"),
+            None,
+            None,
+            None,
+            "updated",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(true),
+        )
+        .await
+        .unwrap();
+
+        let u2 = find_by_id(&pool, id).await.unwrap();
+        assert_eq!(u2.email, "new@email.com");
+        assert_eq!(u2.nombre, "Carlos");
+        assert!(u2.must_change_password);
+
+        // 5. Delete (Soft)
+        delete(&pool, id).await.unwrap();
+        let res = sqlx::query!("SELECT deleted_at FROM users WHERE id = ?", id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert!(res.deleted_at.is_some());
+
+        // find_by_id should now fail (it filters out deleted_at)
+        let fail = find_by_id(&pool, id).await;
+        assert!(fail.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_user_counts_and_roles() {
+        let pool = setup_test_env().await;
+        insert(
+            &pool,
+            "u-1",
+            "user1@test.com",
+            "h",
+            "N",
+            "A",
+            "admin",
+            "now",
+            "now",
+            "111",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            false,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(count_by_email(&pool, "user1@test.com").await.unwrap(), 1);
+        assert_eq!(
+            count_by_email_excluding_id(&pool, "user1@test.com", "u-1")
+                .await
+                .unwrap(),
+            0
+        );
+
+        let role_name = get_role_name(&pool, "admin").await.unwrap();
+        assert_eq!(role_name, "Administrador");
+    }
+}

@@ -418,3 +418,135 @@ pub async fn delete_gafete(
     db::delete(pool, &numero, &tipo).await?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::gafete::CreateGafeteInput;
+
+    async fn setup_test_env() -> SqlitePool {
+        use sqlx::sqlite::SqlitePoolOptions;
+        use sqlx::Executor;
+
+        let db_id = uuid::Uuid::new_v4().to_string();
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect(&format!("sqlite:file:{}?mode=memory&cache=shared", db_id))
+            .await
+            .unwrap();
+
+        // Deshabilitar FKs para simplificar tests de servicio
+        pool.execute("PRAGMA foreign_keys = OFF;").await.unwrap();
+
+        // Cargar esquemas necesarios en orden lógico
+        let schemas = vec![
+            "migrations/1_create_users.sql",
+            "migrations/2_create_contratista.sql",
+            "migrations/4_create_vehiculo.sql",
+            "migrations/5_create_gafete.sql",
+            "migrations/12_create_ingresos_proveedores.sql",
+            "migrations/7_create_ingreso.sql",
+            "migrations/6_create_alertas_gafetes.sql",
+        ];
+
+        for schema_path in schemas {
+            let sql = std::fs::read_to_string(schema_path).unwrap();
+            pool.execute(sql.as_str()).await.unwrap();
+        }
+
+        // Seed un usuario básico para los snapshots de auditoría
+        sqlx::query("INSERT INTO users (id, email, password_hash, nombre, apellido, role_id, created_at, updated_at, cedula, must_change_password, is_active) 
+                     VALUES ('u-1', 'admin@test.com', 'hash', 'Admin', 'Test', 'role-admin', '2025-01-01', '2025-01-01', '000', 0, 1)")
+            .execute(&pool).await.unwrap();
+
+        pool
+    }
+
+    #[tokio::test]
+    async fn test_create_gafete_integration() {
+        let pool = setup_test_env().await;
+
+        let input = CreateGafeteInput {
+            numero: "G-101".into(),
+            tipo: "contratista".into(),
+        };
+
+        let res = create_gafete(&pool, input)
+            .await
+            .unwrap_or_else(|e| panic!("Error creating gafete: {:?}", e));
+        assert_eq!(res.numero, "G-101");
+        assert_eq!(res.status, "disponible");
+
+        // Intentar duplicado
+        let input2 = CreateGafeteInput {
+            numero: "G-101".into(),
+            tipo: "contratista".into(),
+        };
+        let err = create_gafete(&pool, input2).await;
+        assert!(matches!(err, Err(GafeteError::AlreadyExists)));
+    }
+
+    #[tokio::test]
+    async fn test_gafete_availability_states() {
+        let pool = setup_test_env().await;
+
+        // 1. Crear gafete
+        let numero = "G-202";
+        let tipo = "contratista";
+        create_gafete(
+            &pool,
+            CreateGafeteInput {
+                numero: numero.into(),
+                tipo: tipo.into(),
+            },
+        )
+        .await
+        .unwrap_or_else(|e| panic!("Error creating gafete in availability test: {:?}", e));
+
+        // 2. Verificar disponible
+        let res = get_gafete(&pool, numero, tipo).await.unwrap();
+        assert_eq!(res.status, "disponible");
+        assert!(res.esta_disponible);
+
+        // 3. Marcar como en uso (simulado insertando en ingresos)
+        sqlx::query("INSERT INTO ingresos (id, contratista_id, cedula, nombre, apellido, empresa_nombre, tipo_autorizacion, modo_ingreso, gafete_numero, fecha_hora_ingreso, usuario_ingreso_id, created_at, updated_at) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind("ing-1")
+            .bind("c-1")
+            .bind("123")
+            .bind("Test")
+            .bind("User")
+            .bind("Emp")
+            .bind("praind")
+            .bind("caminando")
+            .bind(numero)
+            .bind("2025-01-01")
+            .bind("u-1")
+            .bind("2025-01-01")
+            .bind("2025-01-01")
+            .execute(&pool).await.unwrap();
+
+        let res_uso = get_gafete(&pool, numero, tipo).await.unwrap();
+        assert_eq!(res_uso.status, "en_uso");
+        assert!(!res_uso.esta_disponible);
+
+        // 4. Marcar como perdido (con alerta)
+        sqlx::query("INSERT INTO alertas_gafetes (id, cedula, nombre_completo, gafete_numero, ingreso_contratista_id, fecha_reporte, resuelto, reportado_por, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind("al-1")
+            .bind("123")
+            .bind("Test User")
+            .bind(numero)
+            .bind("ing-1")
+            .bind("2025-01-01")
+            .bind(0)
+            .bind("u-1")
+            .bind("2025-01-01")
+            .bind("2025-01-01")
+            .execute(&pool).await.unwrap();
+
+        let res_perdido = get_gafete(&pool, numero, tipo).await.unwrap();
+        assert_eq!(res_perdido.status, "perdido");
+        assert!(res_perdido.alerta_id.is_some());
+    }
+}

@@ -453,3 +453,175 @@ async fn get_ingreso_by_id(
     resp.vehiculo_placa = details.vehiculo_placa;
     Ok(resp)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::sqlite::SqlitePoolOptions;
+    use sqlx::Executor;
+
+    async fn setup_test_env() -> SqlitePool {
+        let db_id = uuid::Uuid::new_v4().to_string();
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect(&format!("sqlite:file:{}?mode=memory&cache=shared", db_id))
+            .await
+            .unwrap();
+
+        pool.execute("PRAGMA foreign_keys = OFF;").await.unwrap();
+
+        let schemas = vec![
+            "migrations/1_create_users.sql",
+            "migrations/2_create_contratista.sql",
+            "migrations/4_create_vehiculo.sql",
+            "migrations/5_create_gafete.sql",
+            "migrations/3_create_lista_negra.sql",
+            "migrations/12_create_ingresos_proveedores.sql",
+            "migrations/7_create_ingreso.sql",
+            "migrations/6_create_alertas_gafetes.sql",
+        ];
+
+        for path in schemas {
+            let sql = std::fs::read_to_string(path).unwrap();
+            pool.execute(sql.as_str()).await.unwrap();
+        }
+
+        // Seed
+        pool.execute("INSERT INTO users (id, email, password_hash, nombre, apellido, role_id, created_at, updated_at, cedula, must_change_password, is_active) 
+                      VALUES ('u-1', 'admin@test.com', 'hash', 'Admin', 'Test', 'role-admin', '2025-01-01', '2025-01-01', '000', 0, 1)").await.unwrap();
+
+        pool.execute("INSERT INTO empresas (id, nombre, created_at, updated_at) VALUES ('e-1', 'Test Corp', '2025-01-01', '2025-01-01')").await.unwrap();
+
+        pool.execute("INSERT INTO contratistas (id, cedula, nombre, apellido, empresa_id, fecha_vencimiento_praind, estado, created_at, updated_at)
+                      VALUES ('c-1', '12345', 'Juan', 'Perez', 'e-1', '2030-01-01', 'activo', '2025-01-01', '2025-01-01')").await.unwrap();
+
+        pool.execute("INSERT INTO gafetes (numero, tipo, estado, created_at, updated_at) VALUES ('G-100', 'contratista', 'activo', '2025-01-01', '2025-01-01')").await.unwrap();
+
+        pool
+    }
+
+    #[tokio::test]
+    async fn test_ingreso_contratista_workflow() {
+        let pool = setup_test_env().await;
+        let contratista_id = "c-1";
+        let usuario_id = "u-1";
+
+        // 1. Validar elegibilidad
+        let val = validar_ingreso_contratista(&pool, contratista_id.to_string())
+            .await
+            .unwrap();
+        assert!(val.puede_ingresar);
+        assert!(val.ingreso_abierto.is_none());
+
+        // 2. Crear ingreso (Gafete asignado)
+        let input = CreateIngresoContratistaInput {
+            contratista_id: contratista_id.to_string(),
+            vehiculo_id: None,
+            gafete_numero: Some("G-100".to_string()),
+            tipo_autorizacion: "praind".to_string(),
+            modo_ingreso: "caminando".to_string(),
+            observaciones: Some("Test note".to_string()),
+            usuario_ingreso_id: usuario_id.to_string(),
+        };
+
+        let ingreso = crear_ingreso_contratista(&pool, input, usuario_id.to_string())
+            .await
+            .unwrap();
+        assert_eq!(ingreso.gafete_numero, Some("G-100".to_string()));
+        assert!(ingreso.esta_adentro);
+
+        // 3. Intentar crear duplicado (Debe fallar)
+        let input_dup = CreateIngresoContratistaInput {
+            contratista_id: contratista_id.to_string(),
+            vehiculo_id: None,
+            gafete_numero: Some("G-101".to_string()),
+            tipo_autorizacion: "praind".to_string(),
+            modo_ingreso: "caminando".to_string(),
+            observaciones: None,
+            usuario_ingreso_id: usuario_id.to_string(),
+        };
+        let err_dup = crear_ingreso_contratista(&pool, input_dup, usuario_id.to_string()).await;
+        assert!(matches!(
+            err_dup,
+            Err(IngresoContratistaError::AlreadyInside)
+        ));
+
+        // 4. Registrar salida (Correcta)
+        let salida_input = RegistrarSalidaInput {
+            ingreso_id: ingreso.id.clone(),
+            devolvio_gafete: true,
+            usuario_salida_id: usuario_id.to_string(),
+            observaciones_salida: None,
+        };
+        let ingreso_salida = registrar_salida(&pool, salida_input, usuario_id.to_string())
+            .await
+            .unwrap();
+        assert!(!ingreso_salida.esta_adentro);
+        assert!(ingreso_salida.fecha_hora_salida.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_ingreso_contratista_lost_badge() {
+        let pool = setup_test_env().await;
+        let contratista_id = "c-1";
+        let usuario_id = "u-1";
+
+        // 1. Crear ingreso
+        let input = CreateIngresoContratistaInput {
+            contratista_id: contratista_id.to_string(),
+            vehiculo_id: None,
+            gafete_numero: Some("G-100".to_string()),
+            tipo_autorizacion: "praind".to_string(),
+            modo_ingreso: "caminando".to_string(),
+            observaciones: None,
+            usuario_ingreso_id: usuario_id.to_string(),
+        };
+        let ingreso = crear_ingreso_contratista(&pool, input, usuario_id.to_string())
+            .await
+            .unwrap();
+
+        // 2. Registrar salida indicando que NO devolvió gafete
+        let salida_input = RegistrarSalidaInput {
+            ingreso_id: ingreso.id.clone(),
+            devolvio_gafete: false,
+            usuario_salida_id: usuario_id.to_string(),
+            observaciones_salida: Some("Perdió el gafete".to_string()),
+        };
+        let _ = registrar_salida(&pool, salida_input, usuario_id.to_string())
+            .await
+            .unwrap();
+
+        // 3. Verificar que se generó una alerta
+        let alertas = crate::services::alerta_service::find_pendientes_by_cedula(&pool, "12345")
+            .await
+            .unwrap();
+        assert_eq!(alertas.len(), 1);
+        assert_eq!(alertas[0].gafete_numero, "G-100");
+    }
+
+    #[tokio::test]
+    async fn test_ingreso_contratista_blocked() {
+        let pool = setup_test_env().await;
+
+        // 1. Bloquear contratista
+        pool.execute("INSERT INTO lista_negra (id, cedula, nombre, apellido, motivo_bloqueo, fecha_inicio_bloqueo, bloqueado_por, is_active, created_at, updated_at) 
+                      VALUES ('bl-1', '12345', 'Juan', 'Perez', 'Robo', '2025-01-01', 'Admin', 1, '2025-01-01', '2025-01-01')").await.unwrap();
+
+        // 2. Validar (Debe fallar por bloqueo)
+        let val = validar_ingreso_contratista(&pool, "c-1".into())
+            .await
+            .unwrap();
+
+        println!(
+            "DEBUG: Test Validation Result: puede_ingresar={}, motivo={:?}",
+            val.puede_ingresar, val.motivo_rechazo
+        );
+
+        assert!(!val.puede_ingresar);
+        assert!(val
+            .motivo_rechazo
+            .unwrap()
+            .to_lowercase()
+            .contains("bloqueado"));
+    }
+}

@@ -104,12 +104,13 @@ pub fn search_index(
         fields.empresa_nombre,
         fields.email,
         fields.search_text,
+        fields.tipo,
     ];
 
     // 2. Parser
     let mut query_parser = QueryParser::for_index(index, search_target_fields);
     // Usamos el ID numérico directo:
-    query_parser.set_field_fuzzy(fields.search_text, true, 2, true);
+    query_parser.set_field_fuzzy(fields.search_text, true, 1, true);
 
     // Parsear query
     let query = query_parser
@@ -152,7 +153,7 @@ pub fn search_contratistas(
     limit: usize,
 ) -> Result<Vec<SearchResultDto>, SearchError> {
     // Agregar filtro de tipo
-    let filtered_query = format!("({}) AND tipo:contratista", query_str);
+    let filtered_query = format!("+tipo:contratista +({})", query_str);
     search_index(index, reader, fields, &filtered_query, limit)
 }
 
@@ -178,4 +179,107 @@ fn build_full_name(doc: &TantivyDocument, fields: &SearchFields) -> Option<Strin
     }
 
     Some(nombre_completo)
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::contratista::{Contratista, EstadoContratista};
+    use crate::models::user::User;
+    use crate::search::indexer::{
+        commit_index, create_field_handles, get_index_writer, index_contratista, index_user,
+    };
+    use crate::search::schema::build_search_schema;
+
+    fn setup_test_index_with_data() -> (Index, IndexReader, SearchFields) {
+        let schema = build_search_schema();
+        let index = Index::create_in_ram(schema.clone());
+        let handles = create_field_handles(&schema).unwrap();
+        let mut writer = get_index_writer(&index).unwrap();
+
+        // 1. Contratista
+        let c = Contratista {
+            id: "c1".into(),
+            cedula: "123".into(),
+            nombre: "Alexander".into(),
+            segundo_nombre: None,
+            apellido: "Gomez".into(),
+            segundo_apellido: None,
+            empresa_id: "emp-1".into(),
+            fecha_vencimiento_praind: "2025-01-01".into(),
+            estado: EstadoContratista::Activo,
+            created_at: "".into(),
+            updated_at: "".into(),
+        };
+        index_contratista(&mut writer, &handles, &c, "Intel").unwrap();
+
+        // 2. Usuario
+        let u = User {
+            id: "u1".into(),
+            cedula: "456".into(),
+            nombre: "John".into(),
+            segundo_nombre: None,
+            apellido: "Doe".into(),
+            segundo_apellido: None,
+            email: "john@doe.com".into(),
+            role_id: "role-1".into(),
+            is_active: true,
+            must_change_password: false,
+            fecha_inicio_labores: None,
+            numero_gafete: None,
+            fecha_nacimiento: None,
+            telefono: None,
+            direccion: None,
+            contacto_emergencia_nombre: None,
+            contacto_emergencia_telefono: None,
+            deleted_at: None,
+            created_at: "".into(),
+            updated_at: "".into(),
+        };
+        index_user(&mut writer, &handles, &u).unwrap();
+
+        commit_index(&mut writer).unwrap();
+
+        let reader = get_index_reader(&index).unwrap();
+        let fields = SearchFields::new(&schema);
+        (index, reader, fields)
+    }
+
+    #[test]
+    fn test_fuzzy_search() {
+        let (index, reader, fields) = setup_test_index_with_data();
+
+        // Exact
+        let res = search_index(&index, &reader, &fields, "Alexander", 10).unwrap();
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].id, "c1");
+
+        // Fuzzy (Alexande -> Alexander)
+        let res = search_index(&index, &reader, &fields, "Alexande", 10).unwrap();
+        assert!(res.len() >= 1);
+    }
+
+    #[test]
+    fn test_search_contratistas_filter() {
+        let (index, reader, fields) = setup_test_index_with_data();
+
+        // "Doe" matches user, but search_contratistas should filter it out
+        println!("Searching for 'Doe' with contractor filter...");
+        let res = search_contratistas(&index, &reader, &fields, "Doe", 10).unwrap();
+        for r in &res {
+            println!(
+                "MATCH FOUND - ID: {}, Tipo: {}, Name: {:?}",
+                r.id, r.tipo, r.nombre_completo
+            );
+        }
+        assert_eq!(
+            res.len(),
+            0,
+            "Should NOT find User 'Doe' when filtering for contractors"
+        );
+
+        // "Alexander" matches contratista
+        println!("Searching for 'Alexander' with contractor filter...");
+        let res = search_contratistas(&index, &reader, &fields, "Alexander", 10).unwrap();
+        assert_eq!(res.len(), 1, "Should find Contractor 'Alexander'");
+    }
 }

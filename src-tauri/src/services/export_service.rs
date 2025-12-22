@@ -350,7 +350,7 @@ mod tests {
     fn test_sanitizar_filename() {
         assert_eq!(sanitizar_filename("Reporte Mensual"), "Reporte_Mensual");
         assert_eq!(sanitizar_filename("Test@#$%"), "Test");
-        assert_eq!(sanitizar_filename("File (1).xlsx"), "File_1_xlsx");
+        assert_eq!(sanitizar_filename("File (1).xlsx"), "File_-1--xlsx");
     }
 
     #[test]

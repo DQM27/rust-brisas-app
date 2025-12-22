@@ -1,10 +1,10 @@
 // src/services/auth.rs
 
+use super::keyring_service;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Algorithm, Argon2, Params, Version,
 };
-use super::keyring_service;
 
 fn get_argon2_params() -> Params {
     // Obtener parámetros desde el keyring del sistema
@@ -14,8 +14,9 @@ fn get_argon2_params() -> Params {
         keyring_params.memory,
         keyring_params.iterations,
         keyring_params.parallelism,
-        Some(32)
-    ).unwrap_or_default()
+        Some(32),
+    )
+    .unwrap_or_default()
 }
 
 fn get_password_secret() -> String {
@@ -58,4 +59,33 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, String> {
     Ok(argon2
         .verify_password(password.as_bytes(), &parsed_hash)
         .is_ok())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hash_and_verify_password() {
+        let password = "SecretPassword123!";
+        let hash = hash_password(password).unwrap();
+
+        // El hash no debe ser igual a la clave original
+        assert_ne!(password, hash);
+
+        // Verificación exitosa
+        let is_valid = verify_password(password, &hash).unwrap();
+        assert!(is_valid);
+
+        // Verificación fallida con clave incorrecta
+        let is_invalid = verify_password("WrongPassword", &hash).unwrap();
+        assert!(!is_invalid);
+    }
+
+    #[test]
+    fn test_invalid_hash_format() {
+        let result = verify_password("some_password", "not_a_valid_argon2_hash");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Hash inválido"));
+    }
 }

@@ -400,3 +400,141 @@ pub async fn registrar_salida(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::sqlite::SqlitePoolOptions;
+    use sqlx::Executor;
+
+    async fn setup_test_env() -> SqlitePool {
+        let db_id = uuid::Uuid::new_v4().to_string();
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect(&format!("sqlite:file:{}?mode=memory&cache=shared", db_id))
+            .await
+            .unwrap();
+
+        pool.execute("PRAGMA foreign_keys = OFF;").await.unwrap();
+
+        let schemas = vec![
+            "migrations/1_create_users.sql",
+            "migrations/2_create_contratista.sql",
+            "migrations/4_create_vehiculo.sql",
+            "migrations/7_create_ingreso.sql",
+        ];
+
+        for path in schemas {
+            let sql = std::fs::read_to_string(path).unwrap();
+            pool.execute(sql.as_str()).await.unwrap();
+        }
+
+        // Seed
+        pool.execute("INSERT INTO users (id, email, password_hash, nombre, apellido, role_id, created_at, updated_at, cedula, must_change_password, is_active) 
+                      VALUES ('u-1', 'admin@test.com', 'hash', 'Admin', 'Test', 'role-admin', '2025-01-01', '2025-01-01', '000', 0, 1)").await.unwrap();
+
+        pool.execute("INSERT INTO contratistas (id, cedula, nombre, apellido, empresa_id, fecha_vencimiento_praind, estado, created_at, updated_at)
+                      VALUES ('c-1', '12345', 'Juan', 'Perez', 'e-1', '2030-01-01', 'activo', '2025-01-01', '2025-01-01')").await.unwrap();
+
+        pool
+    }
+
+    #[tokio::test]
+    async fn test_ingreso_contratista_crud() {
+        let pool = setup_test_env().await;
+        let id = "i-1";
+
+        // 1. Insert
+        insert(
+            &pool,
+            id,
+            "c-1",
+            "12345",
+            "Juan",
+            "Perez",
+            "Test Corp",
+            "contratista",
+            "praind",
+            "caminando",
+            None,
+            None,
+            Some("G-1"),
+            "2025-01-01 10:00",
+            "u-1",
+            Some(true),
+            Some("activo"),
+            None,
+            "now",
+            "now",
+        )
+        .await
+        .unwrap();
+
+        // 2. Find by id
+        let ing = find_by_id(&pool, id).await.unwrap().unwrap();
+        assert_eq!(ing.cedula, "12345");
+        assert!(ing.praind_vigente_al_ingreso.unwrap_or(false));
+
+        // 3. Find abierto
+        let abierto = find_ingreso_abierto_by_contratista(&pool, "c-1")
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(abierto.id, id);
+
+        // 4. Registrar salida
+        registrar_salida(
+            &pool,
+            id,
+            "2025-01-01 12:00",
+            120,
+            "u-1",
+            Some("Salida OK"),
+            "updated-now",
+        )
+        .await
+        .unwrap();
+
+        let ing_fin = find_by_id(&pool, id).await.unwrap().unwrap();
+        assert!(ing_fin.fecha_hora_salida.is_some());
+        assert_eq!(ing_fin.tiempo_permanencia_minutos, Some(120));
+
+        // 5. Check abierto again (should be none)
+        let none = find_ingreso_abierto_by_contratista(&pool, "c-1")
+            .await
+            .unwrap();
+        assert!(none.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_find_details() {
+        let pool = setup_test_env().await;
+        insert(
+            &pool,
+            "i-1",
+            "c-1",
+            "12345",
+            "Juan",
+            "Perez",
+            "Test Corp",
+            "contratista",
+            "praind",
+            "caminando",
+            None,
+            None,
+            Some("G-1"),
+            "2025-01-01 10:00",
+            "u-1",
+            Some(true),
+            Some("activo"),
+            None,
+            "now",
+            "now",
+        )
+        .await
+        .unwrap();
+
+        let details = find_details_by_id(&pool, "i-1").await.unwrap().unwrap();
+        assert_eq!(details.usuario_ingreso_nombre, Some("Admin".to_string()));
+    }
+}

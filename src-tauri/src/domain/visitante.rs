@@ -108,3 +108,42 @@ pub fn normalizar_nombre(nombre: &str) -> String {
 pub fn normalizar_cedula(cedula: &str) -> String {
     cedula.trim().to_uppercase()
 }
+
+// ==========================================
+// TESTS
+// ==========================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validar_cedula_valida() {
+        assert!(validar_cedula("V-12345678").is_ok());
+    }
+
+    #[test]
+    fn test_validar_cedula_vacia() {
+        assert!(validar_cedula("   ").is_err());
+    }
+
+    #[test]
+    fn test_validar_nombre_valido() {
+        assert!(validar_nombre("Alexander").is_ok());
+    }
+
+    #[test]
+    fn test_validar_nombre_vacio() {
+        assert!(validar_nombre("").is_err());
+    }
+
+    #[test]
+    fn test_normalizar_nombre() {
+        assert_eq!(normalizar_nombre("  pedro  "), "PEDRO");
+    }
+
+    #[test]
+    fn test_normalizar_cedula() {
+        assert_eq!(normalizar_cedula("  v-8.765.432  "), "V-8.765.432");
+    }
+}

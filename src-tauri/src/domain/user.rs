@@ -184,3 +184,57 @@ pub fn normalizar_email(email: &str) -> String {
 pub fn normalizar_nombre(nombre: &str) -> String {
     nombre.trim().to_string()
 }
+
+// ==========================================
+// TESTS
+// ==========================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validar_email_valido() {
+        assert!(validar_email("test@example.com").is_ok());
+    }
+
+    #[test]
+    fn test_validar_email_invalido() {
+        assert!(validar_email("").is_err());
+        assert!(validar_email("no-at-sign").is_err());
+    }
+
+    #[test]
+    fn test_validar_nombre_valido() {
+        assert!(validar_nombre("Juan").is_ok());
+    }
+
+    #[test]
+    fn test_validar_nombre_vacio() {
+        assert!(validar_nombre("   ").is_err());
+    }
+
+    #[test]
+    fn test_validar_cedula_valida() {
+        assert!(validar_cedula("123-456").is_ok());
+        assert!(validar_cedula("123456").is_ok());
+    }
+
+    #[test]
+    fn test_validar_cedula_invalida() {
+        assert!(validar_cedula("").is_err());
+        assert!(validar_cedula("123 456").is_err()); // space not allowed
+        assert!(validar_cedula("ABC-123").is_err()); // letters not allowed
+    }
+
+    #[test]
+    fn test_validar_password() {
+        assert!(validar_password("12345").is_err());
+        assert!(validar_password("123456").is_ok());
+    }
+
+    #[test]
+    fn test_normalizar_email() {
+        assert_eq!(normalizar_email("  TEST@Example.Com  "), "test@example.com");
+    }
+}

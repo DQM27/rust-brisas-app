@@ -98,3 +98,57 @@ pub fn check_system_role_modification(role_id: &str) -> Result<(), RoleError> {
 pub fn normalizar_nombre(nombre: &str) -> String {
     nombre.trim().to_uppercase()
 }
+
+// ==========================================
+// TESTS
+// ==========================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_superuser() {
+        assert!(is_superuser(SUPERUSER_ID));
+        assert!(!is_superuser("anyone-else"));
+    }
+
+    #[test]
+    fn test_validar_nombre_valido() {
+        assert!(validar_nombre("Guardia").is_ok());
+    }
+
+    #[test]
+    fn test_validar_nombre_vacio() {
+        let result = validar_nombre("   ");
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            RoleError::Validation(msg) => assert!(msg.contains("vacío")),
+            _ => panic!("Expected Validation error"),
+        }
+    }
+
+    #[test]
+    fn test_validar_descripcion_larga() {
+        let long_desc = "a".repeat(201);
+        let result = validar_descripcion(Some(&long_desc));
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            RoleError::Validation(msg) => assert!(msg.contains("exceder 200")),
+            _ => panic!("Expected Validation error"),
+        }
+    }
+
+    #[test]
+    fn test_check_system_role_modification() {
+        assert!(check_system_role_modification(SUPERUSER_ID).is_err());
+        assert!(check_system_role_modification(ROLE_ADMIN_ID).is_err());
+        assert!(check_system_role_modification(ROLE_GUARDIA_ID).is_err());
+        assert!(check_system_role_modification("custom-role").is_ok());
+    }
+
+    #[test]
+    fn test_normalizar_nombre() {
+        assert_eq!(normalizar_nombre("  admin  "), "ADMIN");
+    }
+}

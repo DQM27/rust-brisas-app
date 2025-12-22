@@ -387,3 +387,112 @@ pub async fn has_unresolved_alert_typed(
 
     Ok(result.count > 0)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::sqlite::SqlitePoolOptions;
+    use sqlx::Executor;
+
+    async fn setup_test_env() -> SqlitePool {
+        let db_id = uuid::Uuid::new_v4().to_string();
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect(&format!("sqlite:file:{}?mode=memory&cache=shared", db_id))
+            .await
+            .unwrap();
+
+        pool.execute("PRAGMA foreign_keys = OFF;").await.unwrap();
+
+        let schemas = vec![
+            "migrations/1_create_users.sql",
+            "migrations/2_create_contratista.sql",
+            "migrations/5_create_gafete.sql",
+            "migrations/7_create_ingreso.sql",
+            "migrations/6_create_alertas_gafetes.sql",
+        ];
+
+        for path in schemas {
+            let sql = std::fs::read_to_string(path).unwrap();
+            pool.execute(sql.as_str()).await.unwrap();
+        }
+
+        // Seed user
+        pool.execute("INSERT INTO users (id, email, password_hash, nombre, apellido, role_id, created_at, updated_at, cedula, must_change_password, is_active) 
+                      VALUES ('u-1', 'admin@test.com', 'hash', 'Admin', 'Test', 'role-admin', '2025-01-01', '2025-01-01', '000', 0, 1)").await.unwrap();
+
+        pool
+    }
+
+    #[tokio::test]
+    async fn test_gafete_crud() {
+        let pool = setup_test_env().await;
+        let num = "G-999";
+        let tipo = "contratista";
+
+        // 1. Insert
+        insert(&pool, num, tipo, "now", "now").await.unwrap();
+
+        // 2. Exists
+        assert!(exists_by_numero_and_tipo(&pool, num, tipo).await.unwrap());
+
+        // 3. Find
+        let g = find_by_numero_and_tipo(&pool, num, tipo).await.unwrap();
+        assert_eq!(g.numero, num);
+
+        // 4. Update status
+        update_status(&pool, num, tipo, "extraviado", "updated")
+            .await
+            .unwrap();
+        let g2 = find_by_numero_and_tipo(&pool, num, tipo).await.unwrap();
+        assert!(matches!(g2.estado, GafeteEstado::Extraviado));
+
+        // 5. Delete
+        delete(&pool, num, tipo).await.unwrap();
+        assert!(!exists_by_numero_and_tipo(&pool, num, tipo).await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_find_disponibles() {
+        let pool = setup_test_env().await;
+        insert(&pool, "G-1", "contratista", "now", "now")
+            .await
+            .unwrap();
+        insert(&pool, "G-2", "contratista", "now", "now")
+            .await
+            .unwrap();
+
+        // G-1 en uso (ingreso abierto)
+        pool.execute("INSERT INTO ingresos (id, contratista_id, cedula, nombre, apellido, empresa_nombre, tipo_ingreso, tipo_autorizacion, modo_ingreso, gafete_numero, fecha_hora_ingreso, usuario_ingreso_id, created_at, updated_at)
+                      VALUES ('i-1', 'c-1', '123', 'J', 'P', 'E', 'contratista', 'praind', 'caminando', 'G-1', 'now', 'u-1', 'now', 'now')").await.unwrap();
+
+        let disp = find_disponibles_by_tipo(&pool, "contratista")
+            .await
+            .unwrap();
+        assert_eq!(disp.len(), 1);
+        assert_eq!(disp[0], "G-2");
+    }
+
+    #[tokio::test]
+    async fn test_gafete_alerts() {
+        let pool = setup_test_env().await;
+        insert(&pool, "G-1", "contratista", "now", "now")
+            .await
+            .unwrap();
+
+        // Crear alerta sin resolver
+        pool.execute("INSERT INTO alertas_gafetes (id, cedula, nombre_completo, gafete_numero, ingreso_contratista_id, fecha_reporte, resuelto, reportado_por, created_at, updated_at)
+                      VALUES ('a-1', '123', 'Juan P', 'G-1', 'i-1', '2025-01-01', 0, 'u-1', 'now', 'now')").await.unwrap();
+
+        assert!(has_unresolved_alert(&pool, "G-1").await.unwrap());
+
+        let alert_opt = get_recent_alert_for_gafete_typed(&pool, "G-1", "contratista")
+            .await
+            .unwrap();
+        assert!(alert_opt.is_some());
+
+        let (_, _, name, resuelto, ..) = alert_opt.unwrap();
+        assert_eq!(name, "Juan P");
+        assert!(!resuelto);
+    }
+}
