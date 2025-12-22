@@ -4,7 +4,7 @@
     ChangePasswordSchema,
     type ChangePasswordForm,
   } from "$lib/schemas/userSchema";
-  import { auth } from "$lib/api/auth";
+  import { authService } from "$lib/logic/auth/authService"; // Import authService
   import { toast } from "svelte-5-french-toast";
 
   interface Props {
@@ -41,17 +41,18 @@
 
   let errors = $state<Record<string, string>>({});
 
+  // Refined Logic below
   async function handleSubmit(e: Event) {
     e.preventDefault();
     loading = true;
     errors = {};
 
     // 1. Validar con Zod
-    const result = ChangePasswordSchema.safeParse(formData);
+    const valResult = ChangePasswordSchema.safeParse(formData);
 
-    if (!result.success) {
+    if (!valResult.success) {
       const newErrors: Record<string, string> = {};
-      result.error.issues.forEach((issue) => {
+      valResult.error.issues.forEach((issue) => {
         if (issue.path[0]) {
           newErrors[String(issue.path[0])] = issue.message;
         }
@@ -62,18 +63,15 @@
     }
 
     // 2. Enviar al backend
-    try {
-      await auth.changePassword(userId, result.data);
+    const serviceRes = await authService.changePassword(userId, valResult.data); // Use authService
 
+    if (serviceRes.ok) {
       toast.success("Contraseña actualizada correctamente", { icon: "🔒" });
       onSuccess();
-    } catch (err: any) {
-      console.error(err);
-      toast.error(
-        typeof err === "string" ? err : "Error al actualizar contraseña",
-      );
-      loading = false;
+    } else {
+      toast.error(serviceRes.error || "Error al actualizar contraseña");
     }
+    loading = false;
   }
 
   const inputClass =

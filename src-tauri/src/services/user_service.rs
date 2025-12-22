@@ -430,23 +430,3 @@ pub async fn login(
     // 5. Retornar usuario
     Ok(UserResponse::from(user))
 }
-
-// ==========================================
-// HELPERS INTERNOS
-// ==========================================
-
-/// Verifica si un email ya está en uso
-pub async fn email_exists(pool: &SqlitePool, email: &str) -> Result<bool, String> {
-    let count = db::count_by_email(pool, email).await?;
-    Ok(count > 0)
-}
-
-/// Verifica si un email está en uso por otro usuario (útil para updates)
-pub async fn email_exists_for_other_user(
-    pool: &SqlitePool,
-    email: &str,
-    exclude_id: &str,
-) -> Result<bool, String> {
-    let count = db::count_by_email_excluding_id(pool, email, exclude_id).await?;
-    Ok(count > 0)
-}
