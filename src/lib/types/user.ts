@@ -1,36 +1,21 @@
 // ==========================================
-// src/lib/types.ts
+// src/lib/types/user.ts
 // ==========================================
 
-
-export type UserRole = 'admin' | 'supervisor' | 'guardia';
-
-// Tipo base de User (ya no se usa directamente, pero lo dejamos por compatibilidad)
-export interface User {
-  id: string;
-  email: string;
-  nombre: string;
-  apellido: string;
-  role: UserRole;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Response que ahora viene de Rust (con campos adicionales)
+// Response de usuario del backend
 export interface UserResponse {
   id: string;
   email: string;
   nombre: string;
   apellido: string;
   nombreCompleto: string;
-  role: UserRole;
-  roleDisplay: string;
+  roleId: string;
+  roleName: string;  // Nombre del rol para display
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
 
-  // Nuevos campos opcionales
+  // Campos adicionales
   cedula: string;
   segundoNombre?: string | null;
   segundoApellido?: string | null;
@@ -49,11 +34,6 @@ export interface UserListResponse {
   users: UserResponse[];
   total: number;
   activos: number;
-  porRol: {
-    admins: number;
-    supervisores: number;
-    guardias: number;
-  };
 }
 
 export interface CreateUserInput {
@@ -61,9 +41,9 @@ export interface CreateUserInput {
   password?: string;
   nombre: string;
   apellido: string;
-  role?: string;
+  roleId?: string;  // FK a roles
 
-  // Nuevos campos
+  // Campos adicionales
   cedula: string;
   segundoNombre?: string;
   segundoApellido?: string;
@@ -82,10 +62,10 @@ export interface UpdateUserInput {
   password?: string;
   nombre?: string;
   apellido?: string;
-  role?: string;
+  roleId?: string;  // FK a roles
   isActive?: boolean;
 
-  // Nuevos campos
+  // Campos adicionales
   cedula?: string;
   segundoNombre?: string;
   segundoApellido?: string;

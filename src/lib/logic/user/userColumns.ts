@@ -40,7 +40,7 @@ export class UserColumns {
                 minWidth: 200,
             },
             {
-                field: "role",
+                field: "roleName",
                 headerName: "Rol",
                 width: 130,
                 cellRenderer: (params: any) => {

@@ -65,7 +65,7 @@ export const CreateUserSchema = z.object({
         .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/, 'Segundo apellido solo puede contener letras')
         .optional()
         .or(z.literal('')),
-    role: z.enum(['admin', 'supervisor', 'guardia']),
+    roleId: z.string().optional(),  // FK a roles (default: guardia)
 
     // Campos adicionales opcionales
     telefono: stringOpcional(20, 'Teléfono'),

@@ -1,5 +1,6 @@
 
 import type { UserResponse } from '$lib/types/user';
+import { ROLE_ADMIN_ID, ROLE_SUPERVISOR_ID } from '$lib/types/role';
 
 // ==========================================
 // CAPABILITIES (ACTIONS)
@@ -16,6 +17,22 @@ export type Action =
     | 'DELETE_USER'
     | 'MANAGE_BLACKLIST'       // Add/Remove from blacklist
     | 'VIEW_BLACKLIST_REASON'; // View sensitive reason column
+
+// ==========================================
+// HELPERS
+// ==========================================
+
+function isAdmin(user: UserResponse): boolean {
+    return user.roleId === ROLE_ADMIN_ID;
+}
+
+function isSupervisor(user: UserResponse): boolean {
+    return user.roleId === ROLE_SUPERVISOR_ID;
+}
+
+function isAdminOrSupervisor(user: UserResponse): boolean {
+    return isAdmin(user) || isSupervisor(user);
+}
 
 // ==========================================
 // LOGIC
@@ -37,7 +54,7 @@ export function can(actor: UserResponse | null | undefined, action: Action, targ
     // Supervisor temporarily has same privileges as Admin
     // ADMIN OVERRIDE
     // Admin has full access to almost everything, EXCEPT changing other people's passwords directly (they use reset)
-    if ((actor.role === 'admin' || actor.role === 'supervisor') && action !== 'CHANGE_USER_PASSWORD') {
+    if (isAdminOrSupervisor(actor) && action !== 'CHANGE_USER_PASSWORD') {
         // Special case: RESET_USER_PASSWORD is allowed for admins via this override (or explicit below)
         return true;
     }
