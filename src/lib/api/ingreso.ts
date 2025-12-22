@@ -177,5 +177,16 @@ export const ingreso = {
     resolverAlertaGafete: async (input: ResolverAlertaInput): Promise<AlertaGafeteResponse> => {
         const validated = ResolverAlertaSchema.parse(input);
         return await invoke('resolver_alerta_gafete', { input: validated });
+    },
+
+    /**
+     * Obtener ingreso activo por número de gafete
+     */
+    getByGafete: async (gafeteNumero: string): Promise<IngresoResponse | null> => {
+        try {
+            return await invoke('get_ingreso_by_gafete', { gafeteNumero });
+        } catch {
+            return null;
+        }
     }
 };

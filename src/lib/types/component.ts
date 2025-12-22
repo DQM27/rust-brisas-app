@@ -9,6 +9,7 @@ export type ComponentKey =
   | 'contratista-list'
   | 'proveedor'
   | 'proveedor-list'
+  | 'citas-view'
   | 'lista-negra'
   | 'lista-negra-list'
 

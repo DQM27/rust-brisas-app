@@ -22,3 +22,19 @@ To interact with the project (build, test, run), you MUST load the `dev-env.ps1`
 ```powershell
 . .\dev-env.ps1; dev -Check
 ```
+
+## Git Best Practices
+
+// turbo-all
+1. Make **atomic commits** after each significant change
+2. Use descriptive commit messages in Spanish
+3. Before starting work, check current branch with `git status`
+4. To undo changes, use `git checkout <commit>` to test a version without altering history
+5. Push changes periodically to backup work
+
+```powershell
+# Commit after significant changes
+git add -A
+git commit -m "descripción del cambio"
+```
+

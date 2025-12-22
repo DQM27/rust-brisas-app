@@ -6,7 +6,7 @@ export type ValidationResult =
   | { ok: true }
   | { ok: false; message: string };
 
-const TIPOS_VALIDOS: TipoVehiculo[] = ['motocicleta', 'automóvil'];
+const TIPOS_VALIDOS: TipoVehiculo[] = ['motocicleta', 'automovil'];
 
 export function validateVehiculoInput(
   tipoVehiculo: string,

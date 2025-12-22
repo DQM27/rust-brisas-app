@@ -95,7 +95,7 @@
       id: result.id,
       nombreCompleto: result.nombreCompleto || `ID: ${result.id}`,
       cedula: result.cedula || "",
-      empresaNombre: result.empresaNombre,
+      empresaNombre: result.empresaNombre ?? undefined,
     };
     contratistaId = result.id;
     motivoBloqueo = "";
@@ -177,16 +177,15 @@
   }
 
   // Validación
-  // Validación
-  let isExistenteValid = $derived(
-    modoRegistro === "existente" && contratistaId.trim() && !checkingBlock,
-  );
-
   let isManualValid = $derived(
     modoRegistro === "manual" &&
       cedula.trim() &&
       nombre.trim() &&
       apellido.trim(),
+  );
+
+  let isExistenteValid = $derived(
+    modoRegistro === "existente" && contratistaId.trim() && !checkingBlock,
   );
 
   let isFormValid = $derived(

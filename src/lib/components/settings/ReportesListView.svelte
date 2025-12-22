@@ -157,9 +157,7 @@
           <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {data.total}
           </div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Total
-          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Total</div>
         </div>
         <div
           class="rounded-md border border-green-200 dark:border-green-800/30 bg-green-50 dark:bg-green-900/20 p-4"
@@ -221,19 +219,20 @@
         <div class="p-8 text-center text-gray-500">
           <Lightbulb class="w-8 h-8 mx-auto mb-2 opacity-50" />
           <p>No hay reportes registrados</p>
-          <p class="text-xs mt-1">
-            Los reportes que envies apareceran aqui
-          </p>
+          <p class="text-xs mt-1">Los reportes que envies apareceran aqui</p>
         </div>
       {:else}
         <div class="divide-y divide-gray-200 dark:divide-gray-700">
           {#each getFilteredReportes() as reporte (reporte.id)}
             {@const Icon = tipoIcons[reporte.tipo] || Lightbulb}
-            {@const estado = estadoConfig[reporte.estado] || estadoConfig.pendiente}
+            {@const estado =
+              estadoConfig[reporte.estado] || estadoConfig.pendiente}
             {@const EstadoIcon = estado.icon}
             {@const isExpanded = expandedId === reporte.id}
 
-            <div class="hover:bg-gray-50 dark:hover:bg-[#161b22] transition-colors">
+            <div
+              class="hover:bg-gray-50 dark:hover:bg-[#161b22] transition-colors"
+            >
               <!-- Row Header -->
               <button
                 class="w-full px-4 py-3 flex items-center gap-3 text-left"
@@ -250,7 +249,9 @@
 
                 <!-- Type Badge -->
                 <div
-                  class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border {tipoBgColors[reporte.tipo] || ''} {tipoColors[reporte.tipo] || ''}"
+                  class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border {tipoBgColors[
+                    reporte.tipo
+                  ] || ''} {tipoColors[reporte.tipo] || ''}"
                 >
                   <Icon class="w-3 h-3" />
                   {reporte.tipo}
@@ -267,10 +268,9 @@
 
                 <!-- Attachment indicator -->
                 {#if reporte.tieneAdjunto}
-                  <Paperclip
-                    class="w-4 h-4 text-gray-400"
-                    title={reporte.nombreAdjunto || "Adjunto"}
-                  />
+                  <span title={reporte.nombreAdjunto || "Adjunto"}>
+                    <Paperclip class="w-4 h-4 text-gray-400" />
+                  </span>
                 {/if}
 
                 <!-- Status Badge -->
@@ -280,7 +280,9 @@
                 </div>
 
                 <!-- Date -->
-                <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                <span
+                  class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                >
                   {formatDate(reporte.createdAt)}
                 </span>
               </button>
@@ -322,7 +324,8 @@
                       <div
                         class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-md p-3"
                       >
-                        <span class="text-xs font-semibold text-red-600 dark:text-red-400"
+                        <span
+                          class="text-xs font-semibold text-red-600 dark:text-red-400"
                           >Error de envio</span
                         >
                         <p class="mt-1 text-red-700 dark:text-red-300 text-xs">
@@ -346,9 +349,13 @@
                         class="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors disabled:opacity-50"
                       >
                         <RefreshCw
-                          class="w-3 h-3 {retrying === reporte.id ? 'animate-spin' : ''}"
+                          class="w-3 h-3 {retrying === reporte.id
+                            ? 'animate-spin'
+                            : ''}"
                         />
-                        {retrying === reporte.id ? "Reenviando..." : "Reintentar envio"}
+                        {retrying === reporte.id
+                          ? "Reenviando..."
+                          : "Reintentar envio"}
                       </button>
                     {/if}
                   </div>
