@@ -1,3 +1,0 @@
-    Blocking waiting for file lock on build directory
-    Checking brisas-app v0.1.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 55.17s
