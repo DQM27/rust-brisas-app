@@ -74,12 +74,11 @@ pub async fn validar_ingreso_contratista(
         .map_err(|e| e.to_string())?;
 
     // B. Verificar ingreso abierto
-    let tiene_ingreso_abierto = db::find_ingreso_abierto_by_contratista(pool, &contratista_id)
+    let ingreso_abierto = db::find_ingreso_abierto_by_contratista(pool, &contratista_id)
         .await
-        .is_ok();
+        .map_err(|e| e.to_string())?;
 
-    if tiene_ingreso_abierto {
-        let ingreso = db::find_ingreso_abierto_by_contratista(pool, &contratista_id).await?;
+    if let Some(ingreso) = ingreso_abierto {
         return Ok(ValidacionIngresoResponse {
             puede_ingresar: false,
             motivo_rechazo: Some("El contratista ya tiene un ingreso abierto".to_string()),
@@ -117,7 +116,7 @@ pub async fn validar_ingreso_contratista(
     let resultado = domain::evaluar_elegibilidad_entrada(
         block_status.blocked,
         block_status.motivo,
-        tiene_ingreso_abierto,
+        ingreso_abierto.is_some(),
         &contratista.estado,
         praind_vigente,
         alertas_db.len(),
@@ -165,10 +164,10 @@ pub async fn crear_ingreso_contratista(
     domain::validar_input_entrada(&input)?;
 
     // 2. Verificar duplicados (DB check final)
-    if db::find_ingreso_abierto_by_contratista(pool, &input.contratista_id)
+    let existing = db::find_ingreso_abierto_by_contratista(pool, &input.contratista_id)
         .await
-        .is_ok()
-    {
+        .map_err(|e| e.to_string())?;
+    if existing.is_some() {
         return Err("El contratista ya tiene un ingreso abierto".to_string());
     }
 
@@ -222,7 +221,8 @@ pub async fn crear_ingreso_contratista(
         &now,
         &now,
     )
-    .await?;
+    .await
+    .map_err(|e| e.to_string())?;
 
     get_ingreso_by_id(pool, id).await
 }
@@ -239,7 +239,7 @@ pub async fn validar_puede_salir(
     let mut errores = Vec::new();
 
     match db::find_by_id(pool, ingreso_id).await {
-        Ok(ingreso) => {
+        Ok(Some(ingreso)) => {
             if let Err(e) = domain::validar_ingreso_abierto(&ingreso.fecha_hora_salida) {
                 errores.push(e);
             }
@@ -252,7 +252,8 @@ pub async fn validar_puede_salir(
                 }
             }
         }
-        Err(e) => errores.push(e),
+        Ok(None) => errores.push("Ingreso no encontrado".to_string()),
+        Err(e) => errores.push(e.to_string()),
     }
 
     Ok(ResultadoValidacionSalida {
@@ -267,7 +268,10 @@ pub async fn registrar_salida(
     input: RegistrarSalidaInput,
     usuario_id: String,
 ) -> Result<IngresoResponse, String> {
-    let ingreso = db::find_by_id(pool, &input.ingreso_id).await?;
+    let ingreso = db::find_by_id(pool, &input.ingreso_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Ingreso no encontrado".to_string())?;
     domain::validar_ingreso_abierto(&ingreso.fecha_hora_salida)?;
 
     let now = Utc::now().to_rfc3339();
@@ -298,7 +302,8 @@ pub async fn registrar_salida(
         input.observaciones_salida.as_deref(),
         &now,
     )
-    .await?;
+    .await
+    .map_err(|e| e.to_string())?;
 
     // Generar Alerta si aplica
     if decision.debe_generar_reporte {
@@ -335,13 +340,22 @@ pub async fn registrar_salida(
 pub async fn get_ingresos_abiertos_con_alertas(
     pool: &SqlitePool,
 ) -> Result<Vec<IngresoConEstadoResponse>, String> {
-    let ingresos = db::find_ingresos_abiertos(pool).await?;
+    let ingresos = db::find_ingresos_abiertos(pool)
+        .await
+        .map_err(|e| e.to_string())?;
     let mut responses = Vec::new();
 
     for ingreso in ingresos {
         let minutos = domain::calcular_tiempo_transcurrido(&ingreso.fecha_hora_ingreso)?;
         let alerta_tiempo = domain::construir_alerta_tiempo(minutos);
-        let details = db::find_details_by_id(pool, &ingreso.id).await?;
+        let details = db::find_details_by_id(pool, &ingreso.id)
+            .await
+            .map_err(|e| e.to_string())?
+            .unwrap_or(db::IngresoDetails {
+                usuario_ingreso_nombre: None,
+                usuario_salida_nombre: None,
+                vehiculo_placa: None,
+            });
 
         let mut ingreso_resp = IngresoResponse::from(ingreso);
         ingreso_resp.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
@@ -358,7 +372,9 @@ pub async fn get_ingresos_abiertos_con_alertas(
 pub async fn verificar_tiempos_excedidos(
     pool: &SqlitePool,
 ) -> Result<Vec<AlertaTiempoExcedido>, String> {
-    let ingresos = db::find_ingresos_abiertos(pool).await?;
+    let ingresos = db::find_ingresos_abiertos(pool)
+        .await
+        .map_err(|e| e.to_string())?;
     let mut alertas = Vec::new();
 
     for ingreso in ingresos {
@@ -387,8 +403,18 @@ pub async fn verificar_tiempos_excedidos(
 // ==========================================
 
 async fn get_ingreso_by_id(pool: &SqlitePool, id: String) -> Result<IngresoResponse, String> {
-    let ingreso = db::find_by_id(pool, &id).await?;
-    let details = db::find_details_by_id(pool, &id).await?;
+    let ingreso = db::find_by_id(pool, &id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Ingreso no encontrado".to_string())?;
+    let details = db::find_details_by_id(pool, &id)
+        .await
+        .map_err(|e| e.to_string())?
+        .unwrap_or(db::IngresoDetails {
+            usuario_ingreso_nombre: None,
+            usuario_salida_nombre: None,
+            vehiculo_placa: None,
+        });
 
     let mut resp = IngresoResponse::from(ingreso);
     resp.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();

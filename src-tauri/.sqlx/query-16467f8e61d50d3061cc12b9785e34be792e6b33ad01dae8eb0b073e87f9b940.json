@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT \n            u_ingreso.nombre as usuario_ingreso_nombre,\n            u_salida.nombre as usuario_salida_nombre,\n            v.placa as vehiculo_placa\n        FROM ingresos i\n        LEFT JOIN users u_ingreso ON i.usuario_ingreso_id = u_ingreso.id\n        LEFT JOIN users u_salida ON i.usuario_salida_id = u_salida.id\n        LEFT JOIN vehiculos v ON i.vehiculo_id = v.id\n        WHERE i.id = ?\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "usuario_ingreso_nombre",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "usuario_salida_nombre",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "vehiculo_placa",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "16467f8e61d50d3061cc12b9785e34be792e6b33ad01dae8eb0b073e87f9b940"
+}

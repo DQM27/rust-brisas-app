@@ -73,6 +73,7 @@ fn retrieve_value(key: &str) -> Option<String> {
 }
 
 #[cfg(target_os = "linux")]
+#[allow(dead_code)]
 fn delete_value(key: &str) -> Result<(), String> {
     use crate::services::keyring_linux;
     keyring_linux::delete_secret(key)

@@ -23,8 +23,18 @@ pub async fn get_ingreso_by_id(
     pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<IngresoResponse, String> {
-    let ingreso = db::find_by_id(&pool, &id).await?;
-    let details = db::find_details_by_id(&pool, &id).await?;
+    let ingreso = db::find_by_id(&pool, &id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Ingreso no encontrado".to_string())?;
+    let details = db::find_details_by_id(&pool, &id)
+        .await
+        .map_err(|e| e.to_string())?
+        .unwrap_or(db::IngresoDetails {
+            usuario_ingreso_nombre: None,
+            usuario_salida_nombre: None,
+            vehiculo_placa: None,
+        });
 
     let mut response = IngresoResponse::from(ingreso);
     response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
@@ -37,7 +47,9 @@ pub async fn get_ingreso_by_id(
 /// Obtiene todos los ingresos (limitado a 500)
 #[tauri::command]
 pub async fn get_all_ingresos(pool: State<'_, SqlitePool>) -> Result<IngresoListResponse, String> {
-    let results = db::find_all_with_details(&pool).await?;
+    let results = db::find_all_with_details(&pool)
+        .await
+        .map_err(|e| e.to_string())?;
 
     let mut responses = Vec::new();
     for (ingreso, details) in results {
@@ -68,7 +80,9 @@ pub async fn get_all_ingresos(pool: State<'_, SqlitePool>) -> Result<IngresoList
 pub async fn get_ingresos_abiertos(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<IngresoResponse>, String> {
-    let results = db::find_ingresos_abiertos_with_details(&pool).await?;
+    let results = db::find_ingresos_abiertos_with_details(&pool)
+        .await
+        .map_err(|e| e.to_string())?;
 
     let mut responses = Vec::new();
     for (ingreso, details) in results {
@@ -88,7 +102,10 @@ pub async fn get_ingreso_by_gafete(
     pool: State<'_, SqlitePool>,
     gafete_numero: String,
 ) -> Result<IngresoResponse, String> {
-    let ingreso = db::find_ingreso_by_gafete(&pool, &gafete_numero).await?;
+    let ingreso = db::find_ingreso_by_gafete(&pool, &gafete_numero)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("No se encontró ingreso activo con gafete {}", gafete_numero))?;
     let response = IngresoResponse::from(ingreso);
     Ok(response)
 }
@@ -100,7 +117,9 @@ pub async fn get_salidas_en_rango(
     fecha_inicio: String,
     fecha_fin: String,
 ) -> Result<Vec<IngresoResponse>, String> {
-    let results = db::find_salidas_in_range_with_details(&pool, &fecha_inicio, &fecha_fin).await?;
+    let results = db::find_salidas_in_range_with_details(&pool, &fecha_inicio, &fecha_fin)
+        .await
+        .map_err(|e| e.to_string())?;
     let mut responses = Vec::new();
     for (ingreso, details) in results {
         let mut response = IngresoResponse::from(ingreso);
@@ -118,7 +137,9 @@ pub async fn get_salidas_del_dia(
     pool: State<'_, SqlitePool>,
     fecha: String,
 ) -> Result<Vec<IngresoResponse>, String> {
-    let results = db::find_salidas_by_date_with_details(&pool, &fecha).await?;
+    let results = db::find_salidas_by_date_with_details(&pool, &fecha)
+        .await
+        .map_err(|e| e.to_string())?;
     let mut responses = Vec::new();
     for (ingreso, details) in results {
         let mut response = IngresoResponse::from(ingreso);
