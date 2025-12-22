@@ -109,16 +109,17 @@
         <div class="space-y-4">
           <div class="space-y-2">
             <label
+              for="gafeteInput"
               class="block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
               Asignar Gafete #
             </label>
             <input
+              id="gafeteInput"
               type="text"
               bind:value={gafeteInput}
               placeholder="Escanee o escriba gafete"
               class="w-full text-center text-2xl font-mono p-3 rounded-lg border-2 border-primary/50 focus:border-primary focus:ring-4 focus:ring-primary/20 bg-white dark:bg-[#1e1e1e]"
-              autofocus
             />
           </div>
 

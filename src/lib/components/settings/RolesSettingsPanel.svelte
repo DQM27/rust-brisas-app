@@ -284,9 +284,9 @@
 
             <!-- Permissions Grid -->
             <div>
-              <label
+              <span
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                >Permisos ({formData.permissions.length} seleccionados)</label
+                >Permisos ({formData.permissions.length} seleccionados)</span
               >
               <div
                 class="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-3"

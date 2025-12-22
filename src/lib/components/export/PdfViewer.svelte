@@ -372,10 +372,11 @@
 
   <!-- Canvas container wrapper para clipping -->
   <div class="flex-1 overflow-hidden relative">
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       bind:this={containerRef}
       class="pdf-canvas-container absolute inset-0 overflow-auto bg-[#1c2128] p-4"
-      tabindex="0"
+      tabindex="-1"
       role="application"
       aria-label="Visor PDF"
       onwheel={handleWheel}
