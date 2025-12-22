@@ -11,14 +11,14 @@ use sqlx::{Row, SqlitePool};
 // QUERIES DE LECTURA
 // ==========================================
 
-/// Busca un usuario por ID
+/// Busca un usuario por ID (Solo activos)
 pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<User, String> {
     let row = sqlx::query(
         "SELECT id, email, nombre, apellido, role, is_active, created_at, updated_at,
                 cedula, segundo_nombre, segundo_apellido,
                 fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
-                contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password
-         FROM users WHERE id = ?",
+                contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password, deleted_at
+         FROM users WHERE id = ? AND deleted_at IS NULL",
     )
     .bind(id)
     .fetch_one(pool)
@@ -48,10 +48,11 @@ pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<User, String> {
         contacto_emergencia_nombre: row.get("contacto_emergencia_nombre"),
         contacto_emergencia_telefono: row.get("contacto_emergencia_telefono"),
         must_change_password: row.get::<i32, _>("must_change_password") != 0,
+        deleted_at: row.get("deleted_at"),
     })
 }
 
-/// Busca un usuario por email (incluyendo password_hash para login)
+/// Busca un usuario por email (Solo activos)
 pub async fn find_by_email_with_password(
     pool: &SqlitePool,
     email: &str,
@@ -60,8 +61,8 @@ pub async fn find_by_email_with_password(
         "SELECT id, email, nombre, apellido, role, is_active, created_at, updated_at, password_hash,
                 cedula, segundo_nombre, segundo_apellido,
                 fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
-                contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password
-         FROM users WHERE email = ?"
+                contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password, deleted_at
+         FROM users WHERE email = ? AND deleted_at IS NULL"
     )
     .bind(email)
     .fetch_one(pool)
@@ -91,6 +92,7 @@ pub async fn find_by_email_with_password(
         contacto_emergencia_nombre: row.get("contacto_emergencia_nombre"),
         contacto_emergencia_telefono: row.get("contacto_emergencia_telefono"),
         must_change_password: row.get::<i32, _>("must_change_password") != 0,
+        deleted_at: row.get("deleted_at"),
     };
 
     let password_hash: String = row.get("password_hash");
@@ -98,14 +100,14 @@ pub async fn find_by_email_with_password(
     Ok((user, password_hash))
 }
 
-/// Obtiene todos los usuarios ordenados por fecha de creación
+/// Obtiene todos los usuarios activos ordenados por fecha de creación
 pub async fn find_all(pool: &SqlitePool) -> Result<Vec<User>, String> {
     let rows = sqlx::query(
         "SELECT id, email, nombre, apellido, role, is_active, created_at, updated_at,
                 cedula, segundo_nombre, segundo_apellido,
                 fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
-                contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password
-         FROM users ORDER BY created_at DESC",
+                contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password, deleted_at
+         FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC",
     )
     .fetch_all(pool)
     .await
@@ -137,6 +139,7 @@ pub async fn find_all(pool: &SqlitePool) -> Result<Vec<User>, String> {
                 contacto_emergencia_nombre: row.get("contacto_emergencia_nombre"),
                 contacto_emergencia_telefono: row.get("contacto_emergencia_telefono"),
                 must_change_password: row.get::<i32, _>("must_change_password") != 0,
+                deleted_at: row.get("deleted_at"),
             })
         })
         .collect();
@@ -313,13 +316,15 @@ pub async fn update(
     Ok(())
 }
 
-/// Elimina un usuario por ID
+/// Elimina un usuario por ID (Soft Delete)
 pub async fn delete(pool: &SqlitePool, id: &str) -> Result<(), String> {
-    sqlx::query("DELETE FROM users WHERE id = ?")
+    let now = chrono::Utc::now().to_rfc3339();
+    sqlx::query("UPDATE users SET deleted_at = ? WHERE id = ?")
+        .bind(now)
         .bind(id)
         .execute(pool)
         .await
-        .map_err(|e| format!("Error al eliminar usuario: {}", e))?;
+        .map_err(|e| format!("Error al eliminar usuario (soft): {}", e))?;
 
     Ok(())
 }

@@ -35,6 +35,7 @@ pub struct User {
     pub contacto_emergencia_nombre: Option<String>,
     pub contacto_emergencia_telefono: Option<String>,
     pub must_change_password: bool,
+    pub deleted_at: Option<String>,
 }
 
 // ==========================================
