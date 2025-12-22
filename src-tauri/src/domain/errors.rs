@@ -170,3 +170,33 @@ pub enum IngresoProveedorError {
     #[error("Error de validación: {0}")]
     Validation(String),
 }
+
+// ==========================================
+// VISITANTE ERRORS
+// ==========================================
+
+#[derive(Error, Debug)]
+pub enum VisitanteError {
+    #[error("Visitante no encontrado")]
+    NotFound,
+    #[error("Ya existe un visitante con esa identificacion")]
+    AlreadyExists,
+    #[error("Error de base de datos: {0}")]
+    Database(#[from] sqlx::Error),
+    #[error("Error de validación: {0}")]
+    Validation(String),
+}
+
+// ==========================================
+// INGRESO VISITA ERRORS
+// ==========================================
+
+#[derive(Error, Debug)]
+pub enum IngresoVisitaError {
+    #[error("Ingreso de visita no encontrado")]
+    NotFound,
+    #[error("Error de base de datos: {0}")]
+    Database(#[from] sqlx::Error),
+    #[error("Error de validación: {0}")]
+    Validation(String),
+}

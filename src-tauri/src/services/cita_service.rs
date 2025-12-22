@@ -120,9 +120,10 @@ impl CitaService {
         };
 
         // 4. Delegar creación al NUEVO servicio de ingreso visita
-        let service =
-            crate::services::ingreso_visita_service::IngresoVisitaService::new(self.pool.clone());
-        let ingreso = service.registrar_ingreso(input_ingreso).await?;
+        let ingreso =
+            crate::services::ingreso_visita_service::registrar_ingreso(&self.pool, input_ingreso)
+                .await
+                .map_err(|e| e.to_string())?;
 
         // 5. Marcar cita como completada
         cita_queries::marcar_cita_completada(&self.pool, &cita_id)
