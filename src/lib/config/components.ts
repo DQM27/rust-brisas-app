@@ -6,7 +6,6 @@ import type { ComponentKey } from '$lib/types/component';
 
 // Importar todos los componentes de tabs
 import WelcomePanel from '$lib/components/WelcomePanel.svelte';
-import RegisterUserView from '$lib/components/RegisterUserView.svelte';
 import UserProfileView from '$lib/components/UserProfileView.svelte';
 import UserListView from '$lib/components/user/UserListView.svelte';
 
@@ -30,6 +29,7 @@ import AboutPanel from '$lib/components/settings/AboutPanel.svelte';
 
 import GafeteListView from '$lib/components/gafete/GafeteListView.svelte';
 import IngresoListView from '$lib/components/ingreso/IngresoListView.svelte';
+import CitasList from '$lib/components/ingreso/CitasList.svelte';
 
 /**
  * Registry central de componentes
@@ -41,8 +41,8 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'user-editor': WelcomePanel,
   'user-profile': UserProfileView,
   'dashboard': WelcomePanel,
+  'citas-view': CitasList,
 
-  "user-register": RegisterUserView,
   'contratista': ContratistaView,
   'contratista-list': ContratistaListView,
   'proveedor': ProveedorView,

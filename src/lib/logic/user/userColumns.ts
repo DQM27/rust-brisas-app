@@ -1,77 +1,8 @@
-// lib/logic/user/userListLogic.ts
-import { get } from 'svelte/store';
-import { selectedSearchStore } from "$lib/stores/searchStore";
+// src/lib/logic/user/userColumns.ts
 import type { UserResponse } from "$lib/types/user";
-import type { ColDef, ICellRendererParams } from "@ag-grid-community/core";
+import type { ColDef } from "@ag-grid-community/core";
 
-export interface UserListState {
-    roleFilter: "todos" | "admin" | "supervisor" | "guardia";
-    estadoFilter: "todos" | "activo" | "inactivo";
-}
-
-export class UserListLogic {
-    private state: UserListState;
-
-    constructor() {
-        this.state = {
-            roleFilter: "todos",
-            estadoFilter: "todos"
-        };
-    }
-
-    getState(): UserListState {
-        return this.state;
-    }
-
-    getFilteredData(users: UserResponse[]): UserResponse[] {
-        let filtered = users;
-
-        // Filtro por búsqueda seleccionada (tiene prioridad)
-        const selectedSearch = get(selectedSearchStore);
-        if (selectedSearch.result) {
-            filtered = filtered.filter((u) => u.id === selectedSearch.result!.id);
-            return filtered;
-        }
-
-        // Filtro de rol
-        if (this.state.roleFilter !== "todos") {
-            filtered = filtered.filter((u) => u.role === this.state.roleFilter);
-        }
-
-        // Filtro de estado
-        if (this.state.estadoFilter !== "todos") {
-            const isActive = this.state.estadoFilter === "activo";
-            filtered = filtered.filter((u) => u.isActive === isActive);
-        }
-
-        return filtered;
-    }
-
-    getStats(users: UserResponse[]) {
-        return {
-            total: users.length,
-            activos: users.filter((u) => u.isActive).length,
-            admins: users.filter((u) => u.role === "admin").length,
-            supervisores: users.filter((u) => u.role === "supervisor").length,
-            guardias: users.filter((u) => u.role === "guardia").length,
-        };
-    }
-
-    // Actions
-    setRoleFilter(filter: UserListState['roleFilter']): void {
-        this.state.roleFilter = filter;
-    }
-
-    setEstadoFilter(filter: UserListState['estadoFilter']): void {
-        this.state.estadoFilter = filter;
-    }
-
-    clearAllFilters(): void {
-        this.state.roleFilter = "todos";
-        this.state.estadoFilter = "todos";
-        selectedSearchStore.clear();
-    }
-
+export class UserColumns {
     // Column configuration
     static getColumns(
         onStatusToggle?: (id: string, currentStatus: boolean) => void
@@ -112,21 +43,24 @@ export class UserListLogic {
                 field: "role",
                 headerName: "Rol",
                 width: 130,
-                cellRenderer: (params: ICellRendererParams) => {
-                    const role = params.value as string;
-                    return UserListLogic.formatRoleBadge(role);
+                cellRenderer: (params: any) => {
+                    return UserColumns.formatRoleBadge(params.value);
                 },
             },
             {
                 field: "isActive",
                 headerName: "Estado",
                 width: 130,
-                cellRenderer: (params: ICellRendererParams) => {
-                    const isActive = params.value as boolean;
-                    return UserListLogic.formatEstadoBadge(isActive);
+                cellRenderer: (params: any) => {
+                    return UserColumns.formatEstadoBadge(params.value);
                 },
                 onCellClicked: (params) => {
-                    if (onStatusToggle && params.data) {
+                    if (onStatusToggle && params.data && params.event) {
+                        const target = params.event.target as HTMLElement;
+                        // Prevenir toggle si se hace click en el header o algo raro (aunque onCellClicked debería ser seguro)
+                        // Verificamos si es el botón para evitar disparos accidentales si hubiera otros elementos
+                        if (target && target.tagName !== "BUTTON") return;
+
                         const row = params.data as UserResponse;
                         onStatusToggle(row.id, row.isActive);
                     }
@@ -151,16 +85,10 @@ export class UserListLogic {
                 width: 130,
                 valueFormatter: (params) => {
                     if (!params.value) return "-";
-                    // Split "YYYY-MM-DD" to avoid timezone issues with new Date()
-                    // If it's a full ISO string, we might need different logic, but simple dates usually come as YYYY-MM-DD or we treat them as such for display.
                     const val = String(params.value);
                     const [year, month, day] = val.split('T')[0].split('-').map(Number);
-
                     if (!year || !month || !day) return val;
-
-                    // Create date as local time (noon to be safe, or just use parts directly)
                     const date = new Date(year, month - 1, day);
-
                     return date.toLocaleDateString("es-PA", {
                         year: "numeric",
                         month: "short",
@@ -171,7 +99,7 @@ export class UserListLogic {
         ];
     }
 
-    // Helper methods
+    // Helper methods (ahora puramente estáticos)
     static formatRoleBadge(role: string): string {
         const baseClass = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border";
 
@@ -209,8 +137,4 @@ export class UserListLogic {
       </button>
     `;
     }
-}
-
-export function createUserListLogic(): UserListLogic {
-    return new UserListLogic();
 }

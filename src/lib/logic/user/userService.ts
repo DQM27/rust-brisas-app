@@ -4,7 +4,7 @@
 // Servicio para gestión de usuarios
 
 import { users } from '$lib/api/users';
-import type { UserResponse, UpdateUserInput } from '$lib/types/user';
+import type { UserResponse, UpdateUserInput, CreateUserInput } from '$lib/types/user';
 
 // ============================================
 // TYPES FOR RESULTS
@@ -66,6 +66,19 @@ export async function fetchUserById(id: string): Promise<ServiceResult<UserRespo
 // ============================================
 
 /**
+ * Crear nuevo usuario
+ */
+export async function createUser(input: CreateUserInput): Promise<ServiceResult<UserResponse>> {
+    try {
+        const user = await users.create(input);
+        return { ok: true, data: user };
+    } catch (err: any) {
+        console.error('Error al crear usuario:', err);
+        return { ok: false, error: parseError(err) };
+    }
+}
+
+/**
  * Cambiar estado de usuario (Activo/Inactivo)
  */
 export async function changeStatus(id: string, isActive: boolean): Promise<ServiceResult<UserResponse>> {
@@ -122,7 +135,9 @@ function parseError(err: any): string {
 
     if (typeof err === 'object') {
         const msg = err.message ?? err.toString();
+        // Errores de SurrealDB o Tauri
         if (/unique|email/i.test(msg)) return 'Ya existe un usuario con ese email.';
+        if (/failed/i.test(msg)) return 'Falló la operación en la base de datos.';
         return msg;
     }
 

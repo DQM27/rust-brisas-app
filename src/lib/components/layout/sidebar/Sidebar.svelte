@@ -22,7 +22,6 @@
   import SidebarPanel from "./SidebarPanel.svelte";
 
   // Paneles
-  import UsersPanel from "./panels/UsersPanel.svelte";
   import AccessPanel from "./panels/AccessPanel.svelte";
   import LogsPanel from "./panels/LogsPanel.svelte";
   import SettingsPanel from "./panels/SettingsPanel.svelte";
@@ -40,7 +39,14 @@
       id: "users",
       icon: User,
       label: "Usuarios",
-      panelComponent: UsersPanel,
+      action: () => {
+        openTab({
+          componentKey: "user-list", // Debe coincidir con el mapa en TabsContent
+          title: "Lista de Usuarios",
+          id: "users-list",
+          focusOnOpen: true,
+        });
+      },
       permission: "VIEW_USER_LIST",
     },
     {
