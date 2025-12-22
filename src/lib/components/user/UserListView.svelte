@@ -27,6 +27,7 @@
 
   // Stores
   import { selectedSearchStore } from "$lib/stores/searchStore";
+  import { currentUser } from "$lib/stores/auth";
 
   interface Props {
     tabId: string;
@@ -310,6 +311,19 @@
   // ==========================================
   // LIFECYCLE
   // ==========================================
+
+  // Sincronizar cambios del usuario actual (ej: edición desde Sidebar)
+  $effect(() => {
+    if ($currentUser && users.length > 0) {
+      const index = users.findIndex((u) => u.id === $currentUser.id);
+      if (index !== -1) {
+        // Verificar si hay cambios reales para evitar reactividad innecesaria
+        if (JSON.stringify(users[index]) !== JSON.stringify($currentUser)) {
+          users[index] = $currentUser;
+        }
+      }
+    }
+  });
 
   onMount(() => {
     loadUsers();

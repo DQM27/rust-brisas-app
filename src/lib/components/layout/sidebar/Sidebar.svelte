@@ -166,7 +166,20 @@
   // ATAJOS GLOBALES (MÓDULOS)
   // ==========================================
 
-  onMount(() => {
+  onMount(async () => {
+    // 1. Hidratar sesión (asegurar que currentUser tenga datos frescos de DB)
+    if ($currentUser) {
+      try {
+        const res = await userService.fetchUserById($currentUser.id);
+        if (res.ok) {
+          // Usamos reloadSession para actualizar store sin recargar página
+          currentUser.set(res.data);
+        }
+      } catch (e) {
+        console.error("Error refreshing session:", e);
+      }
+    }
+
     // Registrar handlers globales para navegación de módulos
     // (Atajos eliminados a petición del usuario)
   });
@@ -193,7 +206,7 @@
         toast.success("Perfil actualizado correctamente");
 
         // Update global store
-        currentUser.set(result.data);
+        // currentUser.set(result.data); // Handled by userService now
 
         showProfileModal = false;
       } else {

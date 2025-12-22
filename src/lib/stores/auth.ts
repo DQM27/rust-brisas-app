@@ -12,8 +12,17 @@ export function login(user: UserResponse): void {
 
 }
 
+
 export function logout(): void {
   isAuthenticated.set(false);
   currentUser.set(null);
   resetTabs();
+}
+
+/**
+ * Recarga la sesión actual desde el backend
+ * Útil cuando se actualiza el perfil propio
+ */
+export async function reloadSession(user: UserResponse): Promise<void> {
+  currentUser.set(user);
 }

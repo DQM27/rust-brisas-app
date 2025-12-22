@@ -5,6 +5,8 @@
 
 import { users } from '$lib/api/users';
 import type { UserResponse, UpdateUserInput, CreateUserInput } from '$lib/types/user';
+import { get } from 'svelte/store';
+import { currentUser, reloadSession } from '$lib/stores/auth';
 
 // ============================================
 // TYPES FOR RESULTS
@@ -101,6 +103,13 @@ export async function changeStatus(id: string, isActive: boolean): Promise<Servi
 export async function updateUser(id: string, input: UpdateUserInput): Promise<ServiceResult<UserResponse>> {
     try {
         const user = await users.update(id, input);
+
+        // Actualizar sesión si es el usuario actual
+        const current = get(currentUser);
+        if (current && current.id === user.id) {
+            reloadSession(user);
+        }
+
         return { ok: true, data: user };
     } catch (err: any) {
         console.error('Error al actualizar usuario:', err);

@@ -200,9 +200,10 @@ pub async fn update_user(
     pool: &SqlitePool,
     search_service: &Arc<SearchService>,
     id: String,
-    mut input: UpdateUserInput,
+    mut input: UpdateUserInput, // Restored mut for password fix
 ) -> Result<UserResponse, UserError> {
     // Función helper interna para limpiar opciones
+    /*
     let clean_opt = |opt: &mut Option<String>| {
         if let Some(s) = opt {
             if s.trim().is_empty() {
@@ -210,18 +211,26 @@ pub async fn update_user(
             }
         }
     };
+    */
 
-    clean_opt(&mut input.segundo_nombre);
-    clean_opt(&mut input.segundo_apellido);
-    clean_opt(&mut input.fecha_inicio_labores);
-    clean_opt(&mut input.numero_gafete);
-    clean_opt(&mut input.fecha_nacimiento);
-    clean_opt(&mut input.telefono);
-    clean_opt(&mut input.direccion);
-    clean_opt(&mut input.contacto_emergencia_nombre);
-    clean_opt(&mut input.contacto_emergencia_telefono);
-    clean_opt(&mut input.email);
-    clean_opt(&mut input.password);
+    // clean_opt(&mut input.segundo_nombre);
+    // clean_opt(&mut input.segundo_apellido);
+    // clean_opt(&mut input.fecha_inicio_labores);
+    // clean_opt(&mut input.numero_gafete);
+    // clean_opt(&mut input.fecha_nacimiento);
+    // clean_opt(&mut input.telefono);
+    // clean_opt(&mut input.direccion);
+    // clean_opt(&mut input.contacto_emergencia_nombre);
+    // clean_opt(&mut input.contacto_emergencia_telefono);
+    // clean_opt(&mut input.email);
+    // clean_opt(&mut input.password);
+
+    // FIX: Password cleaning MUST happen if empty string to avoid validation error
+    if let Some(ref p) = input.password {
+        if p.trim().is_empty() {
+            input.password = None;
+        }
+    }
 
     // 1. Validar input
     domain::validar_update_input(&input).map_err(UserError::Validation)?;

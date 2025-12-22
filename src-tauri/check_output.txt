@@ -1,38 +1,429 @@
     Checking brisas-app v0.1.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
-error: prefix `e6edf3` is unknown
-  --> src\export\pdf\templates.rs:69:15
+error[E0412]: cannot find type `UserRole` in this scope
+  --> src\db\user_queries.rs:23:5
    |
-69 |   fill: rgb("#e6edf3"),
-   |               ^^^^^^ unknown prefix
+23 | /     sqlx::query_as!(
+24 | |         User,
+25 | |         r#"
+26 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at,
+...  |
+33 | |         id
+34 | |     )
+   | |_____^ not found in this scope
    |
-   = note: prefixed identifiers and literals are reserved since Rust 2021
-help: consider inserting whitespace here
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider importing this enum
    |
-69 |   fill: rgb("#e6edf3 "),
-   |                     +
-
-error: expected at least one digit in exponent
-   --> src\export\pdf\templates.rs:112:24
-    |
-112 |     title-color: rgb("#2563eb"),
-    |                        ^^^^^^
-
-error: expected `,`, found `0d1117`
-  --> src\export\pdf\templates.rs:62:15
+ 7 + use crate::models::user::UserRole;
    |
-62 |   fill: rgb("#0d1117"),
-   |               ^^^^^^ expected `,`
 
-error: expected `,`, found `2563eb`
-   --> src\export\pdf\templates.rs:112:24
-    |
-112 |     title-color: rgb("#2563eb"),
-    |                        ^^^^^^ expected `,`
+error[E0412]: cannot find type `UserRole` in this scope
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ not found in this scope
+   |
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider importing this enum
+   |
+ 7 + use crate::models::user::UserRole;
+   |
 
-error: expected `,`, found `30363d`
-   --> src\export\pdf\templates.rs:158:27
-    |
-158 |     stroke: 0.5pt + rgb("#30363d"),
-    |                           ^^^^^^ expected `,`
+error[E0412]: cannot find type `UserRole` in this scope
+  --> src\db\user_queries.rs:65:5
+   |
+65 | /     sqlx::query_as!(
+66 | |         User,
+67 | |         r#"
+68 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at,
+...  |
+75 | |         "#
+76 | |     )
+   | |_____^ not found in this scope
+   |
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider importing this enum
+   |
+ 7 + use crate::models::user::UserRole;
+   |
 
-error: could not compile `brisas-app` (lib) due to 5 previous errors
+error[E0277]: the trait bound `bool: From<i64>` is not satisfied
+  --> src\db\user_queries.rs:23:5
+   |
+23 | /     sqlx::query_as!(
+24 | |         User,
+25 | |         r#"
+26 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at,
+...  |
+33 | |         id
+34 | |     )
+   | |_____^ the trait `From<i64>` is not implemented for `bool`
+   |
+   = help: the following other types implement trait `From<T>`:
+             `bool` implements `From<&windows::Win32::Foundation::BOOL>`
+             `bool` implements `From<&windows::Win32::Foundation::BOOLEAN>`
+             `bool` implements `From<&windows::Win32::Foundation::VARIANT_BOOL>`
+             `bool` implements `From<&windows::Win32::Foundation::VARIANT_BOOL>`
+             `bool` implements `From<&windows_result::bool::BOOL>`
+             `bool` implements `From<format_description::parse::format_item::HourBase>`
+             `bool` implements `From<format_description::parse::format_item::MonthCaseSensitive>`
+             `bool` implements `From<format_description::parse::format_item::PeriodCase>`
+           and 17 others
+   = note: required for `i64` to implement `Into<bool>`
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `id`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `email`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `nombre`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `apellido`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `role`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `is_active`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `created_at`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `updated_at`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `cedula`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `segundo_nombre`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `segundo_apellido`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `fecha_inicio_labores`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `numero_gafete`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `fecha_nacimiento`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `telefono`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `direccion`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `contacto_emergencia_nombre`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `contacto_emergencia_telefono`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `must_change_password`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0560]: struct `UserWithPassword` has no field named `deleted_at`
+  --> src\db\user_queries.rs:44:15
+   |
+44 |       let row = sqlx::query_as!(
+   |  _______________^
+45 | |         UserWithPassword,
+46 | |         r#"
+47 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at, 
+...  |
+55 | |         email
+56 | |     )
+   | |_____^ `UserWithPassword` does not have this field
+   |
+   = note: all struct fields are already assigned
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `bool: From<i64>` is not satisfied
+  --> src\db\user_queries.rs:65:5
+   |
+65 | /     sqlx::query_as!(
+66 | |         User,
+67 | |         r#"
+68 | |         SELECT id, email, nombre, apellido, role as "role: UserRole", is_active, created_at, updated_at,
+...  |
+75 | |         "#
+76 | |     )
+   | |_____^ the trait `From<i64>` is not implemented for `bool`
+   |
+   = help: the following other types implement trait `From<T>`:
+             `bool` implements `From<&windows::Win32::Foundation::BOOL>`
+             `bool` implements `From<&windows::Win32::Foundation::BOOLEAN>`
+             `bool` implements `From<&windows::Win32::Foundation::VARIANT_BOOL>`
+             `bool` implements `From<&windows::Win32::Foundation::VARIANT_BOOL>`
+             `bool` implements `From<&windows_result::bool::BOOL>`
+             `bool` implements `From<format_description::parse::format_item::HourBase>`
+             `bool` implements `From<format_description::parse::format_item::MonthCaseSensitive>`
+             `bool` implements `From<format_description::parse::format_item::PeriodCase>`
+           and 17 others
+   = note: required for `i64` to implement `Into<bool>`
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+Some errors have detailed explanations: E0277, E0412, E0560.
+For more information about an error, try `rustc --explain E0277`.
+error: could not compile `brisas-app` (lib) due to 25 previous errors
