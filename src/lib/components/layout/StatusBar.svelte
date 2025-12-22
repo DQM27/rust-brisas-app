@@ -1,27 +1,10 @@
 <!-- src/lib/components/layout/StatusBar.svelte -->
 <script lang="ts">
   import { Wifi, WifiOff } from "lucide-svelte";
-  import InspectionToggle from "../layout/InspectionToggle.svelte";
-  import { createEventDispatcher } from "svelte";
   import { online } from "$lib/stores/network";
-
-  // Props
-  export let inspectionPanelVisible: boolean = false;
-
-  // Dispatcher
-  const dispatch = createEventDispatcher<{
-    inspectionToggle: { visible: boolean };
-  }>();
-
-  function handleInspectionToggle(
-    event: CustomEvent<{ visible: boolean }>,
-  ): void {
-    dispatch("inspectionToggle", event.detail);
-  }
 
   // Clases reactivas para el estado de conexión
   $: connectionClasses = $online ? "text-success" : "text-error";
-
   $: connectionIcon = $online ? Wifi : WifiOff;
 </script>
 
@@ -51,12 +34,8 @@
     </div>
   </div>
 
-  <!-- Sección derecha - Inspección -->
+  <!-- Sección derecha - Espacio reservado para futuras funcionalidades -->
   <div class="flex items-center gap-4">
-    <InspectionToggle
-      visible={inspectionPanelVisible}
-      variant="compact"
-      on:toggle={handleInspectionToggle}
-    />
+    <!-- Vacío por ahora -->
   </div>
 </div>

@@ -6,7 +6,7 @@
   import { isAuthenticated } from "$lib/stores/auth";
   import Sidebar from "$lib/components/layout/sidebar/Sidebar.svelte";
   import StatusBar from "$lib/components/layout/StatusBar.svelte";
-  import { inspectionPanel, setupWizardVisible } from "$lib/stores/ui";
+  import { setupWizardVisible } from "$lib/stores/ui";
   import { initNetworkMonitor } from "$lib/stores/network";
   import Toast from "$lib/components/Toast.svelte";
   import { themeStore } from "$lib/stores/themeStore"; // Inicializar tema
@@ -21,11 +21,6 @@
   // Estado del wizard de setup
   let showSetupWizard = $derived($setupWizardVisible);
   let checkingSetup = $state(true);
-
-  // Toggle del panel de inspección
-  function toggleInspectionPanel(): void {
-    $inspectionPanel.visible = !$inspectionPanel.visible;
-  }
 
   // Handler cuando se completa el setup
   function handleSetupComplete() {
@@ -82,9 +77,7 @@
 
   <!-- StatusBar -->
   {#if !$generalSettings.isKioskMode}
-    <StatusBar
-      inspectionPanelVisible={$inspectionPanel.visible}
-      on:inspectionToggle={toggleInspectionPanel}
-    />
+    <StatusBar />
   {/if}
 </div>
+
