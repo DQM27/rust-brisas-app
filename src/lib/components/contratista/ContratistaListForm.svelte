@@ -27,11 +27,8 @@
     onEstadoFilterChange: (filter: string) => void;
     onPraindFilterChange: (filter: string) => void;
     onClearAllFilters: () => void;
-    onSearchSelect: (e: CustomEvent<SearchResult>) => void;
-    onSearchClear: () => void;
     onNewContratista?: () => void;
     onEditContratista?: (contratista: ContratistaResponse) => void;
-    onViewHistory?: (contratista: ContratistaResponse) => void;
   }
 
   let {
@@ -47,11 +44,8 @@
     onEstadoFilterChange,
     onPraindFilterChange,
     onClearAllFilters,
-    onSearchSelect,
-    onSearchClear,
     onNewContratista,
     onEditContratista,
-    onViewHistory,
   }: Props = $props();
 
   // Estado para selección
@@ -171,9 +165,6 @@
         createCustomButton.editar(() => {
           if (selected) onEditContratista?.(selected);
         }),
-        createCustomButton.historial(() => {
-          if (selected) onViewHistory?.(selected);
-        }),
       ],
 
       multiSelect: [],
@@ -226,8 +217,6 @@
         <SearchBar
           placeholder="Buscar por nombre, cédula o empresa..."
           limit={10}
-          on:select={onSearchSelect}
-          on:clear={onSearchClear}
         />
       </div>
     </div>

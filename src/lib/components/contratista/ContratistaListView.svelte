@@ -154,11 +154,6 @@
     });
   }
 
-  function handleViewHistory(contratista: ContratistaResponse) {
-    console.log("Ver historial de:", contratista);
-    // Implementación pendiente: abrir tab o modal con historial de ingresos
-  }
-
   // --- Filtros ---
   function handleEstadoFilterChange(filter: string) {
     listLogic.setEstadoFilter(filter as any);
@@ -174,15 +169,6 @@
     listLogic.clearAllFilters();
     listState.estadoFilter = "todos";
     listState.praindFilter = "todos";
-  }
-
-  // --- Búsqueda ---
-  function handleSearchSelect(e: CustomEvent<SearchResult>) {
-    console.log("Contratista seleccionado:", e.detail);
-  }
-
-  function handleSearchClear() {
-    console.log("Búsqueda limpiada");
   }
 
   async function handleReindex() {
@@ -215,9 +201,6 @@
   onEstadoFilterChange={handleEstadoFilterChange}
   onPraindFilterChange={handlePraindFilterChange}
   onClearAllFilters={handleClearAllFilters}
-  onSearchSelect={handleSearchSelect}
-  onSearchClear={handleSearchClear}
   onNewContratista={handleNewContratista}
   onEditContratista={handleEditContratista}
-  onViewHistory={handleViewHistory}
 />

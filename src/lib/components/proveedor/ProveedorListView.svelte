@@ -104,14 +104,6 @@
     });
   }
 
-  function handleViewInfo(proveedor: ProveedorResponse) {
-    console.log("Ver información de:", proveedor);
-  }
-
-  function handleViewVehicles(proveedor: ProveedorResponse) {
-    console.log("Ver vehículos de:", proveedor);
-  }
-
   // --- Filtros ---
   function handleEstadoFilterChange(filter: string) {
     estadoFilter = filter;
@@ -119,15 +111,6 @@
 
   function handleClearAllFilters() {
     estadoFilter = "todos";
-  }
-
-  // --- Búsqueda ---
-  function handleSearchSelect(e: CustomEvent<SearchResult>) {
-    console.log("Proveedor seleccionado:", e.detail);
-  }
-
-  function handleSearchClear() {
-    console.log("Búsqueda limpiada");
   }
 
   onMount(() => {
@@ -145,10 +128,6 @@
   onRefresh={loadProveedores}
   onEstadoFilterChange={handleEstadoFilterChange}
   onClearAllFilters={handleClearAllFilters}
-  onSearchSelect={handleSearchSelect}
-  onSearchClear={handleSearchClear}
   onNewProveedor={handleNewProveedor}
   onEditProveedor={handleEditProveedor}
-  onViewInfo={handleViewInfo}
-  onViewVehicles={handleViewVehicles}
 />

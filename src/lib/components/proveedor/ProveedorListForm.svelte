@@ -23,12 +23,8 @@
     onRefresh: () => void;
     onEstadoFilterChange: (filter: string) => void;
     onClearAllFilters: () => void;
-    onSearchSelect: (e: CustomEvent<SearchResult>) => void;
-    onSearchClear: () => void;
     onNewProveedor?: () => void;
     onEditProveedor?: (proveedor: ProveedorResponse) => void;
-    onViewInfo?: (proveedor: ProveedorResponse) => void;
-    onViewVehicles?: (proveedor: ProveedorResponse) => void;
   }
 
   let {
@@ -41,12 +37,8 @@
     onRefresh,
     onEstadoFilterChange,
     onClearAllFilters,
-    onSearchSelect,
-    onSearchClear,
     onNewProveedor,
     onEditProveedor,
-    onViewInfo,
-    onViewVehicles,
   }: Props = $props();
 
   // Estado para selección
@@ -135,8 +127,6 @@
         <SearchBar
           placeholder="Buscar por nombre, cédula o empresa..."
           limit={10}
-          on:select={onSearchSelect}
-          on:clear={onSearchClear}
         />
       </div>
     </div>
