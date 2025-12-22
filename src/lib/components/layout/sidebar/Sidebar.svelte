@@ -25,7 +25,6 @@
   import AccessPanel from "./panels/AccessPanel.svelte";
   import LogsPanel from "./panels/LogsPanel.svelte";
   import SettingsPanel from "./panels/SettingsPanel.svelte";
-  import ContractorsPanel from "./panels/ContractorsPanel.svelte";
   import ProveedoresPanel from "./panels/ProveedoresPanel.svelte";
 
   // Store y tipos
@@ -58,7 +57,14 @@
       id: "contractors",
       icon: HardHat,
       label: "Contratistas",
-      panelComponent: ContractorsPanel,
+      action: () => {
+        openTab({
+          componentKey: "contratista-list",
+          title: "Lista de Contratistas",
+          id: "contratista-list",
+          focusOnOpen: true,
+        });
+      },
     },
     {
       id: "proveedores",
