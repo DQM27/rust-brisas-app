@@ -4,27 +4,26 @@
 // Solo modelos, DTOs y enums - SIN validaciones ni lógica
 
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow; // Import sqlx
+use sqlx::FromRow;
 
-// ==========================================
 // ==========================================
 // MODELO DE DOMINIO
 // ==========================================
 
 /// Representa un usuario del sistema
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)] // Added FromRow
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
     pub id: String,
     pub email: String,
     pub nombre: String,
     pub apellido: String,
-    pub role: UserRole,
+    pub role_id: String, // FK a roles
     pub is_active: bool,
     pub created_at: String,
     pub updated_at: String,
 
-    // Nuevos campos obligatorios
+    // Campos adicionales
     pub cedula: String,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
@@ -40,38 +39,6 @@ pub struct User {
 }
 
 // ==========================================
-// ENUM DE ROLES
-// ==========================================
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::Type)] // Added sqlx::Type
-#[serde(rename_all = "lowercase")]
-#[sqlx(rename_all = "lowercase")] // Lowercase for DB mapping
-pub enum UserRole {
-    Admin,
-    Supervisor,
-    Guardia,
-}
-
-impl UserRole {
-    pub fn as_str(&self) -> &str {
-        match self {
-            UserRole::Admin => "admin",
-            UserRole::Supervisor => "supervisor",
-            UserRole::Guardia => "guardia",
-        }
-    }
-
-    pub fn from_str(s: &str) -> Result<Self, String> {
-        match s.to_lowercase().as_str() {
-            "admin" => Ok(UserRole::Admin),
-            "supervisor" => Ok(UserRole::Supervisor),
-            "guardia" => Ok(UserRole::Guardia),
-            _ => Err(format!("Rol desconocido: {}", s)),
-        }
-    }
-}
-
-// ==========================================
 // DTOs DE ENTRADA
 // ==========================================
 
@@ -82,9 +49,9 @@ pub struct CreateUserInput {
     pub password: Option<String>,
     pub nombre: String,
     pub apellido: String,
-    pub role: Option<String>,
+    pub role_id: Option<String>, // FK a roles
 
-    // Obligatorio nuevo
+    // Obligatorio
     pub cedula: String,
 
     // Opcionales
@@ -107,7 +74,7 @@ pub struct UpdateUserInput {
     pub password: Option<String>,
     pub nombre: Option<String>,
     pub apellido: Option<String>,
-    pub role: Option<String>,
+    pub role_id: Option<String>, // FK a roles
     pub is_active: Option<bool>,
 
     // Opcionales
@@ -143,13 +110,13 @@ pub struct UserResponse {
     pub nombre: String,
     pub apellido: String,
     pub nombre_completo: String,
-    pub role: UserRole,
-    pub role_display: String,
+    pub role_id: String,
+    pub role_name: String, // Nombre del rol para display
     pub is_active: bool,
     pub created_at: String,
     pub updated_at: String,
 
-    // Nuevos campos
+    // Campos adicionales
     pub cedula: String,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
@@ -164,14 +131,9 @@ pub struct UserResponse {
     pub temporary_password: Option<String>,
 }
 
-impl From<User> for UserResponse {
-    fn from(u: User) -> Self {
-        let role_display = match u.role {
-            UserRole::Admin => "Administrador",
-            UserRole::Supervisor => "Supervisor",
-            UserRole::Guardia => "Guardia",
-        };
-
+impl UserResponse {
+    /// Crea UserResponse desde User con nombre del rol
+    pub fn from_user_with_role(u: User, role_name: String) -> Self {
         let mut parts = Vec::new();
         parts.push(u.nombre.as_str());
         if let Some(ref sn) = u.segundo_nombre {
@@ -185,17 +147,15 @@ impl From<User> for UserResponse {
 
         Self {
             id: u.id,
-            email: u.email.clone(),
-            nombre: u.nombre.clone(),
-            apellido: u.apellido.clone(),
+            email: u.email,
+            nombre: u.nombre,
+            apellido: u.apellido,
             nombre_completo,
-            role: u.role,
-            role_display: role_display.to_string(),
+            role_id: u.role_id,
+            role_name,
             is_active: u.is_active,
             created_at: u.created_at,
             updated_at: u.updated_at,
-
-            // Mapeo directo
             cedula: u.cedula,
             segundo_nombre: u.segundo_nombre,
             segundo_apellido: u.segundo_apellido,
@@ -205,10 +165,9 @@ impl From<User> for UserResponse {
             telefono: u.telefono,
             direccion: u.direccion,
             contacto_emergencia_nombre: u.contacto_emergencia_nombre,
-
             contacto_emergencia_telefono: u.contacto_emergencia_telefono,
             must_change_password: u.must_change_password,
-            temporary_password: None, // Por defecto no se envía, solo al crear
+            temporary_password: None,
         }
     }
 }
@@ -219,13 +178,4 @@ pub struct UserListResponse {
     pub users: Vec<UserResponse>,
     pub total: usize,
     pub activos: usize,
-    pub por_rol: RoleStats,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RoleStats {
-    pub admins: usize,
-    pub supervisores: usize,
-    pub guardias: usize,
 }

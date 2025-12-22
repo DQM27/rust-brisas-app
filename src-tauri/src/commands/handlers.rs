@@ -173,6 +173,16 @@ macro_rules! register_handlers {
             // COMANDOS DE DEBUG / SISTEMA
             // ==========================================
             commands::debug_commands::get_app_memory_usage,
+            // ==========================================
+            // COMANDOS DE ROLES
+            // ==========================================
+            commands::role_commands::get_all_roles,
+            commands::role_commands::get_role_by_id,
+            commands::role_commands::get_all_permissions,
+            commands::role_commands::get_visible_modules,
+            commands::role_commands::create_role,
+            commands::role_commands::update_role,
+            commands::role_commands::delete_role,
         ]
     };
 }

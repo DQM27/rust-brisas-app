@@ -4,7 +4,7 @@
 // Capa de data access: queries SQL puras
 // Sin lógica de negocio, solo interacción con la base de datos
 
-use crate::models::user::{User, UserRole};
+use crate::models::user::User;
 use sqlx::{Row, SqlitePool};
 
 // ==========================================
@@ -13,99 +13,92 @@ use sqlx::{Row, SqlitePool};
 
 /// Busca un usuario por ID (Solo activos)
 pub async fn find_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<User> {
-    sqlx::query_as!(
-        User,
+    sqlx::query_as::<_, User>(
         r#"
-        SELECT id, email, nombre, apellido, role as "role: UserRole",
-               is_active as "is_active: bool",
-               created_at, updated_at,
+        SELECT id, email, nombre, apellido, role_id,
+               is_active, created_at, updated_at,
                cedula, segundo_nombre, segundo_apellido,
                fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
                contacto_emergencia_nombre, contacto_emergencia_telefono,
-               must_change_password as "must_change_password: bool",
-               deleted_at
+               must_change_password, deleted_at
         FROM users
         WHERE id = ? AND deleted_at IS NULL
         "#,
-        id
     )
+    .bind(id)
     .fetch_one(pool)
     .await
 }
 
-/// Busca un usuario por email (Solo activos)
+/// Busca un usuario por email con password (Solo activos)
 pub async fn find_by_email_with_password(
     pool: &SqlitePool,
     email: &str,
 ) -> sqlx::Result<(User, String)> {
-    let rec = sqlx::query!(
+    let row = sqlx::query(
         r#"
-        SELECT id, email, nombre, apellido, role as "role: UserRole",
-               is_active as "is_active: bool",
-               created_at, updated_at,
+        SELECT id, email, nombre, apellido, role_id,
+               is_active, created_at, updated_at,
                cedula, segundo_nombre, segundo_apellido,
                fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
                contacto_emergencia_nombre, contacto_emergencia_telefono,
-               must_change_password as "must_change_password: bool",
-               deleted_at,
-               password_hash
+               must_change_password, deleted_at, password_hash
         FROM users
         WHERE email = ? AND deleted_at IS NULL
         "#,
-        email
     )
+    .bind(email)
     .fetch_one(pool)
     .await?;
 
     let user = User {
-        id: rec.id,
-        email: rec.email,
-        nombre: rec.nombre,
-        apellido: rec.apellido,
-        role: rec.role,
-        is_active: rec.is_active,
-        created_at: rec.created_at,
-        updated_at: rec.updated_at,
-        cedula: rec.cedula,
-        segundo_nombre: rec.segundo_nombre,
-        segundo_apellido: rec.segundo_apellido,
-        fecha_inicio_labores: rec.fecha_inicio_labores,
-        numero_gafete: rec.numero_gafete,
-        fecha_nacimiento: rec.fecha_nacimiento,
-        telefono: rec.telefono,
-        direccion: rec.direccion,
-        contacto_emergencia_nombre: rec.contacto_emergencia_nombre,
-        contacto_emergencia_telefono: rec.contacto_emergencia_telefono,
-        must_change_password: rec.must_change_password,
-        deleted_at: rec.deleted_at,
+        id: row.get("id"),
+        email: row.get("email"),
+        nombre: row.get("nombre"),
+        apellido: row.get("apellido"),
+        role_id: row.get("role_id"),
+        is_active: row.get("is_active"),
+        created_at: row.get("created_at"),
+        updated_at: row.get("updated_at"),
+        cedula: row.get("cedula"),
+        segundo_nombre: row.get("segundo_nombre"),
+        segundo_apellido: row.get("segundo_apellido"),
+        fecha_inicio_labores: row.get("fecha_inicio_labores"),
+        numero_gafete: row.get("numero_gafete"),
+        fecha_nacimiento: row.get("fecha_nacimiento"),
+        telefono: row.get("telefono"),
+        direccion: row.get("direccion"),
+        contacto_emergencia_nombre: row.get("contacto_emergencia_nombre"),
+        contacto_emergencia_telefono: row.get("contacto_emergencia_telefono"),
+        must_change_password: row.get("must_change_password"),
+        deleted_at: row.get("deleted_at"),
     };
 
-    Ok((user, rec.password_hash))
+    let password_hash: String = row.get("password_hash");
+    Ok((user, password_hash))
 }
 
-/// Obtiene todos los usuarios activos ordenados por fecha de creación
-pub async fn find_all(pool: &SqlitePool) -> sqlx::Result<Vec<User>> {
-    sqlx::query_as!(
-        User,
+/// Obtiene todos los usuarios activos (excluyendo superuser)
+pub async fn find_all(pool: &SqlitePool, exclude_superuser_id: &str) -> sqlx::Result<Vec<User>> {
+    sqlx::query_as::<_, User>(
         r#"
-        SELECT id, email, nombre, apellido, role as "role: UserRole",
-               is_active as "is_active: bool",
-               created_at, updated_at,
+        SELECT id, email, nombre, apellido, role_id,
+               is_active, created_at, updated_at,
                cedula, segundo_nombre, segundo_apellido,
                fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
                contacto_emergencia_nombre, contacto_emergencia_telefono,
-               must_change_password as "must_change_password: bool",
-               deleted_at
+               must_change_password, deleted_at
         FROM users
-        WHERE deleted_at IS NULL
+        WHERE deleted_at IS NULL AND id != ?
         ORDER BY created_at DESC
-        "#
+        "#,
     )
+    .bind(exclude_superuser_id)
     .fetch_all(pool)
     .await
 }
 
-/// Cuenta cuántos usuarios tienen un email específico (para verificar unicidad)
+/// Cuenta cuántos usuarios tienen un email específico
 pub async fn count_by_email(pool: &SqlitePool, email: &str) -> sqlx::Result<i32> {
     let row = sqlx::query("SELECT COUNT(*) as count FROM users WHERE email = ?")
         .bind(email)
@@ -115,8 +108,7 @@ pub async fn count_by_email(pool: &SqlitePool, email: &str) -> sqlx::Result<i32>
     Ok(row.get("count"))
 }
 
-/// Cuenta cuántos usuarios tienen un email específico excluyendo un ID
-/// (útil para updates)
+/// Cuenta cuántos usuarios tienen un email excluyendo un ID
 pub async fn count_by_email_excluding_id(
     pool: &SqlitePool,
     email: &str,
@@ -131,11 +123,21 @@ pub async fn count_by_email_excluding_id(
     Ok(row.get("count"))
 }
 
+/// Obtiene el nombre de un rol por ID
+pub async fn get_role_name(pool: &SqlitePool, role_id: &str) -> sqlx::Result<String> {
+    let row = sqlx::query("SELECT name FROM roles WHERE id = ?")
+        .bind(role_id)
+        .fetch_one(pool)
+        .await?;
+
+    Ok(row.get("name"))
+}
+
 // ==========================================
 // QUERIES DE ESCRITURA
 // ==========================================
 
-/// Inserta un nuevo usuario en la base de datos
+/// Inserta un nuevo usuario
 pub async fn insert(
     pool: &SqlitePool,
     id: &str,
@@ -143,10 +145,9 @@ pub async fn insert(
     password_hash: &str,
     nombre: &str,
     apellido: &str,
-    role: &str,
+    role_id: &str,
     created_at: &str,
     updated_at: &str,
-    // New params
     cedula: &str,
     segundo_nombre: Option<&str>,
     segundo_apellido: Option<&str>,
@@ -163,7 +164,7 @@ pub async fn insert(
 
     sqlx::query(
         "INSERT INTO users (
-            id, email, password_hash, nombre, apellido, role, created_at, updated_at,
+            id, email, password_hash, nombre, apellido, role_id, created_at, updated_at,
             cedula, segundo_nombre, segundo_apellido,
             fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
             contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password
@@ -175,10 +176,9 @@ pub async fn insert(
     .bind(password_hash)
     .bind(nombre)
     .bind(apellido)
-    .bind(role)
+    .bind(role_id)
     .bind(created_at)
     .bind(updated_at)
-    // New params
     .bind(cedula)
     .bind(segundo_nombre)
     .bind(segundo_apellido)
@@ -196,7 +196,7 @@ pub async fn insert(
     Ok(())
 }
 
-/// Actualiza un usuario existente (campos opcionales)
+/// Actualiza un usuario existente
 pub async fn update(
     pool: &SqlitePool,
     id: &str,
@@ -204,10 +204,9 @@ pub async fn update(
     password_hash: Option<&str>,
     nombre: Option<&str>,
     apellido: Option<&str>,
-    role: Option<&str>,
+    role_id: Option<&str>,
     is_active: Option<i32>,
     updated_at: &str,
-    // New params
     cedula: Option<&str>,
     segundo_nombre: Option<&str>,
     segundo_apellido: Option<&str>,
@@ -228,7 +227,7 @@ pub async fn update(
             password_hash = COALESCE(?, password_hash),
             nombre = COALESCE(?, nombre),
             apellido = COALESCE(?, apellido),
-            role = COALESCE(?, role),
+            role_id = COALESCE(?, role_id),
             is_active = COALESCE(?, is_active),
             updated_at = ?,
             cedula = COALESCE(?, cedula),
@@ -248,10 +247,9 @@ pub async fn update(
     .bind(password_hash)
     .bind(nombre)
     .bind(apellido)
-    .bind(role)
+    .bind(role_id)
     .bind(is_active)
     .bind(updated_at)
-    // New params
     .bind(cedula)
     .bind(segundo_nombre)
     .bind(segundo_apellido)
@@ -270,7 +268,7 @@ pub async fn update(
     Ok(())
 }
 
-/// Elimina un usuario por ID (Soft Delete)
+/// Soft delete de usuario
 pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
     let now = chrono::Utc::now().to_rfc3339();
     sqlx::query("UPDATE users SET deleted_at = ? WHERE id = ?")

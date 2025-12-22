@@ -2,6 +2,7 @@ use crate::db::contratista_queries;
 use crate::db::lista_negra_queries;
 use crate::db::proveedor_queries;
 use crate::db::user_queries;
+use crate::domain::role::SUPERUSER_ID;
 use crate::models::contratista::Contratista;
 use crate::models::lista_negra::ListaNegra;
 use crate::models::proveedor::Proveedor;
@@ -61,8 +62,8 @@ impl SearchService {
         // Obtener todos los contratistas con empresa (Async, sin lock)
         let contratistas = contratista_queries::find_all_with_empresa(pool).await?;
 
-        // Obtener todos los usuarios
-        let users = user_queries::find_all(pool)
+        // Obtener todos los usuarios (excluyendo superuser del índice)
+        let users = user_queries::find_all(pool, SUPERUSER_ID)
             .await
             .map_err(|e| e.to_string())?;
 

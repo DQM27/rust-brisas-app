@@ -2,15 +2,13 @@
 // src/services/user_service.rs
 // ==========================================
 // Capa de servicio: orquesta dominio, db y auth
-// Contiene la lógica de negocio completa
-
-use crate::domain::user as domain;
 
 use crate::db::user_queries as db;
 use crate::domain::errors::UserError;
+use crate::domain::role::{ROLE_GUARDIA_ID, SUPERUSER_ID};
+use crate::domain::user as domain;
 use crate::models::user::{
-    ChangePasswordInput, CreateUserInput, RoleStats, UpdateUserInput, UserListResponse,
-    UserResponse, UserRole,
+    ChangePasswordInput, CreateUserInput, UpdateUserInput, UserListResponse, UserResponse,
 };
 use crate::services::auth;
 use crate::services::search_service::SearchService;
@@ -31,14 +29,13 @@ pub async fn create_user(
     search_service: &Arc<SearchService>,
     mut input: CreateUserInput,
 ) -> Result<UserResponse, UserError> {
-    // 0. Normalizar input: Si campos opcionales vienen vacíos, convertirlos a None
+    // 0. Normalizar input
     if let Some(ref p) = input.password {
         if p.trim().is_empty() {
             input.password = None;
         }
     }
 
-    // Función helper interna para limpiar opciones
     let clean_opt = |opt: &mut Option<String>| {
         if let Some(s) = opt {
             if s.trim().is_empty() {
@@ -65,28 +62,22 @@ pub async fn create_user(
     let nombre_normalizado = domain::normalizar_nombre(&input.nombre);
     let apellido_normalizado = domain::normalizar_nombre(&input.apellido);
 
-    // 3. Verificar que el email no exista
+    // 3. Verificar email único
     let count = db::count_by_email(pool, &email_normalizado).await?;
     if count > 0 {
         return Err(UserError::EmailExists);
     }
 
     // 4. Determinar rol (default: Guardia)
-    let role = if let Some(ref r) = input.role {
-        UserRole::from_str(r).map_err(UserError::Validation)?
-    } else {
-        UserRole::Guardia
-    };
+    let role_id = input.role_id.unwrap_or_else(|| ROLE_GUARDIA_ID.to_string());
 
     // 5. Generar o usar contraseña
     let (password_str, must_change_password) = match input.password {
         Some(p) => {
-            // Check if explicit override is provided, otherwise default to false (admin set permanent)
             let force_change = input.must_change_password.unwrap_or(false);
             (p, force_change)
         }
         None => {
-            // Generar temporal (always force change)
             let rng = rand::thread_rng();
             let temp: String = rng
                 .sample_iter(&Alphanumeric)
@@ -111,13 +102,12 @@ pub async fn create_user(
         &password_hash,
         &nombre_normalizado,
         &apellido_normalizado,
-        role.as_str(),
+        &role_id,
         &now,
         &now,
         &input.cedula,
         input.segundo_nombre.as_deref(),
         input.segundo_apellido.as_deref(),
-        // New fields
         input.fecha_inicio_labores.as_deref(),
         input.numero_gafete.as_deref(),
         input.fecha_nacimiento.as_deref(),
@@ -129,14 +119,13 @@ pub async fn create_user(
     )
     .await?;
 
-    // 8. Retornar usuario creado con la contraseña temporal si aplica
+    // 8. Retornar usuario creado
     let mut response = get_user_by_id(pool, &id).await?;
     if must_change_password {
-        response.temporary_password = Some(password_str.to_string());
+        response.temporary_password = Some(password_str);
     }
 
-    // 9. Indexar en Tantivy (automático)
-    // Obtenemos el User crudo para indexar
+    // 9. Indexar en Tantivy
     match db::find_by_id(pool, &id).await {
         Ok(user) => {
             if let Err(e) = search_service.add_user(&user).await {
@@ -155,7 +144,11 @@ pub async fn create_user(
 
 pub async fn get_user_by_id(pool: &SqlitePool, id: &str) -> Result<UserResponse, UserError> {
     let user = db::find_by_id(pool, id).await.map_err(UserError::from)?;
-    Ok(UserResponse::from(user))
+    let role_name = db::get_role_name(pool, &user.role_id)
+        .await
+        .unwrap_or_else(|_| "Desconocido".to_string());
+
+    Ok(UserResponse::from_user_with_role(user, role_name))
 }
 
 // ==========================================
@@ -163,36 +156,24 @@ pub async fn get_user_by_id(pool: &SqlitePool, id: &str) -> Result<UserResponse,
 // ==========================================
 
 pub async fn get_all_users(pool: &SqlitePool) -> Result<UserListResponse, UserError> {
-    let users = db::find_all(pool).await?;
+    // Excluir superuser del listado
+    let users = db::find_all(pool, SUPERUSER_ID).await?;
 
-    // Convertir a UserResponse
-    let user_responses: Vec<UserResponse> = users.into_iter().map(UserResponse::from).collect();
+    let mut user_responses = Vec::new();
+    for user in users {
+        let role_name = db::get_role_name(pool, &user.role_id)
+            .await
+            .unwrap_or_else(|_| "Desconocido".to_string());
+        user_responses.push(UserResponse::from_user_with_role(user, role_name));
+    }
 
-    // Calcular estadísticas
     let total = user_responses.len();
     let activos = user_responses.iter().filter(|u| u.is_active).count();
-    let admins = user_responses
-        .iter()
-        .filter(|u| u.role == UserRole::Admin)
-        .count();
-    let supervisores = user_responses
-        .iter()
-        .filter(|u| u.role == UserRole::Supervisor)
-        .count();
-    let guardias = user_responses
-        .iter()
-        .filter(|u| u.role == UserRole::Guardia)
-        .count();
 
     Ok(UserListResponse {
         users: user_responses,
         total,
         activos,
-        por_rol: RoleStats {
-            admins,
-            supervisores,
-            guardias,
-        },
     })
 }
 
@@ -204,32 +185,9 @@ pub async fn update_user(
     pool: &SqlitePool,
     search_service: &Arc<SearchService>,
     id: String,
-    mut input: UpdateUserInput, // Restored mut for password fix
+    mut input: UpdateUserInput,
 ) -> Result<UserResponse, UserError> {
-    // Función helper interna para limpiar opciones
-    /*
-    let clean_opt = |opt: &mut Option<String>| {
-        if let Some(s) = opt {
-            if s.trim().is_empty() {
-                *opt = None;
-            }
-        }
-    };
-    */
-
-    // clean_opt(&mut input.segundo_nombre);
-    // clean_opt(&mut input.segundo_apellido);
-    // clean_opt(&mut input.fecha_inicio_labores);
-    // clean_opt(&mut input.numero_gafete);
-    // clean_opt(&mut input.fecha_nacimiento);
-    // clean_opt(&mut input.telefono);
-    // clean_opt(&mut input.direccion);
-    // clean_opt(&mut input.contacto_emergencia_nombre);
-    // clean_opt(&mut input.contacto_emergencia_telefono);
-    // clean_opt(&mut input.email);
-    // clean_opt(&mut input.password);
-
-    // FIX: Password cleaning MUST happen if empty string to avoid validation error
+    // Limpiar password vacío
     if let Some(ref p) = input.password {
         if p.trim().is_empty() {
             input.password = None;
@@ -239,58 +197,42 @@ pub async fn update_user(
     // 1. Validar input
     domain::validar_update_input(&input).map_err(UserError::Validation)?;
 
-    // 2. Verificar que el usuario existe
+    // 2. Verificar que existe
     let _ = db::find_by_id(pool, &id).await?;
 
-    // 3. Normalizar y verificar email si viene
+    // 3. Normalizar email si viene
     let email_normalizado = if let Some(ref email) = input.email {
         let normalizado = domain::normalizar_email(email);
-
-        // Verificar email único
         let count = db::count_by_email_excluding_id(pool, &normalizado, &id).await?;
         if count > 0 {
             return Err(UserError::EmailExists);
         }
-
         Some(normalizado)
     } else {
         None
     };
 
-    // 4. Normalizar nombres si vienen
+    // 4. Normalizar nombres
     let nombre_normalizado = input.nombre.as_ref().map(|n| domain::normalizar_nombre(n));
-
     let apellido_normalizado = input
         .apellido
         .as_ref()
         .map(|a| domain::normalizar_nombre(a));
 
-    // 5. Convertir rol si viene
-    let role_str = if let Some(ref r) = input.role {
-        Some(
-            UserRole::from_str(r)
-                .map_err(UserError::Validation)?
-                .as_str()
-                .to_string(),
-        )
-    } else {
-        None
-    };
-
-    // 6. Hashear contraseña si viene
+    // 5. Hashear contraseña si viene
     let password_hash = if let Some(ref pwd) = input.password {
         Some(auth::hash_password(pwd).map_err(UserError::Auth)?)
     } else {
         None
     };
 
-    // 7. Timestamp de actualización
+    // 6. Timestamp
     let now = Utc::now().to_rfc3339();
 
-    // 8. Convertir is_active a i32 si viene
+    // 7. Convertir is_active
     let is_active_int = input.is_active.map(|b| if b { 1 } else { 0 });
 
-    // 9. Actualizar en DB
+    // 8. Actualizar en DB
     db::update(
         pool,
         &id,
@@ -298,10 +240,9 @@ pub async fn update_user(
         password_hash.as_deref(),
         nombre_normalizado.as_deref(),
         apellido_normalizado.as_deref(),
-        role_str.as_deref(),
+        input.role_id.as_deref(),
         is_active_int,
         &now,
-        // New params
         input.cedula.as_deref(),
         input.segundo_nombre.as_deref(),
         input.segundo_apellido.as_deref(),
@@ -316,10 +257,10 @@ pub async fn update_user(
     )
     .await?;
 
-    // 10. Retornar usuario actualizado
+    // 9. Retornar actualizado
     let response = get_user_by_id(pool, &id).await?;
 
-    // 11. Actualizar índice de Tantivy (automático)
+    // 10. Actualizar índice
     match db::find_by_id(pool, &id).await {
         Ok(user) => {
             if let Err(e) = search_service.update_user(&user).await {
@@ -344,14 +285,10 @@ pub async fn delete_user(
     search_service: &Arc<SearchService>,
     id: String,
 ) -> Result<(), UserError> {
-    // Verificar que existe antes de eliminar
     let _ = db::find_by_id(pool, &id).await?;
 
-    // Eliminar
-    // Eliminar
     db::delete(pool, &id).await?;
 
-    // Eliminar del índice
     if let Err(e) = search_service.delete_user(&id).await {
         eprintln!("⚠️ Error al eliminar usuario del índice {}: {}", id, e);
     }
@@ -368,41 +305,35 @@ pub async fn change_password(
     id: String,
     input: ChangePasswordInput,
 ) -> Result<(), UserError> {
-    // 1. Obtener usuario (incluye password hash para verificar si es necesario)
-    let (_, current_hash) =
-        db::find_by_email_with_password(pool, &get_user_by_id(pool, &id).await?.email).await?;
+    let user = get_user_by_id(pool, &id).await?;
+    let (_, current_hash) = db::find_by_email_with_password(pool, &user.email).await?;
 
-    // 2. Verificar contraseña actual si se provee (obligatorio para usuario normal)
+    // Verificar contraseña actual si se provee
     if let Some(current) = input.current_password {
         let is_valid = auth::verify_password(&current, &current_hash).map_err(UserError::Auth)?;
         if !is_valid {
             return Err(UserError::InvalidCurrentPassword);
         }
-    } else {
-        // Si no se provee current, asumir que es admin reset (validar permisos en capa superior si es necesario)
-        // Ojo: En este diseño básico confiamos que si llega sin current es porque el comando lo permitió
     }
 
-    // 3. Validar nueva contraseña
+    // Validar nueva contraseña
     domain::validar_password(&input.new_password).map_err(UserError::Validation)?;
 
-    // 4. Hashear nueva
+    // Hashear nueva
     let new_hash = auth::hash_password(&input.new_password).map_err(UserError::Auth)?;
 
-    // 5. Actualizar en DB y QUITAR flag de must_change_password
+    // Actualizar y quitar flag
     let now = Utc::now().to_rfc3339();
-
-    // Reusamos db::update pasando solo lo necesario
     db::update(
         pool,
         &id,
-        None, // email
+        None,
         Some(&new_hash),
         None,
         None,
         None,
-        None, // nombre, apellido, role, is_active
-        &now, // updated_at
+        None,
+        &now,
         None,
         None,
         None,
@@ -412,8 +343,8 @@ pub async fn change_password(
         None,
         None,
         None,
-        None,        // otros campos opcionales
-        Some(false), // must_change_password = FALSE
+        None,
+        Some(false),
     )
     .await?;
 
@@ -429,23 +360,22 @@ pub async fn login(
     email: String,
     password: String,
 ) -> Result<UserResponse, UserError> {
-    // 1. Normalizar email
     let email_normalizado = domain::normalizar_email(&email);
 
-    // 2. Buscar usuario con password_hash
     let (user, password_hash) = db::find_by_email_with_password(pool, &email_normalizado).await?;
 
-    // 3. Verificar contraseña
     let is_valid = auth::verify_password(&password, &password_hash).map_err(UserError::Auth)?;
     if !is_valid {
         return Err(UserError::InvalidCredentials);
     }
 
-    // 4. Verificar que esté activo
     if !user.is_active {
         return Err(UserError::InactiveUser);
     }
 
-    // 5. Retornar usuario
-    Ok(UserResponse::from(user))
+    let role_name = db::get_role_name(pool, &user.role_id)
+        .await
+        .unwrap_or_else(|_| "Desconocido".to_string());
+
+    Ok(UserResponse::from_user_with_role(user, role_name))
 }

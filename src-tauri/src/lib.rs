@@ -66,11 +66,15 @@ pub fn run() {
                 backend_ready: AtomicBool::new(true), // Backend listo tras inicialización
             };
 
+            // Estado de sesión del usuario
+            let session_state = services::session::SessionState::new();
+
             tauri::Builder::default()
                 .manage(pool)
                 .manage(app_config)
                 .manage(search_service)
                 .manage(app_state)
+                .manage(session_state)
                 .plugin(tauri_plugin_dialog::init())
                 .plugin(tauri_plugin_opener::init())
                 .plugin(tauri_plugin_updater::Builder::new().build())

@@ -5,5 +5,6 @@ pub mod gafete;
 pub mod ingreso;
 pub mod lista_negra;
 pub mod proveedor;
+pub mod role;
 pub mod user;
 pub mod vehiculo;

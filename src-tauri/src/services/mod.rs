@@ -1,5 +1,7 @@
 pub mod auth;
+pub mod authorization;
 pub mod backup;
+pub mod session;
 
 pub mod contratista_service;
 pub mod empresa_service;
@@ -9,6 +11,7 @@ pub mod export_profile_service;
 pub mod export_service;
 pub mod gafete_service;
 pub mod keyring_service;
+pub mod role_service;
 
 #[cfg(target_os = "linux")]
 pub mod keyring_linux;

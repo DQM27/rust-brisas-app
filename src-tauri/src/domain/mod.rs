@@ -3,6 +3,7 @@ pub mod ingreso_contratista; // NUEVO
 pub mod ingreso_proveedor;
 pub mod ingreso_visita;
 pub mod lista_negra;
+pub mod role;
 pub mod user;
 pub mod vehiculo;
 pub mod visitante;

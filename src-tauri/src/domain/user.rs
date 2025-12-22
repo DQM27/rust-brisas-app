@@ -4,7 +4,7 @@
 // Capa de dominio: validaciones y reglas de negocio puras
 // Sin dependencias de DB ni servicios externos
 
-use crate::models::user::{CreateUserInput, UpdateUserInput, UserRole};
+use crate::models::user::{CreateUserInput, UpdateUserInput};
 
 // ==========================================
 // VALIDACIONES DE CAMPOS INDIVIDUALES
@@ -68,10 +68,6 @@ pub fn validar_apellido(apellido: &str) -> Result<(), String> {
     Ok(())
 }
 
-pub fn validar_role(role_str: &str) -> Result<UserRole, String> {
-    UserRole::from_str(role_str)
-}
-
 pub fn validar_cedula(cedula: &str) -> Result<(), String> {
     let limpio = cedula.trim();
     if limpio.is_empty() {
@@ -119,10 +115,6 @@ pub fn validar_create_input(input: &CreateUserInput) -> Result<(), String> {
     validar_opcional(input.telefono.as_ref(), 20, "teléfono")?;
     validar_opcional(input.direccion.as_ref(), 200, "dirección")?;
 
-    if let Some(ref role) = input.role {
-        validar_role(role)?;
-    }
-
     Ok(())
 }
 
@@ -142,10 +134,6 @@ pub fn validar_update_input(input: &UpdateUserInput) -> Result<(), String> {
 
     if let Some(ref apellido) = input.apellido {
         validar_apellido(apellido)?;
-    }
-
-    if let Some(ref role) = input.role {
-        validar_role(role)?;
     }
 
     Ok(())

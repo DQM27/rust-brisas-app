@@ -21,6 +21,7 @@ pub mod keyring_commands;
 pub mod lista_negra_commands;
 // REEMPLAZADO: pub mod permanencia_commands;
 pub mod proveedor_commands;
+pub mod role_commands;
 
 // REEMPLAZADO: pub mod salida_commands;
 pub mod search_commands;
