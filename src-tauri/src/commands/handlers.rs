@@ -21,7 +21,6 @@ macro_rules! register_handlers {
             commands::empresa_commands::delete_empresa,
             // Comandos de contratista
             commands::contratista_commands::create_contratista,
-            commands::contratista_commands::get_contratista,
             commands::contratista_commands::get_contratista_by_id,
             commands::contratista_commands::get_contratista_by_cedula,
             commands::contratista_commands::get_all_contratistas,
