@@ -1,5 +1,6 @@
 use crate::config::AppConfig;
 use crate::services::backup;
+use log::info;
 use std::fs;
 use tauri::{command, State};
 
@@ -9,7 +10,7 @@ pub async fn backup_database(
     pool: State<'_, sqlx::SqlitePool>,
     destination_path: String,
 ) -> Result<(), String> {
-    println!("💾 Iniciando backup manual a: {}", destination_path);
+    info!("Iniciando backup manual a: {}", destination_path);
 
     // Usar SQL directo para el backup en caliente
     // VACUUM INTO es la forma segura en SQLite de copiar mientras está en uso
@@ -27,7 +28,7 @@ pub async fn backup_database(
         .await
         .map_err(|e| format!("Error al ejecutar backup SQL: {}", e))?;
 
-    println!("✅ Backup completado exitosamente");
+    info!("Backup completado exitosamente");
     Ok(())
 }
 
@@ -37,7 +38,7 @@ pub async fn restore_database(
     config: State<'_, AppConfig>,
     source_path: String,
 ) -> Result<(), String> {
-    println!("🔄 Preparando restauración desde: {}", source_path);
+    info!("Preparando restauración desde: {}", source_path);
 
     let db_path = crate::config::manager::get_database_path(&config);
     let restore_path = backup::get_restore_path(&db_path);
@@ -49,10 +50,10 @@ pub async fn restore_database(
     }
 
     // Copiar archivo fuente a *.restore
-    println!("📄 Copiando a área de staging: {}", restore_path.display());
+    info!("Copiando a área de staging: {}", restore_path.display());
     fs::copy(source, &restore_path)
         .map_err(|e| format!("Error al preparar archivo de restauración: {}", e))?;
 
-    println!("✅ Archivo de restauración listo. Se requiere reinicio.");
+    info!("Archivo de restauración listo. Se requiere reinicio.");
     Ok(())
 }

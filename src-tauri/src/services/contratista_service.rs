@@ -15,6 +15,7 @@ use crate::models::contratista::{
 };
 use crate::services::search_service::SearchService;
 use chrono::Utc;
+use log::warn;
 use sqlx::SqlitePool;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -93,7 +94,7 @@ pub async fn create_contratista(
     if let Some(row) = db::find_by_id_with_empresa(pool, &id).await? {
         if let Err(e) = search_service.add_contratista(&row.contratista, &row.empresa_nombre).await
         {
-            eprintln!("⚠️ Error al indexar contratista {}: {}", id, e);
+            warn!("Error al indexar contratista {}: {}", id, e);
         }
     }
 
@@ -329,7 +330,7 @@ pub async fn update_contratista(
         if let Err(e) =
             search_service.update_contratista(&row.contratista, &row.empresa_nombre).await
         {
-            eprintln!("⚠️ Error al actualizar índice del contratista {}: {}", id, e);
+            warn!("Error al actualizar índice del contratista {}: {}", id, e);
         }
     }
 
@@ -366,7 +367,7 @@ pub async fn cambiar_estado_contratista(
         if let Err(e) =
             search_service.update_contratista(&row.contratista, &row.empresa_nombre).await
         {
-            eprintln!("⚠️ Error al actualizar índice del contratista {}: {}", id, e);
+            warn!("Error al actualizar índice del contratista {}: {}", id, e);
         }
     }
 
@@ -390,7 +391,7 @@ pub async fn delete_contratista(
 
     // Eliminar del índice de Tantivy
     if let Err(e) = search_service.delete_contratista(&id).await {
-        eprintln!("⚠️ Error al eliminar del índice el contratista {}: {}", id, e);
+        warn!("Error al eliminar del índice el contratista {}: {}", id, e);
     }
 
     Ok(())

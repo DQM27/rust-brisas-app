@@ -1,4 +1,5 @@
 use crate::config::AppConfig;
+use log::info;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -9,29 +10,26 @@ pub fn check_and_restore_database(config: &AppConfig) -> Result<(), Box<dyn std:
 
     // Si existe archivo .restore, proceder con la restauración
     if verify_restore_path.exists() {
-        println!("🔄 Restauración pendiente detectada: {}", verify_restore_path.display());
+        info!("Restauración pendiente detectada: {}", verify_restore_path.display());
 
         // 1. Crear backup de seguridad de la actual (rollback)
         let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
         let safety_backup = db_path.with_extension(format!("bkp.{}", timestamp));
 
         if db_path.exists() {
-            println!(
-                "🔒 Creando backup de seguridad pre-restauración: {}",
-                safety_backup.display()
-            );
+            info!("Creando backup de seguridad pre-restauración: {}", safety_backup.display());
             fs::copy(&db_path, &safety_backup)?;
         }
 
         // 2. Reemplazar la base de datos
         // Intentar renombrar primero (atómico), si falla (diferentes discos), copiar y borrar
-        println!("🚀 Aplicando restauración...");
+        info!("Aplicando restauración...");
         if let Err(_) = fs::rename(&verify_restore_path, &db_path) {
             fs::copy(&verify_restore_path, &db_path)?;
             fs::remove_file(&verify_restore_path)?;
         }
 
-        println!("✅ Base de datos restaurada correctamente.");
+        info!("Base de datos restaurada correctamente.");
     }
 
     Ok(())

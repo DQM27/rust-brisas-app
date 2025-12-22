@@ -1,5 +1,6 @@
 // src/db/migrate.rs
 
+use log::error;
 use sqlx::{migrate::Migrator, SqlitePool};
 
 static MIGRATOR: Migrator = sqlx::migrate!("./migrations");
@@ -9,7 +10,7 @@ pub async fn run_migrations(pool: &SqlitePool) -> Result<(), Box<dyn std::error:
     match MIGRATOR.run(pool).await {
         Ok(_) => Ok(()),
         Err(e) => {
-            eprintln!("❌ Error en migraciones: {}", e);
+            error!("Error en migraciones: {}", e);
             Err(e.into())
         }
     }

@@ -6,6 +6,7 @@ use crate::domain::vehiculo as vehiculo_domain;
 use crate::models::proveedor::{CreateProveedorInput, ProveedorResponse, UpdateProveedorInput};
 use crate::services::search_service::SearchService;
 use chrono::Utc;
+use log::warn;
 use sqlx::SqlitePool;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -71,7 +72,7 @@ pub async fn create_proveedor(
 
     // 5. Indexar en búsqueda
     if let Err(e) = search_service.add_proveedor(&proveedor, &empresa_nombre).await {
-        eprintln!("Error indexando proveedor: {}", e);
+        warn!("Error indexando proveedor: {}", e);
         // No falla la operación, solo logging
     }
 
@@ -141,7 +142,7 @@ pub async fn change_status(
 
     // Actualizar en índice de búsqueda
     if let Err(e) = search_service.update_proveedor(&proveedor, &empresa_nombre).await {
-        eprintln!("Error actualizando proveedor en índice: {}", e);
+        warn!("Error actualizando proveedor en índice: {}", e);
     }
 
     populate_response(pool, proveedor).await
@@ -293,7 +294,7 @@ pub async fn update_proveedor(
     };
 
     if let Err(e) = search_service.update_proveedor(&proveedor, &empresa_nombre).await {
-        eprintln!("Error actualizando índice: {}", e);
+        warn!("Error actualizando índice: {}", e);
     }
 
     // 6. Retornar actualizado

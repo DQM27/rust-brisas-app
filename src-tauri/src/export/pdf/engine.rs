@@ -186,7 +186,7 @@ impl TypstWorld {
         }
 
         if fonts.is_empty() {
-            eprintln!("⚠️ WARN: No se encontraron fuentes. El PDF podría no mostrar texto.");
+            log::warn!("No se encontraron fuentes. El PDF podría no mostrar texto.");
         }
 
         fonts

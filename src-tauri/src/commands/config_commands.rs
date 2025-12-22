@@ -1,5 +1,6 @@
 use crate::config::manager::save_config;
 use crate::config::{settings::TerminalConfig, AppConfig};
+use log::info;
 use tauri::{command, State};
 
 /// Obtiene la configuración completa actual
@@ -15,7 +16,7 @@ pub async fn update_terminal_config(
     nombre: String,
     ubicacion: String,
 ) -> Result<TerminalConfig, String> {
-    println!("⚙️ Actualizando configuración de terminal: {} - {}", nombre, ubicacion);
+    info!("Actualizando configuración de terminal: {} - {}", nombre, ubicacion);
 
     // Clonar config actual para modificarla
     // Nota: El State de Tauri es inmutable por defecto durante la ejecución para seguridad de hilos.
@@ -46,7 +47,7 @@ pub async fn update_terminal_config(
     save_config(&current_config, &config_path)
         .map_err(|e| format!("Error al guardar configuración: {}", e))?;
 
-    println!("✅ Configuración guardada en: {}", config_path.display());
+    info!("Configuración guardada en: {}", config_path.display());
 
     Ok(current_config.terminal)
 }

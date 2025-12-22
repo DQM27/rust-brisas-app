@@ -1,6 +1,7 @@
 use crate::domain::cita::{Cita, CitaPopulated, CreateCitaInput};
 use crate::models::visitante::{CreateVisitanteInput, Visitante};
 use crate::services::cita_service::CitaService;
+use log::debug;
 use sqlx::SqlitePool;
 use tauri::{command, State};
 
@@ -10,7 +11,7 @@ pub async fn create_cita(
     cita: CreateCitaInput,
     visitante: Option<CreateVisitanteInput>,
 ) -> Result<Cita, String> {
-    println!("📅 Creating Cita: {:?}", cita);
+    debug!("Creating Cita: {:?}", cita);
     let service = CitaService::new(pool.inner().clone());
     service.agendar_cita(cita, visitante).await
 }

@@ -14,6 +14,7 @@ use crate::services::auth;
 use crate::services::search_service::SearchService;
 
 use chrono::Utc;
+use log::warn;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use sqlx::SqlitePool;
@@ -125,10 +126,10 @@ pub async fn create_user(
     match db::find_by_id(pool, &id).await {
         Ok(user) => {
             if let Err(e) = search_service.add_user(&user).await {
-                eprintln!("⚠️ Error al indexar usuario {}: {}", id, e);
+                warn!("Error al indexar usuario {}: {}", id, e);
             }
         }
-        Err(e) => eprintln!("⚠️ Error al obtener usuario para indexar {}: {}", id, e),
+        Err(e) => warn!("Error al obtener usuario para indexar {}: {}", id, e),
     }
 
     Ok(response)
@@ -251,10 +252,10 @@ pub async fn update_user(
     match db::find_by_id(pool, &id).await {
         Ok(user) => {
             if let Err(e) = search_service.update_user(&user).await {
-                eprintln!("⚠️ Error al actualizar índice del usuario {}: {}", id, e);
+                warn!("Error al actualizar índice del usuario {}: {}", id, e);
             }
         }
-        Err(e) => eprintln!("⚠️ Error al obtener usuario para actualizar índice {}: {}", id, e),
+        Err(e) => warn!("Error al obtener usuario para actualizar índice {}: {}", id, e),
     }
 
     Ok(response)
@@ -274,7 +275,7 @@ pub async fn delete_user(
     db::delete(pool, &id).await?;
 
     if let Err(e) = search_service.delete_user(&id).await {
-        eprintln!("⚠️ Error al eliminar usuario del índice {}: {}", id, e);
+        warn!("Error al eliminar usuario del índice {}: {}", id, e);
     }
 
     Ok(())

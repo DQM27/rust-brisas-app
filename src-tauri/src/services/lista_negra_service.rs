@@ -14,6 +14,7 @@ use crate::models::lista_negra::{
 };
 use crate::services::search_service::SearchService;
 use chrono::Utc;
+use log::warn;
 use sqlx::SqlitePool;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -113,10 +114,10 @@ pub async fn add_to_lista_negra(
     match db::find_by_id(pool, &id).await {
         Ok(lista_negra) => {
             if let Err(e) = search_service.add_lista_negra(&lista_negra).await {
-                eprintln!("⚠️ Error al indexar lista negra {}: {}", id, e);
+                warn!("Error al indexar lista negra {}: {}", id, e);
             }
         }
-        Err(e) => eprintln!("⚠️ Error al obtener lista negra para indexar {}: {}", id, e),
+        Err(e) => warn!("Error al obtener lista negra para indexar {}: {}", id, e),
     }
 
     // 8. Retornar bloqueo creado con datos completos
@@ -338,10 +339,10 @@ pub async fn remove_from_lista_negra(
     match db::find_by_id(pool, &id).await {
         Ok(lista_negra) => {
             if let Err(e) = search_service.update_lista_negra(&lista_negra).await {
-                eprintln!("⚠️ Error al actualizar índice lista negra {}: {}", id, e);
+                warn!("Error al actualizar índice lista negra {}: {}", id, e);
             }
         }
-        Err(e) => eprintln!("⚠️ Error al obtener lista negra para actualizar índice {}: {}", id, e),
+        Err(e) => warn!("Error al obtener lista negra para actualizar índice {}: {}", id, e),
     }
 
     // 5. Retornar actualizado
@@ -397,10 +398,10 @@ pub async fn reactivate_lista_negra(
     match db::find_by_id(pool, &id).await {
         Ok(lista_negra) => {
             if let Err(e) = search_service.update_lista_negra(&lista_negra).await {
-                eprintln!("⚠️ Error al actualizar índice lista negra {}: {}", id, e);
+                warn!("Error al actualizar índice lista negra {}: {}", id, e);
             }
         }
-        Err(e) => eprintln!("⚠️ Error al obtener lista negra para actualizar índice {}: {}", id, e),
+        Err(e) => warn!("Error al obtener lista negra para actualizar índice {}: {}", id, e),
     }
 
     // 6. Retornar actualizado
@@ -454,10 +455,10 @@ pub async fn update_lista_negra(
     match db::find_by_id(pool, &id).await {
         Ok(lista_negra) => {
             if let Err(e) = search_service.update_lista_negra(&lista_negra).await {
-                eprintln!("⚠️ Error al actualizar índice lista negra {}: {}", id, e);
+                warn!("Error al actualizar índice lista negra {}: {}", id, e);
             }
         }
-        Err(e) => eprintln!("⚠️ Error al obtener lista negra para actualizar índice {}: {}", id, e),
+        Err(e) => warn!("Error al obtener lista negra para actualizar índice {}: {}", id, e),
     }
 
     // 7. Retornar actualizado
@@ -484,7 +485,7 @@ pub async fn delete_lista_negra(
 
     // 3. Eliminar de índice
     if let Err(e) = search_service.delete_lista_negra(&id).await {
-        eprintln!("⚠️ Error al eliminar lista negra del índice {}: {}", id, e);
+        warn!("Error al eliminar lista negra del índice {}: {}", id, e);
     }
 
     Ok(())
