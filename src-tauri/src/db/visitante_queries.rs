@@ -2,7 +2,7 @@
 // src/db/visitante_queries.rs
 // ==========================================
 // Capa de data access: queries SQL puras
-// Strict Mode: Uso de query_as para mapping directo
+// Strict Mode: Uso de query_as! con type overrides
 
 use crate::domain::visitante::{CreateVisitanteInput, Visitante};
 use chrono::Utc;
@@ -57,47 +57,77 @@ pub async fn get_visitante_by_cedula(
     pool: &SqlitePool,
     cedula: &str,
 ) -> sqlx::Result<Option<Visitante>> {
-    sqlx::query_as::<_, Visitante>(
+    sqlx::query_as!(
+        Visitante,
         r#"
-        SELECT id, cedula, nombre, apellido, segundo_nombre, segundo_apellido, 
-               empresa, has_vehicle, created_at, updated_at
+        SELECT 
+            id as "id!",
+            cedula as "cedula!",
+            nombre as "nombre!",
+            apellido as "apellido!",
+            segundo_nombre,
+            segundo_apellido,
+            empresa,
+            has_vehicle as "has_vehicle!: bool",
+            created_at as "created_at!",
+            updated_at as "updated_at!"
         FROM visitantes
         WHERE cedula = ?
         "#,
+        cedula
     )
-    .bind(cedula)
     .fetch_optional(pool)
     .await
 }
 
 pub async fn get_visitante_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<Option<Visitante>> {
-    sqlx::query_as::<_, Visitante>(
+    sqlx::query_as!(
+        Visitante,
         r#"
-        SELECT id, cedula, nombre, apellido, segundo_nombre, segundo_apellido, 
-               empresa, has_vehicle, created_at, updated_at
+        SELECT 
+            id as "id!",
+            cedula as "cedula!",
+            nombre as "nombre!",
+            apellido as "apellido!",
+            segundo_nombre,
+            segundo_apellido,
+            empresa,
+            has_vehicle as "has_vehicle!: bool",
+            created_at as "created_at!",
+            updated_at as "updated_at!"
         FROM visitantes
         WHERE id = ?
         "#,
+        id
     )
-    .bind(id)
     .fetch_optional(pool)
     .await
 }
 
 pub async fn search_visitantes(pool: &SqlitePool, term: &str) -> sqlx::Result<Vec<Visitante>> {
     let pattern = format!("%{}%", term);
-    sqlx::query_as::<_, Visitante>(
+    sqlx::query_as!(
+        Visitante,
         r#"
-        SELECT id, cedula, nombre, apellido, segundo_nombre, segundo_apellido, 
-               empresa, has_vehicle, created_at, updated_at
+        SELECT 
+            id as "id!",
+            cedula as "cedula!",
+            nombre as "nombre!",
+            apellido as "apellido!",
+            segundo_nombre,
+            segundo_apellido,
+            empresa,
+            has_vehicle as "has_vehicle!: bool",
+            created_at as "created_at!",
+            updated_at as "updated_at!"
         FROM visitantes
         WHERE cedula LIKE ? OR nombre LIKE ? OR apellido LIKE ?
         LIMIT 20
         "#,
+        pattern,
+        pattern,
+        pattern
     )
-    .bind(&pattern)
-    .bind(&pattern)
-    .bind(&pattern)
     .fetch_all(pool)
     .await
 }

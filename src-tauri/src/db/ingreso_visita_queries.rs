@@ -2,7 +2,7 @@
 // src/db/ingreso_visita_queries.rs
 // ==========================================
 // Capa de data access: queries SQL puras
-// Strict Mode: Uso de query_as! para validación
+// Strict Mode: Uso de query_as! con type overrides
 
 use crate::domain::ingreso_visita::{
     CreateIngresoVisitaInput, IngresoVisita, IngresoVisitaPopulated,
@@ -68,16 +68,28 @@ pub async fn create(
 }
 
 pub async fn find_actives(pool: &SqlitePool) -> sqlx::Result<Vec<IngresoVisitaPopulated>> {
-    sqlx::query_as::<_, IngresoVisitaPopulated>(
+    sqlx::query_as!(
+        IngresoVisitaPopulated,
         r#"
         SELECT 
-            iv.id, iv.visitante_id, iv.cita_id, iv.anfitrion, iv.area_visitada, iv.motivo, iv.gafete,
-            iv.fecha_ingreso, iv.fecha_salida, iv.estado, 
-            iv.usuario_ingreso_id, iv.usuario_salida_id, iv.observaciones,
-            iv.created_at, iv.updated_at,
-            v.nombre as visitante_nombre,
-            v.apellido as visitante_apellido,
-            v.cedula as visitante_cedula,
+            iv.id as "id!",
+            iv.visitante_id as "visitante_id!",
+            iv.cita_id,
+            iv.anfitrion as "anfitrion!",
+            iv.area_visitada as "area_visitada!",
+            iv.motivo as "motivo!",
+            iv.gafete,
+            CAST(iv.fecha_ingreso AS TEXT) as "fecha_ingreso!",
+            CAST(iv.fecha_salida AS TEXT) as fecha_salida,
+            iv.estado as "estado!",
+            iv.usuario_ingreso_id as "usuario_ingreso_id!",
+            iv.usuario_salida_id,
+            iv.observaciones,
+            CAST(iv.created_at AS TEXT) as "created_at!",
+            CAST(iv.updated_at AS TEXT) as "updated_at!",
+            v.nombre as "visitante_nombre!",
+            v.apellido as "visitante_apellido!",
+            v.cedula as "visitante_cedula!",
             v.empresa as visitante_empresa
         FROM ingresos_visitas iv
         INNER JOIN visitantes v ON iv.visitante_id = v.id
@@ -120,16 +132,28 @@ pub async fn registrar_salida(
 }
 
 pub async fn find_historial(pool: &SqlitePool) -> sqlx::Result<Vec<IngresoVisitaPopulated>> {
-    sqlx::query_as::<_, IngresoVisitaPopulated>(
+    sqlx::query_as!(
+        IngresoVisitaPopulated,
         r#"
         SELECT 
-            iv.id, iv.visitante_id, iv.cita_id, iv.anfitrion, iv.area_visitada, iv.motivo, iv.gafete,
-            iv.fecha_ingreso, iv.fecha_salida, iv.estado, 
-            iv.usuario_ingreso_id, iv.usuario_salida_id, iv.observaciones,
-            iv.created_at, iv.updated_at,
-            v.nombre as visitante_nombre,
-            v.apellido as visitante_apellido,
-            v.cedula as visitante_cedula,
+            iv.id as "id!",
+            iv.visitante_id as "visitante_id!",
+            iv.cita_id,
+            iv.anfitrion as "anfitrion!",
+            iv.area_visitada as "area_visitada!",
+            iv.motivo as "motivo!",
+            iv.gafete,
+            CAST(iv.fecha_ingreso AS TEXT) as "fecha_ingreso!",
+            CAST(iv.fecha_salida AS TEXT) as fecha_salida,
+            iv.estado as "estado!",
+            iv.usuario_ingreso_id as "usuario_ingreso_id!",
+            iv.usuario_salida_id,
+            iv.observaciones,
+            CAST(iv.created_at AS TEXT) as "created_at!",
+            CAST(iv.updated_at AS TEXT) as "updated_at!",
+            v.nombre as "visitante_nombre!",
+            v.apellido as "visitante_apellido!",
+            v.cedula as "visitante_cedula!",
             v.empresa as visitante_empresa
         FROM ingresos_visitas iv
         INNER JOIN visitantes v ON iv.visitante_id = v.id
