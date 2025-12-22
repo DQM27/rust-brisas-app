@@ -12,7 +12,6 @@ export type ComponentKey =
   | 'lista-negra'
   | 'lista-negra-list'
 
-  | 'user-profile'
   | 'gafete-list'
   | 'ingreso-list'
   | 'general-settings'

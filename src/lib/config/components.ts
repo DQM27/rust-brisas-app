@@ -6,7 +6,6 @@ import type { ComponentKey } from '$lib/types/component';
 
 // Importar todos los componentes de tabs
 import WelcomePanel from '$lib/components/WelcomePanel.svelte';
-import UserProfileView from '$lib/components/UserProfileView.svelte';
 import UserListView from '$lib/components/user/UserListView.svelte';
 
 import ContratistaView from '$lib/components/contratista/ContratistaView.svelte';
@@ -39,7 +38,6 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'welcome': WelcomePanel,
   'user-list': UserListView,
   'user-editor': WelcomePanel,
-  'user-profile': UserProfileView,
   'dashboard': WelcomePanel,
   'citas-view': CitasList,
 

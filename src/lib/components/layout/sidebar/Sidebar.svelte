@@ -32,6 +32,10 @@
   import { activePanel } from "$lib/stores/sidebar";
   import type { SidebarItem } from "../../../types/Sidebar";
   import { can } from "$lib/logic/permissions";
+  import UserFormModal from "$lib/components/user/UserFormModal.svelte";
+  import * as userService from "$lib/logic/user/userService";
+  import type { CreateUserInput, UpdateUserInput } from "$lib/types/user";
+  import { toast } from "svelte-5-french-toast";
 
   // Items configurables - Definición base
   const allSidebarItems: SidebarItem[] = [
@@ -97,29 +101,33 @@
   ];
 
   // Filtrar items según permisos
-  $: sidebarItems = allSidebarItems.filter((item) => {
-    if (!item) return false;
+  const sidebarItems = $derived(
+    allSidebarItems.filter((item) => {
+      if (!item) return false;
 
-    // 1. Check permission if defined
-    // @ts-ignore
-    if (item.permission && !can($currentUser, item.permission)) {
-      return false;
-    }
-
-    // 2. Check strict role if defined (legacy/simple way)
-    // @ts-ignore
-    if (item.role && $currentUser) {
+      // 1. Check permission if defined
       // @ts-ignore
-      if (!item.role.includes($currentUser.role)) {
+      if (item.permission && !can($currentUser, item.permission)) {
         return false;
       }
-    }
 
-    return true;
-  });
+      // 2. Check strict role if defined (legacy/simple way)
+      // @ts-ignore
+      if (item.role && $currentUser) {
+        // @ts-ignore
+        if (!item.role.includes($currentUser.role)) {
+          return false;
+        }
+      }
 
-  $: currentActivePanel = $activePanel;
-  $: activeItem = sidebarItems.find((item) => item.id === currentActivePanel);
+      return true;
+    }),
+  );
+
+  const currentActivePanel = $derived($activePanel);
+  const activeItem = $derived(
+    sidebarItems.find((item) => item.id === currentActivePanel),
+  );
 
   function handleItemSelect(item: SidebarItem) {
     activeView.set(item.id);
@@ -146,20 +154,14 @@
     logout();
   }
 
-  function openProfile() {
-    openTab({
-      componentKey: "user-profile",
-      title: "Mi Perfil",
-      id: "user-profile-tab",
-    });
-  }
-
   // Derivar iniciales del usuario actual
-  $: userInitials = $currentUser
-    ? `${$currentUser.nombre?.[0] || ""}${$currentUser.apellido?.[0] || ""}`.toUpperCase()
-    : "";
+  const userInitials = $derived(
+    $currentUser
+      ? `${$currentUser.nombre?.[0] || ""}${$currentUser.apellido?.[0] || ""}`.toUpperCase()
+      : "",
+  );
 
-  $: userName = $currentUser?.nombre || "Usuario";
+  const userName = $derived($currentUser?.nombre || "Usuario");
   // ==========================================
   // ATAJOS GLOBALES (MÓDULOS)
   // ==========================================
@@ -168,6 +170,42 @@
     // Registrar handlers globales para navegación de módulos
     // (Atajos eliminados a petición del usuario)
   });
+
+  // Profile Modal Logic
+  let showProfileModal = $state(false);
+  let profileLoading = $state(false);
+
+  function openProfile() {
+    showProfileModal = true;
+  }
+
+  async function handleSaveProfile(data: CreateUserInput | UpdateUserInput) {
+    if (!$currentUser) return;
+
+    profileLoading = true;
+    try {
+      const result = await userService.updateUser(
+        $currentUser.id,
+        data as UpdateUserInput,
+      );
+
+      if (result.ok) {
+        toast.success("Perfil actualizado correctamente");
+
+        // Update global store
+        currentUser.set(result.data);
+
+        showProfileModal = false;
+      } else {
+        toast.error(result.error);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error al guardar perfil");
+    } finally {
+      profileLoading = false;
+    }
+  }
 </script>
 
 <div class="flex h-full">
@@ -185,13 +223,13 @@
 
     <div class="sidebar-bottom-actions">
       <!-- User Avatar -->
-      <button class="user-avatar" title={userName} on:click={openProfile}>
+      <button class="user-avatar" title={userName} onclick={openProfile}>
         {userInitials}
       </button>
 
       <!-- Logout Button -->
       <button
-        on:click={handleLogout}
+        onclick={handleLogout}
         class="sidebar-action-btn group"
         title="Cerrar sesión"
       >
@@ -204,5 +242,15 @@
   <!-- Panel lateral desplegable -->
   {#if activeItem}
     <SidebarPanel item={activeItem} onClose={handlePanelClose} />
+  {/if}
+
+  {#if $currentUser}
+    <UserFormModal
+      show={showProfileModal}
+      user={$currentUser}
+      loading={profileLoading}
+      onSave={handleSaveProfile}
+      onClose={() => (showProfileModal = false)}
+    />
   {/if}
 </div>

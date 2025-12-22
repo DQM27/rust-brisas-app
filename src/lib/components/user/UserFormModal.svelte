@@ -17,6 +17,7 @@
   import { auth } from "$lib/api/auth";
   import { currentUser } from "$lib/stores/auth";
   import { toast } from "svelte-5-french-toast";
+  import ChangePasswordPanel from "$lib/components/ChangePasswordPanel.svelte";
 
   interface Props {
     show: boolean;
@@ -30,9 +31,12 @@
 
   // Modo derivado
   const isEditMode = $derived(!!user);
-  const modalTitle = $derived(
-    isEditMode ? `Editar: ${user?.nombre}` : "Nuevo Usuario",
-  );
+  const isSelf = $derived(user && $currentUser && user.id === $currentUser.id);
+
+  const modalTitle = $derived.by(() => {
+    if (isSelf) return "Mi Perfil";
+    return isEditMode ? `Editar: ${user?.nombre}` : "Nuevo Usuario";
+  });
 
   // Estado del formulario
   let formData = $state<CreateUserForm>({
@@ -60,8 +64,16 @@
   let showSuccessModal = $state(false);
   let generatedPassword = $state<string | null>(null);
 
+  // Estado para "Cambiar Contraseña" (Self)
+  let isChangingPassword = $state(false);
+
   // Cargar datos del usuario cuando se abre en modo edición
   $effect(() => {
+    if (show) {
+      // Reset view modes
+      isChangingPassword = false;
+    }
+
     if (show && user) {
       formData = {
         cedula: user.cedula || "",
@@ -302,272 +314,323 @@
         </button>
       </div>
 
-      <!-- Form -->
-      <form onsubmit={handleSubmit} class="p-6 space-y-5">
-        <!-- Cédula -->
-        <div>
-          <label for="cedula" class={labelClass}>Cédula *</label>
-          <input
-            id="cedula"
-            type="text"
-            value={formData.cedula}
-            oninput={handleCedulaInput}
-            placeholder="Ej: 1-1122-0333"
-            disabled={loading}
-            class={inputClass}
+      <!-- Form or Password Change -->
+      {#if isChangingPassword && user}
+        <div class="p-6 flex justify-center">
+          <ChangePasswordPanel
+            userId={user.id}
+            onSuccess={() => {
+              isChangingPassword = false;
+              // Optionally close modal or toast
+            }}
+            onCancel={() => (isChangingPassword = false)}
           />
-          {#if errors.cedula}<p class={errorClass}>{errors.cedula}</p>{/if}
         </div>
-
-        <!-- Datos Personales -->
-        <div>
-          <h3 class={sectionClass}>Datos Personales</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="nombre" class={labelClass}>Nombre *</label>
-              <input
-                id="nombre"
-                type="text"
-                value={formData.nombre}
-                oninput={(e) => handleNameInput(e, "nombre")}
-                placeholder="Juan"
-                disabled={loading}
-                class={inputClass}
-              />
-              {#if errors.nombre}<p class={errorClass}>{errors.nombre}</p>{/if}
-            </div>
-            <div>
-              <label for="segundoNombre" class={labelClass}
-                >Segundo Nombre</label
-              >
-              <input
-                id="segundoNombre"
-                type="text"
-                value={formData.segundoNombre}
-                oninput={(e) => handleNameInput(e, "segundoNombre")}
-                placeholder="Carlos"
-                disabled={loading}
-                class={inputClass}
-              />
-            </div>
-            <div>
-              <label for="apellido" class={labelClass}>Apellido *</label>
-              <input
-                id="apellido"
-                type="text"
-                value={formData.apellido}
-                oninput={(e) => handleNameInput(e, "apellido")}
-                placeholder="Pérez"
-                disabled={loading}
-                class={inputClass}
-              />
-              {#if errors.apellido}<p class={errorClass}>
-                  {errors.apellido}
-                </p>{/if}
-            </div>
-            <div>
-              <label for="segundoApellido" class={labelClass}
-                >Segundo Apellido</label
-              >
-              <input
-                id="segundoApellido"
-                type="text"
-                value={formData.segundoApellido}
-                oninput={(e) => handleNameInput(e, "segundoApellido")}
-                placeholder="González"
-                disabled={loading}
-                class={inputClass}
-              />
-            </div>
+      {:else}
+        <form onsubmit={handleSubmit} class="p-6 space-y-5">
+          <!-- Cédula -->
+          <div>
+            <label for="cedula" class={labelClass}>Cédula *</label>
+            <input
+              id="cedula"
+              type="text"
+              value={formData.cedula}
+              oninput={handleCedulaInput}
+              placeholder="Ej: 1-1122-0333"
+              disabled={loading}
+              class={inputClass}
+            />
+            {#if errors.cedula}<p class={errorClass}>{errors.cedula}</p>{/if}
           </div>
-        </div>
 
-        <!-- Información Laboral -->
-        <div>
-          <h3 class={sectionClass}>Información Laboral</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="numeroGafete" class={labelClass}>Número Gafete</label>
-              <input
-                id="numeroGafete"
-                type="text"
-                value={formData.numeroGafete}
-                oninput={handleGafeteInput}
-                placeholder="K-017367"
-                disabled={loading}
-                class={inputClass}
-              />
-            </div>
-            <div>
-              <label for="fechaInicioLabores" class={labelClass}
-                >Fecha Inicio</label
-              >
-              <input
-                id="fechaInicioLabores"
-                type="date"
-                bind:value={formData.fechaInicioLabores}
-                disabled={loading}
-                class={inputClass}
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Cuenta -->
-        <div>
-          <h3 class={sectionClass}>Cuenta y Acceso</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="email" class={labelClass}>Email *</label>
-              <input
-                id="email"
-                type="email"
-                bind:value={formData.email}
-                placeholder="correo@ejemplo.com"
-                disabled={loading}
-                class={inputClass}
-              />
-              {#if errors.email}<p class={errorClass}>{errors.email}</p>{/if}
-            </div>
-            <div>
-              <label for="role" class={labelClass}>Rol *</label>
-              <select
-                id="role"
-                bind:value={formData.role}
-                disabled={loading}
-                class={inputClass}
-              >
-                <option value="guardia">Guardia</option>
-                <option value="supervisor">Supervisor</option>
-                <option value="admin">Administrador</option>
-              </select>
-            </div>
-
-            <!-- Contraseña Temporal (Solo Creación) -->
-            {#if !isEditMode}
-              <div class="col-span-2">
-                <label for="password" class={labelClass}
-                  >Contraseña Temporal *</label
-                >
+          <!-- Datos Personales -->
+          <div>
+            <h3 class={sectionClass}>Datos Personales</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="nombre" class={labelClass}>Nombre *</label>
                 <input
-                  id="password"
+                  id="nombre"
                   type="text"
-                  bind:value={formData.password}
-                  placeholder="Contraseña inicial para el usuario"
+                  value={formData.nombre}
+                  oninput={(e) => handleNameInput(e, "nombre")}
+                  placeholder="Juan"
                   disabled={loading}
                   class={inputClass}
                 />
-                {#if errors.password}<p class={errorClass}>
-                    {errors.password}
+                {#if errors.nombre}<p class={errorClass}>
+                    {errors.nombre}
                   </p>{/if}
               </div>
-            {/if}
-          </div>
-        </div>
-
-        <!-- Contacto -->
-        <div>
-          <h3 class={sectionClass}>Contacto</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="telefono" class={labelClass}>Teléfono</label>
-              <input
-                id="telefono"
-                type="tel"
-                value={formData.telefono}
-                oninput={(e) => handleGenericPhoneInput(e, "telefono")}
-                onkeydown={handlePhoneKeydown}
-                placeholder="+505 8888-8888"
-                disabled={loading}
-                class={inputClass}
-              />
-            </div>
-            <div class="col-span-2">
-              <label for="direccion" class={labelClass}>Dirección</label>
-              <textarea
-                id="direccion"
-                bind:value={formData.direccion}
-                disabled={loading}
-                class={inputClass}
-                rows="2"
-                placeholder="Dirección completa"
-              ></textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- Emergencia -->
-        <div>
-          <h3 class={sectionClass}>Contacto de Emergencia</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="contactoEmergenciaNombre" class={labelClass}
-                >Nombre</label
-              >
-              <input
-                id="contactoEmergenciaNombre"
-                type="text"
-                value={formData.contactoEmergenciaNombre}
-                oninput={(e) => handleNameInput(e, "contactoEmergenciaNombre")}
-                disabled={loading}
-                class={inputClass}
-                placeholder="Nombre familiar"
-              />
-            </div>
-            <div>
-              <label for="contactoEmergenciaTelefono" class={labelClass}
-                >Teléfono</label
-              >
-              <input
-                id="contactoEmergenciaTelefono"
-                type="tel"
-                value={formData.contactoEmergenciaTelefono}
-                oninput={(e) =>
-                  handleGenericPhoneInput(e, "contactoEmergenciaTelefono")}
-                onkeydown={handlePhoneKeydown}
-                placeholder="+505 8888-8888"
-                disabled={loading}
-                class={inputClass}
-              />
+              <div>
+                <label for="segundoNombre" class={labelClass}
+                  >Segundo Nombre</label
+                >
+                <input
+                  id="segundoNombre"
+                  type="text"
+                  value={formData.segundoNombre}
+                  oninput={(e) => handleNameInput(e, "segundoNombre")}
+                  placeholder="Carlos"
+                  disabled={loading}
+                  class={inputClass}
+                />
+              </div>
+              <div>
+                <label for="apellido" class={labelClass}>Apellido *</label>
+                <input
+                  id="apellido"
+                  type="text"
+                  value={formData.apellido}
+                  oninput={(e) => handleNameInput(e, "apellido")}
+                  placeholder="Pérez"
+                  disabled={loading}
+                  class={inputClass}
+                />
+                {#if errors.apellido}<p class={errorClass}>
+                    {errors.apellido}
+                  </p>{/if}
+              </div>
+              <div>
+                <label for="segundoApellido" class={labelClass}
+                  >Segundo Apellido</label
+                >
+                <input
+                  id="segundoApellido"
+                  type="text"
+                  value={formData.segundoApellido}
+                  oninput={(e) => handleNameInput(e, "segundoApellido")}
+                  placeholder="González"
+                  disabled={loading}
+                  class={inputClass}
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Buttons -->
-        <div
-          class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
-        >
-          <button
-            type="button"
-            onclick={onClose}
-            class="flex-1 py-2.5 px-4 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          <!-- Información Laboral -->
+          <div>
+            <h3 class={sectionClass}>Información Laboral</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="numeroGafete" class={labelClass}
+                  >Número Gafete</label
+                >
+                <input
+                  id="numeroGafete"
+                  type="text"
+                  value={formData.numeroGafete}
+                  oninput={handleGafeteInput}
+                  placeholder="K-017367"
+                  disabled={loading}
+                  class={inputClass}
+                />
+              </div>
+              <div>
+                <label for="fechaInicioLabores" class={labelClass}
+                  >Fecha Inicio</label
+                >
+                <input
+                  id="fechaInicioLabores"
+                  type="date"
+                  bind:value={formData.fechaInicioLabores}
+                  disabled={loading}
+                  class={inputClass}
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Cuenta -->
+          <div>
+            <h3 class={sectionClass}>Cuenta y Acceso</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="email" class={labelClass}>Email *</label>
+                <input
+                  id="email"
+                  type="email"
+                  bind:value={formData.email}
+                  placeholder="correo@ejemplo.com"
+                  disabled={loading}
+                  class={inputClass}
+                />
+                {#if errors.email}<p class={errorClass}>{errors.email}</p>{/if}
+              </div>
+              <!-- Roles (Solo si no es self y es admin/supervisor) -->
+              {#if !isSelf}
+                <div>
+                  <label for="role" class={labelClass}>Rol *</label>
+                  <select
+                    id="role"
+                    bind:value={formData.role}
+                    disabled={loading}
+                    class={inputClass}
+                  >
+                    <option value="guardia">Guardia</option>
+                    <option value="supervisor">Supervisor</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+              {/if}
+
+              <!-- Contraseña Temporal (Solo Creación) -->
+              {#if !isEditMode}
+                <div class="col-span-2">
+                  <label for="password" class={labelClass}
+                    >Contraseña Temporal *</label
+                  >
+                  <input
+                    id="password"
+                    type="text"
+                    bind:value={formData.password}
+                    placeholder="Contraseña inicial para el usuario"
+                    disabled={loading}
+                    class={inputClass}
+                  />
+                  {#if errors.password}<p class={errorClass}>
+                      {errors.password}
+                    </p>{/if}
+                </div>
+              {/if}
+            </div>
+          </div>
+
+          <!-- Contacto -->
+          <div>
+            <h3 class={sectionClass}>Contacto</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="telefono" class={labelClass}>Teléfono</label>
+                <input
+                  id="telefono"
+                  type="tel"
+                  value={formData.telefono}
+                  oninput={(e) => handleGenericPhoneInput(e, "telefono")}
+                  onkeydown={handlePhoneKeydown}
+                  placeholder="+505 8888-8888"
+                  disabled={loading}
+                  class={inputClass}
+                />
+              </div>
+              <div class="col-span-2">
+                <label for="direccion" class={labelClass}>Dirección</label>
+                <textarea
+                  id="direccion"
+                  bind:value={formData.direccion}
+                  disabled={loading}
+                  class={inputClass}
+                  rows="2"
+                  placeholder="Dirección completa"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Emergencia -->
+          <div>
+            <h3 class={sectionClass}>Contacto de Emergencia</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="contactoEmergenciaNombre" class={labelClass}
+                  >Nombre</label
+                >
+                <input
+                  id="contactoEmergenciaNombre"
+                  type="text"
+                  value={formData.contactoEmergenciaNombre}
+                  oninput={(e) =>
+                    handleNameInput(e, "contactoEmergenciaNombre")}
+                  disabled={loading}
+                  class={inputClass}
+                  placeholder="Nombre familiar"
+                />
+              </div>
+              <div>
+                <label for="contactoEmergenciaTelefono" class={labelClass}
+                  >Teléfono</label
+                >
+                <input
+                  id="contactoEmergenciaTelefono"
+                  type="tel"
+                  value={formData.contactoEmergenciaTelefono}
+                  oninput={(e) =>
+                    handleGenericPhoneInput(e, "contactoEmergenciaTelefono")}
+                  onkeydown={handlePhoneKeydown}
+                  placeholder="+505 8888-8888"
+                  disabled={loading}
+                  class={inputClass}
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Buttons -->
+          <div
+            class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
           >
-            Cancelar
-          </button>
-
-          {#if isEditMode && $currentUser?.role === "admin"}
             <button
               type="button"
-              onclick={handleResetPasswordClick}
-              disabled={loading}
-              class="flex-1 py-2.5 px-4 rounded-md border border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+              onclick={onClose}
+              class="flex-1 py-2.5 px-4 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
-              Reset Password
+              Cancelar
             </button>
-          {/if}
-          <button
-            type="submit"
-            disabled={loading}
-            class="flex-1 py-2.5 px-4 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            {loading
-              ? "Guardando..."
-              : isEditMode
-                ? "Guardar Cambios"
-                : "Crear Usuario"}
-          </button>
-        </div>
-      </form>
+
+            {#if isSelf}
+              <button
+                type="button"
+                onclick={() => (isChangingPassword = true)}
+                disabled={loading}
+                class="flex-1 py-2.5 px-4 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><rect
+                    width="18"
+                    height="11"
+                    x="3"
+                    y="11"
+                    rx="2"
+                    ry="2"
+                  /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg
+                >
+                Cambiar Contraseña
+              </button>
+            {/if}
+
+            {#if isEditMode && !isSelf && $currentUser?.role === "admin"}
+              <button
+                type="button"
+                onclick={handleResetPasswordClick}
+                disabled={loading}
+                class="flex-1 py-2.5 px-4 rounded-md border border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+              >
+                Reset Password
+              </button>
+            {/if}
+            <button
+              type="submit"
+              disabled={loading}
+              class="flex-1 py-2.5 px-4 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {loading
+                ? "Guardando..."
+                : isEditMode
+                  ? "Guardar Cambios"
+                  : "Crear Usuario"}
+            </button>
+          </div>
+        </form>
+      {/if}
     </div>
   </div>
 {/if}
