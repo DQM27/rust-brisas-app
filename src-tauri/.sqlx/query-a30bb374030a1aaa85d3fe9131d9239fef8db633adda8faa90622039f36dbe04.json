@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        INSERT INTO proveedores (id, cedula, nombre, segundo_nombre, apellido, segundo_apellido, empresa_id, estado, created_at, updated_at)\n        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": []
+  },
+  "hash": "a30bb374030a1aaa85d3fe9131d9239fef8db633adda8faa90622039f36dbe04"
+}

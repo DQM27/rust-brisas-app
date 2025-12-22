@@ -1,0 +1,104 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, persona_id, cedula, nombre_completo, gafete_numero,\n                    ingreso_contratista_id, ingreso_proveedor_id,\n                    fecha_reporte, resuelto as \"resuelto: bool\", fecha_resolucion, notas, reportado_por, resuelto_por,\n                    created_at, updated_at\n             FROM alertas_gafetes ORDER BY fecha_reporte DESC",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "persona_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "cedula",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "nombre_completo",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "gafete_numero",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "ingreso_contratista_id",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "ingreso_proveedor_id",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "fecha_reporte",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "resuelto: bool",
+        "ordinal": 8,
+        "type_info": "Int64"
+      },
+      {
+        "name": "fecha_resolucion",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "notas",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "reportado_por",
+        "ordinal": 11,
+        "type_info": "Text"
+      },
+      {
+        "name": "resuelto_por",
+        "ordinal": 12,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 13,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 14,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "5d0fb3327156a13baf01767bca6aec6681f5f3364c5ad7d9dca703b036529e80"
+}

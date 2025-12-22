@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE vehiculos SET\n            tipo_vehiculo = COALESCE(?, tipo_vehiculo),\n            marca = COALESCE(?, marca),\n            modelo = COALESCE(?, modelo),\n            color = COALESCE(?, color),\n            is_active = COALESCE(?, is_active),\n            updated_at = ?\n        WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "db5ec5121a455dfc203c1bd7ccc56e501ab2fdcbf713dcacdc4c517e491df7b4"
+}

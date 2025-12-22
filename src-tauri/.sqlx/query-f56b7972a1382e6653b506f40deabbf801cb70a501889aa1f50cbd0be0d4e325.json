@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COUNT(*) FROM ingresos_proveedores \n                 WHERE gafete = ? \n                 AND fecha_salida IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "name": "COUNT(*)",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f56b7972a1382e6653b506f40deabbf801cb70a501889aa1f50cbd0be0d4e325"
+}

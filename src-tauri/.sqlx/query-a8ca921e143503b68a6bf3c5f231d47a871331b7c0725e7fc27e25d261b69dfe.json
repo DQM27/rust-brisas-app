@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO gafetes (numero, tipo, estado, created_at, updated_at) VALUES (?, ?, 'activo', ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "a8ca921e143503b68a6bf3c5f231d47a871331b7c0725e7fc27e25d261b69dfe"
+}

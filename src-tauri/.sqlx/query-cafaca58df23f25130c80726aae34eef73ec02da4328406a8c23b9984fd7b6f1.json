@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        INSERT INTO empresas (id, nombre, is_active, created_at, updated_at) \n        VALUES (?, ?, 1, ?, ?)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "cafaca58df23f25130c80726aae34eef73ec02da4328406a8c23b9984fd7b6f1"
+}

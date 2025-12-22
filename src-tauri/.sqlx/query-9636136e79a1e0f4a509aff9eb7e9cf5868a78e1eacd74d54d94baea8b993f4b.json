@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT 1 as one FROM gafetes WHERE numero = ? AND tipo = ? LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "one",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "9636136e79a1e0f4a509aff9eb7e9cf5868a78e1eacd74d54d94baea8b993f4b"
+}

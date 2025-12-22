@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        UPDATE proveedores\n        SET nombre = COALESCE(?, nombre),\n            segundo_nombre = COALESCE(?, segundo_nombre),\n            apellido = COALESCE(?, apellido),\n            segundo_apellido = COALESCE(?, segundo_apellido),\n            empresa_id = COALESCE(?, empresa_id),\n            estado = COALESCE(?, estado),\n            updated_at = ?\n        WHERE id = ?\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "306d6be73eb4dce01722feedc44d9f79fd7b3a8f27643104dec69e20a54e2ad8"
+}

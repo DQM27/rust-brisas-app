@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE alertas_gafetes SET\n            resuelto = 1,\n            fecha_resolucion = ?,\n            notas = COALESCE(?, notas),\n            resuelto_por = ?,\n            updated_at = ?\n        WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "a95366d2c1221ee4ea09e8e06a8f4058592bfb3c8f1cd3b6f0db0ec58605affc"
+}

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COUNT(*) FROM ingresos \n                 WHERE gafete_numero = ? \n                 AND tipo_ingreso = 'contratista' \n                 AND fecha_hora_salida IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "name": "COUNT(*)",
+        "ordinal": 0,
+        "type_info": "Int"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e117f7851362f7830552422ffcc6f2a8495b17faa6ed85a706e68e62975bf78e"
+}

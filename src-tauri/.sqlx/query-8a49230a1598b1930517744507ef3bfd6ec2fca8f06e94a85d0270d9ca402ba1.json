@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT cedula, nombre, segundo_nombre, apellido, segundo_apellido FROM contratistas WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "cedula",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "nombre",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "segundo_nombre",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "apellido",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "segundo_apellido",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "8a49230a1598b1930517744507ef3bfd6ec2fca8f06e94a85d0270d9ca402ba1"
+}

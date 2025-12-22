@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        UPDATE users SET\n            email = COALESCE(?, email),\n            password_hash = COALESCE(?, password_hash),\n            nombre = COALESCE(?, nombre),\n            apellido = COALESCE(?, apellido),\n            role_id = COALESCE(?, role_id),\n            is_active = COALESCE(?, is_active),\n            updated_at = ?,\n            cedula = COALESCE(?, cedula),\n            segundo_nombre = COALESCE(?, segundo_nombre),\n            segundo_apellido = COALESCE(?, segundo_apellido),\n            fecha_inicio_labores = COALESCE(?, fecha_inicio_labores),\n            numero_gafete = COALESCE(?, numero_gafete),\n            fecha_nacimiento = COALESCE(?, fecha_nacimiento),\n            telefono = COALESCE(?, telefono),\n            direccion = COALESCE(?, direccion),\n            contacto_emergencia_nombre = COALESCE(?, contacto_emergencia_nombre),\n            contacto_emergencia_telefono = COALESCE(?, contacto_emergencia_telefono),\n            must_change_password = COALESCE(?, must_change_password)\n        WHERE id = ?\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 19
+    },
+    "nullable": []
+  },
+  "hash": "739591f3dad37e0ed8fe866c9872139a904f189a179fb4431bb3333646e2b2f9"
+}

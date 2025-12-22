@@ -1,0 +1,80 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT \n            v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,\n            v.is_active as \"is_active: bool\", v.created_at, v.updated_at\n           FROM vehiculos v\n           WHERE v.id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "contratista_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "proveedor_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "tipo_vehiculo",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "placa",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "marca",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "modelo",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "color",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "is_active: bool",
+        "ordinal": 8,
+        "type_info": "Int64"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 10,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "5df2cae642e375ddb5c5255d7dbbea89922cea3bd75bdcb1edf72857c9621e67"
+}

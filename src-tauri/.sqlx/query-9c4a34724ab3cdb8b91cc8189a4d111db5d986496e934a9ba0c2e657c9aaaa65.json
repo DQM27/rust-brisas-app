@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        INSERT INTO visitantes (id, cedula, nombre, apellido, segundo_nombre, segundo_apellido, empresa, has_vehicle, created_at, updated_at)\n        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": []
+  },
+  "hash": "9c4a34724ab3cdb8b91cc8189a4d111db5d986496e934a9ba0c2e657c9aaaa65"
+}

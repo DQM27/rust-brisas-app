@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM gafetes WHERE numero = ? AND tipo = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "df8d38871de10e4e19552aeb5b266d34e722a300e11f7ad70ed91ccc29e3c0bb"
+}

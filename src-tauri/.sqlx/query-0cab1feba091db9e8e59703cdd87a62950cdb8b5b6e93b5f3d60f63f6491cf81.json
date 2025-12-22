@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT numero, tipo, estado, created_at, updated_at FROM gafetes ORDER BY numero",
+  "describe": {
+    "columns": [
+      {
+        "name": "numero",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "tipo",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "estado",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0cab1feba091db9e8e59703cdd87a62950cdb8b5b6e93b5f3d60f63f6491cf81"
+}

@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT \n            ag.id, \n            ag.fecha_reporte, \n            ag.nombre_completo, \n            ag.resuelto as \"resuelto: bool\",\n            u_rep.nombre as \"reporter_nombre\",\n            u_rep.apellido as \"reporter_apellido\",\n            u_res.nombre as \"resolver_nombre\",\n            u_res.apellido as \"resolver_apellido\",\n            ag.fecha_resolucion,\n            ag.notas\n         FROM alertas_gafetes ag\n         LEFT JOIN users u_rep ON ag.reportado_por = u_rep.id\n         LEFT JOIN users u_res ON ag.resuelto_por = u_res.id\n         WHERE ag.gafete_numero = ? \n         AND (\n            ( ? = 'proveedor' AND ag.ingreso_proveedor_id IS NOT NULL )\n            OR\n            ( ? = 'contratista' AND ag.ingreso_contratista_id IS NOT NULL )\n         )\n         ORDER BY ag.fecha_reporte DESC \n         LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "fecha_reporte",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "nombre_completo",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "resuelto: bool",
+        "ordinal": 3,
+        "type_info": "Int64"
+      },
+      {
+        "name": "reporter_nombre",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "reporter_apellido",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "resolver_nombre",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "resolver_apellido",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "fecha_resolucion",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "notas",
+        "ordinal": 9,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "228d237ca62a0aaa8fe4a5fce19b77820b7ff151fe9b95d72ab019b5e59a273e"
+}

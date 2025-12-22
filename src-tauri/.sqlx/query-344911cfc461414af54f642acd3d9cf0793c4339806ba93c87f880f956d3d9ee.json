@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        INSERT INTO contratistas \n        (id, cedula, nombre, segundo_nombre, apellido, segundo_apellido, empresa_id, fecha_vencimiento_praind, estado, created_at, updated_at)\n        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 11
+    },
+    "nullable": []
+  },
+  "hash": "344911cfc461414af54f642acd3d9cf0793c4339806ba93c87f880f956d3d9ee"
+}

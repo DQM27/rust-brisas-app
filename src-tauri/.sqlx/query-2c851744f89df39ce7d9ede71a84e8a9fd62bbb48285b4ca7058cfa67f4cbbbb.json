@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT g.numero FROM gafetes g\n                 LEFT JOIN ingresos_visitas iv ON g.numero = iv.gafete AND iv.estado = 'ADENTRO'\n                 WHERE g.tipo = 'visita' AND g.estado = 'activo'\n                 AND iv.id IS NULL AND g.numero != 'S/G'\n                 ORDER BY g.numero",
+  "describe": {
+    "columns": [
+      {
+        "name": "numero",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2c851744f89df39ce7d9ede71a84e8a9fd62bbb48285b4ca7058cfa67f4cbbbb"
+}

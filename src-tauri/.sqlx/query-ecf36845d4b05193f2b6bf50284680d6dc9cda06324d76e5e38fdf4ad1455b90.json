@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT e.nombre as empresa_nombre\n               FROM contratistas c\n               INNER JOIN empresas e ON c.empresa_id = e.id\n               WHERE c.id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "empresa_nombre",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ecf36845d4b05193f2b6bf50284680d6dc9cda06324d76e5e38fdf4ad1455b90"
+}

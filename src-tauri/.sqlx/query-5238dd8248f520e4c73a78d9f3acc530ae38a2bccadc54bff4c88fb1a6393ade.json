@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        UPDATE ingresos_visitas \n        SET estado = 'SALIO', \n            fecha_salida = ?, \n            usuario_salida_id = ?, \n            observaciones = COALESCE(?, observaciones),\n            updated_at = ?\n        WHERE id = ?\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "5238dd8248f520e4c73a78d9f3acc530ae38a2bccadc54bff4c88fb1a6393ade"
+}

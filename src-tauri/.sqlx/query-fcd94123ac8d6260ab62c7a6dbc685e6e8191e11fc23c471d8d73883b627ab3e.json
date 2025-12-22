@@ -1,0 +1,152 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT \n            ip.id, ip.cedula, ip.nombre, ip.apellido, ip.proveedor_id, ip.empresa_id, ip.area_visitada, ip.motivo, ip.gafete,\n            ip.tipo_autorizacion, ip.modo_ingreso, ip.placa_vehiculo, \n            CAST(ip.fecha_ingreso AS TEXT) as fecha_ingreso,\n            CAST(ip.fecha_salida AS TEXT) as fecha_salida,\n            ip.estado,\n            ip.usuario_ingreso_id, ip.usuario_salida_id, ip.observaciones, \n            CAST(ip.created_at AS TEXT) as created_at,\n            CAST(ip.updated_at AS TEXT) as updated_at,\n            COALESCE(u.nombre || ' ' || u.apellido, 'N/A') as usuario_ingreso_nombre,\n            CAST(NULL AS TEXT) as usuario_salida_nombre,\n            COALESCE(e.nombre, 'Sin empresa') as empresa_nombre\n        FROM ingresos_proveedores ip\n        LEFT JOIN users u ON ip.usuario_ingreso_id = u.id\n        LEFT JOIN empresas e ON ip.empresa_id = e.id\n        WHERE ip.estado = 'ADENTRO' \n        ORDER BY ip.fecha_ingreso DESC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "cedula",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "nombre",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "apellido",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "proveedor_id",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "empresa_id",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "area_visitada",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "motivo",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "gafete",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "tipo_autorizacion",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "modo_ingreso",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "placa_vehiculo",
+        "ordinal": 11,
+        "type_info": "Text"
+      },
+      {
+        "name": "fecha_ingreso",
+        "ordinal": 12,
+        "type_info": "Text"
+      },
+      {
+        "name": "fecha_salida",
+        "ordinal": 13,
+        "type_info": "Text"
+      },
+      {
+        "name": "estado",
+        "ordinal": 14,
+        "type_info": "Text"
+      },
+      {
+        "name": "usuario_ingreso_id",
+        "ordinal": 15,
+        "type_info": "Text"
+      },
+      {
+        "name": "usuario_salida_id",
+        "ordinal": 16,
+        "type_info": "Text"
+      },
+      {
+        "name": "observaciones",
+        "ordinal": 17,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 18,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 19,
+        "type_info": "Text"
+      },
+      {
+        "name": "usuario_ingreso_nombre",
+        "ordinal": 20,
+        "type_info": "Text"
+      },
+      {
+        "name": "usuario_salida_nombre",
+        "ordinal": 21,
+        "type_info": "Text"
+      },
+      {
+        "name": "empresa_nombre",
+        "ordinal": 22,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "fcd94123ac8d6260ab62c7a6dbc685e6e8191e11fc23c471d8d73883b627ab3e"
+}

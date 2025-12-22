@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        UPDATE empresas SET \n            nombre = COALESCE(?, nombre),\n            is_active = COALESCE(?, is_active),\n            updated_at = ?\n        WHERE id = ?\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "8ebc8619409f6a4c1d91ad5f62435da22399b68d37a75bd283cbe67b46e3a540"
+}

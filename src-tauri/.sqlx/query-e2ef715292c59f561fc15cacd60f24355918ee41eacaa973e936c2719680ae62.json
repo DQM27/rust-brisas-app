@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT \n            id, \n            nombre, \n            is_active as \"is_active: bool\", \n            created_at, \n            updated_at \n        FROM empresas \n        ORDER BY nombre ASC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "nombre",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "is_active: bool",
+        "ordinal": 2,
+        "type_info": "Int64"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e2ef715292c59f561fc15cacd60f24355918ee41eacaa973e936c2719680ae62"
+}

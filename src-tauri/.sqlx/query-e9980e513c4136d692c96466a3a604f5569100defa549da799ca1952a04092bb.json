@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT DISTINCT ip.cedula, ip.nombre, ip.apellido, ip.empresa_id, \n        COALESCE(e.nombre, '') as empresa_nombre \n        FROM ingresos_proveedores ip\n        LEFT JOIN empresas e ON ip.empresa_id = e.id\n        WHERE ip.cedula LIKE ? OR ip.nombre LIKE ? OR ip.apellido LIKE ?\n        LIMIT 20\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "cedula",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "nombre",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "apellido",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "empresa_id",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "empresa_nombre",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e9980e513c4136d692c96466a3a604f5569100defa549da799ca1952a04092bb"
+}
