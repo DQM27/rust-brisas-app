@@ -1,5 +1,6 @@
 // src/domain/ingreso_contratista.rs
 
+use crate::domain::errors::IngresoContratistaError;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -146,7 +147,9 @@ pub fn evaluar_elegibilidad_entrada(
     }
 }
 
-pub fn verificar_praind_vigente(fecha_vencimiento_str: &str) -> Result<bool, String> {
+pub fn verificar_praind_vigente(
+    fecha_vencimiento_str: &str,
+) -> Result<bool, IngresoContratistaError> {
     if fecha_vencimiento_str.is_empty() {
         return Ok(false);
     }
@@ -154,10 +157,10 @@ pub fn verificar_praind_vigente(fecha_vencimiento_str: &str) -> Result<bool, Str
     // Intentar parsear solo fecha YYYY-MM-DD
     let fecha_venc =
         chrono::NaiveDate::parse_from_str(fecha_vencimiento_str, "%Y-%m-%d").map_err(|_| {
-            format!(
+            IngresoContratistaError::Validation(format!(
                 "Formato de fecha de vencimiento inválido: {}. Se espera YYYY-MM-DD",
                 fecha_vencimiento_str
-            )
+            ))
         })?;
 
     let hoy = Utc::now().date_naive();
@@ -170,9 +173,11 @@ pub fn normalizar_numero_gafete(input: &str) -> String {
     input.trim().to_uppercase()
 }
 
-pub fn validar_input_entrada(input: &impl InputEntrada) -> Result<(), String> {
+pub fn validar_input_entrada(input: &impl InputEntrada) -> Result<(), IngresoContratistaError> {
     if input.tipo_ingreso() != "contratista" {
-        return Err("Tipo de ingreso inválido para este servicio".to_string());
+        return Err(IngresoContratistaError::Validation(
+            "Tipo de ingreso inválido para este servicio".to_string(),
+        ));
     }
     // Validaciones basicas adicionales si hicieran falta
     Ok(())
@@ -187,9 +192,13 @@ pub trait InputEntrada {
 // LOGICA DE DOMINIO: PERMANENCIA
 // ==========================================
 
-pub fn calcular_tiempo_transcurrido(fecha_ingreso_str: &str) -> Result<i64, String> {
+pub fn calcular_tiempo_transcurrido(
+    fecha_ingreso_str: &str,
+) -> Result<i64, IngresoContratistaError> {
     let fecha_ingreso = DateTime::parse_from_rfc3339(fecha_ingreso_str)
-        .map_err(|_| "Formato de fecha de ingreso inválido".to_string())?
+        .map_err(|_| {
+            IngresoContratistaError::Validation("Formato de fecha de ingreso inválido".to_string())
+        })?
         .with_timezone(&Utc);
 
     let ahora = Utc::now();
@@ -239,9 +248,11 @@ pub fn construir_alerta_tiempo(minutos_transcurridos: i64) -> AlertaTiempo {
 // LOGICA DE DOMINIO: SALIDA
 // ==========================================
 
-pub fn validar_ingreso_abierto(fecha_salida: &Option<String>) -> Result<(), String> {
+pub fn validar_ingreso_abierto(
+    fecha_salida: &Option<String>,
+) -> Result<(), IngresoContratistaError> {
     if fecha_salida.is_some() {
-        return Err("El ingreso ya fue cerrado (registrado como salida)".to_string());
+        return Err(IngresoContratistaError::NoActiveIngreso);
     }
     Ok(())
 }

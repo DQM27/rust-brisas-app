@@ -24,13 +24,13 @@ pub async fn create_gafete(
     input: CreateGafeteInput,
 ) -> Result<GafeteResponse, GafeteError> {
     // 1. Validar input
-    domain::validar_create_input(&input).map_err(GafeteError::Validation)?;
+    domain::validar_create_input(&input)?;
 
     // 2. Normalizar número
     let numero_normalizado = domain::normalizar_numero(&input.numero);
 
     // 3. Verificar que no exista con este número + tipo
-    let tipo: TipoGafete = input.tipo.parse().map_err(|e| GafeteError::Validation(e))?;
+    let tipo: TipoGafete = input.tipo.parse().map_err(GafeteError::Validation)?;
     let exists = db::exists_by_numero_and_tipo(pool, &numero_normalizado, tipo.as_str()).await?;
     if exists {
         return Err(GafeteError::AlreadyExists);
@@ -324,7 +324,7 @@ pub async fn update_gafete(
     tipo_actual: String,
     input: UpdateGafeteInput,
 ) -> Result<GafeteResponse, GafeteError> {
-    domain::validar_update_input(&input).map_err(GafeteError::Validation)?;
+    domain::validar_update_input(&input)?;
 
     let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo_actual)
         .await

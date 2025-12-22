@@ -43,7 +43,8 @@ pub async fn create_proveedor(
         if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
             if !tipo.is_empty() && !placa.is_empty() {
                 // Normalizar tipo
-                let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)?
+                let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
+                    .map_err(|e| e.to_string())?
                     .as_str()
                     .to_string();
 
@@ -255,7 +256,8 @@ pub async fn update_proveedor(
                     // Normalizar antes de usar
                     // Convertimos Result<TipoVehiculo, String> -> TipoVehiculo -> &str -> String
                     // El ? propagará el error string si la validación falla
-                    let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)?
+                    let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
+                        .map_err(|e| e.to_string())?
                         .as_str()
                         .to_string();
 

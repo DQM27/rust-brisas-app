@@ -29,7 +29,7 @@ pub async fn create_contratista(
     input: CreateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
     // 1. Validar input
-    domain::validar_create_input(&input).map_err(ContratistaError::Validation)?;
+    domain::validar_create_input(&input)?;
 
     // 2. Normalizar datos
     let cedula_normalizada = domain::normalizar_cedula(&input.cedula);
@@ -247,7 +247,7 @@ pub async fn update_contratista(
     input: UpdateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
     // 1. Validar input
-    domain::validar_update_input(&input).map_err(ContratistaError::Validation)?;
+    domain::validar_update_input(&input)?;
 
     // 2. Verificar que el contratista existe
     let _ = db::find_by_id_with_empresa(pool, &id)
@@ -374,8 +374,7 @@ pub async fn cambiar_estado_contratista(
     input: CambiarEstadoInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
     // 1. Validar estado
-    let estado =
-        domain::validar_estado(&input.estado).map_err(|e| ContratistaError::InvalidStatus(e))?;
+    let estado = domain::validar_estado(&input.estado)?;
 
     // 2. Verificar que el contratista existe
     let _ = db::find_by_id_with_empresa(pool, &id)

@@ -252,6 +252,9 @@ pub enum ListaNegraError {
 
     #[error("Error de validación: {0}")]
     Validation(String),
+
+    #[error("Error al parsear fecha: {0}")]
+    DateParse(String),
 }
 
 // ==========================================
@@ -263,8 +266,8 @@ pub enum VisitanteError {
     #[error("Visitante no encontrado")]
     NotFound,
 
-    #[error("Ya existe un visitante con esa identificación")]
-    AlreadyExists,
+    #[error("Ya existe un visitante con esta cédula")]
+    CedulaExists,
 
     #[error("El visitante está en lista negra: {0}")]
     Blacklisted(String),
@@ -451,4 +454,31 @@ pub enum SearchError {
 
     #[error("Error de base de datos: {0}")]
     Database(#[from] sqlx::Error),
+}
+// ==========================================
+// ROLE ERRORS
+// ==========================================
+
+#[derive(Error, Debug)]
+pub enum RoleError {
+    #[error("Rol no encontrado")]
+    NotFound,
+
+    #[error("Ya existe un rol con este nombre")]
+    NameExists,
+
+    #[error("No se puede eliminar un rol del sistema")]
+    CannotDeleteSystemRole,
+
+    #[error("Solo el superusuario puede modificar roles del sistema")]
+    CannotModifySystemRole,
+
+    #[error("Rol del sistema")]
+    SystemRole,
+
+    #[error("Error de base de datos: {0}")]
+    Database(#[from] sqlx::Error),
+
+    #[error("Error de validación: {0}")]
+    Validation(String),
 }

@@ -1,6 +1,6 @@
 use crate::db::{cita_queries, visitante_queries};
 use crate::domain::cita::{Cita, CitaPopulated, CreateCitaInput};
-use crate::domain::visitante::CreateVisitanteInput;
+use crate::models::visitante::CreateVisitanteInput;
 
 use sqlx::SqlitePool;
 

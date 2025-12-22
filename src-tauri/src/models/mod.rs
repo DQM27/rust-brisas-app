@@ -8,3 +8,4 @@ pub mod proveedor;
 pub mod role;
 pub mod user;
 pub mod vehiculo;
+pub mod visitante;

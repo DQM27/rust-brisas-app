@@ -4,7 +4,7 @@
 // Capa de data access: queries SQL puras
 // Strict Mode: Uso de query_as! con type overrides
 
-use crate::domain::visitante::{CreateVisitanteInput, Visitante};
+use crate::models::visitante::{CreateVisitanteInput, Visitante};
 use chrono::Utc;
 use sqlx::SqlitePool;
 use uuid::Uuid;

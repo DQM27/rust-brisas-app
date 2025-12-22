@@ -55,7 +55,7 @@ pub async fn create_user(
     clean_opt(&mut input.contacto_emergencia_telefono);
 
     // 1. Validar input
-    domain::validar_create_input(&input).map_err(UserError::Validation)?;
+    domain::validar_create_input(&input)?;
 
     // 2. Normalizar datos
     let email_normalizado = domain::normalizar_email(&input.email);
@@ -195,7 +195,7 @@ pub async fn update_user(
     }
 
     // 1. Validar input
-    domain::validar_update_input(&input).map_err(UserError::Validation)?;
+    domain::validar_update_input(&input)?;
 
     // 2. Verificar que existe
     let _ = db::find_by_id(pool, &id).await?;
@@ -316,7 +316,7 @@ pub async fn change_password(
     }
 
     // Validar nueva contraseña
-    domain::validar_password(&input.new_password).map_err(UserError::Validation)?;
+    domain::validar_password(&input.new_password)?;
 
     // Hashear nueva
     let new_hash = auth::hash_password(&input.new_password).map_err(UserError::Auth)?;

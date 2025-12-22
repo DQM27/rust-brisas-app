@@ -17,26 +17,7 @@ use uuid::Uuid;
 // ERRORES
 // ==========================================
 
-#[derive(Debug, thiserror::Error)]
-pub enum RoleError {
-    #[error("Rol no encontrado")]
-    NotFound,
-
-    #[error("Ya existe un rol con ese nombre")]
-    NameExists,
-
-    #[error("No se puede eliminar un rol del sistema")]
-    CannotDeleteSystemRole,
-
-    #[error("Solo el superusuario puede modificar roles del sistema")]
-    CannotModifySystemRole,
-
-    #[error("Error de validación: {0}")]
-    Validation(String),
-
-    #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
-}
+use crate::domain::errors::RoleError;
 
 // ==========================================
 // CONSULTAS DE ROLES
@@ -108,7 +89,7 @@ pub async fn create_role(
     input: CreateRoleInput,
 ) -> Result<RoleResponse, RoleError> {
     // 1. Validar input (dominio)
-    domain::validar_create_input(&input).map_err(RoleError::Validation)?;
+    domain::validar_create_input(&input)?;
 
     // 2. Verificar nombre único
     let count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM roles WHERE name = ?")
@@ -123,7 +104,7 @@ pub async fn create_role(
     // 3. Crear rol
     let id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
-    let nombre = domain::normalizar_nombre_rol(&input.name);
+    let nombre = domain::normalizar_nombre(&input.name);
 
     sqlx::query(
         r#"INSERT INTO roles (id, name, description, is_system, created_at, updated_at)
@@ -162,7 +143,7 @@ pub async fn update_role(
     requester_id: &str,
 ) -> Result<RoleResponse, RoleError> {
     // 1. Validar input
-    domain::validar_update_input(&input).map_err(RoleError::Validation)?;
+    domain::validar_update_input(&input)?;
 
     // 2. Obtener rol actual
     let role = get_role_by_id(pool, id).await?;
@@ -176,10 +157,7 @@ pub async fn update_role(
 
     // 4. Actualizar campos básicos
     if input.name.is_some() || input.description.is_some() {
-        let nombre = input
-            .name
-            .as_ref()
-            .map(|n| domain::normalizar_nombre_rol(n));
+        let nombre = input.name.as_ref().map(|n| domain::normalizar_nombre(n));
 
         sqlx::query(
             r#"UPDATE roles SET 

@@ -76,3 +76,105 @@ pub struct ValidacionIngresoProveedorResponse {
     pub tiene_ingreso_abierto: bool,
     pub ingreso_abierto: Option<IngresoProveedor>,
 }
+
+use crate::domain::errors::IngresoProveedorError;
+use chrono::DateTime;
+
+// ==========================================
+// VALIDACIONES DE DOMINIO
+// ==========================================
+
+pub fn normalizar_numero_gafete(input: &str) -> String {
+    input.trim().to_uppercase()
+}
+
+pub fn validar_ingreso_abierto(fecha_salida: &Option<String>) -> Result<(), IngresoProveedorError> {
+    if fecha_salida.is_some() {
+        return Err(IngresoProveedorError::NoActiveIngreso);
+    }
+    Ok(())
+}
+
+pub fn validar_tiempo_salida(
+    fecha_ingreso_str: &str,
+    fecha_salida_str: &str,
+) -> Result<(), IngresoProveedorError> {
+    let ingreso = DateTime::parse_from_rfc3339(fecha_ingreso_str)
+        .map_err(|_| IngresoProveedorError::Validation("Fecha ingreso inválida".to_string()))?;
+
+    let salida = DateTime::parse_from_rfc3339(fecha_salida_str)
+        .map_err(|_| IngresoProveedorError::Validation("Fecha salida inválida".to_string()))?;
+
+    if salida < ingreso {
+        return Err(IngresoProveedorError::Validation(
+            "La fecha de salida no puede ser anterior a la de ingreso".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+pub fn calcular_tiempo_permanencia(
+    fecha_ingreso_str: &str,
+    fecha_salida_str: &str,
+) -> Result<i64, IngresoProveedorError> {
+    let ingreso = DateTime::parse_from_rfc3339(fecha_ingreso_str)
+        .map_err(|_| IngresoProveedorError::Validation("Fecha ingreso inválida".to_string()))?;
+
+    let salida = DateTime::parse_from_rfc3339(fecha_salida_str)
+        .map_err(|_| IngresoProveedorError::Validation("Fecha salida inválida".to_string()))?;
+
+    let duracion = salida.signed_duration_since(ingreso);
+    Ok(duracion.num_minutes())
+}
+
+// Reusing DecisionReporteGafete struct if generic, or redefine?
+// IngresoContratista defined it locally. Maybe we should move it to models/ingreso.rs?
+// For now, define locally to avoid cross-crate dependency hell refactoring.
+#[derive(Debug, Clone)]
+pub struct DecisionReporteGafete {
+    pub debe_generar_reporte: bool,
+    pub motivo: Option<String>,
+    pub gafete_numero: Option<String>,
+}
+
+pub fn evaluar_devolucion_gafete(
+    tenia_gafete: bool,
+    gafete_asignado: Option<&str>,
+    reporto_devolucion: bool,
+    gafete_devuelto_numero: Option<&str>,
+) -> Result<DecisionReporteGafete, IngresoProveedorError> {
+    if !tenia_gafete {
+        return Ok(DecisionReporteGafete {
+            debe_generar_reporte: false,
+            motivo: None,
+            gafete_numero: None,
+        });
+    }
+
+    if !reporto_devolucion {
+        return Ok(DecisionReporteGafete {
+            debe_generar_reporte: true,
+            motivo: Some("Salida registrada sin devolver gafete".to_string()),
+            gafete_numero: gafete_asignado.map(|s| s.to_string()),
+        });
+    }
+
+    if let (Some(asignado), Some(devuelto)) = (gafete_asignado, gafete_devuelto_numero) {
+        if normalizar_numero_gafete(asignado) != normalizar_numero_gafete(devuelto) {
+            return Ok(DecisionReporteGafete {
+                debe_generar_reporte: true,
+                motivo: Some(format!(
+                    "Devolvió gafete incorrecto: {} vs {}",
+                    devuelto, asignado
+                )),
+                gafete_numero: Some(asignado.to_string()),
+            });
+        }
+    }
+
+    Ok(DecisionReporteGafete {
+        debe_generar_reporte: false,
+        motivo: None,
+        gafete_numero: None,
+    })
+}

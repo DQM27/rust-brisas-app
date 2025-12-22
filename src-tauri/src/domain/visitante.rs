@@ -1,26 +1,110 @@
-use serde::{Deserialize, Serialize};
+// ==========================================
+// src/domain/visitante.rs
+// ==========================================
+// Capa de dominio: validaciones y reglas de negocio puras
+// Sin dependencias de DB ni servicios externos
 
-#[derive(Debug, Serialize, Deserialize, Clone, sqlx::FromRow)]
-pub struct Visitante {
-    pub id: String,
-    pub cedula: String,
-    pub nombre: String,
-    pub apellido: String,
-    pub segundo_nombre: Option<String>,
-    pub segundo_apellido: Option<String>,
-    pub empresa: Option<String>,
-    pub has_vehicle: bool,
-    pub created_at: String,
-    pub updated_at: String,
+use crate::domain::errors::VisitanteError;
+use crate::models::visitante::CreateVisitanteInput;
+
+// ==========================================
+// VALIDACIONES DE CAMPOS INDIVIDUALES
+// ==========================================
+
+pub fn validar_cedula(cedula: &str) -> Result<(), VisitanteError> {
+    let limpio = cedula.trim();
+
+    if limpio.is_empty() {
+        return Err(VisitanteError::Validation(
+            "La cédula no puede estar vacía".to_string(),
+        ));
+    }
+
+    if limpio.len() > 20 {
+        return Err(VisitanteError::Validation(
+            "La cédula no puede exceder 20 caracteres".to_string(),
+        ));
+    }
+
+    Ok(())
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CreateVisitanteInput {
-    pub cedula: String,
-    pub nombre: String,
-    pub apellido: String,
-    pub segundo_nombre: Option<String>,
-    pub segundo_apellido: Option<String>,
-    pub empresa: Option<String>,
-    pub has_vehicle: bool,
+pub fn validar_nombre(nombre: &str) -> Result<(), VisitanteError> {
+    let limpio = nombre.trim();
+
+    if limpio.is_empty() {
+        return Err(VisitanteError::Validation(
+            "El nombre no puede estar vacío".to_string(),
+        ));
+    }
+
+    if limpio.len() > 50 {
+        return Err(VisitanteError::Validation(
+            "El nombre no puede exceder 50 caracteres".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+pub fn validar_apellido(apellido: &str) -> Result<(), VisitanteError> {
+    let limpio = apellido.trim();
+
+    if limpio.is_empty() {
+        return Err(VisitanteError::Validation(
+            "El apellido no puede estar vacío".to_string(),
+        ));
+    }
+
+    if limpio.len() > 50 {
+        return Err(VisitanteError::Validation(
+            "El apellido no puede exceder 50 caracteres".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+pub fn validar_opcional(
+    valor: Option<&String>,
+    max_len: usize,
+    nombre_campo: &str,
+) -> Result<(), VisitanteError> {
+    if let Some(v) = valor {
+        if v.trim().len() > max_len {
+            return Err(VisitanteError::Validation(format!(
+                "{} no puede exceder {} caracteres",
+                nombre_campo, max_len
+            )));
+        }
+    }
+    Ok(())
+}
+
+// ==========================================
+// VALIDACIONES DE INPUTS COMPLETOS
+// ==========================================
+
+pub fn validar_create_input(input: &CreateVisitanteInput) -> Result<(), VisitanteError> {
+    validar_cedula(&input.cedula)?;
+    validar_nombre(&input.nombre)?;
+    validar_apellido(&input.apellido)?;
+
+    validar_opcional(input.segundo_nombre.as_ref(), 50, "Segundo nombre")?;
+    validar_opcional(input.segundo_apellido.as_ref(), 50, "Segundo apellido")?;
+    validar_opcional(input.empresa.as_ref(), 100, "Empresa")?;
+
+    Ok(())
+}
+
+// ==========================================
+// HELPERS
+// ==========================================
+
+pub fn normalizar_nombre(nombre: &str) -> String {
+    nombre.trim().to_uppercase()
+}
+
+pub fn normalizar_cedula(cedula: &str) -> String {
+    cedula.trim().to_uppercase()
 }

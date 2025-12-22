@@ -5,11 +5,12 @@
 
 use crate::db::{empresa_queries, ingreso_proveedor_queries, proveedor_queries};
 use crate::domain::errors::IngresoProveedorError;
+use crate::domain::ingreso_proveedor as domain;
 use crate::domain::ingreso_proveedor::{
     CreateIngresoProveedorInput, IngresoProveedor, ProveedorSnapshot,
 };
 use crate::models::proveedor::CreateProveedorInput;
-use crate::services::gafete_service;
+use crate::services::{alerta_service, gafete_service};
 use sqlx::SqlitePool;
 
 pub async fn registrar_ingreso(
@@ -94,8 +95,24 @@ pub async fn registrar_salida(
         .map_err(IngresoProveedorError::Database)?
         .ok_or(IngresoProveedorError::NotFound)?;
 
-    let now = chrono::Utc::now().to_rfc3339();
+    domain::validar_ingreso_abierto(&ingreso.fecha_salida)?;
 
+    let now = chrono::Utc::now().to_rfc3339();
+    domain::validar_tiempo_salida(&ingreso.fecha_ingreso, &now)?; // Using fecha_ingreso (provider struct has it)
+
+    // Evaluar gafete
+    let decision = domain::evaluar_devolucion_gafete(
+        ingreso.gafete.is_some(),
+        ingreso.gafete.as_deref(),
+        devolvio_gafete,
+        if devolvio_gafete {
+            ingreso.gafete.as_deref() // Assuming simplified frontend that just sends bool
+        } else {
+            None
+        },
+    )?;
+
+    // Start TX
     let mut tx = pool
         .begin()
         .await
@@ -122,35 +139,29 @@ pub async fn registrar_salida(
     .await
     .map_err(IngresoProveedorError::Database)?;
 
-    // 3. Verificar Gafete y crear alerta si no se devolvió
-    if let Some(gafete_num) = ingreso.gafete {
-        if !devolvio_gafete {
-            let nombre_completo = format!("{} {}", ingreso.nombre, ingreso.apellido);
+    // 3. Crear alerta si aplica
+    if decision.debe_generar_reporte {
+        if let Some(num) = decision.gafete_numero {
             let alerta_id = uuid::Uuid::new_v4().to_string();
+            let nombre_completo = format!("{} {}", ingreso.nombre, ingreso.apellido);
 
-            sqlx::query(
-                r#"INSERT INTO alertas_gafetes 
-                (id, persona_id, cedula, nombre_completo, gafete_numero, 
-                ingreso_contratista_id, ingreso_proveedor_id,
-                fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por,
-                created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?)"#,
+            alerta_service::insert(
+                pool,
+                &alerta_id,
+                None, // No contratista_id
+                &ingreso.cedula,
+                &nombre_completo,
+                &num,
+                None,      // No ingreso_contratista_id
+                Some(&id), // ingreso_proveedor_id
+                &now,
+                decision.motivo.as_deref(),
+                &usuario_id,
+                &now,
+                &now,
             )
-            .bind(&alerta_id)
-            .bind(None::<&str>)
-            .bind(&ingreso.cedula)
-            .bind(&nombre_completo)
-            .bind(&gafete_num)
-            .bind(None::<&str>)
-            .bind(&id)
-            .bind(&now)
-            .bind(Some("Gafete no devuelto por proveedor al salir"))
-            .bind(&usuario_id)
-            .bind(&now)
-            .bind(&now)
-            .execute(&mut *tx)
             .await
-            .map_err(IngresoProveedorError::Database)?;
+            .map_err(|e| IngresoProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?;
         }
     }
 

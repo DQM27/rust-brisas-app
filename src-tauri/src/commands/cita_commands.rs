@@ -1,5 +1,5 @@
 use crate::domain::cita::{Cita, CitaPopulated, CreateCitaInput};
-use crate::domain::visitante::CreateVisitanteInput;
+use crate::models::visitante::{CreateVisitanteInput, Visitante};
 use crate::services::cita_service::CitaService;
 use sqlx::SqlitePool;
 use tauri::{command, State};
@@ -47,7 +47,7 @@ pub async fn procesar_ingreso_cita(
 pub async fn get_visitante_by_cedula(
     pool: State<'_, SqlitePool>,
     cedula: String,
-) -> Result<Option<crate::domain::visitante::Visitante>, String> {
+) -> Result<Option<Visitante>, String> {
     crate::db::visitante_queries::get_visitante_by_cedula(pool.inner(), &cedula)
         .await
         .map_err(|e| e.to_string())

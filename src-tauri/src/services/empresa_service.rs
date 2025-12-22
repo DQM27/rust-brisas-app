@@ -21,7 +21,7 @@ pub async fn create_empresa(
     input: CreateEmpresaInput,
 ) -> Result<EmpresaResponse, EmpresaError> {
     // 1. Validar input
-    domain::validar_create_input(&input).map_err(EmpresaError::Validation)?;
+    domain::validar_create_input(&input)?;
 
     // 2. Normalizar nombre
     let nombre_normalizado = domain::normalizar_nombre(&input.nombre);
@@ -113,7 +113,7 @@ pub async fn update_empresa(
     input: UpdateEmpresaInput,
 ) -> Result<EmpresaResponse, EmpresaError> {
     // 1. Validar input
-    domain::validar_update_input(&input).map_err(EmpresaError::Validation)?;
+    domain::validar_update_input(&input)?;
 
     // 2. Verificar que existe
     let _ = db::find_by_id(pool, &id)

@@ -28,7 +28,7 @@ pub async fn add_to_lista_negra(
     input: AddToListaNegraInput,
 ) -> Result<ListaNegraResponse, ListaNegraError> {
     // 1. Validar input
-    domain::validar_add_input(&input).map_err(ListaNegraError::Validation)?;
+    domain::validar_add_input(&input)?;
 
     // 2. Determinar datos según si tiene o no contratista_id
     let (contratista_id, cedula, nombre, segundo_nombre, apellido, segundo_apellido) =
@@ -451,7 +451,7 @@ pub async fn update_lista_negra(
     input: UpdateListaNegraInput,
 ) -> Result<ListaNegraResponse, ListaNegraError> {
     // 1. Validar input
-    domain::validar_update_input(&input).map_err(ListaNegraError::Validation)?;
+    domain::validar_update_input(&input)?;
 
     // 2. Verificar que existe
     let _ = db::find_by_id(pool, &id).await.map_err(|e| match e {

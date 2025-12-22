@@ -5,19 +5,37 @@
 
 use crate::db::visitante_queries;
 use crate::domain::errors::VisitanteError;
-use crate::domain::visitante::{CreateVisitanteInput, Visitante};
+use crate::domain::visitante as domain;
+use crate::models::visitante::{CreateVisitanteInput, Visitante};
 use sqlx::SqlitePool;
 
 pub async fn create_visitante(
     pool: &SqlitePool,
-    input: CreateVisitanteInput,
+    mut input: CreateVisitanteInput,
 ) -> Result<Visitante, VisitanteError> {
-    // Validar si ya existe cédula
+    // 1. Validar input
+    domain::validar_create_input(&input)?;
+
+    // 2. Normalizar
+    input.cedula = domain::normalizar_cedula(&input.cedula);
+    input.nombre = domain::normalizar_nombre(&input.nombre);
+    input.apellido = domain::normalizar_nombre(&input.apellido);
+    if let Some(s) = input.segundo_nombre.as_ref() {
+        input.segundo_nombre = Some(domain::normalizar_nombre(s));
+    }
+    if let Some(s) = input.segundo_apellido.as_ref() {
+        input.segundo_apellido = Some(domain::normalizar_nombre(s));
+    }
+    if let Some(s) = input.empresa.as_ref() {
+        input.empresa = Some(s.trim().to_uppercase());
+    }
+
+    // 3. Validar si ya existe cédula
     if visitante_queries::get_visitante_by_cedula(pool, &input.cedula)
         .await?
         .is_some()
     {
-        return Err(VisitanteError::AlreadyExists);
+        return Err(VisitanteError::CedulaExists);
     }
 
     visitante_queries::create_visitante(pool, input)

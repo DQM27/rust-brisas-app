@@ -25,12 +25,11 @@ pub async fn create_vehiculo(
     input: CreateVehiculoInput,
 ) -> Result<VehiculoResponse, VehiculoError> {
     // 1. Validar input
-    domain::validar_create_input(&input).map_err(VehiculoError::Validation)?;
+    domain::validar_create_input(&input)?;
 
     // 2. Normalizar datos
     let placa_normalizada = domain::normalizar_placa(&input.placa);
-    let tipo_vehiculo =
-        domain::validar_tipo_vehiculo(&input.tipo_vehiculo).map_err(VehiculoError::Validation)?;
+    let tipo_vehiculo = domain::validar_tipo_vehiculo(&input.tipo_vehiculo)?;
 
     let marca_normalizada = input
         .marca
@@ -289,7 +288,7 @@ pub async fn update_vehiculo(
     input: UpdateVehiculoInput,
 ) -> Result<VehiculoResponse, VehiculoError> {
     // 1. Validar input
-    domain::validar_update_input(&input).map_err(VehiculoError::Validation)?;
+    domain::validar_update_input(&input)?;
 
     // 2. Verificar que el vehículo existe
     let _ = db::find_by_id(pool, &id)
@@ -298,12 +297,7 @@ pub async fn update_vehiculo(
 
     // 3. Normalizar y convertir tipo si viene
     let tipo_str = if let Some(ref t) = input.tipo_vehiculo {
-        Some(
-            domain::validar_tipo_vehiculo(t)
-                .map_err(VehiculoError::Validation)?
-                .as_str()
-                .to_string(),
-        )
+        Some(domain::validar_tipo_vehiculo(t)?.as_str().to_string())
     } else {
         None
     };
