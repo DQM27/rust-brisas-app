@@ -7,6 +7,7 @@
 use crate::models::export::{
     CsvDelimiter, ExportFormat, ExportRequest, ExportValue, PageOrientation,
 };
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 // ==========================================
@@ -194,14 +195,17 @@ pub fn normalizar_value(value: &serde_json::Value, header: &str) -> ExportValue 
     }
 }
 
-/// Helper legacy para mantener compatibilidad si se necesita string explícito
-pub fn json_value_to_string(value: &serde_json::Value) -> String {
+/// Helper para convertir JSON a string.
+///
+/// Utiliza `Cow<'_, str>` para evitar allocations cuando el valor ya es un String.
+/// Retorna un borrowed `&str` para strings existentes, y owned `String` para otros tipos.
+pub fn json_value_to_string(value: &serde_json::Value) -> Cow<'_, str> {
     match value {
-        serde_json::Value::Null => String::new(),
-        serde_json::Value::Bool(b) => b.to_string(),
-        serde_json::Value::Number(n) => n.to_string(),
-        serde_json::Value::String(s) => s.clone(),
-        serde_json::Value::Array(_) | serde_json::Value::Object(_) => value.to_string(),
+        serde_json::Value::Null => Cow::Borrowed(""),
+        serde_json::Value::Bool(b) => Cow::Owned(b.to_string()),
+        serde_json::Value::Number(n) => Cow::Owned(n.to_string()),
+        serde_json::Value::String(s) => Cow::Borrowed(s.as_str()),
+        serde_json::Value::Array(_) | serde_json::Value::Object(_) => Cow::Owned(value.to_string()),
     }
 }
 
