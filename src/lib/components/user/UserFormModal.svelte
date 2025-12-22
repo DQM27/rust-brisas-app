@@ -13,6 +13,10 @@
     UpdateUserSchema,
     type CreateUserForm,
   } from "$lib/schemas/userSchema";
+  import AdminConfirmModal from "$lib/components/AdminConfirmModal.svelte";
+  import { auth } from "$lib/api/auth";
+  import { currentUser } from "$lib/stores/auth";
+  import { toast } from "svelte-5-french-toast";
 
   interface Props {
     show: boolean;
@@ -50,6 +54,11 @@
   });
 
   let errors = $state<Record<string, string>>({});
+
+  // Estado para reset de contraseña
+  let showAdminConfirm = $state(false);
+  let showSuccessModal = $state(false);
+  let generatedPassword = $state<string | null>(null);
 
   // Cargar datos del usuario cuando se abre en modo edición
   $effect(() => {
@@ -196,6 +205,57 @@
     if (input.value !== formatted) {
       input.value = formatted;
       input.setSelectionRange(formatted.length, formatted.length);
+    }
+  }
+
+  // Password Reset Logic
+  async function handleResetPasswordClick() {
+    showAdminConfirm = true;
+  }
+
+  async function onAdminConfirm(adminPass: string) {
+    showAdminConfirm = false;
+
+    if (!$currentUser?.email) {
+      toast.error("Error de sesión");
+      return;
+    }
+
+    const toastId = toast.loading("Verificando permisos...");
+    try {
+      // 1. Verify Admin Password
+      await auth.login($currentUser.email, adminPass);
+
+      // 2. Generate Random Password
+      const newPass =
+        Math.random().toString(36).slice(-8) +
+        Math.random().toString(36).slice(-2).toUpperCase();
+
+      // 3. Update User (usando onSave con los datos actuales + password)
+      // Nota: onSave espera CreateUserInput o UpdateUserInput.
+      // Modificamos para enviar la password
+      const updateData = {
+        ...formData,
+        password: newPass,
+        mustChangePassword: true,
+      } as unknown as UpdateUserInput; // Cast necesario porque formData no tiene password en UpdateUserForm
+
+      await onSave(updateData);
+
+      generatedPassword = newPass;
+      showSuccessModal = true;
+
+      toast.success("Contraseña restablecida", { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error("Contraseña de administrador incorrecta", { id: toastId });
+    }
+  }
+
+  function copyNewPassword() {
+    if (generatedPassword) {
+      navigator.clipboard.writeText(generatedPassword);
+      toast.success("Copiado al portapapeles");
     }
   }
 
@@ -382,6 +442,26 @@
                 <option value="admin">Administrador</option>
               </select>
             </div>
+
+            <!-- Contraseña Temporal (Solo Creación) -->
+            {#if !isEditMode}
+              <div class="col-span-2">
+                <label for="password" class={labelClass}
+                  >Contraseña Temporal *</label
+                >
+                <input
+                  id="password"
+                  type="text"
+                  bind:value={formData.password}
+                  placeholder="Contraseña inicial para el usuario"
+                  disabled={loading}
+                  class={inputClass}
+                />
+                {#if errors.password}<p class={errorClass}>
+                    {errors.password}
+                  </p>{/if}
+              </div>
+            {/if}
           </div>
         </div>
 
@@ -464,6 +544,17 @@
           >
             Cancelar
           </button>
+
+          {#if isEditMode && $currentUser?.role === "admin"}
+            <button
+              type="button"
+              onclick={handleResetPasswordClick}
+              disabled={loading}
+              class="flex-1 py-2.5 px-4 rounded-md border border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+            >
+              Reset Password
+            </button>
+          {/if}
           <button
             type="submit"
             disabled={loading}
@@ -477,6 +568,84 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+{/if}
+
+<!-- Modales -->
+<AdminConfirmModal
+  isOpen={showAdminConfirm}
+  onConfirm={onAdminConfirm}
+  onCancel={() => (showAdminConfirm = false)}
+/>
+
+{#if showSuccessModal && generatedPassword}
+  <div
+    class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+  >
+    <div
+      class="w-full max-w-md bg-white dark:bg-[#0d1117] rounded-lg shadow-xl border border-green-200 dark:border-green-900/50 p-6 animate-scale-in"
+    >
+      <div class="text-center">
+        <div
+          class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 mb-4"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
+          >
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+          Contraseña Restablecida
+        </h3>
+        <p class="text-gray-500 dark:text-gray-400 text-sm mb-6">
+          La contraseña ha sido generada exitosamente. Por favor compártela con
+          el usuario.
+        </p>
+
+        <div
+          class="flex items-center justify-center gap-3 bg-gray-50 dark:bg-[#161b22] p-3 rounded-md border border-gray-200 dark:border-gray-700 mb-6"
+        >
+          <code
+            class="text-lg font-mono font-bold text-gray-900 dark:text-white tracking-wider"
+            >{generatedPassword}</code
+          >
+          <button
+            onclick={copyNewPassword}
+            class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+            title="Copiar"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path
+                d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
+              /></svg
+            >
+          </button>
+        </div>
+
+        <button
+          onclick={() => (showSuccessModal = false)}
+          class="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-medium py-2 rounded-md transition-colors border border-gray-200 dark:border-gray-700"
+        >
+          Cerrar
+        </button>
+      </div>
     </div>
   </div>
 {/if}
