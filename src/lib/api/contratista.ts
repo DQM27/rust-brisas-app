@@ -1,4 +1,8 @@
-// src/lib/api/contratistaApi.ts
+// ============================================
+// src/lib/api/contratista.ts
+// ============================================
+// API Layer para contratistas - Tauri invoke calls
+
 import { invoke } from "@tauri-apps/api/core";
 import type {
   ContratistaResponse,
@@ -7,36 +11,32 @@ import type {
   UpdateContratistaInput
 } from "$lib/types/contratista";
 
-// Nota: los nombres de comando (create_contratista, get_all_contratistas, etc.)
-// deben coincidir con los comandos que registraste en Rust (tauri::command).
+/**
+ * API object for contratista operations
+ * Follows the same pattern as users API
+ */
+export const contratistas = {
+  create: async (input: CreateContratistaInput): Promise<ContratistaResponse> => {
+    return await invoke<ContratistaResponse>("create_contratista", { input });
+  },
 
-export async function createContratista(
-  input: CreateContratistaInput
-): Promise<ContratistaResponse> {
-  return await invoke("create_contratista", { input });
-}
+  list: async (): Promise<ContratistaListResponse> => {
+    return await invoke<ContratistaListResponse>("get_all_contratistas");
+  },
 
-export async function listContratistas(): Promise<ContratistaListResponse> {
-  return await invoke("get_all_contratistas");
-}
+  getById: async (id: string): Promise<ContratistaResponse> => {
+    return await invoke<ContratistaResponse>("get_contratista", { id });
+  },
 
-export async function getContratista(id: string): Promise<ContratistaResponse> {
-  return await invoke("get_contratista", { id });
-}
+  update: async (id: string, input: UpdateContratistaInput): Promise<ContratistaResponse> => {
+    return await invoke<ContratistaResponse>("update_contratista", { id, input });
+  },
 
-export async function updateContratista(
-  input: UpdateContratistaInput
-): Promise<ContratistaResponse> {
-  return await invoke("update_contratista", { id: input.id, input });
-}
+  delete: async (id: string): Promise<boolean> => {
+    return await invoke<boolean>("delete_contratista", { id });
+  },
 
-export async function deleteContratista(id: string): Promise<boolean> {
-  return await invoke("delete_contratista", { id });
-}
-
-export async function changeEstadoContratista(
-  id: string,
-  estado: string
-): Promise<ContratistaResponse> {
-  return await invoke("cambiar_estado_contratista", { id, input: { id, estado } });
-}
+  changeEstado: async (id: string, estado: string): Promise<ContratistaResponse> => {
+    return await invoke<ContratistaResponse>("cambiar_estado_contratista", { id, input: { id, estado } });
+  },
+};

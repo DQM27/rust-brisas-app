@@ -1,13 +1,16 @@
 // ============================================
 // src/lib/logic/contratista/contratistaService.ts
 // ============================================
-// Servicio consolidado para contratista - reemplaza 6 archivos fragmentados
+// Servicio para gestión de contratistas
 
-import { listContratistas, createContratista, updateContratista, deleteContratista, getContratista, changeEstadoContratista } from '$lib/api/contratista';
-import { submitRegisterVehiculo } from '$lib/logic/vehiculo/submitRegisterVehiculo';
-import { validateVehiculoInput } from '$lib/logic/vehiculo/validateVehiculoInput';
-import { reindexAllContratistas } from '$lib/api/searchService';
-import type { ContratistaResponse, CreateContratistaInput, UpdateContratistaInput } from '$lib/types/contratista';
+import { contratistas } from '$lib/api/contratista';
+import type {
+    ContratistaResponse,
+    ContratistaListResponse,
+    CreateContratistaInput,
+    UpdateContratistaInput,
+    EstadoContratista
+} from '$lib/types/contratista';
 
 // ============================================
 // TYPES FOR RESULTS
@@ -18,74 +21,16 @@ export type ServiceResult<T> =
     | { ok: false; error: string };
 
 // ============================================
-// VALIDATION
-// ============================================
-
-type ValidationResult =
-    | { ok: true }
-    | { ok: false; message: string };
-
-function validateContratistaInput(
-    nombre: string,
-    apellido: string,
-    cedula: string,
-    empresaId: string,
-    fechaVencimientoPraind: string
-): ValidationResult {
-    const n = (nombre || '').trim();
-    const a = (apellido || '').trim();
-    const c = (cedula || '').trim();
-    const e = (empresaId || '').trim();
-    const f = (fechaVencimientoPraind || '').trim();
-
-    if (!n) return { ok: false, message: 'El nombre no puede estar vacío.' };
-    if (n.length > 60) return { ok: false, message: 'Nombre demasiado largo.' };
-
-    if (!a) return { ok: false, message: 'El apellido no puede estar vacío.' };
-    if (a.length > 60) return { ok: false, message: 'Apellido demasiado largo.' };
-
-    if (!c) return { ok: false, message: 'La cédula no puede estar vacía.' };
-    if (c.length > 20) return { ok: false, message: 'La cédula es demasiado larga.' };
-
-    if (!e) return { ok: false, message: 'Debe seleccionar una empresa.' };
-
-    if (!f) return { ok: false, message: 'Debe ingresar la fecha de vencimiento.' };
-
-    return { ok: true };
-}
-
-// ============================================
-// ERROR PARSING
-// ============================================
-
-function parseError(err: any): string {
-    if (!err) return 'Ocurrió un error desconocido.';
-
-    if (typeof err === 'string') {
-        if (/unique|cedula/i.test(err)) return 'Ya existe un contratista con esa cédula.';
-        return err;
-    }
-
-    if (typeof err === 'object') {
-        const msg = err.message ?? err.toString();
-        if (/unique|cedula/i.test(msg)) return 'Ya existe un contratista con esa cédula.';
-        return msg;
-    }
-
-    return 'Ocurrió un error inesperado.';
-}
-
-// ============================================
 // PUBLIC API - FETCH OPERATIONS
 // ============================================
 
 /**
  * Obtener todos los contratistas
  */
-export async function fetchAll(): Promise<ServiceResult<ContratistaResponse[]>> {
+export async function fetchAllContratistas(): Promise<ServiceResult<ContratistaListResponse>> {
     try {
-        const result = await listContratistas();
-        return { ok: true, data: result.contratistas };
+        const result = await contratistas.list();
+        return { ok: true, data: result };
     } catch (err: any) {
         console.error('Error al cargar contratistas:', err);
         return { ok: false, error: parseError(err) };
@@ -95,10 +40,10 @@ export async function fetchAll(): Promise<ServiceResult<ContratistaResponse[]>> 
 /**
  * Obtener solo contratistas activos
  */
-export async function fetchActivos(): Promise<ServiceResult<ContratistaResponse[]>> {
+export async function fetchActiveContratistas(): Promise<ServiceResult<ContratistaResponse[]>> {
     try {
-        const result = await listContratistas();
-        const activos = result.contratistas.filter(c => c.estado === "activo");
+        const result = await contratistas.list();
+        const activos = result.contratistas.filter(c => c.estado === 'activo');
         return { ok: true, data: activos };
     } catch (err: any) {
         console.error('Error al cargar contratistas activos:', err);
@@ -111,7 +56,7 @@ export async function fetchActivos(): Promise<ServiceResult<ContratistaResponse[
  */
 export async function fetchContratistaById(id: string): Promise<ServiceResult<ContratistaResponse>> {
     try {
-        const contratista = await getContratista(id);
+        const contratista = await contratistas.getById(id);
         return { ok: true, data: contratista };
     } catch (err: any) {
         console.error('Error al cargar contratista:', err);
@@ -124,67 +69,14 @@ export async function fetchContratistaById(id: string): Promise<ServiceResult<Co
 // ============================================
 
 /**
- * Registrar nuevo contratista (con validación y vehículo opcional)
+ * Crear nuevo contratista
  */
-export async function register(input: CreateContratistaInput): Promise<ServiceResult<ContratistaResponse>> {
-    const { nombre, apellido, cedula, empresaId, fechaVencimientoPraind, tieneVehiculo, tipoVehiculo, placa, marca, modelo, color } = input;
-
-    // 1. Validar contratista
-    const validation = validateContratistaInput(
-        nombre,
-        apellido,
-        cedula,
-        empresaId,
-        fechaVencimientoPraind
-    );
-
-    if (!validation.ok) {
-        return { ok: false, error: validation.message };
-    }
-
-    // 2. Si tiene vehículo, validar vehículo
-    if (tieneVehiculo) {
-        if (!tipoVehiculo) {
-            return { ok: false, error: 'Debe seleccionar un tipo de vehículo.' };
-        }
-
-        const vehiculoValidation = validateVehiculoInput(
-            tipoVehiculo,
-            placa || '',
-            marca
-        );
-
-        if (!vehiculoValidation.ok) {
-            return { ok: false, error: vehiculoValidation.message };
-        }
-    }
-
-    // 3. Crear contratista
+export async function createContratista(input: CreateContratistaInput): Promise<ServiceResult<ContratistaResponse>> {
     try {
-        const contratista = await createContratista(input);
-
-        // 4. Si tiene vehículo, registrarlo
-        if (tieneVehiculo && tipoVehiculo && placa) {
-            const vehiculoResult = await submitRegisterVehiculo({
-                contratistaId: contratista.id,
-                tipoVehiculo,
-                placa,
-                marca,
-                modelo,
-                color
-            });
-
-            if (!vehiculoResult.ok) {
-                return { ok: false, error: `Error al registrar vehículo: ${vehiculoResult.error}` };
-            }
-        }
-
-        // 5. Reindexar búsqueda (YA SE HACE EN EL BACKEND - ELIMINADO PARA EVITAR BLOQUEOS)
-        // await reindexAllContratistas(); 
-
+        const contratista = await contratistas.create(input);
         return { ok: true, data: contratista };
     } catch (err: any) {
-        console.error('Error al registrar contratista:', err);
+        console.error('Error al crear contratista:', err);
         return { ok: false, error: parseError(err) };
     }
 }
@@ -192,13 +84,9 @@ export async function register(input: CreateContratistaInput): Promise<ServiceRe
 /**
  * Actualizar contratista existente
  */
-export async function update(id: string, input: UpdateContratistaInput): Promise<ServiceResult<ContratistaResponse>> {
+export async function updateContratista(id: string, input: UpdateContratistaInput): Promise<ServiceResult<ContratistaResponse>> {
     try {
-        const contratista = await updateContratista(input);
-
-        // Reindexar búsqueda (YA SE HACE EN EL BACKEND)
-        // await reindexAllContratistas();
-
+        const contratista = await contratistas.update(id, input);
         return { ok: true, data: contratista };
     } catch (err: any) {
         console.error('Error al actualizar contratista:', err);
@@ -209,13 +97,9 @@ export async function update(id: string, input: UpdateContratistaInput): Promise
 /**
  * Eliminar contratista
  */
-export async function remove(id: string): Promise<ServiceResult<void>> {
+export async function deleteContratista(id: string): Promise<ServiceResult<void>> {
     try {
-        await deleteContratista(id);
-
-        // Reindexar búsqueda (YA SE HACE EN EL BACKEND)
-        // await reindexAllContratistas();
-
+        await contratistas.delete(id);
         return { ok: true, data: undefined };
     } catch (err: any) {
         console.error('Error al eliminar contratista:', err);
@@ -223,20 +107,12 @@ export async function remove(id: string): Promise<ServiceResult<void>> {
     }
 }
 
-// ============================================
-// COMPATIBILITY LAYER (para transición suave)
-// ============================================
-
 /**
- * Cambiar estado (Activo/Inactivo/Suspendido)
+ * Cambiar estado de contratista
  */
-export async function changeStatus(id: string, nuevoEstado: 'activo' | 'inactivo' | 'suspendido'): Promise<ServiceResult<ContratistaResponse>> {
+export async function changeEstado(id: string, nuevoEstado: EstadoContratista): Promise<ServiceResult<ContratistaResponse>> {
     try {
-        const contratista = await changeEstadoContratista(id, nuevoEstado);
-
-        // Reindexar búsqueda (YA SE HACE EN EL BACKEND)
-        // await reindexAllContratistas();
-
+        const contratista = await contratistas.changeEstado(id, nuevoEstado);
         return { ok: true, data: contratista };
     } catch (err: any) {
         console.error('Error al cambiar estado:', err);
@@ -244,40 +120,27 @@ export async function changeStatus(id: string, nuevoEstado: 'activo' | 'inactivo
     }
 }
 
-// Aliases para compatibilidad con código existente
-export const fetchAllContratistas = fetchAll;
-export const fetchActivosContratistas = fetchActivos;
-export const registerContratista = register;
+// ============================================
+// ERROR PARSING
+// ============================================
 
-// Alias para submitRegisterContratista (mantiene el mismo tipo de retorno)
-export async function submitRegisterContratista(
-    input: CreateContratistaInput
-): Promise<{ ok: true; contratista: ContratistaResponse } | { ok: false; error: string }> {
-    const result = await register(input);
-    if (result.ok) {
-        return { ok: true, contratista: result.data };
-    } else {
-        return { ok: false, error: result.error };
+function parseError(err: any): string {
+    if (!err) return 'Ocurrió un error desconocido.';
+
+    if (typeof err === 'string') {
+        if (/unique|cedula|duplicat/i.test(err)) return 'Ya existe un contratista con esa cédula.';
+        if (/empresa/i.test(err)) return 'La empresa seleccionada no es válida.';
+        if (/praind|vencimiento/i.test(err)) return 'Fecha de vencimiento PRAIND inválida.';
+        return err;
     }
-}
 
-// Alias para submitFetchAllContratistas
-export async function submitFetchAllContratistas(): Promise<{ ok: true; contratistas: ContratistaResponse[] } | { ok: false; error: string }> {
-    const result = await fetchAll();
-    if (result.ok) {
-        return { ok: true, contratistas: result.data };
-    } else {
-        return { ok: false, error: result.error };
+    if (typeof err === 'object') {
+        const msg = err.message ?? err.toString();
+        if (/unique|cedula|duplicat/i.test(msg)) return 'Ya existe un contratista con esa cédula.';
+        if (/empresa/i.test(msg)) return 'La empresa seleccionada no es válida.';
+        if (/failed/i.test(msg)) return 'Falló la operación en la base de datos.';
+        return msg;
     }
-}
 
-// Alias para submitFetchActiveContratistas
-export async function submitFetchActiveContratistas(): Promise<{ ok: true; contratistas: ContratistaResponse[] } | { ok: false; error: string }> {
-    const result = await fetchActivos();
-    if (result.ok) {
-        return { ok: true, contratistas: result.data };
-    } else {
-        return { ok: false, error: result.error };
-    }
+    return 'Ocurrió un error inesperado.';
 }
-
