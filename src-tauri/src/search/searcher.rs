@@ -3,6 +3,7 @@
 // ==========================================
 // Funciones para buscar en el índice de Tantivy
 
+use crate::search::errors::SearchError;
 use crate::search::schema::fields;
 use serde::{Deserialize, Serialize};
 use tantivy::collector::TopDocs;
@@ -27,30 +28,36 @@ pub struct SearchFields {
 impl SearchFields {
     pub fn new(schema: &Schema) -> Self {
         Self {
-            id: schema.get_field(fields::ID).expect("Falta campo id"),
-            tipo: schema.get_field(fields::TIPO).expect("Falta campo tipo"),
+            id: schema
+                .get_field(fields::ID)
+                .expect("Falta campo id en schema (debe validarse al inicio)"),
+            tipo: schema
+                .get_field(fields::TIPO)
+                .expect("Falta campo tipo en schema (debe validarse al inicio)"),
             cedula: schema
                 .get_field(fields::CEDULA)
-                .expect("Falta campo cedula"),
+                .expect("Falta campo cedula en schema (debe validarse al inicio)"),
             nombre: schema
                 .get_field(fields::NOMBRE)
-                .expect("Falta campo nombre"),
+                .expect("Falta campo nombre en schema (debe validarse al inicio)"),
             segundo_nombre: schema
                 .get_field(fields::SEGUNDO_NOMBRE)
-                .expect("Falta campo segundo_nombre"),
+                .expect("Falta campo segundo_nombre en schema (debe validarse al inicio)"),
             apellido: schema
                 .get_field(fields::APELLIDO)
-                .expect("Falta campo apellido"),
+                .expect("Falta campo apellido en schema (debe validarse al inicio)"),
             segundo_apellido: schema
                 .get_field(fields::SEGUNDO_APELLIDO)
-                .expect("Falta campo segundo_apellido"),
+                .expect("Falta campo segundo_apellido en schema (debe validarse al inicio)"),
             empresa_nombre: schema
                 .get_field(fields::EMPRESA_NOMBRE)
-                .expect("Falta campo empresa_nombre"),
-            email: schema.get_field(fields::EMAIL).expect("Falta campo email"),
+                .expect("Falta campo empresa_nombre en schema (debe validarse al inicio)"),
+            email: schema
+                .get_field(fields::EMAIL)
+                .expect("Falta campo email en schema (debe validarse al inicio)"),
             search_text: schema
                 .get_field(fields::SEARCH_TEXT)
-                .expect("Falta campo search_text"),
+                .expect("Falta campo search_text en schema (debe validarse al inicio)"),
         }
     }
 }
@@ -58,7 +65,7 @@ impl SearchFields {
 /// Resultado de búsqueda
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SearchResult {
+pub struct SearchResultDto {
     pub id: String,
     pub tipo: String,
     pub score: f32,
@@ -69,12 +76,12 @@ pub struct SearchResult {
 }
 
 /// Inicializa un reader para búsquedas
-pub fn get_index_reader(index: &Index) -> Result<IndexReader, String> {
+pub fn get_index_reader(index: &Index) -> Result<IndexReader, SearchError> {
     index
         .reader_builder()
         .reload_policy(ReloadPolicy::Manual)
         .try_into()
-        .map_err(|e| format!("Error al crear reader: {}", e))
+        .map_err(|e| SearchError::TantivyError(format!("Error al crear reader: {}", e)))
 }
 
 /// Busca en el índice con fuzzy search (Optimizado)
@@ -84,7 +91,7 @@ pub fn search_index(
     fields: &SearchFields, // Cache de campos inyectada
     query_str: &str,
     limit: usize,
-) -> Result<Vec<SearchResult>, String> {
+) -> Result<Vec<SearchResultDto>, SearchError> {
     let searcher = reader.searcher();
 
     // 1. Usar campos pre-calculated (Cero costo de lookup)
@@ -107,20 +114,22 @@ pub fn search_index(
     // Parsear query
     let query = query_parser
         .parse_query(query_str)
-        .map_err(|e| format!("Query inválido: {}", e))?;
+        .map_err(|e| SearchError::QueryError(format!("Query inválido: {}", e)))?;
 
     // Ejecutar búsqueda
     let top_docs = searcher
         .search(&query, &TopDocs::with_limit(limit))
-        .map_err(|e| format!("Error búsqueda: {}", e))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error búsqueda: {}", e)))?;
 
     let mut results = Vec::with_capacity(top_docs.len());
 
     for (score, doc_addr) in top_docs {
-        let doc: TantivyDocument = searcher.doc(doc_addr).map_err(|e| e.to_string())?;
+        let doc: TantivyDocument = searcher
+            .doc(doc_addr)
+            .map_err(|e| SearchError::TantivyError(e.to_string()))?;
 
         // 3. Extracción optimizada usando los IDs cacheados
-        results.push(SearchResult {
+        results.push(SearchResultDto {
             id: get_val(&doc, fields.id).unwrap_or_default(),
             tipo: get_val(&doc, fields.tipo).unwrap_or_default(),
             score,
@@ -141,7 +150,7 @@ pub fn search_contratistas(
     fields: &SearchFields, // Cache de campos inyectada
     query_str: &str,
     limit: usize,
-) -> Result<Vec<SearchResult>, String> {
+) -> Result<Vec<SearchResultDto>, SearchError> {
     // Agregar filtro de tipo
     let filtered_query = format!("({}) AND tipo:contratista", query_str);
     search_index(index, reader, fields, &filtered_query, limit)

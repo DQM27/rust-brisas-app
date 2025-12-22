@@ -3,6 +3,7 @@
 // ==========================================
 // Definición del schema de Tantivy
 
+use crate::search::errors::SearchError;
 use tantivy::schema::*;
 
 /// Crea el schema para el índice de búsqueda
@@ -63,41 +64,38 @@ pub struct FieldHandles {
 impl FieldHandles {
     /// Crea los handles desde el schema o retorna error descriptivo.
     /// Debe llamarse al inicializar el índice (fail-fast).
-    pub fn new(schema: &Schema) -> Result<Self, String> {
+    pub fn new(schema: &Schema) -> Result<Self, SearchError> {
         Ok(Self {
             id: schema
                 .get_field(fields::ID)
-                .map_err(|_| format!("Campo '{}' no encontrado en schema", fields::ID))?,
+                .map_err(|_| SearchError::FieldNotFound(fields::ID.to_string()))?,
             tipo: schema
                 .get_field(fields::TIPO)
-                .map_err(|_| format!("Campo '{}' no encontrado en schema", fields::TIPO))?,
+                .map_err(|_| SearchError::FieldNotFound(fields::TIPO.to_string()))?,
             cedula: schema
                 .get_field(fields::CEDULA)
-                .map_err(|_| format!("Campo '{}' no encontrado en schema", fields::CEDULA))?,
+                .map_err(|_| SearchError::FieldNotFound(fields::CEDULA.to_string()))?,
             nombre: schema
                 .get_field(fields::NOMBRE)
-                .map_err(|_| format!("Campo '{}' no encontrado en schema", fields::NOMBRE))?,
-            segundo_nombre: schema.get_field(fields::SEGUNDO_NOMBRE).map_err(|_| {
-                format!("Campo '{}' no encontrado en schema", fields::SEGUNDO_NOMBRE)
-            })?,
+                .map_err(|_| SearchError::FieldNotFound(fields::NOMBRE.to_string()))?,
+            segundo_nombre: schema
+                .get_field(fields::SEGUNDO_NOMBRE)
+                .map_err(|_| SearchError::FieldNotFound(fields::SEGUNDO_NOMBRE.to_string()))?,
             apellido: schema
                 .get_field(fields::APELLIDO)
-                .map_err(|_| format!("Campo '{}' no encontrado en schema", fields::APELLIDO))?,
-            segundo_apellido: schema.get_field(fields::SEGUNDO_APELLIDO).map_err(|_| {
-                format!(
-                    "Campo '{}' no encontrado en schema",
-                    fields::SEGUNDO_APELLIDO
-                )
-            })?,
-            empresa_nombre: schema.get_field(fields::EMPRESA_NOMBRE).map_err(|_| {
-                format!("Campo '{}' no encontrado en schema", fields::EMPRESA_NOMBRE)
-            })?,
+                .map_err(|_| SearchError::FieldNotFound(fields::APELLIDO.to_string()))?,
+            segundo_apellido: schema
+                .get_field(fields::SEGUNDO_APELLIDO)
+                .map_err(|_| SearchError::FieldNotFound(fields::SEGUNDO_APELLIDO.to_string()))?,
+            empresa_nombre: schema
+                .get_field(fields::EMPRESA_NOMBRE)
+                .map_err(|_| SearchError::FieldNotFound(fields::EMPRESA_NOMBRE.to_string()))?,
             email: schema
                 .get_field(fields::EMAIL)
-                .map_err(|_| format!("Campo '{}' no encontrado en schema", fields::EMAIL))?,
+                .map_err(|_| SearchError::FieldNotFound(fields::EMAIL.to_string()))?,
             search_text: schema
                 .get_field(fields::SEARCH_TEXT)
-                .map_err(|_| format!("Campo '{}' no encontrado en schema", fields::SEARCH_TEXT))?,
+                .map_err(|_| SearchError::FieldNotFound(fields::SEARCH_TEXT.to_string()))?,
         })
     }
 }

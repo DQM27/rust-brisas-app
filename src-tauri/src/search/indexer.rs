@@ -7,54 +7,57 @@ use crate::models::contratista::Contratista;
 use crate::models::lista_negra::ListaNegra;
 use crate::models::proveedor::Proveedor;
 use crate::models::user::User;
+use crate::search::errors::SearchError;
 use crate::search::schema::{build_search_schema, fields, FieldHandles};
 use std::path::Path;
 use tantivy::schema::Schema;
 use tantivy::{Index, IndexWriter, TantivyDocument};
 
 /// Inicializa el índice de Tantivy
-pub fn initialize_index(index_path: &Path) -> Result<Index, String> {
+pub fn initialize_index(index_path: &Path) -> Result<Index, SearchError> {
     let schema = build_search_schema();
 
     // Crear o abrir índice existente
     if index_path.exists() {
-        let index =
-            Index::open_in_dir(index_path).map_err(|e| format!("Error al abrir índice: {}", e))?;
+        let index = Index::open_in_dir(index_path)
+            .map_err(|e| SearchError::TantivyError(format!("Error al abrir índice: {}", e)))?;
 
         // Verificar si existe el campo "email" (indicador simple de migración)
         if index.schema().get_field(fields::EMAIL).is_err() {
             // Intentar eliminar directorio
-            std::fs::remove_dir_all(index_path)
-                .map_err(|e| format!("Error al eliminar índice obsoleto: {}", e))?;
-            std::fs::create_dir_all(index_path)
-                .map_err(|e| format!("Error al crear directorio de índice: {}", e))?;
+            std::fs::remove_dir_all(index_path).map_err(|e| {
+                SearchError::IoError(format!("Error al eliminar índice obsoleto: {}", e))
+            })?;
+            std::fs::create_dir_all(index_path).map_err(|e| {
+                SearchError::IoError(format!("Error al crear directorio de índice: {}", e))
+            })?;
 
             Index::create_in_dir(index_path, schema)
-                .map_err(|e| format!("Error al crear índice: {}", e))
+                .map_err(|e| SearchError::TantivyError(format!("Error al crear índice: {}", e)))
         } else {
             Ok(index)
         }
     } else {
-        std::fs::create_dir_all(index_path)
-            .map_err(|e| format!("Error al crear directorio de índice: {}", e))?;
+        std::fs::create_dir_all(index_path).map_err(|e| {
+            SearchError::IoError(format!("Error al crear directorio de índice: {}", e))
+        })?;
 
         Index::create_in_dir(index_path, schema)
-            .map_err(|e| format!("Error al crear índice: {}", e))
+            .map_err(|e| SearchError::TantivyError(format!("Error al crear índice: {}", e)))
     }
 }
 
 /// Crea los FieldHandles desde el schema del índice.
-/// Debe llamarse una vez al inicializar y pasarse a las funciones de indexación.
-pub fn create_field_handles(schema: &Schema) -> Result<FieldHandles, String> {
+pub fn create_field_handles(schema: &Schema) -> Result<FieldHandles, SearchError> {
     FieldHandles::new(schema)
 }
 
 /// Obtiene un writer para el índice
-pub fn get_index_writer(index: &Index) -> Result<IndexWriter, String> {
+pub fn get_index_writer(index: &Index) -> Result<IndexWriter, SearchError> {
     // Budget ajustado a 15MB (Mínimo requerido por Tantivy)
     index
         .writer(15_000_000)
-        .map_err(|e| format!("Error al crear writer: {}", e))
+        .map_err(|e| SearchError::TantivyError(format!("Error al crear writer: {}", e)))
 }
 
 /// Indexa un contratista con su nombre de empresa
@@ -63,7 +66,7 @@ pub fn index_contratista(
     handles: &FieldHandles,
     contratista: &Contratista,
     empresa_nombre: &str,
-) -> Result<(), String> {
+) -> Result<(), SearchError> {
     // Construir texto de búsqueda concatenado
     let mut search_text_parts = vec![
         contratista.cedula.clone(),
@@ -105,7 +108,7 @@ pub fn index_contratista(
     // Agregar al índice
     writer
         .add_document(doc)
-        .map_err(|e| format!("Error al agregar documento: {}", e))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar documento: {}", e)))?;
 
     Ok(())
 }
@@ -115,7 +118,7 @@ pub fn index_user(
     writer: &mut IndexWriter,
     handles: &FieldHandles,
     user: &User,
-) -> Result<(), String> {
+) -> Result<(), SearchError> {
     // Construir texto de búsqueda concatenado
     let mut search_text_parts = vec![
         user.cedula.clone(),
@@ -157,7 +160,7 @@ pub fn index_user(
     // Agregar al índice
     writer
         .add_document(doc)
-        .map_err(|e| format!("Error al agregar usuario: {}", e))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar usuario: {}", e)))?;
 
     Ok(())
 }
@@ -167,7 +170,7 @@ pub fn delete_from_index(
     writer: &mut IndexWriter,
     handles: &FieldHandles,
     id: &str,
-) -> Result<(), String> {
+) -> Result<(), SearchError> {
     let term = tantivy::Term::from_field_text(handles.id, id);
     writer.delete_term(term);
     Ok(())
@@ -179,13 +182,9 @@ pub fn update_contratista_in_index(
     handles: &FieldHandles,
     contratista: &Contratista,
     empresa_nombre: &str,
-) -> Result<(), String> {
-    // Eliminar el documento viejo
+) -> Result<(), SearchError> {
     delete_from_index(writer, handles, &contratista.id)?;
-
-    // Agregar el documento actualizado
     index_contratista(writer, handles, contratista, empresa_nombre)?;
-
     Ok(())
 }
 
@@ -194,21 +193,17 @@ pub fn update_user_in_index(
     writer: &mut IndexWriter,
     handles: &FieldHandles,
     user: &User,
-) -> Result<(), String> {
-    // Eliminar el documento viejo
+) -> Result<(), SearchError> {
     delete_from_index(writer, handles, &user.id)?;
-
-    // Agregar el documento actualizado
     index_user(writer, handles, user)?;
-
     Ok(())
 }
 
 /// Commit de los cambios al índice
-pub fn commit_index(writer: &mut IndexWriter) -> Result<(), String> {
+pub fn commit_index(writer: &mut IndexWriter) -> Result<(), SearchError> {
     writer
         .commit()
-        .map_err(|e| format!("Error al hacer commit: {}", e))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error al hacer commit: {}", e)))?;
     Ok(())
 }
 
@@ -217,7 +212,7 @@ pub fn index_lista_negra(
     writer: &mut IndexWriter,
     handles: &FieldHandles,
     lista_negra: &ListaNegra,
-) -> Result<(), String> {
+) -> Result<(), SearchError> {
     // Construir texto de búsqueda concatenado
     let mut search_text_parts = vec![
         lista_negra.cedula.clone(),
@@ -257,7 +252,7 @@ pub fn index_lista_negra(
 
     writer
         .add_document(doc)
-        .map_err(|e| format!("Error al agregar lista negra: {}", e))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar lista negra: {}", e)))?;
 
     Ok(())
 }
@@ -267,7 +262,7 @@ pub fn update_lista_negra_in_index(
     writer: &mut IndexWriter,
     handles: &FieldHandles,
     lista_negra: &ListaNegra,
-) -> Result<(), String> {
+) -> Result<(), SearchError> {
     delete_from_index(writer, handles, &lista_negra.id)?;
     index_lista_negra(writer, handles, lista_negra)?;
     Ok(())
@@ -279,7 +274,7 @@ pub fn index_proveedor(
     handles: &FieldHandles,
     proveedor: &Proveedor,
     empresa_nombre: &str,
-) -> Result<(), String> {
+) -> Result<(), SearchError> {
     // Construir texto de búsqueda concatenado
     let mut search_text_parts = vec![
         proveedor.cedula.clone(),
@@ -321,7 +316,7 @@ pub fn index_proveedor(
     // Agregar al índice
     writer
         .add_document(doc)
-        .map_err(|e| format!("Error al agregar proveedor: {}", e))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar proveedor: {}", e)))?;
 
     Ok(())
 }
@@ -332,7 +327,7 @@ pub fn update_proveedor_in_index(
     handles: &FieldHandles,
     proveedor: &Proveedor,
     empresa_nombre: &str,
-) -> Result<(), String> {
+) -> Result<(), SearchError> {
     delete_from_index(writer, handles, &proveedor.id)?;
     index_proveedor(writer, handles, proveedor, empresa_nombre)?;
     Ok(())
