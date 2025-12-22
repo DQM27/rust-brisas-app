@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        INSERT INTO citas (id, visitante_id, fecha_cita, anfitrion, area_visitada, motivo, estado, registrado_por, created_at, updated_at)\n        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": []
+  },
+  "hash": "ed51be8178ec676bca6b352e5ec2f30d5f6074fb3ab6e5b8a374e26f6649e7ac"
+}

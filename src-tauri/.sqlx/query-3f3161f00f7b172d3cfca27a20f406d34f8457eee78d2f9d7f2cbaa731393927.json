@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        UPDATE citas SET estado = 'COMPLETADA', updated_at = ? WHERE id = ?\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "3f3161f00f7b172d3cfca27a20f406d34f8457eee78d2f9d7f2cbaa731393927"
+}

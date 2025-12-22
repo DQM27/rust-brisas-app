@@ -1,3 +1,6 @@
+// src/db/cita_queries.rs
+// Strict Mode: Uso de query! para validación en tiempo de compilación
+
 use crate::domain::cita::{Cita, CitaPopulated, CreateCitaInput};
 use chrono::Utc;
 use sqlx::SqlitePool;
@@ -8,22 +11,22 @@ pub async fn create_cita(pool: &SqlitePool, input: CreateCitaInput) -> Result<Ci
     let now = Utc::now().to_rfc3339();
     let estado = "PENDIENTE";
 
-    sqlx::query(
+    sqlx::query!(
         r#"
         INSERT INTO citas (id, visitante_id, fecha_cita, anfitrion, area_visitada, motivo, estado, registrado_por, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        "#
+        "#,
+        id,
+        input.visitante_id,
+        input.fecha_cita,
+        input.anfitrion,
+        input.area_visitada,
+        input.motivo,
+        estado,
+        input.registrado_por,
+        now,
+        now
     )
-    .bind(&id)
-    .bind(&input.visitante_id)
-    .bind(&input.fecha_cita)
-    .bind(&input.anfitrion)
-    .bind(&input.area_visitada)
-    .bind(&input.motivo)
-    .bind(estado)
-    .bind(&input.registrado_por)
-    .bind(&now)
-    .bind(&now)
     .execute(pool)
     .await?;
 
@@ -48,48 +51,97 @@ pub async fn get_citas_pendientes_del_dia(
     let fecha_inicio = format!("{}T00:00:00", fecha);
     let fecha_fin = format!("{}T23:59:59", fecha);
 
-    sqlx::query_as::<_, CitaPopulated>(
+    let rows = sqlx::query!(
         r#"
         SELECT 
-            c.id, c.fecha_cita, c.anfitrion, c.area_visitada, c.motivo, c.estado,
-            v.id as visitante_id, v.cedula as visitante_cedula, v.nombre as visitante_nombre, v.apellido as visitante_apellido,
-            (v.nombre || ' ' || v.apellido) as visitante_nombre_completo,
+            c.id as "id!",
+            c.fecha_cita as "fecha_cita!",
+            c.anfitrion as "anfitrion!",
+            c.area_visitada as "area_visitada!",
+            c.motivo,
+            c.estado as "estado!",
+            v.id as "visitante_id!",
+            v.cedula as "visitante_cedula!",
+            v.nombre as "visitante_nombre!",
+            v.apellido as "visitante_apellido!",
+            (v.nombre || ' ' || v.apellido) as "visitante_nombre_completo!",
             v.empresa as visitante_empresa
         FROM citas c
         JOIN visitantes v ON c.visitante_id = v.id
         WHERE c.estado = 'PENDIENTE'
         AND c.fecha_cita BETWEEN ? AND ?
         ORDER BY c.fecha_cita ASC
-        "#
+        "#,
+        fecha_inicio,
+        fecha_fin
     )
-    .bind(fecha_inicio)
-    .bind(fecha_fin)
     .fetch_all(pool)
-    .await
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| CitaPopulated {
+            id: r.id,
+            fecha_cita: r.fecha_cita,
+            anfitrion: r.anfitrion,
+            area_visitada: r.area_visitada,
+            motivo: r.motivo,
+            estado: r.estado,
+            visitante_id: r.visitante_id,
+            visitante_cedula: r.visitante_cedula,
+            visitante_nombre: r.visitante_nombre,
+            visitante_apellido: r.visitante_apellido,
+            visitante_nombre_completo: r.visitante_nombre_completo,
+            visitante_empresa: r.visitante_empresa,
+        })
+        .collect())
 }
 
 pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<Option<Cita>, sqlx::Error> {
-    sqlx::query_as::<_, Cita>(
+    let row = sqlx::query!(
         r#"
-        SELECT id, visitante_id, fecha_cita, anfitrion, area_visitada, motivo, estado, registrado_por, created_at, updated_at
+        SELECT 
+            id as "id!",
+            visitante_id as "visitante_id!",
+            fecha_cita as "fecha_cita!",
+            anfitrion as "anfitrion!",
+            area_visitada as "area_visitada!",
+            motivo,
+            estado as "estado!",
+            registrado_por as "registrado_por!",
+            created_at as "created_at!",
+            updated_at as "updated_at!"
         FROM citas
         WHERE id = ?
-        "#
+        "#,
+        id
     )
-    .bind(id)
     .fetch_optional(pool)
-    .await
+    .await?;
+
+    Ok(row.map(|r| Cita {
+        id: r.id,
+        visitante_id: r.visitante_id,
+        fecha_cita: r.fecha_cita,
+        anfitrion: r.anfitrion,
+        area_visitada: r.area_visitada,
+        motivo: r.motivo,
+        estado: r.estado,
+        registrado_por: r.registrado_por,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+    }))
 }
 
 pub async fn marcar_cita_completada(pool: &SqlitePool, cita_id: &str) -> Result<(), sqlx::Error> {
     let now = Utc::now().to_rfc3339();
-    sqlx::query(
+    sqlx::query!(
         r#"
         UPDATE citas SET estado = 'COMPLETADA', updated_at = ? WHERE id = ?
         "#,
+        now,
+        cita_id
     )
-    .bind(now)
-    .bind(cita_id)
     .execute(pool)
     .await?;
     Ok(())
@@ -101,23 +153,49 @@ pub async fn get_all_citas_pendientes(
 ) -> Result<Vec<CitaPopulated>, sqlx::Error> {
     let today = Utc::now().format("%Y-%m-%dT00:00:00").to_string();
 
-    sqlx::query_as::<_, CitaPopulated>(
+    let rows = sqlx::query!(
         r#"
         SELECT 
-            c.id, c.fecha_cita, c.anfitrion, c.area_visitada, c.motivo, c.estado,
-            v.id as visitante_id, v.cedula as visitante_cedula, v.nombre as visitante_nombre, v.apellido as visitante_apellido,
-            (v.nombre || ' ' || v.apellido) as visitante_nombre_completo,
+            c.id as "id!",
+            c.fecha_cita as "fecha_cita!",
+            c.anfitrion as "anfitrion!",
+            c.area_visitada as "area_visitada!",
+            c.motivo,
+            c.estado as "estado!",
+            v.id as "visitante_id!",
+            v.cedula as "visitante_cedula!",
+            v.nombre as "visitante_nombre!",
+            v.apellido as "visitante_apellido!",
+            (v.nombre || ' ' || v.apellido) as "visitante_nombre_completo!",
             v.empresa as visitante_empresa
         FROM citas c
         JOIN visitantes v ON c.visitante_id = v.id
         WHERE c.estado = 'PENDIENTE'
         AND c.fecha_cita >= ?
         ORDER BY c.fecha_cita ASC
-        "#
+        "#,
+        today
     )
-    .bind(today)
     .fetch_all(pool)
-    .await
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| CitaPopulated {
+            id: r.id,
+            fecha_cita: r.fecha_cita,
+            anfitrion: r.anfitrion,
+            area_visitada: r.area_visitada,
+            motivo: r.motivo,
+            estado: r.estado,
+            visitante_id: r.visitante_id,
+            visitante_cedula: r.visitante_cedula,
+            visitante_nombre: r.visitante_nombre,
+            visitante_apellido: r.visitante_apellido,
+            visitante_nombre_completo: r.visitante_nombre_completo,
+            visitante_empresa: r.visitante_empresa,
+        })
+        .collect())
 }
 
 /// Actualiza los detalles de una cita pendiente
@@ -131,19 +209,19 @@ pub async fn update_cita(
 ) -> Result<(), sqlx::Error> {
     let now = Utc::now().to_rfc3339();
 
-    sqlx::query(
+    sqlx::query!(
         r#"
         UPDATE citas 
         SET fecha_cita = ?, anfitrion = ?, area_visitada = ?, motivo = ?, updated_at = ?
         WHERE id = ? AND estado = 'PENDIENTE'
         "#,
+        fecha_cita,
+        anfitrion,
+        area_visitada,
+        motivo,
+        now,
+        id
     )
-    .bind(fecha_cita)
-    .bind(anfitrion)
-    .bind(area_visitada)
-    .bind(motivo)
-    .bind(&now)
-    .bind(id)
     .execute(pool)
     .await?;
 
