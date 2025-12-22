@@ -74,7 +74,14 @@ pub fn run() {
             let session_state = services::session::SessionState::new();
 
             tauri::Builder::default()
-                .plugin(tauri_plugin_log::Builder::new().build()) // Logging Plugin
+                .plugin(
+                    tauri_plugin_log::Builder::new()
+                        .level(log::LevelFilter::Info) // Solo INFO, WARN, ERROR
+                        .level_for("zbus", log::LevelFilter::Warn) // Silenciar D-Bus spam
+                        .level_for("tantivy", log::LevelFilter::Warn) // Silenciar Tantivy spam
+                        .level_for("tracing", log::LevelFilter::Warn) // Silenciar tracing spans
+                        .build(),
+                ) // Logging Plugin
                 .manage(pool)
                 .manage(app_config)
                 .manage(search_service)

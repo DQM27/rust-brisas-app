@@ -336,6 +336,7 @@
               type="button"
               role="switch"
               aria-checked={formData.tieneVehiculo}
+              aria-label="Agregar vehículo"
               onclick={() => (formData.tieneVehiculo = !formData.tieneVehiculo)}
               class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#2da44e] {formData.tieneVehiculo
                 ? 'bg-[#2da44e]'
