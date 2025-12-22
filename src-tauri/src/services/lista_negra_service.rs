@@ -6,6 +6,7 @@
 
 use crate::db::contratista_queries;
 use crate::db::lista_negra_queries as db;
+use crate::domain::errors::ListaNegraError;
 use crate::domain::lista_negra as domain;
 use crate::models::lista_negra::{
     AddToListaNegraInput, BlockCheckResponse, ListaNegraListResponse, ListaNegraResponse,
@@ -25,34 +26,34 @@ pub async fn add_to_lista_negra(
     pool: &SqlitePool,
     search_service: &Arc<SearchService>,
     input: AddToListaNegraInput,
-) -> Result<ListaNegraResponse, String> {
+) -> Result<ListaNegraResponse, ListaNegraError> {
     // 1. Validar input
-    domain::validar_add_input(&input)?;
+    domain::validar_add_input(&input).map_err(ListaNegraError::Validation)?;
 
-    // 2. Determinar datos según si tiene o no contratista_id
     // 2. Determinar datos según si tiene o no contratista_id
     let (contratista_id, cedula, nombre, segundo_nombre, apellido, segundo_apellido) =
         if let Some(ref cid) = input.contratista_id {
             // Caso 1: Tiene contratista_id - traer datos de la BD
             let (c, n, sn, a, sa) = contratista_queries::get_basic_data(pool, cid)
                 .await
-                .map_err(|e| e.to_string())?
-                .ok_or_else(|| "Contratista no encontrado".to_string())?;
+                .map_err(ListaNegraError::Database)?
+                .ok_or_else(|| {
+                    ListaNegraError::Validation("Contratista no encontrado".to_string())
+                })?;
             (Some(cid.clone()), c, n, sn, a, sa)
         } else {
             // Caso 2: Registro manual - usar datos proporcionados
-            let cedula = input
-                .cedula
-                .clone()
-                .ok_or_else(|| "Cédula es requerida para registro manual".to_string())?;
-            let nombre = input
-                .nombre
-                .clone()
-                .ok_or_else(|| "Nombre es requerido para registro manual".to_string())?;
-            let apellido = input
-                .apellido
-                .clone()
-                .ok_or_else(|| "Apellido es requerido para registro manual".to_string())?;
+            let cedula = input.cedula.clone().ok_or_else(|| {
+                ListaNegraError::Validation("Cédula es requerida para registro manual".to_string())
+            })?;
+            let nombre = input.nombre.clone().ok_or_else(|| {
+                ListaNegraError::Validation("Nombre es requerido para registro manual".to_string())
+            })?;
+            let apellido = input.apellido.clone().ok_or_else(|| {
+                ListaNegraError::Validation(
+                    "Apellido es requerido para registro manual".to_string(),
+                )
+            })?;
             (
                 None,
                 cedula,
@@ -66,13 +67,9 @@ pub async fn add_to_lista_negra(
     // 3. Verificar que no exista ya un bloqueo activo para esta cédula
     let count = db::count_active_by_cedula(pool, &cedula).await?;
     if count > 0 {
-        return Err(format!(
-            "La persona con cédula {} ya está en la lista negra",
-            cedula
-        ));
+        return Err(ListaNegraError::AlreadyExists);
     }
 
-    // 4. Normalizar datos
     // 4. Normalizar datos
     let cedula_normalizada = domain::normalizar_texto(&cedula);
     let nombre_normalizado = domain::normalizar_texto(&nombre);
@@ -140,29 +137,30 @@ pub async fn add_to_lista_negra(
 pub async fn get_lista_negra_by_id(
     pool: &SqlitePool,
     id: &str,
-) -> Result<ListaNegraResponse, String> {
+) -> Result<ListaNegraResponse, ListaNegraError> {
     // Obtener bloqueo de DB
-    let lista_negra = db::find_by_id(pool, id).await?;
+    let lista_negra = db::find_by_id(pool, id).await.map_err(|e| match e {
+        sqlx::Error::RowNotFound => ListaNegraError::NotFound,
+        _ => ListaNegraError::Database(e),
+    })?;
 
     // Construir response
     let mut response = ListaNegraResponse::from(lista_negra.clone());
 
     // Si tiene contratista_id, obtener nombre de empresa
     if let Some(ref contratista_id) = lista_negra.contratista_id {
-        let row = sqlx::query(
+        let row = sqlx::query!(
             r#"SELECT e.nombre as empresa_nombre
                FROM contratistas c
                INNER JOIN empresas e ON c.empresa_id = e.id
                WHERE c.id = ?"#,
+            contratista_id
         )
-        .bind(contratista_id)
         .fetch_optional(pool)
-        .await
-        .map_err(|e| format!("Error al obtener datos de empresa: {}", e))?;
+        .await?;
 
         if let Some(row) = row {
-            use sqlx::Row;
-            response.empresa_nombre = row.get("empresa_nombre");
+            response.empresa_nombre = Some(row.empresa_nombre);
         }
     }
 
@@ -173,7 +171,9 @@ pub async fn get_lista_negra_by_id(
 // OBTENER TODOS
 // ==========================================
 
-pub async fn get_all_lista_negra(pool: &SqlitePool) -> Result<ListaNegraListResponse, String> {
+pub async fn get_all_lista_negra(
+    pool: &SqlitePool,
+) -> Result<ListaNegraListResponse, ListaNegraError> {
     let bloqueados_db = db::find_all(pool).await?;
 
     // Obtener datos de empresa para cada uno que tenga contratista_id
@@ -183,20 +183,20 @@ pub async fn get_all_lista_negra(pool: &SqlitePool) -> Result<ListaNegraListResp
         let mut response = ListaNegraResponse::from(lista_negra.clone());
 
         if let Some(ref contratista_id) = lista_negra.contratista_id {
-            let row = sqlx::query(
+            // Nota: Podriamos optimizar esto con un JOIN en la query principal de find_all
+            // Pero por ahora mantenemos logica simple
+            let row = sqlx::query!(
                 r#"SELECT e.nombre as empresa_nombre
                    FROM contratistas c
                    INNER JOIN empresas e ON c.empresa_id = e.id
                    WHERE c.id = ?"#,
+                contratista_id
             )
-            .bind(contratista_id)
             .fetch_optional(pool)
-            .await
-            .map_err(|e| format!("Error al obtener datos de empresa: {}", e))?;
+            .await?;
 
             if let Some(row) = row {
-                use sqlx::Row;
-                response.empresa_nombre = row.get("empresa_nombre");
+                response.empresa_nombre = Some(row.empresa_nombre);
             }
         }
 
@@ -228,7 +228,9 @@ pub async fn get_all_lista_negra(pool: &SqlitePool) -> Result<ListaNegraListResp
 // OBTENER ACTIVOS
 // ==========================================
 
-pub async fn get_lista_negra_activos(pool: &SqlitePool) -> Result<Vec<ListaNegraResponse>, String> {
+pub async fn get_lista_negra_activos(
+    pool: &SqlitePool,
+) -> Result<Vec<ListaNegraResponse>, ListaNegraError> {
     let bloqueados_db = db::find_activos(pool).await?;
 
     let mut bloqueados = Vec::new();
@@ -237,20 +239,18 @@ pub async fn get_lista_negra_activos(pool: &SqlitePool) -> Result<Vec<ListaNegra
         let mut response = ListaNegraResponse::from(lista_negra.clone());
 
         if let Some(ref contratista_id) = lista_negra.contratista_id {
-            let row = sqlx::query(
+            let row = sqlx::query!(
                 r#"SELECT e.nombre as empresa_nombre
                    FROM contratistas c
                    INNER JOIN empresas e ON c.empresa_id = e.id
                    WHERE c.id = ?"#,
+                contratista_id
             )
-            .bind(contratista_id)
             .fetch_optional(pool)
-            .await
-            .map_err(|e| format!("Error al obtener datos de empresa: {}", e))?;
+            .await?;
 
             if let Some(row) = row {
-                use sqlx::Row;
-                response.empresa_nombre = row.get("empresa_nombre");
+                response.empresa_nombre = Some(row.empresa_nombre);
             }
         }
 
@@ -267,7 +267,7 @@ pub async fn get_lista_negra_activos(pool: &SqlitePool) -> Result<Vec<ListaNegra
 pub async fn check_is_blocked(
     pool: &SqlitePool,
     cedula: String,
-) -> Result<BlockCheckResponse, String> {
+) -> Result<BlockCheckResponse, ListaNegraError> {
     let lista_negra_opt = db::find_active_by_cedula(pool, &cedula).await?;
 
     if let Some(lista_negra) = lista_negra_opt {
@@ -296,27 +296,25 @@ pub async fn check_is_blocked(
 pub async fn get_blocked_by_cedula(
     pool: &SqlitePool,
     cedula: String,
-) -> Result<Option<ListaNegraResponse>, String> {
+) -> Result<Option<ListaNegraResponse>, ListaNegraError> {
     let lista_negra_opt = db::find_active_by_cedula(pool, &cedula).await?;
 
     if let Some(lista_negra) = lista_negra_opt {
         let mut response = ListaNegraResponse::from(lista_negra.clone());
 
         if let Some(ref contratista_id) = lista_negra.contratista_id {
-            let row = sqlx::query(
+            let row = sqlx::query!(
                 r#"SELECT e.nombre as empresa_nombre
                    FROM contratistas c
                    INNER JOIN empresas e ON c.empresa_id = e.id
                    WHERE c.id = ?"#,
+                contratista_id
             )
-            .bind(contratista_id)
             .fetch_optional(pool)
-            .await
-            .map_err(|e| format!("Error al obtener datos de empresa: {}", e))?;
+            .await?;
 
             if let Some(row) = row {
-                use sqlx::Row;
-                response.empresa_nombre = row.get("empresa_nombre");
+                response.empresa_nombre = Some(row.empresa_nombre);
             }
         }
 
@@ -336,9 +334,12 @@ pub async fn remove_from_lista_negra(
     id: String,
     motivo: String,
     observacion: Option<String>,
-) -> Result<ListaNegraResponse, String> {
+) -> Result<ListaNegraResponse, ListaNegraError> {
     // 1. Verificar que existe antes de desactivar
-    let _ = db::find_by_id(pool, &id).await?;
+    let _ = db::find_by_id(pool, &id).await.map_err(|e| match e {
+        sqlx::Error::RowNotFound => ListaNegraError::NotFound,
+        _ => ListaNegraError::Database(e),
+    })?;
 
     // 2. Normalizar datos
     let motivo_normalizado = domain::normalizar_texto(&motivo);
@@ -387,13 +388,18 @@ pub async fn reactivate_lista_negra(
     motivo_bloqueo: String,
     observaciones: Option<String>,
     bloqueado_por: String,
-) -> Result<ListaNegraResponse, String> {
+) -> Result<ListaNegraResponse, ListaNegraError> {
     // 1. Verificar que existe
-    let registro = db::find_by_id(pool, &id).await?;
+    let registro = db::find_by_id(pool, &id).await.map_err(|e| match e {
+        sqlx::Error::RowNotFound => ListaNegraError::NotFound,
+        _ => ListaNegraError::Database(e),
+    })?;
 
     // 2. Verificar que esté desactivado
     if registro.is_active {
-        return Err("La persona ya está bloqueada actualmente".to_string());
+        // En lugar de String, usamos Validation o AlreadyExists (contextual)
+        // AlreadyExists = "Ya está en lista negra (activo)"
+        return Err(ListaNegraError::AlreadyExists);
     }
 
     // 3. Normalizar datos
@@ -443,12 +449,15 @@ pub async fn update_lista_negra(
     search_service: &Arc<SearchService>,
     id: String,
     input: UpdateListaNegraInput,
-) -> Result<ListaNegraResponse, String> {
+) -> Result<ListaNegraResponse, ListaNegraError> {
     // 1. Validar input
-    domain::validar_update_input(&input)?;
+    domain::validar_update_input(&input).map_err(ListaNegraError::Validation)?;
 
     // 2. Verificar que existe
-    let _ = db::find_by_id(pool, &id).await?;
+    let _ = db::find_by_id(pool, &id).await.map_err(|e| match e {
+        sqlx::Error::RowNotFound => ListaNegraError::NotFound,
+        _ => ListaNegraError::Database(e),
+    })?;
 
     // 3. Normalizar datos si vienen
     let motivo_normalizado = input
@@ -502,14 +511,17 @@ pub async fn delete_lista_negra(
     pool: &SqlitePool,
     search_service: &Arc<SearchService>,
     id: String,
-) -> Result<(), String> {
-    // Verificar que existe antes de eliminar
-    let _ = db::find_by_id(pool, &id).await?;
+) -> Result<(), ListaNegraError> {
+    // 1. Verificar existencia
+    let _ = db::find_by_id(pool, &id).await.map_err(|e| match e {
+        sqlx::Error::RowNotFound => ListaNegraError::NotFound,
+        _ => ListaNegraError::Database(e),
+    })?;
 
-    // Eliminar de DB
+    // 2. Eliminar de DB
     db::delete(pool, &id).await?;
 
-    // Eliminar del índice
+    // 3. Eliminar de índice
     if let Err(e) = search_service.delete_lista_negra(&id).await {
         eprintln!("⚠️ Error al eliminar lista negra del índice {}: {}", id, e);
     }

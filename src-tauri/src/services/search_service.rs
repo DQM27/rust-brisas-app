@@ -70,7 +70,9 @@ impl SearchService {
             .map_err(|e| e.to_string())?;
 
         // Obtener todos los registros de lista negra
-        let lista_negra = lista_negra_queries::find_all(pool).await?;
+        let lista_negra = lista_negra_queries::find_all(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
         // Obtener todos los proveedores
         let proveedores = proveedor_queries::find_all_with_empresa(pool).await?;

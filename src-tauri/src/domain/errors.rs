@@ -140,3 +140,19 @@ pub enum GafeteError {
     #[error("Error de validación: {0}")]
     Validation(String),
 }
+
+// ==========================================
+// LISTA NEGRA ERRORS
+// ==========================================
+
+#[derive(Error, Debug)]
+pub enum ListaNegraError {
+    #[error("Registro no encontrado")]
+    NotFound,
+    #[error("La persona ya está en la lista negra")]
+    AlreadyExists,
+    #[error("Error de base de datos: {0}")]
+    Database(#[from] sqlx::Error),
+    #[error("Error de validación: {0}")]
+    Validation(String),
+}

@@ -1,0 +1,239 @@
+   Compiling ring v0.17.14
+   Compiling zstd-sys v2.0.16+zstd.1.5.7
+   Compiling libsqlite3-sys v0.27.0
+   Compiling psm v0.1.28
+   Compiling stacker v0.1.22
+   Compiling libmimalloc-sys v0.1.44
+    Checking typst-eval v0.14.0
+    Checking mimalloc v0.1.48
+    Checking typst v0.14.0
+   Compiling rustls v0.21.12
+   Compiling rustls v0.23.35
+    Checking rustls-webpki v0.103.8
+    Checking sct v0.7.1
+    Checking rustls-webpki v0.101.7
+    Checking tokio-rustls v0.26.4
+    Checking sqlx-core v0.7.4
+    Checking hyper-rustls v0.27.7
+    Checking reqwest v0.12.24
+    Checking tauri-plugin-updater v2.9.0
+   Compiling zstd-safe v7.2.4
+    Checking zstd v0.13.3
+    Checking tantivy-sstable v0.3.0
+    Checking tantivy-columnar v0.3.0
+    Checking tantivy v0.22.1
+   Compiling sqlx-sqlite v0.7.4
+   Compiling sqlx-macros-core v0.7.4
+   Compiling sqlx-macros v0.7.4
+    Checking sqlx v0.7.4
+    Checking brisas-app v0.1.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+   --> src\db\lista_negra_queries.rs:117:15
+    |
+117 |     let row = sqlx::query_as!(ListaNegraRow, "SELECT * FROM lista_negra WHERE id = ?", id)
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+    = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+   --> src\db\lista_negra_queries.rs:126:16
+    |
+126 |       let rows = sqlx::query_as!(
+    |  ________________^
+127 | |         ListaNegraRow,
+128 | |         "SELECT * FROM lista_negra ORDER BY created_at DESC"
+129 | |     )
+    | |_____^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+    = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+   --> src\db\lista_negra_queries.rs:138:16
+    |
+138 |       let rows = sqlx::query_as!(
+    |  ________________^
+139 | |         ListaNegraRow,
+140 | |         "SELECT * FROM lista_negra WHERE is_active = 1 ORDER BY created_at DESC"
+141 | |     )
+    | |_____^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+    = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+   --> src\db\lista_negra_queries.rs:153:15
+    |
+153 |       let row = sqlx::query_as!(
+    |  _______________^
+154 | |         ListaNegraRow,
+155 | |         "SELECT * FROM lista_negra WHERE cedula = ? AND is_active = 1",
+156 | |         cedula
+157 | |     )
+    | |_____^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+    = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0308]: mismatched types
+  --> src\services\contratista_service.rs:46:51
+   |
+46 |         .map_err(|e| ContratistaError::Validation(e))?;
+   |                      ---------------------------- ^ expected `String`, found `Error`
+   |                      |
+   |                      arguments to this enum variant are incorrect
+   |
+note: tuple variant defined here
+  --> src\domain\errors.rs:68:5
+   |
+68 |     Validation(String),
+   |     ^^^^^^^^^^
+help: try using a conversion method
+   |
+46 |         .map_err(|e| ContratistaError::Validation(e.to_string()))?;
+   |                                                    ++++++++++++
+
+error[E0277]: `?` couldn't convert the error to `std::string::String`
+  --> src\services\ingreso_contratista_service.rs:72:90
+   |
+72 |     let block_status = lista_negra_queries::check_if_blocked(pool, &contratista_id).await?;
+   |                        ------------------------------------------------------------------^ the trait `From<sqlx::Error>` is not implemented for `std::string::String`
+   |                        |
+   |                        this can't be annotated with `?` because it has type `Result<_, sqlx::Error>`
+   |
+   = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+   = help: the following other types implement trait `From<T>`:
+             `std::string::String` implements `From<&EcoString>`
+             `std::string::String` implements `From<&mut str>`
+             `std::string::String` implements `From<&std::string::String>`
+             `std::string::String` implements `From<&str>`
+             `std::string::String` implements `From<AssetKey>`
+             `std::string::String` implements `From<Box<str>>`
+             `std::string::String` implements `From<Cow<'_, str>>`
+             `std::string::String` implements `From<EcoString>`
+           and 14 others
+
+error[E0308]: mismatched types
+   --> src\services\lista_negra_service.rs:163:39
+    |
+163 |             response.empresa_nombre = row.empresa_nombre; // Strict mode: row has field
+    |             -----------------------   ^^^^^^^^^^^^^^^^^^ expected `Option<String>`, found `String`
+    |             |
+    |             expected due to the type of this binding
+    |
+    = note: expected enum `std::option::Option<std::string::String>`
+             found struct `std::string::String`
+help: try wrapping the expression in `Some`
+    |
+163 |             response.empresa_nombre = Some(row.empresa_nombre); // Strict mode: row has field
+    |                                       +++++                  +
+
+error[E0308]: mismatched types
+   --> src\services\lista_negra_service.rs:199:43
+    |
+199 |                 response.empresa_nombre = row.empresa_nombre;
+    |                 -----------------------   ^^^^^^^^^^^^^^^^^^ expected `Option<String>`, found `String`
+    |                 |
+    |                 expected due to the type of this binding
+    |
+    = note: expected enum `std::option::Option<std::string::String>`
+             found struct `std::string::String`
+help: try wrapping the expression in `Some`
+    |
+199 |                 response.empresa_nombre = Some(row.empresa_nombre);
+    |                                           +++++                  +
+
+error[E0308]: mismatched types
+   --> src\services\lista_negra_service.rs:253:43
+    |
+253 |                 response.empresa_nombre = row.empresa_nombre;
+    |                 -----------------------   ^^^^^^^^^^^^^^^^^^ expected `Option<String>`, found `String`
+    |                 |
+    |                 expected due to the type of this binding
+    |
+    = note: expected enum `std::option::Option<std::string::String>`
+             found struct `std::string::String`
+help: try wrapping the expression in `Some`
+    |
+253 |                 response.empresa_nombre = Some(row.empresa_nombre);
+    |                                           +++++                  +
+
+error[E0308]: mismatched types
+   --> src\services\lista_negra_service.rs:317:43
+    |
+317 |                 response.empresa_nombre = row.empresa_nombre;
+    |                 -----------------------   ^^^^^^^^^^^^^^^^^^ expected `Option<String>`, found `String`
+    |                 |
+    |                 expected due to the type of this binding
+    |
+    = note: expected enum `std::option::Option<std::string::String>`
+             found struct `std::string::String`
+help: try wrapping the expression in `Some`
+    |
+317 |                 response.empresa_nombre = Some(row.empresa_nombre);
+    |                                           +++++                  +
+
+error[E0277]: `?` couldn't convert the error to `std::string::String`
+  --> src\services\search_service.rs:73:68
+   |
+73 |         let lista_negra = lista_negra_queries::find_all(pool).await?;
+   |                           -----------------------------------------^ the trait `From<sqlx::Error>` is not implemented for `std::string::String`
+   |                           |
+   |                           this can't be annotated with `?` because it has type `Result<_, sqlx::Error>`
+   |
+   = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+   = help: the following other types implement trait `From<T>`:
+             `std::string::String` implements `From<&EcoString>`
+             `std::string::String` implements `From<&mut str>`
+             `std::string::String` implements `From<&std::string::String>`
+             `std::string::String` implements `From<&str>`
+             `std::string::String` implements `From<AssetKey>`
+             `std::string::String` implements `From<Box<str>>`
+             `std::string::String` implements `From<Cow<'_, str>>`
+             `std::string::String` implements `From<EcoString>`
+           and 14 others
+
+Some errors have detailed explanations: E0277, E0308.
+For more information about an error, try `rustc --explain E0277`.
+error: could not compile `brisas-app` (lib) due to 11 previous errors

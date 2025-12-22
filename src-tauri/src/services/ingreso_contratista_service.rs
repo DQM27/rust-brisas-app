@@ -69,7 +69,9 @@ pub async fn validar_ingreso_contratista(
     contratista_id: String,
 ) -> Result<ValidacionIngresoResponse, String> {
     // A. Verificar lista negra
-    let block_status = lista_negra_queries::check_if_blocked(pool, &contratista_id).await?;
+    let block_status = lista_negra_queries::check_if_blocked(pool, &contratista_id)
+        .await
+        .map_err(|e| e.to_string())?;
 
     // B. Verificar ingreso abierto
     let tiene_ingreso_abierto = db::find_ingreso_abierto_by_contratista(pool, &contratista_id)

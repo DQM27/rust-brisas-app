@@ -21,7 +21,9 @@ pub async fn add_to_lista_negra(
     search_service: State<'_, Arc<SearchService>>,
     input: AddToListaNegraInput,
 ) -> Result<ListaNegraResponse, String> {
-    lista_negra_service::add_to_lista_negra(&pool, &search_service, input).await
+    lista_negra_service::add_to_lista_negra(&pool, &search_service, input)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Obtiene un registro de lista negra por ID
@@ -30,7 +32,9 @@ pub async fn get_lista_negra_by_id(
     pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<ListaNegraResponse, String> {
-    lista_negra_service::get_lista_negra_by_id(&pool, &id).await
+    lista_negra_service::get_lista_negra_by_id(&pool, &id)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Obtiene todos los registros de lista negra
@@ -38,7 +42,9 @@ pub async fn get_lista_negra_by_id(
 pub async fn get_all_lista_negra(
     pool: State<'_, SqlitePool>,
 ) -> Result<ListaNegraListResponse, String> {
-    lista_negra_service::get_all_lista_negra(&pool).await
+    lista_negra_service::get_all_lista_negra(&pool)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Obtiene solo los registros activos de lista negra
@@ -46,7 +52,9 @@ pub async fn get_all_lista_negra(
 pub async fn get_lista_negra_activos(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<ListaNegraResponse>, String> {
-    lista_negra_service::get_lista_negra_activos(&pool).await
+    lista_negra_service::get_lista_negra_activos(&pool)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Verifica si una cédula está bloqueada (CRÍTICO para validaciones)
@@ -55,7 +63,9 @@ pub async fn check_is_blocked(
     pool: State<'_, SqlitePool>,
     cedula: String,
 ) -> Result<BlockCheckResponse, String> {
-    lista_negra_service::check_is_blocked(&pool, cedula).await
+    lista_negra_service::check_is_blocked(&pool, cedula)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Obtiene información de bloqueo por cédula
@@ -64,7 +74,9 @@ pub async fn get_blocked_by_cedula(
     pool: State<'_, SqlitePool>,
     cedula: String,
 ) -> Result<Option<ListaNegraResponse>, String> {
-    lista_negra_service::get_blocked_by_cedula(&pool, cedula).await
+    lista_negra_service::get_blocked_by_cedula(&pool, cedula)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Desactiva un bloqueo (quita de lista negra)
@@ -78,6 +90,7 @@ pub async fn remove_from_lista_negra(
 ) -> Result<ListaNegraResponse, String> {
     lista_negra_service::remove_from_lista_negra(&pool, &search_service, id, motivo, observacion)
         .await
+        .map_err(|e| e.to_string())
 }
 
 /// Reactiva un bloqueo (re-bloquear persona previamente desbloqueada)
@@ -99,6 +112,7 @@ pub async fn reactivate_lista_negra(
         bloqueado_por,
     )
     .await
+    .map_err(|e| e.to_string())
 }
 
 /// Actualiza información de un bloqueo
@@ -109,7 +123,9 @@ pub async fn update_lista_negra(
     id: String,
     input: UpdateListaNegraInput,
 ) -> Result<ListaNegraResponse, String> {
-    lista_negra_service::update_lista_negra(&pool, &search_service, id, input).await
+    lista_negra_service::update_lista_negra(&pool, &search_service, id, input)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Elimina permanentemente un registro de lista negra
@@ -119,5 +135,7 @@ pub async fn delete_lista_negra(
     search_service: State<'_, Arc<SearchService>>,
     id: String,
 ) -> Result<(), String> {
-    lista_negra_service::delete_lista_negra(&pool, &search_service, id).await
+    lista_negra_service::delete_lista_negra(&pool, &search_service, id)
+        .await
+        .map_err(|e| e.to_string())
 }

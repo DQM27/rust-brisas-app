@@ -43,7 +43,7 @@ pub async fn create_contratista(
     // 3. Verificar que NO esté en lista negra
     let block_status = lista_negra_queries::check_if_blocked_by_cedula(pool, &cedula_normalizada)
         .await
-        .map_err(|e| ContratistaError::Validation(e))?;
+        .map_err(|e| ContratistaError::Validation(e.to_string()))?;
 
     if block_status.blocked {
         let motivo = block_status
