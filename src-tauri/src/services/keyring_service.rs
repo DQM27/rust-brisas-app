@@ -2,18 +2,40 @@
 // src/services/keyring_service.rs
 // ==========================================
 // Servicio para almacenar credenciales de forma segura
-// usando el keyring del sistema operativo:
-// - Windows: Credential Manager (nativo)
-// - macOS: Keychain (librería keyring)
-// - Linux: Secret Service (secret-tool nativo)
+// usando el keyring del sistema operativo
 
 #[cfg(target_os = "macos")]
 use keyring::Entry;
 
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 #[cfg(target_os = "macos")]
 const SERVICE_NAME: &str = "brisas-app";
+
+// ==========================================
+// ERROR TYPES
+// ==========================================
+
+#[derive(Debug, Error)]
+pub enum KeyringError {
+    #[error("Error de acceso al llavero: {0}")]
+    AccessError(String),
+
+    #[error("Error de almacenamiento: {0}")]
+    StorageError(String),
+
+    #[error("Error de recuperación: {0}")]
+    RetrievalError(String),
+
+    #[error("Error de eliminación: {0}")]
+    DeletionError(String),
+
+    #[error("Plataforma no soportada")]
+    UnsupportedPlatform,
+}
+
+pub type KeyringResult<T> = Result<T, KeyringError>;
 
 // ==========================================
 // CONSTANTES PARA CLAVES
@@ -54,16 +76,12 @@ pub struct AllCredentials {
 }
 
 // ==========================================
-// FUNCIONES AUXILIARES
-// ==========================================
-
-// ==========================================
 // IMPLEMENTACIÓN LINUX (secret-tool nativo)
 // ==========================================
 #[cfg(target_os = "linux")]
-fn store_value(key: &str, value: &str) -> Result<(), String> {
+fn store_value(key: &str, value: &str) -> KeyringResult<()> {
     use crate::services::keyring_linux;
-    keyring_linux::store_secret(key, value)
+    keyring_linux::store_secret(key, value).map_err(KeyringError::StorageError)
 }
 
 #[cfg(target_os = "linux")]
@@ -74,18 +92,18 @@ fn retrieve_value(key: &str) -> Option<String> {
 
 #[cfg(target_os = "linux")]
 #[allow(dead_code)]
-fn delete_value(key: &str) -> Result<(), String> {
+fn delete_value(key: &str) -> KeyringResult<()> {
     use crate::services::keyring_linux;
-    keyring_linux::delete_secret(key)
+    keyring_linux::delete_secret(key).map_err(KeyringError::DeletionError)
 }
 
 // ==========================================
 // IMPLEMENTACIÓN WINDOWS (Credential Manager nativo)
 // ==========================================
 #[cfg(target_os = "windows")]
-fn store_value(key: &str, value: &str) -> Result<(), String> {
+fn store_value(key: &str, value: &str) -> KeyringResult<()> {
     use crate::services::keyring_windows;
-    keyring_windows::store_secret(key, value)
+    keyring_windows::store_secret(key, value).map_err(KeyringError::StorageError)
 }
 
 #[cfg(target_os = "windows")]
@@ -98,17 +116,17 @@ fn retrieve_value(key: &str) -> Option<String> {
 // IMPLEMENTACIÓN MACOS (librería keyring)
 // ==========================================
 #[cfg(target_os = "macos")]
-fn get_entry(key: &str) -> Result<Entry, String> {
+fn get_entry(key: &str) -> KeyringResult<Entry> {
     Entry::new(SERVICE_NAME, key)
-        .map_err(|e| format!("Error creando entrada keyring para '{}': {}", key, e))
+        .map_err(|e| KeyringError::AccessError(format!("Error creando entrada: {}", e)))
 }
 
 #[cfg(target_os = "macos")]
-fn store_value(key: &str, value: &str) -> Result<(), String> {
+fn store_value(key: &str, value: &str) -> KeyringResult<()> {
     let entry = get_entry(key)?;
     entry
         .set_password(value)
-        .map_err(|e| format!("Error almacenando '{}': {}", key, e))
+        .map_err(|e| KeyringError::StorageError(e.to_string()))
 }
 
 #[cfg(target_os = "macos")]
@@ -122,7 +140,7 @@ fn retrieve_value(key: &str) -> Option<String> {
 // ARGON2 PARAMS
 // ==========================================
 
-pub fn store_argon2_params(params: &Argon2Params) -> Result<(), String> {
+pub fn store_argon2_params(params: &Argon2Params) -> KeyringResult<()> {
     store_value(KEY_ARGON2_MEMORY, &params.memory.to_string())?;
     store_value(KEY_ARGON2_ITERATIONS, &params.iterations.to_string())?;
     store_value(KEY_ARGON2_PARALLELISM, &params.parallelism.to_string())?;

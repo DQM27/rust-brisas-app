@@ -61,7 +61,7 @@ pub fn setup_credentials(
     // 1. (Eliminado: Guardar credenciales SMTP)
 
     // 2. Guardar parámetros de Argon2
-    keyring_service::store_argon2_params(&input.argon2)?;
+    keyring_service::store_argon2_params(&input.argon2).map_err(|e| e.to_string())?;
 
     // 3. Actualizar configuración en TOML
     let mut updated_config = config.inner().clone();
@@ -118,7 +118,7 @@ pub struct Argon2ParamsSafe {
 /// Actualiza parámetros de Argon2
 #[command]
 pub fn update_argon2_params(params: Argon2Params) -> Result<(), String> {
-    keyring_service::store_argon2_params(&params)
+    keyring_service::store_argon2_params(&params).map_err(|e| e.to_string())
 }
 
 /// Genera un nuevo secret aleatorio para Argon2
