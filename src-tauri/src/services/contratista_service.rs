@@ -8,6 +8,7 @@ use crate::db::contratista_queries as db;
 use crate::db::empresa_queries;
 use crate::db::lista_negra_queries;
 use crate::domain::contratista as domain;
+use crate::domain::errors::ContratistaError;
 use crate::models::contratista::{
     CambiarEstadoInput, ContratistaListResponse, ContratistaResponse, CreateContratistaInput,
     EstadoContratista, UpdateContratistaInput,
@@ -26,9 +27,9 @@ pub async fn create_contratista(
     pool: &SqlitePool,
     search_service: &Arc<SearchService>,
     input: CreateContratistaInput,
-) -> Result<ContratistaResponse, String> {
+) -> Result<ContratistaResponse, ContratistaError> {
     // 1. Validar input
-    domain::validar_create_input(&input)?;
+    domain::validar_create_input(&input).map_err(ContratistaError::Validation)?;
 
     // 2. Normalizar datos
     let cedula_normalizada = domain::normalizar_cedula(&input.cedula);
@@ -40,28 +41,32 @@ pub async fn create_contratista(
         domain::normalizar_segundo_apellido(input.segundo_apellido.as_ref());
 
     // 3. Verificar que NO esté en lista negra
-    let block_status =
-        lista_negra_queries::check_if_blocked_by_cedula(pool, &cedula_normalizada).await?;
+    let block_status = lista_negra_queries::check_if_blocked_by_cedula(pool, &cedula_normalizada)
+        .await
+        .map_err(|e| ContratistaError::Validation(e))?;
+
     if block_status.blocked {
         let motivo = block_status
             .motivo
             .unwrap_or_else(|| "Sin motivo especificado".to_string());
-        return Err(format!(
+        return Err(ContratistaError::Validation(format!(
             "No se puede registrar. La persona con cédula {} está en lista negra. Motivo: {}",
             cedula_normalizada, motivo
-        ));
+        )));
     }
 
     // 4. Verificar que la cédula no exista
     let count = db::count_by_cedula(pool, &cedula_normalizada).await?;
     if count > 0 {
-        return Err("Ya existe un contratista con esta cédula".to_string());
+        return Err(ContratistaError::CedulaExists);
     }
 
     // 5. Verificar que la empresa exista
-    let empresa_existe = empresa_queries::exists(pool, &input.empresa_id).await?;
+    let empresa_existe = empresa_queries::exists(pool, &input.empresa_id)
+        .await
+        .map_err(|e| ContratistaError::Validation(e))?;
     if !empresa_existe {
-        return Err("La empresa especificada no existe".to_string());
+        return Err(ContratistaError::EmpresaNotFound);
     }
 
     // 6. Generar ID y timestamps
@@ -88,15 +93,13 @@ pub async fn create_contratista(
     // 8. Obtener contratista creado
     let response = get_contratista_by_id(pool, &id).await?;
 
-    // 9. Indexar en Tantivy (automático)
-    // 9. Indexar en Tantivy (automático)
-    if let Ok(row) = db::find_by_id_with_empresa(pool, &id).await {
+    // 9. Indexar en Tantivy
+    if let Some(row) = db::find_by_id_with_empresa(pool, &id).await? {
         if let Err(e) = search_service
             .add_contratista(&row.contratista, &row.empresa_nombre)
             .await
         {
             eprintln!("⚠️ Error al indexar contratista {}: {}", id, e);
-            // No fallamos la operación, solo logueamos el error
         }
     }
 
@@ -110,8 +113,10 @@ pub async fn create_contratista(
 pub async fn get_contratista_by_id(
     pool: &SqlitePool,
     id: &str,
-) -> Result<ContratistaResponse, String> {
-    let row: db::ContratistaEnhancedRow = db::find_by_id_with_empresa(pool, id).await?;
+) -> Result<ContratistaResponse, ContratistaError> {
+    let row = db::find_by_id_with_empresa(pool, id)
+        .await?
+        .ok_or(ContratistaError::NotFound)?;
 
     let mut response = ContratistaResponse::from(row.contratista);
     response.empresa_nombre = row.empresa_nombre;
@@ -136,8 +141,10 @@ pub async fn get_contratista_by_id(
 pub async fn get_contratista_by_cedula(
     pool: &SqlitePool,
     cedula: &str,
-) -> Result<ContratistaResponse, String> {
-    let row = db::find_by_cedula_with_empresa(pool, cedula).await?;
+) -> Result<ContratistaResponse, ContratistaError> {
+    let row = db::find_by_cedula_with_empresa(pool, cedula)
+        .await?
+        .ok_or(ContratistaError::NotFound)?;
 
     let mut response = ContratistaResponse::from(row.contratista);
     response.empresa_nombre = row.empresa_nombre;
@@ -159,12 +166,12 @@ pub async fn get_contratista_by_cedula(
 // OBTENER TODOS LOS CONTRATISTAS
 // ==========================================
 
-pub async fn get_all_contratistas(pool: &SqlitePool) -> Result<ContratistaListResponse, String> {
+pub async fn get_all_contratistas(
+    pool: &SqlitePool,
+) -> Result<ContratistaListResponse, ContratistaError> {
     let contratistas_with_empresa = db::find_all_with_empresa(pool).await?;
 
-    // Convertir a ContratistaResponse
     let contratistas: Vec<ContratistaResponse> = contratistas_with_empresa
-        .into_iter()
         .into_iter()
         .map(
             |(contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa, is_blocked)| {
@@ -183,7 +190,6 @@ pub async fn get_all_contratistas(pool: &SqlitePool) -> Result<ContratistaListRe
         )
         .collect();
 
-    // Calcular estadísticas
     let total = contratistas.len();
     let activos = contratistas
         .iter()
@@ -207,11 +213,10 @@ pub async fn get_all_contratistas(pool: &SqlitePool) -> Result<ContratistaListRe
 
 pub async fn get_contratistas_activos(
     pool: &SqlitePool,
-) -> Result<Vec<ContratistaResponse>, String> {
+) -> Result<Vec<ContratistaResponse>, ContratistaError> {
     let contratistas_with_empresa = db::find_activos_with_empresa(pool).await?;
 
     let contratistas = contratistas_with_empresa
-        .into_iter()
         .into_iter()
         .map(
             |(contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa, is_blocked)| {
@@ -242,12 +247,14 @@ pub async fn update_contratista(
     search_service: &Arc<SearchService>,
     id: String,
     input: UpdateContratistaInput,
-) -> Result<ContratistaResponse, String> {
+) -> Result<ContratistaResponse, ContratistaError> {
     // 1. Validar input
-    domain::validar_update_input(&input)?;
+    domain::validar_update_input(&input).map_err(ContratistaError::Validation)?;
 
     // 2. Verificar que el contratista existe
-    let _ = db::find_by_id_with_empresa(pool, &id).await?;
+    let _ = db::find_by_id_with_empresa(pool, &id)
+        .await?
+        .ok_or(ContratistaError::NotFound)?;
 
     // 3. Normalizar datos si vienen
     let nombre_normalizado = input.nombre.as_ref().map(|n| domain::normalizar_nombre(n));
@@ -255,8 +262,7 @@ pub async fn update_contratista(
     let segundo_nombre_normalizado = input
         .segundo_nombre
         .as_ref()
-        .map(|sn| domain::normalizar_segundo_nombre(Some(sn)))
-        .flatten();
+        .and_then(|sn| domain::normalizar_segundo_nombre(Some(sn)));
 
     let apellido_normalizado = input
         .apellido
@@ -266,14 +272,15 @@ pub async fn update_contratista(
     let segundo_apellido_normalizado = input
         .segundo_apellido
         .as_ref()
-        .map(|sa| domain::normalizar_segundo_apellido(Some(sa)))
-        .flatten();
+        .and_then(|sa| domain::normalizar_segundo_apellido(Some(sa)));
 
     // 4. Verificar que la empresa exista si viene
     if let Some(ref empresa_id) = input.empresa_id {
-        let empresa_existe = empresa_queries::exists(pool, empresa_id).await?;
+        let empresa_existe = empresa_queries::exists(pool, empresa_id)
+            .await
+            .map_err(|e| ContratistaError::Validation(e))?;
         if !empresa_existe {
-            return Err("La empresa especificada no existe".to_string());
+            return Err(ContratistaError::EmpresaNotFound);
         }
     }
 
@@ -303,31 +310,27 @@ pub async fn update_contratista(
         let vehiculo_existente = vehiculos.first();
 
         if tiene {
-            // Caso: El usuario indica que TIENE vehículo
-            // Validar datos mínimos
             if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
                 if !tipo.is_empty() && !placa.is_empty() {
                     if let Some(v) = vehiculo_existente {
-                        // Actualizar existente
-                        vehiculo_queries::update(
+                        let _ = vehiculo_queries::update(
                             pool,
                             &v.id,
                             Some(tipo),
                             input.marca.as_deref(),
                             input.modelo.as_deref(),
                             input.color.as_deref(),
-                            Some(1), // Activo
+                            Some(1),
                             &now,
                         )
-                        .await?;
+                        .await;
                     } else {
-                        // Crear nuevo
                         let vid = Uuid::new_v4().to_string();
-                        vehiculo_queries::insert(
+                        let _ = vehiculo_queries::insert(
                             pool,
                             &vid,
                             Some(&id),
-                            None, // proveedor_id
+                            None,
                             tipo,
                             placa,
                             input.marca.as_deref(),
@@ -336,24 +339,20 @@ pub async fn update_contratista(
                             &now,
                             &now,
                         )
-                        .await?;
+                        .await;
                     }
                 }
             }
-        } else {
-            // Caso: El usuario indica que NO TIENE vehículo
-            // Si existe uno, lo eliminamos o desactivamos (aquí eliminamos físico para limpiar)
-            if let Some(v) = vehiculo_existente {
-                vehiculo_queries::delete(pool, &v.id).await?;
-            }
+        } else if let Some(v) = vehiculo_existente {
+            let _ = vehiculo_queries::delete(pool, &v.id).await;
         }
     }
 
     // 8. Obtener contratista actualizado
     let response = get_contratista_by_id(pool, &id).await?;
 
-    // 9. Actualizar índice de Tantivy (automático)
-    if let Ok(row) = db::find_by_id_with_empresa(pool, &id).await {
+    // 9. Actualizar índice de Tantivy
+    if let Some(row) = db::find_by_id_with_empresa(pool, &id).await? {
         if let Err(e) = search_service
             .update_contratista(&row.contratista, &row.empresa_nombre)
             .await
@@ -377,12 +376,15 @@ pub async fn cambiar_estado_contratista(
     search_service: &Arc<SearchService>,
     id: String,
     input: CambiarEstadoInput,
-) -> Result<ContratistaResponse, String> {
+) -> Result<ContratistaResponse, ContratistaError> {
     // 1. Validar estado
-    let estado = domain::validar_estado(&input.estado)?;
+    let estado =
+        domain::validar_estado(&input.estado).map_err(|e| ContratistaError::InvalidStatus(e))?;
 
     // 2. Verificar que el contratista existe
-    let _ = db::find_by_id_with_empresa(pool, &id).await?;
+    let _ = db::find_by_id_with_empresa(pool, &id)
+        .await?
+        .ok_or(ContratistaError::NotFound)?;
 
     // 3. Timestamp de actualización
     let now = Utc::now().to_rfc3339();
@@ -393,8 +395,8 @@ pub async fn cambiar_estado_contratista(
     // 5. Obtener contratista actualizado
     let response = get_contratista_by_id(pool, &id).await?;
 
-    // 6. Actualizar índice de Tantivy (automático)
-    if let Ok(row) = db::find_by_id_with_empresa(pool, &id).await {
+    // 6. Actualizar índice de Tantivy
+    if let Some(row) = db::find_by_id_with_empresa(pool, &id).await? {
         if let Err(e) = search_service
             .update_contratista(&row.contratista, &row.empresa_nombre)
             .await
@@ -417,14 +419,16 @@ pub async fn delete_contratista(
     pool: &SqlitePool,
     search_service: &Arc<SearchService>,
     id: String,
-) -> Result<(), String> {
-    // Verificar que existe antes de eliminar
-    let _ = db::find_by_id_with_empresa(pool, &id).await?;
+) -> Result<(), ContratistaError> {
+    // Verificar que existe
+    let _ = db::find_by_id_with_empresa(pool, &id)
+        .await?
+        .ok_or(ContratistaError::NotFound)?;
 
     // Eliminar de DB
     db::delete(pool, &id).await?;
 
-    // Eliminar del índice de Tantivy (automático)
+    // Eliminar del índice de Tantivy
     if let Err(e) = search_service.delete_contratista(&id).await {
         eprintln!(
             "⚠️ Error al eliminar del índice el contratista {}: {}",

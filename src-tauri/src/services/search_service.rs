@@ -60,7 +60,9 @@ impl SearchService {
     /// Re-indexa todo (contratistas, usuarios, proveedores y lista negra) desde la base de datos
     pub async fn reindex_all(&self, pool: &SqlitePool) -> Result<(), String> {
         // Obtener todos los contratistas con empresa (Async, sin lock)
-        let contratistas = contratista_queries::find_all_with_empresa(pool).await?;
+        let contratistas = contratista_queries::find_all_with_empresa(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
         // Obtener todos los usuarios (excluyendo superuser del índice)
         let users = user_queries::find_all(pool, SUPERUSER_ID)

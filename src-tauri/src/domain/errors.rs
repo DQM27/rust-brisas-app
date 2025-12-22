@@ -39,3 +39,31 @@ pub enum UserError {
     #[error("Error de validación: {0}")]
     Validation(String),
 }
+
+// ==========================================
+// CONTRATISTA ERRORS
+// ==========================================
+
+#[derive(Error, Debug)]
+pub enum ContratistaError {
+    #[error("Contratista no encontrado")]
+    NotFound,
+
+    #[error("Ya existe un contratista con esta cédula")]
+    CedulaExists,
+
+    #[error("Empresa no encontrada")]
+    EmpresaNotFound,
+
+    #[error("Estado inválido: {0}")]
+    InvalidStatus(String),
+
+    #[error("Error de base de datos: {0}")]
+    Database(#[from] sqlx::Error),
+
+    #[error("Error de búsqueda: {0}")]
+    Search(String),
+
+    #[error("Error de validación: {0}")]
+    Validation(String),
+}

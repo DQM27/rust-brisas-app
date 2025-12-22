@@ -88,7 +88,9 @@ pub async fn validar_ingreso_contratista(
     }
 
     // C. Datos del contratista
-    let contratista_opt = contratista_queries::find_basic_info_by_id(pool, &contratista_id).await?;
+    let contratista_opt = contratista_queries::find_basic_info_by_id(pool, &contratista_id)
+        .await
+        .map_err(|e| e.to_string())?;
     let contratista = match contratista_opt {
         None => {
             return Ok(ValidacionIngresoResponse {
@@ -167,7 +169,8 @@ pub async fn crear_ingreso_contratista(
 
     // 3. Obtener Datos
     let contratista = contratista_queries::find_basic_info_by_id(pool, &input.contratista_id)
-        .await?
+        .await
+        .map_err(|e| e.to_string())?
         .ok_or_else(|| "Contratista no encontrado".to_string())?;
 
     let praind_vigente = domain::verificar_praind_vigente(&contratista.fecha_vencimiento_praind)?;

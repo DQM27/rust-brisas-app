@@ -34,7 +34,10 @@ pub async fn add_to_lista_negra(
     let (contratista_id, cedula, nombre, segundo_nombre, apellido, segundo_apellido) =
         if let Some(ref cid) = input.contratista_id {
             // Caso 1: Tiene contratista_id - traer datos de la BD
-            let (c, n, sn, a, sa) = contratista_queries::get_basic_data(pool, cid).await?;
+            let (c, n, sn, a, sa) = contratista_queries::get_basic_data(pool, cid)
+                .await
+                .map_err(|e| e.to_string())?
+                .ok_or_else(|| "Contratista no encontrado".to_string())?;
             (Some(cid.clone()), c, n, sn, a, sa)
         } else {
             // Caso 2: Registro manual - usar datos proporcionados
