@@ -38,12 +38,24 @@ pub async fn add_to_lista_negra(
             (Some(cid.clone()), c, n, sn, a, sa)
         } else {
             // Caso 2: Registro manual - usar datos proporcionados
+            let cedula = input
+                .cedula
+                .clone()
+                .ok_or_else(|| "Cédula es requerida para registro manual".to_string())?;
+            let nombre = input
+                .nombre
+                .clone()
+                .ok_or_else(|| "Nombre es requerido para registro manual".to_string())?;
+            let apellido = input
+                .apellido
+                .clone()
+                .ok_or_else(|| "Apellido es requerido para registro manual".to_string())?;
             (
                 None,
-                input.cedula.clone().unwrap(),
-                input.nombre.clone().unwrap(),
+                cedula,
+                nombre,
                 input.segundo_nombre.clone(),
-                input.apellido.clone().unwrap(),
+                apellido,
                 input.segundo_apellido.clone(),
             )
         };
@@ -351,7 +363,10 @@ pub async fn remove_from_lista_negra(
                 eprintln!("⚠️ Error al actualizar índice lista negra {}: {}", id, e);
             }
         }
-        Err(e) => eprintln!("⚠️ Error al obtener lista negra para actualizar índice {}: {}", id, e),
+        Err(e) => eprintln!(
+            "⚠️ Error al obtener lista negra para actualizar índice {}: {}",
+            id, e
+        ),
     }
 
     // 5. Retornar actualizado
@@ -406,7 +421,10 @@ pub async fn reactivate_lista_negra(
                 eprintln!("⚠️ Error al actualizar índice lista negra {}: {}", id, e);
             }
         }
-        Err(e) => eprintln!("⚠️ Error al obtener lista negra para actualizar índice {}: {}", id, e),
+        Err(e) => eprintln!(
+            "⚠️ Error al obtener lista negra para actualizar índice {}: {}",
+            id, e
+        ),
     }
 
     // 6. Retornar actualizado
@@ -463,7 +481,10 @@ pub async fn update_lista_negra(
                 eprintln!("⚠️ Error al actualizar índice lista negra {}: {}", id, e);
             }
         }
-        Err(e) => eprintln!("⚠️ Error al obtener lista negra para actualizar índice {}: {}", id, e),
+        Err(e) => eprintln!(
+            "⚠️ Error al obtener lista negra para actualizar índice {}: {}",
+            id, e
+        ),
     }
 
     // 7. Retornar actualizado

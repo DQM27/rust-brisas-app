@@ -43,3 +43,61 @@ pub mod fields {
     pub const EMAIL: &str = "email";
     pub const SEARCH_TEXT: &str = "search_text";
 }
+
+/// Handles pre-cargados de todos los campos del schema.
+/// Se inicializa una vez al cargar el índice (fail-fast pattern).
+#[derive(Clone, Copy)]
+pub struct FieldHandles {
+    pub id: Field,
+    pub tipo: Field,
+    pub cedula: Field,
+    pub nombre: Field,
+    pub segundo_nombre: Field,
+    pub apellido: Field,
+    pub segundo_apellido: Field,
+    pub empresa_nombre: Field,
+    pub email: Field,
+    pub search_text: Field,
+}
+
+impl FieldHandles {
+    /// Crea los handles desde el schema o retorna error descriptivo.
+    /// Debe llamarse al inicializar el índice (fail-fast).
+    pub fn new(schema: &Schema) -> Result<Self, String> {
+        Ok(Self {
+            id: schema
+                .get_field(fields::ID)
+                .map_err(|_| format!("Campo '{}' no encontrado en schema", fields::ID))?,
+            tipo: schema
+                .get_field(fields::TIPO)
+                .map_err(|_| format!("Campo '{}' no encontrado en schema", fields::TIPO))?,
+            cedula: schema
+                .get_field(fields::CEDULA)
+                .map_err(|_| format!("Campo '{}' no encontrado en schema", fields::CEDULA))?,
+            nombre: schema
+                .get_field(fields::NOMBRE)
+                .map_err(|_| format!("Campo '{}' no encontrado en schema", fields::NOMBRE))?,
+            segundo_nombre: schema.get_field(fields::SEGUNDO_NOMBRE).map_err(|_| {
+                format!("Campo '{}' no encontrado en schema", fields::SEGUNDO_NOMBRE)
+            })?,
+            apellido: schema
+                .get_field(fields::APELLIDO)
+                .map_err(|_| format!("Campo '{}' no encontrado en schema", fields::APELLIDO))?,
+            segundo_apellido: schema.get_field(fields::SEGUNDO_APELLIDO).map_err(|_| {
+                format!(
+                    "Campo '{}' no encontrado en schema",
+                    fields::SEGUNDO_APELLIDO
+                )
+            })?,
+            empresa_nombre: schema.get_field(fields::EMPRESA_NOMBRE).map_err(|_| {
+                format!("Campo '{}' no encontrado en schema", fields::EMPRESA_NOMBRE)
+            })?,
+            email: schema
+                .get_field(fields::EMAIL)
+                .map_err(|_| format!("Campo '{}' no encontrado en schema", fields::EMAIL))?,
+            search_text: schema
+                .get_field(fields::SEARCH_TEXT)
+                .map_err(|_| format!("Campo '{}' no encontrado en schema", fields::SEARCH_TEXT))?,
+        })
+    }
+}

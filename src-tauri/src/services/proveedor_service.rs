@@ -19,12 +19,10 @@ pub async fn create_proveedor(
     // 1. Validar que la empresa existe
     let empresa = empresa_queries::find_by_id(pool, &input.empresa_id)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "La empresa seleccionada no existe".to_string())?;
 
-    if empresa.is_none() {
-        return Err("La empresa seleccionada no existe".to_string());
-    }
-    let empresa_nombre = empresa.unwrap().nombre;
+    let empresa_nombre = empresa.nombre;
 
     // 2. Validar duplicidad
     if proveedor_queries::find_by_cedula(pool, &input.cedula)

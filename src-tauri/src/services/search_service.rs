@@ -6,9 +6,10 @@ use crate::models::contratista::Contratista;
 use crate::models::lista_negra::ListaNegra;
 use crate::models::proveedor::Proveedor;
 use crate::models::user::User;
+use crate::search::schema::FieldHandles;
 use crate::search::{
-    commit_index, delete_from_index, index_contratista, index_lista_negra, index_proveedor,
-    index_user, update_contratista_in_index, update_lista_negra_in_index,
+    commit_index, create_field_handles, delete_from_index, index_contratista, index_lista_negra,
+    index_proveedor, index_user, update_contratista_in_index, update_lista_negra_in_index,
     update_proveedor_in_index, update_user_in_index,
 };
 use crate::search::{get_index_reader, get_index_writer, initialize_index};
@@ -23,7 +24,8 @@ use tokio::sync::Mutex;
 pub struct SearchService {
     pub index: Arc<Index>,
     pub reader: Arc<IndexReader>,
-    pub fields: Arc<SearchFields>, // Cache de campos
+    pub fields: Arc<SearchFields>, // Cache de campos para búsqueda
+    pub handles: FieldHandles,     // Handles pre-cargados para indexación (fail-fast)
     pub writer_mutex: Mutex<()>,
     #[allow(dead_code)]
     index_path: PathBuf,
@@ -38,13 +40,17 @@ impl SearchService {
         let index = initialize_index(&index_path)?;
         let reader = get_index_reader(&index)?;
 
-        // Pre-calcular campos (Zero-Cost Abstraction)
+        // Pre-calcular campos para búsqueda (Zero-Cost Abstraction)
         let fields = Arc::new(SearchFields::new(&index.schema()));
+
+        // Pre-cargar field handles para indexación (fail-fast pattern)
+        let handles = create_field_handles(&index.schema())?;
 
         Ok(Self {
             index: Arc::new(index),
             reader: Arc::new(reader),
             fields,
+            handles,
             writer_mutex: Mutex::new(()),
             index_path,
         })
@@ -68,7 +74,6 @@ impl SearchService {
         let _lock = self.writer_mutex.lock().await;
 
         {
-            let schema = self.index.schema();
             let mut writer = get_index_writer(&self.index)?;
 
             // Limpiar índice existente
@@ -78,22 +83,22 @@ impl SearchService {
 
             // Indexar contratistas
             for (contratista, empresa_nombre, _, _, _) in contratistas {
-                index_contratista(&mut writer, &schema, &contratista, &empresa_nombre)?;
+                index_contratista(&mut writer, &self.handles, &contratista, &empresa_nombre)?;
             }
 
             // Indexar usuarios
             for user in users {
-                index_user(&mut writer, &schema, &user)?;
+                index_user(&mut writer, &self.handles, &user)?;
             }
 
             // Indexar lista negra
             for ln in lista_negra {
-                index_lista_negra(&mut writer, &schema, &ln)?;
+                index_lista_negra(&mut writer, &self.handles, &ln)?;
             }
 
             // Indexar proveedores
             for (proveedor, empresa_nombre) in proveedores {
-                index_proveedor(&mut writer, &schema, &proveedor, &empresa_nombre)?;
+                index_proveedor(&mut writer, &self.handles, &proveedor, &empresa_nombre)?;
             }
 
             // Commit
@@ -122,10 +127,9 @@ impl SearchService {
         let _lock = self.writer_mutex.lock().await;
 
         {
-            let schema = self.index.schema();
             let mut writer = get_index_writer(&self.index)?;
 
-            index_contratista(&mut writer, &schema, contratista, empresa_nombre)?;
+            index_contratista(&mut writer, &self.handles, contratista, empresa_nombre)?;
             commit_index(&mut writer)?;
         }
 
@@ -145,10 +149,9 @@ impl SearchService {
         let _lock = self.writer_mutex.lock().await;
 
         {
-            let schema = self.index.schema();
             let mut writer = get_index_writer(&self.index)?;
 
-            update_contratista_in_index(&mut writer, &schema, contratista, empresa_nombre)?;
+            update_contratista_in_index(&mut writer, &self.handles, contratista, empresa_nombre)?;
             commit_index(&mut writer)?;
         }
 
@@ -164,10 +167,9 @@ impl SearchService {
         let _lock = self.writer_mutex.lock().await;
 
         {
-            let schema = self.index.schema();
             let mut writer = get_index_writer(&self.index)?;
 
-            delete_from_index(&mut writer, &schema, id)?;
+            delete_from_index(&mut writer, &self.handles, id)?;
             commit_index(&mut writer)?;
         }
 
@@ -183,10 +185,9 @@ impl SearchService {
         let _lock = self.writer_mutex.lock().await;
 
         {
-            let schema = self.index.schema();
             let mut writer = get_index_writer(&self.index)?;
 
-            index_user(&mut writer, &schema, user)?;
+            index_user(&mut writer, &self.handles, user)?;
             commit_index(&mut writer)?;
         }
 
@@ -202,10 +203,9 @@ impl SearchService {
         let _lock = self.writer_mutex.lock().await;
 
         {
-            let schema = self.index.schema();
             let mut writer = get_index_writer(&self.index)?;
 
-            update_user_in_index(&mut writer, &schema, user)?;
+            update_user_in_index(&mut writer, &self.handles, user)?;
             commit_index(&mut writer)?;
         }
 
@@ -221,10 +221,9 @@ impl SearchService {
         let _lock = self.writer_mutex.lock().await;
 
         {
-            let schema = self.index.schema();
             let mut writer = get_index_writer(&self.index)?;
 
-            delete_from_index(&mut writer, &schema, id)?;
+            delete_from_index(&mut writer, &self.handles, id)?;
             commit_index(&mut writer)?;
         }
 
@@ -240,10 +239,9 @@ impl SearchService {
         let _lock = self.writer_mutex.lock().await;
 
         {
-            let schema = self.index.schema();
             let mut writer = get_index_writer(&self.index)?;
 
-            index_lista_negra(&mut writer, &schema, lista_negra)?;
+            index_lista_negra(&mut writer, &self.handles, lista_negra)?;
             commit_index(&mut writer)?;
         }
 
@@ -259,10 +257,9 @@ impl SearchService {
         let _lock = self.writer_mutex.lock().await;
 
         {
-            let schema = self.index.schema();
             let mut writer = get_index_writer(&self.index)?;
 
-            update_lista_negra_in_index(&mut writer, &schema, lista_negra)?;
+            update_lista_negra_in_index(&mut writer, &self.handles, lista_negra)?;
             commit_index(&mut writer)?;
         }
 
@@ -278,10 +275,9 @@ impl SearchService {
         let _lock = self.writer_mutex.lock().await;
 
         {
-            let schema = self.index.schema();
             let mut writer = get_index_writer(&self.index)?;
 
-            delete_from_index(&mut writer, &schema, id)?;
+            delete_from_index(&mut writer, &self.handles, id)?;
             commit_index(&mut writer)?;
         }
 
@@ -319,10 +315,9 @@ impl SearchService {
         let _lock = self.writer_mutex.lock().await;
 
         {
-            let schema = self.index.schema();
             let mut writer = get_index_writer(&self.index)?;
 
-            index_proveedor(&mut writer, &schema, proveedor, empresa_nombre)?;
+            index_proveedor(&mut writer, &self.handles, proveedor, empresa_nombre)?;
             commit_index(&mut writer)?;
         }
 
@@ -342,10 +337,9 @@ impl SearchService {
         let _lock = self.writer_mutex.lock().await;
 
         {
-            let schema = self.index.schema();
             let mut writer = get_index_writer(&self.index)?;
 
-            update_proveedor_in_index(&mut writer, &schema, proveedor, empresa_nombre)?;
+            update_proveedor_in_index(&mut writer, &self.handles, proveedor, empresa_nombre)?;
             commit_index(&mut writer)?;
         }
 
@@ -361,10 +355,9 @@ impl SearchService {
         let _lock = self.writer_mutex.lock().await;
 
         {
-            let schema = self.index.schema();
             let mut writer = get_index_writer(&self.index)?;
 
-            delete_from_index(&mut writer, &schema, id)?;
+            delete_from_index(&mut writer, &self.handles, id)?;
             commit_index(&mut writer)?;
         }
 
