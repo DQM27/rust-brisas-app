@@ -5,7 +5,7 @@
 // Usa solo std::fs y String manipulation
 
 use crate::export::errors::{ExportError, ExportResult};
-use crate::models::export::CsvConfig;
+use crate::models::export::{CsvConfig, ExportValue};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -16,7 +16,7 @@ use std::path::PathBuf;
 /// Genera un archivo CSV y retorna el path
 pub fn generate_csv(
     headers: &[String],
-    rows: &[HashMap<String, String>],
+    rows: &[HashMap<String, ExportValue>],
     config: &CsvConfig,
     target_path: Option<String>,
 ) -> ExportResult<String> {
@@ -48,7 +48,7 @@ pub fn generate_csv(
 /// Construye el contenido completo del CSV
 fn build_csv_content(
     headers: &[String],
-    rows: &[HashMap<String, String>],
+    rows: &[HashMap<String, ExportValue>],
     config: &CsvConfig,
 ) -> ExportResult<String> {
     let mut content = String::new();
@@ -67,7 +67,7 @@ fn build_csv_content(
     for row in rows {
         let values: Vec<String> = headers
             .iter()
-            .map(|header| row.get(header).cloned().unwrap_or_default())
+            .map(|header| row.get(header).map(|v| v.to_string()).unwrap_or_default())
             .collect();
 
         let row_line = encode_csv_line(&values, config.delimiter.as_char());
@@ -197,12 +197,12 @@ mod tests {
     fn test_build_csv_content() {
         let headers = vec!["Name".to_string(), "Age".to_string()];
         let mut row1 = HashMap::new();
-        row1.insert("Name".to_string(), "John".to_string());
-        row1.insert("Age".to_string(), "30".to_string());
+        row1.insert("Name".to_string(), ExportValue::Text("John".to_string()));
+        row1.insert("Age".to_string(), ExportValue::Text("30".to_string()));
 
         let mut row2 = HashMap::new();
-        row2.insert("Name".to_string(), "Jane".to_string());
-        row2.insert("Age".to_string(), "25".to_string());
+        row2.insert("Name".to_string(), ExportValue::Text("Jane".to_string()));
+        row2.insert("Age".to_string(), ExportValue::Text("25".to_string()));
 
         let rows = vec![row1, row2];
 
@@ -221,7 +221,7 @@ mod tests {
     #[test]
     fn test_build_csv_content_with_bom() {
         let headers = vec!["Name".to_string()];
-        let rows = vec![];
+        let rows: Vec<HashMap<String, ExportValue>> = vec![];
 
         let config = CsvConfig {
             filename: "test.csv".to_string(),

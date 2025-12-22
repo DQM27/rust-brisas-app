@@ -5,7 +5,7 @@
 // Tema claro optimizado para impresión (ahorro de tinta)
 
 use crate::export::errors::{ExportError, ExportResult};
-use crate::models::export::{PageOrientation, PdfConfig, PdfDesign};
+use crate::models::export::{ExportValue, PageOrientation, PdfConfig, PdfDesign};
 use std::collections::HashMap;
 
 // ==========================================
@@ -15,7 +15,7 @@ use std::collections::HashMap;
 /// Genera el markup Typst completo para el PDF
 pub fn generate_typst_markup(
     headers: &[String],
-    rows: &[HashMap<String, String>],
+    rows: &[HashMap<String, ExportValue>],
     config: &PdfConfig,
     design: &PdfDesign,
 ) -> ExportResult<String> {
@@ -83,7 +83,7 @@ fn generate_page_setup(config: &PdfConfig, design: &PdfDesign) -> ExportResult<S
 /// Genera el contenido dentro de un showybox decorativo (tema claro)
 fn generate_showybox_content(
     headers: &[String],
-    rows: &[HashMap<String, String>],
+    rows: &[HashMap<String, ExportValue>],
     config: &PdfConfig,
     _design: &PdfDesign,
 ) -> ExportResult<String> {
@@ -99,7 +99,7 @@ fn generate_showybox_content(
     // Generar la tabla con font_size
     let table_content = generate_table(headers, rows, config)?;
 
-    // Texto footer
+    // ... (rest unchanged) ...
     let footer_text = if !config.generated_by.is_empty() {
         format!("Generado por: {} | Fecha: {}", config.generated_by, now)
     } else {
@@ -149,15 +149,14 @@ fn generate_showybox_content(
 /// Genera la tabla con headers y datos (tema claro)
 fn generate_table(
     headers: &[String],
-    rows: &[HashMap<String, String>],
+    rows: &[HashMap<String, ExportValue>],
     config: &PdfConfig,
 ) -> ExportResult<String> {
     // Usar el font_size numérico del config (header es 1pt más grande)
     let body_size = format!("{}pt", config.font_size);
     let header_size = format!("{}pt", config.font_size + 1);
 
-    // Columnas fraccionadas CON PESOS INTELIGENTES
-    // Esto evita que columnas como "Cédula" se rompan
+    // ... (column specs unchanged) ...
     let columns_spec = headers
         .iter()
         .map(|h| {
@@ -227,7 +226,10 @@ fn generate_table(
     // Rows con word-break ON
     for row in rows {
         for header in headers {
-            let value = row.get(header).map(|s| s.as_str()).unwrap_or("-");
+            let value = row
+                .get(header)
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "-".to_string());
             let lower_header = header.to_lowercase();
 
             // Para identificadores largos sin espacios, forzamos quiebre
@@ -238,9 +240,9 @@ fn generate_table(
                 || lower_header.contains("aut.") // Autorización abreviada
                 || lower_header.contains("autoriza")
             {
-                force_break_string(value)
+                force_break_string(&value)
             } else {
-                value.to_string()
+                value
             };
 
             let escaped_value = escape_typst_string(&processed_value);

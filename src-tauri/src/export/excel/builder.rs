@@ -5,7 +5,7 @@
 // Crea archivos .xlsx con formato profesional
 
 use crate::export::errors::{ExportError, ExportResult};
-use crate::models::export::ExcelConfig;
+use crate::models::export::{ExcelConfig, ExportValue};
 use rust_xlsxwriter::{Format, Workbook, Worksheet};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -17,7 +17,7 @@ use std::path::PathBuf;
 /// Genera un archivo Excel y retorna el path
 pub fn generate_excel(
     headers: &[String],
-    rows: &[HashMap<String, String>],
+    rows: &[HashMap<String, ExportValue>],
     config: &ExcelConfig,
     target_path: Option<String>,
 ) -> ExportResult<String> {
@@ -54,7 +54,7 @@ pub fn generate_excel(
 fn write_excel_content(
     worksheet: &mut Worksheet,
     headers: &[String],
-    rows: &[HashMap<String, String>],
+    rows: &[HashMap<String, ExportValue>],
 ) -> ExportResult<()> {
     // 1. Crear formatos
     let header_format = create_header_format()?;
@@ -70,18 +70,43 @@ fn write_excel_content(
     // 3. Escribir rows (empezando en fila 1)
     for (row_idx, row) in rows.iter().enumerate() {
         for (col_idx, header) in headers.iter().enumerate() {
-            let value = row.get(header).map(|s| s.as_str()).unwrap_or("");
+            let value_opt = row.get(header);
 
-            worksheet
-                .write_string_with_format((row_idx + 1) as u32, col_idx as u16, value, &cell_format)
-                .map_err(|e| {
-                    ExportError::XlsxWriteError(format!(
-                        "Error escribiendo celda [{}, {}]: {}",
-                        row_idx + 1,
-                        col_idx,
-                        e
-                    ))
-                })?;
+            let result = match value_opt {
+                Some(ExportValue::Text(s)) => worksheet.write_string_with_format(
+                    (row_idx + 1) as u32,
+                    col_idx as u16,
+                    s,
+                    &cell_format,
+                ),
+                Some(ExportValue::Number(n)) => worksheet.write_number_with_format(
+                    (row_idx + 1) as u32,
+                    col_idx as u16,
+                    *n,
+                    &cell_format,
+                ),
+                Some(ExportValue::Bool(b)) => worksheet.write_boolean_with_format(
+                    (row_idx + 1) as u32,
+                    col_idx as u16,
+                    *b,
+                    &cell_format,
+                ),
+                None => worksheet.write_string_with_format(
+                    (row_idx + 1) as u32,
+                    col_idx as u16,
+                    "",
+                    &cell_format,
+                ),
+            };
+
+            result.map_err(|e| {
+                ExportError::XlsxWriteError(format!(
+                    "Error escribiendo celda [{}, {}]: {}",
+                    row_idx + 1,
+                    col_idx,
+                    e
+                ))
+            })?;
         }
     }
 
@@ -123,6 +148,8 @@ fn create_cell_format() -> ExportResult<Format> {
     Ok(format)
 }
 
+// ... (formats remain same) ...
+
 // ==========================================
 // AUTOFIT DE COLUMNAS
 // ==========================================
@@ -131,7 +158,7 @@ fn create_cell_format() -> ExportResult<Format> {
 fn autofit_columns(
     worksheet: &mut Worksheet,
     headers: &[String],
-    rows: &[HashMap<String, String>],
+    rows: &[HashMap<String, ExportValue>],
 ) -> ExportResult<()> {
     for (col_idx, header) in headers.iter().enumerate() {
         // Calcular ancho máximo para esta columna
@@ -151,14 +178,19 @@ fn autofit_columns(
 }
 
 /// Calcula el ancho apropiado para una columna
-fn calculate_column_width(header: &str, rows: &[HashMap<String, String>]) -> f64 {
+fn calculate_column_width(header: &str, rows: &[HashMap<String, ExportValue>]) -> f64 {
     // Ancho del header
     let mut max_len = header.len();
 
     // Revisar todas las filas
     for row in rows {
         if let Some(value) = row.get(header) {
-            max_len = max_len.max(value.len());
+            let len = match value {
+                ExportValue::Text(s) => s.len(),
+                ExportValue::Number(n) => n.to_string().len(),
+                ExportValue::Bool(b) => b.to_string().len(),
+            };
+            max_len = max_len.max(len);
         }
     }
 
@@ -258,10 +290,13 @@ mod tests {
     fn test_calculate_column_width() {
         let header = "Name";
         let mut row1 = HashMap::new();
-        row1.insert("Name".to_string(), "John".to_string());
+        row1.insert("Name".to_string(), ExportValue::Text("John".to_string()));
 
         let mut row2 = HashMap::new();
-        row2.insert("Name".to_string(), "Alexander".to_string());
+        row2.insert(
+            "Name".to_string(),
+            ExportValue::Text("Alexander".to_string()),
+        );
 
         let rows = vec![row1, row2];
 

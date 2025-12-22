@@ -6,7 +6,7 @@
 
 use crate::export::errors::{ExportError, ExportResult};
 
-use crate::models::export::{PdfConfig, PdfDesign};
+use crate::models::export::{ExportValue, PdfConfig, PdfDesign};
 use chrono::Datelike;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -27,7 +27,7 @@ use typst::{Library, LibraryExt, World};
 
 pub fn generate_pdf(
     headers: &[String],
-    rows: &[HashMap<String, String>],
+    rows: &[HashMap<String, ExportValue>],
     config: &PdfConfig,
     design: &PdfDesign, // ✅ USA PDF DESIGN
 ) -> ExportResult<Vec<u8>> {

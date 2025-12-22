@@ -10,7 +10,6 @@ use crate::models::export::{
     CsvConfig, CsvDelimiter, ExcelConfig, ExportData, ExportFormat, ExportRequest, ExportResponse,
     PageOrientation, PdfConfig,
 };
-use std::collections::HashMap;
 
 // ==========================================
 // FUNCIÓN PRINCIPAL DE EXPORTACIÓN
@@ -50,8 +49,8 @@ fn normalizar_export_data(request: &ExportRequest) -> ExportResult<ExportData> {
     // 2. Clonar headers
     let headers = request.headers.clone();
 
-    // 3. Normalizar todas las rows (JSON → String)
-    let rows: Vec<HashMap<String, String>> = request
+    // 3. Normalizar todas las rows (JSON → ExportValue)
+    let rows: Vec<std::collections::HashMap<String, crate::models::export::ExportValue>> = request
         .rows
         .iter()
         .map(|row| domain::normalizar_row(row, &headers))

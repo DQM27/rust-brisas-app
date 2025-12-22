@@ -241,12 +241,39 @@ pub struct ExportResponse {
 // MODELO INTERNO NORMALIZADO
 // ==========================================
 
+/// Valor tipado para exportación
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(untagged)]
+pub enum ExportValue {
+    Text(String),
+    Number(f64),
+    Bool(bool),
+    // Por ahora las fechas las manejamos como strings ISO
+    // En el futuro podríamos agregar Date(DateTime<Local>)
+}
+
+impl Default for ExportValue {
+    fn default() -> Self {
+        ExportValue::Text(String::new())
+    }
+}
+
+impl std::fmt::Display for ExportValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExportValue::Text(s) => write!(f, "{}", s),
+            ExportValue::Number(n) => write!(f, "{}", n),
+            ExportValue::Bool(b) => write!(f, "{}", b),
+        }
+    }
+}
+
 /// Datos normalizados listos para exportar
 #[derive(Debug, Clone)]
 pub struct ExportData {
     pub format: ExportFormat,
     pub headers: Vec<String>,
-    pub rows: Vec<HashMap<String, String>>, // Todo normalizado a String
+    pub rows: Vec<HashMap<String, ExportValue>>, // Tipado fuerte
     pub pdf_config: Option<PdfConfig>,
     pub excel_config: Option<ExcelConfig>,
     pub csv_config: Option<CsvConfig>,

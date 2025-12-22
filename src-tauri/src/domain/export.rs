@@ -4,7 +4,9 @@
 // Capa de dominio: validaciones y reglas de negocio puras
 // Sin dependencias de DB ni servicios externos
 
-use crate::models::export::{CsvDelimiter, ExportFormat, ExportRequest, PageOrientation};
+use crate::models::export::{
+    CsvDelimiter, ExportFormat, ExportRequest, ExportValue, PageOrientation,
+};
 use std::collections::HashMap;
 
 // ==========================================
@@ -172,38 +174,53 @@ pub fn normalizar_titulo(titulo: &str) -> String {
     titulo.trim().to_string()
 }
 
-/// Convierte un valor JSON a String de forma segura
+/// Convierte un valor JSON a ExportValue preservando tipos
+pub fn normalizar_value(value: &serde_json::Value, header: &str) -> ExportValue {
+    match value {
+        serde_json::Value::Null => ExportValue::Text(String::new()),
+        serde_json::Value::Bool(b) => ExportValue::Bool(*b),
+        serde_json::Value::Number(n) => {
+            if let Some(f) = n.as_f64() {
+                ExportValue::Number(f)
+            } else {
+                ExportValue::Number(0.0)
+            }
+        }
+        serde_json::Value::String(s) => {
+            // Intentar formatear si parece una fecha y es string
+            let formatted = try_format_date(s, header);
+            ExportValue::Text(formatted)
+        }
+        serde_json::Value::Array(_) | serde_json::Value::Object(_) => {
+            // Para arrays/objetos, usar JSON string
+            ExportValue::Text(value.to_string())
+        }
+    }
+}
+
+/// Helper legacy para mantener compatibilidad si se necesita string explícito
 pub fn json_value_to_string(value: &serde_json::Value) -> String {
     match value {
         serde_json::Value::Null => String::new(),
         serde_json::Value::Bool(b) => b.to_string(),
         serde_json::Value::Number(n) => n.to_string(),
         serde_json::Value::String(s) => s.clone(),
-        serde_json::Value::Array(_) | serde_json::Value::Object(_) => {
-            // Para arrays/objetos, usar JSON string
-            value.to_string()
-        }
+        serde_json::Value::Array(_) | serde_json::Value::Object(_) => value.to_string(),
     }
 }
 
 use chrono::DateTime;
 
-/// Normaliza una fila completa (convierte todos los valores a String)
+/// Normaliza una fila completa (preservando tipos)
 pub fn normalizar_row(
     row: &HashMap<String, serde_json::Value>,
     headers: &[String],
-) -> HashMap<String, String> {
+) -> HashMap<String, ExportValue> {
     let mut normalized = HashMap::new();
 
     for header in headers {
-        let raw_value = row
-            .get(header)
-            .map(json_value_to_string)
-            .unwrap_or_default();
-
-        // Intentar formatear si parece una fecha
-        let value = try_format_date(&raw_value, header);
-
+        let raw_value = row.get(header).unwrap_or(&serde_json::Value::Null);
+        let value = normalizar_value(raw_value, header);
         normalized.insert(header.clone(), value);
     }
 
