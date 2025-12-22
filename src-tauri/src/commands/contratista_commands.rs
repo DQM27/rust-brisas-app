@@ -34,18 +34,6 @@ pub async fn get_contratista_by_id(
         .map_err(|e| e.to_string())
 }
 
-/// DEPRECATED: Use get_contratista_by_id instead
-#[deprecated(note = "Use get_contratista_by_id instead")]
-#[tauri::command]
-pub async fn get_contratista(
-    pool: State<'_, SqlitePool>,
-    id: String,
-) -> Result<ContratistaResponse, String> {
-    contratista_service::get_contratista_by_id(&pool, &id)
-        .await
-        .map_err(|e| e.to_string())
-}
-
 #[tauri::command]
 pub async fn get_contratista_by_cedula(
     pool: State<'_, SqlitePool>,
