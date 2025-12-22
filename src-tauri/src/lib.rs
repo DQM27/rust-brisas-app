@@ -12,8 +12,9 @@ pub mod models;
 pub mod search;
 pub mod services;
 
+use log::{error, info};
 use std::sync::atomic::AtomicBool;
-use tauri::Manager;
+use tauri::Manager; // Import log macros
 
 pub struct AppState {
     pub backend_ready: AtomicBool,
@@ -25,13 +26,16 @@ pub fn run() {
     {
         #[tokio::main]
         async fn main_inner() -> Result<(), Box<dyn std::error::Error>> {
+            // Environment logger is initialized by tauri-plugin-log if attached,
+            // but dotenv needs to be loaded first for config
             dotenvy::dotenv().ok();
 
             let app_config = config::load_config()?;
 
             // Verificar si hay restauración pendiente ANTES de conectar a la DB
             if let Err(e) = services::backup::check_and_restore_database(&app_config) {
-                eprintln!("❌ Error crítico al restaurar base de datos: {}", e);
+                // eprintln -> log::error
+                error!("❌ Error crítico al restaurar base de datos: {}", e);
             }
 
             // Inicializar pool y servicio de búsqueda en paralelo
@@ -44,16 +48,16 @@ pub fn run() {
 
             // Solo reindexar si el índice está vacío (primera vez o después de restauración)
             if search_service.is_empty() {
-                println!("📇 Índice vacío, detectado. Iniciando reindexado en segundo plano...");
+                info!("📇 Índice vacío, detectado. Iniciando reindexado en segundo plano...");
                 let pool_clone = pool.clone();
                 let search_service_clone = search_service.clone();
 
                 tokio::spawn(async move {
-                    println!("🔄 Iniciando reindexado background task...");
+                    info!("🔄 Iniciando reindexado background task...");
                     if let Err(e) = search_service_clone.reindex_all(&pool_clone).await {
-                        eprintln!("❌ Error al reindexar en background: {}", e);
+                        error!("❌ Error al reindexar en background: {}", e);
                     } else {
-                        println!(
+                        info!(
                             "✅ Reindexado background completado: {} documentos",
                             search_service_clone.doc_count()
                         );
@@ -70,6 +74,7 @@ pub fn run() {
             let session_state = services::session::SessionState::new();
 
             tauri::Builder::default()
+                .plugin(tauri_plugin_log::Builder::new().build()) // Logging Plugin
                 .manage(pool)
                 .manage(app_config)
                 .manage(search_service)
