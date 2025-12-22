@@ -4,6 +4,7 @@
 // Solo modelos, DTOs y enums - SIN validaciones ni lógica
 
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow; // Import sqlx
 
 // ==========================================
 // ==========================================
@@ -11,7 +12,7 @@ use serde::{Deserialize, Serialize};
 // ==========================================
 
 /// Representa un usuario del sistema
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)] // Added FromRow
 #[serde(rename_all = "camelCase")]
 pub struct User {
     pub id: String,
@@ -42,8 +43,9 @@ pub struct User {
 // ENUM DE ROLES
 // ==========================================
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::Type)] // Added sqlx::Type
 #[serde(rename_all = "lowercase")]
+#[sqlx(rename_all = "lowercase")] // Lowercase for DB mapping
 pub enum UserRole {
     Admin,
     Supervisor,

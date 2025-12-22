@@ -4,56 +4,37 @@
 // Capa de data access: queries SQL puras
 // Sin lógica de negocio, solo interacción con la base de datos
 
-use crate::models::user::{User, UserRole};
+use crate::models::user::User;
 use sqlx::{Row, SqlitePool};
 
 // ==========================================
 // QUERIES DE LECTURA
 // ==========================================
 
+const SELECT_USERS: &str = "
+    SELECT id, email, nombre, apellido, role, is_active, created_at, updated_at,
+           cedula, segundo_nombre, segundo_apellido,
+           fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
+           contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password, deleted_at
+    FROM users
+";
+
+#[derive(sqlx::FromRow)]
+struct UserWithPassword {
+    #[sqlx(flatten)]
+    user: User,
+    password_hash: String,
+}
+
 /// Busca un usuario por ID (Solo activos)
 pub async fn find_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<User> {
-    let row = sqlx::query(
-        "SELECT id, email, nombre, apellido, role, is_active, created_at, updated_at,
-                cedula, segundo_nombre, segundo_apellido,
-                fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
-                contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password, deleted_at
-         FROM users WHERE id = ? AND deleted_at IS NULL",
-    )
+    sqlx::query_as::<_, User>(&format!(
+        "{} WHERE id = ? AND deleted_at IS NULL",
+        SELECT_USERS
+    ))
     .bind(id)
     .fetch_one(pool)
-    .await?;
-
-    Ok(User {
-        id: row.get("id"),
-        email: row.get("email"),
-        nombre: row.get("nombre"),
-        apellido: row.get("apellido"),
-        role: UserRole::from_str(row.get("role")).map_err(|e| {
-            sqlx::Error::Decode(Box::new(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                e,
-            )))
-        })?,
-        is_active: row.get::<i32, _>("is_active") != 0,
-        created_at: row.get("created_at"),
-        updated_at: row.get("updated_at"),
-        // New fields
-        // Nuevos campos
-        cedula: row.get("cedula"),
-        segundo_nombre: row.get("segundo_nombre"),
-        segundo_apellido: row.get("segundo_apellido"),
-
-        fecha_inicio_labores: row.get("fecha_inicio_labores"),
-        numero_gafete: row.get("numero_gafete"),
-        fecha_nacimiento: row.get("fecha_nacimiento"),
-        telefono: row.get("telefono"),
-        direccion: row.get("direccion"),
-        contacto_emergencia_nombre: row.get("contacto_emergencia_nombre"),
-        contacto_emergencia_telefono: row.get("contacto_emergencia_telefono"),
-        must_change_password: row.get::<i32, _>("must_change_password") != 0,
-        deleted_at: row.get("deleted_at"),
-    })
+    .await
 }
 
 /// Busca un usuario por email (Solo activos)
@@ -61,97 +42,25 @@ pub async fn find_by_email_with_password(
     pool: &SqlitePool,
     email: &str,
 ) -> sqlx::Result<(User, String)> {
-    let row = sqlx::query(
-        "SELECT id, email, nombre, apellido, role, is_active, created_at, updated_at, password_hash,
-                cedula, segundo_nombre, segundo_apellido,
-                fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
-                contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password, deleted_at
-         FROM users WHERE email = ? AND deleted_at IS NULL"
-    )
+    let row = sqlx::query_as::<_, UserWithPassword>(&format!(
+        "{} WHERE email = ? AND deleted_at IS NULL",
+        SELECT_USERS.replace("FROM users", ", password_hash FROM users") // Inject password_hash
+    ))
     .bind(email)
     .fetch_one(pool)
     .await?;
 
-    let user = User {
-        id: row.get("id"),
-        email: row.get("email"),
-        nombre: row.get("nombre"),
-        apellido: row.get("apellido"),
-        role: UserRole::from_str(row.get("role")).map_err(|e| {
-            sqlx::Error::Decode(Box::new(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                e,
-            )))
-        })?,
-        is_active: row.get::<i32, _>("is_active") != 0,
-        created_at: row.get("created_at"),
-        updated_at: row.get("updated_at"),
-        // New fields
-        // Nuevos campos
-        cedula: row.get("cedula"),
-        segundo_nombre: row.get("segundo_nombre"),
-        segundo_apellido: row.get("segundo_apellido"),
-
-        fecha_inicio_labores: row.get("fecha_inicio_labores"),
-        numero_gafete: row.get("numero_gafete"),
-        fecha_nacimiento: row.get("fecha_nacimiento"),
-        telefono: row.get("telefono"),
-        direccion: row.get("direccion"),
-        contacto_emergencia_nombre: row.get("contacto_emergencia_nombre"),
-        contacto_emergencia_telefono: row.get("contacto_emergencia_telefono"),
-        must_change_password: row.get::<i32, _>("must_change_password") != 0,
-        deleted_at: row.get("deleted_at"),
-    };
-
-    let password_hash: String = row.get("password_hash");
-
-    Ok((user, password_hash))
+    Ok((row.user, row.password_hash))
 }
 
 /// Obtiene todos los usuarios activos ordenados por fecha de creación
 pub async fn find_all(pool: &SqlitePool) -> sqlx::Result<Vec<User>> {
-    let rows = sqlx::query(
-        "SELECT id, email, nombre, apellido, role, is_active, created_at, updated_at,
-                cedula, segundo_nombre, segundo_apellido,
-                fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
-                contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password, deleted_at
-         FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC",
-    )
+    sqlx::query_as::<_, User>(&format!(
+        "{} WHERE deleted_at IS NULL ORDER BY created_at DESC",
+        SELECT_USERS
+    ))
     .fetch_all(pool)
-    .await?;
-
-    let users: Vec<User> = rows
-        .into_iter()
-        .filter_map(|row| {
-            Some(User {
-                id: row.get("id"),
-                email: row.get("email"),
-                nombre: row.get("nombre"),
-                apellido: row.get("apellido"),
-                role: UserRole::from_str(row.get("role")).ok()?,
-                is_active: row.get::<i32, _>("is_active") != 0,
-                created_at: row.get("created_at"),
-                updated_at: row.get("updated_at"),
-                // New fields
-                // Nuevos campos
-                cedula: row.get("cedula"),
-                segundo_nombre: row.get("segundo_nombre"),
-                segundo_apellido: row.get("segundo_apellido"),
-
-                fecha_inicio_labores: row.get("fecha_inicio_labores"),
-                numero_gafete: row.get("numero_gafete"),
-                fecha_nacimiento: row.get("fecha_nacimiento"),
-                telefono: row.get("telefono"),
-                direccion: row.get("direccion"),
-                contacto_emergencia_nombre: row.get("contacto_emergencia_nombre"),
-                contacto_emergencia_telefono: row.get("contacto_emergencia_telefono"),
-                must_change_password: row.get::<i32, _>("must_change_password") != 0,
-                deleted_at: row.get("deleted_at"),
-            })
-        })
-        .collect();
-
-    Ok(users)
+    .await
 }
 
 /// Cuenta cuántos usuarios tienen un email específico (para verificar unicidad)
