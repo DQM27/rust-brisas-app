@@ -2,6 +2,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
+  import { toast } from "svelte-5-french-toast";
   import ListaNegraListForm from "./ListaNegraListForm.svelte";
   import ListaNegraForm from "./ListaNegraForm.svelte";
   import BlacklistConfirmModal from "./blacklistForm/BlacklistConfirmModal.svelte";
@@ -115,10 +116,9 @@
       await loadListaNegra();
       showAddModal = false;
       resetForm();
-      // TODO: Toast de éxito
+      toast.success("Persona agregada a lista negra");
     } else {
-      // TODO: Toast de error
-      console.error("Error al agregar a lista negra:", result.error);
+      toast.error(result.error || "Error al agregar a lista negra");
     }
 
     addFormLoading = false;
@@ -150,21 +150,26 @@
       );
     } else {
       // Re-bloquear (reactivate)
+      const usuario = $currentUser;
+      const bloqueadoPor = usuario
+        ? `${usuario.nombre} ${usuario.apellido}`
+        : "Sistema";
       result = await listaNegraService.reblock(
         data.id,
         data.motivoDesbloqueo || "Re-bloqueo manual",
         data.observaciones,
-        "usuario_actual", // TODO: Obtener usuario actual del store
+        bloqueadoPor,
       );
     }
 
     if (result.ok) {
       await loadListaNegra();
       selectedBloqueado = null;
-      // TODO: Toast de éxito
+      toast.success(
+        bloqueado.isActive ? "Persona desbloqueada" : "Persona re-bloqueada",
+      );
     } else {
-      // TODO: Toast de error
-      console.error("Error:", result.error);
+      toast.error(result.error || "Error en la operación");
     }
   }
 
