@@ -1,0 +1,187 @@
+    Checking brisas-app v0.1.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+error: error returned from database: (code: 1) no such column: a.ingreso_visita_id
+   --> src\db\gafete_queries.rs:175:13
+    |
+175 | /             sqlx::query_as!(
+176 | |                 NumRow,
+177 | |                 r#"SELECT g.numero FROM gafetes g
+178 | |                  LEFT JOIN ingresos_visitas iv ON g.numero = iv.gafete AND iv.estado = 'ADENTRO'
+...   |
+182 | |                  ORDER BY g.numero"#
+183 | |             )
+    | |_____________^
+    |
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0308]: mismatched types
+  --> src\commands\gafete_commands.rs:18:5
+   |
+18 |     gafete_service::create_gafete(&pool, input).await
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Result<GafeteResponse, String>`, found `Result<GafeteResponse, GafeteError>`
+   |
+   = note: expected enum `Result<_, std::string::String>`
+              found enum `Result<_, GafeteError>`
+
+error[E0308]: mismatched types
+  --> src\commands\gafete_commands.rs:26:5
+   |
+26 |     gafete_service::create_gafete_range(&pool, input).await
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Result<Vec<String>, String>`, found `Result<Vec<String>, GafeteError>`
+   |
+   = note: expected enum `Result<_, std::string::String>`
+              found enum `Result<_, GafeteError>`
+
+error[E0308]: mismatched types
+  --> src\commands\gafete_commands.rs:35:5
+   |
+35 |     gafete_service::get_gafete(&pool, &numero, &tipo).await
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Result<GafeteResponse, String>`, found `Result<GafeteResponse, GafeteError>`
+   |
+   = note: expected enum `Result<_, std::string::String>`
+              found enum `Result<_, GafeteError>`
+
+error[E0308]: mismatched types
+  --> src\commands\gafete_commands.rs:40:5
+   |
+40 |     gafete_service::get_all_gafetes(&pool).await
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Result<GafeteListResponse, String>`, found `Result<GafeteListResponse, GafeteError>`
+   |
+   = note: expected enum `Result<_, std::string::String>`
+              found enum `Result<_, GafeteError>`
+
+error[E0308]: mismatched types
+  --> src\commands\gafete_commands.rs:49:5
+   |
+49 |     gafete_service::get_gafetes_disponibles(&pool, tipo_enum).await
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Result<Vec<GafeteResponse>, String>`, found `Result<Vec<GafeteResponse>, GafeteError>`
+   |
+   = note: expected enum `Result<_, std::string::String>`
+              found enum `Result<_, GafeteError>`
+
+error[E0308]: mismatched types
+  --> src\commands\gafete_commands.rs:58:5
+   |
+58 |     gafete_service::is_gafete_disponible(&pool, &numero, &tipo).await
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Result<bool, String>`, found `Result<bool, GafeteError>`
+   |
+   = note: expected enum `Result<_, std::string::String>`
+              found enum `Result<_, GafeteError>`
+
+error[E0308]: mismatched types
+  --> src\commands\gafete_commands.rs:68:5
+   |
+68 |     gafete_service::update_gafete(&pool, numero, tipo, input).await
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Result<GafeteResponse, String>`, found `Result<GafeteResponse, GafeteError>`
+   |
+   = note: expected enum `Result<_, std::string::String>`
+              found enum `Result<_, GafeteError>`
+
+error[E0308]: mismatched types
+  --> src\commands\gafete_commands.rs:79:5
+   |
+79 |     gafete_service::update_gafete_status(&pool, numero, tipo, input.estado, usuario_id).await
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Result<GafeteResponse, String>`, found `Result<GafeteResponse, GafeteError>`
+   |
+   = note: expected enum `Result<_, std::string::String>`
+              found enum `Result<_, GafeteError>`
+
+error[E0308]: mismatched types
+  --> src\commands\gafete_commands.rs:88:5
+   |
+88 |     gafete_service::delete_gafete(&pool, numero, tipo).await
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Result<(), String>`, found `Result<(), GafeteError>`
+   |
+   = note: expected enum `Result<_, std::string::String>`
+              found enum `Result<_, GafeteError>`
+
+error[E0308]: `match` arms have incompatible types
+   --> src\db\gafete_queries.rs:192:13
+    |
+154 |       let numeros = match tipo {
+    |                     ---------- `match` arms have incompatible types
+...
+159 | /             sqlx::query_as!(
+160 | |                 NumRow,
+161 | |                 r#"SELECT g.numero FROM gafetes g
+162 | |                  LEFT JOIN ingresos_proveedores ip ON g.numero = ip.gafete AND ip.fecha_salida IS NULL
+...   |
+168 | |             .fetch_all(pool)
+169 | |             .await?
+    | |___________________- this is found to be of type `std::vec::Vec<find_disponibles_by_tipo::{closure#0}::NumRow>`
+...
+175 | /             sqlx::query_as!(
+176 | |                 NumRow,
+177 | |                 r#"SELECT g.numero FROM gafetes g
+178 | |                  LEFT JOIN ingresos_visitas iv ON g.numero = iv.gafete AND iv.estado = 'ADENTRO'
+...   |
+184 | |             .fetch_all(pool)
+185 | |             .await?
+    | |___________________- this is found to be of type `std::vec::Vec<find_disponibles_by_tipo::{closure#0}::NumRow>`
+...
+192 | /             sqlx::query_as!(
+193 | |                 NumRow,
+194 | |                 r#"SELECT g.numero FROM gafetes g
+195 | |                  LEFT JOIN ingresos i ON g.numero = i.gafete_numero AND i.fecha_hora_salida IS NULL AND i.tipo_ingreso = 'contratista'
+...   |
+202 | |             .fetch_all(pool)
+203 | |             .await?
+    | |___________________^ expected `NumRow`, found a different `NumRow`
+    |
+    = note: expected struct `std::vec::Vec<find_disponibles_by_tipo::{closure#0}::NumRow>`
+               found struct `std::vec::Vec<find_disponibles_by_tipo::{closure#0}::NumRow>`
+
+error[E0599]: no method named `unwrap_or_default` found for struct `std::string::String` in the current scope
+   --> src\db\gafete_queries.rs:353:29
+    |
+353 |             r.fecha_reporte.unwrap_or_default(), // Should be not null? DTO had Option.
+    |                             ^^^^^^^^^^^^^^^^^ method not found in `std::string::String`
+
+error[E0599]: no method named `unwrap_or_default` found for struct `std::string::String` in the current scope
+   --> src\db\gafete_queries.rs:354:31
+    |
+354 |             r.nombre_completo.unwrap_or_default(),
+    |                               ^^^^^^^^^^^^^^^^^ method not found in `std::string::String`
+
+error[E0277]: `?` couldn't convert the error to `std::string::String`
+   --> src\services\ingreso_contratista_service.rs:185:90
+    |
+185 |             gafete_service::is_gafete_disponible(pool, &normalizado, "contratista").await?;
+    |             -----------------------------------------------------------------------------^ the trait `From<GafeteError>` is not implemented for `std::string::String`
+    |             |
+    |             this can't be annotated with `?` because it has type `Result<_, GafeteError>`
+    |
+note: `GafeteError` needs to implement `Into<std::string::String>`
+   --> src\domain\errors.rs:133:1
+    |
+133 | pub enum GafeteError {
+    | ^^^^^^^^^^^^^^^^^^^^
+    = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+
+warning: unused import: `std::str::FromStr`
+ --> src\db\gafete_queries.rs:9:5
+  |
+9 | use std::str::FromStr;
+  |     ^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `std::str::FromStr`
+  --> src\services\gafete_service.rs:17:5
+   |
+17 | use std::str::FromStr;
+   |     ^^^^^^^^^^^^^^^^^
+
+Some errors have detailed explanations: E0277, E0308, E0599.
+For more information about an error, try `rustc --explain E0277`.
+warning: `brisas-app` (lib) generated 2 warnings
+error: could not compile `brisas-app` (lib) due to 14 previous errors; 2 warnings emitted

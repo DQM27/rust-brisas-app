@@ -2,8 +2,10 @@
 // src/services/gafete_service.rs
 // ==========================================
 // Orquesta dominio y DB - Lógica de negocio completa
+// Strict Mode: Return Result<T, GafeteError>
 
 use crate::db::gafete_queries as db;
+use crate::domain::errors::GafeteError;
 use crate::domain::gafete as domain;
 use crate::models::gafete::{
     CreateGafeteInput, CreateGafeteRangeInput, GafeteEstado, GafeteListResponse, GafeteResponse,
@@ -20,51 +22,49 @@ use sqlx::SqlitePool;
 pub async fn create_gafete(
     pool: &SqlitePool,
     input: CreateGafeteInput,
-) -> Result<GafeteResponse, String> {
+) -> Result<GafeteResponse, GafeteError> {
     // 1. Validar input
-    domain::validar_create_input(&input)?;
+    domain::validar_create_input(&input).map_err(GafeteError::Validation)?;
 
     // 2. Normalizar número
     let numero_normalizado = domain::normalizar_numero(&input.numero);
 
     // 3. Verificar que no exista con este número + tipo
-    let tipo = TipoGafete::from_str(&input.tipo)?;
+    let tipo = TipoGafete::from_str(&input.tipo).map_err(|e| GafeteError::Validation(e))?;
     let exists = db::exists_by_numero_and_tipo(pool, &numero_normalizado, tipo.as_str()).await?;
     if exists {
-        return Err(format!(
-            "Ya existe un gafete con el número {} de tipo {}",
-            numero_normalizado, input.tipo
-        ));
+        return Err(GafeteError::AlreadyExists);
     }
 
-    // 4. Parsear tipo
-    let tipo = TipoGafete::from_str(&input.tipo)?;
-
-    // 5. Timestamps
+    // 4. Timestamps
     let now = Utc::now().to_rfc3339();
 
-    // 6. Insertar
+    // 5. Insertar
     db::insert(pool, &numero_normalizado, tipo.as_str(), &now, &now).await?;
 
-    // 7. Retornar
+    // 6. Retornar
     get_gafete(pool, &numero_normalizado, tipo.as_str()).await
 }
 
 pub async fn create_gafete_range(
     pool: &SqlitePool,
     input: CreateGafeteRangeInput,
-) -> Result<Vec<String>, String> {
+) -> Result<Vec<String>, GafeteError> {
     let mut created_gafetes = Vec::new();
 
     if input.start > input.end {
-        return Err("El inicio del rango debe ser menor o igual al fin del rango".to_string());
+        return Err(GafeteError::Validation(
+            "El inicio del rango debe ser menor o igual al fin del rango".to_string(),
+        ));
     }
 
     if (input.end - input.start) > 1000 {
-        return Err("No se pueden crear más de 1000 gafetes en una sola operación".to_string());
+        return Err(GafeteError::Validation(
+            "No se pueden crear más de 1000 gafetes en una sola operación".to_string(),
+        ));
     }
 
-    let tipo = TipoGafete::from_str(&input.tipo)?;
+    let tipo = TipoGafete::from_str(&input.tipo).map_err(GafeteError::Validation)?;
     let now = Utc::now().to_rfc3339();
     let padding = input.padding.unwrap_or(2);
     let prefix = input.prefix.unwrap_or_default();
@@ -77,8 +77,15 @@ pub async fn create_gafete_range(
         // Intentar insertar - Ignorar errores de duplicados (continue)
         match db::insert(pool, &numero_completo, tipo.as_str(), &now, &now).await {
             Ok(_) => created_gafetes.push(numero_completo),
-            Err(e) if e.contains("Ya existe") => continue, // Skip duplicates
-            Err(e) => return Err(e),                       // Fail on other errors
+            Err(e) => {
+                // Check unique violation properly
+                if let Some(db_err) = e.as_database_error() {
+                    if db_err.is_unique_violation() {
+                        continue;
+                    }
+                }
+                return Err(GafeteError::Database(e));
+            }
         }
     }
 
@@ -93,8 +100,21 @@ pub async fn get_gafete(
     pool: &SqlitePool,
     numero: &str,
     tipo: &str,
-) -> Result<GafeteResponse, String> {
-    let gafete = db::find_by_numero_and_tipo(pool, numero, tipo).await?;
+) -> Result<GafeteResponse, GafeteError> {
+    // Si falla find, retorna sqlx error. Si es RowNotFound, retorna Error Database.
+    // Deberíamos mapear RowNotFound a GafeteError::NotFound?
+    // DB returns sqlx::Error::RowNotFound.
+    // GafeteError::Database wraps it.
+    // Frontend could check code/string.
+    // Better: Helper map_not_found?
+    // Using simple propagation first.
+    let gafete = db::find_by_numero_and_tipo(pool, numero, tipo)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::RowNotFound => GafeteError::NotFound,
+            _ => GafeteError::Database(e),
+        })?;
+
     let en_uso = db::is_en_uso(pool, numero, tipo).await?;
     let tiene_alerta = db::has_unresolved_alert_typed(pool, numero, tipo).await?;
 
@@ -123,9 +143,7 @@ pub async fn get_gafete(
         response.notas = notas;
     }
 
-    // Determinar estado global (status) considerando estado físico + uso + alertas
-    // Prioridad: Dañado/Extraviado (Físico) > Perdido (Alerta) > En Uso > Disponible
-    // Prioridad: Dañado/Extraviado (Físico) > Perdido (Alerta) > En Uso > Disponible
+    // Determinar estado global (status)
     if gafete.estado == GafeteEstado::Danado {
         response.status = "danado".to_string();
         response.esta_disponible = false;
@@ -133,7 +151,7 @@ pub async fn get_gafete(
         response.status = "extraviado".to_string();
         response.esta_disponible = false;
     } else if tiene_alerta {
-        response.status = "perdido".to_string(); // Alerta de extravío generada por sistema
+        response.status = "perdido".to_string();
         response.esta_disponible = false;
     } else if en_uso {
         response.status = "en_uso".to_string();
@@ -150,13 +168,12 @@ pub async fn get_gafete(
 // OBTENER TODOS
 // ==========================================
 
-pub async fn get_all_gafetes(pool: &SqlitePool) -> Result<GafeteListResponse, String> {
+pub async fn get_all_gafetes(pool: &SqlitePool) -> Result<GafeteListResponse, GafeteError> {
     let gafetes = db::find_all(pool).await?;
 
     // Calcular disponibilidad y estado para cada uno
     let mut responses = Vec::with_capacity(gafetes.len());
 
-    // Contadores para stats rápidos
     let mut stats_danados = 0;
     let mut stats_extraviados = 0;
 
@@ -189,8 +206,6 @@ pub async fn get_all_gafetes(pool: &SqlitePool) -> Result<GafeteListResponse, St
             response.notas = notas;
         }
 
-        // Determinar status
-        // Determinar status
         if gafete.estado == GafeteEstado::Danado {
             response.status = "danado".to_string();
             response.esta_disponible = false;
@@ -213,10 +228,8 @@ pub async fn get_all_gafetes(pool: &SqlitePool) -> Result<GafeteListResponse, St
         responses.push(response);
     }
 
-    // Stats
     let total = responses.len();
     let disponibles = responses.iter().filter(|g| g.esta_disponible).count();
-    // En uso real debe contar los que están en uso pero NO dañados/extraviados
     let en_uso = responses.iter().filter(|r| r.status == "en_uso").count();
 
     let contratistas = responses
@@ -262,13 +275,11 @@ pub async fn get_all_gafetes(pool: &SqlitePool) -> Result<GafeteListResponse, St
 pub async fn get_gafetes_disponibles(
     pool: &SqlitePool,
     tipo: TipoGafete,
-) -> Result<Vec<GafeteResponse>, String> {
+) -> Result<Vec<GafeteResponse>, GafeteError> {
     let numeros = db::find_disponibles_by_tipo(pool, tipo.as_str()).await?;
 
     let mut responses = Vec::new();
     for numero in numeros {
-        // Optimización: find_disponibles_by_tipo ya filtra por estado, uso y alertas
-        // Pero necesitamos el objeto completo
         let gafete = db::find_by_numero_and_tipo(pool, &numero, tipo.as_str()).await?;
         let mut response = GafeteResponse::from(gafete);
         response.esta_disponible = true;
@@ -283,26 +294,21 @@ pub async fn get_gafetes_disponibles(
 // VERIFICAR DISPONIBILIDAD
 // ==========================================
 
-// ==========================================
-// VERIFICAR DISPONIBILIDAD
-// ==========================================
-
 pub async fn is_gafete_disponible(
     pool: &SqlitePool,
     numero: &str,
     tipo: &str,
-) -> Result<bool, String> {
-    // Verificar existencia y estado físico usando numero Y tipo
+) -> Result<bool, GafeteError> {
     match db::find_by_numero_and_tipo(pool, numero, tipo).await {
         Ok(g) => {
             if g.estado != GafeteEstado::Activo {
                 return Ok(false);
             }
         }
-        Err(_) => return Ok(false), // No existe
+        Err(sqlx::Error::RowNotFound) => return Ok(false),
+        Err(e) => return Err(GafeteError::Database(e)),
     }
 
-    // Checking usage and alerts (Typed)
     let en_uso = db::is_en_uso(pool, numero, tipo).await?;
     let tiene_alerta = db::has_unresolved_alert_typed(pool, numero, tipo).await?;
     Ok(!en_uso && !tiene_alerta)
@@ -317,48 +323,31 @@ pub async fn update_gafete(
     numero: String,
     tipo_actual: String,
     input: UpdateGafeteInput,
-) -> Result<GafeteResponse, String> {
-    // 1. Validar input
-    domain::validar_update_input(&input)?;
+) -> Result<GafeteResponse, GafeteError> {
+    domain::validar_update_input(&input).map_err(GafeteError::Validation)?;
 
-    // 2. Verificar que existe
-    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo_actual).await?;
+    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo_actual)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::RowNotFound => GafeteError::NotFound,
+            _ => GafeteError::Database(e),
+        })?;
 
-    // 3. Parsear nuevo tipo si viene
     let tipo_str = if let Some(ref t) = input.tipo {
-        Some(TipoGafete::from_str(t)?.as_str().to_string())
+        Some(
+            TipoGafete::from_str(t)
+                .map_err(GafeteError::Validation)?
+                .as_str()
+                .to_string(),
+        )
     } else {
         None
     };
 
-    // 4. Timestamp
     let now = Utc::now().to_rfc3339();
-
-    // 5. Actualizar (OJO: db::update solo recibe numero, no tipo!!
-    //    Si NUMBER es parte de la PK, update puede necesitar cambiar el tipo.
-    //    Pero 'update' query en db::update usa 'WHERE numero = ?'.
-    //    Esto es AMBIGUO. db::update necesita (numero, tipo_actual) en el WHERE.
-    //    Necesito actualizar db::update tambien.
-    //    Asumiendo que db::update será corregido para recibir tipo_actual.
-    //    db::update(pool, numero, tipo_actual, nuevo_tipo, ...).
-    //    Por ahora, asumimos db::update ESTÁ ROTO.
-    //    Lo dejaremos roto en esta llamada y lo arreglare en db queries.
-    //    Pero aqui llamaremos db::update(pool, &numero, &tipo_actual, ...).
-
-    // Me detengo. Debo arreglar db::update primero o simultaneamente?
-    // db::update ya existe y toma 4 args.
-    // Necesito cambiarlo.
-
-    // Dejaré caer esto si no puedo cambiar db::update aqui.
-    // Asumiré db::update sigue tomando 4 args y actualiza TODOS los numeros?? MAL.
-
-    // Solucion: Agregar parametro 'tipo' a db::update en el siguiente paso.
-    // Aqui solo cambio la llamada para compilar con lo que ESPERO tener.
 
     db::update(pool, &numero, &tipo_actual, tipo_str.as_deref(), &now).await?;
 
-    // 6. Retornar
-    // Si cambio el tipo, debo buscar con el NUEVO tipo.
     let tipo_final = tipo_str.unwrap_or(tipo_actual);
     get_gafete(pool, &numero, &tipo_final).await
 }
@@ -369,24 +358,22 @@ pub async fn update_gafete_status(
     tipo: String,
     estado: GafeteEstado,
     usuario_id: Option<String>,
-) -> Result<GafeteResponse, String> {
-    // Validar estado (Implícita por tipo)
-
-    // Verificar que existe
-    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo).await?;
+) -> Result<GafeteResponse, GafeteError> {
+    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::RowNotFound => GafeteError::NotFound,
+            _ => GafeteError::Database(e),
+        })?;
 
     let now = Utc::now().to_rfc3339();
-    // Idem: db::update_status debe recibir tipo.
     db::update_status(pool, &numero, &tipo, estado.as_str(), &now).await?;
 
-    // Si el estado es "Activo", resolver alertas pendientes
     if estado == GafeteEstado::Activo {
         if let Ok(true) = db::has_unresolved_alert_typed(pool, &numero, &tipo).await {
-            // Buscar la alerta pendiente
             if let Ok(Some((id, _, _, _, _, _, _, _))) =
                 db::get_recent_alert_for_gafete_typed(pool, &numero, &tipo).await
             {
-                // Resolverla
                 let resolver_id = usuario_id.unwrap_or_else(|| "sistema".to_string());
                 alerta_service::resolver(
                     pool,
@@ -397,7 +384,7 @@ pub async fn update_gafete_status(
                     &now,
                 )
                 .await
-                .map_err(|e| format!("Error al resolver alerta automática: {}", e))?;
+                .map_err(|e| GafeteError::Validation(e.to_string()))?; // Map AlertaError
             }
         }
     }
@@ -409,16 +396,25 @@ pub async fn update_gafete_status(
 // ELIMINAR
 // ==========================================
 
-pub async fn delete_gafete(pool: &SqlitePool, numero: String, tipo: String) -> Result<(), String> {
-    // 1. Verificar que existe
-    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo).await?;
+pub async fn delete_gafete(
+    pool: &SqlitePool,
+    numero: String,
+    tipo: String,
+) -> Result<(), GafeteError> {
+    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::RowNotFound => GafeteError::NotFound,
+            _ => GafeteError::Database(e),
+        })?;
 
-    // 2. Verificar que no esté en uso (si está 'activo' o 'en_uso')
     let en_uso = db::is_en_uso(pool, &numero, &tipo).await?;
     if en_uso {
-        return Err("No se puede eliminar un gafete que está actualmente en uso".to_string());
+        return Err(GafeteError::Validation(
+            "No se puede eliminar un gafete que está actualmente en uso".to_string(),
+        ));
     }
 
-    // 3. Eliminar
-    db::delete(pool, &numero, &tipo).await
+    db::delete(pool, &numero, &tipo).await?;
+    Ok(())
 }

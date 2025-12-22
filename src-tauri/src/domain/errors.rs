@@ -124,3 +124,19 @@ pub enum AlertaError {
     #[error("Error de validación: {0}")]
     Validation(String),
 }
+
+// ==========================================
+// GAFETE ERRORS
+// ==========================================
+
+#[derive(Error, Debug)]
+pub enum GafeteError {
+    #[error("Gafete no encontrado")]
+    NotFound,
+    #[error("Gafete ya existe")]
+    AlreadyExists,
+    #[error("Error de base de datos: {0}")]
+    Database(#[from] sqlx::Error),
+    #[error("Error de validación: {0}")]
+    Validation(String),
+}

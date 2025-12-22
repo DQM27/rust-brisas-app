@@ -181,8 +181,9 @@ pub async fn crear_ingreso_contratista(
     // 4. Gestionar Gafete
     let gafete_normalizado = if let Some(ref g) = input.gafete_numero {
         let normalizado = domain::normalizar_numero_gafete(g);
-        let disponible =
-            gafete_service::is_gafete_disponible(pool, &normalizado, "contratista").await?;
+        let disponible = gafete_service::is_gafete_disponible(pool, &normalizado, "contratista")
+            .await
+            .map_err(|e| e.to_string())?;
         if !disponible {
             return Err(format!("Gafete {} no está disponible", normalizado));
         }

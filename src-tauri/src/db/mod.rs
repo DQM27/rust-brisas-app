@@ -2,7 +2,8 @@
 
 use crate::config::AppConfig;
 use sqlx::sqlite::SqlitePoolOptions;
-use sqlx::SqlitePool;
+use sqlx::{ConnectOptions, SqlitePool}; // Import ConnectOptions trait
+use std::str::FromStr;
 
 pub mod migrate;
 pub mod seed;
@@ -34,11 +35,15 @@ pub async fn init_pool(config: &AppConfig) -> Result<SqlitePool, Box<dyn std::er
 
     if !db_exists {}
 
+    let options = sqlx::sqlite::SqliteConnectOptions::from_str(&db_url)?
+        .log_statements(log::LevelFilter::Off)
+        .log_slow_statements(log::LevelFilter::Warn, std::time::Duration::from_secs(3));
+
     let pool = SqlitePoolOptions::new()
         .max_connections(1) // Desktop Optimization
         .min_connections(0)
         .idle_timeout(std::time::Duration::from_secs(60))
-        .connect(&db_url)
+        .connect_with(options)
         .await?;
 
     // Optimizaciones de SQLite para mejor rendimiento y menor memoria
