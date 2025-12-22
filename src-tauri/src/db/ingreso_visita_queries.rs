@@ -2,7 +2,7 @@
 // src/db/ingreso_visita_queries.rs
 // ==========================================
 // Capa de data access: queries SQL puras
-// Strict Mode: Uso de query_as! para validación y DTO intermedio
+// Strict Mode: Uso de query_as! para validación
 
 use crate::domain::ingreso_visita::{
     CreateIngresoVisitaInput, IngresoVisita, IngresoVisitaPopulated,
@@ -10,103 +10,6 @@ use crate::domain::ingreso_visita::{
 use chrono::Utc;
 use sqlx::SqlitePool;
 use uuid::Uuid;
-
-// ==========================================
-// DTO & CONVERSION
-// ==========================================
-
-#[derive(sqlx::FromRow)]
-struct IngresoVisitaRow {
-    id: Option<String>,
-    visitante_id: Option<String>,
-    cita_id: Option<String>,
-    anfitrion: Option<String>,
-    area_visitada: Option<String>,
-    motivo: Option<String>,
-    gafete: Option<String>,
-    fecha_ingreso: Option<String>,
-    fecha_salida: Option<String>,
-    estado: Option<String>,
-    usuario_ingreso_id: Option<String>,
-    usuario_salida_id: Option<String>,
-    observaciones: Option<String>,
-    created_at: Option<String>,
-    updated_at: Option<String>,
-}
-
-impl From<IngresoVisitaRow> for IngresoVisita {
-    fn from(row: IngresoVisitaRow) -> Self {
-        IngresoVisita {
-            id: row.id.unwrap_or_default(),
-            visitante_id: row.visitante_id.unwrap_or_default(),
-            cita_id: row.cita_id,
-            anfitrion: row.anfitrion.unwrap_or_default(),
-            area_visitada: row.area_visitada.unwrap_or_default(),
-            motivo: row.motivo.unwrap_or_default(),
-            gafete: row.gafete,
-            fecha_ingreso: row.fecha_ingreso.unwrap_or_default(),
-            fecha_salida: row.fecha_salida,
-            estado: row.estado.unwrap_or_default(),
-            usuario_ingreso_id: row.usuario_ingreso_id.unwrap_or_default(),
-            usuario_salida_id: row.usuario_salida_id,
-            observaciones: row.observaciones,
-            created_at: row.created_at.unwrap_or_default(),
-            updated_at: row.updated_at.unwrap_or_default(),
-        }
-    }
-}
-
-#[derive(sqlx::FromRow)]
-struct IngresoVisitaPopulatedRow {
-    // Ingreso Fields
-    id: Option<String>,
-    visitante_id: Option<String>,
-    cita_id: Option<String>,
-    anfitrion: Option<String>,
-    area_visitada: Option<String>,
-    motivo: Option<String>,
-    gafete: Option<String>,
-    fecha_ingreso: Option<String>,
-    fecha_salida: Option<String>,
-    estado: Option<String>,
-    usuario_ingreso_id: Option<String>,
-    usuario_salida_id: Option<String>,
-    observaciones: Option<String>,
-    created_at: Option<String>,
-    updated_at: Option<String>,
-    // Visitante Fields
-    visitante_nombre: Option<String>,
-    visitante_apellido: Option<String>,
-    visitante_cedula: Option<String>,
-    visitante_empresa: Option<String>,
-}
-
-impl From<IngresoVisitaPopulatedRow> for IngresoVisitaPopulated {
-    fn from(row: IngresoVisitaPopulatedRow) -> Self {
-        IngresoVisitaPopulated {
-            id: row.id.unwrap_or_default(),
-            visitante_id: row.visitante_id.unwrap_or_default(),
-            cita_id: row.cita_id,
-            anfitrion: row.anfitrion.unwrap_or_default(),
-            area_visitada: row.area_visitada.unwrap_or_default(),
-            motivo: row.motivo.unwrap_or_default(),
-            gafete: row.gafete,
-            fecha_ingreso: row.fecha_ingreso.unwrap_or_default(),
-            fecha_salida: row.fecha_salida,
-            estado: row.estado.unwrap_or_default(),
-            usuario_ingreso_id: row.usuario_ingreso_id.unwrap_or_default(),
-            usuario_salida_id: row.usuario_salida_id,
-            observaciones: row.observaciones,
-            created_at: row.created_at.unwrap_or_default(),
-            updated_at: row.updated_at.unwrap_or_default(),
-            // Visitante
-            visitante_nombre: row.visitante_nombre.unwrap_or_default(),
-            visitante_apellido: row.visitante_apellido.unwrap_or_default(),
-            visitante_cedula: row.visitante_cedula.unwrap_or_default(),
-            visitante_empresa: row.visitante_empresa,
-        }
-    }
-}
 
 // ==========================================
 // QUERIES
@@ -165,16 +68,13 @@ pub async fn create(
 }
 
 pub async fn find_actives(pool: &SqlitePool) -> sqlx::Result<Vec<IngresoVisitaPopulated>> {
-    let rows = sqlx::query_as!(
-        IngresoVisitaPopulatedRow,
+    sqlx::query_as::<_, IngresoVisitaPopulated>(
         r#"
         SELECT 
             iv.id, iv.visitante_id, iv.cita_id, iv.anfitrion, iv.area_visitada, iv.motivo, iv.gafete,
-            CAST(iv.fecha_ingreso AS TEXT) as fecha_ingreso,
-            CAST(iv.fecha_salida AS TEXT) as fecha_salida,
-            iv.estado, iv.usuario_ingreso_id, iv.usuario_salida_id, iv.observaciones,
-            CAST(iv.created_at AS TEXT) as created_at,
-            CAST(iv.updated_at AS TEXT) as updated_at,
+            iv.fecha_ingreso, iv.fecha_salida, iv.estado, 
+            iv.usuario_ingreso_id, iv.usuario_salida_id, iv.observaciones,
+            iv.created_at, iv.updated_at,
             v.nombre as visitante_nombre,
             v.apellido as visitante_apellido,
             v.cedula as visitante_cedula,
@@ -186,9 +86,7 @@ pub async fn find_actives(pool: &SqlitePool) -> sqlx::Result<Vec<IngresoVisitaPo
         "#
     )
     .fetch_all(pool)
-    .await?;
-
-    Ok(rows.into_iter().map(|r| r.into()).collect())
+    .await
 }
 
 pub async fn registrar_salida(
@@ -222,16 +120,13 @@ pub async fn registrar_salida(
 }
 
 pub async fn find_historial(pool: &SqlitePool) -> sqlx::Result<Vec<IngresoVisitaPopulated>> {
-    let rows = sqlx::query_as!(
-        IngresoVisitaPopulatedRow,
+    sqlx::query_as::<_, IngresoVisitaPopulated>(
         r#"
         SELECT 
             iv.id, iv.visitante_id, iv.cita_id, iv.anfitrion, iv.area_visitada, iv.motivo, iv.gafete,
-            CAST(iv.fecha_ingreso AS TEXT) as fecha_ingreso,
-            CAST(iv.fecha_salida AS TEXT) as fecha_salida,
-            iv.estado, iv.usuario_ingreso_id, iv.usuario_salida_id, iv.observaciones,
-            CAST(iv.created_at AS TEXT) as created_at,
-            CAST(iv.updated_at AS TEXT) as updated_at,
+            iv.fecha_ingreso, iv.fecha_salida, iv.estado, 
+            iv.usuario_ingreso_id, iv.usuario_salida_id, iv.observaciones,
+            iv.created_at, iv.updated_at,
             v.nombre as visitante_nombre,
             v.apellido as visitante_apellido,
             v.cedula as visitante_cedula,
@@ -244,7 +139,5 @@ pub async fn find_historial(pool: &SqlitePool) -> sqlx::Result<Vec<IngresoVisita
         "#
     )
     .fetch_all(pool)
-    .await?;
-
-    Ok(rows.into_iter().map(|r| r.into()).collect())
+    .await
 }
