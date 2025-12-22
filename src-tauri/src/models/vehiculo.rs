@@ -45,18 +45,22 @@ impl TipoVehiculo {
         }
     }
 
-    pub fn from_str(s: &str) -> Result<Self, String> {
-        match s.to_lowercase().as_str() {
-            "motocicleta" => Ok(TipoVehiculo::Motocicleta),
-            "automóvil" | "automovil" => Ok(TipoVehiculo::Automovil),
-            _ => Err(format!("Tipo de vehículo desconocido: {}", s)),
-        }
-    }
-
     pub fn display(&self) -> &str {
         match self {
             TipoVehiculo::Motocicleta => "Motocicleta",
             TipoVehiculo::Automovil => "Automóvil",
+        }
+    }
+}
+
+impl std::str::FromStr for TipoVehiculo {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "motocicleta" => Ok(TipoVehiculo::Motocicleta),
+            "automóvil" | "automovil" => Ok(TipoVehiculo::Automovil),
+            _ => Err(format!("Tipo de vehículo desconocido: {}", s)),
         }
     }
 }

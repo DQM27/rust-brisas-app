@@ -41,25 +41,25 @@ impl SessionState {
 
     /// Establece el usuario de la sesión actual
     pub fn set_user(&self, user: SessionUser) {
-        let mut guard = self.current_user.write().unwrap();
+        let mut guard = self.current_user.write().expect("Session lock poisoned");
         *guard = Some(user);
     }
 
     /// Obtiene el usuario de la sesión actual
     pub fn get_user(&self) -> Option<SessionUser> {
-        let guard = self.current_user.read().unwrap();
+        let guard = self.current_user.read().expect("Session lock poisoned");
         guard.clone()
     }
 
     /// Limpia la sesión (logout)
     pub fn clear(&self) {
-        let mut guard = self.current_user.write().unwrap();
+        let mut guard = self.current_user.write().expect("Session lock poisoned");
         *guard = None;
     }
 
     /// Verifica si hay sesión activa
     pub fn is_authenticated(&self) -> bool {
-        let guard = self.current_user.read().unwrap();
+        let guard = self.current_user.read().expect("Session lock poisoned");
         guard.is_some()
     }
 

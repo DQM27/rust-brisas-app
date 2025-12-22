@@ -53,7 +53,7 @@ pub async fn get_gafetes_disponibles(
     pool: State<'_, SqlitePool>,
     tipo: String,
 ) -> Result<Vec<GafeteResponse>, String> {
-    let tipo_enum = TipoGafete::from_str(&tipo)?;
+    let tipo_enum: TipoGafete = tipo.parse()?;
     gafete_service::get_gafetes_disponibles(&pool, tipo_enum)
         .await
         .map_err(|e| e.to_string())

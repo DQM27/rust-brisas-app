@@ -24,8 +24,8 @@ impl From<GafeteRow> for Gafete {
     fn from(row: GafeteRow) -> Self {
         Gafete {
             numero: row.numero,
-            tipo: TipoGafete::from_str(&row.tipo).unwrap_or(TipoGafete::Contratista), // Fallback seguro
-            estado: GafeteEstado::from_str(&row.estado).unwrap_or(GafeteEstado::Activo),
+            tipo: row.tipo.parse().unwrap_or(TipoGafete::Contratista), // Fallback seguro
+            estado: row.estado.parse().unwrap_or(GafeteEstado::Activo),
             created_at: row.created_at,
             updated_at: row.updated_at,
         }

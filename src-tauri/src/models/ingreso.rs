@@ -26,20 +26,24 @@ impl TipoIngreso {
         }
     }
 
-    pub fn from_str(s: &str) -> Result<Self, String> {
-        match s.to_lowercase().as_str() {
-            "contratista" => Ok(TipoIngreso::Contratista),
-            "visita" => Ok(TipoIngreso::Visita),
-            "proveedor" => Ok(TipoIngreso::Proveedor),
-            _ => Err(format!("Tipo de ingreso desconocido: {}", s)),
-        }
-    }
-
     pub fn display(&self) -> &str {
         match self {
             TipoIngreso::Contratista => "Contratista",
             TipoIngreso::Visita => "Visita",
             TipoIngreso::Proveedor => "Proveedor",
+        }
+    }
+}
+
+impl std::str::FromStr for TipoIngreso {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "contratista" => Ok(TipoIngreso::Contratista),
+            "visita" => Ok(TipoIngreso::Visita),
+            "proveedor" => Ok(TipoIngreso::Proveedor),
+            _ => Err(format!("Tipo de ingreso desconocido: {}", s)),
         }
     }
 }
@@ -58,8 +62,12 @@ impl TipoAutorizacion {
             TipoAutorizacion::Correo => "correo",
         }
     }
+}
 
-    pub fn from_str(s: &str) -> Result<Self, String> {
+impl std::str::FromStr for TipoAutorizacion {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "praind" => Ok(TipoAutorizacion::Praind),
             "correo" => Ok(TipoAutorizacion::Correo),
@@ -83,18 +91,22 @@ impl ModoIngreso {
         }
     }
 
-    pub fn from_str(s: &str) -> Result<Self, String> {
-        match s.to_lowercase().as_str() {
-            "caminando" => Ok(ModoIngreso::Caminando),
-            "vehiculo" => Ok(ModoIngreso::Vehiculo),
-            _ => Err(format!("Modo de ingreso desconocido: {}", s)),
-        }
-    }
-
     pub fn display(&self) -> &str {
         match self {
             ModoIngreso::Caminando => "Caminando",
             ModoIngreso::Vehiculo => "Vehículo",
+        }
+    }
+}
+
+impl std::str::FromStr for ModoIngreso {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "caminando" => Ok(ModoIngreso::Caminando),
+            "vehiculo" => Ok(ModoIngreso::Vehiculo),
+            _ => Err(format!("Modo de ingreso desconocido: {}", s)),
         }
     }
 }
@@ -239,8 +251,10 @@ pub struct IngresoResponse {
     pub updated_at: String,
 }
 
-impl From<Ingreso> for IngresoResponse {
-    fn from(i: Ingreso) -> Self {
+impl TryFrom<Ingreso> for IngresoResponse {
+    type Error = String;
+
+    fn try_from(i: Ingreso) -> Result<Self, Self::Error> {
         let esta_adentro = i.fecha_hora_salida.is_none();
         let tiene_gafete_asignado = i.gafete_numero.is_some();
 
@@ -254,13 +268,11 @@ impl From<Ingreso> for IngresoResponse {
             }
         });
 
-        let tipo_ingreso =
-            TipoIngreso::from_str(&i.tipo_ingreso).unwrap_or(TipoIngreso::Contratista);
-        let tipo_autorizacion =
-            TipoAutorizacion::from_str(&i.tipo_autorizacion).unwrap_or(TipoAutorizacion::Praind);
-        let modo_ingreso = ModoIngreso::from_str(&i.modo_ingreso).unwrap_or(ModoIngreso::Caminando);
+        let tipo_ingreso: TipoIngreso = i.tipo_ingreso.parse()?;
+        let tipo_autorizacion: TipoAutorizacion = i.tipo_autorizacion.parse()?;
+        let modo_ingreso: ModoIngreso = i.modo_ingreso.parse()?;
 
-        Self {
+        Ok(Self {
             id: i.id,
             contratista_id: i.contratista_id,
             cedula: i.cedula.clone(),
@@ -269,7 +281,7 @@ impl From<Ingreso> for IngresoResponse {
             nombre_completo: format!("{} {}", i.nombre, i.apellido),
             empresa_nombre: i.empresa_nombre,
             tipo_ingreso: tipo_ingreso.clone(),
-            tipo_ingreso_display: "Contratista".to_string(),
+            tipo_ingreso_display: tipo_ingreso.display().to_string(),
             tipo_autorizacion: tipo_autorizacion.clone(),
             tipo_autorizacion_display: match tipo_autorizacion {
                 TipoAutorizacion::Praind => "PRAIND",
@@ -287,9 +299,9 @@ impl From<Ingreso> for IngresoResponse {
             tiempo_permanencia_minutos: i.tiempo_permanencia_minutos,
             tiempo_permanencia_texto,
             usuario_ingreso_id: i.usuario_ingreso_id,
-            usuario_ingreso_nombre: String::new(), // Se llena con JOIN
+            usuario_ingreso_nombre: String::new(), // se llena en el servicio
             usuario_salida_id: i.usuario_salida_id,
-            usuario_salida_nombre: None, // Se llena con JOIN
+            usuario_salida_nombre: None, // se llena en el servicio
             praind_vigente_al_ingreso: i.praind_vigente_al_ingreso,
             estado_contratista_al_ingreso: i.estado_contratista_al_ingreso,
             observaciones: i.observaciones,
@@ -297,7 +309,7 @@ impl From<Ingreso> for IngresoResponse {
             tiene_gafete_asignado,
             created_at: i.created_at,
             updated_at: i.updated_at,
-        }
+        })
     }
 }
 

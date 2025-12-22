@@ -11,16 +11,15 @@ pub async fn get_all_ingresos_with_stats(
 ) -> Result<IngresoListResponse, sqlx::Error> {
     let results = db::find_all_with_details(pool).await?;
 
-    let responses: Vec<IngresoResponse> = results
-        .into_iter()
-        .map(|(ingreso, details)| {
-            let mut response = IngresoResponse::from(ingreso);
+    let mut responses = Vec::new();
+    for (ingreso, details) in results {
+        if let Ok(mut response) = IngresoResponse::try_from(ingreso) {
             response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
             response.usuario_salida_nombre = details.usuario_salida_nombre;
             response.vehiculo_placa = details.vehiculo_placa;
-            response
-        })
-        .collect();
+            responses.push(response);
+        }
+    }
 
     let total = responses.len();
     let adentro = responses
@@ -41,16 +40,16 @@ pub async fn get_all_ingresos_with_stats(
 pub async fn get_ingresos_abiertos(pool: &SqlitePool) -> Result<Vec<IngresoResponse>, sqlx::Error> {
     let results = db::find_ingresos_abiertos_with_details(pool).await?;
 
-    Ok(results
-        .into_iter()
-        .map(|(ingreso, details)| {
-            let mut response = IngresoResponse::from(ingreso);
+    let mut responses = Vec::new();
+    for (ingreso, details) in results {
+        if let Ok(mut response) = IngresoResponse::try_from(ingreso) {
             response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
             response.usuario_salida_nombre = details.usuario_salida_nombre;
             response.vehiculo_placa = details.vehiculo_placa;
-            response
-        })
-        .collect())
+            responses.push(response);
+        }
+    }
+    Ok(responses)
 }
 
 /// Obtiene un ingreso por ID con detalles
@@ -71,7 +70,12 @@ pub async fn get_ingreso_by_id(
             vehiculo_placa: None,
         });
 
-    let mut response = IngresoResponse::from(ingreso);
+    let mut response = IngresoResponse::try_from(ingreso).map_err(|e| {
+        sqlx::Error::Decode(Box::new(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            e,
+        )))
+    })?;
     response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
     response.usuario_salida_nombre = details.usuario_salida_nombre;
     response.vehiculo_placa = details.vehiculo_placa;
@@ -89,7 +93,13 @@ pub async fn get_ingreso_by_gafete(
         None => return Ok(None),
     };
 
-    Ok(Some(IngresoResponse::from(ingreso)))
+    let response = IngresoResponse::try_from(ingreso).map_err(|e| {
+        sqlx::Error::Decode(Box::new(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            e,
+        )))
+    })?;
+    Ok(Some(response))
 }
 
 /// Obtiene salidas en un rango de fechas
@@ -100,14 +110,14 @@ pub async fn get_salidas_en_rango(
 ) -> Result<Vec<IngresoResponse>, sqlx::Error> {
     let results = db::find_salidas_in_range_with_details(pool, fecha_inicio, fecha_fin).await?;
 
-    Ok(results
-        .into_iter()
-        .map(|(ingreso, details)| {
-            let mut response = IngresoResponse::from(ingreso);
+    let mut responses = Vec::new();
+    for (ingreso, details) in results {
+        if let Ok(mut response) = IngresoResponse::try_from(ingreso) {
             response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
             response.usuario_salida_nombre = details.usuario_salida_nombre;
             response.vehiculo_placa = details.vehiculo_placa;
-            response
-        })
-        .collect())
+            responses.push(response);
+        }
+    }
+    Ok(responses)
 }

@@ -69,26 +69,6 @@ impl Module {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
-        match s {
-            "users" => Some(Module::Users),
-            "roles" => Some(Module::Roles),
-            "contratistas" => Some(Module::Contratistas),
-            "empresas" => Some(Module::Empresas),
-            "proveedores" => Some(Module::Proveedores),
-            "visitantes" => Some(Module::Visitantes),
-            "ingresos" => Some(Module::Ingresos),
-            "citas" => Some(Module::Citas),
-            "vehiculos" => Some(Module::Vehiculos),
-            "gafetes" => Some(Module::Gafetes),
-            "lista_negra" => Some(Module::ListaNegra),
-            "config" => Some(Module::Config),
-            "backup" => Some(Module::Backup),
-            "export" => Some(Module::Export),
-            _ => None,
-        }
-    }
-
     pub fn display_name(&self) -> &'static str {
         match self {
             Module::Users => "Usuarios",
@@ -105,6 +85,30 @@ impl Module {
             Module::Config => "Configuración",
             Module::Backup => "Respaldos",
             Module::Export => "Exportar",
+        }
+    }
+}
+
+impl std::str::FromStr for Module {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "users" => Ok(Module::Users),
+            "roles" => Ok(Module::Roles),
+            "contratistas" => Ok(Module::Contratistas),
+            "empresas" => Ok(Module::Empresas),
+            "proveedores" => Ok(Module::Proveedores),
+            "visitantes" => Ok(Module::Visitantes),
+            "ingresos" => Ok(Module::Ingresos),
+            "citas" => Ok(Module::Citas),
+            "vehiculos" => Ok(Module::Vehiculos),
+            "gafetes" => Ok(Module::Gafetes),
+            "lista_negra" => Ok(Module::ListaNegra),
+            "config" => Ok(Module::Config),
+            "backup" => Ok(Module::Backup),
+            "export" => Ok(Module::Export),
+            _ => Err(format!("Unknown module: {}", s)),
         }
     }
 }
@@ -144,18 +148,6 @@ impl Action {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
-        match s {
-            "view" => Some(Action::View),
-            "create" => Some(Action::Create),
-            "read" => Some(Action::Read),
-            "update" => Some(Action::Update),
-            "delete" => Some(Action::Delete),
-            "export" => Some(Action::Export),
-            _ => None,
-        }
-    }
-
     pub fn display_name(&self) -> &'static str {
         match self {
             Action::View => "Ver",
@@ -164,6 +156,22 @@ impl Action {
             Action::Update => "Actualizar",
             Action::Delete => "Eliminar",
             Action::Export => "Exportar",
+        }
+    }
+}
+
+impl std::str::FromStr for Action {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "view" => Ok(Action::View),
+            "create" => Ok(Action::Create),
+            "read" => Ok(Action::Read),
+            "update" => Ok(Action::Update),
+            "delete" => Ok(Action::Delete),
+            "export" => Ok(Action::Export),
+            _ => Err(format!("Unknown action: {}", s)),
         }
     }
 }

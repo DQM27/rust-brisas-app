@@ -4,7 +4,7 @@
 // Capa de data access: queries SQL puras
 // Strict Mode: Uso de query_as! para validación y DTO intermedio para parseo seguro
 
-use crate::models::vehiculo::{TipoVehiculo, Vehiculo};
+use crate::models::vehiculo::Vehiculo;
 use sqlx::SqlitePool;
 use std::convert::TryFrom;
 
@@ -35,8 +35,12 @@ impl TryFrom<VehiculoRow> for Vehiculo {
             id: r.id,
             contratista_id: r.contratista_id,
             proveedor_id: r.proveedor_id,
-            tipo_vehiculo: TipoVehiculo::from_str(&r.tipo_vehiculo)
-                .map_err(|e| sqlx::Error::Decode(e.into()))?,
+            tipo_vehiculo: r.tipo_vehiculo.parse().map_err(|e| {
+                sqlx::Error::Decode(Box::new(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    e,
+                )))
+            })?,
             placa: r.placa,
             marca: r.marca,
             modelo: r.modelo,

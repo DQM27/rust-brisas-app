@@ -177,8 +177,7 @@ pub async fn find_by_id_with_empresa(
 
     match row {
         Some(r) => {
-            let estado =
-                EstadoContratista::from_str(&r.estado).unwrap_or(EstadoContratista::Inactivo);
+            let estado = r.estado.parse().unwrap_or(EstadoContratista::Inactivo);
 
             Ok(Some(ContratistaEnhancedRow {
                 contratista: Contratista {
@@ -235,8 +234,7 @@ pub async fn find_by_cedula_with_empresa(
 
     match row {
         Some(r) => {
-            let estado =
-                EstadoContratista::from_str(&r.estado).unwrap_or(EstadoContratista::Inactivo);
+            let estado = r.estado.parse().unwrap_or(EstadoContratista::Inactivo);
 
             Ok(Some(ContratistaEnhancedRow {
                 contratista: Contratista {
@@ -289,8 +287,7 @@ pub async fn find_all_with_empresa(
     let result: Vec<_> = rows
         .into_iter()
         .map(|r| {
-            let estado =
-                EstadoContratista::from_str(&r.estado).unwrap_or(EstadoContratista::Inactivo);
+            let estado = r.estado.parse().unwrap_or(EstadoContratista::Inactivo);
             (
                 Contratista {
                     id: r.id,
@@ -341,8 +338,7 @@ pub async fn find_activos_with_empresa(
     let result: Vec<_> = rows
         .into_iter()
         .map(|r| {
-            let estado =
-                EstadoContratista::from_str(&r.estado).unwrap_or(EstadoContratista::Inactivo);
+            let estado = r.estado.parse().unwrap_or(EstadoContratista::Inactivo);
             (
                 Contratista {
                     id: r.id,

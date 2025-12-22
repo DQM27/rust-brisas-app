@@ -73,23 +73,7 @@ pub async fn validar_ingreso_contratista(
         .await
         .map_err(|e| e.to_string())?;
 
-    // B. Verificar ingreso abierto
-    let ingreso_abierto = db::find_ingreso_abierto_by_contratista(pool, &contratista_id)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if let Some(ingreso) = ingreso_abierto {
-        return Ok(ValidacionIngresoResponse {
-            puede_ingresar: false,
-            motivo_rechazo: Some("El contratista ya tiene un ingreso abierto".to_string()),
-            alertas: vec![],
-            contratista: None,
-            tiene_ingreso_abierto: true,
-            ingreso_abierto: Some(IngresoResponse::from(ingreso)),
-        });
-    }
-
-    // C. Datos del contratista
+    // C. Datos del contratista (Moved up to be available for ingreso_abierto check)
     let contratista_opt = contratista_queries::find_basic_info_by_id(pool, &contratista_id)
         .await
         .map_err(|e| e.to_string())?;
@@ -106,6 +90,33 @@ pub async fn validar_ingreso_contratista(
         }
         Some(c) => c,
     };
+
+    // D. Validaciones de Dominio (and B. Ingreso Abierto restored)
+    let ingreso_abierto = db::find_ingreso_abierto_by_contratista(pool, &contratista.id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if let Some(ref ingreso) = ingreso_abierto {
+        let response = IngresoResponse::try_from(ingreso.clone())
+            .map_err(|e| format!("Error parsing ingreso: {}", e))?;
+
+        return Ok(ValidacionIngresoResponse {
+            puede_ingresar: false,
+            motivo_rechazo: Some("El contratista ya tiene un ingreso activo".to_string()),
+            alertas: vec![],
+            contratista: Some(serde_json::json!({
+                "id": contratista.id,
+                "cedula": contratista.cedula,
+                "nombre": contratista.nombre,
+                "apellido": contratista.apellido,
+                "nombre_completo": format!("{} {}", contratista.nombre, contratista.apellido),
+                "empresa_nombre": contratista.empresa_nombre,
+                "estado": contratista.estado,
+            })),
+            tiene_ingreso_abierto: true,
+            ingreso_abierto: Some(response),
+        });
+    }
 
     // D. Validaciones de Dominio
     let praind_vigente = domain::verificar_praind_vigente(&contratista.fecha_vencimiento_praind)?;
@@ -196,8 +207,8 @@ pub async fn crear_ingreso_contratista(
     // 5. Insertar
     let id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
-    let tipo_autorizacion = TipoAutorizacion::from_str(&input.tipo_autorizacion)?;
-    let modo_ingreso = ModoIngreso::from_str(&input.modo_ingreso)?;
+    let tipo_autorizacion: TipoAutorizacion = input.tipo_autorizacion.parse()?;
+    let modo_ingreso: ModoIngreso = input.modo_ingreso.parse()?;
 
     db::insert(
         pool,
@@ -357,12 +368,13 @@ pub async fn get_ingresos_abiertos_con_alertas(
                 vehiculo_placa: None,
             });
 
-        let mut ingreso_resp = IngresoResponse::from(ingreso);
-        ingreso_resp.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
-        ingreso_resp.vehiculo_placa = details.vehiculo_placa;
+        let mut response = IngresoResponse::try_from(ingreso)
+            .map_err(|e| format!("Error parsing ingreso: {}", e))?;
+        response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
+        response.vehiculo_placa = details.vehiculo_placa;
 
         responses.push(IngresoConEstadoResponse {
-            ingreso: ingreso_resp,
+            ingreso: response,
             alerta_tiempo,
         });
     }
@@ -416,7 +428,8 @@ async fn get_ingreso_by_id(pool: &SqlitePool, id: String) -> Result<IngresoRespo
             vehiculo_placa: None,
         });
 
-    let mut resp = IngresoResponse::from(ingreso);
+    let mut resp =
+        IngresoResponse::try_from(ingreso).map_err(|e| format!("Error parsing ingreso: {}", e))?;
     resp.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
     resp.usuario_salida_nombre = details.usuario_salida_nombre;
     resp.vehiculo_placa = details.vehiculo_placa;

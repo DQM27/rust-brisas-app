@@ -30,7 +30,7 @@ pub async fn create_gafete(
     let numero_normalizado = domain::normalizar_numero(&input.numero);
 
     // 3. Verificar que no exista con este número + tipo
-    let tipo = TipoGafete::from_str(&input.tipo).map_err(|e| GafeteError::Validation(e))?;
+    let tipo: TipoGafete = input.tipo.parse().map_err(|e| GafeteError::Validation(e))?;
     let exists = db::exists_by_numero_and_tipo(pool, &numero_normalizado, tipo.as_str()).await?;
     if exists {
         return Err(GafeteError::AlreadyExists);
@@ -64,7 +64,7 @@ pub async fn create_gafete_range(
         ));
     }
 
-    let tipo = TipoGafete::from_str(&input.tipo).map_err(GafeteError::Validation)?;
+    let tipo: TipoGafete = input.tipo.parse().map_err(GafeteError::Validation)?;
     let now = Utc::now().to_rfc3339();
     let padding = input.padding.unwrap_or(2);
     let prefix = input.prefix.unwrap_or_default();
@@ -335,7 +335,7 @@ pub async fn update_gafete(
 
     let tipo_str = if let Some(ref t) = input.tipo {
         Some(
-            TipoGafete::from_str(t)
+            t.parse::<TipoGafete>()
                 .map_err(GafeteError::Validation)?
                 .as_str()
                 .to_string(),

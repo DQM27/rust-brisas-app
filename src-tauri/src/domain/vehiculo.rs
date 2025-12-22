@@ -4,7 +4,7 @@
 // Capa de dominio: validaciones y reglas de negocio puras
 // Sin dependencias de DB ni servicios externos
 
-use crate::models::vehiculo::{CreateVehiculoInput, UpdateVehiculoInput, TipoVehiculo};
+use crate::models::vehiculo::{CreateVehiculoInput, TipoVehiculo, UpdateVehiculoInput};
 
 // ==========================================
 // VALIDACIONES DE CAMPOS INDIVIDUALES
@@ -12,58 +12,61 @@ use crate::models::vehiculo::{CreateVehiculoInput, UpdateVehiculoInput, TipoVehi
 
 pub fn validar_contratista_id(contratista_id: &str) -> Result<(), String> {
     let limpio = contratista_id.trim();
-    
+
     if limpio.is_empty() {
         return Err("Debe especificar un contratista".to_string());
     }
-    
+
     Ok(())
 }
 
 pub fn validar_tipo_vehiculo(tipo_str: &str) -> Result<TipoVehiculo, String> {
-    TipoVehiculo::from_str(tipo_str)
+    tipo_str.parse()
 }
 
 pub fn validar_placa(placa: &str) -> Result<(), String> {
     let limpia = placa.trim().to_uppercase();
-    
+
     if limpia.is_empty() {
         return Err("La placa no puede estar vacía".to_string());
     }
-    
+
     // Validación flexible: solo alfanuméricos, guiones y espacios
-    if !limpia.chars().all(|c| c.is_alphanumeric() || c == '-' || c == ' ') {
+    if !limpia
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '-' || c == ' ')
+    {
         return Err("La placa solo puede contener letras, números, guiones y espacios".to_string());
     }
-    
+
     if limpia.len() < 3 || limpia.len() > 15 {
         return Err("La placa debe tener entre 3 y 15 caracteres".to_string());
     }
-    
+
     Ok(())
 }
 
 pub fn validar_marca(marca: &str) -> Result<(), String> {
     let limpia = marca.trim();
-    
+
     if limpia.is_empty() {
         return Err("La marca no puede estar vacía".to_string());
     }
-    
+
     if limpia.len() > 50 {
         return Err("La marca no puede exceder 50 caracteres".to_string());
     }
-    
+
     Ok(())
 }
 
 pub fn validar_texto_opcional(texto: &str, campo: &str, max_len: usize) -> Result<(), String> {
     let limpio = texto.trim();
-    
+
     if limpio.len() > max_len {
         return Err(format!("{} no puede exceder {} caracteres", campo, max_len));
     }
-    
+
     Ok(())
 }
 
@@ -76,21 +79,21 @@ pub fn validar_create_input(input: &CreateVehiculoInput) -> Result<(), String> {
     validar_contratista_id(&input.contratista_id)?;
     validar_tipo_vehiculo(&input.tipo_vehiculo)?;
     validar_placa(&input.placa)?;
-    
+
     if let Some(ref marca) = input.marca {
         if !marca.trim().is_empty() {
             validar_marca(marca)?;
         }
     }
-    
+
     if let Some(ref modelo) = input.modelo {
         validar_texto_opcional(modelo, "Modelo", 50)?;
     }
-    
+
     if let Some(ref color) = input.color {
         validar_texto_opcional(color, "Color", 30)?;
     }
-    
+
     Ok(())
 }
 
@@ -99,21 +102,21 @@ pub fn validar_update_input(input: &UpdateVehiculoInput) -> Result<(), String> {
     if let Some(ref tipo) = input.tipo_vehiculo {
         validar_tipo_vehiculo(tipo)?;
     }
-    
+
     if let Some(ref marca) = input.marca {
         if !marca.trim().is_empty() {
             validar_marca(marca)?;
         }
     }
-    
+
     if let Some(ref modelo) = input.modelo {
         validar_texto_opcional(modelo, "Modelo", 50)?;
     }
-    
+
     if let Some(ref color) = input.color {
         validar_texto_opcional(color, "Color", 30)?;
     }
-    
+
     Ok(())
 }
 

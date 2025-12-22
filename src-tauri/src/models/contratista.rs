@@ -37,8 +37,12 @@ impl EstadoContratista {
             EstadoContratista::Suspendido => "suspendido",
         }
     }
+}
 
-    pub fn from_str(s: &str) -> Result<Self, String> {
+impl std::str::FromStr for EstadoContratista {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "activo" => Ok(EstadoContratista::Activo),
             "inactivo" => Ok(EstadoContratista::Inactivo),

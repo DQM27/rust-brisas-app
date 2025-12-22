@@ -42,8 +42,10 @@ pub async fn export_data(request: ExportRequest) -> ExportResult<ExportResponse>
 /// Convierte ExportRequest en ExportData normalizado
 fn normalizar_export_data(request: &ExportRequest) -> ExportResult<ExportData> {
     // 1. Parsear formato
-    let format =
-        ExportFormat::from_str(&request.format).map_err(|e| ExportError::InvalidFormat(e))?;
+    let format = request
+        .format
+        .parse()
+        .map_err(|e| ExportError::InvalidFormat(e))?;
 
     // 2. Clonar headers
     let headers = request.headers.clone();

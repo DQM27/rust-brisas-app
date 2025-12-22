@@ -3,7 +3,7 @@
 // ==========================================
 // Validaciones y reglas de negocio puras - Sin DB
 
-use crate::models::gafete::{CreateGafeteInput, UpdateGafeteInput, TipoGafete};
+use crate::models::gafete::{CreateGafeteInput, TipoGafete, UpdateGafeteInput};
 
 // ==========================================
 // VALIDACIONES DE CAMPOS
@@ -11,25 +11,25 @@ use crate::models::gafete::{CreateGafeteInput, UpdateGafeteInput, TipoGafete};
 
 pub fn validar_numero(numero: &str) -> Result<(), String> {
     let limpio = numero.trim();
-    
+
     if limpio.is_empty() {
         return Err("El número no puede estar vacío".to_string());
     }
-    
+
     if limpio.len() > 20 {
         return Err("El número no puede exceder 20 caracteres".to_string());
     }
-    
+
     // S/G es reservado
     if limpio.to_uppercase() == "S/G" {
         return Err("'S/G' es un número reservado del sistema".to_string());
     }
-    
+
     Ok(())
 }
 
 pub fn validar_tipo(tipo_str: &str) -> Result<TipoGafete, String> {
-    TipoGafete::from_str(tipo_str)
+    tipo_str.parse()
 }
 
 // ==========================================

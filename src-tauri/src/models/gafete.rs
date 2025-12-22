@@ -43,22 +43,26 @@ impl TipoGafete {
         }
     }
 
-    pub fn from_str(s: &str) -> Result<Self, String> {
-        match s.to_lowercase().as_str() {
-            "contratista" => Ok(TipoGafete::Contratista),
-            "proveedor" => Ok(TipoGafete::Proveedor),
-            "visita" => Ok(TipoGafete::Visita),
-            "otro" => Ok(TipoGafete::Otro),
-            _ => Err(format!("Tipo de gafete desconocido: {}", s)),
-        }
-    }
-
     pub fn display(&self) -> &str {
         match self {
             TipoGafete::Contratista => "Contratista",
             TipoGafete::Proveedor => "Proveedor",
             TipoGafete::Visita => "Visita",
             TipoGafete::Otro => "Otro",
+        }
+    }
+}
+
+impl std::str::FromStr for TipoGafete {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "contratista" => Ok(TipoGafete::Contratista),
+            "proveedor" => Ok(TipoGafete::Proveedor),
+            "visita" => Ok(TipoGafete::Visita),
+            "otro" => Ok(TipoGafete::Otro),
+            _ => Err(format!("Tipo de gafete desconocido: {}", s)),
         }
     }
 }
@@ -83,8 +87,12 @@ impl GafeteEstado {
             GafeteEstado::Extraviado => "extraviado",
         }
     }
+}
 
-    pub fn from_str(s: &str) -> Result<Self, String> {
+impl std::str::FromStr for GafeteEstado {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "activo" => Ok(GafeteEstado::Activo),
             "danado" => Ok(GafeteEstado::Danado),

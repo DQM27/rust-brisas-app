@@ -27,8 +27,12 @@ impl ExportFormat {
             ExportFormat::Csv => "csv",
         }
     }
+}
 
-    pub fn from_str(s: &str) -> Result<Self, String> {
+impl std::str::FromStr for ExportFormat {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "pdf" => Ok(ExportFormat::Pdf),
             "excel" => Ok(ExportFormat::Excel),
@@ -39,23 +43,19 @@ impl ExportFormat {
 }
 
 /// Orientación de página (solo para PDF)
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum PageOrientation {
-    Portrait,  // Vertical
+    Portrait, // Vertical
+    #[default]
     Landscape, // Horizontal
 }
 
-impl Default for PageOrientation {
-    fn default() -> Self {
-        PageOrientation::Landscape
-    }
-}
-
 /// Delimitador para CSV
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum CsvDelimiter {
-    Comma,     // ,
+    #[default]
+    Comma, // ,
     Semicolon, // ;
     Tab,       // \t
     Pipe,      // |
@@ -70,8 +70,12 @@ impl CsvDelimiter {
             CsvDelimiter::Pipe => '|',
         }
     }
+}
 
-    pub fn from_str(s: &str) -> Result<Self, String> {
+impl std::str::FromStr for CsvDelimiter {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "comma" | "," => Ok(CsvDelimiter::Comma),
             "semicolon" | ";" => Ok(CsvDelimiter::Semicolon),
@@ -79,12 +83,6 @@ impl CsvDelimiter {
             "pipe" | "|" => Ok(CsvDelimiter::Pipe),
             _ => Err(format!("Delimitador desconocido: {}", s)),
         }
-    }
-}
-
-impl Default for CsvDelimiter {
-    fn default() -> Self {
-        CsvDelimiter::Comma
     }
 }
 

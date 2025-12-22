@@ -55,8 +55,12 @@ impl EstadoProveedor {
             EstadoProveedor::Suspendido => "SUSPENDIDO",
         }
     }
+}
 
-    pub fn from_str(s: &str) -> Result<Self, String> {
+impl std::str::FromStr for EstadoProveedor {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_uppercase().as_str() {
             "ACTIVO" => Ok(EstadoProveedor::Activo),
             "INACTIVO" => Ok(EstadoProveedor::Inactivo),
@@ -70,7 +74,7 @@ impl TryFrom<String> for EstadoProveedor {
     type Error = String;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
-        EstadoProveedor::from_str(&s)
+        s.parse()
     }
 }
 
@@ -78,7 +82,8 @@ impl TryFrom<String> for EstadoProveedor {
 impl<'r> sqlx::Decode<'r, sqlx::Sqlite> for EstadoProveedor {
     fn decode(value: sqlx::sqlite::SqliteValueRef<'r>) -> Result<Self, sqlx::error::BoxDynError> {
         let s = <String as sqlx::Decode<sqlx::Sqlite>>::decode(value)?;
-        Ok(EstadoProveedor::from_str(&s)?)
+        Ok(s.parse()
+            .map_err(|e| Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, e)))?)
     }
 }
 

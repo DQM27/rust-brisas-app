@@ -13,7 +13,7 @@ use std::collections::HashMap;
 
 /// Valida que el formato sea válido
 pub fn validar_formato(formato: &str) -> Result<ExportFormat, String> {
-    ExportFormat::from_str(formato)
+    formato.parse()
 }
 
 /// Valida que los headers no estén vacíos
@@ -88,7 +88,7 @@ pub fn validar_orientacion(orientacion: &str) -> Result<PageOrientation, String>
 
 /// Valida delimitador CSV
 pub fn validar_delimitador(delimitador: &str) -> Result<CsvDelimiter, String> {
-    CsvDelimiter::from_str(delimitador)
+    delimitador.parse()
 }
 
 /// Valida título del documento
@@ -130,7 +130,7 @@ pub fn validar_export_request(request: &ExportRequest) -> Result<(), String> {
     validar_consistencia_columnas(&request.headers, &request.rows)?;
 
     // 5. Validar configuraciones opcionales según formato
-    let formato = ExportFormat::from_str(&request.format)?;
+    let formato: ExportFormat = request.format.parse()?;
 
     match formato {
         ExportFormat::Pdf => {
