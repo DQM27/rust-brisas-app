@@ -203,7 +203,7 @@
 
     <!-- Modal -->
     <div
-      class="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-lg bg-white dark:bg-[#0d1117] shadow-2xl border border-gray-200 dark:border-gray-700"
+      class="relative z-10 w-full max-w-md max-h-[90vh] overflow-hidden rounded-lg bg-white dark:bg-[#0d1117] shadow-2xl border border-gray-200 dark:border-gray-700"
       transition:fly={{ y: 20, duration: 300 }}
     >
       <!-- Header -->
