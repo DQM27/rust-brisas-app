@@ -2,13 +2,13 @@
 // src/commands/ingreso_commands.rs
 // ==========================================
 // Comandos generales de consulta de ingresos
-// (Los comandos de entrada/salida están en sus propios módulos)
+// Capa delgada que delega al servicio
 
-use crate::db::ingreso_general_queries as db;
 use crate::models::ingreso::{
     AlertaGafeteResponse, IngresoListResponse, IngresoResponse, ResolverAlertaInput,
 };
 use crate::services::alerta_service;
+use crate::services::ingreso_general_service as service;
 use chrono::Utc;
 use sqlx::SqlitePool;
 use tauri::State;
@@ -23,56 +23,18 @@ pub async fn get_ingreso_by_id(
     pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<IngresoResponse, String> {
-    let ingreso = db::find_by_id(&pool, &id)
+    service::get_ingreso_by_id(&pool, &id)
         .await
         .map_err(|e| e.to_string())?
-        .ok_or_else(|| "Ingreso no encontrado".to_string())?;
-    let details = db::find_details_by_id(&pool, &id)
-        .await
-        .map_err(|e| e.to_string())?
-        .unwrap_or(db::IngresoDetails {
-            usuario_ingreso_nombre: None,
-            usuario_salida_nombre: None,
-            vehiculo_placa: None,
-        });
-
-    let mut response = IngresoResponse::from(ingreso);
-    response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
-    response.usuario_salida_nombre = details.usuario_salida_nombre;
-    response.vehiculo_placa = details.vehiculo_placa;
-
-    Ok(response)
+        .ok_or_else(|| "Ingreso no encontrado".to_string())
 }
 
 /// Obtiene todos los ingresos (limitado a 500)
 #[tauri::command]
 pub async fn get_all_ingresos(pool: State<'_, SqlitePool>) -> Result<IngresoListResponse, String> {
-    let results = db::find_all_with_details(&pool)
+    service::get_all_ingresos_with_stats(&pool)
         .await
-        .map_err(|e| e.to_string())?;
-
-    let mut responses = Vec::new();
-    for (ingreso, details) in results {
-        let mut response = IngresoResponse::from(ingreso);
-        response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
-        response.usuario_salida_nombre = details.usuario_salida_nombre;
-        response.vehiculo_placa = details.vehiculo_placa;
-        responses.push(response);
-    }
-
-    let total = responses.len();
-    let adentro = responses
-        .iter()
-        .filter(|i| i.fecha_hora_salida.is_none())
-        .count();
-    let salieron = total - adentro;
-
-    Ok(IngresoListResponse {
-        ingresos: responses,
-        total,
-        adentro,
-        salieron,
-    })
+        .map_err(|e| e.to_string())
 }
 
 /// Obtiene solo ingresos abiertos (personas adentro)
@@ -80,20 +42,9 @@ pub async fn get_all_ingresos(pool: State<'_, SqlitePool>) -> Result<IngresoList
 pub async fn get_ingresos_abiertos(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<IngresoResponse>, String> {
-    let results = db::find_ingresos_abiertos_with_details(&pool)
+    service::get_ingresos_abiertos(&pool)
         .await
-        .map_err(|e| e.to_string())?;
-
-    let mut responses = Vec::new();
-    for (ingreso, details) in results {
-        let mut response = IngresoResponse::from(ingreso);
-        response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
-        response.usuario_salida_nombre = details.usuario_salida_nombre;
-        response.vehiculo_placa = details.vehiculo_placa;
-        responses.push(response);
-    }
-
-    Ok(responses)
+        .map_err(|e| e.to_string())
 }
 
 /// Busca ingreso abierto por número de gafete
@@ -102,12 +53,10 @@ pub async fn get_ingreso_by_gafete(
     pool: State<'_, SqlitePool>,
     gafete_numero: String,
 ) -> Result<IngresoResponse, String> {
-    let ingreso = db::find_ingreso_by_gafete(&pool, &gafete_numero)
+    service::get_ingreso_by_gafete(&pool, &gafete_numero)
         .await
         .map_err(|e| e.to_string())?
-        .ok_or_else(|| format!("No se encontró ingreso activo con gafete {}", gafete_numero))?;
-    let response = IngresoResponse::from(ingreso);
-    Ok(response)
+        .ok_or_else(|| format!("No se encontró ingreso activo con gafete {}", gafete_numero))
 }
 
 /// Obtiene salidas en rango de fechas (YYYY-MM-DD)
@@ -117,18 +66,9 @@ pub async fn get_salidas_en_rango(
     fecha_inicio: String,
     fecha_fin: String,
 ) -> Result<Vec<IngresoResponse>, String> {
-    let results = db::find_salidas_in_range_with_details(&pool, &fecha_inicio, &fecha_fin)
+    service::get_salidas_en_rango(&pool, &fecha_inicio, &fecha_fin)
         .await
-        .map_err(|e| e.to_string())?;
-    let mut responses = Vec::new();
-    for (ingreso, details) in results {
-        let mut response = IngresoResponse::from(ingreso);
-        response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
-        response.usuario_salida_nombre = details.usuario_salida_nombre;
-        response.vehiculo_placa = details.vehiculo_placa;
-        responses.push(response);
-    }
-    Ok(responses)
+        .map_err(|e| e.to_string())
 }
 
 /// Obtiene salidas de un día (YYYY-MM-DD)
@@ -137,18 +77,9 @@ pub async fn get_salidas_del_dia(
     pool: State<'_, SqlitePool>,
     fecha: String,
 ) -> Result<Vec<IngresoResponse>, String> {
-    let results = db::find_salidas_by_date_with_details(&pool, &fecha)
+    service::get_salidas_en_rango(&pool, &fecha, &fecha)
         .await
-        .map_err(|e| e.to_string())?;
-    let mut responses = Vec::new();
-    for (ingreso, details) in results {
-        let mut response = IngresoResponse::from(ingreso);
-        response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
-        response.usuario_salida_nombre = details.usuario_salida_nombre;
-        response.vehiculo_placa = details.vehiculo_placa;
-        responses.push(response);
-    }
-    Ok(responses)
+        .map_err(|e| e.to_string())
 }
 
 // ==========================================
@@ -161,14 +92,15 @@ pub async fn get_alertas_pendientes_by_cedula(
     pool: State<'_, SqlitePool>,
     cedula: String,
 ) -> Result<Vec<AlertaGafeteResponse>, String> {
-    let alertas = alerta_service::find_pendientes_by_cedula(&pool, &cedula)
+    alerta_service::find_pendientes_by_cedula(&pool, &cedula)
         .await
-        .map_err(|e| e.to_string())?;
-    let responses: Vec<_> = alertas
-        .into_iter()
-        .map(AlertaGafeteResponse::from)
-        .collect();
-    Ok(responses)
+        .map_err(|e| e.to_string())
+        .map(|alertas| {
+            alertas
+                .into_iter()
+                .map(AlertaGafeteResponse::from)
+                .collect()
+        })
 }
 
 /// Obtiene todas las alertas de gafetes
@@ -176,14 +108,15 @@ pub async fn get_alertas_pendientes_by_cedula(
 pub async fn get_all_alertas_gafetes(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<AlertaGafeteResponse>, String> {
-    let alertas = alerta_service::find_all(&pool, None)
+    alerta_service::find_all(&pool, None)
         .await
-        .map_err(|e| e.to_string())?;
-    let responses: Vec<_> = alertas
-        .into_iter()
-        .map(AlertaGafeteResponse::from)
-        .collect();
-    Ok(responses)
+        .map_err(|e| e.to_string())
+        .map(|alertas| {
+            alertas
+                .into_iter()
+                .map(AlertaGafeteResponse::from)
+                .collect()
+        })
 }
 
 /// Marca una alerta de gafete como resuelta
@@ -194,6 +127,7 @@ pub async fn resolver_alerta_gafete(
 ) -> Result<AlertaGafeteResponse, String> {
     let now = Utc::now().to_rfc3339();
     let resolver_id = input.usuario_id.unwrap_or_else(|| "sistema".to_string());
+
     alerta_service::resolver(
         &pool,
         &input.alerta_id,
@@ -208,5 +142,6 @@ pub async fn resolver_alerta_gafete(
     let alerta = alerta_service::find_by_id(&pool, &input.alerta_id)
         .await
         .map_err(|e| e.to_string())?;
+
     Ok(AlertaGafeteResponse::from(alerta))
 }

@@ -22,6 +22,7 @@ pub mod keyring_windows;
 
 pub mod cita_service;
 pub mod ingreso_contratista_service; // NUEVO UNIFICADO
+pub mod ingreso_general_service;
 pub mod ingreso_proveedor_service;
 pub mod ingreso_visita_service;
 pub mod lista_negra_service;

@@ -25,7 +25,7 @@ export const contratistas = {
   },
 
   getById: async (id: string): Promise<ContratistaResponse> => {
-    return await invoke<ContratistaResponse>("get_contratista", { id });
+    return await invoke<ContratistaResponse>("get_contratista_by_id", { id });
   },
 
   update: async (id: string, input: UpdateContratistaInput): Promise<ContratistaResponse> => {
