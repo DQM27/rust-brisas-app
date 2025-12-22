@@ -123,13 +123,6 @@ pub async fn registrar_salida(
         if let Some(ref gafete_num) = gafete {
             // TODO: Agregar ingreso_visita_id a alertas_gafetes y crear la alerta real
             // Por ahora solo log
-            #[cfg(feature = "logging")]
-            log::warn!(
-                "⚠️ ALERTA: Gafete {} no devuelto por visita {} ({})",
-                gafete_num,
-                visitante_nombre,
-                visitante_cedula
-            );
             println!(
                 "⚠️ ALERTA: Gafete {} no devuelto por visita {} ({})",
                 gafete_num, visitante_nombre, visitante_cedula
