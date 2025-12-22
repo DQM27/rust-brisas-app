@@ -4,35 +4,31 @@
 // Capa de data access: queries SQL puras
 // Sin lógica de negocio, solo interacción con la base de datos
 
-use crate::models::user::User;
+use crate::models::user::{User, UserRole};
 use sqlx::{Row, SqlitePool};
 
 // ==========================================
 // QUERIES DE LECTURA
 // ==========================================
 
-const SELECT_USERS: &str = "
-    SELECT id, email, nombre, apellido, role, is_active, created_at, updated_at,
-           cedula, segundo_nombre, segundo_apellido,
-           fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
-           contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password, deleted_at
-    FROM users
-";
-
-#[derive(sqlx::FromRow)]
-struct UserWithPassword {
-    #[sqlx(flatten)]
-    user: User,
-    password_hash: String,
-}
-
 /// Busca un usuario por ID (Solo activos)
 pub async fn find_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<User> {
-    sqlx::query_as::<_, User>(&format!(
-        "{} WHERE id = ? AND deleted_at IS NULL",
-        SELECT_USERS
-    ))
-    .bind(id)
+    sqlx::query_as!(
+        User,
+        r#"
+        SELECT id, email, nombre, apellido, role as "role: UserRole",
+               is_active as "is_active: bool",
+               created_at, updated_at,
+               cedula, segundo_nombre, segundo_apellido,
+               fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
+               contacto_emergencia_nombre, contacto_emergencia_telefono,
+               must_change_password as "must_change_password: bool",
+               deleted_at
+        FROM users
+        WHERE id = ? AND deleted_at IS NULL
+        "#,
+        id
+    )
     .fetch_one(pool)
     .await
 }
@@ -42,23 +38,69 @@ pub async fn find_by_email_with_password(
     pool: &SqlitePool,
     email: &str,
 ) -> sqlx::Result<(User, String)> {
-    let row = sqlx::query_as::<_, UserWithPassword>(&format!(
-        "{} WHERE email = ? AND deleted_at IS NULL",
-        SELECT_USERS.replace("FROM users", ", password_hash FROM users") // Inject password_hash
-    ))
-    .bind(email)
+    let rec = sqlx::query!(
+        r#"
+        SELECT id, email, nombre, apellido, role as "role: UserRole",
+               is_active as "is_active: bool",
+               created_at, updated_at,
+               cedula, segundo_nombre, segundo_apellido,
+               fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
+               contacto_emergencia_nombre, contacto_emergencia_telefono,
+               must_change_password as "must_change_password: bool",
+               deleted_at,
+               password_hash
+        FROM users
+        WHERE email = ? AND deleted_at IS NULL
+        "#,
+        email
+    )
     .fetch_one(pool)
     .await?;
 
-    Ok((row.user, row.password_hash))
+    let user = User {
+        id: rec.id,
+        email: rec.email,
+        nombre: rec.nombre,
+        apellido: rec.apellido,
+        role: rec.role,
+        is_active: rec.is_active,
+        created_at: rec.created_at,
+        updated_at: rec.updated_at,
+        cedula: rec.cedula,
+        segundo_nombre: rec.segundo_nombre,
+        segundo_apellido: rec.segundo_apellido,
+        fecha_inicio_labores: rec.fecha_inicio_labores,
+        numero_gafete: rec.numero_gafete,
+        fecha_nacimiento: rec.fecha_nacimiento,
+        telefono: rec.telefono,
+        direccion: rec.direccion,
+        contacto_emergencia_nombre: rec.contacto_emergencia_nombre,
+        contacto_emergencia_telefono: rec.contacto_emergencia_telefono,
+        must_change_password: rec.must_change_password,
+        deleted_at: rec.deleted_at,
+    };
+
+    Ok((user, rec.password_hash))
 }
 
 /// Obtiene todos los usuarios activos ordenados por fecha de creación
 pub async fn find_all(pool: &SqlitePool) -> sqlx::Result<Vec<User>> {
-    sqlx::query_as::<_, User>(&format!(
-        "{} WHERE deleted_at IS NULL ORDER BY created_at DESC",
-        SELECT_USERS
-    ))
+    sqlx::query_as!(
+        User,
+        r#"
+        SELECT id, email, nombre, apellido, role as "role: UserRole",
+               is_active as "is_active: bool",
+               created_at, updated_at,
+               cedula, segundo_nombre, segundo_apellido,
+               fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
+               contacto_emergencia_nombre, contacto_emergencia_telefono,
+               must_change_password as "must_change_password: bool",
+               deleted_at
+        FROM users
+        WHERE deleted_at IS NULL
+        ORDER BY created_at DESC
+        "#
+    )
     .fetch_all(pool)
     .await
 }
