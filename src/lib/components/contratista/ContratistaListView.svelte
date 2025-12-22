@@ -27,7 +27,7 @@
   import {
     createContratistaListLogic,
     ContratistaListLogic,
-  } from "$lib/logic/contratista/contratistaListLogic";
+  } from "$lib/logic/contratista/contratistaColumns";
   import {
     createCustomButton,
     COMMON_DEFAULT_BUTTONS,
