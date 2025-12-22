@@ -67,3 +67,25 @@ pub enum ContratistaError {
     #[error("Error de validación: {0}")]
     Validation(String),
 }
+
+// ==========================================
+// EMPRESA ERRORS
+// ==========================================
+
+#[derive(Error, Debug)]
+pub enum EmpresaError {
+    #[error("Empresa no encontrada")]
+    NotFound,
+
+    #[error("Ya existe una empresa con este nombre")]
+    NameExists,
+
+    #[error("No se puede eliminar la empresa porque tiene {0} contratista(s) asociado(s)")]
+    HasContratistas(i64),
+
+    #[error("Error de base de datos: {0}")]
+    Database(#[from] sqlx::Error),
+
+    #[error("Error de validación: {0}")]
+    Validation(String),
+}

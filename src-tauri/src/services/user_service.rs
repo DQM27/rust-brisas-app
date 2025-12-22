@@ -229,8 +229,7 @@ pub async fn update_user(
     // 6. Timestamp
     let now = Utc::now().to_rfc3339();
 
-    // 7. Convertir is_active
-    let is_active_int = input.is_active.map(|b| if b { 1 } else { 0 });
+    // 7. (Eliminado: Conversión manual de is_active, SQLx lo maneja)
 
     // 8. Actualizar en DB
     db::update(
@@ -241,7 +240,7 @@ pub async fn update_user(
         nombre_normalizado.as_deref(),
         apellido_normalizado.as_deref(),
         input.role_id.as_deref(),
-        is_active_int,
+        input.is_active,
         &now,
         input.cedula.as_deref(),
         input.segundo_nombre.as_deref(),
