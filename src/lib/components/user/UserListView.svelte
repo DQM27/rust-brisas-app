@@ -177,7 +177,9 @@
     editingUser = null;
   }
 
-  async function handleSaveUser(data: CreateUserInput | UpdateUserInput) {
+  async function handleSaveUser(
+    data: CreateUserInput | UpdateUserInput,
+  ): Promise<boolean> {
     modalLoading = true;
     try {
       if (editingUser) {
@@ -191,9 +193,11 @@
           users = users.map((u) =>
             u.id === editingUser!.id ? result.data : u,
           );
-          closeModal();
+          // closeModal(); // Dejamos que el modal controle el cierre
+          return true;
         } else {
           toast.error(result.error);
+          return false;
         }
       } else {
         // Modo creación
@@ -201,11 +205,17 @@
         if (result.ok) {
           toast.success("Usuario creado");
           await loadUsers(); // Recargar para obtener el nuevo usuario
-          closeModal();
+          // closeModal(); // Dejamos que el modal controle el cierre (para mostrar password)
+          return true;
         } else {
           toast.error(result.error);
+          return false;
         }
       }
+    } catch (e) {
+      console.error(e);
+      toast.error("Error inesperado");
+      return false;
     } finally {
       modalLoading = false;
     }

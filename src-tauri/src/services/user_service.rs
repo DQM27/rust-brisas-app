@@ -80,9 +80,13 @@ pub async fn create_user(
 
     // 5. Generar o usar contraseña
     let (password_str, must_change_password) = match input.password {
-        Some(p) => (p, false), // Admin asignó contraseña (opcional)
+        Some(p) => {
+            // Check if explicit override is provided, otherwise default to false (admin set permanent)
+            let force_change = input.must_change_password.unwrap_or(false);
+            (p, force_change)
+        }
         None => {
-            // Generar temporal
+            // Generar temporal (always force change)
             let rng = rand::thread_rng();
             let temp: String = rng
                 .sample_iter(&Alphanumeric)

@@ -23,7 +23,9 @@
     show: boolean;
     user?: UserResponse | null; // Si viene, es edición; si no, creación
     loading?: boolean;
-    onSave: (data: CreateUserInput | UpdateUserInput) => Promise<void>;
+    onSave: (
+      data: CreateUserInput | UpdateUserInput,
+    ) => Promise<boolean | void>;
     onClose: () => void;
   }
 
@@ -141,7 +143,32 @@
     const result = schema.safeParse(formData);
 
     if (result.success) {
-      await onSave(result.data);
+      // Logic: If creation and password is empty, generate one automatically
+      let finalPassword = formData.password;
+
+      if (!isEditMode && !finalPassword) {
+        finalPassword =
+          Math.random().toString(36).slice(-8) +
+          Math.random().toString(36).slice(-2).toUpperCase();
+        // Update payload
+        result.data.password = finalPassword;
+        result.data.mustChangePassword = true;
+      }
+
+      // Capture password for modal (using the final one)
+      const tempPassword = !isEditMode ? finalPassword : null;
+
+      const success = await onSave(result.data);
+      const isSuccess = typeof success === "boolean" ? success : true;
+
+      if (isSuccess) {
+        if (!isEditMode && tempPassword) {
+          generatedPassword = tempPassword;
+          showSuccessModal = true;
+        } else {
+          onClose();
+        }
+      }
     } else {
       const newErrors: Record<string, string> = {};
       result.error.issues.forEach((issue) => {
@@ -474,25 +501,7 @@
                 </div>
               {/if}
 
-              <!-- Contraseña Temporal (Solo Creación) -->
-              {#if !isEditMode}
-                <div class="col-span-2">
-                  <label for="password" class={labelClass}
-                    >Contraseña Temporal *</label
-                  >
-                  <input
-                    id="password"
-                    type="text"
-                    bind:value={formData.password}
-                    placeholder="Contraseña inicial para el usuario"
-                    disabled={loading}
-                    class={inputClass}
-                  />
-                  {#if errors.password}<p class={errorClass}>
-                      {errors.password}
-                    </p>{/if}
-                </div>
-              {/if}
+              <!-- Password input removed as per user request (Auto-generated only) -->
             </div>
           </div>
 
@@ -703,7 +712,10 @@
         </div>
 
         <button
-          onclick={() => (showSuccessModal = false)}
+          onclick={() => {
+            showSuccessModal = false;
+            onClose();
+          }}
           class="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-medium py-2 rounded-md transition-colors border border-gray-200 dark:border-gray-700"
         >
           Cerrar

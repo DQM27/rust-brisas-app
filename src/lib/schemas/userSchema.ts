@@ -79,6 +79,7 @@ export const CreateUserSchema = z.object({
     fechaNacimiento: z.string().optional(),
     contactoEmergenciaNombre: stringOpcional(100, 'Nombre contacto emergencia'),
     contactoEmergenciaTelefono: stringOpcional(20, 'Teléfono contacto emergencia'),
+    mustChangePassword: z.boolean().optional(),
 });
 
 export const UpdateUserSchema = CreateUserSchema.partial().extend({

@@ -192,8 +192,10 @@
     showProfileModal = true;
   }
 
-  async function handleSaveProfile(data: CreateUserInput | UpdateUserInput) {
-    if (!$currentUser) return;
+  async function handleSaveProfile(
+    data: CreateUserInput | UpdateUserInput,
+  ): Promise<boolean> {
+    if (!$currentUser) return false;
 
     profileLoading = true;
     try {
@@ -208,13 +210,16 @@
         // Update global store
         // currentUser.set(result.data); // Handled by userService now
 
-        showProfileModal = false;
+        // showProfileModal = false; // DELEGATED to UserFormModal
+        return true;
       } else {
         toast.error(result.error);
+        return false;
       }
     } catch (err) {
       console.error(err);
       toast.error("Error al guardar perfil");
+      return false;
     } finally {
       profileLoading = false;
     }

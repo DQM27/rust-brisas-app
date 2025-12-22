@@ -31,6 +31,7 @@
 
     if (result.ok) {
       // 1. Revisar si debe cambiar contraseña
+      console.log("LOGIN RESULT:", result.data);
       if (result.data.mustChangePassword) {
         tempUser = result.data;
         tempPassword = password;

@@ -74,6 +74,7 @@ export interface CreateUserInput {
   direccion?: string;
   contactoEmergenciaNombre?: string;
   contactoEmergenciaTelefono?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface UpdateUserInput {
