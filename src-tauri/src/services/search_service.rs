@@ -75,7 +75,9 @@ impl SearchService {
             .map_err(|e| e.to_string())?;
 
         // Obtener todos los proveedores
-        let proveedores = proveedor_queries::find_all_with_empresa(pool).await?;
+        let proveedores = proveedor_queries::find_all_with_empresa(pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
         // Adquirir lock para escribir en el índice
         let _lock = self.writer_mutex.lock().await;

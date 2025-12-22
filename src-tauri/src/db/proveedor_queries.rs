@@ -1,12 +1,18 @@
 // ==========================================
 // src/db/proveedor_queries.rs
 // ==========================================
+// Capa de data access: queries SQL puras
+// Strict Mode: Uso de query_as! para validación en tiempo de compilación
+
 use crate::models::proveedor::{
     CreateProveedorInput, EstadoProveedor, Proveedor, UpdateProveedorInput,
 };
 use chrono::Utc;
+use serde::Serialize;
 use sqlx::SqlitePool;
 use uuid::Uuid;
+
+#[derive(Debug, Serialize)]
 pub struct ProveedorEnhancedRow {
     pub proveedor: Proveedor,
     pub empresa_nombre: String,
@@ -17,83 +23,110 @@ pub struct ProveedorEnhancedRow {
     pub vehiculo_color: Option<String>,
 }
 
-use sqlx::Row;
+// ==========================================
+// QUERIES DE LECTURA
+// ==========================================
 
 /// Obtiene un proveedor por ID con su empresa y vehículo asociado
 pub async fn find_by_id_with_empresa(
     pool: &SqlitePool,
     id: &str,
-) -> Result<Option<ProveedorEnhancedRow>, String> {
-    let row = sqlx::query(
+) -> sqlx::Result<Option<ProveedorEnhancedRow>> {
+    // DTO intermedio para el query complejo
+    #[derive(sqlx::FromRow)]
+    struct EnhancedRow {
+        id: String,
+        cedula: String,
+        nombre: String,
+        segundo_nombre: Option<String>,
+        apellido: String,
+        segundo_apellido: Option<String>,
+        empresa_id: String,
+        estado: EstadoProveedor,
+        created_at: String,
+        updated_at: String,
+        empresa_nombre: String,
+        tipo_vehiculo: Option<String>,
+        placa: Option<String>,
+        marca: Option<String>,
+        modelo: Option<String>,
+        color: Option<String>,
+    }
+
+    let row = sqlx::query_as!(
+        EnhancedRow,
         r#"
-        SELECT p.*, e.nombre as empresa_nombre,
-               v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color
+        SELECT 
+            p.id as "id!",
+            p.cedula as "cedula!",
+            p.nombre as "nombre!",
+            p.segundo_nombre,
+            p.apellido as "apellido!",
+            p.segundo_apellido,
+            p.empresa_id as "empresa_id!",
+            p.estado as "estado!: EstadoProveedor",
+            CAST(p.created_at AS TEXT) as "created_at!",
+            CAST(p.updated_at AS TEXT) as "updated_at!",
+            e.nombre as "empresa_nombre!",
+            v.tipo_vehiculo,
+            v.placa,
+            v.marca,
+            v.modelo,
+            v.color
         FROM proveedores p
         LEFT JOIN empresas e ON p.empresa_id = e.id
         LEFT JOIN vehiculos v ON p.id = v.proveedor_id
         WHERE p.id = ?
         "#,
+        id
     )
-    .bind(id)
     .fetch_optional(pool)
-    .await
-    .map_err(|e| format!("Error en DB: {}", e))?;
+    .await?;
 
-    if let Some(row) = row {
-        let estado_str: String = row.get("estado");
-        let estado = EstadoProveedor::from_str(&estado_str).unwrap_or(EstadoProveedor::Activo);
-
-        let proveedor = Proveedor {
-            id: row.get("id"),
-            cedula: row.get("cedula"),
-            nombre: row.get("nombre"),
-            segundo_nombre: row.get("segundo_nombre"),
-            apellido: row.get("apellido"),
-            segundo_apellido: row.get("segundo_apellido"),
-            empresa_id: row.get("empresa_id"),
-            estado,
-            created_at: row.get("created_at"),
-            updated_at: row.get("updated_at"),
-        };
-
-        Ok(Some(ProveedorEnhancedRow {
-            proveedor,
-            empresa_nombre: row.get("empresa_nombre"),
-            vehiculo_tipo: row.try_get("tipo_vehiculo").ok(),
-            vehiculo_placa: row.try_get("placa").ok(),
-            vehiculo_marca: row.try_get("marca").ok(),
-            vehiculo_modelo: row.try_get("modelo").ok(),
-            vehiculo_color: row.try_get("color").ok(),
-        }))
-    } else {
-        Ok(None)
-    }
+    Ok(row.map(|r| ProveedorEnhancedRow {
+        proveedor: Proveedor {
+            id: r.id,
+            cedula: r.cedula,
+            nombre: r.nombre,
+            segundo_nombre: r.segundo_nombre,
+            apellido: r.apellido,
+            segundo_apellido: r.segundo_apellido,
+            empresa_id: r.empresa_id,
+            estado: r.estado,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+        },
+        empresa_nombre: r.empresa_nombre,
+        vehiculo_tipo: r.tipo_vehiculo,
+        vehiculo_placa: r.placa,
+        vehiculo_marca: r.marca,
+        vehiculo_modelo: r.modelo,
+        vehiculo_color: r.color,
+    }))
 }
 
-pub async fn create(
-    pool: &SqlitePool,
-    input: CreateProveedorInput,
-) -> Result<Proveedor, sqlx::Error> {
+pub async fn create(pool: &SqlitePool, input: CreateProveedorInput) -> sqlx::Result<Proveedor> {
     let id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
     let estado = EstadoProveedor::Activo;
+    let estado_str = estado.as_str();
 
-    sqlx::query(
+    sqlx::query!(
         r#"
         INSERT INTO proveedores (id, cedula, nombre, segundo_nombre, apellido, segundo_apellido, empresa_id, estado, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
+        id,
+        input.cedula,
+        input.nombre,
+        input.segundo_nombre,
+        input.apellido,
+        input.segundo_apellido,
+        input.empresa_id,
+        estado_str,
+        now,
+        now
     )
-    .bind(&id)
-    .bind(&input.cedula)
-    .bind(&input.nombre)
-    .bind(&input.segundo_nombre)
-    .bind(&input.apellido)
-    .bind(&input.segundo_apellido)
-    .bind(&input.empresa_id)
-    .bind(estado.as_str())
-    .bind(&now)
-    .bind(&now)
     .execute(pool)
     .await?;
 
@@ -111,108 +144,141 @@ pub async fn create(
     })
 }
 
-pub async fn find_by_cedula(
-    pool: &SqlitePool,
-    cedula: &str,
-) -> Result<Option<Proveedor>, sqlx::Error> {
-    sqlx::query_as::<_, Proveedor>("SELECT * FROM proveedores WHERE cedula = ?")
-        .bind(cedula)
-        .fetch_optional(pool)
-        .await
+pub async fn find_by_cedula(pool: &SqlitePool, cedula: &str) -> sqlx::Result<Option<Proveedor>> {
+    sqlx::query_as!(
+        Proveedor,
+        r#"
+        SELECT 
+            id as "id!",
+            cedula as "cedula!",
+            nombre as "nombre!",
+            segundo_nombre,
+            apellido as "apellido!",
+            segundo_apellido,
+            empresa_id as "empresa_id!",
+            estado as "estado!: EstadoProveedor",
+            CAST(created_at AS TEXT) as "created_at!",
+            CAST(updated_at AS TEXT) as "updated_at!"
+        FROM proveedores 
+        WHERE cedula = ?
+        "#,
+        cedula
+    )
+    .fetch_optional(pool)
+    .await
 }
 
-pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<Option<Proveedor>, sqlx::Error> {
-    sqlx::query_as::<_, Proveedor>("SELECT * FROM proveedores WHERE id = ?")
-        .bind(id)
-        .fetch_optional(pool)
-        .await
+pub async fn find_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<Option<Proveedor>> {
+    sqlx::query_as!(
+        Proveedor,
+        r#"
+        SELECT 
+            id as "id!",
+            cedula as "cedula!",
+            nombre as "nombre!",
+            segundo_nombre,
+            apellido as "apellido!",
+            segundo_apellido,
+            empresa_id as "empresa_id!",
+            estado as "estado!: EstadoProveedor",
+            CAST(created_at AS TEXT) as "created_at!",
+            CAST(updated_at AS TEXT) as "updated_at!"
+        FROM proveedores 
+        WHERE id = ?
+        "#,
+        id
+    )
+    .fetch_optional(pool)
+    .await
 }
 
 /// Obtiene todos los proveedores con el nombre de su empresa (para reindexación)
-pub async fn find_all_with_empresa(pool: &SqlitePool) -> Result<Vec<(Proveedor, String)>, String> {
-    let rows = sqlx::query_as::<
-        _,
-        (
-            String,
-            String,
-            String,
-            Option<String>,
-            String,
-            Option<String>,
-            String,
-            String,
-            String,
-            String,
-            String,
-        ),
-    >(
+pub async fn find_all_with_empresa(pool: &SqlitePool) -> sqlx::Result<Vec<(Proveedor, String)>> {
+    #[derive(sqlx::FromRow)]
+    struct ProveedorWithEmpresa {
+        id: String,
+        cedula: String,
+        nombre: String,
+        segundo_nombre: Option<String>,
+        apellido: String,
+        segundo_apellido: Option<String>,
+        empresa_id: String,
+        estado: EstadoProveedor,
+        created_at: String,
+        updated_at: String,
+        empresa_nombre: String,
+    }
+
+    let rows = sqlx::query_as!(
+        ProveedorWithEmpresa,
         r#"
         SELECT 
-            p.id, p.cedula, p.nombre, p.segundo_nombre, p.apellido, p.segundo_apellido, 
-            p.empresa_id, p.estado, p.created_at, p.updated_at,
-            COALESCE(e.nombre, 'Empresa desconocida') as empresa_nombre
+            p.id as "id!",
+            p.cedula as "cedula!",
+            p.nombre as "nombre!",
+            p.segundo_nombre,
+            p.apellido as "apellido!",
+            p.segundo_apellido,
+            p.empresa_id as "empresa_id!",
+            p.estado as "estado!: EstadoProveedor",
+            CAST(p.created_at AS TEXT) as "created_at!",
+            CAST(p.updated_at AS TEXT) as "updated_at!",
+            COALESCE(e.nombre, 'Empresa desconocida') as "empresa_nombre!"
         FROM proveedores p
         LEFT JOIN empresas e ON p.empresa_id = e.id
-        "#,
+        "#
     )
     .fetch_all(pool)
-    .await
-    .map_err(|e| e.to_string())?;
+    .await?;
 
-    let result: Vec<(Proveedor, String)> = rows
+    Ok(rows
         .into_iter()
-        .map(
-            |(
-                id,
-                cedula,
-                nombre,
-                segundo_nombre,
-                apellido,
-                segundo_apellido,
-                empresa_id,
-                estado,
-                created_at,
-                updated_at,
-                empresa_nombre,
-            )| {
-                let proveedor = Proveedor {
-                    id,
-                    cedula,
-                    nombre,
-                    segundo_nombre,
-                    apellido,
-                    segundo_apellido,
-                    empresa_id,
-                    estado: EstadoProveedor::from_str(&estado).unwrap_or(EstadoProveedor::Activo),
-                    created_at,
-                    updated_at,
-                };
-                (proveedor, empresa_nombre)
-            },
-        )
-        .collect();
-
-    Ok(result)
+        .map(|r| {
+            (
+                Proveedor {
+                    id: r.id,
+                    cedula: r.cedula,
+                    nombre: r.nombre,
+                    segundo_nombre: r.segundo_nombre,
+                    apellido: r.apellido,
+                    segundo_apellido: r.segundo_apellido,
+                    empresa_id: r.empresa_id,
+                    estado: r.estado,
+                    created_at: r.created_at,
+                    updated_at: r.updated_at,
+                },
+                r.empresa_nombre,
+            )
+        })
+        .collect())
 }
 
-pub async fn search(
-    pool: &SqlitePool,
-    query: &str,
-    limit: i64,
-) -> Result<Vec<Proveedor>, sqlx::Error> {
+pub async fn search(pool: &SqlitePool, query: &str, limit: i64) -> sqlx::Result<Vec<Proveedor>> {
     let pattern = format!("%{}%", query);
-    sqlx::query_as::<_, Proveedor>(
+    sqlx::query_as!(
+        Proveedor,
         r#"
-        SELECT * FROM proveedores
+        SELECT 
+            id as "id!",
+            cedula as "cedula!",
+            nombre as "nombre!",
+            segundo_nombre,
+            apellido as "apellido!",
+            segundo_apellido,
+            empresa_id as "empresa_id!",
+            estado as "estado!: EstadoProveedor",
+            CAST(created_at AS TEXT) as "created_at!",
+            CAST(updated_at AS TEXT) as "updated_at!"
+        FROM proveedores
         WHERE cedula LIKE ? OR nombre LIKE ? OR apellido LIKE ?
         ORDER BY created_at DESC
         LIMIT ?
         "#,
+        pattern,
+        pattern,
+        pattern,
+        limit
     )
-    .bind(&pattern)
-    .bind(&pattern)
-    .bind(&pattern)
-    .bind(limit)
     .fetch_all(pool)
     .await
 }
@@ -221,17 +287,10 @@ pub async fn update(
     pool: &SqlitePool,
     id: &str,
     input: UpdateProveedorInput,
-) -> Result<Proveedor, sqlx::Error> {
+) -> sqlx::Result<Proveedor> {
     let now = Utc::now().to_rfc3339();
 
-    // Construcción dinámica de la query
-    // Por simplicidad en MVP, actualizamos campos si vienen, pero SQLx estático prefiere queries fijas.
-    // Usaremos COALESCE o lógica condicional en la app.
-    // Para simplificar, haremos un fetch previo + update selectivo.
-
-    // NOTA: Para producción robusta, usar query builder. Aquí usaremos un update fijo con COALESCE en SQL.
-
-    sqlx::query_as::<_, Proveedor>(
+    sqlx::query!(
         r#"
         UPDATE proveedores
         SET nombre = COALESCE(?, nombre),
@@ -242,25 +301,28 @@ pub async fn update(
             estado = COALESCE(?, estado),
             updated_at = ?
         WHERE id = ?
-        RETURNING *
         "#,
+        input.nombre,
+        input.segundo_nombre,
+        input.apellido,
+        input.segundo_apellido,
+        input.empresa_id,
+        input.estado,
+        now,
+        id
     )
-    .bind(input.nombre)
-    .bind(input.segundo_nombre)
-    .bind(input.apellido)
-    .bind(input.segundo_apellido)
-    .bind(input.empresa_id)
-    .bind(input.estado)
-    .bind(&now)
-    .bind(id)
-    .fetch_one(pool)
-    .await
+    .execute(pool)
+    .await?;
+
+    // Fetch the updated record
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| sqlx::Error::RowNotFound)
 }
 
-pub async fn delete(pool: &SqlitePool, id: &str) -> Result<(), sqlx::Error> {
-    sqlx::query("DELETE FROM proveedores WHERE id = ?")
-        .bind(id)
+pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
+    sqlx::query!("DELETE FROM proveedores WHERE id = ?", id)
         .execute(pool)
-        .await
-        .map(|_| ())
+        .await?;
+    Ok(())
 }
