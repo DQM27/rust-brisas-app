@@ -142,3 +142,121 @@ pub async fn check_permissions(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::sqlite::SqlitePoolOptions;
+    use sqlx::Executor;
+    use uuid::Uuid;
+
+    async fn setup_test_env() -> SqlitePool {
+        let db_id = Uuid::new_v4().to_string();
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect(&format!("sqlite:file:{}?mode=memory&cache=shared", db_id))
+            .await
+            .unwrap();
+
+        pool.execute(
+            r#"
+            CREATE TABLE role_permissions (
+                role_id TEXT NOT NULL,
+                permission_id TEXT NOT NULL,
+                PRIMARY KEY (role_id, permission_id)
+            );
+            
+            INSERT INTO role_permissions (role_id, permission_id) VALUES ('admin', 'contratistas:view');
+            INSERT INTO role_permissions (role_id, permission_id) VALUES ('admin', 'contratistas:create');
+            INSERT INTO role_permissions (role_id, permission_id) VALUES ('user', 'contratistas:view');
+            "#,
+        )
+        .await
+        .unwrap();
+
+        pool
+    }
+
+    #[tokio::test]
+    async fn test_role_has_permission() {
+        let pool = setup_test_env().await;
+
+        assert!(
+            role_has_permission(&pool, "admin", Module::Contratistas, Action::View)
+                .await
+                .unwrap()
+        );
+        assert!(
+            role_has_permission(&pool, "admin", Module::Contratistas, Action::Create)
+                .await
+                .unwrap()
+        );
+        assert!(
+            role_has_permission(&pool, "user", Module::Contratistas, Action::View)
+                .await
+                .unwrap()
+        );
+        assert!(
+            !role_has_permission(&pool, "user", Module::Contratistas, Action::Create)
+                .await
+                .unwrap()
+        );
+        assert!(
+            !role_has_permission(&pool, "guest", Module::Contratistas, Action::View)
+                .await
+                .unwrap()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_get_role_permissions() {
+        let pool = setup_test_env().await;
+
+        let admin_perms = get_role_permissions(&pool, "admin").await.unwrap();
+        assert!(admin_perms.contains("contratistas:view"));
+        assert!(admin_perms.contains("contratistas:create"));
+        assert_eq!(admin_perms.len(), 2);
+
+        let user_perms = get_role_permissions(&pool, "user").await.unwrap();
+        assert!(user_perms.contains("contratistas:view"));
+        assert_eq!(user_perms.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_check_permission_normal_user() {
+        let pool = setup_test_env().await;
+
+        // Autorizado
+        let res = check_permission(&pool, "u-1", "admin", Module::Contratistas, Action::View).await;
+        assert!(res.is_ok());
+
+        // No autorizado
+        let res =
+            check_permission(&pool, "u-1", "user", Module::Contratistas, Action::Create).await;
+        assert!(matches!(res, Err(AuthError::Unauthorized { .. })));
+    }
+
+    #[tokio::test]
+    async fn test_check_permission_superuser_bypass() {
+        let pool = setup_test_env().await;
+
+        let res = check_permission(
+            &pool,
+            crate::domain::role::SUPERUSER_ID,
+            "none",
+            Module::Users,
+            Action::Delete,
+        )
+        .await;
+        assert!(res.is_ok(), "Superuser should bypass all permission checks");
+    }
+
+    #[tokio::test]
+    async fn test_get_visible_modules() {
+        let pool = setup_test_env().await;
+
+        let modules = get_visible_modules(&pool, "u-1", "user").await.unwrap();
+        assert!(modules.contains(&Module::Contratistas));
+        // Depende de si otros módulos están en el setup.
+    }
+}

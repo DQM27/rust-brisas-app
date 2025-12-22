@@ -88,3 +88,38 @@ impl Default for SessionState {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_session_state_workflow() {
+        let state = SessionState::new();
+        assert!(!state.is_authenticated());
+        assert!(state.get_user().is_none());
+
+        let user = SessionUser {
+            id: "u-1".into(),
+            email: "test@example.com".into(),
+            nombre: "Test".into(),
+            apellido: "User".into(),
+            role_id: "admin".into(),
+            role_name: "Administrator".into(),
+        };
+
+        // Login
+        state.set_user(user.clone());
+        assert!(state.is_authenticated());
+        assert_eq!(state.get_user().unwrap().id, "u-1");
+
+        // Required check
+        let req_user = state.require_session().unwrap();
+        assert_eq!(req_user.email, "test@example.com");
+
+        // Logout
+        state.clear();
+        assert!(!state.is_authenticated());
+        assert!(state.require_session().is_err());
+    }
+}
