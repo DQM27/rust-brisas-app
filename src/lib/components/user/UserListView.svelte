@@ -139,11 +139,6 @@
     });
   }
 
-  function handleViewHistory(user: UserResponse) {
-    // TODO: Implementar vista de historial real
-    toast.error("Historial no implementado aún");
-  }
-
   async function handleDeleteUser(user: UserResponse) {
     if (!confirm(`¿Estás seguro de eliminar al usuario ${user.nombre}?`))
       return;
@@ -231,7 +226,6 @@
   onNewUser={handleNewUser}
   onEditUser={handleEditUser}
   onViewInfo={handleViewInfo}
-  onViewHistory={handleViewHistory}
   onDeleteUser={handleDeleteUser}
   onDeleteMultiple={handleDeleteMultiple}
 />

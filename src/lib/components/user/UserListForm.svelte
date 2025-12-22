@@ -30,7 +30,6 @@
     onNewUser?: () => void;
     onEditUser?: (user: UserResponse) => void;
     onViewInfo?: (user: UserResponse) => void;
-    onViewHistory?: (user: UserResponse) => void;
     onDeleteUser?: (user: UserResponse) => void;
     onDeleteMultiple?: (users: UserResponse[]) => void;
   }
@@ -52,7 +51,6 @@
     onNewUser,
     onEditUser,
     onViewInfo,
-    onViewHistory,
     onDeleteUser,
     onDeleteMultiple,
   }: Props = $props();
@@ -150,9 +148,6 @@
       singleSelect: [
         createCustomButton.editar(() => {
           if (selected) onEditUser?.(selected);
-        }),
-        createCustomButton.historial(() => {
-          if (selected) onViewHistory?.(selected);
         }),
         createCustomButton.eliminar(() => {
           if (selected) onDeleteUser?.(selected);
