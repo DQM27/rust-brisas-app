@@ -156,3 +156,17 @@ pub enum ListaNegraError {
     #[error("Error de validación: {0}")]
     Validation(String),
 }
+
+// ==========================================
+// INGRESO PROVEEDOR ERRORS
+// ==========================================
+
+#[derive(Error, Debug)]
+pub enum IngresoProveedorError {
+    #[error("Ingreso no encontrado")]
+    NotFound,
+    #[error("Error de base de datos: {0}")]
+    Database(#[from] sqlx::Error),
+    #[error("Error de validación: {0}")]
+    Validation(String),
+}

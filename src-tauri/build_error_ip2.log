@@ -1,0 +1,121 @@
+    Checking brisas-app v0.1.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+   --> src\db\ingreso_proveedor_queries.rs:154:15
+    |
+154 |       let row = sqlx::query_as!(
+    |  _______________^
+155 | |         IngresoProveedorRow,
+156 | |         r#"
+157 | |         SELECT 
+...   |
+174 | |         id
+175 | |     )
+    | |_____^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+    = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+   --> src\db\ingreso_proveedor_queries.rs:183:16
+    |
+183 |       let rows = sqlx::query_as!(
+    |  ________________^
+184 | |         IngresoProveedorRow,
+185 | |         r#"
+186 | |         SELECT 
+...   |
+203 | |         "#
+204 | |     )
+    | |_____^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+    = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+   --> src\db\ingreso_proveedor_queries.rs:212:16
+    |
+212 |       let rows = sqlx::query_as!(
+    |  ________________^
+213 | |         IngresoProveedorRow,
+214 | |         r#"
+215 | |         SELECT 
+...   |
+234 | |         "#
+235 | |     )
+    | |_____^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+    = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `std::string::String: From<std::option::Option<std::string::String>>` is not satisfied
+   --> src\db\ingreso_proveedor_queries.rs:299:15
+    |
+299 |       let row = sqlx::query_as!(
+    |  _______________^
+300 | |         IngresoProveedorRow,
+301 | |         r#"
+302 | |         SELECT 
+...   |
+318 | |         proveedor_id
+319 | |     )
+    | |_____^ the trait `From<std::option::Option<std::string::String>>` is not implemented for `std::string::String`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `std::string::String` implements `From<&EcoString>`
+              `std::string::String` implements `From<&mut str>`
+              `std::string::String` implements `From<&std::string::String>`
+              `std::string::String` implements `From<&str>`
+              `std::string::String` implements `From<AssetKey>`
+              `std::string::String` implements `From<Box<str>>`
+              `std::string::String` implements `From<Cow<'_, str>>`
+              `std::string::String` implements `From<EcoString>`
+            and 14 others
+    = note: required for `std::option::Option<std::string::String>` to implement `Into<std::string::String>`
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query_as` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0308]: mismatched types
+  --> src\db\ingreso_proveedor_queries.rs:57:21
+   |
+57 |             gafete: row.gafete.unwrap_or_default(),
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `Option<String>`, found `String`
+   |
+   = note: expected enum `std::option::Option<std::string::String>`
+            found struct `std::string::String`
+help: try wrapping the expression in `Some`
+   |
+57 |             gafete: Some(row.gafete.unwrap_or_default()),
+   |                     +++++                              +
+
+Some errors have detailed explanations: E0277, E0308.
+For more information about an error, try `rustc --explain E0277`.
+error: could not compile `brisas-app` (lib) due to 5 previous errors
