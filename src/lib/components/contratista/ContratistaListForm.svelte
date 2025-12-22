@@ -31,12 +31,7 @@
     onSearchClear: () => void;
     onNewContratista?: () => void;
     onEditContratista?: (contratista: ContratistaResponse) => void;
-    onViewInfo?: (contratista: ContratistaResponse) => void;
     onViewHistory?: (contratista: ContratistaResponse) => void;
-    onViewVehicles?: (contratista: ContratistaResponse) => void;
-    onViewBadges?: (contratista: ContratistaResponse) => void;
-    onDeleteContratista?: (contratista: ContratistaResponse) => void;
-    onDeleteMultiple?: (contratistas: ContratistaResponse[]) => void;
   }
 
   let {
@@ -56,12 +51,7 @@
     onSearchClear,
     onNewContratista,
     onEditContratista,
-    onViewInfo,
     onViewHistory,
-    onViewVehicles,
-    onViewBadges,
-    onDeleteContratista,
-    onDeleteMultiple,
   }: Props = $props();
 
   // Estado para selección

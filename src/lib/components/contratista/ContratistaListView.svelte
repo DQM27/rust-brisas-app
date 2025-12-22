@@ -154,34 +154,9 @@
     });
   }
 
-  function handleViewInfo(contratista: ContratistaResponse) {
-    console.log("Ver información de:", contratista);
-    // TODO: Abrir panel lateral o modal con información detallada
-  }
-
   function handleViewHistory(contratista: ContratistaResponse) {
     console.log("Ver historial de:", contratista);
-    // TODO: Abrir tab o modal con historial de ingresos
-  }
-
-  function handleViewVehicles(contratista: ContratistaResponse) {
-    console.log("Ver vehículos de:", contratista);
-    // TODO: Abrir tab de vehículos filtrado por este contratista
-  }
-
-  function handleViewBadges(contratista: ContratistaResponse) {
-    console.log("Ver carnets de:", contratista);
-    // TODO: Abrir tab de carnets filtrado por este contratista
-  }
-
-  function handleDeleteContratista(contratista: ContratistaResponse) {
-    // TODO: Mostrar confirmación y eliminar
-    console.log("Eliminar:", contratista);
-  }
-
-  function handleDeleteMultiple(contratistas: ContratistaResponse[]) {
-    // TODO: Mostrar confirmación y eliminar múltiples
-    console.log("Eliminar múltiples:", contratistas.length);
+    // Implementación pendiente: abrir tab o modal con historial de ingresos
   }
 
   // --- Filtros ---
@@ -244,10 +219,5 @@
   onSearchClear={handleSearchClear}
   onNewContratista={handleNewContratista}
   onEditContratista={handleEditContratista}
-  onViewInfo={handleViewInfo}
   onViewHistory={handleViewHistory}
-  onViewVehicles={handleViewVehicles}
-  onViewBadges={handleViewBadges}
-  onDeleteContratista={handleDeleteContratista}
-  onDeleteMultiple={handleDeleteMultiple}
 />
