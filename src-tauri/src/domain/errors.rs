@@ -89,3 +89,25 @@ pub enum EmpresaError {
     #[error("Error de validación: {0}")]
     Validation(String),
 }
+
+// ==========================================
+// VEHICULO ERRORS
+// ==========================================
+
+#[derive(Error, Debug)]
+pub enum VehiculoError {
+    #[error("Vehículo no encontrado")]
+    NotFound,
+
+    #[error("Ya existe un vehículo con esta placa")]
+    PlacaExists,
+
+    #[error("Tipo de vehículo desconocido: {0}")]
+    InvalidType(String),
+
+    #[error("Error de base de datos: {0}")]
+    Database(#[from] sqlx::Error),
+
+    #[error("Error de validación: {0}")]
+    Validation(String),
+}

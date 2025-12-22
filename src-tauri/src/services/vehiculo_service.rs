@@ -4,7 +4,9 @@
 // Capa de servicio: orquesta dominio, db
 // Contiene la lógica de negocio completa
 
+use crate::db::contratista_queries;
 use crate::db::vehiculo_queries as db;
+use crate::domain::errors::VehiculoError;
 use crate::domain::vehiculo as domain;
 use crate::models::vehiculo::{
     CreateVehiculoInput, TipoVehiculo, TipoVehiculoStats, UpdateVehiculoInput,
@@ -21,13 +23,14 @@ use uuid::Uuid;
 pub async fn create_vehiculo(
     pool: &SqlitePool,
     input: CreateVehiculoInput,
-) -> Result<VehiculoResponse, String> {
+) -> Result<VehiculoResponse, VehiculoError> {
     // 1. Validar input
-    domain::validar_create_input(&input)?;
+    domain::validar_create_input(&input).map_err(VehiculoError::Validation)?;
 
     // 2. Normalizar datos
     let placa_normalizada = domain::normalizar_placa(&input.placa);
-    let tipo_vehiculo = domain::validar_tipo_vehiculo(&input.tipo_vehiculo)?;
+    let tipo_vehiculo =
+        domain::validar_tipo_vehiculo(&input.tipo_vehiculo).map_err(VehiculoError::Validation)?;
 
     let marca_normalizada = input
         .marca
@@ -48,17 +51,19 @@ pub async fn create_vehiculo(
         .filter(|c| !c.is_empty());
 
     // 3. Verificar que el contratista exista
-    if !db::contratista_exists(pool, &input.contratista_id).await? {
-        return Err("El contratista especificado no existe".to_string());
+    let exists = db::contratista_exists(pool, &input.contratista_id).await?;
+    if !exists {
+        // Podríamos usar ContratistaError::NotFound pero la firma retorna VehiculoError.
+        // Convertimos a Validation por ahora.
+        return Err(VehiculoError::Validation(
+            "El contratista especificado no existe".to_string(),
+        ));
     }
 
     // 4. Verificar que la placa no exista
     let count = db::count_by_placa(pool, &placa_normalizada).await?;
     if count > 0 {
-        return Err(format!(
-            "Ya existe un vehículo con la placa {}",
-            placa_normalizada
-        ));
+        return Err(VehiculoError::PlacaExists);
     }
 
     // 5. Generar ID y timestamps
@@ -89,34 +94,33 @@ pub async fn create_vehiculo(
 // OBTENER VEHÍCULO POR ID
 // ==========================================
 
-pub async fn get_vehiculo_by_id(pool: &SqlitePool, id: &str) -> Result<VehiculoResponse, String> {
+pub async fn get_vehiculo_by_id(
+    pool: &SqlitePool,
+    id: &str,
+) -> Result<VehiculoResponse, VehiculoError> {
     // Obtener vehículo de DB
-    let vehiculo = db::find_by_id(pool, id).await?;
+    let vehiculo = db::find_by_id(pool, id)
+        .await?
+        .ok_or(VehiculoError::NotFound)?;
 
-    // Obtener datos del contratista con JOIN
-    let row = sqlx::query(
-        r#"SELECT 
-            c.nombre as contratista_nombre,
-            c.apellido as contratista_apellido,
-            c.cedula as contratista_cedula,
-            e.nombre as empresa_nombre
-           FROM contratistas c
-           INNER JOIN empresas e ON c.empresa_id = e.id
-           WHERE c.id = ?"#,
-    )
-    .bind(&vehiculo.contratista_id)
-    .fetch_one(pool)
-    .await
-    .map_err(|e| format!("Error al obtener datos del contratista: {}", e))?;
-
-    use sqlx::Row;
-    let nombre: String = row.get("contratista_nombre");
-    let apellido: String = row.get("contratista_apellido");
+    // Obtener datos del contratista usando queries ya existentes
+    // Nota: find_by_id_with_empresa retorna Option
+    let contratista_info = if let Some(cid) = &vehiculo.contratista_id {
+        contratista_queries::find_by_id_with_empresa(pool, cid)
+            .await
+            .map_err(VehiculoError::Database)?
+    } else {
+        None
+    };
 
     let mut response = VehiculoResponse::from(vehiculo);
-    response.contratista_nombre = format!("{} {}", nombre, apellido);
-    response.contratista_cedula = row.get("contratista_cedula");
-    response.empresa_nombre = row.get("empresa_nombre");
+
+    if let Some(info) = contratista_info {
+        response.contratista_nombre =
+            format!("{} {}", info.contratista.nombre, info.contratista.apellido);
+        response.contratista_cedula = info.contratista.cedula;
+        response.empresa_nombre = info.empresa_nombre;
+    }
 
     Ok(response)
 }
@@ -128,36 +132,30 @@ pub async fn get_vehiculo_by_id(pool: &SqlitePool, id: &str) -> Result<VehiculoR
 pub async fn get_vehiculo_by_placa(
     pool: &SqlitePool,
     placa: String,
-) -> Result<VehiculoResponse, String> {
+) -> Result<VehiculoResponse, VehiculoError> {
     let placa_normalizada = domain::normalizar_placa(&placa);
 
     // Obtener vehículo de DB
-    let vehiculo = db::find_by_placa(pool, &placa_normalizada).await?;
+    let vehiculo = db::find_by_placa(pool, &placa_normalizada)
+        .await?
+        .ok_or(VehiculoError::NotFound)?;
 
-    // Obtener datos del contratista con JOIN
-    let row = sqlx::query(
-        r#"SELECT 
-            c.nombre as contratista_nombre,
-            c.apellido as contratista_apellido,
-            c.cedula as contratista_cedula,
-            e.nombre as empresa_nombre
-           FROM contratistas c
-           INNER JOIN empresas e ON c.empresa_id = e.id
-           WHERE c.id = ?"#,
-    )
-    .bind(&vehiculo.contratista_id)
-    .fetch_one(pool)
-    .await
-    .map_err(|e| format!("Error al obtener datos del contratista: {}", e))?;
-
-    use sqlx::Row;
-    let nombre: String = row.get("contratista_nombre");
-    let apellido: String = row.get("contratista_apellido");
+    let contratista_info = if let Some(cid) = &vehiculo.contratista_id {
+        contratista_queries::find_by_id_with_empresa(pool, cid)
+            .await
+            .map_err(VehiculoError::Database)?
+    } else {
+        None
+    };
 
     let mut response = VehiculoResponse::from(vehiculo);
-    response.contratista_nombre = format!("{} {}", nombre, apellido);
-    response.contratista_cedula = row.get("contratista_cedula");
-    response.empresa_nombre = row.get("empresa_nombre");
+
+    if let Some(info) = contratista_info {
+        response.contratista_nombre =
+            format!("{} {}", info.contratista.nombre, info.contratista.apellido);
+        response.contratista_cedula = info.contratista.cedula;
+        response.empresa_nombre = info.empresa_nombre;
+    }
 
     Ok(response)
 }
@@ -166,36 +164,32 @@ pub async fn get_vehiculo_by_placa(
 // OBTENER TODOS LOS VEHÍCULOS
 // ==========================================
 
-pub async fn get_all_vehiculos(pool: &SqlitePool) -> Result<VehiculoListResponse, String> {
+pub async fn get_all_vehiculos(pool: &SqlitePool) -> Result<VehiculoListResponse, VehiculoError> {
     let vehiculos = db::find_all(pool).await?;
 
-    // Obtener datos de contratistas para cada vehículo
     let mut vehiculo_responses = Vec::new();
 
+    // Optimización: Podríamos hacer un join en query, pero para mantener strictness y reuso
+    // llamamos individualmente por ahora. Si el rendimiento sufre, crear query específica.
+    // O mejor, precargar todos los contratistas?
+    // Dado que find_all es paginado usualmente, aquí trae todo.
+    // Asumimos volumen bajo por ahora.
+
     for vehiculo in vehiculos {
-        let row = sqlx::query(
-            r#"SELECT 
-                c.nombre as contratista_nombre,
-                c.apellido as contratista_apellido,
-                c.cedula as contratista_cedula,
-                e.nombre as empresa_nombre
-               FROM contratistas c
-               INNER JOIN empresas e ON c.empresa_id = e.id
-               WHERE c.id = ?"#,
-        )
-        .bind(&vehiculo.contratista_id)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| format!("Error al obtener datos del contratista: {}", e))?;
+        let mut response = VehiculoResponse::from(vehiculo.clone());
 
-        use sqlx::Row;
-        let nombre: String = row.get("contratista_nombre");
-        let apellido: String = row.get("contratista_apellido");
-
-        let mut response = VehiculoResponse::from(vehiculo);
-        response.contratista_nombre = format!("{} {}", nombre, apellido);
-        response.contratista_cedula = row.get("contratista_cedula");
-        response.empresa_nombre = row.get("empresa_nombre");
+        if let Some(cid) = &vehiculo.contratista_id {
+            // Reemplazo de query manual
+            if let Some(info) = contratista_queries::find_by_id_with_empresa(pool, cid)
+                .await
+                .map_err(VehiculoError::Database)?
+            {
+                response.contratista_nombre =
+                    format!("{} {}", info.contratista.nombre, info.contratista.apellido);
+                response.contratista_cedula = info.contratista.cedula;
+                response.empresa_nombre = info.empresa_nombre;
+            }
+        }
 
         vehiculo_responses.push(response);
     }
@@ -229,36 +223,25 @@ pub async fn get_all_vehiculos(pool: &SqlitePool) -> Result<VehiculoListResponse
 // OBTENER VEHÍCULOS ACTIVOS
 // ==========================================
 
-pub async fn get_vehiculos_activos(pool: &SqlitePool) -> Result<Vec<VehiculoResponse>, String> {
+pub async fn get_vehiculos_activos(
+    pool: &SqlitePool,
+) -> Result<Vec<VehiculoResponse>, VehiculoError> {
     let vehiculos = db::find_activos(pool).await?;
-
     let mut vehiculo_responses = Vec::new();
 
     for vehiculo in vehiculos {
-        let row = sqlx::query(
-            r#"SELECT 
-                c.nombre as contratista_nombre,
-                c.apellido as contratista_apellido,
-                c.cedula as contratista_cedula,
-                e.nombre as empresa_nombre
-               FROM contratistas c
-               INNER JOIN empresas e ON c.empresa_id = e.id
-               WHERE c.id = ?"#,
-        )
-        .bind(&vehiculo.contratista_id)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| format!("Error al obtener datos del contratista: {}", e))?;
-
-        use sqlx::Row;
-        let nombre: String = row.get("contratista_nombre");
-        let apellido: String = row.get("contratista_apellido");
-
-        let mut response = VehiculoResponse::from(vehiculo);
-        response.contratista_nombre = format!("{} {}", nombre, apellido);
-        response.contratista_cedula = row.get("contratista_cedula");
-        response.empresa_nombre = row.get("empresa_nombre");
-
+        let mut response = VehiculoResponse::from(vehiculo.clone());
+        if let Some(cid) = &vehiculo.contratista_id {
+            if let Some(info) = contratista_queries::find_by_id_with_empresa(pool, cid)
+                .await
+                .map_err(VehiculoError::Database)?
+            {
+                response.contratista_nombre =
+                    format!("{} {}", info.contratista.nombre, info.contratista.apellido);
+                response.contratista_cedula = info.contratista.cedula;
+                response.empresa_nombre = info.empresa_nombre;
+            }
+        }
         vehiculo_responses.push(response);
     }
 
@@ -272,35 +255,23 @@ pub async fn get_vehiculos_activos(pool: &SqlitePool) -> Result<Vec<VehiculoResp
 pub async fn get_vehiculos_by_contratista(
     pool: &SqlitePool,
     contratista_id: String,
-) -> Result<Vec<VehiculoResponse>, String> {
+) -> Result<Vec<VehiculoResponse>, VehiculoError> {
     let vehiculos = db::find_by_contratista(pool, &contratista_id).await?;
-
     let mut vehiculo_responses = Vec::new();
 
     for vehiculo in vehiculos {
-        let row = sqlx::query(
-            r#"SELECT 
-                c.nombre as contratista_nombre,
-                c.apellido as contratista_apellido,
-                c.cedula as contratista_cedula,
-                e.nombre as empresa_nombre
-               FROM contratistas c
-               INNER JOIN empresas e ON c.empresa_id = e.id
-               WHERE c.id = ?"#,
-        )
-        .bind(&vehiculo.contratista_id)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| format!("Error al obtener datos del contratista: {}", e))?;
-
-        use sqlx::Row;
-        let nombre: String = row.get("contratista_nombre");
-        let apellido: String = row.get("contratista_apellido");
-
-        let mut response = VehiculoResponse::from(vehiculo);
-        response.contratista_nombre = format!("{} {}", nombre, apellido);
-        response.contratista_cedula = row.get("contratista_cedula");
-        response.empresa_nombre = row.get("empresa_nombre");
+        let mut response = VehiculoResponse::from(vehiculo.clone());
+        // Aquí ya sabemos el contratista_id, pero necesitamos nombre y empresa.
+        // Podríamos pasarlo, pero para consistencia buscamos.
+        if let Some(info) = contratista_queries::find_by_id_with_empresa(pool, &contratista_id)
+            .await
+            .map_err(VehiculoError::Database)?
+        {
+            response.contratista_nombre =
+                format!("{} {}", info.contratista.nombre, info.contratista.apellido);
+            response.contratista_cedula = info.contratista.cedula;
+            response.empresa_nombre = info.empresa_nombre;
+        }
 
         vehiculo_responses.push(response);
     }
@@ -316,16 +287,23 @@ pub async fn update_vehiculo(
     pool: &SqlitePool,
     id: String,
     input: UpdateVehiculoInput,
-) -> Result<VehiculoResponse, String> {
+) -> Result<VehiculoResponse, VehiculoError> {
     // 1. Validar input
-    domain::validar_update_input(&input)?;
+    domain::validar_update_input(&input).map_err(VehiculoError::Validation)?;
 
     // 2. Verificar que el vehículo existe
-    let _ = db::find_by_id(pool, &id).await?;
+    let _ = db::find_by_id(pool, &id)
+        .await?
+        .ok_or(VehiculoError::NotFound)?;
 
     // 3. Normalizar y convertir tipo si viene
     let tipo_str = if let Some(ref t) = input.tipo_vehiculo {
-        Some(domain::validar_tipo_vehiculo(t)?.as_str().to_string())
+        Some(
+            domain::validar_tipo_vehiculo(t)
+                .map_err(VehiculoError::Validation)?
+                .as_str()
+                .to_string(),
+        )
     } else {
         None
     };
@@ -352,8 +330,10 @@ pub async fn update_vehiculo(
     // 5. Timestamp de actualización
     let now = Utc::now().to_rfc3339();
 
-    // 6. Convertir is_active a i32 si viene
-    let is_active_int = input.is_active.map(|b| if b { 1 } else { 0 });
+    // 6. Convertir is_active.
+    // db::update ahora espera Option<bool> por mi refactor anterior.
+    // input.is_active es Option<bool>. Pasamos directo.
+    let is_active = input.is_active;
 
     // 7. Actualizar en DB
     db::update(
@@ -363,7 +343,7 @@ pub async fn update_vehiculo(
         marca_normalizada.as_deref(),
         modelo_normalizado.as_deref(),
         color_normalizado.as_deref(),
-        is_active_int,
+        is_active,
         &now,
     )
     .await?;
@@ -376,10 +356,14 @@ pub async fn update_vehiculo(
 // ELIMINAR VEHÍCULO
 // ==========================================
 
-pub async fn delete_vehiculo(pool: &SqlitePool, id: String) -> Result<(), String> {
+pub async fn delete_vehiculo(pool: &SqlitePool, id: String) -> Result<(), VehiculoError> {
     // Verificar que existe antes de eliminar
-    let _ = db::find_by_id(pool, &id).await?;
+    let _ = db::find_by_id(pool, &id)
+        .await?
+        .ok_or(VehiculoError::NotFound)?;
 
     // Eliminar
-    db::delete(pool, &id).await
+    db::delete(pool, &id).await?;
+
+    Ok(())
 }

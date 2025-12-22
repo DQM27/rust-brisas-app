@@ -62,9 +62,7 @@ pub async fn create_contratista(
     }
 
     // 5. Verificar que la empresa exista
-    let empresa_existe = empresa_queries::exists(pool, &input.empresa_id)
-        .await
-        .map_err(|e| ContratistaError::Validation(e))?;
+    let empresa_existe = empresa_queries::exists(pool, &input.empresa_id).await?;
     if !empresa_existe {
         return Err(ContratistaError::EmpresaNotFound);
     }
@@ -276,9 +274,7 @@ pub async fn update_contratista(
 
     // 4. Verificar que la empresa exista si viene
     if let Some(ref empresa_id) = input.empresa_id {
-        let empresa_existe = empresa_queries::exists(pool, empresa_id)
-            .await
-            .map_err(|e| ContratistaError::Validation(e))?;
+        let empresa_existe = empresa_queries::exists(pool, empresa_id).await?;
         if !empresa_existe {
             return Err(ContratistaError::EmpresaNotFound);
         }
@@ -320,7 +316,7 @@ pub async fn update_contratista(
                             input.marca.as_deref(),
                             input.modelo.as_deref(),
                             input.color.as_deref(),
-                            Some(1),
+                            Some(true),
                             &now,
                         )
                         .await;

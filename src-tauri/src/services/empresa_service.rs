@@ -4,6 +4,7 @@
 
 use crate::db::empresa_queries as db;
 use crate::domain::empresa as domain;
+use crate::domain::errors::EmpresaError;
 use crate::models::empresa::{
     CreateEmpresaInput, EmpresaListResponse, EmpresaResponse, UpdateEmpresaInput,
 };
@@ -18,9 +19,9 @@ use uuid::Uuid;
 pub async fn create_empresa(
     pool: &SqlitePool,
     input: CreateEmpresaInput,
-) -> Result<EmpresaResponse, String> {
+) -> Result<EmpresaResponse, EmpresaError> {
     // 1. Validar input
-    domain::validar_create_input(&input)?;
+    domain::validar_create_input(&input).map_err(EmpresaError::Validation)?;
 
     // 2. Normalizar nombre
     let nombre_normalizado = domain::normalizar_nombre(&input.nombre);
@@ -28,7 +29,7 @@ pub async fn create_empresa(
     // 3. Verificar que no exista
     let count = db::count_by_nombre(pool, &nombre_normalizado).await?;
     if count > 0 {
-        return Err("Ya existe una empresa con este nombre".to_string());
+        return Err(EmpresaError::NameExists);
     }
 
     // 4. Crear
@@ -48,9 +49,9 @@ pub async fn create_empresa(
 pub async fn get_empresa_by_id(
     pool: &SqlitePool,
     id: String,
-) -> Result<EmpresaResponse, String> {
+) -> Result<EmpresaResponse, EmpresaError> {
     let empresa_opt = db::find_by_id(pool, &id).await?;
-    let empresa = empresa_opt.ok_or("Empresa no encontrada")?;
+    let empresa = empresa_opt.ok_or(EmpresaError::NotFound)?;
     let total_contratistas = db::count_contratistas(pool, &id).await?;
 
     let mut response = EmpresaResponse::from(empresa);
@@ -63,7 +64,7 @@ pub async fn get_empresa_by_id(
 // OBTENER TODAS
 // ==========================================
 
-pub async fn get_all_empresas(pool: &SqlitePool) -> Result<EmpresaListResponse, String> {
+pub async fn get_all_empresas(pool: &SqlitePool) -> Result<EmpresaListResponse, EmpresaError> {
     let empresas = db::find_all(pool).await?;
 
     let mut responses = Vec::new();
@@ -88,7 +89,7 @@ pub async fn get_all_empresas(pool: &SqlitePool) -> Result<EmpresaListResponse, 
 // OBTENER ACTIVAS
 // ==========================================
 
-pub async fn get_empresas_activas(pool: &SqlitePool) -> Result<Vec<EmpresaResponse>, String> {
+pub async fn get_empresas_activas(pool: &SqlitePool) -> Result<Vec<EmpresaResponse>, EmpresaError> {
     let empresas = db::find_activas(pool).await?;
 
     let mut responses = Vec::new();
@@ -110,12 +111,14 @@ pub async fn update_empresa(
     pool: &SqlitePool,
     id: String,
     input: UpdateEmpresaInput,
-) -> Result<EmpresaResponse, String> {
+) -> Result<EmpresaResponse, EmpresaError> {
     // 1. Validar input
-    domain::validar_update_input(&input)?;
+    domain::validar_update_input(&input).map_err(EmpresaError::Validation)?;
 
     // 2. Verificar que existe
-    let _ = db::find_by_id(pool, &id).await?.ok_or("Empresa no encontrada")?;
+    let _ = db::find_by_id(pool, &id)
+        .await?
+        .ok_or(EmpresaError::NotFound)?;
 
     // 3. Normalizar y verificar nombre si viene
     let nombre_normalizado = if let Some(ref nombre) = input.nombre {
@@ -123,7 +126,7 @@ pub async fn update_empresa(
 
         let count = db::count_by_nombre_excluding_id(pool, &normalizado, &id).await?;
         if count > 0 {
-            return Err("Ya existe otra empresa con este nombre".to_string());
+            return Err(EmpresaError::NameExists);
         }
 
         Some(normalizado)
@@ -133,7 +136,14 @@ pub async fn update_empresa(
 
     // 4. Actualizar
     let now = Utc::now().to_rfc3339();
-    db::update(pool, &id, nombre_normalizado.as_deref(), input.is_active, &now).await?;
+    db::update(
+        pool,
+        &id,
+        nombre_normalizado.as_deref(),
+        input.is_active,
+        &now,
+    )
+    .await?;
 
     // 5. Retornar
     get_empresa_by_id(pool, id).await
@@ -143,19 +153,18 @@ pub async fn update_empresa(
 // ELIMINAR
 // ==========================================
 
-pub async fn delete_empresa(pool: &SqlitePool, id: String) -> Result<(), String> {
+pub async fn delete_empresa(pool: &SqlitePool, id: String) -> Result<(), EmpresaError> {
     // 1. Verificar que existe
-    let _ = db::find_by_id(pool, &id).await?.ok_or("Empresa no encontrada")?;
+    let _ = db::find_by_id(pool, &id)
+        .await?
+        .ok_or(EmpresaError::NotFound)?;
 
     // 2. Verificar que no tenga contratistas
     let count = db::count_contratistas(pool, &id).await?;
     if count > 0 {
-        return Err(format!(
-            "No se puede eliminar la empresa porque tiene {} contratista(s) asociado(s)",
-            count
-        ));
+        return Err(EmpresaError::HasContratistas(count));
     }
 
     // 3. Eliminar
-    db::delete(pool, &id).await
+    db::delete(pool, &id).await.map_err(EmpresaError::Database)
 }

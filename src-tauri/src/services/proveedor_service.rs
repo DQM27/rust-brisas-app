@@ -268,7 +268,7 @@ pub async fn update_proveedor(
                             input.marca.as_deref(),
                             input.modelo.as_deref(),
                             input.color.as_deref(),
-                            Some(1),
+                            Some(true),
                             &now,
                         )
                         .await

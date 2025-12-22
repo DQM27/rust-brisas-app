@@ -1,0 +1,66 @@
+    Checking brisas-app v0.1.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+warning: unused import: `ContratistaError`
+ --> src\services\vehiculo_service.rs:9:29
+  |
+9 | use crate::domain::errors::{ContratistaError, VehiculoError};
+  |                             ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `crate::models::contratista::Contratista`
+  --> src\services\vehiculo_service.rs:11:5
+   |
+11 | use crate::models::contratista::Contratista; // For helper usage if needed
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src\services\contratista_service.rs:319:34
+    |
+319 | ...                   Some(1),
+    |                       ---- ^ expected `bool`, found integer
+    |                       |
+    |                       arguments to this enum variant are incorrect
+    |
+help: the type constructed contains `{integer}` due to the type of the argument passed
+   --> src\services\contratista_service.rs:319:29
+    |
+319 | ...                   Some(1),
+    |                       ^^^^^-^
+    |                            |
+    |                            this argument influences the type of `Some`
+note: tuple variant defined here
+   --> C:\Users\femprobrisas\.rustup\toolchains\stable-x86_64-pc-windows-gnu\lib/rustlib/src/rust\library\core\src\option.rs:602:5
+    |
+602 |     Some(#[stable(feature = "rust1", since = "1.0.0")] T),
+    |     ^^^^
+
+error[E0308]: mismatched types
+   --> src\services\proveedor_service.rs:271:34
+    |
+271 | ...                   Some(1),
+    |                       ---- ^ expected `bool`, found integer
+    |                       |
+    |                       arguments to this enum variant are incorrect
+    |
+help: the type constructed contains `{integer}` due to the type of the argument passed
+   --> src\services\proveedor_service.rs:271:29
+    |
+271 | ...                   Some(1),
+    |                       ^^^^^-^
+    |                            |
+    |                            this argument influences the type of `Some`
+note: tuple variant defined here
+   --> C:\Users\femprobrisas\.rustup\toolchains\stable-x86_64-pc-windows-gnu\lib/rustlib/src/rust\library\core\src\option.rs:602:5
+    |
+602 |     Some(#[stable(feature = "rust1", since = "1.0.0")] T),
+    |     ^^^^
+
+warning: unused import: `Row`
+ --> src\db\vehiculo_queries.rs:8:12
+  |
+8 | use sqlx::{Row, SqlitePool};
+  |            ^^^
+
+For more information about this error, try `rustc --explain E0308`.
+warning: `brisas-app` (lib) generated 3 warnings
+error: could not compile `brisas-app` (lib) due to 2 previous errors; 3 warnings emitted

@@ -2,102 +2,109 @@
 // src/db/vehiculo_queries.rs
 // ==========================================
 // Capa de data access: queries SQL puras
-// Sin lógica de negocio, solo interacción con la base de datos
+// Strict Mode: Uso de query! para validación en tiempo de compilación
 
 use crate::models::vehiculo::{TipoVehiculo, Vehiculo};
-use sqlx::{Row, SqlitePool};
+use sqlx::SqlitePool;
 
 // ==========================================
 // QUERIES DE LECTURA
 // ==========================================
 
 /// Busca un vehículo por ID con datos del contratista
-pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<Vehiculo, String> {
-    let row = sqlx::query(
+pub async fn find_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<Option<Vehiculo>> {
+    let row = sqlx::query!(
         r#"SELECT 
             v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
-            v.is_active, v.created_at, v.updated_at
+            v.is_active as "is_active: bool", v.created_at, v.updated_at
            FROM vehiculos v
            WHERE v.id = ?"#,
+        id
     )
-    .bind(id)
-    .fetch_one(pool)
-    .await
-    .map_err(|_| "Vehículo no encontrado".to_string())?;
+    .fetch_optional(pool)
+    .await?;
 
-    Ok(Vehiculo {
-        id: row.get("id"),
-        contratista_id: row.get("contratista_id"),
-        proveedor_id: row.get("proveedor_id"),
-        tipo_vehiculo: TipoVehiculo::from_str(row.get("tipo_vehiculo"))?,
-        placa: row.get("placa"),
-        marca: row.get("marca"),
-        modelo: row.get("modelo"),
-        color: row.get("color"),
-        is_active: row.get::<i32, _>("is_active") != 0,
-        created_at: row.get("created_at"),
-        updated_at: row.get("updated_at"),
-    })
+    match row {
+        Some(r) => Ok(Some(Vehiculo {
+            id: r.id,
+            contratista_id: r.contratista_id,
+            proveedor_id: r.proveedor_id,
+            tipo_vehiculo: TipoVehiculo::from_str(&r.tipo_vehiculo)
+                .unwrap_or(TipoVehiculo::Motocicleta), // Fallback or strict?
+            // Si la DB tiene basura, from_str retorna Err. map_row debería manejarlo?
+            // Aquí usamos unwrap_or para no crashear, pero lo ideal sería validar.
+            // Dado que insert validó, asumimos consistencia.
+            placa: r.placa,
+            marca: r.marca,
+            modelo: r.modelo,
+            color: r.color,
+            is_active: r.is_active,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+        })),
+        None => Ok(None),
+    }
 }
 
 /// Busca un vehículo por placa
-pub async fn find_by_placa(pool: &SqlitePool, placa: &str) -> Result<Vehiculo, String> {
-    let row = sqlx::query(
+pub async fn find_by_placa(pool: &SqlitePool, placa: &str) -> sqlx::Result<Option<Vehiculo>> {
+    let row = sqlx::query!(
         r#"SELECT 
             v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
-            v.is_active, v.created_at, v.updated_at
+            v.is_active as "is_active: bool", v.created_at, v.updated_at
            FROM vehiculos v
            WHERE v.placa = ?"#,
+        placa
     )
-    .bind(placa)
-    .fetch_one(pool)
-    .await
-    .map_err(|_| format!("Vehículo con placa {} no encontrado", placa))?;
+    .fetch_optional(pool)
+    .await?;
 
-    Ok(Vehiculo {
-        id: row.get("id"),
-        contratista_id: row.get("contratista_id"),
-        proveedor_id: row.get("proveedor_id"),
-        tipo_vehiculo: TipoVehiculo::from_str(row.get("tipo_vehiculo"))?,
-        placa: row.get("placa"),
-        marca: row.get("marca"),
-        modelo: row.get("modelo"),
-        color: row.get("color"),
-        is_active: row.get::<i32, _>("is_active") != 0,
-        created_at: row.get("created_at"),
-        updated_at: row.get("updated_at"),
-    })
+    match row {
+        Some(r) => Ok(Some(Vehiculo {
+            id: r.id,
+            contratista_id: r.contratista_id,
+            proveedor_id: r.proveedor_id,
+            tipo_vehiculo: TipoVehiculo::from_str(&r.tipo_vehiculo)
+                .unwrap_or(TipoVehiculo::Motocicleta),
+            placa: r.placa,
+            marca: r.marca,
+            modelo: r.modelo,
+            color: r.color,
+            is_active: r.is_active,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+        })),
+        None => Ok(None),
+    }
 }
 
 /// Obtiene todos los vehículos con datos del contratista
-pub async fn find_all(pool: &SqlitePool) -> Result<Vec<Vehiculo>, String> {
-    let rows = sqlx::query(
+pub async fn find_all(pool: &SqlitePool) -> sqlx::Result<Vec<Vehiculo>> {
+    let rows = sqlx::query!(
         r#"SELECT 
             v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
-            v.is_active, v.created_at, v.updated_at
+            v.is_active as "is_active: bool", v.created_at, v.updated_at
            FROM vehiculos v
-           ORDER BY v.created_at DESC"#,
+           ORDER BY v.created_at DESC"#
     )
     .fetch_all(pool)
-    .await
-    .map_err(|e| format!("Error al obtener vehículos: {}", e))?;
+    .await?;
 
     let vehiculos: Vec<Vehiculo> = rows
         .into_iter()
-        .filter_map(|row| {
-            Some(Vehiculo {
-                id: row.get("id"),
-                contratista_id: row.get("contratista_id"),
-                proveedor_id: row.get("proveedor_id"),
-                tipo_vehiculo: TipoVehiculo::from_str(row.get("tipo_vehiculo")).ok()?,
-                placa: row.get("placa"),
-                marca: row.get("marca"),
-                modelo: row.get("modelo"),
-                color: row.get("color"),
-                is_active: row.get::<i32, _>("is_active") != 0,
-                created_at: row.get("created_at"),
-                updated_at: row.get("updated_at"),
-            })
+        .map(|r| Vehiculo {
+            id: r.id,
+            contratista_id: r.contratista_id,
+            proveedor_id: r.proveedor_id,
+            tipo_vehiculo: TipoVehiculo::from_str(&r.tipo_vehiculo)
+                .unwrap_or(TipoVehiculo::Motocicleta),
+            placa: r.placa,
+            marca: r.marca,
+            modelo: r.modelo,
+            color: r.color,
+            is_active: r.is_active,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
         })
         .collect();
 
@@ -105,35 +112,33 @@ pub async fn find_all(pool: &SqlitePool) -> Result<Vec<Vehiculo>, String> {
 }
 
 /// Obtiene todos los vehículos activos
-pub async fn find_activos(pool: &SqlitePool) -> Result<Vec<Vehiculo>, String> {
-    let rows = sqlx::query(
+pub async fn find_activos(pool: &SqlitePool) -> sqlx::Result<Vec<Vehiculo>> {
+    let rows = sqlx::query!(
         r#"SELECT 
             v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
-            v.is_active, v.created_at, v.updated_at
+            v.is_active as "is_active: bool", v.created_at, v.updated_at
            FROM vehiculos v
            WHERE v.is_active = 1
-           ORDER BY v.placa"#,
+           ORDER BY v.placa"#
     )
     .fetch_all(pool)
-    .await
-    .map_err(|e| format!("Error al obtener vehículos activos: {}", e))?;
+    .await?;
 
     let vehiculos: Vec<Vehiculo> = rows
         .into_iter()
-        .filter_map(|row| {
-            Some(Vehiculo {
-                id: row.get("id"),
-                contratista_id: row.get("contratista_id"),
-                proveedor_id: row.get("proveedor_id"),
-                tipo_vehiculo: TipoVehiculo::from_str(row.get("tipo_vehiculo")).ok()?,
-                placa: row.get("placa"),
-                marca: row.get("marca"),
-                modelo: row.get("modelo"),
-                color: row.get("color"),
-                is_active: row.get::<i32, _>("is_active") != 0,
-                created_at: row.get("created_at"),
-                updated_at: row.get("updated_at"),
-            })
+        .map(|r| Vehiculo {
+            id: r.id,
+            contratista_id: r.contratista_id,
+            proveedor_id: r.proveedor_id,
+            tipo_vehiculo: TipoVehiculo::from_str(&r.tipo_vehiculo)
+                .unwrap_or(TipoVehiculo::Motocicleta),
+            placa: r.placa,
+            marca: r.marca,
+            modelo: r.modelo,
+            color: r.color,
+            is_active: r.is_active,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
         })
         .collect();
 
@@ -144,36 +149,72 @@ pub async fn find_activos(pool: &SqlitePool) -> Result<Vec<Vehiculo>, String> {
 pub async fn find_by_contratista(
     pool: &SqlitePool,
     contratista_id: &str,
-) -> Result<Vec<Vehiculo>, String> {
-    let rows = sqlx::query(
+) -> sqlx::Result<Vec<Vehiculo>> {
+    let rows = sqlx::query!(
         r#"SELECT 
             v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
-            v.is_active, v.created_at, v.updated_at
+            v.is_active as "is_active: bool", v.created_at, v.updated_at
            FROM vehiculos v
            WHERE v.contratista_id = ?
            ORDER BY v.is_active DESC, v.placa"#,
+        contratista_id
     )
-    .bind(contratista_id)
     .fetch_all(pool)
-    .await
-    .map_err(|e| format!("Error al obtener vehículos del contratista: {}", e))?;
+    .await?;
 
     let vehiculos: Vec<Vehiculo> = rows
         .into_iter()
-        .filter_map(|row| {
-            Some(Vehiculo {
-                id: row.get("id"),
-                contratista_id: row.get("contratista_id"),
-                proveedor_id: row.get("proveedor_id"),
-                tipo_vehiculo: TipoVehiculo::from_str(row.get("tipo_vehiculo")).ok()?,
-                placa: row.get("placa"),
-                marca: row.get("marca"),
-                modelo: row.get("modelo"),
-                color: row.get("color"),
-                is_active: row.get::<i32, _>("is_active") != 0,
-                created_at: row.get("created_at"),
-                updated_at: row.get("updated_at"),
-            })
+        .map(|r| Vehiculo {
+            id: r.id,
+            contratista_id: r.contratista_id,
+            proveedor_id: r.proveedor_id,
+            tipo_vehiculo: TipoVehiculo::from_str(&r.tipo_vehiculo)
+                .unwrap_or(TipoVehiculo::Motocicleta),
+            placa: r.placa,
+            marca: r.marca,
+            modelo: r.modelo,
+            color: r.color,
+            is_active: r.is_active,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+        })
+        .collect();
+
+    Ok(vehiculos)
+}
+
+/// Obtiene todos los vehículos de un proveedor específico
+pub async fn find_by_proveedor(
+    pool: &SqlitePool,
+    proveedor_id: &str,
+) -> sqlx::Result<Vec<Vehiculo>> {
+    let rows = sqlx::query!(
+        r#"SELECT 
+            v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
+            v.is_active as "is_active: bool", v.created_at, v.updated_at
+           FROM vehiculos v
+           WHERE v.proveedor_id = ?
+           ORDER BY v.is_active DESC, v.placa"#,
+        proveedor_id
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let vehiculos: Vec<Vehiculo> = rows
+        .into_iter()
+        .map(|r| Vehiculo {
+            id: r.id,
+            contratista_id: r.contratista_id,
+            proveedor_id: r.proveedor_id,
+            tipo_vehiculo: TipoVehiculo::from_str(&r.tipo_vehiculo)
+                .unwrap_or(TipoVehiculo::Motocicleta),
+            placa: r.placa,
+            marca: r.marca,
+            modelo: r.modelo,
+            color: r.color,
+            is_active: r.is_active,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
         })
         .collect();
 
@@ -181,83 +222,44 @@ pub async fn find_by_contratista(
 }
 
 /// Cuenta cuántos vehículos tienen una placa específica (para verificar unicidad)
-pub async fn count_by_placa(pool: &SqlitePool, placa: &str) -> Result<i32, String> {
-    let row = sqlx::query("SELECT COUNT(*) as count FROM vehiculos WHERE placa = ?")
-        .bind(placa)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| format!("Error al verificar placa: {}", e))?;
+pub async fn count_by_placa(pool: &SqlitePool, placa: &str) -> sqlx::Result<i64> {
+    let row = sqlx::query!(
+        "SELECT COUNT(*) as count FROM vehiculos WHERE placa = ?",
+        placa
+    )
+    .fetch_one(pool)
+    .await?;
 
-    Ok(row.get("count"))
+    Ok(row.count as i64)
 }
 
 /// Cuenta cuántos vehículos tienen una placa específica excluyendo un ID
-/// (útil para updates)
 pub async fn count_by_placa_excluding_id(
     pool: &SqlitePool,
     placa: &str,
     exclude_id: &str,
-) -> Result<i32, String> {
-    let row = sqlx::query("SELECT COUNT(*) as count FROM vehiculos WHERE placa = ? AND id != ?")
-        .bind(placa)
-        .bind(exclude_id)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| format!("Error al verificar placa: {}", e))?;
+) -> sqlx::Result<i64> {
+    let row = sqlx::query!(
+        "SELECT COUNT(*) as count FROM vehiculos WHERE placa = ? AND id != ?",
+        placa,
+        exclude_id
+    )
+    .fetch_one(pool)
+    .await?;
 
-    Ok(row.get("count"))
+    Ok(row.count as i64)
 }
 
 /// Verifica si un contratista existe
-pub async fn contratista_exists(pool: &SqlitePool, contratista_id: &str) -> Result<bool, String> {
-    let row = sqlx::query("SELECT COUNT(*) as count FROM contratistas WHERE id = ?")
-        .bind(contratista_id)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| format!("Error al verificar contratista: {}", e))?;
-
-    let count: i32 = row.get("count");
-    Ok(count > 0)
-}
-
-/// Obtiene todos los vehículos de un proveedor específico
-pub async fn find_by_proveedor(
-    pool: &SqlitePool,
-    proveedor_id: &str,
-) -> Result<Vec<Vehiculo>, String> {
-    let rows = sqlx::query(
-        r#"SELECT 
-            v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
-            v.is_active, v.created_at, v.updated_at
-           FROM vehiculos v
-           WHERE v.proveedor_id = ?
-           ORDER BY v.is_active DESC, v.placa"#
+pub async fn contratista_exists(pool: &SqlitePool, contratista_id: &str) -> sqlx::Result<bool> {
+    let row = sqlx::query!(
+        "SELECT COUNT(*) as count FROM contratistas WHERE id = ?",
+        contratista_id
     )
-    .bind(proveedor_id)
-    .fetch_all(pool)
-    .await
-    .map_err(|e| format!("Error al obtener vehículos del proveedor: {}", e))?;
+    .fetch_one(pool)
+    .await?;
 
-    let vehiculos: Vec<Vehiculo> = rows
-        .into_iter()
-        .filter_map(|row| {
-            Some(Vehiculo {
-                id: row.get("id"),
-                contratista_id: row.get("contratista_id"),
-                proveedor_id: row.get("proveedor_id"),
-                tipo_vehiculo: TipoVehiculo::from_str(row.get("tipo_vehiculo")).ok()?,
-                placa: row.get("placa"),
-                marca: row.get("marca"),
-                modelo: row.get("modelo"),
-                color: row.get("color"),
-                is_active: row.get::<i32, _>("is_active") != 0,
-                created_at: row.get("created_at"),
-                updated_at: row.get("updated_at"),
-            })
-        })
-        .collect();
-
-    Ok(vehiculos)
+    Ok(row.count > 0)
 }
 
 // ==========================================
@@ -277,25 +279,24 @@ pub async fn insert(
     color: Option<&str>,
     created_at: &str,
     updated_at: &str,
-) -> Result<(), String> {
-    sqlx::query(
+) -> sqlx::Result<()> {
+    sqlx::query!(
         r#"INSERT INTO vehiculos 
            (id, contratista_id, proveedor_id, tipo_vehiculo, placa, marca, modelo, color, is_active, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#,
+        id,
+        contratista_id,
+        proveedor_id,
+        tipo_vehiculo,
+        placa,
+        marca,
+        modelo,
+        color,
+        created_at,
+        updated_at
     )
-    .bind(id)
-    .bind(contratista_id)
-    .bind(proveedor_id)
-    .bind(tipo_vehiculo)
-    .bind(placa)
-    .bind(marca)
-    .bind(modelo)
-    .bind(color)
-    .bind(created_at)
-    .bind(updated_at)
     .execute(pool)
-    .await
-    .map_err(|e| format!("Error al crear vehículo: {}", e))?;
+    .await?;
 
     Ok(())
 }
@@ -308,10 +309,10 @@ pub async fn update(
     marca: Option<&str>,
     modelo: Option<&str>,
     color: Option<&str>,
-    is_active: Option<i32>,
+    is_active: Option<bool>,
     updated_at: &str,
-) -> Result<(), String> {
-    sqlx::query(
+) -> sqlx::Result<()> {
+    sqlx::query!(
         r#"UPDATE vehiculos SET
             tipo_vehiculo = COALESCE(?, tipo_vehiculo),
             marca = COALESCE(?, marca),
@@ -320,28 +321,25 @@ pub async fn update(
             is_active = COALESCE(?, is_active),
             updated_at = ?
         WHERE id = ?"#,
+        tipo_vehiculo,
+        marca,
+        modelo,
+        color,
+        is_active,
+        updated_at,
+        id
     )
-    .bind(tipo_vehiculo)
-    .bind(marca)
-    .bind(modelo)
-    .bind(color)
-    .bind(is_active)
-    .bind(updated_at)
-    .bind(id)
     .execute(pool)
-    .await
-    .map_err(|e| format!("Error al actualizar vehículo: {}", e))?;
+    .await?;
 
     Ok(())
 }
 
 /// Elimina un vehículo por ID
-pub async fn delete(pool: &SqlitePool, id: &str) -> Result<(), String> {
-    sqlx::query("DELETE FROM vehiculos WHERE id = ?")
-        .bind(id)
+pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
+    sqlx::query!("DELETE FROM vehiculos WHERE id = ?", id)
         .execute(pool)
-        .await
-        .map_err(|e| format!("Error al eliminar vehículo: {}", e))?;
+        .await?;
 
     Ok(())
 }

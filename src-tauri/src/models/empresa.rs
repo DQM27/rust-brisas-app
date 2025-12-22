@@ -3,12 +3,13 @@
 // ==========================================
 
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 
 // ==========================================
 // MODELO DE DOMINIO
 // ==========================================
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Empresa {
     pub id: String,
