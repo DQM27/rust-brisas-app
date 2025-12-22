@@ -399,37 +399,19 @@
       </div>
     {:else if contratistas.length === 0}
       <div class="flex h-full items-center justify-center">
-        <div class="text-center max-w-md">
-          <div
-            class="mx-auto w-16 h-16 rounded-full bg-[#2da44e]/10 flex items-center justify-center mb-4"
-          >
-            <AlertCircle size={32} class="text-[#2da44e]" />
-          </div>
-          <p class="text-lg font-medium text-gray-200">
-            ¡Empieza a registrar contratistas!
+        <div class="text-center">
+          <AlertCircle size={48} class="mx-auto text-gray-400" />
+          <p class="mt-4 text-lg font-medium text-gray-300">
+            No hay contratistas
           </p>
           <p class="mt-2 text-sm text-gray-400">
-            Aún no hay contratistas en el sistema. Crea el primero para
-            comenzar.
+            Crea el primer contratista para comenzar
           </p>
           <button
             onclick={() => openModal()}
-            class="mt-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#2da44e] hover:bg-[#2c974b] text-white font-medium text-sm transition-colors"
+            class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Registrar primer contratista
+            Nuevo Contratista
           </button>
         </div>
       </div>
