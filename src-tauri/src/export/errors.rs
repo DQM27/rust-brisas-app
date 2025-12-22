@@ -16,37 +16,44 @@ pub enum ExportError {
     EmptyData,
     InvalidData(String),
     MismatchedColumns(String),
-    
+
     // ==========================================
     // Errores de configuración
     // ==========================================
     InvalidOrientation(String),
     InvalidDelimiter(String),
     InvalidTitle(String),
-    
+
     // ==========================================
     // Errores de generación (PDF)
     // ==========================================
     TypstCompilationError(String),
     TemplateGenerationError(String),
-    
+
     // ==========================================
     // Errores de generación (Excel)
     // ==========================================
     XlsxWriteError(String),
     XlsxFormatError(String),
-    
+
     // ==========================================
     // Errores de generación (CSV)
     // ==========================================
     CsvWriteError(String),
-    
+
     // ==========================================
     // Errores de sistema
     // ==========================================
     FileSystemError(String),
     IoError(String),
-    
+
+    // ==========================================
+    // Errores de Perfiles
+    // ==========================================
+    ProfileNotFound,
+    ProfileSerializationError(String),
+    InvalidProfileOperation(String),
+
     // ==========================================
     // Error catch-all
     // ==========================================
@@ -62,27 +69,34 @@ impl std::fmt::Display for ExportError {
             Self::EmptyData => write!(f, "No hay datos para exportar"),
             Self::InvalidData(msg) => write!(f, "Datos inválidos: {}", msg),
             Self::MismatchedColumns(msg) => write!(f, "Columnas no coinciden: {}", msg),
-            
+
             // Configuración
             Self::InvalidOrientation(msg) => write!(f, "Orientación inválida: {}", msg),
             Self::InvalidDelimiter(msg) => write!(f, "Delimitador inválido: {}", msg),
             Self::InvalidTitle(msg) => write!(f, "Título inválido: {}", msg),
-            
+
             // PDF
             Self::TypstCompilationError(msg) => write!(f, "Error compilando PDF: {}", msg),
             Self::TemplateGenerationError(msg) => write!(f, "Error generando template: {}", msg),
-            
+
             // Excel
             Self::XlsxWriteError(msg) => write!(f, "Error escribiendo Excel: {}", msg),
             Self::XlsxFormatError(msg) => write!(f, "Error de formato Excel: {}", msg),
-            
+
             // CSV
             Self::CsvWriteError(msg) => write!(f, "Error escribiendo CSV: {}", msg),
-            
+
             // Sistema
             Self::FileSystemError(msg) => write!(f, "Error de archivo: {}", msg),
             Self::IoError(msg) => write!(f, "Error de I/O: {}", msg),
-            
+
+            // Perfiles
+            Self::ProfileNotFound => write!(f, "Perfil no encontrado"),
+            Self::ProfileSerializationError(msg) => write!(f, "Error de datos de perfil: {}", msg),
+            Self::InvalidProfileOperation(msg) => {
+                write!(f, "Operación inválida en perfil: {}", msg)
+            }
+
             // Unknown
             Self::Unknown(msg) => write!(f, "Error desconocido: {}", msg),
         }

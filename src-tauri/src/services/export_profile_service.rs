@@ -1,21 +1,22 @@
 // src-tauri/src/services/export_profile_service.rs
 
 use crate::config::manager::{get_database_path, load_config};
-use crate::models::export::{ExportProfile, PdfDesign, PdfColors, PdfFonts, CsvOptions};
+use crate::export::errors::ExportError;
+use crate::models::export::{CsvOptions, ExportProfile, PdfColors, PdfDesign, PdfFonts};
 use std::fs;
 use std::path::PathBuf;
 
 const PROFILE_FILE_NAME: &str = "export_profiles.json";
 
 /// Obtiene la ruta del archivo de perfiles (al lado de la DB)
-fn get_profiles_path() -> Result<PathBuf, String> {
-    let config = load_config().map_err(|e| e.to_string())?;
+fn get_profiles_path() -> Result<PathBuf, ExportError> {
+    let config = load_config().map_err(|e| ExportError::IoError(e.to_string()))?;
     let db_path = get_database_path(&config);
 
     // Usar el directorio de la DB
-    let parent = db_path
-        .parent()
-        .ok_or("No se pudo obtener el directorio de la DB")?;
+    let parent = db_path.parent().ok_or(ExportError::FileSystemError(
+        "No se pudo obtener el directorio de la DB".to_string(),
+    ))?;
     Ok(parent.join(PROFILE_FILE_NAME))
 }
 
@@ -32,10 +33,10 @@ fn get_default_profiles() -> Vec<ExportProfile> {
             pdf_design: Some(PdfDesign {
                 page_size: "us-letter".to_string(),
                 orientation: "landscape".to_string(),
-                margin_x: 15.0,
-                margin_x_unit: "mm".to_string(),
-                margin_y: 20.0,
-                margin_y_unit: "mm".to_string(),
+                margin_x: 1.5,
+                margin_x_unit: "cm".to_string(),
+                margin_y: 2.0,
+                margin_y_unit: "cm".to_string(),
                 colors: PdfColors {
                     header_fill: "#2da44e".to_string(),
                     header_text: "#ffffff".to_string(),
@@ -60,10 +61,10 @@ fn get_default_profiles() -> Vec<ExportProfile> {
             pdf_design: Some(PdfDesign {
                 page_size: "us-letter".to_string(),
                 orientation: "portrait".to_string(),
-                margin_x: 15.0,
-                margin_x_unit: "mm".to_string(),
-                margin_y: 20.0,
-                margin_y_unit: "mm".to_string(),
+                margin_x: 1.5,
+                margin_x_unit: "cm".to_string(),
+                margin_y: 2.0,
+                margin_y_unit: "cm".to_string(),
                 colors: PdfColors {
                     header_fill: "#2da44e".to_string(),
                     header_text: "#ffffff".to_string(),
@@ -105,14 +106,15 @@ fn get_default_profiles() -> Vec<ExportProfile> {
 }
 
 /// Carga todos los perfiles (Default + Custom)
-pub fn get_all_profiles() -> Result<Vec<ExportProfile>, String> {
+pub fn get_all_profiles() -> Result<Vec<ExportProfile>, ExportError> {
     let path = get_profiles_path()?;
 
     if path.exists() {
         // Si existe el archivo, cargar de ahí
-        let content = fs::read_to_string(path).map_err(|e| e.to_string())?;
-        let profiles: Vec<ExportProfile> = serde_json::from_str(&content)
-            .map_err(|e| format!("Error parseando perfiles: {}", e))?;
+        let content = fs::read_to_string(path).map_err(|e| ExportError::IoError(e.to_string()))?;
+        let profiles: Vec<ExportProfile> = serde_json::from_str(&content).map_err(|e| {
+            ExportError::ProfileSerializationError(format!("Error parseando perfiles: {}", e))
+        })?;
         Ok(profiles)
     } else {
         // Primera vez, retornar defaults y guardarlos
@@ -123,15 +125,16 @@ pub fn get_all_profiles() -> Result<Vec<ExportProfile>, String> {
 }
 
 /// Guarda todos los perfiles (reemplaza el archivo completo)
-fn save_all_profiles(profiles: &[ExportProfile]) -> Result<(), String> {
+fn save_all_profiles(profiles: &[ExportProfile]) -> Result<(), ExportError> {
     let path = get_profiles_path()?;
-    let json = serde_json::to_string_pretty(profiles).map_err(|e| e.to_string())?;
-    fs::write(path, json).map_err(|e| e.to_string())?;
+    let json = serde_json::to_string_pretty(profiles)
+        .map_err(|e| ExportError::ProfileSerializationError(e.to_string()))?;
+    fs::write(path, json).map_err(|e| ExportError::IoError(e.to_string()))?;
     Ok(())
 }
 
 /// Guarda un perfil (o actualiza uno existente)
-pub fn save_profile(profile: ExportProfile) -> Result<(), String> {
+pub fn save_profile(profile: ExportProfile) -> Result<(), ExportError> {
     let mut profiles = get_all_profiles()?;
 
     // Upsert
@@ -146,7 +149,7 @@ pub fn save_profile(profile: ExportProfile) -> Result<(), String> {
 }
 
 /// Elimina un perfil por ID
-pub fn delete_profile(id: String) -> Result<(), String> {
+pub fn delete_profile(id: String) -> Result<(), ExportError> {
     let mut profiles = get_all_profiles()?;
 
     // No permitir eliminar si es el único default
@@ -154,7 +157,9 @@ pub fn delete_profile(id: String) -> Result<(), String> {
     if default_count == 1 {
         if let Some(profile) = profiles.iter().find(|p| p.id == id) {
             if profile.is_default {
-                return Err("No se puede eliminar el único perfil predeterminado. Marca otro como predeterminado primero.".to_string());
+                return Err(ExportError::InvalidProfileOperation(
+                    "No se puede eliminar el único perfil predeterminado. Marca otro como predeterminado primero.".to_string())
+                );
             }
         }
     }
@@ -170,12 +175,12 @@ pub fn delete_profile(id: String) -> Result<(), String> {
 }
 
 /// Establece un perfil como predeterminado
-pub fn set_default_profile(id: String) -> Result<(), String> {
+pub fn set_default_profile(id: String) -> Result<(), ExportError> {
     let mut profiles = get_all_profiles()?;
 
     // Verificar que el perfil existe
     if !profiles.iter().any(|p| p.id == id) {
-        return Err("Perfil no encontrado".to_string());
+        return Err(ExportError::ProfileNotFound);
     }
 
     // Quitar default de todos y establecer solo el seleccionado
@@ -189,16 +194,10 @@ pub fn set_default_profile(id: String) -> Result<(), String> {
 
 /// Obtiene el perfil predeterminado
 pub fn get_default_profile() -> Option<ExportProfile> {
-    get_all_profiles()
-        .ok()?
-        .into_iter()
-        .find(|p| p.is_default)
+    get_all_profiles().ok()?.into_iter().find(|p| p.is_default)
 }
 
 /// Obtiene un perfil por ID
 pub fn get_profile_by_id(id: &str) -> Option<ExportProfile> {
-    get_all_profiles()
-        .ok()?
-        .into_iter()
-        .find(|p| p.id == id)
+    get_all_profiles().ok()?.into_iter().find(|p| p.id == id)
 }
