@@ -28,6 +28,9 @@ macro_rules! register_handlers {
             commands::contratista_commands::update_contratista,
             commands::contratista_commands::cambiar_estado_contratista,
             commands::contratista_commands::delete_contratista,
+            // Auditoría de contratista
+            commands::contratista_commands::actualizar_praind_con_historial,
+            commands::contratista_commands::cambiar_estado_con_historial,
             // Comandos de lista negra
             commands::lista_negra_commands::add_to_lista_negra,
             commands::lista_negra_commands::get_lista_negra_by_id,

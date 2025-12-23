@@ -88,3 +88,33 @@ pub async fn delete_contratista(
         .await
         .map_err(|e| e.to_string())
 }
+
+// ==========================================
+// COMANDOS CON AUDITORÍA
+// ==========================================
+
+/// Actualiza la fecha PRAIND de un contratista con registro en historial
+#[tauri::command]
+pub async fn actualizar_praind_con_historial(
+    pool: State<'_, SqlitePool>,
+    search_service: State<'_, Arc<SearchService>>,
+    input: contratista_service::ActualizarPraindInput,
+    usuario_id: String,
+) -> Result<ContratistaResponse, String> {
+    contratista_service::actualizar_praind_con_historial(&pool, &search_service, input, usuario_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Cambia el estado de un contratista con registro de motivo en historial
+#[tauri::command]
+pub async fn cambiar_estado_con_historial(
+    pool: State<'_, SqlitePool>,
+    search_service: State<'_, Arc<SearchService>>,
+    input: contratista_service::CambiarEstadoConHistorialInput,
+    usuario_id: String,
+) -> Result<ContratistaResponse, String> {
+    contratista_service::cambiar_estado_con_historial(&pool, &search_service, input, usuario_id)
+        .await
+        .map_err(|e| e.to_string())
+}
