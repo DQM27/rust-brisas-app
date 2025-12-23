@@ -1,0 +1,52 @@
+%% Flujo de Lista Negra - Estado Actual y Mejoras
+%% Pegar en https://mermaid.live para visualizar
+
+flowchart TB
+    subgraph ESTADO_ACTUAL["⚠️ Estado Actual - Problemas Identificados"]
+        direction TB
+        
+        P1["❌ Solo verifica en CONTRATISTAS<br/>ingreso_contratista_service.rs:83"]
+        P2["❌ NO verifica en PROVEEDORES<br/>ingreso_proveedor_service.rs"]
+        P3["❌ NO verifica en VISITAS<br/>ingreso_visita_service.rs"]
+        P4["❌ tipo_persona no se usa<br/>Campo existe pero sin lógica"]
+        P5["❌ No hay FK a proveedores/visitantes<br/>Solo FK a contratistas"]
+    end
+
+    subgraph FLUJO_IDEAL["✅ Flujo Ideal de Lista Negra"]
+        direction TB
+        
+        I1[Persona intenta ingresar]
+        I2{Verificar cédula<br/>en lista_negra}
+        I3{is_active = 1?}
+        I4{fecha_fin_bloqueo<br/>expirado?}
+        I5[✅ Acceso Permitido]
+        I6[❌ Acceso Denegado]
+        I7[Auto-desactivar<br/>bloqueo expirado]
+        
+        I1 --> I2
+        I2 -->|Encontrado| I3
+        I2 -->|No encontrado| I5
+        I3 -->|Sí, activo| I4
+        I3 -->|No, inactivo| I5
+        I4 -->|No expirado| I6
+        I4 -->|Sí, expirado| I7
+        I7 --> I5
+    end
+
+    subgraph CASOS_BLOQUEO["📋 Tipos de Bloqueo"]
+        B1["🔴 Permanente<br/>fecha_fin_bloqueo = NULL"]
+        B2["🟡 Temporal<br/>fecha_fin_bloqueo = fecha"]
+        B3["🟢 Auto-expirado<br/>fecha < hoy"]
+    end
+
+    subgraph MEJORAS["📝 Mejoras Necesarias"]
+        M1["1. Verificar lista negra en TODOS los servicios"]
+        M2["2. Usar tipo_persona para filtrar"]
+        M3["3. Auto-expirar bloqueos temporales"]
+        M4["4. Agregar FK opcional a proveedores/visitantes"]
+        M5["5. Historial de bloqueos con razón de desbloqueo"]
+        M6["6. Notificación al intentar ingreso bloqueado"]
+    end
+
+    ESTADO_ACTUAL --> FLUJO_IDEAL
+    FLUJO_IDEAL --> MEJORAS
