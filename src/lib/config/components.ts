@@ -11,7 +11,7 @@ import UserListView from '$lib/components/user/UserListView.svelte';
 import ContratistaListView from '$lib/components/contratista/ContratistaListView.svelte';
 import ProveedorView from '$lib/components/proveedor/ProveedorView.svelte';
 import ProveedorListView from '$lib/components/proveedor/ProveedorListView.svelte';
-import ListaNegraView from '$lib/components/listaNegra/ListaNegraView.svelte';
+// import ListaNegraView from '$lib/components/listaNegra/ListaNegraView.svelte'; // Eliminado
 import ListaNegraListView from '$lib/components/listaNegra/ListaNegraListView.svelte';
 
 import GeneralSettingsPanel from '$lib/components/settings/GeneralSettingsPanel.svelte';
@@ -45,8 +45,9 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'contratista-list': ContratistaListView,
   'proveedor': ProveedorView,
   'proveedor-list': ProveedorListView,
-  'lista-negra': ListaNegraView,
-  'lista-negra-list': ListaNegraListView,
+  'lista-negra': ListaNegraListView, // Ahora usa el ListView nuevo directamente
+  'lista-negra-list': ListaNegraListView, // También usa ListView
+
 
   'general-settings': GeneralSettingsPanel as any,
   'visual-settings': VisualSettingsPanel as any,

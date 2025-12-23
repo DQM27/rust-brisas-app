@@ -15,6 +15,7 @@
     HardHat,
     Package,
     Calendar,
+    Ban,
   } from "lucide-svelte";
 
   // Componentes
@@ -71,6 +72,19 @@
       icon: Package,
       label: "Proveedores",
       panelComponent: ProveedoresPanel,
+    },
+    {
+      id: "blacklist",
+      icon: Ban,
+      label: "Lista Negra",
+      action: () => {
+        openTab({
+          componentKey: "lista-negra-list",
+          title: "Lista Negra",
+          id: "lista-negra-list",
+          focusOnOpen: true,
+        });
+      },
     },
     {
       id: "citas",

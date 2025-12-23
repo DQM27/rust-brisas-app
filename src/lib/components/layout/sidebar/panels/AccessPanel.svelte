@@ -45,38 +45,7 @@
       <span>Gestión de permisos</span>
     </button>
   {/if}
-  <button
-    class="panel-item"
-    on:click={executeAndClose(() =>
-      openView("lista-negra-list", "Lista Negra"),
-    )}
-    on:keydown={(e) =>
-      handleKeydown(
-        e,
-        executeAndClose(() => openView("lista-negra-list", "Lista Negra")),
-      )}
-  >
-    <svelte:component this={Ban} size={16} />
-    <span>Lista negra</span>
-  </button>
-  {#if $currentUser && can($currentUser, "MANAGE_BLACKLIST")}
-    <button
-      class="panel-item"
-      on:click={executeAndClose(() =>
-        openView("lista-negra", "Agregar a Lista Negra"),
-      )}
-      on:keydown={(e) =>
-        handleKeydown(
-          e,
-          executeAndClose(() =>
-            openView("lista-negra", "Agregar a Lista Negra"),
-          ),
-        )}
-    >
-      <svelte:component this={ShieldAlert} size={16} />
-      <span>Agregar a lista negra</span>
-    </button>
-  {/if}
+
   <button
     class="panel-item"
     on:click={executeAndClose(() =>
