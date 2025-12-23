@@ -1,14 +1,20 @@
 // ==========================================
 // src/db/lista_negra_queries.rs
 // ==========================================
+// Queries de base de datos para Lista Negra
 
 use crate::models::lista_negra::ListaNegra;
 use sqlx::SqlitePool;
 
+// ==========================================
+// TIPOS AUXILIARES
+// ==========================================
+
 #[derive(Debug)]
 pub struct BlockStatus {
     pub blocked: bool,
-    pub motivo: Option<String>,
+    pub nivel_severidad: Option<String>,
+    pub bloqueado_desde: Option<String>,
 }
 
 // ==========================================
@@ -18,19 +24,18 @@ pub struct BlockStatus {
 #[derive(sqlx::FromRow)]
 struct ListaNegraRow {
     id: String,
-    contratista_id: Option<String>,
     cedula: Option<String>,
     nombre: Option<String>,
     segundo_nombre: Option<String>,
     apellido: Option<String>,
     segundo_apellido: Option<String>,
+    empresa_id: Option<String>,
+    empresa_nombre: Option<String>,
+    nivel_severidad: Option<String>,
     motivo_bloqueo: Option<String>,
-    fecha_inicio_bloqueo: Option<String>,
-    fecha_fin_bloqueo: Option<String>,
     bloqueado_por: Option<String>,
     observaciones: Option<String>,
     is_active: i64,
-    tipo_persona: Option<String>,
     created_at: Option<String>,
     updated_at: Option<String>,
 }
@@ -39,15 +44,15 @@ impl From<ListaNegraRow> for ListaNegra {
     fn from(row: ListaNegraRow) -> Self {
         ListaNegra {
             id: row.id,
-            contratista_id: row.contratista_id,
             cedula: row.cedula.unwrap_or_default(),
             nombre: row.nombre.unwrap_or_default(),
             segundo_nombre: row.segundo_nombre,
             apellido: row.apellido.unwrap_or_default(),
             segundo_apellido: row.segundo_apellido,
+            empresa_id: row.empresa_id,
+            empresa_nombre: row.empresa_nombre,
+            nivel_severidad: row.nivel_severidad.unwrap_or_else(|| "BAJO".to_string()),
             motivo_bloqueo: row.motivo_bloqueo.unwrap_or_default(),
-            fecha_inicio_bloqueo: row.fecha_inicio_bloqueo.unwrap_or_default(),
-            fecha_fin_bloqueo: row.fecha_fin_bloqueo,
             bloqueado_por: row.bloqueado_por.unwrap_or_default(),
             observaciones: row.observaciones,
             is_active: row.is_active != 0,
@@ -61,38 +66,29 @@ impl From<ListaNegraRow> for ListaNegra {
 // QUERIES DE LECTURA
 // ==========================================
 
-/// Verifica si un contratista está bloqueado
-pub async fn check_if_blocked(
-    pool: &SqlitePool,
-    contratista_id: &str,
-) -> sqlx::Result<BlockStatus> {
-    let row = sqlx::query!(
-        "SELECT COUNT(*) as count, motivo_bloqueo 
-         FROM lista_negra 
-         WHERE contratista_id = ? AND is_active = 1",
-        contratista_id
-    )
-    .fetch_one(pool)
-    .await?;
-
-    Ok(BlockStatus { blocked: row.count > 0, motivo: row.motivo_bloqueo })
-}
-
-/// Verifica si una cédula está bloqueada
+/// Verifica si una cédula está bloqueada (para guardias - info mínima)
 pub async fn check_if_blocked_by_cedula(
     pool: &SqlitePool,
     cedula: &str,
 ) -> sqlx::Result<BlockStatus> {
     let row = sqlx::query!(
-        "SELECT COUNT(*) as count, motivo_bloqueo 
+        r#"SELECT nivel_severidad, created_at 
          FROM lista_negra 
-         WHERE cedula = ? AND is_active = 1",
+         WHERE cedula = ? AND is_active = 1
+         LIMIT 1"#,
         cedula
     )
-    .fetch_one(pool)
+    .fetch_optional(pool)
     .await?;
 
-    Ok(BlockStatus { blocked: row.count > 0, motivo: row.motivo_bloqueo })
+    match row {
+        Some(r) => Ok(BlockStatus {
+            blocked: true,
+            nivel_severidad: Some(r.nivel_severidad),
+            bloqueado_desde: Some(r.created_at),
+        }),
+        None => Ok(BlockStatus { blocked: false, nivel_severidad: None, bloqueado_desde: None }),
+    }
 }
 
 /// Cuenta bloqueos activos por cédula
@@ -116,7 +112,7 @@ pub async fn find_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<ListaNegra>
     Ok(row.into())
 }
 
-/// Busca todos los registros
+/// Busca todos los registros (historial completo)
 pub async fn find_all(pool: &SqlitePool) -> sqlx::Result<Vec<ListaNegra>> {
     let rows = sqlx::query_as!(ListaNegraRow, "SELECT * FROM lista_negra ORDER BY created_at DESC")
         .fetch_all(pool)
@@ -125,7 +121,7 @@ pub async fn find_all(pool: &SqlitePool) -> sqlx::Result<Vec<ListaNegra>> {
     Ok(rows.into_iter().map(ListaNegra::from).collect())
 }
 
-/// Busca registros activos
+/// Busca solo registros activos (bloqueados actualmente)
 pub async fn find_activos(pool: &SqlitePool) -> sqlx::Result<Vec<ListaNegra>> {
     let rows = sqlx::query_as!(
         ListaNegraRow,
@@ -137,7 +133,7 @@ pub async fn find_activos(pool: &SqlitePool) -> sqlx::Result<Vec<ListaNegra>> {
     Ok(rows.into_iter().map(ListaNegra::from).collect())
 }
 
-/// Busca activo por cédula
+/// Busca bloqueo activo por cédula (para validaciones)
 pub async fn find_active_by_cedula(
     pool: &SqlitePool,
     cedula: &str,
@@ -153,24 +149,37 @@ pub async fn find_active_by_cedula(
     Ok(row.map(ListaNegra::from))
 }
 
+/// Busca por nivel de severidad
+pub async fn find_by_nivel(pool: &SqlitePool, nivel: &str) -> sqlx::Result<Vec<ListaNegra>> {
+    let rows = sqlx::query_as!(
+        ListaNegraRow,
+        "SELECT * FROM lista_negra WHERE nivel_severidad = ? AND is_active = 1 ORDER BY created_at DESC",
+        nivel
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().map(ListaNegra::from).collect())
+}
+
 // ==========================================
 // QUERIES DE ESCRITURA
 // ==========================================
 
-/// Inserta un nuevo registro en lista negra
+/// Inserta un nuevo bloqueo
 #[allow(clippy::too_many_arguments)]
 pub async fn insert(
     pool: &SqlitePool,
     id: &str,
-    contratista_id: Option<&str>,
     cedula: &str,
     nombre: &str,
     segundo_nombre: Option<&str>,
     apellido: &str,
     segundo_apellido: Option<&str>,
+    empresa_id: Option<&str>,
+    empresa_nombre: Option<&str>,
+    nivel_severidad: &str,
     motivo_bloqueo: &str,
-    fecha_inicio_bloqueo: &str,
-    fecha_fin_bloqueo: Option<&str>,
     bloqueado_por: &str,
     observaciones: Option<&str>,
     created_at: &str,
@@ -178,19 +187,20 @@ pub async fn insert(
 ) -> sqlx::Result<()> {
     sqlx::query!(
         r#"INSERT INTO lista_negra 
-           (id, contratista_id, cedula, nombre, segundo_nombre, apellido, segundo_apellido, motivo_bloqueo, fecha_inicio_bloqueo, 
-            fecha_fin_bloqueo, bloqueado_por, observaciones, is_active, created_at, updated_at)
+           (id, cedula, nombre, segundo_nombre, apellido, segundo_apellido, 
+            empresa_id, empresa_nombre, nivel_severidad, motivo_bloqueo, 
+            bloqueado_por, observaciones, is_active, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#,
         id,
-        contratista_id,
         cedula,
         nombre,
         segundo_nombre,
         apellido,
         segundo_apellido,
+        empresa_id,
+        empresa_nombre,
+        nivel_severidad,
         motivo_bloqueo,
-        fecha_inicio_bloqueo,
-        fecha_fin_bloqueo,
         bloqueado_por,
         observaciones,
         created_at,
@@ -202,23 +212,13 @@ pub async fn insert(
     Ok(())
 }
 
-/// Desactiva un bloqueo
-pub async fn deactivate(
-    pool: &SqlitePool,
-    id: &str,
-    motivo: &str,
-    observaciones: Option<&str>,
-    updated_at: &str,
-) -> sqlx::Result<()> {
+/// Desactiva un bloqueo (no borra, para mantener historial)
+pub async fn deactivate(pool: &SqlitePool, id: &str, updated_at: &str) -> sqlx::Result<()> {
     sqlx::query!(
         r#"UPDATE lista_negra SET 
            is_active = 0, 
-           motivo_bloqueo = ?, 
-           observaciones = COALESCE(?, observaciones),
            updated_at = ? 
            WHERE id = ?"#,
-        motivo,
-        observaciones,
         updated_at,
         id
     )
@@ -228,25 +228,25 @@ pub async fn deactivate(
     Ok(())
 }
 
-/// Reactiva un bloqueo
+/// Reactiva un bloqueo existente
 pub async fn reactivate(
     pool: &SqlitePool,
     id: &str,
+    nivel_severidad: &str,
     motivo: &str,
-    observaciones: Option<&str>,
     bloqueado_por: &str,
     updated_at: &str,
 ) -> sqlx::Result<()> {
     sqlx::query!(
         r#"UPDATE lista_negra SET 
            is_active = 1, 
+           nivel_severidad = ?,
            motivo_bloqueo = ?, 
-           observaciones = COALESCE(?, observaciones),
            bloqueado_por = ?,
            updated_at = ? 
            WHERE id = ?"#,
+        nivel_severidad,
         motivo,
-        observaciones,
         bloqueado_por,
         updated_at,
         id
@@ -257,24 +257,24 @@ pub async fn reactivate(
     Ok(())
 }
 
-/// Actualiza un registro
+/// Actualiza un bloqueo
 pub async fn update(
     pool: &SqlitePool,
     id: &str,
+    nivel_severidad: Option<&str>,
     motivo: Option<&str>,
-    fecha_fin: Option<&str>,
     observaciones: Option<&str>,
     updated_at: &str,
 ) -> sqlx::Result<()> {
     sqlx::query!(
         r#"UPDATE lista_negra SET 
+           nivel_severidad = COALESCE(?, nivel_severidad),
            motivo_bloqueo = COALESCE(?, motivo_bloqueo),
-           fecha_fin_bloqueo = COALESCE(?, fecha_fin_bloqueo),
            observaciones = COALESCE(?, observaciones),
            updated_at = ?
            WHERE id = ?"#,
+        nivel_severidad,
         motivo,
-        fecha_fin,
         observaciones,
         updated_at,
         id
@@ -285,7 +285,7 @@ pub async fn update(
     Ok(())
 }
 
-/// Elimina un registro
+/// Elimina un registro permanentemente (usar con precaución)
 pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
     sqlx::query!("DELETE FROM lista_negra WHERE id = ?", id).execute(pool).await?;
 

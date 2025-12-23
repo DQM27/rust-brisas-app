@@ -1,52 +1,70 @@
-%% Flujo de Lista Negra - Estado Actual y Mejoras
+%% Flujo de Lista Negra - Diseño Corregido
 %% Pegar en https://mermaid.live para visualizar
 
 flowchart TB
-    subgraph ESTADO_ACTUAL["⚠️ Estado Actual - Problemas Identificados"]
+    subgraph CONCEPTO["📋 Concepto: Bloqueado = No puede NADA"]
+        C1["🚫 SI está en Lista Negra:"]
+        C2["❌ NO puede ingresar como Contratista"]
+        C3["❌ NO puede ingresar como Proveedor"]
+        C4["❌ NO puede ingresar como Visita"]
+        C5["❌ NO puede ser REGISTRADO en el sistema"]
+        
+        C1 --> C2
+        C1 --> C3
+        C1 --> C4
+        C1 --> C5
+    end
+
+    subgraph NIVELES["⚠️ Niveles de Severidad - Propuesta"]
+        N1["🔴 ALTO - Persona peligrosa/agresiva<br/>Prohibición permanente, alertar a seguridad"]
+        N2["🟠 MEDIO - Conflicto laboral/robo menor<br/>Prohibición pero sin alerta especial"] 
+        N3["🟡 BAJO - Terminación de relación laboral<br/>Solo se le prohíbe acceso"]
+    end
+
+    subgraph FLUJO_BLOQUEO["👤 Proceso de Bloquear Persona"]
         direction TB
         
-        P1["❌ Solo verifica en CONTRATISTAS<br/>ingreso_contratista_service.rs:83"]
-        P2["❌ NO verifica en PROVEEDORES<br/>ingreso_proveedor_service.rs"]
-        P3["❌ NO verifica en VISITAS<br/>ingreso_visita_service.rs"]
-        P4["❌ tipo_persona no se usa<br/>Campo existe pero sin lógica"]
-        P5["❌ No hay FK a proveedores/visitantes<br/>Solo FK a contratistas"]
-    end
-
-    subgraph FLUJO_IDEAL["✅ Flujo Ideal de Lista Negra"]
-        direction TB
+        B1[Admin/Supervisor inicia bloqueo]
+        B2{¿Persona ya existe<br/>en el sistema?}
+        B3["🔍 BUSCAR por nombre/cédula<br/>en contratistas, proveedores, visitantes"]
+        B4["📝 REGISTRO MANUAL<br/>Cédula, Nombre, Apellido, Empresa"]
+        B5["Seleccionar Nivel de Severidad"]
+        B6["Escribir Motivo del Bloqueo"]
+        B7["✅ Persona Bloqueada"]
         
-        I1[Persona intenta ingresar]
-        I2{Verificar cédula<br/>en lista_negra}
-        I3{is_active = 1?}
-        I4{fecha_fin_bloqueo<br/>expirado?}
-        I5[✅ Acceso Permitido]
-        I6[❌ Acceso Denegado]
-        I7[Auto-desactivar<br/>bloqueo expirado]
+        B1 --> B2
+        B2 -->|Sí| B3
+        B2 -->|No| B4
+        B3 --> B5
+        B4 --> B5
+        B5 --> B6
+        B6 --> B7
+    end
+
+    subgraph VALIDACIONES["� Validaciones Automáticas"]
+        V1["Al intentar INGRESAR<br/>(cualquier tipo)"]
+        V2["Al intentar REGISTRAR<br/>(nuevo contratista/proveedor/visita)"]
+        V3{¿Cédula en<br/>lista_negra?}
+        V4["❌ RECHAZAR + Mostrar motivo"]
+        V5["✅ Permitir"]
         
-        I1 --> I2
-        I2 -->|Encontrado| I3
-        I2 -->|No encontrado| I5
-        I3 -->|Sí, activo| I4
-        I3 -->|No, inactivo| I5
-        I4 -->|No expirado| I6
-        I4 -->|Sí, expirado| I7
-        I7 --> I5
+        V1 --> V3
+        V2 --> V3
+        V3 -->|Sí| V4
+        V3 -->|No| V5
     end
 
-    subgraph CASOS_BLOQUEO["📋 Tipos de Bloqueo"]
-        B1["🔴 Permanente<br/>fecha_fin_bloqueo = NULL"]
-        B2["🟡 Temporal<br/>fecha_fin_bloqueo = fecha"]
-        B3["🟢 Auto-expirado<br/>fecha < hoy"]
+    subgraph DATOS["� Datos del Bloqueo"]
+        D1["id: UUID"]
+        D2["cedula: TEXT NOT NULL"]
+        D3["nombre, apellido: TEXT"]
+        D4["empresa_id: FK opcional a empresas"]
+        D5["empresa_nombre: TEXT (si no tiene FK)"]
+        D6["nivel_severidad: ALTO|MEDIO|BAJO"]
+        D7["motivo_bloqueo: TEXT NOT NULL"]
+        D8["bloqueado_por: FK a users"]
+        D9["is_active: 1=bloqueado, 0=desbloqueado"]
     end
 
-    subgraph MEJORAS["📝 Mejoras Necesarias"]
-        M1["1. Verificar lista negra en TODOS los servicios"]
-        M2["2. Usar tipo_persona para filtrar"]
-        M3["3. Auto-expirar bloqueos temporales"]
-        M4["4. Agregar FK opcional a proveedores/visitantes"]
-        M5["5. Historial de bloqueos con razón de desbloqueo"]
-        M6["6. Notificación al intentar ingreso bloqueado"]
-    end
-
-    ESTADO_ACTUAL --> FLUJO_IDEAL
-    FLUJO_IDEAL --> MEJORAS
+    CONCEPTO --> FLUJO_BLOQUEO
+    FLUJO_BLOQUEO --> VALIDACIONES

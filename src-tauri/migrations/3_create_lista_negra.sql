@@ -1,36 +1,75 @@
 -- ==========================================
--- Migration: Lista Negra (FINAL y Corregido para máxima compatibilidad SQLite)
+-- Migration: Lista Negra (REFACTORIZADO)
 -- ==========================================
+-- Bloqueo universal por CÉDULA: aplica a contratistas, proveedores y visitas
+-- Si una cédula está bloqueada, NO puede ingresar NI ser registrada en el sistema
 
--- 1. Creación de la Tabla
 CREATE TABLE IF NOT EXISTS lista_negra (
     id TEXT PRIMARY KEY NOT NULL,
-    contratista_id TEXT,
+    
+    -- Identificación de la persona (cédula es el identificador universal)
     cedula TEXT NOT NULL,
-    nombre TEXT,
+    nombre TEXT NOT NULL,
     segundo_nombre TEXT,
-    apellido TEXT,
+    apellido TEXT NOT NULL,
     segundo_apellido TEXT,
+    
+    -- Empresa (opcional - para personas manuales o vinculadas)
+    empresa_id TEXT,                -- FK a empresas (si la empresa está registrada)
+    empresa_nombre TEXT,            -- Nombre libre (si la empresa NO está registrada)
+    
+    -- Nivel de severidad (para feedback visual al guardia)
+    -- ALTO = 🔴 Rojo = Peligroso, llamar supervisor
+    -- MEDIO = 🟡 Amarillo = Precaución
+    -- BAJO = 🟢 Verde/Gris = Trato normal, solo no dejar entrar
+    nivel_severidad TEXT NOT NULL DEFAULT 'BAJO' CHECK (nivel_severidad IN ('ALTO', 'MEDIO', 'BAJO')),
+    
+    -- Motivo (solo visible para Admin/Supervisor, NO para guardias)
     motivo_bloqueo TEXT NOT NULL,
-    fecha_inicio_bloqueo TEXT NOT NULL,
-    fecha_fin_bloqueo TEXT,
+    
+    -- Quién bloqueó
     bloqueado_por TEXT NOT NULL,
+    
+    -- Observaciones internas (solo Admin/Supervisor)
     observaciones TEXT,
+    
+    -- Estado: 1 = bloqueado activo, 0 = desbloqueado (historial implícito)
     is_active INTEGER NOT NULL DEFAULT 1,
-    tipo_persona TEXT DEFAULT 'contratista',  -- NEW: 'contratista' | 'proveedor' | 'visita' | 'externo'
+    
+    -- Auditoría
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    FOREIGN KEY (contratista_id) REFERENCES contratistas(id) ON DELETE SET NULL
+    
+    -- FKs opcionales
+    FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE SET NULL,
+    FOREIGN KEY (bloqueado_por) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- 2. Índice para optimizar el TRIGGER
--- Índice compuesto básico para búsquedas rápidas por cédula y estado.
-CREATE INDEX IF NOT EXISTS idx_lista_negra_cedula_activos 
+-- ==========================================
+-- Índices
+-- ==========================================
+
+-- Índice principal: búsqueda rápida por cédula + estado activo
+CREATE INDEX IF NOT EXISTS idx_lista_negra_cedula_activo 
 ON lista_negra(cedula, is_active);
 
+-- Índice para búsqueda solo por cédula
+CREATE INDEX IF NOT EXISTS idx_lista_negra_cedula 
+ON lista_negra(cedula);
 
--- 3. Trigger para forzar la unicidad (Máxima compatibilidad)
--- Este TRIGGER usa una subconsulta COUNT() simple en lugar de EXISTS y evita condiciones complejas.
+-- Índice por nivel de severidad (para reportes)
+CREATE INDEX IF NOT EXISTS idx_lista_negra_nivel 
+ON lista_negra(nivel_severidad, is_active);
+
+-- Índice por empresa (para reportes)
+CREATE INDEX IF NOT EXISTS idx_lista_negra_empresa 
+ON lista_negra(empresa_id);
+
+-- ==========================================
+-- Triggers de Unicidad
+-- ==========================================
+
+-- Solo puede haber UN bloqueo activo por cédula
 CREATE TRIGGER IF NOT EXISTS unique_active_cedula
 BEFORE INSERT ON lista_negra
 WHEN NEW.is_active = 1 AND (
@@ -38,30 +77,23 @@ WHEN NEW.is_active = 1 AND (
     WHERE cedula = NEW.cedula AND is_active = 1
 ) > 0
 BEGIN
-    SELECT RAISE(ABORT, 'UNIQUE constraint failed: Solo puede haber un bloqueo activo (is_active = 1) por cedula.');
+    SELECT RAISE(ABORT, 'UNIQUE constraint failed: Solo puede haber un bloqueo activo por cédula.');
 END;
 
--- 4. Trigger de unicidad adicional para UPDATES (obligatorio si se usa el TRIGGER de arriba)
--- Maneja el caso en el que se intenta activar un registro existente cuando ya hay otro activo.
+-- Trigger para UPDATE (si se reactiva un bloqueo)
 CREATE TRIGGER IF NOT EXISTS unique_active_cedula_update
 BEFORE UPDATE ON lista_negra
 WHEN NEW.is_active = 1 AND (
     SELECT COUNT(id) FROM lista_negra 
     WHERE cedula = NEW.cedula 
     AND is_active = 1
-    -- Asegura que no se cuente el registro que se está actualizando (NEW.id)
     AND id != NEW.id 
 ) > 0
 BEGIN
-    SELECT RAISE(ABORT, 'UNIQUE constraint failed: Solo puede haber un bloqueo activo (is_active = 1) por cedula.');
+    SELECT RAISE(ABORT, 'UNIQUE constraint failed: Ya existe un bloqueo activo para esta cédula.');
 END;
 
-
--- 5. Índices complementarios
-CREATE INDEX IF NOT EXISTS idx_lista_negra_cedula ON lista_negra(cedula);
-CREATE INDEX IF NOT EXISTS idx_lista_negra_contratista ON lista_negra(contratista_id);
-
--- 6. Trigger para actualizar updated_at automáticamente
+-- Trigger para auto-actualizar updated_at
 CREATE TRIGGER IF NOT EXISTS update_lista_negra_timestamp 
 AFTER UPDATE ON lista_negra
 BEGIN

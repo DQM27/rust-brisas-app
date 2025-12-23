@@ -80,15 +80,10 @@ pub async fn validar_ingreso_contratista(
         .ok_or(IngresoContratistaError::ContratistaNotFound)?;
 
     // B. Verificar Bloqueo
-    let block_response = lista_negra_service::check_is_blocked(pool, contratista.cedula.clone())
-        .await
-        .unwrap_or(BlockCheckResponse {
-            is_blocked: false,
-            motivo: None,
-            bloqueado_desde: None,
-            bloqueado_hasta: None,
-            bloqueado_por: None,
-        });
+    let block_response =
+        lista_negra_service::check_is_blocked(pool, contratista.cedula.clone()).await.unwrap_or(
+            BlockCheckResponse { is_blocked: false, nivel_severidad: None, bloqueado_desde: None },
+        );
 
     // C. Verificar Ingreso Abierto
     let ingreso_abierto = db::find_ingreso_abierto_by_contratista(pool, &contratista.id)
@@ -129,7 +124,7 @@ pub async fn validar_ingreso_contratista(
         nombre_completo,
         &contratista.fecha_vencimiento_praind,
         block_response.is_blocked,
-        block_response.motivo.clone(),
+        block_response.nivel_severidad.clone(),
         ingreso_abierto.is_some(),
         contratista.estado.clone(),
         alertas_db.len(),

@@ -47,10 +47,10 @@ pub async fn create_contratista(
         .map_err(|e| ContratistaError::Validation(e.to_string()))?;
 
     if block_status.blocked {
-        let motivo = block_status.motivo.unwrap_or_else(|| "Sin motivo especificado".to_string());
+        let nivel = block_status.nivel_severidad.unwrap_or_else(|| "BAJO".to_string());
         return Err(ContratistaError::Validation(format!(
-            "No se puede registrar. La persona con cédula {} está en lista negra. Motivo: {}",
-            cedula_normalizada, motivo
+            "No se puede registrar. La persona con cédula {} está en lista negra. Nivel: {}",
+            cedula_normalizada, nivel
         )));
     }
 

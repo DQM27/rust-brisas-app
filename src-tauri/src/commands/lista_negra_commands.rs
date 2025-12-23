@@ -74,19 +74,8 @@ pub async fn remove_from_lista_negra(
     pool: State<'_, SqlitePool>,
     search_service: State<'_, Arc<SearchService>>,
     id: String,
-    motivo: String,
-    observacion: Option<String>,
-    usuario_id: String,
 ) -> Result<ListaNegraResponse, ListaNegraError> {
-    lista_negra_service::remove_from_lista_negra(
-        &pool,
-        &search_service,
-        id,
-        motivo,
-        observacion,
-        usuario_id,
-    )
-    .await
+    lista_negra_service::remove_from_lista_negra(&pool, &search_service, id).await
 }
 
 /// Reactiva un bloqueo (re-bloquear persona previamente desbloqueada)
@@ -95,16 +84,16 @@ pub async fn reactivate_lista_negra(
     pool: State<'_, SqlitePool>,
     search_service: State<'_, Arc<SearchService>>,
     id: String,
+    nivel_severidad: String,
     motivo_bloqueo: String,
-    observaciones: Option<String>,
     bloqueado_por: String,
 ) -> Result<ListaNegraResponse, ListaNegraError> {
     lista_negra_service::reactivate_lista_negra(
         &pool,
         &search_service,
         id,
+        nivel_severidad,
         motivo_bloqueo,
-        observaciones,
         bloqueado_por,
     )
     .await

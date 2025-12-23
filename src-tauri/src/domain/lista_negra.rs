@@ -5,8 +5,7 @@
 // Sin dependencias de DB ni servicios externos
 
 use crate::domain::errors::ListaNegraError;
-use crate::models::lista_negra::{AddToListaNegraInput, UpdateListaNegraInput};
-use chrono::NaiveDateTime;
+use crate::models::lista_negra::{AddToListaNegraInput, NivelSeveridad, UpdateListaNegraInput};
 
 // ==========================================
 // VALIDACIONES DE CAMPOS INDIVIDUALES
@@ -79,16 +78,19 @@ pub fn validar_bloqueado_por(bloqueado_por: &str) -> Result<(), ListaNegraError>
 
     if limpio.len() > 100 {
         return Err(ListaNegraError::Validation(
-            "El nombre de quien bloqueó no puede exceder 100 caracteres".to_string(),
+            "El ID de quien bloqueó no puede exceder 100 caracteres".to_string(),
         ));
     }
 
     Ok(())
 }
 
-pub fn validar_fecha_fin(fecha_str: &str) -> Result<NaiveDateTime, ListaNegraError> {
-    NaiveDateTime::parse_from_str(fecha_str, "%Y-%m-%d %H:%M:%S")
-        .map_err(|_| ListaNegraError::DateParse(fecha_str.to_string()))
+pub fn validar_nivel_severidad(nivel: &str) -> Result<NivelSeveridad, ListaNegraError> {
+    nivel.parse::<NivelSeveridad>().map_err(|_| {
+        ListaNegraError::Validation(
+            "Nivel de severidad inválido. Debe ser ALTO, MEDIO o BAJO".to_string(),
+        )
+    })
 }
 
 // ==========================================
@@ -97,42 +99,13 @@ pub fn validar_fecha_fin(fecha_str: &str) -> Result<NaiveDateTime, ListaNegraErr
 
 /// Valida todos los campos necesarios para agregar a lista negra
 pub fn validar_add_input(input: &AddToListaNegraInput) -> Result<(), ListaNegraError> {
-    // Si tiene contratista_id, no necesita cédula/nombre/apellido obligatoriamente, pero si vienen se validan??
-    // Asumimos lógica original: si contratista_id -> solo valida motivo/bloqueado_por
-    if input.contratista_id.is_some() {
-        validar_motivo(&input.motivo_bloqueo)?;
-        validar_bloqueado_por(&input.bloqueado_por)?;
-
-        if let Some(ref fecha) = input.fecha_fin_bloqueo {
-            validar_fecha_fin(fecha)?;
-        }
-
-        return Ok(());
-    }
-
-    // Si NO tiene contratista_id, requiere cédula + nombre + apellido
-    let cedula = input.cedula.as_ref().ok_or(ListaNegraError::Validation(
-        "Debe proporcionar cédula si no especifica contratista_id".to_string(),
-    ))?;
-    validar_cedula(cedula)?;
-
-    let nombre = input.nombre.as_ref().ok_or(ListaNegraError::Validation(
-        "Debe proporcionar nombre si no especifica contratista_id".to_string(),
-    ))?;
-    validar_nombre(nombre)?;
-
-    // Apellido también obligatorio? Asumimos que sí por lógica anterior inferida
-    let apellido = input.apellido.as_ref().ok_or(ListaNegraError::Validation(
-        "Debe proporcionar apellido si no especifica contratista_id".to_string(),
-    ))?;
-    validar_nombre(apellido)?;
-
+    // Siempre requiere cédula, nombre, apellido, motivo, bloqueado_por, nivel
+    validar_cedula(&input.cedula)?;
+    validar_nombre(&input.nombre)?;
+    validar_nombre(&input.apellido)?;
     validar_motivo(&input.motivo_bloqueo)?;
     validar_bloqueado_por(&input.bloqueado_por)?;
-
-    if let Some(ref fecha) = input.fecha_fin_bloqueo {
-        validar_fecha_fin(fecha)?;
-    }
+    validar_nivel_severidad(&input.nivel_severidad)?;
 
     Ok(())
 }
@@ -143,8 +116,8 @@ pub fn validar_update_input(input: &UpdateListaNegraInput) -> Result<(), ListaNe
         validar_motivo(motivo)?;
     }
 
-    if let Some(ref fecha) = input.fecha_fin_bloqueo {
-        validar_fecha_fin(fecha)?;
+    if let Some(ref nivel) = input.nivel_severidad {
+        validar_nivel_severidad(nivel)?;
     }
 
     Ok(())
@@ -185,5 +158,13 @@ mod tests {
         assert!(validar_motivo("Comportamiento indebido").is_ok());
         assert!(validar_motivo("").is_err());
         assert!(validar_motivo(&"a".repeat(501)).is_err());
+    }
+
+    #[test]
+    fn test_validar_nivel_severidad() {
+        assert!(validar_nivel_severidad("ALTO").is_ok());
+        assert!(validar_nivel_severidad("medio").is_ok());
+        assert!(validar_nivel_severidad("Bajo").is_ok());
+        assert!(validar_nivel_severidad("INVALIDO").is_err());
     }
 }

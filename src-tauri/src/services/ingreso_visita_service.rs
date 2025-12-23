@@ -195,10 +195,8 @@ pub async fn validar_ingreso(
         .await
         .unwrap_or(crate::models::lista_negra::BlockCheckResponse {
             is_blocked: false,
-            motivo: None,
+            nivel_severidad: None,
             bloqueado_desde: None,
-            bloqueado_hasta: None,
-            bloqueado_por: None,
         });
 
     // C. Verificar Ingreso Abierto
@@ -218,7 +216,7 @@ pub async fn validar_ingreso(
         nombre_completo,
         None, // Autorización correo no trackeada en DB aún
         block_response.is_blocked,
-        block_response.motivo,
+        block_response.nivel_severidad.clone(), // Nivel en lugar de motivo
         ingreso_abierto.is_some(),
         alertas_db.len(),
     );
