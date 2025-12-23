@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS lista_negra (
     bloqueado_por TEXT NOT NULL,
     observaciones TEXT,
     is_active INTEGER NOT NULL DEFAULT 1,
+    tipo_persona TEXT DEFAULT 'contratista',  -- NEW: 'contratista' | 'proveedor' | 'visita' | 'externo'
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY (contratista_id) REFERENCES contratistas(id) ON DELETE SET NULL

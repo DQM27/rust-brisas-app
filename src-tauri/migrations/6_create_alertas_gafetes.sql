@@ -1,7 +1,7 @@
 -- ==========================================
 -- Migración: Tabla de Alertas de Gafetes (REFACTORIZADA)
 -- ==========================================
--- Registro de gafetes no devueltos con soporte Polimórfico (Contratistas y Proveedores)
+-- Registro de gafetes no devueltos con soporte Polimórfico (Contratistas, Proveedores y Visitas)
 
 CREATE TABLE IF NOT EXISTS alertas_gafetes (
     id TEXT PRIMARY KEY,
@@ -14,9 +14,10 @@ CREATE TABLE IF NOT EXISTS alertas_gafetes (
     -- Gafete no devuelto
     gafete_numero TEXT NOT NULL,
     
-    -- VINCULACIÓN POLIMÓRFICA
+    -- VINCULACIÓN POLIMÓRFICA (uno de los tres debe estar presente)
     ingreso_contratista_id TEXT,  -- FK a la tabla 'ingresos'
     ingreso_proveedor_id TEXT,    -- FK a la tabla 'ingresos_proveedores'
+    ingreso_visita_id TEXT,       -- FK a la tabla 'ingresos_visitas' (NEW)
     
     -- Estado de la alerta
     fecha_reporte TEXT NOT NULL,
@@ -32,12 +33,13 @@ CREATE TABLE IF NOT EXISTS alertas_gafetes (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     
-    -- Restricción: Debe venir de algún lado
-    CHECK (ingreso_contratista_id IS NOT NULL OR ingreso_proveedor_id IS NOT NULL),
+    -- Restricción: Debe venir de algún tipo de ingreso
+    CHECK (ingreso_contratista_id IS NOT NULL OR ingreso_proveedor_id IS NOT NULL OR ingreso_visita_id IS NOT NULL),
 
     -- Foreign Keys
     FOREIGN KEY (ingreso_contratista_id) REFERENCES ingresos(id),
     FOREIGN KEY (ingreso_proveedor_id) REFERENCES ingresos_proveedores(id),
+    FOREIGN KEY (ingreso_visita_id) REFERENCES ingresos_visitas(id),
     FOREIGN KEY (reportado_por) REFERENCES users(id),
     FOREIGN KEY (resuelto_por) REFERENCES users(id)
 );
@@ -47,3 +49,4 @@ CREATE INDEX IF NOT EXISTS idx_alertas_cedula ON alertas_gafetes(cedula, resuelt
 CREATE INDEX IF NOT EXISTS idx_alertas_gafete ON alertas_gafetes(gafete_numero);
 CREATE INDEX IF NOT EXISTS idx_alertas_ingreso_c ON alertas_gafetes(ingreso_contratista_id);
 CREATE INDEX IF NOT EXISTS idx_alertas_ingreso_p ON alertas_gafetes(ingreso_proveedor_id);
+CREATE INDEX IF NOT EXISTS idx_alertas_ingreso_v ON alertas_gafetes(ingreso_visita_id);

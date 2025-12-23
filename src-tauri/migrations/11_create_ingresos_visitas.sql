@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS ingresos_visitas (
     area_visitada TEXT NOT NULL,
     motivo TEXT NOT NULL,
     gafete TEXT,
+    gafete_tipo TEXT DEFAULT 'visita',  -- NEW: tipo de gafete asignado
+    razon_sin_gafete TEXT,              -- NEW: motivo si es "S/G"
     
     -- Tiempos y Estado
     fecha_ingreso DATETIME NOT NULL,
@@ -40,3 +42,4 @@ CREATE TABLE IF NOT EXISTS ingresos_visitas (
 CREATE INDEX IF NOT EXISTS idx_ingresos_visitas_visitante ON ingresos_visitas(visitante_id);
 CREATE INDEX IF NOT EXISTS idx_ingresos_visitas_estado ON ingresos_visitas(estado);
 CREATE INDEX IF NOT EXISTS idx_ingresos_visitas_fecha ON ingresos_visitas(fecha_ingreso);
+
