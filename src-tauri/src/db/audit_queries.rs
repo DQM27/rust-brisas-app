@@ -274,3 +274,54 @@ pub struct ReporteSeguridadRow {
     pub fecha_resolucion: Option<String>,
     pub created_at: String,
 }
+
+// ==========================================
+// HISTORIAL ESTADO GAFETES
+// ==========================================
+
+pub async fn insert_historial_estado_gafete(
+    pool: &SqlitePool,
+    id: &str,
+    gafete_numero: &str,
+    gafete_tipo: &str,
+    estado_anterior: &str,
+    estado_nuevo: &str,
+    cambiado_por: &str,
+    motivo: Option<&str>,
+    fecha_cambio: &str,
+    created_at: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        INSERT INTO historial_estado_gafetes (id, gafete_numero, gafete_tipo, estado_anterior, estado_nuevo, cambiado_por, motivo, fecha_cambio, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        "#,
+    )
+    .bind(id)
+    .bind(gafete_numero)
+    .bind(gafete_tipo)
+    .bind(estado_anterior)
+    .bind(estado_nuevo)
+    .bind(cambiado_por)
+    .bind(motivo)
+    .bind(fecha_cambio)
+    .bind(created_at)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+#[derive(Debug, Clone, sqlx::FromRow, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HistorialEstadoGafeteRow {
+    pub id: String,
+    pub gafete_numero: String,
+    pub gafete_tipo: String,
+    pub estado_anterior: String,
+    pub estado_nuevo: String,
+    pub cambiado_por: String,
+    pub motivo: Option<String>,
+    pub fecha_cambio: String,
+    pub created_at: String,
+}

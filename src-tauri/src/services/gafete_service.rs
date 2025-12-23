@@ -4,6 +4,7 @@
 // Orquesta dominio y DB - Lógica de negocio completa
 // Strict Mode: Return Result<T, GafeteError>
 
+use crate::db::audit_queries;
 use crate::db::gafete_queries as db;
 use crate::domain::errors::GafeteError;
 use crate::domain::gafete as domain;
@@ -13,7 +14,9 @@ use crate::models::gafete::{
 };
 use crate::services::alerta_service;
 use chrono::Utc;
+use log::warn;
 use sqlx::SqlitePool;
+use uuid::Uuid;
 
 // ==========================================
 // CREAR GAFETE
@@ -333,15 +336,43 @@ pub async fn update_gafete_status(
     tipo: String,
     estado: GafeteEstado,
     usuario_id: Option<String>,
+    motivo: Option<String>, // NUEVO: motivo del cambio
 ) -> Result<GafeteResponse, GafeteError> {
-    let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo).await.map_err(|e| match e {
-        sqlx::Error::RowNotFound => GafeteError::NotFound,
-        _ => GafeteError::Database(e),
-    })?;
+    // 1. Obtener estado anterior
+    let gafete_actual =
+        db::find_by_numero_and_tipo(pool, &numero, &tipo).await.map_err(|e| match e {
+            sqlx::Error::RowNotFound => GafeteError::NotFound,
+            _ => GafeteError::Database(e),
+        })?;
+
+    let estado_anterior = gafete_actual.estado.as_str().to_string();
 
     let now = Utc::now().to_rfc3339();
+
+    // 2. Actualizar estado
     db::update_status(pool, &numero, &tipo, estado.as_str(), &now).await?;
 
+    // 3. Registrar en historial_estado_gafetes (AUDITORÍA)
+    let historial_id = Uuid::new_v4().to_string();
+    let usuario = usuario_id.clone().unwrap_or_else(|| "sistema".to_string());
+    if let Err(e) = audit_queries::insert_historial_estado_gafete(
+        pool,
+        &historial_id,
+        &numero,
+        &tipo,
+        &estado_anterior,
+        estado.as_str(),
+        &usuario,
+        motivo.as_deref(),
+        &now,
+        &now,
+    )
+    .await
+    {
+        warn!("Error al registrar historial de estado gafete {} {}: {}", numero, tipo, e);
+    }
+
+    // 4. Si se activa, resolver alerta pendiente
     if estado == GafeteEstado::Activo {
         if let Ok(true) = db::has_unresolved_alert_typed(pool, &numero, &tipo).await {
             if let Ok(Some((id, _, _, _, _, _, _, _))) =
@@ -357,7 +388,7 @@ pub async fn update_gafete_status(
                     &now,
                 )
                 .await
-                .map_err(|e| GafeteError::Validation(e.to_string()))?; // Map AlertaError
+                .map_err(|e| GafeteError::Validation(e.to_string()))?;
             }
         }
     }

@@ -75,8 +75,9 @@ pub async fn update_gafete_status(
     tipo: String,
     input: UpdateGafeteStatusInput,
     usuario_id: Option<String>,
+    motivo: Option<String>, // NUEVO: motivo del cambio (para auditoría)
 ) -> Result<GafeteResponse, String> {
-    gafete_service::update_gafete_status(&pool, numero, tipo, input.estado, usuario_id)
+    gafete_service::update_gafete_status(&pool, numero, tipo, input.estado, usuario_id, motivo)
         .await
         .map_err(|e| e.to_string())
 }
