@@ -3,7 +3,7 @@
 // ==========================================
 // Capa de servicio: Lógica de negocio para Ingresos de Visita
 
-use crate::db::{ingreso_visita_queries, visitante_queries};
+use crate::db::ingreso_visita_queries;
 use crate::domain::errors::IngresoVisitaError;
 use crate::domain::ingreso_visita as domain;
 use crate::domain::ingreso_visita::ValidacionIngresoVisitaResponse;
@@ -12,7 +12,7 @@ use crate::domain::ingreso_visita::{
 };
 use crate::domain::motor_validacion::{self as motor, ContextoIngreso};
 use crate::models::visitante::CreateVisitanteInput;
-use crate::services::{alerta_service, gafete_service, lista_negra_service};
+use crate::services::{alerta_service, gafete_service, lista_negra_service, visitante_service};
 use sqlx::SqlitePool;
 
 pub async fn registrar_ingreso(
@@ -54,9 +54,9 @@ pub async fn registrar_ingreso_full(
     input: CreateIngresoVisitaFullInput,
 ) -> Result<IngresoVisita, IngresoVisitaError> {
     // 1. Buscar o Crear Visitante
-    let visitante_id = match visitante_queries::get_visitante_by_cedula(pool, &input.cedula)
+    let visitante_id = match visitante_service::get_visitante_by_cedula(pool, &input.cedula)
         .await
-        .map_err(IngresoVisitaError::Database)?
+        .map_err(|e| IngresoVisitaError::Validation(e.to_string()))?
     {
         Some(v) => v.id,
         None => {
@@ -70,9 +70,9 @@ pub async fn registrar_ingreso_full(
                 empresa: input.empresa,
                 has_vehicle: false, // Default false por ahora
             };
-            visitante_queries::create_visitante(pool, create_input)
+            visitante_service::create_visitante(pool, create_input)
                 .await
-                .map_err(IngresoVisitaError::Database)?
+                .map_err(|e| IngresoVisitaError::Validation(e.to_string()))?
                 .id
         }
     };
@@ -183,9 +183,9 @@ pub async fn validar_ingreso(
     visitante_id: &str,
 ) -> Result<ValidacionIngresoVisitaResponse, IngresoVisitaError> {
     // A. Buscar Visitante
-    let visitante = visitante_queries::get_visitante_by_id(pool, visitante_id)
+    let visitante = visitante_service::get_visitante_by_id(pool, visitante_id)
         .await
-        .map_err(IngresoVisitaError::Database)?
+        .map_err(|e| IngresoVisitaError::Validation(e.to_string()))?
         .ok_or(IngresoVisitaError::Validation("Visitante no encontrado".to_string()))?;
 
     // B. Verificar Bloqueo

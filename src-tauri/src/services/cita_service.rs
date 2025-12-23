@@ -1,6 +1,7 @@
-use crate::db::{cita_queries, visitante_queries};
+use crate::db::cita_queries;
 use crate::domain::cita::{Cita, CitaPopulated, CreateCitaInput};
 use crate::models::visitante::CreateVisitanteInput;
+use crate::services::visitante_service;
 
 use sqlx::SqlitePool;
 
@@ -23,7 +24,7 @@ impl CitaService {
         // 1. Si viene input de visitante, crear o buscar
         if let Some(v_input) = visitante_input {
             // Verificar si existe por cédula
-            let existente = visitante_queries::get_visitante_by_cedula(&self.pool, &v_input.cedula)
+            let existente = visitante_service::get_visitante_by_cedula(&self.pool, &v_input.cedula)
                 .await
                 .map_err(|e| e.to_string())?;
 
@@ -32,7 +33,7 @@ impl CitaService {
                     visitante_id = v.id;
                 }
                 None => {
-                    let nuevo = visitante_queries::create_visitante(&self.pool, v_input)
+                    let nuevo = visitante_service::create_visitante(&self.pool, v_input)
                         .await
                         .map_err(|e| e.to_string())?;
                     visitante_id = nuevo.id;
@@ -98,7 +99,7 @@ impl CitaService {
             .ok_or_else(|| "Cita no encontrada".to_string())?;
 
         // 2. Obtener el visitante
-        let visitante = visitante_queries::get_visitante_by_id(&self.pool, &cita.visitante_id)
+        let visitante = visitante_service::get_visitante_by_id(&self.pool, &cita.visitante_id)
             .await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Visitante asociado no encontrado".to_string())?;
