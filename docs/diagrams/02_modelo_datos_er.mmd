@@ -156,5 +156,8 @@ erDiagram
     VISITANTES ||--o{ CITAS : "tiene"
     VISITANTES ||--o{ INGRESOS_VISITAS : "registra"
     
-    GAFETES ||--o{ INGRESOS_CONTRATISTAS : "asignado"
+    %% Gafetes por tipo -> Ingresos correspondientes
+    GAFETES ||--o{ INGRESOS_CONTRATISTAS : "tipo contratista"
+    GAFETES ||--o{ INGRESOS_PROVEEDORES : "tipo proveedor"
+    GAFETES ||--o{ INGRESOS_VISITAS : "tipo visita"
     GAFETES ||--o{ ALERTAS_GAFETES : "genera"
