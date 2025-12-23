@@ -450,9 +450,9 @@ pub async fn actualizar_praind_con_historial(
     .map_err(|e| ContratistaError::Database(e))?;
 
     // 5. Si el PRAIND renovado y estaba suspendido por PRAIND, activar automáticamente
-    let nueva_fecha_valida =
-        crate::domain::ingreso_contratista::verificar_praind_vigente(&input.nueva_fecha_praind)
-            .unwrap_or(false);
+    let fecha_venc = chrono::NaiveDate::parse_from_str(&input.nueva_fecha_praind, "%Y-%m-%d")
+        .unwrap_or_default();
+    let nueva_fecha_valida = fecha_venc >= chrono::Utc::now().date_naive();
 
     if nueva_fecha_valida && contratista_row.contratista.estado.as_str() == "suspendido" {
         // Cambiar a activo automáticamente

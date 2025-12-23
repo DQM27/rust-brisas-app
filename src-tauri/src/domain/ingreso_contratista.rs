@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 // src/domain/ingreso_contratista.rs
 
 use crate::domain::errors::IngresoContratistaError;

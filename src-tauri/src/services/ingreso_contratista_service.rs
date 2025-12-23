@@ -193,7 +193,15 @@ pub async fn crear_ingreso_contratista(
         .await?
         .ok_or(IngresoContratistaError::ContratistaNotFound)?;
 
-    let praind_vigente = domain::verificar_praind_vigente(&contratista.fecha_vencimiento_praind)?;
+    let fecha_venc =
+        chrono::NaiveDate::parse_from_str(&contratista.fecha_vencimiento_praind, "%Y-%m-%d")
+            .map_err(|_| {
+                IngresoContratistaError::Validation(format!(
+                    "Fecha PRAIND inválida: {}",
+                    contratista.fecha_vencimiento_praind
+                ))
+            })?;
+    let praind_vigente = fecha_venc >= chrono::Utc::now().date_naive();
 
     // 4. Gestionar Gafete
     let gafete_normalizado = if let Some(ref g) = input.gafete_numero {
@@ -335,7 +343,8 @@ pub async fn registrar_salida(
                 &nombre_completo,
                 &num,
                 Some(&input.ingreso_id),
-                None,
+                None, // ingreso_proveedor_id
+                None, // ingreso_visita_id
                 &now,
                 decision.motivo.as_deref(),
                 &usuario_id,
@@ -531,7 +540,15 @@ pub async fn registrar_ingreso_excepcional(
         .ok_or(IngresoContratistaError::ContratistaNotFound)?;
 
     // 2. Verificar que NO puede entrar normalmente (de lo contrario, ¿por qué es excepcional?)
-    let praind_vigente = domain::verificar_praind_vigente(&contratista.fecha_vencimiento_praind)?;
+    let fecha_venc =
+        chrono::NaiveDate::parse_from_str(&contratista.fecha_vencimiento_praind, "%Y-%m-%d")
+            .map_err(|_| {
+                IngresoContratistaError::Validation(format!(
+                    "Fecha PRAIND inválida: {}",
+                    contratista.fecha_vencimiento_praind
+                ))
+            })?;
+    let praind_vigente = fecha_venc >= chrono::Utc::now().date_naive();
 
     // Determinar motivo de bloqueo original
     let motivo_bloqueo = if !praind_vigente {

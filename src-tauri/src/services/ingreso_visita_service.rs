@@ -125,41 +125,29 @@ pub async fn registrar_salida(
     // 3. Crear alerta si aplica
     if decision.debe_generar_reporte {
         if let Some(num) = decision.gafete_numero {
+            let alerta_id = uuid::Uuid::new_v4().to_string();
             let nombre_completo =
                 format!("{} {}", ingreso.visitante_nombre, ingreso.visitante_apellido);
+            let now = chrono::Utc::now().to_rfc3339();
 
-            // Note: ingreso_visita logic might need a dedicated field in AlertGafete table or generic persona_id usage?
-            // alerta_service::insert takes ingreso_proveedor_id and ingreso_contratista_id optional args.
-            // It doesn't seem to have ingreso_visita_id yet?
-            // Let's check alerta_service::insert signature again.
-            // Step 1432 for ingreso_contratista usage: `insert(..., Some(&input.ingreso_id), None, ...)`
-            // Alert table has `ingreso_contratista_id`, `ingreso_proveedor_id`.
-            // Does it have `ingreso_visita_id`?
-            // If not, we might abuse one of them or use persona_id?
-            // User prompt doesn't ask to change DB schema.
-            // But `IngresoVisita` was requested.
-            // Let's assume there is no column for ingreso_visita_id yet, since TO-DO said "Agregar ingreso_visita_id a alertas_gafetes".
-            // If I can't add it to DB, I should probably skip inserting or use a placeholder if the schema supports it.
-            // Check `alerta_service.rs` insert function to be sure.
-            // But for now, I'll log a warning if I can't insert, or use Generic persona logic.
-            // Wait, I can try to use `alerta_service::insert` mapping to `persona_id` or similar?
-            // Let's look at `alerta_service` signature.
-            // I'll assume for this refactor I should just make the code clean, and maybe leave the alert insertion as TO-DO if column missing, OR try to insert if I can.
-            // But the TO-DO `TODO: Agregar ingreso_visita_id a alertas_gafetes` in previous code suggests the column is MISSING.
-            // So calling `alerta_service::insert` might fail or I'd need to modify `alerta_service` to accept `ingreso_visita_id`.
-            // Modifying `alerta_service` is outside scope? No, "Refactor Ingreso Domain".
-            // But modifying DB schema requires migrations.
-            // If I can't modify DB, I can't implement real alert persistence for visits yet.
-            // User goal 3: "Update domain/ingreso_visita.rs to return Result<T, IngresoVisitaError>".
-            // It doesn't explicitly say "Implement alerts for visits".
-            // However, `ingreso_proveedor` did have it.
-
-            // I will keep the TO-DO but use the domain logic for decision making.
-            // Or better, just log for now as before, but using the decision result.
-            println!(
-                "⚠️ ALERTA (PENDIENTE DB): Gafete {} no devuelto por visita {} ({})",
-                num, nombre_completo, ingreso.visitante_cedula
-            );
+            alerta_service::insert(
+                pool,
+                &alerta_id,
+                None, // No persona_id generico
+                &ingreso.visitante_cedula,
+                &nombre_completo,
+                &num,
+                None,      // ingreso_contratista_id
+                None,      // ingreso_proveedor_id
+                Some(&id), // ingreso_visita_id
+                &now,
+                decision.motivo.as_deref(),
+                &usuario_id,
+                &now,
+                &now,
+            )
+            .await
+            .map_err(|e| IngresoVisitaError::Validation(e.to_string()))?; // Map correctly
         }
     }
 
