@@ -328,16 +328,13 @@ const LISTA_NEGRA_CONFIG: Omit<AGGridToolbarConfig, 'customButtons'> = {
   gridId: 'lista-negra-list',
   availableButtons: {
     default: [
-      ...COMMON_DEFAULT_BUTTONS.filter(b =>
-        ['autosize-all', 'reset-columns', 'export-csv', 'export-excel',
-          'export-json', 'select-all', 'clear-filters', 'toggle-filters'].includes(b.id)
-      )
+      ...COMMON_DEFAULT_BUTTONS.filter(b => b.id === 'toggle-filters')
     ],
     singleSelect: [
-      ...COMMON_SINGLE_SELECT_BUTTONS
+      ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
     ],
     multiSelect: [
-      ...COMMON_MULTI_SELECT_BUTTONS
+      ...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))
     ]
   },
   showColumnSelector: true,
