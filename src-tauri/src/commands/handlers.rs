@@ -42,6 +42,7 @@ macro_rules! register_handlers {
             commands::lista_negra_commands::reactivate_lista_negra,
             commands::lista_negra_commands::update_lista_negra,
             commands::lista_negra_commands::delete_lista_negra,
+            commands::lista_negra_commands::search_personas_for_block,
             // Comandos de vehículo
             commands::vehiculo_commands::create_vehiculo,
             commands::vehiculo_commands::get_vehiculo_by_id,

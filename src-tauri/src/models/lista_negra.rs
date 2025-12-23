@@ -214,3 +214,26 @@ pub struct NivelStats {
     pub medio: usize,
     pub bajo: usize,
 }
+
+/// Resultado de búsqueda de persona para bloquear
+/// Permite pre-llenar el formulario de bloqueo
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PersonaSearchResult {
+    /// Tipo de persona: contratista, proveedor, visita
+    pub tipo_persona: String,
+    /// ID de la entidad (contratista_id, proveedor_id, visitante_id)
+    pub entity_id: String,
+    pub cedula: String,
+    pub nombre: String,
+    pub segundo_nombre: Option<String>,
+    pub apellido: String,
+    pub segundo_apellido: Option<String>,
+    pub nombre_completo: String,
+    /// ID de la empresa (si aplica)
+    pub empresa_id: Option<String>,
+    /// Nombre de la empresa
+    pub empresa_nombre: Option<String>,
+    /// Si ya está bloqueado actualmente
+    pub ya_bloqueado: bool,
+}

@@ -341,3 +341,114 @@ pub async fn delete_lista_negra(
 
     Ok(())
 }
+
+// ==========================================
+// BÚSQUEDA UNIFICADA PARA FORMULARIO DE BLOQUEO
+// ==========================================
+
+use crate::db::{contratista_queries, empresa_queries, proveedor_queries, visitante_queries};
+use crate::models::lista_negra::PersonaSearchResult;
+
+/// Busca personas en contratistas, proveedores y visitantes
+/// para pre-llenar el formulario de bloqueo
+pub async fn search_personas_for_block(
+    pool: &SqlitePool,
+    query: String,
+) -> Result<Vec<PersonaSearchResult>, ListaNegraError> {
+    let query = query.trim().to_uppercase();
+    if query.is_empty() || query.len() < 2 {
+        return Ok(vec![]);
+    }
+
+    let mut results: Vec<PersonaSearchResult> = vec![];
+
+    // 1. Buscar en contratistas (usa la query existente con empresa)
+    if let Ok(contratistas) = contratista_queries::find_all_with_empresa(pool).await {
+        for (c, emp_nombre, _, _, _) in contratistas {
+            // Filtrar por query
+            if c.cedula.contains(&query)
+                || c.nombre.to_uppercase().contains(&query)
+                || c.apellido.to_uppercase().contains(&query)
+            {
+                let ya_bloqueado =
+                    db::count_active_by_cedula(pool, &c.cedula).await.unwrap_or(0) > 0;
+                let nombre_completo = format!("{} {}", c.nombre, c.apellido);
+
+                results.push(PersonaSearchResult {
+                    tipo_persona: "contratista".to_string(),
+                    entity_id: c.id.clone(),
+                    cedula: c.cedula.clone(),
+                    nombre: c.nombre.clone(),
+                    segundo_nombre: c.segundo_nombre.clone(),
+                    apellido: c.apellido.clone(),
+                    segundo_apellido: c.segundo_apellido.clone(),
+                    nombre_completo,
+                    empresa_id: Some(c.empresa_id.clone()),
+                    empresa_nombre: Some(emp_nombre),
+                    ya_bloqueado,
+                });
+            }
+        }
+    }
+
+    // 2. Buscar en proveedores
+    if let Ok(proveedores) = proveedor_queries::search(pool, &query, 20).await {
+        for p in proveedores {
+            let ya_bloqueado = db::count_active_by_cedula(pool, &p.cedula).await.unwrap_or(0) > 0;
+            let nombre_completo = format!("{} {}", p.nombre, p.apellido);
+
+            // Obtener nombre de empresa
+            let emp_nombre = empresa_queries::find_by_id(pool, &p.empresa_id)
+                .await
+                .ok()
+                .flatten()
+                .map(|e| e.nombre)
+                .unwrap_or_else(|| "Desconocida".to_string());
+
+            results.push(PersonaSearchResult {
+                tipo_persona: "proveedor".to_string(),
+                entity_id: p.id.clone(),
+                cedula: p.cedula.clone(),
+                nombre: p.nombre.clone(),
+                segundo_nombre: p.segundo_nombre.clone(),
+                apellido: p.apellido.clone(),
+                segundo_apellido: p.segundo_apellido.clone(),
+                nombre_completo,
+                empresa_id: Some(p.empresa_id.clone()),
+                empresa_nombre: Some(emp_nombre),
+                ya_bloqueado,
+            });
+        }
+    }
+
+    // 3. Buscar en visitantes
+    if let Ok(visitantes) = visitante_queries::search_visitantes(pool, &query).await {
+        for v in visitantes.into_iter().take(20) {
+            let ya_bloqueado = db::count_active_by_cedula(pool, &v.cedula).await.unwrap_or(0) > 0;
+            let nombre_completo = format!("{} {}", v.nombre, v.apellido);
+
+            results.push(PersonaSearchResult {
+                tipo_persona: "visita".to_string(),
+                entity_id: v.id.clone(),
+                cedula: v.cedula.clone(),
+                nombre: v.nombre.clone(),
+                segundo_nombre: v.segundo_nombre.clone(),
+                apellido: v.apellido.clone(),
+                segundo_apellido: v.segundo_apellido.clone(),
+                nombre_completo,
+                empresa_id: v.empresa_id.clone(),
+                empresa_nombre: v.empresa.clone(),
+                ya_bloqueado,
+            });
+        }
+    }
+
+    // Eliminar duplicados por cédula
+    results.sort_by(|a, b| a.cedula.cmp(&b.cedula));
+    results.dedup_by(|a, b| a.cedula == b.cedula);
+
+    // Limitar resultados
+    results.truncate(30);
+
+    Ok(results)
+}

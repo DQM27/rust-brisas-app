@@ -119,3 +119,12 @@ pub async fn delete_lista_negra(
 ) -> Result<(), ListaNegraError> {
     lista_negra_service::delete_lista_negra(&pool, &search_service, id).await
 }
+
+/// Busca personas (contratistas, proveedores, visitas) para formulario de bloqueo
+#[tauri::command]
+pub async fn search_personas_for_block(
+    pool: State<'_, SqlitePool>,
+    query: String,
+) -> Result<Vec<crate::models::lista_negra::PersonaSearchResult>, ListaNegraError> {
+    lista_negra_service::search_personas_for_block(&pool, query).await
+}
