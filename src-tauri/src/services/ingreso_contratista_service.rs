@@ -298,17 +298,7 @@ pub async fn registrar_salida(
         ingreso.gafete_numero.as_deref(),
         input.devolvio_gafete,
         if input.devolvio_gafete { ingreso.gafete_numero.as_deref() } else { None },
-    )
-    .map_err(|e| IngresoContratistaError::Validation(e))?; // This function returns DecisionReporteGafete struct, NOT Result. Wait, let me check.
-                                                           // Step 1308: DecisionReporteGafete struct. It is not a result.
-                                                           // But `evaluar_devolucion_gafete` call in original code has `?` (line 304).
-                                                           // This implies it returned Result.
-
-    // I need to check `evaluar_devolucion_gafete` signature.
-    // If it returns Result, I need to know the error type.
-
-    // Let's defer full replacement of registrar_salida until I know `evaluar_devolucion_gafete`.
-    // But for now I'll use map_err for everything I'm unsure of.
+    ); // La función retorna DecisionReporteGafete directamente (no Result)
 
     // Actualizar DB
     db::registrar_salida(

@@ -105,7 +105,7 @@ pub async fn registrar_salida(
         ingreso.gafete.as_deref(),
         devolvio_gafete,
         if devolvio_gafete { ingreso.gafete.as_deref() } else { None },
-    )?;
+    ); // Retorna DecisionReporteGafete directamente
 
     // 2. Registrar salida
     ingreso_visita_queries::registrar_salida(pool, &id, &usuario_id, observaciones.as_deref())

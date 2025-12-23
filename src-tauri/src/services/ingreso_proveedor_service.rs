@@ -104,7 +104,7 @@ pub async fn registrar_salida(
         } else {
             None
         },
-    )?;
+    ); // Retorna DecisionReporteGafete directamente
 
     // Start TX
     let mut tx = pool.begin().await.map_err(IngresoProveedorError::Database)?;

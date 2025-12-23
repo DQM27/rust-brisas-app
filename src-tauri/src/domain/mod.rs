@@ -1,4 +1,5 @@
 pub mod cita;
+pub mod common; // Funciones compartidas entre tipos de ingreso
 pub mod ingreso_contratista;
 pub mod ingreso_proveedor;
 pub mod ingreso_visita;

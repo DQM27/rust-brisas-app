@@ -4,6 +4,12 @@ use crate::domain::errors::IngresoContratistaError;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+// Re-exports from common module for backward compatibility
+pub use crate::domain::common::{
+    calcular_tiempo_permanencia, evaluar_devolucion_gafete, normalizar_numero_gafete,
+    validar_gafete_coincide, validar_tiempo_salida, DecisionReporteGafete,
+};
+
 // ==========================================
 // CONSTANTES DE NEGOCIO
 // ==========================================
@@ -65,13 +71,7 @@ pub struct AlertaTiempo {
     pub mensaje: Option<String>,
 }
 
-/// Resultado de evaluación de devolución de gafete
-#[derive(Debug, Clone)]
-pub struct DecisionReporteGafete {
-    pub debe_generar_reporte: bool,
-    pub motivo: Option<String>,
-    pub gafete_numero: Option<String>,
-}
+// DecisionReporteGafete ahora viene de common module (re-exportado arriba)
 
 // ==========================================
 // LOGICA DE DOMINIO: ENTRADA
@@ -162,9 +162,7 @@ pub fn verificar_praind_vigente(
     Ok(fecha_venc >= hoy)
 }
 
-pub fn normalizar_numero_gafete(input: &str) -> String {
-    input.trim().to_uppercase()
-}
+// normalizar_numero_gafete -> ahora viene de domain::common
 
 pub fn validar_input_entrada(input: &impl InputEntrada) -> Result<(), IngresoContratistaError> {
     if input.tipo_ingreso() != "contratista" {
@@ -244,95 +242,14 @@ pub fn validar_ingreso_abierto(
     Ok(())
 }
 
-pub fn validar_tiempo_salida(
-    fecha_ingreso_str: &str,
-    fecha_salida_str: &str,
-) -> Result<(), String> {
-    let ingreso = DateTime::parse_from_rfc3339(fecha_ingreso_str)
-        .map_err(|_| "Datos corruptos: fecha ingreso inválida".to_string())?;
+// validar_tiempo_salida -> ahora viene de domain::common
 
-    let salida = DateTime::parse_from_rfc3339(fecha_salida_str)
-        .map_err(|_| "Fecha salida inválida".to_string())?;
+// calcular_tiempo_permanencia -> ahora viene de domain::common
 
-    if salida < ingreso {
-        return Err("La fecha de salida no puede ser anterior a la de ingreso".to_string());
-    }
-    Ok(())
-}
+// validar_gafete_coincide -> ahora viene de domain::common
 
-pub fn calcular_tiempo_permanencia(
-    fecha_ingreso_str: &str,
-    fecha_salida_str: &str,
-) -> Result<i64, String> {
-    let ingreso = DateTime::parse_from_rfc3339(fecha_ingreso_str)
-        .map_err(|_| "Fecha ingreso inválida".to_string())?;
-
-    let salida = DateTime::parse_from_rfc3339(fecha_salida_str)
-        .map_err(|_| "Fecha salida inválida".to_string())?;
-
-    let duracion = salida.signed_duration_since(ingreso);
-    Ok(duracion.num_minutes())
-}
-
-pub fn validar_gafete_coincide(
-    asignado: Option<&str>,
-    devuelto: Option<&str>,
-) -> Result<(), String> {
-    match (asignado, devuelto) {
-        (Some(a), Some(d)) => {
-            if normalizar_numero_gafete(a) != normalizar_numero_gafete(d) {
-                return Err(format!(
-                    "El gafete devuelto ({}) no coincide con el asignado ({})",
-                    d, a
-                ));
-            }
-        }
-        _ => {} // Si no tenía o no devolvió, no hay conflicto de coincidencia aquí
-    }
-    Ok(())
-}
-
-pub fn evaluar_devolucion_gafete(
-    tenia_gafete: bool,
-    gafete_asignado: Option<&str>, // Número de gafete
-    reporto_devolucion: bool,
-    gafete_devuelto_numero: Option<&str>, // El numero que dice que devolvió
-) -> Result<DecisionReporteGafete, String> {
-    // Si no tenía gafete asignado, no hay nada que evaluar
-    if !tenia_gafete {
-        return Ok(DecisionReporteGafete {
-            debe_generar_reporte: false,
-            motivo: None,
-            gafete_numero: None,
-        });
-    }
-
-    // SI tenía gafete asignado:
-
-    // Caso 1: Dice que NO lo devolvió (Check desmarcado en frontend)
-    if !reporto_devolucion {
-        return Ok(DecisionReporteGafete {
-            debe_generar_reporte: true,
-            motivo: Some("Salida registrada sin devolver gafete".to_string()),
-            gafete_numero: gafete_asignado.map(|s| s.to_string()),
-        });
-    }
-
-    // Caso 2: Dice que SÍ lo devolvió, pero hay discrepancia de números (validación extra)
-    if let (Some(asignado), Some(devuelto)) = (gafete_asignado, gafete_devuelto_numero) {
-        if normalizar_numero_gafete(asignado) != normalizar_numero_gafete(devuelto) {
-            // Esto debería haber fallado antes en `validar_gafete_coincide`, pero por seguridad:
-            return Ok(DecisionReporteGafete {
-                debe_generar_reporte: true,
-                motivo: Some(format!("Devolvió gafete incorrecto: {} vs {}", devuelto, asignado)),
-                gafete_numero: Some(asignado.to_string()),
-            });
-        }
-    }
-
-    // Caso 3: Todo OK
-    Ok(DecisionReporteGafete { debe_generar_reporte: false, motivo: None, gafete_numero: None })
-}
+// evaluar_devolucion_gafete -> ahora viene de domain::common
+// La versión del common retorna DecisionReporteGafete directamente (no Result)
 
 // ==========================================
 // LOGICA DE DOMINIO: VISITANTES
@@ -680,16 +597,16 @@ mod tests {
     #[test]
     fn test_evaluar_devolucion_gafete() {
         // Todo OK
-        let res = evaluar_devolucion_gafete(true, Some("G-1"), true, Some("G-1")).unwrap();
+        let res = evaluar_devolucion_gafete(true, Some("G-1"), true, Some("G-1"));
         assert!(!res.debe_generar_reporte);
 
         // No lo devolvió
-        let res = evaluar_devolucion_gafete(true, Some("G-1"), false, None).unwrap();
+        let res = evaluar_devolucion_gafete(true, Some("G-1"), false, None);
         assert!(res.debe_generar_reporte);
         assert!(res.motivo.unwrap().contains("sin devolver"));
 
         // Devolvió uno distinto
-        let res = evaluar_devolucion_gafete(true, Some("G-1"), true, Some("G-2")).unwrap();
+        let res = evaluar_devolucion_gafete(true, Some("G-1"), true, Some("G-2"));
         assert!(res.debe_generar_reporte);
         assert!(res.motivo.unwrap().contains("incorrecto"));
     }
