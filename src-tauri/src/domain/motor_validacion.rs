@@ -31,7 +31,7 @@ impl TipoIngreso {
 
     /// Indica si este tipo de ingreso requiere validación de estado
     pub fn requiere_estado(&self) -> bool {
-        matches!(self, TipoIngreso::Contratista)
+        matches!(self, TipoIngreso::Contratista | TipoIngreso::Proveedor)
     }
 
     /// Indica si este tipo de ingreso puede usar PRAIND
@@ -157,6 +157,7 @@ impl ContextoIngreso {
         esta_bloqueado: bool,
         motivo_bloqueo: Option<String>,
         tiene_ingreso_abierto: bool,
+        estado: String,
         cantidad_alertas_gafete: usize,
     ) -> Self {
         Self {
@@ -167,7 +168,7 @@ impl ContextoIngreso {
             esta_bloqueado,
             motivo_bloqueo,
             tiene_ingreso_abierto,
-            estado_contratista: None,
+            estado_contratista: Some(estado.to_lowercase()),
             cantidad_alertas_gafete,
         }
     }

@@ -165,3 +165,36 @@ pub async fn find_historial(pool: &SqlitePool) -> sqlx::Result<Vec<IngresoVisita
     .fetch_all(pool)
     .await
 }
+
+pub async fn find_active_by_visitante_id(
+    pool: &SqlitePool,
+    visitante_id: &str,
+) -> sqlx::Result<Option<IngresoVisita>> {
+    sqlx::query_as!(
+        IngresoVisita,
+        r#"
+        SELECT
+            iv.id as "id!",
+            iv.visitante_id as "visitante_id!",
+            iv.cita_id,
+            iv.anfitrion as "anfitrion!",
+            iv.area_visitada as "area_visitada!",
+            iv.motivo as "motivo!",
+            iv.gafete,
+            CAST(iv.fecha_ingreso AS TEXT) as "fecha_ingreso!",
+            CAST(iv.fecha_salida AS TEXT) as fecha_salida,
+            iv.estado as "estado!",
+            iv.usuario_ingreso_id as "usuario_ingreso_id!",
+            iv.usuario_salida_id,
+            iv.observaciones,
+            CAST(iv.created_at AS TEXT) as "created_at!",
+            CAST(iv.updated_at AS TEXT) as "updated_at!"
+        FROM ingresos_visitas iv
+        WHERE iv.visitante_id = ? AND iv.estado = 'ADENTRO'
+        LIMIT 1
+        "#,
+        visitante_id
+    )
+    .fetch_optional(pool)
+    .await
+}

@@ -81,6 +81,17 @@ pub struct IngresoVisitaPopulated {
     pub visitante_empresa: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ValidacionIngresoVisitaResponse {
+    pub puede_ingresar: bool,
+    pub motivo_rechazo: Option<String>,
+    pub alertas: Vec<String>,
+    pub visitante: Option<serde_json::Value>,
+    pub tiene_ingreso_abierto: bool,
+    pub ingreso_abierto: Option<IngresoVisita>,
+}
+
 use crate::domain::errors::IngresoVisitaError;
 
 // Re-exports from common module

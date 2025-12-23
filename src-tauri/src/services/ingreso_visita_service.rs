@@ -6,20 +6,30 @@
 use crate::db::{ingreso_visita_queries, visitante_queries};
 use crate::domain::errors::IngresoVisitaError;
 use crate::domain::ingreso_visita as domain;
+use crate::domain::ingreso_visita::ValidacionIngresoVisitaResponse;
 use crate::domain::ingreso_visita::{
     CreateIngresoVisitaFullInput, CreateIngresoVisitaInput, IngresoVisita, IngresoVisitaPopulated,
 };
+use crate::domain::motor_validacion::{self as motor, ContextoIngreso};
 use crate::models::visitante::CreateVisitanteInput;
-use crate::services::gafete_service;
+use crate::services::{alerta_service, gafete_service, lista_negra_service};
 use sqlx::SqlitePool;
 
 pub async fn registrar_ingreso(
     pool: &SqlitePool,
     input: CreateIngresoVisitaInput,
 ) -> Result<IngresoVisita, IngresoVisitaError> {
-    // 1. Validar existencia del visitante
-    if visitante_queries::get_visitante_by_id(pool, &input.visitante_id).await?.is_none() {
-        return Err(IngresoVisitaError::Validation("El visitante no existe".to_string()));
+    // 1. Validar existencia del visitante y reglas de ingreso
+    let validacion = validar_ingreso(pool, &input.visitante_id)
+        .await
+        .map_err(|e| IngresoVisitaError::Validation(e.to_string()))?; // Map generic error
+
+    if !validacion.puede_ingresar {
+        return Err(IngresoVisitaError::Validation(
+            validacion
+                .motivo_rechazo
+                .unwrap_or("Ingreso rechazado por reglas de negocio".to_string()),
+        ));
     }
 
     // 2. Validar disponibilidad de gafete (si aplica)
@@ -166,4 +176,73 @@ pub async fn get_historial(
     pool: &SqlitePool,
 ) -> Result<Vec<IngresoVisitaPopulated>, IngresoVisitaError> {
     ingreso_visita_queries::find_historial(pool).await.map_err(IngresoVisitaError::Database)
+}
+
+pub async fn validar_ingreso(
+    pool: &SqlitePool,
+    visitante_id: &str,
+) -> Result<ValidacionIngresoVisitaResponse, IngresoVisitaError> {
+    // A. Buscar Visitante
+    let visitante = visitante_queries::get_visitante_by_id(pool, visitante_id)
+        .await
+        .map_err(IngresoVisitaError::Database)?
+        .ok_or(IngresoVisitaError::Validation("Visitante no encontrado".to_string()))?;
+
+    // B. Verificar Bloqueo
+    let block_response = lista_negra_service::check_is_blocked(pool, visitante.cedula.clone())
+        .await
+        .unwrap_or(crate::models::lista_negra::BlockCheckResponse {
+            is_blocked: false,
+            motivo: None,
+            bloqueado_desde: None,
+            bloqueado_hasta: None,
+            bloqueado_por: None,
+        });
+
+    // C. Verificar Ingreso Abierto
+    let ingreso_abierto = ingreso_visita_queries::find_active_by_visitante_id(pool, visitante_id)
+        .await
+        .map_err(IngresoVisitaError::Database)?;
+
+    // D. Alertas (Gafetes)
+    let alertas_db = alerta_service::find_pendientes_by_cedula(pool, &visitante.cedula)
+        .await
+        .map_err(|e| IngresoVisitaError::Validation(format!("Error alertas: {}", e)))?;
+
+    // E. Motor
+    let nombre_completo = format!("{} {}", visitante.nombre, visitante.apellido);
+    let contexto = ContextoIngreso::new_visita(
+        visitante.cedula.clone(),
+        nombre_completo,
+        None, // Autorización correo no trackeada en DB aún
+        block_response.is_blocked,
+        block_response.motivo,
+        ingreso_abierto.is_some(),
+        alertas_db.len(),
+    );
+
+    let resultado_motor = motor::validar_ingreso(&contexto);
+
+    // F. Construir JSON
+    let visitante_json = if resultado_motor.puede_ingresar || !resultado_motor.bloqueos.is_empty() {
+        Some(serde_json::json!({
+            "id": visitante.id,
+            "cedula": visitante.cedula,
+            "nombre": visitante.nombre,
+            "apellido": visitante.apellido,
+            "empresa": visitante.empresa,
+            "alertas": alertas_db.iter().cloned().map(crate::models::ingreso::AlertaGafeteResponse::from).collect::<Vec<_>>()
+        }))
+    } else {
+        None
+    };
+
+    Ok(ValidacionIngresoVisitaResponse {
+        puede_ingresar: resultado_motor.puede_ingresar,
+        motivo_rechazo: resultado_motor.mensaje_bloqueo(),
+        alertas: resultado_motor.alertas,
+        visitante: visitante_json,
+        tiene_ingreso_abierto: false,
+        ingreso_abierto: ingreso_abierto,
+    })
 }

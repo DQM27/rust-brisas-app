@@ -54,6 +54,7 @@ impl EstadoPermanencia {
 // ==========================================
 
 /// Resultado de validación de entrada
+#[deprecated(note = "Use motor_validacion::ResultadoValidacion instead")]
 #[derive(Debug, Clone)]
 pub struct ResultadoValidacionEntrada {
     pub puede_ingresar: bool,
@@ -78,6 +79,7 @@ pub struct AlertaTiempo {
 // ==========================================
 
 /// Evalúa todas las reglas para determinar si un contratista puede entrar
+#[deprecated(note = "Use motor_validacion::validar_ingreso instead")]
 pub fn evaluar_elegibilidad_entrada(
     esta_bloqueado: bool,
     motivo_bloqueo: Option<String>,
@@ -140,6 +142,7 @@ pub fn evaluar_elegibilidad_entrada(
     ResultadoValidacionEntrada { puede_ingresar, motivo_rechazo, alertas }
 }
 
+#[deprecated(note = "Use motor_validacion logic instead")]
 pub fn verificar_praind_vigente(
     fecha_vencimiento_str: &str,
 ) -> Result<bool, IngresoContratistaError> {
@@ -257,6 +260,9 @@ pub fn validar_ingreso_abierto(
 
 /// Evalúa todas las reglas para determinar si un visitante puede entrar
 /// Mismas reglas que contratistas EXCEPTO: no valida PRAIND ni estado
+#[deprecated(
+    note = "Use motor_validacion::validar_ingreso with ContextoIngreso::new_visita instead"
+)]
 pub fn evaluar_elegibilidad_visita(
     esta_bloqueado: bool,
     motivo_bloqueo: Option<String>,

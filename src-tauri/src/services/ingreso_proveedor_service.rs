@@ -9,8 +9,9 @@ use crate::domain::ingreso_proveedor as domain;
 use crate::domain::ingreso_proveedor::{
     CreateIngresoProveedorInput, IngresoProveedor, ProveedorSnapshot,
 };
+use crate::domain::motor_validacion::{self as motor, ContextoIngreso};
 use crate::models::proveedor::CreateProveedorInput;
-use crate::services::{alerta_service, gafete_service};
+use crate::services::{alerta_service, gafete_service, lista_negra_service};
 use sqlx::SqlitePool;
 
 pub async fn registrar_ingreso(
@@ -217,45 +218,68 @@ pub async fn validar_ingreso(
         None => return Err(IngresoProveedorError::NotFound),
     };
 
-    // 3. Obtener vehículos
+    // 3. Verificar Bloqueo (Lista Negra)
+    let block_response = lista_negra_service::check_is_blocked(pool, proveedor.cedula.clone())
+        .await
+        .unwrap_or(crate::models::lista_negra::BlockCheckResponse {
+            is_blocked: false,
+            motivo: None,
+            bloqueado_desde: None,
+            bloqueado_hasta: None,
+            bloqueado_por: None,
+        });
+
+    // 4. Obtener alertas pendientes
+    let alertas_db =
+        alerta_service::find_pendientes_by_cedula(pool, &proveedor.cedula).await.map_err(|e| {
+            IngresoProveedorError::Validation(format!("Error obteniendo alertas: {}", e))
+        })?;
+
+    // 5. Construir Contexto y Validar con Motor
+    let nombre_completo = format!("{} {}", proveedor.nombre, proveedor.apellido);
+
+    let contexto = ContextoIngreso::new_proveedor(
+        proveedor.cedula.clone(),
+        nombre_completo,
+        None, // Por ahora no tracking de autorización por correo en DB
+        block_response.is_blocked,
+        block_response.motivo,
+        ingreso_abierto.is_some(),
+        proveedor.estado.as_str().to_string(),
+        alertas_db.len(),
+    );
+
+    let resultado_motor = motor::validar_ingreso(&contexto);
+
+    // 6. Obtener vehículos (solo si es necesario para el frontend)
     let vehiculos = crate::db::vehiculo_queries::find_by_proveedor(pool, &proveedor_id)
         .await
         .map_err(IngresoProveedorError::Database)?;
 
-    // 4. Construir respuesta JSON
-    let proveedor_json = serde_json::json!({
-        "id": proveedor.id,
-        "cedula": proveedor.cedula,
-        "nombre": proveedor.nombre,
-        "segundo_nombre": proveedor.segundo_nombre,
-        "apellido": proveedor.apellido,
-        "segundo_apellido": proveedor.segundo_apellido,
-        "empresa_id": proveedor.empresa_id,
-        "estado": proveedor.estado.as_str(),
-        "vehiculos": vehiculos
-    });
-
-    // 5. Obtener alertas pendientes
-    let alertas_pendientes =
-        crate::services::alerta_service::find_pendientes_by_cedula(pool, &proveedor.cedula)
-            .await
-            .map_err(|e| {
-            IngresoProveedorError::Validation(format!("Error obteniendo alertas: {}", e))
-        })?;
-    // Wait, alerta_service returns Result<Vec<AlertaGafete>, sqlx::Error>? No, AlertaError?
-    // Previous refactor: check alerta_service.rs.
-    // Usually it mapped to String. But I should check.
-    // Assuming AlertaError or sqlx::Error. If AlertaError, map to Validation or Database?
-
-    let alertas_response: Vec<crate::models::ingreso::AlertaGafeteResponse> =
-        alertas_pendientes.into_iter().map(|a| a.into()).collect();
+    // 7. Construir respuesta
+    let proveedor_json = if resultado_motor.puede_ingresar || !resultado_motor.bloqueos.is_empty() {
+        Some(serde_json::json!({
+            "id": proveedor.id,
+            "cedula": proveedor.cedula,
+            "nombre": proveedor.nombre,
+            "segundo_nombre": proveedor.segundo_nombre,
+            "apellido": proveedor.apellido,
+            "segundo_apellido": proveedor.segundo_apellido,
+            "empresa_id": proveedor.empresa_id,
+            "estado": proveedor.estado.as_str(),
+            "vehiculos": vehiculos,
+            "alertas": alertas_db.iter().cloned().map(crate::models::ingreso::AlertaGafeteResponse::from).collect::<Vec<_>>()
+        }))
+    } else {
+        None
+    };
 
     Ok(ValidacionIngresoProveedorResponse {
-        puede_ingresar: true,
-        motivo_rechazo: None,
-        alertas: alertas_response,
-        proveedor: Some(proveedor_json),
-        tiene_ingreso_abierto: false,
+        puede_ingresar: resultado_motor.puede_ingresar,
+        motivo_rechazo: resultado_motor.mensaje_bloqueo(),
+        alertas: resultado_motor.alertas,
+        proveedor: proveedor_json,
+        tiene_ingreso_abierto: false, // El motor ya lo maneja en bloqueos si es true
         ingreso_abierto: None,
     })
 }
