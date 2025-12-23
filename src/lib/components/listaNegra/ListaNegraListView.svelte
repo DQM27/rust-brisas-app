@@ -15,10 +15,7 @@
 
   // Logic & Config
   import * as listaNegraService from "$lib/logic/listaNegra/listaNegraService";
-  import {
-    createListaNegraListLogic,
-    ListaNegraListLogic,
-  } from "$lib/logic/listaNegra/listaNegraListLogic";
+  import { ListaNegraColumns } from "$lib/logic/listaNegra/listaNegraColumns";
   import { createCustomButton } from "$lib/config/agGridConfigs";
   import { can } from "$lib/logic/permissions";
 
@@ -55,11 +52,8 @@
   let showEstadoDropdown = $state(false);
   let showNivelDropdown = $state(false);
 
-  // Lógica de presentación
-  const listLogic = createListaNegraListLogic();
-  const listState = listLogic.getState();
-  let estadoFilter = $state(listState.estadoFilter);
-  let nivelFilter = $state(listState.nivelFilter);
+  let estadoFilter = $state<"todos" | "activo" | "inactivo">("todos");
+  let nivelFilter = $state<"todos" | "ALTO" | "MEDIO" | "BAJO">("todos");
 
   // Selección en grid
   let selectedRows = $state<ListaNegraResponse[]>([]);
@@ -84,14 +78,29 @@
 
   // Datos filtrados
   let filteredData = $derived.by(() => {
-    // Sincronizar estado local con lógica
-    listLogic.setEstadoFilter(estadoFilter);
-    listLogic.setNivelFilter(nivelFilter);
+    let filtered = bloqueados;
 
-    // Forzar reactividad del store de búsqueda
-    $selectedSearchStore;
+    // Filtro por búsqueda seleccionada (tiene prioridad)
+    const selectedSearch = $selectedSearchStore;
+    if (selectedSearch.result) {
+      const cedula = selectedSearch.result.cedula || selectedSearch.result.id;
+      filtered = filtered.filter((b) => b.cedula === cedula);
+      return filtered;
+    }
 
-    return listLogic.getFilteredData(bloqueados);
+    // Filtro de estado
+    if (estadoFilter === "activo") {
+      filtered = filtered.filter((b) => b.isActive);
+    } else if (estadoFilter === "inactivo") {
+      filtered = filtered.filter((b) => !b.isActive);
+    }
+
+    // Filtro de nivel
+    if (nivelFilter !== "todos") {
+      filtered = filtered.filter((b) => b.nivelSeveridad === nivelFilter);
+    }
+
+    return filtered;
   });
 
   // Labels de filtros
@@ -108,7 +117,7 @@
 
   // Columnas AG Grid
   let columnDefs = $derived.by((): ColDef<ListaNegraResponse>[] => {
-    return ListaNegraListLogic.getColumns();
+    return ListaNegraColumns.getColumns();
   });
 
   // Botones personalizados (Toolbar)
