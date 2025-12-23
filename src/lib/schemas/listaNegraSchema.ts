@@ -53,15 +53,13 @@ export const AddToListaNegraSchema = z.object({
         .max(100, 'Nombre de empresa no puede exceder 100 caracteres')
         .optional()
         .or(z.literal('')),
-    nivelSeveridad: z.enum(NIVELES_SEVERIDAD, {
-        errorMap: () => ({ message: 'Seleccione un nivel de severidad válido' }),
-    }),
+    nivelSeveridad: z.enum(['ALTO', 'MEDIO', 'BAJO']),
     motivoBloqueo: motivoSchema,
     observaciones: observacionesSchema,
 });
 
 export const UpdateListaNegraSchema = z.object({
-    nivelSeveridad: z.enum(NIVELES_SEVERIDAD).optional(),
+    nivelSeveridad: z.enum(['ALTO', 'MEDIO', 'BAJO']).optional(),
     motivoBloqueo: z.string()
         .trim()
         .max(500, 'El motivo no puede exceder 500 caracteres')
@@ -70,11 +68,11 @@ export const UpdateListaNegraSchema = z.object({
 });
 
 export const ReactivateListaNegraSchema = z.object({
-    nivelSeveridad: z.enum(NIVELES_SEVERIDAD, {
-        errorMap: () => ({ message: 'Seleccione un nivel de severidad válido' }),
-    }),
+    nivelSeveridad: z.enum(['ALTO', 'MEDIO', 'BAJO']),
     motivoBloqueo: motivoSchema,
 });
+
+
 
 // Tipos inferidos
 export type AddToListaNegraForm = z.infer<typeof AddToListaNegraSchema>;

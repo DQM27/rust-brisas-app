@@ -24,6 +24,7 @@ export type GridId =
   | 'contratista-list'
   | 'proveedor-list'
   | 'lista-negra-list'
+  | 'lista-negra'
   | 'vehicles-list'
   | 'badges-list'
   | 'entries-list'
@@ -57,7 +58,7 @@ export type CommonToolbarButton =
   | 'expand-groups'
   | 'collapse-groups';
 
-export type ButtonVariant = 'default' | 'primary' | 'danger' | 'success';
+export type ButtonVariant = 'default' | 'primary' | 'danger' | 'success' | 'destructive' | 'warning';
 export type ButtonState = 'normal' | 'hover' | 'disabled' | 'loading' | 'success' | 'error';
 
 export interface CustomToolbarButton {
