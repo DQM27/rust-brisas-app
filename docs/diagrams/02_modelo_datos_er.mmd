@@ -81,10 +81,9 @@ erDiagram
     }
     
     GAFETES {
-        text id PK
-        text numero UK
+        text numero PK
+        text tipo PK
         text estado
-        text tipo
     }
     
     INGRESOS_CONTRATISTAS {
@@ -93,7 +92,8 @@ erDiagram
         text cedula
         text tipo_autorizacion
         text modo_ingreso
-        text gafete_numero
+        text gafete_numero FK
+        text gafete_tipo FK
         text fecha_hora_ingreso
         text fecha_hora_salida
     }
@@ -101,17 +101,23 @@ erDiagram
     INGRESOS_PROVEEDORES {
         text id PK
         text proveedor_id FK
-        text gafete_numero
-        text fecha_hora_ingreso
-        text fecha_hora_salida
+        text empresa_id FK
+        text gafete FK
+        text gafete_tipo FK
+        text fecha_ingreso
+        text fecha_salida
+        text estado
     }
     
     INGRESOS_VISITAS {
         text id PK
         text visitante_id FK
-        text gafete_numero
-        text fecha_hora_ingreso
-        text fecha_hora_salida
+        text cita_id FK
+        text gafete FK
+        text gafete_tipo FK
+        text fecha_ingreso
+        text fecha_salida
+        text estado
     }
     
     CITAS {
@@ -125,39 +131,52 @@ erDiagram
     ALERTAS_GAFETES {
         text id PK
         text gafete_numero
-        text ingreso_id FK
-        text tipo_alerta
-        text resuelta
+        text ingreso_contratista_id FK
+        text ingreso_proveedor_id FK
+        text ingreso_visita_id FK
+        int resuelto
     }
     
     LISTA_NEGRA {
         text id PK
         text cedula
         text tipo_persona
-        text motivo
-        text activo
+        text motivo_bloqueo
+        int is_active
     }
 
-    %% Relaciones
+    %% ================================
+    %% RELACIONES
+    %% ================================
+    
+    %% Autenticación y Roles
     USERS ||--o{ ROLES : "tiene"
     ROLES ||--o{ ROLE_PERMISSIONS : "tiene"
     PERMISSIONS ||--o{ ROLE_PERMISSIONS : "pertenece"
     
+    %% Empresas emplean personas
     EMPRESAS ||--o{ CONTRATISTAS : "emplea"
     EMPRESAS ||--o{ PROVEEDORES : "emplea"
     EMPRESAS ||--o{ VISITANTES : "emplea"
     
+    %% Personas poseen vehículos
     CONTRATISTAS ||--o{ VEHICULOS : "posee"
     PROVEEDORES ||--o{ VEHICULOS : "posee"
     VISITANTES ||--o{ VEHICULOS : "posee"
     
+    %% Personas registran ingresos
     CONTRATISTAS ||--o{ INGRESOS_CONTRATISTAS : "registra"
     PROVEEDORES ||--o{ INGRESOS_PROVEEDORES : "registra"
-    VISITANTES ||--o{ CITAS : "tiene"
     VISITANTES ||--o{ INGRESOS_VISITAS : "registra"
+    VISITANTES ||--o{ CITAS : "programa"
     
-    %% Gafetes por tipo -> Ingresos correspondientes
-    GAFETES ||--o{ INGRESOS_CONTRATISTAS : "tipo contratista"
-    GAFETES ||--o{ INGRESOS_PROVEEDORES : "tipo proveedor"
-    GAFETES ||--o{ INGRESOS_VISITAS : "tipo visita"
-    GAFETES ||--o{ ALERTAS_GAFETES : "genera"
+    %% Gafetes (FK Compuesta) -> Ingresos
+    GAFETES ||--o{ INGRESOS_CONTRATISTAS : "FK compuesta"
+    GAFETES ||--o{ INGRESOS_PROVEEDORES : "FK compuesta"
+    GAFETES ||--o{ INGRESOS_VISITAS : "FK compuesta"
+    
+    %% Alertas de gafetes
+    GAFETES ||--o{ ALERTAS_GAFETES : "genera alerta"
+    INGRESOS_CONTRATISTAS ||--o{ ALERTAS_GAFETES : "origen"
+    INGRESOS_PROVEEDORES ||--o{ ALERTAS_GAFETES : "origen"
+    INGRESOS_VISITAS ||--o{ ALERTAS_GAFETES : "origen"
