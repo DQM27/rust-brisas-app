@@ -128,8 +128,9 @@ pub struct Ingreso {
     pub tipo_autorizacion: String,
     pub modo_ingreso: String,
     pub vehiculo_id: Option<String>,
-    pub placa_temporal: Option<String>, // Mantener para compatibilidad futura
-    pub gafete_numero: Option<String>,  // NULL = sin gafete
+    pub placa_temporal: Option<String>,
+    pub gafete_numero: Option<String>,
+    pub gafete_tipo: Option<String>, // FK compuesta con gafete_numero
     pub fecha_hora_ingreso: String,
     pub fecha_hora_salida: Option<String>,
     pub tiempo_permanencia_minutos: Option<i64>,
@@ -151,7 +152,8 @@ pub struct Ingreso {
 pub struct CreateIngresoContratistaInput {
     pub contratista_id: String,
     pub vehiculo_id: Option<String>,
-    pub gafete_numero: Option<String>, // NULL = sin gafete
+    pub gafete_numero: Option<String>,
+    pub gafete_tipo: Option<String>, // Default: 'contratista'
     pub tipo_autorizacion: String,
     pub modo_ingreso: String,
     pub observaciones: Option<String>,

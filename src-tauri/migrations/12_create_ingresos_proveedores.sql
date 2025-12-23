@@ -19,7 +19,10 @@ CREATE TABLE IF NOT EXISTS ingresos_proveedores (
     -- Datos del ingreso
     area_visitada TEXT NOT NULL,
     motivo TEXT NOT NULL,
+    
+    -- Gafete (FK compuesta a gafetes)
     gafete TEXT,
+    gafete_tipo TEXT DEFAULT 'proveedor' CHECK (gafete_tipo IN ('contratista', 'proveedor', 'visita', 'otro')),
     
     -- Detalles operativos
     tipo_autorizacion TEXT, -- 'correo', 'pase'
@@ -41,7 +44,8 @@ CREATE TABLE IF NOT EXISTS ingresos_proveedores (
     
     FOREIGN KEY (empresa_id) REFERENCES empresas(id),
     FOREIGN KEY (usuario_ingreso_id) REFERENCES users(id),
-    FOREIGN KEY (usuario_salida_id) REFERENCES users(id)
+    FOREIGN KEY (usuario_salida_id) REFERENCES users(id),
+    FOREIGN KEY (gafete, gafete_tipo) REFERENCES gafetes(numero, tipo)
 );
 
 -- Índices
@@ -49,3 +53,4 @@ CREATE INDEX IF NOT EXISTS idx_ingresos_proveedores_empresa ON ingresos_proveedo
 CREATE INDEX IF NOT EXISTS idx_ingresos_proveedores_cedula ON ingresos_proveedores(cedula);
 CREATE INDEX IF NOT EXISTS idx_ingresos_proveedores_estado ON ingresos_proveedores(estado);
 CREATE INDEX IF NOT EXISTS idx_ingresos_proveedores_fecha ON ingresos_proveedores(fecha_ingreso);
+CREATE INDEX IF NOT EXISTS idx_ingresos_proveedores_gafete ON ingresos_proveedores(gafete, gafete_tipo);

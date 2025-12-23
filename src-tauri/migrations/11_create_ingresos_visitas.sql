@@ -15,9 +15,11 @@ CREATE TABLE IF NOT EXISTS ingresos_visitas (
     anfitrion TEXT NOT NULL,
     area_visitada TEXT NOT NULL,
     motivo TEXT NOT NULL,
+    
+    -- Gafete (FK compuesta a gafetes)
     gafete TEXT,
-    gafete_tipo TEXT DEFAULT 'visita',  -- NEW: tipo de gafete asignado
-    razon_sin_gafete TEXT,              -- NEW: motivo si es "S/G"
+    gafete_tipo TEXT DEFAULT 'visita' CHECK (gafete_tipo IN ('contratista', 'proveedor', 'visita', 'otro')),
+    razon_sin_gafete TEXT, -- Motivo si es "S/G"
     
     -- Tiempos y Estado
     fecha_ingreso DATETIME NOT NULL,
@@ -35,11 +37,12 @@ CREATE TABLE IF NOT EXISTS ingresos_visitas (
     FOREIGN KEY (visitante_id) REFERENCES visitantes(id),
     FOREIGN KEY (cita_id) REFERENCES citas(id),
     FOREIGN KEY (usuario_ingreso_id) REFERENCES users(id),
-    FOREIGN KEY (usuario_salida_id) REFERENCES users(id)
+    FOREIGN KEY (usuario_salida_id) REFERENCES users(id),
+    FOREIGN KEY (gafete, gafete_tipo) REFERENCES gafetes(numero, tipo)
 );
 
 -- Índices para búsquedas rápidas
 CREATE INDEX IF NOT EXISTS idx_ingresos_visitas_visitante ON ingresos_visitas(visitante_id);
 CREATE INDEX IF NOT EXISTS idx_ingresos_visitas_estado ON ingresos_visitas(estado);
 CREATE INDEX IF NOT EXISTS idx_ingresos_visitas_fecha ON ingresos_visitas(fecha_ingreso);
-
+CREATE INDEX IF NOT EXISTS idx_ingresos_visitas_gafete ON ingresos_visitas(gafete, gafete_tipo);
