@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE contratistas SET fecha_vencimiento_praind = ?, updated_at = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "60340baa9a076fcd042c382c0480206588e8d950831084d6cbbf046cecb398b6"
+}

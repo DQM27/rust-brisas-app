@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO alertas_gafetes \n           (id, persona_id, cedula, nombre_completo, gafete_numero, \n            ingreso_contratista_id, ingreso_proveedor_id, ingreso_visita_id,\n            fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por,\n            created_at, updated_at)\n           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 13
+    },
+    "nullable": []
+  },
+  "hash": "73dbe3720f1e6437eaf4830561cca06a97a24cee67eff5921792f53e203a0725"
+}

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, persona_id, cedula, nombre_completo, gafete_numero,\n                ingreso_contratista_id, ingreso_proveedor_id,\n                fecha_reporte, resuelto as \"resuelto: bool\", fecha_resolucion, notas, reportado_por, resuelto_por,\n                created_at, updated_at\n         FROM alertas_gafetes WHERE cedula = ? AND resuelto = 0 ORDER BY fecha_reporte DESC",
+  "query": "SELECT id, persona_id, cedula, nombre_completo, gafete_numero,\n                    ingreso_contratista_id, ingreso_proveedor_id, ingreso_visita_id,\n                    fecha_reporte, resuelto as \"resuelto: bool\", fecha_resolucion, notas, reportado_por, resuelto_por,\n                    created_at, updated_at\n             FROM alertas_gafetes WHERE resuelto = ? ORDER BY fecha_reporte DESC",
   "describe": {
     "columns": [
       {
@@ -39,43 +39,48 @@
         "type_info": "Text"
       },
       {
-        "name": "fecha_reporte",
+        "name": "ingreso_visita_id",
         "ordinal": 7,
         "type_info": "Text"
       },
       {
-        "name": "resuelto: bool",
+        "name": "fecha_reporte",
         "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "resuelto: bool",
+        "ordinal": 9,
         "type_info": "Int64"
       },
       {
         "name": "fecha_resolucion",
-        "ordinal": 9,
-        "type_info": "Text"
-      },
-      {
-        "name": "notas",
         "ordinal": 10,
         "type_info": "Text"
       },
       {
-        "name": "reportado_por",
+        "name": "notas",
         "ordinal": 11,
         "type_info": "Text"
       },
       {
-        "name": "resuelto_por",
+        "name": "reportado_por",
         "ordinal": 12,
         "type_info": "Text"
       },
       {
-        "name": "created_at",
+        "name": "resuelto_por",
         "ordinal": 13,
         "type_info": "Text"
       },
       {
-        "name": "updated_at",
+        "name": "created_at",
         "ordinal": 14,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 15,
         "type_info": "Text"
       }
     ],
@@ -90,6 +95,7 @@
       false,
       true,
       true,
+      true,
       false,
       true,
       true,
@@ -100,5 +106,5 @@
       false
     ]
   },
-  "hash": "9ab7e35e926d11b5cbe45d33768281de05aa9fb6e36d28e125b9e50db37ebf2f"
+  "hash": "4ae3f12abd13e8b75b6787a6589c58877a8106623f4e3f978cd3339fb882741f"
 }
