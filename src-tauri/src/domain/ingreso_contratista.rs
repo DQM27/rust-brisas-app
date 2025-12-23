@@ -333,8 +333,240 @@ pub fn evaluar_devolucion_gafete(
     // Caso 3: Todo OK
     Ok(DecisionReporteGafete { debe_generar_reporte: false, motivo: None, gafete_numero: None })
 }
+
+// ==========================================
+// LOGICA DE DOMINIO: PRAIND ALERTAS
+// ==========================================
+
+/// Días de anticipación para alerta de vencimiento PRAIND
+pub const DIAS_ALERTA_PRAIND: i64 = 30;
+
+/// Evalúa si el PRAIND está por vencer (dentro de los próximos 30 días)
+pub fn praind_por_vencer(fecha_vencimiento_str: &str) -> Result<bool, IngresoContratistaError> {
+    if fecha_vencimiento_str.is_empty() {
+        return Ok(false);
+    }
+
+    let fecha_venc =
+        chrono::NaiveDate::parse_from_str(fecha_vencimiento_str, "%Y-%m-%d").map_err(|_| {
+            IngresoContratistaError::Validation(format!(
+                "Formato de fecha inválido: {}",
+                fecha_vencimiento_str
+            ))
+        })?;
+
+    let hoy = Utc::now().date_naive();
+    let dias_restantes = (fecha_venc - hoy).num_days();
+
+    // Está por vencer si: 0 <= días_restantes <= 30
+    Ok(dias_restantes >= 0 && dias_restantes <= DIAS_ALERTA_PRAIND)
+}
+
+/// Calcula los días restantes hasta el vencimiento del PRAIND
+pub fn dias_hasta_vencimiento_praind(
+    fecha_vencimiento_str: &str,
+) -> Result<i64, IngresoContratistaError> {
+    if fecha_vencimiento_str.is_empty() {
+        return Err(IngresoContratistaError::Validation("Fecha vacía".to_string()));
+    }
+
+    let fecha_venc =
+        chrono::NaiveDate::parse_from_str(fecha_vencimiento_str, "%Y-%m-%d").map_err(|_| {
+            IngresoContratistaError::Validation(format!(
+                "Formato de fecha inválido: {}",
+                fecha_vencimiento_str
+            ))
+        })?;
+
+    let hoy = Utc::now().date_naive();
+    Ok((fecha_venc - hoy).num_days())
+}
+
+/// Determina si el contratista debe ser suspendido por PRAIND vencido
+/// Retorna true si la fecha de vencimiento es anterior a hoy (00:00)
+pub fn debe_suspender_por_praind(
+    fecha_vencimiento_str: &str,
+) -> Result<bool, IngresoContratistaError> {
+    let dias = dias_hasta_vencimiento_praind(fecha_vencimiento_str)?;
+    Ok(dias < 0)
+}
+
+// ==========================================
+// LOGICA DE DOMINIO: CIERRE MANUAL
+// ==========================================
+
+/// Motivo de cierre manual de un ingreso
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MotivoCierre {
+    /// El guardia olvidó registrar la salida al momento
+    OlvidoRegistrarSalida,
+    /// Se confirmó que la persona salió sin registrar
+    SalioSinRegistrar,
+    /// No se encontró a la persona en las instalaciones
+    PersonaNoLocalizada,
+    /// Un supervisor autorizó el cierre (caso excepcional)
+    AutorizacionEspecial,
+}
+
+impl MotivoCierre {
+    pub fn as_str(&self) -> &str {
+        match self {
+            MotivoCierre::OlvidoRegistrarSalida => "olvido_registrar_salida",
+            MotivoCierre::SalioSinRegistrar => "salio_sin_registrar",
+            MotivoCierre::PersonaNoLocalizada => "persona_no_localizada",
+            MotivoCierre::AutorizacionEspecial => "autorizacion_especial",
+        }
+    }
+
+    pub fn descripcion(&self) -> &str {
+        match self {
+            MotivoCierre::OlvidoRegistrarSalida => "Se olvidó registrar la salida",
+            MotivoCierre::SalioSinRegistrar => "La persona salió sin registrar",
+            MotivoCierre::PersonaNoLocalizada => "No se localizó a la persona en instalaciones",
+            MotivoCierre::AutorizacionEspecial => "Cierre autorizado por supervisor",
+        }
+    }
+}
+
+impl std::str::FromStr for MotivoCierre {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "olvido_registrar_salida" => Ok(MotivoCierre::OlvidoRegistrarSalida),
+            "salio_sin_registrar" => Ok(MotivoCierre::SalioSinRegistrar),
+            "persona_no_localizada" => Ok(MotivoCierre::PersonaNoLocalizada),
+            "autorizacion_especial" => Ok(MotivoCierre::AutorizacionEspecial),
+            _ => Err(format!("Motivo de cierre desconocido: {}", s)),
+        }
+    }
+}
+
+/// Resultado de evaluación de cierre manual
+#[derive(Debug, Clone)]
+pub struct ResultadoCierreManual {
+    pub puede_cerrar: bool,
+    pub genera_reporte: bool,
+    pub tipo_reporte: Option<String>,
+    pub mensaje: Option<String>,
+}
+
+/// Evalúa si un ingreso puede cerrarse manualmente y qué acciones tomar
+pub fn evaluar_cierre_manual(
+    fecha_hora_ingreso: &str,
+    motivo: &MotivoCierre,
+) -> Result<ResultadoCierreManual, IngresoContratistaError> {
+    let minutos_transcurridos = calcular_tiempo_transcurrido(fecha_hora_ingreso)?;
+    let estado_permanencia = evaluar_estado_permanencia(minutos_transcurridos);
+
+    // Siempre se puede cerrar manualmente
+    let puede_cerrar = true;
+
+    // Genera reporte si el cierre es sospechoso
+    let genera_reporte =
+        matches!(motivo, MotivoCierre::SalioSinRegistrar | MotivoCierre::PersonaNoLocalizada)
+            || estado_permanencia == EstadoPermanencia::TiempoExcedido;
+
+    let tipo_reporte = if genera_reporte { Some("cierre_manual".to_string()) } else { None };
+
+    let mensaje = if estado_permanencia == EstadoPermanencia::TiempoExcedido {
+        Some(format!(
+            "Tiempo excedido: {} minutos ({} horas)",
+            minutos_transcurridos,
+            minutos_transcurridos / 60
+        ))
+    } else {
+        None
+    };
+
+    Ok(ResultadoCierreManual { puede_cerrar, genera_reporte, tipo_reporte, mensaje })
+}
+
+// ==========================================
+// LOGICA DE DOMINIO: INGRESO EXCEPCIONAL
+// ==========================================
+
+/// Motivo para un ingreso excepcional (cuando normalmente no podría entrar)
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MotivoExcepcional {
+    /// Orden directa de Seguridad Industrial
+    OrdenSeguridadIndustrial,
+    /// Emergencia operativa que requiere presencia
+    EmergenciaOperativa,
+    /// Documentos en trámite con autorización temporal
+    DocumentosEnTramite,
+    /// Otro motivo especificado en texto libre
+    Otro,
+}
+
+impl MotivoExcepcional {
+    pub fn as_str(&self) -> &str {
+        match self {
+            MotivoExcepcional::OrdenSeguridadIndustrial => "orden_seguridad_industrial",
+            MotivoExcepcional::EmergenciaOperativa => "emergencia_operativa",
+            MotivoExcepcional::DocumentosEnTramite => "documentos_en_tramite",
+            MotivoExcepcional::Otro => "otro",
+        }
+    }
+}
+
+impl std::str::FromStr for MotivoExcepcional {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "orden_seguridad_industrial" => Ok(MotivoExcepcional::OrdenSeguridadIndustrial),
+            "emergencia_operativa" => Ok(MotivoExcepcional::EmergenciaOperativa),
+            "documentos_en_tramite" => Ok(MotivoExcepcional::DocumentosEnTramite),
+            "otro" => Ok(MotivoExcepcional::Otro),
+            _ => Err(format!("Motivo excepcional desconocido: {}", s)),
+        }
+    }
+}
+
+/// Resultado de evaluación de ingreso excepcional
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResultadoIngresoExcepcional {
+    pub permitido: bool,
+    pub motivo_original_bloqueo: String,
+    pub autorizado_por: String,
+    pub motivo_excepcional: MotivoExcepcional,
+    pub notas: Option<String>,
+    pub valido_hasta: String, // Válido solo hasta 23:59 del día
+}
+
+/// Evalúa si un ingreso excepcional es válido
+///
+/// Un ingreso excepcional permite la entrada de un contratista que normalmente
+/// no podría ingresar (suspendido, PRAIND vencido, etc.) con autorización.
+pub fn evaluar_ingreso_excepcional(
+    motivo_bloqueo_original: &str,
+    autorizado_por_id: &str,
+    motivo: &MotivoExcepcional,
+    notas: Option<&str>,
+) -> ResultadoIngresoExcepcional {
+    // Siempre se permite si hay un supervisor que autoriza
+    // La responsabilidad recae en el guardia y el supervisor autorizado
+
+    let ahora = Utc::now();
+    let fin_del_dia = ahora.date_naive().and_hms_opt(23, 59, 59).unwrap();
+
+    ResultadoIngresoExcepcional {
+        permitido: true,
+        motivo_original_bloqueo: motivo_bloqueo_original.to_string(),
+        autorizado_por: autorizado_por_id.to_string(),
+        motivo_excepcional: motivo.clone(),
+        notas: notas.map(|s| s.to_string()),
+        valido_hasta: fin_del_dia.to_string(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]
@@ -405,5 +637,95 @@ mod tests {
         let res = evaluar_devolucion_gafete(true, Some("G-1"), true, Some("G-2")).unwrap();
         assert!(res.debe_generar_reporte);
         assert!(res.motivo.unwrap().contains("incorrecto"));
+    }
+
+    // ==========================================
+    // TESTS NUEVOS: PRAIND ALERTAS
+    // ==========================================
+
+    #[test]
+    fn test_praind_por_vencer() {
+        // Fecha en 15 días - debería estar por vencer
+        let en_15_dias =
+            (Utc::now().date_naive() + chrono::Duration::days(15)).format("%Y-%m-%d").to_string();
+        assert!(praind_por_vencer(&en_15_dias).unwrap());
+
+        // Fecha en 60 días - no debería estar por vencer
+        let en_60_dias =
+            (Utc::now().date_naive() + chrono::Duration::days(60)).format("%Y-%m-%d").to_string();
+        assert!(!praind_por_vencer(&en_60_dias).unwrap());
+
+        // Fecha pasada - no está "por vencer", ya venció
+        assert!(!praind_por_vencer("2000-01-01").unwrap());
+    }
+
+    #[test]
+    fn test_dias_hasta_vencimiento_praind() {
+        let hoy = Utc::now().date_naive().format("%Y-%m-%d").to_string();
+        assert_eq!(dias_hasta_vencimiento_praind(&hoy).unwrap(), 0);
+
+        let manana =
+            (Utc::now().date_naive() + chrono::Duration::days(1)).format("%Y-%m-%d").to_string();
+        assert_eq!(dias_hasta_vencimiento_praind(&manana).unwrap(), 1);
+    }
+
+    #[test]
+    fn test_debe_suspender_por_praind() {
+        // Ayer - debe suspender
+        let ayer =
+            (Utc::now().date_naive() - chrono::Duration::days(1)).format("%Y-%m-%d").to_string();
+        assert!(debe_suspender_por_praind(&ayer).unwrap());
+
+        // Mañana - no debe suspender
+        let manana =
+            (Utc::now().date_naive() + chrono::Duration::days(1)).format("%Y-%m-%d").to_string();
+        assert!(!debe_suspender_por_praind(&manana).unwrap());
+
+        // Hoy - no debe suspender (vence a las 23:59)
+        let hoy = Utc::now().date_naive().format("%Y-%m-%d").to_string();
+        assert!(!debe_suspender_por_praind(&hoy).unwrap());
+    }
+
+    // ==========================================
+    // TESTS NUEVOS: CIERRE MANUAL
+    // ==========================================
+
+    #[test]
+    fn test_motivo_cierre_from_str() {
+        assert_eq!(
+            "olvido_registrar_salida".parse::<MotivoCierre>().unwrap(),
+            MotivoCierre::OlvidoRegistrarSalida
+        );
+        assert_eq!(
+            "salio_sin_registrar".parse::<MotivoCierre>().unwrap(),
+            MotivoCierre::SalioSinRegistrar
+        );
+        assert!("invalido".parse::<MotivoCierre>().is_err());
+    }
+
+    #[test]
+    fn test_motivo_excepcional_from_str() {
+        assert_eq!(
+            "orden_seguridad_industrial".parse::<MotivoExcepcional>().unwrap(),
+            MotivoExcepcional::OrdenSeguridadIndustrial
+        );
+        assert_eq!(
+            "emergencia_operativa".parse::<MotivoExcepcional>().unwrap(),
+            MotivoExcepcional::EmergenciaOperativa
+        );
+    }
+
+    #[test]
+    fn test_evaluar_ingreso_excepcional() {
+        let resultado = evaluar_ingreso_excepcional(
+            "PRAIND vencido",
+            "supervisor-123",
+            &MotivoExcepcional::OrdenSeguridadIndustrial,
+            Some("Orden verbal del gerente"),
+        );
+
+        assert!(resultado.permitido);
+        assert_eq!(resultado.autorizado_por, "supervisor-123");
+        assert_eq!(resultado.motivo_original_bloqueo, "PRAIND vencido");
     }
 }

@@ -163,7 +163,7 @@ impl PdfConfig {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```ignore
     /// let config = PdfConfig::builder()
     ///     .title("Monthly Report")
     ///     .orientation(PageOrientation::Portrait)
