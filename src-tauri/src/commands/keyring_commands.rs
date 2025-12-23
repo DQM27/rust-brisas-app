@@ -4,6 +4,7 @@
 // Comandos Tauri para gestión segura de credenciales
 
 use crate::config::{save_config, AppConfig};
+use crate::domain::errors::KeyringError;
 use crate::services::keyring_service::{self, Argon2Params, CredentialStatus};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
@@ -57,11 +58,12 @@ pub fn needs_setup(config: State<'_, AppConfig>) -> bool {
 pub fn setup_credentials(
     input: SetupCredentialsInput,
     config: State<'_, AppConfig>,
-) -> Result<SetupResult, String> {
+) -> Result<SetupResult, KeyringError> {
     // 1. (Eliminado: Guardar credenciales SMTP)
 
     // 2. Guardar parámetros de Argon2
-    keyring_service::store_argon2_params(&input.argon2).map_err(|e| e.to_string())?;
+    keyring_service::store_argon2_params(&input.argon2)
+        .map_err(|e| KeyringError::StoreError(e.to_string()))?;
 
     // 3. Actualizar configuración en TOML
     let mut updated_config = config.inner().clone();
@@ -83,7 +85,7 @@ pub fn setup_credentials(
     };
 
     save_config(&updated_config, &config_path)
-        .map_err(|e| format!("Error guardando configuración: {}", e))?;
+        .map_err(|e| KeyringError::Message(format!("Error guardando configuración: {}", e)))?;
 
     Ok(SetupResult {
         success: true,
@@ -117,8 +119,9 @@ pub struct Argon2ParamsSafe {
 
 /// Actualiza parámetros de Argon2
 #[command]
-pub fn update_argon2_params(params: Argon2Params) -> Result<(), String> {
-    keyring_service::store_argon2_params(&params).map_err(|e| e.to_string())
+pub fn update_argon2_params(params: Argon2Params) -> Result<(), KeyringError> {
+    keyring_service::store_argon2_params(&params)
+        .map_err(|e| KeyringError::StoreError(e.to_string()))
 }
 
 /// Genera un nuevo secret aleatorio para Argon2
@@ -139,7 +142,7 @@ pub fn generate_random_secret() -> String {
 
 /// Comando de diagnóstico para probar el keyring
 #[command]
-pub fn test_keyring() -> Result<String, String> {
+pub fn test_keyring() -> Result<String, KeyringError> {
     // Implementación multiplataforma usando el keyring_service
     #[cfg(target_os = "linux")]
     use crate::services::keyring_linux as keyring_impl;
@@ -285,9 +288,12 @@ pub fn test_keyring() -> Result<String, String> {
 
 /// Resetea todas las credenciales (usar con cuidado)
 #[command]
-pub fn reset_all_credentials(confirm: bool, config: State<'_, AppConfig>) -> Result<(), String> {
+pub fn reset_all_credentials(
+    confirm: bool,
+    config: State<'_, AppConfig>,
+) -> Result<(), KeyringError> {
     if !confirm {
-        return Err("Debes confirmar la operación".to_string());
+        return Err(KeyringError::Message("Debes confirmar la operación".to_string()));
     }
 
     // Eliminar credenciales
@@ -306,7 +312,7 @@ pub fn reset_all_credentials(confirm: bool, config: State<'_, AppConfig>) -> Res
     };
 
     save_config(&updated_config, &config_path)
-        .map_err(|e| format!("Error guardando configuración: {}", e))?;
+        .map_err(|e| KeyringError::Message(format!("Error guardando configuración: {}", e)))?;
 
     Ok(())
 }

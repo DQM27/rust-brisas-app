@@ -3,6 +3,7 @@
 // ==========================================
 // Capa de comandos Tauri: delega al servicio
 
+use crate::domain::errors::ContratistaError;
 use crate::models::contratista::{
     CambiarEstadoInput, ContratistaListResponse, ContratistaResponse, CreateContratistaInput,
     UpdateContratistaInput,
@@ -18,40 +19,38 @@ pub async fn create_contratista(
     pool: State<'_, SqlitePool>,
     search_service: State<'_, Arc<SearchService>>,
     input: CreateContratistaInput,
-) -> Result<ContratistaResponse, String> {
-    contratista_service::create_contratista(&pool, &search_service, input)
-        .await
-        .map_err(|e| e.to_string())
+) -> Result<ContratistaResponse, ContratistaError> {
+    contratista_service::create_contratista(&pool, &search_service, input).await
 }
 
 #[tauri::command]
 pub async fn get_contratista_by_id(
     pool: State<'_, SqlitePool>,
     id: String,
-) -> Result<ContratistaResponse, String> {
-    contratista_service::get_contratista_by_id(&pool, &id).await.map_err(|e| e.to_string())
+) -> Result<ContratistaResponse, ContratistaError> {
+    contratista_service::get_contratista_by_id(&pool, &id).await
 }
 
 #[tauri::command]
 pub async fn get_contratista_by_cedula(
     pool: State<'_, SqlitePool>,
     cedula: String,
-) -> Result<ContratistaResponse, String> {
-    contratista_service::get_contratista_by_cedula(&pool, &cedula).await.map_err(|e| e.to_string())
+) -> Result<ContratistaResponse, ContratistaError> {
+    contratista_service::get_contratista_by_cedula(&pool, &cedula).await
 }
 
 #[tauri::command]
 pub async fn get_all_contratistas(
     pool: State<'_, SqlitePool>,
-) -> Result<ContratistaListResponse, String> {
-    contratista_service::get_all_contratistas(&pool).await.map_err(|e| e.to_string())
+) -> Result<ContratistaListResponse, ContratistaError> {
+    contratista_service::get_all_contratistas(&pool).await
 }
 
 #[tauri::command]
 pub async fn get_contratistas_activos(
     pool: State<'_, SqlitePool>,
-) -> Result<Vec<ContratistaResponse>, String> {
-    contratista_service::get_contratistas_activos(&pool).await.map_err(|e| e.to_string())
+) -> Result<Vec<ContratistaResponse>, ContratistaError> {
+    contratista_service::get_contratistas_activos(&pool).await
 }
 
 #[tauri::command]
@@ -60,10 +59,8 @@ pub async fn update_contratista(
     search_service: State<'_, Arc<SearchService>>,
     id: String,
     input: UpdateContratistaInput,
-) -> Result<ContratistaResponse, String> {
-    contratista_service::update_contratista(&pool, &search_service, id, input)
-        .await
-        .map_err(|e| e.to_string())
+) -> Result<ContratistaResponse, ContratistaError> {
+    contratista_service::update_contratista(&pool, &search_service, id, input).await
 }
 
 #[tauri::command]
@@ -72,10 +69,8 @@ pub async fn cambiar_estado_contratista(
     search_service: State<'_, Arc<SearchService>>,
     id: String,
     input: CambiarEstadoInput,
-) -> Result<ContratistaResponse, String> {
-    contratista_service::cambiar_estado_contratista(&pool, &search_service, id, input)
-        .await
-        .map_err(|e| e.to_string())
+) -> Result<ContratistaResponse, ContratistaError> {
+    contratista_service::cambiar_estado_contratista(&pool, &search_service, id, input).await
 }
 
 #[tauri::command]
@@ -83,10 +78,8 @@ pub async fn delete_contratista(
     pool: State<'_, SqlitePool>,
     search_service: State<'_, Arc<SearchService>>,
     id: String,
-) -> Result<(), String> {
-    contratista_service::delete_contratista(&pool, &search_service, id)
-        .await
-        .map_err(|e| e.to_string())
+) -> Result<(), ContratistaError> {
+    contratista_service::delete_contratista(&pool, &search_service, id).await
 }
 
 // ==========================================
@@ -100,10 +93,9 @@ pub async fn actualizar_praind_con_historial(
     search_service: State<'_, Arc<SearchService>>,
     input: contratista_service::ActualizarPraindInput,
     usuario_id: String,
-) -> Result<ContratistaResponse, String> {
+) -> Result<ContratistaResponse, ContratistaError> {
     contratista_service::actualizar_praind_con_historial(&pool, &search_service, input, usuario_id)
         .await
-        .map_err(|e| e.to_string())
 }
 
 /// Cambia el estado de un contratista con registro de motivo en historial
@@ -113,8 +105,7 @@ pub async fn cambiar_estado_con_historial(
     search_service: State<'_, Arc<SearchService>>,
     input: contratista_service::CambiarEstadoConHistorialInput,
     usuario_id: String,
-) -> Result<ContratistaResponse, String> {
+) -> Result<ContratistaResponse, ContratistaError> {
     contratista_service::cambiar_estado_con_historial(&pool, &search_service, input, usuario_id)
         .await
-        .map_err(|e| e.to_string())
 }

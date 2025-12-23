@@ -4,13 +4,23 @@
 // Errores tipados para cada módulo del dominio
 // Uso de thiserror para derivación automática
 
+use serde::{Serialize, Serializer};
 use thiserror::Error;
+
+/// Helper function to serialize errors as strings
+fn serialize_error_as_string<S>(e: &sqlx::Error, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    s.serialize_str(&e.to_string())
+}
 
 // ==========================================
 // USER ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum UserError {
     #[error("Usuario no encontrado")]
     NotFound,
@@ -37,7 +47,11 @@ pub enum UserError {
     EmpresaHasContratistas(i64),
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
 
     #[error("Error de búsqueda: {0}")]
     Search(String),
@@ -56,7 +70,8 @@ pub enum UserError {
 // CONTRATISTA ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum ContratistaError {
     #[error("Contratista no encontrado")]
     NotFound,
@@ -80,7 +95,11 @@ pub enum ContratistaError {
     AlreadyInside,
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
 
     #[error("Error de búsqueda: {0}")]
     Search(String),
@@ -93,7 +112,8 @@ pub enum ContratistaError {
 // EMPRESA ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum EmpresaError {
     #[error("Empresa no encontrada")]
     NotFound,
@@ -111,7 +131,11 @@ pub enum EmpresaError {
     HasProveedores(i64),
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -121,7 +145,8 @@ pub enum EmpresaError {
 // VEHICULO ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum VehiculoError {
     #[error("Vehículo no encontrado")]
     NotFound,
@@ -133,7 +158,11 @@ pub enum VehiculoError {
     InvalidType(String),
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -143,7 +172,8 @@ pub enum VehiculoError {
 // PROVEEDOR ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum ProveedorError {
     #[error("Proveedor no encontrado")]
     NotFound,
@@ -164,7 +194,11 @@ pub enum ProveedorError {
     AlreadyInside,
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
 
     #[error("Error de búsqueda: {0}")]
     Search(String),
@@ -177,7 +211,8 @@ pub enum ProveedorError {
 // GAFETE ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum GafeteError {
     #[error("Gafete no encontrado")]
     NotFound,
@@ -201,7 +236,11 @@ pub enum GafeteError {
     Disabled,
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -211,7 +250,8 @@ pub enum GafeteError {
 // ALERTA ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum AlertaError {
     #[error("Alerta no encontrada")]
     NotFound,
@@ -223,7 +263,11 @@ pub enum AlertaError {
     AlreadyResolved,
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -233,7 +277,8 @@ pub enum AlertaError {
 // LISTA NEGRA ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum ListaNegraError {
     #[error("Registro no encontrado")]
     NotFound,
@@ -248,7 +293,11 @@ pub enum ListaNegraError {
     MotivoRequired,
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -261,7 +310,8 @@ pub enum ListaNegraError {
 // VISITANTE ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum VisitanteError {
     #[error("Visitante no encontrado")]
     NotFound,
@@ -273,7 +323,11 @@ pub enum VisitanteError {
     Blacklisted(String),
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -283,7 +337,8 @@ pub enum VisitanteError {
 // INGRESO VISITA ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum IngresoVisitaError {
     #[error("Ingreso de visita no encontrado")]
     NotFound,
@@ -301,7 +356,11 @@ pub enum IngresoVisitaError {
     Gafete(String),
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -311,7 +370,8 @@ pub enum IngresoVisitaError {
 // INGRESO PROVEEDOR ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum IngresoProveedorError {
     #[error("Ingreso de proveedor no encontrado")]
     NotFound,
@@ -329,7 +389,11 @@ pub enum IngresoProveedorError {
     Gafete(String),
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -339,7 +403,8 @@ pub enum IngresoProveedorError {
 // INGRESO CONTRATISTA ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum IngresoContratistaError {
     #[error("Ingreso de contratista no encontrado")]
     NotFound,
@@ -369,17 +434,25 @@ pub enum IngresoContratistaError {
     Gafete(String),
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
 
     #[error("Error de validación: {0}")]
     Validation(String),
+
+    #[error("Error interno: {0}")]
+    Internal(String),
 }
 
 // ==========================================
 // INGRESO GENERAL ERRORS (Multi-tipo)
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum IngresoError {
     #[error("Ingreso no encontrado")]
     NotFound,
@@ -403,7 +476,11 @@ pub enum IngresoError {
     Gafete(String),
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -413,7 +490,8 @@ pub enum IngresoError {
 // CITA ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum CitaError {
     #[error("Cita no encontrada")]
     NotFound,
@@ -431,7 +509,17 @@ pub enum CitaError {
     InvalidDate,
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
+
+    #[error("Error de visitante: {0}")]
+    Visitante(#[from] VisitanteError),
+
+    #[error("Error de ingreso de visita: {0}")]
+    IngresoVisita(#[from] IngresoVisitaError),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -441,7 +529,8 @@ pub enum CitaError {
 // SEARCH/INDEX ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum SearchError {
     #[error("Error de índice: {0}")]
     Index(String),
@@ -453,13 +542,106 @@ pub enum SearchError {
     NotInitialized,
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
+
+    #[error("Error del motor de búsqueda: {0}")]
+    Engine(#[from] crate::search::errors::SearchError),
+}
+
+// ==========================================
+// EXPORT ERRORS
+// ==========================================
+
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
+pub enum ExportError {
+    #[error("Error al generar exportación: {0}")]
+    Generation(String),
+
+    #[error("Formato no soportado: {0}")]
+    UnsupportedFormat(String),
+
+    #[error("Error de I/O: {0}")]
+    Io(String),
+
+    #[error("Error de base de datos: {0}")]
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
+
+    #[error("Error del motor de exportación: {0}")]
+    Engine(#[from] crate::export::errors::ExportError),
+}
+
+// ==========================================
+// CONFIG ERRORS
+// ==========================================
+
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
+pub enum ConfigError {
+    #[error("Error de configuración: {0}")]
+    Message(String),
+
+    #[error("Error de I/O: {0}")]
+    Io(String),
+
+    #[error("Error de base de datos: {0}")]
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
+}
+
+// ==========================================
+// KEYRING ERRORS
+// ==========================================
+
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
+pub enum KeyringError {
+    #[error("Error en almacén de claves: {0}")]
+    Message(String),
+
+    #[error("Error de guardado: {0}")]
+    StoreError(String),
+
+    #[error("Error de recuperación: {0}")]
+    RetrieveError(String),
+
+    #[error("Error de eliminación: {0}")]
+    DeleteError(String),
+}
+
+// ==========================================
+// SYSTEM ERRORS
+// ==========================================
+
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
+pub enum SystemError {
+    #[error("Error de sistema: {0}")]
+    Message(String),
+
+    #[error("Error de ventana: {0}")]
+    Window(String),
+
+    #[error("Error de proceso: {0}")]
+    Process(String),
 }
 // ==========================================
 // ROLE ERRORS
 // ==========================================
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum RoleError {
     #[error("Rol no encontrado")]
     NotFound,
@@ -477,8 +659,15 @@ pub enum RoleError {
     SystemRole,
 
     #[error("Error de base de datos: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(
+        #[from]
+        #[serde(serialize_with = "serialize_error_as_string")]
+        sqlx::Error,
+    ),
 
     #[error("Error de validación: {0}")]
     Validation(String),
+
+    #[error("No autorizado: {0}")]
+    Unauthorized(String),
 }

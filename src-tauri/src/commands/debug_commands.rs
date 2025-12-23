@@ -1,8 +1,9 @@
+use crate::domain::errors::SystemError;
 use sysinfo::{Pid, System};
 use tauri::command;
 
 #[command]
-pub fn get_app_memory_usage() -> Result<u64, String> {
+pub fn get_app_memory_usage() -> Result<u64, SystemError> {
     // Inicializar sistema LIMPIO (sin cargar procesos ni nada)
     let mut sys = System::new();
 
@@ -25,7 +26,10 @@ pub fn get_app_memory_usage() -> Result<u64, String> {
             sys.refresh_processes();
             match sys.process(sys_pid) {
                 Some(p) => Ok(p.memory()),
-                None => Err(format!("No se pudo encontrar el proceso con PID {}", pid)),
+                None => Err(SystemError::Process(format!(
+                    "No se pudo encontrar el proceso con PID {}",
+                    pid
+                ))),
             }
         }
     }

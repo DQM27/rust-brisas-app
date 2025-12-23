@@ -1,5 +1,6 @@
 // src/commands/ingreso_contratista_commands.rs
 
+use crate::domain::errors::IngresoContratistaError;
 use crate::models::ingreso::{
     CreateIngresoContratistaInput, IngresoResponse, RegistrarSalidaInput, ValidacionIngresoResponse,
 };
@@ -16,8 +17,8 @@ use tauri::State;
 pub async fn validate_ingreso_contratista(
     pool: State<'_, SqlitePool>,
     contratista_id: String,
-) -> Result<ValidacionIngresoResponse, String> {
-    service::validar_ingreso_contratista(&pool, contratista_id).await.map_err(|e| e.to_string())
+) -> Result<ValidacionIngresoResponse, IngresoContratistaError> {
+    service::validar_ingreso_contratista(&pool, contratista_id).await
 }
 
 /// Crea el ingreso de un contratista
@@ -26,8 +27,8 @@ pub async fn create_ingreso_contratista(
     pool: State<'_, SqlitePool>,
     input: CreateIngresoContratistaInput,
     usuario_id: String,
-) -> Result<IngresoResponse, String> {
-    service::crear_ingreso_contratista(&pool, input, usuario_id).await.map_err(|e| e.to_string())
+) -> Result<IngresoResponse, IngresoContratistaError> {
+    service::crear_ingreso_contratista(&pool, input, usuario_id).await
 }
 
 // ==========================================
@@ -40,8 +41,10 @@ pub async fn validate_exit_contratista(
     pool: State<'_, SqlitePool>,
     ingreso_id: String,
     gafete_devuelto: Option<String>,
-) -> Result<service::ResultadoValidacionSalida, String> {
-    service::validar_puede_salir(&pool, &ingreso_id, gafete_devuelto.as_deref()).await
+) -> Result<service::ResultadoValidacionSalida, IngresoContratistaError> {
+    service::validar_puede_salir(&pool, &ingreso_id, gafete_devuelto.as_deref())
+        .await
+        .map_err(|e| IngresoContratistaError::Internal(e))
 }
 
 /// Registra la salida
@@ -50,8 +53,8 @@ pub async fn register_exit_contratista(
     pool: State<'_, SqlitePool>,
     input: RegistrarSalidaInput,
     usuario_id: String,
-) -> Result<IngresoResponse, String> {
-    service::registrar_salida(&pool, input, usuario_id).await.map_err(|e| e.to_string())
+) -> Result<IngresoResponse, IngresoContratistaError> {
+    service::registrar_salida(&pool, input, usuario_id).await
 }
 
 // ==========================================
@@ -62,16 +65,16 @@ pub async fn register_exit_contratista(
 #[tauri::command]
 pub async fn get_permanencia_status(
     pool: State<'_, SqlitePool>,
-) -> Result<Vec<service::IngresoConEstadoResponse>, String> {
-    service::get_ingresos_abiertos_con_alertas(&pool).await.map_err(|e| e.to_string())
+) -> Result<Vec<service::IngresoConEstadoResponse>, IngresoContratistaError> {
+    service::get_ingresos_abiertos_con_alertas(&pool).await
 }
 
 /// Verifica alertas de tiempo excedido (para notificaciones)
 #[tauri::command]
 pub async fn check_time_alerts(
     pool: State<'_, SqlitePool>,
-) -> Result<Vec<service::AlertaTiempoExcedido>, String> {
-    service::verificar_tiempos_excedidos(&pool).await.map_err(|e| e.to_string())
+) -> Result<Vec<service::AlertaTiempoExcedido>, IngresoContratistaError> {
+    service::verificar_tiempos_excedidos(&pool).await
 }
 
 // ==========================================
@@ -84,8 +87,8 @@ pub async fn cerrar_ingreso_manual(
     pool: State<'_, SqlitePool>,
     input: service::CerrarIngresoManualInput,
     usuario_id: String,
-) -> Result<service::ResultadoCierreManualResponse, String> {
-    service::cerrar_ingreso_manual(&pool, input, usuario_id).await.map_err(|e| e.to_string())
+) -> Result<service::ResultadoCierreManualResponse, IngresoContratistaError> {
+    service::cerrar_ingreso_manual(&pool, input, usuario_id).await
 }
 
 // ==========================================
@@ -98,8 +101,6 @@ pub async fn registrar_ingreso_excepcional(
     pool: State<'_, SqlitePool>,
     input: service::IngresoExcepcionalInput,
     usuario_id: String,
-) -> Result<service::IngresoExcepcionalResponse, String> {
-    service::registrar_ingreso_excepcional(&pool, input, usuario_id)
-        .await
-        .map_err(|e| e.to_string())
+) -> Result<service::IngresoExcepcionalResponse, IngresoContratistaError> {
+    service::registrar_ingreso_excepcional(&pool, input, usuario_id).await
 }

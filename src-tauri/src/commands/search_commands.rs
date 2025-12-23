@@ -3,6 +3,7 @@
 // ==========================================
 // Comandos Tauri para búsqueda
 
+use crate::domain::errors::SearchError;
 use crate::search::searcher::SearchResultDto;
 use crate::services::search_service::SearchService;
 use std::sync::Arc;
@@ -13,17 +14,17 @@ pub async fn search_contratistas(
     search_service: State<'_, Arc<SearchService>>,
     query: String,
     limit: Option<usize>,
-) -> Result<Vec<SearchResultDto>, String> {
+) -> Result<Vec<SearchResultDto>, SearchError> {
     let limit = limit.unwrap_or(10); // Default: 10 resultados
-    search_service.search(&query, limit).map_err(|e| e.to_string())
+    Ok(search_service.search(&query, limit)?)
 }
 
 #[tauri::command]
 pub async fn reindex_all_contratistas(
     search_service: State<'_, Arc<SearchService>>,
     pool: State<'_, sqlx::SqlitePool>,
-) -> Result<(), String> {
-    search_service.reindex_all_contratistas(&pool).await.map_err(|e| e.to_string())
+) -> Result<(), SearchError> {
+    Ok(search_service.reindex_all_contratistas(&pool).await?)
 }
 
 #[tauri::command]
@@ -31,7 +32,7 @@ pub async fn search_global(
     search_service: State<'_, Arc<SearchService>>,
     query: String,
     limit: Option<usize>,
-) -> Result<Vec<SearchResultDto>, String> {
+) -> Result<Vec<SearchResultDto>, SearchError> {
     let limit = limit.unwrap_or(20);
-    search_service.search(&query, limit).map_err(|e| e.to_string())
+    Ok(search_service.search(&query, limit)?)
 }

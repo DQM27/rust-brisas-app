@@ -1,4 +1,5 @@
 use crate::config::AppConfig;
+use crate::domain::errors::ConfigError;
 use crate::services::backup;
 use log::info;
 use std::fs;
@@ -9,7 +10,7 @@ use tauri::{command, State};
 pub async fn backup_database(
     pool: State<'_, sqlx::SqlitePool>,
     destination_path: String,
-) -> Result<(), String> {
+) -> Result<(), ConfigError> {
     info!("Iniciando backup manual a: {}", destination_path);
 
     // Usar SQL directo para el backup en caliente
@@ -20,13 +21,10 @@ pub async fn backup_database(
     let dest_path = std::path::Path::new(&destination_path);
     if dest_path.exists() {
         fs::remove_file(dest_path)
-            .map_err(|e| format!("No se pudo sobrescribir el archivo: {}", e))?;
+            .map_err(|e| ConfigError::Io(format!("No se pudo sobrescribir el archivo: {}", e)))?;
     }
 
-    sqlx::query(&query)
-        .execute(pool.inner())
-        .await
-        .map_err(|e| format!("Error al ejecutar backup SQL: {}", e))?;
+    sqlx::query(&query).execute(pool.inner()).await.map_err(ConfigError::Database)?;
 
     info!("Backup completado exitosamente");
     Ok(())
@@ -37,7 +35,7 @@ pub async fn backup_database(
 pub async fn restore_database(
     config: State<'_, AppConfig>,
     source_path: String,
-) -> Result<(), String> {
+) -> Result<(), ConfigError> {
     info!("Preparando restauración desde: {}", source_path);
 
     let db_path = crate::config::manager::get_database_path(&config);
@@ -46,13 +44,14 @@ pub async fn restore_database(
     // Validar origen
     let source = std::path::Path::new(&source_path);
     if !source.exists() {
-        return Err("El archivo de origen no existe".to_string());
+        return Err(ConfigError::Message("El archivo de origen no existe".to_string()));
     }
 
     // Copiar archivo fuente a *.restore
     info!("Copiando a área de staging: {}", restore_path.display());
-    fs::copy(source, &restore_path)
-        .map_err(|e| format!("Error al preparar archivo de restauración: {}", e))?;
+    fs::copy(source, &restore_path).map_err(|e| {
+        ConfigError::Io(format!("Error al preparar archivo de restauración: {}", e))
+    })?;
 
     info!("Archivo de restauración listo. Se requiere reinicio.");
     Ok(())
