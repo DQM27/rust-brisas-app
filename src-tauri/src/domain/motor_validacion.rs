@@ -122,6 +122,106 @@ pub struct ContextoIngreso {
     pub cantidad_alertas_gafete: usize,
 }
 
+impl ContextoIngreso {
+    /// Crea un contexto de ingreso para un contratista
+    pub fn new_contratista(
+        cedula: String,
+        nombre_completo: String,
+        fecha_vencimiento_praind: &str,
+        esta_bloqueado: bool,
+        motivo_bloqueo: Option<String>,
+        tiene_ingreso_abierto: bool,
+        estado_contratista: String,
+        cantidad_alertas_gafete: usize,
+    ) -> Self {
+        Self {
+            tipo_ingreso: TipoIngreso::Contratista,
+            cedula,
+            nombre_completo,
+            autorizacion: TipoAutorizacion::Praind {
+                fecha_vencimiento: fecha_vencimiento_praind.to_string(),
+            },
+            esta_bloqueado,
+            motivo_bloqueo,
+            tiene_ingreso_abierto,
+            estado_contratista: Some(estado_contratista),
+            cantidad_alertas_gafete,
+        }
+    }
+
+    /// Crea un contexto de ingreso para un proveedor
+    pub fn new_proveedor(
+        cedula: String,
+        nombre_completo: String,
+        referencia_correo: Option<String>,
+        esta_bloqueado: bool,
+        motivo_bloqueo: Option<String>,
+        tiene_ingreso_abierto: bool,
+        cantidad_alertas_gafete: usize,
+    ) -> Self {
+        Self {
+            tipo_ingreso: TipoIngreso::Proveedor,
+            cedula,
+            nombre_completo,
+            autorizacion: TipoAutorizacion::Correo { referencia: referencia_correo },
+            esta_bloqueado,
+            motivo_bloqueo,
+            tiene_ingreso_abierto,
+            estado_contratista: None,
+            cantidad_alertas_gafete,
+        }
+    }
+
+    /// Crea un contexto de ingreso para una visita
+    pub fn new_visita(
+        cedula: String,
+        nombre_completo: String,
+        referencia_correo: Option<String>,
+        esta_bloqueado: bool,
+        motivo_bloqueo: Option<String>,
+        tiene_ingreso_abierto: bool,
+        cantidad_alertas_gafete: usize,
+    ) -> Self {
+        Self {
+            tipo_ingreso: TipoIngreso::Visita,
+            cedula,
+            nombre_completo,
+            autorizacion: TipoAutorizacion::Correo { referencia: referencia_correo },
+            esta_bloqueado,
+            motivo_bloqueo,
+            tiene_ingreso_abierto,
+            estado_contratista: None,
+            cantidad_alertas_gafete,
+        }
+    }
+
+    /// Crea un contexto para ingreso excepcional (supervisor autorizó manualmente)
+    pub fn new_excepcional(
+        tipo_ingreso: TipoIngreso,
+        cedula: String,
+        nombre_completo: String,
+        autorizado_por: String,
+        motivo: String,
+        cantidad_alertas_gafete: usize,
+    ) -> Self {
+        Self {
+            tipo_ingreso,
+            cedula,
+            nombre_completo,
+            autorizacion: TipoAutorizacion::Excepcional { autorizado_por, motivo },
+            esta_bloqueado: false, // Si es excepcional, el bloqueo fue anulado
+            motivo_bloqueo: None,
+            tiene_ingreso_abierto: false, // También anulado
+            estado_contratista: if tipo_ingreso == TipoIngreso::Contratista {
+                Some("activo".to_string()) // Forzar activo
+            } else {
+                None
+            },
+            cantidad_alertas_gafete,
+        }
+    }
+}
+
 // ==========================================
 // RESULTADO DE VALIDACIÓN (OUTPUT DEL MOTOR)
 // ==========================================

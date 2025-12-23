@@ -9,6 +9,7 @@ use crate::db::ingreso_contratista_queries as db;
 // Usamos nuestro nuevo modulo de dominio
 use crate::domain::errors::IngresoContratistaError;
 use crate::domain::ingreso_contratista as domain;
+use crate::domain::motor_validacion::{self as motor, ContextoIngreso};
 use crate::models::lista_negra::BlockCheckResponse;
 use crate::services::lista_negra_service;
 
@@ -116,20 +117,24 @@ pub async fn validar_ingreso_contratista(
         });
     }
 
-    // D. Validaciones de Dominio
-    let praind_vigente = domain::verificar_praind_vigente(&contratista.fecha_vencimiento_praind)?;
+    // D. Validaciones con Motor Unificado
     let alertas_db = alerta_service::find_pendientes_by_cedula(pool, &contratista.cedula)
         .await
         .map_err(|e| IngresoContratistaError::Database(sqlx::Error::Protocol(e.to_string())))?;
 
-    let resultado = domain::evaluar_elegibilidad_entrada(
+    let nombre_completo = format!("{} {}", contratista.nombre, contratista.apellido);
+    let contexto = ContextoIngreso::new_contratista(
+        contratista.cedula.clone(),
+        nombre_completo,
+        &contratista.fecha_vencimiento_praind,
         block_response.is_blocked,
-        block_response.motivo,
+        block_response.motivo.clone(),
         ingreso_abierto.is_some(),
-        &contratista.estado,
-        praind_vigente,
+        contratista.estado.clone(),
         alertas_db.len(),
     );
+
+    let resultado_motor = motor::validar_ingreso(&contexto);
 
     // E. Vehículos (para frontend)
     let vehiculos = crate::db::vehiculo_queries::find_by_contratista(pool, &contratista_id)
@@ -137,7 +142,12 @@ pub async fn validar_ingreso_contratista(
         .unwrap_or_default();
 
     // F. Construir JSON Seguro
-    let contratista_json = if resultado.puede_ingresar || resultado.motivo_rechazo.is_some() {
+    let praind_vigente = !resultado_motor.bloqueos.iter().any(|b| {
+        matches!(b, motor::MotivoBloqueo::AutorizacionInvalida { motivo } if motivo.contains("PRAIND"))
+    });
+
+    let contratista_json = if resultado_motor.puede_ingresar || !resultado_motor.bloqueos.is_empty()
+    {
         Some(serde_json::json!({
             "id": contratista.id,
             "cedula": contratista.cedula,
@@ -155,9 +165,9 @@ pub async fn validar_ingreso_contratista(
     };
 
     Ok(ValidacionIngresoResponse {
-        puede_ingresar: resultado.puede_ingresar,
-        motivo_rechazo: resultado.motivo_rechazo,
-        alertas: resultado.alertas,
+        puede_ingresar: resultado_motor.puede_ingresar,
+        motivo_rechazo: resultado_motor.mensaje_bloqueo(),
+        alertas: resultado_motor.alertas,
         contratista: contratista_json,
         tiene_ingreso_abierto: false,
         ingreso_abierto: None,
