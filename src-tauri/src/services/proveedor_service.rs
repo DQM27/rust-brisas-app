@@ -2,6 +2,7 @@
 // src/services/proveedor_service.rs
 // ==========================================
 use crate::db::{empresa_queries, proveedor_queries, vehiculo_queries};
+use crate::domain::proveedor as proveedor_domain;
 use crate::domain::vehiculo as vehiculo_domain;
 use crate::models::proveedor::{CreateProveedorInput, ProveedorResponse, UpdateProveedorInput};
 use crate::services::search_service::SearchService;
@@ -17,6 +18,9 @@ pub async fn create_proveedor(
     search_service: &Arc<SearchService>,
     input: CreateProveedorInput,
 ) -> Result<ProveedorResponse, String> {
+    // 0. Validar Input de Dominio
+    proveedor_domain::validar_create_input(&input).map_err(|e| e.to_string())?;
+
     // 1. Validar que la empresa existe
     let empresa = empresa_queries::find_by_id(pool, &input.empresa_id)
         .await
@@ -205,6 +209,9 @@ pub async fn update_proveedor(
     id: String,
     input: UpdateProveedorInput,
 ) -> Result<ProveedorResponse, String> {
+    // 0. Validar Input de Dominio
+    proveedor_domain::validar_update_input(&input).map_err(|e| e.to_string())?;
+
     // 1. Verificar existencia
     let _ = proveedor_queries::find_by_id(pool, &id)
         .await

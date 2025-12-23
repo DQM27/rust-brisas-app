@@ -14,5 +14,6 @@ pub mod contratista;
 pub mod empresa;
 pub mod export;
 pub mod gafete;
+pub mod proveedor;
 
 pub mod errors;
