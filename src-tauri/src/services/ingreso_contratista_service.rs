@@ -415,6 +415,212 @@ pub async fn verificar_tiempos_excedidos(
 }
 
 // ==========================================
+// 4. CIERRE MANUAL DE INGRESO
+// ==========================================
+
+/// Input para cerrar un ingreso manualmente
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CerrarIngresoManualInput {
+    pub ingreso_id: String,
+    pub motivo_cierre: String,
+    pub fecha_salida_estimada: Option<String>,
+    pub notas: Option<String>,
+}
+
+/// Resultado de cierre manual
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResultadoCierreManualResponse {
+    pub ingreso: IngresoResponse,
+    pub genera_reporte: bool,
+    pub tipo_reporte: Option<String>,
+    pub mensaje: Option<String>,
+}
+
+/// Cierra un ingreso manualmente (cuando el guardia no registró la salida a tiempo)
+pub async fn cerrar_ingreso_manual(
+    pool: &SqlitePool,
+    input: CerrarIngresoManualInput,
+    usuario_id: String,
+) -> Result<ResultadoCierreManualResponse, IngresoContratistaError> {
+    // 1. Buscar el ingreso
+    let ingreso =
+        db::find_by_id(pool, &input.ingreso_id).await?.ok_or(IngresoContratistaError::NotFound)?;
+
+    // 2. Validar que esté abierto
+    domain::validar_ingreso_abierto(&ingreso.fecha_hora_salida)?;
+
+    // 3. Parsear motivo
+    let motivo: domain::MotivoCierre =
+        input.motivo_cierre.parse().map_err(|e: String| IngresoContratistaError::Validation(e))?;
+
+    // 4. Evaluar cierre con lógica de dominio
+    let evaluacion = domain::evaluar_cierre_manual(&ingreso.fecha_hora_ingreso, &motivo)?;
+
+    // 5. Determinar fecha de salida
+    let fecha_salida = input.fecha_salida_estimada.unwrap_or_else(|| Utc::now().to_rfc3339());
+
+    // 6. Calcular tiempo de permanencia
+    let minutos_permanencia =
+        domain::calcular_tiempo_permanencia(&ingreso.fecha_hora_ingreso, &fecha_salida)
+            .map_err(|e| IngresoContratistaError::Validation(e))?;
+
+    // 7. Actualizar DB con cierre manual
+    let now = Utc::now().to_rfc3339();
+    db::registrar_salida(
+        pool,
+        &input.ingreso_id,
+        &fecha_salida,
+        minutos_permanencia,
+        &usuario_id,
+        input.notas.as_deref(),
+        &now,
+    )
+    .await?;
+
+    // 8. Obtener ingreso actualizado
+    let ingreso_actualizado = get_ingreso_by_id(pool, input.ingreso_id).await?;
+
+    Ok(ResultadoCierreManualResponse {
+        ingreso: ingreso_actualizado,
+        genera_reporte: evaluacion.genera_reporte,
+        tipo_reporte: evaluacion.tipo_reporte,
+        mensaje: evaluacion.mensaje,
+    })
+}
+
+// ==========================================
+// 5. INGRESO EXCEPCIONAL
+// ==========================================
+
+/// Input para registrar un ingreso excepcional
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IngresoExcepcionalInput {
+    pub contratista_id: String,
+    pub autorizado_por: String,
+    pub motivo_excepcional: String,
+    pub notas: Option<String>,
+    // Campos normales de ingreso
+    pub vehiculo_id: Option<String>,
+    pub gafete_numero: Option<String>,
+    pub modo_ingreso: String,
+    pub observaciones: Option<String>,
+}
+
+/// Resultado de ingreso excepcional
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IngresoExcepcionalResponse {
+    pub ingreso: IngresoResponse,
+    pub motivo_original_bloqueo: String,
+    pub autorizado_por: String,
+    pub valido_hasta: String,
+}
+
+/// Registra un ingreso excepcional para un contratista que normalmente no podría entrar
+pub async fn registrar_ingreso_excepcional(
+    pool: &SqlitePool,
+    input: IngresoExcepcionalInput,
+    usuario_id: String,
+) -> Result<IngresoExcepcionalResponse, IngresoContratistaError> {
+    // 1. Obtener contratista
+    let contratista = contratista_queries::find_basic_info_by_id(pool, &input.contratista_id)
+        .await?
+        .ok_or(IngresoContratistaError::ContratistaNotFound)?;
+
+    // 2. Verificar que NO puede entrar normalmente (de lo contrario, ¿por qué es excepcional?)
+    let praind_vigente = domain::verificar_praind_vigente(&contratista.fecha_vencimiento_praind)?;
+
+    // Determinar motivo de bloqueo original
+    let motivo_bloqueo = if !praind_vigente {
+        "PRAIND vencido".to_string()
+    } else if contratista.estado != "activo" {
+        format!("Estado: {}", contratista.estado)
+    } else {
+        "Razón no determinada".to_string()
+    };
+
+    // 3. Parsear motivo excepcional
+    let motivo: domain::MotivoExcepcional = input
+        .motivo_excepcional
+        .parse()
+        .map_err(|e: String| IngresoContratistaError::Validation(e))?;
+
+    // 4. Evaluar ingreso excepcional
+    let evaluacion = domain::evaluar_ingreso_excepcional(
+        &motivo_bloqueo,
+        &input.autorizado_por,
+        &motivo,
+        input.notas.as_deref(),
+    );
+
+    // 5. Verificar duplicados
+    let existing = db::find_ingreso_abierto_by_contratista(pool, &input.contratista_id).await?;
+    if existing.is_some() {
+        return Err(IngresoContratistaError::AlreadyInside);
+    }
+
+    // 6. Gestionar gafete
+    let gafete_normalizado = if let Some(ref g) = input.gafete_numero {
+        let normalizado = domain::normalizar_numero_gafete(g);
+        let disponible = gafete_service::is_gafete_disponible(pool, &normalizado, "contratista")
+            .await
+            .map_err(|e| IngresoContratistaError::Gafete(e.to_string()))?;
+        if !disponible {
+            return Err(IngresoContratistaError::GafeteNotAvailable);
+        }
+        Some(normalizado)
+    } else {
+        None
+    };
+
+    // 7. Insertar ingreso (marcado como excepcional)
+    let id = Uuid::new_v4().to_string();
+    let now = Utc::now().to_rfc3339();
+    let modo_ingreso: ModoIngreso = input
+        .modo_ingreso
+        .parse()
+        .map_err(|_| IngresoContratistaError::Validation("Modo ingreso inválido".to_string()))?;
+
+    // Usamos "correo" como tipo de autorización para excepcionales
+    db::insert(
+        pool,
+        &id,
+        &input.contratista_id,
+        &contratista.cedula,
+        &contratista.nombre,
+        &contratista.apellido,
+        &contratista.empresa_nombre,
+        TipoIngreso::Contratista.as_str(),
+        TipoAutorizacion::Correo.as_str(), // Excepcional usa correo/autorización especial
+        modo_ingreso.as_str(),
+        input.vehiculo_id.as_deref(),
+        None,
+        gafete_normalizado.as_deref(),
+        &now,
+        &usuario_id,
+        Some(praind_vigente),
+        Some(&contratista.estado),
+        input.observaciones.as_deref(),
+        &now,
+        &now,
+    )
+    .await?;
+
+    // 8. Obtener ingreso creado
+    let ingreso = get_ingreso_by_id(pool, id).await?;
+
+    Ok(IngresoExcepcionalResponse {
+        ingreso,
+        motivo_original_bloqueo: evaluacion.motivo_original_bloqueo,
+        autorizado_por: evaluacion.autorizado_por,
+        valido_hasta: evaluacion.valido_hasta,
+    })
+}
+
+// ==========================================
 // HELPERS PRIVADOS
 // ==========================================
 

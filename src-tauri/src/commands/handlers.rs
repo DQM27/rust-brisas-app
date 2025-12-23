@@ -102,6 +102,9 @@ macro_rules! register_handlers {
             // Monitoreo
             commands::ingreso_contratista_commands::get_permanencia_status,
             commands::ingreso_contratista_commands::check_time_alerts,
+            // Cierre Manual e Ingreso Excepcional
+            commands::ingreso_contratista_commands::cerrar_ingreso_manual,
+            commands::ingreso_contratista_commands::registrar_ingreso_excepcional,
             // ==========================================
             // COMANDOS GENERALES DE CONSULTA DE INGRESOS
             // ==========================================

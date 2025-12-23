@@ -73,3 +73,33 @@ pub async fn check_time_alerts(
 ) -> Result<Vec<service::AlertaTiempoExcedido>, String> {
     service::verificar_tiempos_excedidos(&pool).await.map_err(|e| e.to_string())
 }
+
+// ==========================================
+// 4. CIERRE MANUAL
+// ==========================================
+
+/// Cierra un ingreso manualmente (cuando el guardia no registró salida)
+#[tauri::command]
+pub async fn cerrar_ingreso_manual(
+    pool: State<'_, SqlitePool>,
+    input: service::CerrarIngresoManualInput,
+    usuario_id: String,
+) -> Result<service::ResultadoCierreManualResponse, String> {
+    service::cerrar_ingreso_manual(&pool, input, usuario_id).await.map_err(|e| e.to_string())
+}
+
+// ==========================================
+// 5. INGRESO EXCEPCIONAL
+// ==========================================
+
+/// Registra un ingreso excepcional (contratista que normalmente no podría entrar)
+#[tauri::command]
+pub async fn registrar_ingreso_excepcional(
+    pool: State<'_, SqlitePool>,
+    input: service::IngresoExcepcionalInput,
+    usuario_id: String,
+) -> Result<service::IngresoExcepcionalResponse, String> {
+    service::registrar_ingreso_excepcional(&pool, input, usuario_id)
+        .await
+        .map_err(|e| e.to_string())
+}
