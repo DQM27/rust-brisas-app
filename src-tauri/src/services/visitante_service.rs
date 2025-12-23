@@ -3,7 +3,7 @@
 // ==========================================
 // Capa de servicio: Lógica de negocio para Visitantes
 
-use crate::db::visitante_queries;
+use crate::db::{lista_negra_queries, visitante_queries};
 use crate::domain::errors::VisitanteError;
 use crate::domain::visitante as domain;
 use crate::models::visitante::{CreateVisitanteInput, Visitante};
@@ -30,7 +30,20 @@ pub async fn create_visitante(
         input.empresa = Some(s.trim().to_uppercase());
     }
 
-    // 3. Validar si ya existe cédula
+    // 3. Verificar que NO esté en lista negra
+    let block_status = lista_negra_queries::check_if_blocked_by_cedula(pool, &input.cedula)
+        .await
+        .map_err(|e| VisitanteError::Validation(e.to_string()))?;
+
+    if block_status.blocked {
+        let nivel = block_status.nivel_severidad.unwrap_or_else(|| "BAJO".to_string());
+        return Err(VisitanteError::Validation(format!(
+            "No se puede registrar. La persona con cédula {} está en lista negra. Nivel: {}",
+            input.cedula, nivel
+        )));
+    }
+
+    // 4. Validar si ya existe cédula
     if visitante_queries::get_visitante_by_cedula(pool, &input.cedula).await?.is_some() {
         return Err(VisitanteError::CedulaExists);
     }

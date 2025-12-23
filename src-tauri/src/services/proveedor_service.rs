@@ -29,7 +29,21 @@ pub async fn create_proveedor(
 
     let empresa_nombre = empresa.nombre;
 
-    // 2. Validar duplicidad
+    // 2. Verificar que NO esté en lista negra
+    let block_status =
+        crate::db::lista_negra_queries::check_if_blocked_by_cedula(pool, &input.cedula)
+            .await
+            .map_err(|e| ProveedorError::Validation(e.to_string()))?;
+
+    if block_status.blocked {
+        let nivel = block_status.nivel_severidad.unwrap_or_else(|| "BAJO".to_string());
+        return Err(ProveedorError::Validation(format!(
+            "No se puede registrar. La persona con cédula {} está en lista negra. Nivel: {}",
+            input.cedula, nivel
+        )));
+    }
+
+    // 3. Validar duplicidad
     info!("Creando proveedor con cédula '{}' para empresa '{}'", input.cedula, input.empresa_id);
     if proveedor_queries::find_by_cedula(pool, &input.cedula).await?.is_some() {
         return Err(ProveedorError::CedulaExists);
