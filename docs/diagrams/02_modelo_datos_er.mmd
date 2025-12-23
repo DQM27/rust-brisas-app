@@ -1,0 +1,160 @@
+%% Modelo de Datos - Entidad Relación
+%% Pegar en https://mermaid.live para visualizar
+
+erDiagram
+    USERS {
+        text id PK
+        text email UK
+        text password_hash
+        text nombre
+        text apellido
+        text role_id FK
+        int is_active
+        text cedula
+    }
+    
+    ROLES {
+        text id PK
+        text name UK
+        text description
+        int is_system
+    }
+    
+    PERMISSIONS {
+        text id PK
+        text module
+        text action
+        text description
+    }
+    
+    ROLE_PERMISSIONS {
+        text role_id FK
+        text permission_id FK
+    }
+    
+    EMPRESAS {
+        text id PK
+        text nombre UK
+        text rif UK
+        text direccion
+        text telefono
+        int activa
+    }
+    
+    CONTRATISTAS {
+        text id PK
+        text cedula UK
+        text nombre
+        text apellido
+        text empresa_id FK
+        text fecha_vencimiento_praind
+        text estado
+    }
+    
+    PROVEEDORES {
+        text id PK
+        text cedula UK
+        text nombre
+        text apellido
+        text empresa_id FK
+        text estado
+    }
+    
+    VISITANTES {
+        text id PK
+        text cedula UK
+        text nombre
+        text apellido
+        text empresa_id FK
+        text empresa
+    }
+    
+    VEHICULOS {
+        text id PK
+        text placa UK
+        text marca
+        text modelo
+        text color
+        text contratista_id FK
+        text proveedor_id FK
+        text visitante_id FK
+    }
+    
+    GAFETES {
+        text id PK
+        text numero UK
+        text estado
+        text tipo
+    }
+    
+    INGRESOS_CONTRATISTAS {
+        text id PK
+        text contratista_id FK
+        text cedula
+        text tipo_autorizacion
+        text modo_ingreso
+        text gafete_numero
+        text fecha_hora_ingreso
+        text fecha_hora_salida
+    }
+    
+    INGRESOS_PROVEEDORES {
+        text id PK
+        text proveedor_id FK
+        text gafete_numero
+        text fecha_hora_ingreso
+        text fecha_hora_salida
+    }
+    
+    INGRESOS_VISITAS {
+        text id PK
+        text visitante_id FK
+        text gafete_numero
+        text fecha_hora_ingreso
+        text fecha_hora_salida
+    }
+    
+    CITAS {
+        text id PK
+        text visitante_id FK
+        text fecha_programada
+        text estado
+        text motivo
+    }
+    
+    ALERTAS_GAFETES {
+        text id PK
+        text gafete_numero
+        text ingreso_id FK
+        text tipo_alerta
+        text resuelta
+    }
+    
+    LISTA_NEGRA {
+        text id PK
+        text cedula
+        text tipo_persona
+        text motivo
+        text activo
+    }
+
+    %% Relaciones
+    USERS ||--o{ ROLES : "tiene"
+    ROLES ||--o{ ROLE_PERMISSIONS : "tiene"
+    PERMISSIONS ||--o{ ROLE_PERMISSIONS : "pertenece"
+    
+    EMPRESAS ||--o{ CONTRATISTAS : "emplea"
+    EMPRESAS ||--o{ PROVEEDORES : "emplea"
+    EMPRESAS ||--o{ VISITANTES : "emplea"
+    
+    CONTRATISTAS ||--o{ VEHICULOS : "posee"
+    PROVEEDORES ||--o{ VEHICULOS : "posee"
+    VISITANTES ||--o{ VEHICULOS : "posee"
+    
+    CONTRATISTAS ||--o{ INGRESOS_CONTRATISTAS : "registra"
+    PROVEEDORES ||--o{ INGRESOS_PROVEEDORES : "registra"
+    VISITANTES ||--o{ CITAS : "tiene"
+    VISITANTES ||--o{ INGRESOS_VISITAS : "registra"
+    
+    GAFETES ||--o{ INGRESOS_CONTRATISTAS : "asignado"
+    GAFETES ||--o{ ALERTAS_GAFETES : "genera"

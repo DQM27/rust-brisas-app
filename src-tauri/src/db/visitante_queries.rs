@@ -22,8 +22,8 @@ pub async fn create_visitante(
 
     sqlx::query!(
         r#"
-        INSERT INTO visitantes (id, cedula, nombre, apellido, segundo_nombre, segundo_apellido, empresa, has_vehicle, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO visitantes (id, cedula, nombre, apellido, segundo_nombre, segundo_apellido, empresa, empresa_id, has_vehicle, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
         id,
         input.cedula,
@@ -32,6 +32,7 @@ pub async fn create_visitante(
         input.segundo_nombre,
         input.segundo_apellido,
         input.empresa,
+        input.empresa_id,
         input.has_vehicle,
         now,
         now
@@ -47,6 +48,7 @@ pub async fn create_visitante(
         segundo_nombre: input.segundo_nombre,
         segundo_apellido: input.segundo_apellido,
         empresa: input.empresa,
+        empresa_id: input.empresa_id,
         has_vehicle: input.has_vehicle,
         created_at: now.clone(),
         updated_at: now,
@@ -68,6 +70,7 @@ pub async fn get_visitante_by_cedula(
             segundo_nombre,
             segundo_apellido,
             empresa,
+            empresa_id,
             has_vehicle as "has_vehicle!: bool",
             created_at as "created_at!",
             updated_at as "updated_at!"
@@ -92,6 +95,7 @@ pub async fn get_visitante_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<Op
             segundo_nombre,
             segundo_apellido,
             empresa,
+            empresa_id,
             has_vehicle as "has_vehicle!: bool",
             created_at as "created_at!",
             updated_at as "updated_at!"
@@ -117,6 +121,7 @@ pub async fn search_visitantes(pool: &SqlitePool, term: &str) -> sqlx::Result<Ve
             segundo_nombre,
             segundo_apellido,
             empresa,
+            empresa_id,
             has_vehicle as "has_vehicle!: bool",
             created_at as "created_at!",
             updated_at as "updated_at!"

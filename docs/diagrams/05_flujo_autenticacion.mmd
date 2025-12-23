@@ -1,0 +1,59 @@
+%% Flujo de Autenticación
+%% Pegar en https://mermaid.live para visualizar
+
+sequenceDiagram
+    autonumber
+    
+    participant U as 👤 Usuario
+    participant FE as 🖥️ Frontend
+    participant BE as ⚙️ Backend
+    participant KR as 🔐 Keyring
+    participant SS as 📋 Session State
+    participant DB as 💾 SQLite
+
+    rect rgb(255, 240, 245)
+        Note over U,DB: LOGIN
+        U->>FE: Ingresa email y contraseña
+        FE->>BE: login(email, password)
+        BE->>DB: SELECT user WHERE email
+        DB-->>BE: User + password_hash
+        
+        BE->>KR: get_argon2_params()
+        KR-->>BE: {salt, memory, iterations}
+        
+        BE->>BE: Argon2 verify(password, hash)
+        
+        alt ✅ Credenciales Válidas
+            BE->>SS: set_current_user(user)
+            BE->>DB: SELECT role + permissions
+            DB-->>BE: Permisos del rol
+            BE-->>FE: {user, role, permissions}
+            FE->>FE: Guarda en authStore
+            FE-->>U: Redirige a Dashboard
+        else ❌ Credenciales Inválidas
+            BE-->>FE: UserError::InvalidCredentials
+            FE-->>U: Muestra error
+        end
+    end
+    
+    rect rgb(240, 248, 255)
+        Note over U,DB: VERIFICACIÓN DE PERMISOS
+        U->>FE: Intenta acceder a módulo
+        FE->>FE: authStore.hasPermission(module, action)
+        
+        alt ✅ Tiene Permiso
+            FE-->>U: Muestra contenido
+        else ❌ Sin Permiso
+            FE-->>U: Acceso denegado
+        end
+    end
+    
+    rect rgb(255, 255, 240)
+        Note over U,DB: LOGOUT
+        U->>FE: Click en salir
+        FE->>BE: logout()
+        BE->>SS: clear_session()
+        BE-->>FE: OK
+        FE->>FE: Limpia authStore
+        FE-->>U: Redirige a Login
+    end

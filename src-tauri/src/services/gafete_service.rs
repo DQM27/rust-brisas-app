@@ -499,7 +499,7 @@ mod tests {
         assert!(res.esta_disponible);
 
         // 3. Marcar como en uso (simulado insertando en ingresos)
-        sqlx::query("INSERT INTO ingresos (id, contratista_id, cedula, nombre, apellido, empresa_nombre, tipo_autorizacion, modo_ingreso, gafete_numero, fecha_hora_ingreso, usuario_ingreso_id, created_at, updated_at) 
+        sqlx::query("INSERT INTO ingresos_contratistas (id, contratista_id, cedula, nombre, apellido, empresa_nombre, tipo_autorizacion, modo_ingreso, gafete_numero, fecha_hora_ingreso, usuario_ingreso_id, created_at, updated_at) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
             .bind("ing-1")
             .bind("c-1")

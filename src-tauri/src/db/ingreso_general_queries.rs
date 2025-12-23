@@ -45,7 +45,7 @@ pub async fn find_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<Option<Ingr
             observaciones,
             created_at as "created_at!",
             updated_at as "updated_at!"
-        FROM ingresos 
+        FROM ingresos_contratistas 
         WHERE id = ?
         "#,
         id
@@ -90,7 +90,7 @@ pub async fn find_details_by_id(
             u_ingreso.nombre as usuario_ingreso_nombre,
             u_salida.nombre as usuario_salida_nombre,
             v.placa as vehiculo_placa
-        FROM ingresos i
+        FROM ingresos_contratistas i
         LEFT JOIN users u_ingreso ON i.usuario_ingreso_id = u_ingreso.id
         LEFT JOIN users u_salida ON i.usuario_salida_id = u_salida.id
         LEFT JOIN vehiculos v ON i.vehiculo_id = v.id
@@ -141,7 +141,7 @@ pub async fn find_all_with_details(
             u_ingreso.nombre as usuario_ingreso_nombre,
             u_salida.nombre as usuario_salida_nombre,
             v.placa as vehiculo_placa
-        FROM ingresos i
+        FROM ingresos_contratistas i
         LEFT JOIN users u_ingreso ON i.usuario_ingreso_id = u_ingreso.id
         LEFT JOIN users u_salida ON i.usuario_salida_id = u_salida.id
         LEFT JOIN vehiculos v ON i.vehiculo_id = v.id
@@ -222,7 +222,7 @@ pub async fn find_ingresos_abiertos_with_details(
             u_ingreso.nombre as usuario_ingreso_nombre,
             u_salida.nombre as usuario_salida_nombre,
             v.placa as vehiculo_placa
-        FROM ingresos i
+        FROM ingresos_contratistas i
         LEFT JOIN users u_ingreso ON i.usuario_ingreso_id = u_ingreso.id
         LEFT JOIN users u_salida ON i.usuario_salida_id = u_salida.id
         LEFT JOIN vehiculos v ON i.vehiculo_id = v.id
@@ -301,7 +301,7 @@ pub async fn find_ingreso_by_gafete(
             observaciones,
             created_at as "created_at!",
             updated_at as "updated_at!"
-        FROM ingresos 
+        FROM ingresos_contratistas 
         WHERE gafete_numero = ? AND fecha_hora_salida IS NULL
         "#,
         gafete_numero
@@ -373,7 +373,7 @@ pub async fn find_salidas_in_range_with_details(
             u_ingreso.nombre as usuario_ingreso_nombre,
             u_salida.nombre as usuario_salida_nombre,
             v.placa as vehiculo_placa
-        FROM ingresos i
+        FROM ingresos_contratistas i
         LEFT JOIN users u_ingreso ON i.usuario_ingreso_id = u_ingreso.id
         LEFT JOIN users u_salida ON i.usuario_salida_id = u_salida.id
         LEFT JOIN vehiculos v ON i.vehiculo_id = v.id

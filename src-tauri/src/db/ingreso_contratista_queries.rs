@@ -45,7 +45,7 @@ pub async fn find_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<Option<Ingr
             observaciones,
             created_at as "created_at!",
             updated_at as "updated_at!"
-        FROM ingresos 
+        FROM ingresos_contratistas 
         WHERE id = ? AND tipo_ingreso = 'contratista'
         "#,
         id
@@ -90,7 +90,7 @@ pub async fn find_details_by_id(
             u_ingreso.nombre as usuario_ingreso_nombre,
             u_salida.nombre as usuario_salida_nombre,
             v.placa as vehiculo_placa
-        FROM ingresos i
+        FROM ingresos_contratistas i
         LEFT JOIN users u_ingreso ON i.usuario_ingreso_id = u_ingreso.id
         LEFT JOIN users u_salida ON i.usuario_salida_id = u_salida.id
         LEFT JOIN vehiculos v ON i.vehiculo_id = v.id
@@ -138,7 +138,7 @@ pub async fn find_ingreso_abierto_by_contratista(
             observaciones,
             created_at as "created_at!",
             updated_at as "updated_at!"
-        FROM ingresos 
+        FROM ingresos_contratistas 
         WHERE contratista_id = ? 
           AND fecha_hora_salida IS NULL 
           AND tipo_ingreso = 'contratista'
@@ -201,7 +201,7 @@ pub async fn find_all(pool: &SqlitePool) -> sqlx::Result<Vec<Ingreso>> {
             observaciones,
             created_at as "created_at!",
             updated_at as "updated_at!"
-        FROM ingresos 
+        FROM ingresos_contratistas 
         WHERE tipo_ingreso = 'contratista'
         ORDER BY fecha_hora_ingreso DESC 
         LIMIT 500
@@ -266,7 +266,7 @@ pub async fn find_ingresos_abiertos(pool: &SqlitePool) -> sqlx::Result<Vec<Ingre
             observaciones,
             created_at as "created_at!",
             updated_at as "updated_at!"
-        FROM ingresos 
+        FROM ingresos_contratistas 
         WHERE fecha_hora_salida IS NULL 
           AND tipo_ingreso = 'contratista'
         ORDER BY fecha_hora_ingreso DESC
@@ -334,7 +334,7 @@ pub async fn insert(
 ) -> sqlx::Result<()> {
     sqlx::query!(
         r#"
-        INSERT INTO ingresos
+        INSERT INTO ingresos_contratistas
         (id, contratista_id, cedula, nombre, apellido, empresa_nombre,
          tipo_ingreso, tipo_autorizacion, modo_ingreso, vehiculo_id, placa_temporal,
          gafete_numero, fecha_hora_ingreso, fecha_hora_salida, tiempo_permanencia_minutos,
@@ -380,7 +380,7 @@ pub async fn registrar_salida(
 ) -> sqlx::Result<()> {
     sqlx::query!(
         r#"
-        UPDATE ingresos SET
+        UPDATE ingresos_contratistas SET
             fecha_hora_salida = ?,
             tiempo_permanencia_minutos = ?,
             usuario_salida_id = ?,

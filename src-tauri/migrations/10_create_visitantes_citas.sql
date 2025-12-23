@@ -11,15 +11,18 @@ CREATE TABLE IF NOT EXISTS visitantes (
     apellido TEXT NOT NULL,
     segundo_nombre TEXT,
     segundo_apellido TEXT,
-    empresa TEXT,              -- String libre, no FK a empresas (amenos que se requiera estricto)
-    has_vehicle INTEGER DEFAULT 0, -- Booleano para saber si pre-cargar vehículo
+    empresa TEXT,                   -- String libre para empresas no registradas
+    empresa_id TEXT,                -- FK a empresas (preferido si la empresa está registrada)
+    has_vehicle INTEGER DEFAULT 0,  -- Booleano para saber si pre-cargar vehículo
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (empresa_id) REFERENCES empresas(id)
 );
 
 -- Índices para búsqueda rápida de visitantes
 CREATE INDEX IF NOT EXISTS idx_visitantes_cedula ON visitantes(cedula);
 CREATE INDEX IF NOT EXISTS idx_visitantes_nombre ON visitantes(nombre, apellido);
+CREATE INDEX IF NOT EXISTS idx_visitantes_empresa ON visitantes(empresa_id);
 
 -- 2. Tabla: Citas (Pre-registros)
 -- Representa una intención de visita en una fecha específica.

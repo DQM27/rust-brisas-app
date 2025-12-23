@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS reportes_seguridad (
     fecha_resolucion TEXT,
     created_at TEXT NOT NULL,
     FOREIGN KEY (contratista_id) REFERENCES contratistas(id) ON DELETE SET NULL,
-    FOREIGN KEY (ingreso_id) REFERENCES ingresos(id) ON DELETE SET NULL,
+    FOREIGN KEY (ingreso_id) REFERENCES ingresos_contratistas(id) ON DELETE SET NULL,
     FOREIGN KEY (generado_por) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (resuelto_por) REFERENCES users(id) ON DELETE SET NULL
 );

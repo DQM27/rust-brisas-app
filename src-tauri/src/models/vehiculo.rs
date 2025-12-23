@@ -14,8 +14,9 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Vehiculo {
     pub id: String,
-    pub contratista_id: Option<String>, // Ahora es Opcional
-    pub proveedor_id: Option<String>,   // Nuevo campo
+    pub contratista_id: Option<String>,
+    pub proveedor_id: Option<String>,
+    pub visitante_id: Option<String>, // Nuevo: FK a visitantes
     pub tipo_vehiculo: TipoVehiculo,
     pub placa: String,
     pub marca: Option<String>,

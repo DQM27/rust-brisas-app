@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS alertas_gafetes (
     gafete_numero TEXT NOT NULL,
     
     -- VINCULACIÓN POLIMÓRFICA (uno de los tres debe estar presente)
-    ingreso_contratista_id TEXT,  -- FK a la tabla 'ingresos'
+    ingreso_contratista_id TEXT,  -- FK a la tabla 'ingresos_contratistas'
     ingreso_proveedor_id TEXT,    -- FK a la tabla 'ingresos_proveedores'
     ingreso_visita_id TEXT,       -- FK a la tabla 'ingresos_visitas' (NEW)
     
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS alertas_gafetes (
     CHECK (ingreso_contratista_id IS NOT NULL OR ingreso_proveedor_id IS NOT NULL OR ingreso_visita_id IS NOT NULL),
 
     -- Foreign Keys
-    FOREIGN KEY (ingreso_contratista_id) REFERENCES ingresos(id),
+    FOREIGN KEY (ingreso_contratista_id) REFERENCES ingresos_contratistas(id),
     FOREIGN KEY (ingreso_proveedor_id) REFERENCES ingresos_proveedores(id),
     FOREIGN KEY (ingreso_visita_id) REFERENCES ingresos_visitas(id),
     FOREIGN KEY (reportado_por) REFERENCES users(id),

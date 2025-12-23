@@ -15,7 +15,8 @@ pub struct Visitante {
     pub apellido: String,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
-    pub empresa: Option<String>,
+    pub empresa: Option<String>, // Legacy: string libre (para compatibilidad)
+    pub empresa_id: Option<String>, // Nuevo: FK a empresas
     pub has_vehicle: bool,
     pub created_at: String,
     pub updated_at: String,
@@ -29,6 +30,7 @@ pub struct CreateVisitanteInput {
     pub apellido: String,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
-    pub empresa: Option<String>,
+    pub empresa: Option<String>,    // Legacy: string libre
+    pub empresa_id: Option<String>, // Nuevo: FK a empresas (preferido)
     pub has_vehicle: bool,
 }

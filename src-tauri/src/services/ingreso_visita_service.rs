@@ -75,7 +75,8 @@ pub async fn registrar_ingreso_full(
                 segundo_nombre: None,
                 segundo_apellido: None,
                 empresa: input.empresa,
-                has_vehicle: false, // Default false por ahora
+                empresa_id: None, // TODO: Agregar empresa_id al input de ingreso
+                has_vehicle: false,
             };
             visitante_service::create_visitante(pool, create_input)
                 .await

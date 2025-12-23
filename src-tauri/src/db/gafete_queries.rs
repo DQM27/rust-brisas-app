@@ -110,7 +110,7 @@ pub async fn is_en_uso(pool: &SqlitePool, numero: &str, tipo: &str) -> sqlx::Res
     let count = match tipo {
         "contratista" => {
             sqlx::query_scalar!(
-                r#"SELECT COUNT(*) FROM ingresos 
+                r#"SELECT COUNT(*) FROM ingresos_contratistas 
                  WHERE gafete_numero = ? 
                  AND tipo_ingreso = 'contratista' 
                  AND fecha_hora_salida IS NULL"#,
@@ -184,7 +184,7 @@ pub async fn find_disponibles_by_tipo(pool: &SqlitePool, tipo: &str) -> sqlx::Re
             sqlx::query_as!(
                 NumRow,
                 r#"SELECT g.numero FROM gafetes g
-                 LEFT JOIN ingresos i ON g.numero = i.gafete_numero AND i.fecha_hora_salida IS NULL AND i.tipo_ingreso = 'contratista'
+                 LEFT JOIN ingresos_contratistas i ON g.numero = i.gafete_numero AND i.fecha_hora_salida IS NULL AND i.tipo_ingreso = 'contratista'
                  LEFT JOIN alertas_gafetes a ON g.numero = a.gafete_numero AND a.resuelto = 0 AND a.ingreso_contratista_id IS NOT NULL
                  WHERE g.tipo = ? AND g.estado = 'activo'
                  AND i.id IS NULL AND a.id IS NULL AND g.numero != 'S/G'
@@ -450,7 +450,7 @@ mod tests {
         insert(&pool, "G-2", "contratista", "now", "now").await.unwrap();
 
         // G-1 en uso (ingreso abierto)
-        pool.execute("INSERT INTO ingresos (id, contratista_id, cedula, nombre, apellido, empresa_nombre, tipo_ingreso, tipo_autorizacion, modo_ingreso, gafete_numero, fecha_hora_ingreso, usuario_ingreso_id, created_at, updated_at)
+        pool.execute("INSERT INTO ingresos_contratistas (id, contratista_id, cedula, nombre, apellido, empresa_nombre, tipo_ingreso, tipo_autorizacion, modo_ingreso, gafete_numero, fecha_hora_ingreso, usuario_ingreso_id, created_at, updated_at)
                       VALUES ('i-1', 'c-1', '123', 'J', 'P', 'E', 'contratista', 'praind', 'caminando', 'G-1', 'now', 'u-1', 'now', 'now')").await.unwrap();
 
         let disp = find_disponibles_by_tipo(&pool, "contratista").await.unwrap();

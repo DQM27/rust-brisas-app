@@ -1,0 +1,56 @@
+%% Flujo de Salida y Alertas
+%% Pegar en https://mermaid.live para visualizar
+
+sequenceDiagram
+    autonumber
+    
+    participant G as 👮 Guardia
+    participant FE as 🖥️ Frontend
+    participant BE as ⚙️ Backend
+    participant AS as 🔔 Alerta Service
+    participant DB as 💾 SQLite
+
+    rect rgb(255, 245, 238)
+        Note over G,DB: BÚSQUEDA DE PERSONA ADENTRO
+        G->>FE: Busca por gafete o nombre
+        FE->>BE: get_ingresos_activos()
+        BE->>DB: SELECT WHERE salida IS NULL
+        DB-->>BE: Lista de personas adentro
+        BE-->>FE: Ingresos activos
+        FE-->>G: Muestra lista
+    end
+    
+    rect rgb(240, 255, 255)
+        Note over G,DB: VALIDACIÓN DE SALIDA
+        G->>FE: Selecciona persona
+        FE->>BE: validate_exit(ingreso_id)
+        BE->>BE: Calcula tiempo permanencia
+        Note over BE: tiempo = ahora - hora_ingreso
+        BE-->>FE: {ok, advertencias}
+    end
+    
+    rect rgb(255, 250, 240)
+        Note over G,DB: REGISTRO DE SALIDA
+        G->>FE: Confirma salida
+        FE->>BE: registrar_salida(id, devuelve_gafete)
+        
+        BE->>BE: Evalúa devolución gafete
+        Note over BE: Reglas:<br/>- Mismo turno: OK<br/>- Diferente turno: ALERTA<br/>- Sin gafete: ERROR
+        
+        alt 🟢 Devolución Correcta
+            BE->>DB: UPDATE ingreso (salida)
+            BE->>DB: UPDATE gafete (disponible)
+        else 🟡 Devolución Tardía
+            BE->>AS: crear_alerta(gafete, tipo)
+            AS->>DB: INSERT alerta_gafete
+            BE->>DB: UPDATE ingreso (salida)
+            BE->>DB: UPDATE gafete (disponible)
+        else 🔴 No Devuelve Gafete
+            BE->>AS: crear_alerta(gafete, no_devuelto)
+            AS->>DB: INSERT alerta_gafete
+            BE->>DB: UPDATE ingreso (salida, sin_gafete)
+        end
+        
+        BE-->>FE: Salida registrada + alertas
+        FE-->>G: Confirma y muestra advertencias
+    end

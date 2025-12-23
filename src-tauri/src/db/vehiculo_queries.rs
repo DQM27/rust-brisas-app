@@ -17,6 +17,7 @@ struct VehiculoRow {
     id: String,
     contratista_id: Option<String>,
     proveedor_id: Option<String>,
+    visitante_id: Option<String>,
     tipo_vehiculo: String,
     placa: String,
     marca: Option<String>,
@@ -35,6 +36,7 @@ impl TryFrom<VehiculoRow> for Vehiculo {
             id: r.id,
             contratista_id: r.contratista_id,
             proveedor_id: r.proveedor_id,
+            visitante_id: r.visitante_id,
             tipo_vehiculo: r.tipo_vehiculo.parse().map_err(|e| {
                 sqlx::Error::Decode(Box::new(std::io::Error::new(
                     std::io::ErrorKind::InvalidData,
@@ -61,7 +63,7 @@ pub async fn find_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<Option<Vehi
     let row = sqlx::query_as!(
         VehiculoRow,
         r#"SELECT 
-            v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
+            v.id, v.contratista_id, v.proveedor_id, v.visitante_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
             v.is_active as "is_active: bool", v.created_at, v.updated_at
            FROM vehiculos v
            WHERE v.id = ?"#,
@@ -81,7 +83,7 @@ pub async fn find_by_placa(pool: &SqlitePool, placa: &str) -> sqlx::Result<Optio
     let row = sqlx::query_as!(
         VehiculoRow,
         r#"SELECT 
-            v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
+            v.id, v.contratista_id, v.proveedor_id, v.visitante_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
             v.is_active as "is_active: bool", v.created_at, v.updated_at
            FROM vehiculos v
            WHERE v.placa = ?"#,
@@ -101,7 +103,7 @@ pub async fn find_all(pool: &SqlitePool) -> sqlx::Result<Vec<Vehiculo>> {
     let rows = sqlx::query_as!(
         VehiculoRow,
         r#"SELECT 
-            v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
+            v.id, v.contratista_id, v.proveedor_id, v.visitante_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
             v.is_active as "is_active: bool", v.created_at, v.updated_at
            FROM vehiculos v
            ORDER BY v.created_at DESC"#
@@ -117,7 +119,7 @@ pub async fn find_activos(pool: &SqlitePool) -> sqlx::Result<Vec<Vehiculo>> {
     let rows = sqlx::query_as!(
         VehiculoRow,
         r#"SELECT 
-            v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
+            v.id, v.contratista_id, v.proveedor_id, v.visitante_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
             v.is_active as "is_active: bool", v.created_at, v.updated_at
            FROM vehiculos v
            WHERE v.is_active = 1
@@ -137,7 +139,7 @@ pub async fn find_by_contratista(
     let rows = sqlx::query_as!(
         VehiculoRow,
         r#"SELECT 
-            v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
+            v.id, v.contratista_id, v.proveedor_id, v.visitante_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
             v.is_active as "is_active: bool", v.created_at, v.updated_at
            FROM vehiculos v
            WHERE v.contratista_id = ?
@@ -158,7 +160,7 @@ pub async fn find_by_proveedor(
     let rows = sqlx::query_as!(
         VehiculoRow,
         r#"SELECT 
-            v.id, v.contratista_id, v.proveedor_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
+            v.id, v.contratista_id, v.proveedor_id, v.visitante_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,
             v.is_active as "is_active: bool", v.created_at, v.updated_at
            FROM vehiculos v
            WHERE v.proveedor_id = ?

@@ -1,0 +1,58 @@
+%% Motor de Validación - Flujo de Decisión
+%% Pegar en https://mermaid.live para visualizar
+
+flowchart TD
+    START([📥 Solicitud de Ingreso]) --> CTX[Crear ContextoIngreso]
+    
+    CTX --> LN{¿En Lista Negra?}
+    LN -->|Sí| BLOCK_LN[❌ BLOQUEADO<br/>Motivo: Lista Negra]
+    LN -->|No| IA{¿Ingreso Activo?}
+    
+    IA -->|Sí| BLOCK_IA[❌ BLOQUEADO<br/>Ya está adentro]
+    IA -->|No| TIPO{Tipo de Ingreso}
+    
+    TIPO -->|Contratista| PRAIND{¿PRAIND Vigente?}
+    TIPO -->|Proveedor| CORREO{¿Autorización Correo?}
+    TIPO -->|Visita| CITA{¿Tiene Cita/Correo?}
+    
+    PRAIND -->|No| BLOCK_PR[❌ BLOQUEADO<br/>PRAIND vencido]
+    PRAIND -->|Sí| ESTADO_C{¿Estado Activo?}
+    
+    CORREO -->|No| BLOCK_CO[❌ BLOQUEADO<br/>Sin autorización]
+    CORREO -->|Sí| ESTADO_P{¿Estado Activo?}
+    
+    CITA -->|No| BLOCK_CI[❌ BLOQUEADO<br/>Sin cita/autorización]
+    CITA -->|Sí| CHECK_ALT[Verificar Alertas]
+    
+    ESTADO_C -->|Inactivo| BLOCK_ES[❌ BLOQUEADO<br/>Contratista inactivo]
+    ESTADO_C -->|Activo| CHECK_ALT
+    
+    ESTADO_P -->|Inactivo| BLOCK_EP[❌ BLOQUEADO<br/>Proveedor inactivo]
+    ESTADO_P -->|Activo| CHECK_ALT
+    
+    CHECK_ALT --> ALERTAS{¿Alertas Gafete<br/>Pendientes?}
+    
+    ALERTAS -->|Sí| OK_WARN[✅ PERMITIDO<br/>⚠️ Con advertencia]
+    ALERTAS -->|No| OK[✅ PERMITIDO]
+    
+    OK --> END([📤 Resultado])
+    OK_WARN --> END
+    BLOCK_LN --> END
+    BLOCK_IA --> END
+    BLOCK_PR --> END
+    BLOCK_CO --> END
+    BLOCK_CI --> END
+    BLOCK_ES --> END
+    BLOCK_EP --> END
+    
+    style START fill:#4ecdc4,stroke:#1a9c94,color:#fff
+    style END fill:#4ecdc4,stroke:#1a9c94,color:#fff
+    style OK fill:#00b894,stroke:#00a085,color:#fff
+    style OK_WARN fill:#fdcb6e,stroke:#f39c12,color:#333
+    style BLOCK_LN fill:#e74c3c,stroke:#c0392b,color:#fff
+    style BLOCK_IA fill:#e74c3c,stroke:#c0392b,color:#fff
+    style BLOCK_PR fill:#e74c3c,stroke:#c0392b,color:#fff
+    style BLOCK_CO fill:#e74c3c,stroke:#c0392b,color:#fff
+    style BLOCK_CI fill:#e74c3c,stroke:#c0392b,color:#fff
+    style BLOCK_ES fill:#e74c3c,stroke:#c0392b,color:#fff
+    style BLOCK_EP fill:#e74c3c,stroke:#c0392b,color:#fff

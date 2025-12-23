@@ -1,0 +1,23 @@
+%% Arquitectura de Capas - Backend
+%% Pegar en https://mermaid.live para visualizar
+
+graph TD
+    A[🖥️ Frontend SvelteKit] -->|invoke| B[📡 Commands Layer]
+    B -->|llama| C[⚙️ Services Layer]
+    C -->|usa| D[📐 Domain Layer]
+    C -->|ejecuta| E[🗃️ DB Queries Layer]
+    E -->|SQL| F[(💾 SQLite)]
+    
+    subgraph Backend Rust/Tauri
+        B
+        C
+        D
+        E
+    end
+    
+    style A fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style B fill:#4ecdc4,stroke:#1a9c94,color:#fff
+    style C fill:#45b7d1,stroke:#2980b9,color:#fff
+    style D fill:#96ceb4,stroke:#27ae60,color:#fff
+    style E fill:#ffeaa7,stroke:#fdcb6e,color:#333
+    style F fill:#dfe6e9,stroke:#636e72,color:#333

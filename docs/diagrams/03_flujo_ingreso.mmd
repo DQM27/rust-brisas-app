@@ -1,0 +1,50 @@
+%% Flujo de Ingreso de Contratista
+%% Pegar en https://mermaid.live para visualizar
+
+sequenceDiagram
+    autonumber
+    
+    participant G as 👮 Guardia
+    participant FE as 🖥️ Frontend
+    participant BE as ⚙️ Backend
+    participant MV as 📐 Motor Validación
+    participant DB as 💾 SQLite
+
+    rect rgb(240, 248, 255)
+        Note over G,DB: FASE 1: Búsqueda
+        G->>FE: Busca contratista (nombre/cédula)
+        FE->>BE: search_all(query)
+        BE->>DB: Tantivy full-text search
+        DB-->>BE: Resultados indexados
+        BE-->>FE: Lista de coincidencias
+        FE-->>G: Muestra opciones
+    end
+    
+    rect rgb(255, 248, 240)
+        Note over G,DB: FASE 2: Validación
+        G->>FE: Selecciona contratista
+        FE->>BE: validate_ingreso_contratista(id)
+        BE->>DB: Obtiene datos completos
+        DB-->>BE: Contratista + historial
+        BE->>MV: validar_ingreso(contexto)
+        
+        Note over MV: Verifica:<br/>✓ Lista negra<br/>✓ PRAIND vigente<br/>✓ Estado activo<br/>✓ Sin ingreso abierto
+        
+        MV-->>BE: ResultadoValidacion
+        BE-->>FE: {puede_ingresar, alertas, bloqueo}
+    end
+    
+    rect rgb(240, 255, 240)
+        Note over G,DB: FASE 3: Registro
+        alt ✅ Puede Ingresar
+            G->>FE: Selecciona modo y gafete
+            FE->>BE: create_ingreso_contratista(datos)
+            BE->>DB: INSERT ingreso
+            BE->>DB: UPDATE gafete (estado: en_uso)
+            BE-->>FE: Ingreso creado ✅
+            FE-->>G: Confirma entrada
+        else ❌ Bloqueado
+            BE-->>FE: Motivo de bloqueo
+            FE-->>G: Muestra error y razón
+        end
+    end

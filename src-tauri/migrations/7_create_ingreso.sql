@@ -1,9 +1,9 @@
 -- ==========================================
--- Migración: Tabla de Ingresos
+-- Migración: Tabla de Ingresos de Contratistas
 -- ==========================================
 -- Registro de entradas y salidas de contratistas
 
-CREATE TABLE IF NOT EXISTS ingresos (
+CREATE TABLE IF NOT EXISTS ingresos_contratistas (
     id TEXT PRIMARY KEY,
     
     -- Contratista
@@ -56,17 +56,17 @@ CREATE TABLE IF NOT EXISTS ingresos (
 -- ==========================================
 
 -- Buscar por contratista (verificar ingreso abierto)
-CREATE INDEX IF NOT EXISTS idx_ingresos_contratista ON ingresos(contratista_id, fecha_hora_salida);
+CREATE INDEX IF NOT EXISTS idx_ingresos_contratistas_contratista ON ingresos_contratistas(contratista_id, fecha_hora_salida);
 
 -- Buscar por cédula
-CREATE INDEX IF NOT EXISTS idx_ingresos_cedula ON ingresos(cedula);
+CREATE INDEX IF NOT EXISTS idx_ingresos_contratistas_cedula ON ingresos_contratistas(cedula);
 
 -- Listar ingresos abiertos (personas adentro)
-CREATE INDEX IF NOT EXISTS idx_ingresos_abiertos ON ingresos(fecha_hora_salida) 
+CREATE INDEX IF NOT EXISTS idx_ingresos_contratistas_abiertos ON ingresos_contratistas(fecha_hora_salida) 
 WHERE fecha_hora_salida IS NULL;
 
 -- Buscar ingreso por gafete (para registrar salida)
-CREATE INDEX IF NOT EXISTS idx_ingresos_gafete ON ingresos(gafete_numero, fecha_hora_salida);
+CREATE INDEX IF NOT EXISTS idx_ingresos_contratistas_gafete ON ingresos_contratistas(gafete_numero, fecha_hora_salida);
 
 -- Listar por fecha (reportes)
-CREATE INDEX IF NOT EXISTS idx_ingresos_fecha ON ingresos(fecha_hora_ingreso DESC);
+CREATE INDEX IF NOT EXISTS idx_ingresos_contratistas_fecha ON ingresos_contratistas(fecha_hora_ingreso DESC);

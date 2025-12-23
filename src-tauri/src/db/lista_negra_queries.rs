@@ -30,6 +30,7 @@ struct ListaNegraRow {
     bloqueado_por: Option<String>,
     observaciones: Option<String>,
     is_active: i64,
+    tipo_persona: Option<String>,
     created_at: Option<String>,
     updated_at: Option<String>,
 }

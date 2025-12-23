@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS vehiculos (
     id TEXT PRIMARY KEY NOT NULL,
     contratista_id TEXT,
     proveedor_id TEXT,
+    visitante_id TEXT,
     tipo_vehiculo TEXT NOT NULL CHECK(tipo_vehiculo IN ('motocicleta', 'automovil')),
     placa TEXT NOT NULL UNIQUE,
     marca TEXT,
@@ -18,11 +19,14 @@ CREATE TABLE IF NOT EXISTS vehiculos (
     updated_at TEXT NOT NULL,
     FOREIGN KEY (contratista_id) REFERENCES contratistas(id) ON DELETE CASCADE,
     FOREIGN KEY (proveedor_id) REFERENCES proveedores(id) ON DELETE CASCADE,
-    CHECK (contratista_id IS NOT NULL OR proveedor_id IS NOT NULL)
+    FOREIGN KEY (visitante_id) REFERENCES visitantes(id) ON DELETE CASCADE,
+    CHECK (contratista_id IS NOT NULL OR proveedor_id IS NOT NULL OR visitante_id IS NOT NULL)
 );
 
 -- Índices para optimizar consultas
 CREATE INDEX IF NOT EXISTS idx_vehiculos_contratista ON vehiculos(contratista_id);
+CREATE INDEX IF NOT EXISTS idx_vehiculos_proveedor ON vehiculos(proveedor_id);
+CREATE INDEX IF NOT EXISTS idx_vehiculos_visitante ON vehiculos(visitante_id);
 CREATE INDEX IF NOT EXISTS idx_vehiculos_placa ON vehiculos(placa);
 CREATE INDEX IF NOT EXISTS idx_vehiculos_is_active ON vehiculos(is_active);
 CREATE INDEX IF NOT EXISTS idx_vehiculos_tipo ON vehiculos(tipo_vehiculo);
