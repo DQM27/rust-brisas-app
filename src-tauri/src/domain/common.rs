@@ -41,7 +41,7 @@ impl Default for DecisionReporteGafete {
 ///
 /// # Ejemplos
 /// ```
-/// use brisas_app::domain::common::normalizar_numero_gafete;
+/// use brisas_app_lib::domain::common::normalizar_numero_gafete;
 /// assert_eq!(normalizar_numero_gafete(" v-123 "), "V-123");
 /// ```
 pub fn normalizar_numero_gafete(input: &str) -> String {
