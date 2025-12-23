@@ -335,6 +335,61 @@ pub fn evaluar_devolucion_gafete(
 }
 
 // ==========================================
+// LOGICA DE DOMINIO: VISITANTES
+// ==========================================
+
+/// Evalúa todas las reglas para determinar si un visitante puede entrar
+/// Mismas reglas que contratistas EXCEPTO: no valida PRAIND ni estado
+pub fn evaluar_elegibilidad_visita(
+    esta_bloqueado: bool,
+    motivo_bloqueo: Option<String>,
+    tiene_ingreso_abierto: bool,
+    cantidad_alertas_gafete: usize,
+) -> ResultadoValidacionEntrada {
+    let mut alertas = Vec::new();
+
+    // 1. REGLA BLOQUEANTE: Lista Negra
+    if esta_bloqueado {
+        return ResultadoValidacionEntrada {
+            puede_ingresar: false,
+            motivo_rechazo: Some(format!(
+                "VISITANTE BLOQUEADO: {}",
+                motivo_bloqueo.unwrap_or_default()
+            )),
+            alertas,
+        };
+    }
+
+    // 2. REGLA BLOQUEANTE: Ingreso Abierto (Duplicado)
+    if tiene_ingreso_abierto {
+        return ResultadoValidacionEntrada {
+            puede_ingresar: false,
+            motivo_rechazo: Some("El visitante ya tiene un ingreso activo".to_string()),
+            alertas,
+        };
+    }
+
+    // 3. REGLA BLOQUEANTE: Más de 1 gafete pendiente (límite 2 = bloqueado)
+    if cantidad_alertas_gafete >= 2 {
+        return ResultadoValidacionEntrada {
+            puede_ingresar: false,
+            motivo_rechazo: Some(format!(
+                "Debe {} gafetes. Regularice antes de ingresar",
+                cantidad_alertas_gafete
+            )),
+            alertas,
+        };
+    }
+
+    // 4. REGLA NO BLOQUEANTE: 1 alerta de gafete = warning
+    if cantidad_alertas_gafete == 1 {
+        alertas.push("⚠️ Tiene 1 gafete pendiente de devolución".to_string());
+    }
+
+    ResultadoValidacionEntrada { puede_ingresar: true, motivo_rechazo: None, alertas }
+}
+
+// ==========================================
 // LOGICA DE DOMINIO: PRAIND ALERTAS
 // ==========================================
 
