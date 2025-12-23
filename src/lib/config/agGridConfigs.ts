@@ -368,6 +368,7 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     enableGrouping: false
   },
   'lista-negra-list': LISTA_NEGRA_CONFIG,
+  'lista-negra': LISTA_NEGRA_CONFIG,
 
   // Placeholders para las demás grids
   'vehicles-list': {
