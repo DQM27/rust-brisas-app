@@ -396,3 +396,183 @@ pub async fn delete_contratista(
 
     Ok(())
 }
+
+// ==========================================
+// ACTUALIZAR PRAIND CON HISTORIAL
+// ==========================================
+
+use crate::db::audit_queries;
+
+/// Input para actualizar fecha PRAIND
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActualizarPraindInput {
+    pub contratista_id: String,
+    pub nueva_fecha_praind: String,
+    pub motivo: Option<String>,
+}
+
+/// Actualiza la fecha de vencimiento PRAIND y registra en historial
+pub async fn actualizar_praind_con_historial(
+    pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
+    input: ActualizarPraindInput,
+    usuario_id: String,
+) -> Result<ContratistaResponse, ContratistaError> {
+    // 1. Obtener contratista actual
+    let contratista_row = db::find_by_id_with_empresa(pool, &input.contratista_id)
+        .await?
+        .ok_or(ContratistaError::NotFound)?;
+
+    let fecha_anterior = contratista_row.contratista.fecha_vencimiento_praind.clone();
+
+    // 2. Validar nueva fecha
+    crate::models::contratista::validaciones::validar_fecha(&input.nueva_fecha_praind)
+        .map_err(|e| ContratistaError::Validation(e))?;
+
+    // 3. Actualizar contratista
+    let now = Utc::now().to_rfc3339();
+    db::update_praind(pool, &input.contratista_id, &input.nueva_fecha_praind, &now).await?;
+
+    // 4. Registrar en historial
+    let historial_id = Uuid::new_v4().to_string();
+    audit_queries::insert_praind_historial(
+        pool,
+        &historial_id,
+        &input.contratista_id,
+        Some(&fecha_anterior),
+        &input.nueva_fecha_praind,
+        &usuario_id,
+        input.motivo.as_deref(),
+        &now,
+    )
+    .await
+    .map_err(|e| ContratistaError::Database(e))?;
+
+    // 5. Si el PRAIND renovado y estaba suspendido por PRAIND, activar automáticamente
+    let nueva_fecha_valida =
+        crate::domain::ingreso_contratista::verificar_praind_vigente(&input.nueva_fecha_praind)
+            .unwrap_or(false);
+
+    if nueva_fecha_valida && contratista_row.contratista.estado.as_str() == "suspendido" {
+        // Cambiar a activo automáticamente
+        db::update_estado(pool, &input.contratista_id, "activo", &now).await?;
+
+        // Registrar transición de estado
+        let estado_historial_id = Uuid::new_v4().to_string();
+        audit_queries::insert_historial_estado(
+            pool,
+            &estado_historial_id,
+            &input.contratista_id,
+            "suspendido",
+            "activo",
+            Some(&usuario_id),
+            "Reactivación automática por renovación de PRAIND",
+            &now,
+        )
+        .await
+        .map_err(|e| ContratistaError::Database(e))?;
+    }
+
+    // 6. Obtener respuesta actualizada
+    let updated = db::find_by_id_with_empresa(pool, &input.contratista_id)
+        .await?
+        .ok_or(ContratistaError::NotFound)?;
+
+    // 7. Actualizar índice de búsqueda
+    if let Err(e) =
+        search_service.update_contratista(&updated.contratista, &updated.empresa_nombre).await
+    {
+        warn!("Error al actualizar índice del contratista: {}", e);
+    }
+
+    let response = build_response(updated, pool).await;
+    Ok(response)
+}
+
+// ==========================================
+// CAMBIAR ESTADO CON HISTORIAL
+// ==========================================
+
+/// Input para cambiar estado con auditoría
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CambiarEstadoConHistorialInput {
+    pub contratista_id: String,
+    pub nuevo_estado: String,
+    pub motivo: String,
+}
+
+/// Cambia el estado del contratista y registra en historial
+pub async fn cambiar_estado_con_historial(
+    pool: &SqlitePool,
+    search_service: &Arc<SearchService>,
+    input: CambiarEstadoConHistorialInput,
+    usuario_id: String,
+) -> Result<ContratistaResponse, ContratistaError> {
+    // 1. Obtener contratista actual
+    let contratista_row = db::find_by_id_with_empresa(pool, &input.contratista_id)
+        .await?
+        .ok_or(ContratistaError::NotFound)?;
+
+    let estado_anterior = contratista_row.contratista.estado.as_str().to_string();
+
+    // 2. Validar nuevo estado
+    let nuevo_estado: crate::models::contratista::EstadoContratista =
+        input.nuevo_estado.parse().map_err(|e: String| ContratistaError::Validation(e))?;
+
+    // 3. Actualizar estado
+    let now = Utc::now().to_rfc3339();
+    db::update_estado(pool, &input.contratista_id, nuevo_estado.as_str(), &now).await?;
+
+    // 4. Registrar en historial
+    let historial_id = Uuid::new_v4().to_string();
+    audit_queries::insert_historial_estado(
+        pool,
+        &historial_id,
+        &input.contratista_id,
+        &estado_anterior,
+        nuevo_estado.as_str(),
+        Some(&usuario_id),
+        &input.motivo,
+        &now,
+    )
+    .await
+    .map_err(|e| ContratistaError::Database(e))?;
+
+    // 5. Obtener respuesta actualizada
+    let updated = db::find_by_id_with_empresa(pool, &input.contratista_id)
+        .await?
+        .ok_or(ContratistaError::NotFound)?;
+
+    // 6. Actualizar índice de búsqueda
+    if let Err(e) =
+        search_service.update_contratista(&updated.contratista, &updated.empresa_nombre).await
+    {
+        warn!("Error al actualizar índice del contratista: {}", e);
+    }
+
+    let response = build_response(updated, pool).await;
+    Ok(response)
+}
+
+/// Helper para construir respuesta con datos completos
+async fn build_response(row: db::ContratistaEnhancedRow, pool: &SqlitePool) -> ContratistaResponse {
+    let vehiculo = crate::db::vehiculo_queries::find_by_contratista(pool, &row.contratista.id)
+        .await
+        .ok()
+        .and_then(|v| v.into_iter().next());
+
+    let mut response = ContratistaResponse::from(row.contratista);
+    response.empresa_nombre = row.empresa_nombre;
+
+    if let Some(v) = vehiculo {
+        response.vehiculo_tipo = Some(v.tipo_vehiculo.to_string());
+        response.vehiculo_placa = Some(v.placa);
+        response.vehiculo_marca = v.marca;
+        response.vehiculo_modelo = v.modelo;
+        response.vehiculo_color = v.color;
+    }
+
+    response
+}

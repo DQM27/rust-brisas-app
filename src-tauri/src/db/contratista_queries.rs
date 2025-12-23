@@ -460,6 +460,25 @@ pub async fn update_estado(
     Ok(())
 }
 
+/// Actualiza solo la fecha de vencimiento PRAIND
+pub async fn update_praind(
+    pool: &SqlitePool,
+    id: &str,
+    fecha_vencimiento_praind: &str,
+    updated_at: &str,
+) -> sqlx::Result<()> {
+    sqlx::query!(
+        "UPDATE contratistas SET fecha_vencimiento_praind = ?, updated_at = ? WHERE id = ?",
+        fecha_vencimiento_praind,
+        updated_at,
+        id
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
 /// Elimina un contratista
 pub async fn delete(pool: &SqlitePool, id: &str) -> sqlx::Result<()> {
     sqlx::query!("DELETE FROM contratistas WHERE id = ?", id).execute(pool).await?;
