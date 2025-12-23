@@ -1,20 +1,26 @@
 // src/lib/types/listaNegra.ts
 
 // ==========================================
+// ENUMS
+// ==========================================
+
+export type NivelSeveridad = 'ALTO' | 'MEDIO' | 'BAJO';
+
+// ==========================================
 // MODELO DE DOMINIO
 // ==========================================
 
 export interface ListaNegra {
   id: string;
-  contratistaId?: string;
   cedula: string;
   nombre: string;
   segundoNombre?: string;
   apellido: string;
   segundoApellido?: string;
+  empresaId?: string;
+  empresaNombre?: string;
+  nivelSeveridad: NivelSeveridad;
   motivoBloqueo: string;
-  fechaInicioBloqueo: string;
-  fechaFinBloqueo?: string;
   bloqueadoPor: string;
   observaciones?: string;
   isActive: boolean;
@@ -27,21 +33,22 @@ export interface ListaNegra {
 // ==========================================
 
 export interface AddToListaNegraInput {
-  contratistaId?: string;
-  cedula?: string;
-  nombre?: string;
+  cedula: string;
+  nombre: string;
   segundoNombre?: string;
-  apellido?: string;
+  apellido: string;
   segundoApellido?: string;
+  empresaId?: string;
+  empresaNombre?: string;
+  nivelSeveridad: NivelSeveridad;
   motivoBloqueo: string;
-  fechaFinBloqueo?: string;
   bloqueadoPor: string;
   observaciones?: string;
 }
 
 export interface UpdateListaNegraInput {
+  nivelSeveridad?: NivelSeveridad;
   motivoBloqueo?: string;
-  fechaFinBloqueo?: string;
   observaciones?: string;
 }
 
@@ -51,22 +58,20 @@ export interface UpdateListaNegraInput {
 
 export interface ListaNegraResponse {
   id: string;
-  contratistaId?: string;
   cedula: string;
   nombre: string;
   segundoNombre?: string;
   apellido: string;
   segundoApellido?: string;
   nombreCompleto: string;
+  empresaId?: string;
+  empresaNombre?: string;
+  nivelSeveridad: NivelSeveridad;
   motivoBloqueo: string;
-  fechaInicioBloqueo: string;
-  fechaFinBloqueo?: string;
   bloqueadoPor: string;
   observaciones?: string;
   isActive: boolean;
-  esBloqueoPermanente: boolean;
-  diasTranscurridos: number;
-  empresaNombre?: string;
+  bloqueadoDesde: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -75,14 +80,33 @@ export interface ListaNegraListResponse {
   bloqueados: ListaNegraResponse[];
   total: number;
   activos: number;
-  permanentes: number;
-  temporales: number;
+  porNivel: {
+    alto: number;
+    medio: number;
+    bajo: number;
+  };
 }
 
 export interface BlockCheckResponse {
   isBlocked: boolean;
-  motivo?: string;
+  nivelSeveridad?: NivelSeveridad;
   bloqueadoDesde?: string;
-  bloqueadoHasta?: string;
-  bloqueadoPor?: string;
+}
+
+// ==========================================
+// BÚSQUEDA DE PERSONAS PARA BLOQUEAR
+// ==========================================
+
+export interface PersonaSearchResult {
+  tipoPersona: 'contratista' | 'proveedor' | 'visita';
+  entityId: string;
+  cedula: string;
+  nombre: string;
+  segundoNombre?: string;
+  apellido: string;
+  segundoApellido?: string;
+  nombreCompleto: string;
+  empresaId?: string;
+  empresaNombre?: string;
+  yaBloqueado: boolean;
 }

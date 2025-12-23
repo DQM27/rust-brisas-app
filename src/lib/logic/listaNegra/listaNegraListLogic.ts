@@ -6,7 +6,7 @@ import type { ColDef, ICellRendererParams } from "@ag-grid-community/core";
 
 export interface ListaNegraListState {
   estadoFilter: "todos" | "activo" | "inactivo";
-  tipoFilter: "todos" | "permanente" | "temporal";
+  nivelFilter: "todos" | "ALTO" | "MEDIO" | "BAJO";
 }
 
 export class ListaNegraListLogic {
@@ -15,7 +15,7 @@ export class ListaNegraListLogic {
   constructor() {
     this.state = {
       estadoFilter: "todos",
-      tipoFilter: "todos"
+      nivelFilter: "todos"
     };
   }
 
@@ -42,11 +42,9 @@ export class ListaNegraListLogic {
       filtered = filtered.filter((b) => !b.isActive);
     }
 
-    // Filtro de tipo
-    if (this.state.tipoFilter === "permanente") {
-      filtered = filtered.filter((b) => b.esBloqueoPermanente);
-    } else if (this.state.tipoFilter === "temporal") {
-      filtered = filtered.filter((b) => !b.esBloqueoPermanente);
+    // Filtro de nivel
+    if (this.state.nivelFilter !== "todos") {
+      filtered = filtered.filter((b) => b.nivelSeveridad === this.state.nivelFilter);
     }
 
     return filtered;
@@ -56,8 +54,11 @@ export class ListaNegraListLogic {
     return {
       total: bloqueados.length,
       activos: bloqueados.filter((b) => b.isActive).length,
-      permanentes: bloqueados.filter((b) => b.esBloqueoPermanente).length,
-      temporales: bloqueados.filter((b) => !b.esBloqueoPermanente).length,
+      porNivel: {
+        alto: bloqueados.filter((b) => b.nivelSeveridad === 'ALTO').length,
+        medio: bloqueados.filter((b) => b.nivelSeveridad === 'MEDIO').length,
+        bajo: bloqueados.filter((b) => b.nivelSeveridad === 'BAJO').length,
+      }
     };
   }
 
@@ -66,18 +67,18 @@ export class ListaNegraListLogic {
     this.state.estadoFilter = filter;
   }
 
-  setTipoFilter(filter: ListaNegraListState['tipoFilter']): void {
-    this.state.tipoFilter = filter;
+  setNivelFilter(filter: ListaNegraListState['nivelFilter']): void {
+    this.state.nivelFilter = filter;
   }
 
   clearAllFilters(): void {
     this.state.estadoFilter = "todos";
-    this.state.tipoFilter = "todos";
+    this.state.nivelFilter = "todos";
     selectedSearchStore.clear();
   }
 
   // Column configuration
-  static getColumns(): ColDef<ListaNegraResponse>[] {
+  static getColumns(handleStatusChange?: (id: string) => void): ColDef<ListaNegraResponse>[] {
     return [
       {
         field: "cedula",
@@ -104,6 +105,14 @@ export class ListaNegraListLogic {
         },
       },
       {
+        field: "nivelSeveridad",
+        headerName: "Nivel",
+        width: 100,
+        cellRenderer: (params: ICellRendererParams) => {
+          return ListaNegraListLogic.formatNivelBadge(params.value);
+        },
+      },
+      {
         field: "isActive",
         headerName: "Estado",
         width: 130,
@@ -112,34 +121,13 @@ export class ListaNegraListLogic {
         },
       },
       {
-        field: "esBloqueoPermanente",
-        headerName: "Tipo",
-        width: 140,
-        cellRenderer: (params: ICellRendererParams) => {
-          return ListaNegraListLogic.formatTipoBadge(params.value);
-        },
-      },
-      {
         field: "motivoBloqueo",
-        headerName: "Motivo de Bloqueo",
-        flex: 1,
-        minWidth: 250,
-        cellRenderer: (params: ICellRendererParams) => {
-          const motivo = params.value || "Sin motivo especificado";
-          return `<span class="text-xs text-gray-300 line-clamp-2">${motivo}</span>`;
-        },
-      },
-      {
-        field: "observaciones",
-        headerName: "Observaciones",
+        headerName: "Motivo",
         flex: 1,
         minWidth: 200,
         cellRenderer: (params: ICellRendererParams) => {
-          const obs = params.value;
-          if (!obs || obs.trim() === "") {
-            return `<span class="text-xs text-gray-500 italic">Sin observaciones</span>`;
-          }
-          return `<span class="text-xs text-gray-300 line-clamp-2">${obs}</span>`;
+          const motivo = params.value || "Sin motivo especificado";
+          return `<span class="text-xs text-gray-300 line-clamp-2">${motivo}</span>`;
         },
       },
       {
@@ -152,7 +140,7 @@ export class ListaNegraListLogic {
         },
       },
       {
-        field: "fechaInicioBloqueo",
+        field: "bloqueadoDesde",
         headerName: "Fecha Bloqueo",
         width: 150,
         cellRenderer: (params: ICellRendererParams) => {
@@ -175,48 +163,22 @@ export class ListaNegraListLogic {
           `;
         },
       },
-      {
-        field: "fechaFinBloqueo",
-        headerName: "Fecha Desbloqueo",
-        width: 170,
-        cellRenderer: (params: ICellRendererParams) => {
-          const fecha = params.value;
-          if (!fecha) {
-            return `<span class="text-xs text-gray-500 italic">No desbloqueado</span>`;
-          }
-          const fechaObj = new Date(fecha);
-          const fechaStr = fechaObj.toLocaleDateString("es-CR", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric"
-          });
-          const horaStr = fechaObj.toLocaleTimeString("es-CR", {
-            hour: "2-digit",
-            minute: "2-digit"
-          });
-          return `
-            <div class="text-xs">
-              <div class="text-green-400">${fechaStr}</div>
-              <div class="text-gray-500">${horaStr}</div>
-            </div>
-          `;
-        },
-      },
     ];
   }
 
   // Helper methods
-  static formatTipoBadge(esPermanente: boolean): string {
+  static formatNivelBadge(nivel: string): string {
     const baseClass = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border";
 
-    if (esPermanente) {
-      // Purple (GitHub Merged/Purple)
-      const classes = "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800";
-      return `<span class="${baseClass} ${classes}">Permanente</span>`;
-    } else {
-      // Yellow (GitHub Attention)
-      const classes = "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800";
-      return `<span class="${baseClass} ${classes}">Temporal</span>`;
+    switch (nivel) {
+      case 'ALTO':
+        return `<span class="${baseClass} bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800">ALTO</span>`;
+      case 'MEDIO':
+        return `<span class="${baseClass} bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800">MEDIO</span>`;
+      case 'BAJO':
+        return `<span class="${baseClass} bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800">BAJO</span>`;
+      default:
+        return `<span class="${baseClass} bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800">${nivel || 'N/A'}</span>`;
     }
   }
 
