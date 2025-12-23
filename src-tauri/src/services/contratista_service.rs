@@ -15,7 +15,7 @@ use crate::models::contratista::{
 };
 use crate::services::search_service::SearchService;
 use chrono::Utc;
-use log::warn;
+use log::{error, info, warn};
 use sqlx::SqlitePool;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -61,6 +61,10 @@ pub async fn create_contratista(
     }
 
     // 5. Verificar que la empresa exista
+    info!(
+        "Creando contratista con cédula {} para empresa {}",
+        cedula_normalizada, input.empresa_id
+    );
     let empresa_existe = empresa_queries::exists(pool, &input.empresa_id).await?;
     if !empresa_existe {
         return Err(ContratistaError::EmpresaNotFound);
@@ -85,7 +89,13 @@ pub async fn create_contratista(
         &now,
         &now,
     )
-    .await?;
+    .await
+    .map_err(|e| {
+        error!("Error de base de datos al crear contratista {}: {}", cedula_normalizada, e);
+        ContratistaError::Database(e)
+    })?;
+
+    info!("Contratista {} creado exitosamente con ID {}", cedula_normalizada, id);
 
     // 8. Obtener contratista creado
     let response = get_contratista_by_id(pool, &id).await?;
@@ -236,6 +246,8 @@ pub async fn update_contratista(
     // 1. Validar input
     domain::validar_update_input(&input)?;
 
+    info!("Actualizando contratista con ID {}", id);
+
     // 2. Verificar que el contratista existe
     let _ = db::find_by_id_with_empresa(pool, &id).await?.ok_or(ContratistaError::NotFound)?;
 
@@ -275,7 +287,13 @@ pub async fn update_contratista(
         input.fecha_vencimiento_praind.as_deref(),
         &now,
     )
-    .await?;
+    .await
+    .map_err(|e| {
+        error!("Error al actualizar contratista {}: {}", id, e);
+        ContratistaError::Database(e)
+    })?;
+
+    info!("Contratista {} actualizado exitosamente", id);
 
     // 7. Gestionar Vehículo
     if let Some(tiene) = input.tiene_vehiculo {
@@ -350,6 +368,8 @@ pub async fn cambiar_estado_contratista(
     // 1. Validar estado
     let estado = domain::validar_estado(&input.estado)?;
 
+    info!("Cambiando estado de contratista {} a {}", id, input.estado);
+
     // 2. Verificar que el contratista existe
     let _ = db::find_by_id_with_empresa(pool, &id).await?.ok_or(ContratistaError::NotFound)?;
 
@@ -383,11 +403,18 @@ pub async fn delete_contratista(
     search_service: &Arc<SearchService>,
     id: String,
 ) -> Result<(), ContratistaError> {
+    info!("Eliminando contratista con ID {}", id);
+
     // Verificar que existe
     let _ = db::find_by_id_with_empresa(pool, &id).await?.ok_or(ContratistaError::NotFound)?;
 
     // Eliminar de DB
-    db::delete(pool, &id).await?;
+    db::delete(pool, &id).await.map_err(|e| {
+        error!("Error al eliminar contratista {}: {}", id, e);
+        ContratistaError::Database(e)
+    })?;
+
+    info!("Contratista {} eliminado exitosamente", id);
 
     // Eliminar del índice de Tantivy
     if let Err(e) = search_service.delete_contratista(&id).await {
@@ -432,6 +459,10 @@ pub async fn actualizar_praind_con_historial(
 
     // 3. Actualizar contratista
     let now = Utc::now().to_rfc3339();
+    info!(
+        "Actualizando PRAIND para contratista {} -> {}",
+        input.contratista_id, input.nueva_fecha_praind
+    );
     db::update_praind(pool, &input.contratista_id, &input.nueva_fecha_praind, &now).await?;
 
     // 4. Registrar en historial

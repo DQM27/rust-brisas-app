@@ -14,7 +14,7 @@ use crate::services::auth;
 use crate::services::search_service::SearchService;
 
 use chrono::Utc;
-use log::warn;
+use log::{error, info, warn};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use sqlx::SqlitePool;
@@ -85,7 +85,8 @@ pub async fn create_user(
         }
     };
 
-    let password_hash = auth::hash_password(&password_str).map_err(UserError::Auth)?;
+    info!("Creando usuario '{}' con rol '{}'", email_normalizado, role_id);
+    let password_hash = auth::hash_password(&password_str)?;
 
     // 6. Generar ID y timestamps
     let id = Uuid::new_v4().to_string();
@@ -114,7 +115,13 @@ pub async fn create_user(
         input.contacto_emergencia_telefono.as_deref(),
         must_change_password,
     )
-    .await?;
+    .await
+    .map_err(|e| {
+        error!("Error de base de datos al crear usuario {}: {}", email_normalizado, e);
+        UserError::Database(e)
+    })?;
+
+    info!("Usuario '{}' creado exitosamente con ID {}", email_normalizado, id);
 
     // 8. Retornar usuario creado
     let mut response = get_user_by_id(pool, &id).await?;
@@ -189,6 +196,8 @@ pub async fn update_user(
     // 1. Validar input
     domain::validar_update_input(&input)?;
 
+    info!("Actualizando usuario con ID {}", id);
+
     // 2. Verificar que existe
     let _ = db::find_by_id(pool, &id).await?;
 
@@ -209,11 +218,8 @@ pub async fn update_user(
     let apellido_normalizado = input.apellido.as_ref().map(|a| domain::normalizar_nombre(a));
 
     // 5. Hashear contraseña si viene
-    let password_hash = if let Some(ref pwd) = input.password {
-        Some(auth::hash_password(pwd).map_err(UserError::Auth)?)
-    } else {
-        None
-    };
+    let password_hash =
+        if let Some(ref pwd) = input.password { Some(auth::hash_password(pwd)?) } else { None };
 
     // 6. Timestamp
     let now = Utc::now().to_rfc3339();
@@ -243,7 +249,13 @@ pub async fn update_user(
         input.contacto_emergencia_telefono.as_deref(),
         input.must_change_password,
     )
-    .await?;
+    .await
+    .map_err(|e| {
+        error!("Error al actualizar usuario {}: {}", id, e);
+        UserError::Database(e)
+    })?;
+
+    info!("Usuario {} actualizado exitosamente", id);
 
     // 9. Retornar actualizado
     let response = get_user_by_id(pool, &id).await?;
@@ -272,7 +284,13 @@ pub async fn delete_user(
 ) -> Result<(), UserError> {
     let _ = db::find_by_id(pool, &id).await?;
 
-    db::delete(pool, &id).await?;
+    info!("Eliminando usuario con ID {}", id);
+    db::delete(pool, &id).await.map_err(|e| {
+        error!("Error al eliminar usuario {}: {}", id, e);
+        UserError::Database(e)
+    })?;
+
+    info!("Usuario {} eliminado exitosamente", id);
 
     if let Err(e) = search_service.delete_user(&id).await {
         warn!("Error al eliminar usuario del índice {}: {}", id, e);
@@ -295,8 +313,9 @@ pub async fn change_password(
 
     // Verificar contraseña actual si se provee
     if let Some(current) = input.current_password {
-        let is_valid = auth::verify_password(&current, &current_hash).map_err(UserError::Auth)?;
+        let is_valid = auth::verify_password(&current, &current_hash)?;
         if !is_valid {
+            error!("Cambio de contraseña fallido para {}: clave actual incorrecta", id);
             return Err(UserError::InvalidCurrentPassword);
         }
     }
@@ -305,7 +324,7 @@ pub async fn change_password(
     domain::validar_password(&input.new_password)?;
 
     // Hashear nueva
-    let new_hash = auth::hash_password(&input.new_password).map_err(UserError::Auth)?;
+    let new_hash = auth::hash_password(&input.new_password)?;
 
     // Actualizar y quitar flag
     let now = Utc::now().to_rfc3339();
@@ -331,7 +350,13 @@ pub async fn change_password(
         None,
         Some(false),
     )
-    .await?;
+    .await
+    .map_err(|e| {
+        error!("Error al actualizar password para {}: {}", id, e);
+        UserError::Database(e)
+    })?;
+
+    info!("Contraseña cambiada para usuario {}", id);
 
     Ok(())
 }
@@ -349,8 +374,9 @@ pub async fn login(
 
     let (user, password_hash) = db::find_by_email_with_password(pool, &email_normalizado).await?;
 
-    let is_valid = auth::verify_password(&password, &password_hash).map_err(UserError::Auth)?;
+    let is_valid = auth::verify_password(&password, &password_hash)?;
     if !is_valid {
+        warn!("Intento de login fallido para {}: credenciales inválidas", email_normalizado);
         return Err(UserError::InvalidCredentials);
     }
 

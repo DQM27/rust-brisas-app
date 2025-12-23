@@ -13,6 +13,7 @@ use crate::domain::ingreso_visita::{
 use crate::domain::motor_validacion::{self as motor, ContextoIngreso};
 use crate::models::visitante::CreateVisitanteInput;
 use crate::services::{alerta_service, gafete_service, lista_negra_service, visitante_service};
+use log::{error, info};
 use sqlx::SqlitePool;
 
 pub async fn registrar_ingreso(
@@ -20,9 +21,9 @@ pub async fn registrar_ingreso(
     input: CreateIngresoVisitaInput,
 ) -> Result<IngresoVisita, IngresoVisitaError> {
     // 1. Validar existencia del visitante y reglas de ingreso
-    let validacion = validar_ingreso(pool, &input.visitante_id)
-        .await
-        .map_err(|e| IngresoVisitaError::Validation(e.to_string()))?; // Map generic error
+    info!("Validando ingreso para visitante con ID {}", input.visitante_id);
+    let validacion = validar_ingreso(pool, &input.visitante_id).await?; // validando_ingreso already returns Result<..., IngresoVisitaError>
+                                                                        // Wait, looking at the code, it uses map_err. I will clean it up too.
 
     if !validacion.puede_ingresar {
         return Err(IngresoVisitaError::Validation(
@@ -46,7 +47,13 @@ pub async fn registrar_ingreso(
     }
 
     // 3. Crear ingreso
-    ingreso_visita_queries::create(pool, input).await.map_err(IngresoVisitaError::Database)
+    let ingreso = ingreso_visita_queries::create(pool, input).await.map_err(|e| {
+        error!("Error de base de datos al registrar ingreso de visita: {}", e);
+        IngresoVisitaError::Database(e)
+    })?;
+
+    info!("Ingreso de visita {} registrado exitosamente", ingreso.id);
+    Ok(ingreso)
 }
 
 pub async fn registrar_ingreso_full(
@@ -117,10 +124,16 @@ pub async fn registrar_salida(
         if devolvio_gafete { ingreso.gafete.as_deref() } else { None },
     ); // Retorna DecisionReporteGafete directamente
 
+    info!("Registrando salida para ingreso de visita {}", id);
     // 2. Registrar salida
     ingreso_visita_queries::registrar_salida(pool, &id, &usuario_id, observaciones.as_deref())
         .await
-        .map_err(IngresoVisitaError::Database)?;
+        .map_err(|e| {
+            error!("Error al registrar salida de visita {}: {}", id, e);
+            IngresoVisitaError::Database(e)
+        })?;
+
+    info!("Salida de visita {} registrada exitosamente", id);
 
     // 3. Crear alerta si aplica
     if decision.debe_generar_reporte {

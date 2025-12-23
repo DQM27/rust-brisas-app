@@ -22,6 +22,7 @@ use chrono::Utc;
 use serde::Serialize;
 use sqlx::SqlitePool;
 
+use log::{error, info};
 use uuid::Uuid;
 
 // ==========================================
@@ -182,6 +183,8 @@ pub async fn crear_ingreso_contratista(
     // 1. Validar input básico
     domain::validar_input_entrada(&input)?;
 
+    info!("Registrando ingreso para contratista ID {}", input.contratista_id);
+
     // 2. Verificar duplicados (DB check final)
     let existing = db::find_ingreso_abierto_by_contratista(pool, &input.contratista_id).await?;
     if existing.is_some() {
@@ -251,7 +254,16 @@ pub async fn crear_ingreso_contratista(
         &now,
         &now,
     )
-    .await?;
+    .await
+    .map_err(|e| {
+        error!(
+            "Error de base de datos al registrar ingreso de contratista ({}): {}",
+            contratista.cedula, e
+        );
+        IngresoContratistaError::Database(e)
+    })?;
+
+    info!("Ingreso de contratista registrado exitosamente con ID: {}", id);
 
     get_ingreso_by_id(pool, id).await
 }
@@ -317,8 +329,7 @@ pub async fn registrar_salida(
         input.devolvio_gafete,
         if input.devolvio_gafete { ingreso.gafete_numero.as_deref() } else { None },
     ); // La función retorna DecisionReporteGafete directamente (no Result)
-
-    // Actualizar DB
+       // Actualizar DB
     db::registrar_salida(
         pool,
         &input.ingreso_id,
@@ -328,7 +339,13 @@ pub async fn registrar_salida(
         input.observaciones_salida.as_deref(),
         &now,
     )
-    .await?;
+    .await
+    .map_err(|e| {
+        error!("Error al registrar salida de contratista (ID {}): {}", input.ingreso_id, e);
+        IngresoContratistaError::Database(e)
+    })?;
+
+    info!("Salida de contratista (ID {}) registrada exitosamente", input.ingreso_id);
 
     // Generar Alerta si aplica
     if decision.debe_generar_reporte {
@@ -486,7 +503,13 @@ pub async fn cerrar_ingreso_manual(
         input.notas.as_deref(),
         &now,
     )
-    .await?;
+    .await
+    .map_err(|e| {
+        error!("Error al realizar cierre manual de ingreso {}: {}", input.ingreso_id, e);
+        IngresoContratistaError::Database(e)
+    })?;
+
+    info!("Cierre manual de ingreso {} completado exitosamente", input.ingreso_id);
 
     // 8. Obtener ingreso actualizado
     let ingreso_actualizado = get_ingreso_by_id(pool, input.ingreso_id).await?;
@@ -624,7 +647,13 @@ pub async fn registrar_ingreso_excepcional(
         &now,
         &now,
     )
-    .await?;
+    .await
+    .map_err(|e| {
+        error!("Error al registrar ingreso excepcional para {}: {}", contratista.cedula, e);
+        IngresoContratistaError::Database(e)
+    })?;
+
+    info!("Ingreso excepcional registrado exitosamente con ID {}", id);
 
     // 8. Obtener ingreso creado
     let ingreso = get_ingreso_by_id(pool, id).await?;

@@ -5,6 +5,7 @@
 use crate::db::alerta_gafete_queries as db;
 use crate::domain::errors::AlertaError;
 use crate::models::ingreso::AlertaGafete;
+use log::{error, info};
 use sqlx::SqlitePool;
 
 pub async fn find_by_id(pool: &SqlitePool, id: &str) -> Result<AlertaGafete, AlertaError> {
@@ -59,7 +60,13 @@ pub async fn insert(
         updated_at,
     )
     .await
-    .map_err(AlertaError::Database)
+    .map_err(|e| {
+        error!("Error de base de datos al insertar alerta para {}: {}", cedula, e);
+        AlertaError::Database(e)
+    })?;
+
+    info!("Alerta registrada para {} (Gafete: {})", cedula, gafete_numero);
+    Ok(())
 }
 
 pub async fn resolver(
@@ -70,9 +77,14 @@ pub async fn resolver(
     usuario_id: &str,
     updated_at: &str,
 ) -> Result<(), AlertaError> {
-    db::resolver(pool, id, fecha_resolucion, notas, usuario_id, updated_at)
-        .await
-        .map_err(AlertaError::Database)
+    info!("Resolviendo alerta {}", id);
+    db::resolver(pool, id, fecha_resolucion, notas, usuario_id, updated_at).await.map_err(|e| {
+        error!("Error al resolver alerta {}: {}", id, e);
+        AlertaError::Database(e)
+    })?;
+
+    info!("Alerta {} resuelta exitosamente", id);
+    Ok(())
 }
 
 pub async fn delete(pool: &SqlitePool, id: &str) -> Result<(), AlertaError> {

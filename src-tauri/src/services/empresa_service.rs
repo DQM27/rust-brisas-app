@@ -9,6 +9,7 @@ use crate::models::empresa::{
     CreateEmpresaInput, EmpresaListResponse, EmpresaResponse, UpdateEmpresaInput,
 };
 use chrono::Utc;
+use log::{error, info};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -36,7 +37,13 @@ pub async fn create_empresa(
     let id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
 
-    db::insert(pool, &id, &nombre_normalizado, &now, &now).await?;
+    info!("Creando empresa '{}'", nombre_normalizado);
+    db::insert(pool, &id, &nombre_normalizado, &now, &now).await.map_err(|e| {
+        error!("Error al insertar empresa '{}': {}", nombre_normalizado, e);
+        EmpresaError::Database(e)
+    })?;
+
+    info!("Empresa '{}' creada exitosamente con ID {}", nombre_normalizado, id);
 
     // 5. Retornar
     get_empresa_by_id(pool, id).await
@@ -130,7 +137,15 @@ pub async fn update_empresa(
 
     // 4. Actualizar
     let now = Utc::now().to_rfc3339();
-    db::update(pool, &id, nombre_normalizado.as_deref(), input.is_active, &now).await?;
+    info!("Actualizando empresa con ID {}", id);
+    db::update(pool, &id, nombre_normalizado.as_deref(), input.is_active, &now).await.map_err(
+        |e| {
+            error!("Error al actualizar empresa {}: {}", id, e);
+            EmpresaError::Database(e)
+        },
+    )?;
+
+    info!("Empresa {} actualizada exitosamente", id);
 
     // 5. Retornar
     get_empresa_by_id(pool, id).await
@@ -150,6 +165,13 @@ pub async fn delete_empresa(pool: &SqlitePool, id: String) -> Result<(), Empresa
         return Err(EmpresaError::HasContratistas(count));
     }
 
+    info!("Eliminando empresa con ID {}", id);
     // 3. Eliminar
-    db::delete(pool, &id).await.map_err(EmpresaError::Database)
+    db::delete(pool, &id).await.map_err(|e| {
+        error!("Error al eliminar empresa {}: {}", id, e);
+        EmpresaError::Database(e)
+    })?;
+
+    info!("Empresa {} eliminada exitosamente", id);
+    Ok(())
 }

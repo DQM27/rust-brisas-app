@@ -12,6 +12,7 @@ use crate::domain::ingreso_proveedor::{
 use crate::domain::motor_validacion::{self as motor, ContextoIngreso};
 use crate::models::proveedor::CreateProveedorInput;
 use crate::services::{alerta_service, gafete_service, lista_negra_service};
+use log::{error, info};
 use sqlx::SqlitePool;
 
 pub async fn registrar_ingreso(
@@ -72,9 +73,14 @@ pub async fn registrar_ingreso(
     };
 
     // 4. Crear ingreso vinculado
-    ingreso_proveedor_queries::create(pool, input, &proveedor_id)
-        .await
-        .map_err(IngresoProveedorError::Database)
+    let ingreso =
+        ingreso_proveedor_queries::create(pool, input, &proveedor_id).await.map_err(|e| {
+            error!("Error al registrar ingreso de proveedor: {}", e);
+            IngresoProveedorError::Database(e)
+        })?;
+
+    info!("Ingreso de proveedor {} registrado exitosamente", ingreso.id);
+    Ok(ingreso)
 }
 
 pub async fn registrar_salida(
@@ -110,6 +116,7 @@ pub async fn registrar_salida(
     // Start TX
     let mut tx = pool.begin().await.map_err(IngresoProveedorError::Database)?;
 
+    info!("Registrando salida para ingreso de proveedor {}", id);
     // 2. Registrar salida en DB
     sqlx::query(
         r#"
@@ -129,7 +136,12 @@ pub async fn registrar_salida(
     .bind(&id)
     .execute(&mut *tx)
     .await
-    .map_err(IngresoProveedorError::Database)?;
+    .map_err(|e| {
+        error!("Error al registrar salida de proveedor {}: {}", id, e);
+        IngresoProveedorError::Database(e)
+    })?;
+
+    info!("Salida de proveedor {} registrada exitosamente", id);
 
     // 3. Crear alerta si aplica
     if decision.debe_generar_reporte {

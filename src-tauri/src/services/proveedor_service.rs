@@ -8,7 +8,7 @@ use crate::domain::vehiculo as vehiculo_domain;
 use crate::models::proveedor::{CreateProveedorInput, ProveedorResponse, UpdateProveedorInput};
 use crate::services::search_service::SearchService;
 use chrono::Utc;
-use log::warn;
+use log::{error, info, warn};
 use sqlx::SqlitePool;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -30,6 +30,7 @@ pub async fn create_proveedor(
     let empresa_nombre = empresa.nombre;
 
     // 2. Validar duplicidad
+    info!("Creando proveedor con cédula '{}' para empresa '{}'", input.cedula, input.empresa_id);
     if proveedor_queries::find_by_cedula(pool, &input.cedula).await?.is_some() {
         return Err(ProveedorError::CedulaExists);
     }
@@ -75,7 +76,13 @@ pub async fn create_proveedor(
     }
 
     // 6. Enriquecer respuesta (nombre empresa y vehículo)
-    populate_response(pool, proveedor).await
+    let resp = populate_response(pool, proveedor).await.map_err(|e| {
+        error!("Error al poblar respuesta para proveedor: {}", e);
+        e
+    })?;
+
+    info!("Proveedor creado exitosamente con ID {}", resp.id);
+    Ok(resp)
 }
 
 /// Busca proveedores
@@ -128,7 +135,11 @@ pub async fn change_status(
         color: None,
     };
 
-    let proveedor = proveedor_queries::update(pool, id, input).await?;
+    info!("Cambiando estado de proveedor {} a {}", id, new_status);
+    let proveedor = proveedor_queries::update(pool, id, input).await.map_err(|e| {
+        error!("Error al actualizar estado del proveedor {}: {}", id, e);
+        ProveedorError::Database(e)
+    })?;
 
     // Obtener nombre de empresa para indexación
     let empresa = empresa_queries::find_by_id(pool, &proveedor.empresa_id).await?;
@@ -202,6 +213,8 @@ pub async fn update_proveedor(
     // 0. Validar Input de Dominio
     proveedor_domain::validar_update_input(&input)?;
 
+    info!("Actualizando proveedor con ID {}", id);
+
     // 1. Verificar existencia
     let _ = proveedor_queries::find_by_id(pool, &id).await?.ok_or(ProveedorError::NotFound)?;
 
@@ -213,7 +226,10 @@ pub async fn update_proveedor(
     }
 
     // 3. Actualizar Proveedor en DB
-    let proveedor = proveedor_queries::update(pool, &id, input.clone()).await?;
+    let proveedor = proveedor_queries::update(pool, &id, input.clone()).await.map_err(|e| {
+        error!("Error al actualizar proveedor {}: {}", id, e);
+        ProveedorError::Database(e)
+    })?;
 
     // 4. Gestionar Vehículo
     if let Some(tiene) = input.tiene_vehiculo {
