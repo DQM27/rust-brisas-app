@@ -9,7 +9,6 @@ import WelcomePanel from '$lib/components/WelcomePanel.svelte';
 import UserListView from '$lib/components/user/UserListView.svelte';
 
 import ContratistaListView from '$lib/components/contratista/ContratistaListView.svelte';
-import ProveedorView from '$lib/components/proveedor/ProveedorView.svelte';
 import ProveedorListView from '$lib/components/proveedor/ProveedorListView.svelte';
 // import ListaNegraView from '$lib/components/listaNegra/ListaNegraView.svelte'; // Eliminado
 import ListaNegraListView from '$lib/components/listaNegra/ListaNegraListView.svelte';
@@ -43,7 +42,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
 
   'contratista': ContratistaListView,
   'contratista-list': ContratistaListView,
-  'proveedor': ProveedorView,
+  'proveedor': ProveedorListView,
   'proveedor-list': ProveedorListView,
   'lista-negra': ListaNegraListView, // Ahora usa el ListView nuevo directamente
   'lista-negra-list': ListaNegraListView, // También usa ListView

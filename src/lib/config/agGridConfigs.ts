@@ -352,7 +352,7 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     availableButtons: {
       default: [
         ...COMMON_DEFAULT_BUTTONS.filter(b => b.id === 'toggle-filters')
-      ], // Los botones comunes se mueven a customButtons en el componente para controlar el orden
+      ],
       singleSelect: [
         ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
       ],

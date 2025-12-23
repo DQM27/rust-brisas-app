@@ -1,133 +1,234 @@
 <!-- src/lib/components/proveedor/ProveedorListView.svelte -->
 <script lang="ts">
-  import { onMount } from "svelte";
-  import ProveedorListForm from "./ProveedorListForm.svelte";
+  import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
+  import ProveedorFormModal from "$lib/components/proveedor/ProveedorFormModal.svelte";
   import {
     fetchAllProveedores,
+    fetchActiveProveedores,
+    createProveedor,
+    updateProveedor,
+    deleteProveedor,
     changeStatus,
-    type ServiceResult,
   } from "$lib/logic/proveedor/proveedorService";
-  import { ProveedorListLogic } from "$lib/logic/proveedor/proveedorListLogic";
-  import type { ProveedorResponse } from "$lib/types/proveedor";
-  import { openTab } from "$lib/stores/tabs";
-  import type { SearchResult } from "$lib/types/search.types";
-  import type { ColDef } from "@ag-grid-community/core";
+  import { PROVEEDOR_COLUMNS } from "$lib/logic/proveedor/proveedorColumns";
+  import { createCustomButton } from "$lib/config/agGridConfigs";
+  import type {
+    ProveedorResponse,
+    CreateProveedorInput,
+    UpdateProveedorInput,
+  } from "$lib/types/proveedor";
   import { toast } from "svelte-5-french-toast";
+  import type { ColDef } from "@ag-grid-community/core";
 
-  interface Props {
-    tabId: string;
-    data?: any;
-  }
-
-  let { tabId, data }: Props = $props();
-
-  // Estado local
+  // Estado del Grid
   let proveedores = $state<ProveedorResponse[]>([]);
   let loading = $state(false);
-  let error = $state("");
+  let error = $state<string | null>(null);
 
-  // Filtros
-  let estadoFilter = $state("todos");
+  // Estado local de filtros
+  // Simplificado: Toggle entre ver todos o solo activos
+  let activeFilter = $state<"todos" | "activos">("activos");
 
-  // Datos filtrados
-  let filteredData = $derived.by(() => {
-    if (estadoFilter === "todos") return proveedores;
-    return proveedores.filter((p) => p.estado?.toLowerCase() === estadoFilter);
-  });
+  // Estado del Modal
+  let showModal = $state(false);
+  let selectedProveedor = $state<ProveedorResponse | null>(null);
+  let modalLoading = $state(false);
 
-  // Definición de columnas usando ProveedorListLogic
-  let columnDefs = $derived.by((): ColDef<ProveedorResponse>[] =>
-    ProveedorListLogic.getColumns(handleStatusToggle),
-  );
+  // Selección
+  let selectedRows = $state<ProveedorResponse[]>([]);
 
-  // --- Cargar datos ---
-  async function loadProveedores() {
+  // Carga inicial
+  const loadData = async () => {
     loading = true;
-    error = "";
+    error = null;
 
-    const result = await fetchAllProveedores();
+    // Si el filtro es 'activos', usamos el servicio optimizado
+    // Si es 'todos', traemos todo
+    const res =
+      activeFilter === "activos"
+        ? await fetchActiveProveedores()
+        : await fetchAllProveedores();
 
-    if (result.ok) {
-      proveedores = result.data;
+    if (res.ok) {
+      proveedores = res.data;
     } else {
-      error = result.error;
+      error = res.error;
+      toast.error(res.error);
     }
-
     loading = false;
+  };
+
+  // Manejadores del Grid
+  const handleRefresh = () => loadData();
+
+  function openFormModal(proveedor: ProveedorResponse | null) {
+    selectedProveedor = proveedor;
+    showModal = true;
   }
 
-  // --- Toggle de estado ---
-  let isTogglingStatus = false;
+  // Creación / Edición
+  async function handleSave(data: CreateProveedorInput | UpdateProveedorInput) {
+    modalLoading = true;
+    let result;
 
-  async function handleStatusToggle(id: string, currentStatus: string) {
-    if (isTogglingStatus) return;
-    isTogglingStatus = true;
+    if (selectedProveedor) {
+      result = await updateProveedor(
+        selectedProveedor.id,
+        data as UpdateProveedorInput,
+      );
+    } else {
+      result = await createProveedor(data as CreateProveedorInput);
+    }
 
-    const statusLower = currentStatus?.toLowerCase() || "inactivo";
-    const newStatus = statusLower === "activo" ? "INACTIVO" : "ACTIVO";
-
-    const result = await changeStatus(id, newStatus);
+    modalLoading = false;
 
     if (result.ok) {
-      // Update local state instead of reloading
+      toast.success(
+        selectedProveedor ? "Proveedor actualizado" : "Proveedor creado",
+      );
+      loadData(); // Recargar grid
+      showModal = false;
+      return true;
+    } else {
+      toast.error(result.error);
+      return false;
+    }
+  }
+
+  // Cambio de estado (usado en columna toggle)
+  // Nota: PROVEEDOR_COLUMNS usa un formatter, pero la acción real debería ser via menu o botón custom.
+  // Sin embargo, si queremos toggle desde toolbar o menu context:
+  async function toggleStatus(proveedor: ProveedorResponse) {
+    const newStatus = proveedor.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO";
+    const toastId = toast.loading(`Cambiando estado a ${newStatus}...`);
+
+    const res = await changeStatus(proveedor.id, newStatus);
+
+    if (res.ok) {
+      toast.success("Estado actualizado", { id: toastId });
+      // Optimistic update local
       proveedores = proveedores.map((p) =>
-        p.id === id
+        p.id === proveedor.id
           ? {
               ...p,
-              estado: result.data.estado,
-              puedeIngresar: result.data.puedeIngresar,
+              estado: res.data.estado,
+              puedeIngresar: res.data.puedeIngresar,
             }
           : p,
       );
-      toast.success(`Estado cambiado a ${newStatus.toLowerCase()}`);
     } else {
-      toast.error(result.error);
+      toast.error(res.error, { id: toastId });
     }
-
-    isTogglingStatus = false;
   }
 
-  // --- Acciones ---
-  function handleNewProveedor() {
-    openTab({
-      componentKey: "proveedor",
-      title: "Nuevo Proveedor",
-      data: {},
-    });
+  // Eliminar
+  async function confirmDelete(proveedor: ProveedorResponse) {
+    if (
+      !confirm(`¿Estás seguro de eliminar al proveedor "${proveedor.nombre}"?`)
+    )
+      return;
+
+    const res = await deleteProveedor(proveedor.id);
+    if (res.ok) {
+      toast.success("Proveedor eliminado");
+      loadData();
+    } else {
+      toast.error(res.error);
+    }
   }
 
-  function handleEditProveedor(proveedor: ProveedorResponse) {
-    openTab({
-      componentKey: "proveedor",
-      title: `Editar: ${proveedor.nombre}`,
-      data: { proveedorId: proveedor.id, initialData: proveedor },
-    });
-  }
+  // Botones Custom
+  const customButtons = $derived.by(() => {
+    const selected = selectedRows[0];
 
-  // --- Filtros ---
-  function handleEstadoFilterChange(filter: string) {
-    estadoFilter = filter;
-  }
+    return {
+      default: [
+        createCustomButton.nuevo(() => openFormModal(null)),
+        {
+          id: "refresh",
+          label: "Actualizar",
+          category: "data",
+          onClick: loadData,
+          tooltip: "Recargar lista",
+        },
+        {
+          id: "filter-active",
+          label: activeFilter === "activos" ? "Ver Todos" : "Ver Activos",
+          category: "ui",
+          onClick: () => {
+            activeFilter = activeFilter === "activos" ? "todos" : "activos";
+            loadData();
+          },
+          tooltip: "Alternar entre ver solo activos o todos los registros",
+        },
+      ],
+      singleSelect: [
+        createCustomButton.editar(() => {
+          if (selected) openFormModal(selected);
+        }),
+        createCustomButton.eliminar(() => {
+          if (selected) confirmDelete(selected);
+        }),
+      ],
+      multiSelect: [],
+    };
+  });
 
-  function handleClearAllFilters() {
-    estadoFilter = "todos";
-  }
+  // Definición de columnas
+  const columnDefs = $derived([
+    ...PROVEEDOR_COLUMNS,
+  ] as ColDef<ProveedorResponse>[]);
 
-  onMount(() => {
-    loadProveedores();
+  // Effect para cargar datos al montar
+  $effect(() => {
+    loadData();
   });
 </script>
 
-<ProveedorListForm
-  {proveedores}
-  {loading}
-  {error}
-  {filteredData}
-  {columnDefs}
-  {estadoFilter}
-  onRefresh={loadProveedores}
-  onEstadoFilterChange={handleEstadoFilterChange}
-  onClearAllFilters={handleClearAllFilters}
-  onNewProveedor={handleNewProveedor}
-  onEditProveedor={handleEditProveedor}
+<div class="h-full flex flex-col space-y-4 p-4 animate-fade-in bg-[#1e1e1e]">
+  {#if loading}
+    <div class="flex h-full items-center justify-center">
+      <div class="text-center">
+        <svg
+          class="mx-auto h-8 w-8 animate-spin text-blue-500"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+        <p class="mt-4 text-sm text-gray-400">Cargando proveedores...</p>
+      </div>
+    </div>
+  {:else}
+    <AGGridWrapper
+      gridId="proveedor-list"
+      rowData={proveedores}
+      {columnDefs}
+      {customButtons}
+      onSelectionChanged={(rows) => {
+        selectedRows = rows;
+      }}
+      getRowId={(params) => params.data.id}
+    />
+  {/if}
+</div>
+
+<ProveedorFormModal
+  show={showModal}
+  proveedor={selectedProveedor}
+  loading={modalLoading}
+  onSave={handleSave}
+  onClose={() => (showModal = false)}
 />

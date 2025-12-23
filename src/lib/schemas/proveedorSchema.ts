@@ -1,8 +1,3 @@
-// ==========================================
-// src/lib/schemas/proveedorSchema.ts
-// ==========================================
-// Zod validation schemas for Proveedor forms
-
 import { z } from 'zod';
 
 // ==========================================
@@ -51,28 +46,33 @@ export const CreateProveedorSchema = z.object({
     segundoNombre: nombreOpcionalSchema,
     apellido: apellidoSchema,
     segundoApellido: nombreOpcionalSchema,
-    empresaId: z.string().min(1, 'Empresa es requerida'),
+    empresaId: z.string().min(1, 'Seleccione una empresa válida'),
 
     // Vehículo (opcional)
-    tieneVehiculo: z.boolean().optional().default(false),
+    tieneVehiculo: z.boolean().default(false),
     tipoVehiculo: z.string().optional(),
     placa: placaSchema,
     marca: z.string().trim().max(50).optional().or(z.literal('')),
     modelo: z.string().trim().max(50).optional().or(z.literal('')),
     color: z.string().trim().max(30).optional().or(z.literal('')),
-}).refine(
-    (data) => {
-        // Si tiene vehículo, placa y tipo son requeridos
-        if (data.tieneVehiculo) {
-            return data.placa && data.placa.trim() !== '' && data.tipoVehiculo;
+}).superRefine((data, ctx) => {
+    if (data.tieneVehiculo) {
+        if (!data.placa || data.placa.trim() === '') {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'La placa es requerida si tiene vehículo',
+                path: ['placa'],
+            });
         }
-        return true;
-    },
-    {
-        message: 'Placa y tipo de vehículo son requeridos cuando se registra un vehículo',
-        path: ['placa'],
+        if (!data.tipoVehiculo || data.tipoVehiculo.trim() === '') {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'El tipo de vehículo es requerido',
+                path: ['tipoVehiculo'],
+            });
+        }
     }
-);
+});
 
 export const UpdateProveedorSchema = z.object({
     nombre: nombreSchema.optional(),
@@ -81,6 +81,25 @@ export const UpdateProveedorSchema = z.object({
     segundoApellido: nombreOpcionalSchema,
     empresaId: z.string().optional(),
     estado: z.enum(['ACTIVO', 'INACTIVO', 'SUSPENDIDO']).optional(),
+
+    // Vehículo update
+    tieneVehiculo: z.boolean().optional(),
+    tipoVehiculo: z.string().optional(),
+    placa: placaSchema,
+    marca: z.string().trim().max(50).optional().or(z.literal('')),
+    modelo: z.string().trim().max(50).optional().or(z.literal('')),
+    color: z.string().trim().max(30).optional().or(z.literal('')),
+}).superRefine((data, ctx) => {
+    // Si se activa tieneVehiculo explícitamente, validar
+    if (data.tieneVehiculo === true) {
+        if (!data.placa || data.placa.trim() === '') {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'La placa es requerida',
+                path: ['placa'],
+            });
+        }
+    }
 });
 
 // ==========================================
