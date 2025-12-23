@@ -14,7 +14,9 @@ pub async fn create_proveedor(
     search_service: State<'_, Arc<SearchService>>,
     input: CreateProveedorInput,
 ) -> Result<ProveedorResponse, String> {
-    proveedor_service::create_proveedor(&pool, &search_service, input).await
+    proveedor_service::create_proveedor(&pool, &search_service, input)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[command]
@@ -22,7 +24,7 @@ pub async fn search_proveedores_catalog(
     pool: State<'_, SqlitePool>,
     query: String,
 ) -> Result<Vec<ProveedorResponse>, String> {
-    proveedor_service::search_proveedores(&pool, &query).await
+    proveedor_service::search_proveedores(&pool, &query).await.map_err(|e| e.to_string())
 }
 
 #[command]
@@ -30,7 +32,7 @@ pub async fn get_proveedor_by_cedula(
     pool: State<'_, SqlitePool>,
     cedula: String,
 ) -> Result<Option<ProveedorResponse>, String> {
-    proveedor_service::get_proveedor_by_cedula(&pool, &cedula).await
+    proveedor_service::get_proveedor_by_cedula(&pool, &cedula).await.map_err(|e| e.to_string())
 }
 
 #[command]
@@ -40,7 +42,9 @@ pub async fn change_proveedor_status(
     id: String,
     new_status: String,
 ) -> Result<ProveedorResponse, String> {
-    proveedor_service::change_status(&pool, &search_service, &id, &new_status).await
+    proveedor_service::change_status(&pool, &search_service, &id, &new_status)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[command]
@@ -50,7 +54,9 @@ pub async fn update_proveedor(
     id: String,
     input: crate::models::proveedor::UpdateProveedorInput,
 ) -> Result<ProveedorResponse, String> {
-    proveedor_service::update_proveedor(&pool, &search_service, id, input).await
+    proveedor_service::update_proveedor(&pool, &search_service, id, input)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[command]
@@ -58,5 +64,5 @@ pub async fn get_proveedor_by_id(
     pool: State<'_, SqlitePool>,
     id: String,
 ) -> Result<ProveedorResponse, String> {
-    proveedor_service::get_proveedor_by_id(&pool, &id).await
+    proveedor_service::get_proveedor_by_id(&pool, &id).await.map_err(|e| e.to_string())
 }

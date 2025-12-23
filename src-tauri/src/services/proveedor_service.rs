@@ -2,6 +2,7 @@
 // src/services/proveedor_service.rs
 // ==========================================
 use crate::db::{empresa_queries, proveedor_queries, vehiculo_queries};
+use crate::domain::errors::ProveedorError;
 use crate::domain::proveedor as proveedor_domain;
 use crate::domain::vehiculo as vehiculo_domain;
 use crate::models::proveedor::{CreateProveedorInput, ProveedorResponse, UpdateProveedorInput};
@@ -17,30 +18,24 @@ pub async fn create_proveedor(
     pool: &SqlitePool,
     search_service: &Arc<SearchService>,
     input: CreateProveedorInput,
-) -> Result<ProveedorResponse, String> {
+) -> Result<ProveedorResponse, ProveedorError> {
     // 0. Validar Input de Dominio
-    proveedor_domain::validar_create_input(&input).map_err(|e| e.to_string())?;
+    proveedor_domain::validar_create_input(&input)?;
 
     // 1. Validar que la empresa existe
     let empresa = empresa_queries::find_by_id(pool, &input.empresa_id)
-        .await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| "La empresa seleccionada no existe".to_string())?;
+        .await?
+        .ok_or(ProveedorError::EmpresaNotFound)?;
 
     let empresa_nombre = empresa.nombre;
 
     // 2. Validar duplicidad
-    if proveedor_queries::find_by_cedula(pool, &input.cedula)
-        .await
-        .map_err(|e| e.to_string())?
-        .is_some()
-    {
-        return Err("Ya existe un proveedor con esa cédula".to_string());
+    if proveedor_queries::find_by_cedula(pool, &input.cedula).await?.is_some() {
+        return Err(ProveedorError::CedulaExists);
     }
 
     // 3. Crear
-    let proveedor =
-        proveedor_queries::create(pool, input.clone()).await.map_err(|e| e.to_string())?;
+    let proveedor = proveedor_queries::create(pool, input.clone()).await?;
 
     // 4. Crear Vehículo si aplica
     if let Some(true) = input.tiene_vehiculo {
@@ -48,7 +43,7 @@ pub async fn create_proveedor(
             if !tipo.is_empty() && !placa.is_empty() {
                 // Normalizar tipo
                 let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
-                    .map_err(|e| e.to_string())?
+                    .map_err(|e| ProveedorError::Validation(e.to_string()))?
                     .as_str()
                     .to_string();
 
@@ -68,8 +63,7 @@ pub async fn create_proveedor(
                     &now,
                     &now,
                 )
-                .await
-                .map_err(|e| e.to_string())?;
+                .await?;
             }
         }
     }
@@ -88,15 +82,13 @@ pub async fn create_proveedor(
 pub async fn search_proveedores(
     pool: &SqlitePool,
     query: &str,
-) -> Result<Vec<ProveedorResponse>, String> {
-    let proveedores =
-        proveedor_queries::search(pool, query, 100).await.map_err(|e| e.to_string())?;
+) -> Result<Vec<ProveedorResponse>, ProveedorError> {
+    let proveedores = proveedor_queries::search(pool, query, 100).await?;
 
     let mut responses = Vec::with_capacity(proveedores.len());
     for prov in proveedores {
         responses.push(populate_response(pool, prov).await?);
     }
-
     Ok(responses)
 }
 
@@ -104,8 +96,8 @@ pub async fn search_proveedores(
 pub async fn get_proveedor_by_cedula(
     pool: &SqlitePool,
     cedula: &str,
-) -> Result<Option<ProveedorResponse>, String> {
-    let p = proveedor_queries::find_by_cedula(pool, cedula).await.map_err(|e| e.to_string())?;
+) -> Result<Option<ProveedorResponse>, ProveedorError> {
+    let p = proveedor_queries::find_by_cedula(pool, cedula).await?;
 
     if let Some(proveedor) = p {
         Ok(Some(populate_response(pool, proveedor).await?))
@@ -120,7 +112,7 @@ pub async fn change_status(
     search_service: &Arc<SearchService>,
     id: &str,
     new_status: &str,
-) -> Result<ProveedorResponse, String> {
+) -> Result<ProveedorResponse, ProveedorError> {
     let input = UpdateProveedorInput {
         nombre: None,
         segundo_nombre: None,
@@ -136,12 +128,10 @@ pub async fn change_status(
         color: None,
     };
 
-    let proveedor = proveedor_queries::update(pool, id, input).await.map_err(|e| e.to_string())?;
+    let proveedor = proveedor_queries::update(pool, id, input).await?;
 
     // Obtener nombre de empresa para indexación
-    let empresa = empresa_queries::find_by_id(pool, &proveedor.empresa_id)
-        .await
-        .map_err(|e| e.to_string())?;
+    let empresa = empresa_queries::find_by_id(pool, &proveedor.empresa_id).await?;
     let empresa_nombre = empresa.map(|e| e.nombre).unwrap_or_else(|| "Desconocida".to_string());
 
     // Actualizar en índice de búsqueda
@@ -156,10 +146,8 @@ pub async fn change_status(
 async fn populate_response(
     pool: &SqlitePool,
     proveedor: crate::models::proveedor::Proveedor,
-) -> Result<ProveedorResponse, String> {
-    let empresa = empresa_queries::find_by_id(pool, &proveedor.empresa_id)
-        .await
-        .map_err(|e| e.to_string())?;
+) -> Result<ProveedorResponse, ProveedorError> {
+    let empresa = empresa_queries::find_by_id(pool, &proveedor.empresa_id).await?;
 
     let proveedor_id = proveedor.id.clone();
     let mut response: ProveedorResponse = proveedor.into();
@@ -185,11 +173,13 @@ async fn populate_response(
 }
 
 /// Obtiene un proveedor por ID con todos sus datos
-pub async fn get_proveedor_by_id(pool: &SqlitePool, id: &str) -> Result<ProveedorResponse, String> {
+pub async fn get_proveedor_by_id(
+    pool: &SqlitePool,
+    id: &str,
+) -> Result<ProveedorResponse, ProveedorError> {
     let row = proveedor_queries::find_by_id_with_empresa(pool, id)
-        .await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| "Proveedor no encontrado".to_string())?;
+        .await?
+        .ok_or(ProveedorError::NotFound)?;
 
     let mut response = ProveedorResponse::from(row.proveedor);
     response.empresa_nombre = row.empresa_nombre;
@@ -208,26 +198,22 @@ pub async fn update_proveedor(
     search_service: &Arc<SearchService>,
     id: String,
     input: UpdateProveedorInput,
-) -> Result<ProveedorResponse, String> {
+) -> Result<ProveedorResponse, ProveedorError> {
     // 0. Validar Input de Dominio
-    proveedor_domain::validar_update_input(&input).map_err(|e| e.to_string())?;
+    proveedor_domain::validar_update_input(&input)?;
 
     // 1. Verificar existencia
-    let _ = proveedor_queries::find_by_id(pool, &id)
-        .await
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| "Proveedor no encontrado".to_string())?;
+    let _ = proveedor_queries::find_by_id(pool, &id).await?.ok_or(ProveedorError::NotFound)?;
 
     // 2. Validar Empresa si cambia
     if let Some(ref eid) = input.empresa_id {
-        if empresa_queries::find_by_id(pool, eid).await.map_err(|e| e.to_string())?.is_none() {
-            return Err("La empresa especificada no existe".to_string());
+        if empresa_queries::find_by_id(pool, eid).await?.is_none() {
+            return Err(ProveedorError::EmpresaNotFound);
         }
     }
 
     // 3. Actualizar Proveedor en DB
-    let proveedor =
-        proveedor_queries::update(pool, &id, input.clone()).await.map_err(|e| e.to_string())?;
+    let proveedor = proveedor_queries::update(pool, &id, input.clone()).await?;
 
     // 4. Gestionar Vehículo
     if let Some(tiene) = input.tiene_vehiculo {
@@ -243,7 +229,7 @@ pub async fn update_proveedor(
                     // Convertimos Result<TipoVehiculo, String> -> TipoVehiculo -> &str -> String
                     // El ? propagará el error string si la validación falla
                     let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
-                        .map_err(|e| e.to_string())?
+                        .map_err(|e| ProveedorError::Validation(e.to_string()))?
                         .as_str()
                         .to_string();
 
@@ -259,8 +245,7 @@ pub async fn update_proveedor(
                             Some(true),
                             &now,
                         )
-                        .await
-                        .map_err(|e| format!("Error al actualizar vehículo: {}", e))?;
+                        .await?;
                     } else {
                         // Create
                         let vid = Uuid::new_v4().to_string();
@@ -277,15 +262,14 @@ pub async fn update_proveedor(
                             &now,
                             &now,
                         )
-                        .await
-                        .map_err(|e| format!("Error al crear vehículo en update: {}", e))?;
+                        .await?;
                     }
                 }
             }
         } else {
             // Eliminar si existe
             if let Some(v) = vehiculo_existente {
-                vehiculo_queries::delete(pool, &v.id).await.map_err(|e| e.to_string())?;
+                vehiculo_queries::delete(pool, &v.id).await?;
             }
         }
     }
