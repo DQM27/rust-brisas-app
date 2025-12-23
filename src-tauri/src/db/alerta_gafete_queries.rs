@@ -20,6 +20,7 @@ struct AlertaGafeteRow {
     gafete_numero: Option<String>,
     ingreso_contratista_id: Option<String>,
     ingreso_proveedor_id: Option<String>,
+    ingreso_visita_id: Option<String>,
     fecha_reporte: Option<String>,
     resuelto: Option<bool>,
     fecha_resolucion: Option<String>,
@@ -40,6 +41,7 @@ impl From<AlertaGafeteRow> for AlertaGafete {
             gafete_numero: row.gafete_numero.unwrap_or_default(),
             ingreso_contratista_id: row.ingreso_contratista_id,
             ingreso_proveedor_id: row.ingreso_proveedor_id,
+            ingreso_visita_id: row.ingreso_visita_id,
             fecha_reporte: row.fecha_reporte.unwrap_or_else(|| chrono::Utc::now().to_rfc3339()),
             resuelto: row.resuelto.unwrap_or(false),
             fecha_resolucion: row.fecha_resolucion,
@@ -61,7 +63,7 @@ pub async fn find_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<AlertaGafet
     let row = sqlx::query_as!(
         AlertaGafeteRow,
         r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
-                ingreso_contratista_id, ingreso_proveedor_id,
+                ingreso_contratista_id, ingreso_proveedor_id, ingreso_visita_id,
                 fecha_reporte, resuelto as "resuelto: bool", fecha_resolucion, notas, reportado_por, resuelto_por,
                 created_at, updated_at
          FROM alertas_gafetes WHERE id = ?"#,
@@ -81,7 +83,7 @@ pub async fn find_pendientes_by_cedula(
     let rows = sqlx::query_as!(
         AlertaGafeteRow,
         r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
-                ingreso_contratista_id, ingreso_proveedor_id,
+                ingreso_contratista_id, ingreso_proveedor_id, ingreso_visita_id,
                 fecha_reporte, resuelto as "resuelto: bool", fecha_resolucion, notas, reportado_por, resuelto_por,
                 created_at, updated_at
          FROM alertas_gafetes WHERE cedula = ? AND resuelto = 0 ORDER BY fecha_reporte DESC"#,
@@ -102,7 +104,7 @@ pub async fn find_all(
         sqlx::query_as!(
             AlertaGafeteRow,
             r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
-                    ingreso_contratista_id, ingreso_proveedor_id,
+                    ingreso_contratista_id, ingreso_proveedor_id, ingreso_visita_id,
                     fecha_reporte, resuelto as "resuelto: bool", fecha_resolucion, notas, reportado_por, resuelto_por,
                     created_at, updated_at
              FROM alertas_gafetes WHERE resuelto = ? ORDER BY fecha_reporte DESC"#,
@@ -114,7 +116,7 @@ pub async fn find_all(
         sqlx::query_as!(
             AlertaGafeteRow,
             r#"SELECT id, persona_id, cedula, nombre_completo, gafete_numero,
-                    ingreso_contratista_id, ingreso_proveedor_id,
+                    ingreso_contratista_id, ingreso_proveedor_id, ingreso_visita_id,
                     fecha_reporte, resuelto as "resuelto: bool", fecha_resolucion, notas, reportado_por, resuelto_por,
                     created_at, updated_at
              FROM alertas_gafetes ORDER BY fecha_reporte DESC"#
@@ -140,6 +142,7 @@ pub async fn insert(
     gafete_numero: &str,
     ingreso_contratista_id: Option<&str>,
     ingreso_proveedor_id: Option<&str>,
+    ingreso_visita_id: Option<&str>,
     fecha_reporte: &str,
     notas: Option<&str>,
     reportado_por: &str,
@@ -149,10 +152,10 @@ pub async fn insert(
     sqlx::query!(
         r#"INSERT INTO alertas_gafetes 
            (id, persona_id, cedula, nombre_completo, gafete_numero, 
-            ingreso_contratista_id, ingreso_proveedor_id,
+            ingreso_contratista_id, ingreso_proveedor_id, ingreso_visita_id,
             fecha_reporte, resuelto, fecha_resolucion, notas, reportado_por,
             created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?)"#,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?)"#,
         id,
         persona_id,
         cedula,
@@ -160,6 +163,7 @@ pub async fn insert(
         gafete_numero,
         ingreso_contratista_id,
         ingreso_proveedor_id,
+        ingreso_visita_id,
         fecha_reporte,
         notas,
         reportado_por,

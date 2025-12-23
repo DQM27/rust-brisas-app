@@ -146,6 +146,7 @@ pub async fn registrar_salida(
                 &num,
                 None,      // No ingreso_contratista_id
                 Some(&id), // ingreso_proveedor_id
+                None,      // ingreso_visita_id
                 &now,
                 decision.motivo.as_deref(),
                 &usuario_id,
