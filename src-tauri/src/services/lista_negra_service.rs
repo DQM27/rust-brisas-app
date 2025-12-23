@@ -4,6 +4,7 @@
 // Capa de servicio: orquesta dominio, db
 // Contiene la lógica de negocio completa
 
+use crate::db::audit_queries;
 use crate::db::contratista_queries;
 use crate::db::lista_negra_queries as db;
 use crate::domain::errors::ListaNegraError;
@@ -110,7 +111,23 @@ pub async fn add_to_lista_negra(
     )
     .await?;
 
-    // 7. Indexar en Tantivy
+    // 7. Registrar en historial_bloqueos (AUDITORÍA)
+    let historial_id = Uuid::new_v4().to_string();
+    if let Err(e) = audit_queries::insert_historial_bloqueo(
+        pool,
+        &historial_id,
+        &id,
+        "bloqueado",
+        &bloqueado_por_normalizado,
+        &motivo_normalizado,
+        &now,
+    )
+    .await
+    {
+        warn!("Error al registrar historial de bloqueo {}: {}", id, e);
+    }
+
+    // 8. Indexar en Tantivy
     match db::find_by_id(pool, &id).await {
         Ok(lista_negra) => {
             if let Err(e) = search_service.add_lista_negra(&lista_negra).await {
@@ -120,7 +137,7 @@ pub async fn add_to_lista_negra(
         Err(e) => warn!("Error al obtener lista negra para indexar {}: {}", id, e),
     }
 
-    // 8. Retornar bloqueo creado con datos completos
+    // 9. Retornar bloqueo creado con datos completos
     get_lista_negra_by_id(pool, &id).await
 }
 
@@ -316,6 +333,7 @@ pub async fn remove_from_lista_negra(
     id: String,
     motivo: String,
     observacion: Option<String>,
+    usuario_id: String, // NUEVO: quién desbloquea
 ) -> Result<ListaNegraResponse, ListaNegraError> {
     // 1. Verificar que existe antes de desactivar
     let _ = db::find_by_id(pool, &id).await.map_err(|e| match e {
@@ -335,7 +353,23 @@ pub async fn remove_from_lista_negra(
     db::deactivate(pool, &id, &motivo_normalizado, observacion_normalizada.as_deref(), &now)
         .await?;
 
-    // 4. Actualizar índice
+    // 4. Registrar en historial_bloqueos (AUDITORÍA)
+    let historial_id = Uuid::new_v4().to_string();
+    if let Err(e) = audit_queries::insert_historial_bloqueo(
+        pool,
+        &historial_id,
+        &id,
+        "desbloqueado",
+        &usuario_id,
+        &motivo_normalizado,
+        &now,
+    )
+    .await
+    {
+        warn!("Error al registrar historial de desbloqueo {}: {}", id, e);
+    }
+
+    // 5. Actualizar índice
     match db::find_by_id(pool, &id).await {
         Ok(lista_negra) => {
             if let Err(e) = search_service.update_lista_negra(&lista_negra).await {
@@ -345,7 +379,7 @@ pub async fn remove_from_lista_negra(
         Err(e) => warn!("Error al obtener lista negra para actualizar índice {}: {}", id, e),
     }
 
-    // 5. Retornar actualizado
+    // 6. Retornar actualizado
     get_lista_negra_by_id(pool, &id).await
 }
 
@@ -394,7 +428,23 @@ pub async fn reactivate_lista_negra(
     )
     .await?;
 
-    // 5. Actualizar índice
+    // 5. Registrar en historial_bloqueos (AUDITORÍA)
+    let historial_id = Uuid::new_v4().to_string();
+    if let Err(e) = audit_queries::insert_historial_bloqueo(
+        pool,
+        &historial_id,
+        &id,
+        "bloqueado",
+        &bloqueado_por_normalizado,
+        &motivo_normalizado,
+        &now,
+    )
+    .await
+    {
+        warn!("Error al registrar historial de reactivación {}: {}", id, e);
+    }
+
+    // 6. Actualizar índice
     match db::find_by_id(pool, &id).await {
         Ok(lista_negra) => {
             if let Err(e) = search_service.update_lista_negra(&lista_negra).await {
@@ -404,7 +454,7 @@ pub async fn reactivate_lista_negra(
         Err(e) => warn!("Error al obtener lista negra para actualizar índice {}: {}", id, e),
     }
 
-    // 6. Retornar actualizado
+    // 7. Retornar actualizado
     get_lista_negra_by_id(pool, &id).await
 }
 

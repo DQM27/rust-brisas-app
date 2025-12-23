@@ -77,10 +77,18 @@ pub async fn remove_from_lista_negra(
     id: String,
     motivo: String,
     observacion: Option<String>,
+    usuario_id: String, // Quién desbloquea (para auditoría)
 ) -> Result<ListaNegraResponse, String> {
-    lista_negra_service::remove_from_lista_negra(&pool, &search_service, id, motivo, observacion)
-        .await
-        .map_err(|e| e.to_string())
+    lista_negra_service::remove_from_lista_negra(
+        &pool,
+        &search_service,
+        id,
+        motivo,
+        observacion,
+        usuario_id,
+    )
+    .await
+    .map_err(|e| e.to_string())
 }
 
 /// Reactiva un bloqueo (re-bloquear persona previamente desbloqueada)
