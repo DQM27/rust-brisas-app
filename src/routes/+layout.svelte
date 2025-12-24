@@ -12,6 +12,7 @@
   import { themeStore } from "$lib/stores/themeStore"; // Inicializar tema
   import { generalSettings } from "$lib/stores/settingsStore";
   import SetupWizard from "$lib/components/setup/SetupWizard.svelte";
+  import KeyboardShortcuts from "$lib/components/layout/KeyboardShortcuts.svelte";
   import { needsSetup } from "$lib/services/keyringService";
 
   // Estado de autenticación reactivo
@@ -57,6 +58,11 @@
   <SetupWizard onComplete={handleSetupComplete} />
 {/if}
 
+<!-- Keyboard Shortcuts (global) -->
+{#if authenticated}
+  <KeyboardShortcuts />
+{/if}
+
 <div
   class="flex flex-col h-screen bg-surface-1 text-primary overflow-hidden font-sans"
 >
@@ -80,4 +86,3 @@
     <StatusBar />
   {/if}
 </div>
-

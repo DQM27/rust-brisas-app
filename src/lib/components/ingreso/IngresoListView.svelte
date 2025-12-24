@@ -14,9 +14,17 @@
   import { invoke } from "@tauri-apps/api/core";
   import { createCustomButton } from "$lib/config/agGridConfigs";
   import { currentUser } from "$lib/stores/auth";
+  import { keyboardCommand, clearCommand } from "$lib/stores/keyboardCommands";
+  import { activeTabId } from "$lib/stores/tabs";
 
   // Types
   import type { CustomToolbarButton } from "$lib/types/agGrid";
+
+  // Props
+  interface Props {
+    tabId?: string;
+  }
+  let { tabId = "ingreso-list" }: Props = $props();
 
   // ==========================================
   // STATE
@@ -26,6 +34,15 @@
   let error = $state("");
   let selectedRows = $state<any[]>([]);
   let showModal = $state(false);
+
+  // Keyboard shortcut listener for Ctrl+N
+  $effect(() => {
+    const cmd = $keyboardCommand;
+    if (cmd?.command === "create-new" && $activeTabId === tabId) {
+      showModal = true;
+      clearCommand();
+    }
+  });
 
   // ==========================================
   // COLUMNS

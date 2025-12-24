@@ -2,4 +2,4 @@
   import IngresoListView from "./IngresoListView.svelte";
 </script>
 
-<IngresoListView />
+<IngresoListView tabId="ingreso-list" />

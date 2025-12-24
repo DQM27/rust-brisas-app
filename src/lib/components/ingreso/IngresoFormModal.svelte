@@ -149,7 +149,7 @@
   >
     <!-- Modal -->
     <div
-      class="bg-surface-2 rounded-lg shadow-surface-xl border border-surface max-w-2xl w-full max-h-[90vh] overflow-auto"
+      class="bg-surface-2 rounded-lg shadow-surface-xl border border-surface max-w-xl w-full max-h-[90vh] overflow-visible flex flex-col"
       transition:scale={{ duration: 200, start: 0.95 }}
     >
       <!-- Header -->

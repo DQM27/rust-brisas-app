@@ -12,23 +12,20 @@
   } from "$lib/stores/searchStore";
   import { performSearch } from "$lib/logic/search/performSearch";
   import type { SearchResult, SearchState } from "$lib/types/search.types";
+  import { highlightMatches } from "$lib/logic/search/highlightMatches";
 
-  export let placeholder: string = "Buscar por nombre, cédula o empresa...";
-  export let disabled: boolean = false;
-  export let limit: number = 10;
-  export let autofocus: boolean = false;
-  export let searchFunction:
-    | ((query: string) => Promise<SearchResult[]>)
-    | null = null;
+  let {
+    placeholder = "Buscar por nombre, cédula o empresa...",
+    disabled = false,
+    limit = 10,
+    autofocus = false,
+    searchFunction = null,
+  } = $props();
 
-  export function focus() {
-    inputRef?.focus();
-  }
-
-  let inputRef: HTMLInputElement;
-  let query = "";
-  let showDropdown = false;
-  let highlightedIndex = -1;
+  let inputRef = $state<HTMLInputElement>();
+  let query = $state("");
+  let showDropdown = $state(false);
+  let highlightedIndex = $state(-1);
   let debounceTimer: ReturnType<typeof setTimeout>;
 
   const dispatch = createEventDispatcher<{
@@ -36,11 +33,11 @@
     clear: void;
   }>();
 
-  let results: SearchResult[] = [];
-  $: results = ($searchStore as SearchState).results;
-  $: isLoading = ($searchStore as SearchState).isLoading;
-  $: error = ($searchStore as SearchState).error;
-  $: selectedResult = ($selectedSearchStore as any).result;
+  // Reactive state from store (still works but we use $derived for better Svelte 5 compatibility)
+  const results = $derived(($searchStore as SearchState).results);
+  const isLoading = $derived(($searchStore as SearchState).isLoading);
+  const error = $derived(($searchStore as SearchState).error);
+  const selectedResult = $derived(($selectedSearchStore as any).result);
 
   function handleInput() {
     clearTimeout(debounceTimer);
@@ -183,10 +180,10 @@
     <input
       bind:this={inputRef}
       bind:value={query}
-      on:input={handleInput}
-      on:focus={() =>
+      oninput={handleInput}
+      onfocus={() =>
         query.trim().length >= 2 && results.length > 0 && (showDropdown = true)}
-      on:keydown={handleKeyDown}
+      onkeydown={handleKeyDown}
       type="text"
       autocomplete="off"
       placeholder={selectedResult
@@ -206,7 +203,7 @@
       {#if selectedResult || query}
         <button
           type="button"
-          on:click={clear}
+          onclick={clear}
           class="p-1 text-gray-500 hover:text-gray-300 transition-colors"
           title="Limpiar"
         >
@@ -253,39 +250,59 @@
           <p class="text-sm text-gray-400">Sin resultados para "{query}"</p>
         </div>
       {:else}
-        <div class="max-h-64 overflow-y-auto">
+        <div class="py-1">
           {#each results as result, index}
             {@const typedResult = result as SearchResult}
             <button
               type="button"
-              on:click={() => handleSelect(typedResult)}
-              on:mouseenter={() => (highlightedIndex = index)}
-              class="w-full px-4 py-2.5 text-left transition-colors
-                {highlightedIndex === index
-                ? 'bg-white/5'
-                : 'hover:bg-white/5'}"
+              onclick={() => handleSelect(typedResult)}
+              onmouseenter={() => (highlightedIndex = index)}
+              class="w-full px-3 py-1 text-left flex items-center gap-3 {highlightedIndex ===
+              index
+                ? 'bg-[#1f6feb]/5'
+                : 'hover:bg-gray-700/20'}"
             >
-              <div class="flex items-center justify-between">
-                <div class="min-w-0 flex-1">
-                  <p class="text-sm text-white truncate">
-                    {typedResult.nombreCompleto || `ID: ${typedResult.id}`}
-                  </p>
-                  <div class="flex items-center gap-2 mt-0.5">
-                    {#if typedResult.cedula}
-                      <span class="text-xs text-gray-500"
-                        >{typedResult.cedula}</span
-                      >
-                    {/if}
-                    {#if typedResult.empresaNombre}
-                      <span class="text-xs text-gray-600"
-                        >• {typedResult.empresaNombre}</span
-                      >
-                    {/if}
-                  </div>
-                </div>
-                <span class="text-[10px] text-gray-600 uppercase ml-2"
-                  >{typedResult.tipo}</span
+              <!-- Icon (GitHub style) -->
+              <div class="flex-shrink-0 text-gray-500">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+
+              <!-- Content with Text Highlight -->
+              <div
+                class="flex-1 min-w-0 flex items-center justify-between py-1"
+              >
+                <span
+                  class="text-[13px] px-1.5 py-0.5 rounded transition-colors {highlightedIndex ===
+                  index
+                    ? 'bg-[#1f6feb] text-white'
+                    : 'text-gray-300'} truncate"
+                >
+                  {@html highlightMatches(
+                    typedResult.nombreCompleto || `ID: ${typedResult.id}`,
+                    query,
+                  )}
+                </span>
+
+                <div class="flex items-center gap-2">
+                  <span
+                    class="text-[10px] px-1.5 py-0.5 rounded-md bg-gray-800 text-gray-400 border border-gray-700 font-mono"
+                  >
+                    {typedResult.tipo}
+                  </span>
+                </div>
               </div>
             </button>
           {/each}
