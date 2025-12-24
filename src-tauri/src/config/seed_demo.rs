@@ -17,7 +17,22 @@ use crate::services::auth::hash_password;
 
 /// Ejecuta todos los seeds de demostración
 pub async fn run_demo_seed(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
-    log::info!("🌱 Iniciando seeds de demo...");
+    // 🛡️ SAFETY CHECK: Verificar que estamos en la DB de demo
+    let db_path: String =
+        sqlx::query_scalar("SELECT file FROM pragma_database_list WHERE name='main'")
+            .fetch_one(pool)
+            .await?;
+
+    if !db_path.contains("brisas_demo.db") {
+        let error_msg = format!(
+            "⛔ CRITICAL: Intento de correr seeds demo en base de datos de producción: {}",
+            db_path
+        );
+        log::error!("{}", error_msg);
+        return Err(error_msg.into());
+    }
+
+    log::info!("🌱 Iniciando seeds de demo en: {}", db_path);
 
     log::info!("🌱 Seeding users...");
     seed_demo_users(pool).await?;

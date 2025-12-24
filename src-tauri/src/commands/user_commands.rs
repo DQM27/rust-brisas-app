@@ -58,6 +58,15 @@ pub async fn login(
     email: String,
     password: String,
 ) -> Result<UserResponse, UserError> {
+    // DEBUG: Verificar a qué DB estamos conectados
+    if let Ok(path) =
+        sqlx::query_scalar::<_, String>("SELECT file FROM pragma_database_list WHERE name='main'")
+            .fetch_one(&*pool)
+            .await
+    {
+        log::info!("🔐 Login request using DB file: {}", path);
+    }
+
     user_service::login(&pool, email, password).await
 }
 
