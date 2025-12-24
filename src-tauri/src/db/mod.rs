@@ -6,7 +6,6 @@ use sqlx::{ConnectOptions, SqlitePool}; // Import ConnectOptions trait
 use std::str::FromStr;
 
 pub mod migrate;
-pub mod seed;
 
 pub mod alerta_gafete_queries;
 pub mod cita_queries;

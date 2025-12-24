@@ -44,7 +44,7 @@ pub fn run() {
 
             // Migraciones y seed (secuenciales, dependen del pool)
             db::migrate::run_migrations(&pool).await?;
-            db::seed::seed_db(&pool).await?;
+            config::seed::seed_db(&pool).await?;
 
             // Solo reindexar si el índice está vacío (primera vez o después de restauración)
             if search_service.is_empty() {
