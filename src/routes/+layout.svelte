@@ -64,6 +64,31 @@
 
     return cleanup;
   });
+
+  // Efecto reactivo para gestionar el estado de la ventana (Setup -> Login -> App)
+  $effect(() => {
+    if (!checkingSetup) {
+      (async () => {
+        try {
+          if (showSetupWizard || !authenticated) {
+            // Modo Launcher (Setup o Login)
+            await setWindowDecorations(false);
+            await setWindowSize(700, 550);
+            const { getCurrentWindow } = await import("@tauri-apps/api/window");
+            await getCurrentWindow().center();
+          } else {
+            // Modo App Completa
+            await setWindowDecorations(true);
+            await setWindowSize(1200, 800);
+            const { getCurrentWindow } = await import("@tauri-apps/api/window");
+            await getCurrentWindow().center();
+          }
+        } catch (e) {
+          console.error("Error gestionando estado de ventana:", e);
+        }
+      })();
+    }
+  });
 </script>
 
 {#if checkingSetup}
