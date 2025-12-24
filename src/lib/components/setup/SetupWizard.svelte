@@ -418,30 +418,6 @@
                   <p class="mt-1 text-xs text-gray-500">1-2 recomendado</p>
                 </div>
               </div>
-
-              <!-- Resumen -->
-              <div
-                class="mt-6 p-4 rounded-md bg-gray-50 dark:bg-[#161b22] border border-gray-200 dark:border-gray-700"
-              >
-                <h4 class="font-medium text-gray-900 dark:text-gray-100 mb-3">
-                  Resumen de Configuracion
-                </h4>
-                <ul class="space-y-2 text-sm">
-                  <li class="flex items-center gap-2">
-                    <Check class="w-4 h-4 text-[#2da44e]" />
-                    <span class="text-gray-600 dark:text-gray-300"
-                      >Terminal: {terminalName} ({terminalLocation})</span
-                    >
-                  </li>
-                  <li class="flex items-center gap-2">
-                    <Check class="w-4 h-4 text-[#2da44e]" />
-                    <span class="text-gray-600 dark:text-gray-300"
-                      >Argon2: {argon2Params.memory}KB, {argon2Params.iterations}
-                      iter</span
-                    >
-                  </li>
-                </ul>
-              </div>
             </div>
           </div>
         {/if}
