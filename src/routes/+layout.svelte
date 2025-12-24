@@ -116,14 +116,14 @@
       {/if}
       <div class="flex-1 bg-surface-1 overflow-auto relative flex">
         <Toast />
-        <div class="flex-1 w-full">
+        <div class="flex-1 w-full relative">
           {@render children()}
         </div>
       </div>
     </div>
 
-    <!-- StatusBar -->
-    {#if !$generalSettings.isKioskMode}
+    <!-- StatusBar (Solo si autenticado y no Setup) -->
+    {#if authenticated && !$generalSettings.isKioskMode && !showSetupWizard}
       <StatusBar />
     {/if}
   </div>

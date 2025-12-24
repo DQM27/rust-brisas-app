@@ -156,15 +156,13 @@
   transition:fade
 >
   {#if isResetting}
-    <div class="flex flex-col items-center gap-6 text-center animate-fade-in">
-      <div class="p-4 bg-[#2da44e]/10 rounded-full">
-        <RefreshCw class="w-12 h-12 text-[#2da44e] animate-spin" />
-      </div>
+    <div class="flex flex-col items-center gap-4 text-center" transition:fade>
+      <RefreshCw class="w-12 h-12 text-[#2da44e] animate-spin" />
       <div>
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">
           Reiniciando Sistema...
         </h2>
-        <p class="text-sm text-gray-500 mt-2">
+        <p class="text-sm text-gray-500">
           Limpiando configuración y llaves de seguridad.
         </p>
       </div>
@@ -174,9 +172,18 @@
       class="bg-white dark:bg-[#0d1117] w-full h-full overflow-hidden flex flex-col relative"
       transition:fade
     >
-      <!-- Header (Simple) -->
+      <!-- Close Button (X) -->
+      <button
+        type="button"
+        onclick={exitApp}
+        class="absolute top-4 right-4 p-1 text-gray-400 hover:text-red-500 transition-colors z-[60]"
+        title="Salir"
+      >
+        <X class="w-5 h-5" />
+      </button>
+      <!-- Header (Sin drag para efecto 'bloqueado') -->
       <div
-        class="bg-gray-50 dark:bg-surface-3 px-6 py-4 border-b border-gray-100 dark:border-gray-800"
+        class="bg-gray-50 dark:bg-[#161b22] px-6 py-4 border-b border-gray-200 dark:border-gray-700"
       >
         <div class="flex items-center gap-3">
           <div class="p-2 bg-[#2da44e]/10 rounded-lg">
@@ -184,10 +191,10 @@
           </div>
           <div class="flex-1">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Configuración Inicial
+              Configuracion Inicial
             </h2>
             <p class="text-sm text-gray-500 dark:text-gray-400">
-              Prepara tu terminal para Brisas App
+              Configura las credenciales seguras de la aplicacion
             </p>
           </div>
         </div>

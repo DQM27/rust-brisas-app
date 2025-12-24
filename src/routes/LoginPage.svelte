@@ -114,7 +114,9 @@
 </script>
 
 <!-- Usar bg-surface-1 para fondo consistente -->
-<div class="flex h-screen w-full items-center justify-center bg-surface-1 p-4">
+<div
+  class="w-full h-full flex flex-col items-center justify-center bg-surface-1"
+>
   {#if view === "login"}
     <LoginForm
       bind:this={formRef}
@@ -125,7 +127,7 @@
     />
   {:else if view === "change_password" && tempUser}
     <div
-      class="flex-1 flex items-center justify-center p-8 bg-white dark:bg-[#0d1117] relative"
+      class="flex-1 flex items-center justify-center p-8 bg-white dark:bg-[#0d1117] relative w-full"
     >
       <div class="animate-fade-in w-full max-w-sm">
         <ChangePasswordPanel
