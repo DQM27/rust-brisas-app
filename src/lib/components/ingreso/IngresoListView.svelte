@@ -13,6 +13,7 @@
   // Logic
   import { invoke } from "@tauri-apps/api/core";
   import { createCustomButton } from "$lib/config/agGridConfigs";
+  import { currentUser } from "$lib/stores/auth";
 
   // Types
   import type { CustomToolbarButton } from "$lib/types/agGrid";
@@ -44,29 +45,57 @@
       },
       {
         field: "nombreCompleto",
-        headerName: "Persona",
-        flex: 1,
+        headerName: "Nombre",
+        width: 200,
         sortable: true,
         filter: true,
       },
       {
-        field: "tipoIngresoDisplay",
-        headerName: "Tipo",
-        width: 120,
+        field: "cedula",
+        headerName: "Cédula",
+        width: 130,
         sortable: true,
         filter: true,
       },
       {
         field: "empresaNombre",
         headerName: "Empresa",
-        flex: 1,
+        width: 180,
+        sortable: true,
+        filter: true,
+      },
+      {
+        field: "tipoAutorizacionDisplay",
+        headerName: "Autorización",
+        width: 130,
+        sortable: true,
+        filter: true,
+      },
+      {
+        field: "modoIngresoDisplay",
+        headerName: "Modo",
+        width: 110,
         sortable: true,
         filter: true,
       },
       {
         field: "fechaHoraIngreso",
-        headerName: "Hora Ingreso",
-        width: 150,
+        headerName: "Fecha Entrada",
+        width: 140,
+        sortable: true,
+        valueFormatter: (params) => {
+          if (!params.value) return "";
+          return new Date(params.value).toLocaleDateString("es-ES", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+        },
+      },
+      {
+        field: "fechaHoraIngreso",
+        headerName: "Hora Entrada",
+        width: 120,
         sortable: true,
         valueFormatter: (params) => {
           if (!params.value) return "";
@@ -77,11 +106,85 @@
         },
       },
       {
-        field: "modoIngresoDisplay",
-        headerName: "Modo",
-        width: 120,
+        field: "usuarioIngresoNombre",
+        headerName: "Registrado Por",
+        width: 150,
         sortable: true,
         filter: true,
+      },
+      {
+        field: "fechaHoraSalida",
+        headerName: "Fecha Salida",
+        width: 140,
+        sortable: true,
+        valueFormatter: (params) => {
+          if (!params.value) return "-";
+          return new Date(params.value).toLocaleDateString("es-ES", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+        },
+      },
+      {
+        field: "fechaHoraSalida",
+        headerName: "Hora Salida",
+        width: 120,
+        sortable: true,
+        valueFormatter: (params) => {
+          if (!params.value) return "-";
+          return new Date(params.value).toLocaleTimeString("es-ES", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        },
+      },
+      {
+        field: "usuarioSalidaNombre",
+        headerName: "Salida Por",
+        width: 150,
+        sortable: true,
+        filter: true,
+        valueFormatter: (params) => {
+          if (!params.value) return "-";
+          return params.value;
+        },
+      },
+      {
+        field: "tiempoPermanenciaTexto",
+        headerName: "Tiempo Dentro",
+        width: 140,
+        sortable: true,
+        valueGetter: (params) => {
+          if (params.data.fechaHoraSalida) {
+            return params.data.tiempoPermanenciaTexto || "-";
+          }
+          // Calcular tiempo transcurrido si aún está adentro
+          const entrada = new Date(params.data.fechaHoraIngreso);
+          const ahora = new Date();
+          const diffMs = ahora.getTime() - entrada.getTime();
+          const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+          const diffMins = Math.floor(
+            (diffMs % (1000 * 60 * 60)) / (1000 * 60),
+          );
+          return `${diffHours}h ${diffMins}m`;
+        },
+      },
+      {
+        field: "actions",
+        headerName: "Acciones",
+        width: 120,
+        sortable: false,
+        filter: false,
+        pinned: "right",
+        cellRenderer: (params: any) => {
+          const button = document.createElement("button");
+          button.className =
+            "px-3 py-1 bg-error text-white rounded-md text-sm hover:opacity-90 transition-opacity";
+          button.textContent = "Salida";
+          button.onclick = () => handleSalida(params.data);
+          return button;
+        },
       },
     ];
   });
@@ -104,17 +207,7 @@
           tooltip: "Recargar lista",
         },
       ],
-      singleSelect: [
-        {
-          id: "salida",
-          label: "Registrar Salida",
-          onClick: () => {
-            if (selected) handleSalida(selected);
-          },
-          variant: "destructive" as const,
-          tooltip: "Registrar salida",
-        },
-      ],
+      singleSelect: [],
       multiSelect: [],
     };
   });
@@ -146,19 +239,19 @@
   }
 
   async function handleSalida(ingreso: any) {
-    if (!confirm(`¿Registrar salida para ${ingreso.nombre_completo}?`)) return;
+    if (!confirm(`¿Registrar salida para ${ingreso.nombreCompleto}?`)) return;
 
     try {
       const command =
-        ingreso.tipo_ingreso === "Contratista"
+        ingreso.tipoIngreso === "contratista"
           ? "register_exit_contratista"
-          : ingreso.tipo_ingreso === "Proveedor"
+          : ingreso.tipoIngreso === "proveedor"
             ? "registrar_salida_proveedor"
             : "registrar_salida_visita";
 
       await invoke(command, {
         id: ingreso.id,
-        usuarioId: "SYSTEM",
+        usuarioId: $currentUser?.id || "00000000-0000-0000-0000-000000000000",
         devolvioGafete: true,
         observaciones: null,
       });
