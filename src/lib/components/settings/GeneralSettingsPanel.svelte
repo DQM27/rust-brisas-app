@@ -14,7 +14,7 @@
   onMount(async () => {
     try {
       const config = await invoke<any>("get_app_config");
-      showDemoMode = config?.setup?.showDemoMode ?? false;
+      showDemoMode = config?.setup?.show_demo_mode ?? false;
     } catch (e) {
       console.warn("No se pudo cargar config de demo:", e);
     }

@@ -41,8 +41,11 @@ pub fn load_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
     // Buscar archivo existente
     for path in get_config_search_paths() {
         if path.exists() {
+            log::info!("📁 Cargando config desde: {}", path.display());
             let content = fs::read_to_string(&path)?;
             let mut config: AppConfig = toml::from_str(&content)?;
+
+            log::info!("🔧 Config cargada: show_demo_mode = {}", config.setup.show_demo_mode);
 
             // Generar ID si está vacío
             if config.terminal.id.is_empty() {
@@ -55,7 +58,7 @@ pub fn load_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
     }
 
     // No se encontró, crear nueva configuración
-
+    log::info!("📁 No se encontró config, creando nueva...");
     create_default_config()
 }
 

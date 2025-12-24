@@ -10,6 +10,9 @@ pub async fn get_app_config(config: State<'_, AppConfigState>) -> Result<AppConf
     let config_guard = config
         .read()
         .map_err(|e| ConfigError::Message(format!("Error al leer configuración: {}", e)))?;
+
+    log::info!("📖 get_app_config llamado: show_demo_mode = {}", config_guard.setup.show_demo_mode);
+
     Ok(config_guard.clone())
 }
 
