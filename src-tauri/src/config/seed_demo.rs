@@ -11,9 +11,8 @@
 
 use chrono::{Duration, Utc};
 use sqlx::SqlitePool;
-use uuid::Uuid;
 
-use crate::domain::role::{ROLE_ADMIN_ID, ROLE_GUARDIA_ID, ROLE_SUPERVISOR_ID};
+use crate::domain::role::{ROLE_GUARDIA_ID, ROLE_SUPERVISOR_ID};
 use crate::services::auth::hash_password;
 
 /// Ejecuta todos los seeds de demostración
@@ -256,8 +255,8 @@ async fn seed_demo_proveedores(pool: &SqlitePool) -> Result<(), Box<dyn std::err
     for (id, cedula, nombre, apellido, empresa_id) in proveedores {
         sqlx::query(
             r#"INSERT OR IGNORE INTO proveedores 
-               (id, cedula, nombre, apellido, empresa_id, is_active, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, 1, ?, ?)"#,
+               (id, cedula, nombre, apellido, empresa_id, estado, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, 'ACTIVO', ?, ?)"#,
         )
         .bind(id)
         .bind(cedula)

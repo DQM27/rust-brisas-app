@@ -76,7 +76,13 @@
 <!-- Usar bg-surface-1 para fondo consistente -->
 <div class="flex h-screen w-full items-center justify-center bg-surface-1 p-4">
   {#if view === "login"}
-    <LoginForm bind:this={formRef} {loading} onSubmit={handleLogin} />
+    <!-- TODO: isDemoMode debería venir de config/estado de la app -->
+    <LoginForm
+      bind:this={formRef}
+      {loading}
+      isDemoMode={true}
+      onSubmit={handleLogin}
+    />
   {:else if view === "change_password" && tempUser}
     <div class="animate-fade-in w-full max-w-sm">
       <ChangePasswordPanel
