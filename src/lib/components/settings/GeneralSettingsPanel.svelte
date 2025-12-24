@@ -1,7 +1,41 @@
 <script lang="ts">
   import { generalSettings } from "$lib/stores/settingsStore";
   import { scale } from "svelte/transition";
-  import { Check, X, Layout, Type, Power } from "lucide-svelte";
+  import { Check, X, Layout, Type, Power, FlaskConical } from "lucide-svelte";
+  import { invoke } from "@tauri-apps/api/core";
+  import { onMount } from "svelte";
+  import { toast } from "svelte-5-french-toast";
+
+  // Estado del modo demo (se carga desde el backend)
+  let showDemoMode = $state(false);
+  let loadingDemo = $state(false);
+
+  // Cargar configuración al montar
+  onMount(async () => {
+    try {
+      const config = await invoke<any>("get_app_config");
+      showDemoMode = config?.setup?.showDemoMode ?? false;
+    } catch (e) {
+      console.warn("No se pudo cargar config de demo:", e);
+    }
+  });
+
+  async function toggleDemoMode() {
+    loadingDemo = true;
+    try {
+      const newValue = !showDemoMode;
+      await invoke("toggle_demo_mode", { enabled: newValue });
+      showDemoMode = newValue;
+      toast.success(
+        newValue ? "Modo demo habilitado" : "Modo demo deshabilitado",
+        { icon: newValue ? "🧪" : "🔒" },
+      );
+    } catch (e: any) {
+      console.error("Error toggling demo mode:", e);
+      toast.error("Error al cambiar modo demo");
+    }
+    loadingDemo = false;
+  }
 
   // ==========================================================================
   // Toggle Component (reusable)
@@ -9,10 +43,16 @@
 </script>
 
 <!-- Reusable Toggle Switch -->
-{#snippet toggleSwitch(checked: boolean, onChange: () => void, srLabel: string)}
+{#snippet toggleSwitch(
+  checked: boolean,
+  onChange: () => void,
+  srLabel: string,
+  disabled: boolean = false,
+)}
   <button
     onclick={onChange}
-    class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2
+    {disabled}
+    class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed
     {checked ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}"
   >
     <span class="sr-only">{srLabel}</span>
@@ -37,6 +77,7 @@
   label: string,
   checked: boolean,
   onChange: () => void,
+  disabled: boolean = false,
 )}
   <div class="flex items-center justify-between py-3">
     <div class="flex items-center gap-3">
@@ -45,7 +86,7 @@
       </div>
       <span class="text-secondary font-medium">{label}</span>
     </div>
-    {@render toggleSwitch(checked, onChange, label)}
+    {@render toggleSwitch(checked, onChange, label, disabled)}
   </div>
 {/snippet}
 
@@ -127,7 +168,31 @@
           $generalSettings.disableSetupWizard,
           () => generalSettings.toggleSetupWizard(),
         )}
+
+        <!-- Modo Demo Toggle -->
+        {@render settingRow(
+          FlaskConical,
+          "bg-amber-50 dark:bg-amber-900/20",
+          "text-amber-500",
+          "Mostrar Modo Demo en Login",
+          showDemoMode,
+          toggleDemoMode,
+          loadingDemo,
+        )}
       </div>
+
+      <!-- Nota de seguridad para modo demo -->
+      {#if showDemoMode}
+        <div
+          class="mt-3 flex items-start gap-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/20"
+        >
+          <span class="text-amber-500 text-lg">⚠️</span>
+          <p class="text-xs text-amber-600 dark:text-amber-400">
+            El modo demo está habilitado. Se mostrará el enlace "¿Modo Demo?" en
+            la pantalla de login. Desactívalo antes de desplegar a producción.
+          </p>
+        </div>
+      {/if}
     </div>
 
     <!-- ================================================================== -->
