@@ -42,9 +42,16 @@ pub fn run() {
             let pool = db::init_pool(&app_config).await?;
             let search_service = search::init_search_service(&app_config)?;
 
-            // Migraciones y seed (secuenciales, dependen del pool)
+            // Migraciones (siempre necesarias)
             db::migrate::run_migrations(&pool).await?;
-            config::seed::seed_db(&pool).await?;
+
+            // Solo sembrar DB si ya está configurado (para evitar desincronización de Argon2)
+            if app_config.setup.is_configured {
+                info!("🌱 App configurada, verificando integridad de datos...");
+                config::seed::seed_db(&pool).await?;
+            } else {
+                info!("⚠️ App NO configurada, saltando seed hasta que se complete el Wizard.");
+            }
 
             // Solo reindexar si el índice está vacío (primera vez o después de restauración)
             if search_service.is_empty() {

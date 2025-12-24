@@ -93,3 +93,7 @@ export async function generateRandomSecret(): Promise<string> {
 export async function resetAllCredentials(confirm: boolean): Promise<void> {
   return invoke('reset_all_credentials', { confirm });
 }
+
+export async function exitApp(): Promise<void> {
+  return invoke('exit_app');
+}

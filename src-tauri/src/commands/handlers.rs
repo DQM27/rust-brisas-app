@@ -166,6 +166,7 @@ macro_rules! register_handlers {
             // COMANDOS DE VENTANA
             // ==========================================
             commands::window_commands::show_main_window,
+            commands::app_commands::exit_app,
             // ==========================================
             // COMANDOS DE KEYRING/CREDENCIALES
             // ==========================================

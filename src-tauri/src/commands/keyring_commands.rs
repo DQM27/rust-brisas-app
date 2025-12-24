@@ -3,7 +3,8 @@
 // ==========================================
 // Comandos Tauri para gestión segura de credenciales
 
-use crate::config::{save_config, AppConfig};
+use crate::config::save_config;
+use crate::config::settings::AppConfigState;
 use crate::domain::errors::KeyringError;
 use crate::services::keyring_service::{self, Argon2Params, CredentialStatus};
 use chrono::Utc;
@@ -39,14 +40,23 @@ pub fn get_credential_status() -> CredentialStatus {
 
 /// Verifica si la app está completamente configurada
 #[command]
-pub fn is_app_configured(config: State<'_, AppConfig>) -> bool {
-    config.setup.is_configured && keyring_service::is_fully_configured()
+pub fn is_app_configured(config: State<'_, AppConfigState>) -> bool {
+    // Necesitamos un read lock porque AppConfigState es RwLock
+    if let Ok(guard) = config.read() {
+        guard.setup.is_configured && keyring_service::is_fully_configured()
+    } else {
+        false // Si falla el lock, asumimos no configurado
+    }
 }
 
 /// Verifica si necesita ejecutar el wizard de configuración
 #[command]
-pub fn needs_setup(config: State<'_, AppConfig>) -> bool {
-    !config.setup.is_configured || !keyring_service::is_fully_configured()
+pub fn needs_setup(config: State<'_, AppConfigState>) -> bool {
+    if let Ok(guard) = config.read() {
+        !guard.setup.is_configured || !keyring_service::is_fully_configured()
+    } else {
+        true // Si falla el lock, asumimos setup necesario
+    }
 }
 
 // ==========================================
@@ -55,37 +65,57 @@ pub fn needs_setup(config: State<'_, AppConfig>) -> bool {
 
 /// Configura todas las credenciales en el primer uso
 #[command]
-pub fn setup_credentials(
+pub async fn setup_credentials(
     input: SetupCredentialsInput,
-    config: State<'_, AppConfig>,
+    pool: State<'_, crate::db::DbPool>,
+    config: State<'_, crate::config::settings::AppConfigState>,
 ) -> Result<SetupResult, KeyringError> {
-    // 1. (Eliminado: Guardar credenciales SMTP)
+    // 1. Manejo inteligente del secreto Argon2
+    // Si ya existe un secreto en el Keyring, lo REUTILIZAMOS para no perder acceso a datos
+    // previos si solo se borró el TOML pero no las llaves de Windows.
+    let mut final_argon2 = input.argon2.clone();
+    if keyring_service::has_argon2_secret() {
+        let existing = keyring_service::get_argon2_params();
+        if !existing.secret.is_empty() {
+            log::info!("🔐 Detectado secreto existente en Keyring. Reutilizando para mantener compatibilidad.");
+            final_argon2.secret = existing.secret;
+        }
+    }
 
-    // 2. Guardar parámetros de Argon2
-    keyring_service::store_argon2_params(&input.argon2)
+    // 2. Guardar parámetros (reutilizando secreto si existía)
+    keyring_service::store_argon2_params(&final_argon2)
         .map_err(|e| KeyringError::StoreError(e.to_string()))?;
 
     // 3. Actualizar configuración en TOML
-    let mut updated_config = config.inner().clone();
+    {
+        let mut config_guard = config.write().map_err(|e| {
+            KeyringError::Message(format!("Error escribiendo configuración: {}", e))
+        })?;
 
-    // Actualizar datos de setup
-    updated_config.setup.is_configured = true;
-    updated_config.setup.configured_at = Some(Utc::now().to_rfc3339());
-    updated_config.setup.configured_version = Some(env!("CARGO_PKG_VERSION").to_string());
+        config_guard.setup.is_configured = true;
+        config_guard.setup.configured_at = Some(Utc::now().to_rfc3339());
+        config_guard.setup.configured_version = Some(env!("CARGO_PKG_VERSION").to_string());
 
-    // Actualizar datos de terminal
-    updated_config.terminal.nombre = input.terminal_name;
-    updated_config.terminal.ubicacion = input.terminal_location;
+        config_guard.terminal.nombre = input.terminal_name;
+        config_guard.terminal.ubicacion = input.terminal_location;
 
-    // Guardar config actualizada
-    let config_path = if let Some(data_dir) = dirs::data_local_dir() {
-        data_dir.join("Brisas").join("brisas.toml")
-    } else {
-        std::path::PathBuf::from("./config/brisas.toml")
-    };
+        let config_path = if let Some(data_dir) = dirs::data_local_dir() {
+            data_dir.join("Brisas").join("brisas.toml")
+        } else {
+            std::path::PathBuf::from("brisas.toml")
+        };
 
-    save_config(&updated_config, &config_path)
-        .map_err(|e| KeyringError::Message(format!("Error guardando configuración: {}", e)))?;
+        crate::config::save_config(&config_guard, &config_path)
+            .map_err(|e| KeyringError::Message(format!("Error guardando configuración: {}", e)))?;
+    }
+
+    // 4. 🔥 IMPORTANTE: Disparar el SEED ahora que la llave es segura
+    log::info!("🌱 Configuración completada. Iniciando sembrado de base de datos...");
+    let db_pool = pool.0.read().await;
+    if let Err(e) = crate::config::seed::seed_db(&db_pool).await {
+        log::error!("❌ Error al sembrar base de datos tras setup: {}", e);
+        // No fallamos el comando completo porque la config ya se guardó, pero avisamos.
+    }
 
     Ok(SetupResult {
         success: true,
@@ -290,28 +320,31 @@ pub fn test_keyring() -> Result<String, KeyringError> {
 #[command]
 pub fn reset_all_credentials(
     confirm: bool,
-    config: State<'_, AppConfig>,
+    config: State<'_, AppConfigState>,
 ) -> Result<(), KeyringError> {
     if !confirm {
         return Err(KeyringError::Message("Debes confirmar la operación".to_string()));
     }
 
-    // Eliminar credenciales
-    // let _ = keyring_service::delete_smtp_credentials();
+    // Eliminar credenciales del Keyring del OS
+    let _ = keyring_service::delete_argon2_params();
 
-    // Actualizar estado de configuración
-    let mut updated_config = config.inner().clone();
-    updated_config.setup.is_configured = false;
-    updated_config.setup.configured_at = None;
-    updated_config.setup.configured_version = None;
+    // Actualizar estado de configuración con write lock
+    let mut config_guard = config
+        .write()
+        .map_err(|e| KeyringError::Message(format!("Error escribiendo configuración: {}", e)))?;
+
+    config_guard.setup.is_configured = false;
+    config_guard.setup.configured_at = None;
+    config_guard.setup.configured_version = None;
 
     let config_path = if let Some(data_dir) = dirs::data_local_dir() {
         data_dir.join("Brisas").join("brisas.toml")
     } else {
-        std::path::PathBuf::from("./config/brisas.toml")
+        std::path::PathBuf::from("brisas.toml")
     };
 
-    save_config(&updated_config, &config_path)
+    save_config(&config_guard, &config_path)
         .map_err(|e| KeyringError::Message(format!("Error guardando configuración: {}", e)))?;
 
     Ok(())

@@ -32,9 +32,7 @@
     // Verificar si necesita configuración inicial
     (async () => {
       try {
-        if (!$generalSettings.disableSetupWizard) {
-          $setupWizardVisible = await needsSetup();
-        }
+        $setupWizardVisible = await needsSetup();
       } catch (e) {
         console.error("Error verificando setup:", e);
         $setupWizardVisible = false;
@@ -52,31 +50,30 @@
   });
 </script>
 
-<!-- Setup Wizard (primera ejecución) -->
 {#if showSetupWizard}
   <SetupWizard onComplete={handleSetupComplete} />
-{/if}
-
-<div
-  class="flex flex-col h-screen bg-surface-1 text-primary overflow-hidden font-sans"
->
-  <!-- Main Area -->
+{:else}
   <div
-    class="flex flex-1 w-full overflow-hidden bg-surface-1 md:flex-row flex-col"
+    class="flex flex-col h-screen bg-surface-1 text-primary overflow-hidden font-sans"
   >
-    {#if authenticated && !$generalSettings.isKioskMode}
-      <Sidebar />
-    {/if}
-    <div class="flex-1 bg-surface-1 overflow-auto relative flex">
-      <Toast />
-      <div class="flex-1 w-full">
-        {@render children()}
+    <!-- Main Area -->
+    <div
+      class="flex flex-1 w-full overflow-hidden bg-surface-1 md:flex-row flex-col"
+    >
+      {#if authenticated && !$generalSettings.isKioskMode}
+        <Sidebar />
+      {/if}
+      <div class="flex-1 bg-surface-1 overflow-auto relative flex">
+        <Toast />
+        <div class="flex-1 w-full">
+          {@render children()}
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- StatusBar -->
-  {#if !$generalSettings.isKioskMode}
-    <StatusBar />
-  {/if}
-</div>
+    <!-- StatusBar -->
+    {#if !$generalSettings.isKioskMode}
+      <StatusBar />
+    {/if}
+  </div>
+{/if}

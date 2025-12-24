@@ -15,6 +15,9 @@
   import {
     setupCredentials,
     generateRandomSecret,
+    exitApp,
+    resetAllCredentials,
+    getCredentialStatus,
     type Argon2Params,
   } from "$lib/services/keyringService";
 
@@ -28,6 +31,7 @@
   let currentStep = $state(1);
   let isSubmitting = $state(false);
   let error = $state("");
+  let keyFoundInSystem = $state(false);
 
   // Visibility toggles
   let showArgon2Secret = $state(false);
@@ -63,10 +67,25 @@
     }
   }
 
+  async function checkSystemKey() {
+    try {
+      const status = await getCredentialStatus();
+      keyFoundInSystem = status.argon2_configured;
+      if (keyFoundInSystem && argon2Params.secret === "") {
+        argon2Params.secret = "********"; // Placeholder visual
+      }
+    } catch (e) {
+      console.error("Error verificando llaves:", e);
+    }
+  }
+
   function nextStep() {
     if (currentStep < 2) {
       currentStep++;
       error = "";
+      if (currentStep === 2) {
+        checkSystemKey();
+      }
     }
   }
 
@@ -93,6 +112,21 @@
       isSubmitting = false;
     }
   }
+
+  async function handleFactoryReset() {
+    if (
+      confirm(
+        "⚠️ ¿Estás seguro? Esto borrará TODA la configuración y las llaves de seguridad de Windows.",
+      )
+    ) {
+      try {
+        await resetAllCredentials(true);
+        window.location.reload(); // Recargar para reiniciar el flujo
+      } catch (e) {
+        error = `Error en reset: ${e}`;
+      }
+    }
+  }
 </script>
 
 <div
@@ -111,7 +145,7 @@
         <div class="p-2 bg-[#2da44e]/10 rounded-lg">
           <Shield class="w-6 h-6 text-[#2da44e]" />
         </div>
-        <div>
+        <div class="flex-1">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Configuracion Inicial
           </h2>
@@ -119,6 +153,14 @@
             Configura las credenciales seguras de la aplicacion
           </p>
         </div>
+        <button
+          type="button"
+          onclick={handleFactoryReset}
+          class="text-xs px-2 py-1 rounded bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors border border-red-200 dark:border-red-800/30"
+          title="Borrar todo y empezar de cero"
+        >
+          Factory Reset
+        </button>
       </div>
 
       <!-- Progress Steps -->
@@ -245,39 +287,56 @@
               >
                 Secret (Pepper)
               </label>
-              <div class="flex gap-2">
-                <div class="relative flex-1">
-                  <input
-                    id="argon2Secret"
-                    type={showArgon2Secret ? "text" : "password"}
-                    bind:value={argon2Params.secret}
-                    placeholder="Secret para hasheo de contraseñas"
-                    class="w-full px-3 py-2 pr-10 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent font-mono"
+              {#if keyFoundInSystem}
+                <div
+                  class="mb-4 p-3 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 flex items-start gap-2"
+                >
+                  <Check
+                    class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
                   />
+                  <div class="text-xs text-blue-700 dark:text-blue-300">
+                    <p class="font-semibold">Llave detectada en Windows</p>
+                    <p>
+                      Se reutilizará el secreto guardado para mantener acceso a
+                      los usuarios existentes. No necesitas ingresar uno nuevo.
+                    </p>
+                  </div>
+                </div>
+              {:else}
+                <div class="flex gap-2">
+                  <div class="relative flex-1">
+                    <input
+                      id="argon2Secret"
+                      type={showArgon2Secret ? "text" : "password"}
+                      bind:value={argon2Params.secret}
+                      placeholder="Secret para hasheo de contraseñas"
+                      class="w-full px-3 py-2 pr-10 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent font-mono"
+                    />
+                    <button
+                      type="button"
+                      onclick={() => (showArgon2Secret = !showArgon2Secret)}
+                      class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+                    >
+                      {#if showArgon2Secret}
+                        <EyeOff class="w-4 h-4" />
+                      {:else}
+                        <Eye class="w-4 h-4" />
+                      {/if}
+                    </button>
+                  </div>
                   <button
                     type="button"
-                    onclick={() => (showArgon2Secret = !showArgon2Secret)}
-                    class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+                    onclick={generateSecret}
+                    class="px-3 py-2 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#21262d] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#30363d]"
                   >
-                    {#if showArgon2Secret}
-                      <EyeOff class="w-4 h-4" />
-                    {:else}
-                      <Eye class="w-4 h-4" />
-                    {/if}
+                    Generar
                   </button>
                 </div>
-                <button
-                  type="button"
-                  onclick={generateSecret}
-                  class="px-3 py-2 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#21262d] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#30363d]"
-                >
-                  Generar
-                </button>
-              </div>
-              <p class="mt-1 text-xs text-gray-500">
-                Este secret se usa como "pepper" adicional al salt. Guardalo de
-                forma segura.
-              </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  Este secret se usa como "pepper" adicional al salt. Guardalo
+                  de forma segura.
+                </p>
+              {/if}
             </div>
 
             <div class="grid grid-cols-3 gap-4">
@@ -362,15 +421,25 @@
     <div
       class="bg-gray-50 dark:bg-[#161b22] px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between"
     >
-      <button
-        type="button"
-        onclick={prevStep}
-        disabled={currentStep === 1}
-        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#21262d] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#30363d] disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <ChevronLeft class="w-4 h-4" />
-        <span>Anterior</span>
-      </button>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          onclick={exitApp}
+          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-red-200 dark:border-red-900/30 bg-red-50/50 dark:bg-red-900/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20"
+        >
+          <span>Salir del Sistema</span>
+        </button>
+
+        <button
+          type="button"
+          onclick={prevStep}
+          disabled={currentStep === 1}
+          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#21262d] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#30363d] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft class="w-4 h-4" />
+          <span>Anterior</span>
+        </button>
+      </div>
 
       {#if currentStep < 2}
         <button

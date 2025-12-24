@@ -1,3 +1,4 @@
+pub mod app_commands;
 pub mod backup;
 
 pub mod cita_commands;

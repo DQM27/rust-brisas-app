@@ -111,6 +111,11 @@ fn retrieve_value(key: &str) -> Option<String> {
     use crate::services::keyring_windows;
     keyring_windows::retrieve_secret(key)
 }
+#[cfg(target_os = "windows")]
+fn delete_value(key: &str) -> KeyringResult<()> {
+    use crate::services::keyring_windows;
+    keyring_windows::delete_secret(key).map_err(KeyringError::DeletionError)
+}
 
 // ==========================================
 // IMPLEMENTACIÓN MACOS (librería keyring)
@@ -157,6 +162,15 @@ pub fn get_argon2_params() -> Argon2Params {
 
 pub fn has_argon2_secret() -> bool {
     retrieve_value(KEY_PASSWORD_SECRET).map(|s| !s.is_empty()).unwrap_or(false)
+}
+
+pub fn delete_argon2_params() -> KeyringResult<()> {
+    // Intentar borrar cada una de las claves
+    let _ = delete_value(KEY_ARGON2_MEMORY);
+    let _ = delete_value(KEY_ARGON2_ITERATIONS);
+    let _ = delete_value(KEY_ARGON2_PARALLELISM);
+    let _ = delete_value(KEY_PASSWORD_SECRET);
+    Ok(())
 }
 
 // ==========================================
