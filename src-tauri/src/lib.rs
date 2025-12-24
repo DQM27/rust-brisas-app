@@ -13,7 +13,7 @@ pub mod search;
 pub mod services;
 
 use log::{error, info};
-use std::sync::atomic::AtomicBool;
+use std::sync::{atomic::AtomicBool, Arc, RwLock};
 use tauri::Manager; // Import log macros
 
 pub struct AppState {
@@ -83,7 +83,7 @@ pub fn run() {
                         .build(),
                 ) // Logging Plugin
                 .manage(pool)
-                .manage(app_config)
+                .manage(Arc::new(RwLock::new(app_config)))
                 .manage(search_service)
                 .manage(app_state)
                 .manage(session_state)

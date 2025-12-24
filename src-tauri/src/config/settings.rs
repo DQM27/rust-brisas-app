@@ -80,3 +80,7 @@ impl Default for AppConfig {
         }
     }
 }
+
+/// Type alias para AppConfig mutable compartido
+/// Permite actualizar la configuración en runtime desde cualquier comando
+pub type AppConfigState = std::sync::Arc<std::sync::RwLock<AppConfig>>;
