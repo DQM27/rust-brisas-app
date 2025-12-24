@@ -28,6 +28,7 @@
   // Stores
   import { selectedSearchStore } from "$lib/stores/searchStore";
   import { currentUser } from "$lib/stores/auth";
+  import { activeTabId } from "$lib/stores/tabs";
 
   interface Props {
     tabId: string;
@@ -61,6 +62,17 @@
   let showModal = $state(false);
   let editingUser = $state<UserResponse | null>(null);
   let modalLoading = $state(false);
+
+  // Keyboard shortcut handler for Ctrl+N
+  function handleKeydown(e: KeyboardEvent) {
+    if ($activeTabId !== tabId) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "TEXTAREA" || target.isContentEditable) return;
+      e.preventDefault();
+      openModal(null);
+    }
+  }
 
   // ==========================================
   // DERIVADOS
@@ -340,7 +352,7 @@
   });
 </script>
 
-<svelte:window onclick={handleClickOutside} />
+<svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
 
 <div class="flex h-full flex-col relative bg-[#1e1e1e]">
   <!-- Header -->

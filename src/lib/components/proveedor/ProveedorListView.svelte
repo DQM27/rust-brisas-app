@@ -19,6 +19,12 @@
   } from "$lib/types/proveedor";
   import { toast } from "svelte-5-french-toast";
   import type { ColDef } from "@ag-grid-community/core";
+  import { activeTabId } from "$lib/stores/tabs";
+
+  interface Props {
+    tabId?: string;
+  }
+  let { tabId = "proveedor-list" }: Props = $props();
 
   // Estado del Grid
   let proveedores = $state<ProveedorResponse[]>([]);
@@ -36,6 +42,17 @@
 
   // Selección
   let selectedRows = $state<ProveedorResponse[]>([]);
+
+  // Keyboard shortcut handler for Ctrl+N
+  function handleKeydown(e: KeyboardEvent) {
+    if ($activeTabId !== tabId) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "TEXTAREA" || target.isContentEditable) return;
+      e.preventDefault();
+      openFormModal(null);
+    }
+  }
 
   // Carga inicial
   const loadData = async () => {
@@ -184,6 +201,8 @@
     loadData();
   });
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="h-full flex flex-col space-y-4 p-4 animate-fade-in bg-[#1e1e1e]">
   {#if loading}

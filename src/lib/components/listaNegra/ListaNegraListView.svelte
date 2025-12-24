@@ -29,6 +29,7 @@
   // Stores
   import { selectedSearchStore } from "$lib/stores/searchStore";
   import { currentUser } from "$lib/stores/auth";
+  import { activeTabId } from "$lib/stores/tabs";
 
   interface Props {
     tabId: string;
@@ -57,6 +58,17 @@
 
   // Selección en grid
   let selectedRows = $state<ListaNegraResponse[]>([]);
+
+  // Keyboard shortcut handler for Ctrl+N
+  function handleKeydown(e: KeyboardEvent) {
+    if ($activeTabId !== tabId) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "TEXTAREA" || target.isContentEditable) return;
+      e.preventDefault();
+      openFormModal(null);
+    }
+  }
 
   // ==========================================
   // ESTADO DE MODALES
@@ -361,7 +373,7 @@
   });
 </script>
 
-<svelte:window onclick={handleClickOutside} />
+<svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
 
 <div class="flex h-full flex-col relative bg-[#1e1e1e]">
   <!-- Header -->

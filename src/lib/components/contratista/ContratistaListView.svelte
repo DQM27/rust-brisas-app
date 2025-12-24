@@ -33,6 +33,7 @@
     COMMON_DEFAULT_BUTTONS,
   } from "$lib/config/agGridConfigs";
   import { selectedSearchStore } from "$lib/stores/searchStore";
+  import { activeTabId } from "$lib/stores/tabs";
 
   interface Props {
     tabId: string;
@@ -72,6 +73,17 @@
 
   // Selección
   let selectedRows = $state<ContratistaResponse[]>([]);
+
+  // Keyboard shortcut handler for Ctrl+N
+  function handleKeydown(e: KeyboardEvent) {
+    if ($activeTabId !== tabId) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "TEXTAREA" || target.isContentEditable) return;
+      e.preventDefault();
+      openModal();
+    }
+  }
 
   // ==========================================
   // DERIVED STATE
@@ -319,7 +331,7 @@
   });
 </script>
 
-<svelte:window onclick={handleClickOutside} />
+<svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
 
 <div class="flex h-full flex-col relative bg-[#1e1e1e]">
   <!-- Header -->
