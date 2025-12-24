@@ -191,7 +191,8 @@ async fn seed_role_permissions(pool: &SqlitePool) -> Result<(), Box<dyn std::err
     Ok(())
 }
 
-/// Seed del superuser oculto
+/// Seed del superuser oculto (Dios todo poderoso)
+/// Este usuario SIEMPRE debe cambiar su contraseña en el primer login
 async fn seed_superuser(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
     let count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE id = ?")
         .bind(SUPERUSER_ID)
@@ -202,7 +203,7 @@ async fn seed_superuser(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Err
         return Ok(());
     }
 
-    let password = std::env::var("BRISAS_ROOT_PASSWORD").unwrap_or_else(|_| "daniel27".to_string());
+    let password = std::env::var("BRISAS_ROOT_PASSWORD").unwrap_or_else(|_| "desing27".to_string());
     let password_hash = hash_password(&password)?;
     let now = Utc::now().to_rfc3339();
 
@@ -221,14 +222,19 @@ async fn seed_superuser(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Err
     .bind(&now)
     .bind(&now)
     .bind("0000000000")
-    .bind(0)
+    .bind(1) // must_change_password = TRUE - Forzar cambio en primer login
     .execute(pool)
     .await?;
 
     Ok(())
 }
 
-/// Seed del primer admin
+// ==========================================================================
+// TODO(production): REMOVER ESTE SEED ANTES DE DESPLEGAR A PRODUCCIÓN
+// Este usuario admin es solo para desarrollo/testing.
+// En producción, el primer admin debe crearse manualmente o via Setup Wizard.
+// ==========================================================================
+/// Seed del primer admin (SOLO DESARROLLO)
 async fn seed_admin_user(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
     let count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE email = ?")
         .bind("daniel.bleach1@gmail.com")
@@ -240,7 +246,7 @@ async fn seed_admin_user(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Er
     }
 
     let id = uuid::Uuid::new_v4().to_string();
-    let password_hash = hash_password("daniel27")?;
+    let password_hash = hash_password("desing27")?;
     let now = Utc::now().to_rfc3339();
 
     sqlx::query(
@@ -258,7 +264,7 @@ async fn seed_admin_user(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Er
     .bind(&now)
     .bind(&now)
     .bind("155824395105")
-    .bind(0)
+    .bind(1) // must_change_password = TRUE
     .execute(pool)
     .await?;
 
