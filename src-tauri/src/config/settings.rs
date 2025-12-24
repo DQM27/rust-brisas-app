@@ -24,6 +24,9 @@ pub struct SetupState {
     /// Versión en la que se configuró
     #[serde(default)]
     pub configured_version: Option<String>,
+    /// Habilita el modo demo en la pantalla de login (default: false por seguridad)
+    #[serde(default)]
+    pub show_demo_mode: bool,
 }
 
 /// Configuración de la terminal

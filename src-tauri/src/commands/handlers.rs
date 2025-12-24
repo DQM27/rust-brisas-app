@@ -12,6 +12,7 @@ macro_rules! register_handlers {
             commands::user_commands::delete_user,
             commands::user_commands::login,
             commands::user_commands::change_password,
+            commands::user_commands::demo_login,
             // Comandos de empresa
             commands::empresa_commands::create_empresa,
             commands::empresa_commands::get_empresa_by_id,
@@ -160,6 +161,7 @@ macro_rules! register_handlers {
             // ==========================================
             commands::config_commands::get_app_config,
             commands::config_commands::update_terminal_config,
+            commands::config_commands::toggle_demo_mode,
             // ==========================================
             // COMANDOS DE VENTANA
             // ==========================================

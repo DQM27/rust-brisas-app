@@ -12,7 +12,7 @@
 use chrono::{Duration, Utc};
 use sqlx::SqlitePool;
 
-use crate::domain::role::{ROLE_GUARDIA_ID, ROLE_SUPERVISOR_ID};
+use crate::domain::role::{ROLE_ADMIN_ID, ROLE_GUARDIA_ID, ROLE_SUPERVISOR_ID};
 use crate::services::auth::hash_password;
 
 /// Ejecuta todos los seeds de demostración
@@ -47,13 +47,13 @@ async fn seed_demo_users(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Er
             ROLE_SUPERVISOR_ID,
             "MC123456",
         ),
-        // Guardia 1: Albert Einstein
+        // Admin: Albert Einstein (padre de la relatividad, merece ser admin)
         (
-            "demo-guardia-1",
+            "demo-admin-1",
             "albert.einstein@demo.com",
             "Albert",
             "Einstein",
-            ROLE_GUARDIA_ID,
+            ROLE_ADMIN_ID,
             "AE789012",
         ),
         // Guardia 2: Richard Feynman

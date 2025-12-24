@@ -38,3 +38,28 @@ pub async fn update_terminal_config(
 
     Ok(current_config.terminal)
 }
+
+/// Habilita o deshabilita el modo demo en la pantalla de login
+#[command]
+pub async fn toggle_demo_mode(
+    config: State<'_, AppConfig>,
+    enabled: bool,
+) -> Result<bool, ConfigError> {
+    info!("Cambiando modo demo a: {}", enabled);
+
+    let mut current_config = config.inner().clone();
+    current_config.setup.show_demo_mode = enabled;
+
+    let config_path = if let Some(data_dir) = dirs::data_local_dir() {
+        data_dir.join("Brisas").join("brisas.toml")
+    } else {
+        std::path::PathBuf::from("./config/brisas.toml")
+    };
+
+    save_config(&current_config, &config_path)
+        .map_err(|e| ConfigError::Message(format!("Error al guardar configuración: {}", e)))?;
+
+    info!("Modo demo guardado en: {}", config_path.display());
+
+    Ok(enabled)
+}

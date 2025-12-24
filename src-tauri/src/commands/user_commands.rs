@@ -69,3 +69,19 @@ pub async fn change_password(
 ) -> Result<(), UserError> {
     user_service::change_password(&pool, id, input).await
 }
+
+/// Ejecuta el seed de demostración y logea con un usuario demo
+/// email debe ser uno de: marie.curie@demo.com, albert.einstein@demo.com, richard.feynman@demo.com
+#[tauri::command]
+pub async fn demo_login(
+    pool: State<'_, SqlitePool>,
+    email: String,
+) -> Result<UserResponse, UserError> {
+    // 1. Ejecutar seed_demo (es idempotente, no duplica datos)
+    crate::config::seed_demo::run_demo_seed(&pool)
+        .await
+        .map_err(|e| UserError::Database(sqlx::Error::Protocol(e.to_string())))?;
+
+    // 2. Logear con el usuario demo (password siempre es demo123)
+    user_service::login(&pool, email, "demo123".to_string()).await
+}

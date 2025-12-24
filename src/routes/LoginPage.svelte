@@ -5,10 +5,13 @@
   import { authService } from "$lib/logic/auth/authService";
   import { toast } from "svelte-5-french-toast";
   import type { UserResponse } from "$lib/types/user";
+  import { invoke } from "@tauri-apps/api/core";
+  import { onMount } from "svelte";
 
   // Estado UI
   let view = $state<"login" | "change_password">("login");
   let loading = $state(false);
+  let showDemoLink = $state(false);
 
   // Estado Temporal (durante el flujo de cambio de pass)
   let tempUser = $state<UserResponse | null>(null);
@@ -16,6 +19,16 @@
 
   // Referencia al form para resetearlo
   let formRef = $state<any>();
+
+  // Cargar configuración al montar
+  onMount(async () => {
+    try {
+      const config = await invoke<any>("get_app_config");
+      showDemoLink = config?.setup?.showDemoMode ?? false;
+    } catch (e) {
+      console.warn("No se pudo cargar config:", e);
+    }
+  });
 
   async function handleLogin({
     email,
@@ -49,6 +62,33 @@
     loading = false;
   }
 
+  async function handleDemoLogin(email: string) {
+    loading = true;
+    toast("Iniciando modo demo...", { icon: "🧪" });
+
+    try {
+      // Llamar al comando que ejecuta seed_demo y logea
+      const user = await invoke<UserResponse>("demo_login", { email });
+
+      if (user.mustChangePassword) {
+        tempUser = user;
+        tempPassword = "demo123";
+        view = "change_password";
+        toast("Debes actualizar tu contraseña para continuar", { icon: "🔒" });
+      } else {
+        completeLogin(user);
+        toast.success(`Bienvenido al modo demo, ${user.nombre}!`, {
+          icon: "🎉",
+        });
+      }
+    } catch (e: any) {
+      console.error("Error en demo login:", e);
+      toast.error(e?.message || "Error al iniciar modo demo", { icon: "✕" });
+    }
+
+    loading = false;
+  }
+
   function completeLogin(user: UserResponse) {
     setAuth(user);
     formRef?.reset();
@@ -76,12 +116,12 @@
 <!-- Usar bg-surface-1 para fondo consistente -->
 <div class="flex h-screen w-full items-center justify-center bg-surface-1 p-4">
   {#if view === "login"}
-    <!-- TODO: isDemoMode debería venir de config/estado de la app -->
     <LoginForm
       bind:this={formRef}
       {loading}
-      isDemoMode={true}
+      {showDemoLink}
       onSubmit={handleLogin}
+      onDemoLogin={handleDemoLogin}
     />
   {:else if view === "change_password" && tempUser}
     <div class="animate-fade-in w-full max-w-sm">

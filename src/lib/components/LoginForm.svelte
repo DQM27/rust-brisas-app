@@ -5,21 +5,43 @@
 
   interface Props {
     loading?: boolean;
-    isDemoMode?: boolean;
+    showDemoLink?: boolean;
     onSubmit: (data: { email: string; password: string }) => void;
+    onDemoLogin?: (email: string) => void;
   }
 
-  let { loading = false, isDemoMode = false, onSubmit }: Props = $props();
+  let {
+    loading = false,
+    showDemoLink = false,
+    onSubmit,
+    onDemoLogin,
+  }: Props = $props();
 
   let email = $state("");
   let password = $state("");
   let errors = $state<Record<string, string>>({});
+  let showDemoModal = $state(false);
 
-  // Usuarios demo con físicos famosos
+  // Usuarios demo con científicos famosos
   const demoUsers = [
-    { email: "marie.curie@demo.com", password: "demo123", role: "Supervisora", name: "Marie Curie", icon: "👩‍🔬" },
-    { email: "albert.einstein@demo.com", password: "demo123", role: "Guardia", name: "Albert Einstein", icon: "👨‍🔬" },
-    { email: "richard.feynman@demo.com", password: "demo123", role: "Guardia", name: "Richard Feynman", icon: "🧑‍🔬" },
+    {
+      email: "marie.curie@demo.com",
+      role: "Supervisora",
+      name: "Marie Curie",
+      icon: "👩‍🔬",
+    },
+    {
+      email: "albert.einstein@demo.com",
+      role: "Administrador",
+      name: "Albert Einstein",
+      icon: "👨‍🔬",
+    },
+    {
+      email: "richard.feynman@demo.com",
+      role: "Guardia",
+      name: "Richard Feynman",
+      icon: "🧑‍🔬",
+    },
   ];
 
   function handleSubmit() {
@@ -43,10 +65,19 @@
     onSubmit({ email, password });
   }
 
-  function quickLogin(userEmail: string, userPassword: string) {
-    email = userEmail;
-    password = userPassword;
-    onSubmit({ email: userEmail, password: userPassword });
+  function handleDemoClick() {
+    showDemoModal = true;
+  }
+
+  function handleDemoUserSelect(userEmail: string) {
+    showDemoModal = false;
+    if (onDemoLogin) {
+      onDemoLogin(userEmail);
+    }
+  }
+
+  function closeDemoModal() {
+    showDemoModal = false;
   }
 
   export function reset() {
@@ -92,7 +123,6 @@
         <label for="password" class="text-sm font-medium text-secondary">
           Contraseña
         </label>
-        <!-- Opcional: Link a recuperar contraseña -->
       </div>
       <input
         id="password"
@@ -145,33 +175,96 @@
         Ingresar
       {/if}
     </button>
-  </form>
 
-  <!-- Demo Quick Login Buttons (solo visible en modo demo) -->
-  {#if isDemoMode}
-    <div class="mt-6 rounded-lg bg-amber-500/10 border border-amber-500/30 p-4">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-amber-500 text-lg">⚡</span>
-        <span class="text-sm font-medium text-amber-400">Acceso Rápido Demo</span>
+    <!-- Link de Demo (solo visible si está habilitado) -->
+    {#if showDemoLink}
+      <div class="text-center">
+        <button
+          type="button"
+          onclick={handleDemoClick}
+          disabled={loading}
+          class="text-sm text-amber-500 hover:text-amber-400 hover:underline transition-colors disabled:opacity-50"
+        >
+          ¿Modo Demo?
+        </button>
       </div>
-      <div class="flex flex-col gap-2">
+    {/if}
+  </form>
+</div>
+
+<!-- Modal de Demo -->
+{#if showDemoModal}
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in"
+    onclick={closeDemoModal}
+    onkeydown={(e) => e.key === "Escape" && closeDemoModal()}
+    role="dialog"
+    tabindex="-1"
+  >
+    <div
+      class="w-full max-w-sm mx-4 rounded-lg bg-surface-2 p-6 shadow-2xl border border-surface-tertiary animate-scale-in"
+      onclick={(e) => e.stopPropagation()}
+    >
+      <!-- Header -->
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-2xl">🧪</span>
+        <div>
+          <h2 class="text-lg font-bold text-primary">Modo Demo</h2>
+          <p class="text-xs text-tertiary">
+            Selecciona un usuario para continuar
+          </p>
+        </div>
+      </div>
+
+      <!-- Users -->
+      <div class="flex flex-col gap-2 mb-4">
         {#each demoUsers as user}
           <button
             type="button"
-            onclick={() => quickLogin(user.email, user.password)}
-            disabled={loading}
-            class="flex items-center gap-3 w-full rounded bg-surface-1 px-3 py-2 text-left text-sm transition-all hover:bg-surface-2 hover:shadow-md disabled:opacity-60 border border-surface-tertiary"
+            onclick={() => handleDemoUserSelect(user.email)}
+            class="flex items-center gap-3 w-full rounded-lg bg-surface-1 px-4 py-3 text-left transition-all hover:bg-surface-3 hover:shadow-md border border-surface-tertiary hover:border-accent/50"
           >
-            <span class="text-xl">{user.icon}</span>
+            <span class="text-2xl">{user.icon}</span>
             <div class="flex-1">
               <div class="font-medium text-primary">{user.name}</div>
               <div class="text-xs text-tertiary">{user.role}</div>
             </div>
-            <span class="text-xs text-accent">→</span>
+            <span class="text-accent">→</span>
           </button>
         {/each}
       </div>
-      <p class="text-xs text-tertiary mt-3 text-center">Contraseña: demo123</p>
+
+      <!-- Footer -->
+      <div
+        class="flex justify-between items-center pt-3 border-t border-surface-tertiary"
+      >
+        <p class="text-xs text-tertiary">
+          <span class="text-amber-500">⚡</span> Carga datos de prueba automáticamente
+        </p>
+        <button
+          type="button"
+          onclick={closeDemoModal}
+          class="text-sm text-tertiary hover:text-primary transition-colors"
+        >
+          Cancelar
+        </button>
+      </div>
     </div>
-  {/if}
-</div>
+  </div>
+{/if}
+
+<style>
+  @keyframes scale-in {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  .animate-scale-in {
+    animation: scale-in 0.2s ease-out;
+  }
+</style>
