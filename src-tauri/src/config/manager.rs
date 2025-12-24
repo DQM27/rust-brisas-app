@@ -8,9 +8,6 @@ use std::path::PathBuf;
 fn get_config_search_paths() -> Vec<PathBuf> {
     let mut paths = Vec::new();
 
-    // 1. Carpeta actual (para desarrollo)
-    paths.push(PathBuf::from("./config/brisas.toml"));
-
     // 2. Carpeta de datos de la app
     if let Some(data_dir) = dirs::data_local_dir() {
         paths.push(data_dir.join("Brisas").join("brisas.toml"));

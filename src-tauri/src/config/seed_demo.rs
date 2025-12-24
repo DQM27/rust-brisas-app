@@ -32,37 +32,37 @@ pub async fn run_demo_seed(pool: &SqlitePool) -> Result<(), Box<dyn std::error::
         return Err(error_msg.into());
     }
 
-    log::info!("🌱 Iniciando seeds de demo en: {}", db_path);
+    log::debug!("🌱 Iniciando seeds de demo en: {}", db_path);
 
-    log::info!("🌱 Seeding users...");
+    log::debug!("🌱 Seeding users...");
     seed_demo_users(pool).await?;
 
-    log::info!("🌱 Seeding empresas...");
+    log::debug!("🌱 Seeding empresas...");
     seed_demo_empresas(pool).await?;
 
-    log::info!("🌱 Seeding gafetes...");
+    log::debug!("🌱 Seeding gafetes...");
     seed_demo_gafetes(pool).await?;
 
-    log::info!("🌱 Seeding contratistas...");
+    log::debug!("🌱 Seeding contratistas...");
     seed_demo_contratistas(pool).await?;
 
-    log::info!("🌱 Seeding proveedores...");
+    log::debug!("🌱 Seeding proveedores...");
     seed_demo_proveedores(pool).await?;
 
-    log::info!("🌱 Seeding visitantes...");
+    log::debug!("🌱 Seeding visitantes...");
     seed_demo_visitantes(pool).await?;
 
     // IMPORTANTE: Vehículos antes que ingresos para evitar FK constraint
-    log::info!("🌱 Seeding vehiculos...");
+    log::debug!("🌱 Seeding vehiculos...");
     seed_demo_vehiculos(pool).await?;
 
-    log::info!("🌱 Seeding ingresos...");
+    log::debug!("🌱 Seeding ingresos...");
     seed_demo_ingresos_contratistas(pool).await?;
 
-    log::info!("🌱 Seeding alertas...");
+    log::debug!("🌱 Seeding alertas...");
     seed_demo_alertas_gafete(pool).await?;
 
-    log::info!("🌱 Seeding lista negra...");
+    log::debug!("🌱 Seeding lista negra...");
     seed_demo_lista_negra(pool).await?;
 
     log::info!("✅ Todos los seeds de demo completados exitosamente.");
