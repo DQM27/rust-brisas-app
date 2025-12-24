@@ -94,14 +94,11 @@
   }
 </script>
 
-<div class="w-full max-w-sm">
-  <form
-    onsubmit={preventDefault(handleSubmit)}
-    class="flex flex-col gap-6 rounded-lg bg-surface-2 p-8 shadow-xl border border-surface-tertiary"
-  >
-    <div class="text-center">
-      <h1 class="text-2xl font-bold text-primary">Bienvenido</h1>
-      <p class="text-sm text-tertiary mt-1">Inicia sesión en Brisas App</p>
+<div class="w-full h-full flex flex-col justify-center p-8">
+  <form onsubmit={preventDefault(handleSubmit)} class="flex flex-col gap-6">
+    <div>
+      <h1 class="text-3xl font-bold text-primary">Bienvenido</h1>
+      <p class="text-sm text-tertiary mt-2">Inicia sesión en Brisas App</p>
     </div>
 
     <!-- Email -->
@@ -149,18 +146,18 @@
     </div>
 
     <!-- Acciones -->
-    <div class="flex gap-3">
+    <div class="flex gap-3 mt-2">
       <button
         type="button"
         onclick={exitApp}
-        class="flex-1 py-1.5 px-4 rounded border border-surface-tertiary text-secondary font-medium hover:bg-surface-3 transition-colors text-sm"
+        class="flex-1 py-2.5 px-4 rounded-lg border border-surface-tertiary text-secondary font-medium hover:bg-surface-3 transition-colors text-sm"
       >
         Cancelar
       </button>
       <button
         type="submit"
         disabled={loading}
-        class="flex-[2] rounded bg-accent px-4 py-2.5 font-medium text-white transition-all hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/20 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+        class="flex-1 rounded-lg bg-accent px-4 py-2.5 font-medium text-white transition-all hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/20 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
       >
         {#if loading}
           <span class="flex items-center justify-center gap-2">

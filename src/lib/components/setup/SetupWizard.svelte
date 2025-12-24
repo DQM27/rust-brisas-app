@@ -171,7 +171,7 @@
     </div>
   {:else}
     <div
-      class="bg-white dark:bg-surface-2 w-full max-w-xl rounded-xl shadow-2xl overflow-hidden flex flex-col relative border border-gray-200 dark:border-gray-800"
+      class="bg-white dark:bg-[#0d1117] w-full h-full overflow-hidden flex flex-col relative"
       transition:fade
     >
       <!-- Header (Simple) -->

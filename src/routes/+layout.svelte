@@ -70,10 +70,16 @@
     if (!checkingSetup) {
       (async () => {
         try {
-          if (showSetupWizard || !authenticated) {
-            // Modo Launcher (Setup o Login)
+          if (showSetupWizard) {
+            // Modo Launcher Setup (Grande)
             await setWindowDecorations(false);
             await setWindowSize(700, 550);
+            const { getCurrentWindow } = await import("@tauri-apps/api/window");
+            await getCurrentWindow().center();
+          } else if (!authenticated) {
+            // Modo Launcher Login (Compacto)
+            await setWindowDecorations(false);
+            await setWindowSize(450, 600);
             const { getCurrentWindow } = await import("@tauri-apps/api/window");
             await getCurrentWindow().center();
           } else {
