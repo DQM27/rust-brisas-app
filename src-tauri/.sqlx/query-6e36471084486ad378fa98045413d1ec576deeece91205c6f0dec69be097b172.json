@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT nivel_severidad, created_at \n         FROM lista_negra \n         WHERE cedula = ? AND is_active = 1\n         LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "nivel_severidad",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "6e36471084486ad378fa98045413d1ec576deeece91205c6f0dec69be097b172"
+}

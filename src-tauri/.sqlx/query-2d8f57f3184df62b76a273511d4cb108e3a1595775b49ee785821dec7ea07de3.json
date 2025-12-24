@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM lista_negra WHERE cedula = ? AND is_active = 1",
+  "query": "SELECT \n            v.id, v.contratista_id, v.proveedor_id, v.visitante_id, v.tipo_vehiculo, v.placa, v.marca, v.modelo, v.color,\n            v.is_active as \"is_active: bool\", v.created_at, v.updated_at\n           FROM vehiculos v\n           WHERE v.contratista_id = ?\n           ORDER BY v.is_active DESC, v.placa",
   "describe": {
     "columns": [
       {
@@ -9,73 +9,58 @@
         "type_info": "Text"
       },
       {
-        "name": "cedula",
+        "name": "contratista_id",
         "ordinal": 1,
         "type_info": "Text"
       },
       {
-        "name": "nombre",
+        "name": "proveedor_id",
         "ordinal": 2,
         "type_info": "Text"
       },
       {
-        "name": "segundo_nombre",
+        "name": "visitante_id",
         "ordinal": 3,
         "type_info": "Text"
       },
       {
-        "name": "apellido",
+        "name": "tipo_vehiculo",
         "ordinal": 4,
         "type_info": "Text"
       },
       {
-        "name": "segundo_apellido",
+        "name": "placa",
         "ordinal": 5,
         "type_info": "Text"
       },
       {
-        "name": "empresa_id",
+        "name": "marca",
         "ordinal": 6,
         "type_info": "Text"
       },
       {
-        "name": "empresa_nombre",
+        "name": "modelo",
         "ordinal": 7,
         "type_info": "Text"
       },
       {
-        "name": "nivel_severidad",
+        "name": "color",
         "ordinal": 8,
         "type_info": "Text"
       },
       {
-        "name": "motivo_bloqueo",
+        "name": "is_active: bool",
         "ordinal": 9,
-        "type_info": "Text"
-      },
-      {
-        "name": "bloqueado_por",
-        "ordinal": 10,
-        "type_info": "Text"
-      },
-      {
-        "name": "observaciones",
-        "ordinal": 11,
-        "type_info": "Text"
-      },
-      {
-        "name": "is_active",
-        "ordinal": 12,
         "type_info": "Int64"
       },
       {
         "name": "created_at",
-        "ordinal": 13,
+        "ordinal": 10,
         "type_info": "Text"
       },
       {
         "name": "updated_at",
-        "ordinal": 14,
+        "ordinal": 11,
         "type_info": "Text"
       }
     ],
@@ -84,21 +69,18 @@
     },
     "nullable": [
       false,
-      false,
-      false,
-      true,
-      false,
       true,
       true,
       true,
       false,
       false,
-      false,
+      true,
+      true,
       true,
       false,
       false,
       false
     ]
   },
-  "hash": "bba6e161747dcd13fe5cc891cb98151b7f7496165d483a5eb766f9d722aafd1b"
+  "hash": "2d8f57f3184df62b76a273511d4cb108e3a1595775b49ee785821dec7ea07de3"
 }

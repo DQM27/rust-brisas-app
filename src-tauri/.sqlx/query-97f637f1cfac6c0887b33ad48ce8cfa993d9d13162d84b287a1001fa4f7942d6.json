@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE lista_negra SET \n           is_active = 0, \n           updated_at = ? \n           WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "97f637f1cfac6c0887b33ad48ce8cfa993d9d13162d84b287a1001fa4f7942d6"
+}

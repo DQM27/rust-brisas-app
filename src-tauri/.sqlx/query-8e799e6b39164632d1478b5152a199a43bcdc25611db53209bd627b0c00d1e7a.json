@@ -9,47 +9,47 @@
         "type_info": "Text"
       },
       {
-        "name": "contratista_id",
+        "name": "cedula",
         "ordinal": 1,
         "type_info": "Text"
       },
       {
-        "name": "cedula",
+        "name": "nombre",
         "ordinal": 2,
         "type_info": "Text"
       },
       {
-        "name": "nombre",
+        "name": "segundo_nombre",
         "ordinal": 3,
         "type_info": "Text"
       },
       {
-        "name": "segundo_nombre",
+        "name": "apellido",
         "ordinal": 4,
         "type_info": "Text"
       },
       {
-        "name": "apellido",
+        "name": "segundo_apellido",
         "ordinal": 5,
         "type_info": "Text"
       },
       {
-        "name": "segundo_apellido",
+        "name": "empresa_id",
         "ordinal": 6,
         "type_info": "Text"
       },
       {
-        "name": "motivo_bloqueo",
+        "name": "empresa_nombre",
         "ordinal": 7,
         "type_info": "Text"
       },
       {
-        "name": "fecha_inicio_bloqueo",
+        "name": "nivel_severidad",
         "ordinal": 8,
         "type_info": "Text"
       },
       {
-        "name": "fecha_fin_bloqueo",
+        "name": "motivo_bloqueo",
         "ordinal": 9,
         "type_info": "Text"
       },
@@ -84,15 +84,15 @@
     },
     "nullable": [
       false,
+      false,
+      false,
       true,
       false,
       true,
       true,
       true,
-      true,
       false,
       false,
-      true,
       false,
       true,
       false,

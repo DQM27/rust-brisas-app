@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        INSERT INTO ingresos_contratistas\n        (id, contratista_id, cedula, nombre, apellido, empresa_nombre,\n         tipo_ingreso, tipo_autorizacion, modo_ingreso, vehiculo_id, placa_temporal,\n         gafete_numero, gafete_tipo, fecha_hora_ingreso, fecha_hora_salida, tiempo_permanencia_minutos,\n         usuario_ingreso_id, usuario_salida_id, praind_vigente_al_ingreso,\n         estado_contratista_al_ingreso, observaciones, created_at, updated_at)\n        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, NULL, ?, ?, ?, ?, ?)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 20
+    },
+    "nullable": []
+  },
+  "hash": "73f3368e62da82aa6d5b654947d5532f38b739a945974f4a84f4598d27f9b443"
+}

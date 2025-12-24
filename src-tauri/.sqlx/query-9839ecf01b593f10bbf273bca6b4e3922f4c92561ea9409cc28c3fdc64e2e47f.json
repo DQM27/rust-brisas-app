@@ -1,30 +1,30 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT * FROM lista_negra WHERE cedula = ? AND is_active = 1",
+  "query": "\n        SELECT \n            id as \"id!\",\n            cedula as \"cedula!\",\n            nombre as \"nombre!\",\n            apellido as \"apellido!\",\n            segundo_nombre,\n            segundo_apellido,\n            empresa,\n            empresa_id,\n            has_vehicle as \"has_vehicle!: bool\",\n            created_at as \"created_at!\",\n            updated_at as \"updated_at!\"\n        FROM visitantes\n        WHERE cedula LIKE ? OR nombre LIKE ? OR apellido LIKE ?\n        LIMIT 20\n        ",
   "describe": {
     "columns": [
       {
-        "name": "id",
+        "name": "id!",
         "ordinal": 0,
         "type_info": "Text"
       },
       {
-        "name": "cedula",
+        "name": "cedula!",
         "ordinal": 1,
         "type_info": "Text"
       },
       {
-        "name": "nombre",
+        "name": "nombre!",
         "ordinal": 2,
         "type_info": "Text"
       },
       {
-        "name": "segundo_nombre",
+        "name": "apellido!",
         "ordinal": 3,
         "type_info": "Text"
       },
       {
-        "name": "apellido",
+        "name": "segundo_nombre",
         "ordinal": 4,
         "type_info": "Text"
       },
@@ -34,71 +34,47 @@
         "type_info": "Text"
       },
       {
-        "name": "empresa_id",
+        "name": "empresa",
         "ordinal": 6,
         "type_info": "Text"
       },
       {
-        "name": "empresa_nombre",
+        "name": "empresa_id",
         "ordinal": 7,
         "type_info": "Text"
       },
       {
-        "name": "nivel_severidad",
+        "name": "has_vehicle!: bool",
         "ordinal": 8,
-        "type_info": "Text"
+        "type_info": "Int64"
       },
       {
-        "name": "motivo_bloqueo",
+        "name": "created_at!",
         "ordinal": 9,
         "type_info": "Text"
       },
       {
-        "name": "bloqueado_por",
+        "name": "updated_at!",
         "ordinal": 10,
-        "type_info": "Text"
-      },
-      {
-        "name": "observaciones",
-        "ordinal": 11,
-        "type_info": "Text"
-      },
-      {
-        "name": "is_active",
-        "ordinal": 12,
-        "type_info": "Int64"
-      },
-      {
-        "name": "created_at",
-        "ordinal": 13,
-        "type_info": "Text"
-      },
-      {
-        "name": "updated_at",
-        "ordinal": 14,
         "type_info": "Text"
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 3
     },
     "nullable": [
-      false,
-      false,
-      false,
-      true,
-      false,
-      true,
-      true,
       true,
       false,
       false,
       false,
       true,
-      false,
+      true,
+      true,
+      true,
+      true,
       false,
       false
     ]
   },
-  "hash": "bba6e161747dcd13fe5cc891cb98151b7f7496165d483a5eb766f9d722aafd1b"
+  "hash": "9839ecf01b593f10bbf273bca6b4e3922f4c92561ea9409cc28c3fdc64e2e47f"
 }

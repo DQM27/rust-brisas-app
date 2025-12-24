@@ -1,5 +1,9 @@
 // Implementación de keyring para Windows usando Windows Credential Manager
 // Utiliza la API nativa de Windows para almacenar credenciales de forma segura
+//
+// SAFETY: Este módulo requiere unsafe para FFI con Windows Credential Manager API.
+// Cada bloque unsafe tiene documentación explicando por qué es seguro.
+#![allow(unsafe_code)]
 
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;

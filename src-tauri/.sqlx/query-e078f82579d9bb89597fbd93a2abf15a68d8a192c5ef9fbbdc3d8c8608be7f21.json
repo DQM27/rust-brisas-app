@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        UPDATE citas SET estado = 'CANCELADA', updated_at = ? WHERE id = ?\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "e078f82579d9bb89597fbd93a2abf15a68d8a192c5ef9fbbdc3d8c8608be7f21"
+}

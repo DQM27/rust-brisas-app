@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT g.numero FROM gafetes g\n                 LEFT JOIN ingresos_contratistas i ON g.numero = i.gafete_numero AND i.fecha_hora_salida IS NULL AND i.tipo_ingreso = 'contratista'\n                 LEFT JOIN alertas_gafetes a ON g.numero = a.gafete_numero AND a.resuelto = 0 AND a.ingreso_contratista_id IS NOT NULL\n                 WHERE g.tipo = ? AND g.estado = 'activo'\n                 AND i.id IS NULL AND a.id IS NULL AND g.numero != 'S/G'\n                 ORDER BY g.numero",
+  "describe": {
+    "columns": [
+      {
+        "name": "numero",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "88bd2d40dbc63d4d7b006d366929710008c9f62f4ca3d79737c06b932c79ec9e"
+}

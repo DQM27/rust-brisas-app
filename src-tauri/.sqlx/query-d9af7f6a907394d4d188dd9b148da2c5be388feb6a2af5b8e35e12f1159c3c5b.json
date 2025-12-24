@@ -1,0 +1,152 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT \n            id as \"id!\",\n            contratista_id,\n            cedula as \"cedula!\",\n            nombre as \"nombre!\",\n            apellido as \"apellido!\",\n            empresa_nombre as \"empresa_nombre!\",\n            tipo_ingreso as \"tipo_ingreso!\",\n            tipo_autorizacion as \"tipo_autorizacion!\",\n            modo_ingreso as \"modo_ingreso!\",\n            vehiculo_id,\n            placa_temporal,\n            gafete_numero,\n            gafete_tipo,\n            fecha_hora_ingreso as \"fecha_hora_ingreso!\",\n            fecha_hora_salida,\n            tiempo_permanencia_minutos,\n            usuario_ingreso_id as \"usuario_ingreso_id!\",\n            usuario_salida_id,\n            praind_vigente_al_ingreso as \"praind_vigente_al_ingreso: bool\",\n            estado_contratista_al_ingreso,\n            observaciones,\n            created_at as \"created_at!\",\n            updated_at as \"updated_at!\"\n        FROM ingresos_contratistas \n        WHERE id = ? AND tipo_ingreso = 'contratista'\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "contratista_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "cedula!",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "nombre!",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "apellido!",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "empresa_nombre!",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "tipo_ingreso!",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "tipo_autorizacion!",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "modo_ingreso!",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "vehiculo_id",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "placa_temporal",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "gafete_numero",
+        "ordinal": 11,
+        "type_info": "Text"
+      },
+      {
+        "name": "gafete_tipo",
+        "ordinal": 12,
+        "type_info": "Text"
+      },
+      {
+        "name": "fecha_hora_ingreso!",
+        "ordinal": 13,
+        "type_info": "Text"
+      },
+      {
+        "name": "fecha_hora_salida",
+        "ordinal": 14,
+        "type_info": "Text"
+      },
+      {
+        "name": "tiempo_permanencia_minutos",
+        "ordinal": 15,
+        "type_info": "Int64"
+      },
+      {
+        "name": "usuario_ingreso_id!",
+        "ordinal": 16,
+        "type_info": "Text"
+      },
+      {
+        "name": "usuario_salida_id",
+        "ordinal": 17,
+        "type_info": "Text"
+      },
+      {
+        "name": "praind_vigente_al_ingreso: bool",
+        "ordinal": 18,
+        "type_info": "Int64"
+      },
+      {
+        "name": "estado_contratista_al_ingreso",
+        "ordinal": 19,
+        "type_info": "Text"
+      },
+      {
+        "name": "observaciones",
+        "ordinal": 20,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at!",
+        "ordinal": 21,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at!",
+        "ordinal": 22,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "d9af7f6a907394d4d188dd9b148da2c5be388feb6a2af5b8e35e12f1159c3c5b"
+}

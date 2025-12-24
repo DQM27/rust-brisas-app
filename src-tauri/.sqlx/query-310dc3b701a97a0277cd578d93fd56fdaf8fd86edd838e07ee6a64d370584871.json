@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE lista_negra SET \n           nivel_severidad = COALESCE(?, nivel_severidad),\n           motivo_bloqueo = COALESCE(?, motivo_bloqueo),\n           observaciones = COALESCE(?, observaciones),\n           updated_at = ?\n           WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "310dc3b701a97a0277cd578d93fd56fdaf8fd86edd838e07ee6a64d370584871"
+}

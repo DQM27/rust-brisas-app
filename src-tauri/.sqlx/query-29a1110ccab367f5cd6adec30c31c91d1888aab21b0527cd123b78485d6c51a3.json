@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO lista_negra \n           (id, cedula, nombre, segundo_nombre, apellido, segundo_apellido, \n            empresa_id, empresa_nombre, nivel_severidad, motivo_bloqueo, \n            bloqueado_por, observaciones, is_active, created_at, updated_at)\n           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 14
+    },
+    "nullable": []
+  },
+  "hash": "29a1110ccab367f5cd6adec30c31c91d1888aab21b0527cd123b78485d6c51a3"
+}
