@@ -214,8 +214,10 @@ pub async fn crear_ingreso_contratista(
             if !disponible {
                 return Err(IngresoContratistaError::GafeteNotAvailable);
             }
+            Some(normalizado)
+        } else {
+            None
         }
-        Some(normalizado)
     } else {
         None
     };

@@ -554,6 +554,19 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     showColumnSelector: true,
     showThemeSelector: false,
     enableGrouping: false
+  },
+  'ingreso-list': {
+    gridId: 'ingreso-list',
+    availableButtons: {
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all', 'toggle-filters'].includes(b.id))
+      ],
+      singleSelect: [],
+      multiSelect: []
+    },
+    showColumnSelector: true,
+    showThemeSelector: false,
+    enableGrouping: false
   }
 };
 

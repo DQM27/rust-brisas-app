@@ -34,11 +34,13 @@
   let loading = false;
   let error: string | undefined = undefined;
   let hasSearched = false;
+  let focusedIndex = -1;
 
   // Debounced search
   const doSearch = debounce(async (q: string) => {
     if (!q || q.length < 3) {
       results = [];
+      focusedIndex = -1;
       return;
     }
 
@@ -65,10 +67,13 @@
       } else {
         results = rawResults;
       }
+      focusedIndex = results.length > 0 ? 0 : -1;
+      console.log("[PersonaFinder] Search Results:", results);
     } catch (e: any) {
       console.error("Error searching:", e);
       error = "Error al buscar. Intente nuevamente.";
       results = [];
+      focusedIndex = -1;
     } finally {
       loading = false;
     }
@@ -87,7 +92,25 @@
   function handleInput(e: Event) {
     const val = (e.target as HTMLInputElement).value;
     query = val;
+    focusedIndex = -1;
     doSearch(val);
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (!results.length) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      focusedIndex = (focusedIndex + 1) % results.length;
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      focusedIndex = (focusedIndex - 1 + results.length) % results.length;
+    } else if (e.key === "Enter") {
+      if (focusedIndex >= 0) {
+        e.preventDefault();
+        selectItem(results[focusedIndex]);
+      }
+    }
   }
 
   function selectItem(item: any) {
@@ -147,6 +170,7 @@
       placeholder="Buscar por nombre, cédula o empresa..."
       bind:value={query}
       on:input={handleInput}
+      on:keydown={handleKeydown}
       use:focus={autoFocus}
     />
   </div>
@@ -159,10 +183,13 @@
     >
       {#if results.length > 0}
         <ul class="menu p-0">
-          {#each results as item}
+          {#each results as item, i}
             <li>
               <button
-                class="flex gap-4 py-3 px-4 hover:bg-base-200"
+                class="flex gap-4 py-3 px-4 w-full text-left transition-colors {focusedIndex ===
+                i
+                  ? 'bg-primary/10 border-l-4 border-primary'
+                  : 'hover:bg-base-200 border-l-4 border-transparent'}"
                 on:click={() => selectItem(item)}
               >
                 <div class="avatar placeholder">
@@ -174,7 +201,7 @@
                 </div>
                 <div class="flex-1 text-left">
                   <div class="font-bold text-base">
-                    {item.titulo}
+                    {item.nombreCompleto || item.titulo || "Sin nombre"}
                     {#if item.tipo === "ListaNegra"}
                       <span class="badge badge-error badge-sm ml-2"
                         >BLOQUEADO</span
@@ -184,8 +211,17 @@
                   <div
                     class="text-xs text-base-content/60 uppercase font-semibold tracking-wide"
                   >
-                    {item.tipo} • {item.subtitulo || "Sin detalles"}
+                    {item.tipo} • {item.empresaNombre ||
+                      item.subtitulo ||
+                      "Sin detalles"}
                   </div>
+                  {#if item.cedula}
+                    <div
+                      class="text-[10px] font-mono opacity-50 bg-base-300 w-fit px-1 rounded mt-1"
+                    >
+                      ID: {item.cedula}
+                    </div>
+                  {/if}
                 </div>
                 <div class="text-right flex items-center">
                   <span class="btn btn-ghost btn-circle btn-sm">

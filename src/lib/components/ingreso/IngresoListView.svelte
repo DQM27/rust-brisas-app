@@ -32,35 +32,39 @@
   let columnDefs = $derived.by((): ColDef<any>[] => {
     return [
       {
-        field: "gafete",
+        field: "gafeteNumero",
         headerName: "Gafete",
         width: 100,
         sortable: true,
         filter: true,
+        valueFormatter: (params) => {
+          if (!params.value) return "S/G";
+          return params.value;
+        },
       },
       {
-        field: "nombre_completo",
+        field: "nombreCompleto",
         headerName: "Persona",
         flex: 1,
         sortable: true,
         filter: true,
       },
       {
-        field: "tipo_ingreso",
+        field: "tipoIngresoDisplay",
         headerName: "Tipo",
         width: 120,
         sortable: true,
         filter: true,
       },
       {
-        field: "empresa",
+        field: "empresaNombre",
         headerName: "Empresa",
         flex: 1,
         sortable: true,
         filter: true,
       },
       {
-        field: "fecha_ingreso",
+        field: "fechaHoraIngreso",
         headerName: "Hora Ingreso",
         width: 150,
         sortable: true,
@@ -73,7 +77,7 @@
         },
       },
       {
-        field: "modo_ingreso",
+        field: "modoIngresoDisplay",
         headerName: "Modo",
         width: 120,
         sortable: true,
@@ -92,7 +96,7 @@
       default: [
         createCustomButton.nuevo(() => handleNuevoIngreso()),
         {
-          id: "refresh",
+          id: "reload-data",
           label: "Actualizar",
           icon: RotateCw,
           onClick: loadIngresos,

@@ -89,13 +89,23 @@ pub async fn registrar_ingreso_full(
     };
 
     // 2. Preparar input de ingreso
+    let gafete_final = if let Some(ref g) = input.gafete {
+        if g == "S/G" {
+            None
+        } else {
+            Some(g.clone())
+        }
+    } else {
+        None
+    };
+
     let ingreso_input = CreateIngresoVisitaInput {
         visitante_id,
         cita_id: input.cita_id,
         anfitrion: input.anfitrion,
         area_visitada: input.area_visitada,
         motivo: input.motivo,
-        gafete: input.gafete,
+        gafete: gafete_final,
         observaciones: input.observaciones,
         usuario_ingreso_id: input.usuario_ingreso_id,
     };

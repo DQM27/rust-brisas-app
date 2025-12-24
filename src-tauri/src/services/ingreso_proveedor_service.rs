@@ -76,8 +76,16 @@ pub async fn registrar_ingreso(
     };
 
     // 4. Crear ingreso vinculado
-    let ingreso =
-        ingreso_proveedor_queries::create(pool, input, &proveedor_id).await.map_err(|e| {
+    let mut input_modificado = input;
+    if let Some(ref g) = input_modificado.gafete {
+        if g == "S/G" {
+            input_modificado.gafete = None;
+        }
+    }
+
+    let ingreso = ingreso_proveedor_queries::create(pool, input_modificado, &proveedor_id)
+        .await
+        .map_err(|e| {
             error!("Error al registrar ingreso de proveedor: {}", e);
             IngresoProveedorError::Database(e)
         })?;

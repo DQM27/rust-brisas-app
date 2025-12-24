@@ -12,6 +12,7 @@
   // Logic
   import { ingresoService } from "$lib/logic/ingreso/ingresoService";
   import type { ValidacionIngresoResult } from "$lib/logic/ingreso/types";
+  import { currentUser } from "$lib/stores/auth";
 
   // Props
   interface Props {
@@ -49,7 +50,9 @@
       loading = true;
       validationResult = await ingresoService.validarIngreso("contratista", id);
 
-      console.log("=== VALIDATION DEBUG ===", validationResult);
+      if (validationResult.persona) {
+        selectedPerson = { ...selectedPerson, ...validationResult.persona };
+      }
 
       if (!validationResult.puedeIngresar) {
         toast.error(
@@ -65,7 +68,7 @@
   }
 
   async function handleSubmit() {
-    if (!selectedPerson || !validationResult || !gafete.trim()) {
+    if (!selectedPerson || !validationResult) {
       toast.error("Complete todos los campos requeridos");
       return;
     }
@@ -92,6 +95,7 @@
           modoIngreso: tieneVehiculo ? "vehiculo" : "caminando",
         },
         selectedPerson,
+        $currentUser?.id,
       );
 
       toast.success("¡Ingreso registrado exitosamente!");
@@ -186,13 +190,22 @@
               >
                 {selectedPerson.nombre?.charAt(0) || "?"}
               </div>
-              <div>
-                <div class="font-semibold text-primary">
-                  {selectedPerson.nombre}
-                  {selectedPerson.apellido}
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <div class="font-semibold text-primary">
+                    {selectedPerson.nombreCompleto ||
+                      `${selectedPerson.nombre} ${selectedPerson.apellido}`}
+                  </div>
+                  <div
+                    class="text-xs font-mono text-secondary px-2 py-1 bg-surface-2 rounded border border-surface"
+                  >
+                    {selectedPerson.cedula || "N/A"}
+                  </div>
                 </div>
                 <div class="text-sm text-secondary">
-                  {selectedPerson.empresa || "Sin empresa"}
+                  {selectedPerson.empresaNombre ||
+                    selectedPerson.empresa ||
+                    "Sin empresa"}
                 </div>
               </div>
             </div>

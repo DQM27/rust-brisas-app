@@ -192,9 +192,11 @@ export async function crearIngreso(
     tipo: TipoIngreso,
     candidateId: string,
     formData: FinalizarIngresoForm,
-    extraData?: any
+    extraData?: any,
+    usuarioId?: string
 ): Promise<any> {
-    console.log(`[IngresoService] Creando ingreso ${tipo}`, { candidateId, formData, extraData });
+    const finalUsuarioId = usuarioId || '00000000-0000-0000-0000-000000000000'; // Fallback to Superuser if unknown
+    console.log(`[IngresoService] Creando ingreso ${tipo}`, { candidateId, formData, extraData, finalUsuarioId });
 
     try {
         if (tipo === 'contratista') {
@@ -207,9 +209,9 @@ export async function crearIngreso(
                     tipoAutorizacion: formData.tipoAutorizacion || 'praind',
                     modoIngreso: formData.modoIngreso || 'caminando',
                     observaciones: formData.observaciones || null,
-                    usuarioIngresoId: 'SYSTEM'
+                    usuarioIngresoId: finalUsuarioId
                 },
-                usuarioId: 'SYSTEM' // Backend expects both sometimes
+                usuarioId: finalUsuarioId
             });
         } else if (tipo === 'proveedor') {
             return await invoke('crear_ingreso_proveedor_v2', {
@@ -240,7 +242,7 @@ export async function crearIngreso(
                     modoIngreso: formData.modoIngreso || 'caminando',
                     gafeteNumero: formData.gafete,
                     observaciones: formData.observaciones || null,
-                    usuarioIngresoId: 'SYSTEM',
+                    usuarioIngresoId: finalUsuarioId,
                 }
             });
         }
@@ -357,8 +359,8 @@ function mapContratistaResponse(res: any): ValidacionIngresoResult {
             nombre: res.contratista.nombre,
             apellido: res.contratista.apellido,
             nombreCompleto: `${res.contratista.nombre} ${res.contratista.apellido}`,
-            empresa: res.contratista.empresa_nombre, // This matches manually built JSON in Rust
-            empresaId: res.contratista.empresa_id,
+            empresa: res.contratista.empresa_nombre,
+            empresaId: res.contratista.empresa_id || undefined,
             estado: res.contratista.estado,
             vehiculos: res.contratista.vehiculos || []
         } : undefined
