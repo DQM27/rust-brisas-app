@@ -338,6 +338,10 @@ pub fn reset_all_credentials(
     config_guard.setup.configured_at = None;
     config_guard.setup.configured_version = None;
 
+    // También borrar info de terminal para reset completo
+    config_guard.terminal.nombre = String::new();
+    config_guard.terminal.ubicacion = String::new();
+
     let config_path = if let Some(data_dir) = dirs::data_local_dir() {
         data_dir.join("Brisas").join("brisas.toml")
     } else {

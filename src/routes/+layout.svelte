@@ -21,7 +21,6 @@
   // Estado del wizard de setup
   let showSetupWizard = $derived($setupWizardVisible);
   let checkingSetup = $state(true);
-
   // Handler cuando se completa el setup
   function handleSetupComplete() {
     $setupWizardVisible = false;
@@ -50,7 +49,11 @@
   });
 </script>
 
-{#if showSetupWizard}
+{#if checkingSetup}
+  <div class="h-screen w-screen bg-surface-1 flex items-center justify-center">
+    <!-- Un div limpio mientras carga el estado -->
+  </div>
+{:else if showSetupWizard}
   <SetupWizard onComplete={handleSetupComplete} />
 {:else}
   <div

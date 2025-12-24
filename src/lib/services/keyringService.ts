@@ -97,3 +97,11 @@ export async function resetAllCredentials(confirm: boolean): Promise<void> {
 export async function exitApp(): Promise<void> {
   return invoke('exit_app');
 }
+
+export async function setWindowDecorations(decorations: boolean): Promise<void> {
+  return invoke('set_window_decorations', { decorations });
+}
+
+export async function setWindowSize(width: number, height: number): Promise<void> {
+  return invoke('set_window_size', { width, height });
+}

@@ -167,6 +167,8 @@ macro_rules! register_handlers {
             // ==========================================
             commands::window_commands::show_main_window,
             commands::app_commands::exit_app,
+            commands::app_commands::set_window_decorations,
+            commands::app_commands::set_window_size,
             // ==========================================
             // COMANDOS DE KEYRING/CREDENCIALES
             // ==========================================
