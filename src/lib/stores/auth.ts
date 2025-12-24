@@ -1,21 +1,30 @@
 // $lib/stores/auth.ts
-import { persisted } from 'svelte-persisted-store';
+import { writable } from 'svelte/store';
 import { resetTabs } from './tabs';
 import type { UserResponse } from '$lib/types/user';
+import { startSession, stopSession } from './sessionStore';
 
-export const isAuthenticated = persisted<boolean>('brisas-auth', false);
-export const currentUser = persisted<UserResponse | null>('brisas-user', null);
+// Session-only stores (NOT persisted - login required after app restart)
+export const isAuthenticated = writable<boolean>(false);
+export const currentUser = writable<UserResponse | null>(null);
 
 export function login(user: UserResponse): void {
   isAuthenticated.set(true);
   currentUser.set(user);
 
+  // Start session monitoring (activity tracking and timeout checking)
+  startSession();
 }
 
-
 export function logout(): void {
+  // Stop session monitoring first
+  stopSession();
+
+  // Clear authentication state
   isAuthenticated.set(false);
   currentUser.set(null);
+
+  // Close all tabs
   resetTabs();
 }
 

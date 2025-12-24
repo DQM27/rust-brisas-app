@@ -22,6 +22,7 @@ export type ComponentKey =
   | 'backup-settings'
   | 'device-settings'
   | 'security-settings'
+  | 'session-settings'
   | 'export-settings'
   | 'roles-settings'
   | 'reportes-list'

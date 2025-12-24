@@ -17,6 +17,12 @@
     setWindowDecorations,
     setWindowSize,
   } from "$lib/services/keyringService";
+  import {
+    isScreensaverActive,
+    awaitingScreensaverPassword,
+    attemptExitScreensaver,
+  } from "$lib/stores/sessionStore";
+  import ScreensaverPasswordModal from "$lib/components/ScreensaverPasswordModal.svelte";
 
   // Estado de autenticación reactivo
   let authenticated = $derived($isAuthenticated);
@@ -25,6 +31,11 @@
   // Estado del wizard de setup
   let showSetupWizard = $derived($setupWizardVisible);
   let checkingSetup = $state(true);
+
+  // Estado del screensaver
+  let screensaverActive = $derived($isScreensaverActive);
+  let showPasswordModal = $derived($awaitingScreensaverPassword);
+
   // Handler cuando se completa el setup
   async function handleSetupComplete() {
     $setupWizardVisible = false;
@@ -95,6 +106,101 @@
       })();
     }
   });
+
+  // Efecto reactivo para manejar el modo screensaver FULLSCREEN
+  $effect(() => {
+    (async () => {
+      if (screensaverActive) {
+        try {
+          // Enter fullscreen/kiosk mode when screensaver activates
+          const { getCurrentWindow } = await import("@tauri-apps/api/window");
+          const appWindow = getCurrentWindow();
+          await appWindow.setFullscreen(true);
+          generalSettings.update((s) => ({ ...s, isKioskMode: true }));
+          console.log("[Layout] Screensaver activated - entering fullscreen");
+        } catch (e) {
+          console.error("[Layout] Error entering screensaver fullscreen:", e);
+          // Fallback to just kiosk mode if Tauri fullscreen fails
+          generalSettings.update((s) => ({ ...s, isKioskMode: true }));
+        }
+      } else if (screensaverActive === false) {
+        // Only exit fullscreen if we're deactivating screensaver
+        // Don't interfere with manual fullscreen toggles (double-click)
+        try {
+          const { getCurrentWindow } = await import("@tauri-apps/api/window");
+          const appWindow = getCurrentWindow();
+          const isCurrentlyFullscreen = await appWindow.isFullscreen();
+
+          // Only exit fullscreen if we're currently in fullscreen
+          // This prevents interfering with the user double-clicking
+          if (isCurrentlyFullscreen) {
+            await appWindow.setFullscreen(false);
+            generalSettings.update((s) => ({ ...s, isKioskMode: false }));
+            console.log(
+              "[Layout] Screensaver deactivated - exiting fullscreen",
+            );
+          }
+        } catch (e) {
+          console.error("[Layout] Error exiting screensaver fullscreen:", e);
+          generalSettings.update((s) => ({ ...s, isKioskMode: false }));
+        }
+      }
+    })();
+  });
+
+  // Handle interaction when screensaver is active (to trigger password modal or exit)
+  onMount(() => {
+    let ignoreInteractions = false; // Flag to prevent immediate deactivation
+
+    const handleInteraction = () => {
+      // Ignore interactions if flag is set (during screensaver activation)
+      if (ignoreInteractions) {
+        console.log(
+          "[Layout] Ignoring interaction during screensaver activation cooldown",
+        );
+        return;
+      }
+
+      if ($isScreensaverActive && !$awaitingScreensaverPassword) {
+        console.log(
+          "[Layout] User interaction detected - attempting to exit screensaver",
+        );
+        attemptExitScreensaver();
+      }
+    };
+
+    // Listen for any interaction
+    const events = ["mousedown", "keydown", "touchstart"];
+    events.forEach((event) => {
+      window.addEventListener(event, handleInteraction, {
+        once: false,
+        capture: true,
+      });
+    });
+
+    // Watch for screensaver activation to set the ignore flag
+    const unsubscribe = isScreensaverActive.subscribe((active) => {
+      if (active) {
+        console.log(
+          "[Layout] Screensaver activated - ignoring interactions for 500ms",
+        );
+        ignoreInteractions = true;
+
+        // After a short delay, start listening for real user interactions
+        setTimeout(() => {
+          ignoreInteractions = false;
+          console.log("[Layout] Now listening for user interactions");
+        }, 500);
+      }
+    });
+
+    return () => {
+      events.forEach((event) => {
+        window.removeEventListener(event, handleInteraction, { capture: true });
+      });
+      unsubscribe();
+    };
+  });
 </script>
 
 {#if checkingSetup}
@@ -125,6 +231,11 @@
     <!-- StatusBar (Solo si autenticado y no Setup) -->
     {#if authenticated && !$generalSettings.isKioskMode && !showSetupWizard}
       <StatusBar />
+    {/if}
+
+    <!-- Screensaver Password Modal -->
+    {#if showPasswordModal}
+      <ScreensaverPasswordModal />
     {/if}
   </div>
 {/if}

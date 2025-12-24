@@ -16,6 +16,8 @@
     "core:window:allow-set-size",
     "core:window:allow-center",
     "core:window:allow-start-dragging",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen",
     "dialog:allow-ask"
   ]
 }

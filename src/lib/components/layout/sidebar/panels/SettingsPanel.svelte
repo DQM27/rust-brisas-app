@@ -13,6 +13,7 @@
     Home,
     Shield,
     Palette,
+    Clock,
   } from "lucide-svelte";
   import { openView, activePanel } from "../../../../stores/sidebar";
 
@@ -164,6 +165,22 @@
   >
     <svelte:component this={Shield} size={16} />
     <span>Seguridad y Credenciales</span>
+  </button>
+  <button
+    class="panel-item"
+    on:click={executeAndClose(() =>
+      openView("session-settings", "Gestión de Sesión"),
+    )}
+    on:keydown={(e) =>
+      handleKeydown(
+        e,
+        executeAndClose(() =>
+          openView("session-settings", "Gestión de Sesión"),
+        ),
+      )}
+  >
+    <svelte:component this={Clock} size={16} />
+    <span>Gestión de Sesión</span>
   </button>
   <button
     class="panel-item"
