@@ -26,15 +26,24 @@ pub mod visitante_queries;
 
 pub mod audit_queries; // Tablas de auditoría
 
-/// Inicializa la conexión a la base de datos (Pool)
+/// Inicializa la conexión a la base de datos (Pool) tomando en cuenta el modo Demo
 pub async fn init_pool(config: &AppConfig) -> Result<SqlitePool, Box<dyn std::error::Error>> {
-    // Obtener ruta de la DB desde la configuración
-    let db_path = crate::config::manager::get_database_path(config);
+    // Verificar si estamos en modo Demo
+    let db_path = if config.setup.show_demo_mode {
+        log::info!("🧪 Arranque en Modo Demo detectado. Usando DB aislada.");
+        crate::config::manager::get_demo_database_path()
+    } else {
+        crate::config::manager::get_database_path(config)
+    };
 
-    let db_exists = db_path.exists();
+    init_pool_by_path(&db_path).await
+}
+
+/// Inicializa un pool en una ruta específica (útil para Demo o restauraciones)
+pub async fn init_pool_by_path(
+    db_path: &std::path::Path,
+) -> Result<SqlitePool, Box<dyn std::error::Error>> {
     let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
-
-    if !db_exists {}
 
     let options = sqlx::sqlite::SqliteConnectOptions::from_str(&db_url)?
         .log_statements(log::LevelFilter::Off)
@@ -52,9 +61,9 @@ pub async fn init_pool(config: &AppConfig) -> Result<SqlitePool, Box<dyn std::er
         r#"
         PRAGMA journal_mode = WAL;
         PRAGMA synchronous = NORMAL;
-        PRAGMA cache_size = -2000;      -- Reduce a ~2MB (antes -64000 ~64MB)
+        PRAGMA cache_size = -2000;      -- Reduce a ~2MB
         PRAGMA temp_store = MEMORY;
-        PRAGMA mmap_size = 0;           -- Desactiva mmap de SQLite (libera RAM)
+        PRAGMA mmap_size = 0;           -- Desactiva mmap de SQLite
         PRAGMA foreign_keys = ON;
         "#,
     )

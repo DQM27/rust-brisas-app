@@ -17,15 +17,40 @@ use crate::services::auth::hash_password;
 
 /// Ejecuta todos los seeds de demostración
 pub async fn run_demo_seed(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
+    log::info!("🌱 Iniciando seeds de demo...");
+
+    log::info!("🌱 Seeding users...");
     seed_demo_users(pool).await?;
+
+    log::info!("🌱 Seeding empresas...");
     seed_demo_empresas(pool).await?;
+
+    log::info!("🌱 Seeding gafetes...");
     seed_demo_gafetes(pool).await?;
+
+    log::info!("🌱 Seeding contratistas...");
     seed_demo_contratistas(pool).await?;
+
+    log::info!("🌱 Seeding proveedores...");
     seed_demo_proveedores(pool).await?;
+
+    log::info!("🌱 Seeding visitantes...");
     seed_demo_visitantes(pool).await?;
+
+    // IMPORTANTE: Vehículos antes que ingresos para evitar FK constraint
+    log::info!("🌱 Seeding vehiculos...");
+    seed_demo_vehiculos(pool).await?;
+
+    log::info!("🌱 Seeding ingresos...");
     seed_demo_ingresos_contratistas(pool).await?;
+
+    log::info!("🌱 Seeding alertas...");
     seed_demo_alertas_gafete(pool).await?;
+
+    log::info!("🌱 Seeding lista negra...");
     seed_demo_lista_negra(pool).await?;
+
+    log::info!("✅ Todos los seeds de demo completados exitosamente.");
     Ok(())
 }
 
@@ -98,26 +123,22 @@ async fn seed_demo_empresas(pool: &SqlitePool) -> Result<(), Box<dyn std::error:
 
     // Empresas: Compañías legendarias del mundo tech
     let empresas = [
-        // Contratistas: Empresas de hardware/infraestructura
-        ("demo-emp-1", "Bell Labs", "contratista"), // Donde se inventó Unix
-        ("demo-emp-2", "Xerox PARC", "contratista"), // GUI, mouse, ethernet
-        ("demo-emp-3", "IBM Research", "contratista"), // Mainframes legendarios
-        // Proveedores: Empresas de software
-        ("demo-emp-4", "Oracle Systems", "proveedor"), // Bases de datos
-        ("demo-emp-5", "Red Hat", "proveedor"),        // Linux empresarial
-        // Visitantes: Consultores/startups
-        ("demo-emp-6", "CERN Computing", "visitante"), // Donde nació la web
+        ("demo-emp-1", "Bell Labs"),      // Donde se inventó Unix
+        ("demo-emp-2", "Xerox PARC"),     // GUI, mouse, ethernet
+        ("demo-emp-3", "IBM Research"),   // Mainframes legendarios
+        ("demo-emp-4", "Oracle Systems"), // Bases de datos
+        ("demo-emp-5", "Red Hat"),        // Linux empresarial
+        ("demo-emp-6", "CERN Computing"), // Donde nació la web
     ];
 
-    for (id, nombre, tipo) in empresas {
+    for (id, nombre) in empresas {
         sqlx::query(
             r#"INSERT OR IGNORE INTO empresas 
-               (id, nombre, tipo, is_active, created_at, updated_at)
-               VALUES (?, ?, ?, 1, ?, ?)"#,
+               (id, nombre, is_active, created_at, updated_at)
+               VALUES (?, ?, 1, ?, ?)"#,
         )
         .bind(id)
         .bind(nombre)
-        .bind(tipo)
         .bind(&now)
         .bind(&now)
         .execute(pool)
@@ -135,15 +156,15 @@ async fn seed_demo_gafetes(pool: &SqlitePool) -> Result<(), Box<dyn std::error::
     let now = Utc::now().to_rfc3339();
 
     // Gafetes de contratista (C-001 a C-020)
+    // Nota: PK es (numero, tipo), no hay columna 'id'
+    // Estado válido: 'activo', 'danado', 'extraviado'
     for i in 1..=20 {
-        let id = format!("demo-gafete-c-{:03}", i);
         let numero = format!("C-{:03}", i);
         sqlx::query(
             r#"INSERT OR IGNORE INTO gafetes 
-               (id, numero, tipo, estado, created_at, updated_at)
-               VALUES (?, ?, 'contratista', 'disponible', ?, ?)"#,
+               (numero, tipo, estado, created_at, updated_at)
+               VALUES (?, 'contratista', 'activo', ?, ?)"#,
         )
-        .bind(&id)
         .bind(&numero)
         .bind(&now)
         .bind(&now)
@@ -153,14 +174,12 @@ async fn seed_demo_gafetes(pool: &SqlitePool) -> Result<(), Box<dyn std::error::
 
     // Gafetes de proveedor (P-001 a P-010)
     for i in 1..=10 {
-        let id = format!("demo-gafete-p-{:03}", i);
         let numero = format!("P-{:03}", i);
         sqlx::query(
             r#"INSERT OR IGNORE INTO gafetes 
-               (id, numero, tipo, estado, created_at, updated_at)
-               VALUES (?, ?, 'proveedor', 'disponible', ?, ?)"#,
+               (numero, tipo, estado, created_at, updated_at)
+               VALUES (?, 'proveedor', 'activo', ?, ?)"#,
         )
-        .bind(&id)
         .bind(&numero)
         .bind(&now)
         .bind(&now)
@@ -170,14 +189,12 @@ async fn seed_demo_gafetes(pool: &SqlitePool) -> Result<(), Box<dyn std::error::
 
     // Gafetes de visita (V-001 a V-010)
     for i in 1..=10 {
-        let id = format!("demo-gafete-v-{:03}", i);
         let numero = format!("V-{:03}", i);
         sqlx::query(
             r#"INSERT OR IGNORE INTO gafetes 
-               (id, numero, tipo, estado, created_at, updated_at)
-               VALUES (?, ?, 'visita', 'disponible', ?, ?)"#,
+               (numero, tipo, estado, created_at, updated_at)
+               VALUES (?, 'visita', 'activo', ?, ?)"#,
         )
-        .bind(&id)
         .bind(&numero)
         .bind(&now)
         .bind(&now)
@@ -214,7 +231,7 @@ async fn seed_demo_contratistas(pool: &SqlitePool) -> Result<(), Box<dyn std::er
 
         sqlx::query(
             r#"INSERT OR IGNORE INTO contratistas 
-               (id, cedula, nombre, apellido, empresa_id, praind_vencimiento, estado, created_at, updated_at)
+               (id, cedula, nombre, apellido, empresa_id, fecha_vencimiento_praind, estado, created_at, updated_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
         .bind(id)
@@ -256,7 +273,7 @@ async fn seed_demo_proveedores(pool: &SqlitePool) -> Result<(), Box<dyn std::err
         sqlx::query(
             r#"INSERT OR IGNORE INTO proveedores 
                (id, cedula, nombre, apellido, empresa_id, estado, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, 'ACTIVO', ?, ?)"#,
+               VALUES (?, ?, ?, ?, ?, 'activo', ?, ?)"#,
         )
         .bind(id)
         .bind(cedula)
@@ -327,24 +344,23 @@ async fn seed_demo_ingresos_contratistas(
     let ingreso_2h_ago = (now - Duration::hours(2)).to_rfc3339();
     sqlx::query(
         r#"INSERT OR IGNORE INTO ingresos_contratistas 
-           (id, contratista_id, cedula, fecha_hora_ingreso, gafete_numero, usuario_ingreso_id, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)"#,
+           (id, contratista_id, cedula, nombre, apellido, empresa_nombre, tipo_autorizacion, modo_ingreso, vehiculo_id, fecha_hora_ingreso, gafete_numero, usuario_ingreso_id, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'praind', 'vehiculo', ?, ?, ?, ?, ?, ?)"#,
     )
     .bind("demo-ingreso-1")
     .bind("demo-cont-1")
     .bind("12345678")
+    .bind("Isaac")
+    .bind("Newton")
+    .bind("Bell Labs")
+    .bind("demo-veh-1")
     .bind(&ingreso_2h_ago)
     .bind("C-001")
-    .bind("demo-guardia-1")
+    .bind("demo-guardia-2")
     .bind(&now_str)
     .bind(&now_str)
     .execute(pool)
     .await?;
-
-    // Marcar gafete como en uso
-    sqlx::query("UPDATE gafetes SET estado = 'en_uso' WHERE numero = 'C-001'")
-        .execute(pool)
-        .await?;
 
     // ==========================================
     // CASO 2: Ingreso ACTIVO con ALERTA TEMPRANA (13h 35min)
@@ -352,23 +368,23 @@ async fn seed_demo_ingresos_contratistas(
     let ingreso_13h = (now - Duration::hours(13) - Duration::minutes(35)).to_rfc3339();
     sqlx::query(
         r#"INSERT OR IGNORE INTO ingresos_contratistas 
-           (id, contratista_id, cedula, fecha_hora_ingreso, gafete_numero, usuario_ingreso_id, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)"#,
+           (id, contratista_id, cedula, nombre, apellido, empresa_nombre, tipo_autorizacion, modo_ingreso, vehiculo_id, fecha_hora_ingreso, gafete_numero, usuario_ingreso_id, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'praind', 'vehiculo', ?, ?, ?, ?, ?, ?)"#,
     )
     .bind("demo-ingreso-2")
     .bind("demo-cont-4")
     .bind("45678901")
+    .bind("Niels")
+    .bind("Bohr")
+    .bind("Xerox PARC")
+    .bind("demo-veh-2")
     .bind(&ingreso_13h)
     .bind("C-002")
-    .bind("demo-guardia-1")
+    .bind("demo-guardia-2")
     .bind(&now_str)
     .bind(&now_str)
     .execute(pool)
     .await?;
-
-    sqlx::query("UPDATE gafetes SET estado = 'en_uso' WHERE numero = 'C-002'")
-        .execute(pool)
-        .await?;
 
     // ==========================================
     // CASO 3: Ingreso ACTIVO con TIEMPO EXCEDIDO (15 horas)
@@ -376,12 +392,15 @@ async fn seed_demo_ingresos_contratistas(
     let ingreso_15h = (now - Duration::hours(15)).to_rfc3339();
     sqlx::query(
         r#"INSERT OR IGNORE INTO ingresos_contratistas 
-           (id, contratista_id, cedula, fecha_hora_ingreso, gafete_numero, usuario_ingreso_id, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)"#,
+           (id, contratista_id, cedula, nombre, apellido, empresa_nombre, tipo_autorizacion, modo_ingreso, fecha_hora_ingreso, gafete_numero, usuario_ingreso_id, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'praind', 'caminando', ?, ?, ?, ?, ?)"#,
     )
     .bind("demo-ingreso-3")
     .bind("demo-cont-6")
     .bind("67890123")
+    .bind("Enrico")
+    .bind("Fermi")
+    .bind("IBM Research")
     .bind(&ingreso_15h)
     .bind("C-003")
     .bind("demo-guardia-2")
@@ -389,10 +408,6 @@ async fn seed_demo_ingresos_contratistas(
     .bind(&now_str)
     .execute(pool)
     .await?;
-
-    sqlx::query("UPDATE gafetes SET estado = 'en_uso' WHERE numero = 'C-003'")
-        .execute(pool)
-        .await?;
 
     // ==========================================
     // CASO 4: Ingreso COMPLETADO (historial)
@@ -408,16 +423,19 @@ async fn seed_demo_ingresos_contratistas(
 
     sqlx::query(
         r#"INSERT OR IGNORE INTO ingresos_contratistas 
-           (id, contratista_id, cedula, fecha_hora_ingreso, fecha_hora_salida, gafete_numero, usuario_ingreso_id, usuario_salida_id, tiempo_permanencia_minutos, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+           (id, contratista_id, cedula, nombre, apellido, empresa_nombre, tipo_autorizacion, modo_ingreso, fecha_hora_ingreso, fecha_hora_salida, gafete_numero, usuario_ingreso_id, usuario_salida_id, tiempo_permanencia_minutos, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'praind', 'caminando', ?, ?, ?, ?, ?, ?, ?, ?)"#,
     )
     .bind("demo-ingreso-4")
     .bind("demo-cont-7")
     .bind("78901234")
+    .bind("Max")
+    .bind("Planck")
+    .bind("Bell Labs")
     .bind(&ingreso_ayer_8am)
     .bind(&salida_ayer_5pm)
     .bind("C-004")
-    .bind("demo-guardia-1")
+    .bind("demo-guardia-2")
     .bind("demo-guardia-2")
     .bind(540) // 9 horas = 540 minutos
     .bind(&now_str)
@@ -438,34 +456,38 @@ async fn seed_demo_lista_negra(pool: &SqlitePool) -> Result<(), Box<dyn std::err
     // Persona bloqueada
     sqlx::query(
         r#"INSERT OR IGNORE INTO lista_negra 
-           (id, cedula, nivel_severidad, motivo_bloqueo, descripcion, is_active, created_at, updated_at, created_by)
-           VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)"#,
+           (id, cedula, nombre, apellido, nivel_severidad, motivo_bloqueo, bloqueado_por, observaciones, is_active, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#,
     )
     .bind("demo-bloqueo-1")
     .bind("99999999")
-    .bind("alto")
+    .bind("Kevin")
+    .bind("Mitnick") // Homenaje al hacker legendario
+    .bind("ALTO")
     .bind("Robo de herramientas")
+    .bind("demo-supervisor-1")
     .bind("Se detectó sustrayendo herramientas del almacén el 15/12/2024")
     .bind(&now)
     .bind(&now)
-    .bind("demo-supervisor-1")
     .execute(pool)
     .await?;
 
     // Contratista bloqueado (demo-cont-5 está suspendido, pero también bloqueado)
     sqlx::query(
         r#"INSERT OR IGNORE INTO lista_negra 
-           (id, cedula, nivel_severidad, motivo_bloqueo, descripcion, is_active, created_at, updated_at, created_by)
-           VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)"#,
+           (id, cedula, nombre, apellido, nivel_severidad, motivo_bloqueo, bloqueado_por, observaciones, is_active, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#,
     )
     .bind("demo-bloqueo-2")
     .bind("56789012") // cedula de demo-cont-5
-    .bind("medio")
+    .bind("Werner")
+    .bind("Heisenberg")
+    .bind("MEDIO")
     .bind("Incumplimiento de normas de seguridad")
+    .bind("demo-supervisor-1")
     .bind("No utilizó EPP requerido en área de alto riesgo")
     .bind(&now)
     .bind(&now)
-    .bind("demo-supervisor-1")
     .execute(pool)
     .await?;
 
@@ -485,13 +507,16 @@ async fn seed_demo_alertas_gafete(pool: &SqlitePool) -> Result<(), Box<dyn std::
     // ==========================================
     sqlx::query(
         r#"INSERT OR IGNORE INTO alertas_gafetes 
-           (id, cedula, gafete_numero, ingreso_contratista_id, resuelto, created_at, updated_at)
-           VALUES (?, ?, ?, ?, 0, ?, ?)"#,
+           (id, cedula, nombre_completo, gafete_numero, ingreso_contratista_id, resuelto, fecha_reporte, reportado_por, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)"#,
     )
     .bind("demo-alerta-1")
     .bind("78901234") // cedula de demo-cont-7
+    .bind("Max Planck")
     .bind("C-004")
     .bind("demo-ingreso-4")
+    .bind(&now)
+    .bind("demo-admin-1")
     .bind(&now)
     .bind(&now)
     .execute(pool)
@@ -503,12 +528,15 @@ async fn seed_demo_alertas_gafete(pool: &SqlitePool) -> Result<(), Box<dyn std::
     // ==========================================
     sqlx::query(
         r#"INSERT OR IGNORE INTO alertas_gafetes 
-           (id, cedula, gafete_numero, ingreso_contratista_id, resuelto, created_at, updated_at)
-           VALUES (?, ?, ?, NULL, 0, ?, ?)"#,
+           (id, cedula, nombre_completo, gafete_numero, ingreso_contratista_id, resuelto, fecha_reporte, reportado_por, created_at, updated_at)
+           VALUES (?, ?, ?, ?, NULL, 0, ?, ?, ?, ?)"#,
     )
     .bind("demo-alerta-2")
     .bind("89012345") // cedula de demo-cont-8 (PRAIND por vencer 7 días)
+    .bind("Erwin Schrödinger")
     .bind("C-010")
+    .bind(&now)
+    .bind("demo-admin-1")
     .bind(&now)
     .bind(&now)
     .execute(pool)
@@ -516,16 +544,409 @@ async fn seed_demo_alertas_gafete(pool: &SqlitePool) -> Result<(), Box<dyn std::
 
     sqlx::query(
         r#"INSERT OR IGNORE INTO alertas_gafetes 
-           (id, cedula, gafete_numero, ingreso_contratista_id, resuelto, created_at, updated_at)
-           VALUES (?, ?, ?, NULL, 0, ?, ?)"#,
+           (id, cedula, nombre_completo, gafete_numero, ingreso_contratista_id, resuelto, fecha_reporte, reportado_por, created_at, updated_at)
+           VALUES (?, ?, ?, ?, NULL, 0, ?, ?, ?, ?)"#,
     )
     .bind("demo-alerta-3")
     .bind("89012345") // mismo contratista, segunda alerta
+    .bind("Erwin Schrödinger")
     .bind("C-011")
+    .bind(&now)
+    .bind("demo-admin-1")
     .bind(&now)
     .bind(&now)
     .execute(pool)
     .await?;
+
+    Ok(())
+}
+
+// ==========================================
+// VEHÍCULOS DE PRUEBA
+// ==========================================
+
+async fn seed_demo_vehiculos(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
+    let now = Utc::now().to_rfc3339();
+
+    // Estructura: (id, contratista_id, proveedor_id, visitante_id, tipo, placa, marca, modelo, color)
+    let vehiculos = [
+        // --- Contratistas (Isaac Newton, Niels Bohr, etc.) ---
+        (
+            "demo-veh-1",
+            Some("demo-cont-1"),
+            None,
+            None,
+            "automovil",
+            "MKB-123",
+            "Tesla",
+            "Model S",
+            "Rojo",
+        ),
+        (
+            "demo-veh-1b",
+            Some("demo-cont-1"),
+            None,
+            None,
+            "motocicleta",
+            "MKB-123M",
+            "BMW",
+            "S1000RR",
+            "Blanco/Azul",
+        ),
+        (
+            "demo-veh-2",
+            Some("demo-cont-4"),
+            None,
+            None,
+            "motocicleta",
+            "XYZ-101",
+            "Yamaha",
+            "MT-07",
+            "Negro",
+        ),
+        (
+            "demo-veh-2b",
+            Some("demo-cont-4"),
+            None,
+            None,
+            "automovil",
+            "XYZ-101A",
+            "Toyota",
+            "Corolla",
+            "Gris",
+        ),
+        (
+            "demo-veh-3",
+            Some("demo-cont-6"),
+            None,
+            None,
+            "automovil",
+            "ABC-456",
+            "Toyota",
+            "Hilux",
+            "Blanco",
+        ),
+        (
+            "demo-veh-4",
+            Some("demo-cont-2"),
+            None,
+            None,
+            "automovil",
+            "FUT-777",
+            "Ford",
+            "Mustang",
+            "Gris",
+        ),
+        (
+            "demo-veh-5",
+            Some("demo-cont-3"),
+            None,
+            None,
+            "motocicleta",
+            "HAR-888",
+            "Harley Davidson",
+            "Iron 883",
+            "Mate",
+        ),
+        (
+            "demo-veh-6",
+            Some("demo-cont-7"),
+            None,
+            None,
+            "automovil",
+            "HON-999",
+            "Honda",
+            "Civic",
+            "Azul",
+        ),
+        (
+            "demo-veh-7",
+            Some("demo-cont-8"),
+            None,
+            None,
+            "motocicleta",
+            "VES-202",
+            "Vespa",
+            "Primavera",
+            "Amarillo",
+        ),
+        (
+            "demo-veh-8",
+            Some("demo-cont-5"),
+            None,
+            None,
+            "automovil",
+            "CHE-555",
+            "Chevrolet",
+            "Silverado",
+            "Verde",
+        ),
+        // --- Proveedores ---
+        (
+            "demo-veh-9",
+            None,
+            Some("demo-prov-1"),
+            None,
+            "automovil",
+            "BMW-001",
+            "BMW",
+            "M3",
+            "Negro",
+        ),
+        (
+            "demo-veh-10",
+            None,
+            Some("demo-prov-2"),
+            None,
+            "motocicleta",
+            "DUC-999",
+            "Ducati",
+            "Panigale V4",
+            "Rojo",
+        ),
+        (
+            "demo-veh-10b",
+            None,
+            Some("demo-prov-2"),
+            None,
+            "automovil",
+            "DUC-999A",
+            "Audi",
+            "RS6",
+            "Negro Mate",
+        ),
+        (
+            "demo-veh-11",
+            None,
+            Some("demo-prov-3"),
+            None,
+            "automovil",
+            "POR-911",
+            "Porsche",
+            "911 GT3",
+            "Plateado",
+        ),
+        (
+            "demo-veh-12",
+            None,
+            Some("demo-prov-4"),
+            None,
+            "motocicleta",
+            "KAW-636",
+            "Kawasaki",
+            "Ninja ZX-6R",
+            "Verde Kawa",
+        ),
+        (
+            "demo-veh-13",
+            None,
+            Some("demo-prov-5"),
+            None,
+            "automovil",
+            "HND-202",
+            "Honda",
+            "CR-V",
+            "Blanco",
+        ),
+        (
+            "demo-veh-18",
+            None,
+            Some("demo-prov-6"),
+            None,
+            "motocicleta",
+            "TRI-333",
+            "Triumph",
+            "Tiger 900",
+            "Naranja",
+        ),
+        (
+            "demo-veh-19",
+            None,
+            Some("demo-prov-7"),
+            None,
+            "motocicleta",
+            "KTM-129",
+            "KTM",
+            "SuperDuke 1290",
+            "Naranja/Negro",
+        ),
+        (
+            "demo-veh-23",
+            None,
+            Some("demo-prov-1"),
+            None,
+            "motocicleta",
+            "BMW-S1K",
+            "BMW",
+            "S1000XR",
+            "Rojo",
+        ),
+        // --- Visitantes ---
+        (
+            "demo-veh-14",
+            None,
+            None,
+            Some("demo-visit-1"),
+            "automovil",
+            "AUD-101",
+            "Audi",
+            "A4",
+            "Gris",
+        ),
+        (
+            "demo-veh-14b",
+            None,
+            None,
+            Some("demo-visit-1"),
+            "motocicleta",
+            "AUD-101M",
+            "Ducati",
+            "Monster",
+            "Amarillo",
+        ),
+        (
+            "demo-veh-15",
+            None,
+            None,
+            Some("demo-visit-2"),
+            "motocicleta",
+            "SUZ-1300",
+            "Suzuki",
+            "Hayabusa",
+            "Azul",
+        ),
+        (
+            "demo-veh-16",
+            None,
+            None,
+            Some("demo-visit-3"),
+            "automovil",
+            "MBZ-500",
+            "Mercedes-Benz",
+            "E-Class",
+            "Negro",
+        ),
+        (
+            "demo-veh-17",
+            None,
+            None,
+            Some("demo-visit-4"),
+            "motocicleta",
+            "NIZ-400",
+            "Nissan",
+            "Frontier",
+            "Naranja",
+        ),
+        (
+            "demo-veh-20",
+            None,
+            None,
+            Some("demo-visit-5"),
+            "motocicleta",
+            "BMW-GS",
+            "BMW",
+            "R1250 GS",
+            "Blanco/Azul",
+        ),
+        (
+            "demo-veh-21",
+            None,
+            None,
+            Some("demo-visit-6"),
+            "automovil",
+            "SUB-WRX",
+            "Subaru",
+            "WRX STI",
+            "Azul Rally",
+        ),
+        (
+            "demo-veh-22",
+            None,
+            None,
+            Some("demo-visit-7"),
+            "motocicleta",
+            "HND-CBR",
+            "Honda",
+            "CBR-1000RR-R",
+            "HRC Colors",
+        ),
+        (
+            "demo-veh-24",
+            None,
+            None,
+            Some("demo-visit-2"),
+            "automovil",
+            "SUZ-VIT",
+            "Suzuki",
+            "Vitara",
+            "Rojo",
+        ),
+        (
+            "demo-veh-25",
+            None,
+            None,
+            Some("demo-visit-3"),
+            "motocicleta",
+            "YAM-R1",
+            "Yamaha",
+            "YZF-R1",
+            "Petronas",
+        ),
+        (
+            "demo-veh-26",
+            None,
+            None,
+            Some("demo-visit-4"),
+            "automovil",
+            "NIZ-Z",
+            "Nissan",
+            "400Z",
+            "Amarillo",
+        ),
+        (
+            "demo-veh-27",
+            None,
+            None,
+            Some("demo-visit-5"),
+            "automovil",
+            "BMW-X5",
+            "BMW",
+            "X5 M",
+            "Blanco",
+        ),
+        (
+            "demo-veh-28",
+            None,
+            None,
+            Some("demo-visit-6"),
+            "motocicleta",
+            "KTM-ADV",
+            "KTM",
+            "1290 Super Adventure",
+            "Blanco",
+        ),
+    ];
+
+    for (id, cont_id, prov_id, visit_id, tipo, placa, marca, modelo, color) in vehiculos {
+        sqlx::query(
+            r#"INSERT OR IGNORE INTO vehiculos 
+               (id, contratista_id, proveedor_id, visitante_id, tipo_vehiculo, placa, marca, modelo, color, is_active, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#,
+        )
+        .bind(id)
+        .bind(cont_id)
+        .bind(prov_id)
+        .bind(visit_id)
+        .bind(tipo)
+        .bind(placa)
+        .bind(marca)
+        .bind(modelo)
+        .bind(color)
+        .bind(&now)
+        .bind(&now)
+        .execute(pool)
+        .await?;
+    }
 
     Ok(())
 }
