@@ -82,9 +82,11 @@ pub fn run() {
                         .level_for("tracing", log::LevelFilter::Warn) // Silenciar tracing spans
                         .build(),
                 ) // Logging Plugin
-                .manage(pool)
+                .manage(db::DbPool(tokio::sync::RwLock::new(pool)))
                 .manage(Arc::new(RwLock::new(app_config)))
-                .manage(search_service)
+                .manage(services::search_service::SearchState(tokio::sync::RwLock::new(
+                    search_service,
+                )))
                 .manage(app_state)
                 .manage(session_state)
                 .plugin(tauri_plugin_dialog::init())

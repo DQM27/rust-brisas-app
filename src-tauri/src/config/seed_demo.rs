@@ -469,42 +469,58 @@ async fn seed_demo_lista_negra(pool: &SqlitePool) -> Result<(), Box<dyn std::err
     let now = Utc::now().to_rfc3339();
 
     // Persona bloqueada
-    sqlx::query(
-        r#"INSERT OR IGNORE INTO lista_negra 
-           (id, cedula, nombre, apellido, nivel_severidad, motivo_bloqueo, bloqueado_por, observaciones, is_active, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#,
-    )
-    .bind("demo-bloqueo-1")
-    .bind("99999999")
-    .bind("Kevin")
-    .bind("Mitnick") // Homenaje al hacker legendario
-    .bind("ALTO")
-    .bind("Robo de herramientas")
-    .bind("demo-supervisor-1")
-    .bind("Se detectó sustrayendo herramientas del almacén el 15/12/2024")
-    .bind(&now)
-    .bind(&now)
-    .execute(pool)
-    .await?;
+    let exists_1: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM lista_negra WHERE id = ?)")
+            .bind("demo-bloqueo-1")
+            .fetch_one(pool)
+            .await?;
 
-    // Contratista bloqueado (demo-cont-5 está suspendido, pero también bloqueado)
-    sqlx::query(
-        r#"INSERT OR IGNORE INTO lista_negra 
-           (id, cedula, nombre, apellido, nivel_severidad, motivo_bloqueo, bloqueado_por, observaciones, is_active, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#,
-    )
-    .bind("demo-bloqueo-2")
-    .bind("56789012") // cedula de demo-cont-5
-    .bind("Werner")
-    .bind("Heisenberg")
-    .bind("MEDIO")
-    .bind("Incumplimiento de normas de seguridad")
-    .bind("demo-supervisor-1")
-    .bind("No utilizó EPP requerido en área de alto riesgo")
-    .bind(&now)
-    .bind(&now)
-    .execute(pool)
-    .await?;
+    if !exists_1 {
+        sqlx::query(
+            r#"INSERT INTO lista_negra 
+            (id, cedula, nombre, apellido, nivel_severidad, motivo_bloqueo, bloqueado_por, observaciones, is_active, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#,
+        )
+        .bind("demo-bloqueo-1")
+        .bind("99999999")
+        .bind("Kevin")
+        .bind("Mitnick")
+        .bind("ALTO")
+        .bind("Robo de herramientas")
+        .bind("demo-supervisor-1")
+        .bind("Se detectó sustrayendo herramientas del almacén el 15/12/2024")
+        .bind(&now)
+        .bind(&now)
+        .execute(pool)
+        .await?;
+    }
+
+    // Contratista bloqueado
+    let exists_2: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM lista_negra WHERE id = ?)")
+            .bind("demo-bloqueo-2")
+            .fetch_one(pool)
+            .await?;
+
+    if !exists_2 {
+        sqlx::query(
+            r#"INSERT INTO lista_negra 
+            (id, cedula, nombre, apellido, nivel_severidad, motivo_bloqueo, bloqueado_por, observaciones, is_active, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#,
+        )
+        .bind("demo-bloqueo-2")
+        .bind("56789012")
+        .bind("Werner")
+        .bind("Heisenberg")
+        .bind("MEDIO")
+        .bind("Incumplimiento de normas de seguridad")
+        .bind("demo-supervisor-1")
+        .bind("No utilizó EPP requerido en área de alto riesgo")
+        .bind(&now)
+        .bind(&now)
+        .execute(pool)
+        .await?;
+    }
 
     Ok(())
 }

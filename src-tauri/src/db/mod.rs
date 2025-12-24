@@ -4,6 +4,9 @@ use crate::config::AppConfig;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::{ConnectOptions, SqlitePool}; // Import ConnectOptions trait
 use std::str::FromStr;
+use tokio::sync::RwLock;
+
+pub struct DbPool(pub RwLock<SqlitePool>);
 
 pub mod migrate;
 

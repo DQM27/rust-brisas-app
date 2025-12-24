@@ -22,6 +22,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tantivy::{Index, IndexReader};
 use tokio::sync::Mutex;
+use tokio::sync::RwLock;
+
+pub struct SearchState(pub RwLock<Arc<SearchService>>);
 
 /// Estado del servicio de búsqueda
 pub struct SearchService {

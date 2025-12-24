@@ -2,7 +2,7 @@ use crate::config::manager::save_config;
 use crate::config::settings::{AppConfig, AppConfigState, TerminalConfig};
 use crate::domain::errors::ConfigError;
 use log::info;
-use tauri::{command, Manager, State};
+use tauri::{command, State};
 
 /// Obtiene la configuración completa actual
 #[command]
@@ -51,18 +51,18 @@ pub async fn update_terminal_config(
 /// Habilita o deshabilita el modo demo en la pantalla de login con intercambio dinámico de DB
 #[command]
 pub async fn toggle_demo_mode(
-    app: tauri::AppHandle,
+    pool_state: State<'_, crate::db::DbPool>,
+    search_state: State<'_, crate::services::search_service::SearchState>,
     config: State<'_, AppConfigState>,
     enabled: bool,
 ) -> Result<bool, ConfigError> {
     info!("🔄 Cambiando modo demo a: {}", enabled);
 
-    // 1. Actualizar configuración en memoria y archivo
+    // 1. Actualizar configuración
     let config_snapshot = {
         let mut config_guard = config
             .write()
             .map_err(|e| ConfigError::Message(format!("Error al escribir configuración: {}", e)))?;
-
         config_guard.setup.show_demo_mode = enabled;
 
         let config_path = if let Some(data_dir) = dirs::data_local_dir() {
@@ -70,103 +70,86 @@ pub async fn toggle_demo_mode(
         } else {
             std::path::PathBuf::from("./config/brisas.toml")
         };
-
         save_config(&config_guard, &config_path)
             .map_err(|e| ConfigError::Message(format!("Error al guardar configuración: {}", e)))?;
-
         config_guard.clone()
-    }; // El lock se libera aquí automáticamente al salir del scope
+    };
 
-    // 2. Intercambio dinámico de conexiones (Hot-Swap)
+    // 2. Intercambio atómico (Hot-Swap via RwLock)
     if enabled {
         info!("🧪 Iniciando entorno Demo aislado...");
         let db_path = crate::config::manager::get_demo_database_path();
         let search_path = crate::config::manager::get_demo_search_path();
 
-        // Limpiar entorno demo previo para asegurar reseteo (según solicitud usuario)
+        // Limpiar previo
         if db_path.exists() {
-            if let Err(e) = std::fs::remove_file(&db_path) {
-                log::error!("❌ Error eliminando DB demo antigua: {}", e);
-                // No retornamos error fatal aquí, intentamos continuar o tal vez sea crítico
-            }
+            let _ = std::fs::remove_file(&db_path);
         }
         if search_path.exists() {
-            if let Err(e) = std::fs::remove_dir_all(&search_path) {
-                log::error!("❌ Error eliminando índice búsqueda demo antiguo: {}", e);
-            }
+            let _ = std::fs::remove_dir_all(&search_path);
         }
 
-        // Inicializar nuevo pool demo
+        // Nuevo Pool Demo
         let demo_pool = match crate::db::init_pool_by_path(&db_path).await {
             Ok(p) => p,
-            Err(e) => {
-                log::error!("❌ Error fatal iniciando pool demo en {:?}: {}", db_path, e);
-                return Err(ConfigError::Message(format!("Error iniciando DB demo: {}", e)));
-            }
+            Err(e) => return Err(ConfigError::Message(format!("Error DB demo: {}", e))),
         };
 
-        // Aplicar migraciones y seed
+        // Migraciones y Seeds
         if let Err(e) = crate::db::migrate::run_migrations(&demo_pool).await {
-            log::error!("❌ Error ejecutando migraciones demo: {}", e);
             return Err(ConfigError::Message(format!("Error migraciones demo: {}", e)));
         }
-
         if let Err(e) = crate::config::seed::seed_db(&demo_pool).await {
-            log::error!("❌ Error ejecutando seed base demo: {}", e);
             return Err(ConfigError::Message(format!("Error seed base demo: {}", e)));
         }
-
         if let Err(e) = crate::config::seed_demo::run_demo_seed(&demo_pool).await {
-            log::error!("❌ Error ejecutando seed demo extendido: {}", e);
-            return Err(ConfigError::Message(format!("Error seed demo extendido: {}", e)));
+            return Err(ConfigError::Message(format!("Error seed demo: {}", e)));
         }
 
-        // Inicializar nuevo servicio de búsqueda demo
-        let demo_search_service = match crate::search::init_search_service(&config_snapshot) {
+        // Buscar Demo
+        let demo_search = match crate::search::init_search_service(&config_snapshot) {
             Ok(s) => s,
-            Err(e) => {
-                log::error!("❌ Error inicializando servicio búsqueda demo: {}", e);
-                return Err(ConfigError::Message(format!("Error servicio búsqueda: {}", e)));
-            }
+            Err(e) => return Err(ConfigError::Message(format!("Error search demo: {}", e))),
         };
-
-        // Reindexar demo
-        if let Err(e) = demo_search_service.reindex_all(&demo_pool).await {
-            log::error!("❌ Error reindexando demo: {}", e);
-            return Err(ConfigError::Message(format!("Error reindexando demo: {}", e)));
+        if let Err(e) = demo_search.reindex_all(&demo_pool).await {
+            return Err(ConfigError::Message(format!("Error reindex demo: {}", e)));
         }
 
-        // Sobrescribir estados globales de Tauri (Hot-Swap)
-        app.manage(demo_pool);
-        app.manage(demo_search_service);
+        // ⚡ ATOMIC SWAP ⚡
+        {
+            let mut pool_guard = pool_state.0.write().await;
+            *pool_guard = demo_pool;
+        }
+        {
+            let mut search_guard = search_state.0.write().await;
+            *search_guard = demo_search;
+        }
 
-        info!("✅ Entorno Demo listo y activo.");
+        info!("✅ Entorno Demo SWAPPED y activo.");
     } else {
-        info!("🏠 Volviendo a entorno de Producción...");
+        info!("🏠 Volviendo a Producción...");
 
-        // Re-inicializar pool de producción
         let prod_pool = match crate::db::init_pool(&config_snapshot).await {
             Ok(p) => p,
-            Err(e) => {
-                log::error!("❌ Error fatal reconectando a producción: {}", e);
-                return Err(ConfigError::Message(format!("Error reconexión prod: {}", e)));
-            }
+            Err(e) => return Err(ConfigError::Message(format!("Error DB prod: {}", e))),
         };
 
-        // Re-inicializar servicio de búsqueda de producción
-        let prod_search_service = match crate::search::init_search_service(&config_snapshot) {
+        let prod_search = match crate::search::init_search_service(&config_snapshot) {
             Ok(s) => s,
-            Err(e) => {
-                log::error!("❌ Error restaurando búsqueda producción: {}", e);
-                return Err(ConfigError::Message(format!("Error búsqueda prod: {}", e)));
-            }
+            Err(e) => return Err(ConfigError::Message(format!("Error search prod: {}", e))),
         };
 
-        // Sobrescribir estados globales (Hot-Swap back)
-        app.manage(prod_pool);
-        app.manage(prod_search_service);
+        // ⚡ ATOMIC SWAP ⚡
+        {
+            let mut pool_guard = pool_state.0.write().await;
+            *pool_guard = prod_pool;
+        }
+        {
+            let mut search_guard = search_state.0.write().await;
+            *search_guard = prod_search;
+        }
 
-        info!("✅ Entorno de Producción restaurado.");
+        info!("✅ Entorno Producción SWAPPED y activo.");
     }
 
     Ok(enabled)

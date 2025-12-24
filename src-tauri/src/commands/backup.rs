@@ -1,4 +1,5 @@
 use crate::config::AppConfig;
+use crate::db::DbPool;
 use crate::domain::errors::ConfigError;
 use crate::services::backup;
 use log::info;
@@ -8,7 +9,7 @@ use tauri::{command, State};
 /// Crea una copia de seguridad de la base de datos usando VACUUM INTO
 #[command]
 pub async fn backup_database(
-    pool: State<'_, sqlx::SqlitePool>,
+    pool_state: State<'_, DbPool>,
     destination_path: String,
 ) -> Result<(), ConfigError> {
     info!("Iniciando backup manual a: {}", destination_path);
@@ -24,7 +25,8 @@ pub async fn backup_database(
             .map_err(|e| ConfigError::Io(format!("No se pudo sobrescribir el archivo: {}", e)))?;
     }
 
-    sqlx::query(&query).execute(pool.inner()).await.map_err(ConfigError::Database)?;
+    let pool = pool_state.0.read().await;
+    sqlx::query(&query).execute(&*pool).await.map_err(ConfigError::Database)?;
 
     info!("Backup completado exitosamente");
     Ok(())
