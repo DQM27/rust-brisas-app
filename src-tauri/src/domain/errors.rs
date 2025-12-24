@@ -366,6 +366,12 @@ pub enum IngresoVisitaError {
     Validation(String),
 }
 
+impl From<crate::domain::common::CommonError> for IngresoVisitaError {
+    fn from(err: crate::domain::common::CommonError) -> Self {
+        IngresoVisitaError::Validation(err.to_string())
+    }
+}
+
 // ==========================================
 // INGRESO PROVEEDOR ERRORS
 // ==========================================
@@ -397,6 +403,12 @@ pub enum IngresoProveedorError {
 
     #[error("Error de validación: {0}")]
     Validation(String),
+}
+
+impl From<crate::domain::common::CommonError> for IngresoProveedorError {
+    fn from(err: crate::domain::common::CommonError) -> Self {
+        IngresoProveedorError::Validation(err.to_string())
+    }
 }
 
 // ==========================================
@@ -445,6 +457,12 @@ pub enum IngresoContratistaError {
 
     #[error("Error interno: {0}")]
     Internal(String),
+}
+
+impl From<crate::domain::common::CommonError> for IngresoContratistaError {
+    fn from(err: crate::domain::common::CommonError) -> Self {
+        IngresoContratistaError::Validation(err.to_string())
+    }
 }
 
 // ==========================================

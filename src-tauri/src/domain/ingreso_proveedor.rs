@@ -100,7 +100,7 @@ pub fn validar_tiempo_salida(
     fecha_salida_str: &str,
 ) -> Result<(), IngresoProveedorError> {
     common_domain::validar_tiempo_salida(fecha_ingreso_str, fecha_salida_str)
-        .map_err(|e| IngresoProveedorError::Validation(e))
+        .map_err(|e| IngresoProveedorError::Validation(e.to_string()))
 }
 
 /// Wrapper que usa el error específico de proveedor
@@ -109,7 +109,7 @@ pub fn calcular_tiempo_permanencia(
     fecha_salida_str: &str,
 ) -> Result<i64, IngresoProveedorError> {
     common_domain::calcular_tiempo_permanencia(fecha_ingreso_str, fecha_salida_str)
-        .map_err(|e| IngresoProveedorError::Validation(e))
+        .map_err(|e| IngresoProveedorError::Validation(e.to_string()))
 }
 
 /// Delega a common::evaluar_devolucion_gafete

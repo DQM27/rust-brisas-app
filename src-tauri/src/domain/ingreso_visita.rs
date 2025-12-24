@@ -117,7 +117,7 @@ pub fn validar_tiempo_salida(
     fecha_salida_str: &str,
 ) -> Result<(), IngresoVisitaError> {
     common_domain::validar_tiempo_salida(fecha_ingreso_str, fecha_salida_str)
-        .map_err(|e| IngresoVisitaError::Validation(e))
+        .map_err(|e| IngresoVisitaError::Validation(e.to_string()))
 }
 
 /// Wrapper que usa el error específico de visita
@@ -126,7 +126,7 @@ pub fn calcular_tiempo_permanencia(
     fecha_salida_str: &str,
 ) -> Result<i64, IngresoVisitaError> {
     common_domain::calcular_tiempo_permanencia(fecha_ingreso_str, fecha_salida_str)
-        .map_err(|e| IngresoVisitaError::Validation(e))
+        .map_err(|e| IngresoVisitaError::Validation(e.to_string()))
 }
 
 /// Delega a common::evaluar_devolucion_gafete

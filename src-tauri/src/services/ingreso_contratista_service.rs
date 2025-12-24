@@ -313,17 +313,10 @@ pub async fn registrar_salida(
     domain::validar_ingreso_abierto(&ingreso.fecha_hora_salida)?;
 
     let now = Utc::now().to_rfc3339();
-    domain::validar_tiempo_salida(&ingreso.fecha_hora_ingreso, &now)
-        .map_err(|e: String| IngresoContratistaError::Validation(e))?; // domain::validar_tiempo_salida returns generic String yet? Check.
-                                                                       // I need to update domain::validar_tiempo_salida too, I missed it?
-                                                                       // Wait, step 1317: I updated calcular_tiempo_transcurrido. Did I update validar_tiempo_salida? No I didn't see it in the chunk replacement.
-                                                                       // So I assume it returns String. I'll fix it here with map_err or update domain first.
-                                                                       // Easier to map_err for now, or assume I update domain next.
-                                                                       // Let's assume map_err logic for String errors from domain.
+    domain::validar_tiempo_salida(&ingreso.fecha_hora_ingreso, &now)?;
 
     let minutos_permanencia =
-        domain::calcular_tiempo_permanencia(&ingreso.fecha_hora_ingreso, &now)
-            .map_err(|e: String| IngresoContratistaError::Validation(e))?;
+        domain::calcular_tiempo_permanencia(&ingreso.fecha_hora_ingreso, &now)?;
 
     // Evaluar reporte de gafete
     let decision = domain::evaluar_devolucion_gafete(
@@ -492,8 +485,7 @@ pub async fn cerrar_ingreso_manual(
 
     // 6. Calcular tiempo de permanencia
     let minutos_permanencia =
-        domain::calcular_tiempo_permanencia(&ingreso.fecha_hora_ingreso, &fecha_salida)
-            .map_err(|e| IngresoContratistaError::Validation(e))?;
+        domain::calcular_tiempo_permanencia(&ingreso.fecha_hora_ingreso, &fecha_salida)?;
 
     // 7. Actualizar DB con cierre manual
     let now = Utc::now().to_rfc3339();

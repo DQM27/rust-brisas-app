@@ -9,6 +9,28 @@
 
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
+// ==========================================
+// ERRORES COMUNES
+// ==========================================
+
+/// Errores comunes para validaciones de dominio compartidas
+#[derive(Error, Debug, Clone, Serialize)]
+#[serde(tag = "type", content = "message")]
+pub enum CommonError {
+    #[error("Datos corruptos: fecha de ingreso inválida")]
+    FechaIngresoInvalida,
+
+    #[error("Fecha de salida inválida")]
+    FechaSalidaInvalida,
+
+    #[error("La fecha de salida no puede ser anterior a la de ingreso")]
+    SalidaAnteriorAIngreso,
+
+    #[error("El gafete devuelto ({devuelto}) no coincide con el asignado ({asignado})")]
+    GafeteNoCoincide { devuelto: String, asignado: String },
+}
 
 // ==========================================
 // GAFETES: STRUCTS COMUNES
@@ -102,14 +124,14 @@ pub fn evaluar_devolucion_gafete(
 pub fn validar_gafete_coincide(
     asignado: Option<&str>,
     devuelto: Option<&str>,
-) -> Result<(), String> {
+) -> Result<(), CommonError> {
     match (asignado, devuelto) {
         (Some(a), Some(d)) => {
             if normalizar_numero_gafete(a) != normalizar_numero_gafete(d) {
-                return Err(format!(
-                    "El gafete devuelto ({}) no coincide con el asignado ({})",
-                    d, a
-                ));
+                return Err(CommonError::GafeteNoCoincide {
+                    devuelto: d.to_string(),
+                    asignado: a.to_string(),
+                });
             }
         }
         _ => {} // Si no tenía o no devolvió, no hay conflicto aquí
@@ -133,15 +155,15 @@ pub fn validar_gafete_coincide(
 pub fn validar_tiempo_salida(
     fecha_ingreso_str: &str,
     fecha_salida_str: &str,
-) -> Result<(), String> {
+) -> Result<(), CommonError> {
     let ingreso = DateTime::parse_from_rfc3339(fecha_ingreso_str)
-        .map_err(|_| "Datos corruptos: fecha ingreso inválida".to_string())?;
+        .map_err(|_| CommonError::FechaIngresoInvalida)?;
 
     let salida = DateTime::parse_from_rfc3339(fecha_salida_str)
-        .map_err(|_| "Fecha salida inválida".to_string())?;
+        .map_err(|_| CommonError::FechaSalidaInvalida)?;
 
     if salida < ingreso {
-        return Err("La fecha de salida no puede ser anterior a la de ingreso".to_string());
+        return Err(CommonError::SalidaAnteriorAIngreso);
     }
     Ok(())
 }
@@ -157,12 +179,12 @@ pub fn validar_tiempo_salida(
 pub fn calcular_tiempo_permanencia(
     fecha_ingreso_str: &str,
     fecha_salida_str: &str,
-) -> Result<i64, String> {
+) -> Result<i64, CommonError> {
     let ingreso = DateTime::parse_from_rfc3339(fecha_ingreso_str)
-        .map_err(|_| "Fecha ingreso inválida".to_string())?;
+        .map_err(|_| CommonError::FechaIngresoInvalida)?;
 
     let salida = DateTime::parse_from_rfc3339(fecha_salida_str)
-        .map_err(|_| "Fecha salida inválida".to_string())?;
+        .map_err(|_| CommonError::FechaSalidaInvalida)?;
 
     let duracion = salida.signed_duration_since(ingreso);
     Ok(duracion.num_minutes())
@@ -233,7 +255,7 @@ mod tests {
     fn test_validar_gafete_no_coincide() {
         let result = validar_gafete_coincide(Some("V-001"), Some("V-999"));
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("no coincide"));
+        assert!(matches!(result.unwrap_err(), CommonError::GafeteNoCoincide { .. }));
     }
 
     #[test]
@@ -257,7 +279,7 @@ mod tests {
         let salida = "2024-01-01T08:00:00Z";
         let result = validar_tiempo_salida(ingreso, salida);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("anterior"));
+        assert!(matches!(result.unwrap_err(), CommonError::SalidaAnteriorAIngreso));
     }
 
     #[test]
@@ -270,6 +292,8 @@ mod tests {
 
     #[test]
     fn test_calcular_permanencia_fecha_invalida() {
-        assert!(calcular_tiempo_permanencia("invalid", "2024-01-01T17:00:00Z").is_err());
+        let result = calcular_tiempo_permanencia("invalid", "2024-01-01T17:00:00Z");
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), CommonError::FechaIngresoInvalida));
     }
 }
