@@ -39,12 +39,36 @@ async fn seed_demo_users(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Er
     let password_hash = hash_password("demo123")?;
 
     let users = [
-        ("demo-supervisor-1", "supervisor@demo.com", "María", "González", ROLE_SUPERVISOR_ID),
-        ("demo-guardia-1", "guardia@demo.com", "Carlos", "Rodríguez", ROLE_GUARDIA_ID),
-        ("demo-guardia-2", "guardia2@demo.com", "Ana", "Martínez", ROLE_GUARDIA_ID),
+        // Supervisora: Marie Curie (primera mujer en ganar un Nobel)
+        (
+            "demo-supervisor-1",
+            "marie.curie@demo.com",
+            "Marie",
+            "Curie",
+            ROLE_SUPERVISOR_ID,
+            "MC123456",
+        ),
+        // Guardia 1: Albert Einstein
+        (
+            "demo-guardia-1",
+            "albert.einstein@demo.com",
+            "Albert",
+            "Einstein",
+            ROLE_GUARDIA_ID,
+            "AE789012",
+        ),
+        // Guardia 2: Richard Feynman
+        (
+            "demo-guardia-2",
+            "richard.feynman@demo.com",
+            "Richard",
+            "Feynman",
+            ROLE_GUARDIA_ID,
+            "RF345678",
+        ),
     ];
 
-    for (id, email, nombre, apellido, role_id) in users {
+    for (id, email, nombre, apellido, role_id, cedula) in users {
         sqlx::query(
             r#"INSERT OR IGNORE INTO users 
                (id, email, password_hash, nombre, apellido, role_id, is_active, created_at, updated_at, cedula, must_change_password)
@@ -58,7 +82,7 @@ async fn seed_demo_users(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Er
         .bind(role_id)
         .bind(&now)
         .bind(&now)
-        .bind(format!("DEMO{}", Uuid::new_v4().to_string().split('-').next().unwrap()))
+        .bind(cedula)
         .execute(pool)
         .await?;
     }
@@ -73,13 +97,17 @@ async fn seed_demo_users(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Er
 async fn seed_demo_empresas(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
     let now = Utc::now().to_rfc3339();
 
+    // Empresas: Compañías legendarias del mundo tech
     let empresas = [
-        ("demo-emp-1", "Construcciones del Norte S.A.", "contratista"),
-        ("demo-emp-2", "Mantenimiento Industrial Corp", "contratista"),
-        ("demo-emp-3", "Servicios Eléctricos Unidos", "contratista"),
-        ("demo-emp-4", "Distribuidora de Materiales Ltda", "proveedor"),
-        ("demo-emp-5", "Suministros Técnicos S.A.", "proveedor"),
-        ("demo-emp-6", "Consultores Ambientales", "visitante"),
+        // Contratistas: Empresas de hardware/infraestructura
+        ("demo-emp-1", "Bell Labs", "contratista"), // Donde se inventó Unix
+        ("demo-emp-2", "Xerox PARC", "contratista"), // GUI, mouse, ethernet
+        ("demo-emp-3", "IBM Research", "contratista"), // Mainframes legendarios
+        // Proveedores: Empresas de software
+        ("demo-emp-4", "Oracle Systems", "proveedor"), // Bases de datos
+        ("demo-emp-5", "Red Hat", "proveedor"),        // Linux empresarial
+        // Visitantes: Consultores/startups
+        ("demo-emp-6", "CERN Computing", "visitante"), // Donde nació la web
     ];
 
     for (id, nombre, tipo) in empresas {
@@ -169,17 +197,17 @@ async fn seed_demo_contratistas(pool: &SqlitePool) -> Result<(), Box<dyn std::er
     let now = Utc::now().to_rfc3339();
     let hoy = Utc::now().date_naive();
 
-    // Contratistas con diferentes estados de PRAIND
+    // Contratistas: Físicos famosos con diferentes estados de PRAIND
     let contratistas = [
         // (id, cedula, nombre, apellido, empresa_id, praind_vence_en_dias, estado)
-        ("demo-cont-1", "12345678", "Juan", "Pérez", "demo-emp-1", 180, "activo"), // PRAIND OK
-        ("demo-cont-2", "23456789", "Pedro", "García", "demo-emp-1", 15, "activo"), // PRAIND por vencer (< 30 días)
-        ("demo-cont-3", "34567890", "Luis", "Hernández", "demo-emp-2", -5, "activo"), // PRAIND VENCIDO
-        ("demo-cont-4", "45678901", "Miguel", "López", "demo-emp-2", 90, "activo"),   // PRAIND OK
-        ("demo-cont-5", "56789012", "Roberto", "Díaz", "demo-emp-3", 60, "suspendido"), // Suspendido
-        ("demo-cont-6", "67890123", "Fernando", "Torres", "demo-emp-3", 120, "activo"), // PRAIND OK
-        ("demo-cont-7", "78901234", "Andrés", "Ramírez", "demo-emp-1", 45, "activo"),   // PRAIND OK
-        ("demo-cont-8", "89012345", "Jorge", "Castillo", "demo-emp-2", 7, "activo"), // PRAIND por vencer (7 días)
+        ("demo-cont-1", "IN170401", "Isaac", "Newton", "demo-emp-1", 180, "activo"), // PRAIND OK - Padre de la física clásica
+        ("demo-cont-2", "NT185607", "Nikola", "Tesla", "demo-emp-1", 15, "activo"), // PRAIND por vencer - Genio de la electricidad
+        ("demo-cont-3", "SH194201", "Stephen", "Hawking", "demo-emp-2", -5, "activo"), // PRAIND VENCIDO - Cosmólogo
+        ("demo-cont-4", "NB188501", "Niels", "Bohr", "demo-emp-2", 90, "activo"), // PRAIND OK - Física cuántica
+        ("demo-cont-5", "WH190101", "Werner", "Heisenberg", "demo-emp-3", 60, "suspendido"), // Suspendido - Principio de incertidumbre
+        ("demo-cont-6", "EP190001", "Enrico", "Fermi", "demo-emp-3", 120, "activo"), // PRAIND OK - Física nuclear
+        ("demo-cont-7", "MD186701", "Max", "Planck", "demo-emp-1", 45, "activo"), // PRAIND OK - Padre de la cuántica
+        ("demo-cont-8", "ES188701", "Erwin", "Schrödinger", "demo-emp-2", 7, "activo"), // PRAIND por vencer - El gato
     ];
 
     for (id, cedula, nombre, apellido, empresa_id, praind_dias, estado) in contratistas {
@@ -213,10 +241,16 @@ async fn seed_demo_contratistas(pool: &SqlitePool) -> Result<(), Box<dyn std::er
 async fn seed_demo_proveedores(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
     let now = Utc::now().to_rfc3339();
 
+    // Proveedores: Matemáticos legendarios
     let proveedores = [
-        ("demo-prov-1", "11111111", "Ricardo", "Mendoza", "demo-emp-4"),
-        ("demo-prov-2", "22222222", "Alejandro", "Vargas", "demo-emp-4"),
-        ("demo-prov-3", "33333333", "Héctor", "Flores", "demo-emp-5"),
+        ("demo-prov-1", "CG177701", "Carl", "Gauss", "demo-emp-4"), // Príncipe de las matemáticas
+        ("demo-prov-2", "LE170701", "Leonhard", "Euler", "demo-emp-4"), // El más prolífico de la historia
+        ("demo-prov-3", "BR182601", "Bernhard", "Riemann", "demo-emp-5"), // Hipótesis de Riemann
+        ("demo-prov-4", "PF160101", "Pierre", "Fermat", "demo-emp-4"),  // Último teorema de Fermat
+        ("demo-prov-5", "AG178901", "Augustin", "Cauchy", "demo-emp-5"), // Análisis complejo
+        ("demo-prov-6", "JL174901", "Joseph", "Lagrange", "demo-emp-4"), // Mecánica analítica
+        ("demo-prov-7", "GC184501", "Georg", "Cantor", "demo-emp-5"),   // Teoría de conjuntos
+        ("demo-prov-8", "DP186201", "David", "Hilbert", "demo-emp-4"),  // 23 problemas de Hilbert
     ];
 
     for (id, cedula, nombre, apellido, empresa_id) in proveedores {
@@ -246,10 +280,16 @@ async fn seed_demo_proveedores(pool: &SqlitePool) -> Result<(), Box<dyn std::err
 async fn seed_demo_visitantes(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
     let now = Utc::now().to_rfc3339();
 
+    // Visitantes: Leyendas de la programación y ciencias de la computación
     let visitantes = [
-        ("demo-visit-1", "44444444", "Laura", "Sánchez", Some("demo-emp-6")),
-        ("demo-visit-2", "55555555", "Patricia", "Morales", None),
-        ("demo-visit-3", "66666666", "Gabriela", "Ortiz", None),
+        ("demo-visit-1", "AL181501", "Ada", "Lovelace", Some("demo-emp-6")), // Primera programadora de la historia
+        ("demo-visit-2", "GH190601", "Grace", "Hopper", None), // COBOL, el primer "bug"
+        ("demo-visit-3", "LT196901", "Linus", "Torvalds", None), // Creador de Linux y Git
+        ("demo-visit-4", "AT191201", "Alan", "Turing", Some("demo-emp-6")), // Padre de la computación
+        ("demo-visit-5", "DJ194201", "Dennis", "Ritchie", None),            // Creador de C y Unix
+        ("demo-visit-6", "KB194001", "Ken", "Thompson", None), // Co-creador de Unix y Go
+        ("demo-visit-7", "BS195001", "Bjarne", "Stroustrup", Some("demo-emp-6")), // Creador de C++
+        ("demo-visit-8", "JG195501", "James", "Gosling", None), // Padre de Java
     ];
 
     for (id, cedula, nombre, apellido, empresa_id) in visitantes {

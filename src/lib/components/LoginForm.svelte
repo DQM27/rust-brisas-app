@@ -5,14 +5,22 @@
 
   interface Props {
     loading?: boolean;
+    isDemoMode?: boolean;
     onSubmit: (data: { email: string; password: string }) => void;
   }
 
-  let { loading = false, onSubmit }: Props = $props();
+  let { loading = false, isDemoMode = false, onSubmit }: Props = $props();
 
   let email = $state("");
   let password = $state("");
   let errors = $state<Record<string, string>>({});
+
+  // Usuarios demo con físicos famosos
+  const demoUsers = [
+    { email: "marie.curie@demo.com", password: "demo123", role: "Supervisora", name: "Marie Curie", icon: "👩‍🔬" },
+    { email: "albert.einstein@demo.com", password: "demo123", role: "Guardia", name: "Albert Einstein", icon: "👨‍🔬" },
+    { email: "richard.feynman@demo.com", password: "demo123", role: "Guardia", name: "Richard Feynman", icon: "🧑‍🔬" },
+  ];
 
   function handleSubmit() {
     errors = {};
@@ -33,6 +41,12 @@
 
     // 2. Enviar si es válido
     onSubmit({ email, password });
+  }
+
+  function quickLogin(userEmail: string, userPassword: string) {
+    email = userEmail;
+    password = userPassword;
+    onSubmit({ email: userEmail, password: userPassword });
   }
 
   export function reset() {
@@ -132,4 +146,32 @@
       {/if}
     </button>
   </form>
+
+  <!-- Demo Quick Login Buttons (solo visible en modo demo) -->
+  {#if isDemoMode}
+    <div class="mt-6 rounded-lg bg-amber-500/10 border border-amber-500/30 p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-amber-500 text-lg">⚡</span>
+        <span class="text-sm font-medium text-amber-400">Acceso Rápido Demo</span>
+      </div>
+      <div class="flex flex-col gap-2">
+        {#each demoUsers as user}
+          <button
+            type="button"
+            onclick={() => quickLogin(user.email, user.password)}
+            disabled={loading}
+            class="flex items-center gap-3 w-full rounded bg-surface-1 px-3 py-2 text-left text-sm transition-all hover:bg-surface-2 hover:shadow-md disabled:opacity-60 border border-surface-tertiary"
+          >
+            <span class="text-xl">{user.icon}</span>
+            <div class="flex-1">
+              <div class="font-medium text-primary">{user.name}</div>
+              <div class="text-xs text-tertiary">{user.role}</div>
+            </div>
+            <span class="text-xs text-accent">→</span>
+          </button>
+        {/each}
+      </div>
+      <p class="text-xs text-tertiary mt-3 text-center">Contraseña: demo123</p>
+    </div>
+  {/if}
 </div>
