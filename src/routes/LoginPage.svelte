@@ -49,7 +49,6 @@
         tempUser = result.data;
         tempPassword = password;
         view = "change_password";
-        toast("Debes actualizar tu contraseña para continuar", { icon: "🔒" });
       } else {
         // 2. Login normal
         completeLogin(result.data);
@@ -74,7 +73,6 @@
         tempUser = user;
         tempPassword = "demo123";
         view = "change_password";
-        toast("Debes actualizar tu contraseña para continuar", { icon: "🔒" });
       } else {
         completeLogin(user);
         toast.success(`Bienvenido al modo demo, ${user.nombre}!`, {

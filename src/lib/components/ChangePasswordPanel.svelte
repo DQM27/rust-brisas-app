@@ -79,9 +79,7 @@
   const errorClass = "text-xs text-red-500 mt-1";
 </script>
 
-<div
-  class="w-full max-w-sm rounded-lg bg-white dark:bg-[#0d1117] p-8 shadow-xl border border-gray-200 dark:border-gray-700"
->
+<div class="w-full h-full flex flex-col justify-center p-8">
   <div class="mb-6 text-center">
     <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
       Cambiar Contraseña
