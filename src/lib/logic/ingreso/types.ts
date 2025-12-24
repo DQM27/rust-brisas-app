@@ -67,6 +67,8 @@ export interface FinalizarIngresoForm {
     vehiculoId?: string | null;
     observaciones?: string;
     esExcepcional?: boolean;
+    tipoAutorizacion: string;
+    modoIngreso: string;
     // Campos específicos
     autorizadoPor?: string; // Para excepcional
     motivoExcepcional?: string; // Para excepcional

@@ -159,6 +159,8 @@ export async function registrarEntrada(input: any): Promise<ServiceResult<any>> 
             vehiculoId: input.vehiculoId,
             observaciones: input.observaciones,
             esExcepcional: input.tipoAutorizacion === 'excepcional',
+            tipoAutorizacion: input.tipoAutorizacion || 'praind',
+            modoIngreso: input.modoIngreso || 'caminando',
         };
 
         const res = await crearIngreso(
@@ -198,13 +200,16 @@ export async function crearIngreso(
         if (tipo === 'contratista') {
             return await invoke('create_ingreso_contratista', {
                 input: {
-                    contratista_id: candidateId,
-                    gafete: formData.gafete,
-                    vehiculo_id: formData.vehiculoId || null,
+                    contratistaId: candidateId,
+                    gafeteNumero: formData.gafete,
+                    gafeteTipo: 'contratista',
+                    vehiculoId: formData.vehiculoId || null,
+                    tipoAutorizacion: formData.tipoAutorizacion || 'praind',
+                    modoIngreso: formData.modoIngreso || 'caminando',
                     observaciones: formData.observaciones || null,
-                    autorizado_por: formData.esExcepcional ? formData.autorizadoPor : null,
-                    motivo: formData.esExcepcional ? formData.motivoExcepcional : null
-                }
+                    usuarioIngresoId: 'SYSTEM'
+                },
+                usuarioId: 'SYSTEM' // Backend expects both sometimes
             });
         } else if (tipo === 'proveedor') {
             return await invoke('crear_ingreso_proveedor_v2', {
@@ -228,14 +233,14 @@ export async function crearIngreso(
                     cedula: extraData.cedula,
                     nombre: extraData.nombre,
                     apellido: extraData.apellido,
-                    empresa: extraData.empresa,
-                    cita_id: extraData.citaId,
                     anfitrion: extraData.anfitrion,
-                    area_visitada: extraData.areaVisitada,
-                    motivo: extraData.motivo || 'Visita',
-                    gafete: formData.gafete,
+                    areaVisitada: extraData.areaVisitada,
+                    motivoVisita: extraData.motivo || 'Visita',
+                    tipoAutorizacion: formData.tipoAutorizacion || 'correo',
+                    modoIngreso: formData.modoIngreso || 'caminando',
+                    gafeteNumero: formData.gafete,
                     observaciones: formData.observaciones || null,
-                    usuario_ingreso_id: 'SYSTEM',
+                    usuarioIngresoId: 'SYSTEM',
                 }
             });
         }
@@ -340,11 +345,11 @@ export const ingresoService = {
 
 function mapContratistaResponse(res: any): ValidacionIngresoResult {
     return {
-        puedeIngresar: res.puede_ingresar,
-        motivoRechazo: res.motivo_rechazo,
+        puedeIngresar: res.puedeIngresar,
+        motivoRechazo: res.motivoRechazo,
         alertas: res.alertas || [],
-        tieneIngresoAbierto: res.tiene_ingreso_abierto,
-        ingresoAbierto: res.ingreso_abierto,
+        tieneIngresoAbierto: res.tieneIngresoAbierto,
+        ingresoAbierto: res.ingresoAbierto,
         contratista: res.contratista,
         persona: res.contratista ? {
             id: res.contratista.id,
@@ -352,7 +357,7 @@ function mapContratistaResponse(res: any): ValidacionIngresoResult {
             nombre: res.contratista.nombre,
             apellido: res.contratista.apellido,
             nombreCompleto: `${res.contratista.nombre} ${res.contratista.apellido}`,
-            empresa: res.contratista.empresa?.nombre,
+            empresa: res.contratista.empresa_nombre, // This matches manually built JSON in Rust
             empresaId: res.contratista.empresa_id,
             estado: res.contratista.estado,
             vehiculos: res.contratista.vehiculos || []
@@ -362,11 +367,11 @@ function mapContratistaResponse(res: any): ValidacionIngresoResult {
 
 function mapProveedorResponse(res: any): ValidacionIngresoResult {
     return {
-        puedeIngresar: res.puede_ingresar,
-        motivoRechazo: res.motivo_rechazo,
+        puedeIngresar: res.puedeIngresar,
+        motivoRechazo: res.motivoRechazo,
         alertas: res.alertas || [],
-        tieneIngresoAbierto: res.tiene_ingreso_abierto,
-        ingresoAbierto: res.ingreso_abierto,
+        tieneIngresoAbierto: res.tieneIngresoAbierto,
+        ingresoAbierto: res.ingresoAbierto,
         proveedor: res.proveedor,
         persona: res.proveedor ? {
             id: res.proveedor.id,
@@ -374,7 +379,7 @@ function mapProveedorResponse(res: any): ValidacionIngresoResult {
             nombre: res.proveedor.nombre,
             apellido: res.proveedor.apellido || '',
             nombreCompleto: `${res.proveedor.nombre} ${res.proveedor.apellido || ''}`,
-            empresa: res.proveedor.empresa,
+            empresa: res.proveedor.empresa_nombre || res.proveedor.empresa,
             vehiculos: []
         } : undefined
     };
@@ -382,11 +387,11 @@ function mapProveedorResponse(res: any): ValidacionIngresoResult {
 
 function mapVisitaResponse(res: any): ValidacionIngresoResult {
     return {
-        puedeIngresar: res.puede_ingresar,
-        motivoRechazo: res.motivo_rechazo,
+        puedeIngresar: res.puedeIngresar,
+        motivoRechazo: res.motivoRechazo,
         alertas: res.alertas || [],
-        tieneIngresoAbierto: res.tiene_ingreso_abierto,
-        ingresoAbierto: res.ingreso_abierto,
+        tieneIngresoAbierto: res.tieneIngresoAbierto,
+        ingresoAbierto: res.ingresoAbierto,
         visitante: res.visitante,
         persona: res.visitante ? {
             id: res.visitante.id,
@@ -394,7 +399,7 @@ function mapVisitaResponse(res: any): ValidacionIngresoResult {
             nombre: res.visitante.nombre,
             apellido: res.visitante.apellido,
             nombreCompleto: `${res.visitante.nombre} ${res.visitante.apellido}`,
-            empresa: res.visitante.empresa,
+            empresa: res.visitante.empresa_nombre || res.visitante.empresa,
             vehiculos: []
         } : undefined
     };

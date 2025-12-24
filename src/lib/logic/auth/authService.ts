@@ -18,7 +18,17 @@ function parseAuthError(err: any): { message: string; code?: string } {
     }
 
     if (typeof err === 'object') {
-        const msg = err.message ?? err.toString();
+        // Intentar extraer mensaje del objeto
+        let msg = 'Error desconocido';
+
+        if (err.message) {
+            msg = typeof err.message === 'string' ? err.message : JSON.stringify(err.message);
+        } else if (err.error) {
+            msg = typeof err.error === 'string' ? err.error : JSON.stringify(err.error);
+        } else {
+            msg = JSON.stringify(err);
+        }
+
         const code = err.code || undefined;
 
         if (/credential/i.test(msg)) return { message: 'Credenciales inválidas.', code: 'INVALID_CREDENTIALS' };

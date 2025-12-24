@@ -46,6 +46,9 @@ export const FinalizarIngresoSchema = z.object({
     esExcepcional: z.boolean().default(false),
     autorizadoPor: z.string().optional(),
     motivoExcepcional: z.string().optional(),
+
+    tipoAutorizacion: z.string().default('praind'),
+    modoIngreso: z.string().default('caminando'),
 }).superRefine((data, ctx) => {
     if (data.esExcepcional) {
         if (!data.autorizadoPor || data.autorizadoPor.length < 3) {

@@ -1,161 +1,266 @@
 <script lang="ts">
-  import { fade, fly } from "svelte/transition";
   import { onMount } from "svelte";
-  import { preventDefault } from "svelte/legacy";
-  import { cubicOut } from "svelte/easing";
-  import { activeTabId } from "$lib/stores/tabs";
-  import type { CitaPopulated } from "$lib/types/cita";
+  import { fade } from "svelte/transition";
+  import { toast } from "svelte-5-french-toast";
+  import { AlertCircle, RotateCw } from "lucide-svelte";
+  import type { ColDef } from "@ag-grid-community/core";
 
-  import IngresoContratistaForm from "./contratista/IngresoContratistaForm.svelte";
-  import IngresoVisitaForm from "./visita/IngresoVisitaForm.svelte";
-  import IngresoProveedorForm from "./proveedor/IngresoProveedorForm.svelte";
+  // Components
+  import SearchBar from "$lib/components/shared/SearchBar.svelte";
+  import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
+  import IngresoFormModal from "./IngresoFormModal.svelte";
 
-  import IngresosActivosTable from "./contratista/IngresosActivosTable.svelte";
-  import IngresoVisitasTable from "./visita/IngresoVisitasTable.svelte";
-  import IngresoProveedoresTable from "./proveedor/IngresoProveedoresTable.svelte";
+  // Logic
+  import { invoke } from "@tauri-apps/api/core";
+  import { createCustomButton } from "$lib/config/agGridConfigs";
 
-  let isFormOpen = false;
-  let activeTab: "contratistas" | "visitas" | "proveedores" = "contratistas";
+  // Types
+  import type { CustomToolbarButton } from "$lib/types/agGrid";
 
-  // Estado para edición de citas
-  let editingCita: CitaPopulated | null = null;
+  // ==========================================
+  // STATE
+  // ==========================================
+  let ingresos = $state<any[]>([]);
+  let loading = $state(false);
+  let error = $state("");
+  let selectedRows = $state<any[]>([]);
+  let showModal = $state(false);
 
-  function setActiveTab(tab: typeof activeTab) {
-    activeTab = tab;
-  }
-
-  // Cerrar formulario automáticamente cuando se cambia de pestaña
-  $: $activeTabId, ((isFormOpen = false), (editingCita = null));
-
-  function toggleForm() {
-    isFormOpen = !isFormOpen;
-  }
-
-  function closeForm() {
-    isFormOpen = false;
-    editingCita = null;
-  }
-
-  function openForm() {
-    editingCita = null;
-    isFormOpen = true;
-  }
-
-  function handleEditCita(cita: CitaPopulated) {
-    editingCita = cita;
-    isFormOpen = true;
-  }
-
-  // Refresh trigger for tables
-  let refreshTrigger = 0;
-
-  function handleProveedorSuccess() {
-    closeForm();
-    refreshTrigger++;
-  }
-
-  // Registrar manejador para el comando "new" en el contexto "ingreso-list"
-  // Esto escucha cuando se dispara el comando (ej. Ctrl+N)
-  /* Atajos eliminados
-  onMount(() => {
-    return shortcutService.registerHandler("ingreso-list", "new", openForm);
+  // ==========================================
+  // COLUMNS
+  // ==========================================
+  let columnDefs = $derived.by((): ColDef<any>[] => {
+    return [
+      {
+        field: "gafete",
+        headerName: "Gafete",
+        width: 100,
+        sortable: true,
+        filter: true,
+      },
+      {
+        field: "nombre_completo",
+        headerName: "Persona",
+        flex: 1,
+        sortable: true,
+        filter: true,
+      },
+      {
+        field: "tipo_ingreso",
+        headerName: "Tipo",
+        width: 120,
+        sortable: true,
+        filter: true,
+      },
+      {
+        field: "empresa",
+        headerName: "Empresa",
+        flex: 1,
+        sortable: true,
+        filter: true,
+      },
+      {
+        field: "fecha_ingreso",
+        headerName: "Hora Ingreso",
+        width: 150,
+        sortable: true,
+        valueFormatter: (params) => {
+          if (!params.value) return "";
+          return new Date(params.value).toLocaleTimeString("es-ES", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        },
+      },
+      {
+        field: "modo_ingreso",
+        headerName: "Modo",
+        width: 120,
+        sortable: true,
+        filter: true,
+      },
+    ];
   });
-  */
+
+  // ==========================================
+  // TOOLBAR BUTTONS
+  // ==========================================
+  const customButtons = $derived.by(() => {
+    const selected = selectedRows[0];
+
+    return {
+      default: [
+        createCustomButton.nuevo(() => handleNuevoIngreso()),
+        {
+          id: "refresh",
+          label: "Actualizar",
+          icon: RotateCw,
+          onClick: loadIngresos,
+          variant: "default" as const,
+          tooltip: "Recargar lista",
+        },
+      ],
+      singleSelect: [
+        {
+          id: "salida",
+          label: "Registrar Salida",
+          onClick: () => {
+            if (selected) handleSalida(selected);
+          },
+          variant: "destructive" as const,
+          tooltip: "Registrar salida",
+        },
+      ],
+      multiSelect: [],
+    };
+  });
+
+  // ==========================================
+  // HANDLERS
+  // ==========================================
+  async function loadIngresos() {
+    loading = true;
+    error = "";
+    try {
+      const data = await invoke("get_ingresos_abiertos");
+      ingresos = data as any[];
+    } catch (err: any) {
+      error = err.message || "Error al cargar ingresos";
+      toast.error(error);
+    } finally {
+      loading = false;
+    }
+  }
+
+  function handleNuevoIngreso() {
+    showModal = true;
+  }
+
+  function handleModalComplete() {
+    showModal = false;
+    loadIngresos();
+  }
+
+  async function handleSalida(ingreso: any) {
+    if (!confirm(`¿Registrar salida para ${ingreso.nombre_completo}?`)) return;
+
+    try {
+      const command =
+        ingreso.tipo_ingreso === "Contratista"
+          ? "register_exit_contratista"
+          : ingreso.tipo_ingreso === "Proveedor"
+            ? "registrar_salida_proveedor"
+            : "registrar_salida_visita";
+
+      await invoke(command, {
+        id: ingreso.id,
+        usuarioId: "SYSTEM",
+        devolvioGafete: true,
+        observaciones: null,
+      });
+
+      toast.success("Salida registrada exitosamente");
+      loadIngresos();
+    } catch (err: any) {
+      toast.error("Error al registrar salida: " + err.message);
+    }
+  }
+
+  // ==========================================
+  // LIFECYCLE
+  // ==========================================
+  onMount(() => {
+    loadIngresos();
+  });
 </script>
 
-<!--
-  Vista principal del módulo de Ingreso
-  Usa use:shortcutService.useScope para activar el contexto "ingreso-list"
--->
-<div class="h-full flex gap-0 overflow-hidden relative bg-[#0d1117]">
-  <!-- Panel Izquierdo: Formulario de Entrada (Colapsable) -->
-  {#if isFormOpen}
-    <div
-      class="h-full shrink-0"
-      transition:fly={{ x: -300, duration: 300, opacity: 0, easing: cubicOut }}
-    >
-      <div class="h-full overflow-y-auto">
-        {#if activeTab === "contratistas"}
-          <IngresoContratistaForm onSuccess={closeForm} onClose={closeForm} />
-        {:else if activeTab === "visitas"}
-          <IngresoVisitaForm
-            onSuccess={closeForm}
-            onClose={closeForm}
-            {editingCita}
-          />
-        {:else if activeTab === "proveedores"}
-          <IngresoProveedorForm
-            onSuccess={handleProveedorSuccess}
-            onClose={closeForm}
-          />
-        {:else}
-          <!-- Fallback por si acaso -->
-          <div class="bg-gray-800 p-4 rounded text-white">
-            Seleccione una pestaña válida
-          </div>
-        {/if}
+<div class="flex h-full flex-col relative bg-surface-1">
+  <!-- Header -->
+  <div class="border-b border-surface px-6 py-4 bg-surface-2">
+    <div class="flex items-center justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-semibold text-primary">Ingresos Activos</h2>
+        <p class="mt-1 text-sm text-secondary">
+          Personas actualmente en planta
+        </p>
+      </div>
+      <div class="flex-1 max-w-md">
+        <SearchBar placeholder="Buscar por nombre, gafete..." limit={10} />
       </div>
     </div>
-  {/if}
+  </div>
 
-  <!-- Panel Derecho: Contenido con Pestañas -->
-  <div class="flex-1 h-full min-w-0 flex flex-col transition-all duration-300">
-    <!-- Tabs Header -->
-    <div
-      class="bg-[#252526] border-b border-white/10 px-4 pt-2 flex gap-1 items-end"
-    >
-      <button
-        class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {activeTab ===
-        'contratistas'
-          ? 'border-blue-500 text-blue-500 bg-white/5'
-          : 'border-transparent text-gray-400 hover:text-gray-200'}"
-        on:click={() => setActiveTab("contratistas")}
-      >
-        Contratistas
-      </button>
-      <button
-        class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {activeTab ===
-        'visitas'
-          ? 'border-blue-500 text-blue-500 bg-white/5'
-          : 'border-transparent text-gray-400 hover:text-gray-200'}"
-        on:click={() => setActiveTab("visitas")}
-      >
-        Visitas
-      </button>
-      <button
-        class="px-4 py-2 text-sm font-medium border-b-2 transition-colors {activeTab ===
-        'proveedores'
-          ? 'border-blue-500 text-blue-500 bg-white/5'
-          : 'border-transparent text-gray-400 hover:text-gray-200'}"
-        on:click={() => setActiveTab("proveedores")}
-      >
-        Proveedores
-      </button>
-    </div>
-
-    <!-- Tab Content -->
-    <div class="flex-1 relative overflow-hidden">
-      {#if activeTab === "contratistas"}
-        <IngresosActivosTable
-          onRegisterClick={openForm}
-          onCloseForm={closeForm}
-          {isFormOpen}
-        />
-      {:else if activeTab === "visitas"}
-        <IngresoVisitasTable
-          onRegisterClick={openForm}
-          onEditClick={handleEditCita}
-          onCloseForm={closeForm}
-          {isFormOpen}
-        />
-      {:else if activeTab === "proveedores"}
-        <IngresoProveedoresTable
-          onRegisterClick={openForm}
-          onCloseForm={closeForm}
-          {isFormOpen}
-          {refreshTrigger}
-        />
-      {/if}
-    </div>
+  <!-- Content -->
+  <div class="flex-1 overflow-hidden relative bg-surface-1">
+    {#if error}
+      <div class="p-6">
+        <div
+          class="flex items-center gap-3 rounded-lg border border-error bg-error bg-opacity-10 p-4 text-error"
+          transition:fade
+        >
+          <AlertCircle size={20} />
+          <div>
+            <div class="font-medium">Error al cargar ingresos</div>
+            <div class="text-sm opacity-90">{error}</div>
+          </div>
+        </div>
+      </div>
+    {:else if loading}
+      <div class="flex h-full items-center justify-center">
+        <div class="text-center">
+          <svg
+            class="mx-auto h-8 w-8 animate-spin text-accent"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            />
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
+          <p class="mt-4 text-sm text-secondary">Cargando ingresos...</p>
+        </div>
+      </div>
+    {:else if ingresos.length === 0}
+      <div class="flex h-full items-center justify-center">
+        <div class="text-center">
+          <AlertCircle size={48} class="mx-auto text-secondary" />
+          <p class="mt-4 text-lg font-medium text-primary">
+            No hay ingresos activos
+          </p>
+          <p class="mt-2 text-sm text-secondary">
+            Registra un nuevo ingreso para comenzar
+          </p>
+          <button
+            onclick={handleNuevoIngreso}
+            class="mt-4 px-4 py-2 bg-accent text-white rounded-md hover:opacity-90 transition-opacity"
+          >
+            Nuevo Ingreso
+          </button>
+        </div>
+      </div>
+    {:else}
+      <AGGridWrapper
+        gridId="ingreso-list"
+        {columnDefs}
+        rowData={ingresos}
+        {customButtons}
+        getRowId={(params) => params.data.id}
+        persistenceKey="ingresos-activos-columns"
+        onSelectionChanged={(rows) => (selectedRows = rows)}
+      />
+    {/if}
   </div>
 </div>
+
+<!-- Modal -->
+<IngresoFormModal bind:show={showModal} on:complete={handleModalComplete} />

@@ -30,15 +30,18 @@ pub async fn registrar_ingreso(
 
     // 2. Validar disponibilidad de gafete (si aplica)
     if let Some(ref g) = input.gafete {
-        let disponible = gafete_service::is_gafete_disponible(pool, g, "proveedor")
-            .await
-            .map_err(|e| IngresoProveedorError::Validation(e.to_string()))?; // Mapping GafeteError to Validation? Or keep string?
-                                                                             // GafeteService returns Result<bool, GafeteError>. We map to String then Validation.
-        if !disponible {
-            return Err(IngresoProveedorError::Validation(format!(
-                "El gafete {} no está disponible",
-                g
-            )));
+        // Skip check if it's "S/G" (Sin Gafete)
+        if g != "S/G" {
+            let disponible = gafete_service::is_gafete_disponible(pool, g, "proveedor")
+                .await
+                .map_err(|e| IngresoProveedorError::Validation(e.to_string()))?; // Mapping GafeteError to Validation? Or keep string?
+                                                                                 // GafeteService returns Result<bool, GafeteError>. We map to String then Validation.
+            if !disponible {
+                return Err(IngresoProveedorError::Validation(format!(
+                    "El gafete {} no está disponible",
+                    g
+                )));
+            }
         }
     }
 

@@ -92,6 +92,20 @@
     loadingEmpresas = false;
   }
 
+  // Helper: Convertir YYYY-MM-DD → DD-MM-YYYY
+  function formatDateForDisplay(isoDate: string): string {
+    if (!isoDate) return "";
+    const [year, month, day] = isoDate.split("T")[0].split("-");
+    return `${day}-${month}-${year}`;
+  }
+
+  // Helper: Convertir DD-MM-YYYY → YYYY-MM-DD
+  function formatDateForBackend(displayDate: string): string {
+    if (!displayDate || displayDate.length !== 10) return "";
+    const [day, month, year] = displayDate.split("-");
+    return `${year}-${month}-${day}`;
+  }
+
   // Cargar datos del contratista cuando se abre en modo edición
   $effect(() => {
     if (show && contratista) {
@@ -102,8 +116,9 @@
         apellido: contratista.apellido || "",
         segundoApellido: "",
         empresaId: contratista.empresaId || "",
-        fechaVencimientoPraind:
-          contratista.fechaVencimientoPraind?.split("T")[0] || "",
+        fechaVencimientoPraind: formatDateForDisplay(
+          contratista.fechaVencimientoPraind || "",
+        ),
         tieneVehiculo: !!(
           contratista.vehiculoTipo || contratista.vehiculoPlaca
         ),
@@ -145,7 +160,9 @@
       nombre: formData.nombre,
       apellido: formData.apellido,
       empresaId: formData.empresaId,
-      fechaVencimientoPraind: formData.fechaVencimientoPraind,
+      fechaVencimientoPraind: formatDateForBackend(
+        formData.fechaVencimientoPraind,
+      ),
       tieneVehiculo: formData.tieneVehiculo,
       tipoVehiculo: formData.tipoVehiculo || undefined,
       placa: formData.placa,
@@ -320,10 +337,30 @@
             >
             <input
               id="fechaPraind"
-              type="date"
+              type="text"
               bind:value={formData.fechaVencimientoPraind}
+              placeholder="DD-MM-YYYY"
+              maxlength="10"
               disabled={loading}
               class={inputClass}
+              oninput={(e) => {
+                const input = e.target as HTMLInputElement;
+                let value = input.value.replace(/[^\d-]/g, ""); // Solo números y guiones
+
+                // Auto-formatear como DD-MM-YYYY
+                if (value.length >= 3 && value[2] !== "-") {
+                  value = value.slice(0, 2) + "-" + value.slice(2);
+                }
+                if (value.length >= 6 && value[5] !== "-") {
+                  value = value.slice(0, 5) + "-" + value.slice(5);
+                }
+
+                // Limitar a 10 caracteres
+                value = value.slice(0, 10);
+
+                formData.fechaVencimientoPraind = value;
+                input.value = value;
+              }}
             />
           </div>
 

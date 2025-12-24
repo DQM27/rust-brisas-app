@@ -25,8 +25,8 @@ import ReportesListView from '$lib/components/settings/ReportesListView.svelte';
 import AboutPanel from '$lib/components/settings/AboutPanel.svelte';
 
 
+
 import GafeteListView from '$lib/components/gafete/GafeteListView.svelte';
-import IngresoListView from '$lib/components/ingreso/IngresoListView.svelte';
 import IngresoModule from '$lib/components/ingreso/IngresoModule.svelte';
 import VisitaListView from '$lib/components/visita/VisitaListView.svelte';
 
