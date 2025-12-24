@@ -30,6 +30,7 @@ export type GridId =
   | 'entries-list'
   | 'companies-list'
   | 'users-list'
+  | 'visitas-list' // Added
   | 'visitas-activas-grid'
   | 'proveedores-activos-grid'
   | 'proveedores-grid';

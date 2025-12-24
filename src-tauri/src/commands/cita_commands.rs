@@ -65,3 +65,9 @@ pub async fn update_cita(
     let service = CitaService::new(pool.inner().clone());
     service.update_cita(id, fecha_cita, anfitrion, area_visitada, motivo).await
 }
+
+#[command]
+pub async fn cancelar_cita(pool: State<'_, SqlitePool>, id: String) -> Result<(), CitaError> {
+    let service = CitaService::new(pool.inner().clone());
+    service.cancelar_cita(id).await
+}

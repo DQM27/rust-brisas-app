@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { citaService } from "$lib/services/citaService";
+  import { visitaService } from "$lib/logic/visita/visitaService";
   import { currentUser } from "$lib/stores/auth";
   import { toast } from "svelte-5-french-toast";
   import { X, Calendar, Clock } from "lucide-svelte";
@@ -66,7 +66,7 @@
 
       if (isEditing && editingCita) {
         // Actualizar cita existente
-        await citaService.actualizarCita(editingCita.id, {
+        await visitaService.actualizarCita(editingCita.id, {
           fecha_cita: fechaCita,
           anfitrion,
           area_visitada: areaVisitada,
@@ -92,7 +92,7 @@
           registrado_por: $currentUser.id,
         };
 
-        await citaService.createCita(cita, visitante);
+        await visitaService.createCita(cita, visitante);
         toast.success("Visita pre-registrada correctamente");
       }
 

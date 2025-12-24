@@ -6,7 +6,7 @@
   import type { CustomToolbarButton } from "$lib/types/agGrid";
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
   import { ingresoVisitaService } from "$lib/services/ingresoVisitaService";
-  import { citaService } from "$lib/services/citaService";
+  import { visitaService } from "$lib/logic/visita/visitaService";
   import type { IngresoVisita } from "$lib/types/ingreso-nuevos";
   import type { CitaPopulated } from "$lib/types/cita";
   import SalidaModal from "../common/SalidaModal.svelte";
@@ -58,7 +58,7 @@
     loading = true;
     try {
       if (activeView === "pendientes") {
-        citasPendientes = await citaService.getCitasPendientes();
+        citasPendientes = await visitaService.getCitasPendientes();
       } else if (activeView === "activas") {
         ingresosActivos = await ingresoVisitaService.getActivos();
       } else {
@@ -298,7 +298,7 @@
   async function handleProcesarIngreso(event: CustomEvent<{ gafete: string }>) {
     if (!selectedCitaParaProcesar || !$currentUser) return;
     try {
-      await citaService.procesarIngresoCita(
+      await visitaService.procesarIngresoCita(
         selectedCitaParaProcesar.id,
         event.detail.gafete,
         $currentUser.id,

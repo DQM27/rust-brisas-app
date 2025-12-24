@@ -271,7 +271,7 @@
         <!-- Búsqueda de persona (solo en creación) -->
         {#if !isEditMode}
           <div class="space-y-2">
-            <label class={labelClass}>Buscar persona</label>
+            <label for="search" class={labelClass}>Buscar persona</label>
 
             {#if selectedPersona}
               <!-- Persona seleccionada -->
@@ -304,6 +304,7 @@
               <!-- Campo de búsqueda -->
               <div class="relative">
                 <input
+                  id="search"
                   type="text"
                   bind:value={searchQuery}
                   oninput={() => handleSearch()}
@@ -321,7 +322,7 @@
                 </div>
               </div>
 
-              <!-- Resultados de búsqueda -->
+              <!-- Resultados de búsqueda (Resto igual) -->
               {#if showResults && searchResults.length > 0}
                 <div
                   class="absolute z-30 w-full max-h-60 overflow-auto rounded-lg bg-[#161b22] border border-gray-700 shadow-xl"
@@ -466,7 +467,7 @@
 
         <!-- Nivel de Severidad -->
         <div>
-          <label class={labelClass}>Nivel de Severidad *</label>
+          <span class={labelClass}>Nivel de Severidad *</span>
           <div class="grid grid-cols-3 gap-3">
             {#each ["ALTO", "MEDIO", "BAJO"] as const as nivel}
               <button

@@ -127,4 +127,13 @@ impl CitaService {
 
         Ok(ingreso.id)
     }
+
+    pub async fn cancelar_cita(&self, id: String) -> Result<(), CitaError> {
+        let _cita = cita_queries::find_by_id(&self.pool, &id)
+            .await
+            .map_err(CitaError::Database)?
+            .ok_or(CitaError::NotFound)?;
+
+        cita_queries::marcar_cita_cancelada(&self.pool, &id).await.map_err(CitaError::Database)
+    }
 }

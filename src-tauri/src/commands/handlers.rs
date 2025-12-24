@@ -71,6 +71,7 @@ macro_rules! register_handlers {
             commands::cita_commands::update_cita,
             commands::cita_commands::procesar_ingreso_cita,
             commands::cita_commands::get_visitante_by_cedula,
+            commands::cita_commands::cancelar_cita,
             // ==========================================
             // COMANDOS DE INGRESO VISITAS
             // ==========================================

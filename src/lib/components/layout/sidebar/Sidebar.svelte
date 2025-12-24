@@ -26,7 +26,6 @@
   import AccessPanel from "./panels/AccessPanel.svelte";
   import LogsPanel from "./panels/LogsPanel.svelte";
   import SettingsPanel from "./panels/SettingsPanel.svelte";
-  import ProveedoresPanel from "./panels/ProveedoresPanel.svelte";
 
   // Store y tipos
   import { activePanel } from "$lib/stores/sidebar";
@@ -71,7 +70,14 @@
       id: "proveedores",
       icon: Package,
       label: "Proveedores",
-      panelComponent: ProveedoresPanel,
+      action: () => {
+        openTab({
+          componentKey: "proveedor-list",
+          title: "Lista de Proveedores",
+          id: "proveedores-list",
+          focusOnOpen: true,
+        });
+      },
     },
     {
       id: "blacklist",

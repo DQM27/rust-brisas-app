@@ -2,7 +2,7 @@
   import { createEventDispatcher } from "svelte";
   import type { CitaPopulated } from "$lib/types/cita";
   import { X, Calendar, Clock, Save } from "lucide-svelte";
-  import { citaService } from "$lib/services/citaService";
+  import { visitaService } from "$lib/logic/visita/visitaService";
   import { toast } from "svelte-5-french-toast";
 
   export let cita: CitaPopulated;
@@ -27,14 +27,14 @@
     loading = true;
     try {
       const fechaCompleta = `${fechaCita}T${horaCita}:00`;
-      
-      await citaService.actualizarCita(cita.id, {
+
+      await visitaService.actualizarCita(cita.id, {
         fecha_cita: fechaCompleta,
         anfitrion,
         area_visitada: areaVisitada,
         motivo,
       });
-      
+
       toast.success("Cita actualizada correctamente");
       onSave();
       onClose();
@@ -47,10 +47,16 @@
 </script>
 
 <!-- Modal backdrop -->
-<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-  <div class="bg-[#161b22] border border-[#30363d] rounded-lg shadow-xl w-full max-w-md mx-4">
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+>
+  <div
+    class="bg-[#161b22] border border-[#30363d] rounded-lg shadow-xl w-full max-w-md mx-4"
+  >
     <!-- Header -->
-    <div class="flex items-center justify-between px-5 py-4 border-b border-[#30363d]">
+    <div
+      class="flex items-center justify-between px-5 py-4 border-b border-[#30363d]"
+    >
       <h3 class="text-lg font-semibold text-[#f0f6fc]">Editar Cita</h3>
       <button
         onclick={onClose}
@@ -61,18 +67,29 @@
     </div>
 
     <!-- Content -->
-    <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="p-5 space-y-4">
+    <form
+      onsubmit={(e) => {
+        e.preventDefault();
+        handleSubmit();
+      }}
+      class="p-5 space-y-4"
+    >
       <!-- Info del visitante (solo lectura) -->
       <div class="bg-[#0d1117] rounded-lg p-3 space-y-1">
         <p class="text-[#8d96a0] text-xs">Visitante</p>
-        <p class="text-[#f0f6fc] font-medium">{cita.visitante_nombre_completo}</p>
+        <p class="text-[#f0f6fc] font-medium">
+          {cita.visitante_nombre_completo}
+        </p>
         <p class="text-[#8d96a0] text-xs font-mono">{cita.visitante_cedula}</p>
       </div>
 
       <!-- Fecha | Hora -->
       <div class="grid grid-cols-2 gap-3">
         <div class="space-y-1">
-          <label for="edit-fecha" class="text-xs font-medium text-[#c9d1d9] flex items-center gap-1">
+          <label
+            for="edit-fecha"
+            class="text-xs font-medium text-[#c9d1d9] flex items-center gap-1"
+          >
             <Calendar size={12} /> Fecha
           </label>
           <input
@@ -83,7 +100,10 @@
           />
         </div>
         <div class="space-y-1">
-          <label for="edit-hora" class="text-xs font-medium text-[#c9d1d9] flex items-center gap-1">
+          <label
+            for="edit-hora"
+            class="text-xs font-medium text-[#c9d1d9] flex items-center gap-1"
+          >
             <Clock size={12} /> Hora
           </label>
           <input
@@ -98,7 +118,9 @@
       <!-- Anfitrión | Área -->
       <div class="grid grid-cols-2 gap-3">
         <div class="space-y-1">
-          <label for="edit-anfitrion" class="text-xs font-medium text-[#c9d1d9]">Anfitrión *</label>
+          <label for="edit-anfitrion" class="text-xs font-medium text-[#c9d1d9]"
+            >Anfitrión *</label
+          >
           <input
             id="edit-anfitrion"
             type="text"
@@ -108,7 +130,9 @@
           />
         </div>
         <div class="space-y-1">
-          <label for="edit-area" class="text-xs font-medium text-[#c9d1d9]">Área *</label>
+          <label for="edit-area" class="text-xs font-medium text-[#c9d1d9]"
+            >Área *</label
+          >
           <input
             id="edit-area"
             type="text"
@@ -121,7 +145,9 @@
 
       <!-- Motivo -->
       <div class="space-y-1">
-        <label for="edit-motivo" class="text-xs font-medium text-[#8d96a0]">Motivo</label>
+        <label for="edit-motivo" class="text-xs font-medium text-[#8d96a0]"
+          >Motivo</label
+        >
         <input
           id="edit-motivo"
           type="text"

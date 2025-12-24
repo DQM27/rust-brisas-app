@@ -227,3 +227,17 @@ pub async fn update_cita(
 
     Ok(())
 }
+
+pub async fn marcar_cita_cancelada(pool: &SqlitePool, cita_id: &str) -> Result<(), sqlx::Error> {
+    let now = Utc::now().to_rfc3339();
+    sqlx::query!(
+        r#"
+        UPDATE citas SET estado = 'CANCELADA', updated_at = ? WHERE id = ?
+        "#,
+        now,
+        cita_id
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}

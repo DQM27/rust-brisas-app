@@ -442,6 +442,23 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     showThemeSelector: true,
     enableGrouping: false
   },
+  'visitas-list': {
+    gridId: 'visitas-list',
+    availableButtons: {
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b => b.id === 'toggle-filters')
+      ],
+      singleSelect: [
+        ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
+      ],
+      multiSelect: [
+        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))
+      ]
+    },
+    showColumnSelector: true,
+    showThemeSelector: true,
+    enableGrouping: false
+  },
   'visitas-activas-grid': {
     gridId: 'visitas-activas-grid',
     availableButtons: {
