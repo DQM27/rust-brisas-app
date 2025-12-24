@@ -145,20 +145,9 @@
     }
   }
 
-  // Drag manual para el modo launcher
-  async function handleHeaderDrag(e: MouseEvent) {
-    if (
-      e.target instanceof Element &&
-      (e.target.tagName === "BUTTON" || e.target.closest("button"))
-    ) {
-      return;
-    }
-    try {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      await getCurrentWindow().startDragging();
-    } catch (err) {
-      console.error("Error arrastrando ventana:", err);
-    }
+  async function minimizeWindow() {
+    const { getCurrentWindow } = await import("@tauri-apps/api/window");
+    await getCurrentWindow().minimize();
   }
 </script>
 
@@ -192,11 +181,9 @@
       >
         <X class="w-5 h-5" />
       </button>
-      <!-- Header -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <!-- Header (Sin drag para efecto 'bloqueado') -->
       <div
-        class="bg-gray-50 dark:bg-[#161b22] px-6 py-4 border-b border-gray-200 dark:border-gray-700 cursor-move"
-        onmousedown={handleHeaderDrag}
+        class="bg-gray-50 dark:bg-[#161b22] px-6 py-4 border-b border-gray-200 dark:border-gray-700"
       >
         <div class="flex items-center gap-3">
           <div class="p-2 bg-[#2da44e]/10 rounded-lg">

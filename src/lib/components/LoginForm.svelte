@@ -3,6 +3,7 @@
   import { LoginSchema } from "$lib/schemas/userSchema";
   import type { ZodIssue } from "zod";
   import { X, Minus, Lock } from "lucide-svelte";
+  import { exitApp } from "$lib/services/keyringService";
 
   interface Props {
     loading?: boolean;
@@ -87,27 +88,6 @@
     errors = {};
   }
 
-  // Drag manual para el modo launcher
-  async function handleHeaderDrag(e: MouseEvent) {
-    if (
-      e.target instanceof Element &&
-      (e.target.tagName === "BUTTON" || e.target.closest("button"))
-    ) {
-      return;
-    }
-    try {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      await getCurrentWindow().startDragging();
-    } catch (err) {
-      console.error("Error arrastrando ventana:", err);
-    }
-  }
-
-  async function exitApp() {
-    const { exit } = await import("@tauri-apps/api/process");
-    await exit(0);
-  }
-
   async function minimizeWindow() {
     const { getCurrentWindow } = await import("@tauri-apps/api/window");
     await getCurrentWindow().minimize();
@@ -117,11 +97,9 @@
 <div
   class="w-full h-full bg-white dark:bg-[#0d1117] flex flex-col overflow-hidden relative shadow-2xl"
 >
-  <!-- Launcher Header -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <!-- Launcher Header (Sin drag para efecto 'bloqueado') -->
   <div
-    class="bg-gray-50 dark:bg-[#161b22] px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between cursor-move"
-    onmousedown={handleHeaderDrag}
+    class="bg-gray-50 dark:bg-[#161b22] px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
   >
     <div class="flex items-center gap-2">
       <div class="p-1 bg-[#2da44e]/10 rounded border border-[#2da44e]/20">
@@ -210,40 +188,49 @@
           {/if}
         </div>
 
-        <!-- Submit -->
-        <button
-          type="submit"
-          disabled={loading}
-          class="mt-2 w-full rounded bg-accent px-4 py-2.5 font-medium text-white transition-all hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/20 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
-        >
-          {#if loading}
-            <span class="flex items-center justify-center gap-2">
-              <svg
-                class="h-4 w-4 animate-spin text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              Procesando...
-            </span>
-          {:else}
-            Ingresar
-          {/if}
-        </button>
+        <!-- Acciones -->
+        <div class="flex gap-3">
+          <button
+            type="button"
+            onclick={exitApp}
+            class="flex-1 py-1.5 px-4 rounded border border-surface-tertiary text-secondary font-medium hover:bg-surface-3 transition-colors text-sm"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            class="flex-[2] rounded bg-accent px-4 py-2.5 font-medium text-white transition-all hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/20 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+          >
+            {#if loading}
+              <span class="flex items-center justify-center gap-2">
+                <svg
+                  class="h-4 w-4 animate-spin text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                ...
+              </span>
+            {:else}
+              Ingresar
+            {/if}
+          </button>
+        </div>
 
         <!-- Link de Demo (solo visible si está habilitado) -->
         {#if showDemoLink}
