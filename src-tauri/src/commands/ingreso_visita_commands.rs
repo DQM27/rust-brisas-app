@@ -20,6 +20,14 @@ pub async fn crear_ingreso_visita_v2(
 }
 
 #[command]
+pub async fn validar_ingreso_visita(
+    pool: State<'_, SqlitePool>,
+    visitante_id: String,
+) -> Result<crate::domain::ingreso_visita::ValidacionIngresoVisitaResponse, IngresoVisitaError> {
+    ingreso_visita_service::validar_ingreso(&pool, &visitante_id).await
+}
+
+#[command]
 pub async fn get_ingresos_visitas_activos(
     pool: State<'_, SqlitePool>,
 ) -> Result<Vec<IngresoVisitaPopulated>, IngresoVisitaError> {

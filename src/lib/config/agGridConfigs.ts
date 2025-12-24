@@ -515,6 +515,45 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     showColumnSelector: true,
     showThemeSelector: true,
     enableGrouping: false
+  },
+  'contratista-ingreso-list': {
+    gridId: 'contratista-ingreso-list',
+    availableButtons: {
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
+      ],
+      singleSelect: [],
+      multiSelect: []
+    },
+    showColumnSelector: true,
+    showThemeSelector: false,
+    enableGrouping: false
+  },
+  'visita-ingreso-list': {
+    gridId: 'visita-ingreso-list',
+    availableButtons: {
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
+      ],
+      singleSelect: [],
+      multiSelect: []
+    },
+    showColumnSelector: true,
+    showThemeSelector: false,
+    enableGrouping: false
+  },
+  'proveedor-ingreso-list': {
+    gridId: 'proveedor-ingreso-list',
+    availableButtons: {
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
+      ],
+      singleSelect: [],
+      multiSelect: []
+    },
+    showColumnSelector: true,
+    showThemeSelector: false,
+    enableGrouping: false
   }
 };
 

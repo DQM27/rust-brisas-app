@@ -1,515 +1,401 @@
-// ============================================
-// src/lib/logic/ingreso/ingresoService.ts
-// ============================================
-
-import { ingreso } from '$lib/api/ingreso';
+import { invoke } from '@tauri-apps/api/core';
 import type {
-    IngresoResponse,
-    IngresoConEstadoResponse,
-    IngresoListResponse,
-    ValidacionIngresoResponse,
-    CreateIngresoContratistaInput,
-    RegistrarSalidaInput,
-    ResolverAlertaInput,
-    AlertaGafeteResponse
-} from '$lib/types/ingreso';
-import type {
-    AutoSelectionResult,
-    GafeteValidationResult,
-    PrepararFormularioOutput,
-    ValidarGafeteInput,
-    ValidarModoVehiculoInput,
-    ValidarFormularioCompletoInput
-} from '$lib/types/ingreso-form.types';
-import {
-    GafeteValidationSchema,
-    ModoVehiculoSchema,
-    IngresoFormValidationSchema
-} from '$lib/types/ingreso-form.types';
-import { ZodError } from 'zod';
+    TipoIngreso,
+    ValidacionIngresoResult,
+    FinalizarIngresoForm
+} from './types';
 
-// ============================================
+// ==========================================
 // TYPES FOR RESULTS
-// ============================================
+// ==========================================
 
 export type ServiceResult<T> =
     | { ok: true; data: T }
     | { ok: false; error: string };
 
-// ============================================
-// ERROR PARSING
-// ============================================
+// ==========================================
+// VALIDACIÓN
+// ==========================================
 
-function parseError(err: any): string {
-    if (!err) return 'Ocurrió un error desconocido.';
+export async function validarIngreso(tipo: TipoIngreso, id: string): Promise<ValidacionIngresoResult> {
+    console.log(`[IngresoService] Validando ingreso ${tipo} para ID: ${id}`);
 
-    // Manejo de errores de Zod
-    if (err instanceof ZodError) {
-        return err.issues.map((e: any) => e.message).join(', ');
-    }
-
-    if (typeof err === 'string') {
-        if (/bloqueado/i.test(err)) {
-            return 'La persona se encuentra bloqueada y no puede ingresar.';
-        }
-        if (/no encontrado/i.test(err)) {
-            return 'Registro no encontrado.';
-        }
-        if (/gafete/i.test(err) && /uso/i.test(err)) {
-            return 'El gafete seleccionado ya está en uso.';
-        }
-        return err;
-    }
-
-    if (typeof err === 'object' && err.message) {
-        return parseError(err.message);
-    }
-
-    return 'Ocurrió un error inesperado al procesar la solicitud.';
-}
-
-// ============================================
-// VALIDACIONES DE NEGOCIO - LÓGICA PURA
-// ============================================
-
-/**
- * Calcular auto-selección inteligente basada en vehículos del contratista
- * 
- * Reglas de negocio:
- * - Sin vehículos → modo caminando
- * - 1 vehículo → modo vehículo con el único vehículo pre-seleccionado
- * - Múltiples vehículos → modo caminando, usuario debe elegir
- * 
- * @param contratistaData - Datos del contratista con vehículos
- * @returns Resultado de auto-selección con modo y vehículo sugeridos
- */
-export function calcularAutoSeleccion(contratistaData: any): AutoSelectionResult {
-    const vehiculos = contratistaData?.vehiculos || [];
-
-    if (vehiculos.length === 0) {
-        return {
-            suggestedMode: 'caminando',
-            suggestedVehicleId: null,
-            reason: 'no_vehicles'
-        };
-    }
-
-    if (vehiculos.length === 1) {
-        return {
-            suggestedMode: 'vehiculo',
-            suggestedVehicleId: vehiculos[0].id,
-            reason: 'single_vehicle'
-        };
-    }
-
-    // Múltiples vehículos: dejar que el usuario elija
-    return {
-        suggestedMode: 'caminando',
-        suggestedVehicleId: null,
-        reason: 'multiple_vehicles'
-    };
-}
-
-/**
- * Validar gafete contra lista de disponibles
- * 
- * Validaciones:
- * - Si está vacío, es válido (opcional)
- * - Si tiene valor, debe existir en la lista y estar disponible
- * - Genera sugerencias si no es válido
- * 
- * @param input - Número de gafete y lista de disponibles
- * @returns Resultado con validez y sugerencias
- */
-export function validarGafete(input: ValidarGafeteInput): ServiceResult<GafeteValidationResult> {
     try {
-        const normalizado = input.gafeteNumero.trim().toUpperCase();
+        let response: any;
 
-        // Si está vacío, es válido (gafete es opcional)
-        if (!normalizado) {
-            return {
-                ok: true,
-                data: { isValid: true, suggestions: [] }
-            };
+        if (tipo === 'contratista') {
+            response = await invoke('validate_ingreso_contratista', { contratistaId: id });
+            return mapContratistaResponse(response);
+        } else if (tipo === 'proveedor') {
+            response = await invoke('validar_ingreso_proveedor', { proveedorId: id });
+            return mapProveedorResponse(response);
+        } else if (tipo === 'visita') {
+            response = await invoke('validar_ingreso_visita', { visitanteId: id });
+            return mapVisitaResponse(response);
+        } else {
+            throw new Error(`Tipo de ingreso no soportado: ${tipo}`);
         }
-
-        // Validación con Zod
-        const validation = GafeteValidationSchema.safeParse({
-            numero: normalizado,
-            gafetesDisponibles: input.gafetesDisponibles
-        });
-
-        if (validation.success) {
-            return {
-                ok: true,
-                data: { isValid: true, suggestions: [] }
-            };
-        }
-
-        // Generar sugerencias si no es válido
-        const suggestions = input.gafetesDisponibles
-            .filter(g => g.numero.includes(normalizado) && g.estaDisponible)
-            .map(g => g.numero)
-            .slice(0, 5);
-
-        return {
-            ok: true,
-            data: {
-                isValid: false,
-                suggestions
-            }
-        };
-
-    } catch (err) {
-        return {
-            ok: false,
-            error: parseError(err)
-        };
+    } catch (error) {
+        console.error(`[IngresoService] Error validando ingreso:`, error);
+        throw error;
     }
 }
 
+// ==========================================
+// VALIDACIÓN PREVIA (FORMULARIO)
+// ==========================================
+
 /**
- * Validar modo de ingreso con vehículo
- * 
- * Validaciones:
- * - Si modo es "vehículo", debe tener vehiculoId
- * - Si modo es "vehículo", el contratista debe tener vehículos
- * 
- * @param input - Modo, vehículo seleccionado y disponibilidad
- * @returns Resultado de validación
+ * Valida y prepara los datos iniciales para el formulario de ingreso
  */
-export function validarModoVehiculo(input: ValidarModoVehiculoInput): ServiceResult<boolean> {
-    try {
-        ModoVehiculoSchema.parse({
-            modoIngreso: input.modoIngreso,
-            vehiculoId: input.vehiculoId,
-            tieneVehiculos: input.tieneVehiculos
-        });
-
-        return { ok: true, data: true };
-
-    } catch (err) {
-        if (err instanceof ZodError) {
-            return {
-                ok: false,
-                error: err.issues[0].message
-            };
-        }
-        return {
-            ok: false,
-            error: 'Error al validar modo de ingreso'
-        };
+export async function prepararFormularioIngreso(contratistaId: string): Promise<ServiceResult<{
+    validacion: ValidacionIngresoResult;
+    autoSeleccion: {
+        suggestedMode: 'caminando' | 'vehiculo';
+        suggestedVehicleId: string | null;
     }
-}
-
-/**
- * Validar formulario completo antes de submit
- * 
- * Última validación antes de enviar al backend
- * Verifica que todos los campos requeridos estén correctos
- * 
- * @param input - Datos completos del formulario
- * @returns Resultado de validación
- */
-export function validarFormularioCompleto(input: ValidarFormularioCompletoInput): ServiceResult<boolean> {
+}>> {
     try {
-        IngresoFormValidationSchema.parse({
-            contratistaValidated: input.contratistaValidated,
-            canEnter: input.canEnter,
-            contratistaId: input.contratistaId,
-            modoIngreso: input.modoIngreso,
-            vehiculoId: input.vehiculoId,
-            gafeteNumero: input.gafeteNumero,
-            tipoAutorizacion: input.tipoAutorizacion
-        });
+        const validacion = await validarIngreso('contratista', contratistaId);
 
-        return { ok: true, data: true };
+        // Lógica de auto-selección simple
+        let suggestedMode: 'caminando' | 'vehiculo' = 'caminando';
+        let suggestedVehicleId: string | null = null;
 
-    } catch (err) {
-        if (err instanceof ZodError) {
-            return {
-                ok: false,
-                error: err.issues.map(i => i.message).join(', ')
-            };
-        }
-        return {
-            ok: false,
-            error: 'Error al validar formulario'
-        };
-    }
-}
-
-// ============================================
-// ORQUESTADORES - FLUJOS COMPLETOS
-// ============================================
-
-/**
- * Preparar formulario de ingreso
- * 
- * Orquestador principal que:
- * 1. Valida si el contratista puede ingresar
- * 2. Calcula auto-selección de vehículo
- * 3. Retorna todo preparado para el formulario
- * 
- * @param contratistaId - ID del contratista a validar
- * @returns Validación completa y auto-selección
- */
-export async function prepararFormularioIngreso(
-    contratistaId: string
-): Promise<ServiceResult<PrepararFormularioOutput>> {
-    try {
-        // 1. Validar si puede ingresar
-        const validacionResult = await validarIngreso(contratistaId);
-
-        if (!validacionResult.ok) {
-            return validacionResult as ServiceResult<PrepararFormularioOutput>;
+        if (validacion.persona?.vehiculos && validacion.persona.vehiculos.length > 0) {
+            suggestedMode = 'vehiculo';
+            suggestedVehicleId = validacion.persona.vehiculos[0].id;
         }
 
-        const validacion = validacionResult.data;
-
-        // 2. Verificar que puede ingresar
-        // 2. Check removed to allow UI handling of rejection reason
-        // The controller will handle !puedeIngresar and show the message in the UI
-
-
-        // 3. Calcular auto-selección basada en vehículos
-        const autoSeleccion = calcularAutoSeleccion(validacion.contratista);
-
-        // 4. Retornar todo preparado
         return {
             ok: true,
             data: {
                 validacion,
-                autoSeleccion
+                autoSeleccion: {
+                    suggestedMode,
+                    suggestedVehicleId
+                }
             }
         };
-
-    } catch (err) {
-        return {
-            ok: false,
-            error: parseError(err)
-        };
-    }
-}
-
-// ============================================
-// PUBLIC API - INGRESO OPERATIONS
-// ============================================
-
-/**
- * Validar si un contratista puede ingresar
- */
-export async function validarIngreso(contratistaId: string): Promise<ServiceResult<ValidacionIngresoResponse>> {
-    try {
-        const data = await ingreso.validarIngresoContratista(contratistaId);
-        return { ok: true, data };
-    } catch (err: any) {
-        console.error('Error al validar ingreso:', err);
-        return { ok: false, error: parseError(err) };
+    } catch (e: any) {
+        return { ok: false, error: e.message || 'Error al validar contratista' };
     }
 }
 
 /**
- * Registrar entrada de contratista
+ * Valida todo el estado del formulario antes de enviar
  */
-export async function registrarEntrada(input: CreateIngresoContratistaInput): Promise<ServiceResult<IngresoResponse>> {
-    try {
-        const data = await ingreso.crearIngresoContratista(input);
-        return { ok: true, data };
-    } catch (err: any) {
-        console.error('Error al registrar entrada:', err);
-        return { ok: false, error: parseError(err) };
+export function validarFormularioCompleto(params: {
+    contratistaValidated: boolean;
+    canEnter: boolean;
+    contratistaId: string | null;
+    modoIngreso: string;
+    vehiculoId?: string | null;
+    gafeteNumero: string;
+    tipoAutorizacion: 'praind' | 'correo';
+}): ServiceResult<null> {
+    if (!params.contratistaId) {
+        return { ok: false, error: 'No se ha seleccionado un contratista.' };
     }
-}
-
-// ============================================
-// PUBLIC API - SALIDA OPERATIONS
-// ============================================
-
-/**
- * Validar si puede salir (reglas de negocio)
- */
-export async function validarSalida(id: string): Promise<ServiceResult<{ puedeSalir: boolean, mensaje?: string }>> {
-    try {
-        const data = await ingreso.validarPuedeSalir(id);
-        return { ok: true, data };
-    } catch (err: any) {
-        console.error('Error al validar salida:', err);
-        return { ok: false, error: parseError(err) };
+    if (!params.contratistaValidated) {
+        return { ok: false, error: 'El contratista no ha sido validado correctamente.' };
     }
+    if (!params.canEnter) {
+        return { ok: false, error: 'El contratista no está autorizado para ingresar.' };
+    }
+    if (params.modoIngreso === 'vehiculo' && !params.vehiculoId) {
+        return { ok: false, error: 'Debe seleccionar un vehículo para el ingreso en este modo.' };
+    }
+    return { ok: true, data: null };
 }
 
 /**
- * Registrar salida
+ * Valida si el gafete es válido y está disponible
  */
-export async function registrarSalida(input: RegistrarSalidaInput): Promise<ServiceResult<IngresoResponse>> {
-    try {
-        const data = await ingreso.registrarSalida(input);
-        return { ok: true, data };
-    } catch (err: any) {
-        console.error('Error al registrar salida:', err);
-        return { ok: false, error: parseError(err) };
+export function validarGafete(params: {
+    gafeteNumero: string;
+    gafetesDisponibles: any[];
+}): ServiceResult<{ isValid: boolean; suggestions: string[] }> {
+    const numero = params.gafeteNumero.trim().toUpperCase();
+    if (!numero) {
+        return { ok: true, data: { isValid: false, suggestions: [] } };
     }
+
+    const gafete = params.gafetesDisponibles.find(g => g.numero === numero);
+    if (!gafete) {
+        return { ok: true, data: { isValid: false, suggestions: [] } };
+    }
+
+    return { ok: true, data: { isValid: true, suggestions: [] } };
 }
 
 /**
- * Registrar salida con verificación de gafete físico
+ * Valida coherencia del modo vehículo
  */
-export async function registrarSalidaConGafete(
-    ingresoId: string,
-    gafeteNumero: string,
-    usuarioSalidaId: string
-): Promise<ServiceResult<IngresoResponse>> {
-    try {
-        const data = await ingreso.registrarSalidaConGafete(ingresoId, gafeteNumero, usuarioSalidaId);
-        return { ok: true, data };
-    } catch (err: any) {
-        console.error('Error al registrar salida con gafete:', err);
-        return { ok: false, error: parseError(err) };
-    }
-}
-
-/**
- * Obtener salidas del día
- */
-export async function fetchSalidasDelDia(fecha?: string): Promise<ServiceResult<IngresoResponse[]>> {
-    try {
-        const data = await ingreso.getSalidasDelDia(fecha);
-        return { ok: true, data };
-    } catch (err: any) {
-        console.error('Error al obtener salidas del día:', err);
-        return { ok: false, error: parseError(err) };
-    }
-}
-
-/**
- * Obtener salidas en un rango de fechas
- * 
- * Usa el comando Tauri optimizado del backend que filtra con SQL
- * en lugar de iterar día por día
- * 
- * @param startDate - Fecha de inicio (YYYY-MM-DD)
- * @param endDate - Fecha de fin (YYYY-MM-DD)
- * @returns Lista de salidas en el rango
- */
-export async function fetchSalidasEnRango(
-    startDate: string,
-    endDate: string
-): Promise<ServiceResult<IngresoResponse[]>> {
-    try {
-        // Validar fechas básicas
-        if (startDate > endDate) {
-            return {
-                ok: false,
-                error: 'La fecha de inicio no puede ser mayor que la fecha de fin'
-            };
+export function validarModoVehiculo(params: {
+    modoIngreso: string;
+    vehiculoId?: string | null;
+    tieneVehiculos: boolean;
+}): ServiceResult<null> {
+    if (params.modoIngreso === 'vehiculo') {
+        if (!params.tieneVehiculos) {
+            return { ok: false, error: 'El contratista no tiene vehículos registrados.' };
         }
+        if (!params.vehiculoId) {
+            return { ok: false, error: 'Debe seleccionar un vehículo.' };
+        }
+    }
+    return { ok: true, data: null };
+}
 
-        // Llamar al backend con query SQL optimizada
-        const data = await ingreso.getSalidasEnRango(startDate, endDate);
+// ==========================================
+// REGISTRO Y OPERACIONES
+// ==========================================
 
-        return { ok: true, data };
+export async function registrarEntrada(input: any): Promise<ServiceResult<any>> {
+    try {
+        const formData: FinalizarIngresoForm = {
+            gafete: input.gafeteNumero || '',
+            vehiculoId: input.vehiculoId,
+            observaciones: input.observaciones,
+            esExcepcional: input.tipoAutorizacion === 'excepcional',
+        };
 
-    } catch (err: any) {
-        console.error('Error al obtener salidas en rango:', err);
-        return { ok: false, error: parseError(err) };
+        const res = await crearIngreso(
+            'contratista',
+            input.contratistaId,
+            formData
+        );
+
+        return { ok: true, data: res };
+    } catch (e: any) {
+        return { ok: false, error: e.message || 'Error al registrar entrada' };
     }
 }
 
-// ============================================
-// PUBLIC API - CONSULTAS
-// ============================================
+export async function fetchAbiertos(): Promise<ServiceResult<any[]>> {
+    try {
+        const data = await invoke('get_ingresos_activos');
+        return { ok: true, data: data as any[] };
+    } catch (e: any) {
+        return { ok: false, error: e.message || 'Error cargando ingresos activos' };
+    }
+}
+
+// ==========================================
+// CREACIÓN (FINALIZAR)
+// ==========================================
+
+export async function crearIngreso(
+    tipo: TipoIngreso,
+    candidateId: string,
+    formData: FinalizarIngresoForm,
+    extraData?: any
+): Promise<any> {
+    console.log(`[IngresoService] Creando ingreso ${tipo}`, { candidateId, formData, extraData });
+
+    try {
+        if (tipo === 'contratista') {
+            return await invoke('create_ingreso_contratista', {
+                input: {
+                    contratista_id: candidateId,
+                    gafete: formData.gafete,
+                    vehiculo_id: formData.vehiculoId || null,
+                    observaciones: formData.observaciones || null,
+                    autorizado_por: formData.esExcepcional ? formData.autorizadoPor : null,
+                    motivo: formData.esExcepcional ? formData.motivoExcepcional : null
+                }
+            });
+        } else if (tipo === 'proveedor') {
+            return await invoke('crear_ingreso_proveedor_v2', {
+                input: {
+                    proveedor_id: candidateId,
+                    gafete: formData.gafete,
+                    vehiculo_id: formData.vehiculoId || null,
+                    observaciones: formData.observaciones || null,
+                    autorizado_por: formData.esExcepcional ? formData.autorizadoPor : null,
+                    motivo: formData.esExcepcional ? formData.motivoExcepcional : null,
+                    guia_remision: extraData?.guiaRemision || null
+                }
+            });
+        } else if (tipo === 'visita') {
+            if (!extraData || !extraData.cedula) {
+                throw new Error("Faltan datos requeridos para ingreso de visita (cedula, nombre, etc.)");
+            }
+
+            return await invoke('crear_ingreso_visita_v2', {
+                input: {
+                    cedula: extraData.cedula,
+                    nombre: extraData.nombre,
+                    apellido: extraData.apellido,
+                    empresa: extraData.empresa,
+                    cita_id: extraData.citaId,
+                    anfitrion: extraData.anfitrion,
+                    area_visitada: extraData.areaVisitada,
+                    motivo: extraData.motivo || 'Visita',
+                    gafete: formData.gafete,
+                    observaciones: formData.observaciones || null,
+                    usuario_ingreso_id: 'SYSTEM',
+                }
+            });
+        }
+    } catch (error) {
+        console.error(`[IngresoService] Error creando ingreso:`, error);
+        throw error;
+    }
+}
+
+// ==========================================
+// SALIDA Y TIEMPO
+// ==========================================
 
 /**
- * Obtener ingresos abiertos CON alertas de tiempo
- * Usa el endpoint optimizado que calcula el estado de permanencia
+ * Registra la salida de una persona
  */
-export async function fetchAbiertos(): Promise<ServiceResult<IngresoConEstadoResponse[]>> {
+export async function registrarSalida(params: {
+    ingresoId: string;
+    devolvioGafete: boolean;
+    observacionesSalida: string;
+    usuarioSalidaId: string;
+}): Promise<ServiceResult<any>> {
     try {
-        const data = await ingreso.getIngresosAbiertosConAlertas();
-        return { ok: true, data };
-    } catch (err: any) {
-        console.error('Error al obtener ingresos abiertos:', err);
-        return { ok: false, error: parseError(err) };
+        const res = await invoke('registrar_salida', {
+            input: {
+                ingreso_id: params.ingresoId,
+                devolvio_gafete: params.devolvioGafete,
+                observaciones: params.observacionesSalida,
+                usuario_salida_id: params.usuarioSalidaId
+            }
+        });
+        return { ok: true, data: res };
+    } catch (e: any) {
+        return { ok: false, error: e.message || 'Error al registrar salida' };
     }
 }
-
-export async function fetchByGafete(gafeteNumero: string): Promise<ServiceResult<IngresoResponse | null>> {
-    try {
-        const data = await ingreso.getByGafete(gafeteNumero);
-        return { ok: true, data };
-    } catch (err: any) {
-        console.error('Error al buscar ingreso por gafete:', err);
-        return { ok: false, error: parseError(err) };
-    }
-}
-
-// ============================================
-// PUBLIC API - ALERTAS
-// ============================================
-
-export async function fetchAlertasGafetes(): Promise<ServiceResult<AlertaGafeteResponse[]>> {
-    try {
-        const data = await ingreso.getAlertasGafetes();
-        return { ok: true, data };
-    } catch (err: any) {
-        console.error('Error al obtener alertas de gafetes:', err);
-        return { ok: false, error: parseError(err) };
-    }
-}
-
-export async function resolverAlerta(input: ResolverAlertaInput): Promise<ServiceResult<AlertaGafeteResponse>> {
-    try {
-        const data = await ingreso.resolverAlertaGafete(input);
-        return { ok: true, data };
-    } catch (err: any) {
-        console.error('Error al resolver alerta:', err);
-        return { ok: false, error: parseError(err) };
-    }
-}
-
-// ============================================
-// FRONTEND TIME LOGIC (Replicating Backend)
-// ============================================
-
-import type { AlertaTiempo, EstadoPermanencia } from '$lib/types/ingreso';
 
 /**
- * Evalúa el estado de permanencia en tiempo real sin pedirlo al backend.
- * Replica la lógica de validaciones_permanencia.rs
+ * Obtiene historial de salidas en un rango de fechas
  */
-export function evaluateTimeStatus(entryDate: Date, currentDate: Date = new Date()): AlertaTiempo {
-    const diffMs = currentDate.getTime() - entryDate.getTime();
+export async function fetchSalidasEnRango(startDate: string, endDate: string): Promise<ServiceResult<any[]>> {
+    try {
+        const data = await invoke('get_ingresos_salidas_rango', {
+            start_date: startDate,
+            end_date: endDate
+        });
+        return { ok: true, data: data as any[] };
+    } catch (e: any) {
+        return { ok: false, error: e.message || 'Error cargando historial de salidas' };
+    }
+}
+
+/**
+ * Evalúa el estado de tiempo de permanencia
+ */
+export function evaluateTimeStatus(entryDate: Date, current: Date) {
+    const diffMs = current.getTime() - entryDate.getTime();
     const minutosTranscurridos = Math.floor(diffMs / 60000);
 
-    // Constantes idénticas al backend
-    const TIEMPO_MAXIMO_MINUTOS = 840; // 14 horas
-    const TIEMPO_ALERTA_TEMPRANA_MINUTOS = 810; // 13.5 horas
+    // Umbrales sugeridos (pueden venir de config en el futuro)
+    const LIMITE_NORMAL = 120; // 2 horas
+    const LIMITE_ALERTA = 180; // 3 horas
 
-    let estado: EstadoPermanencia = 'normal';
+    let estado: 'normal' | 'alerta_temprana' | 'tiempo_excedido' = 'normal';
 
-    if (minutosTranscurridos >= TIEMPO_MAXIMO_MINUTOS) {
+    if (minutosTranscurridos > LIMITE_ALERTA) {
         estado = 'tiempo_excedido';
-    } else if (minutosTranscurridos >= TIEMPO_ALERTA_TEMPRANA_MINUTOS) {
+    } else if (minutosTranscurridos > LIMITE_NORMAL) {
         estado = 'alerta_temprana';
-    }
-
-    const minutosRestantes = TIEMPO_MAXIMO_MINUTOS - minutosTranscurridos;
-
-    // Generar mensaje si es necesario
-    let mensaje: string | undefined;
-
-    if (estado === 'alerta_temprana') {
-        mensaje = `⚠️ Tiempo límite próximo: ${minutosRestantes} minutos restantes para salir`;
-    } else if (estado === 'tiempo_excedido') {
-        const excedidos = Math.abs(minutosRestantes);
-        mensaje = `🚨 TIEMPO EXCEDIDO: ${excedidos} minutos sobre el límite de 14 horas`;
     }
 
     return {
         estado,
-        minutosTranscurridos,
-        minutosRestantes,
-        mensaje
+        minutosTranscurridos
+    };
+}
+
+
+// ==========================================
+// COMPATIBILITY EXPORT
+// ==========================================
+
+export const ingresoService = {
+    validarIngreso,
+    prepararFormularioIngreso,
+    validarFormularioCompleto,
+    validarGafete,
+    validarModoVehiculo,
+    registrarEntrada,
+    fetchAbiertos,
+    crearIngreso,
+    registrarSalida,
+    fetchSalidasEnRango,
+    evaluateTimeStatus
+};
+
+
+// ==========================================
+// MAPPERS
+// ==========================================
+
+
+function mapContratistaResponse(res: any): ValidacionIngresoResult {
+    return {
+        puedeIngresar: res.puede_ingresar,
+        motivoRechazo: res.motivo_rechazo,
+        alertas: res.alertas || [],
+        tieneIngresoAbierto: res.tiene_ingreso_abierto,
+        ingresoAbierto: res.ingreso_abierto,
+        contratista: res.contratista,
+        persona: res.contratista ? {
+            id: res.contratista.id,
+            cedula: res.contratista.cedula,
+            nombre: res.contratista.nombre,
+            apellido: res.contratista.apellido,
+            nombreCompleto: `${res.contratista.nombre} ${res.contratista.apellido}`,
+            empresa: res.contratista.empresa?.nombre,
+            empresaId: res.contratista.empresa_id,
+            estado: res.contratista.estado,
+            vehiculos: res.contratista.vehiculos || []
+        } : undefined
+    };
+}
+
+function mapProveedorResponse(res: any): ValidacionIngresoResult {
+    return {
+        puedeIngresar: res.puede_ingresar,
+        motivoRechazo: res.motivo_rechazo,
+        alertas: res.alertas || [],
+        tieneIngresoAbierto: res.tiene_ingreso_abierto,
+        ingresoAbierto: res.ingreso_abierto,
+        proveedor: res.proveedor,
+        persona: res.proveedor ? {
+            id: res.proveedor.id,
+            cedula: res.proveedor.cedula,
+            nombre: res.proveedor.nombre,
+            apellido: res.proveedor.apellido || '',
+            nombreCompleto: `${res.proveedor.nombre} ${res.proveedor.apellido || ''}`,
+            empresa: res.proveedor.empresa,
+            vehiculos: []
+        } : undefined
+    };
+}
+
+function mapVisitaResponse(res: any): ValidacionIngresoResult {
+    return {
+        puedeIngresar: res.puede_ingresar,
+        motivoRechazo: res.motivo_rechazo,
+        alertas: res.alertas || [],
+        tieneIngresoAbierto: res.tiene_ingreso_abierto,
+        ingresoAbierto: res.ingreso_abierto,
+        visitante: res.visitante,
+        persona: res.visitante ? {
+            id: res.visitante.id,
+            cedula: res.visitante.cedula,
+            nombre: res.visitante.nombre,
+            apellido: res.visitante.apellido,
+            nombreCompleto: `${res.visitante.nombre} ${res.visitante.apellido}`,
+            empresa: res.visitante.empresa,
+            vehiculos: []
+        } : undefined
     };
 }

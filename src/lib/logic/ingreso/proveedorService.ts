@@ -4,10 +4,8 @@
 // Lógica de negocio para ingresos de PROVEEDORES
 
 import { ingreso } from '$lib/api/ingreso';
-import type {
-    CreateIngresoProveedorInput,
-    IngresoResponse
-} from '$lib/types/ingreso';
+import type { IngresoResponse } from '$lib/types/ingreso';
+import type { CreateIngresoProveedorInput } from '$lib/types/ingreso-nuevos';
 
 // ==========================================
 // TIPOS INTERNOS
@@ -136,31 +134,16 @@ export async function crearIngresoProveedor(
         motivo: datosNormalizados.motivo,
         tipoAutorizacion: datosNormalizados.tipoAutorizacion,
         modoIngreso: datosNormalizados.modoIngreso,
-        vehiculoPlaca: datosNormalizados.vehiculoPlaca ?? null,
-        gafeteNumero: datosNormalizados.gafeteNumero ?? null,
-        observaciones: datosNormalizados.observaciones ?? null,
+        placaVehiculo: datosNormalizados.vehiculoPlaca || undefined,
+        gafete: datosNormalizados.gafeteNumero || undefined,
+        observaciones: datosNormalizados.observaciones || undefined,
         usuarioIngresoId: usuarioId,
     };
 
     // 4. Invocar API
     const { ingresoProveedorService } = await import('$lib/services/ingresoProveedorService');
 
-    const inputService = {
-        cedula: input.cedula,
-        nombre: input.nombre,
-        apellido: input.apellido,
-        empresa_id: input.empresaId, // snake_case expected in Rust struct? Let's check domain/ingreso_proveedor.rs
-        area_visitada: input.areaVisitada,
-        motivo: input.motivo,
-        tipo_autorizacion: input.tipoAutorizacion,
-        modo_ingreso: input.modoIngreso,
-        placa_vehiculo: input.vehiculoPlaca || undefined,
-        gafete: input.gafeteNumero || undefined,
-        observaciones: input.observaciones || undefined,
-        usuario_ingreso_id: input.usuarioIngresoId
-    };
-
-    const result = await ingresoProveedorService.createIngreso(inputService);
+    const result = await ingresoProveedorService.createIngreso(input);
     return result as any;
 }
 

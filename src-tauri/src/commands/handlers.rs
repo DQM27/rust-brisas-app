@@ -78,6 +78,7 @@ macro_rules! register_handlers {
             commands::ingreso_visita_commands::get_ingresos_visitas_activos,
             commands::ingreso_visita_commands::get_ingresos_visitas_historial,
             commands::ingreso_visita_commands::crear_ingreso_visita_v2,
+            commands::ingreso_visita_commands::validar_ingreso_visita,
             commands::ingreso_visita_commands::registrar_salida_visita,
             // ==========================================
             // COMANDOS DE INGRESO PROVEEDORES

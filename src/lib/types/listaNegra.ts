@@ -91,6 +91,8 @@ export interface BlockCheckResponse {
   isBlocked: boolean;
   nivelSeveridad?: NivelSeveridad;
   bloqueadoDesde?: string;
+  motivo?: string;
+  bloqueadoPor?: string;
 }
 
 // ==========================================

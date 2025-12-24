@@ -108,7 +108,7 @@
       fecha_cita: fechaCita,
       anfitrion: formData.anfitrion,
       area_visitada: formData.areaVisitada,
-      motivo: formData.motivo || undefined,
+      motivo: formData.motivo || "",
       registrado_por: $currentUser.id,
     };
 

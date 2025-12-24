@@ -78,7 +78,7 @@
 
     // Filtro de rol
     if (roleFilter !== "todos") {
-      filtered = filtered.filter((u) => u.role === roleFilter);
+      filtered = filtered.filter((u) => u.roleName === roleFilter);
     }
 
     // Filtro de estado

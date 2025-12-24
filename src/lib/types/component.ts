@@ -15,6 +15,7 @@ export type ComponentKey =
 
   | 'gafete-list'
   | 'ingreso-list'
+  | 'ingreso-module'
   | 'general-settings'
   | 'visual-settings'
   | 'update-settings'

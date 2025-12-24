@@ -47,7 +47,6 @@
   let contratistas = $state<ContratistaResponse[]>([]);
   let loading = $state(false);
   let error = $state("");
-  let blockedContratistas = $state<Set<string>>(new Set());
   let isUpdatingStatus = false;
 
   // Modal state
@@ -172,7 +171,6 @@
       const result = await contratistaService.fetchAllContratistas();
       if (result.ok) {
         contratistas = result.data.contratistas;
-        await loadBlockedContratistas();
       } else {
         error = result.error;
       }
@@ -181,19 +179,6 @@
       error = "Error al cargar contratistas";
     }
     loading = false;
-  }
-
-  async function loadBlockedContratistas() {
-    const result = await listaNegraService.fetchAll();
-    if (result.ok) {
-      const blocked = new Set<string>();
-      result.data.bloqueados.forEach((b) => {
-        if (b.isActive && b.contratistaId) {
-          blocked.add(b.contratistaId);
-        }
-      });
-      blockedContratistas = blocked;
-    }
   }
 
   // ==========================================

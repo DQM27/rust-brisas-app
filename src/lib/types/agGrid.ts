@@ -30,10 +30,14 @@ export type GridId =
   | 'entries-list'
   | 'companies-list'
   | 'users-list'
-  | 'visitas-list' // Added
+  | 'visitas-list'
   | 'visitas-activas-grid'
   | 'proveedores-activos-grid'
-  | 'proveedores-grid';
+  | 'proveedores-grid'
+  | 'contratista-ingreso-list'
+  | 'visita-ingreso-list'
+  | 'proveedor-ingreso-list';
+
 
 // ============================================
 // Toolbar
