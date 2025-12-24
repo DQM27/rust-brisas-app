@@ -96,7 +96,7 @@
 
 <div class="w-full h-full flex flex-col justify-center p-8">
   <form onsubmit={preventDefault(handleSubmit)} class="flex flex-col gap-6">
-    <div>
+    <div class="text-center">
       <h1 class="text-3xl font-bold text-primary">Bienvenido</h1>
       <p class="text-sm text-tertiary mt-2">Inicia sesión en Brisas App</p>
     </div>

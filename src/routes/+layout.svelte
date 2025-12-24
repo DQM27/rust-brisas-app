@@ -79,7 +79,7 @@
           } else if (!authenticated) {
             // Modo Launcher Login (Compacto)
             await setWindowDecorations(false);
-            await setWindowSize(450, 600);
+            await setWindowSize(450, 500);
             const { getCurrentWindow } = await import("@tauri-apps/api/window");
             await getCurrentWindow().center();
           } else {
