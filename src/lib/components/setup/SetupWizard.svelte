@@ -144,10 +144,26 @@
       isConfirming = false;
     }
   }
+
+  // Drag manual para el modo launcher
+  async function handleHeaderDrag(e: MouseEvent) {
+    if (
+      e.target instanceof Element &&
+      (e.target.tagName === "BUTTON" || e.target.closest("button"))
+    ) {
+      return;
+    }
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      await getCurrentWindow().startDragging();
+    } catch (err) {
+      console.error("Error arrastrando ventana:", err);
+    }
+  }
 </script>
 
 <div
-  class="fixed inset-0 bg-surface-1/95 flex items-center justify-center z-50 p-4"
+  class="h-screen w-screen bg-[#0d1117] flex items-center justify-center p-0"
   transition:fade
 >
   {#if isResetting}
@@ -164,8 +180,8 @@
     </div>
   {:else}
     <div
-      class="bg-white dark:bg-[#0d1117] rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col relative"
-      transition:fly={{ y: 20, duration: 300 }}
+      class="bg-white dark:bg-[#0d1117] w-full h-full overflow-hidden flex flex-col relative"
+      transition:fade
     >
       <!-- Close Button (X) -->
       <button
@@ -177,8 +193,10 @@
         <X class="w-5 h-5" />
       </button>
       <!-- Header -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
-        class="bg-gray-50 dark:bg-[#161b22] px-6 py-4 border-b border-gray-200 dark:border-gray-700"
+        class="bg-gray-50 dark:bg-[#161b22] px-6 py-4 border-b border-gray-200 dark:border-gray-700 cursor-move"
+        onmousedown={handleHeaderDrag}
       >
         <div class="flex items-center gap-3">
           <div class="p-2 bg-[#2da44e]/10 rounded-lg">

@@ -12,7 +12,11 @@
   import { themeStore } from "$lib/stores/themeStore"; // Inicializar tema
   import { generalSettings } from "$lib/stores/settingsStore";
   import SetupWizard from "$lib/components/setup/SetupWizard.svelte";
-  import { needsSetup } from "$lib/services/keyringService";
+  import {
+    needsSetup,
+    setWindowDecorations,
+    setWindowSize,
+  } from "$lib/services/keyringService";
 
   // Estado de autenticación reactivo
   let authenticated = $derived($isAuthenticated);
@@ -22,8 +26,12 @@
   let showSetupWizard = $derived($setupWizardVisible);
   let checkingSetup = $state(true);
   // Handler cuando se completa el setup
-  function handleSetupComplete() {
+  async function handleSetupComplete() {
     $setupWizardVisible = false;
+    await setWindowDecorations(true);
+    await setWindowSize(1200, 800);
+    const { getCurrentWindow } = await import("@tauri-apps/api/window");
+    await getCurrentWindow().center();
   }
 
   // Inicializar monitor de red y atajos
@@ -32,6 +40,15 @@
     (async () => {
       try {
         $setupWizardVisible = await needsSetup();
+        if ($setupWizardVisible) {
+          await setWindowDecorations(false);
+          await setWindowSize(700, 550);
+          const { getCurrentWindow } = await import("@tauri-apps/api/window");
+          await getCurrentWindow().center();
+        } else {
+          await setWindowDecorations(true);
+          // Restaurar tamaño si es necesario o dejar que el sistema lo maneje
+        }
       } catch (e) {
         console.error("Error verificando setup:", e);
         $setupWizardVisible = false;
