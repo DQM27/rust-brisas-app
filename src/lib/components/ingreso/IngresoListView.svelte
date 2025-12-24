@@ -14,7 +14,6 @@
   import { invoke } from "@tauri-apps/api/core";
   import { createCustomButton } from "$lib/config/agGridConfigs";
   import { currentUser } from "$lib/stores/auth";
-  import { keyboardCommand, clearCommand } from "$lib/stores/keyboardCommands";
   import { activeTabId } from "$lib/stores/tabs";
 
   // Types
@@ -35,23 +34,21 @@
   let selectedRows = $state<any[]>([]);
   let showModal = $state(false);
 
-  // Keyboard shortcut listener for Ctrl+N
-  // Track last processed timestamp to avoid reacting to stale commands
-  let lastProcessedTimestamp = 0;
+  // Keyboard shortcut handler for Ctrl+N
+  function handleKeydown(e: KeyboardEvent) {
+    // Only handle if this tab is active
+    if ($activeTabId !== tabId) return;
 
-  $effect(() => {
-    const cmd = $keyboardCommand;
-    // Only process if: command exists, is new, and this tab is active
-    if (
-      cmd?.command === "create-new" &&
-      cmd.timestamp > lastProcessedTimestamp &&
-      $activeTabId === tabId
-    ) {
-      lastProcessedTimestamp = cmd.timestamp;
+    // Ctrl+N or Cmd+N to open new modal
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") {
+      // Don't trigger if focused on input/textarea
+      const target = e.target as HTMLElement;
+      if (target.tagName === "TEXTAREA" || target.isContentEditable) return;
+
+      e.preventDefault();
       showModal = true;
-      clearCommand();
     }
-  });
+  }
 
   // ==========================================
   // COLUMNS
@@ -384,6 +381,9 @@
     {/if}
   </div>
 </div>
+
+<!-- Keyboard shortcut listener -->
+<svelte:window onkeydown={handleKeydown} />
 
 <!-- Modal -->
 <IngresoFormModal bind:show={showModal} on:complete={handleModalComplete} />
