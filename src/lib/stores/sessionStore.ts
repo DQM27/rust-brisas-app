@@ -249,8 +249,25 @@ export function exitScreensaver(): void {
 /**
  * Cancels screensaver password prompt and performs full logout
  */
-export function cancelScreensaverPassword(): void {
+export async function cancelScreensaverPassword(): Promise<void> {
     console.log('[Session] Screensaver password cancelled, logging out');
+
+    // First exit fullscreen if we're in it
+    if (browser) {
+        try {
+            const { getCurrentWindow } = await import('@tauri-apps/api/window');
+            const appWindow = getCurrentWindow();
+            const isFullscreen = await appWindow.isFullscreen();
+
+            if (isFullscreen) {
+                console.log('[Session] Exiting fullscreen before logout');
+                await appWindow.setFullscreen(false);
+            }
+        } catch (e) {
+            console.error('[Session] Error exiting fullscreen before logout:', e);
+        }
+    }
+
     performCompleteLogout();
 }
 

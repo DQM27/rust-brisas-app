@@ -115,8 +115,23 @@
           // Enter fullscreen/kiosk mode when screensaver activates
           const { getCurrentWindow } = await import("@tauri-apps/api/window");
           const appWindow = getCurrentWindow();
-          await appWindow.setFullscreen(true);
+
+          // First, check if maximized and unmaximize
+          const isMaximized = await appWindow.isMaximized();
+          if (isMaximized) {
+            console.log("[Layout] Window is maximized, unmaximizing first...");
+            await appWindow.unmaximize();
+            // Small delay to let window settle
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+
+          // Force kiosk mode FIRST to hide UI elements
           generalSettings.update((s) => ({ ...s, isKioskMode: true }));
+
+          // Then set fullscreen
+          console.log("[Layout] Setting fullscreen to true...");
+          await appWindow.setFullscreen(true);
+
           console.log("[Layout] Screensaver activated - entering fullscreen");
         } catch (e) {
           console.error("[Layout] Error entering screensaver fullscreen:", e);

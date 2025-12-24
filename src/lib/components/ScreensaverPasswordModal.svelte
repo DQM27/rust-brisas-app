@@ -37,9 +37,9 @@
     }
   }
 
-  function handleCancel() {
-    // Cancel screensaver and perform full logout
-    cancelScreensaverPassword();
+  async function handleCancel() {
+    // Cancel screensaver and perform full logout (exits fullscreen first)
+    await cancelScreensaverPassword();
   }
 </script>
 
