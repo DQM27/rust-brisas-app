@@ -36,9 +36,18 @@
   let showModal = $state(false);
 
   // Keyboard shortcut listener for Ctrl+N
+  // Track last processed timestamp to avoid reacting to stale commands
+  let lastProcessedTimestamp = 0;
+
   $effect(() => {
     const cmd = $keyboardCommand;
-    if (cmd?.command === "create-new" && $activeTabId === tabId) {
+    // Only process if: command exists, is new, and this tab is active
+    if (
+      cmd?.command === "create-new" &&
+      cmd.timestamp > lastProcessedTimestamp &&
+      $activeTabId === tabId
+    ) {
+      lastProcessedTimestamp = cmd.timestamp;
       showModal = true;
       clearCommand();
     }
