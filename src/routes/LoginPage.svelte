@@ -114,7 +114,7 @@
 </script>
 
 <!-- Usar bg-surface-1 para fondo consistente -->
-<div class="h-screen w-full flex flex-col bg-surface-1 overflow-hidden">
+<div class="flex h-screen w-full items-center justify-center bg-surface-1 p-4">
   {#if view === "login"}
     <LoginForm
       bind:this={formRef}
