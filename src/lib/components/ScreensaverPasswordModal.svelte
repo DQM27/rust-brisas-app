@@ -5,12 +5,20 @@
   import {
     exitScreensaver,
     cancelScreensaverPassword,
+    sessionMode,
   } from "$lib/stores/sessionStore";
   import { auth as authApi } from "$lib/api/auth";
 
   let password = $state("");
   let error = $state("");
   let loading = $state(false);
+  let inputRef = $state<HTMLInputElement | null>(null);
+
+  $effect(() => {
+    if (inputRef) {
+      inputRef.focus();
+    }
+  });
 
   async function handleSubmit() {
     if (!$currentUser?.email) {
@@ -64,10 +72,14 @@
           id="screensaver-password-title"
           class="text-xl font-bold text-primary"
         >
-          Protector de Pantalla
+          {$sessionMode === "locked"
+            ? "Bloqueo por Inactividad"
+            : "Protector de Pantalla"}
         </h2>
         <p class="text-sm text-tertiary">
-          Ingresa tu contraseña para continuar
+          {$sessionMode === "locked"
+            ? "La aplicación se ha bloqueado por seguridad"
+            : "Ingresa tu contraseña para continuar"}
         </p>
       </div>
     </div>
@@ -93,11 +105,11 @@
         </label>
         <input
           id="screensaver-password"
+          bind:this={inputRef}
           type="password"
           bind:value={password}
           placeholder="••••••••"
           disabled={loading}
-          autofocus
           class="w-full rounded border bg-surface-1 px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-accent transition-all {error
             ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
             : 'border-emphasis focus:border-accent'}"
