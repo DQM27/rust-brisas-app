@@ -40,10 +40,11 @@
   const isEditMode = $derived(!!user);
   const isSelf = $derived(user && $currentUser && user.id === $currentUser.id);
 
-  const modalTitle = $derived.by(() => {
-    if (isSelf) return "Mi Perfil";
-    return isEditMode ? `Editar: ${user?.nombre}` : "Nuevo Usuario";
-  });
+  const modalTitle = $derived(
+    isEditMode
+      ? `Editar: ${user?.nombre} ${user?.apellido}`.trim()
+      : "Crear Nuevo Usuario",
+  );
 
   // Estado del formulario
   let formData = $state<CreateUserForm>({
@@ -442,6 +443,19 @@
                   />
                 </div>
               </div>
+
+              <div>
+                <label for="fechaNacimiento" class={labelClass}
+                  >Fecha Nacimiento</label
+                >
+                <input
+                  id="fechaNacimiento"
+                  type="date"
+                  bind:value={formData.fechaNacimiento}
+                  disabled={loading}
+                  class={inputClass}
+                />
+              </div>
             </div>
 
             <!-- COL 2: Institucional -->
@@ -463,7 +477,7 @@
                 </div>
                 <div>
                   <label for="fechaInicioLabores" class={labelClass}
-                    >Inicio</label
+                    >Fecha Inicio Labores</label
                   >
                   <input
                     id="fechaInicioLabores"
