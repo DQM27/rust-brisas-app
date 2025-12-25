@@ -53,10 +53,16 @@
     }
   }
 
-  // Reset cuando cambia el ingreso
+  // Reset cuando cambia el ingreso y auto-seleccionar devolvioGafete si no tiene gafete
   $effect(() => {
     if (ingreso) {
       reset();
+      // Si no tiene gafete, auto-seleccionar true
+      const tieneGafete =
+        ingreso.gafeteNumero && ingreso.gafeteNumero !== "S/G";
+      if (!tieneGafete) {
+        devolvioGafete = true;
+      }
     }
   });
 </script>
@@ -174,11 +180,7 @@
             {/if}
           </div>
         {:else}
-          <!-- Si no tiene gafete, auto-seleccionar true -->
-          {(() => {
-            devolvioGafete = true;
-            return "";
-          })()}
+          <!-- Si no tiene gafete, ya se auto-seleccionó true en el $effect -->
           <div
             class="p-3 bg-surface-1 rounded-lg border border-surface text-sm text-secondary"
           >
