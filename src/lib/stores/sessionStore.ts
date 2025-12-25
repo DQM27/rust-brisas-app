@@ -175,8 +175,20 @@ function startTimeoutChecker(): void {
         return; // Already running
     }
 
-    console.log('[Session] Timeout checker stopped');
+    // Check every 10 seconds
+    checkIntervalId = setInterval(checkTimeouts, 10000);
+    console.log('[Session] Timeout checker started');
 }
+
+/**
+ * Stops the interval-based timeout checker
+ */
+function stopTimeoutChecker(): void {
+    if (checkIntervalId !== null) {
+        clearInterval(checkIntervalId);
+        checkIntervalId = null;
+        console.log('[Session] Timeout checker stopped');
+    }
 }
 
 // =============================================================================
