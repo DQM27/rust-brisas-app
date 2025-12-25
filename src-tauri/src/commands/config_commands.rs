@@ -51,6 +51,32 @@ pub async fn update_terminal_config(
     Ok(config_guard.terminal.clone())
 }
 
+/// Actualiza la configuración de audio
+#[command]
+pub async fn update_audio_config(
+    config: State<'_, AppConfigState>,
+    alert_sound: String,
+) -> Result<(), ConfigError> {
+    info!("Actualizando configuración de audio: {}", alert_sound);
+
+    let mut config_guard = config
+        .write()
+        .map_err(|e| ConfigError::Message(format!("Error al escribir configuración: {}", e)))?;
+
+    config_guard.audio.alert_sound = alert_sound;
+
+    let config_path = if let Some(data_dir) = dirs::data_local_dir() {
+        data_dir.join("Brisas").join("brisas.toml")
+    } else {
+        std::path::PathBuf::from("./config/brisas.toml")
+    };
+
+    save_config(&config_guard, &config_path)
+        .map_err(|e| ConfigError::Message(format!("Error al guardar configuración: {}", e)))?;
+
+    Ok(())
+}
+
 /// Habilita o deshabilita el modo demo en la pantalla de login con intercambio dinámico de DB
 #[command]
 pub async fn toggle_demo_mode(

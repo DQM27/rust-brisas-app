@@ -1,8 +1,20 @@
 <script lang="ts">
   import { generalSettings } from "$lib/stores/settingsStore";
   import { scale } from "svelte/transition";
-  import { Check, X, Layout, Type, Power, FlaskConical } from "lucide-svelte";
+  import {
+    Check,
+    X,
+    Layout,
+    Type,
+    Power,
+    FlaskConical,
+    Volume2,
+    Music,
+    Upload,
+    VolumeX,
+  } from "lucide-svelte";
   import { invoke } from "@tauri-apps/api/core";
+  import { open } from "@tauri-apps/plugin-dialog";
   import { onMount } from "svelte";
   import { toast } from "svelte-5-french-toast";
 
@@ -10,13 +22,22 @@
   let showDemoMode = $state(false);
   let loadingDemo = $state(false);
 
+  // Estado de audio
+  let alertSound = $state("Hand");
+  let useCustomSound = $state(false);
+  let customSoundPath = $state<string | null>(null);
+  let uploadingSound = $state(false);
+
   // Cargar configuración al montar
   onMount(async () => {
     try {
       const config = await invoke<any>("get_app_config");
       showDemoMode = config?.setup?.show_demo_mode ?? false;
+      alertSound = config?.audio?.alert_sound ?? "Hand";
+      useCustomSound = config?.audio?.use_custom ?? false;
+      customSoundPath = config?.audio?.custom_sound_path ?? null;
     } catch (e) {
-      console.warn("No se pudo cargar config de demo:", e);
+      console.warn("No se pudo cargar config de la aplicación:", e);
     }
   });
 
@@ -35,6 +56,71 @@
       toast.error("Error al cambiar modo demo");
     }
     loadingDemo = false;
+  }
+
+  async function saveAudioConfig() {
+    try {
+      await invoke("update_audio_config", { alertSound });
+      toast.success("Sonido de sistema actualizado", { icon: "🔔" });
+    } catch (e) {
+      console.error("Error saving audio config:", e);
+      toast.error("Error al guardar configuración de audio");
+    }
+  }
+
+  async function toggleCustomSound() {
+    try {
+      if (useCustomSound && !customSoundPath) {
+        toast.error("Primero selecciona un archivo de sonido");
+        useCustomSound = false;
+        return;
+      }
+      await invoke("set_use_custom_sound", { useCustom: useCustomSound });
+      toast.success(
+        useCustomSound ? "Usando sonido personalizado" : "Usando sonido nativo",
+      );
+    } catch (e) {
+      console.error("Error toggling custom sound:", e);
+      toast.error("Error al cambiar tipo de sonido");
+    }
+  }
+
+  async function pickCustomSound() {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [
+          {
+            name: "Audio",
+            extensions: ["wav", "mp3"],
+          },
+        ],
+      });
+
+      if (selected && typeof selected === "string") {
+        uploadingSound = true;
+        const newPath = await invoke<string>("upload_custom_sound", {
+          filePath: selected,
+        });
+        customSoundPath = newPath;
+        useCustomSound = true;
+        toast.success("Sonido personalizado cargado correctamente");
+      }
+    } catch (e) {
+      console.error("Error picking sound:", e);
+      toast.error("Error al cargar sonido");
+    } finally {
+      uploadingSound = false;
+    }
+  }
+
+  async function testSound() {
+    try {
+      await invoke("play_alert_sound");
+    } catch (e) {
+      console.error("Error playing test sound:", e);
+      toast.error("No se pudo reproducir el sonido de prueba");
+    }
   }
 
   // ==========================================================================
@@ -193,6 +279,109 @@
           </p>
         </div>
       {/if}
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- AUDIO ALERTS CARD -->
+    <!-- ================================================================== -->
+    <div class="card-base p-5">
+      <div class="flex items-center gap-4 mb-4">
+        <div
+          class="p-3 rounded-lg bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"
+        >
+          <Volume2 size={22} />
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold text-primary">Alertas de Audio</h3>
+          <p class="text-sm text-secondary">
+            Configura los sonidos de notificación del sistema.
+          </p>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        <!-- Selector Nativo -->
+        <div class="flex items-center justify-between py-2">
+          <div class="flex-1">
+            <span class="text-secondary font-medium block"
+              >Sonido del Sistema</span
+            >
+            <p class="text-xs text-secondary/70">
+              Usa los sonidos nativos de Windows.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <select
+              bind:value={alertSound}
+              onchange={saveAudioConfig}
+              disabled={useCustomSound}
+              class="rounded-md border border-emphasis bg-surface-2 px-3 py-1.5 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
+            >
+              <option value="Hand">Crítico (Hand)</option>
+              <option value="Exclamation">Exclamación</option>
+              <option value="Beep">Beep Sugerido</option>
+              <option value="Question">Pregunta/Aviso</option>
+              <option value="Asterisk">Informativo</option>
+            </select>
+
+            <button
+              onclick={testSound}
+              class="p-2 rounded-md bg-surface-hover hover:bg-emphasis text-primary transition-colors"
+              title="Probar Sonido"
+            >
+              <Volume2 size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div class="border-t border-emphasis pt-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div
+                class="p-2 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-500"
+              >
+                <Music size={18} />
+              </div>
+              <div class="flex flex-col">
+                <span class="text-secondary font-medium"
+                  >Sonido Personalizado</span
+                >
+                <span class="text-xs text-secondary/60">
+                  {customSoundPath
+                    ? customSoundPath.split(/[\\/]/).pop()
+                    : "Ningún archivo seleccionado"}
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+              <button
+                onclick={pickCustomSound}
+                disabled={uploadingSound}
+                class="btn-secondary py-1.5 px-3 text-xs flex items-center gap-2"
+              >
+                {#if uploadingSound}
+                  <span class="animate-spin text-accent">⏳</span>
+                {:else}
+                  <Upload size={14} />
+                {/if}
+                {customSoundPath ? "Cambiar archivo" : "Subir archivo .wav"}
+              </button>
+
+              {@render toggleSwitch(
+                useCustomSound,
+                () => {
+                  useCustomSound = !useCustomSound;
+                  toggleCustomSound();
+                },
+                "Usar personalizado",
+                !customSoundPath,
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ================================================================== -->

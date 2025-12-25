@@ -9,7 +9,33 @@ pub struct AppConfig {
     pub database: DatabaseConfig,
     pub app: AppInfo,
     #[serde(default)]
+    pub audio: AudioConfig,
+    #[serde(default)]
     pub setup: SetupState,
+}
+
+/// Configuración de audio y alertas
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AudioConfig {
+    /// Sonido de alerta nativo de Windows (Hand, Exclamation, Beep, Question, Asterisk)
+    #[serde(default = "default_alert_sound")]
+    pub alert_sound: String,
+    /// Ruta al archivo de sonido personalizado
+    #[serde(default)]
+    pub custom_sound_path: Option<String>,
+    /// Indica si se debe usar el sonido personalizado en lugar del nativo
+    #[serde(default)]
+    pub use_custom: bool,
+}
+
+impl Default for AudioConfig {
+    fn default() -> Self {
+        Self { alert_sound: default_alert_sound(), custom_sound_path: None, use_custom: false }
+    }
+}
+
+fn default_alert_sound() -> String {
+    "Hand".to_string()
 }
 
 /// Estado de configuración inicial de la app
@@ -76,6 +102,7 @@ impl Default for AppConfig {
                 default_path: "".to_string(), // Se calculará en runtime
             },
             app: AppInfo { version: env!("CARGO_PKG_VERSION").to_string() },
+            audio: AudioConfig::default(),
             setup: SetupState::default(),
         }
     }

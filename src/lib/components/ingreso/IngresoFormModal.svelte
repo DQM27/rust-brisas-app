@@ -13,6 +13,7 @@
   import { ingresoService } from "$lib/logic/ingreso/ingresoService";
   import type { ValidacionIngresoResult } from "$lib/logic/ingreso/types";
   import { currentUser } from "$lib/stores/auth";
+  import { invoke } from "@tauri-apps/api/core";
 
   // Props
   interface Props {
@@ -55,6 +56,8 @@
       }
 
       if (!validationResult.puedeIngresar) {
+        // Trigger native alert sound
+        invoke("play_alert_sound");
         toast.error(
           validationResult.motivoRechazo || "Contratista no autorizado",
         );

@@ -161,6 +161,7 @@ macro_rules! register_handlers {
             // ==========================================
             commands::config_commands::get_app_config,
             commands::config_commands::update_terminal_config,
+            commands::config_commands::update_audio_config,
             commands::config_commands::toggle_demo_mode,
             // ==========================================
             // COMANDOS DE VENTANA
@@ -198,6 +199,12 @@ macro_rules! register_handlers {
             commands::role_commands::create_role,
             commands::role_commands::update_role,
             commands::role_commands::delete_role,
+            // ==========================================
+            // COMANDOS DE AUDIO
+            // ==========================================
+            commands::audio_commands::play_alert_sound,
+            commands::audio_commands::upload_custom_sound,
+            commands::audio_commands::set_use_custom_sound,
         ]
     };
 }

@@ -24,6 +24,9 @@
   import { toast } from "svelte-5-french-toast";
   import ChangePasswordPanel from "$lib/components/ChangePasswordPanel.svelte";
 
+  import { roleService } from "$lib/logic/role/roleService";
+  import type { RoleResponse as RoleType } from "$lib/types/role";
+
   interface Props {
     show: boolean;
     user?: UserResponse | null; // Si viene, es edición; si no, creación
@@ -35,6 +38,10 @@
   }
 
   let { show, user = null, loading = false, onSave, onClose }: Props = $props();
+
+  // Roles state
+  let availableRoles = $state<RoleType[]>([]);
+  let rolesLoading = $state(false);
 
   // Modo derivado
   const isEditMode = $derived(!!user);
@@ -67,6 +74,21 @@
 
   let errors = $state<Record<string, string>>({});
 
+  // Cargar roles
+  async function loadRoles() {
+    try {
+      rolesLoading = true;
+      const result = await roleService.fetchAllRoles();
+      if (result.ok) {
+        availableRoles = result.data.roles;
+      }
+    } catch (e) {
+      console.error("Error loading roles:", e);
+    } finally {
+      rolesLoading = false;
+    }
+  }
+
   // Estado para reset de contraseña
   let showAdminConfirm = $state(false);
   let showSuccessModal = $state(false);
@@ -80,6 +102,7 @@
     if (show) {
       // Reset view modes
       isChangingPassword = false;
+      loadRoles();
     }
 
     if (show && user) {
@@ -522,12 +545,26 @@
                   <select
                     id="roleId"
                     bind:value={formData.roleId}
-                    disabled={loading}
+                    disabled={loading || rolesLoading}
                     class={inputClass}
                   >
-                    <option value={ROLE_GUARDIA_ID}>Guardia</option>
-                    <option value={ROLE_SUPERVISOR_ID}>Supervisor</option>
-                    <option value={ROLE_ADMIN_ID}>Administrador</option>
+                    {#if rolesLoading}
+                      <option disabled selected>Cargando roles...</option>
+                    {:else}
+                      <optgroup label="Roles del Sistema">
+                        {#each availableRoles.filter(r => r.isSystem) as role}
+                          <option value={role.id}>{role.name}</option>
+                        {each}
+                      </optgroup>
+                      
+                      {#if availableRoles.some(r => !r.isSystem)}
+                        <optgroup label="Roles Personalizados">
+                          {#each availableRoles.filter(r => !r.isSystem) as role}
+                            <option value={role.id}>{role.name}</option>
+                          {/each}
+                        </optgroup>
+                      {/if}
+                    {/if}
                   </select>
                 </div>
               {:else}
