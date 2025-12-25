@@ -327,12 +327,12 @@
 
     <!-- Modal Content -->
     <div
-      class="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-auto rounded-lg bg-white dark:bg-[#0d1117] shadow-2xl border border-gray-200 dark:border-gray-700"
+      class="relative z-10 w-full max-w-5xl max-h-[95vh] overflow-hidden rounded-lg bg-white dark:bg-[#0d1117] shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col"
       transition:fly={{ y: 20, duration: 200 }}
     >
       <!-- Header -->
       <div
-        class="sticky top-0 z-20 flex items-center justify-between px-6 py-4 bg-white dark:bg-[#0d1117] border-b border-gray-200 dark:border-gray-700"
+        class="flex-none flex items-center justify-between px-6 py-4 bg-white dark:bg-[#0d1117] border-b border-gray-200 dark:border-gray-700"
       >
         <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
           {modalTitle}
@@ -346,150 +346,148 @@
         </button>
       </div>
 
-      <!-- Form or Password Change -->
-      {#if isChangingPassword && user}
-        <div class="p-6 flex justify-center">
-          <ChangePasswordPanel
-            userId={user.id}
-            onSuccess={() => {
-              isChangingPassword = false;
-              // Optionally close modal or toast
-            }}
-            onCancel={() => (isChangingPassword = false)}
-          />
-        </div>
-      {:else}
-        <form onsubmit={handleSubmit} class="p-5 space-y-3">
-          <!-- Cédula -->
-          <div>
-            <label for="cedula" class={labelClass}>Cédula *</label>
-            <input
-              id="cedula"
-              type="text"
-              value={formData.cedula}
-              oninput={handleCedulaInput}
-              placeholder="Ej: 1-1122-0333"
-              disabled={loading}
-              class={inputClass}
+      <!-- Form Content (Scrollable only if screen is very small, otherwise fits) -->
+      <div class="flex-1 overflow-y-auto p-6">
+        {#if isChangingPassword && user}
+          <div class="flex justify-center h-full items-center">
+            <ChangePasswordPanel
+              userId={user.id}
+              onSuccess={() => {
+                isChangingPassword = false;
+              }}
+              onCancel={() => (isChangingPassword = false)}
             />
-            {#if errors.cedula}<p class={errorClass}>{errors.cedula}</p>{/if}
           </div>
+        {:else}
+          <form
+            onsubmit={handleSubmit}
+            class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full"
+          >
+            <!-- COL 1: Identidad -->
+            <div class="space-y-3">
+              <h3 class={sectionClass}>Identidad</h3>
 
-          <!-- Datos Personales -->
-          <div>
-            <h3 class={sectionClass}>Datos Personales</h3>
-            <div class="grid grid-cols-2 gap-3">
               <div>
-                <label for="nombre" class={labelClass}>Nombre *</label>
+                <label for="cedula" class={labelClass}>Cédula *</label>
                 <input
-                  id="nombre"
+                  id="cedula"
                   type="text"
-                  value={formData.nombre}
-                  oninput={(e) => handleNameInput(e, "nombre")}
-                  placeholder="Juan"
+                  value={formData.cedula}
+                  oninput={handleCedulaInput}
+                  placeholder="Ej: 1-1122-0333"
                   disabled={loading}
                   class={inputClass}
                 />
-                {#if errors.nombre}<p class={errorClass}>
-                    {errors.nombre}
+                {#if errors.cedula}<p class={errorClass}>
+                    {errors.cedula}
                   </p>{/if}
               </div>
-              <div>
-                <label for="segundoNombre" class={labelClass}
-                  >Segundo Nombre</label
-                >
-                <input
-                  id="segundoNombre"
-                  type="text"
-                  value={formData.segundoNombre}
-                  oninput={(e) => handleNameInput(e, "segundoNombre")}
-                  placeholder="Carlos"
-                  disabled={loading}
-                  class={inputClass}
-                />
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="nombre" class={labelClass}>Nombre *</label>
+                  <input
+                    id="nombre"
+                    type="text"
+                    value={formData.nombre}
+                    oninput={(e) => handleNameInput(e, "nombre")}
+                    disabled={loading}
+                    class={inputClass}
+                  />
+                  {#if errors.nombre}<p class={errorClass}>
+                      {errors.nombre}
+                    </p>{/if}
+                </div>
+                <div>
+                  <label for="segundoNombre" class={labelClass}
+                    >2do Nombre</label
+                  >
+                  <input
+                    id="segundoNombre"
+                    type="text"
+                    value={formData.segundoNombre}
+                    oninput={(e) => handleNameInput(e, "segundoNombre")}
+                    disabled={loading}
+                    class={inputClass}
+                  />
+                </div>
               </div>
-              <div>
-                <label for="apellido" class={labelClass}>Apellido *</label>
-                <input
-                  id="apellido"
-                  type="text"
-                  value={formData.apellido}
-                  oninput={(e) => handleNameInput(e, "apellido")}
-                  placeholder="Pérez"
-                  disabled={loading}
-                  class={inputClass}
-                />
-                {#if errors.apellido}<p class={errorClass}>
-                    {errors.apellido}
-                  </p>{/if}
-              </div>
-              <div>
-                <label for="segundoApellido" class={labelClass}
-                  >Segundo Apellido</label
-                >
-                <input
-                  id="segundoApellido"
-                  type="text"
-                  value={formData.segundoApellido}
-                  oninput={(e) => handleNameInput(e, "segundoApellido")}
-                  placeholder="González"
-                  disabled={loading}
-                  class={inputClass}
-                />
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="apellido" class={labelClass}>Apellido *</label>
+                  <input
+                    id="apellido"
+                    type="text"
+                    value={formData.apellido}
+                    oninput={(e) => handleNameInput(e, "apellido")}
+                    disabled={loading}
+                    class={inputClass}
+                  />
+                  {#if errors.apellido}<p class={errorClass}>
+                      {errors.apellido}
+                    </p>{/if}
+                </div>
+                <div>
+                  <label for="segundoApellido" class={labelClass}
+                    >2do Apellido</label
+                  >
+                  <input
+                    id="segundoApellido"
+                    type="text"
+                    value={formData.segundoApellido}
+                    oninput={(e) => handleNameInput(e, "segundoApellido")}
+                    disabled={loading}
+                    class={inputClass}
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Información Laboral -->
-          <div>
-            <h3 class={sectionClass}>Información Laboral</h3>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label for="numeroGafete" class={labelClass}
-                  >Número Gafete</label
-                >
-                <input
-                  id="numeroGafete"
-                  type="text"
-                  value={formData.numeroGafete}
-                  oninput={handleGafeteInput}
-                  placeholder="K-017367"
-                  disabled={loading}
-                  class={inputClass}
-                />
-              </div>
-              <div>
-                <label for="fechaInicioLabores" class={labelClass}
-                  >Fecha Inicio</label
-                >
-                <input
-                  id="fechaInicioLabores"
-                  type="date"
-                  bind:value={formData.fechaInicioLabores}
-                  disabled={loading}
-                  class={inputClass}
-                />
-              </div>
-            </div>
-          </div>
+            <!-- COL 2: Institucional -->
+            <div class="space-y-3">
+              <h3 class={sectionClass}>Institucional & Cuenta</h3>
 
-          <!-- Cuenta -->
-          <div>
-            <h3 class={sectionClass}>Cuenta y Acceso</h3>
-            <div class="grid grid-cols-2 gap-3">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="numeroGafete" class={labelClass}>Gafete</label>
+                  <input
+                    id="numeroGafete"
+                    type="text"
+                    value={formData.numeroGafete}
+                    oninput={handleGafeteInput}
+                    placeholder="K-XXXXXX"
+                    disabled={loading}
+                    class={inputClass}
+                  />
+                </div>
+                <div>
+                  <label for="fechaInicioLabores" class={labelClass}
+                    >Inicio</label
+                  >
+                  <input
+                    id="fechaInicioLabores"
+                    type="date"
+                    bind:value={formData.fechaInicioLabores}
+                    disabled={loading}
+                    class={inputClass}
+                  />
+                </div>
+              </div>
+
               <div>
                 <label for="email" class={labelClass}>Email *</label>
                 <input
                   id="email"
                   type="email"
                   bind:value={formData.email}
-                  placeholder="correo@ejemplo.com"
                   disabled={loading}
                   class={inputClass}
                 />
                 {#if errors.email}<p class={errorClass}>{errors.email}</p>{/if}
               </div>
-              <!-- Roles (Solo si no es self y es admin/supervisor) -->
+
+              <!-- Roles -->
               {#if !isSelf}
                 <div>
                   <label for="roleId" class={labelClass}>Rol *</label>
@@ -504,16 +502,19 @@
                     <option value={ROLE_ADMIN_ID}>Administrador</option>
                   </select>
                 </div>
+              {:else}
+                <div
+                  class="p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 text-xs text-gray-500 text-center"
+                >
+                  Tu rol y permisos son gestionados por un administrador.
+                </div>
               {/if}
-
-              <!-- Password input removed as per user request (Auto-generated only) -->
             </div>
-          </div>
 
-          <!-- Contacto -->
-          <div>
-            <h3 class={sectionClass}>Contacto</h3>
-            <div class="grid grid-cols-2 gap-3">
+            <!-- COL 3: Contacto -->
+            <div class="space-y-3">
+              <h3 class={sectionClass}>Contacto</h3>
+
               <div>
                 <label for="telefono" class={labelClass}>Teléfono</label>
                 <input
@@ -527,124 +528,121 @@
                   class={inputClass}
                 />
               </div>
-              <div class="col-span-2">
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="contactoEmergenciaNombre" class={labelClass}
+                    >Emergencia</label
+                  >
+                  <input
+                    id="contactoEmergenciaNombre"
+                    type="text"
+                    value={formData.contactoEmergenciaNombre}
+                    oninput={(e) =>
+                      handleNameInput(e, "contactoEmergenciaNombre")}
+                    disabled={loading}
+                    class={inputClass}
+                    placeholder="Nombre"
+                  />
+                </div>
+                <div>
+                  <label for="contactoEmergenciaTelefono" class={labelClass}
+                    >Tel. Emergencia</label
+                  >
+                  <input
+                    id="contactoEmergenciaTelefono"
+                    type="tel"
+                    value={formData.contactoEmergenciaTelefono}
+                    oninput={(e) =>
+                      handleGenericPhoneInput(e, "contactoEmergenciaTelefono")}
+                    onkeydown={handlePhoneKeydown}
+                    placeholder="Teléfono"
+                    disabled={loading}
+                    class={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div>
                 <label for="direccion" class={labelClass}>Dirección</label>
                 <textarea
                   id="direccion"
                   bind:value={formData.direccion}
                   disabled={loading}
                   class={inputClass}
-                  rows="2"
-                  placeholder="Dirección completa"
+                  rows="3"
+                  placeholder="Dirección completa..."
                 ></textarea>
               </div>
             </div>
-          </div>
+          </form>
+        {/if}
+      </div>
 
-          <!-- Emergencia -->
-          <div>
-            <h3 class={sectionClass}>Contacto de Emergencia</h3>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label for="contactoEmergenciaNombre" class={labelClass}
-                  >Nombre</label
-                >
-                <input
-                  id="contactoEmergenciaNombre"
-                  type="text"
-                  value={formData.contactoEmergenciaNombre}
-                  oninput={(e) =>
-                    handleNameInput(e, "contactoEmergenciaNombre")}
-                  disabled={loading}
-                  class={inputClass}
-                  placeholder="Nombre familiar"
-                />
-              </div>
-              <div>
-                <label for="contactoEmergenciaTelefono" class={labelClass}
-                  >Teléfono</label
-                >
-                <input
-                  id="contactoEmergenciaTelefono"
-                  type="tel"
-                  value={formData.contactoEmergenciaTelefono}
-                  oninput={(e) =>
-                    handleGenericPhoneInput(e, "contactoEmergenciaTelefono")}
-                  onkeydown={handlePhoneKeydown}
-                  placeholder="+505 8888-8888"
-                  disabled={loading}
-                  class={inputClass}
-                />
-              </div>
-            </div>
-          </div>
+      <!-- Footer Actions -->
+      <div
+        class="flex-none flex gap-2 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#0d1117]/50"
+      >
+        <button
+          type="button"
+          onclick={onClose}
+          class="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 transition-colors text-sm font-medium"
+        >
+          Cancelar
+        </button>
 
-          <!-- Buttons -->
-          <div
-            class="flex gap-2 pt-3 border-t border-gray-200 dark:border-gray-700 mt-2"
+        <div class="flex-1"></div>
+
+        {#if isSelf && !isChangingPassword}
+          <button
+            type="button"
+            onclick={() => (isChangingPassword = true)}
+            disabled={loading}
+            class="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 transition-colors flex items-center gap-2 text-sm font-medium"
           >
-            <button
-              type="button"
-              onclick={onClose}
-              class="flex-1 py-1.5 px-3 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm"
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path
+                d="M7 11V7a5 5 0 0 1 10 0v4"
+              /></svg
             >
-              Cancelar
-            </button>
+            Cambiar Contraseña
+          </button>
+        {/if}
 
-            {#if isSelf}
-              <button
-                type="button"
-                onclick={() => (isChangingPassword = true)}
-                disabled={loading}
-                class="flex-1 py-1.5 px-3 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-1.5 text-sm"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><rect
-                    width="18"
-                    height="11"
-                    x="3"
-                    y="11"
-                    rx="2"
-                    ry="2"
-                  /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg
-                >
-                Cambiar Contraseña
-              </button>
-            {/if}
+        {#if isEditMode && !isSelf && $currentUser?.roleId === ROLE_ADMIN_ID && !isChangingPassword}
+          <button
+            type="button"
+            onclick={handleResetPasswordClick}
+            disabled={loading}
+            class="px-4 py-2 rounded-md border border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors text-sm font-medium"
+          >
+            Reset Password
+          </button>
+        {/if}
 
-            {#if isEditMode && !isSelf && $currentUser?.roleId === ROLE_ADMIN_ID}
-              <button
-                type="button"
-                onclick={handleResetPasswordClick}
-                disabled={loading}
-                class="flex-1 py-1.5 px-3 rounded-md border border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors text-sm"
-              >
-                Reset Password
-              </button>
-            {/if}
-            <button
-              type="submit"
-              disabled={loading}
-              class="flex-1 py-1.5 px-3 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
-            >
-              {loading
-                ? "Guardando..."
-                : isEditMode
-                  ? "Guardar Cambios"
-                  : "Crear Usuario"}
-            </button>
-          </div>
-        </form>
-      {/if}
+        {#if !isChangingPassword}
+          <button
+            onclick={handleSubmit}
+            disabled={loading}
+            class="px-6 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm shadow-sm"
+          >
+            {loading
+              ? "Guardando..."
+              : isEditMode
+                ? "Guardar Cambios"
+                : "Crear Usuario"}
+          </button>
+        {/if}
+      </div>
     </div>
   </div>
 {/if}
