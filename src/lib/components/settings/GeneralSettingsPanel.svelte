@@ -71,7 +71,7 @@
 
 <!-- Setting Row -->
 {#snippet settingRow(
-  icon: any,
+  Icon: any,
   iconBg: string,
   iconColor: string,
   label: string,
@@ -82,7 +82,7 @@
   <div class="flex items-center justify-between py-3">
     <div class="flex items-center gap-3">
       <div class="p-2 rounded-md {iconBg}">
-        <svelte:component this={icon} size={18} class={iconColor} />
+        <Icon size={18} class={iconColor} />
       </div>
       <span class="text-secondary font-medium">{label}</span>
     </div>

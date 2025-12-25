@@ -130,12 +130,15 @@
   }
 
   // Drag & Drop
-  function handleDragStart(index: number) {
+  function handleDragStart(e: DragEvent, index: number) {
+    e.dataTransfer?.setData("text/plain", String(index));
+    e.dataTransfer!.effectAllowed = "move";
     draggedIndex = index;
   }
 
   function handleDragOver(e: DragEvent, index: number) {
     e.preventDefault();
+    e.dataTransfer!.dropEffect = "move";
     if (draggedIndex === null || draggedIndex === index) return;
 
     const newColumns = [...columns];
@@ -237,10 +240,10 @@
     {#each filteredColumns as column, index (column.id)}
       <div
         draggable="true"
-        ondragstart={() => handleDragStart(index)}
+        ondragstart={(e) => handleDragStart(e, index)}
         ondragover={(e) => handleDragOver(e, index)}
         ondragend={handleDragEnd}
-        class="group flex items-center gap-2 p-2 rounded-lg transition-all cursor-move
+        class="group flex items-center gap-2 p-2 rounded-lg transition-all cursor-grab active:cursor-grabbing
           {draggedIndex === index
           ? 'opacity-50 scale-98 bg-blue-500/20 border border-blue-500/30'
           : 'bg-[#252526] border border-transparent hover:border-white/10'}"

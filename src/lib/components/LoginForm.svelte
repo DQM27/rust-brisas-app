@@ -214,9 +214,11 @@
     role="dialog"
     tabindex="-1"
   >
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="w-full max-w-sm mx-4 rounded-lg bg-surface-2 p-6 shadow-2xl border border-surface-tertiary animate-scale-in"
       onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
     >
       <!-- Header -->
       <div class="flex items-center gap-3 mb-4">

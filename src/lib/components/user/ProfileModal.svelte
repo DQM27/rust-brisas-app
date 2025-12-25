@@ -49,14 +49,17 @@
     class="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
     transition:fade={{ duration: 200 }}
     onclick={onClose}
+    onkeydown={(e) => e.key === "Escape" && onClose()}
     role="dialog"
     aria-modal="true"
+    tabindex="-1"
   >
-    <!-- Modal Container -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="bg-white dark:bg-[#0d1117] w-full max-w-2xl rounded-xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800"
       transition:fly={{ y: 20, duration: 300 }}
       onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
     >
       <!-- Header with Cover & Avatar -->
       <div class="relative">
