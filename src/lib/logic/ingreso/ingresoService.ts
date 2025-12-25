@@ -195,8 +195,11 @@ export async function crearIngreso(
     extraData?: any,
     usuarioId?: string
 ): Promise<any> {
-    const finalUsuarioId = usuarioId || '00000000-0000-0000-0000-000000000000'; // Fallback to Superuser if unknown
-    console.log(`[IngresoService] Creando ingreso ${tipo}`, { candidateId, formData, extraData, finalUsuarioId });
+    // Validar que se proporcione un usuario válido
+    if (!usuarioId) {
+        throw new Error('Se requiere un usuario autenticado para registrar el ingreso');
+    }
+    console.log(`[IngresoService] Creando ingreso ${tipo}`, { candidateId, formData, extraData, usuarioId });
 
     try {
         if (tipo === 'contratista') {
@@ -209,9 +212,9 @@ export async function crearIngreso(
                     tipoAutorizacion: formData.tipoAutorizacion || 'praind',
                     modoIngreso: formData.modoIngreso || 'caminando',
                     observaciones: formData.observaciones || null,
-                    usuarioIngresoId: finalUsuarioId
+                    usuarioIngresoId: usuarioId
                 },
-                usuarioId: finalUsuarioId
+                usuarioId: usuarioId
             });
         } else if (tipo === 'proveedor') {
             return await invoke('crear_ingreso_proveedor_v2', {
@@ -242,7 +245,7 @@ export async function crearIngreso(
                     modoIngreso: formData.modoIngreso || 'caminando',
                     gafeteNumero: formData.gafete,
                     observaciones: formData.observaciones || null,
-                    usuarioIngresoId: finalUsuarioId,
+                    usuarioIngresoId: usuarioId,
                 }
             });
         }

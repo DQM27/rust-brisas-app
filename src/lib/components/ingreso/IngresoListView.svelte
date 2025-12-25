@@ -277,8 +277,15 @@
 
     if (!selectedIngreso) return;
 
-    const usuarioId =
-      $currentUser?.id || "00000000-0000-0000-0000-000000000000";
+    // Validar que hay un usuario autenticado
+    if (!$currentUser?.id) {
+      toast.error(
+        "Error: No hay sesión activa. Por favor, inicie sesión nuevamente.",
+      );
+      return;
+    }
+
+    const usuarioId = $currentUser.id;
 
     try {
       salidaLoading = true;
