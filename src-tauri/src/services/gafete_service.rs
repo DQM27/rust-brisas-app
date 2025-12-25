@@ -162,6 +162,17 @@ pub async fn get_gafete(
         response.esta_disponible = true;
     }
 
+    if response.status != "disponible"
+        && response.status != "en_uso"
+        && response.status != "perdido"
+    {
+        // Fetch last change info for damaged/missing if not an alert
+        if let Ok(Some((nombre, fecha))) = db::get_last_status_change(pool, numero, tipo).await {
+            response.reportado_por_nombre = Some(nombre);
+            response.fecha_perdido = Some(fecha); // Using this field for generic date
+        }
+    }
+
     Ok(response)
 }
 
@@ -227,6 +238,18 @@ pub async fn get_all_gafetes(pool: &SqlitePool) -> Result<GafeteListResponse, Ga
         }
 
         responses.push(response);
+    }
+
+    // Enrich with history for damaged/missing
+    for r in responses.iter_mut() {
+        if r.status != "disponible" && r.status != "en_uso" && r.status != "perdido" {
+            if let Ok(Some((nombre, fecha))) =
+                db::get_last_status_change(pool, &r.numero, r.tipo.as_str()).await
+            {
+                r.reportado_por_nombre = Some(nombre);
+                r.fecha_perdido = Some(fecha);
+            }
+        }
     }
 
     let total = responses.len();
@@ -404,6 +427,7 @@ pub async fn delete_gafete(
     pool: &SqlitePool,
     numero: String,
     tipo: String,
+    usuario_id: Option<String>,
 ) -> Result<(), GafeteError> {
     let _ = db::find_by_numero_and_tipo(pool, &numero, &tipo).await.map_err(|e| match e {
         sqlx::Error::RowNotFound => GafeteError::NotFound,
@@ -418,6 +442,30 @@ pub async fn delete_gafete(
     }
 
     db::delete(pool, &numero, &tipo).await?;
+
+    // Record deletion in history (even if record is gone, history remains)
+    let now = Utc::now().to_rfc3339();
+    let historial_id = Uuid::new_v4().to_string();
+    let usuario = usuario_id.unwrap_or_else(|| "sistema".to_string());
+
+    // We log it as a status change to "ELIMINADO"
+    if let Err(e) = audit_queries::insert_historial_estado_gafete(
+        pool,
+        &historial_id,
+        &numero,
+        &tipo,
+        "desconocido", // We don't fetch prev state here to save a query, or we could
+        "ELIMINADO",
+        &usuario,
+        Some("Gafete eliminado permanentemente"),
+        &now,
+        &now,
+    )
+    .await
+    {
+        warn!("Error al registrar historial de eliminación de gafete {} {}: {}", numero, tipo, e);
+    }
+
     Ok(())
 }
 

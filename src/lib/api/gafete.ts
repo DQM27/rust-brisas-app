@@ -48,7 +48,7 @@ export const gafete = {
             usuarioId,
         }),
 
-    delete: async (numero: string, tipo: string): Promise<void> => {
-        return await invoke('delete_gafete', { numero, tipo });
+    delete: async (numero: string, tipo: string, usuarioId?: string): Promise<void> => {
+        return await invoke('delete_gafete', { numero, tipo, usuarioId });
     }
 };

@@ -124,10 +124,10 @@ export async function update(
 /**
  * Eliminar gafete
  */
-export async function remove(numero: string, tipo: string): Promise<ServiceResult<void>> {
+export async function remove(numero: string, tipo: string, userId?: string): Promise<ServiceResult<null>> {
     try {
-        await gafete.delete(numero, tipo);
-        return { ok: true, data: undefined };
+        await gafete.delete(numero, tipo, userId);
+        return { ok: true, data: null };
     } catch (err: any) {
         console.error('Error al eliminar gafete:', err);
         return { ok: false, error: parseError(err) };

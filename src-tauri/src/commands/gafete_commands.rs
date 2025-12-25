@@ -97,7 +97,8 @@ pub async fn delete_gafete(
     pool_state: State<'_, DbPool>,
     numero: String,
     tipo: String,
+    usuario_id: Option<String>,
 ) -> Result<(), GafeteError> {
     let pool = pool_state.0.read().await;
-    gafete_service::delete_gafete(&pool, numero, tipo).await
+    gafete_service::delete_gafete(&pool, numero, tipo, usuario_id).await
 }

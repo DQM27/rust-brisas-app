@@ -163,7 +163,12 @@
     )
       return;
 
-    const result = await gafeteService.remove(gafete.numero, gafete.tipo);
+    const userId = $currentUser?.id;
+    const result = await gafeteService.remove(
+      gafete.numero,
+      gafete.tipo,
+      userId,
+    );
     if (result.ok) {
       toast.success("Gafete eliminado");
       loadGafetes();

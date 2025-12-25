@@ -271,6 +271,35 @@ pub async fn delete(pool: &SqlitePool, numero: &str, tipo: &str) -> sqlx::Result
     Ok(())
 }
 
+pub async fn get_last_status_change(
+    pool: &SqlitePool,
+    numero: &str,
+    tipo: &str,
+) -> sqlx::Result<Option<(String, String)>> {
+    let result = sqlx::query!(
+        r#"SELECT u.nombre, u.apellido, h.fecha_cambio 
+           FROM historial_estado_gafetes h 
+           LEFT JOIN users u ON h.cambiado_por = u.id 
+           WHERE h.gafete_numero = ? AND h.gafete_tipo = ? 
+           ORDER BY h.fecha_cambio DESC 
+           LIMIT 1"#,
+        numero,
+        tipo
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(result.map(|r| {
+        let nombre = r.nombre.unwrap_or_else(|| "Sistema".to_string());
+        let nombre_completo = if let Some(apellido) = r.apellido {
+            format!("{} {}", nombre, apellido)
+        } else {
+            nombre
+        };
+        (nombre_completo, r.fecha_cambio)
+    }))
+}
+
 // ==========================================
 // QUERIES DE ALERTAS (HELPERS)
 // ==========================================
