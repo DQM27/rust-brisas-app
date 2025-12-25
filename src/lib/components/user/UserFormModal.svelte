@@ -305,12 +305,12 @@
 
   // Styles
   const inputClass =
-    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60";
+    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-2.5 py-1.5 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60";
   const labelClass =
-    "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
-  const errorClass = "text-xs text-red-500 mt-1";
+    "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1";
+  const errorClass = "text-xs text-red-500 mt-0.5";
   const sectionClass =
-    "text-base font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2 mb-3";
+    "text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-1 mb-2";
 </script>
 
 {#if show}
@@ -359,7 +359,7 @@
           />
         </div>
       {:else}
-        <form onsubmit={handleSubmit} class="p-6 space-y-5">
+        <form onsubmit={handleSubmit} class="p-5 space-y-3">
           <!-- Cédula -->
           <div>
             <label for="cedula" class={labelClass}>Cédula *</label>
@@ -378,7 +378,7 @@
           <!-- Datos Personales -->
           <div>
             <h3 class={sectionClass}>Datos Personales</h3>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-3">
               <div>
                 <label for="nombre" class={labelClass}>Nombre *</label>
                 <input
@@ -443,7 +443,7 @@
           <!-- Información Laboral -->
           <div>
             <h3 class={sectionClass}>Información Laboral</h3>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-3">
               <div>
                 <label for="numeroGafete" class={labelClass}
                   >Número Gafete</label
@@ -476,7 +476,7 @@
           <!-- Cuenta -->
           <div>
             <h3 class={sectionClass}>Cuenta y Acceso</h3>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-3">
               <div>
                 <label for="email" class={labelClass}>Email *</label>
                 <input
@@ -513,7 +513,7 @@
           <!-- Contacto -->
           <div>
             <h3 class={sectionClass}>Contacto</h3>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-3">
               <div>
                 <label for="telefono" class={labelClass}>Teléfono</label>
                 <input
@@ -544,7 +544,7 @@
           <!-- Emergencia -->
           <div>
             <h3 class={sectionClass}>Contacto de Emergencia</h3>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-3">
               <div>
                 <label for="contactoEmergenciaNombre" class={labelClass}
                   >Nombre</label
@@ -581,12 +581,12 @@
 
           <!-- Buttons -->
           <div
-            class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700"
+            class="flex gap-2 pt-3 border-t border-gray-200 dark:border-gray-700 mt-2"
           >
             <button
               type="button"
               onclick={onClose}
-              class="flex-1 py-2.5 px-4 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              class="flex-1 py-1.5 px-3 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm"
             >
               Cancelar
             </button>
@@ -596,12 +596,12 @@
                 type="button"
                 onclick={() => (isChangingPassword = true)}
                 disabled={loading}
-                class="flex-1 py-2.5 px-4 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                class="flex-1 py-1.5 px-3 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-1.5 text-sm"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
+                  width="14"
+                  height="14"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -626,7 +626,7 @@
                 type="button"
                 onclick={handleResetPasswordClick}
                 disabled={loading}
-                class="flex-1 py-2.5 px-4 rounded-md border border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+                class="flex-1 py-1.5 px-3 rounded-md border border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors text-sm"
               >
                 Reset Password
               </button>
@@ -634,7 +634,7 @@
             <button
               type="submit"
               disabled={loading}
-              class="flex-1 py-2.5 px-4 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              class="flex-1 py-1.5 px-3 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
             >
               {loading
                 ? "Guardando..."
