@@ -24,7 +24,7 @@
   import { toast } from "svelte-5-french-toast";
   import ChangePasswordPanel from "$lib/components/ChangePasswordPanel.svelte";
 
-  import { roleService } from "$lib/logic/role/roleService";
+  import * as roleService from "$lib/logic/role/roleService";
   import type { RoleResponse as RoleType } from "$lib/types/role";
 
   interface Props {
@@ -552,14 +552,14 @@
                       <option disabled selected>Cargando roles...</option>
                     {:else}
                       <optgroup label="Roles del Sistema">
-                        {#each availableRoles.filter(r => r.isSystem) as role}
+                        {#each availableRoles.filter((r) => r.isSystem) as role}
                           <option value={role.id}>{role.name}</option>
-                        {each}
+                        {/each}
                       </optgroup>
-                      
-                      {#if availableRoles.some(r => !r.isSystem)}
+
+                      {#if availableRoles.some((r) => !r.isSystem)}
                         <optgroup label="Roles Personalizados">
-                          {#each availableRoles.filter(r => !r.isSystem) as role}
+                          {#each availableRoles.filter((r) => !r.isSystem) as role}
                             <option value={role.id}>{role.name}</option>
                           {/each}
                         </optgroup>
