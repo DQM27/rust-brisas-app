@@ -14,6 +14,8 @@ export type SessionMode = 'active' | 'screensaver' | 'locked';
 interface SessionState {
     mode: SessionMode;
     lastActivityTime: number;
+    lastAppFocusTime: number;          // NEW: When app last had focus
+    appHasFocus: boolean;               // NEW: Current focus state
     screensaverActive: boolean;
     awaitingPasswordForScreensaver: boolean;
 }
@@ -25,6 +27,8 @@ interface SessionState {
 const initialState: SessionState = {
     mode: 'active',
     lastActivityTime: Date.now(),
+    lastAppFocusTime: Date.now(),      // NEW
+    appHasFocus: true,                  // NEW: Assume focused at start
     screensaverActive: false,
     awaitingPasswordForScreensaver: false,
 };
@@ -103,12 +107,14 @@ function detachActivityListeners(): void {
 }
 
 // =============================================================================
-// TIMEOUT CHECKING (Configurable: System-Wide or App-Only Detection)
+// TIMEOUT CHECKING (Dual Mode: App Focus + System Idle)
 // =============================================================================
 
 /**
  * Checks if timeouts have been reached and triggers appropriate actions
- * Uses either system-wide or app-only idle detection based on user settings
+ * Handles TWO independent lock mechanisms:
+ * 1. App Lock: When app loses focus/minimized
+ * 2. System Screensaver: When PC is globally idle
  */
 async function checkTimeouts(): Promise<void> {
     const state = get(sessionState);
@@ -120,22 +126,30 @@ async function checkTimeouts(): Promise<void> {
         return;
     }
 
-    // Get idle time based on user preference
-    let inactiveMinutes: number;
+    const now = Date.now();
 
-    if (settings.useSystemWideDetection) {
-        // System-wide detection: detects PC idle time (mouse, keyboard globally)
-        inactiveMinutes = await getSystemIdleMinutes();
-        console.log(`[Session] System-wide idle for ${inactiveMinutes} minutes`);
-    } else {
-        // App-only detection: detects activity only within this app
-        const now = Date.now();
-        inactiveMinutes = (now - state.lastActivityTime) / 1000 / 60;
-        console.log(`[Session] App-only idle for ${inactiveMinutes.toFixed(1)} minutes`);
+    // =========================================================================
+    // 1. APP LOCK CHECK (focus-based)
+    // =========================================================================
+    if (settings.enableAppLock && !state.appHasFocus) {
+        const appUnfocusedMinutes = (now - state.lastAppFocusTime) / 1000 / 60;
+
+        if (appUnfocusedMinutes >= settings.appLockTimeoutMinutes) {
+            console.log(`[Session] App unfocused for ${appUnfocusedMinutes.toFixed(1)} min - locking`);
+            // TODO: Implement lock without screensaver (just require password)
+            performCompleteLogout(); // Temporary: full logout
+            return;
+        }
     }
 
-    // Check for complete logout timeout
-    if (settings.enableCompleteTimeout && inactiveMinutes >= settings.completeTimeoutMinutes) {
+    // =========================================================================
+    // 2. SYSTEM SCREENSAVER CHECK (PC-wide idle)
+    // =========================================================================
+    const systemIdleMinutes = await getSystemIdleMinutes();
+    console.log(`[Session] System idle: ${systemIdleMinutes} min`);
+
+    // Check for complete logout timeout (highest priority)
+    if (settings.enableCompleteTimeout && systemIdleMinutes >= settings.completeTimeoutMinutes) {
         console.log('[Session] Complete logout timeout reached');
         performCompleteLogout();
         return;
@@ -145,7 +159,7 @@ async function checkTimeouts(): Promise<void> {
     if (
         settings.enableScreensaver &&
         !state.screensaverActive &&
-        inactiveMinutes >= settings.screensaverTimeoutMinutes
+        systemIdleMinutes >= settings.screensaverTimeoutMinutes
     ) {
         console.log('[Session] Screensaver timeout reached');
         enterScreensaver();
@@ -318,6 +332,8 @@ export function startSession(): void {
     sessionState.set({
         mode: 'active',
         lastActivityTime: Date.now(),
+        lastAppFocusTime: Date.now(),
+        appHasFocus: true,
         screensaverActive: false,
         awaitingPasswordForScreensaver: false,
     });
