@@ -6,16 +6,18 @@ import { browser } from '$app/environment';
 // =============================================================================
 
 export interface SessionSettings {
-    // Enable/disable features
-    enableScreensaver: boolean;        // Interactive screensaver mode
-    enableCompleteTimeout: boolean;    // Full logout
+    // App Lock (cuando app pierde foco o está minimizada)
+    enableAppLock: boolean;                 // Bloquear cuando app no tiene foco
+    appLockTimeoutMinutes: number;          // Timeout para bloqueo de app
 
-    // Timeout durations (in minutes)
-    screensaverTimeoutMinutes: number; // Default: 20
-    completeTimeoutMinutes: number;    // Default: 60
+    // System Screensaver (cuando PC está inactiva)
+    enableScreensaver: boolean;             // Activar screensaver del sistema
+    screensaverTimeoutMinutes: number;      // Timeout para screensaver
+    screensaverRequiresPassword: boolean;   // Requiere password para salir
 
-    // Screensaver behavior
-    screensaverRequiresPassword: boolean; // Default: true (secure mode)
+    // Complete Logout
+    enableCompleteTimeout: boolean;         // Logout completo
+    completeTimeoutMinutes: number;         // Timeout para logout completo
 }
 
 // =============================================================================
@@ -23,16 +25,18 @@ export interface SessionSettings {
 // =============================================================================
 
 const DEFAULT_SETTINGS: SessionSettings = {
-    // Features enabled by default for security
+    // App Lock: deshabilitado por defecto (usuario elige)
+    enableAppLock: false,
+    appLockTimeoutMinutes: 20,
+
+    // System Screensaver: habilitado por defecto para seguridad
     enableScreensaver: true,
-    enableCompleteTimeout: true,
-
-    // Timeout durations
     screensaverTimeoutMinutes: 20,
-    completeTimeoutMinutes: 60,
-
-    // Screensaver requires password by default (secure mode)
     screensaverRequiresPassword: true,
+
+    // Complete Logout: habilitado por defecto
+    enableCompleteTimeout: true,
+    completeTimeoutMinutes: 60,
 };
 
 // =============================================================================
@@ -81,17 +85,17 @@ function saveToStorage(settings: SessionSettings): void {
 function validateSettings(settings: SessionSettings): SessionSettings {
     const validated = { ...settings };
 
-    // Ensure timeouts are positive numbers
+    // Ensure all timeouts are positive numbers
+    validated.appLockTimeoutMinutes = Math.max(1, Math.floor(settings.appLockTimeoutMinutes));
     validated.screensaverTimeoutMinutes = Math.max(1, Math.floor(settings.screensaverTimeoutMinutes));
     validated.completeTimeoutMinutes = Math.max(1, Math.floor(settings.completeTimeoutMinutes));
 
-    // If both are enabled, ensure complete timeout > screensaver timeout
+    // If screensaver and complete logout are both enabled, ensure complete > screensaver
     if (validated.enableScreensaver && validated.enableCompleteTimeout) {
         if (validated.completeTimeoutMinutes <= validated.screensaverTimeoutMinutes) {
-            // Auto-adjust: set complete timeout to screensaver + 10 minutes
             validated.completeTimeoutMinutes = validated.screensaverTimeoutMinutes + 10;
             console.warn(
-                `Complete logout timeout adjusted to ${validated.completeTimeoutMinutes} minutes (must be greater than screensaver timeout)`
+                `Complete logout timeout adjusted to ${validated.completeTimeoutMinutes} minutes`
             );
         }
     }
@@ -105,9 +109,11 @@ function validateSettings(settings: SessionSettings): SessionSettings {
 
 export interface SessionSettingsStore extends Writable<SessionSettings> {
     reset: () => void;
+    toggleAppLock: () => void;
     toggleScreensaver: () => void;
     toggleCompleteTimeout: () => void;
     toggleScreensaverPassword: () => void;
+    setAppLockTimeout: (minutes: number) => void;
     setScreensaverTimeout: (minutes: number) => void;
     setCompleteTimeout: (minutes: number) => void;
 }
@@ -144,6 +150,10 @@ function createSessionSettingsStore(): SessionSettingsStore {
             set(DEFAULT_SETTINGS);
         },
 
+        toggleAppLock: () => {
+            update((s) => ({ ...s, enableAppLock: !s.enableAppLock }));
+        },
+
         toggleScreensaver: () => {
             update((s) => ({ ...s, enableScreensaver: !s.enableScreensaver }));
         },
@@ -154,6 +164,10 @@ function createSessionSettingsStore(): SessionSettingsStore {
 
         toggleScreensaverPassword: () => {
             update((s) => ({ ...s, screensaverRequiresPassword: !s.screensaverRequiresPassword }));
+        },
+
+        setAppLockTimeout: (minutes: number) => {
+            update((s) => ({ ...s, appLockTimeoutMinutes: minutes }));
         },
 
         setScreensaverTimeout: (minutes: number) => {

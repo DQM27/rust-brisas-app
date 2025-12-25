@@ -103,12 +103,12 @@ function detachActivityListeners(): void {
 }
 
 // =============================================================================
-// TIMEOUT CHECKING (Using System-Wide Idle Detection)
+// TIMEOUT CHECKING (Configurable: System-Wide or App-Only Detection)
 // =============================================================================
 
 /**
  * Checks if timeouts have been reached and triggers appropriate actions
- * NOW USES SYSTEM-WIDE IDLE DETECTION instead of manual activity tracking
+ * Uses either system-wide or app-only idle detection based on user settings
  */
 async function checkTimeouts(): Promise<void> {
     const state = get(sessionState);
@@ -120,10 +120,19 @@ async function checkTimeouts(): Promise<void> {
         return;
     }
 
-    // Get system-wide idle time in minutes
-    const inactiveMinutes = await getSystemIdleMinutes();
+    // Get idle time based on user preference
+    let inactiveMinutes: number;
 
-    console.log(`[Session] System idle for ${inactiveMinutes} minutes`);
+    if (settings.useSystemWideDetection) {
+        // System-wide detection: detects PC idle time (mouse, keyboard globally)
+        inactiveMinutes = await getSystemIdleMinutes();
+        console.log(`[Session] System-wide idle for ${inactiveMinutes} minutes`);
+    } else {
+        // App-only detection: detects activity only within this app
+        const now = Date.now();
+        inactiveMinutes = (now - state.lastActivityTime) / 1000 / 60;
+        console.log(`[Session] App-only idle for ${inactiveMinutes.toFixed(1)} minutes`);
+    }
 
     // Check for complete logout timeout
     if (settings.enableCompleteTimeout && inactiveMinutes >= settings.completeTimeoutMinutes) {
