@@ -166,14 +166,14 @@
 <div class="space-y-4">
   <!-- Header con stats -->
   <div class="flex items-center justify-between">
-    <div class="flex items-center gap-4 text-xs text-gray-400">
+    <div class="flex items-center gap-4 text-xs text-[#8b949e]">
       <span>
-        <span class="text-white font-medium">{visibleCount}</span
+        <span class="text-[#e6edf3] font-medium">{visibleCount}</span
         >/{columns.length} visibles
       </span>
       {#if pinnedLeftCount > 0 || pinnedRightCount > 0}
         <span>
-          <span class="text-white font-medium"
+          <span class="text-[#e6edf3] font-medium"
             >{pinnedLeftCount + pinnedRightCount}</span
           > fijadas
         </span>
@@ -185,14 +185,14 @@
   <div class="relative">
     <Search
       size={14}
-      class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+      class="absolute left-3 top-1/2 -translate-y-1/2 text-[#8b949e]"
     />
     <input
       type="text"
       bind:value={searchQuery}
       placeholder="Buscar columna..."
-      class="w-full pl-9 pr-3 py-2 text-sm bg-[#252526] border border-white/10 rounded-lg
-        text-white placeholder:text-gray-500 focus:outline-none focus:border-white/30"
+      class="w-full pl-9 pr-3 py-2 text-sm bg-[#0d1117] border border-[#30363d] rounded-md
+        text-[#e6edf3] placeholder:text-[#8b949e] focus:outline-none focus:border-[#58a6ff]"
     />
   </div>
 
@@ -200,36 +200,36 @@
   <div class="flex flex-wrap gap-2">
     <button
       onclick={showAll}
-      class="px-2.5 py-1.5 text-xs font-medium text-green-400 bg-green-500/10
-        border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors"
+      class="px-2.5 py-1.5 text-xs font-medium text-[#238636] bg-[#238636]/10
+        border border-[#238636]/30 rounded-md hover:bg-[#238636]/20 transition-colors"
     >
       Mostrar todas
     </button>
     <button
       onclick={hideAll}
-      class="px-2.5 py-1.5 text-xs font-medium text-red-400 bg-red-500/10
-        border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
+      class="px-2.5 py-1.5 text-xs font-medium text-[#f85149] bg-[#f85149]/10
+        border border-[#f85149]/30 rounded-md hover:bg-[#f85149]/20 transition-colors"
     >
       Ocultar todas
     </button>
     <button
       onclick={unpinAll}
-      class="px-2.5 py-1.5 text-xs font-medium text-gray-400 bg-white/5
-        border border-white/10 rounded-lg hover:bg-white/10 transition-colors"
+      class="px-2.5 py-1.5 text-xs font-medium text-[#8b949e] bg-[#21262d]
+        border border-[#30363d] rounded-md hover:border-[#8b949e] transition-colors"
     >
       Desfijar todas
     </button>
     <button
       onclick={autosizeAll}
-      class="px-2.5 py-1.5 text-xs font-medium text-blue-400 bg-blue-500/10
-        border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-colors"
+      class="px-2.5 py-1.5 text-xs font-medium text-[#58a6ff] bg-[#58a6ff]/10
+        border border-[#58a6ff]/30 rounded-md hover:bg-[#58a6ff]/20 transition-colors"
     >
       Auto-ajustar
     </button>
     <button
       onclick={resetColumns}
-      class="px-2.5 py-1.5 text-xs font-medium text-gray-400 bg-white/5
-        border border-white/10 rounded-lg hover:bg-white/10 transition-colors"
+      class="px-2.5 py-1.5 text-xs font-medium text-[#8b949e] bg-[#21262d]
+        border border-[#30363d] rounded-md hover:border-[#8b949e] transition-colors"
     >
       Reset
     </button>
@@ -243,14 +243,16 @@
         ondragstart={(e) => handleDragStart(e, index)}
         ondragover={(e) => handleDragOver(e, index)}
         ondragend={handleDragEnd}
-        class="group flex items-center gap-2 p-2 rounded-lg transition-all cursor-grab active:cursor-grabbing
+        class="group flex items-center gap-2 p-2 rounded-md transition-all cursor-grab active:cursor-grabbing
           {draggedIndex === index
-          ? 'opacity-50 scale-98 bg-blue-500/20 border border-blue-500/30'
-          : 'bg-[#252526] border border-transparent hover:border-white/10'}"
+          ? 'opacity-50 scale-98 bg-[#58a6ff]/20 border border-[#58a6ff]/40'
+          : 'bg-[#161b22] border border-[#30363d] hover:border-[#8b949e]'}"
         role="listitem"
       >
         <!-- Drag Handle -->
-        <div class="text-gray-600 group-hover:text-gray-400 transition-colors">
+        <div
+          class="text-[#484f58] group-hover:text-[#8b949e] transition-colors"
+        >
           <GripVertical size={14} />
         </div>
 
@@ -259,8 +261,8 @@
           onclick={() => toggleVisibility(column.id)}
           class="p-1 rounded transition-colors
             {column.visible
-            ? 'text-green-400 hover:bg-green-500/10'
-            : 'text-gray-500 hover:bg-white/5'}"
+            ? 'text-[#238636] hover:bg-[#238636]/10'
+            : 'text-[#484f58] hover:bg-[#21262d]'}"
           title={column.visible ? "Ocultar" : "Mostrar"}
         >
           {#if column.visible}
@@ -273,7 +275,7 @@
         <!-- Column Name -->
         <span
           class="flex-1 text-sm truncate transition-colors
-            {column.visible ? 'text-white' : 'text-gray-500'}"
+            {column.visible ? 'text-[#e6edf3]' : 'text-[#484f58]'}"
         >
           {column.name}
         </span>
@@ -287,8 +289,8 @@
               setPinned(column.id, column.pinned === "left" ? null : "left")}
             class="p-1 rounded transition-colors
               {column.pinned === 'left'
-              ? 'text-blue-400 bg-blue-500/10'
-              : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}"
+              ? 'text-[#58a6ff] bg-[#58a6ff]/10'
+              : 'text-[#484f58] hover:text-[#8b949e] hover:bg-[#21262d]'}"
             title="Fijar izquierda"
           >
             <ArrowLeftToLine size={12} />
@@ -298,8 +300,8 @@
               setPinned(column.id, column.pinned === "right" ? null : "right")}
             class="p-1 rounded transition-all
               {column.pinned === 'right'
-              ? 'text-blue-400 bg-blue-500/10'
-              : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}"
+              ? 'text-[#58a6ff] bg-[#58a6ff]/10'
+              : 'text-[#484f58] hover:text-[#8b949e] hover:bg-[#21262d]'}"
             title="Fijar derecha"
           >
             <ArrowRightToLine size={12} />
@@ -311,8 +313,8 @@
           <span
             class="px-1.5 py-0.5 text-[10px] font-medium rounded
               {column.pinned === 'left'
-              ? 'bg-blue-500/20 text-blue-400'
-              : 'bg-purple-500/20 text-purple-400'}"
+              ? 'bg-[#58a6ff]/20 text-[#58a6ff]'
+              : 'bg-[#a371f7]/20 text-[#a371f7]'}"
           >
             {column.pinned === "left" ? "IZQ" : "DER"}
           </span>
@@ -322,14 +324,14 @@
 
     {#if filteredColumns.length === 0}
       <div class="py-8 text-center">
-        <Columns size={24} class="mx-auto text-gray-600 mb-2" />
-        <p class="text-sm text-gray-500">No se encontraron columnas</p>
+        <Columns size={24} class="mx-auto text-[#484f58] mb-2" />
+        <p class="text-sm text-[#8b949e]">No se encontraron columnas</p>
       </div>
     {/if}
   </div>
 
   <!-- Tip -->
-  <p class="text-xs text-gray-500 text-center">
+  <p class="text-xs text-[#8b949e] text-center">
     Arrastra para reordenar • Click en el ojo para mostrar/ocultar
   </p>
 </div>

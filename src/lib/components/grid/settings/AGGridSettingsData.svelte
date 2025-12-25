@@ -89,43 +89,43 @@
   <!-- Paginación -->
   <section>
     <div class="flex items-center gap-2 mb-3">
-      <Hash size={16} class="text-blue-400" />
-      <h3 class="text-sm font-medium text-white">Paginación</h3>
+      <Hash size={16} class="text-[#58a6ff]" />
+      <h3 class="text-sm font-medium text-[#e6edf3]">Paginación</h3>
     </div>
 
     <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
       {#each paginationOptions as size}
         <button
           onclick={() => handlePaginationChange(size)}
-          class="py-2 px-3 text-sm rounded-lg border transition-all
+          class="py-2 px-3 text-sm rounded-md border transition-all
             {paginationSize === size
-            ? 'border-blue-500 bg-blue-500/10 text-blue-400 font-medium'
-            : 'border-white/10 bg-[#252526] text-gray-300 hover:border-white/20'}"
+            ? 'border-[#58a6ff] bg-[#58a6ff]/10 text-[#58a6ff] font-medium'
+            : 'border-[#30363d] bg-[#161b22] text-[#8b949e] hover:border-[#8b949e]'}"
         >
           {size}
         </button>
       {/each}
     </div>
 
-    <p class="text-xs text-gray-500 mt-2">Registros por página en la tabla</p>
+    <p class="text-xs text-[#8b949e] mt-2">Registros por página en la tabla</p>
   </section>
 
   <!-- Quick Filter -->
   <section>
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-2">
-        <Search size={16} class="text-green-400" />
-        <h3 class="text-sm font-medium text-white">Búsqueda rápida</h3>
+        <Search size={16} class="text-[#238636]" />
+        <h3 class="text-sm font-medium text-[#e6edf3]">Búsqueda rápida</h3>
       </div>
       <label class="flex items-center gap-2 cursor-pointer">
-        <span class="text-xs text-gray-400">
+        <span class="text-xs text-[#8b949e]">
           {enableQuickFilter ? "Activo" : "Inactivo"}
         </span>
         <input
           type="checkbox"
           checked={enableQuickFilter}
           onchange={handleQuickFilterToggle}
-          class="w-4 h-4 rounded bg-[#1e1e1e] border-white/20 text-green-500 focus:ring-green-500"
+          class="w-4 h-4 rounded bg-[#0d1117] border-[#30363d] text-[#238636] focus:ring-[#238636]"
         />
       </label>
     </div>
@@ -134,15 +134,15 @@
       <div class="relative">
         <Search
           size={14}
-          class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+          class="absolute left-3 top-1/2 -translate-y-1/2 text-[#8b949e]"
         />
         <input
           type="text"
           bind:value={quickFilterText}
           oninput={handleQuickFilterChange}
           placeholder="Escribir para filtrar en todas las columnas..."
-          class="w-full pl-9 pr-3 py-2.5 text-sm bg-[#252526] border border-white/10 rounded-lg
-            text-white placeholder:text-gray-500 focus:outline-none focus:border-green-500/50"
+          class="w-full pl-9 pr-3 py-2.5 text-sm bg-[#0d1117] border border-[#30363d] rounded-md
+            text-[#e6edf3] placeholder:text-[#8b949e] focus:outline-none focus:border-[#238636]/50"
         />
         {#if quickFilterText}
           <button
@@ -150,20 +150,20 @@
               quickFilterText = "";
               handleQuickFilterChange();
             }}
-            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-[#8b949e] hover:text-[#e6edf3]"
           >
             ×
           </button>
         {/if}
       </div>
-      <p class="text-xs text-gray-500 mt-2">
+      <p class="text-xs text-[#8b949e] mt-2">
         Filtra instantáneamente en todas las columnas visibles
       </p>
     {:else}
       <div
-        class="p-4 rounded-lg bg-[#252526] border border-white/10 text-center"
+        class="p-4 rounded-md bg-[#161b22] border border-[#30363d] text-center"
       >
-        <p class="text-sm text-gray-400">
+        <p class="text-sm text-[#8b949e]">
           Activa la búsqueda rápida para filtrar en todas las columnas
         </p>
       </div>
@@ -173,17 +173,17 @@
   <!-- Filtros flotantes -->
   <section>
     <div class="flex items-center gap-2 mb-3">
-      <Filter size={16} class="text-purple-400" />
-      <h3 class="text-sm font-medium text-white">Filtros de columna</h3>
+      <Filter size={16} class="text-[#a371f7]" />
+      <h3 class="text-sm font-medium text-[#e6edf3]">Filtros de columna</h3>
     </div>
 
     <label
-      class="flex items-center justify-between p-3 rounded-lg bg-[#252526] border border-white/10
-        hover:border-white/20 cursor-pointer transition-colors"
+      class="flex items-center justify-between p-3 rounded-md bg-[#161b22] border border-[#30363d]
+        hover:border-[#8b949e] cursor-pointer transition-colors"
     >
       <div>
-        <p class="text-sm text-white">Filtros flotantes</p>
-        <p class="text-xs text-gray-500">
+        <p class="text-sm text-[#e6edf3]">Filtros flotantes</p>
+        <p class="text-xs text-[#8b949e]">
           Muestra campo de filtro debajo de cada encabezado
         </p>
       </div>
@@ -191,7 +191,7 @@
         type="checkbox"
         checked={showFloatingFilters}
         onchange={handleFloatingFiltersChange}
-        class="w-4 h-4 rounded bg-[#1e1e1e] border-white/20 text-purple-500 focus:ring-purple-500"
+        class="w-4 h-4 rounded bg-[#0d1117] border-[#30363d] text-[#a371f7] focus:ring-[#a371f7]"
       />
     </label>
   </section>
@@ -199,30 +199,30 @@
   <!-- Acciones de filtros -->
   <section>
     <div class="flex items-center gap-2 mb-3">
-      <Trash2 size={16} class="text-red-400" />
-      <h3 class="text-sm font-medium text-white">Limpiar</h3>
+      <Trash2 size={16} class="text-[#f85149]" />
+      <h3 class="text-sm font-medium text-[#e6edf3]">Limpiar</h3>
     </div>
 
     <div class="flex gap-2">
       <button
         onclick={clearAllFilters}
-        class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg
-          bg-red-500/10 border border-red-500/20 text-sm text-red-400
-          hover:bg-red-500/20 transition-colors"
+        class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md
+          bg-[#f85149]/10 border border-[#f85149]/20 text-sm text-[#f85149]
+          hover:bg-[#f85149]/20 transition-colors"
       >
         <Filter size={14} />
         Limpiar filtros
         {#if activeFiltersCount > 0}
-          <span class="px-1.5 py-0.5 text-xs bg-red-500/30 rounded">
+          <span class="px-1.5 py-0.5 text-xs bg-[#f85149]/30 rounded">
             {activeFiltersCount}
           </span>
         {/if}
       </button>
       <button
         onclick={clearSort}
-        class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg
-          bg-[#252526] border border-white/10 text-sm text-gray-300
-          hover:bg-white/5 hover:border-white/20 transition-colors"
+        class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md
+          bg-[#21262d] border border-[#30363d] text-sm text-[#8b949e]
+          hover:border-[#8b949e] transition-colors"
       >
         Limpiar orden
       </button>
@@ -230,9 +230,9 @@
   </section>
 
   <!-- Info -->
-  <div class="p-3 rounded-lg bg-[#252526] border border-white/10">
-    <p class="text-xs text-gray-400">
-      <strong class="text-gray-300">Tip:</strong> Usa Shift+Click en los encabezados
+  <div class="p-3 rounded-md bg-[#161b22] border border-[#30363d]">
+    <p class="text-xs text-[#8b949e]">
+      <strong class="text-[#e6edf3]">Tip:</strong> Usa Shift+Click en los encabezados
       para ordenar por múltiples columnas. Los filtros se combinan con AND.
     </p>
   </div>

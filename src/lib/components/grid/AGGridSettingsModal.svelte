@@ -11,7 +11,7 @@
   import AGGridSettingsToolbar from "./settings/AGGridSettingsToolbar.svelte";
   import AGGridSettingsData from "./settings/AGGridSettingsData.svelte";
   import AGGridSettingsAdvanced from "./settings/AGGridSettingsAdvanced.svelte";
-  import { Palette, Columns, Wrench, ClipboardType, Cpu } from "lucide-svelte";
+  import { Palette, Columns, Wrench, Database, Settings } from "lucide-svelte";
 
   interface Props {
     gridId: GridId;
@@ -34,8 +34,8 @@
     { id: "appearance", label: "Apariencia", icon: Palette },
     { id: "columns", label: "Columnas", icon: Columns },
     { id: "toolbar", label: "Toolbar", icon: Wrench },
-    { id: "data", label: "Datos", icon: ClipboardType },
-    { id: "advanced", label: "Avanzado", icon: Cpu },
+    { id: "data", label: "Datos", icon: Database },
+    { id: "advanced", label: "Avanzado", icon: Settings },
   ];
 
   function handleClose() {
@@ -81,13 +81,13 @@
   onkeydown={(e) => e.key === "Escape" && handleClose()}
 >
   <!-- Backdrop -->
-  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+  <div class="absolute inset-0 bg-black/60"></div>
 
-  <!-- Modal -->
+  <!-- Modal (GitHub Style) -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
-    class="relative w-full max-w-4xl max-h-[85vh] flex flex-col
-      bg-[#1a1a1b] border border-white/10 rounded-xl shadow-2xl
+    class="relative w-full max-w-3xl max-h-[85vh] flex flex-col
+      bg-[#0d1117] border border-[#30363d] rounded-lg shadow-2xl
       {isClosing ? 'scale-95' : 'scale-100'} transition-transform duration-150"
     onclick={(e) => e.stopPropagation()}
     role="document"
@@ -96,62 +96,55 @@
   >
     <!-- Header -->
     <div
-      class="flex items-center justify-between px-5 py-4 border-b border-white/10"
+      class="flex items-center justify-between px-4 py-3 border-b border-[#30363d]"
     >
-      <div>
-        <h2 class="text-base font-semibold text-white">
-          Configuración de Grid
-        </h2>
-        <p class="text-xs text-gray-500 mt-0.5">
-          Personaliza la tabla a tu gusto
-        </p>
-      </div>
-      <div class="flex items-center gap-2">
-        <button
-          onclick={() => (showResetConfirm = true)}
-          class="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400
-            hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-          title="Restaurar valores por defecto"
-        >
-          <RotateCcw size={14} />
-          <span class="hidden sm:inline">Reset</span>
-        </button>
-        <button
-          onclick={handleClose}
-          class="p-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-        >
-          <X size={18} />
-        </button>
-      </div>
+      <h2 class="text-sm font-semibold text-[#e6edf3]">
+        Configuración de Grid
+      </h2>
+      <button
+        onclick={handleClose}
+        class="p-1 text-[#8b949e] hover:text-[#e6edf3] rounded transition-colors"
+        aria-label="Cerrar"
+      >
+        <X size={18} />
+      </button>
     </div>
 
     <!-- Content -->
     <div class="flex flex-1 overflow-hidden">
-      <!-- Sidebar Tabs -->
-      <div
-        class="w-48 border-r border-white/5 bg-black/40 backdrop-blur-md p-3 flex flex-col gap-1"
-      >
+      <!-- Sidebar Navigation (GitHub Style) -->
+      <nav class="w-52 border-r border-[#30363d] py-2 overflow-y-auto">
         {#each tabs as tab}
           <button
             onclick={() => (activeTab = tab.id)}
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all group
+            class="w-full flex items-center gap-3 px-4 py-2 text-left text-sm transition-colors
               {activeTab === tab.id
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-              : 'text-gray-400 hover:text-white hover:bg-white/5'}"
+              ? 'bg-[#161b22] text-[#e6edf3] border-l-2 border-l-[#f78166]'
+              : 'text-[#8b949e] hover:bg-[#161b22] hover:text-[#e6edf3] border-l-2 border-l-transparent'}"
           >
             <tab.icon
-              size={18}
-              class={activeTab === tab.id
-                ? "text-white"
-                : "text-gray-500 group-hover:text-gray-300"}
+              size={16}
+              class={activeTab === tab.id ? "text-[#f78166]" : "text-[#8b949e]"}
             />
-            <span class="text-sm font-medium">{tab.label}</span>
+            {tab.label}
           </button>
         {/each}
-      </div>
+
+        <!-- Reset Button in Sidebar -->
+        <div class="mt-4 px-3">
+          <button
+            onclick={() => (showResetConfirm = true)}
+            class="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs
+              text-[#f85149] hover:bg-[#f8514922] border border-[#f8514966] rounded-md transition-colors"
+          >
+            <RotateCcw size={14} />
+            Restaurar todo
+          </button>
+        </div>
+      </nav>
 
       <!-- Tab Content -->
-      <div class="flex-1 overflow-y-auto p-5">
+      <div class="flex-1 overflow-y-auto p-6 bg-[#010409]">
         {#if activeTab === "appearance"}
           <AGGridSettingsAppearance {gridId} {gridApi} />
         {:else if activeTab === "columns"}
@@ -168,26 +161,26 @@
 
     <!-- Footer -->
     <div
-      class="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-black/20"
+      class="flex items-center justify-between px-4 py-3 border-t border-[#30363d] bg-[#0d1117]"
     >
-      <p class="text-xs text-gray-500">
+      <p class="text-xs text-[#8b949e]">
         Los cambios se aplican automáticamente
       </p>
       <button
         onclick={handleClose}
-        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500
-          rounded-lg transition-colors"
+        class="px-4 py-1.5 text-sm font-medium text-white bg-[#238636] hover:bg-[#2ea043]
+          rounded-md transition-colors"
       >
         Listo
       </button>
     </div>
   </div>
 
-  <!-- Reset Confirmation -->
+  <!-- Reset Confirmation (GitHub Style) -->
   {#if showResetConfirm}
     <div
       transition:fade={{ duration: 100 }}
-      class="absolute inset-0 z-10 flex items-center justify-center bg-black/50"
+      class="absolute inset-0 z-10 flex items-center justify-center bg-black/70"
       onclick={() => (showResetConfirm = false)}
       role="button"
       tabindex="0"
@@ -195,31 +188,31 @@
     >
       <div
         transition:slide={{ duration: 150, easing: cubicOut }}
-        class="bg-[#252526] border border-white/10 rounded-xl p-5 max-w-sm mx-4 shadow-2xl"
+        class="bg-[#161b22] border border-[#30363d] rounded-lg p-4 max-w-sm mx-4 shadow-2xl"
         onclick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         tabindex="-1"
         onkeydown={(e) => e.stopPropagation()}
       >
-        <h3 class="text-sm font-semibold text-white mb-2">
+        <h3 class="text-sm font-semibold text-[#e6edf3] mb-2">
           ¿Restaurar configuración?
         </h3>
-        <p class="text-xs text-gray-400 mb-4">
+        <p class="text-xs text-[#8b949e] mb-4">
           Esto restablecerá todas las opciones de esta grid a sus valores por
           defecto. Esta acción no se puede deshacer.
         </p>
         <div class="flex justify-end gap-2">
           <button
             onclick={() => (showResetConfirm = false)}
-            class="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+            class="px-3 py-1.5 text-sm text-[#8b949e] hover:text-[#e6edf3] transition-colors"
           >
             Cancelar
           </button>
           <button
             onclick={handleResetAll}
-            class="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-500
-              rounded-lg transition-colors"
+            class="px-3 py-1.5 text-sm font-medium text-white bg-[#da3633] hover:bg-[#f85149]
+              rounded-md transition-colors"
           >
             Restaurar
           </button>

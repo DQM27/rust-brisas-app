@@ -202,8 +202,8 @@
   <!-- Sección: Confirmaciones -->
   <!-- ============================================ -->
   <div class="space-y-3">
-    <div class="flex items-center gap-2 text-white text-sm font-medium">
-      <AlertTriangle size={16} class="text-amber-400" />
+    <div class="flex items-center gap-2 text-[#e6edf3] text-sm font-medium">
+      <AlertTriangle size={16} class="text-[#d29922]" />
       Confirmaciones
     </div>
 
@@ -211,22 +211,22 @@
       <!-- Confirmar eliminación -->
       <button
         onclick={toggleConfirmDelete}
-        class="w-full flex items-center justify-between p-3 bg-[#1e1e1e] border border-white/10 rounded-lg
-          hover:border-white/20 transition-colors group"
+        class="w-full flex items-center justify-between p-3 bg-[#161b22] border border-[#30363d] rounded-md
+          hover:border-[#8b949e] transition-colors group"
       >
         <div class="flex items-center gap-3">
-          <div class="p-2 rounded-lg bg-red-500/10">
-            <Trash2 size={16} class="text-red-400" />
+          <div class="p-2 rounded-md bg-[#f85149]/10">
+            <Trash2 size={16} class="text-[#f85149]" />
           </div>
           <div class="text-left">
-            <div class="text-white text-sm">Confirmar eliminación</div>
-            <div class="text-gray-500 text-xs">
+            <div class="text-[#e6edf3] text-sm">Confirmar eliminación</div>
+            <div class="text-[#8b949e] text-xs">
               Pedir confirmación antes de eliminar registros
             </div>
           </div>
         </div>
         <div
-          class={`w-10 h-6 rounded-full transition-colors ${confirmDelete ? "bg-blue-500" : "bg-gray-600"}`}
+          class={`w-10 h-6 rounded-full transition-colors ${confirmDelete ? "bg-[#58a6ff]" : "bg-[#6e7681]"}`}
         >
           <div
             class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${confirmDelete ? "translate-x-5" : "translate-x-1"}`}
@@ -237,22 +237,24 @@
       <!-- Confirmar operaciones masivas -->
       <button
         onclick={toggleConfirmBulk}
-        class="w-full flex items-center justify-between p-3 bg-[#1e1e1e] border border-white/10 rounded-lg
-          hover:border-white/20 transition-colors group"
+        class="w-full flex items-center justify-between p-3 bg-[#161b22] border border-[#30363d] rounded-md
+          hover:border-[#8b949e] transition-colors group"
       >
         <div class="flex items-center gap-3">
-          <div class="p-2 rounded-lg bg-amber-500/10">
-            <Layers size={16} class="text-amber-400" />
+          <div class="p-2 rounded-md bg-[#d29922]/10">
+            <Layers size={16} class="text-[#d29922]" />
           </div>
           <div class="text-left">
-            <div class="text-white text-sm">Confirmar operaciones masivas</div>
-            <div class="text-gray-500 text-xs">
+            <div class="text-[#e6edf3] text-sm">
+              Confirmar operaciones masivas
+            </div>
+            <div class="text-[#8b949e] text-xs">
               Pedir confirmación para acciones que afecten múltiples registros
             </div>
           </div>
         </div>
         <div
-          class={`w-10 h-6 rounded-full transition-colors ${confirmBulk ? "bg-blue-500" : "bg-gray-600"}`}
+          class={`w-10 h-6 rounded-full transition-colors ${confirmBulk ? "bg-[#58a6ff]" : "bg-[#6e7681]"}`}
         >
           <div
             class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${confirmBulk ? "translate-x-5" : "translate-x-1"}`}
@@ -264,11 +266,11 @@
       <div class="pl-4 pt-1">
         <button
           onclick={toggleDontAskAgain}
-          class="flex items-center gap-2 text-gray-400 text-xs hover:text-gray-300 transition-colors"
+          class="flex items-center gap-2 text-[#8b949e] text-xs hover:text-[#e6edf3] transition-colors"
         >
           <div
             class={`w-4 h-4 rounded border flex items-center justify-center transition-colors
-            ${dontAskAgain ? "bg-blue-500 border-blue-500" : "border-gray-500"}`}
+            ${dontAskAgain ? "bg-[#58a6ff] border-[#58a6ff]" : "border-[#8b949e]"}`}
           >
             {#if dontAskAgain}
               <Check size={12} class="text-white" />
@@ -284,30 +286,30 @@
   <!-- Sección: Undo/Redo -->
   <!-- ============================================ -->
   <div class="space-y-3">
-    <div class="flex items-center gap-2 text-white text-sm font-medium">
-      <Undo2 size={16} class="text-purple-400" />
+    <div class="flex items-center gap-2 text-[#e6edf3] text-sm font-medium">
+      <Undo2 size={16} class="text-[#a371f7]" />
       Deshacer / Rehacer
     </div>
 
     <div class="pl-6">
       <button
         onclick={toggleUndoRedo}
-        class="w-full flex items-center justify-between p-3 bg-[#1e1e1e] border border-white/10 rounded-lg
-          hover:border-white/20 transition-colors"
+        class="w-full flex items-center justify-between p-3 bg-[#161b22] border border-[#30363d] rounded-md
+          hover:border-[#8b949e] transition-colors"
       >
         <div class="flex items-center gap-3">
-          <div class="p-2 rounded-lg bg-purple-500/10">
-            <Undo2 size={16} class="text-purple-400" />
+          <div class="p-2 rounded-md bg-[#a371f7]/10">
+            <Undo2 size={16} class="text-[#a371f7]" />
           </div>
           <div class="text-left">
-            <div class="text-white text-sm">Habilitar Ctrl+Z / Ctrl+Y</div>
-            <div class="text-gray-500 text-xs">
+            <div class="text-[#e6edf3] text-sm">Habilitar Ctrl+Z / Ctrl+Y</div>
+            <div class="text-[#8b949e] text-xs">
               Permite deshacer y rehacer cambios en celdas editables
             </div>
           </div>
         </div>
         <div
-          class={`w-10 h-6 rounded-full transition-colors ${enableUndoRedo ? "bg-blue-500" : "bg-gray-600"}`}
+          class={`w-10 h-6 rounded-full transition-colors ${enableUndoRedo ? "bg-[#58a6ff]" : "bg-[#6e7681]"}`}
         >
           <div
             class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${enableUndoRedo ? "translate-x-5" : "translate-x-1"}`}
@@ -321,39 +323,39 @@
   <!-- Sección: Performance -->
   <!-- ============================================ -->
   <div class="space-y-3">
-    <div class="flex items-center gap-2 text-white text-sm font-medium">
-      <Zap size={16} class="text-yellow-400" />
+    <div class="flex items-center gap-2 text-[#e6edf3] text-sm font-medium">
+      <Zap size={16} class="text-[#d29922]" />
       Rendimiento
     </div>
 
     <div class="space-y-3 pl-6">
       <!-- Row Buffer -->
-      <div class="p-3 bg-[#1e1e1e] border border-white/10 rounded-lg">
+      <div class="p-3 bg-[#161b22] border border-[#30363d] rounded-md">
         <div class="flex items-center justify-between mb-3">
           <div>
-            <div class="text-white text-sm">Buffer de filas</div>
-            <div class="text-gray-500 text-xs">
+            <div class="text-[#e6edf3] text-sm">Buffer de filas</div>
+            <div class="text-[#8b949e] text-xs">
               Filas pre-renderizadas fuera de la vista
             </div>
           </div>
-          <div class="text-blue-400 text-sm font-medium">{rowBuffer}</div>
+          <div class="text-[#58a6ff] text-sm font-medium">{rowBuffer}</div>
         </div>
         <div class="flex gap-2">
           {#each rowBufferOptions as option}
             <button
               onclick={() => setRowBuffer(option)}
-              class={`flex-1 py-2 text-xs rounded transition-colors
+              class={`flex-1 py-2 text-xs rounded-md transition-colors
                 ${
                   rowBuffer === option
-                    ? "bg-blue-500 text-white"
-                    : "bg-[#252526] text-gray-400 hover:bg-[#2a2a2b] hover:text-white"
+                    ? "bg-[#58a6ff] text-white"
+                    : "bg-[#21262d] text-[#8b949e] hover:bg-[#30363d] hover:text-white"
                 }`}
             >
               {option}
             </button>
           {/each}
         </div>
-        <div class="mt-2 flex items-start gap-1.5 text-gray-500 text-xs">
+        <div class="mt-2 flex items-start gap-1.5 text-[#8b949e] text-xs">
           <Info size={12} class="mt-0.5 shrink-0" />
           <span
             >Valores más altos mejoran el scroll suave pero usan más memoria</span
@@ -364,17 +366,17 @@
       <!-- Debounce Scroll -->
       <button
         onclick={toggleDebounceScroll}
-        class="w-full flex items-center justify-between p-3 bg-[#1e1e1e] border border-white/10 rounded-lg
-          hover:border-white/20 transition-colors"
+        class="w-full flex items-center justify-between p-3 bg-[#161b22] border border-[#30363d] rounded-md
+          hover:border-[#8b949e] transition-colors"
       >
         <div class="text-left">
-          <div class="text-white text-sm">Suavizar scroll vertical</div>
-          <div class="text-gray-500 text-xs">
+          <div class="text-[#e6edf3] text-sm">Suavizar scroll vertical</div>
+          <div class="text-[#8b949e] text-xs">
             Reduce el parpadeo durante el scroll rápido
           </div>
         </div>
         <div
-          class={`w-10 h-6 rounded-full transition-colors ${debounceScroll ? "bg-blue-500" : "bg-gray-600"}`}
+          class={`w-10 h-6 rounded-full transition-colors ${debounceScroll ? "bg-[#58a6ff]" : "bg-[#6e7681]"}`}
         >
           <div
             class={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${debounceScroll ? "translate-x-5" : "translate-x-1"}`}
@@ -388,25 +390,27 @@
   <!-- Sección: Backup -->
   <!-- ============================================ -->
   <div class="space-y-3">
-    <div class="flex items-center gap-2 text-white text-sm font-medium">
-      <Download size={16} class="text-cyan-400" />
+    <div class="flex items-center gap-2 text-[#e6edf3] text-sm font-medium">
+      <Download size={16} class="text-[#238636]" />
       Respaldo de Configuración
     </div>
 
     <div class="space-y-4 pl-6">
       <!-- Exportar -->
-      <div class="p-3 bg-[#1e1e1e] border border-white/10 rounded-lg space-y-3">
+      <div
+        class="p-3 bg-[#161b22] border border-[#30363d] rounded-md space-y-3"
+      >
         <div class="flex items-center justify-between">
           <div>
-            <div class="text-white text-sm">Exportar configuración</div>
-            <div class="text-gray-500 text-xs">
+            <div class="text-[#e6edf3] text-sm">Exportar configuración</div>
+            <div class="text-[#8b949e] text-xs">
               Guarda tu configuración actual como JSON
             </div>
           </div>
           <button
             onclick={exportConfig}
-            class="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20
-              rounded text-cyan-400 text-xs hover:bg-cyan-500/20 transition-colors"
+            class="flex items-center gap-1.5 px-3 py-1.5 bg-[#238636]/10 border border-[#238636]/20
+              rounded-md text-[#238636] text-xs hover:bg-[#238636]/20 transition-colors"
           >
             <Download size={14} />
             Generar
@@ -418,18 +422,18 @@
             <textarea
               readonly
               value={exportedConfig}
-              class="w-full h-32 p-2 text-xs font-mono bg-[#252526] border border-white/10 rounded
-                text-gray-300 resize-none focus:outline-none"
+              class="w-full h-32 p-2 text-xs font-mono bg-[#0d1117] border border-[#30363d] rounded-md
+                text-[#e6edf3] resize-none focus:outline-none"
             ></textarea>
             <div class="flex gap-2">
               <button
                 onclick={copyToClipboard}
-                class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#252526] border border-white/10
-                  rounded text-xs text-gray-300 hover:bg-[#2a2a2b] transition-colors"
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#21262d] border border-[#30363d]
+                  rounded-md text-xs text-[#8b949e] hover:bg-[#30363d] transition-colors"
               >
                 {#if copySuccess}
-                  <Check size={14} class="text-green-400" />
-                  <span class="text-green-400">Copiado!</span>
+                  <Check size={14} class="text-[#238636]" />
+                  <span class="text-[#238636]">Copiado!</span>
                 {:else}
                   <Copy size={14} />
                   Copiar
@@ -437,8 +441,8 @@
               </button>
               <button
                 onclick={downloadConfig}
-                class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#252526] border border-white/10
-                  rounded text-xs text-gray-300 hover:bg-[#2a2a2b] transition-colors"
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#21262d] border border-[#30363d]
+                  rounded-md text-xs text-[#8b949e] hover:bg-[#30363d] transition-colors"
               >
                 <FileDown size={14} />
                 Descargar
@@ -449,10 +453,12 @@
       </div>
 
       <!-- Importar -->
-      <div class="p-3 bg-[#1e1e1e] border border-white/10 rounded-lg space-y-3">
+      <div
+        class="p-3 bg-[#161b22] border border-[#30363d] rounded-md space-y-3"
+      >
         <div>
-          <div class="text-white text-sm">Importar configuración</div>
-          <div class="text-gray-500 text-xs">
+          <div class="text-[#e6edf3] text-sm">Importar configuración</div>
+          <div class="text-[#8b949e] text-xs">
             Restaura una configuración previamente guardada
           </div>
         </div>
@@ -460,20 +466,20 @@
         <textarea
           bind:value={importJson}
           placeholder={importPlaceholder}
-          class="w-full h-32 p-2 text-xs font-mono bg-[#252526] border border-white/10 rounded
-            text-gray-300 resize-none focus:outline-none focus:border-white/30
-            placeholder:text-gray-600"
+          class="w-full h-32 p-2 text-xs font-mono bg-[#0d1117] border border-[#30363d] rounded-md
+            text-[#e6edf3] resize-none focus:outline-none focus:border-[#58a6ff]
+            placeholder:text-[#8b949e]"
         ></textarea>
 
         {#if importError}
-          <div class="flex items-center gap-2 text-red-400 text-xs">
+          <div class="flex items-center gap-2 text-[#f85149] text-xs">
             <AlertTriangle size={14} />
             {importError}
           </div>
         {/if}
 
         {#if importSuccess}
-          <div class="flex items-center gap-2 text-green-400 text-xs">
+          <div class="flex items-center gap-2 text-[#238636] text-xs">
             <Check size={14} />
             Configuración importada correctamente
           </div>
@@ -481,8 +487,8 @@
 
         <div class="flex gap-2">
           <label
-            class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#252526] border border-white/10
-              rounded text-xs text-gray-300 hover:bg-[#2a2a2b] transition-colors cursor-pointer"
+            class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#21262d] border border-[#30363d]
+              rounded-md text-xs text-[#8b949e] hover:bg-[#30363d] transition-colors cursor-pointer"
           >
             <FileUp size={14} />
             Cargar archivo
@@ -496,8 +502,8 @@
           <button
             onclick={importConfig}
             disabled={!importJson.trim()}
-            class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-500/10 border border-blue-500/20
-              rounded text-xs text-blue-400 hover:bg-blue-500/20 transition-colors
+            class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#58a6ff]/10 border border-[#58a6ff]/20
+              rounded-md text-xs text-[#58a6ff] hover:bg-[#58a6ff]/20 transition-colors
               disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Upload size={14} />

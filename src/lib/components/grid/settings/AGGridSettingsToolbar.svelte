@@ -197,25 +197,25 @@
   <div class="relative">
     <button
       onclick={() => (showContextMenu = !showContextMenu)}
-      class="w-full flex items-center justify-between p-3 rounded-lg
-        bg-[#252526] border border-white/10 hover:border-white/20 transition-colors"
+      class="w-full flex items-center justify-between p-3 rounded-md
+        bg-[#161b22] border border-[#30363d] hover:border-[#8b949e] transition-colors"
     >
       <div class="text-left flex items-center gap-3">
-        <div class="p-2 rounded-lg bg-blue-500/10">
-          <MousePointerClick size={18} class="text-blue-400" />
+        <div class="p-2 rounded-md bg-[#f78166]/10">
+          <MousePointerClick size={18} class="text-[#f78166]" />
         </div>
         <div>
-          <p class="text-sm font-medium text-white">
+          <p class="text-sm font-medium text-[#e6edf3]">
             {contextLabels[selectedContext]}
           </p>
-          <p class="text-xs text-gray-500">
+          <p class="text-xs text-[#8b949e]">
             {contextDescriptions[selectedContext]}
           </p>
         </div>
       </div>
       <ChevronDown
         size={16}
-        class="text-gray-400 transition-transform {showContextMenu
+        class="text-[#8b949e] transition-transform {showContextMenu
           ? 'rotate-180'
           : ''}"
       />
@@ -223,19 +223,19 @@
 
     {#if showContextMenu}
       <div
-        class="absolute top-full left-0 right-0 mt-1 z-10 rounded-lg
-          bg-[#252526] border border-white/10 shadow-xl overflow-hidden"
+        class="absolute top-full left-0 right-0 mt-1 z-10 rounded-md
+          bg-[#161b22] border border-[#30363d] shadow-xl overflow-hidden"
       >
         {#each Object.entries(contextLabels) as [ctx, label]}
           <button
             onclick={() => handleContextChange(ctx as ToolbarContext)}
-            class="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors
+            class="w-full px-4 py-3 text-left hover:bg-[#21262d] transition-colors
               {selectedContext === ctx
-              ? 'bg-blue-500/10 border-l-2 border-l-blue-500'
-              : ''}"
+              ? 'bg-[#21262d] border-l-2 border-l-[#f78166]'
+              : 'border-l-2 border-l-transparent'}"
           >
-            <p class="text-sm text-white">{label}</p>
-            <p class="text-xs text-gray-500">
+            <p class="text-sm text-[#e6edf3]">{label}</p>
+            <p class="text-xs text-[#8b949e]">
               {contextDescriptions[ctx as ToolbarContext]}
             </p>
           </button>
@@ -246,44 +246,44 @@
 
   <!-- Counter -->
   <div
-    class="flex items-center justify-between p-3 rounded-lg
+    class="flex items-center justify-between p-3 rounded-md
       {isOverLimit
-      ? 'bg-red-500/10 border border-red-500/20'
-      : 'bg-[#252526] border border-white/10'}"
+      ? 'bg-[#f85149]/10 border border-[#f85149]/30'
+      : 'bg-[#161b22] border border-[#30363d]'}"
   >
     <div class="flex items-center gap-3">
       <div
         class="p-1.5 rounded-md {isOverLimit
-          ? 'bg-red-500/20'
+          ? 'bg-[#f85149]/20'
           : isAtLimit
-            ? 'bg-amber-500/20'
-            : 'bg-green-500/20'}"
+            ? 'bg-[#d29922]/20'
+            : 'bg-[#238636]/20'}"
       >
         <Tally5
           size={16}
           class={isOverLimit
-            ? "text-red-400"
+            ? "text-[#f85149]"
             : isAtLimit
-              ? "text-amber-400"
-              : "text-green-400"}
+              ? "text-[#d29922]"
+              : "text-[#238636]"}
         />
       </div>
-      <span class="text-xs text-gray-300">
+      <span class="text-xs text-[#8b949e]">
         Botones visibles:
         <span
           class="font-semibold
             {isOverLimit
-            ? 'text-red-400'
+            ? 'text-[#f85149]'
             : isAtLimit
-              ? 'text-amber-400'
-              : 'text-green-400'}"
+              ? 'text-[#d29922]'
+              : 'text-[#238636]'}"
         >
           {visibleCount}/{buttonLimit}
         </span>
       </span>
     </div>
     {#if isOverLimit}
-      <span class="text-xs text-red-100 bg-red-600 px-2 py-1 rounded">
+      <span class="text-xs text-white bg-[#da3633] px-2 py-1 rounded-md">
         Oculta {visibleCount - buttonLimit}
       </span>
     {:else}
@@ -292,8 +292,8 @@
           {#each Array(buttonLimit) as _, i}
             <div
               class="w-1 h-3 rounded-full {i < visibleCount
-                ? 'bg-blue-400'
-                : 'bg-gray-600'}"
+                ? 'bg-[#58a6ff]'
+                : 'bg-[#30363d]'}"
             ></div>
           {/each}
         </div>
@@ -311,15 +311,15 @@
         ondragstart={(e) => handleDragStart(e, index)}
         ondragover={(e) => handleDragOver(e, index)}
         ondragend={handleDragEnd}
-        class="group flex items-center gap-2 p-2.5 rounded-lg transition-all cursor-grab active:cursor-grabbing
+        class="group flex items-center gap-2 p-2.5 rounded-md transition-all cursor-grab active:cursor-grabbing
           {draggedIndex === index
-          ? 'opacity-50 scale-98 bg-blue-500/20 border border-blue-500/30'
-          : 'bg-[#252526] border border-transparent hover:border-white/10'}
+          ? 'opacity-50 scale-98 bg-[#58a6ff]/20 border border-[#58a6ff]/40'
+          : 'bg-[#161b22] border border-[#30363d] hover:border-[#8b949e]'}
           {!canToggle && !button.visible ? 'opacity-50' : ''}"
         role="listitem"
       >
         <!-- Drag Handle -->
-        <div class="text-gray-600 group-hover:text-gray-400 cursor-move">
+        <div class="text-[#484f58] group-hover:text-[#8b949e] cursor-move">
           <GripVertical size={14} />
         </div>
 
@@ -329,8 +329,8 @@
           disabled={!canToggle && !button.visible}
           class="p-1 rounded transition-colors
             {button.visible
-            ? 'text-green-400 hover:bg-green-500/10'
-            : 'text-gray-500 hover:bg-white/5'}
+            ? 'text-[#238636] hover:bg-[#238636]/10'
+            : 'text-[#484f58] hover:bg-[#21262d]'}
             disabled:cursor-not-allowed disabled:opacity-50"
         >
           {#if button.visible}
@@ -343,13 +343,13 @@
         <!-- Icon -->
         {#if button.icon}
           {@const Icon = button.icon}
-          <Icon size={14} class="text-gray-400" />
+          <Icon size={14} class="text-[#8b949e]" />
         {/if}
 
         <!-- Label -->
         <span
           class="flex-1 text-sm truncate
-            {button.visible ? 'text-white' : 'text-gray-500'}"
+            {button.visible ? 'text-[#e6edf3]' : 'text-[#484f58]'}"
         >
           {button.label}
         </span>
@@ -357,7 +357,7 @@
         <!-- Category Badge -->
         {#if button.category}
           <span
-            class="px-1.5 py-0.5 text-[10px] text-gray-500 bg-white/5 rounded"
+            class="px-1.5 py-0.5 text-[10px] text-[#8b949e] bg-[#21262d] rounded"
           >
             {button.category}
           </span>
@@ -366,7 +366,7 @@
         <!-- Order Number -->
         {#if button.visible}
           <span
-            class="w-5 h-5 flex items-center justify-center text-[10px] text-gray-500 bg-white/5 rounded"
+            class="w-5 h-5 flex items-center justify-center text-[10px] text-[#8b949e] bg-[#21262d] rounded"
           >
             {index + 1}
           </span>
@@ -378,19 +378,19 @@
   <!-- Reset Button -->
   <button
     onclick={resetToDefault}
-    class="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg
-      bg-[#252526] border border-white/10 text-sm text-gray-300
-      hover:bg-white/5 hover:border-white/20 transition-colors"
+    class="w-full flex items-center justify-center gap-2 p-2.5 rounded-md
+      bg-[#21262d] border border-[#30363d] text-sm text-[#8b949e]
+      hover:border-[#8b949e] transition-colors"
   >
     <RotateCcw size={14} />
     Restaurar orden por defecto
   </button>
 
   <!-- Tips -->
-  <div class="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
-    <p class="text-xs text-blue-400">
-      <strong>Tips:</strong> Arrastra para reordenar • El orden se guarda por contexto
-      • Los botones ocultos no aparecen en la toolbar
+  <div class="p-3 rounded-md bg-[#161b22] border border-[#30363d]">
+    <p class="text-xs text-[#8b949e]">
+      <strong class="text-[#e6edf3]">Tips:</strong> Arrastra para reordenar • El
+      orden se guarda por contexto • Los botones ocultos no aparecen en la toolbar
     </p>
   </div>
 </div>

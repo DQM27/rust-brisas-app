@@ -8,14 +8,7 @@
   } from "$lib/types/agGrid";
   import type { GridApi } from "@ag-grid-community/core";
   import { agGridSettings } from "$lib/stores/agGridSettings.svelte";
-  import {
-    Check,
-    LayoutTemplate,
-    Type,
-    Rows,
-    Settings2,
-    Layout,
-  } from "lucide-svelte";
+  import { Check } from "lucide-svelte";
 
   interface Props {
     gridId: GridId;
@@ -100,33 +93,33 @@
 <div class="space-y-6">
   <!-- Tema -->
   <section>
-    <div class="flex items-center gap-2 mb-3">
-      <LayoutTemplate size={16} class="text-blue-400" />
-      <h3 class="text-sm font-medium text-white">Tema</h3>
-    </div>
+    <h3
+      class="text-xs font-semibold uppercase tracking-wider text-[#8b949e] mb-3"
+    >
+      Tema
+    </h3>
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
       {#each themes as t}
         <button
           onclick={() => handleThemeChange(t.value)}
-          class="relative flex flex-col items-center gap-2 p-3 rounded-lg border transition-all
+          class="relative flex flex-col items-center gap-2 p-3 rounded-md border transition-all
             {theme === t.value
-            ? 'border-blue-500 bg-blue-500/10'
-            : 'border-white/10 hover:border-white/20 bg-[#252526]'}"
+            ? 'border-[#238636] bg-[#238636]/10'
+            : 'border-[#30363d] hover:border-[#8b949e] bg-[#161b22]'}"
         >
-          <!-- Preview -->
           <div
-            class="w-full h-8 rounded flex items-center justify-center text-xs
+            class="w-full h-8 rounded flex items-center justify-center text-xs font-mono
               {t.dark
-              ? 'bg-gray-800 text-gray-300'
-              : 'bg-gray-100 text-gray-700'}"
+              ? 'bg-[#0d1117] text-[#8b949e] border border-[#30363d]'
+              : 'bg-[#f6f8fa] text-[#24292f] border border-[#d0d7de]'}"
           >
             Abc
           </div>
-          <span class="text-xs text-gray-300">{t.label}</span>
+          <span class="text-xs text-[#e6edf3]">{t.label}</span>
 
           {#if theme === t.value}
             <div class="absolute top-1.5 right-1.5">
-              <Check size={14} class="text-blue-400" />
+              <Check size={14} class="text-[#238636]" />
             </div>
           {/if}
         </button>
@@ -136,32 +129,33 @@
 
   <!-- Fuente -->
   <section>
-    <div class="flex items-center gap-2 mb-3">
-      <Type size={16} class="text-purple-400" />
-      <h3 class="text-sm font-medium text-white">Fuente</h3>
-    </div>
+    <h3
+      class="text-xs font-semibold uppercase tracking-wider text-[#8b949e] mb-3"
+    >
+      Fuente
+    </h3>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
       {#each fonts as f}
         <button
           onclick={() => handleFontChange(f.value)}
-          class="relative flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all
+          class="relative flex flex-col items-center gap-1.5 p-3 rounded-md border transition-all
             {font === f.value
-            ? 'border-blue-500 bg-blue-500/10'
-            : 'border-white/10 hover:border-white/20 bg-[#252526]'}"
+            ? 'border-[#238636] bg-[#238636]/10'
+            : 'border-[#30363d] hover:border-[#8b949e] bg-[#161b22]'}"
         >
           <span
-            class="text-lg text-white
+            class="text-lg text-[#e6edf3]
               {f.value === 'inter' ? 'font-inter' : ''}
               {f.value === 'roboto' ? 'font-roboto' : ''}
               {f.value === 'source-sans' ? 'font-source-sans' : ''}"
           >
             {f.preview}
           </span>
-          <span class="text-xs text-gray-400">{f.label}</span>
+          <span class="text-xs text-[#8b949e]">{f.label}</span>
 
           {#if font === f.value}
-            <div class="absolute top-1.5 right-1.5">
-              <Check size={12} class="text-blue-400" />
+            <div class="absolute top-1 right-1">
+              <Check size={12} class="text-[#238636]" />
             </div>
           {/if}
         </button>
@@ -171,30 +165,32 @@
 
   <!-- Densidad -->
   <section>
-    <div class="flex items-center gap-2 mb-3">
-      <Rows size={16} class="text-amber-400" />
-      <h3 class="text-sm font-medium text-white">Densidad de filas</h3>
-    </div>
+    <h3
+      class="text-xs font-semibold uppercase tracking-wider text-[#8b949e] mb-3"
+    >
+      Densidad de filas
+    </h3>
     <div class="flex gap-2">
       {#each densities as d}
         <button
           onclick={() => handleDensityChange(d.value)}
-          class="flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border transition-all
+          class="flex-1 flex flex-col items-center gap-1 p-3 rounded-md border transition-all
             {rowHeight === d.value
-            ? 'border-blue-500 bg-blue-500/10'
-            : 'border-white/10 hover:border-white/20 bg-[#252526]'}"
+            ? 'border-[#238636] bg-[#238636]/10'
+            : 'border-[#30363d] hover:border-[#8b949e] bg-[#161b22]'}"
         >
-          <!-- Visual indicator -->
           <div class="w-full flex flex-col gap-0.5">
             {#each [1, 2, 3] as _}
               <div
-                class="w-full bg-gray-600 rounded-sm"
+                class="w-full rounded-sm {rowHeight === d.value
+                  ? 'bg-[#238636]'
+                  : 'bg-[#30363d]'}"
                 style="height: {d.px / 6}px"
               ></div>
             {/each}
           </div>
-          <span class="text-xs text-gray-300 mt-1">{d.label}</span>
-          <span class="text-[10px] text-gray-500">{d.px}px</span>
+          <span class="text-xs text-[#e6edf3] mt-1">{d.label}</span>
+          <span class="text-[10px] text-[#8b949e]">{d.px}px</span>
         </button>
       {/each}
     </div>
@@ -202,36 +198,37 @@
 
   <!-- Ubicación de Toolbar -->
   <section>
-    <div class="flex items-center gap-2 mb-3">
-      <Layout size={16} class="text-cyan-400" />
-      <h3 class="text-sm font-medium text-white">Ubicación de Toolbar</h3>
-    </div>
+    <h3
+      class="text-xs font-semibold uppercase tracking-wider text-[#8b949e] mb-3"
+    >
+      Ubicación de Toolbar
+    </h3>
     <div class="flex gap-2">
       {#each [["top", "Superior"], ["bottom", "Inferior"]] as [value, label]}
         <button
           onclick={() => handleToolbarPositionChange(value as "top" | "bottom")}
-          class="flex-1 flex flex-col items-center gap-2 p-3 rounded-lg border transition-all
+          class="relative flex-1 flex flex-col items-center gap-2 p-3 rounded-md border transition-all
             {toolbarPosition === value
-            ? 'border-blue-500 bg-blue-500/10'
-            : 'border-white/10 hover:border-white/20 bg-[#252526]'}"
+            ? 'border-[#238636] bg-[#238636]/10'
+            : 'border-[#30363d] hover:border-[#8b949e] bg-[#161b22]'}"
         >
           <div class="w-full flex flex-col gap-1">
             {#if value === "top"}
-              <div class="w-full h-2 bg-blue-500/40 rounded-sm"></div>
+              <div class="w-full h-2 bg-[#f78166] rounded-sm"></div>
               <div
-                class="w-full h-8 bg-gray-700/30 rounded-sm border border-white/5"
+                class="w-full h-8 bg-[#21262d] rounded-sm border border-[#30363d]"
               ></div>
             {:else}
               <div
-                class="w-full h-8 bg-gray-700/30 rounded-sm border border-white/5"
+                class="w-full h-8 bg-[#21262d] rounded-sm border border-[#30363d]"
               ></div>
-              <div class="w-full h-2 bg-blue-500/40 rounded-sm"></div>
+              <div class="w-full h-2 bg-[#f78166] rounded-sm"></div>
             {/if}
           </div>
-          <span class="text-xs text-gray-300">{label}</span>
+          <span class="text-xs text-[#e6edf3]">{label}</span>
           {#if toolbarPosition === value}
-            <div class="absolute top-1.5 right-1.5">
-              <Check size={12} class="text-blue-400" />
+            <div class="absolute top-1 right-1">
+              <Check size={12} class="text-[#238636]" />
             </div>
           {/if}
         </button>
@@ -241,34 +238,35 @@
 
   <!-- Opciones adicionales -->
   <section>
-    <div class="flex items-center gap-2 mb-3">
-      <Settings2 size={16} class="text-green-400" />
-      <h3 class="text-sm font-medium text-white">Opciones</h3>
-    </div>
+    <h3
+      class="text-xs font-semibold uppercase tracking-wider text-[#8b949e] mb-3"
+    >
+      Opciones
+    </h3>
     <div class="space-y-2">
       <label
-        class="flex items-center justify-between p-3 rounded-lg bg-[#252526] border border-white/10
-          hover:border-white/20 cursor-pointer transition-colors"
+        class="flex items-center justify-between p-3 rounded-md bg-[#161b22] border border-[#30363d]
+          hover:border-[#8b949e] cursor-pointer transition-colors"
       >
         <div>
-          <p class="text-sm text-white">Animar filas</p>
-          <p class="text-xs text-gray-500">Animaciones al ordenar y filtrar</p>
+          <p class="text-sm text-[#e6edf3]">Animar filas</p>
+          <p class="text-xs text-[#8b949e]">Animaciones al ordenar y filtrar</p>
         </div>
         <input
           type="checkbox"
           checked={animateRows}
           onchange={handleAnimateChange}
-          class="w-4 h-4 rounded bg-[#1e1e1e] border-white/20 text-blue-500 focus:ring-blue-500"
+          class="w-4 h-4 rounded bg-[#0d1117] border-[#30363d] text-[#238636] focus:ring-[#238636]"
         />
       </label>
 
       <label
-        class="flex items-center justify-between p-3 rounded-lg bg-[#252526] border border-white/10
-          hover:border-white/20 cursor-pointer transition-colors"
+        class="flex items-center justify-between p-3 rounded-md bg-[#161b22] border border-[#30363d]
+          hover:border-[#8b949e] cursor-pointer transition-colors"
       >
         <div>
-          <p class="text-sm text-white">Seleccionar texto</p>
-          <p class="text-xs text-gray-500">
+          <p class="text-sm text-[#e6edf3]">Seleccionar texto</p>
+          <p class="text-xs text-[#8b949e]">
             Permitir copiar texto de las celdas
           </p>
         </div>
@@ -276,7 +274,7 @@
           type="checkbox"
           checked={cellTextSelection}
           onchange={handleTextSelectionChange}
-          class="w-4 h-4 rounded bg-[#1e1e1e] border-white/20 text-blue-500 focus:ring-blue-500"
+          class="w-4 h-4 rounded bg-[#0d1117] border-[#30363d] text-[#238636] focus:ring-[#238636]"
         />
       </label>
     </div>
