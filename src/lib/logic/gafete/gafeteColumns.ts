@@ -28,25 +28,25 @@ export class GafeteColumns {
                 cellRenderer: (params: any) => {
                     const tipo = params.data.tipo;
                     const baseClass =
-                        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border";
+                        "inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-widest leading-none shadow-sm";
                     let colorClass = "";
 
                     switch (tipo) {
                         case "contratista":
                             colorClass =
-                                "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800";
+                                "bg-indigo-500/10 text-indigo-600 border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20";
                             break;
                         case "proveedor":
                             colorClass =
-                                "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800";
+                                "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20";
                             break;
                         case "visita":
                             colorClass =
-                                "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800";
+                                "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20";
                             break;
                         default:
                             colorClass =
-                                "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
+                                "bg-gray-500/10 text-gray-600 border-gray-500/20 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 shadow-none";
                     }
 
                     return `<span class="${baseClass} ${colorClass}">${params.value}</span>`;
@@ -57,11 +57,11 @@ export class GafeteColumns {
                 headerName: "Estado",
                 sortable: true,
                 filter: true,
-                width: 140,
+                width: 150,
                 cellRenderer: (params: any) => {
                     const status = params.value;
                     const baseClass =
-                        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border uppercase tracking-wide";
+                        "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none shadow-sm";
 
                     let classes = "";
                     let icon = "";
@@ -69,43 +69,38 @@ export class GafeteColumns {
 
                     switch (status) {
                         case "disponible":
-                            classes =
-                                "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800";
-                            icon = "✔";
+                        case "activo":
+                            classes = "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20";
+                            icon = `<span class="mr-1.5 text-emerald-500">✔</span>`;
                             label = "Disponible";
                             break;
                         case "en_uso":
-                            classes =
-                                "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
-                            icon = "◉";
+                            classes = "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20";
+                            icon = `<span class="mr-1.5 text-blue-500">◉</span>`;
                             label = "En Uso";
                             break;
                         case "perdido":
-                            classes =
-                                "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800";
-                            icon = "✖";
+                            classes = "bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20";
+                            icon = `<span class="mr-1.5 text-red-500">⚠</span>`;
                             label = "Perdido";
                             break;
                         case "danado":
-                            classes =
-                                "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-900/50 dark:text-rose-200 dark:border-rose-700";
-                            icon = "⚡";
+                            classes = "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-700/30";
+                            icon = `<span class="mr-1.5 text-rose-500">⚡</span>`;
                             label = "Dañado";
                             break;
                         case "extraviado":
-                            classes =
-                                "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/50 dark:text-amber-200 dark:border-amber-700";
-                            icon = "❓";
+                            classes = "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20";
+                            icon = `<span class="mr-1.5 text-amber-500">❓</span>`;
                             label = "Extraviado";
                             break;
                         default:
-                            classes =
-                                "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600";
-                            icon = "-";
+                            classes = "bg-gray-500/10 text-gray-600 border-gray-500/20 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600";
+                            icon = `<span class="mr-1.5 opacity-75">-</span>`;
                             label = status;
                     }
 
-                    return `<span class="${baseClass} ${classes}"><span class="mr-1 opacity-75">${icon}</span> ${label}</span>`;
+                    return `<span class="${baseClass} ${classes}">${icon} ${label}</span>`;
                 },
             },
             {
