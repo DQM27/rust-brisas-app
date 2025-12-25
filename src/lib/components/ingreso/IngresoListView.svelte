@@ -10,12 +10,14 @@
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
   import IngresoFormModal from "./IngresoFormModal.svelte";
   import SalidaModal from "./SalidaModal.svelte";
+  import ExportDialog from "$lib/components/export/ExportDialog.svelte";
 
   // Logic
   import { invoke } from "@tauri-apps/api/core";
   import { createCustomButton } from "$lib/config/agGridConfigs";
   import { currentUser } from "$lib/stores/auth";
   import { activeTabId } from "$lib/stores/tabs";
+  import { exportData, getAvailableFormats } from "$lib/logic/export";
 
   // Types
   import type { CustomToolbarButton } from "$lib/types/agGrid";
@@ -39,6 +41,14 @@
   let showSalidaModal = $state(false);
   let selectedIngreso = $state<any>(null);
   let salidaLoading = $state(false);
+
+  // Estado para Exportación
+  let gridApi = $state<any>(null);
+  let showExportModal = $state(false);
+  let availableFormats = $state<string[]>([]);
+  let exportColumns = $state<{ id: string; name: string; selected: boolean }[]>(
+    [],
+  );
 
   // Keyboard shortcut handler for Ctrl+N
   function handleKeydown(e: KeyboardEvent) {
@@ -227,6 +237,7 @@
     return {
       default: [
         createCustomButton.nuevo(() => handleNuevoIngreso()),
+        createCustomButton.exportar(() => handleExportClick()),
         {
           id: "reload-data",
           label: "Actualizar",
@@ -236,8 +247,8 @@
           tooltip: "Recargar lista",
         },
       ],
-      singleSelect: [],
-      multiSelect: [],
+      singleSelect: [createCustomButton.exportar(() => handleExportClick())],
+      multiSelect: [createCustomButton.exportar(() => handleExportClick())],
     };
   });
 
@@ -270,6 +281,45 @@
   function handleSalida(ingreso: any) {
     selectedIngreso = ingreso;
     showSalidaModal = true;
+  }
+
+  // ==========================================
+  // EXPORT
+  // ==========================================
+  async function handleExportClick() {
+    if (!gridApi) return;
+
+    // Obtener formatos disponibles
+    availableFormats = await getAvailableFormats();
+
+    // Obtener columnas para el selector
+    const cols = gridApi.getAllGridColumns();
+    exportColumns = cols
+      .map((col: any) => ({
+        id: col.getColId(),
+        name: col.getColDef().headerName || col.getColId(),
+        selected: col.isVisible(),
+      }))
+      .filter((col: any) => col.id !== "actions" && col.id !== "selection");
+
+    showExportModal = true;
+  }
+
+  async function handleExport(format: any, options: any) {
+    if (!gridApi) return;
+
+    try {
+      const isSelection = selectedRows.length > 0;
+      const toastId = toast.loading(
+        `Exportando ${isSelection ? "selección" : "todo"} a ${format.toUpperCase()}...`,
+      );
+      await exportData(gridApi, format, options, isSelection);
+      toast.success("Exportación completada", { id: toastId });
+    } catch (err: any) {
+      if (err.message !== "Exportación cancelada por el usuario") {
+        toast.error("Error al exportar: " + err.message);
+      }
+    }
   }
 
   async function handleSalidaConfirm(event: CustomEvent) {
@@ -419,6 +469,7 @@
         getRowId={(params) => params.data.id}
         persistenceKey="ingresos-activos-columns"
         onSelectionChanged={(rows) => (selectedRows = rows)}
+        onGridReady={(api) => (gridApi = api)}
       />
     {/if}
   </div>
@@ -441,3 +492,12 @@
     selectedIngreso = null;
   }}
 />
+
+{#if showExportModal}
+  <ExportDialog
+    onExport={handleExport}
+    onClose={() => (showExportModal = false)}
+    {availableFormats}
+    columns={exportColumns}
+  />
+{/if}

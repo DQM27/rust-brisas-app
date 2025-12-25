@@ -284,6 +284,16 @@ export const createCustomButton = {
     tooltip: 'Ver carnets asignados'
   }),
 
+  exportar: (onClick: () => void, disabled = false) => ({
+    id: 'export-advanced',
+    label: 'Exportar',
+    icon: Download,
+    onClick,
+    disabled,
+    variant: 'default' as const,
+    tooltip: 'Exportación avanzada (PDF, Excel, CSV)'
+  }),
+
   quitarListaNegra: (onClick: () => void, disabled = false) => ({
     id: 'remove-blacklist',
     label: 'Quitar de Lista',
