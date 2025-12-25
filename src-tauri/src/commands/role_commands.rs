@@ -64,9 +64,18 @@ pub async fn create_role(
     session: State<'_, SessionState>,
     input: CreateRoleInput,
 ) -> Result<RoleResponse, RoleError> {
+    log::info!("🚀 create_role invoked. Input name: {}", input.name);
+
+    // Check actual session state
+    let maybe_user = session.get_user();
+    match &maybe_user {
+        Some(u) => log::info!("✅ Session found for user: {} ({})", u.nombre, u.id),
+        None => log::error!("❌ No active session found in SessionState!"),
+    }
+
     // Verificar sesión
-    let _user =
-        session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
+    let _user = maybe_user
+        .ok_or(RoleError::Unauthorized("Sesión requerida (Backend check failed)".to_string()))?;
 
     // Por ahora permitimos a cualquier admin crear roles
     // TODO: Verificar permiso roles:create

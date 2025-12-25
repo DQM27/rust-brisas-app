@@ -8,6 +8,8 @@ use crate::models::user::{
 use crate::services::search_service::SearchState;
 use crate::services::user_service;
 
+use crate::services::session::{SessionState, SessionUser}; // Fix import
+
 use tauri::State;
 
 #[tauri::command]
@@ -62,6 +64,7 @@ pub async fn get_all_users(pool_state: State<'_, DbPool>) -> Result<UserListResp
 #[tauri::command]
 pub async fn login(
     pool_state: State<'_, DbPool>,
+    session: State<'_, SessionState>, // Add session state
     email: String,
     password: String,
 ) -> Result<UserResponse, UserError> {
@@ -76,7 +79,22 @@ pub async fn login(
         log::info!("🔐 Login request using DB file: {}", path);
     }
 
-    user_service::login(&pool, email, password).await
+    let user_response = user_service::login(&pool, email, password).await?;
+
+    // Update SessionState
+    let session_user = SessionUser {
+        id: user_response.id.clone(),
+        email: user_response.email.clone(),
+        nombre: user_response.nombre.clone(),
+        apellido: user_response.apellido.clone(),
+        role_id: user_response.role_id.clone(),
+        role_name: user_response.role_name.clone(),
+    };
+
+    session.set_user(session_user);
+    log::info!("✅ Sesión establecida para: {}", user_response.email);
+
+    Ok(user_response)
 }
 
 #[tauri::command]
@@ -94,6 +112,7 @@ pub async fn change_password(
 #[tauri::command]
 pub async fn demo_login(
     pool_state: State<'_, DbPool>,
+    session: State<'_, SessionState>, // Add session state
     email: String,
 ) -> Result<UserResponse, UserError> {
     let pool = pool_state.0.read().await;
@@ -104,5 +123,20 @@ pub async fn demo_login(
         .map_err(|e| UserError::Database(sqlx::Error::Protocol(e.to_string())))?;
 
     // 2. Logear con el usuario demo (password siempre es demo123)
-    user_service::login(&pool, email, "demo123".to_string()).await
+    let user_response = user_service::login(&pool, email, "demo123".to_string()).await?;
+
+    // Update SessionState
+    let session_user = SessionUser {
+        id: user_response.id.clone(),
+        email: user_response.email.clone(),
+        nombre: user_response.nombre.clone(),
+        apellido: user_response.apellido.clone(),
+        role_id: user_response.role_id.clone(),
+        role_name: user_response.role_name.clone(),
+    };
+
+    session.set_user(session_user);
+    log::info!("✅ Sesión DEMO establecida para: {}", user_response.email);
+
+    Ok(user_response)
 }
