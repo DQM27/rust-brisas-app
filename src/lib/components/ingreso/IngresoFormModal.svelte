@@ -136,16 +136,8 @@
   <div
     class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
     transition:fade={{ duration: 150 }}
-    onclick={(e) => {
-      if (e.target === e.currentTarget) handleClose();
-    }}
-    onkeydown={(e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        if (e.target === e.currentTarget) handleClose();
-      }
-    }}
-    role="button"
-    tabindex="-1"
+    role="dialog"
+    aria-modal="true"
   >
     <!-- Modal -->
     <div
