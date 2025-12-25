@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT COUNT(*) as count FROM gafetes WHERE numero = ?",
+  "query": "SELECT COUNT(*) as count FROM gafetes WHERE numero = ? AND is_deleted = 0",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "daa922b99e42c372dcacfb37132e0339ae4a4bd5aba98270c920337deb52ba85"
+  "hash": "a1fa6d595df61fd2a82518bd7e5a8645e11e06f7b9433eb2b25a052c3fffc9e0"
 }

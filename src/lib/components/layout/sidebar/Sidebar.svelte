@@ -15,6 +15,8 @@
     HardHat,
     Package,
     Calendar,
+    BadgeCheck,
+    LogIn,
     Ban,
   } from "lucide-svelte";
 
@@ -23,7 +25,7 @@
   import SidebarPanel from "./SidebarPanel.svelte";
 
   // Paneles
-  import AccessPanel from "./panels/AccessPanel.svelte";
+  // AccessPanel removed as per user request
   import LogsPanel from "./panels/LogsPanel.svelte";
   import SettingsPanel from "./panels/SettingsPanel.svelte";
 
@@ -106,10 +108,30 @@
       },
     },
     {
-      id: "access",
-      icon: Lock,
-      label: "Accesos",
-      panelComponent: AccessPanel,
+      id: "gafetes",
+      icon: BadgeCheck,
+      label: "Gafetes",
+      action: () => {
+        openTab({
+          componentKey: "gafete-list",
+          title: "Gestión de Gafetes",
+          id: "gafete-list",
+          focusOnOpen: true,
+        });
+      },
+    },
+    {
+      id: "ingresos",
+      icon: LogIn,
+      label: "Ingresos",
+      action: () => {
+        openTab({
+          componentKey: "ingreso-list",
+          title: "Control de Ingresos",
+          id: "ingreso-list",
+          focusOnOpen: true,
+        });
+      },
     },
     {
       id: "logs",

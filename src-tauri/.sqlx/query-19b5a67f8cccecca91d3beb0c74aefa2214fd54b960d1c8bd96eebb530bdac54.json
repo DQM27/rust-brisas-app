@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT numero, tipo, estado, created_at, updated_at FROM gafetes WHERE tipo = ? ORDER BY numero",
+  "query": "SELECT numero, tipo, estado, created_at, updated_at FROM gafetes WHERE tipo = ? AND is_deleted = 0 ORDER BY numero",
   "describe": {
     "columns": [
       {
@@ -40,5 +40,5 @@
       false
     ]
   },
-  "hash": "1e62bbb114e1244669a14add24b410e67db8986dd8a1e111fa887b7eaab78b11"
+  "hash": "19b5a67f8cccecca91d3beb0c74aefa2214fd54b960d1c8bd96eebb530bdac54"
 }

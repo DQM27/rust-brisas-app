@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE gafetes SET is_deleted = 1 WHERE numero = ? AND tipo = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "c686252a72efedc7825a17e26b1d276372185c1573906e56b5053277083e8f84"
+}

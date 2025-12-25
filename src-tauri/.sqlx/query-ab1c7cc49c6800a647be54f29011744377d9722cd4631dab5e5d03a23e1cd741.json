@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT 1 as one FROM gafetes WHERE numero = ? AND tipo = ? LIMIT 1",
+  "query": "SELECT 1 as one FROM gafetes WHERE numero = ? AND tipo = ? AND is_deleted = 0 LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "9636136e79a1e0f4a509aff9eb7e9cf5868a78e1eacd74d54d94baea8b993f4b"
+  "hash": "ab1c7cc49c6800a647be54f29011744377d9722cd4631dab5e5d03a23e1cd741"
 }
