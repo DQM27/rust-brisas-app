@@ -37,6 +37,7 @@
   import UserFormModal from "$lib/components/user/UserFormModal.svelte";
   import UpdateModal from "$lib/components/settings/modals/UpdateModal.svelte";
   import BackupModal from "$lib/components/settings/modals/BackupModal.svelte";
+  import AboutModal from "$lib/components/settings/modals/AboutModal.svelte";
   import * as userService from "$lib/logic/user/userService";
   import type { CreateUserInput, UpdateUserInput } from "$lib/types/user";
   import { toast } from "svelte-5-french-toast";
@@ -147,6 +148,7 @@
   let showSettingsMenu = $state(false);
   let showUpdateModal = $state(false);
   let showBackupModal = $state(false);
+  let showAboutModal = $state(false);
 
   function toggleSettingsMenu(e: MouseEvent) {
     e.stopPropagation();
@@ -300,14 +302,17 @@
 
     <div class="sidebar-bottom-actions">
       <!-- Settings Button (VS Code style) -->
-      <div class="relative">
+      <div class="relative w-full flex items-center justify-center">
         <button
           onclick={toggleSettingsMenu}
-          class="sidebar-action-btn group {showSettingsMenu ? 'active' : ''}"
+          class="sidebar-icon-btn group {showSettingsMenu ? 'active' : ''}"
           title="Configuración"
         >
-          <Settings size={20} />
-          <span class="sidebar-tooltip">Configuración</span>
+          <Settings
+            size={22}
+            class="transition-transform duration-200 group-hover:scale-110"
+          />
+          <span class="sidebar-icon-tooltip">Configuración</span>
         </button>
 
         {#if showSettingsMenu}
@@ -417,9 +422,7 @@
             <button
               class="settings-menu-item"
               onclick={() =>
-                handleSettingsAction(() =>
-                  openView("about", "Acerca del Sistema"),
-                )}
+                handleSettingsAction(() => (showAboutModal = true))}
             >
               Acerca de Brisas App
             </button>
@@ -467,6 +470,7 @@
     show={showBackupModal}
     onClose={() => (showBackupModal = false)}
   />
+  <AboutModal show={showAboutModal} onClose={() => (showAboutModal = false)} />
 </div>
 
 <style>
@@ -474,7 +478,7 @@
   .settings-menu {
     position: absolute;
     bottom: 0;
-    left: 48px; /* Width of sidebar-icons (approx) + margin */
+    left: 46px; /* Ajustado un poco más cerca de la sidebar */
     z-index: 2000;
     min-width: 220px;
     padding: 0px 0;
