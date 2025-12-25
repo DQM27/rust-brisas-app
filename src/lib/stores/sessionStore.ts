@@ -57,7 +57,6 @@ function recordActivity(): void {
 
     // Don't record activity during screensaver cooldown period
     if (screensaverCooldown) {
-        console.log('[Session] Ignoring activity during screensaver cooldown');
         return;
     }
 
@@ -88,12 +87,10 @@ const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart']
 
 function handleFocus() {
     sessionState.update(s => ({ ...s, appHasFocus: true, lastAppFocusTime: Date.now() }));
-    console.log('[Session] App focused');
 }
 
 function handleBlur() {
     sessionState.update(s => ({ ...s, appHasFocus: false, lastAppFocusTime: Date.now() }));
-    console.log('[Session] App lost focus');
 }
 
 function attachActivityListeners(): void {
@@ -151,7 +148,6 @@ async function checkTimeouts(): Promise<void> {
         const appIdleMinutes = (now - state.lastActivityTime) / 1000 / 60;
 
         if (appIdleMinutes >= settings.appLockTimeoutMinutes) {
-            console.log(`[Session] App idle for ${appIdleMinutes.toFixed(1)} min (internal) - locking app`);
             enterLockedMode();
             return;
         }
@@ -161,11 +157,9 @@ async function checkTimeouts(): Promise<void> {
     // 2. SYSTEM SCREENSAVER CHECK (PC-wide idle)
     // =========================================================================
     const systemIdleMinutes = await getSystemIdleMinutes();
-    console.log(`[Session] System idle: ${systemIdleMinutes} min`);
 
     // Check for complete logout timeout (highest priority)
     if (settings.enableCompleteTimeout && systemIdleMinutes >= settings.completeTimeoutMinutes) {
-        console.log('[Session] Complete logout timeout reached');
         performCompleteLogout();
         return;
     }
@@ -176,7 +170,6 @@ async function checkTimeouts(): Promise<void> {
         !state.screensaverActive &&
         systemIdleMinutes >= settings.screensaverTimeoutMinutes
     ) {
-        console.log('[Session] Screensaver timeout reached');
         enterScreensaver();
         return;
     }
@@ -192,14 +185,12 @@ function startTimeoutChecker(): void {
 
     // Check every 10 seconds
     checkIntervalId = setInterval(checkTimeouts, 10000);
-    console.log('[Session] Timeout checker started');
 }
 
 function stopTimeoutChecker(): void {
     if (checkIntervalId !== null) {
         clearInterval(checkIntervalId);
         checkIntervalId = null;
-        console.log('[Session] Timeout checker stopped');
     }
 }
 
@@ -211,7 +202,6 @@ function stopTimeoutChecker(): void {
  * Enters locked mode (app-level lock, no screensaver)
  */
 export function enterLockedMode(): void {
-    console.log('[Session] Entering app locked mode');
 
     sessionState.update((s) => ({
         ...s,
@@ -225,7 +215,6 @@ export function enterLockedMode(): void {
  * Enters screensaver mode (PC-wide idle)
  */
 export function enterScreensaver(): void {
-    console.log('[Session] Entering system screensaver mode');
 
     // Set cooldown to prevent activity detection during tab opening
     screensaverCooldown = true;
@@ -266,14 +255,12 @@ export function attemptExitScreensaver(): void {
     }
 
     if (settings.screensaverRequiresPassword) {
-        console.log('[Session] Password required to exit screensaver');
         sessionState.update((s) => ({
             ...s,
             awaitingPasswordForScreensaver: true,
         }));
         // The layout component will show the password modal
     } else {
-        console.log('[Session] Exiting screensaver (no password required)');
         exitScreensaver();
     }
 }
@@ -282,7 +269,6 @@ export function attemptExitScreensaver(): void {
  * Exits screensaver mode (after password verification or if no password required)
  */
 export function exitScreensaver(): void {
-    console.log('[Session] Exiting screensaver mode');
 
     sessionState.update((s) => ({
         ...s,
@@ -299,7 +285,6 @@ export function exitScreensaver(): void {
  * Cancels screensaver password prompt and performs full logout
  */
 export async function cancelScreensaverPassword(): Promise<void> {
-    console.log('[Session] Screensaver password cancelled, logging out');
 
     // First exit fullscreen if we're in it
     if (browser) {
@@ -309,7 +294,6 @@ export async function cancelScreensaverPassword(): Promise<void> {
             const isFullscreen = await appWindow.isFullscreen();
 
             if (isFullscreen) {
-                console.log('[Session] Exiting fullscreen before logout');
                 await appWindow.setFullscreen(false);
             }
         } catch (e) {
@@ -328,7 +312,6 @@ export async function cancelScreensaverPassword(): Promise<void> {
  * Performs a complete logout (closes all tabs, clears session)
  */
 function performCompleteLogout(): void {
-    console.log('[Session] Performing complete logout');
 
     // Stop all session monitoring
     stopSession();
@@ -346,8 +329,6 @@ function performCompleteLogout(): void {
  */
 export function startSession(): void {
     if (!browser) return;
-
-    console.log('[Session] Starting session monitoring');
 
     // Reset state
     sessionState.set({
@@ -371,8 +352,6 @@ export function startSession(): void {
  */
 export function stopSession(): void {
     if (!browser) return;
-
-    console.log('[Session] Stopping session monitoring');
 
     // Stop activity tracking
     detachActivityListeners();

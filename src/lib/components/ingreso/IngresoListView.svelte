@@ -9,6 +9,7 @@
   import SearchBar from "$lib/components/shared/SearchBar.svelte";
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
   import IngresoFormModal from "./IngresoFormModal.svelte";
+  import SalidaModal from "./SalidaModal.svelte";
 
   // Logic
   import { invoke } from "@tauri-apps/api/core";
@@ -33,6 +34,11 @@
   let error = $state("");
   let selectedRows = $state<any[]>([]);
   let showModal = $state(false);
+
+  // Estado para el modal de salida
+  let showSalidaModal = $state(false);
+  let selectedIngreso = $state<any>(null);
+  let salidaLoading = $state(false);
 
   // Keyboard shortcut handler for Ctrl+N
   function handleKeydown(e: KeyboardEvent) {
@@ -261,28 +267,57 @@
     loadIngresos();
   }
 
-  async function handleSalida(ingreso: any) {
-    if (!confirm(`¿Registrar salida para ${ingreso.nombreCompleto}?`)) return;
+  function handleSalida(ingreso: any) {
+    selectedIngreso = ingreso;
+    showSalidaModal = true;
+  }
+
+  async function handleSalidaConfirm(event: CustomEvent) {
+    const { devolvioGafete, observaciones } = event.detail;
+
+    if (!selectedIngreso) return;
+
+    const usuarioId =
+      $currentUser?.id || "00000000-0000-0000-0000-000000000000";
 
     try {
-      const command =
-        ingreso.tipoIngreso === "contratista"
-          ? "register_exit_contratista"
-          : ingreso.tipoIngreso === "proveedor"
-            ? "registrar_salida_proveedor"
-            : "registrar_salida_visita";
+      salidaLoading = true;
 
-      await invoke(command, {
-        id: ingreso.id,
-        usuarioId: $currentUser?.id || "00000000-0000-0000-0000-000000000000",
-        devolvioGafete: true,
-        observaciones: null,
-      });
+      if (selectedIngreso.tipoIngreso === "contratista") {
+        // El comando de contratista espera un objeto 'input'
+        await invoke("register_exit_contratista", {
+          input: {
+            ingresoId: selectedIngreso.id,
+            devolvioGafete: devolvioGafete,
+            usuarioSalidaId: usuarioId,
+            observacionesSalida: observaciones,
+          },
+          usuarioId: usuarioId,
+        });
+      } else if (selectedIngreso.tipoIngreso === "proveedor") {
+        await invoke("registrar_salida_proveedor", {
+          id: selectedIngreso.id,
+          usuarioId: usuarioId,
+          observaciones: observaciones,
+          devolvioGafete: devolvioGafete,
+        });
+      } else {
+        await invoke("registrar_salida_visita", {
+          id: selectedIngreso.id,
+          usuarioId: usuarioId,
+          devolvioGafete: devolvioGafete,
+          observaciones: observaciones,
+        });
+      }
 
       toast.success("Salida registrada exitosamente");
+      showSalidaModal = false;
+      selectedIngreso = null;
       loadIngresos();
     } catch (err: any) {
       toast.error("Error al registrar salida: " + err.message);
+    } finally {
+      salidaLoading = false;
     }
   }
 
@@ -387,3 +422,15 @@
 
 <!-- Modal -->
 <IngresoFormModal bind:show={showModal} on:complete={handleModalComplete} />
+
+<!-- Modal de Salida -->
+<SalidaModal
+  bind:show={showSalidaModal}
+  ingreso={selectedIngreso}
+  loading={salidaLoading}
+  on:confirm={handleSalidaConfirm}
+  on:close={() => {
+    showSalidaModal = false;
+    selectedIngreso = null;
+  }}
+/>

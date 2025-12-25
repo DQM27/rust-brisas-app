@@ -8,12 +8,16 @@ import type { Readable } from 'svelte/store';
 /**
  * Store persistido con tabs serializables
  */
-const tabsStorePersisted = persisted<SerializableTab[]>('brisas-tabs', []);
+const tabsStorePersisted = persisted<SerializableTab[]>('brisas-tabs', [], {
+  storage: 'session'
+});
 
 /**
  * Store del tab activo
  */
-export const activeTabId = persisted<string>('brisas-active-tab', '');
+export const activeTabId = persisted<string>('brisas-active-tab', '', {
+  storage: 'session'
+});
 
 /**
  * Store derivado con componentes hidratados (solo en memoria)
@@ -52,10 +56,10 @@ function generateTabId(componentKey: string, data?: Record<string, any>): string
  */
 export function openTab(options: OpenTabOptions): string {
   const { componentKey, title, data, focusOnOpen = true } = options;
-  
+
   const id = options.id || generateTabId(componentKey, data);
   const tabs = get(tabsStorePersisted);
-  
+
   // Si ya existe, solo enfocarlo
   const existingTab = tabs.find(t => t.id === id);
   if (existingTab) {
@@ -64,7 +68,7 @@ export function openTab(options: OpenTabOptions): string {
     }
     return id;
   }
-  
+
   // Crear nuevo tab
   const newTab: SerializableTab = {
     id,
@@ -74,13 +78,13 @@ export function openTab(options: OpenTabOptions): string {
     isDirty: false,
     order: tabs.length
   };
-  
+
   tabsStorePersisted.update(currentTabs => [...currentTabs, newTab]);
-  
+
   if (focusOnOpen) {
     activeTabId.set(id);
   }
-  
+
   return id;
 }
 
@@ -94,11 +98,11 @@ export function openTab(options: OpenTabOptions): string {
 export function closeTab(id: string, force: boolean = false): boolean {
   const tabs = get(tabsStorePersisted);
   const tab = tabs.find(t => t.id === id);
-  
+
   if (!tab) {
     return false;
   }
-  
+
   // Verificar si tiene cambios sin guardar
   if (tab.isDirty && !force) {
     const confirmed = confirm(`"${tab.title}" tiene cambios sin guardar. ¿Cerrar de todos modos?`);
@@ -106,11 +110,11 @@ export function closeTab(id: string, force: boolean = false): boolean {
       return false;
     }
   }
-  
+
   // Filtrar el tab
   const remainingTabs = tabs.filter(t => t.id !== id);
   tabsStorePersisted.set(remainingTabs);
-  
+
   // Manejar tab activo
   const currentActive = get(activeTabId);
   if (currentActive === id) {
@@ -123,7 +127,7 @@ export function closeTab(id: string, force: boolean = false): boolean {
       activeTabId.set('');
     }
   }
-  
+
   return true;
 }
 
@@ -136,7 +140,7 @@ export function closeTab(id: string, force: boolean = false): boolean {
 export function closeAllTabs(force: boolean = false): boolean {
   const tabs = get(tabsStorePersisted);
   const dirtyTabs = tabs.filter(t => t.isDirty);
-  
+
   if (dirtyTabs.length > 0 && !force) {
     const tabWord = dirtyTabs.length === 1 ? 'tab tiene' : 'tabs tienen';
     const confirmed = confirm(
@@ -146,7 +150,7 @@ export function closeAllTabs(force: boolean = false): boolean {
       return false;
     }
   }
-  
+
   tabsStorePersisted.set([]);
   activeTabId.set('');
   return true;
@@ -227,10 +231,10 @@ export function closeTabsToRight(id: string, force: boolean = false): boolean {
  * @param isDirty - Estado de modificación
  */
 export function markTabDirty(id: string, isDirty: boolean = true): void {
-  tabsStorePersisted.update(tabs => 
-    tabs.map(tab => 
-      tab.id === id 
-        ? { ...tab, isDirty } 
+  tabsStorePersisted.update(tabs =>
+    tabs.map(tab =>
+      tab.id === id
+        ? { ...tab, isDirty }
         : tab
     )
   );
@@ -243,10 +247,10 @@ export function markTabDirty(id: string, isDirty: boolean = true): void {
  * @param data - Datos a actualizar (se mezclan con los existentes)
  */
 export function updateTabData(id: string, data: Record<string, any>): void {
-  tabsStorePersisted.update(tabs => 
-    tabs.map(tab => 
-      tab.id === id 
-        ? { ...tab, data: { ...tab.data, ...data } } 
+  tabsStorePersisted.update(tabs =>
+    tabs.map(tab =>
+      tab.id === id
+        ? { ...tab, data: { ...tab.data, ...data } }
         : tab
     )
   );
@@ -259,10 +263,10 @@ export function updateTabData(id: string, data: Record<string, any>): void {
  * @param title - Nuevo título
  */
 export function updateTabTitle(id: string, title: string): void {
-  tabsStorePersisted.update(tabs => 
-    tabs.map(tab => 
-      tab.id === id 
-        ? { ...tab, title } 
+  tabsStorePersisted.update(tabs =>
+    tabs.map(tab =>
+      tab.id === id
+        ? { ...tab, title }
         : tab
     )
   );
@@ -275,12 +279,12 @@ export function updateTabTitle(id: string, title: string): void {
  */
 export function reorderTabs(newOrder: string[]): void {
   const tabs = get(tabsStorePersisted);
-  
+
   const reordered = newOrder
     .map(id => tabs.find(t => t.id === id))
     .filter((tab): tab is SerializableTab => tab !== undefined)
     .map((tab, index) => ({ ...tab, order: index }));
-  
+
   tabsStorePersisted.set(reordered);
 }
 

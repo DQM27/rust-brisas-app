@@ -34,7 +34,6 @@
     try {
       if ("wakeLock" in navigator) {
         wakeLock = await navigator.wakeLock.request("screen");
-        console.log("Wake Lock is active");
       }
     } catch (err) {
       const e = err as Error;
@@ -56,7 +55,6 @@
       await appWindow.setFullscreen(!current);
       generalSettings.update((s) => ({ ...s, isKioskMode: !current }));
     } catch (e) {
-      console.log("Not running in Tauri, trying web fullscreen");
       if (!document.fullscreenElement) {
         document.documentElement
           .requestFullscreen()

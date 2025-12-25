@@ -177,7 +177,7 @@ export async function registrarEntrada(input: any): Promise<ServiceResult<any>> 
 
 export async function fetchAbiertos(): Promise<ServiceResult<any[]>> {
     try {
-        const data = await invoke('get_ingresos_activos');
+        const data = await invoke('get_ingresos_abiertos');
         return { ok: true, data: data as any[] };
     } catch (e: any) {
         return { ok: false, error: e.message || 'Error cargando ingresos activos' };

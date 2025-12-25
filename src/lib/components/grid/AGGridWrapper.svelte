@@ -208,6 +208,7 @@
   const gridOptions: GridOptions<T> = {
     columnDefs: columnDefs,
     localeText: AG_GRID_LOCALE_ES,
+    loadThemeGoogleFonts: false,
 
     // Default Column Definition
     defaultColDef: {
