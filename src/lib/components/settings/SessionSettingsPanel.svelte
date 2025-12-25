@@ -65,7 +65,82 @@
     </button>
   </div>
 
-  <!-- Screensaver Settings -->
+  <!-- App Lock Settings (cuando app pierde foco) -->
+  <div class="rounded-lg border border-emphasis bg-surface-1 p-4">
+    <div class="flex items-start gap-3 mb-4">
+      <div
+        class="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-500/10"
+      >
+        <Shield size={20} class="text-amber-500" />
+      </div>
+      <div class="flex-1">
+        <div class="flex items-center justify-between mb-1">
+          <h4 class="font-medium text-primary">
+            Bloqueo por Inactividad de la App
+          </h4>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={$sessionSettings.enableAppLock}
+              onchange={() => sessionSettings.toggleAppLock()}
+              class="sr-only peer"
+            />
+            <div
+              class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full"
+            ></div>
+          </label>
+        </div>
+        <p class="text-sm text-secondary mb-3">
+          Bloquea la app cuando pierde el foco o está minimizada
+        </p>
+
+        {#if $sessionSettings.enableAppLock}
+          <div class="space-y-3 ml-1 pl-3 border-l-2 border-amber-500/30">
+            <!-- Timeout Duration -->
+            <div>
+              <label
+                for="app-lock-timeout"
+                class="block text-sm font-medium text-secondary mb-2"
+              >
+                Tiempo sin usar la app: <span
+                  class="text-amber-500 font-semibold"
+                  >{formatTime($sessionSettings.appLockTimeoutMinutes)}</span
+                >
+              </label>
+              <div class="flex items-center gap-3">
+                <input
+                  id="app-lock-timeout"
+                  type="range"
+                  min="1"
+                  max="120"
+                  step="1"
+                  value={$sessionSettings.appLockTimeoutMinutes}
+                  oninput={(e) =>
+                    sessionSettings.setAppLockTimeout(
+                      Number((e.target as HTMLInputElement).value),
+                    )}
+                  class="flex-1 h-2 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                />
+                <input
+                  type="number"
+                  min="1"
+                  max="120"
+                  value={$sessionSettings.appLockTimeoutMinutes}
+                  onchange={(e) =>
+                    sessionSettings.setAppLockTimeout(
+                      Number((e.target as HTMLInputElement).value),
+                    )}
+                  class="w-20 px-2 py-1 text-sm rounded border border-emphasis bg-surface-2 text-primary focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+            </div>
+          </div>
+        {/if}
+      </div>
+    </div>
+  </div>
+
+  <!-- Screensaver Settings (cuando PC está inactiva) -->
   <div class="rounded-lg border border-emphasis bg-surface-1 p-4">
     <div class="flex items-start gap-3 mb-4">
       <div
@@ -86,7 +161,7 @@
               class="sr-only peer"
             />
             <div
-              class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-accent peer-focus:ring-2 peer-focus:ring-accent transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full"
+              class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full"
             ></div>
           </label>
         </div>
@@ -154,7 +229,7 @@
                   class="sr-only peer"
                 />
                 <div
-                  class="w-11 h-6 bg-surface-3 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"
+                  class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full"
                 ></div>
               </label>
             </div>
@@ -183,7 +258,7 @@
               class="sr-only peer"
             />
             <div
-              class="w-11 h-6 bg-surface-3 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"
+              class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full"
             ></div>
           </label>
         </div>
