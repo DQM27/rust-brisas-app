@@ -20,6 +20,10 @@
     "core:window:allow-is-fullscreen",
     "core:window:allow-is-maximized",
     "core:window:allow-unmaximize",
+    "core:window:allow-is-minimized",
+    "core:window:allow-unminimize",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-set-focus",
     "dialog:allow-ask"
   ]
 }

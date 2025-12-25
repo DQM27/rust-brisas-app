@@ -116,7 +116,16 @@
           const { getCurrentWindow } = await import("@tauri-apps/api/window");
           const appWindow = getCurrentWindow();
 
-          // First, check if maximized and unmaximize
+          // First, check if minimized and restore
+          const isMinimized = await appWindow.isMinimized();
+          if (isMinimized) {
+            console.log("[Layout] Window is minimized, restoring first...");
+            await appWindow.unminimize();
+            // Small delay to let window restore
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+
+          // Then check if maximized and unmaximize
           const isMaximized = await appWindow.isMaximized();
           if (isMaximized) {
             console.log("[Layout] Window is maximized, unmaximizing first...");
@@ -124,6 +133,14 @@
             // Small delay to let window settle
             await new Promise((resolve) => setTimeout(resolve, 100));
           }
+
+          // Set always on top to appear above all other windows (like native screensaver)
+          console.log("[Layout] Setting always on top...");
+          await appWindow.setAlwaysOnTop(true);
+
+          // Give focus to the window
+          console.log("[Layout] Setting focus...");
+          await appWindow.setFocus();
 
           // Force kiosk mode FIRST to hide UI elements
           generalSettings.update((s) => ({ ...s, isKioskMode: true }));
@@ -150,6 +167,7 @@
           // This prevents interfering with the user double-clicking
           if (isCurrentlyFullscreen) {
             await appWindow.setFullscreen(false);
+            await appWindow.setAlwaysOnTop(false); // Remove always on top
             generalSettings.update((s) => ({ ...s, isKioskMode: false }));
             console.log(
               "[Layout] Screensaver deactivated - exiting fullscreen",

@@ -3,6 +3,7 @@ import { browser } from '$app/environment';
 import { sessionSettings } from './sessionSettingsStore';
 import { logout, currentUser } from './auth';
 import { openTab, activeTabId } from './tabs';
+import { getSystemIdleMinutes } from '$lib/services/systemIdleService';
 
 // =============================================================================
 // TYPES
@@ -31,7 +32,7 @@ const initialState: SessionState = {
 const sessionState = writable<SessionState>(initialState);
 
 // =============================================================================
-// ACTIVITY TRACKING
+// ACTIVITY TRACKING (Kept for manual reset after screensaver exit)
 // =============================================================================
 
 let activityListenersActive = false;
@@ -41,6 +42,7 @@ let screensaverCooldown = false; // Flag to prevent immediate deactivation after
 
 /**
  * Updates the last activity time (debounced to avoid excessive updates)
+ * NOW ONLY USED to exit screensaver when password is not required
  */
 function recordActivity(): void {
     // Don't record activity if we're waiting for screensaver password
@@ -101,13 +103,14 @@ function detachActivityListeners(): void {
 }
 
 // =============================================================================
-// TIMEOUT CHECKING
+// TIMEOUT CHECKING (Using System-Wide Idle Detection)
 // =============================================================================
 
 /**
  * Checks if timeouts have been reached and triggers appropriate actions
+ * NOW USES SYSTEM-WIDE IDLE DETECTION instead of manual activity tracking
  */
-function checkTimeouts(): void {
+async function checkTimeouts(): Promise<void> {
     const state = get(sessionState);
     const settings = get(sessionSettings);
     const user = get(currentUser);
@@ -117,8 +120,10 @@ function checkTimeouts(): void {
         return;
     }
 
-    const now = Date.now();
-    const inactiveMinutes = (now - state.lastActivityTime) / 1000 / 60;
+    // Get system-wide idle time in minutes
+    const inactiveMinutes = await getSystemIdleMinutes();
+
+    console.log(`[Session] System idle for ${inactiveMinutes} minutes`);
 
     // Check for complete logout timeout
     if (settings.enableCompleteTimeout && inactiveMinutes >= settings.completeTimeoutMinutes) {
