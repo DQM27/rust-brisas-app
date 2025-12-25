@@ -44,7 +44,7 @@ pub async fn find_by_numero_and_tipo(
 ) -> sqlx::Result<Gafete> {
     let row = sqlx::query_as!(
         GafeteRow,
-        "SELECT numero, tipo, estado, created_at, updated_at FROM gafetes WHERE numero = ? AND tipo = ?",
+        r#"SELECT numero, tipo, estado, created_at, updated_at FROM gafetes WHERE numero = ? AND tipo = ? AND is_deleted = 0"#,
         numero,
         tipo
     )
@@ -58,7 +58,7 @@ pub async fn find_by_numero_and_tipo(
 pub async fn find_all(pool: &SqlitePool) -> sqlx::Result<Vec<Gafete>> {
     let rows = sqlx::query_as!(
         GafeteRow,
-        "SELECT numero, tipo, estado, created_at, updated_at FROM gafetes ORDER BY numero"
+        r#"SELECT numero, tipo, estado, created_at, updated_at FROM gafetes WHERE is_deleted = 0 ORDER BY numero"#
     )
     .fetch_all(pool)
     .await?;
@@ -70,7 +70,7 @@ pub async fn find_all(pool: &SqlitePool) -> sqlx::Result<Vec<Gafete>> {
 pub async fn find_by_tipo(pool: &SqlitePool, tipo: &str) -> sqlx::Result<Vec<Gafete>> {
     let rows = sqlx::query_as!(
         GafeteRow,
-        "SELECT numero, tipo, estado, created_at, updated_at FROM gafetes WHERE tipo = ? ORDER BY numero",
+        r#"SELECT numero, tipo, estado, created_at, updated_at FROM gafetes WHERE tipo = ? AND is_deleted = 0 ORDER BY numero"#,
         tipo
     )
     .fetch_all(pool)
@@ -81,9 +81,12 @@ pub async fn find_by_tipo(pool: &SqlitePool, tipo: &str) -> sqlx::Result<Vec<Gaf
 
 /// Cuenta gafetes por número
 pub async fn count_by_numero(pool: &SqlitePool, numero: &str) -> sqlx::Result<i64> {
-    let result = sqlx::query!("SELECT COUNT(*) as count FROM gafetes WHERE numero = ?", numero)
-        .fetch_one(pool)
-        .await?;
+    let result = sqlx::query!(
+        r#"SELECT COUNT(*) as count FROM gafetes WHERE numero = ? AND is_deleted = 0"#,
+        numero
+    )
+    .fetch_one(pool)
+    .await?;
 
     Ok(result.count as i64)
 }
@@ -95,7 +98,7 @@ pub async fn exists_by_numero_and_tipo(
     tipo: &str,
 ) -> sqlx::Result<bool> {
     let result = sqlx::query!(
-        "SELECT 1 as one FROM gafetes WHERE numero = ? AND tipo = ? LIMIT 1",
+        r#"SELECT 1 as one FROM gafetes WHERE numero = ? AND tipo = ? AND is_deleted = 0 LIMIT 1"#,
         numero,
         tipo
     )
@@ -160,7 +163,7 @@ pub async fn find_disponibles_by_tipo(pool: &SqlitePool, tipo: &str) -> sqlx::Re
                  LEFT JOIN ingresos_proveedores ip ON g.numero = ip.gafete AND ip.fecha_salida IS NULL
                  LEFT JOIN alertas_gafetes a ON g.numero = a.gafete_numero AND a.resuelto = 0 AND a.ingreso_proveedor_id IS NOT NULL
                  WHERE g.tipo = 'proveedor' AND g.estado = 'activo'
-                 AND ip.id IS NULL AND a.id IS NULL AND g.numero != 'S/G'
+                 AND ip.id IS NULL AND a.id IS NULL AND g.numero != 'S/G' AND g.is_deleted = 0
                  ORDER BY g.numero"#
             )
             .fetch_all(pool)
@@ -173,7 +176,7 @@ pub async fn find_disponibles_by_tipo(pool: &SqlitePool, tipo: &str) -> sqlx::Re
                 r#"SELECT g.numero FROM gafetes g
                  LEFT JOIN ingresos_visitas iv ON g.numero = iv.gafete AND iv.estado = 'ADENTRO'
                  WHERE g.tipo = 'visita' AND g.estado = 'activo'
-                 AND iv.id IS NULL AND g.numero != 'S/G'
+                 AND iv.id IS NULL AND g.numero != 'S/G' AND g.is_deleted = 0
                  ORDER BY g.numero"#
             )
             .fetch_all(pool)
@@ -187,7 +190,7 @@ pub async fn find_disponibles_by_tipo(pool: &SqlitePool, tipo: &str) -> sqlx::Re
                  LEFT JOIN ingresos_contratistas i ON g.numero = i.gafete_numero AND i.fecha_hora_salida IS NULL AND i.tipo_ingreso = 'contratista'
                  LEFT JOIN alertas_gafetes a ON g.numero = a.gafete_numero AND a.resuelto = 0 AND a.ingreso_contratista_id IS NOT NULL
                  WHERE g.tipo = ? AND g.estado = 'activo'
-                 AND i.id IS NULL AND a.id IS NULL AND g.numero != 'S/G'
+                 AND i.id IS NULL AND a.id IS NULL AND g.numero != 'S/G' AND g.is_deleted = 0
                  ORDER BY g.numero"#,
                 tipo
             )
@@ -264,9 +267,13 @@ pub async fn update_status(
 }
 
 pub async fn delete(pool: &SqlitePool, numero: &str, tipo: &str) -> sqlx::Result<()> {
-    sqlx::query!("DELETE FROM gafetes WHERE numero = ? AND tipo = ?", numero, tipo)
-        .execute(pool)
-        .await?;
+    sqlx::query!(
+        r#"UPDATE gafetes SET is_deleted = 1 WHERE numero = ? AND tipo = ?"#,
+        numero,
+        tipo
+    )
+    .execute(pool)
+    .await?;
 
     Ok(())
 }

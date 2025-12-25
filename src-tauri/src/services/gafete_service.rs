@@ -240,12 +240,20 @@ pub async fn get_all_gafetes(pool: &SqlitePool) -> Result<GafeteListResponse, Ga
         responses.push(response);
     }
 
-    // Enrich with history for damaged/missing
+    // Enrich with history for damaged/missing, OR if recently recovered (activo)
     for r in responses.iter_mut() {
-        if r.status != "disponible" && r.status != "en_uso" && r.status != "perdido" {
+        // We want to show "Reportado por" or "Recuperado por" info if available.
+        // If it's active but was previously damaged/lost, we might want to see who recovered it.
+        // Current logic only fetches if NOT available/in_use/lost (which matches damaged/extraviado).
+        // Let's expand to fetch last status change for ANY status if it's not a simple 'en_uso' automatic change.
+        // Actually, db::get_last_status_change returns the LAST entry in history.
+
+        if r.status != "en_uso" && r.status != "perdido" {
             if let Ok(Some((nombre, fecha))) =
                 db::get_last_status_change(pool, &r.numero, r.tipo.as_str()).await
             {
+                // If status is "disponible" (activo), this means it was recovered or created.
+                // If it was just created, the history might be "Activo" by system or user.
                 r.reportado_por_nombre = Some(nombre);
                 r.fecha_perdido = Some(fecha);
             }
