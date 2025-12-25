@@ -11,10 +11,10 @@ use crate::models::role::{CreateRoleInput, UpdateRoleInput};
 // CONSTANTES
 // ==========================================
 
-pub const SUPERUSER_ID: &str = "00000000-0000-0000-0000-000000000000";
-pub const ROLE_ADMIN_ID: &str = "11111111-1111-1111-1111-111111111111";
-pub const ROLE_GUARDIA_ID: &str = "22222222-2222-2222-2222-222222222222";
-pub const ROLE_SUPERVISOR_ID: &str = "33333333-3333-3333-3333-333333333333"; // Assuming ID if not known, or just add what was likely there. Wait, I don't know the exact ID.
+pub const SUPERUSER_ID: &str = "e0d6da3e-07a8-48c6-9304-436154b7c845";
+pub const ROLE_ADMIN_ID: &str = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
+pub const ROLE_GUARDIA_ID: &str = "27221d6e-9818-430c-99c3-5694a971216b";
+pub const ROLE_SUPERVISOR_ID: &str = "75438848-185d-400e-953a-7a54a01c801e";
 pub const SUPERUSER_EMAIL: &str = "admin@brisas.local";
 
 pub fn is_superuser(user_id: &str) -> bool {

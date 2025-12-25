@@ -33,29 +33,61 @@ fn get_default_config_path() -> PathBuf {
     }
 }
 
-/// Carga la configuración desde el archivo TOML
+/// Carga la configuración desde el archivo TOML con fallback a backup
 pub fn load_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
     // Buscar archivo existente
     for path in get_config_search_paths() {
         if path.exists() {
             log::info!("📁 Cargando config desde: {}", path.display());
-            let content = fs::read_to_string(&path)?;
-            let mut config: AppConfig = toml::from_str(&content)?;
 
-            log::info!("🔧 Config cargada: show_demo_mode = {}", config.setup.show_demo_mode);
+            // Intentar cargar archivo principal
+            match fs::read_to_string(&path) {
+                Ok(content) => {
+                    match toml::from_str::<AppConfig>(&content) {
+                        Ok(mut config) => {
+                            log::info!(
+                                "🔧 Config cargada: show_demo_mode = {}",
+                                config.setup.show_demo_mode
+                            );
 
-            // Generar ID si está vacío
-            if config.terminal.id.is_empty() {
-                config.terminal.id = generate_hardware_id()?;
-                save_config(&config, &path)?;
+                            // Generar ID si está vacío
+                            if config.terminal.id.is_empty() {
+                                config.terminal.id = generate_hardware_id()?;
+                                save_config(&config, &path)?;
+                            }
+                            return Ok(config);
+                        }
+                        Err(e) => {
+                            log::error!(
+                                "❌ Error parsing config file: {}. Intentando cargar backup...",
+                                e
+                            );
+                        }
+                    }
+                }
+                Err(e) => {
+                    log::error!("❌ Error reading config file: {}. Intentando cargar backup...", e);
+                }
             }
 
-            return Ok(config);
+            // Fallback: Intentar cargar backup si existe
+            let backup_path = path.with_extension("toml.bak");
+            if backup_path.exists() {
+                log::warn!("⚠️ Intentando restaurar desde backup: {}", backup_path.display());
+                let content = fs::read_to_string(&backup_path)?;
+                let config: AppConfig = toml::from_str(&content)?;
+
+                // Restaurar archivo principal
+                log::info!("✅ Backup cargado y válido. Restaurando archivo principal...");
+                save_config(&config, &path)?;
+
+                return Ok(config);
+            }
         }
     }
 
-    // No se encontró, crear nueva configuración
-    log::info!("📁 No se encontró config, creando nueva...");
+    // No se encontró o falló todo, crear nueva configuración
+    log::info!("📁 No se encontró config válida, creando nueva...");
     create_default_config()
 }
 
@@ -81,11 +113,21 @@ fn create_default_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
     Ok(config)
 }
 
-/// Guarda la configuración en un archivo TOML
+/// Guarda la configuración en un archivo TOML creando un backup previo
 pub fn save_config(config: &AppConfig, path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     // Crear directorio si no existe
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
+    }
+
+    // Crear backup si el archivo existe
+    if path.exists() {
+        let backup_path = path.with_extension("toml.bak");
+        if let Err(e) = fs::copy(path, &backup_path) {
+            log::warn!("⚠️ No se pudo crear backup de config: {}", e);
+        } else {
+            log::debug!("📦 Backup de config creado en: {}", backup_path.display());
+        }
     }
 
     let toml_string = toml::to_string_pretty(config)?;

@@ -137,8 +137,16 @@ function parseError(err: any): string {
     }
 
     if (typeof err === 'object') {
-        const msg = err.message ?? err.toString();
-        return msg;
+        // Si tiene message, usarlo
+        if (err.message) return err.message;
+
+        // Si es un error de Tauri/Backend serializado
+        // Intentar stringify para ver qué tiene dentro
+        try {
+            return JSON.stringify(err);
+        } catch {
+            return err.toString();
+        }
     }
 
     return 'Ocurrió un error inesperado.';

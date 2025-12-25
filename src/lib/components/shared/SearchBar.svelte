@@ -13,6 +13,7 @@
   import { performSearch } from "$lib/logic/search/performSearch";
   import type { SearchResult, SearchState } from "$lib/types/search.types";
   import { highlightMatches } from "$lib/logic/search/highlightMatches";
+  import { gridState } from "$lib/stores/gridStateStore.svelte";
 
   let {
     placeholder = "Buscar por nombre, cédula o empresa...",
@@ -41,6 +42,17 @@
 
   function handleInput() {
     clearTimeout(debounceTimer);
+
+    // Prioridad 1: Si hay searchFunction explícita (ej. en modales), usarla
+    if (searchFunction) {
+      // Dejar pasar al debounce normal
+    }
+    // Prioridad 2: Si no hay searchFunction pero hay Grid Activo, filtrar grid
+    else if (gridState.activeGridApi) {
+      gridState.activeGridApi.setGridOption("quickFilterText", query);
+      showDropdown = false;
+      return;
+    }
 
     if (query.trim().length < 2) {
       searchStore.clearResults();
@@ -81,6 +93,11 @@
 
   export function clear() {
     query = "";
+
+    if (gridState.activeGridApi) {
+      gridState.activeGridApi.setGridOption("quickFilterText", "");
+    }
+
     showDropdown = false;
     highlightedIndex = -1;
     searchStore.clear();
@@ -186,9 +203,11 @@
       onkeydown={handleKeyDown}
       type="text"
       autocomplete="off"
-      placeholder={selectedResult
-        ? `Filtrando: ${selectedResult.nombreCompleto || selectedResult.id}`
-        : placeholder}
+      placeholder={!searchFunction && gridState.activeGridApi
+        ? "Filtrar en tabla activa..."
+        : selectedResult
+          ? `Filtrando: ${selectedResult.nombreCompleto || selectedResult.id}`
+          : placeholder}
       {disabled}
       class="w-full rounded-lg border bg-[#1e1e1e] pl-10 pr-16 py-2.5 text-sm text-white
         placeholder:text-gray-500 transition-colors

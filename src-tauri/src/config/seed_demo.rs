@@ -85,7 +85,7 @@ async fn seed_demo_users(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Er
             "Marie",
             "Curie",
             ROLE_SUPERVISOR_ID,
-            "MC123456",
+            "10000001",
         ),
         // Admin: Albert Einstein (padre de la relatividad, merece ser admin)
         (
@@ -94,7 +94,7 @@ async fn seed_demo_users(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Er
             "Albert",
             "Einstein",
             ROLE_ADMIN_ID,
-            "AE789012",
+            "10000002",
         ),
         // Guardia 2: Richard Feynman
         (
@@ -103,7 +103,7 @@ async fn seed_demo_users(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Er
             "Richard",
             "Feynman",
             ROLE_GUARDIA_ID,
-            "RF345678",
+            "10000003",
         ),
     ];
 
@@ -170,11 +170,11 @@ async fn seed_demo_empresas(pool: &SqlitePool) -> Result<(), Box<dyn std::error:
 async fn seed_demo_gafetes(pool: &SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
     let now = Utc::now().to_rfc3339();
 
-    // Gafetes de contratista (C-001 a C-020)
+    // Gafetes de contratista (01 a 20)
     // Nota: PK es (numero, tipo), no hay columna 'id'
     // Estado válido: 'activo', 'danado', 'extraviado'
     for i in 1..=20 {
-        let numero = format!("C-{:03}", i);
+        let numero = format!("{:02}", i);
         sqlx::query(
             r#"INSERT OR IGNORE INTO gafetes 
                (numero, tipo, estado, created_at, updated_at)
@@ -187,9 +187,9 @@ async fn seed_demo_gafetes(pool: &SqlitePool) -> Result<(), Box<dyn std::error::
         .await?;
     }
 
-    // Gafetes de proveedor (P-001 a P-010)
+    // Gafetes de proveedor (01 a 10)
     for i in 1..=10 {
-        let numero = format!("P-{:03}", i);
+        let numero = format!("{:02}", i);
         sqlx::query(
             r#"INSERT OR IGNORE INTO gafetes 
                (numero, tipo, estado, created_at, updated_at)
@@ -202,9 +202,9 @@ async fn seed_demo_gafetes(pool: &SqlitePool) -> Result<(), Box<dyn std::error::
         .await?;
     }
 
-    // Gafetes de visita (V-001 a V-010)
+    // Gafetes de visita (01 a 10)
     for i in 1..=10 {
-        let numero = format!("V-{:03}", i);
+        let numero = format!("{:02}", i);
         sqlx::query(
             r#"INSERT OR IGNORE INTO gafetes 
                (numero, tipo, estado, created_at, updated_at)
@@ -231,14 +231,14 @@ async fn seed_demo_contratistas(pool: &SqlitePool) -> Result<(), Box<dyn std::er
     // Contratistas: Físicos famosos con diferentes estados de PRAIND
     let contratistas = [
         // (id, cedula, nombre, apellido, empresa_id, praind_vence_en_dias, estado)
-        ("demo-cont-1", "IN170401", "Isaac", "Newton", "demo-emp-1", 180, "activo"), // PRAIND OK - Padre de la física clásica
-        ("demo-cont-2", "NT185607", "Nikola", "Tesla", "demo-emp-1", 15, "activo"), // PRAIND por vencer - Genio de la electricidad
-        ("demo-cont-3", "SH194201", "Stephen", "Hawking", "demo-emp-2", -5, "activo"), // PRAIND VENCIDO - Cosmólogo
-        ("demo-cont-4", "NB188501", "Niels", "Bohr", "demo-emp-2", 90, "activo"), // PRAIND OK - Física cuántica
-        ("demo-cont-5", "WH190101", "Werner", "Heisenberg", "demo-emp-3", 60, "suspendido"), // Suspendido - Principio de incertidumbre
-        ("demo-cont-6", "EP190001", "Enrico", "Fermi", "demo-emp-3", 120, "activo"), // PRAIND OK - Física nuclear
-        ("demo-cont-7", "MD186701", "Max", "Planck", "demo-emp-1", 45, "activo"), // PRAIND OK - Padre de la cuántica
-        ("demo-cont-8", "ES188701", "Erwin", "Schrödinger", "demo-emp-2", 7, "activo"), // PRAIND por vencer - El gato
+        ("demo-cont-1", "17040100", "Isaac", "Newton", "demo-emp-1", 180, "activo"), // PRAIND OK - Padre de la física clásica
+        ("demo-cont-2", "18560700", "Nikola", "Tesla", "demo-emp-1", 15, "activo"), // PRAIND por vencer - Genio de la electricidad
+        ("demo-cont-3", "19420100", "Stephen", "Hawking", "demo-emp-2", -5, "activo"), // PRAIND VENCIDO - Cosmólogo
+        ("demo-cont-4", "18850100", "Niels", "Bohr", "demo-emp-2", 90, "activo"), // PRAIND OK - Física cuántica
+        ("demo-cont-5", "19010100", "Werner", "Heisenberg", "demo-emp-3", 60, "suspendido"), // Suspendido - Principio de incertidumbre
+        ("demo-cont-6", "19000100", "Enrico", "Fermi", "demo-emp-3", 120, "activo"), // PRAIND OK - Física nuclear
+        ("demo-cont-7", "18670100", "Max", "Planck", "demo-emp-1", 45, "activo"), // PRAIND OK - Padre de la cuántica
+        ("demo-cont-8", "18870100", "Erwin", "Schrödinger", "demo-emp-2", 7, "activo"), // PRAIND por vencer - El gato
     ];
 
     for (id, cedula, nombre, apellido, empresa_id, praind_dias, estado) in contratistas {
@@ -274,14 +274,14 @@ async fn seed_demo_proveedores(pool: &SqlitePool) -> Result<(), Box<dyn std::err
 
     // Proveedores: Matemáticos legendarios
     let proveedores = [
-        ("demo-prov-1", "CG177701", "Carl", "Gauss", "demo-emp-4"), // Príncipe de las matemáticas
-        ("demo-prov-2", "LE170701", "Leonhard", "Euler", "demo-emp-4"), // El más prolífico de la historia
-        ("demo-prov-3", "BR182601", "Bernhard", "Riemann", "demo-emp-5"), // Hipótesis de Riemann
-        ("demo-prov-4", "PF160101", "Pierre", "Fermat", "demo-emp-4"),  // Último teorema de Fermat
-        ("demo-prov-5", "AG178901", "Augustin", "Cauchy", "demo-emp-5"), // Análisis complejo
-        ("demo-prov-6", "JL174901", "Joseph", "Lagrange", "demo-emp-4"), // Mecánica analítica
-        ("demo-prov-7", "GC184501", "Georg", "Cantor", "demo-emp-5"),   // Teoría de conjuntos
-        ("demo-prov-8", "DP186201", "David", "Hilbert", "demo-emp-4"),  // 23 problemas de Hilbert
+        ("demo-prov-1", "17770100", "Carl", "Gauss", "demo-emp-4"), // Príncipe de las matemáticas
+        ("demo-prov-2", "17070100", "Leonhard", "Euler", "demo-emp-4"), // El más prolífico de la historia
+        ("demo-prov-3", "18260100", "Bernhard", "Riemann", "demo-emp-5"), // Hipótesis de Riemann
+        ("demo-prov-4", "16010100", "Pierre", "Fermat", "demo-emp-4"),  // Último teorema de Fermat
+        ("demo-prov-5", "17890100", "Augustin", "Cauchy", "demo-emp-5"), // Análisis complejo
+        ("demo-prov-6", "17490100", "Joseph", "Lagrange", "demo-emp-4"), // Mecánica analítica
+        ("demo-prov-7", "18450100", "Georg", "Cantor", "demo-emp-5"),   // Teoría de conjuntos
+        ("demo-prov-8", "18620100", "David", "Hilbert", "demo-emp-4"),  // 23 problemas de Hilbert
     ];
 
     for (id, cedula, nombre, apellido, empresa_id) in proveedores {
@@ -313,14 +313,14 @@ async fn seed_demo_visitantes(pool: &SqlitePool) -> Result<(), Box<dyn std::erro
 
     // Visitantes: Leyendas de la programación y ciencias de la computación
     let visitantes = [
-        ("demo-visit-1", "AL181501", "Ada", "Lovelace", Some("demo-emp-6")), // Primera programadora de la historia
-        ("demo-visit-2", "GH190601", "Grace", "Hopper", None), // COBOL, el primer "bug"
-        ("demo-visit-3", "LT196901", "Linus", "Torvalds", None), // Creador de Linux y Git
-        ("demo-visit-4", "AT191201", "Alan", "Turing", Some("demo-emp-6")), // Padre de la computación
-        ("demo-visit-5", "DJ194201", "Dennis", "Ritchie", None),            // Creador de C y Unix
-        ("demo-visit-6", "KB194001", "Ken", "Thompson", None), // Co-creador de Unix y Go
-        ("demo-visit-7", "BS195001", "Bjarne", "Stroustrup", Some("demo-emp-6")), // Creador de C++
-        ("demo-visit-8", "JG195501", "James", "Gosling", None), // Padre de Java
+        ("demo-visit-1", "18150100", "Ada", "Lovelace", Some("demo-emp-6")), // Primera programadora de la historia
+        ("demo-visit-2", "19060100", "Grace", "Hopper", None), // COBOL, el primer "bug"
+        ("demo-visit-3", "19690100", "Linus", "Torvalds", None), // Creador de Linux y Git
+        ("demo-visit-4", "19120100", "Alan", "Turing", Some("demo-emp-6")), // Padre de la computación
+        ("demo-visit-5", "19420100", "Dennis", "Ritchie", None),            // Creador de C y Unix
+        ("demo-visit-6", "19400100", "Ken", "Thompson", None), // Co-creador de Unix y Go
+        ("demo-visit-7", "19500100", "Bjarne", "Stroustrup", Some("demo-emp-6")), // Creador de C++
+        ("demo-visit-8", "19550100", "James", "Gosling", None), // Padre de Java
     ];
 
     for (id, cedula, nombre, apellido, empresa_id) in visitantes {
@@ -364,13 +364,13 @@ async fn seed_demo_ingresos_contratistas(
     )
     .bind("demo-ingreso-1")
     .bind("demo-cont-1")
-    .bind("12345678")
+    .bind("17040100") // Isaac Newton
     .bind("Isaac")
     .bind("Newton")
     .bind("Bell Labs")
     .bind("demo-veh-1")
     .bind(&ingreso_2h_ago)
-    .bind("C-001")
+    .bind("01")
     .bind("demo-guardia-2")
     .bind(&now_str)
     .bind(&now_str)
@@ -388,13 +388,13 @@ async fn seed_demo_ingresos_contratistas(
     )
     .bind("demo-ingreso-2")
     .bind("demo-cont-4")
-    .bind("45678901")
+    .bind("18850100") // Niels Bohr
     .bind("Niels")
     .bind("Bohr")
     .bind("Xerox PARC")
     .bind("demo-veh-2")
     .bind(&ingreso_13h)
-    .bind("C-002")
+    .bind("02")
     .bind("demo-guardia-2")
     .bind(&now_str)
     .bind(&now_str)
@@ -412,12 +412,12 @@ async fn seed_demo_ingresos_contratistas(
     )
     .bind("demo-ingreso-3")
     .bind("demo-cont-6")
-    .bind("67890123")
+    .bind("19000100") // Enrico Fermi
     .bind("Enrico")
     .bind("Fermi")
     .bind("IBM Research")
     .bind(&ingreso_15h)
-    .bind("C-003")
+    .bind("03")
     .bind("demo-guardia-2")
     .bind(&now_str)
     .bind(&now_str)
@@ -443,13 +443,13 @@ async fn seed_demo_ingresos_contratistas(
     )
     .bind("demo-ingreso-4")
     .bind("demo-cont-7")
-    .bind("78901234")
+    .bind("18670100") // Max Planck
     .bind("Max")
     .bind("Planck")
     .bind("Bell Labs")
     .bind(&ingreso_ayer_8am)
     .bind(&salida_ayer_5pm)
-    .bind("C-004")
+    .bind("04")
     .bind("demo-guardia-2")
     .bind("demo-guardia-2")
     .bind(540) // 9 horas = 540 minutos
@@ -509,7 +509,7 @@ async fn seed_demo_lista_negra(pool: &SqlitePool) -> Result<(), Box<dyn std::err
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)"#,
         )
         .bind("demo-bloqueo-2")
-        .bind("56789012")
+        .bind("19010100") // Werner Heisenberg
         .bind("Werner")
         .bind("Heisenberg")
         .bind("MEDIO")
@@ -542,9 +542,9 @@ async fn seed_demo_alertas_gafete(pool: &SqlitePool) -> Result<(), Box<dyn std::
            VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)"#,
     )
     .bind("demo-alerta-1")
-    .bind("78901234") // cedula de demo-cont-7
+    .bind("18670100") // cedula de demo-cont-7 (Max Planck)
     .bind("Max Planck")
-    .bind("C-004")
+    .bind("04") // C-004 -> 04
     .bind("demo-ingreso-4")
     .bind(&now)
     .bind("demo-admin-1")
@@ -563,9 +563,9 @@ async fn seed_demo_alertas_gafete(pool: &SqlitePool) -> Result<(), Box<dyn std::
            VALUES (?, ?, ?, ?, NULL, 0, ?, ?, ?, ?)"#,
     )
     .bind("demo-alerta-2")
-    .bind("89012345") // cedula de demo-cont-8 (PRAIND por vencer 7 días)
+    .bind("18870100") // cedula de demo-cont-8 (Schrödinger)
     .bind("Erwin Schrödinger")
-    .bind("C-010")
+    .bind("10") // C-010 -> 10
     .bind(&now)
     .bind("demo-admin-1")
     .bind(&now)
@@ -579,9 +579,9 @@ async fn seed_demo_alertas_gafete(pool: &SqlitePool) -> Result<(), Box<dyn std::
            VALUES (?, ?, ?, ?, NULL, 0, ?, ?, ?, ?)"#,
     )
     .bind("demo-alerta-3")
-    .bind("89012345") // mismo contratista, segunda alerta
+    .bind("18870100") // mismo contratista
     .bind("Erwin Schrödinger")
-    .bind("C-011")
+    .bind("11") // C-011 -> 11
     .bind(&now)
     .bind("demo-admin-1")
     .bind(&now)

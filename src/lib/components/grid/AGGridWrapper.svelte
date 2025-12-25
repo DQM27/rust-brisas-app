@@ -20,6 +20,7 @@
     AGGridWrapperProps,
   } from "$lib/types/agGrid";
   import { agGridSettings } from "$lib/stores/agGridSettings.svelte";
+  import { gridState } from "$lib/stores/gridStateStore.svelte";
   import { AG_GRID_LOCALE_ES } from "$lib/config/agGridLocale";
   import AGGridToolbar from "./AGGridToolbar.svelte";
   import AGGridSettingsModal from "./AGGridSettingsModal.svelte";
@@ -109,6 +110,13 @@
   });
 
   // Effects para actualizar opciones cuando cambian
+  $effect(() => {
+    if (gridApi) {
+      gridState.registerGrid(gridId, gridApi);
+      return () => gridState.unregisterGrid(gridId);
+    }
+  });
+
   $effect(() => {
     if (gridApi && myTheme) {
       gridApi.setGridOption("theme", myTheme as any);
