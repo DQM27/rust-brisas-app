@@ -131,6 +131,36 @@ export async function deleteUser(id: string): Promise<ServiceResult<void>> {
 }
 
 // ============================================
+// AVATAR OPERATIONS
+// ============================================
+
+/**
+ * Subir avatar de usuario (Encriptado)
+ */
+export async function uploadUserAvatar(userId: string, filePath: string): Promise<ServiceResult<string>> {
+    try {
+        const fileUuid = await users.uploadAvatar(userId, filePath);
+        return { ok: true, data: fileUuid };
+    } catch (err: any) {
+        console.error('Error al subir avatar:', err);
+        return { ok: false, error: parseError(err) };
+    }
+}
+
+/**
+ * Obtener avatar desencriptado (Base64)
+ */
+export async function getUserAvatar(userId: string): Promise<ServiceResult<string>> {
+    try {
+        const b64 = await users.getAvatar(userId);
+        return { ok: true, data: b64 };
+    } catch (err: any) {
+        // No loguear error si es solo que no tiene avatar, o manejarlo silenciosamente
+        return { ok: false, error: parseError(err) };
+    }
+}
+
+// ============================================
 // ERROR PARSING
 // ============================================
 

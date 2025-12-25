@@ -114,6 +114,7 @@ pub async fn create_user(
         input.contacto_emergencia_nombre.as_deref(),
         input.contacto_emergencia_telefono.as_deref(),
         must_change_password,
+        input.avatar_path.as_deref(),
     )
     .await
     .map_err(|e| {
@@ -248,6 +249,7 @@ pub async fn update_user(
         input.contacto_emergencia_nombre.as_deref(),
         input.contacto_emergencia_telefono.as_deref(),
         input.must_change_password,
+        input.avatar_path.as_deref(),
     )
     .await
     .map_err(|e| {
@@ -349,6 +351,7 @@ pub async fn change_password(
         None,
         None,
         Some(false),
+        None,
     )
     .await
     .map_err(|e| {
@@ -439,6 +442,7 @@ mod tests {
             contacto_emergencia_nombre: None,
             contacto_emergencia_telefono: None,
             must_change_password: Some(false),
+            avatar_path: None,
         };
 
         let res = create_user(&pool, &search_service, input).await.unwrap();
@@ -476,6 +480,7 @@ mod tests {
             contacto_emergencia_nombre: None,
             contacto_emergencia_telefono: None,
             must_change_password: Some(false),
+            avatar_path: None,
         };
         create_user(&pool, &search_service, input).await.unwrap();
 
@@ -509,6 +514,7 @@ mod tests {
             contacto_emergencia_nombre: None,
             contacto_emergencia_telefono: None,
             must_change_password: Some(false),
+            avatar_path: None,
         };
         let user = create_user(&pool, &search_service, input).await.unwrap();
 
@@ -545,6 +551,7 @@ mod tests {
             contacto_emergencia_nombre: None,
             contacto_emergencia_telefono: None,
             must_change_password: Some(false),
+            avatar_path: None,
         };
         let user = create_user(&pool, &search_service, input).await.unwrap();
 
@@ -566,6 +573,7 @@ mod tests {
             contacto_emergencia_nombre: None,
             contacto_emergencia_telefono: None,
             must_change_password: None,
+            avatar_path: None,
         };
 
         update_user(&pool, &search_service, user.id.clone(), update_input).await.unwrap();

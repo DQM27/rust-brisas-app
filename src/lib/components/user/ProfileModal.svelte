@@ -12,6 +12,7 @@
     Shield,
     PenSquare,
   } from "lucide-svelte";
+  import * as userService from "$lib/logic/user/userService";
   import type { UserResponse } from "$lib/types/user";
 
   interface Props {
@@ -37,6 +38,26 @@
       ? `${user.nombre?.[0] || ""}${user.apellido?.[0] || ""}`.toUpperCase()
       : "",
   );
+
+  // Avatar Logic
+  let avatarUrl = $state<string | null>(null);
+
+  async function loadUserAvatar(userId: string) {
+    const result = await userService.getUserAvatar(userId);
+    if (result.ok) {
+      avatarUrl = `data:image/webp;base64,${result.data}`;
+    } else {
+      avatarUrl = null;
+    }
+  }
+
+  $effect(() => {
+    if (show && user) {
+      loadUserAvatar(user.id);
+    } else {
+      avatarUrl = null;
+    }
+  });
 
   const fullName = $derived(
     user ? `${user.nombre || ""} ${user.apellido || ""}`.trim() : "",
@@ -81,9 +102,17 @@
 
         <div class="absolute -bottom-12 left-8">
           <div
-            class="w-24 h-24 rounded-full border-4 border-white dark:border-[#0d1117] bg-blue-500 flex items-center justify-center text-3xl font-bold text-white shadow-md"
+            class="w-24 h-24 rounded-full border-4 border-white dark:border-[#0d1117] bg-blue-500 flex items-center justify-center text-3xl font-bold text-white shadow-md overflow-hidden"
           >
-            {userInitials}
+            {#if avatarUrl}
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                class="w-full h-full object-cover"
+              />
+            {:else}
+              {userInitials}
+            {/if}
           </div>
         </div>
 

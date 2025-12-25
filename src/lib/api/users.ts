@@ -1,9 +1,9 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { 
-  UserResponse, 
-  UserListResponse, 
-  CreateUserInput, 
-  UpdateUserInput 
+import type {
+  UserResponse,
+  UserListResponse,
+  CreateUserInput,
+  UpdateUserInput
 } from '$lib/types/user';
 
 export const users = {
@@ -25,5 +25,13 @@ export const users = {
 
   delete: async (id: string): Promise<void> => {
     await invoke('delete_user', { id });
+  },
+
+  uploadAvatar: async (userId: string, filePath: string): Promise<string> => {
+    return await invoke<string>('upload_user_avatar', { userId, filePath });
+  },
+
+  getAvatar: async (userId: string): Promise<string> => {
+    return await invoke<string>('get_user_avatar', { userId });
   },
 };

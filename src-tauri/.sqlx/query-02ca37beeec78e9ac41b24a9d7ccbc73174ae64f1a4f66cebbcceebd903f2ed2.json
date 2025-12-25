@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n        SELECT\n            id,\n            email,\n            nombre,\n            apellido,\n            role_id,\n            is_active as \"is_active: bool\",\n            created_at,\n            updated_at,\n            cedula,\n            segundo_nombre,\n            segundo_apellido,\n            fecha_inicio_labores,\n            numero_gafete,\n            fecha_nacimiento,\n            telefono,\n            direccion,\n            contacto_emergencia_nombre,\n            contacto_emergencia_telefono,\n            must_change_password as \"must_change_password: bool\",\n            deleted_at\n        FROM users\n        WHERE deleted_at IS NULL AND id != ?\n        ORDER BY created_at DESC\n        ",
+  "query": "\n        SELECT\n            id,\n            email,\n            nombre,\n            apellido,\n            role_id,\n            is_active as \"is_active: bool\",\n            created_at,\n            updated_at,\n            cedula,\n            segundo_nombre,\n            segundo_apellido,\n            fecha_inicio_labores,\n            numero_gafete,\n            fecha_nacimiento,\n            telefono,\n            direccion,\n            contacto_emergencia_nombre,\n            contacto_emergencia_telefono,\n            must_change_password as \"must_change_password: bool\",\n            deleted_at,\n            avatar_path\n        FROM users\n        WHERE deleted_at IS NULL AND id != ?\n        ORDER BY created_at DESC\n        ",
   "describe": {
     "columns": [
       {
@@ -102,6 +102,11 @@
         "name": "deleted_at",
         "ordinal": 19,
         "type_info": "Text"
+      },
+      {
+        "name": "avatar_path",
+        "ordinal": 20,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -127,8 +132,9 @@
       true,
       true,
       false,
+      true,
       true
     ]
   },
-  "hash": "e42bab1ac89c4bfb3ae8c7e4e43587757e5f6777a1a2804f10444dae86c1e179"
+  "hash": "02ca37beeec78e9ac41b24a9d7ccbc73174ae64f1a4f66cebbcceebd903f2ed2"
 }

@@ -244,6 +244,26 @@
       : "Usuario",
   );
 
+  // Avatar
+  let avatarUrl = $state<string | null>(null);
+
+  async function loadUserAvatar(userId: string) {
+    const result = await userService.getUserAvatar(userId);
+    if (result.ok) {
+      avatarUrl = `data:image/webp;base64,${result.data}`;
+    } else {
+      avatarUrl = null;
+    }
+  }
+
+  $effect(() => {
+    if ($currentUser) {
+      loadUserAvatar($currentUser.id);
+    } else {
+      avatarUrl = null;
+    }
+  });
+
   onMount(async () => {
     // 1. Hidratar sesión (asegurar que currentUser tenga datos frescos de DB)
     if ($currentUser) {
@@ -252,6 +272,7 @@
         if (res.ok) {
           // Usamos reloadSession para actualizar store sin recargar página
           currentUser.set(res.data);
+          loadUserAvatar(res.data.id);
         }
       } catch (e) {
         console.error("Error refreshing session:", e);
@@ -321,7 +342,7 @@
       <!-- User Profile & Menu -->
       <div class="relative w-full flex items-center justify-center">
         <button
-          class="user-avatar"
+          class="user-avatar overflow-hidden flex items-center justify-center p-0"
           title={userName}
           onclick={(e) => {
             e.stopPropagation();
@@ -329,7 +350,15 @@
             if (showProfileMenu) showSettingsMenu = false;
           }}
         >
-          {userInitials}
+          {#if avatarUrl}
+            <img
+              src={avatarUrl}
+              alt="Avatar"
+              class="w-full h-full object-cover"
+            />
+          {:else}
+            {userInitials}
+          {/if}
         </button>
 
         {#if showProfileMenu}

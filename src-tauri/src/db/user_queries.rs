@@ -7,6 +7,16 @@
 use crate::models::user::User;
 use sqlx::SqlitePool;
 
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// [NOTE TO DEVELOPER]
+// When modifying queries in this file (or any other query file), you MUST:
+// 1. Ensure the code compiles (structures match the query columns).
+// 2. Run `cargo sqlx prepare --database-url sqlite:brisas_dev.db` in `src-tauri`.
+//
+// Failure to do so will cause 'offline' verification errors during build because
+// the .sqlx/ directory will be out of sync with the code/queries.
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 // ==========================================
 // TIPOS AUXILIARES
 // ==========================================
@@ -96,7 +106,8 @@ pub async fn find_by_id(pool: &SqlitePool, id: &str) -> sqlx::Result<User> {
             contacto_emergencia_nombre,
             contacto_emergencia_telefono,
             must_change_password as "must_change_password: bool",
-            deleted_at
+            deleted_at,
+            avatar_path
         FROM users
         WHERE id = ? AND deleted_at IS NULL
         "#,
@@ -173,7 +184,8 @@ pub async fn find_all(pool: &SqlitePool, exclude_superuser_id: &str) -> sqlx::Re
             contacto_emergencia_nombre,
             contacto_emergencia_telefono,
             must_change_password as "must_change_password: bool",
-            deleted_at
+            deleted_at,
+            avatar_path
         FROM users
         WHERE deleted_at IS NULL AND id != ?
         ORDER BY created_at DESC
@@ -241,7 +253,7 @@ pub async fn insert(
     fecha_nacimiento: Option<&str>,
     telefono: Option<&str>,
     direccion: Option<&str>,
-    kontakt_emergencia_nombre: Option<&str>,
+    contacto_emergencia_nombre: Option<&str>,
     contacto_emergencia_telefono: Option<&str>,
     must_change_password: bool,
     avatar_path: Option<&str>,

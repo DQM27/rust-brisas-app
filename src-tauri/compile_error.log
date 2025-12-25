@@ -1,0 +1,26 @@
+    Checking brisas-app v0.1.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+error[E0425]: cannot find value `contacto_emergencia_nombre` in this scope
+   --> src\db\user_queries.rs:267:9
+    |
+267 |         contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password,
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: a local variable with a similar name exists: `kontakt_emergencia_nombre`
+
+error[E0609]: no field `avatar_path` on type `CreateUserInput`
+   --> src\services\user_service.rs:117:15
+    |
+117 |         input.avatar_path.as_deref(),
+    |               ^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `email`, `password`, `nombre`, `apellido`, `role_id` ... and 11 others
+
+error[E0609]: no field `avatar_path` on type `UpdateUserInput`
+   --> src\services\user_service.rs:252:15
+    |
+252 |         input.avatar_path.as_deref(),
+    |               ^^^^^^^^^^^ unknown field
+    |
+    = note: available fields are: `email`, `password`, `nombre`, `apellido`, `role_id` ... and 12 others
+
+Some errors have detailed explanations: E0425, E0609.
+For more information about an error, try `rustc --explain E0425`.
+error: could not compile `brisas-app` (lib) due to 3 previous errors

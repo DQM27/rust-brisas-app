@@ -3,7 +3,6 @@
 <script lang="ts">
   import { fade, fly } from "svelte/transition";
   import { X, Camera } from "lucide-svelte";
-  import { invoke } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-dialog";
   import type {
     UserResponse,
@@ -27,6 +26,7 @@
   import ChangePasswordPanel from "$lib/components/ChangePasswordPanel.svelte";
 
   import * as roleService from "$lib/logic/role/roleService";
+  import * as userService from "$lib/logic/user/userService";
   import type { RoleResponse as RoleType } from "$lib/types/role";
 
   interface Props {
@@ -52,8 +52,12 @@
   async function loadAvatar(userId: string) {
     try {
       avatarLoading = true;
-      const b64 = await invoke<string>("get_user_avatar", { user_id: userId });
-      activeAvatar = `data:image/webp;base64,${b64}`;
+      const result = await userService.getUserAvatar(userId);
+      if (result.ok) {
+        activeAvatar = `data:image/webp;base64,${result.data}`;
+      } else {
+        activeAvatar = null;
+      }
     } catch (e) {
       console.log("No avatar or error:", e);
       activeAvatar = null;
@@ -80,10 +84,11 @@
         avatarLoading = true;
         const toastId = toast.loading("Encriptando y subiendo a Bóveda...");
 
-        await invoke("upload_user_avatar", {
-          user_id: user.id,
-          file_path: selected,
-        });
+        const result = await userService.uploadUserAvatar(user.id, selected);
+
+        if (!result.ok) {
+          throw new Error(result.error);
+        }
 
         toast.success("Foto blindada exitosamente", { id: toastId });
         await loadAvatar(user.id);

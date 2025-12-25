@@ -64,6 +64,9 @@ pub enum UserError {
 
     #[error("Error inesperado: {0}")]
     Internal(String),
+
+    #[error("Error de I/O: {0}")]
+    IO(String),
 }
 
 // ==========================================

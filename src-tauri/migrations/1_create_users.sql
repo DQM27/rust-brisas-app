@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
     contacto_emergencia_telefono TEXT,
     must_change_password INTEGER NOT NULL DEFAULT 0,
     deleted_at TEXT DEFAULT NULL,
+    avatar_path TEXT DEFAULT NULL,
     
     FOREIGN KEY (role_id) REFERENCES roles(id)
 );

@@ -395,6 +395,7 @@ mod tests {
             deleted_at: None,
             created_at: "".to_string(),
             updated_at: "".to_string(),
+            avatar_path: None,
         };
 
         index_user(&mut writer, &handles, &user).unwrap();

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n        SELECT\n            id,\n            email,\n            nombre,\n            apellido,\n            role_id,\n            is_active as \"is_active: bool\",\n            created_at,\n            updated_at,\n            cedula,\n            segundo_nombre,\n            segundo_apellido,\n            fecha_inicio_labores,\n            numero_gafete,\n            fecha_nacimiento,\n            telefono,\n            direccion,\n            contacto_emergencia_nombre,\n            contacto_emergencia_telefono,\n            must_change_password as \"must_change_password: bool\",\n            deleted_at\n        FROM users\n        WHERE id = ? AND deleted_at IS NULL\n        ",
+  "query": "\n        SELECT\n            id,\n            email,\n            nombre,\n            apellido,\n            role_id,\n            is_active as \"is_active: bool\",\n            created_at,\n            updated_at,\n            cedula,\n            segundo_nombre,\n            segundo_apellido,\n            fecha_inicio_labores,\n            numero_gafete,\n            fecha_nacimiento,\n            telefono,\n            direccion,\n            contacto_emergencia_nombre,\n            contacto_emergencia_telefono,\n            must_change_password as \"must_change_password: bool\",\n            deleted_at,\n            avatar_path\n        FROM users\n        WHERE id = ? AND deleted_at IS NULL\n        ",
   "describe": {
     "columns": [
       {
@@ -102,6 +102,11 @@
         "name": "deleted_at",
         "ordinal": 19,
         "type_info": "Text"
+      },
+      {
+        "name": "avatar_path",
+        "ordinal": 20,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -127,8 +132,9 @@
       true,
       true,
       false,
+      true,
       true
     ]
   },
-  "hash": "11ec306fb0c7091446c55db1e55836a294c71d77c3a1e48820ffc26ad31d2e95"
+  "hash": "1e7ee7c41a4e7b800f7867543b05c19f83cf7a80abfb76e886eaad5a9e077d89"
 }

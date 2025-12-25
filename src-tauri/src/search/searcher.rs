@@ -233,6 +233,7 @@ mod tests {
             deleted_at: None,
             created_at: "".into(),
             updated_at: "".into(),
+            avatar_path: None,
         };
         index_user(&mut writer, &handles, &u).unwrap();
 

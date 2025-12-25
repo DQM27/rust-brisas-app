@@ -66,6 +66,7 @@ pub struct CreateUserInput {
     pub contacto_emergencia_nombre: Option<String>,
     pub contacto_emergencia_telefono: Option<String>,
     pub must_change_password: Option<bool>,
+    pub avatar_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -90,6 +91,7 @@ pub struct UpdateUserInput {
     pub contacto_emergencia_nombre: Option<String>,
     pub contacto_emergencia_telefono: Option<String>,
     pub must_change_password: Option<bool>,
+    pub avatar_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
