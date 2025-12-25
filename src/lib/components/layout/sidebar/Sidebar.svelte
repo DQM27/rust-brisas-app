@@ -527,7 +527,7 @@
   .settings-menu {
     position: absolute;
     bottom: 0;
-    left: 53px; /* 52px sidebar + 1px gap */
+    left: 52px; /* 52px sidebar + 0px gap (flush) */
     z-index: 2000;
     min-width: 220px;
     padding: 0px 0;
