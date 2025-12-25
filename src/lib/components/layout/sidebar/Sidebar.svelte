@@ -38,6 +38,7 @@
   import UpdateModal from "$lib/components/settings/modals/UpdateModal.svelte";
   import BackupModal from "$lib/components/settings/modals/BackupModal.svelte";
   import AboutModal from "$lib/components/settings/modals/AboutModal.svelte";
+  import ProfileModal from "$lib/components/user/ProfileModal.svelte";
   import * as userService from "$lib/logic/user/userService";
   import type { CreateUserInput, UpdateUserInput } from "$lib/types/user";
   import { toast } from "svelte-5-french-toast";
@@ -259,10 +260,16 @@
   });
 
   // Profile Modal Logic
-  let showProfileModal = $state(false);
+  let showProfileModal = $state(false); // Edit Mode
+  let showProfileViewModal = $state(false); // View Mode
   let profileLoading = $state(false);
 
   function openProfile() {
+    showProfileViewModal = true;
+  }
+
+  function handleEditProfile() {
+    showProfileViewModal = false;
     showProfileModal = true;
   }
 
@@ -502,6 +509,12 @@
   {/if}
 
   {#if $currentUser}
+    <ProfileModal
+      show={showProfileViewModal}
+      user={$currentUser}
+      onClose={() => (showProfileViewModal = false)}
+      onEdit={handleEditProfile}
+    />
     <UserFormModal
       show={showProfileModal}
       user={$currentUser}
