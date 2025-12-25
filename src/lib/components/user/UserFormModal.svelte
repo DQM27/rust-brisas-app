@@ -501,6 +501,20 @@
                 {#if errors.email}<p class={errorClass}>{errors.email}</p>{/if}
               </div>
 
+              <div>
+                <label for="telefono" class={labelClass}>Teléfono</label>
+                <input
+                  id="telefono"
+                  type="tel"
+                  value={formData.telefono}
+                  oninput={(e) => handleGenericPhoneInput(e, "telefono")}
+                  onkeydown={handlePhoneKeydown}
+                  placeholder="+505 8888-8888"
+                  disabled={loading}
+                  class={inputClass}
+                />
+              </div>
+
               <!-- Roles -->
               {#if !isSelf}
                 <div>
@@ -528,20 +542,6 @@
             <!-- COL 3: Contacto -->
             <div class="space-y-3">
               <h3 class={sectionClass}>Contacto</h3>
-
-              <div>
-                <label for="telefono" class={labelClass}>Teléfono</label>
-                <input
-                  id="telefono"
-                  type="tel"
-                  value={formData.telefono}
-                  oninput={(e) => handleGenericPhoneInput(e, "telefono")}
-                  onkeydown={handlePhoneKeydown}
-                  placeholder="+505 8888-8888"
-                  disabled={loading}
-                  class={inputClass}
-                />
-              </div>
 
               <div class="grid grid-cols-2 gap-2">
                 <div>
