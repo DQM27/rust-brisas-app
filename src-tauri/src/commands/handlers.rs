@@ -13,6 +13,8 @@ macro_rules! register_handlers {
             commands::user_commands::login,
             commands::user_commands::change_password,
             commands::user_commands::demo_login,
+            commands::user_commands::upload_user_avatar,
+            commands::user_commands::get_user_avatar,
             // Comandos de empresa
             commands::empresa_commands::create_empresa,
             commands::empresa_commands::get_empresa_by_id,

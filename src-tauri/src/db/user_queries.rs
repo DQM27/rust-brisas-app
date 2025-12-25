@@ -33,6 +33,7 @@ pub struct UserWithPassword {
     pub must_change_password: bool,
     pub deleted_at: Option<String>,
     pub password_hash: String,
+    pub avatar_path: Option<String>,
 }
 
 impl UserWithPassword {
@@ -59,6 +60,7 @@ impl UserWithPassword {
                 contacto_emergencia_telefono: self.contacto_emergencia_telefono,
                 must_change_password: self.must_change_password,
                 deleted_at: self.deleted_at,
+                avatar_path: self.avatar_path,
             },
             self.password_hash,
         )
@@ -133,6 +135,7 @@ pub async fn find_by_email_with_password(
             contacto_emergencia_telefono,
             must_change_password as "must_change_password: bool",
             deleted_at,
+            avatar_path,
             password_hash
         FROM users
         WHERE email = ? AND deleted_at IS NULL
@@ -238,9 +241,10 @@ pub async fn insert(
     fecha_nacimiento: Option<&str>,
     telefono: Option<&str>,
     direccion: Option<&str>,
-    contacto_emergencia_nombre: Option<&str>,
+    kontakt_emergencia_nombre: Option<&str>,
     contacto_emergencia_telefono: Option<&str>,
     must_change_password: bool,
+    avatar_path: Option<&str>,
 ) -> sqlx::Result<()> {
     // SQLx maneja la conversión de bool a numeric en SQLite automáticamente
     // cuando se usa query! macro si el tipo de la columna es compatible
@@ -250,14 +254,16 @@ pub async fn insert(
             id, email, password_hash, nombre, apellido, role_id, created_at, updated_at,
             cedula, segundo_nombre, segundo_apellido,
             fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
-            contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password, is_active
+            contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password, is_active,
+            avatar_path
         ) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
         "#,
         id, email, password_hash, nombre, apellido, role_id, created_at, updated_at,
         cedula, segundo_nombre, segundo_apellido,
         fecha_inicio_labores, numero_gafete, fecha_nacimiento, telefono, direccion,
-        contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password
+        contacto_emergencia_nombre, contacto_emergencia_telefono, must_change_password,
+        avatar_path
     )
     .execute(pool)
     .await?;
@@ -287,6 +293,7 @@ pub async fn update(
     contacto_emergencia_nombre: Option<&str>,
     contacto_emergencia_telefono: Option<&str>,
     must_change_password: Option<bool>,
+    avatar_path: Option<&str>,
 ) -> sqlx::Result<()> {
     sqlx::query!(
         r#"
@@ -308,7 +315,8 @@ pub async fn update(
             direccion = COALESCE(?, direccion),
             contacto_emergencia_nombre = COALESCE(?, contacto_emergencia_nombre),
             contacto_emergencia_telefono = COALESCE(?, contacto_emergencia_telefono),
-            must_change_password = COALESCE(?, must_change_password)
+            must_change_password = COALESCE(?, must_change_password),
+            avatar_path = COALESCE(?, avatar_path)
         WHERE id = ?
         "#,
         email,
@@ -329,6 +337,7 @@ pub async fn update(
         contacto_emergencia_nombre,
         contacto_emergencia_telefono,
         must_change_password,
+        avatar_path,
         id
     )
     .execute(pool)
@@ -383,7 +392,7 @@ mod tests {
         // 1. Insert
         insert(
             &pool, id, email, "hash", "Juan", "Perez", "admin", "now", "now", "123", None, None,
-            None, None, None, None, None, None, None, false,
+            None, None, None, None, None, None, None, false, None,
         )
         .await
         .unwrap();
@@ -420,6 +429,7 @@ mod tests {
             None,
             None,
             Some(true),
+            None,
         )
         .await
         .unwrap();
@@ -466,6 +476,7 @@ mod tests {
             None,
             None,
             false,
+            None,
         )
         .await
         .unwrap();

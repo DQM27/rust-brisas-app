@@ -140,3 +140,120 @@ pub async fn demo_login(
 
     Ok(user_response)
 }
+
+// ==========================================
+// AVATAR COMMANDS (ENCRYPTED VAULT)
+// ==========================================
+
+#[tauri::command]
+pub async fn upload_user_avatar(
+    pool_state: State<'_, DbPool>,
+    user_id: String,
+    file_path: String,
+) -> Result<String, UserError> {
+    use crate::commands::security_commands::encrypt_data;
+    use std::fs;
+    use std::path::Path;
+    use uuid::Uuid;
+
+    let pool = pool_state.0.read().await;
+
+    // 1. Validar archivo
+    let source_path = Path::new(&file_path);
+    if !source_path.exists() {
+        return Err(UserError::Validation("El archivo no existe".to_string()));
+    }
+
+    // 2. Leer contenido
+    let file_content = fs::read(source_path).map_err(|e| UserError::IO(e.to_string()))?;
+
+    // 3. Encriptar (ChaCha20Poly1305)
+    let encrypted_content =
+        encrypt_data(&file_content).map_err(|e| UserError::Database(sqlx::Error::Protocol(e)))?;
+
+    // 4. Preparar destino (Vault)
+    let data_dir = dirs::data_local_dir()
+        .ok_or(UserError::Validation("No ses pudo obtener directorio de datos".to_string()))?
+        .join("Brisas")
+        .join("images")
+        .join("avatars");
+
+    if !data_dir.exists() {
+        fs::create_dir_all(&data_dir).map_err(|e| UserError::IO(e.to_string()))?;
+    }
+
+    // 5. Generar UUID para el archivo (Nombre ofuscado)
+    let file_uuid = Uuid::new_v4().to_string();
+    let dest_path = data_dir.join(format!("{}.enc", file_uuid));
+
+    // 6. Guardar blob encriptado
+    fs::write(&dest_path, encrypted_content).map_err(|e| UserError::IO(e.to_string()))?;
+
+    // 7. Actualizar DB
+    crate::db::user_queries::update(
+        &pool,
+        &user_id,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,  // Campos no modificados
+        "now", // updated_at
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(&file_uuid), // avatar_path (solo el UUID)
+    )
+    .await
+    .map_err(UserError::Database)?;
+
+    Ok(file_uuid)
+}
+
+#[tauri::command]
+pub async fn get_user_avatar(
+    pool_state: State<'_, DbPool>,
+    user_id: String,
+) -> Result<String, UserError> {
+    use crate::commands::security_commands::decrypt_data;
+    use base64::{engine::general_purpose, Engine as _};
+    use std::fs;
+
+    let pool = pool_state.0.read().await;
+
+    // 1. Obtener UUID de la DB
+    let user =
+        crate::db::user_queries::find_by_id(&pool, &user_id).await.map_err(UserError::Database)?;
+
+    let avatar_uuid =
+        user.avatar_path.ok_or(UserError::Validation("Usuario sin avatar".to_string()))?;
+
+    // 2. Buscar en Bóveda
+    let file_path = dirs::data_local_dir()
+        .ok_or(UserError::Validation("Error sistema de archivos".to_string()))?
+        .join("Brisas")
+        .join("images")
+        .join("avatars")
+        .join(format!("{}.enc", avatar_uuid));
+
+    if !file_path.exists() {
+        return Err(UserError::Validation("Archivo de avatar no encontrado en bóveda".to_string()));
+    }
+
+    // 3. Leer y Desencriptar
+    let encrypted_content = fs::read(file_path).map_err(|e| UserError::IO(e.to_string()))?;
+    let decrypted_content = decrypt_data(&encrypted_content)
+        .map_err(|e| UserError::Database(sqlx::Error::Protocol(e)))?;
+
+    // 4. Retornar como Base64 para el frontend
+    Ok(general_purpose::STANDARD.encode(decrypted_content))
+}

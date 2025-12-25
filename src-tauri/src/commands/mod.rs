@@ -28,6 +28,7 @@ pub mod role_commands;
 
 // REEMPLAZADO: pub mod salida_commands;
 pub mod search_commands;
+pub mod security_commands;
 
 pub mod user_commands;
 pub mod vehiculo_commands;

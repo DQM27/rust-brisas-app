@@ -2,7 +2,9 @@
 <!-- Modal reutilizable para crear y editar usuarios -->
 <script lang="ts">
   import { fade, fly } from "svelte/transition";
-  import { X } from "lucide-svelte";
+  import { X, Camera } from "lucide-svelte";
+  import { invoke } from "@tauri-apps/api/core";
+  import { open } from "@tauri-apps/plugin-dialog";
   import type {
     UserResponse,
     CreateUserInput,
@@ -42,6 +44,57 @@
   // Roles state
   let availableRoles = $state<RoleType[]>([]);
   let rolesLoading = $state(false);
+
+  // Avatar State (Encrypted Vault)
+  let activeAvatar = $state<string | null>(null);
+  let avatarLoading = $state(false);
+
+  async function loadAvatar(userId: string) {
+    try {
+      avatarLoading = true;
+      const b64 = await invoke<string>("get_user_avatar", { user_id: userId });
+      activeAvatar = `data:image/webp;base64,${b64}`;
+    } catch (e) {
+      console.log("No avatar or error:", e);
+      activeAvatar = null;
+    } finally {
+      avatarLoading = false;
+    }
+  }
+
+  async function handleAvatarUpload() {
+    if (!user) return;
+
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [
+          {
+            name: "Imagen",
+            extensions: ["png", "jpg", "jpeg", "webp"],
+          },
+        ],
+      });
+
+      if (selected && typeof selected === "string") {
+        avatarLoading = true;
+        const toastId = toast.loading("Encriptando y subiendo a Bóveda...");
+
+        await invoke("upload_user_avatar", {
+          user_id: user.id,
+          file_path: selected,
+        });
+
+        toast.success("Foto blindada exitosamente", { id: toastId });
+        await loadAvatar(user.id);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Error al subir imagen");
+    } finally {
+      avatarLoading = false;
+    }
+  }
 
   // Modo derivado
   const isEditMode = $derived(!!user);
@@ -103,9 +156,11 @@
       // Reset view modes
       isChangingPassword = false;
       loadRoles();
+      activeAvatar = null;
     }
 
     if (show && user) {
+      loadAvatar(user.id);
       formData = {
         cedula: user.cedula || "",
         nombre: user.nombre || "",
@@ -337,6 +392,7 @@
     "text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-1 mb-2";
 </script>
 
+```
 {#if show}
   <div
     class="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -388,7 +444,85 @@
             class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full"
           >
             <!-- COL 1: Identidad -->
-            <div class="space-y-3">
+            <!-- COL 1: Identidad + Avatar -->
+            <div class="space-y-4">
+              <!-- Secure Avatar Component -->
+              <div class="flex flex-col items-center justify-center mb-6">
+                <div class="relative group">
+                  <div
+                    class="w-28 h-28 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 border-4 border-white dark:border-gray-700 shadow-lg flex items-center justify-center relative"
+                  >
+                    {#if avatarLoading}
+                      <div
+                        class="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-sm z-10"
+                      >
+                        <div
+                          class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+                        ></div>
+                      </div>
+                    {/if}
+
+                    {#if activeAvatar}
+                      <img
+                        src={activeAvatar}
+                        alt="Avatar"
+                        class="w-full h-full object-cover"
+                      />
+                    {:else}
+                      <div
+                        class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-600"
+                      >
+                        <span class="text-3xl font-bold">
+                          {formData.nombre
+                            ? formData.nombre[0].toUpperCase()
+                            : "?"}{formData.apellido
+                            ? formData.apellido[0].toUpperCase()
+                            : ""}
+                        </span>
+                      </div>
+                    {/if}
+                  </div>
+
+                  {#if isEditMode}
+                    <button
+                      type="button"
+                      onclick={handleAvatarUpload}
+                      disabled={avatarLoading}
+                      class="absolute bottom-1 right-1 p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all hover:scale-110 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 z-20"
+                      title="Subir foto segura"
+                    >
+                      <Camera size={16} />
+                    </button>
+                  {/if}
+                </div>
+                {#if isEditMode}
+                  <div
+                    class="mt-3 flex items-center gap-1.5 px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-[10px] font-medium border border-green-100 dark:border-green-900/30"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><rect
+                        width="18"
+                        height="11"
+                        x="3"
+                        y="11"
+                        rx="2"
+                        ry="2"
+                      /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg
+                    >
+                    Bóveda Encriptada
+                  </div>
+                {/if}
+              </div>
+
               <h3 class={sectionClass}>Identidad</h3>
 
               <div>
