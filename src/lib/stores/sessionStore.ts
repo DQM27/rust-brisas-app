@@ -14,8 +14,8 @@ export type SessionMode = 'active' | 'screensaver' | 'locked';
 interface SessionState {
     mode: SessionMode;
     lastActivityTime: number;
-    lastAppFocusTime: number;          // NEW: When app last had focus
-    appHasFocus: boolean;               // NEW: Current focus state
+    lastAppFocusTime: number;          // When app last had focus
+    appHasFocus: boolean;               // Current focus state
     screensaverActive: boolean;
     awaitingPasswordForScreensaver: boolean;
 }
@@ -27,8 +27,8 @@ interface SessionState {
 const initialState: SessionState = {
     mode: 'active',
     lastActivityTime: Date.now(),
-    lastAppFocusTime: Date.now(),      // NEW
-    appHasFocus: true,                  // NEW: Assume focused at start
+    lastAppFocusTime: Date.now(),
+    appHasFocus: true,
     screensaverActive: false,
     awaitingPasswordForScreensaver: false,
 };
@@ -86,12 +86,25 @@ function recordActivity(): void {
  */
 const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
 
+function handleFocus() {
+    sessionState.update(s => ({ ...s, appHasFocus: true, lastAppFocusTime: Date.now() }));
+    console.log('[Session] App focused');
+}
+
+function handleBlur() {
+    sessionState.update(s => ({ ...s, appHasFocus: false, lastAppFocusTime: Date.now() }));
+    console.log('[Session] App lost focus');
+}
+
 function attachActivityListeners(): void {
     if (!browser || activityListenersActive) return;
 
     activityEvents.forEach((event) => {
         window.addEventListener(event, recordActivity, { passive: true });
     });
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
 
     activityListenersActive = true;
 }
@@ -102,6 +115,9 @@ function detachActivityListeners(): void {
     activityEvents.forEach((event) => {
         window.removeEventListener(event, recordActivity);
     });
+
+    window.removeEventListener('focus', handleFocus);
+    window.removeEventListener('blur', handleBlur);
 
     activityListenersActive = false;
 }
@@ -129,15 +145,14 @@ async function checkTimeouts(): Promise<void> {
     const now = Date.now();
 
     // =========================================================================
-    // 1. APP LOCK CHECK (focus-based)
+    // 1. APP LOCK CHECK (Internal App Inactivity)
     // =========================================================================
-    if (settings.enableAppLock && !state.appHasFocus) {
-        const appUnfocusedMinutes = (now - state.lastAppFocusTime) / 1000 / 60;
+    if (settings.enableAppLock && state.mode === 'active') {
+        const appIdleMinutes = (now - state.lastActivityTime) / 1000 / 60;
 
-        if (appUnfocusedMinutes >= settings.appLockTimeoutMinutes) {
-            console.log(`[Session] App unfocused for ${appUnfocusedMinutes.toFixed(1)} min - locking`);
-            // TODO: Implement lock without screensaver (just require password)
-            performCompleteLogout(); // Temporary: full logout
+        if (appIdleMinutes >= settings.appLockTimeoutMinutes) {
+            console.log(`[Session] App idle for ${appIdleMinutes.toFixed(1)} min (internal) - locking app`);
+            enterLockedMode();
             return;
         }
     }
@@ -180,9 +195,6 @@ function startTimeoutChecker(): void {
     console.log('[Session] Timeout checker started');
 }
 
-/**
- * Stops the interval-based timeout checker
- */
 function stopTimeoutChecker(): void {
     if (checkIntervalId !== null) {
         clearInterval(checkIntervalId);
@@ -196,14 +208,27 @@ function stopTimeoutChecker(): void {
 // =============================================================================
 
 /**
- * Enters screensaver mode
+ * Enters locked mode (app-level lock, no screensaver)
+ */
+export function enterLockedMode(): void {
+    console.log('[Session] Entering app locked mode');
+
+    sessionState.update((s) => ({
+        ...s,
+        mode: 'locked',
+        screensaverActive: false, // Ensure screensaver is NOT active
+        awaitingPasswordForScreensaver: true, // Reuse this flag for the password modal
+    }));
+}
+
+/**
+ * Enters screensaver mode (PC-wide idle)
  */
 export function enterScreensaver(): void {
-    console.log('[Session] Entering screensaver mode');
+    console.log('[Session] Entering system screensaver mode');
 
     // Set cooldown to prevent activity detection during tab opening
     screensaverCooldown = true;
-    console.log('[Session] Activating screensaver cooldown (1000ms)');
 
     // Open/focus the welcome tab
     const welcomeTabId = 'welcome';
@@ -224,11 +249,7 @@ export function enterScreensaver(): void {
     // Clear cooldown after delay
     setTimeout(() => {
         screensaverCooldown = false;
-        console.log('[Session] Screensaver cooldown cleared - now detecting activity');
     }, 1000);
-
-    // The WelcomePanel will handle entering fullscreen via isKioskMode
-    // This will be triggered in the layout component when it observes screensaverActive
 }
 
 /**

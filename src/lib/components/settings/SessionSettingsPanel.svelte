@@ -76,7 +76,7 @@
       <div class="flex-1">
         <div class="flex items-center justify-between mb-1">
           <h4 class="font-medium text-primary">
-            Bloqueo por Inactividad de la App
+            Bloqueo por Inactividad Local (App)
           </h4>
           <label class="relative inline-flex items-center cursor-pointer">
             <input
@@ -91,7 +91,8 @@
           </label>
         </div>
         <p class="text-sm text-secondary mb-3">
-          Bloquea la app cuando pierde el foco o está minimizada
+          Bloquea la app por falta de interacción interna (incluso si está
+          visible)
         </p>
 
         {#if $sessionSettings.enableAppLock}
