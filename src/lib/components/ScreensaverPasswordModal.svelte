@@ -12,7 +12,7 @@
   let password = $state("");
   let error = $state("");
   let loading = $state(false);
-  let inputRef = $state<HTMLInputElement | null>(null);
+  let inputRef: HTMLInputElement | null = $state(null);
 
   $effect(() => {
     if (inputRef) {
