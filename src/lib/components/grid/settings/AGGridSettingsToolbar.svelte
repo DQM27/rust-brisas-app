@@ -15,6 +15,10 @@
     RotateCcw,
     AlertCircle,
     ChevronDown,
+    Layout,
+    MousePointerClick,
+    Tally5,
+    Info,
   } from "lucide-svelte";
 
   interface Props {
@@ -192,13 +196,18 @@
       class="w-full flex items-center justify-between p-3 rounded-lg
         bg-[#252526] border border-white/10 hover:border-white/20 transition-colors"
     >
-      <div class="text-left">
-        <p class="text-sm font-medium text-white">
-          {contextLabels[selectedContext]}
-        </p>
-        <p class="text-xs text-gray-500">
-          {contextDescriptions[selectedContext]}
-        </p>
+      <div class="text-left flex items-center gap-3">
+        <div class="p-2 rounded-lg bg-blue-500/10">
+          <MousePointerClick size={18} class="text-blue-400" />
+        </div>
+        <div>
+          <p class="text-sm font-medium text-white">
+            {contextLabels[selectedContext]}
+          </p>
+          <p class="text-xs text-gray-500">
+            {contextDescriptions[selectedContext]}
+          </p>
+        </div>
       </div>
       <ChevronDown
         size={16}
@@ -238,11 +247,24 @@
       ? 'bg-red-500/10 border border-red-500/20'
       : 'bg-[#252526] border border-white/10'}"
   >
-    <div class="flex items-center gap-2">
-      {#if isOverLimit}
-        <AlertCircle size={16} class="text-red-400" />
-      {/if}
-      <span class="text-sm text-gray-300">
+    <div class="flex items-center gap-3">
+      <div
+        class="p-1.5 rounded-md {isOverLimit
+          ? 'bg-red-500/20'
+          : isAtLimit
+            ? 'bg-amber-500/20'
+            : 'bg-green-500/20'}"
+      >
+        <Tally5
+          size={16}
+          class={isOverLimit
+            ? "text-red-400"
+            : isAtLimit
+              ? "text-amber-400"
+              : "text-green-400"}
+        />
+      </div>
+      <span class="text-xs text-gray-300">
         Botones visibles:
         <span
           class="font-semibold
@@ -257,11 +279,21 @@
       </span>
     </div>
     {#if isOverLimit}
-      <span class="text-xs text-red-400">
-        Oculta {visibleCount - buttonLimit} para continuar
+      <span class="text-xs text-red-100 bg-red-600 px-2 py-1 rounded">
+        Oculta {visibleCount - buttonLimit}
       </span>
-    {:else if isAtLimit}
-      <span class="text-xs text-amber-400">Límite alcanzado</span>
+    {:else}
+      <div class="flex items-center gap-1.5 opacity-40">
+        <div class="flex gap-0.5">
+          {#each Array(buttonLimit) as _, i}
+            <div
+              class="w-1 h-3 rounded-full {i < visibleCount
+                ? 'bg-blue-400'
+                : 'bg-gray-600'}"
+            ></div>
+          {/each}
+        </div>
+      </div>
     {/if}
   </div>
 

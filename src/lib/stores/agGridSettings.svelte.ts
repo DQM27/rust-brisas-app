@@ -9,7 +9,8 @@ import type {
   ToolbarButtonsConfig,
   AGGridColumnConfig,
   ConfirmationsConfig,
-  ToolbarContext
+  ToolbarContext,
+  ToolbarPosition
 } from '$lib/types/agGrid';
 
 // ============================================
@@ -37,6 +38,7 @@ const DEFAULT_CONFIG: Omit<GridConfiguration, 'gridId'> = {
   font: 'system',
   rowHeight: 'normal',
   headerHeight: 40,
+  toolbarPosition: 'top',
   animateRows: true,
   enableCellTextSelection: true,
 
@@ -170,6 +172,15 @@ class AGGridSettingsStore {
 
   setHeaderHeight(gridId: GridId, height: number): void {
     this.updateConfig(gridId, { headerHeight: height });
+  }
+
+  getToolbarPosition(gridId: GridId): ToolbarPosition {
+    this.version;
+    return this.getConfiguration(gridId)?.toolbarPosition ?? 'top';
+  }
+
+  setToolbarPosition(gridId: GridId, position: ToolbarPosition): void {
+    this.updateConfig(gridId, { toolbarPosition: position });
   }
 
   getAnimateRows(gridId: GridId): boolean {

@@ -76,6 +76,7 @@
   const enableQuickFilter = $derived(
     agGridSettings.getEnableQuickFilter(gridId),
   );
+  const toolbarPosition = $derived(agGridSettings.getToolbarPosition(gridId));
 
   // Tema personalizado reactivo
   const myTheme = $derived.by(() => {
@@ -318,15 +319,17 @@
 </script>
 
 <div class="flex flex-col w-full h-full bg-[#0d0d0d] {fontClass}">
-  <AGGridToolbar
-    {gridId}
-    {context}
-    {selectedRows}
-    {gridApi}
-    {customButtons}
-    {customToolbarSlot}
-    onOpenSettings={() => (showSettings = true)}
-  />
+  {#if toolbarPosition === "top"}
+    <AGGridToolbar
+      {gridId}
+      {context}
+      {selectedRows}
+      {gridApi}
+      {customButtons}
+      {customToolbarSlot}
+      onOpenSettings={() => (showSettings = true)}
+    />
+  {/if}
 
   {#if showSettings}
     <AGGridSettingsModal
@@ -338,8 +341,21 @@
   {/if}
 
   <div
-    class="flex-1 overflow-hidden border-x border-b border-white/10 {themeClass}"
+    class="flex-1 overflow-hidden border-x border-white/10 {themeClass}
+      {toolbarPosition === 'top' ? 'border-b' : 'border-t'}"
   >
     <AgGrid {gridOptions} {rowData} {modules} />
   </div>
+
+  {#if toolbarPosition === "bottom"}
+    <AGGridToolbar
+      {gridId}
+      {context}
+      {selectedRows}
+      {gridApi}
+      {customButtons}
+      {customToolbarSlot}
+      onOpenSettings={() => (showSettings = true)}
+    />
+  {/if}
 </div>

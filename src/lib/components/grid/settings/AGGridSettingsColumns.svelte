@@ -10,6 +10,8 @@
     ArrowRightToLine,
     Columns,
     Search,
+    Pin,
+    Hash,
   } from "lucide-svelte";
 
   interface Props {
@@ -291,7 +293,7 @@
           <button
             onclick={() =>
               setPinned(column.id, column.pinned === "right" ? null : "right")}
-            class="p-1 rounded transition-colors
+            class="p-1 rounded transition-all
               {column.pinned === 'right'
               ? 'text-blue-400 bg-blue-500/10'
               : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}"

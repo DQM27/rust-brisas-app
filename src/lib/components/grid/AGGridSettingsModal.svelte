@@ -11,6 +11,7 @@
   import AGGridSettingsToolbar from "./settings/AGGridSettingsToolbar.svelte";
   import AGGridSettingsData from "./settings/AGGridSettingsData.svelte";
   import AGGridSettingsAdvanced from "./settings/AGGridSettingsAdvanced.svelte";
+  import { Palette, Columns, Wrench, ClipboardType, Cpu } from "lucide-svelte";
 
   interface Props {
     gridId: GridId;
@@ -29,12 +30,12 @@
   let isClosing = $state(false);
   let showResetConfirm = $state(false);
 
-  const tabs: { id: SettingsTab; label: string; icon: string }[] = [
-    { id: "appearance", label: "Apariencia", icon: "🎨" },
-    { id: "columns", label: "Columnas", icon: "📊" },
-    { id: "toolbar", label: "Toolbar", icon: "🔧" },
-    { id: "data", label: "Datos", icon: "📋" },
-    { id: "advanced", label: "Avanzado", icon: "⚙️" },
+  const tabs: { id: SettingsTab; label: string; icon: any }[] = [
+    { id: "appearance", label: "Apariencia", icon: Palette },
+    { id: "columns", label: "Columnas", icon: Columns },
+    { id: "toolbar", label: "Toolbar", icon: Wrench },
+    { id: "data", label: "Datos", icon: ClipboardType },
+    { id: "advanced", label: "Avanzado", icon: Cpu },
   ];
 
   function handleClose() {
@@ -128,17 +129,22 @@
     <div class="flex flex-1 overflow-hidden">
       <!-- Sidebar Tabs -->
       <div
-        class="w-44 border-r border-white/10 bg-black/20 p-2 flex flex-col gap-1"
+        class="w-48 border-r border-white/5 bg-black/40 backdrop-blur-md p-3 flex flex-col gap-1"
       >
         {#each tabs as tab}
           <button
             onclick={() => (activeTab = tab.id)}
-            class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-all
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all group
               {activeTab === tab.id
-              ? 'bg-white/10 text-white'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
               : 'text-gray-400 hover:text-white hover:bg-white/5'}"
           >
-            <span class="text-base">{tab.icon}</span>
+            <tab.icon
+              size={18}
+              class={activeTab === tab.id
+                ? "text-white"
+                : "text-gray-500 group-hover:text-gray-300"}
+            />
             <span class="text-sm font-medium">{tab.label}</span>
           </button>
         {/each}

@@ -8,7 +8,14 @@
   } from "$lib/types/agGrid";
   import type { GridApi } from "@ag-grid-community/core";
   import { agGridSettings } from "$lib/stores/agGridSettings.svelte";
-  import { Check } from "lucide-svelte";
+  import {
+    Check,
+    LayoutTemplate,
+    Type,
+    Rows,
+    Settings2,
+    Layout,
+  } from "lucide-svelte";
 
   interface Props {
     gridId: GridId;
@@ -21,6 +28,7 @@
   let theme = $derived(agGridSettings.getTheme(gridId));
   let font = $derived(agGridSettings.getFont(gridId));
   let rowHeight = $derived(agGridSettings.getRowHeight(gridId));
+  let toolbarPosition = $derived(agGridSettings.getToolbarPosition(gridId));
   let animateRows = $derived(agGridSettings.getAnimateRows(gridId));
   let cellTextSelection = $derived(agGridSettings.getCellTextSelection(gridId));
 
@@ -83,12 +91,19 @@
       gridApi.setGridOption("enableCellTextSelection", cellTextSelection);
     }
   }
+
+  function handleToolbarPositionChange(value: "top" | "bottom") {
+    agGridSettings.setToolbarPosition(gridId, value);
+  }
 </script>
 
 <div class="space-y-6">
   <!-- Tema -->
   <section>
-    <h3 class="text-sm font-medium text-white mb-3">Tema</h3>
+    <div class="flex items-center gap-2 mb-3">
+      <LayoutTemplate size={16} class="text-blue-400" />
+      <h3 class="text-sm font-medium text-white">Tema</h3>
+    </div>
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
       {#each themes as t}
         <button
@@ -121,7 +136,10 @@
 
   <!-- Fuente -->
   <section>
-    <h3 class="text-sm font-medium text-white mb-3">Fuente</h3>
+    <div class="flex items-center gap-2 mb-3">
+      <Type size={16} class="text-purple-400" />
+      <h3 class="text-sm font-medium text-white">Fuente</h3>
+    </div>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
       {#each fonts as f}
         <button
@@ -153,7 +171,10 @@
 
   <!-- Densidad -->
   <section>
-    <h3 class="text-sm font-medium text-white mb-3">Densidad de filas</h3>
+    <div class="flex items-center gap-2 mb-3">
+      <Rows size={16} class="text-amber-400" />
+      <h3 class="text-sm font-medium text-white">Densidad de filas</h3>
+    </div>
     <div class="flex gap-2">
       {#each densities as d}
         <button
@@ -179,9 +200,51 @@
     </div>
   </section>
 
+  <!-- Ubicación de Toolbar -->
+  <section>
+    <div class="flex items-center gap-2 mb-3">
+      <Layout size={16} class="text-cyan-400" />
+      <h3 class="text-sm font-medium text-white">Ubicación de Toolbar</h3>
+    </div>
+    <div class="flex gap-2">
+      {#each [["top", "Superior"], ["bottom", "Inferior"]] as [value, label]}
+        <button
+          onclick={() => handleToolbarPositionChange(value as "top" | "bottom")}
+          class="flex-1 flex flex-col items-center gap-2 p-3 rounded-lg border transition-all
+            {toolbarPosition === value
+            ? 'border-blue-500 bg-blue-500/10'
+            : 'border-white/10 hover:border-white/20 bg-[#252526]'}"
+        >
+          <div class="w-full flex flex-col gap-1">
+            {#if value === "top"}
+              <div class="w-full h-2 bg-blue-500/40 rounded-sm"></div>
+              <div
+                class="w-full h-8 bg-gray-700/30 rounded-sm border border-white/5"
+              ></div>
+            {:else}
+              <div
+                class="w-full h-8 bg-gray-700/30 rounded-sm border border-white/5"
+              ></div>
+              <div class="w-full h-2 bg-blue-500/40 rounded-sm"></div>
+            {/if}
+          </div>
+          <span class="text-xs text-gray-300">{label}</span>
+          {#if toolbarPosition === value}
+            <div class="absolute top-1.5 right-1.5">
+              <Check size={12} class="text-blue-400" />
+            </div>
+          {/if}
+        </button>
+      {/each}
+    </div>
+  </section>
+
   <!-- Opciones adicionales -->
   <section>
-    <h3 class="text-sm font-medium text-white mb-3">Opciones</h3>
+    <div class="flex items-center gap-2 mb-3">
+      <Settings2 size={16} class="text-green-400" />
+      <h3 class="text-sm font-medium text-white">Opciones</h3>
+    </div>
     <div class="space-y-2">
       <label
         class="flex items-center justify-between p-3 rounded-lg bg-[#252526] border border-white/10

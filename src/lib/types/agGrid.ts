@@ -119,6 +119,7 @@ export interface AGGridColumnConfig {
 
 export type RowHeight = 'compact' | 'normal' | 'comfortable';
 export type GridDensity = 'compact' | 'normal' | 'comfortable';
+export type ToolbarPosition = 'top' | 'bottom';
 
 export interface AppearanceConfig {
   theme: AGGridTheme;
@@ -176,6 +177,7 @@ export interface GridConfiguration {
   font: AGGridFont;
   rowHeight: RowHeight;
   headerHeight: number;
+  toolbarPosition: ToolbarPosition;
   animateRows: boolean;
   enableCellTextSelection: boolean;
 
