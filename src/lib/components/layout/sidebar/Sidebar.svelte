@@ -149,10 +149,12 @@
   let showUpdateModal = $state(false);
   let showBackupModal = $state(false);
   let showAboutModal = $state(false);
+  let showProfileMenu = $state(false);
 
   function toggleSettingsMenu(e: MouseEvent) {
     e.stopPropagation();
     showSettingsMenu = !showSettingsMenu;
+    showProfileMenu = false; // Close profile menu if open
   }
 
   function closeSettingsMenu() {
@@ -167,6 +169,9 @@
   function handleWindowClick(e: MouseEvent) {
     if (showSettingsMenu) {
       closeSettingsMenu();
+    }
+    if (showProfileMenu) {
+      showProfileMenu = false;
     }
   }
 
@@ -231,7 +236,12 @@
       : "",
   );
 
-  const userName = $derived($currentUser?.nombre || "Usuario");
+  const userName = $derived(
+    $currentUser
+      ? `${$currentUser.nombre || ""} ${$currentUser.apellido || ""}`.trim() ||
+          "Usuario"
+      : "Usuario",
+  );
 
   onMount(async () => {
     // 1. Hidratar sesión (asegurar que currentUser tenga datos frescos de DB)
@@ -301,6 +311,60 @@
     </div>
 
     <div class="sidebar-bottom-actions">
+      <!-- User Profile & Menu -->
+      <div class="relative w-full flex items-center justify-center">
+        <button
+          class="user-avatar"
+          title={userName}
+          onclick={(e) => {
+            e.stopPropagation();
+            showProfileMenu = !showProfileMenu;
+            if (showProfileMenu) showSettingsMenu = false;
+          }}
+        >
+          {userInitials}
+        </button>
+
+        {#if showProfileMenu}
+          <div
+            class="settings-menu"
+            onclick={(e) => e.stopPropagation()}
+            role="menu"
+            tabindex="-1"
+            onkeydown={(e) => e.key === "Escape" && (showProfileMenu = false)}
+            style="bottom: 48px;"
+          >
+            <!-- Profile Actions -->
+            <div class="px-3 py-2 border-b border-[#454545] mb-1">
+              <p class="text-xs font-semibold text-white">{userName}</p>
+              <p class="text-[10px] text-gray-400">{$currentUser?.email}</p>
+            </div>
+
+            <button
+              class="settings-menu-item"
+              onclick={() => {
+                openProfile();
+                showProfileMenu = false;
+              }}
+            >
+              Ver Perfil
+            </button>
+
+            <div class="settings-menu-separator"></div>
+
+            <button
+              class="settings-menu-item text-red-400 hover:text-red-300"
+              onclick={() => {
+                handleLogout();
+                showProfileMenu = false;
+              }}
+            >
+              Cerrar Sesión
+            </button>
+          </div>
+        {/if}
+      </div>
+
       <!-- Settings Button (VS Code style) -->
       <div class="relative w-full flex items-center justify-center">
         <button
@@ -429,21 +493,6 @@
           </div>
         {/if}
       </div>
-
-      <!-- User Avatar -->
-      <button class="user-avatar" title={userName} onclick={openProfile}>
-        {userInitials}
-      </button>
-
-      <!-- Logout Button -->
-      <button
-        onclick={handleLogout}
-        class="sidebar-action-btn group"
-        title="Cerrar sesión"
-      >
-        <LogOut size={20} />
-        <span class="sidebar-tooltip"> Cerrar sesión </span>
-      </button>
     </div>
   </div>
 
@@ -478,14 +527,15 @@
   .settings-menu {
     position: absolute;
     bottom: 0;
-    left: 46px; /* Ajustado un poco más cerca de la sidebar */
+    left: 53px; /* 52px sidebar + 1px gap */
     z-index: 2000;
     min-width: 220px;
     padding: 0px 0;
     background: #1e1e1e; /* VS Code menu bg */
     border: 1px solid #454545;
     border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    /* Box-shadow removed as per user request ("quitale la sobra") */
+    /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); */
     display: flex;
     flex-direction: column;
     overflow: hidden;
