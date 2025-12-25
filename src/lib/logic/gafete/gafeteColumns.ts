@@ -42,7 +42,7 @@ export class GafeteColumns {
                             break;
                         case "visita":
                             colorClass =
-                                "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20";
+                                "bg-violet-500/10 text-violet-600 border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-400 dark:border-violet-500/20";
                             break;
                         default:
                             colorClass =
