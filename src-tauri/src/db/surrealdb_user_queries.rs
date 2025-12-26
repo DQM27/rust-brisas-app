@@ -290,3 +290,118 @@ pub async fn verify_credentials(
 
     Ok(None)
 }
+
+// ==========================================
+// FUNCIONES ADICIONALES (para paridad con SQLite)
+// ==========================================
+
+/// Cuenta cuántos usuarios tienen un email específico
+pub async fn count_by_email(email: String) -> Result<i32, SurrealDbError> {
+    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
+    let client = db.get_client().await?;
+
+    let mut result = client
+        .query("SELECT count() FROM usuarios WHERE email = $email AND deleted_at IS NONE GROUP ALL")
+        .bind(("email", email))
+        .await?;
+
+    #[derive(serde::Deserialize)]
+    struct CountResult {
+        count: i32,
+    }
+
+    let counts: Vec<CountResult> = result.take(0)?;
+    Ok(counts.into_iter().next().map(|c| c.count).unwrap_or(0))
+}
+
+/// Cuenta cuántos usuarios tienen un email excluyendo un ID
+pub async fn count_by_email_excluding_id(
+    email: String,
+    exclude_id: String,
+) -> Result<i32, SurrealDbError> {
+    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
+    let client = db.get_client().await?;
+
+    let mut result = client
+        .query(
+            r#"
+            SELECT count() FROM usuarios 
+            WHERE email = $email 
+            AND id != type::thing('usuarios', $exclude_id)
+            AND deleted_at IS NONE 
+            GROUP ALL
+            "#,
+        )
+        .bind(("email", email))
+        .bind(("exclude_id", exclude_id))
+        .await?;
+
+    #[derive(serde::Deserialize)]
+    struct CountResult {
+        count: i32,
+    }
+
+    let counts: Vec<CountResult> = result.take(0)?;
+    Ok(counts.into_iter().next().map(|c| c.count).unwrap_or(0))
+}
+
+/// Obtiene el nombre de un rol por ID
+pub async fn get_role_name(role_id: &str) -> Result<String, SurrealDbError> {
+    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
+    let client = db.get_client().await?;
+
+    #[derive(serde::Deserialize)]
+    struct RoleResult {
+        name: String,
+    }
+
+    let role: Option<RoleResult> = client.select(("roles", role_id)).await?;
+
+    Ok(role.map(|r| r.name).unwrap_or_else(|| "Desconocido".to_string()))
+}
+
+/// Busca un usuario por email con password hash (para login)
+pub async fn find_by_email_with_password(
+    email: String,
+) -> Result<Option<(User, String)>, SurrealDbError> {
+    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
+    let client = db.get_client().await?;
+
+    let mut result = client
+        .query(
+            r#"
+            SELECT * FROM usuarios 
+            WHERE email = $email 
+            AND deleted_at IS NONE
+            "#,
+        )
+        .bind(("email", email))
+        .await?;
+
+    let users: Vec<SurrealUser> = result.take(0)?;
+
+    Ok(users.into_iter().next().map(|u| {
+        let password = u.password.clone();
+        (u.to_domain(), password)
+    }))
+}
+
+/// Obtiene todos los usuarios excluyendo el superuser
+pub async fn find_all_excluding_superuser(exclude_id: &str) -> Result<Vec<User>, SurrealDbError> {
+    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
+    let client = db.get_client().await?;
+
+    let mut result = client
+        .query(
+            r#"
+            SELECT * FROM usuarios 
+            WHERE id != type::thing('usuarios', $exclude_id)
+            AND deleted_at IS NONE
+            "#,
+        )
+        .bind(("exclude_id", exclude_id.to_string()))
+        .await?;
+
+    let users: Vec<SurrealUser> = result.take(0)?;
+    Ok(users.into_iter().map(|u| u.to_domain()).collect())
+}
