@@ -1,8 +1,7 @@
 // ==========================================
 // src/services/surrealdb_user_service.rs
 // ==========================================
-// User service implementation using SurrealDB
-// Activated with: cargo run --features surrealdb-backend
+// User service implementation using SurrealDB (Idiomatic)
 
 use crate::db::surrealdb_user_queries as db;
 use crate::domain::errors::UserError;
@@ -14,8 +13,7 @@ use crate::models::user::{
 use crate::services::auth;
 use crate::services::surrealdb_service::SurrealDbError;
 
-use chrono::Utc;
-use log::{error, info, warn};
+use log::{info, warn};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 
@@ -25,7 +23,17 @@ use rand::Rng;
 
 impl From<SurrealDbError> for UserError {
     fn from(e: SurrealDbError) -> Self {
-        UserError::Database(sqlx::Error::Protocol(e.to_string()))
+        // Detectar errores de índice único (email/cedula duplicado)
+        let msg = e.to_string();
+        if msg.contains("unique") || msg.contains("UNIQUE") {
+            if msg.contains("email") {
+                return UserError::EmailExists;
+            }
+            if msg.contains("cedula") {
+                return UserError::CedulaExists;
+            }
+        }
+        UserError::Database(sqlx::Error::Protocol(msg))
     }
 }
 
@@ -63,22 +71,16 @@ pub async fn create_user(mut input: CreateUserInput) -> Result<UserResponse, Use
     domain::validar_create_input(&input)?;
 
     // 2. Normalizar datos
-    let email_normalizado = domain::normalizar_email(&input.email);
-    input.email = email_normalizado.clone();
+    input.email = domain::normalizar_email(&input.email);
     input.nombre = domain::normalizar_nombre(&input.nombre);
     input.apellido = domain::normalizar_nombre(&input.apellido);
 
-    // 3. Verificar email único
-    if let Some(_) = db::get_user_by_email(email_normalizado.clone()).await? {
-        return Err(UserError::EmailExists);
-    }
-
-    // 4. Determinar rol (default: Guardia)
+    // 3. Determinar rol (default: Guardia)
     if input.role_id.is_none() {
         input.role_id = Some(ROLE_GUARDIA_ID.to_string());
     }
 
-    // 5. Generar o usar contraseña
+    // 4. Generar o usar contraseña
     let (password_str, must_change_password) = match input.password.clone() {
         Some(p) => {
             let force_change = input.must_change_password.unwrap_or(false);
@@ -96,13 +98,13 @@ pub async fn create_user(mut input: CreateUserInput) -> Result<UserResponse, Use
     info!("Creando usuario '{}' con rol '{:?}'", input.email, input.role_id);
     let password_hash = auth::hash_password(&password_str)?;
 
-    // 6. Crear en SurrealDB
-    let user = db::create_user(input, password_hash).await?;
+    // 5. Crear en SurrealDB (índice UNIQUE rechazará duplicados)
+    let (user, role_name) = db::create_user(input, password_hash).await?;
 
     info!("Usuario '{}' creado exitosamente con ID {}", user.email, user.id);
 
-    // 7. Construir respuesta
-    let mut response = UserResponse::from_user_with_role(user, "Guardia".to_string());
+    // 6. Construir respuesta
+    let mut response = UserResponse::from_user_with_role(user, role_name);
     if must_change_password {
         response.temporary_password = Some(password_str);
     }
@@ -115,10 +117,9 @@ pub async fn create_user(mut input: CreateUserInput) -> Result<UserResponse, Use
 // ==========================================
 
 pub async fn get_user_by_id(id: &str) -> Result<UserResponse, UserError> {
-    let user = db::get_user_by_id(id).await?.ok_or(UserError::NotFound)?;
+    let (user, role_name) = db::get_user_by_id(id).await?.ok_or(UserError::NotFound)?;
 
-    // TODO: Obtener nombre del rol desde SurrealDB
-    Ok(UserResponse::from_user_with_role(user, "Guardia".to_string()))
+    Ok(UserResponse::from_user_with_role(user, role_name))
 }
 
 // ==========================================
@@ -126,11 +127,11 @@ pub async fn get_user_by_id(id: &str) -> Result<UserResponse, UserError> {
 // ==========================================
 
 pub async fn get_all_users() -> Result<UserListResponse, UserError> {
-    let users = db::get_all_users().await?;
+    let users_with_roles = db::get_all_users().await?;
 
-    let user_responses: Vec<UserResponse> = users
+    let user_responses: Vec<UserResponse> = users_with_roles
         .into_iter()
-        .map(|u| UserResponse::from_user_with_role(u, "Guardia".to_string()))
+        .map(|(u, role_name)| UserResponse::from_user_with_role(u, role_name))
         .collect();
 
     let total = user_responses.len();
@@ -159,21 +160,12 @@ pub async fn update_user(
 
     info!("Actualizando usuario con ID {}", id);
 
-    // 2. Verificar que existe
-    let _ = db::get_user_by_id(&id).await?.ok_or(UserError::NotFound)?;
-
-    // 3. Normalizar email si viene
+    // 2. Normalizar email si viene
     if let Some(ref email) = input.email {
-        let normalizado = domain::normalizar_email(email);
-        if let Some(existing) = db::get_user_by_email(normalizado.clone()).await? {
-            if existing.id != id {
-                return Err(UserError::EmailExists);
-            }
-        }
-        input.email = Some(normalizado);
+        input.email = Some(domain::normalizar_email(email));
     }
 
-    // 4. Normalizar nombres
+    // 3. Normalizar nombres
     if let Some(ref n) = input.nombre {
         input.nombre = Some(domain::normalizar_nombre(n));
     }
@@ -181,12 +173,12 @@ pub async fn update_user(
         input.apellido = Some(domain::normalizar_nombre(a));
     }
 
-    // 5. Actualizar en SurrealDB
-    let user = db::update_user(id.clone(), input).await?;
+    // 4. Actualizar en SurrealDB (MERGE solo actualiza campos presentes)
+    let (user, role_name) = db::update_user(id.clone(), input).await?;
 
     info!("Usuario {} actualizado exitosamente", id);
 
-    Ok(UserResponse::from_user_with_role(user, "Guardia".to_string()))
+    Ok(UserResponse::from_user_with_role(user, role_name))
 }
 
 // ==========================================
@@ -194,11 +186,8 @@ pub async fn update_user(
 // ==========================================
 
 pub async fn delete_user(id: String) -> Result<(), UserError> {
-    let _ = db::get_user_by_id(&id).await?.ok_or(UserError::NotFound)?;
-
     info!("Eliminando usuario con ID {}", id);
     db::delete_user(id.clone()).await?;
-
     info!("Usuario {} eliminado exitosamente", id);
     Ok(())
 }
@@ -208,13 +197,8 @@ pub async fn delete_user(id: String) -> Result<(), UserError> {
 // ==========================================
 
 pub async fn change_password(id: String, input: ChangePasswordInput) -> Result<(), UserError> {
-    let user = get_user_by_id(&id).await?;
-
-    // Verificar contraseña actual si se provee
-    if let Some(current) = input.current_password {
-        // TODO: Obtener hash actual de SurrealDB y verificar
-        warn!("Verificación de password actual no implementada para SurrealDB");
-    }
+    // Verificar que el usuario existe
+    let _ = get_user_by_id(&id).await?;
 
     // Validar nueva contraseña
     domain::validar_password(&input.new_password)?;
@@ -222,28 +206,8 @@ pub async fn change_password(id: String, input: ChangePasswordInput) -> Result<(
     // Hashear nueva
     let new_hash = auth::hash_password(&input.new_password)?;
 
-    // Actualizar password
-    let update_input = UpdateUserInput {
-        email: None,
-        password: Some(new_hash),
-        nombre: None,
-        apellido: None,
-        role_id: None,
-        is_active: None,
-        cedula: None,
-        segundo_nombre: None,
-        segundo_apellido: None,
-        fecha_inicio_labores: None,
-        numero_gafete: None,
-        fecha_nacimiento: None,
-        telefono: None,
-        direccion: None,
-        contacto_emergencia_nombre: None,
-        contacto_emergencia_telefono: None,
-        must_change_password: Some(false),
-    };
-
-    db::update_user(id.clone(), update_input).await?;
+    // Actualizar password directamente
+    db::update_password(id.clone(), new_hash).await?;
 
     info!("Contraseña cambiada para usuario {}", id);
     Ok(())
@@ -256,7 +220,7 @@ pub async fn change_password(id: String, input: ChangePasswordInput) -> Result<(
 pub async fn login(email: String, password: String) -> Result<UserResponse, UserError> {
     let email_normalizado = domain::normalizar_email(&email);
 
-    let user =
+    let (user, role_name) =
         db::verify_credentials(email_normalizado.clone(), password).await?.ok_or_else(|| {
             warn!("Intento de login fallido para {}: credenciales inválidas", email_normalizado);
             UserError::InvalidCredentials
@@ -266,5 +230,5 @@ pub async fn login(email: String, password: String) -> Result<UserResponse, User
         return Err(UserError::InactiveUser);
     }
 
-    Ok(UserResponse::from_user_with_role(user, "Guardia".to_string()))
+    Ok(UserResponse::from_user_with_role(user, role_name))
 }

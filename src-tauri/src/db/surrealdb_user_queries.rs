@@ -1,7 +1,7 @@
 // ==========================================
-// SurrealDB User Repository
+// SurrealDB User Repository (Idiomatic)
 // ==========================================
-// Operaciones CRUD para usuarios usando SurrealDB
+// Operaciones CRUD usando patrones nativos de SurrealDB
 
 use crate::models::user::{CreateUserInput, UpdateUserInput, User};
 use crate::services::surrealdb_service::{get_surrealdb, SurrealDbError};
@@ -12,6 +12,7 @@ use surrealdb::sql::Thing;
 // TIPOS PARA SURREALDB
 // ==========================================
 
+/// Usuario con relación a rol (SurrealDB nativo)
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SurrealUser {
     pub id: Thing,
@@ -19,7 +20,7 @@ pub struct SurrealUser {
     pub password: String,
     pub nombre: String,
     pub apellido: String,
-    pub role: Thing,
+    pub role: Thing, // Referencia nativa: roles:admin
     pub is_active: bool,
     pub created_at: String,
     pub updated_at: String,
@@ -35,6 +36,38 @@ pub struct SurrealUser {
     pub contacto_emergencia_telefono: Option<String>,
     pub must_change_password: bool,
     pub deleted_at: Option<String>,
+}
+
+/// Usuario con rol expandido (después de FETCH)
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SurrealUserWithRole {
+    pub id: Thing,
+    pub email: String,
+    pub password: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub role: RoleData, // Rol completo después de FETCH
+    pub is_active: bool,
+    pub created_at: String,
+    pub updated_at: String,
+    pub cedula: String,
+    pub segundo_nombre: Option<String>,
+    pub segundo_apellido: Option<String>,
+    pub fecha_inicio_labores: Option<String>,
+    pub numero_gafete: Option<String>,
+    pub fecha_nacimiento: Option<String>,
+    pub telefono: Option<String>,
+    pub direccion: Option<String>,
+    pub contacto_emergencia_nombre: Option<String>,
+    pub contacto_emergencia_telefono: Option<String>,
+    pub must_change_password: bool,
+    pub deleted_at: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RoleData {
+    pub id: Thing,
+    pub name: String,
 }
 
 impl SurrealUser {
@@ -65,29 +98,77 @@ impl SurrealUser {
     }
 }
 
-// ==========================================
-// QUERIES
-// ==========================================
-
-/// Obtiene todos los usuarios
-pub async fn get_all_users() -> Result<Vec<User>, SurrealDbError> {
-    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
-    let client = db.get_client().await?;
-
-    let users: Vec<SurrealUser> =
-        client.query("SELECT * FROM usuarios WHERE deleted_at IS NONE").await?.take(0)?;
-
-    Ok(users.into_iter().map(|u| u.to_domain()).collect())
+impl SurrealUserWithRole {
+    /// Convierte a User de dominio con nombre de rol
+    pub fn to_domain_with_role(self) -> (User, String) {
+        let role_name = self.role.name.clone();
+        let user = User {
+            id: self.id.id.to_string(),
+            email: self.email,
+            nombre: self.nombre,
+            apellido: self.apellido,
+            role_id: self.role.id.id.to_string(),
+            is_active: self.is_active,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            cedula: self.cedula,
+            segundo_nombre: self.segundo_nombre,
+            segundo_apellido: self.segundo_apellido,
+            fecha_inicio_labores: self.fecha_inicio_labores,
+            numero_gafete: self.numero_gafete,
+            fecha_nacimiento: self.fecha_nacimiento,
+            telefono: self.telefono,
+            direccion: self.direccion,
+            contacto_emergencia_nombre: self.contacto_emergencia_nombre,
+            contacto_emergencia_telefono: self.contacto_emergencia_telefono,
+            must_change_password: self.must_change_password,
+            deleted_at: self.deleted_at,
+        };
+        (user, role_name)
+    }
 }
 
-/// Obtiene un usuario por ID
-pub async fn get_user_by_id(id: &str) -> Result<Option<User>, SurrealDbError> {
+// ==========================================
+// QUERIES (Idiomáticas SurrealDB)
+// ==========================================
+
+/// Obtiene todos los usuarios activos con su rol (usando FETCH)
+pub async fn get_all_users() -> Result<Vec<(User, String)>, SurrealDbError> {
     let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
     let client = db.get_client().await?;
 
-    let user: Option<SurrealUser> = client.select(("usuarios", id)).await?;
+    // FETCH expande la relación del rol automáticamente
+    let mut result = client
+        .query(
+            r#"
+            SELECT * FROM usuarios 
+            WHERE deleted_at IS NONE 
+            FETCH role
+            "#,
+        )
+        .await?;
 
-    Ok(user.map(|u| u.to_domain()))
+    let users: Vec<SurrealUserWithRole> = result.take(0)?;
+    Ok(users.into_iter().map(|u| u.to_domain_with_role()).collect())
+}
+
+/// Obtiene un usuario por ID con su rol
+pub async fn get_user_by_id(id: &str) -> Result<Option<(User, String)>, SurrealDbError> {
+    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
+    let client = db.get_client().await?;
+
+    let mut result = client
+        .query(
+            r#"
+            SELECT * FROM type::thing('usuarios', $id) 
+            FETCH role
+            "#,
+        )
+        .bind(("id", id.to_string()))
+        .await?;
+
+    let users: Vec<SurrealUserWithRole> = result.take(0)?;
+    Ok(users.into_iter().next().map(|u| u.to_domain_with_role()))
 }
 
 /// Obtiene un usuario por email
@@ -105,38 +186,24 @@ pub async fn get_user_by_email(email: String) -> Result<Option<User>, SurrealDbE
 }
 
 /// Crea un nuevo usuario
+/// El índice UNIQUE en email/cedula rechazará duplicados automáticamente
 pub async fn create_user(
     input: CreateUserInput,
     password_hash: String,
-) -> Result<User, SurrealDbError> {
+) -> Result<(User, String), SurrealDbError> {
     let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
     let client = db.get_client().await?;
 
     let id = uuid::Uuid::new_v4().to_string();
     let role_id = input.role_id.clone().unwrap_or_else(|| "guardia".to_string());
     let now = chrono::Utc::now().to_rfc3339();
-
-    // Clonar todos los valores antes de bind
-    let email = input.email.clone();
-    let nombre = input.nombre.clone();
-    let apellido = input.apellido.clone();
-    let cedula = input.cedula.clone();
-    let segundo_nombre = input.segundo_nombre.clone();
-    let segundo_apellido = input.segundo_apellido.clone();
-    let fecha_inicio_labores = input.fecha_inicio_labores.clone();
-    let numero_gafete = input.numero_gafete.clone();
-    let fecha_nacimiento = input.fecha_nacimiento.clone();
-    let telefono = input.telefono.clone();
-    let direccion = input.direccion.clone();
-    let contacto_emergencia_nombre = input.contacto_emergencia_nombre.clone();
-    let contacto_emergencia_telefono = input.contacto_emergencia_telefono.clone();
     let must_change_password = input.must_change_password.unwrap_or(true);
 
-    let user: Option<SurrealUser> = client
+    // Crear usuario y retornar con FETCH del rol
+    let mut result = client
         .query(
             r#"
-            CREATE usuarios CONTENT {
-                id: $id,
+            CREATE type::thing('usuarios', $id) CONTENT {
                 email: $email,
                 password: $password,
                 nombre: $nombre,
@@ -157,88 +224,100 @@ pub async fn create_user(
                 contacto_emergencia_telefono: $contacto_emergencia_telefono,
                 must_change_password: $must_change_password,
                 deleted_at: NONE
-            }
+            } RETURN AFTER FETCH role
             "#,
         )
         .bind(("id", id))
-        .bind(("email", email))
+        .bind(("email", input.email))
         .bind(("password", password_hash))
-        .bind(("nombre", nombre))
-        .bind(("apellido", apellido))
+        .bind(("nombre", input.nombre))
+        .bind(("apellido", input.apellido))
         .bind(("role_id", role_id))
-        .bind(("now", now.clone()))
-        .bind(("cedula", cedula))
-        .bind(("segundo_nombre", segundo_nombre))
-        .bind(("segundo_apellido", segundo_apellido))
-        .bind(("fecha_inicio_labores", fecha_inicio_labores))
-        .bind(("numero_gafete", numero_gafete))
-        .bind(("fecha_nacimiento", fecha_nacimiento))
-        .bind(("telefono", telefono))
-        .bind(("direccion", direccion))
-        .bind(("contacto_emergencia_nombre", contacto_emergencia_nombre))
-        .bind(("contacto_emergencia_telefono", contacto_emergencia_telefono))
+        .bind(("now", now))
+        .bind(("cedula", input.cedula))
+        .bind(("segundo_nombre", input.segundo_nombre))
+        .bind(("segundo_apellido", input.segundo_apellido))
+        .bind(("fecha_inicio_labores", input.fecha_inicio_labores))
+        .bind(("numero_gafete", input.numero_gafete))
+        .bind(("fecha_nacimiento", input.fecha_nacimiento))
+        .bind(("telefono", input.telefono))
+        .bind(("direccion", input.direccion))
+        .bind(("contacto_emergencia_nombre", input.contacto_emergencia_nombre))
+        .bind(("contacto_emergencia_telefono", input.contacto_emergencia_telefono))
         .bind(("must_change_password", must_change_password))
-        .await?
-        .take(0)?;
+        .await?;
 
-    user.map(|u| u.to_domain())
+    let users: Vec<SurrealUserWithRole> = result.take(0)?;
+    users
+        .into_iter()
+        .next()
+        .map(|u| u.to_domain_with_role())
         .ok_or_else(|| SurrealDbError::Query("Error creando usuario".to_string()))
 }
 
-/// Actualiza un usuario
-pub async fn update_user(id: String, input: UpdateUserInput) -> Result<User, SurrealDbError> {
+/// Actualiza un usuario usando MERGE (solo campos presentes)
+pub async fn update_user(
+    id: String,
+    input: UpdateUserInput,
+) -> Result<(User, String), SurrealDbError> {
     let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
     let client = db.get_client().await?;
 
-    // Construir query dinámicamente basado en campos presentes
-    let mut updates = Vec::new();
-    let now = chrono::Utc::now().to_rfc3339();
+    // Construir objeto de actualización dinámicamente
+    #[derive(Serialize)]
+    struct UpdateData {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        email: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        nombre: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        apellido: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        is_active: Option<bool>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cedula: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        segundo_nombre: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        segundo_apellido: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        must_change_password: Option<bool>,
+        updated_at: String,
+    }
 
-    if input.email.is_some() {
-        updates.push("email = $email");
-    }
-    if input.nombre.is_some() {
-        updates.push("nombre = $nombre");
-    }
-    if input.apellido.is_some() {
-        updates.push("apellido = $apellido");
-    }
-    if input.is_active.is_some() {
-        updates.push("is_active = $is_active");
-    }
-    if input.cedula.is_some() {
-        updates.push("cedula = $cedula");
-    }
-    updates.push("updated_at = $now");
+    let update_data = UpdateData {
+        email: input.email,
+        nombre: input.nombre,
+        apellido: input.apellido,
+        is_active: input.is_active,
+        cedula: input.cedula,
+        segundo_nombre: input.segundo_nombre,
+        segundo_apellido: input.segundo_apellido,
+        must_change_password: input.must_change_password,
+        updated_at: chrono::Utc::now().to_rfc3339(),
+    };
 
-    let query = format!("UPDATE usuarios:{} SET {}", id, updates.join(", "));
+    // MERGE solo actualiza campos presentes
+    let mut result = client
+        .query(
+            r#"
+            UPDATE type::thing('usuarios', $id) MERGE $data
+            RETURN AFTER FETCH role
+            "#,
+        )
+        .bind(("id", id.clone()))
+        .bind(("data", update_data))
+        .await?;
 
-    let mut q = client.query(&query);
-
-    if let Some(email) = input.email {
-        q = q.bind(("email", email));
-    }
-    if let Some(nombre) = input.nombre {
-        q = q.bind(("nombre", nombre));
-    }
-    if let Some(apellido) = input.apellido {
-        q = q.bind(("apellido", apellido));
-    }
-    if let Some(is_active) = input.is_active {
-        q = q.bind(("is_active", is_active));
-    }
-    if let Some(cedula) = input.cedula {
-        q = q.bind(("cedula", cedula));
-    }
-    q = q.bind(("now", now));
-
-    let user: Option<SurrealUser> = q.await?.take(0)?;
-
-    user.map(|u| u.to_domain())
+    let users: Vec<SurrealUserWithRole> = result.take(0)?;
+    users
+        .into_iter()
+        .next()
+        .map(|u| u.to_domain_with_role())
         .ok_or_else(|| SurrealDbError::Query("Usuario no encontrado".to_string()))
 }
 
-/// Elimina un usuario (soft delete)
+/// Soft delete de usuario
 pub async fn delete_user(id: String) -> Result<(), SurrealDbError> {
     let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
     let client = db.get_client().await?;
@@ -246,7 +325,13 @@ pub async fn delete_user(id: String) -> Result<(), SurrealDbError> {
     let now = chrono::Utc::now().to_rfc3339();
 
     client
-        .query("UPDATE usuarios:$id SET deleted_at = $now")
+        .query(
+            r#"
+            UPDATE type::thing('usuarios', $id) SET 
+                deleted_at = $now,
+                is_active = false
+            "#,
+        )
         .bind(("id", id))
         .bind(("now", now))
         .await?;
@@ -254,115 +339,10 @@ pub async fn delete_user(id: String) -> Result<(), SurrealDbError> {
     Ok(())
 }
 
-/// Verifica credenciales para login
+/// Verifica credenciales para login (retorna usuario con rol)
 pub async fn verify_credentials(
     email: String,
     password: String,
-) -> Result<Option<User>, SurrealDbError> {
-    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
-    let client = db.get_client().await?;
-
-    // Obtener usuario con hash de password
-    let mut result = client
-        .query(
-            r#"
-            SELECT * FROM usuarios 
-            WHERE email = $email 
-            AND deleted_at IS NONE 
-            AND is_active = true
-            "#,
-        )
-        .bind(("email", email))
-        .await?;
-
-    let users: Vec<SurrealUser> = result.take(0)?;
-
-    if let Some(user) = users.into_iter().next() {
-        // Verificar password con argon2
-        let parsed_hash = argon2::PasswordHash::new(&user.password)
-            .map_err(|e| SurrealDbError::Query(format!("Error parsing hash: {}", e)))?;
-
-        use argon2::PasswordVerifier;
-        if argon2::Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_ok() {
-            return Ok(Some(user.to_domain()));
-        }
-    }
-
-    Ok(None)
-}
-
-// ==========================================
-// FUNCIONES ADICIONALES (para paridad con SQLite)
-// ==========================================
-
-/// Cuenta cuántos usuarios tienen un email específico
-pub async fn count_by_email(email: String) -> Result<i32, SurrealDbError> {
-    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
-    let client = db.get_client().await?;
-
-    let mut result = client
-        .query("SELECT count() FROM usuarios WHERE email = $email AND deleted_at IS NONE GROUP ALL")
-        .bind(("email", email))
-        .await?;
-
-    #[derive(serde::Deserialize)]
-    struct CountResult {
-        count: i32,
-    }
-
-    let counts: Vec<CountResult> = result.take(0)?;
-    Ok(counts.into_iter().next().map(|c| c.count).unwrap_or(0))
-}
-
-/// Cuenta cuántos usuarios tienen un email excluyendo un ID
-pub async fn count_by_email_excluding_id(
-    email: String,
-    exclude_id: String,
-) -> Result<i32, SurrealDbError> {
-    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
-    let client = db.get_client().await?;
-
-    let mut result = client
-        .query(
-            r#"
-            SELECT count() FROM usuarios 
-            WHERE email = $email 
-            AND id != type::thing('usuarios', $exclude_id)
-            AND deleted_at IS NONE 
-            GROUP ALL
-            "#,
-        )
-        .bind(("email", email))
-        .bind(("exclude_id", exclude_id))
-        .await?;
-
-    #[derive(serde::Deserialize)]
-    struct CountResult {
-        count: i32,
-    }
-
-    let counts: Vec<CountResult> = result.take(0)?;
-    Ok(counts.into_iter().next().map(|c| c.count).unwrap_or(0))
-}
-
-/// Obtiene el nombre de un rol por ID
-pub async fn get_role_name(role_id: &str) -> Result<String, SurrealDbError> {
-    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
-    let client = db.get_client().await?;
-
-    #[derive(serde::Deserialize)]
-    struct RoleResult {
-        name: String,
-    }
-
-    let role: Option<RoleResult> = client.select(("roles", role_id)).await?;
-
-    Ok(role.map(|r| r.name).unwrap_or_else(|| "Desconocido".to_string()))
-}
-
-/// Busca un usuario por email con password hash (para login)
-pub async fn find_by_email_with_password(
-    email: String,
 ) -> Result<Option<(User, String)>, SurrealDbError> {
     let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
     let client = db.get_client().await?;
@@ -372,36 +352,48 @@ pub async fn find_by_email_with_password(
             r#"
             SELECT * FROM usuarios 
             WHERE email = $email 
-            AND deleted_at IS NONE
+            AND deleted_at IS NONE 
+            AND is_active = true
+            FETCH role
             "#,
         )
         .bind(("email", email))
         .await?;
 
-    let users: Vec<SurrealUser> = result.take(0)?;
+    let users: Vec<SurrealUserWithRole> = result.take(0)?;
 
-    Ok(users.into_iter().next().map(|u| {
-        let password = u.password.clone();
-        (u.to_domain(), password)
-    }))
+    if let Some(user) = users.into_iter().next() {
+        // Verificar password con argon2
+        let parsed_hash = argon2::PasswordHash::new(&user.password)
+            .map_err(|e| SurrealDbError::Query(format!("Error parsing hash: {}", e)))?;
+
+        use argon2::PasswordVerifier;
+        if argon2::Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_ok() {
+            return Ok(Some(user.to_domain_with_role()));
+        }
+    }
+
+    Ok(None)
 }
 
-/// Obtiene todos los usuarios excluyendo el superuser
-pub async fn find_all_excluding_superuser(exclude_id: &str) -> Result<Vec<User>, SurrealDbError> {
+/// Actualiza solo la contraseña de un usuario
+pub async fn update_password(id: String, password_hash: String) -> Result<(), SurrealDbError> {
     let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
     let client = db.get_client().await?;
 
-    let mut result = client
+    client
         .query(
             r#"
-            SELECT * FROM usuarios 
-            WHERE id != type::thing('usuarios', $exclude_id)
-            AND deleted_at IS NONE
+            UPDATE type::thing('usuarios', $id) SET 
+                password = $password,
+                must_change_password = false,
+                updated_at = $now
             "#,
         )
-        .bind(("exclude_id", exclude_id.to_string()))
+        .bind(("id", id))
+        .bind(("password", password_hash))
+        .bind(("now", chrono::Utc::now().to_rfc3339()))
         .await?;
 
-    let users: Vec<SurrealUser> = result.take(0)?;
-    Ok(users.into_iter().map(|u| u.to_domain()).collect())
+    Ok(())
 }
