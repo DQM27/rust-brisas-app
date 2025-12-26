@@ -17,7 +17,30 @@ pub async fn seed_surrealdb() -> Result<(), Box<dyn std::error::Error>> {
     seed_superuser().await?;
     seed_admin_user().await?;
 
+    // Debug: listar todos los usuarios después de seeds
+    list_all_users().await.ok();
+
     println!("✅ [SURREALDB] Seeds completados");
+    Ok(())
+}
+
+async fn list_all_users() -> Result<(), SurrealDbError> {
+    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
+    let client = db.get_client().await?;
+
+    #[derive(serde::Deserialize, Debug)]
+    struct UserDebug {
+        email: String,
+        is_active: bool,
+    }
+
+    let mut result = client.query("SELECT email, is_active FROM usuarios").await?;
+    let users: Vec<UserDebug> = result.take(0)?;
+
+    println!("  📋 Usuarios en DB: {}", users.len());
+    for u in &users {
+        println!("     - {} (active={})", u.email, u.is_active);
+    }
     Ok(())
 }
 

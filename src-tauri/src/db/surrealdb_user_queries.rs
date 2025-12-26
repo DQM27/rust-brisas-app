@@ -74,11 +74,11 @@ impl SurrealUser {
     /// Convierte a User de dominio
     pub fn to_domain(self) -> User {
         User {
-            id: self.id.id.to_string(),
+            id: self.id.id.to_raw(),
             email: self.email,
             nombre: self.nombre,
             apellido: self.apellido,
-            role_id: self.role.id.to_string(),
+            role_id: self.role.id.to_raw(),
             is_active: self.is_active,
             created_at: self.created_at,
             updated_at: self.updated_at,
@@ -103,11 +103,11 @@ impl SurrealUserWithRole {
     pub fn to_domain_with_role(self) -> (User, String) {
         let role_name = self.role.name.clone();
         let user = User {
-            id: self.id.id.to_string(),
+            id: self.id.id.to_raw(),
             email: self.email,
             nombre: self.nombre,
             apellido: self.apellido,
-            role_id: self.role.id.id.to_string(),
+            role_id: self.role.id.id.to_raw(),
             is_active: self.is_active,
             created_at: self.created_at,
             updated_at: self.updated_at,
@@ -157,10 +157,13 @@ pub async fn get_user_by_id(id: &str) -> Result<Option<(User, String)>, SurrealD
     let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
     let client = db.get_client().await?;
 
+    println!("[DEBUG] get_user_by_id: buscando id={}", id);
+
     let mut result = client
         .query(
             r#"
             SELECT * FROM type::thing('usuarios', $id) 
+            WHERE deleted_at IS NONE
             FETCH role
             "#,
         )
@@ -168,6 +171,7 @@ pub async fn get_user_by_id(id: &str) -> Result<Option<(User, String)>, SurrealD
         .await?;
 
     let users: Vec<SurrealUserWithRole> = result.take(0)?;
+    println!("[DEBUG] get_user_by_id: encontrados={}", users.len());
     Ok(users.into_iter().next().map(|u| u.to_domain_with_role()))
 }
 
@@ -347,6 +351,8 @@ pub async fn verify_credentials(
     let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
     let client = db.get_client().await?;
 
+    println!("[DEBUG] verify_credentials: buscando email={}", email);
+
     let mut result = client
         .query(
             r#"
@@ -357,20 +363,34 @@ pub async fn verify_credentials(
             FETCH role
             "#,
         )
-        .bind(("email", email))
+        .bind(("email", email.clone()))
         .await?;
 
     let users: Vec<SurrealUserWithRole> = result.take(0)?;
+    println!("[DEBUG] verify_credentials: usuarios encontrados={}", users.len());
 
     if let Some(user) = users.into_iter().next() {
-        // Verificar password con argon2
-        let parsed_hash = argon2::PasswordHash::new(&user.password)
-            .map_err(|e| SurrealDbError::Query(format!("Error parsing hash: {}", e)))?;
+        println!("[DEBUG] Usuario encontrado: {}", user.email);
+        println!(
+            "[DEBUG] Password hash almacenado: {}",
+            &user.password[..20.min(user.password.len())]
+        );
 
-        use argon2::PasswordVerifier;
-        if argon2::Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_ok() {
-            return Ok(Some(user.to_domain_with_role()));
+        // Usar auth::verify_password que incluye el secret del keyring
+        match crate::services::auth::verify_password(&password, &user.password) {
+            Ok(true) => {
+                println!("[DEBUG] Password verificado correctamente");
+                return Ok(Some(user.to_domain_with_role()));
+            }
+            Ok(false) => {
+                println!("[DEBUG] Password NO coincide");
+            }
+            Err(e) => {
+                println!("[DEBUG] Error verificando password: {}", e);
+            }
         }
+    } else {
+        println!("[DEBUG] Usuario NO encontrado en la DB");
     }
 
     Ok(None)
