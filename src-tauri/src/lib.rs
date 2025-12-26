@@ -58,7 +58,7 @@ pub fn run() {
             // ==========================================
             #[cfg(feature = "surrealdb-backend")]
             {
-                info!("🚀 Inicializando SurrealDB embebido...");
+                println!("🚀 [SURREALDB] Inicializando SurrealDB embebido...");
                 let surreal_config = if app_config.setup.show_demo_mode {
                     services::surrealdb_service::SurrealDbConfig::demo()
                 } else {
@@ -66,8 +66,14 @@ pub fn run() {
                 };
 
                 match services::surrealdb_service::setup_embedded_surrealdb(surreal_config).await {
-                    Ok(_) => info!("✅ SurrealDB embebido inicializado correctamente"),
-                    Err(e) => error!("❌ Error inicializando SurrealDB: {}", e),
+                    Ok(_) => {
+                        println!("✅ [SURREALDB] SurrealDB embebido inicializado correctamente");
+                        // Ejecutar seeds de SurrealDB
+                        if let Err(e) = config::surrealdb_seed::seed_surrealdb().await {
+                            println!("❌ [SURREALDB] Error en seeds: {}", e);
+                        }
+                    }
+                    Err(e) => println!("❌ [SURREALDB] Error inicializando: {}", e),
                 }
             }
 
