@@ -33,8 +33,10 @@ sqlx = { version = "0.7", features = [
     "migrate",
 ], default-features = false }
 
-# SurrealDB - Multi-model database (experimental)
-surrealdb = { version = "2.0", features = ["kv-mem"] }
+# SurrealDB - Multi-model database (experimental, embedded)
+surrealdb = { version = "2.0", features = [
+    "kv-rocksdb",
+], default-features = false }
 
 # ==========================================
 # ASYNC RUNTIME

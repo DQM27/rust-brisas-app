@@ -1,12 +1,12 @@
 // ==========================================
-// SurrealDB Connection Service
+// SurrealDB Connection Service (EMBEDDED)
 // ==========================================
-// Maneja la conexión a SurrealDB (cloud o local)
+// Maneja la conexión a SurrealDB embebido (sin servidor externo)
 
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use std::sync::Arc;
-use surrealdb::engine::remote::ws::{Client, Ws};
-use surrealdb::opt::auth::Root;
+use surrealdb::engine::local::{Db, RocksDb};
 use surrealdb::Surreal;
 use thiserror::Error;
 use tokio::sync::RwLock;
@@ -28,6 +28,9 @@ pub enum SurrealDbError {
 
     #[error("No conectado a SurrealDB")]
     NotConnected,
+
+    #[error("Error de inicialización: {0}")]
+    Init(String),
 }
 
 impl From<surrealdb::Error> for SurrealDbError {
@@ -42,27 +45,32 @@ impl From<surrealdb::Error> for SurrealDbError {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SurrealDbConfig {
-    /// URL del servidor (ws://localhost:8000 o wss://cloud.surrealdb.com)
-    pub url: String,
+    /// Ruta donde se almacenará la base de datos (RocksDB)
+    pub data_path: PathBuf,
     /// Namespace a usar
     pub namespace: String,
     /// Database a usar
     pub database: String,
-    /// Usuario root (solo para desarrollo/setup)
-    pub username: Option<String>,
-    /// Password root (solo para desarrollo/setup)
-    pub password: Option<String>,
 }
 
 impl Default for SurrealDbConfig {
     fn default() -> Self {
-        Self {
-            url: "ws://localhost:8000".to_string(),
-            namespace: "brisas".to_string(),
-            database: "produccion".to_string(),
-            username: Some("root".to_string()),
-            password: Some("root".to_string()),
-        }
+        // Por defecto, usa el directorio de datos de la app
+        let data_path =
+            dirs::data_dir().unwrap_or_else(|| PathBuf::from(".")).join("Brisas").join("surrealdb");
+
+        Self { data_path, namespace: "brisas".to_string(), database: "produccion".to_string() }
+    }
+}
+
+impl SurrealDbConfig {
+    pub fn demo() -> Self {
+        let data_path = dirs::data_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("Brisas")
+            .join("surrealdb_demo");
+
+        Self { data_path, namespace: "brisas".to_string(), database: "demo".to_string() }
     }
 }
 
@@ -71,7 +79,7 @@ impl Default for SurrealDbConfig {
 // ==========================================
 
 pub struct SurrealDbService {
-    client: Arc<RwLock<Option<Surreal<Client>>>>,
+    client: Arc<RwLock<Option<Surreal<Db>>>>,
     config: SurrealDbConfig,
 }
 
@@ -80,30 +88,51 @@ impl SurrealDbService {
         Self { client: Arc::new(RwLock::new(None)), config }
     }
 
-    /// Conecta a SurrealDB
+    /// Conecta a SurrealDB en modo embebido (RocksDB)
     pub async fn connect(&self) -> Result<(), SurrealDbError> {
-        let db = Surreal::new::<Ws>(&self.config.url)
+        // Crear directorio si no existe
+        if !self.config.data_path.exists() {
+            std::fs::create_dir_all(&self.config.data_path)
+                .map_err(|e| SurrealDbError::Init(format!("Error creando directorio: {}", e)))?;
+        }
+
+        log::info!("🔌 Conectando a SurrealDB embebido en: {:?}", self.config.data_path);
+
+        // Crear conexión embebida con RocksDB
+        let db = Surreal::new::<RocksDb>(self.config.data_path.clone())
             .await
             .map_err(|e| SurrealDbError::Connection(e.to_string()))?;
-
-        // Autenticación root (para desarrollo)
-        if let (Some(user), Some(pass)) = (&self.config.username, &self.config.password) {
-            db.signin(Root { username: user, password: pass })
-                .await
-                .map_err(|e| SurrealDbError::Auth(e.to_string()))?;
-        }
 
         // Seleccionar namespace y database
         db.use_ns(&self.config.namespace).use_db(&self.config.database).await?;
 
         *self.client.write().await = Some(db);
 
-        log::info!("✅ Conectado a SurrealDB: {}", self.config.url);
+        log::info!(
+            "✅ SurrealDB embebido conectado: ns={}, db={}",
+            self.config.namespace,
+            self.config.database
+        );
+
+        Ok(())
+    }
+
+    /// Inicializa el esquema de la base de datos
+    pub async fn init_schema(&self) -> Result<(), SurrealDbError> {
+        let client = self.get_client().await?;
+
+        // Definir tablas y esquema
+        client
+            .query(include_str!("../db/surrealdb_schema.surql"))
+            .await
+            .map_err(|e| SurrealDbError::Init(format!("Error inicializando esquema: {}", e)))?;
+
+        log::info!("📋 Esquema SurrealDB inicializado");
         Ok(())
     }
 
     /// Obtiene referencia al cliente
-    pub async fn get_client(&self) -> Result<Surreal<Client>, SurrealDbError> {
+    pub async fn get_client(&self) -> Result<Surreal<Db>, SurrealDbError> {
         self.client.read().await.clone().ok_or(SurrealDbError::NotConnected)
     }
 
@@ -117,6 +146,11 @@ impl SurrealDbService {
         *self.client.write().await = None;
         log::info!("🔌 Desconectado de SurrealDB");
     }
+
+    /// Obtiene la ruta de datos
+    pub fn data_path(&self) -> &PathBuf {
+        &self.config.data_path
+    }
 }
 
 // ==========================================
@@ -127,10 +161,22 @@ use once_cell::sync::OnceCell;
 
 static SURREAL_SERVICE: OnceCell<Arc<SurrealDbService>> = OnceCell::new();
 
+/// Inicializa el servicio de SurrealDB
 pub fn init_surrealdb(config: SurrealDbConfig) -> Arc<SurrealDbService> {
     SURREAL_SERVICE.get_or_init(|| Arc::new(SurrealDbService::new(config))).clone()
 }
 
+/// Obtiene el servicio de SurrealDB si está inicializado
 pub fn get_surrealdb() -> Option<Arc<SurrealDbService>> {
     SURREAL_SERVICE.get().cloned()
+}
+
+/// Conecta e inicializa SurrealDB embebido
+pub async fn setup_embedded_surrealdb(
+    config: SurrealDbConfig,
+) -> Result<Arc<SurrealDbService>, SurrealDbError> {
+    let service = init_surrealdb(config);
+    service.connect().await?;
+    service.init_schema().await?;
+    Ok(service)
 }
