@@ -23,7 +23,6 @@ pub async fn play_alert_sound(config: State<'_, AppConfigState>) -> Result<(), S
             );
             let _ = Command::new("powershell").args(["-NoProfile", "-Command", &cmd]).spawn();
         } else {
-            // Use PowerShell to play the configured system sound
             let cmd = format!("[System.Media.SystemSounds]:: {}.Play()", sound);
             let _ = Command::new("powershell").args(["-NoProfile", "-Command", &cmd]).spawn();
         }
@@ -31,7 +30,6 @@ pub async fn play_alert_sound(config: State<'_, AppConfigState>) -> Result<(), S
 
     #[cfg(not(target_os = "windows"))]
     {
-        // Fallback simple for other OS
         let _ = Command::new("afplay").arg("/System/Library/Sounds/Sosumi.aiff").spawn();
     }
 
@@ -51,7 +49,6 @@ pub async fn upload_custom_sound(
         return Err("El archivo de sonido no existe".to_string());
     }
 
-    // Obtener directorio de datos
     let data_dir = if let Some(dir) = dirs::data_local_dir() {
         dir.join("Brisas").join("sounds")
     } else {
@@ -67,13 +64,10 @@ pub async fn upload_custom_sound(
 
     let dest_str = dest.to_string_lossy().to_string();
 
-    // Actualizar configuración
     {
         let mut config_guard = config.write().map_err(|e| e.to_string())?;
         config_guard.audio.custom_sound_path = Some(dest_str.clone());
         config_guard.audio.use_custom = true;
-
-        // Guardar configuración
         let config_path = if let Some(d) = dirs::data_local_dir() {
             d.join("Brisas").join("brisas.toml")
         } else {

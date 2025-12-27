@@ -87,7 +87,9 @@ pub fn validar_texto_opcional(
 
 /// Valida todos los campos necesarios para crear un vehículo
 pub fn validar_create_input(input: &CreateVehiculoInput) -> Result<(), VehiculoError> {
-    validar_contratista_id(&input.contratista_id)?;
+    if let Some(ref cid) = input.contratista_id {
+        validar_contratista_id(cid)?;
+    }
     validar_tipo_vehiculo(&input.tipo_vehiculo)?;
     validar_placa(&input.placa)?;
 

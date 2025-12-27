@@ -1,7 +1,6 @@
 // ==========================================
 // src/models/vehiculo.rs
 // ==========================================
-// Solo modelos, DTOs y enums - SIN validaciones ni lógica
 
 use serde::{Deserialize, Serialize};
 
@@ -9,14 +8,13 @@ use serde::{Deserialize, Serialize};
 // MODELO DE DOMINIO
 // ==========================================
 
-/// Representa un vehículo registrado
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Vehiculo {
     pub id: String,
     pub contratista_id: Option<String>,
     pub proveedor_id: Option<String>,
-    pub visitante_id: Option<String>, // Nuevo: FK a visitantes
+    pub visitante_id: Option<String>,
     pub tipo_vehiculo: TipoVehiculo,
     pub placa: String,
     pub marca: Option<String>,
@@ -116,7 +114,6 @@ pub struct VehiculoResponse {
     pub updated_at: String,
 }
 
-// Implementación de Display para TipoVehiculo
 use std::fmt;
 
 impl fmt::Display for TipoVehiculo {
@@ -124,8 +121,6 @@ impl fmt::Display for TipoVehiculo {
         write!(f, "{}", self.display())
     }
 }
-
-// ... (CreateVehiculoInput code remains same)
 
 impl From<Vehiculo> for VehiculoResponse {
     fn from(v: Vehiculo) -> Self {
@@ -148,7 +143,7 @@ impl From<Vehiculo> for VehiculoResponse {
 
         Self {
             id: v.id,
-            contratista_id: v.contratista_id.unwrap_or_default(), // Handle None as empty string
+            contratista_id: v.contratista_id.unwrap_or_default(),
             contratista_nombre: String::new(),
             contratista_cedula: String::new(),
             empresa_nombre: String::new(),

@@ -9,7 +9,6 @@ use crate::models::role::{
     CreateRoleInput, Module, Permission, Role, RoleListResponse, RoleResponse, UpdateRoleInput,
     VisibleModule,
 };
-use crate::services::authorization;
 use uuid::Uuid;
 
 // ==========================================
@@ -95,7 +94,7 @@ pub async fn create_role(input: CreateRoleInput) -> Result<RoleResponse, RoleErr
         &id,
         &nombre,
         input.description.as_deref(),
-        &input.permissions,
+        input.permissions.clone(),
         false, // is_system = false para roles creados
     )
     .await
@@ -221,7 +220,7 @@ pub async fn get_all_permissions() -> Result<Vec<Permission>, RoleError> {
                 id: format!("{}:{}", module.as_str(), action),
                 module: module.as_str().to_string(),
                 action: action.to_string(),
-                description: format!("{} {}", action, module.display_name()),
+                description: Some(format!("{} {}", action, module.display_name())),
             });
         }
     }

@@ -1,7 +1,6 @@
 // ==========================================
 // src/models/role.rs
 // ==========================================
-// Solo modelos, DTOs y enums - SIN validaciones ni lógica
 
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
@@ -10,7 +9,6 @@ use sqlx::FromRow;
 // ENUMS PARA MÓDULOS Y ACCIONES
 // ==========================================
 
-/// Módulos del sistema (recursos protegidos)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Module {
@@ -113,7 +111,6 @@ impl std::str::FromStr for Module {
     }
 }
 
-/// Acciones que se pueden realizar en un módulo
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Action {
@@ -180,7 +177,6 @@ impl std::str::FromStr for Action {
 // MODELO DE DOMINIO (DB)
 // ==========================================
 
-/// Rol en la base de datos
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Role {
@@ -192,7 +188,6 @@ pub struct Role {
     pub updated_at: String,
 }
 
-/// Permiso en la base de datos
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Permission {
     pub id: String,
@@ -201,7 +196,6 @@ pub struct Permission {
     pub description: Option<String>,
 }
 
-/// Relación role-permission
 #[derive(Debug, Clone, FromRow)]
 pub struct RolePermission {
     pub role_id: String,
@@ -258,7 +252,6 @@ impl RoleResponse {
     }
 }
 
-/// Módulo visible con sus permisos
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VisibleModule {
@@ -271,7 +264,6 @@ pub struct VisibleModule {
     pub can_export: bool,
 }
 
-/// Lista de roles con estadísticas
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RoleListResponse {

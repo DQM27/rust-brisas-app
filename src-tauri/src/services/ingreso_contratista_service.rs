@@ -130,7 +130,7 @@ pub async fn validar_ingreso_contratista(
         b.is_blocked,
         b.nivel_severidad,
         false, // TODO: verificar si es excepcional check
-        contratista.estado.clone(),
+        contratista.estado.as_str().to_string(),
         0, // tiempo permanencia previo
     );
     let motor_res = motor::validar_ingreso(&ctx);

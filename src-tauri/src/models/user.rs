@@ -1,7 +1,6 @@
 // ==========================================
-// src/models/user.rs (REFACTORIZADO)
+// src/models/user.rs
 // ==========================================
-// Solo modelos, DTOs y enums - SIN validaciones ni lógica
 
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
@@ -10,7 +9,6 @@ use sqlx::FromRow;
 // MODELO DE DOMINIO
 // ==========================================
 
-/// Representa un usuario del sistema
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
@@ -18,12 +16,10 @@ pub struct User {
     pub email: String,
     pub nombre: String,
     pub apellido: String,
-    pub role_id: String, // FK a roles
+    pub role_id: String,
     pub is_active: bool,
     pub created_at: String,
     pub updated_at: String,
-
-    // Campos adicionales
     pub cedula: String,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
@@ -50,12 +46,8 @@ pub struct CreateUserInput {
     pub password: Option<String>,
     pub nombre: String,
     pub apellido: String,
-    pub role_id: Option<String>, // FK a roles
-
-    // Obligatorio
+    pub role_id: Option<String>,
     pub cedula: String,
-
-    // Opcionales
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
     pub fecha_inicio_labores: Option<String>,
@@ -76,10 +68,8 @@ pub struct UpdateUserInput {
     pub password: Option<String>,
     pub nombre: Option<String>,
     pub apellido: Option<String>,
-    pub role_id: Option<String>, // FK a roles
+    pub role_id: Option<String>,
     pub is_active: Option<bool>,
-
-    // Opcionales
     pub cedula: Option<String>,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
@@ -97,7 +87,7 @@ pub struct UpdateUserInput {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChangePasswordInput {
-    pub current_password: Option<String>, // Requerido si no es admin reseteando a otro
+    pub current_password: Option<String>,
     pub new_password: String,
 }
 
@@ -114,12 +104,10 @@ pub struct UserResponse {
     pub apellido: String,
     pub nombre_completo: String,
     pub role_id: String,
-    pub role_name: String, // Nombre del rol para display
+    pub role_name: String,
     pub is_active: bool,
     pub created_at: String,
     pub updated_at: String,
-
-    // Campos adicionales
     pub cedula: String,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
@@ -135,7 +123,6 @@ pub struct UserResponse {
 }
 
 impl UserResponse {
-    /// Crea UserResponse desde User con nombre del rol
     pub fn from_user_with_role(u: User, role_name: String) -> Self {
         let mut parts = Vec::new();
         parts.push(u.nombre.as_str());

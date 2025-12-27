@@ -1,7 +1,6 @@
 // ==========================================
 // src/models/gafete.rs
 // ==========================================
-// Solo modelos, DTOs y enums - SIN validaciones ni lógica
 
 use serde::{Deserialize, Serialize};
 
@@ -9,13 +8,12 @@ use serde::{Deserialize, Serialize};
 // MODELO DE DOMINIO
 // ==========================================
 
-/// Representa un gafete físico del inventario
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Gafete {
     pub numero: String,
     pub tipo: TipoGafete,
-    pub estado: GafeteEstado, // Enum: Activo, Danado, Extraviado
+    pub estado: GafeteEstado,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -119,7 +117,7 @@ pub struct CreateGafeteRangeInput {
     pub start: u32,
     pub end: u32,
     pub prefix: Option<String>,
-    pub padding: Option<usize>, // Default 2
+    pub padding: Option<usize>,
     pub tipo: String,
 }
 
@@ -147,14 +145,11 @@ pub struct GafeteResponse {
     pub tipo_display: String,
     pub estado_fisico: GafeteEstado,
     pub esta_disponible: bool,
-    pub status: String, // "disponible", "en_uso", "perdido", "danado", "extraviado"
-    // Información de alerta (si está perdido)
-    pub alerta_id: Option<String>,     // UUID de la alerta
-    pub fecha_perdido: Option<String>, // Maps to fecha_reporte
-    pub quien_perdio: Option<String>,  // Nombre de quien la perdió (contratista/proveedor)
+    pub status: String,
+    pub alerta_id: Option<String>,
+    pub fecha_perdido: Option<String>,
+    pub quien_perdio: Option<String>,
     pub alerta_resuelta: Option<bool>,
-
-    // Detailed info fields
     pub reportado_por_nombre: Option<String>,
     pub resuelto_por_nombre: Option<String>,
     pub fecha_resolucion: Option<String>,
@@ -171,8 +166,8 @@ impl From<Gafete> for GafeteResponse {
             tipo: g.tipo.clone(),
             tipo_display: g.tipo.display().to_string(),
             estado_fisico: g.estado.clone(),
-            esta_disponible: false,             // Se calcula después con query
-            status: String::from("disponible"), // Se calcula después
+            esta_disponible: false,
+            status: String::from("disponible"),
             alerta_id: None,
             fecha_perdido: None,
             quien_perdio: None,

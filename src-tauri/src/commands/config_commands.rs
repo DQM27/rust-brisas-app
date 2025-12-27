@@ -4,7 +4,6 @@ use crate::domain::errors::ConfigError;
 use log::info;
 use tauri::{command, State};
 
-/// Obtiene la configuración completa actual
 #[command]
 pub async fn get_app_config(config: State<'_, AppConfigState>) -> Result<AppConfig, ConfigError> {
     let config_guard = config
@@ -19,7 +18,6 @@ pub async fn get_app_config(config: State<'_, AppConfigState>) -> Result<AppConf
     Ok(config_guard.clone())
 }
 
-/// Actualiza la configuración de la terminal (nombre y ubicación)
 #[command]
 pub async fn update_terminal_config(
     config: State<'_, AppConfigState>,
@@ -28,7 +26,6 @@ pub async fn update_terminal_config(
 ) -> Result<TerminalConfig, ConfigError> {
     info!("Actualizando configuración de terminal: {} - {}", nombre, ubicacion);
 
-    // Obtener lock de escritura y modificar
     let mut config_guard = config
         .write()
         .map_err(|e| ConfigError::Message(format!("Error al escribir configuración: {}", e)))?;
@@ -36,7 +33,6 @@ pub async fn update_terminal_config(
     config_guard.terminal.nombre = nombre;
     config_guard.terminal.ubicacion = ubicacion;
 
-    // Guardar en archivo
     let config_path = if let Some(data_dir) = dirs::data_local_dir() {
         data_dir.join("Brisas").join("brisas.toml")
     } else {
@@ -51,7 +47,6 @@ pub async fn update_terminal_config(
     Ok(config_guard.terminal.clone())
 }
 
-/// Actualiza la configuración de audio
 #[command]
 pub async fn update_audio_config(
     config: State<'_, AppConfigState>,
@@ -77,7 +72,6 @@ pub async fn update_audio_config(
     Ok(())
 }
 
-/// Habilita o deshabilita el modo demo en la pantalla de login
 #[command]
 pub async fn toggle_demo_mode(
     config: State<'_, AppConfigState>,
@@ -85,7 +79,6 @@ pub async fn toggle_demo_mode(
 ) -> Result<bool, ConfigError> {
     info!("🔄 Cambiando modo demo a: {}", enabled);
 
-    // 1. Actualizar configuración
     let mut config_guard = config
         .write()
         .map_err(|e| ConfigError::Message(format!("Error al escribir configuración: {}", e)))?;

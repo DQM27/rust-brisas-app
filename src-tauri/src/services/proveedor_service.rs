@@ -16,7 +16,6 @@ use crate::services::search_service::SearchService;
 use chrono::Utc;
 use log::{error, info, warn};
 use std::sync::Arc;
-use uuid::Uuid;
 
 /// Crea un nuevo proveedor
 pub async fn create_proveedor(
@@ -251,7 +250,7 @@ pub async fn update_proveedor(
     if let Some(tiene) = input.tiene_vehiculo {
         let vehiculos = vehiculo_db::find_by_proveedor(&id).await.unwrap_or_default();
         let vehiculo_existente = vehiculos.first();
-        let now = Utc::now().to_rfc3339();
+        let _now = Utc::now().to_rfc3339();
 
         if tiene {
             // Actualizar o Crear

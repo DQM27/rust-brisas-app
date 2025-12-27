@@ -51,8 +51,9 @@ pub async fn find_details_for_ingreso(ingreso: &Ingreso) -> Result<IngresoDetail
     let client = get_db().await?;
     let mut details = IngresoDetails::default();
 
-    // Fetch usuario ingreso
-    if let Some(uid) = &ingreso.usuario_ingreso_id {
+    // Fetch usuario ingreso - es String no Option
+    let uid = ingreso.usuario_ingreso_id.clone();
+    if !uid.is_empty() {
         let sql = "SELECT nombre, apellido FROM type::thing($id)";
         let mut res = client.query(sql).bind(("id", uid)).await?;
         #[derive(serde::Deserialize)]
@@ -60,14 +61,15 @@ pub async fn find_details_for_ingreso(ingreso: &Ingreso) -> Result<IngresoDetail
             nombre: String,
             apellido: String,
         }
-        let u: Option<UserInfo> = res.take(0).ok().flatten(); // take(0) puede fallar si no hay resultados
+        let u: Option<UserInfo> = res.take(0).ok().flatten();
         if let Some(user) = u {
             details.usuario_ingreso_nombre = Some(format!("{} {}", user.nombre, user.apellido));
         }
     }
 
     // Fetch usuario salida
-    if let Some(uid) = &ingreso.usuario_salida_id {
+    let salida_uid = ingreso.usuario_salida_id.clone();
+    if let Some(uid) = salida_uid {
         let sql = "SELECT nombre, apellido FROM type::thing($id)";
         let mut res = client.query(sql).bind(("id", uid)).await?;
         #[derive(serde::Deserialize)]
@@ -81,8 +83,8 @@ pub async fn find_details_for_ingreso(ingreso: &Ingreso) -> Result<IngresoDetail
         }
     }
 
-    // Vehiculo
-    details.vehiculo_placa = ingreso.vehiculo_placa.clone(); // Ya lo tiene el ingreso desnormalizado
+    // Vehiculo - usar placa_temporal ya que no hay vehiculo_placa
+    details.vehiculo_placa = ingreso.placa_temporal.clone();
 
     Ok(details)
 }

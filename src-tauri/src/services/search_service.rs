@@ -100,7 +100,7 @@ impl SearchService {
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 
         // Obtener todos los usuarios (excluyendo superuser del índice)
-        let users = user_queries::find_all(Some(SUPERUSER_ID))
+        let users = user_queries::find_all(SUPERUSER_ID)
             .await
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 

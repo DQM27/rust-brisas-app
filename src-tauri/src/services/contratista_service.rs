@@ -60,8 +60,7 @@ pub async fn create_contratista(
         "Creando contratista con cédula {} para empresa {}",
         cedula_normalizada, input.empresa_id
     );
-    let empresa_opt =
-        empresa_db::get_empresa_by_id(&input.empresa_id).await.map_err(map_db_error)?;
+    let empresa_opt = empresa_db::find_by_id(&input.empresa_id).await.map_err(map_db_error)?;
     if empresa_opt.is_none() {
         return Err(ContratistaError::EmpresaNotFound);
     }
@@ -165,7 +164,7 @@ pub async fn update_contratista(
 
     // 3. Verificar que la empresa exista si viene
     if let Some(ref empresa_id) = input.empresa_id {
-        let empresa_opt = empresa_db::get_empresa_by_id(empresa_id).await.map_err(map_db_error)?;
+        let empresa_opt = empresa_db::find_by_id(empresa_id).await.map_err(map_db_error)?;
         if empresa_opt.is_none() {
             return Err(ContratistaError::EmpresaNotFound);
         }

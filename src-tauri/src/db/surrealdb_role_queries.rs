@@ -1,4 +1,4 @@
-use crate::models::role::{Permission, Role};
+use crate::models::role::Role;
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use chrono::Utc;
 use serde::Deserialize;
@@ -37,7 +37,7 @@ pub async fn create(
     id: &str,
     name: &str,
     description: Option<&str>,
-    permissions: &[String],
+    permissions: Vec<String>,
     is_system: bool,
 ) -> Result<Role, SurrealDbError> {
     let client = get_db().await?;
@@ -61,7 +61,7 @@ pub async fn create(
         .bind(("name", name.to_string()))
         .bind(("description", description.map(String::from)))
         .bind(("is_system", is_system))
-        .bind(("permissions", permissions))
+        .bind(("permissions", permissions.clone()))
         .bind(("now", now))
         .await?;
 

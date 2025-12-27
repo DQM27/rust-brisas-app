@@ -30,10 +30,14 @@ pub async fn create_vehiculo(
     let color_normalizado =
         input.color.as_ref().map(|c| domain::normalizar_texto(c)).filter(|c| !c.is_empty());
 
-    let exists =
-        contratista_db::find_by_id(&input.contratista_id).await.map_err(map_db_error)?.is_some();
-    if !exists {
-        return Err(VehiculoError::Validation("El contratista especificado no existe".to_string()));
+    // Verificar que el contratista existe si se proporciona un contratista_id
+    if let Some(ref cid) = input.contratista_id {
+        let exists = contratista_db::find_by_id(cid).await.map_err(map_db_error)?.is_some();
+        if !exists {
+            return Err(VehiculoError::Validation(
+                "El contratista especificado no existe".to_string(),
+            ));
+        }
     }
 
     let count = db::count_by_placa(&placa_normalizada).await.map_err(map_db_error)?;
@@ -43,6 +47,7 @@ pub async fn create_vehiculo(
 
     let input_db = CreateVehiculoInput {
         contratista_id: input.contratista_id.clone(),
+        proveedor_id: None,
         tipo_vehiculo: tipo_vehiculo.as_str().to_string(),
         placa: placa_normalizada,
         marca: marca_normalizada,

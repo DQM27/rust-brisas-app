@@ -2,12 +2,11 @@
 // src/commands/lista_negra_commands.rs
 // ==========================================
 // Capa de API: Tauri command handlers (thin wrappers)
-// Solo delega a la capa de servicio
 
 use crate::domain::errors::ListaNegraError;
 use crate::models::lista_negra::{
     AddToListaNegraInput, BlockCheckResponse, ListaNegraListResponse, ListaNegraResponse,
-    UpdateListaNegraInput,
+    NivelStats, UpdateListaNegraInput,
 };
 use crate::services::lista_negra_service;
 use tauri::command;
@@ -19,10 +18,10 @@ pub async fn add_to_lista_negra(
 ) -> Result<ListaNegraResponse, ListaNegraError> {
     lista_negra_service::add_to_lista_negra(
         input.cedula,
-        input.nombre_completo,
-        input.apellido_completo.unwrap_or_default(), // TODO: Ajustar servicio
+        input.nombre,
+        input.apellido,
         input.nivel_severidad,
-        input.motivo,
+        input.motivo_bloqueo,
         input.bloqueado_por,
     )
     .await
@@ -46,11 +45,14 @@ pub async fn get_all_lista_negra() -> Result<ListaNegraListResponse, ListaNegraE
         .await
         .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))?;
 
+    let total = list.len();
+    let activos = list.iter().filter(|l| l.is_active).count();
+
     Ok(ListaNegraListResponse {
-        items: list,
-        total: 0, // TODO: Calcular
-        activos: 0,
-        inactivos: 0,
+        bloqueados: list,
+        total,
+        activos,
+        por_nivel: NivelStats { alto: 0, medio: 0, bajo: 0 },
     })
 }
 
@@ -83,13 +85,6 @@ pub async fn get_blocked_by_cedula(
 /// Desactiva un bloqueo (quita de lista negra)
 #[command]
 pub async fn remove_from_lista_negra(id: String) -> Result<ListaNegraResponse, ListaNegraError> {
-    // El servicio tiene remove_from_lista_negra(id, motivo, user)
-    // El comando no recibe motivo/user?
-    // Asumiremos valores por defecto o ajustaremos el comando si el frontend manda mas datos.
-    // El frontend original probablemente manda un objeto o params.
-    // En `commands/handlers.rs` linea 44: `remove_from_lista_negra`.
-    // El stub anterior solo recibía id.
-    // Pasaremos placeholders.
     lista_negra_service::remove_from_lista_negra(
         id,
         "Desbloqueo manual".to_string(),
@@ -98,20 +93,18 @@ pub async fn remove_from_lista_negra(id: String) -> Result<ListaNegraResponse, L
     .await
     .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))?;
 
-    // Retornar algo vacío o el objeto actualizado?
-    // Service retorna (), command retorna Response.
     Err(ListaNegraError::Database(sqlx::Error::Protocol("Not implemented response".to_string())))
 }
 
-/// Reactiva un bloqueo (re-bloquear persona previamente desbloqueada)
+/// Reactiva un bloqueo
 #[command]
 pub async fn reactivate_lista_negra(
     id: String,
-    nivel_severidad: String,
+    _nivel_severidad: String,
     motivo_bloqueo: String,
     bloqueado_por: String,
 ) -> Result<ListaNegraResponse, ListaNegraError> {
-    lista_negra_service::reactivate_lista_negra(id, motivo_bloqueo, bloqueado_por) // service missing severidad?
+    lista_negra_service::reactivate_lista_negra(id, motivo_bloqueo, bloqueado_por)
         .await
         .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))?;
     Err(ListaNegraError::Database(sqlx::Error::Protocol("Not implemented response".to_string())))
@@ -125,7 +118,7 @@ pub async fn update_lista_negra(
 ) -> Result<ListaNegraResponse, ListaNegraError> {
     lista_negra_service::update_lista_negra(
         id,
-        input.motivo.unwrap_or_default(),
+        input.motivo_bloqueo.unwrap_or_default(),
         input.nivel_severidad.unwrap_or_default(),
         "admin".to_string(),
     )
@@ -141,7 +134,7 @@ pub async fn delete_lista_negra(id: String) -> Result<(), ListaNegraError> {
         .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))
 }
 
-/// Busca personas (contratistas, proveedores, visitas) para formulario de bloqueo
+/// Busca personas para formulario de bloqueo
 #[command]
 pub async fn search_personas_for_block(
     query: String,

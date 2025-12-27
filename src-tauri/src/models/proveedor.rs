@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 
 use sqlx::FromRow;
 
-/// Modelo de dominio - Representa un proveedor en la base de datos
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Proveedor {
@@ -17,23 +16,6 @@ pub struct Proveedor {
     pub apellido: String,
     pub segundo_apellido: Option<String>,
     pub empresa_id: String,
-    // sqlx no maneja automáticamente enums complejos sin Type, pero como texto sí si coincide.
-    // Si EstadoProveedor es texto en DB, necesitamos que sqlx lo pueda leer.
-    // Lo más fácil es sqlx::Type si está soportado, o string y conversión manual,
-    // pero si usamos FromRow, tiene que mappear directo.
-    // Usualmente scan o try_from.
-    // Asumiremos que en DB es TEXT.
-    // Para simplificar, marcaremos 'estado' como String en el struct DB o implementaremos Type.
-    // Revisando el error original: "trait bound not satisfied", falta FromRow.
-    // Ojo: EstadoProveedor necesita implementar sqlx::Type o FromRow parará ahí.
-    // Mejor cambiamos estado a String en struct y hacemos parsing en el service/impl, o implementamos sqlx::Type.
-    // Dado que el error es solo "FromRow not implemented for Proveedor", iniciamos con eso.
-    // Si falla en runtime por el enum, lo corregiremos.
-    // Pero espera, sqlx map_err dice "Decode".
-    // Vamos a derivar sqlx::Type para EstadoProveedor si es posible, o usar String.
-    // Por simplicidad y robustez rápida: Usar String en el struct ORM y convertir luego,
-    // O derivar sqlx::Type.
-    // Vamos a intentar Type primero.
     pub estado: EstadoProveedor,
     pub created_at: String,
     pub updated_at: String,
@@ -78,7 +60,6 @@ impl TryFrom<String> for EstadoProveedor {
     }
 }
 
-// Para que sqlx pueda leerlo como String desde la DB y convertirlo
 impl<'r> sqlx::Decode<'r, sqlx::Sqlite> for EstadoProveedor {
     fn decode(value: sqlx::sqlite::SqliteValueRef<'r>) -> Result<Self, sqlx::error::BoxDynError> {
         let s = <String as sqlx::Decode<sqlx::Sqlite>>::decode(value)?;
@@ -116,8 +97,6 @@ pub struct CreateProveedorInput {
     pub apellido: String,
     pub segundo_apellido: Option<String>,
     pub empresa_id: String,
-
-    // Opcional: Vehículo al crear
     pub tiene_vehiculo: Option<bool>,
     pub tipo_vehiculo: Option<String>,
     pub placa: Option<String>,
@@ -135,7 +114,6 @@ pub struct UpdateProveedorInput {
     pub segundo_apellido: Option<String>,
     pub empresa_id: Option<String>,
     pub estado: Option<String>,
-    // Campos para actualización de vehículo
     pub tiene_vehiculo: Option<bool>,
     pub tipo_vehiculo: Option<String>,
     pub placa: Option<String>,
@@ -196,7 +174,7 @@ impl From<Proveedor> for ProveedorResponse {
             segundo_apellido: p.segundo_apellido,
             nombre_completo,
             empresa_id: p.empresa_id,
-            empresa_nombre: String::new(), // Se llena en el servicio/query
+            empresa_nombre: String::new(),
             estado: p.estado,
             puede_ingresar,
             vehiculo_tipo: None,

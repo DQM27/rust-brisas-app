@@ -28,8 +28,7 @@ pub async fn get_role_by_id(id: String) -> Result<RoleResponse, RoleError> {
 
 #[tauri::command]
 pub async fn get_all_permissions() -> Result<Vec<Permission>, RoleError> {
-    // Generado estáticamente en el servicio
-    Ok(role_service::get_all_permissions())
+    role_service::get_all_permissions().await
 }
 
 #[tauri::command]
@@ -83,8 +82,8 @@ pub async fn update_role(
     id: String,
     input: UpdateRoleInput,
 ) -> Result<RoleResponse, RoleError> {
-    let _ = session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
-    role_service::update_role(id, input).await
+    let user = session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
+    role_service::update_role(&id, input, &user.id).await
 }
 
 #[tauri::command]

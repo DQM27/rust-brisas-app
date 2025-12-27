@@ -4,7 +4,6 @@
 use chrono::{NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
-/// Modelo de dominio - Representa un contratista en la base de datos
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Contratista {
@@ -65,7 +64,7 @@ pub struct CreateContratistaInput {
     pub apellido: String,
     pub segundo_apellido: Option<String>,
     pub empresa_id: String,
-    pub fecha_vencimiento_praind: String, // "YYYY-MM-DD"
+    pub fecha_vencimiento_praind: String,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -76,7 +75,6 @@ pub struct UpdateContratistaInput {
     pub segundo_apellido: Option<String>,
     pub empresa_id: Option<String>,
     pub fecha_vencimiento_praind: Option<String>,
-    // Campos para actualizar vehículo
     pub tiene_vehiculo: Option<bool>,
     pub tipo_vehiculo: Option<String>,
     pub placa: Option<String>,
@@ -88,7 +86,7 @@ pub struct UpdateContratistaInput {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CambiarEstadoInput {
-    pub estado: String, // "activo", "inactivo", "suspendido"
+    pub estado: String,
 }
 
 // ==========================================
@@ -160,7 +158,7 @@ impl From<Contratista> for ContratistaResponse {
             estado: c.estado,
             puede_ingresar,
             praind_vencido,
-            esta_bloqueado: false, // Se actualiza en el servicio
+            esta_bloqueado: false,
             dias_hasta_vencimiento,
             requiere_atencion,
             vehiculo_tipo: None,

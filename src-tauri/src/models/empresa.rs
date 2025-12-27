@@ -57,7 +57,7 @@ impl From<Empresa> for EmpresaResponse {
             id: e.id,
             nombre: e.nombre,
             is_active: e.is_active,
-            total_contratistas: 0, // Se llena después con query
+            total_contratistas: 0,
             created_at: e.created_at,
             updated_at: e.updated_at,
         }

@@ -1,7 +1,6 @@
 // ==========================================
 // src/models/export.rs
 // ==========================================
-// Solo modelos, DTOs y enums - SIN validaciones ni lógica
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -10,7 +9,6 @@ use std::collections::HashMap;
 // ENUMS
 // ==========================================
 
-/// Formato de exportación
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum ExportFormat {
@@ -42,23 +40,21 @@ impl std::str::FromStr for ExportFormat {
     }
 }
 
-/// Orientación de página (solo para PDF)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum PageOrientation {
-    Portrait, // Vertical
+    Portrait,
     #[default]
-    Landscape, // Horizontal
+    Landscape,
 }
 
-/// Delimitador para CSV
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum CsvDelimiter {
     #[default]
-    Comma, // ,
-    Semicolon, // ;
-    Tab,       // \t
-    Pipe,      // |
+    Comma,
+    Semicolon,
+    Tab,
+    Pipe,
 }
 
 impl CsvDelimiter {
@@ -94,33 +90,26 @@ impl std::str::FromStr for CsvDelimiter {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExportRequest {
-    pub format: String,                                // "pdf" | "excel" | "csv"
-    pub headers: Vec<String>,                          // Headers de columnas
-    pub rows: Vec<HashMap<String, serde_json::Value>>, // Datos (flexible)
-
-    // Opcionales para PDF
-    pub title: Option<String>,        // Título del documento
-    pub orientation: Option<String>,  // "portrait" | "landscape"
-    pub show_preview: Option<bool>,   // Si mostrar preview (PDF.js)
-    pub template_id: Option<String>,  // ID del template a usar
-    pub font_size: Option<i32>,       // 8-20 pts
-    pub font_family: Option<String>,  // "Inter", "Arial", etc.
-    pub margin_top: Option<f32>,      // Márgen superior (cm)
-    pub margin_bottom: Option<f32>,   // Márgen inferior (cm)
-    pub margin_left: Option<f32>,     // Márgen izquierdo (cm)
-    pub margin_right: Option<f32>,    // Márgen derecho (cm)
-    pub banner_color: Option<String>, // Color del banner hex
-
-    // Opcionales para CSV
-    pub delimiter: Option<String>, // "comma" | "semicolon" | "tab" | "pipe"
-    pub include_bom: Option<bool>, // BOM para Excel UTF-8
-
-    // Opcionales generales
-    pub target_path: Option<String>, // Path absoluto donde guardar el archivo
-    pub generated_by: Option<String>, // Nombre del usuario que genera el reporte
+    pub format: String,
+    pub headers: Vec<String>,
+    pub rows: Vec<HashMap<String, serde_json::Value>>,
+    pub title: Option<String>,
+    pub orientation: Option<String>,
+    pub show_preview: Option<bool>,
+    pub template_id: Option<String>,
+    pub font_size: Option<i32>,
+    pub font_family: Option<String>,
+    pub margin_top: Option<f32>,
+    pub margin_bottom: Option<f32>,
+    pub margin_left: Option<f32>,
+    pub margin_right: Option<f32>,
+    pub banner_color: Option<String>,
+    pub delimiter: Option<String>,
+    pub include_bom: Option<bool>,
+    pub target_path: Option<String>,
+    pub generated_by: Option<String>,
 }
 
-/// Configuración específica para PDF
 #[derive(Debug, Clone)]
 pub struct PdfConfig {
     pub title: String,
@@ -128,14 +117,14 @@ pub struct PdfConfig {
     pub headers: Vec<String>,
     pub show_preview: bool,
     pub template_id: Option<String>,
-    pub font_size: i32,       // 8-20 pts
-    pub font_family: String,  // Nombre de la fuente
-    pub margin_top: f32,      // Márgen superior (cm)
-    pub margin_bottom: f32,   // Márgen inferior (cm)
-    pub margin_left: f32,     // Márgen izquierdo (cm)
-    pub margin_right: f32,    // Márgen derecho (cm)
-    pub banner_color: String, // Color hex del banner
-    pub generated_by: String, // Nombre del usuario
+    pub font_size: i32,
+    pub font_family: String,
+    pub margin_top: f32,
+    pub margin_bottom: f32,
+    pub margin_left: f32,
+    pub margin_right: f32,
+    pub banner_color: String,
+    pub generated_by: String,
 }
 
 impl Default for PdfConfig {
@@ -159,7 +148,6 @@ impl Default for PdfConfig {
 }
 
 impl PdfConfig {
-    /// Creates a new builder for PdfConfig with sensible defaults.
     ///
     /// # Example
     ///
@@ -169,73 +157,61 @@ impl PdfConfig {
     ///     .orientation(PageOrientation::Portrait)
     ///     .font_size(12)
     ///     .build();
-    /// ```
+
     #[must_use]
     pub fn builder() -> PdfConfigBuilder {
         PdfConfigBuilder::default()
     }
 }
 
-/// Builder for `PdfConfig` using the fluent builder pattern.
-///
-/// Provides a convenient way to construct `PdfConfig` with
-/// only the fields you need, using sensible defaults for the rest.
 #[derive(Debug, Clone, Default)]
 pub struct PdfConfigBuilder {
     config: PdfConfig,
 }
 
 impl PdfConfigBuilder {
-    /// Sets the document title.
     #[must_use]
     pub fn title(mut self, title: impl Into<String>) -> Self {
         self.config.title = title.into();
         self
     }
 
-    /// Sets the page orientation.
     #[must_use]
     pub fn orientation(mut self, orientation: PageOrientation) -> Self {
         self.config.orientation = orientation;
         self
     }
 
-    /// Sets the column headers.
     #[must_use]
     pub fn headers(mut self, headers: Vec<String>) -> Self {
         self.config.headers = headers;
         self
     }
 
-    /// Enables or disables preview mode.
     #[must_use]
     pub fn show_preview(mut self, show: bool) -> Self {
         self.config.show_preview = show;
         self
     }
 
-    /// Sets the template ID.
     #[must_use]
     pub fn template_id(mut self, id: impl Into<String>) -> Self {
         self.config.template_id = Some(id.into());
         self
     }
 
-    /// Sets the font size (8-20 pts).
     #[must_use]
     pub fn font_size(mut self, size: i32) -> Self {
         self.config.font_size = size.clamp(8, 20);
         self
     }
 
-    /// Sets the font family.
     #[must_use]
     pub fn font_family(mut self, family: impl Into<String>) -> Self {
         self.config.font_family = family.into();
         self
     }
 
-    /// Sets all margins at once (in cm).
     #[must_use]
     pub fn margins(mut self, top: f32, bottom: f32, left: f32, right: f32) -> Self {
         self.config.margin_top = top;
@@ -245,7 +221,6 @@ impl PdfConfigBuilder {
         self
     }
 
-    /// Sets uniform margins on all sides (in cm).
     #[must_use]
     pub fn uniform_margins(mut self, margin: f32) -> Self {
         self.config.margin_top = margin;
@@ -255,28 +230,24 @@ impl PdfConfigBuilder {
         self
     }
 
-    /// Sets the banner color (hex format, e.g., "#059669").
     #[must_use]
     pub fn banner_color(mut self, color: impl Into<String>) -> Self {
         self.config.banner_color = color.into();
         self
     }
 
-    /// Sets the "generated by" user name.
     #[must_use]
     pub fn generated_by(mut self, name: impl Into<String>) -> Self {
         self.config.generated_by = name.into();
         self
     }
 
-    /// Builds the final `PdfConfig`.
     #[must_use]
     pub fn build(self) -> PdfConfig {
         self.config
     }
 }
 
-/// Configuración específica para Excel
 #[derive(Debug, Clone)]
 pub struct ExcelConfig {
     pub filename: String,
@@ -289,13 +260,12 @@ impl Default for ExcelConfig {
     }
 }
 
-/// Configuración específica para CSV
 #[derive(Debug, Clone)]
 pub struct CsvConfig {
     pub filename: String,
     pub headers: Vec<String>,
     pub delimiter: CsvDelimiter,
-    pub include_bom: bool, // UTF-8 BOM para Excel
+    pub include_bom: bool,
 }
 
 impl Default for CsvConfig {
@@ -304,7 +274,7 @@ impl Default for CsvConfig {
             filename: "export.csv".to_string(),
             headers: Vec::new(),
             delimiter: CsvDelimiter::Comma,
-            include_bom: true, // Por default activado para Excel
+            include_bom: true,
         }
     }
 }
@@ -313,42 +283,38 @@ impl Default for CsvConfig {
 // DTOs DE SALIDA
 // ==========================================
 
-/// Respuesta de exportación PDF
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PdfExportResponse {
     pub success: bool,
-    pub bytes: Option<Vec<u8>>,    // Bytes del PDF
-    pub file_path: Option<String>, // Path si se guardó
+    pub bytes: Option<Vec<u8>>,
+    pub file_path: Option<String>,
     pub message: String,
 }
 
-/// Respuesta de exportación Excel
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExcelExportResponse {
     pub success: bool,
-    pub file_path: Option<String>, // Path donde se guardó
+    pub file_path: Option<String>,
     pub message: String,
 }
 
-/// Respuesta de exportación CSV
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CsvExportResponse {
     pub success: bool,
-    pub file_path: Option<String>, // Path donde se guardó
+    pub file_path: Option<String>,
     pub message: String,
 }
 
-/// Respuesta genérica unificada (para un solo comando)
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExportResponse {
     pub success: bool,
-    pub format: String,            // "pdf" | "excel" | "csv"
-    pub bytes: Option<Vec<u8>>,    // Solo para PDF
-    pub file_path: Option<String>, // Para todos
+    pub format: String,
+    pub bytes: Option<Vec<u8>>,
+    pub file_path: Option<String>,
     pub message: String,
 }
 
@@ -356,15 +322,12 @@ pub struct ExportResponse {
 // MODELO INTERNO NORMALIZADO
 // ==========================================
 
-/// Valor tipado para exportación
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum ExportValue {
     Text(String),
     Number(f64),
     Bool(bool),
-    // Por ahora las fechas las manejamos como strings ISO
-    // En el futuro podríamos agregar Date(DateTime<Local>)
 }
 
 impl Default for ExportValue {
@@ -383,12 +346,11 @@ impl std::fmt::Display for ExportValue {
     }
 }
 
-/// Datos normalizados listos para exportar
 #[derive(Debug, Clone)]
 pub struct ExportData {
     pub format: ExportFormat,
     pub headers: Vec<String>,
-    pub rows: Vec<HashMap<String, ExportValue>>, // Tipado fuerte
+    pub rows: Vec<HashMap<String, ExportValue>>,
     pub pdf_config: Option<PdfConfig>,
     pub excel_config: Option<ExcelConfig>,
     pub csv_config: Option<CsvConfig>,
@@ -399,16 +361,15 @@ pub struct ExportData {
 // PERFILES DE EXPORTACIÓN
 // ==========================================
 
-/// Diseño completo para PDF
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PdfDesign {
-    pub page_size: String,   // "us-letter" | "a4" | "legal"
-    pub orientation: String, // "portrait" | "landscape"
+    pub page_size: String,
+    pub orientation: String,
     pub margin_x: f64,
-    pub margin_x_unit: String, // "mm" | "cm" | "in" | "pt"
+    pub margin_x_unit: String,
     pub margin_y: f64,
-    pub margin_y_unit: String, // "mm" | "cm" | "in" | "pt"
+    pub margin_y_unit: String,
     pub colors: PdfColors,
     pub fonts: PdfFonts,
 }
@@ -430,34 +391,26 @@ pub struct PdfFonts {
     pub header_size: i32,
 }
 
-/// Opciones específicas para CSV
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CsvOptions {
-    pub delimiter: String, // "comma" | "semicolon" | "tab" | "pipe"
+    pub delimiter: String,
     pub include_bom: bool,
 }
 
-/// Perfil de exportación unificado (incluye formato + diseño + opciones)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExportProfile {
     pub id: String,
     pub name: String,
-    pub format: String, // "pdf" | "excel" | "csv"
+    pub format: String,
     pub is_default: bool,
-
-    // Opciones comunes
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_preview: Option<bool>,
-
-    // Opciones PDF (incluye diseño completo)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pdf_design: Option<PdfDesign>,
-
-    // Opciones CSV
     #[serde(skip_serializing_if = "Option::is_none")]
     pub csv_options: Option<CsvOptions>,
 }

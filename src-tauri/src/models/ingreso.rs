@@ -1,7 +1,6 @@
 // ==========================================
 // src/models/ingreso.rs
 // ==========================================
-// Solo modelos, DTOs y enums - SIN validaciones ni lógica
 
 use serde::{Deserialize, Serialize};
 
@@ -130,7 +129,7 @@ pub struct Ingreso {
     pub vehiculo_id: Option<String>,
     pub placa_temporal: Option<String>,
     pub gafete_numero: Option<String>,
-    pub gafete_tipo: Option<String>, // FK compuesta con gafete_numero
+    pub gafete_tipo: Option<String>,
     pub fecha_hora_ingreso: String,
     pub fecha_hora_salida: Option<String>,
     pub tiempo_permanencia_minutos: Option<i64>,
@@ -156,7 +155,7 @@ pub struct CreateIngresoContratistaInput {
     pub contratista_id: String,
     pub vehiculo_id: Option<String>,
     pub gafete_numero: Option<String>,
-    pub gafete_tipo: Option<String>, // Default: 'contratista'
+    pub gafete_tipo: Option<String>,
     pub tipo_autorizacion: String,
     pub modo_ingreso: String,
     pub observaciones: Option<String>,
@@ -174,7 +173,7 @@ pub struct CreateIngresoVisitaInput {
     pub motivo_visita: String,
     pub tipo_autorizacion: String,
     pub modo_ingreso: String,
-    pub vehiculo_placa: Option<String>, // Placa temporal
+    pub vehiculo_placa: Option<String>,
     pub gafete_numero: Option<String>,
     pub observaciones: Option<String>,
     pub usuario_ingreso_id: String,
@@ -186,18 +185,17 @@ pub struct CreateIngresoProveedorInput {
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
-    pub empresa_id: String, // FK a tabla empresas
+    pub empresa_id: String,
     pub area_visitada: String,
     pub motivo: String,
     pub tipo_autorizacion: String,
     pub modo_ingreso: String,
-    pub vehiculo_placa: Option<String>, // Placa temporal
+    pub vehiculo_placa: Option<String>,
     pub gafete_numero: Option<String>,
     pub observaciones: Option<String>,
     pub usuario_ingreso_id: String,
 }
 
-/// Input unificado usando tagged union
 #[derive(Debug, Deserialize)]
 #[serde(tag = "tipo", rename_all = "lowercase")]
 pub enum CreateIngresoInput {
@@ -296,7 +294,7 @@ impl TryFrom<Ingreso> for IngresoResponse {
             modo_ingreso: modo_ingreso.clone(),
             modo_ingreso_display: modo_ingreso.display().to_string(),
             vehiculo_id: i.vehiculo_id,
-            vehiculo_placa: None, // Se llena con JOIN
+            vehiculo_placa: None,
             placa_temporal: i.placa_temporal,
             gafete_numero: i.gafete_numero,
             fecha_hora_ingreso: i.fecha_hora_ingreso,
@@ -304,9 +302,9 @@ impl TryFrom<Ingreso> for IngresoResponse {
             tiempo_permanencia_minutos: i.tiempo_permanencia_minutos,
             tiempo_permanencia_texto,
             usuario_ingreso_id: i.usuario_ingreso_id,
-            usuario_ingreso_nombre: String::new(), // se llena en el servicio
+            usuario_ingreso_nombre: String::new(),
             usuario_salida_id: i.usuario_salida_id,
-            usuario_salida_nombre: None, // se llena en el servicio
+            usuario_salida_nombre: None,
             praind_vigente_al_ingreso: i.praind_vigente_al_ingreso,
             estado_contratista_al_ingreso: i.estado_contratista_al_ingreso,
             observaciones: i.observaciones,
@@ -346,7 +344,7 @@ pub struct ValidacionIngresoResponse {
 #[serde(rename_all = "camelCase")]
 pub struct AlertaGafete {
     pub id: String,
-    pub persona_id: Option<String>, // contratista_id si existe
+    pub persona_id: Option<String>,
     pub cedula: String,
     pub nombre_completo: String,
     pub gafete_numero: String,
@@ -387,7 +385,7 @@ pub struct AlertaGafeteResponse {
     pub fecha_resolucion: Option<String>,
     pub notas: Option<String>,
     pub reportado_por: String,
-    pub reportado_por_nombre: String, // JOIN con users
+    pub reportado_por_nombre: String,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -408,7 +406,7 @@ impl From<AlertaGafete> for AlertaGafeteResponse {
             fecha_resolucion: a.fecha_resolucion,
             notas: a.notas,
             reportado_por: a.reportado_por,
-            reportado_por_nombre: String::new(), // Se llena con JOIN
+            reportado_por_nombre: String::new(),
             created_at: a.created_at,
             updated_at: a.updated_at,
         }

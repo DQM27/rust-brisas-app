@@ -3,7 +3,7 @@
 // ==========================================
 // Comandos Tauri para búsqueda
 
-use crate::domain::errors::SearchError;
+use crate::search::errors::SearchError;
 use crate::search::searcher::SearchResultDto;
 use crate::services::search_service::SearchService;
 use std::sync::Arc;
