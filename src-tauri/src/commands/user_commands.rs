@@ -214,6 +214,7 @@ pub async fn demo_login(
 // AVATAR COMMANDS (ENCRYPTED VAULT)
 // ==========================================
 
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn upload_user_avatar(
     pool_state: State<'_, DbPool>,
@@ -288,6 +289,7 @@ pub async fn upload_user_avatar(
     Ok(file_uuid)
 }
 
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn get_user_avatar(
     pool_state: State<'_, DbPool>,
@@ -333,4 +335,20 @@ pub async fn demo_login(email: String) -> Result<UserResponse, UserError> {
     // TODO: Implementar seed_demo para SurrealDB
     log::warn!("⚠️ demo_login: seed_demo no implementado para SurrealDB");
     user_service::login(email, "demo123".to_string()).await
+}
+
+// ==========================================
+// AVATAR STUBS FOR SURREALDB (TODO: implement)
+// ==========================================
+
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn upload_user_avatar(_user_id: String, _file_path: String) -> Result<String, UserError> {
+    Err(UserError::Validation("Avatar upload no implementado para SurrealDB aún".to_string()))
+}
+
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn get_user_avatar(_user_id: String) -> Result<String, UserError> {
+    Err(UserError::Validation("Avatar retrieval no implementado para SurrealDB aún".to_string()))
 }

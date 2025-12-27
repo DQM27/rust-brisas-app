@@ -34,8 +34,9 @@ sqlx = { version = "0.7", features = [
 ], default-features = false }
 
 # SurrealDB - Multi-model database (experimental, embedded)
+# Using surrealkv (pure Rust) instead of rocksdb (requires C++ compilation)
 surrealdb = { version = "2.0", features = [
-    "kv-rocksdb",
+    "kv-surrealkv",
 ], default-features = false }
 
 # ==========================================

@@ -36,6 +36,7 @@ pub struct SurrealUser {
     pub contacto_emergencia_telefono: Option<String>,
     pub must_change_password: bool,
     pub deleted_at: Option<String>,
+    pub avatar_path: Option<String>,
 }
 
 /// Usuario con rol expandido (después de FETCH)
@@ -62,6 +63,7 @@ pub struct SurrealUserWithRole {
     pub contacto_emergencia_telefono: Option<String>,
     pub must_change_password: bool,
     pub deleted_at: Option<String>,
+    pub avatar_path: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -94,6 +96,7 @@ impl SurrealUser {
             contacto_emergencia_telefono: self.contacto_emergencia_telefono,
             must_change_password: self.must_change_password,
             deleted_at: self.deleted_at,
+            avatar_path: self.avatar_path,
         }
     }
 }
@@ -123,6 +126,7 @@ impl SurrealUserWithRole {
             contacto_emergencia_telefono: self.contacto_emergencia_telefono,
             must_change_password: self.must_change_password,
             deleted_at: self.deleted_at,
+            avatar_path: self.avatar_path,
         };
         (user, role_name)
     }

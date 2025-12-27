@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
-use surrealdb::engine::local::{Db, RocksDb};
+use surrealdb::engine::local::{Db, SurrealKv};
 use surrealdb::Surreal;
 use thiserror::Error;
 use tokio::sync::RwLock;
@@ -45,7 +45,7 @@ impl From<surrealdb::Error> for SurrealDbError {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SurrealDbConfig {
-    /// Ruta donde se almacenará la base de datos (RocksDB)
+    /// Ruta donde se almacenará la base de datos (SurrealKV)
     pub data_path: PathBuf,
     /// Namespace a usar
     pub namespace: String,
@@ -88,7 +88,7 @@ impl SurrealDbService {
         Self { client: Arc::new(RwLock::new(None)), config }
     }
 
-    /// Conecta a SurrealDB en modo embebido (RocksDB)
+    /// Conecta a SurrealDB en modo embebido (SurrealKV - Pure Rust)
     pub async fn connect(&self) -> Result<(), SurrealDbError> {
         // Crear directorio si no existe
         if !self.config.data_path.exists() {
@@ -98,8 +98,8 @@ impl SurrealDbService {
 
         log::info!("🔌 Conectando a SurrealDB embebido en: {:?}", self.config.data_path);
 
-        // Crear conexión embebida con RocksDB
-        let db = Surreal::new::<RocksDb>(self.config.data_path.clone())
+        // Crear conexión embebida con SurrealKV (Pure Rust, no C++ deps)
+        let db = Surreal::new::<SurrealKv>(self.config.data_path.clone())
             .await
             .map_err(|e| SurrealDbError::Connection(e.to_string()))?;
 

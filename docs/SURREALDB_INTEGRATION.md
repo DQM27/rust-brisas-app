@@ -103,6 +103,6 @@ El feature `surrealdb-backend` activa:
 
 ## Notas Importantes
 
-- **Primera compilación de RocksDB tarda ~5-10 min** (después es rápido)
-- **La PC del trabajo (i3)** puede compilar sin `--features surrealdb-backend` normalmente
+- **SurrealKV (Pure Rust)** - No requiere compilar C++, funciona en cualquier PC
+- ~~RocksDB~~ (deshabilitado por problemas de compilación con g++ en algunas PCs)
 - Si hay problemas de login, borrar `~/.local/share/Brisas/surrealdb*/` y reiniciar
