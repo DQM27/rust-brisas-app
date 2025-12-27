@@ -14,7 +14,7 @@ use log::error;
 // Helper para mapear errores de SurrealDB a VisitanteError
 fn map_db_error(e: SurrealDbError) -> VisitanteError {
     error!("Error de base de datos (SurrealDB): {}", e);
-    VisitanteError::Database(sqlx::Error::Protocol(e.to_string()))
+    VisitanteError::Database(e.to_string())
 }
 
 pub async fn create_visitante(

@@ -4,9 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use sqlx::FromRow;
-
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Proveedor {
     pub id: String,
@@ -57,30 +55,6 @@ impl TryFrom<String> for EstadoProveedor {
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
         s.parse()
-    }
-}
-
-impl<'r> sqlx::Decode<'r, sqlx::Sqlite> for EstadoProveedor {
-    fn decode(value: sqlx::sqlite::SqliteValueRef<'r>) -> Result<Self, sqlx::error::BoxDynError> {
-        let s = <String as sqlx::Decode<sqlx::Sqlite>>::decode(value)?;
-        Ok(s.parse()
-            .map_err(|e| Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, e)))?)
-    }
-}
-
-impl<'q> sqlx::Encode<'q, sqlx::Sqlite> for EstadoProveedor {
-    fn encode_by_ref(
-        &self,
-        buf: &mut Vec<sqlx::sqlite::SqliteArgumentValue<'q>>,
-    ) -> sqlx::encode::IsNull {
-        let s = self.as_str().to_string();
-        <String as sqlx::Encode<sqlx::Sqlite>>::encode(s, buf)
-    }
-}
-
-impl sqlx::Type<sqlx::Sqlite> for EstadoProveedor {
-    fn type_info() -> sqlx::sqlite::SqliteTypeInfo {
-        <String as sqlx::Type<sqlx::Sqlite>>::type_info()
     }
 }
 

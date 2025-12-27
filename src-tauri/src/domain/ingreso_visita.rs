@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IngresoVisita {
     pub id: String,
@@ -54,7 +53,7 @@ pub struct CreateIngresoVisitaFullInput {
     // Opcional: Cita ID si viene de cita (aunque si es full, suele ser manual)
     pub cita_id: Option<String>,
 }
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IngresoVisitaPopulated {
     // Ingreso Fields

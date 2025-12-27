@@ -3,7 +3,6 @@
 // ==========================================
 
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
 
 // ==========================================
 // ENUMS PARA MÓDULOS Y ACCIONES
@@ -177,7 +176,7 @@ impl std::str::FromStr for Action {
 // MODELO DE DOMINIO (DB)
 // ==========================================
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Role {
     pub id: String,
@@ -188,7 +187,7 @@ pub struct Role {
     pub updated_at: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Permission {
     pub id: String,
     pub module: String,
@@ -196,7 +195,7 @@ pub struct Permission {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Clone, FromRow)]
+#[derive(Debug, Clone)]
 pub struct RolePermission {
     pub role_id: String,
     pub permission_id: String,

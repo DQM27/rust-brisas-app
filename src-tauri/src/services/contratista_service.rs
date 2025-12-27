@@ -20,7 +20,7 @@ use std::sync::Arc;
 
 // Helper para mapear errores de SurrealDB a ContratistaError
 fn map_db_error(e: SurrealDbError) -> ContratistaError {
-    ContratistaError::Database(sqlx::Error::Protocol(e.to_string()))
+    ContratistaError::Database(e.to_string())
 }
 
 // ==========================================

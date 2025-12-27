@@ -22,9 +22,7 @@ use crate::domain::errors::RoleError;
 // ==========================================
 
 pub async fn get_all_roles() -> Result<RoleListResponse, RoleError> {
-    let roles: Vec<Role> = db::find_all()
-        .await
-        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
+    let roles: Vec<Role> = db::find_all().await.map_err(|e| RoleError::Database(e.to_string()))?;
 
     let mut responses = Vec::new();
     let mut system_count = 0;
@@ -37,9 +35,8 @@ pub async fn get_all_roles() -> Result<RoleListResponse, RoleError> {
         // db::find_all retorna Role.
         // db::get_permissions retorna los permisos del rol.
 
-        let permissions = db::get_permissions(&role.id)
-            .await
-            .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
+        let permissions =
+            db::get_permissions(&role.id).await.map_err(|e| RoleError::Database(e.to_string()))?;
 
         if role.is_system {
             system_count += 1;
@@ -60,12 +57,11 @@ pub async fn get_all_roles() -> Result<RoleListResponse, RoleError> {
 pub async fn get_role_by_id(id: &str) -> Result<RoleResponse, RoleError> {
     let role = db::find_by_id(id)
         .await
-        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?
+        .map_err(|e| RoleError::Database(e.to_string()))?
         .ok_or(RoleError::NotFound)?;
 
-    let permissions = db::get_permissions(&role.id)
-        .await
-        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
+    let permissions =
+        db::get_permissions(&role.id).await.map_err(|e| RoleError::Database(e.to_string()))?;
     Ok(RoleResponse::from_role_with_permissions(role, permissions))
 }
 
@@ -78,9 +74,8 @@ pub async fn create_role(input: CreateRoleInput) -> Result<RoleResponse, RoleErr
     domain::validar_create_input(&input)?;
 
     // 2. Verificar nombre único
-    let exists = db::exists_by_name(&input.name)
-        .await
-        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
+    let exists =
+        db::exists_by_name(&input.name).await.map_err(|e| RoleError::Database(e.to_string()))?;
 
     if exists {
         return Err(RoleError::NameExists);
@@ -98,7 +93,7 @@ pub async fn create_role(input: CreateRoleInput) -> Result<RoleResponse, RoleErr
         false, // is_system = false para roles creados
     )
     .await
-    .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
+    .map_err(|e| RoleError::Database(e.to_string()))?;
 
     get_role_by_id(&id).await
 }
@@ -129,7 +124,7 @@ pub async fn update_role(
 
     db::update(id, nombre.as_deref(), input.description.as_deref(), perms_ref)
         .await
-        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
+        .map_err(|e| RoleError::Database(e.to_string()))?;
 
     get_role_by_id(id).await
 }
@@ -145,7 +140,7 @@ pub async fn delete_role(id: &str) -> Result<(), RoleError> {
         return Err(RoleError::CannotDeleteSystemRole);
     }
 
-    db::delete(id).await.map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
+    db::delete(id).await.map_err(|e| RoleError::Database(e.to_string()))?;
 
     Ok(())
 }
@@ -181,7 +176,7 @@ pub async fn get_user_visible_modules(
     // que revisa los permisos guardados en el rol (array strings)
     let permissions = surrealdb_authorization::get_role_permissions(role_id)
         .await
-        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
+        .map_err(|e| RoleError::Database(e.to_string()))?;
 
     let mut modules = Vec::new();
 

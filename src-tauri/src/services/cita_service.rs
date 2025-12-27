@@ -17,7 +17,7 @@ pub async fn agendar_cita(
         // Si viene input de visitante, buscamos por cédula o creamos
         let existente = visitante_service::get_visitante_by_cedula(&v_input.cedula)
             .await
-            .map_err(|e| CitaError::Database(sqlx::Error::Protocol(e.to_string())))?;
+            .map_err(|e| CitaError::Database(e.to_string()))?;
 
         match existente {
             Some(v) => {
@@ -26,7 +26,7 @@ pub async fn agendar_cita(
             None => {
                 let nuevo = visitante_service::create_visitante(v_input)
                     .await
-                    .map_err(|e| CitaError::Database(sqlx::Error::Protocol(e.to_string())))?;
+                    .map_err(|e| CitaError::Database(e.to_string()))?;
                 visitante_id = nuevo.id;
             }
         }
@@ -54,8 +54,8 @@ pub async fn agendar_cita(
     // 3. Insertar
     let nueva_cita = db::insert(cita_json)
         .await
-        .map_err(|e| CitaError::Database(sqlx::Error::Protocol(e.to_string())))?
-        .ok_or(CitaError::Database(sqlx::Error::Protocol("Error creando cita".to_string())))?;
+        .map_err(|e| CitaError::Database(e.to_string()))?
+        .ok_or(CitaError::Database("Error creando cita".to_string()))?;
 
     // 4. Mapear a Domain
     Ok(Cita {
@@ -79,7 +79,7 @@ pub async fn get_citas_hoy() -> Result<Vec<CitaPopulated>, CitaError> {
 
     let citas = db::find_activas_by_fecha(&hoy_inicio, &hoy_fin)
         .await
-        .map_err(|e| CitaError::Database(sqlx::Error::Protocol(e.to_string())))?;
+        .map_err(|e| CitaError::Database(e.to_string()))?;
 
     let mut populated = Vec::new();
     for c in citas {
@@ -134,12 +134,10 @@ pub async fn procesar_ingreso_cita(
     // (Simplificado: asumimos que frontend pasa datos necesarios a registrar_ingreso,
     // pero si solo pasa ID cita, aqui deberíamos buscarla.
     // Por ahora, stub funcional de error si no se implementa flujo completo)
-    Err(CitaError::Database(sqlx::Error::Protocol(
-        "Flujo procesar_ingreso_cita requiere refactor mayor".to_string(),
-    )))
+    Err(CitaError::Database("Flujo procesar_ingreso_cita requiere refactor mayor".to_string()))
 }
 
 pub async fn cancelar_cita(id: String) -> Result<(), CitaError> {
-    db::cancel(&id).await.map_err(|e| CitaError::Database(sqlx::Error::Protocol(e.to_string())))?;
+    db::cancel(&id).await.map_err(|e| CitaError::Database(e.to_string()))?;
     Ok(())
 }

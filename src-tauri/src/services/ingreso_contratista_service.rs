@@ -93,7 +93,7 @@ pub async fn validar_ingreso_contratista(
     // 1. Obtener datos del contratista (SurrealDB)
     let contratista = contratista_queries::find_by_id(&contratista_id)
         .await
-        .map_err(|e| IngresoContratistaError::Database(sqlx::Error::Protocol(e.to_string())))?
+        .map_err(|e| IngresoContratistaError::Database(e.to_string()))?
         .ok_or(IngresoContratistaError::ContratistaNotFound)?;
 
     // 2. Verificar Lista Negra
@@ -106,7 +106,7 @@ pub async fn validar_ingreso_contratista(
     // 3. Verificar Ingreso Abierto (SurrealDB)
     let ing_ab = db::find_ingreso_abierto_by_contratista(&contratista.id)
         .await
-        .map_err(|e| IngresoContratistaError::Database(sqlx::Error::Protocol(e.to_string())))?;
+        .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
 
     if let Some(ref ing) = ing_ab {
         let resp = IngresoResponse::try_from(ing.clone())
@@ -164,7 +164,7 @@ pub async fn crear_ingreso_contratista(
     // 3. Obtener datos del contratista para guardar snapshot
     let contratista = contratista_queries::find_by_id(&input.contratista_id)
         .await
-        .map_err(|e| IngresoContratistaError::Database(sqlx::Error::Protocol(e.to_string())))?
+        .map_err(|e| IngresoContratistaError::Database(e.to_string()))?
         .ok_or(IngresoContratistaError::ContratistaNotFound)?;
 
     let contratista_json = serde_json::json!(contratista);
@@ -172,10 +172,8 @@ pub async fn crear_ingreso_contratista(
     // 4. Insertar en DB
     let nuevo_ingreso = db::insert(input.into(), &contratista_json)
         .await
-        .map_err(|e| IngresoContratistaError::Database(sqlx::Error::Protocol(e.to_string())))?
-        .ok_or(IngresoContratistaError::Database(sqlx::Error::Protocol(
-            "Error al crear ingreso".to_string(),
-        )))?;
+        .map_err(|e| IngresoContratistaError::Database(e.to_string()))?
+        .ok_or(IngresoContratistaError::Database("Error al crear ingreso".to_string()))?;
 
     // 5. Marcar gafete como en uso
     if let Some(ref g) = nuevo_ingreso.gafete_numero {
@@ -194,7 +192,7 @@ pub async fn registrar_salida(
     let ingreso_actualizado =
         db::update_salida(&input.ingreso_id, &usuario_id, input.observaciones_salida)
             .await
-            .map_err(|e| IngresoContratistaError::Database(sqlx::Error::Protocol(e.to_string())))?
+            .map_err(|e| IngresoContratistaError::Database(e.to_string()))?
             .ok_or(IngresoContratistaError::NotFound)?;
 
     // 2. Liberar gafete si se devolvió

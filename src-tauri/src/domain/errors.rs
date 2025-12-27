@@ -3,17 +3,10 @@
 // ==========================================
 // Errores tipados para cada módulo del dominio
 // Uso de thiserror para derivación automática
+// SurrealDB es el único motor de base de datos
 
-use serde::{Serialize, Serializer};
+use serde::Serialize;
 use thiserror::Error;
-
-/// Helper function to serialize errors as strings
-fn serialize_error_as_string<S>(e: &sqlx::Error, s: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    s.serialize_str(&e.to_string())
-}
 
 // ==========================================
 // USER ERRORS
@@ -65,12 +58,6 @@ pub enum UserError {
     IO(String),
 }
 
-impl From<sqlx::Error> for UserError {
-    fn from(e: sqlx::Error) -> Self {
-        UserError::Database(e.to_string())
-    }
-}
-
 // ==========================================
 // CONTRATISTA ERRORS
 // ==========================================
@@ -100,11 +87,7 @@ pub enum ContratistaError {
     AlreadyInside,
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de búsqueda: {0}")]
     Search(String),
@@ -136,11 +119,7 @@ pub enum EmpresaError {
     HasProveedores(i64),
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -163,11 +142,7 @@ pub enum VehiculoError {
     InvalidType(String),
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -199,11 +174,7 @@ pub enum ProveedorError {
     AlreadyInside,
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de búsqueda: {0}")]
     Search(String),
@@ -241,11 +212,7 @@ pub enum GafeteError {
     Disabled,
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -274,12 +241,6 @@ pub enum AlertaError {
     Validation(String),
 }
 
-impl From<sqlx::Error> for AlertaError {
-    fn from(e: sqlx::Error) -> Self {
-        AlertaError::Database(e.to_string())
-    }
-}
-
 // ==========================================
 // LISTA NEGRA ERRORS
 // ==========================================
@@ -300,11 +261,7 @@ pub enum ListaNegraError {
     MotivoRequired,
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -330,11 +287,7 @@ pub enum VisitanteError {
     Blacklisted(String),
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -363,11 +316,7 @@ pub enum IngresoVisitaError {
     Gafete(String),
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -402,11 +351,7 @@ pub enum IngresoProveedorError {
     Gafete(String),
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -453,11 +398,7 @@ pub enum IngresoContratistaError {
     Gafete(String),
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -501,11 +442,7 @@ pub enum IngresoError {
     Gafete(String),
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de validación: {0}")]
     Validation(String),
@@ -534,11 +471,7 @@ pub enum CitaError {
     InvalidDate,
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de visitante: {0}")]
     Visitante(#[from] VisitanteError),
@@ -567,11 +500,7 @@ pub enum SearchError {
     NotInitialized,
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error del motor de búsqueda: {0}")]
     Engine(#[from] crate::search::errors::SearchError),
@@ -594,11 +523,7 @@ pub enum ExportError {
     Io(String),
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error del motor de exportación: {0}")]
     Engine(#[from] crate::export::errors::ExportError),
@@ -618,11 +543,7 @@ pub enum ConfigError {
     Io(String),
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 }
 
 // ==========================================
@@ -684,11 +605,7 @@ pub enum RoleError {
     SystemRole,
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de validación: {0}")]
     Validation(String),

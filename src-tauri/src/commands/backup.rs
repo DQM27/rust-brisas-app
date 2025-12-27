@@ -8,9 +8,7 @@ use tauri::{command, State};
 #[command]
 pub async fn backup_database(_destination_path: String) -> Result<(), ConfigError> {
     info!("Backup manual solicitado (Stub SurrealDB)");
-    Err(ConfigError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    Err(ConfigError::Database("No implementado para SurrealDB aún".to_string()))
 }
 
 #[command]

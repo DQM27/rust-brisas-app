@@ -28,7 +28,7 @@ pub async fn create_proveedor(
     // 1. Validar que la empresa existe
     let empresa = empresa_db::find_by_id(&input.empresa_id)
         .await
-        .map_err(|e| ProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?
+        .map_err(|e| ProveedorError::Database(e.to_string()))?
         .ok_or(ProveedorError::EmpresaNotFound)?;
 
     let empresa_nombre = empresa.nombre;
@@ -50,16 +50,15 @@ pub async fn create_proveedor(
     info!("Creando proveedor con cédula '{}' para empresa '{}'", input.cedula, input.empresa_id);
     if db::find_by_cedula(&input.cedula)
         .await
-        .map_err(|e| ProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?
+        .map_err(|e| ProveedorError::Database(e.to_string()))?
         .is_some()
     {
         return Err(ProveedorError::CedulaExists);
     }
 
     // 3. Crear
-    let proveedor = db::create(input.clone())
-        .await
-        .map_err(|e| ProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?;
+    let proveedor =
+        db::create(input.clone()).await.map_err(|e| ProveedorError::Database(e.to_string()))?;
 
     // 4. Crear Vehículo si aplica
     if let Some(true) = input.tiene_vehiculo {
@@ -83,7 +82,7 @@ pub async fn create_proveedor(
 
                 vehiculo_db::insert(vehiculo_input)
                     .await
-                    .map_err(|e| ProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?;
+                    .map_err(|e| ProveedorError::Database(e.to_string()))?;
             }
         }
     }
@@ -106,9 +105,8 @@ pub async fn create_proveedor(
 
 /// Busca proveedores
 pub async fn search_proveedores(query: &str) -> Result<Vec<ProveedorResponse>, ProveedorError> {
-    let proveedores = db::search(query, 100)
-        .await
-        .map_err(|e| ProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?;
+    let proveedores =
+        db::search(query, 100).await.map_err(|e| ProveedorError::Database(e.to_string()))?;
 
     let mut responses = Vec::with_capacity(proveedores.len());
     for prov in proveedores {
@@ -121,9 +119,8 @@ pub async fn search_proveedores(query: &str) -> Result<Vec<ProveedorResponse>, P
 pub async fn get_proveedor_by_cedula(
     cedula: &str,
 ) -> Result<Option<ProveedorResponse>, ProveedorError> {
-    let p = db::find_by_cedula(cedula)
-        .await
-        .map_err(|e| ProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?;
+    let p =
+        db::find_by_cedula(cedula).await.map_err(|e| ProveedorError::Database(e.to_string()))?;
 
     if let Some(proveedor) = p {
         Ok(Some(populate_response(proveedor).await?))
@@ -156,13 +153,13 @@ pub async fn change_status(
     info!("Cambiando estado de proveedor {} a {}", id, new_status);
     let proveedor = db::update(id, input).await.map_err(|e| {
         error!("Error al actualizar estado del proveedor {}: {}", id, e);
-        ProveedorError::Database(sqlx::Error::Protocol(e.to_string()))
+        ProveedorError::Database(e.to_string())
     })?;
 
     // Obtener nombre de empresa para indexación
     let empresa = empresa_db::find_by_id(&proveedor.empresa_id)
         .await
-        .map_err(|e| ProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?;
+        .map_err(|e| ProveedorError::Database(e.to_string()))?;
     let empresa_nombre = empresa.map(|e| e.nombre).unwrap_or_else(|| "Desconocida".to_string());
 
     // Actualizar en índice de búsqueda
@@ -178,7 +175,7 @@ async fn populate_response(proveedor: Proveedor) -> Result<ProveedorResponse, Pr
     // Buscar empresa
     let empresa = empresa_db::find_by_id(&proveedor.empresa_id)
         .await
-        .map_err(|e| ProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?;
+        .map_err(|e| ProveedorError::Database(e.to_string()))?;
 
     let proveedor_id = proveedor.id.clone();
     let mut response: ProveedorResponse = proveedor.into();
@@ -206,7 +203,7 @@ async fn populate_response(proveedor: Proveedor) -> Result<ProveedorResponse, Pr
 pub async fn get_proveedor_by_id(id: &str) -> Result<ProveedorResponse, ProveedorError> {
     let proveedor = db::find_by_id(id)
         .await
-        .map_err(|e| ProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?
+        .map_err(|e| ProveedorError::Database(e.to_string()))?
         .ok_or(ProveedorError::NotFound)?;
 
     populate_response(proveedor).await
@@ -226,14 +223,14 @@ pub async fn update_proveedor(
     // 1. Verificar existencia
     let _ = db::find_by_id(&id)
         .await
-        .map_err(|e| ProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?
+        .map_err(|e| ProveedorError::Database(e.to_string()))?
         .ok_or(ProveedorError::NotFound)?;
 
     // 2. Validar Empresa si cambia
     if let Some(ref eid) = input.empresa_id {
         if empresa_db::find_by_id(eid)
             .await
-            .map_err(|e| ProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?
+            .map_err(|e| ProveedorError::Database(e.to_string()))?
             .is_none()
         {
             return Err(ProveedorError::EmpresaNotFound);
@@ -243,7 +240,7 @@ pub async fn update_proveedor(
     // 3. Actualizar Proveedor en DB
     let proveedor = db::update(&id, input.clone()).await.map_err(|e| {
         error!("Error al actualizar proveedor {}: {}", id, e);
-        ProveedorError::Database(sqlx::Error::Protocol(e.to_string()))
+        ProveedorError::Database(e.to_string())
     })?;
 
     // 4. Gestionar Vehículo
@@ -271,9 +268,9 @@ pub async fn update_proveedor(
                             is_active: Some(true),
                         };
 
-                        vehiculo_db::update(&v.id, update_input).await.map_err(|e| {
-                            ProveedorError::Database(sqlx::Error::Protocol(e.to_string()))
-                        })?;
+                        vehiculo_db::update(&v.id, update_input)
+                            .await
+                            .map_err(|e| ProveedorError::Database(e.to_string()))?;
                     } else {
                         // Create
                         let vehiculo_input = CreateVehiculoInput {
@@ -286,9 +283,9 @@ pub async fn update_proveedor(
                             color: input.color.clone(),
                         };
 
-                        vehiculo_db::insert(vehiculo_input).await.map_err(|e| {
-                            ProveedorError::Database(sqlx::Error::Protocol(e.to_string()))
-                        })?;
+                        vehiculo_db::insert(vehiculo_input)
+                            .await
+                            .map_err(|e| ProveedorError::Database(e.to_string()))?;
                     }
                 }
             }
@@ -297,7 +294,7 @@ pub async fn update_proveedor(
             if let Some(v) = vehiculo_existente {
                 vehiculo_db::delete(&v.id)
                     .await
-                    .map_err(|e| ProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?;
+                    .map_err(|e| ProveedorError::Database(e.to_string()))?;
             }
         }
     }

@@ -14,7 +14,7 @@ use log::{error, info};
 
 // Helper para mapear errores de SurrealDB a EmpresaError
 fn map_db_error(e: SurrealDbError) -> EmpresaError {
-    EmpresaError::Database(sqlx::Error::Protocol(e.to_string()))
+    EmpresaError::Database(e.to_string())
 }
 
 // ==========================================

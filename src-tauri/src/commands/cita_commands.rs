@@ -10,9 +10,7 @@ pub async fn create_cita(
     _visitante: Option<CreateVisitanteInput>,
 ) -> Result<Cita, CitaError> {
     debug!("Creating Cita: {:?}", cita);
-    Err(CitaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    Err(CitaError::Database("No implementado para SurrealDB aún".to_string()))
 }
 
 #[command]
@@ -31,16 +29,14 @@ pub async fn procesar_ingreso_cita(
     _gafete: String,
     _usuario_id: String,
 ) -> Result<String, CitaError> {
-    Err(CitaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    Err(CitaError::Database("No implementado para SurrealDB aún".to_string()))
 }
 
 #[command]
 pub async fn get_visitante_by_cedula(cedula: String) -> Result<Option<Visitante>, CitaError> {
     crate::services::visitante_service::get_visitante_by_cedula(&cedula)
         .await
-        .map_err(|e| CitaError::Database(sqlx::Error::Protocol(e.to_string())))
+        .map_err(|e| CitaError::Database(e.to_string()))
 }
 
 #[command]
@@ -51,14 +47,10 @@ pub async fn update_cita(
     _area_visitada: String,
     _motivo: Option<String>,
 ) -> Result<(), CitaError> {
-    Err(CitaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    Err(CitaError::Database("No implementado para SurrealDB aún".to_string()))
 }
 
 #[command]
 pub async fn cancelar_cita(_id: String) -> Result<(), CitaError> {
-    Err(CitaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    Err(CitaError::Database("No implementado para SurrealDB aún".to_string()))
 }

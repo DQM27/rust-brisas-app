@@ -60,7 +60,7 @@ pub async fn registrar_ingreso(
     // 3. Verificar Ingreso Abierto
     let abierto = db::find_ingreso_abierto_by_cedula(&input.cedula)
         .await
-        .map_err(|e| IngresoProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?;
+        .map_err(|e| IngresoProveedorError::Database(e.to_string()))?;
 
     if abierto.is_some() {
         return Err(IngresoProveedorError::Validation("Ya tiene un ingreso activo".to_string()));
@@ -74,10 +74,8 @@ pub async fn registrar_ingreso(
     // 5. Crear
     let nuevo_ingreso = db::insert(input, &proveedor_data)
         .await
-        .map_err(|e| IngresoProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?
-        .ok_or(IngresoProveedorError::Database(sqlx::Error::Protocol(
-            "Error creando ingreso".to_string(),
-        )))?;
+        .map_err(|e| IngresoProveedorError::Database(e.to_string()))?
+        .ok_or(IngresoProveedorError::Database("Error creando ingreso".to_string()))?;
 
     // 6. Marcar gafete
     if let Some(ref g) = nuevo_ingreso.gafete_numero {
@@ -121,7 +119,7 @@ pub async fn registrar_salida(
 ) -> Result<(), IngresoProveedorError> {
     let actualizado = db::update_salida(&id, &usuario_id, observaciones)
         .await
-        .map_err(|e| IngresoProveedorError::Database(sqlx::Error::Protocol(e.to_string())))?
+        .map_err(|e| IngresoProveedorError::Database(e.to_string()))?
         .ok_or(IngresoProveedorError::Validation(
             "Ingreso no encontrado o ya cerrado".to_string(),
         ))?;

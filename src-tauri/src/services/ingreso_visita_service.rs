@@ -63,7 +63,7 @@ pub async fn registrar_ingreso(
     // Ingreso Abierto
     let abierto = db::find_ingreso_abierto_by_cedula(&input.cedula)
         .await
-        .map_err(|e| IngresoVisitaError::Database(sqlx::Error::Protocol(e.to_string())))?;
+        .map_err(|e| IngresoVisitaError::Database(e.to_string()))?;
     if abierto.is_some() {
         return Err(IngresoVisitaError::Validation("Ya tiene ingreso activo".to_string()));
     }
@@ -71,10 +71,8 @@ pub async fn registrar_ingreso(
     // 4. Crear Ingreso
     let nuevo_ingreso = db::insert(input)
         .await
-        .map_err(|e| IngresoVisitaError::Database(sqlx::Error::Protocol(e.to_string())))?
-        .ok_or(IngresoVisitaError::Database(sqlx::Error::Protocol(
-            "Error creando ingreso".to_string(),
-        )))?;
+        .map_err(|e| IngresoVisitaError::Database(e.to_string()))?
+        .ok_or(IngresoVisitaError::Database("Error creando ingreso".to_string()))?;
 
     // 5. Marcar Gafete
     if let Some(ref g) = nuevo_ingreso.gafete_numero {
@@ -151,7 +149,7 @@ pub async fn registrar_salida(
 ) -> Result<(), IngresoVisitaError> {
     let actualizado = db::update_salida(&id, &usuario_id, observaciones)
         .await
-        .map_err(|e| IngresoVisitaError::Database(sqlx::Error::Protocol(e.to_string())))?
+        .map_err(|e| IngresoVisitaError::Database(e.to_string()))?
         .ok_or(IngresoVisitaError::NotFound)?;
 
     if devolvio_gafete {
@@ -186,7 +184,7 @@ pub async fn validar_ingreso(
     // Check ingreso activo real
     let abierto = db::find_ingreso_abierto_by_cedula(&v.cedula)
         .await
-        .map_err(|e| IngresoVisitaError::Database(sqlx::Error::Protocol(e.to_string())))?;
+        .map_err(|e| IngresoVisitaError::Database(e.to_string()))?;
 
     if let Some(_) = abierto {
         return Ok(crate::domain::ingreso_visita::ValidacionIngresoVisitaResponse {

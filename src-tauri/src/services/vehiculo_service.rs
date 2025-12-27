@@ -14,7 +14,7 @@ use log::error;
 
 fn map_db_error(e: SurrealDbError) -> VehiculoError {
     error!("Error de base de datos (SurrealDB): {}", e);
-    VehiculoError::Database(sqlx::Error::Protocol(e.to_string()))
+    VehiculoError::Database(e.to_string())
 }
 
 pub async fn create_vehiculo(

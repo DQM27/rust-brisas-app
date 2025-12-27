@@ -26,7 +26,7 @@ pub async fn add_to_lista_negra(
     )
     .await
     .map(|l| l.into())
-    .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))
+    .map_err(|e| ListaNegraError::Database(e))
 }
 
 /// Obtiene un registro de lista negra por ID
@@ -34,7 +34,7 @@ pub async fn add_to_lista_negra(
 pub async fn get_lista_negra_by_id(id: String) -> Result<ListaNegraResponse, ListaNegraError> {
     lista_negra_service::get_lista_negra_by_id(id)
         .await
-        .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))?
+        .map_err(|e| ListaNegraError::Database(e))?
         .ok_or(ListaNegraError::NotFound)
 }
 
@@ -43,7 +43,7 @@ pub async fn get_lista_negra_by_id(id: String) -> Result<ListaNegraResponse, Lis
 pub async fn get_all_lista_negra() -> Result<ListaNegraListResponse, ListaNegraError> {
     let list = lista_negra_service::get_all_lista_negra()
         .await
-        .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))?;
+        .map_err(|e| ListaNegraError::Database(e))?;
 
     let total = list.len();
     let activos = list.iter().filter(|l| l.is_active).count();
@@ -59,17 +59,13 @@ pub async fn get_all_lista_negra() -> Result<ListaNegraListResponse, ListaNegraE
 /// Obtiene solo los registros activos de lista negra
 #[command]
 pub async fn get_lista_negra_activos() -> Result<Vec<ListaNegraResponse>, ListaNegraError> {
-    lista_negra_service::get_lista_negra_activos()
-        .await
-        .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))
+    lista_negra_service::get_lista_negra_activos().await.map_err(|e| ListaNegraError::Database(e))
 }
 
 /// Verifica si una cédula está bloqueada (CRÍTICO para validaciones)
 #[command]
 pub async fn check_is_blocked(cedula: String) -> Result<BlockCheckResponse, ListaNegraError> {
-    lista_negra_service::check_is_blocked(cedula)
-        .await
-        .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))
+    lista_negra_service::check_is_blocked(cedula).await.map_err(|e| ListaNegraError::Database(e))
 }
 
 /// Obtiene información de bloqueo por cédula
@@ -79,7 +75,7 @@ pub async fn get_blocked_by_cedula(
 ) -> Result<Option<ListaNegraResponse>, ListaNegraError> {
     lista_negra_service::get_blocked_by_cedula(&cedula)
         .await
-        .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))
+        .map_err(|e| ListaNegraError::Database(e))
 }
 
 /// Desactiva un bloqueo (quita de lista negra)
@@ -91,9 +87,9 @@ pub async fn remove_from_lista_negra(id: String) -> Result<ListaNegraResponse, L
         "admin".to_string(),
     )
     .await
-    .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))?;
+    .map_err(|e| ListaNegraError::Database(e))?;
 
-    Err(ListaNegraError::Database(sqlx::Error::Protocol("Not implemented response".to_string())))
+    Err(ListaNegraError::Database("Not implemented response".to_string()))
 }
 
 /// Reactiva un bloqueo
@@ -106,8 +102,8 @@ pub async fn reactivate_lista_negra(
 ) -> Result<ListaNegraResponse, ListaNegraError> {
     lista_negra_service::reactivate_lista_negra(id, motivo_bloqueo, bloqueado_por)
         .await
-        .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))?;
-    Err(ListaNegraError::Database(sqlx::Error::Protocol("Not implemented response".to_string())))
+        .map_err(|e| ListaNegraError::Database(e))?;
+    Err(ListaNegraError::Database("Not implemented response".to_string()))
 }
 
 /// Actualiza información de un bloqueo
@@ -123,15 +119,13 @@ pub async fn update_lista_negra(
         "admin".to_string(),
     )
     .await
-    .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))
+    .map_err(|e| ListaNegraError::Database(e))
 }
 
 /// Elimina permanentemente un registro de lista negra
 #[command]
 pub async fn delete_lista_negra(id: String) -> Result<(), ListaNegraError> {
-    lista_negra_service::delete_lista_negra(id)
-        .await
-        .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))
+    lista_negra_service::delete_lista_negra(id).await.map_err(|e| ListaNegraError::Database(e))
 }
 
 /// Busca personas para formulario de bloqueo
@@ -141,5 +135,5 @@ pub async fn search_personas_for_block(
 ) -> Result<Vec<crate::models::lista_negra::PersonaSearchResult>, ListaNegraError> {
     lista_negra_service::search_personas_for_block(&query)
         .await
-        .map_err(|e| ListaNegraError::Database(sqlx::Error::Protocol(e)))
+        .map_err(|e| ListaNegraError::Database(e))
 }

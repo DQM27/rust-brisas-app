@@ -39,12 +39,12 @@ pub async fn get_visible_modules(
 
     let modules = surrealdb_authorization::get_visible_modules(&user.id, &user.role_id)
         .await
-        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
+        .map_err(|e| RoleError::Database(e.to_string()))?;
 
     // Obtener permisos para cada módulo
     let permissions = surrealdb_authorization::get_role_permissions(&user.role_id)
         .await
-        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
+        .map_err(|e| RoleError::Database(e.to_string()))?;
 
     let visible: Vec<VisibleModule> = modules
         .into_iter()
