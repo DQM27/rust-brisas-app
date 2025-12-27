@@ -34,4 +34,10 @@ DEFINE TABLE IF NOT EXISTS usuarios;
 
 -- Índices
 DEFINE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios COLUMNS email UNIQUE;
-DEFINE INDEX IF NOT EXISTS idx_usuarios_cedula ON usuarios COLUMNS cedula UNIQUE;
+-- ==========================================
+-- TABLA: empresas
+-- ==========================================
+DEFINE TABLE IF NOT EXISTS empresas;
+
+-- Índices
+DEFINE INDEX IF NOT EXISTS idx_empresas_nombre ON empresas COLUMNS nombre UNIQUE;
