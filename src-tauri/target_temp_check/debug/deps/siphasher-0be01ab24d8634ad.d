@@ -1,0 +1,10 @@
+C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri\target_temp_check\debug\deps\siphasher-0be01ab24d8634ad.d: C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\lib.rs C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\sip.rs C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\sip128.rs C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\../README.md
+
+C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri\target_temp_check\debug\deps\libsiphasher-0be01ab24d8634ad.rlib: C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\lib.rs C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\sip.rs C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\sip128.rs C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\../README.md
+
+C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri\target_temp_check\debug\deps\libsiphasher-0be01ab24d8634ad.rmeta: C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\lib.rs C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\sip.rs C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\sip128.rs C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\../README.md
+
+C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\lib.rs:
+C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\sip.rs:
+C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\sip128.rs:
+C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\siphasher-1.0.1\src\../README.md:

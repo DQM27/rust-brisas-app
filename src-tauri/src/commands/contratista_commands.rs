@@ -1,7 +1,6 @@
 // ==========================================
 // src/commands/contratista_commands.rs
 // ==========================================
-// Capa de comandos Tauri: delega al servicio
 
 use crate::domain::errors::ContratistaError;
 use crate::models::contratista::{
@@ -9,95 +8,89 @@ use crate::models::contratista::{
     UpdateContratistaInput,
 };
 use crate::services::contratista_service;
+use crate::services::search_service::SearchState;
+use tauri::State;
 
 #[tauri::command]
 pub async fn create_contratista(
-    _input: CreateContratistaInput,
+    search_state: State<'_, SearchState>,
+    input: CreateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    Err(ContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    let search_service = search_state.0.read().await;
+    contratista_service::create_contratista(&search_service, input).await
 }
 
 #[tauri::command]
-pub async fn get_contratista_by_id(_id: String) -> Result<ContratistaResponse, ContratistaError> {
-    Err(ContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+pub async fn get_contratista_by_id(id: String) -> Result<ContratistaResponse, ContratistaError> {
+    contratista_service::get_contratista_by_id(&id).await
 }
 
 #[tauri::command]
 pub async fn get_contratista_by_cedula(
-    _cedula: String,
+    cedula: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    Err(ContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    contratista_service::get_contratista_by_cedula(&cedula).await
 }
 
 #[tauri::command]
 pub async fn get_all_contratistas() -> Result<ContratistaListResponse, ContratistaError> {
-    Err(ContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    contratista_service::get_all_contratistas().await
 }
 
 #[tauri::command]
 pub async fn get_contratistas_activos() -> Result<Vec<ContratistaResponse>, ContratistaError> {
-    Err(ContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    contratista_service::get_contratistas_activos().await
 }
 
 #[tauri::command]
 pub async fn update_contratista(
-    _id: String,
-    _input: UpdateContratistaInput,
+    search_state: State<'_, SearchState>,
+    id: String,
+    input: UpdateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    Err(ContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    let search_service = search_state.0.read().await;
+    contratista_service::update_contratista(&search_service, id, input).await
 }
 
 #[tauri::command]
 pub async fn cambiar_estado_contratista(
-    _id: String,
-    _input: CambiarEstadoInput,
+    search_state: State<'_, SearchState>,
+    id: String,
+    input: CambiarEstadoInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    Err(ContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    let search_service = search_state.0.read().await;
+    contratista_service::cambiar_estado_contratista(&search_service, id, input).await
 }
 
 #[tauri::command]
-pub async fn delete_contratista(_id: String) -> Result<(), ContratistaError> {
-    Err(ContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+pub async fn delete_contratista(
+    search_state: State<'_, SearchState>,
+    id: String,
+) -> Result<(), ContratistaError> {
+    let search_service = search_state.0.read().await;
+    contratista_service::delete_contratista(&search_service, id).await
 }
 
 // ==========================================
 // COMANDOS CON AUDITORÍA
 // ==========================================
 
-/// Actualiza la fecha PRAIND de un contratista con registro en historial
 #[tauri::command]
 pub async fn actualizar_praind_con_historial(
-    _input: contratista_service::ActualizarPraindInput,
-    _usuario_id: String,
+    search_state: State<'_, SearchState>,
+    input: contratista_service::ActualizarPraindInput,
+    usuario_id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    Err(ContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    let search_service = search_state.0.read().await;
+    contratista_service::actualizar_praind_con_historial(&search_service, input, usuario_id).await
 }
 
-/// Cambia el estado de un contratista con registro de motivo en historial
 #[tauri::command]
 pub async fn cambiar_estado_con_historial(
-    _input: contratista_service::CambiarEstadoConHistorialInput,
-    _usuario_id: String,
+    search_state: State<'_, SearchState>,
+    input: contratista_service::CambiarEstadoConHistorialInput,
+    usuario_id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    Err(ContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    let search_service = search_state.0.read().await;
+    contratista_service::cambiar_estado_con_historial(&search_service, input, usuario_id).await
 }

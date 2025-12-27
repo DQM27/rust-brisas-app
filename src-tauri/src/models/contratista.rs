@@ -68,8 +68,7 @@ pub struct CreateContratistaInput {
     pub fecha_vencimiento_praind: String, // "YYYY-MM-DD"
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Deserialize, Default)]
 pub struct UpdateContratistaInput {
     pub nombre: Option<String>,
     pub segundo_nombre: Option<String>,

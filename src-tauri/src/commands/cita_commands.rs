@@ -37,8 +37,10 @@ pub async fn procesar_ingreso_cita(
 }
 
 #[command]
-pub async fn get_visitante_by_cedula(_cedula: String) -> Result<Option<Visitante>, CitaError> {
-    Ok(None)
+pub async fn get_visitante_by_cedula(cedula: String) -> Result<Option<Visitante>, CitaError> {
+    crate::services::visitante_service::get_visitante_by_cedula(&cedula)
+        .await
+        .map_err(|e| CitaError::Database(sqlx::Error::Protocol(e.to_string())))
 }
 
 #[command]

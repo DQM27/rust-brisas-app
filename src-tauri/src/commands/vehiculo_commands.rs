@@ -6,74 +6,59 @@ use crate::domain::errors::VehiculoError;
 use crate::models::vehiculo::{
     CreateVehiculoInput, UpdateVehiculoInput, VehiculoListResponse, VehiculoResponse,
 };
+use crate::services::vehiculo_service as service;
 
 /// Crea un nuevo vehículo para un contratista
 #[tauri::command]
 pub async fn create_vehiculo(
-    _input: CreateVehiculoInput,
+    input: CreateVehiculoInput,
 ) -> Result<VehiculoResponse, VehiculoError> {
-    Err(VehiculoError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::create_vehiculo(input).await
 }
 
 /// Obtiene un vehículo por ID
 #[tauri::command]
-pub async fn get_vehiculo_by_id(_id: String) -> Result<VehiculoResponse, VehiculoError> {
-    Err(VehiculoError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+pub async fn get_vehiculo_by_id(id: String) -> Result<VehiculoResponse, VehiculoError> {
+    service::get_vehiculo_by_id(&id).await
 }
 
 /// Obtiene un vehículo por placa
 #[tauri::command]
-pub async fn get_vehiculo_by_placa(_placa: String) -> Result<VehiculoResponse, VehiculoError> {
-    Err(VehiculoError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+pub async fn get_vehiculo_by_placa(placa: String) -> Result<VehiculoResponse, VehiculoError> {
+    service::get_vehiculo_by_placa(placa).await
 }
 
 /// Obtiene todos los vehículos del sistema
 #[tauri::command]
 pub async fn get_all_vehiculos() -> Result<VehiculoListResponse, VehiculoError> {
-    Err(VehiculoError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::get_all_vehiculos().await
 }
 
 /// Obtiene todos los vehículos activos
 #[tauri::command]
 pub async fn get_vehiculos_activos() -> Result<Vec<VehiculoResponse>, VehiculoError> {
-    Err(VehiculoError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::get_vehiculos_activos().await
 }
 
 /// Obtiene todos los vehículos de un contratista específico
 #[tauri::command]
 pub async fn get_vehiculos_by_contratista(
-    _contratista_id: String,
+    contratista_id: String,
 ) -> Result<Vec<VehiculoResponse>, VehiculoError> {
-    Err(VehiculoError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::get_vehiculos_by_contratista(contratista_id).await
 }
 
 /// Actualiza información de un vehículo
 #[tauri::command]
 pub async fn update_vehiculo(
-    _id: String,
-    _input: UpdateVehiculoInput,
+    id: String,
+    input: UpdateVehiculoInput,
 ) -> Result<VehiculoResponse, VehiculoError> {
-    Err(VehiculoError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::update_vehiculo(id, input).await
 }
 
 /// Elimina un vehículo (eliminación física)
 #[tauri::command]
-pub async fn delete_vehiculo(_id: String) -> Result<(), VehiculoError> {
-    Err(VehiculoError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+pub async fn delete_vehiculo(id: String) -> Result<(), VehiculoError> {
+    service::delete_vehiculo(id).await
 }

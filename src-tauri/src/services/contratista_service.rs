@@ -1,12 +1,12 @@
-// ==========================================
-// src/services/contratista_service.rs
-// ==========================================
-// Capa de servicio: orquesta dominio y db
-// Contiene la lógica de negocio completa
+// use crate::db::contratista_queries as db;
+// use crate::db::empresa_queries;
+// use crate::db::lista_negra_queries;
+use crate::db::surrealdb_audit_queries as audit_db;
+use crate::db::surrealdb_contratista_queries as db;
+use crate::db::surrealdb_empresa_queries as empresa_db;
+use crate::db::surrealdb_lista_negra_queries as ln_db;
+use crate::db::surrealdb_vehiculo_queries as veh_db;
 
-use crate::db::contratista_queries as db;
-use crate::db::empresa_queries;
-use crate::db::lista_negra_queries;
 use crate::domain::contratista as domain;
 use crate::domain::errors::ContratistaError;
 use crate::models::contratista::{
@@ -14,19 +14,21 @@ use crate::models::contratista::{
     EstadoContratista, UpdateContratistaInput,
 };
 use crate::services::search_service::SearchService;
-use chrono::Utc;
-use log::{error, info, warn};
-use sqlx::SqlitePool;
+use crate::services::surrealdb_service::SurrealDbError;
+use log::{error, info};
 use std::sync::Arc;
-use uuid::Uuid;
+
+// Helper para mapear errores de SurrealDB a ContratistaError
+fn map_db_error(e: SurrealDbError) -> ContratistaError {
+    ContratistaError::Database(sqlx::Error::Protocol(e.to_string()))
+}
 
 // ==========================================
 // CREAR CONTRATISTA
 // ==========================================
 
 pub async fn create_contratista(
-    pool: &SqlitePool,
-    search_service: &Arc<SearchService>,
+    _search_service: &Arc<SearchService>, // Mantenemos firma por compatibilidad, pero está stubbed
     input: CreateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
     // 1. Validar input
@@ -34,19 +36,12 @@ pub async fn create_contratista(
 
     // 2. Normalizar datos
     let cedula_normalizada = domain::normalizar_cedula(&input.cedula);
-    let nombre_normalizado = domain::normalizar_nombre(&input.nombre);
-    let segundo_nombre_normalizado =
-        domain::normalizar_segundo_nombre(input.segundo_nombre.as_ref());
-    let apellido_normalizado = domain::normalizar_apellido(&input.apellido);
-    let segundo_apellido_normalizado =
-        domain::normalizar_segundo_apellido(input.segundo_apellido.as_ref());
 
     // 3. Verificar que NO esté en lista negra
-    let block_status = lista_negra_queries::check_if_blocked_by_cedula(pool, &cedula_normalizada)
-        .await
-        .map_err(|e| ContratistaError::Validation(e.to_string()))?;
+    let block_status =
+        ln_db::check_if_blocked_by_cedula(&cedula_normalizada).await.map_err(map_db_error)?;
 
-    if block_status.blocked {
+    if block_status.is_blocked {
         let nivel = block_status.nivel_severidad.unwrap_or_else(|| "BAJO".to_string());
         return Err(ContratistaError::Validation(format!(
             "No se puede registrar. La persona con cédula {} está en lista negra. Nivel: {}",
@@ -55,8 +50,8 @@ pub async fn create_contratista(
     }
 
     // 4. Verificar que la cédula no exista
-    let count = db::count_by_cedula(pool, &cedula_normalizada).await?;
-    if count > 0 {
+    let existing = db::find_by_cedula(&cedula_normalizada).await.map_err(map_db_error)?;
+    if existing.is_some() {
         return Err(ContratistaError::CedulaExists);
     }
 
@@ -65,76 +60,32 @@ pub async fn create_contratista(
         "Creando contratista con cédula {} para empresa {}",
         cedula_normalizada, input.empresa_id
     );
-    let empresa_existe = empresa_queries::exists(pool, &input.empresa_id).await?;
-    if !empresa_existe {
+    let empresa_opt =
+        empresa_db::get_empresa_by_id(&input.empresa_id).await.map_err(map_db_error)?;
+    if empresa_opt.is_none() {
         return Err(ContratistaError::EmpresaNotFound);
     }
 
-    // 6. Generar ID y timestamps
-    let id = Uuid::new_v4().to_string();
-    let now = Utc::now().to_rfc3339();
-
-    // 7. Insertar en DB
-    db::insert(
-        pool,
-        &id,
-        &cedula_normalizada,
-        &nombre_normalizado,
-        segundo_nombre_normalizado.as_deref(),
-        &apellido_normalizado,
-        segundo_apellido_normalizado.as_deref(),
-        &input.empresa_id,
-        &input.fecha_vencimiento_praind,
-        EstadoContratista::Activo.as_str(),
-        &now,
-        &now,
-    )
-    .await
-    .map_err(|e| {
+    // 6. Insertar en DB
+    let contratista = db::create(input).await.map_err(|e| {
         error!("Error de base de datos al crear contratista {}: {}", cedula_normalizada, e);
-        ContratistaError::Database(e)
+        map_db_error(e)
     })?;
 
-    info!("Contratista {} creado exitosamente con ID {}", cedula_normalizada, id);
+    info!("Contratista {} creado exitosamente con ID {}", cedula_normalizada, contratista.id);
 
-    // 8. Obtener contratista creado
-    let response = get_contratista_by_id(pool, &id).await?;
-
-    // 9. Indexar en Tantivy
-    if let Some(row) = db::find_by_id_with_empresa(pool, &id).await? {
-        if let Err(e) = search_service.add_contratista(&row.contratista, &row.empresa_nombre).await
-        {
-            warn!("Error al indexar contratista {}: {}", id, e);
-        }
-    }
-
-    Ok(response)
+    // 7. Retornar respuesta
+    build_response(contratista).await
 }
 
 // ==========================================
 // OBTENER CONTRATISTA POR ID
 // ==========================================
 
-pub async fn get_contratista_by_id(
-    pool: &SqlitePool,
-    id: &str,
-) -> Result<ContratistaResponse, ContratistaError> {
-    let row = db::find_by_id_with_empresa(pool, id).await?.ok_or(ContratistaError::NotFound)?;
-
-    let mut response = ContratistaResponse::from(row.contratista);
-    response.empresa_nombre = row.empresa_nombre;
-    response.vehiculo_tipo = row.vehiculo_tipo;
-    response.vehiculo_placa = row.vehiculo_placa;
-    response.vehiculo_marca = row.vehiculo_marca;
-    response.vehiculo_modelo = row.vehiculo_modelo;
-    response.vehiculo_color = row.vehiculo_color;
-    response.esta_bloqueado = row.is_blocked;
-
-    if row.is_blocked {
-        response.puede_ingresar = false;
-    }
-
-    Ok(response)
+pub async fn get_contratista_by_id(id: &str) -> Result<ContratistaResponse, ContratistaError> {
+    let contratista =
+        db::find_by_id(id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
+    build_response(contratista).await
 }
 
 // ==========================================
@@ -142,53 +93,26 @@ pub async fn get_contratista_by_id(
 // ==========================================
 
 pub async fn get_contratista_by_cedula(
-    pool: &SqlitePool,
     cedula: &str,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    let row =
-        db::find_by_cedula_with_empresa(pool, cedula).await?.ok_or(ContratistaError::NotFound)?;
-
-    let mut response = ContratistaResponse::from(row.contratista);
-    response.empresa_nombre = row.empresa_nombre;
-    response.vehiculo_tipo = row.vehiculo_tipo;
-    response.vehiculo_placa = row.vehiculo_placa;
-    response.vehiculo_marca = row.vehiculo_marca;
-    response.vehiculo_modelo = row.vehiculo_modelo;
-    response.vehiculo_color = row.vehiculo_color;
-    response.esta_bloqueado = row.is_blocked;
-
-    if row.is_blocked {
-        response.puede_ingresar = false;
-    }
-
-    Ok(response)
+    let contratista = db::find_by_cedula(cedula)
+        .await
+        .map_err(map_db_error)?
+        .ok_or(ContratistaError::NotFound)?;
+    build_response(contratista).await
 }
 
 // ==========================================
 // OBTENER TODOS LOS CONTRATISTAS
 // ==========================================
 
-pub async fn get_all_contratistas(
-    pool: &SqlitePool,
-) -> Result<ContratistaListResponse, ContratistaError> {
-    let contratistas_with_empresa = db::find_all_with_empresa(pool).await?;
+pub async fn get_all_contratistas() -> Result<ContratistaListResponse, ContratistaError> {
+    let raw_list = db::find_all().await.map_err(map_db_error)?;
 
-    let contratistas: Vec<ContratistaResponse> = contratistas_with_empresa
-        .into_iter()
-        .map(|(contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa, is_blocked)| {
-            let mut response = ContratistaResponse::from(contratista);
-            response.empresa_nombre = empresa_nombre;
-            response.vehiculo_tipo = vehiculo_tipo;
-            response.vehiculo_placa = vehiculo_placa;
-            response.esta_bloqueado = is_blocked;
-
-            if is_blocked {
-                response.puede_ingresar = false;
-            }
-
-            response
-        })
-        .collect();
+    let mut contratistas = Vec::new();
+    for c in raw_list {
+        contratistas.push(build_response(c).await?);
+    }
 
     let total = contratistas.len();
     let activos = contratistas.iter().filter(|c| c.estado == EstadoContratista::Activo).count();
@@ -208,27 +132,16 @@ pub async fn get_all_contratistas(
 // OBTENER CONTRATISTAS ACTIVOS
 // ==========================================
 
-pub async fn get_contratistas_activos(
-    pool: &SqlitePool,
-) -> Result<Vec<ContratistaResponse>, ContratistaError> {
-    let contratistas_with_empresa = db::find_activos_with_empresa(pool).await?;
+pub async fn get_contratistas_activos() -> Result<Vec<ContratistaResponse>, ContratistaError> {
+    let raw_list = db::find_all().await.map_err(map_db_error)?; // Simplificado para este paso
 
-    let contratistas = contratistas_with_empresa
-        .into_iter()
-        .map(|(contratista, empresa_nombre, vehiculo_tipo, vehiculo_placa, is_blocked)| {
-            let mut response = ContratistaResponse::from(contratista);
-            response.empresa_nombre = empresa_nombre;
-            response.vehiculo_tipo = vehiculo_tipo;
-            response.vehiculo_placa = vehiculo_placa;
-            response.esta_bloqueado = is_blocked;
-
-            if is_blocked {
-                response.puede_ingresar = false;
-            }
-
-            response
-        })
-        .collect();
+    let mut contratistas = Vec::new();
+    for c in raw_list {
+        let res = build_response(c).await?;
+        if res.estado == EstadoContratista::Activo {
+            contratistas.push(res);
+        }
+    }
 
     Ok(contratistas)
 }
@@ -238,8 +151,7 @@ pub async fn get_contratistas_activos(
 // ==========================================
 
 pub async fn update_contratista(
-    pool: &SqlitePool,
-    search_service: &Arc<SearchService>,
+    _search_service: &Arc<SearchService>,
     id: String,
     input: UpdateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
@@ -249,110 +161,26 @@ pub async fn update_contratista(
     info!("Actualizando contratista con ID {}", id);
 
     // 2. Verificar que el contratista existe
-    let _ = db::find_by_id_with_empresa(pool, &id).await?.ok_or(ContratistaError::NotFound)?;
+    let _ = db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
-    // 3. Normalizar datos si vienen
-    let nombre_normalizado = input.nombre.as_ref().map(|n| domain::normalizar_nombre(n));
-
-    let segundo_nombre_normalizado =
-        input.segundo_nombre.as_ref().and_then(|sn| domain::normalizar_segundo_nombre(Some(sn)));
-
-    let apellido_normalizado = input.apellido.as_ref().map(|a| domain::normalizar_apellido(a));
-
-    let segundo_apellido_normalizado = input
-        .segundo_apellido
-        .as_ref()
-        .and_then(|sa| domain::normalizar_segundo_apellido(Some(sa)));
-
-    // 4. Verificar que la empresa exista si viene
+    // 3. Verificar que la empresa exista si viene
     if let Some(ref empresa_id) = input.empresa_id {
-        let empresa_existe = empresa_queries::exists(pool, empresa_id).await?;
-        if !empresa_existe {
+        let empresa_opt = empresa_db::get_empresa_by_id(empresa_id).await.map_err(map_db_error)?;
+        if empresa_opt.is_none() {
             return Err(ContratistaError::EmpresaNotFound);
         }
     }
 
-    // 5. Timestamp de actualización
-    let now = Utc::now().to_rfc3339();
-
-    // 6. Actualizar en DB
-    db::update(
-        pool,
-        &id,
-        nombre_normalizado.as_deref(),
-        segundo_nombre_normalizado.as_deref(),
-        apellido_normalizado.as_deref(),
-        segundo_apellido_normalizado.as_deref(),
-        input.empresa_id.as_deref(),
-        input.fecha_vencimiento_praind.as_deref(),
-        &now,
-    )
-    .await
-    .map_err(|e| {
+    // 4. Actualizar en DB
+    let updated = db::update(&id, input).await.map_err(|e| {
         error!("Error al actualizar contratista {}: {}", id, e);
-        ContratistaError::Database(e)
+        map_db_error(e)
     })?;
 
     info!("Contratista {} actualizado exitosamente", id);
 
-    // 7. Gestionar Vehículo
-    if let Some(tiene) = input.tiene_vehiculo {
-        use crate::db::vehiculo_queries;
-        let vehiculos = vehiculo_queries::find_by_contratista(pool, &id).await.unwrap_or_default();
-        let vehiculo_existente = vehiculos.first();
-
-        if tiene {
-            if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
-                if !tipo.is_empty() && !placa.is_empty() {
-                    if let Some(v) = vehiculo_existente {
-                        let _ = vehiculo_queries::update(
-                            pool,
-                            &v.id,
-                            Some(tipo),
-                            input.marca.as_deref(),
-                            input.modelo.as_deref(),
-                            input.color.as_deref(),
-                            Some(true),
-                            &now,
-                        )
-                        .await;
-                    } else {
-                        let vid = Uuid::new_v4().to_string();
-                        let _ = vehiculo_queries::insert(
-                            pool,
-                            &vid,
-                            Some(&id),
-                            None,
-                            tipo,
-                            placa,
-                            input.marca.as_deref(),
-                            input.modelo.as_deref(),
-                            input.color.as_deref(),
-                            &now,
-                            &now,
-                        )
-                        .await;
-                    }
-                }
-            }
-        } else if let Some(v) = vehiculo_existente {
-            let _ = vehiculo_queries::delete(pool, &v.id).await;
-        }
-    }
-
-    // 8. Obtener contratista actualizado
-    let response = get_contratista_by_id(pool, &id).await?;
-
-    // 9. Actualizar índice de Tantivy
-    if let Some(row) = db::find_by_id_with_empresa(pool, &id).await? {
-        if let Err(e) =
-            search_service.update_contratista(&row.contratista, &row.empresa_nombre).await
-        {
-            warn!("Error al actualizar índice del contratista {}: {}", id, e);
-        }
-    }
-
-    Ok(response)
+    // 5. Retornar
+    build_response(updated).await
 }
 
 // ==========================================
@@ -360,8 +188,7 @@ pub async fn update_contratista(
 // ==========================================
 
 pub async fn cambiar_estado_contratista(
-    pool: &SqlitePool,
-    search_service: &Arc<SearchService>,
+    _search_service: &Arc<SearchService>,
     id: String,
     input: CambiarEstadoInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
@@ -371,27 +198,13 @@ pub async fn cambiar_estado_contratista(
     info!("Cambiando estado de contratista {} a {}", id, input.estado);
 
     // 2. Verificar que el contratista existe
-    let _ = db::find_by_id_with_empresa(pool, &id).await?.ok_or(ContratistaError::NotFound)?;
+    let _ = db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
-    // 3. Timestamp de actualización
-    let now = Utc::now().to_rfc3339();
+    // 3. Actualizar estado en DB
+    let updated = db::update_status(&id, estado.as_str()).await.map_err(map_db_error)?;
 
-    // 4. Actualizar estado en DB
-    db::update_estado(pool, &id, estado.as_str(), &now).await?;
-
-    // 5. Obtener contratista actualizado
-    let response = get_contratista_by_id(pool, &id).await?;
-
-    // 6. Actualizar índice de Tantivy
-    if let Some(row) = db::find_by_id_with_empresa(pool, &id).await? {
-        if let Err(e) =
-            search_service.update_contratista(&row.contratista, &row.empresa_nombre).await
-        {
-            warn!("Error al actualizar índice del contratista {}: {}", id, e);
-        }
-    }
-
-    Ok(response)
+    // 4. Retornar
+    build_response(updated).await
 }
 
 // ==========================================
@@ -399,28 +212,21 @@ pub async fn cambiar_estado_contratista(
 // ==========================================
 
 pub async fn delete_contratista(
-    pool: &SqlitePool,
-    search_service: &Arc<SearchService>,
+    _search_service: &Arc<SearchService>,
     id: String,
 ) -> Result<(), ContratistaError> {
     info!("Eliminando contratista con ID {}", id);
 
     // Verificar que existe
-    let _ = db::find_by_id_with_empresa(pool, &id).await?.ok_or(ContratistaError::NotFound)?;
+    let _ = db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
     // Eliminar de DB
-    db::delete(pool, &id).await.map_err(|e| {
+    db::delete(&id).await.map_err(|e| {
         error!("Error al eliminar contratista {}: {}", id, e);
-        ContratistaError::Database(e)
+        map_db_error(e)
     })?;
 
     info!("Contratista {} eliminado exitosamente", id);
-
-    // Eliminar del índice de Tantivy
-    if let Err(e) = search_service.delete_contratista(&id).await {
-        warn!("Error al eliminar del índice el contratista {}: {}", id, e);
-    }
-
     Ok(())
 }
 
@@ -428,9 +234,6 @@ pub async fn delete_contratista(
 // ACTUALIZAR PRAIND CON HISTORIAL
 // ==========================================
 
-use crate::db::audit_queries;
-
-/// Input para actualizar fecha PRAIND
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActualizarPraindInput {
@@ -439,93 +242,57 @@ pub struct ActualizarPraindInput {
     pub motivo: Option<String>,
 }
 
-/// Actualiza la fecha de vencimiento PRAIND y registra en historial
 pub async fn actualizar_praind_con_historial(
-    pool: &SqlitePool,
-    search_service: &Arc<SearchService>,
+    _search_service: &Arc<SearchService>,
     input: ActualizarPraindInput,
     usuario_id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
     // 1. Obtener contratista actual
-    let contratista_row = db::find_by_id_with_empresa(pool, &input.contratista_id)
-        .await?
+    let contratista = db::find_by_id(&input.contratista_id)
+        .await
+        .map_err(map_db_error)?
         .ok_or(ContratistaError::NotFound)?;
 
-    let fecha_anterior = contratista_row.contratista.fecha_vencimiento_praind.clone();
+    let fecha_anterior = contratista.fecha_vencimiento_praind.clone();
 
     // 2. Validar nueva fecha
     crate::models::contratista::validaciones::validar_fecha(&input.nueva_fecha_praind)
         .map_err(|e| ContratistaError::Validation(e))?;
 
     // 3. Actualizar contratista
-    let now = Utc::now().to_rfc3339();
     info!(
         "Actualizando PRAIND para contratista {} -> {}",
         input.contratista_id, input.nueva_fecha_praind
     );
-    db::update_praind(pool, &input.contratista_id, &input.nueva_fecha_praind, &now).await?;
+    let updated = db::update(
+        &input.contratista_id,
+        UpdateContratistaInput {
+            fecha_vencimiento_praind: Some(input.nueva_fecha_praind.clone()),
+            ..Default::default()
+        },
+    )
+    .await
+    .map_err(map_db_error)?;
 
     // 4. Registrar en historial
-    let historial_id = Uuid::new_v4().to_string();
-    audit_queries::insert_praind_historial(
-        pool,
-        &historial_id,
+    audit_db::insert_praind_historial(
         &input.contratista_id,
         Some(&fecha_anterior),
         &input.nueva_fecha_praind,
         &usuario_id,
         input.motivo.as_deref(),
-        &now,
     )
     .await
-    .map_err(|e| ContratistaError::Database(e))?;
+    .map_err(map_db_error)?;
 
-    // 5. Si el PRAIND renovado y estaba suspendido por PRAIND, activar automáticamente
-    let fecha_venc = chrono::NaiveDate::parse_from_str(&input.nueva_fecha_praind, "%Y-%m-%d")
-        .unwrap_or_default();
-    let nueva_fecha_valida = fecha_venc >= chrono::Utc::now().date_naive();
-
-    if nueva_fecha_valida && contratista_row.contratista.estado.as_str() == "suspendido" {
-        // Cambiar a activo automáticamente
-        db::update_estado(pool, &input.contratista_id, "activo", &now).await?;
-
-        // Registrar transición de estado
-        let estado_historial_id = Uuid::new_v4().to_string();
-        audit_queries::insert_historial_estado(
-            pool,
-            &estado_historial_id,
-            &input.contratista_id,
-            "suspendido",
-            "activo",
-            Some(&usuario_id),
-            "Reactivación automática por renovación de PRAIND",
-            &now,
-        )
-        .await
-        .map_err(|e| ContratistaError::Database(e))?;
-    }
-
-    // 6. Obtener respuesta actualizada
-    let updated = db::find_by_id_with_empresa(pool, &input.contratista_id)
-        .await?
-        .ok_or(ContratistaError::NotFound)?;
-
-    // 7. Actualizar índice de búsqueda
-    if let Err(e) =
-        search_service.update_contratista(&updated.contratista, &updated.empresa_nombre).await
-    {
-        warn!("Error al actualizar índice del contratista: {}", e);
-    }
-
-    let response = build_response(updated, pool).await;
-    Ok(response)
+    // 5. Retornar
+    build_response(updated).await
 }
 
 // ==========================================
 // CAMBIAR ESTADO CON HISTORIAL
 // ==========================================
 
-/// Input para cambiar estado con auditoría
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CambiarEstadoConHistorialInput {
@@ -534,76 +301,103 @@ pub struct CambiarEstadoConHistorialInput {
     pub motivo: String,
 }
 
-/// Cambia el estado del contratista y registra en historial
 pub async fn cambiar_estado_con_historial(
-    pool: &SqlitePool,
-    search_service: &Arc<SearchService>,
+    _search_service: &Arc<SearchService>,
     input: CambiarEstadoConHistorialInput,
     usuario_id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
     // 1. Obtener contratista actual
-    let contratista_row = db::find_by_id_with_empresa(pool, &input.contratista_id)
-        .await?
+    let contratista = db::find_by_id(&input.contratista_id)
+        .await
+        .map_err(map_db_error)?
         .ok_or(ContratistaError::NotFound)?;
 
-    let estado_anterior = contratista_row.contratista.estado.as_str().to_string();
+    let estado_anterior = contratista.estado.as_str().to_string();
 
     // 2. Validar nuevo estado
     let nuevo_estado: crate::models::contratista::EstadoContratista =
         input.nuevo_estado.parse().map_err(|e: String| ContratistaError::Validation(e))?;
 
     // 3. Actualizar estado
-    let now = Utc::now().to_rfc3339();
-    db::update_estado(pool, &input.contratista_id, nuevo_estado.as_str(), &now).await?;
+    let updated = db::update_status(&input.contratista_id, nuevo_estado.as_str())
+        .await
+        .map_err(map_db_error)?;
 
     // 4. Registrar en historial
-    let historial_id = Uuid::new_v4().to_string();
-    audit_queries::insert_historial_estado(
-        pool,
-        &historial_id,
+    audit_db::insert_historial_estado(
         &input.contratista_id,
         &estado_anterior,
         nuevo_estado.as_str(),
         Some(&usuario_id),
         &input.motivo,
-        &now,
     )
     .await
-    .map_err(|e| ContratistaError::Database(e))?;
+    .map_err(map_db_error)?;
 
-    // 5. Obtener respuesta actualizada
-    let updated = db::find_by_id_with_empresa(pool, &input.contratista_id)
-        .await?
-        .ok_or(ContratistaError::NotFound)?;
+    // 5. Retornar
+    build_response(updated).await
+}
 
-    // 6. Actualizar índice de búsqueda
-    if let Err(e) =
-        search_service.update_contratista(&updated.contratista, &updated.empresa_nombre).await
-    {
-        warn!("Error al actualizar índice del contratista: {}", e);
+// ==========================================
+// HELPERS
+// ==========================================
+
+async fn build_response(
+    contratista: crate::models::contratista::Contratista,
+) -> Result<ContratistaResponse, ContratistaError> {
+    let mut response = ContratistaResponse::from(contratista.clone());
+
+    // Obtener nombre de empresa
+    response.empresa_nombre =
+        db::get_empresa_nombre(&contratista.empresa_id).await.map_err(map_db_error)?;
+
+    // Obtener vehículo
+    let vehiculos = veh_db::find_by_contratista(&contratista.id).await.map_err(map_db_error)?;
+    if let Some(v) = vehiculos.first() {
+        response.vehiculo_tipo = Some(v.tipo_vehiculo.to_string());
+        response.vehiculo_placa = Some(v.placa.clone());
+        response.vehiculo_marca = v.marca.clone();
+        response.vehiculo_modelo = v.modelo.clone();
+        response.vehiculo_color = v.color.clone();
     }
 
-    let response = build_response(updated, pool).await;
+    // Verificar si está bloqueado
+    let block_status =
+        ln_db::check_if_blocked_by_cedula(&contratista.cedula).await.map_err(map_db_error)?;
+    response.esta_bloqueado = block_status.is_blocked;
+
+    if block_status.is_blocked {
+        response.puede_ingresar = false;
+    }
+
     Ok(response)
 }
 
-/// Helper para construir respuesta con datos completos
-async fn build_response(row: db::ContratistaEnhancedRow, pool: &SqlitePool) -> ContratistaResponse {
-    let vehiculo = crate::db::vehiculo_queries::find_by_contratista(pool, &row.contratista.id)
-        .await
-        .ok()
-        .and_then(|v| v.into_iter().next());
+#[derive(Default)]
+pub struct DefaultUpdateContratistaInput {
+    pub nombre: Option<String>,
+    pub segundo_nombre: Option<String>,
+    pub apellido: Option<String>,
+    pub segundo_apellido: Option<String>,
+    pub empresa_id: Option<String>,
+    pub fecha_vencimiento_praind: Option<String>,
+}
 
-    let mut response = ContratistaResponse::from(row.contratista);
-    response.empresa_nombre = row.empresa_nombre;
-
-    if let Some(v) = vehiculo {
-        response.vehiculo_tipo = Some(v.tipo_vehiculo.to_string());
-        response.vehiculo_placa = Some(v.placa);
-        response.vehiculo_marca = v.marca;
-        response.vehiculo_modelo = v.modelo;
-        response.vehiculo_color = v.color;
+impl From<DefaultUpdateContratistaInput> for UpdateContratistaInput {
+    fn from(d: DefaultUpdateContratistaInput) -> Self {
+        Self {
+            nombre: d.nombre,
+            segundo_nombre: d.segundo_nombre,
+            apellido: d.apellido,
+            segundo_apellido: d.segundo_apellido,
+            empresa_id: d.empresa_id,
+            fecha_vencimiento_praind: d.fecha_vencimiento_praind,
+            tiene_vehiculo: None,
+            tipo_vehiculo: None,
+            placa: None,
+            marca: None,
+            modelo: None,
+            color: None,
+        }
     }
-
-    response
 }

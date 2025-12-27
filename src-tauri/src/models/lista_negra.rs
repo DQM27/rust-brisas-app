@@ -187,7 +187,7 @@ impl From<ListaNegra> for ListaNegraResponse {
 }
 
 /// Response simplificada para Guardias (SIN motivo, solo nivel/color)
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockCheckResponse {
     pub is_blocked: bool,

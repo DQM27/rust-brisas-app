@@ -1,0 +1,54 @@
+    Blocking waiting for file lock on build directory
+   Compiling ring v0.17.14
+   Compiling psm v0.1.28
+   Compiling stacker v0.1.22
+   Compiling zstd-sys v2.0.16+zstd.1.5.7
+   Compiling libsqlite3-sys v0.27.0
+   Compiling blake3 v1.8.2
+   Compiling libmimalloc-sys v0.1.44
+    Checking cedar-policy-core v2.4.2
+    Checking typst-eval v0.14.0
+    Checking mimalloc v0.1.48
+    Checking typst v0.14.0
+   Compiling rustls v0.23.35
+   Compiling rustls v0.21.12
+    Checking cedar-policy-validator v2.4.2
+    Checking rustls-webpki v0.103.8
+    Checking sct v0.7.1
+   Compiling rustls-webpki v0.101.7
+    Checking cedar-policy v2.4.2
+    Checking jsonwebtoken v9.3.1
+    Checking tokio-rustls v0.26.4
+    Checking surrealdb-core v2.4.0
+    Checking sqlx-core v0.7.4
+    Checking hyper-rustls v0.27.7
+    Checking reqwest v0.12.24
+   Compiling zstd-safe v7.2.4
+    Checking tauri-plugin-updater v2.9.0
+    Checking zstd v0.13.3
+    Checking tantivy-sstable v0.3.0
+    Checking tantivy-columnar v0.3.0
+    Checking tantivy v0.22.1
+   Compiling sqlx-sqlite v0.7.4
+   Compiling sqlx-macros-core v0.7.4
+   Compiling sqlx-macros v0.7.4
+    Checking sqlx v0.7.4
+    Checking surrealdb v2.4.0
+    Checking brisas-app v0.1.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+src\services\contratista_service.rs:355:29: error[E0425]: cannot find function `find_by_contratista` in module `veh_db`: not found in `veh_db`
+src\services\vehiculo_service.rs:187:25: error[E0425]: cannot find function `find_by_contratista` in module `db`: not found in `db`
+src\db\surrealdb_gafete_queries.rs:5:42: warning: unused import: `get_db`
+src\services\gafete_service.rs:5:5: warning: unused import: `crate::db::surrealdb_gafete_queries as db`
+src\services\cita_service.rs:5:5: warning: unused import: `crate::db::surrealdb_cita_queries as cita_db`
+src\services\ingreso_visita_service.rs:5:5: warning: unused import: `crate::db::surrealdb_ingreso_queries as ingreso_db`
+src\services\ingreso_visita_service.rs:7:5: warning: unused import: `crate::domain::ingreso_visita as domain`
+src\services\ingreso_visita_service.rs:15:11: warning: unused import: `error`
+src\services\ingreso_contratista_service.rs:84:9: error[E0061]: this function takes 1 argument but 2 arguments were supplied
+src\services\ingreso_contratista_service.rs:211:17: error[E0061]: this function takes 2 arguments but 3 arguments were supplied
+src\services\ingreso_contratista_service.rs:603:26: error[E0061]: this function takes 2 arguments but 3 arguments were supplied
+src\services\ingreso_proveedor_service.rs:35:30: error[E0061]: this function takes 2 arguments but 3 arguments were supplied
+src\services\ingreso_proveedor_service.rs:246:26: error[E0061]: this function takes 1 argument but 2 arguments were supplied
+src\services\vehiculo_service.rs:66:5: error[E0061]: this function takes 1 argument but 10 arguments were supplied
+src\services\vehiculo_service.rs:234:5: error[E0061]: this function takes 2 arguments but 7 arguments were supplied
+warning: `brisas-app` (lib) generated 6 warnings
+error: could not compile `brisas-app` (lib) due to 9 previous errors; 6 warnings emitted

@@ -1,0 +1,41 @@
+    Checking brisas-app v0.1.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+src\services\gafete_service.rs:3:37: error[E0432]: unresolved import `crate::models::gafete::GafeteStatus`: no `GafeteStatus` in `models::gafete`
+src\services\lista_negra_service.rs:3:86: error[E0432]: unresolved import `crate::models::lista_negra::SearchPersonaResult`: no `SearchPersonaResult` in `models::lista_negra`
+src\commands\ingreso_contratista_commands.rs:43:22: error[E0412]: cannot find type `ResultadoValidacionSalida` in module `service`: not found in `service`
+src\commands\ingreso_contratista_commands.rs:67:26: error[E0412]: cannot find type `IngresoConEstadoResponse` in module `service`: not found in `service`
+src\commands\ingreso_contratista_commands.rs:74:26: error[E0412]: cannot find type `AlertaTiempoExcedido` in module `service`: not found in `service`
+src\commands\ingreso_contratista_commands.rs:85:22: error[E0412]: cannot find type `CerrarIngresoManualInput` in module `service`: not found in `service`
+src\commands\ingreso_contratista_commands.rs:87:22: error[E0412]: cannot find type `ResultadoCierreManualResponse` in module `service`: not found in `service`
+src\commands\ingreso_contratista_commands.rs:100:22: error[E0412]: cannot find type `IngresoExcepcionalInput` in module `service`: not found in `service`
+src\commands\ingreso_contratista_commands.rs:102:22: error[E0412]: cannot find type `IngresoExcepcionalResponse` in module `service`: not found in `service`
+src\services\ingreso_contratista_service.rs:8:60: warning: unused import: `alerta_service`
+src\services\ingreso_contratista_service.rs:9:100: warning: unused imports: `ModoIngreso`, `TipoAutorizacion`, and `TipoIngreso`
+src\services\ingreso_contratista_service.rs:10:5: warning: unused import: `chrono::Utc`
+src\services\ingreso_contratista_service.rs:12:5: warning: unused import: `uuid::Uuid`
+src\services\ingreso_proveedor_service.rs:2:17: warning: unused imports: `empresa_queries`, `ingreso_proveedor_queries`, and `proveedor_queries`
+src\services\ingreso_proveedor_service.rs:4:40: warning: unused import: `self as domain`
+src\services\ingreso_proveedor_service.rs:5:39: warning: unused import: `lista_negra_service`
+src\db\surrealdb_gafete_queries.rs:7:22: error[E0521]: borrowed data escapes outside of function: `numero` escapes the function body here, argument requires that `'1` must outlive `'static`
+src\db\surrealdb_gafete_queries.rs:7:22: error[E0521]: borrowed data escapes outside of function: `tipo` escapes the function body here, argument requires that `'2` must outlive `'static`
+src\services\contratista_service.rs:44:21: error[E0609]: no field `blocked` on type `BlockCheckResponse`: unknown field
+src\services\contratista_service.rs:367:44: error[E0609]: no field `blocked` on type `BlockCheckResponse`: unknown field
+src\services\contratista_service.rs:369:21: error[E0609]: no field `blocked` on type `BlockCheckResponse`: unknown field
+src\services\gafete_service.rs:16:38: warning: unused variable: `t`: help: if this is intentional, prefix it with an underscore: `_t`
+src\services\ingreso_contratista_service.rs:31:35: error[E0277]: the trait bound `CreateIngresoContratistaInput: InputEntrada` is not satisfied: unsatisfied trait bound
+src\services\ingreso_contratista_service.rs:39:31: warning: unused variable: `pool`: help: if this is intentional, prefix it with an underscore: `_pool`
+src\services\ingreso_contratista_service.rs:39:50: warning: unused variable: `input`: help: if this is intentional, prefix it with an underscore: `_input`
+src\services\ingreso_contratista_service.rs:39:79: warning: unused variable: `usuario_id`: help: if this is intentional, prefix it with an underscore: `_usuario_id`
+src\services\ingreso_proveedor_service.rs:8:32: warning: unused variable: `pool`: help: if this is intentional, prefix it with an underscore: `_pool`
+src\services\ingreso_proveedor_service.rs:16:31: warning: unused variable: `pool`: help: if this is intentional, prefix it with an underscore: `_pool`
+src\services\ingreso_proveedor_service.rs:16:50: warning: unused variable: `id`: help: if this is intentional, prefix it with an underscore: `_id`
+src\services\ingreso_proveedor_service.rs:16:62: warning: unused variable: `usuario_id`: help: if this is intentional, prefix it with an underscore: `_usuario_id`
+src\services\ingreso_proveedor_service.rs:16:82: warning: unused variable: `observaciones`: help: if this is intentional, prefix it with an underscore: `_observaciones`
+src\services\ingreso_proveedor_service.rs:16:113: warning: unused variable: `devolvio_gafete`: help: if this is intentional, prefix it with an underscore: `_devolvio_gafete`
+src\services\ingreso_proveedor_service.rs:20:26: warning: unused variable: `pool`: help: if this is intentional, prefix it with an underscore: `_pool`
+src\services\ingreso_proveedor_service.rs:21:28: warning: unused variable: `pool`: help: if this is intentional, prefix it with an underscore: `_pool`
+src\services\ingreso_proveedor_service.rs:23:30: warning: unused variable: `pool`: help: if this is intentional, prefix it with an underscore: `_pool`
+src\services\ingreso_proveedor_service.rs:23:49: warning: unused variable: `proveedor_id`: help: if this is intentional, prefix it with an underscore: `_proveedor_id`
+src\services\ingreso_visita_service.rs:39:31: warning: unused variable: `id`: help: if this is intentional, prefix it with an underscore: `_id`
+src\services\visitante_service.rs:44:21: error[E0609]: no field `blocked` on type `BlockCheckResponse`: unknown field
+warning: `brisas-app` (lib) generated 22 warnings
+error: could not compile `brisas-app` (lib) due to 16 previous errors; 22 warnings emitted

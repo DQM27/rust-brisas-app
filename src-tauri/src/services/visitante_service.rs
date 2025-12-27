@@ -3,14 +3,21 @@
 // ==========================================
 // Capa de servicio: Lógica de negocio para Visitantes
 
-use crate::db::{lista_negra_queries, visitante_queries};
+use crate::db::surrealdb_lista_negra_queries as ln_db;
+use crate::db::surrealdb_visitante_queries as db;
 use crate::domain::errors::VisitanteError;
 use crate::domain::visitante as domain;
 use crate::models::visitante::{CreateVisitanteInput, Visitante};
-use sqlx::SqlitePool;
+use crate::services::surrealdb_service::SurrealDbError;
+use log::error;
+
+// Helper para mapear errores de SurrealDB a VisitanteError
+fn map_db_error(e: SurrealDbError) -> VisitanteError {
+    error!("Error de base de datos (SurrealDB): {}", e);
+    VisitanteError::Database(sqlx::Error::Protocol(e.to_string()))
+}
 
 pub async fn create_visitante(
-    pool: &SqlitePool,
     mut input: CreateVisitanteInput,
 ) -> Result<Visitante, VisitanteError> {
     // 1. Validar input
@@ -31,11 +38,10 @@ pub async fn create_visitante(
     }
 
     // 3. Verificar que NO esté en lista negra
-    let block_status = lista_negra_queries::check_if_blocked_by_cedula(pool, &input.cedula)
-        .await
-        .map_err(|e| VisitanteError::Validation(e.to_string()))?;
+    let block_status =
+        ln_db::check_if_blocked_by_cedula(&input.cedula).await.map_err(map_db_error)?;
 
-    if block_status.blocked {
+    if block_status.is_blocked {
         let nivel = block_status.nivel_severidad.unwrap_or_else(|| "BAJO".to_string());
         return Err(VisitanteError::Validation(format!(
             "No se puede registrar. La persona con cédula {} está en lista negra. Nivel: {}",
@@ -44,30 +50,21 @@ pub async fn create_visitante(
     }
 
     // 4. Validar si ya existe cédula
-    if visitante_queries::get_visitante_by_cedula(pool, &input.cedula).await?.is_some() {
+    if db::get_visitante_by_cedula(&input.cedula).await.map_err(map_db_error)?.is_some() {
         return Err(VisitanteError::CedulaExists);
     }
 
-    visitante_queries::create_visitante(pool, input).await.map_err(VisitanteError::Database)
+    db::create_visitante(input).await.map_err(map_db_error)
 }
 
-pub async fn search_visitantes(
-    pool: &SqlitePool,
-    term: &str,
-) -> Result<Vec<Visitante>, VisitanteError> {
-    visitante_queries::search_visitantes(pool, term).await.map_err(VisitanteError::Database)
+pub async fn search_visitantes(term: &str) -> Result<Vec<Visitante>, VisitanteError> {
+    db::search_visitantes(term).await.map_err(map_db_error)
 }
 
-pub async fn get_visitante_by_id(
-    pool: &SqlitePool,
-    id: &str,
-) -> Result<Option<Visitante>, VisitanteError> {
-    visitante_queries::get_visitante_by_id(pool, id).await.map_err(VisitanteError::Database)
+pub async fn get_visitante_by_id(id: &str) -> Result<Option<Visitante>, VisitanteError> {
+    db::get_visitante_by_id(id).await.map_err(map_db_error)
 }
 
-pub async fn get_visitante_by_cedula(
-    pool: &SqlitePool,
-    cedula: &str,
-) -> Result<Option<Visitante>, VisitanteError> {
-    visitante_queries::get_visitante_by_cedula(pool, cedula).await.map_err(VisitanteError::Database)
+pub async fn get_visitante_by_cedula(cedula: &str) -> Result<Option<Visitante>, VisitanteError> {
+    db::get_visitante_by_cedula(cedula).await.map_err(map_db_error)
 }
