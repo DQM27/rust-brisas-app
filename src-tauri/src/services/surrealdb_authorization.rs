@@ -13,6 +13,13 @@ pub async fn get_role_permissions(role_id: &str) -> Result<HashSet<String>, Surr
     let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
     let client = db.get_client().await?;
 
+    // Normalizar role_id (quitar prefijo 'roles:' si existe)
+    let normalized_role_id = role_id.strip_prefix("roles:").unwrap_or(role_id);
+    println!(
+        "🔍 [AUTH] Buscando permisos para role_id: '{}' (normalizado: '{}')",
+        role_id, normalized_role_id
+    );
+
     #[derive(serde::Deserialize)]
     struct PermResult {
         permission_id: String,
@@ -25,10 +32,11 @@ pub async fn get_role_permissions(role_id: &str) -> Result<HashSet<String>, Surr
             WHERE role_id = $role_id
             "#,
         )
-        .bind(("role_id", role_id.to_string()))
+        .bind(("role_id", normalized_role_id.to_string()))
         .await?;
 
     let perms: Vec<PermResult> = result.take(0)?;
+    println!("🔍 [AUTH] Permisos encontrados: {}", perms.len());
     Ok(perms.into_iter().map(|p| p.permission_id).collect())
 }
 

@@ -53,11 +53,14 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
 
     let now = chrono::Utc::now().to_rfc3339();
 
+    // Usar los mismos UUIDs que SQLite para compatibilidad con frontend
+    use crate::domain::role::{ROLE_ADMIN_ID, ROLE_GUARDIA_ID, ROLE_SUPERVISOR_ID};
+
     // Crear roles usando UPSERT para que sea idempotente
     client
         .query(
             r#"
-            UPSERT roles:admin CONTENT {
+            UPSERT type::thing('roles', $admin_id) CONTENT {
                 name: 'Administrador',
                 description: 'Acceso completo al sistema',
                 is_system: true,
@@ -65,7 +68,7 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
                 updated_at: $now
             };
             
-            UPSERT roles:supervisor CONTENT {
+            UPSERT type::thing('roles', $supervisor_id) CONTENT {
                 name: 'Supervisor',
                 description: 'Supervisión de operaciones',
                 is_system: true,
@@ -73,7 +76,7 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
                 updated_at: $now
             };
             
-            UPSERT roles:guardia CONTENT {
+            UPSERT type::thing('roles', $guardia_id) CONTENT {
                 name: 'Guardia',
                 description: 'Registro de ingresos',
                 is_system: true,
@@ -82,10 +85,13 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
             };
             "#,
         )
+        .bind(("admin_id", ROLE_ADMIN_ID))
+        .bind(("supervisor_id", ROLE_SUPERVISOR_ID))
+        .bind(("guardia_id", ROLE_GUARDIA_ID))
         .bind(("now", now))
         .await?;
 
-    println!("  ✓ Roles creados");
+    println!("  ✓ Roles creados (usando UUIDs de SQLite)");
     Ok(())
 }
 
@@ -151,6 +157,9 @@ async fn seed_role_permissions() -> Result<(), SurrealDbError> {
     let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
     let client = db.get_client().await?;
 
+    // Usar los UUIDs correctos
+    use crate::domain::role::{ROLE_ADMIN_ID, ROLE_GUARDIA_ID, ROLE_SUPERVISOR_ID};
+
     // Admin tiene TODOS los permisos
     let modules = [
         "users",
@@ -179,12 +188,13 @@ async fn seed_role_permissions() -> Result<(), SurrealDbError> {
                 .query(
                     r#"
                     UPSERT type::thing('role_permissions', $rp_id) CONTENT {
-                        role_id: 'admin',
+                        role_id: $role_id,
                         permission_id: $perm_id
                     }
                     "#,
                 )
                 .bind(("rp_id", rp_id))
+                .bind(("role_id", ROLE_ADMIN_ID))
                 .bind(("perm_id", perm_id))
                 .await?;
         }
@@ -212,12 +222,13 @@ async fn seed_role_permissions() -> Result<(), SurrealDbError> {
             .query(
                 r#"
                 UPSERT type::thing('role_permissions', $rp_id) CONTENT {
-                    role_id: 'guardia',
+                    role_id: $role_id,
                     permission_id: $perm_id
                 }
                 "#,
             )
             .bind(("rp_id", rp_id))
+            .bind(("role_id", ROLE_GUARDIA_ID))
             .bind(("perm_id", *perm_id))
             .await?;
     }
@@ -257,12 +268,13 @@ async fn seed_role_permissions() -> Result<(), SurrealDbError> {
             .query(
                 r#"
                 UPSERT type::thing('role_permissions', $rp_id) CONTENT {
-                    role_id: 'supervisor',
+                    role_id: $role_id,
                     permission_id: $perm_id
                 }
                 "#,
             )
             .bind(("rp_id", rp_id))
+            .bind(("role_id", ROLE_SUPERVISOR_ID))
             .bind(("perm_id", *perm_id))
             .await?;
     }
@@ -275,6 +287,8 @@ async fn seed_role_permissions() -> Result<(), SurrealDbError> {
 async fn seed_superuser() -> Result<(), SurrealDbError> {
     let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
     let client = db.get_client().await?;
+
+    use crate::domain::role::ROLE_ADMIN_ID;
 
     // Verificar si ya existe
     let mut result = client
@@ -306,7 +320,7 @@ async fn seed_superuser() -> Result<(), SurrealDbError> {
                 password: $password,
                 nombre: 'System',
                 apellido: 'Root',
-                role: roles:admin,
+                role: type::thing('roles', $role_id),
                 is_active: true,
                 created_at: $now,
                 updated_at: $now,
@@ -319,6 +333,7 @@ async fn seed_superuser() -> Result<(), SurrealDbError> {
         .bind(("id", SUPERUSER_ID.to_string()))
         .bind(("email", SUPERUSER_EMAIL.to_string()))
         .bind(("password", password_hash))
+        .bind(("role_id", ROLE_ADMIN_ID))
         .bind(("now", now))
         .await?;
 
@@ -330,6 +345,8 @@ async fn seed_superuser() -> Result<(), SurrealDbError> {
 async fn seed_admin_user() -> Result<(), SurrealDbError> {
     let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
     let client = db.get_client().await?;
+
+    use crate::domain::role::ROLE_ADMIN_ID;
 
     // Verificar si ya existe
     let mut result = client
@@ -361,7 +378,7 @@ async fn seed_admin_user() -> Result<(), SurrealDbError> {
                 password: $password,
                 nombre: 'Daniel',
                 apellido: 'Quintana',
-                role: roles:admin,
+                role: type::thing('roles', $role_id),
                 is_active: true,
                 created_at: $now,
                 updated_at: $now,
@@ -374,6 +391,7 @@ async fn seed_admin_user() -> Result<(), SurrealDbError> {
         .bind(("id", id))
         .bind(("email", "daniel.bleach1@gmail.com".to_string()))
         .bind(("password", password_hash))
+        .bind(("role_id", ROLE_ADMIN_ID))
         .bind(("now", now))
         .await?;
 

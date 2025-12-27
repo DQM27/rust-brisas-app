@@ -97,6 +97,7 @@ impl SurrealDbService {
         }
 
         log::info!("🔌 Conectando a SurrealDB embebido en: {:?}", self.config.data_path);
+        println!("📂 [SURREALDB] Ruta de DB: {:?}", self.config.data_path);
 
         // Crear conexión embebida con SurrealKV (Pure Rust, no C++ deps)
         let db = Surreal::new::<SurrealKv>(self.config.data_path.clone())

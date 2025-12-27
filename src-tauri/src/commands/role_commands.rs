@@ -5,8 +5,7 @@
 
 use crate::domain::errors::RoleError;
 use crate::models::role::{
-    CreateRoleInput, Module, Permission, RoleListResponse, RoleResponse, UpdateRoleInput,
-    VisibleModule,
+    CreateRoleInput, Permission, RoleListResponse, RoleResponse, UpdateRoleInput, VisibleModule,
 };
 use crate::services::session::SessionState;
 use tauri::State;
