@@ -12,7 +12,7 @@ DEFINE FIELD name ON TABLE role TYPE string;
 DEFINE FIELD description ON TABLE role TYPE option<string>;
 DEFINE FIELD is_system ON TABLE role TYPE bool DEFAULT false;
 DEFINE FIELD permissions ON TABLE role TYPE option<array<string>>;
-DEFINE FIELD created_at ON TABLE role TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD created_at ON TABLE role TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE role TYPE datetime VALUE time::now();
 DEFINE INDEX idx_role_name ON role COLUMNS name UNIQUE;
 
@@ -21,7 +21,7 @@ DEFINE TABLE empresa SCHEMAFULL;
 DEFINE FIELD nombre ON TABLE empresa TYPE string;
 DEFINE FIELD direccion ON TABLE empresa TYPE option<string>;
 DEFINE FIELD is_active ON TABLE empresa TYPE bool DEFAULT true;
-DEFINE FIELD created_at ON TABLE empresa TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD created_at ON TABLE empresa TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE empresa TYPE datetime VALUE time::now();
 DEFINE INDEX idx_empresa_nombre ON empresa COLUMNS nombre UNIQUE;
 
@@ -49,7 +49,7 @@ DEFINE FIELD contacto_emergencia_nombre ON TABLE user TYPE option<string>;
 DEFINE FIELD contacto_emergencia_telefono ON TABLE user TYPE option<string>;
 DEFINE FIELD avatar_path ON TABLE user TYPE option<string>;
 DEFINE FIELD must_change_password ON TABLE user TYPE bool DEFAULT false;
-DEFINE FIELD created_at ON TABLE user TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD created_at ON TABLE user TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE user TYPE datetime VALUE time::now();
 DEFINE FIELD deleted_at ON TABLE user TYPE option<datetime>;
 DEFINE FIELD nombre_completo ON TABLE user VALUE 
@@ -66,7 +66,7 @@ DEFINE FIELD apellido ON TABLE contratista TYPE string;
 DEFINE FIELD empresa ON TABLE contratista TYPE record<empresa>;
 DEFINE FIELD estado ON TABLE contratista TYPE string ASSERT $value INSIDE ['activo', 'suspendido', 'bloqueado'];
 DEFINE FIELD fecha_vencimiento_praind ON TABLE contratista TYPE option<string>;
-DEFINE FIELD created_at ON TABLE contratista TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD created_at ON TABLE contratista TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE contratista TYPE datetime VALUE time::now();
 DEFINE INDEX idx_contratista_cedula ON contratista COLUMNS cedula UNIQUE;
 
@@ -75,7 +75,7 @@ DEFINE FIELD cedula ON TABLE proveedor TYPE string;
 DEFINE FIELD nombre ON TABLE proveedor TYPE string;
 DEFINE FIELD apellido ON TABLE proveedor TYPE string;
 DEFINE FIELD empresa ON TABLE proveedor TYPE record<empresa>;
-DEFINE FIELD created_at ON TABLE proveedor TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD created_at ON TABLE proveedor TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE proveedor TYPE datetime VALUE time::now();
 DEFINE INDEX idx_proveedor_cedula ON proveedor COLUMNS cedula UNIQUE;
 
@@ -83,7 +83,7 @@ DEFINE TABLE visitante SCHEMAFULL;
 DEFINE FIELD cedula ON TABLE visitante TYPE string;
 DEFINE FIELD nombre ON TABLE visitante TYPE string;
 DEFINE FIELD apellido ON TABLE visitante TYPE string;
-DEFINE FIELD created_at ON TABLE visitante TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD created_at ON TABLE visitante TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE visitante TYPE datetime VALUE time::now();
 DEFINE INDEX idx_visitante_cedula ON visitante COLUMNS cedula UNIQUE;
 
@@ -110,7 +110,7 @@ DEFINE FIELD estado ON TABLE cita TYPE string ASSERT $value INSIDE ['pendiente',
 DEFINE FIELD activa ON TABLE cita TYPE bool DEFAULT true;
 DEFINE FIELD visitante_nombre ON TABLE cita TYPE option<string>;
 DEFINE FIELD visitante_cedula ON TABLE cita TYPE option<string>;
-DEFINE FIELD created_at ON TABLE cita TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD created_at ON TABLE cita TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE cita TYPE datetime VALUE time::now();
 
 -- Tabla GAFETE
@@ -119,7 +119,7 @@ DEFINE FIELD numero ON TABLE gafete TYPE string;
 DEFINE FIELD tipo ON TABLE gafete TYPE string ASSERT $value INSIDE ['contratista', 'proveedor', 'visita'];
 DEFINE FIELD estado ON TABLE gafete TYPE string ASSERT $value INSIDE ['activo', 'inactivo', 'perdido'] DEFAULT 'activo';
 DEFINE FIELD en_uso ON TABLE gafete TYPE bool DEFAULT false;
-DEFINE FIELD created_at ON TABLE gafete TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD created_at ON TABLE gafete TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE gafete TYPE datetime VALUE time::now();
 DEFINE INDEX idx_gafete_numero_tipo ON gafete COLUMNS numero, tipo UNIQUE;
 
@@ -133,7 +133,7 @@ DEFINE FIELD marca ON TABLE vehiculo TYPE option<string>;
 DEFINE FIELD modelo ON TABLE vehiculo TYPE option<string>;
 DEFINE FIELD color ON TABLE vehiculo TYPE option<string>;
 DEFINE FIELD is_active ON TABLE vehiculo TYPE bool DEFAULT true;
-DEFINE FIELD created_at ON TABLE vehiculo TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD created_at ON TABLE vehiculo TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE vehiculo TYPE datetime VALUE time::now();
 DEFINE INDEX idx_vehiculo_placa ON vehiculo COLUMNS placa UNIQUE;
 
@@ -146,7 +146,7 @@ DEFINE FIELD nivel_severidad ON TABLE lista_negra TYPE string ASSERT $value INSI
 DEFINE FIELD motivo_bloqueo ON TABLE lista_negra TYPE string;
 DEFINE FIELD bloqueado_por ON TABLE lista_negra TYPE option<string>;
 DEFINE FIELD is_active ON TABLE lista_negra TYPE bool DEFAULT true;
-DEFINE FIELD created_at ON TABLE lista_negra TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD created_at ON TABLE lista_negra TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE lista_negra TYPE datetime VALUE time::now();
 DEFINE INDEX idx_lista_negra_cedula ON lista_negra COLUMNS cedula UNIQUE;
 

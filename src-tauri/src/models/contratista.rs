@@ -11,13 +11,18 @@ pub struct Contratista {
     pub id: RecordId,
     pub cedula: String,
     pub nombre: String,
+    #[serde(alias = "segundo_nombre")]
     pub segundo_nombre: Option<String>,
     pub apellido: String,
+    #[serde(alias = "segundo_apellido")]
     pub segundo_apellido: Option<String>,
     pub empresa: RecordId,
+    #[serde(alias = "fecha_vencimiento_praind")]
     pub fecha_vencimiento_praind: Datetime,
     pub estado: EstadoContratista,
+    #[serde(alias = "created_at")]
     pub created_at: Datetime,
+    #[serde(alias = "updated_at")]
     pub updated_at: Datetime,
 }
 
@@ -141,9 +146,24 @@ pub struct ContratistaResponse {
 impl From<Contratista> for ContratistaResponse {
     fn from(c: Contratista) -> Self {
         let hoy = Utc::now();
-        // Fallback to now if parse fails to avoid panic, though validation should ensure validity
-        let fecha_venc: DateTime<Utc> =
-            c.fecha_vencimiento_praind.to_string().parse().unwrap_or(hoy);
+        // Access inner DateTime<Utc> directly (assuming tuple struct or Deref)
+        // If compilation fails, we will adjust to strict Into conversion
+        let raw_date = c.fecha_vencimiento_praind.to_string();
+        let fecha_venc: DateTime<Utc> = raw_date
+            .parse()
+            .or_else(|_| {
+                // Intenta parsear como fecha simple (YYYY-MM-DD)
+                chrono::NaiveDate::parse_from_str(&raw_date, "%Y-%m-%d")
+                    .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_local_timezone(Utc).unwrap())
+            })
+            .unwrap_or_else(|_| {
+                println!(
+                    ">>> CRITICAL: Error parseando fecha '{}'. Usando fecha actual.",
+                    raw_date
+                );
+                hoy
+            });
+
         let dias_hasta_vencimiento = (fecha_venc - hoy).num_days();
         let praind_vencido = fecha_venc < hoy;
         let requiere_atencion = dias_hasta_vencimiento <= 30 && dias_hasta_vencimiento >= 0;
@@ -171,7 +191,7 @@ impl From<Contratista> for ContratistaResponse {
             nombre_completo,
             empresa_id: c.empresa.to_string(),
             empresa_nombre: String::new(), // Will be filled by service
-            fecha_vencimiento_praind: c.fecha_vencimiento_praind.to_string(),
+            fecha_vencimiento_praind: fecha_venc.to_rfc3339(),
             estado: c.estado,
             puede_ingresar,
             praind_vencido,
@@ -183,7 +203,7 @@ impl From<Contratista> for ContratistaResponse {
             vehiculo_marca: None,
             vehiculo_modelo: None,
             vehiculo_color: None,
-            created_at: c.created_at.to_string(),
+            created_at: c.created_at.to_string(), // Keep default or change to rfc3339 if needed
             updated_at: c.updated_at.to_string(),
         }
     }

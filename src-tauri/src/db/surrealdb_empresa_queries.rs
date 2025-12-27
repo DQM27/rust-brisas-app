@@ -9,15 +9,8 @@ use surrealdb::RecordId;
 pub async fn create(dto: EmpresaCreateDTO) -> Result<Empresa, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<Empresa> = db
-        .query(
-            r#"
-            CREATE empresa CONTENT $dto
-        "#,
-        )
-        .bind(("dto", dto))
-        .await?
-        .take(0)?;
+    let result: Option<Empresa> =
+        db.query("CREATE empresa CONTENT $dto").bind(("dto", dto)).await?.take(0)?;
 
     result.ok_or(SurrealDbError::Query("No se pudo crear la empresa".to_string()))
 }
@@ -25,10 +18,16 @@ pub async fn create(dto: EmpresaCreateDTO) -> Result<Empresa, SurrealDbError> {
 pub async fn exists_by_name(nombre: &str) -> Result<bool, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM empresa WHERE nombre = $nombre")
+        .query("SELECT id FROM empresa WHERE nombre = $nombre")
         .bind(("nombre", nombre.to_uppercase()))
         .await?;
-    let empresas: Vec<Empresa> = result.take(0)?;
+
+    #[derive(serde::Deserialize)]
+    struct IdOnly {
+        id: RecordId,
+    }
+
+    let empresas: Vec<IdOnly> = result.take(0)?;
     Ok(!empresas.is_empty())
 }
 

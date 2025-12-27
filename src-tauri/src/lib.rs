@@ -29,16 +29,24 @@ pub struct AppState {
 pub fn run() {
     let mut builder = tauri::Builder::default();
 
+    // 1. SETUP LOGGING
+    // Inicializar logger una sola vez
+    builder = builder.plugin(
+        tauri_plugin_log::Builder::new()
+            .level(log::LevelFilter::Info)
+            .level_for("zbus", log::LevelFilter::Warn)
+            .level_for("tantivy", log::LevelFilter::Warn)
+            .level_for("tracing", log::LevelFilter::Warn)
+            .build(),
+    );
+
+    // DEBUG BANNER
+    println!("\n\n***************************************************");
+    println!("***       DEBUG MODE: SERIALIZATION FIX ACTIVE    ***");
+    println!("***************************************************\n\n");
+
     #[cfg(desktop)]
     {
-        builder = builder.plugin(
-            tauri_plugin_log::Builder::new()
-                .level(log::LevelFilter::Info)
-                .level_for("zbus", log::LevelFilter::Warn)
-                .level_for("tantivy", log::LevelFilter::Warn)
-                .level_for("tracing", log::LevelFilter::Warn)
-                .build(),
-        );
         builder = builder.plugin(tauri_plugin_dialog::init());
         builder = builder.plugin(tauri_plugin_opener::init());
         builder = builder.plugin(tauri_plugin_updater::Builder::new().build());

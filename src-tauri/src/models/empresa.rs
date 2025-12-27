@@ -16,9 +16,12 @@ pub struct Empresa {
     pub id: RecordId,
     pub nombre: String,
     pub direccion: Option<String>,
+    #[serde(alias = "is_active")]
     pub is_active: bool,
-    pub created_at: surrealdb::Datetime,
-    pub updated_at: surrealdb::Datetime,
+    #[serde(alias = "created_at", default)]
+    pub created_at: Option<surrealdb::Datetime>,
+    #[serde(alias = "updated_at", default)]
+    pub updated_at: Option<surrealdb::Datetime>,
 }
 
 // ==========================================
@@ -75,8 +78,14 @@ impl From<Empresa> for EmpresaResponse {
             direccion: e.direccion,
             is_active: e.is_active,
             total_contratistas: 0,
-            created_at: e.created_at.to_string(),
-            updated_at: e.updated_at.to_string(),
+            created_at: e
+                .created_at
+                .map(|d| d.to_string())
+                .unwrap_or_else(|| chrono::Utc::now().to_rfc3339()),
+            updated_at: e
+                .updated_at
+                .map(|d| d.to_string())
+                .unwrap_or_else(|| chrono::Utc::now().to_rfc3339()),
         }
     }
 }
