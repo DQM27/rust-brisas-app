@@ -5,7 +5,7 @@
 
 use crate::models::proveedor::{Proveedor, ProveedorCreateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 pub async fn create(dto: ProveedorCreateDTO) -> Result<Proveedor, SurrealDbError> {
     let db = get_db().await?;
@@ -16,9 +16,9 @@ pub async fn create(dto: ProveedorCreateDTO) -> Result<Proveedor, SurrealDbError
     result.ok_or(SurrealDbError::Query("Error creando proveedor".to_string()))
 }
 
-pub async fn find_by_id(id: &Thing) -> Result<Option<Proveedor>, SurrealDbError> {
+pub async fn find_by_id(id: &RecordId) -> Result<Option<Proveedor>, SurrealDbError> {
     let db = get_db().await?;
-    let result: Option<Proveedor> = db.select((id.tb.clone(), id.id.to_string())).await?;
+    let result: Option<Proveedor> = db.select(id.clone()).await?;
     Ok(result)
 }
 
@@ -60,22 +60,21 @@ pub async fn search(query: &str, limit: usize) -> Result<Vec<Proveedor>, Surreal
     Ok(result.take(0)?)
 }
 
-pub async fn update(id: &Thing, data: serde_json::Value) -> Result<Proveedor, SurrealDbError> {
+pub async fn update(id: &RecordId, data: serde_json::Value) -> Result<Proveedor, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<Proveedor> =
-        db.update((id.tb.clone(), id.id.to_string())).merge(data).await?;
+    let result: Option<Proveedor> = db.update(id.clone()).merge(data).await?;
 
     result.ok_or(SurrealDbError::Query("Proveedor no encontrado o error al actualizar".to_string()))
 }
 
-pub async fn delete(id: &Thing) -> Result<(), SurrealDbError> {
+pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    let _: Option<Proveedor> = db.delete((id.tb.clone(), id.id.to_string())).await?;
+    let _: Option<Proveedor> = db.delete(id.clone()).await?;
     Ok(())
 }
 
-pub async fn get_empresa_nombre(empresa_id: &Thing) -> Result<String, SurrealDbError> {
+pub async fn get_empresa_nombre(empresa_id: &RecordId) -> Result<String, SurrealDbError> {
     let db = get_db().await?;
 
     let mut result = db.query("SELECT nombre FROM $id").bind(("id", empresa_id.clone())).await?;

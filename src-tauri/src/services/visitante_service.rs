@@ -11,7 +11,7 @@ use crate::models::visitante::{CreateVisitanteInput, VisitanteCreateDTO, Visitan
 use crate::services::surrealdb_service::SurrealDbError;
 use chrono::Utc;
 use log::{error, info};
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 // Helper para mapear errores de SurrealDB a VisitanteError
 fn map_db_error(e: SurrealDbError) -> VisitanteError {
@@ -20,22 +20,22 @@ fn map_db_error(e: SurrealDbError) -> VisitanteError {
 }
 
 /// Helper para parsear ID de visitante (acepta con o sin prefijo)
-fn parse_visitante_id(id_str: &str) -> Thing {
+fn parse_visitante_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
-        Thing::from((parts[0], parts[1]))
+        RecordId::from_table_key(parts[0], parts[1])
     } else {
-        Thing::from(("visitante", id_str))
+        RecordId::from_table_key("visitante", id_str)
     }
 }
 
 /// Helper para parsear ID de empresa (acepta con o sin prefijo)
-fn parse_empresa_id(id_str: &str) -> Thing {
+fn parse_empresa_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
-        Thing::from((parts[0], parts[1]))
+        RecordId::from_table_key(parts[0], parts[1])
     } else {
-        Thing::from(("empresa", id_str))
+        RecordId::from_table_key("empresa", id_str)
     }
 }
 
@@ -138,7 +138,8 @@ pub async fn update_visitante(
         serde_json::json!(input.empresa_id.map(|id| parse_empresa_id(&id))),
     );
     update_data.insert("has_vehicle".to_string(), serde_json::json!(input.has_vehicle));
-    update_data.insert("updated_at".to_string(), serde_json::json!(Utc::now()));
+    update_data
+        .insert("updated_at".to_string(), serde_json::json!(surrealdb::Datetime::from(Utc::now())));
 
     let visitante = db::update(&id_thing, serde_json::Value::Object(update_data))
         .await

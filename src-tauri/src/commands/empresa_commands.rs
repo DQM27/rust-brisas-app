@@ -15,7 +15,7 @@ pub async fn create_empresa(input: CreateEmpresaInput) -> Result<EmpresaResponse
 
 #[tauri::command]
 pub async fn get_empresa_by_id(id: String) -> Result<EmpresaResponse, EmpresaError> {
-    service::get_empresa_by_id(id).await
+    service::get_empresa_by_id(&id).await
 }
 
 #[tauri::command]
@@ -33,10 +33,10 @@ pub async fn update_empresa(
     id: String,
     input: UpdateEmpresaInput,
 ) -> Result<EmpresaResponse, EmpresaError> {
-    service::update_empresa(id, input).await
+    service::update_empresa(&id, input).await
 }
 
 #[tauri::command]
 pub async fn delete_empresa(id: String) -> Result<(), EmpresaError> {
-    service::delete_empresa(id).await
+    service::delete_empresa(&id).await
 }

@@ -5,7 +5,7 @@
 
 use crate::models::ingreso::{Ingreso, IngresoCreateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 pub async fn insert(dto: IngresoCreateDTO) -> Result<Ingreso, SurrealDbError> {
     let db = get_db().await?;
@@ -39,22 +39,26 @@ pub async fn find_ingreso_abierto_by_cedula(
 }
 
 pub async fn update_salida(
-    ingreso_id: &Thing,
-    usuario_salida_id: &Thing,
+    ingreso_id: &RecordId,
+    usuario_salida_id: &RecordId,
     observaciones: Option<String>,
 ) -> Result<Ingreso, SurrealDbError> {
     let db = get_db().await?;
 
     let mut map = serde_json::Map::new();
-    map.insert("fecha_hora_salida".to_string(), serde_json::json!(chrono::Utc::now()));
+    map.insert(
+        "fecha_hora_salida".to_string(),
+        serde_json::json!(surrealdb::Datetime::from(chrono::Utc::now())),
+    );
     map.insert("usuario_salida".to_string(), serde_json::json!(usuario_salida_id));
     map.insert("observaciones_salida".to_string(), serde_json::json!(observaciones));
-    map.insert("updated_at".to_string(), serde_json::json!(chrono::Utc::now()));
+    map.insert(
+        "updated_at".to_string(),
+        serde_json::json!(surrealdb::Datetime::from(chrono::Utc::now())),
+    );
 
-    let result: Option<Ingreso> = db
-        .update((ingreso_id.tb.clone(), ingreso_id.id.to_string()))
-        .merge(serde_json::Value::Object(map))
-        .await?;
+    let result: Option<Ingreso> =
+        db.update(ingreso_id.clone()).merge(serde_json::Value::Object(map)).await?;
 
     result
         .ok_or(SurrealDbError::TransactionError("Error al registrar salida de visita".to_string()))

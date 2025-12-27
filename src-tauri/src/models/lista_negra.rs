@@ -2,9 +2,9 @@
 // src/models/lista_negra.rs
 // ==========================================
 
-use chrono::{NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use surrealdb::RecordId;
 
 // ==========================================
 // ENUMS
@@ -54,21 +54,21 @@ impl Default for NivelSeveridad {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListaNegra {
-    pub id: String,
+    pub id: RecordId,
     pub cedula: String,
     pub nombre: String,
     pub segundo_nombre: Option<String>,
     pub apellido: String,
     pub segundo_apellido: Option<String>,
-    pub empresa_id: Option<String>,
+    pub empresa_id: Option<RecordId>,
     pub empresa_nombre: Option<String>,
     pub nivel_severidad: String,
     pub motivo_bloqueo: String,
     pub bloqueado_por: String,
     pub observaciones: Option<String>,
     pub is_active: bool,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: surrealdb::Datetime,
+    pub updated_at: surrealdb::Datetime,
 }
 
 // ==========================================
@@ -139,21 +139,22 @@ impl From<ListaNegra> for ListaNegraResponse {
         .collect::<Vec<&str>>()
         .join(" ");
 
-        let created = NaiveDateTime::parse_from_str(&ln.created_at, "%Y-%m-%dT%H:%M:%S%.f%z")
-            .or_else(|_| NaiveDateTime::parse_from_str(&ln.created_at, "%Y-%m-%d %H:%M:%S"))
-            .unwrap_or_else(|_| Utc::now().naive_utc());
+        let created: chrono::DateTime<chrono::Utc> =
+            ln.created_at.to_string().parse().unwrap_or_default();
+        let updated: chrono::DateTime<chrono::Utc> =
+            ln.updated_at.to_string().parse().unwrap_or_default();
 
-        let dias_bloqueado = (Utc::now().naive_utc() - created).num_days();
+        let dias_bloqueado = (chrono::Utc::now() - created).num_days();
 
         Self {
-            id: ln.id,
+            id: ln.id.to_string(),
             cedula: ln.cedula,
             nombre: ln.nombre,
             segundo_nombre: ln.segundo_nombre,
             apellido: ln.apellido,
             segundo_apellido: ln.segundo_apellido,
             nombre_completo,
-            empresa_id: ln.empresa_id,
+            empresa_id: ln.empresa_id.map(|id| id.to_string()),
             empresa_nombre: ln.empresa_nombre,
             nivel_severidad: ln.nivel_severidad,
             motivo_bloqueo: ln.motivo_bloqueo,
@@ -162,8 +163,8 @@ impl From<ListaNegra> for ListaNegraResponse {
             observaciones: ln.observaciones,
             is_active: ln.is_active,
             dias_bloqueado,
-            created_at: ln.created_at,
-            updated_at: ln.updated_at,
+            created_at: created.to_rfc3339(),
+            updated_at: updated.to_rfc3339(),
         }
     }
 }

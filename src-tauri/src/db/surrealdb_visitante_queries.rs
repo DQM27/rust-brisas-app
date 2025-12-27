@@ -4,7 +4,7 @@
 
 use crate::models::visitante::{Visitante, VisitanteCreateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 pub async fn create_visitante(dto: VisitanteCreateDTO) -> Result<Visitante, SurrealDbError> {
     let db = get_db().await?;
@@ -22,9 +22,9 @@ pub async fn create_visitante(dto: VisitanteCreateDTO) -> Result<Visitante, Surr
     res.ok_or(SurrealDbError::TransactionError("Error al crear visitante".to_string()))
 }
 
-pub async fn find_by_id(id: &Thing) -> Result<Option<Visitante>, SurrealDbError> {
+pub async fn find_by_id(id: &RecordId) -> Result<Option<Visitante>, SurrealDbError> {
     let db = get_db().await?;
-    let result: Option<Visitante> = db.select((id.tb.clone(), id.id.to_string())).await?;
+    let result: Option<Visitante> = db.select(id.clone()).await?;
     Ok(result)
 }
 
@@ -46,17 +46,16 @@ pub async fn search_visitantes(term: &str) -> Result<Vec<Visitante>, SurrealDbEr
     Ok(result.take(0)?)
 }
 
-pub async fn update(id: &Thing, data: serde_json::Value) -> Result<Visitante, SurrealDbError> {
+pub async fn update(id: &RecordId, data: serde_json::Value) -> Result<Visitante, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<Visitante> =
-        db.update((id.tb.clone(), id.id.to_string())).merge(data).await?;
+    let result: Option<Visitante> = db.update(id.clone()).merge(data).await?;
 
     result.ok_or(SurrealDbError::Query("Visitante no encontrado o error al actualizar".to_string()))
 }
 
-pub async fn delete(id: &Thing) -> Result<(), SurrealDbError> {
+pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    let _: Option<Visitante> = db.delete((id.tb.clone(), id.id.to_string())).await?;
+    let _: Option<Visitante> = db.delete(id.clone()).await?;
     Ok(())
 }

@@ -100,8 +100,8 @@ impl SearchService {
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 
         // Obtener todos los usuarios (excluyendo superuser del índice)
-        let superuser_thing = surrealdb::sql::Thing::from(("user", SUPERUSER_ID));
-        let users = user_queries::find_all(Some(&superuser_thing))
+        let superuser_record = surrealdb::RecordId::from_table_key("user", SUPERUSER_ID);
+        let users = user_queries::find_all(Some(&superuser_record))
             .await
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 

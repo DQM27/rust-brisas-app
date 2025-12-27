@@ -8,15 +8,15 @@ use crate::domain::role::is_superuser;
 use crate::models::role::{Action, Module};
 use crate::services::surrealdb_service::SurrealDbError;
 use std::collections::HashSet;
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 /// Helper para parsear ID de rol (acepta con o sin prefijo)
-fn parse_role_id(id_str: &str) -> Thing {
+fn parse_role_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
-        Thing::from((parts[0], parts[1]))
+        RecordId::from_table_key(parts[0], parts[1])
     } else {
-        Thing::from(("role", id_str))
+        RecordId::from_table_key("role", id_str)
     }
 }
 

@@ -1,0 +1,29 @@
+    Checking brisas-app v0.1.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+warning: unused imports: `DateTime` and `Utc`
+ --> src\models\proveedor.rs:5:14
+  |
+5 | use chrono::{DateTime, Utc};
+  |              ^^^^^^^^  ^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `DateTime` and `Utc`
+ --> src\models\vehiculo.rs:5:14
+  |
+5 | use chrono::{DateTime, Utc};
+  |              ^^^^^^^^  ^^^
+
+warning: unused imports: `DateTime` and `Utc`
+ --> src\models\visitante.rs:5:14
+  |
+5 | use chrono::{DateTime, Utc};
+  |              ^^^^^^^^  ^^^
+
+warning: unused import: `sql::Thing`
+  --> src\services\visitante_service.rs:14:17
+   |
+14 | use surrealdb::{sql::Thing, RecordId};
+   |                 ^^^^^^^^^^
+
+warning: `brisas-app` (lib) generated 4 warnings (run `cargo fix --lib -p brisas-app` to apply 4 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 20.34s

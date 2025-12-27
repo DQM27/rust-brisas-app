@@ -5,6 +5,7 @@
 use crate::models::lista_negra::{BlockCheckResponse, ListaNegra};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use serde::Deserialize;
+use surrealdb::Datetime;
 
 pub async fn check_if_blocked_by_cedula(
     cedula: &str,
@@ -19,7 +20,7 @@ pub async fn check_if_blocked_by_cedula(
     #[derive(Deserialize)]
     struct LN {
         nivel_severidad: Option<String>,
-        created_at: Option<String>,
+        created_at: Option<Datetime>,
     }
     let res: Option<LN> = result.take(0)?;
 
@@ -27,7 +28,7 @@ pub async fn check_if_blocked_by_cedula(
         Some(ln) => Ok(BlockCheckResponse {
             is_blocked: true,
             nivel_severidad: ln.nivel_severidad,
-            bloqueado_desde: ln.created_at,
+            bloqueado_desde: ln.created_at.map(|d| d.to_string()),
         }),
         None => Ok(BlockCheckResponse {
             is_blocked: false,

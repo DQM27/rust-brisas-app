@@ -1,12 +1,7 @@
-// ==========================================
-// src/db/surrealdb_user_queries.rs
-// Enterprise Quality SurrealDB Implementation
-// ==========================================
-
 use crate::models::user::{User, UserCreateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use serde::Deserialize;
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 #[derive(Debug, Deserialize)]
 struct UserWithPassword {
@@ -52,13 +47,9 @@ pub async fn insert(dto: UserCreateDTO) -> Result<User, SurrealDbError> {
     created.ok_or(SurrealDbError::Query("No se pudo crear el usuario".to_string()))
 }
 
-pub async fn find_by_id(id: &Thing) -> Result<Option<User>, SurrealDbError> {
+pub async fn find_by_id(id: &RecordId) -> Result<Option<User>, SurrealDbError> {
     let db = get_db().await?;
-    let mut result = db
-        .query("SELECT * FROM type::thing($table, $id)")
-        .bind(("table", id.tb.clone()))
-        .bind(("id", id.id.to_string()))
-        .await?;
+    let mut result = db.query("SELECT * FROM $id").bind(("id", id.clone())).await?;
     Ok(result.take(0)?)
 }
 
@@ -87,7 +78,10 @@ pub async fn find_by_email_with_password(
     }
 }
 
-pub async fn update(id: &Thing, data: serde_json::Value) -> Result<Option<User>, SurrealDbError> {
+pub async fn update(
+    id: &RecordId,
+    data: serde_json::Value,
+) -> Result<Option<User>, SurrealDbError> {
     let db = get_db().await?;
     let mut result =
         db.query("UPDATE $id MERGE $data").bind(("id", id.clone())).bind(("data", data)).await?;
@@ -95,13 +89,13 @@ pub async fn update(id: &Thing, data: serde_json::Value) -> Result<Option<User>,
     Ok(result.take(0)?)
 }
 
-pub async fn delete(id: &Thing) -> Result<(), SurrealDbError> {
+pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
     db.query("DELETE $id").bind(("id", id.clone())).await?;
     Ok(())
 }
 
-pub async fn find_all(exclude_id: Option<&Thing>) -> Result<Vec<User>, SurrealDbError> {
+pub async fn find_all(exclude_id: Option<&RecordId>) -> Result<Vec<User>, SurrealDbError> {
     let db = get_db().await?;
     let mut query = "SELECT * FROM user".to_string();
     if exclude_id.is_some() {
@@ -136,7 +130,7 @@ pub async fn count_by_email(email: &str) -> Result<i64, SurrealDbError> {
 
 pub async fn count_by_email_excluding_id(
     email: &str,
-    exclude_id: &Thing,
+    exclude_id: &RecordId,
 ) -> Result<i64, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
@@ -154,7 +148,7 @@ pub async fn count_by_email_excluding_id(
     Ok(rows.first().map(|c| c.count).unwrap_or(0))
 }
 
-pub async fn get_role_name(role: &Thing) -> Result<String, SurrealDbError> {
+pub async fn get_role_name(role: &RecordId) -> Result<String, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db.query("SELECT name FROM $role").bind(("role", role.clone())).await?;
 

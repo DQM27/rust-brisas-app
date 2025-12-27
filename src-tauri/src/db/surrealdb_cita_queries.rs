@@ -5,19 +5,20 @@
 
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use serde::{Deserialize, Serialize};
+use surrealdb::RecordId;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Cita {
-    pub id: String,
-    pub visitante_id: Option<String>,
-    pub usuario_id: String,
+    pub id: RecordId,
+    pub visitante_id: Option<RecordId>,
+    pub usuario_id: RecordId,
     pub motivo: String,
-    pub fecha_inicio: String,
-    pub fecha_fin: String,
+    pub fecha_inicio: surrealdb::Datetime,
+    pub fecha_fin: surrealdb::Datetime,
     pub estado: String,
     pub activa: bool,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: surrealdb::Datetime,
+    pub updated_at: surrealdb::Datetime,
     pub visitante_nombre: Option<String>,
     pub visitante_cedula: Option<String>,
 }
@@ -63,64 +64,53 @@ pub async fn find_activas_by_fecha(
     Ok(result.take(0)?)
 }
 
-pub async fn find_by_id(id: &str) -> Result<Option<Cita>, SurrealDbError> {
+pub async fn find_by_id(id: &RecordId) -> Result<Option<Cita>, SurrealDbError> {
     let db = get_db().await?;
-    let id_only = id.strip_prefix("cita:").unwrap_or(id).to_string();
-
-    let mut result =
-        db.query("SELECT * FROM type::thing('cita', $id)").bind(("id", id_only)).await?;
-
-    Ok(result.take(0)?)
+    let result = db.select(id.clone()).await?;
+    Ok(result)
 }
 
-pub async fn find_by_visitante(visitante_id: &str) -> Result<Vec<Cita>, SurrealDbError> {
+pub async fn find_by_visitante(visitante_id: &RecordId) -> Result<Vec<Cita>, SurrealDbError> {
     let db = get_db().await?;
-    let id_only = visitante_id.strip_prefix("visitante:").unwrap_or(visitante_id);
-    let visitante_link = format!("visitante:{}", id_only);
-
     let mut result = db
         .query("SELECT * FROM cita WHERE visitante_id = $visitante_id ORDER BY fecha_inicio DESC")
-        .bind(("visitante_id", visitante_link))
+        .bind(("visitante_id", visitante_id.clone()))
         .await?;
 
     Ok(result.take(0)?)
 }
 
-pub async fn cancel(id: &str) -> Result<Option<Cita>, SurrealDbError> {
+pub async fn cancel(id: &RecordId) -> Result<Option<Cita>, SurrealDbError> {
     let db = get_db().await?;
-    let id_only = id.strip_prefix("cita:").unwrap_or(id).to_string();
-
     let mut result = db
         .query(
             r#"
-            UPDATE type::thing('cita', $id) MERGE {
+            UPDATE $id MERGE {
                 activa: false,
                 estado: 'cancelada',
                 updated_at: time::now()
             }
         "#,
         )
-        .bind(("id", id_only))
+        .bind(("id", id.clone()))
         .await?;
 
     Ok(result.take(0)?)
 }
 
-pub async fn completar(id: &str) -> Result<Option<Cita>, SurrealDbError> {
+pub async fn completar(id: &RecordId) -> Result<Option<Cita>, SurrealDbError> {
     let db = get_db().await?;
-    let id_only = id.strip_prefix("cita:").unwrap_or(id).to_string();
-
     let mut result = db
         .query(
             r#"
-            UPDATE type::thing('cita', $id) MERGE {
+            UPDATE $id MERGE {
                 activa: false,
                 estado: 'completada',
                 updated_at: time::now()
             }
         "#,
         )
-        .bind(("id", id_only))
+        .bind(("id", id.clone()))
         .await?;
 
     Ok(result.take(0)?)

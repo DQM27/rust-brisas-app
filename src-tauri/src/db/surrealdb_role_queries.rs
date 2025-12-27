@@ -5,7 +5,7 @@
 
 use crate::models::role::{Role, RoleCreateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 pub async fn find_all() -> Result<Vec<Role>, SurrealDbError> {
     let db = get_db().await?;
@@ -13,17 +13,13 @@ pub async fn find_all() -> Result<Vec<Role>, SurrealDbError> {
     Ok(result.take(0)?)
 }
 
-pub async fn find_by_id(id: &Thing) -> Result<Option<Role>, SurrealDbError> {
+pub async fn find_by_id(id: &RecordId) -> Result<Option<Role>, SurrealDbError> {
     let db = get_db().await?;
-    let mut result = db
-        .query("SELECT * FROM type::thing($tb, $id)")
-        .bind(("tb", id.tb.clone()))
-        .bind(("id", id.id.to_string()))
-        .await?;
+    let mut result = db.query("SELECT * FROM $id").bind(("id", id.clone())).await?;
     Ok(result.take(0)?)
 }
 
-pub async fn get_permissions(role_id: &Thing) -> Result<Vec<String>, SurrealDbError> {
+pub async fn get_permissions(role_id: &RecordId) -> Result<Vec<String>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db.query("SELECT permissions FROM $id").bind(("id", role_id.clone())).await?;
 
@@ -53,7 +49,10 @@ pub async fn create(id: &str, dto: RoleCreateDTO) -> Result<Role, SurrealDbError
     created.ok_or(SurrealDbError::Query("Error creando rol".to_string()))
 }
 
-pub async fn update(id: &Thing, data: serde_json::Value) -> Result<Option<Role>, SurrealDbError> {
+pub async fn update(
+    id: &RecordId,
+    data: serde_json::Value,
+) -> Result<Option<Role>, SurrealDbError> {
     let db = get_db().await?;
     let mut result =
         db.query("UPDATE $id MERGE $data").bind(("id", id.clone())).bind(("data", data)).await?;
@@ -61,7 +60,7 @@ pub async fn update(id: &Thing, data: serde_json::Value) -> Result<Option<Role>,
     Ok(result.take(0)?)
 }
 
-pub async fn delete(id: &Thing) -> Result<(), SurrealDbError> {
+pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
     db.query("DELETE $id").bind(("id", id.clone())).await?;
     Ok(())

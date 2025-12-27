@@ -1,14 +1,15 @@
 use serde::{Deserialize, Serialize};
+use surrealdb::RecordId;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IngresoProveedor {
-    pub id: String,
+    pub id: RecordId,
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
-    pub proveedor_id: Option<String>,
-    pub empresa_id: String,
+    pub proveedor_id: Option<RecordId>,
+    pub empresa_id: RecordId,
     pub area_visitada: String,
     pub motivo: String,
     pub gafete: Option<String>,
@@ -21,8 +22,8 @@ pub struct IngresoProveedor {
     pub usuario_ingreso_id: String,
     pub usuario_salida_id: Option<String>,
     pub observaciones: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: surrealdb::Datetime,
+    pub updated_at: surrealdb::Datetime,
     // Populated fields (from JOINs)
     #[serde(default)]
     pub usuario_ingreso_nombre: String,

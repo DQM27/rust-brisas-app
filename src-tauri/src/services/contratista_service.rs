@@ -15,7 +15,7 @@ use crate::services::surrealdb_service::SurrealDbError;
 use chrono::Utc;
 use log::{error, info};
 use std::sync::Arc;
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 // Helper para mapear errores de SurrealDB a ContratistaError
 fn map_db_error(e: SurrealDbError) -> ContratistaError {
@@ -23,22 +23,22 @@ fn map_db_error(e: SurrealDbError) -> ContratistaError {
 }
 
 /// Helper para parsear ID de contratista (acepta con o sin prefijo)
-fn parse_contratista_id(id_str: &str) -> Thing {
+fn parse_contratista_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
-        Thing::from((parts[0], parts[1]))
+        RecordId::from_table_key(parts[0], parts[1])
     } else {
-        Thing::from(("contratista", id_str))
+        RecordId::from_table_key("contratista", id_str)
     }
 }
 
 /// Helper para parsear ID de empresa (acepta con o sin prefijo)
-fn parse_empresa_id(id_str: &str) -> Thing {
+fn parse_empresa_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
-        Thing::from((parts[0], parts[1]))
+        RecordId::from_table_key(parts[0], parts[1])
     } else {
-        Thing::from(("empresa", id_str))
+        RecordId::from_table_key("empresa", id_str)
     }
 }
 
@@ -93,7 +93,7 @@ pub async fn create_contratista(
         apellido: input.apellido.trim().to_uppercase(),
         segundo_apellido: input.segundo_apellido.map(|s| s.trim().to_uppercase()),
         empresa: empresa_id,
-        fecha_vencimiento_praind: fecha_vencimiento,
+        fecha_vencimiento_praind: surrealdb::Datetime::from(fecha_vencimiento),
         estado: EstadoContratista::Activo,
     };
 
@@ -225,7 +225,8 @@ pub async fn update_contratista(
             .map_err(ContratistaError::Validation)?;
         update_data.insert("fecha_vencimiento_praind".to_string(), serde_json::json!(fecha));
     }
-    update_data.insert("updated_at".to_string(), serde_json::json!(Utc::now()));
+    update_data
+        .insert("updated_at".to_string(), serde_json::json!(surrealdb::Datetime::from(Utc::now())));
 
     // 4. Actualizar en DB
     let updated = db::update(&id, serde_json::Value::Object(update_data)).await.map_err(|e| {
@@ -297,7 +298,13 @@ pub async fn actualizar_praind_con_historial(
     let contratista =
         db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
-    let fecha_anterior = contratista.fecha_vencimiento_praind.format("%Y-%m-%d").to_string();
+    // Parse formatted string from Datetime (Day-Month-Year)
+    let dt: chrono::DateTime<chrono::Utc> = contratista
+        .fecha_vencimiento_praind
+        .to_string()
+        .parse()
+        .unwrap_or_else(|_| chrono::Utc::now());
+    let fecha_anterior = dt.format("%d-%m-%Y").to_string();
 
     let nueva_fecha =
         crate::models::contratista::validaciones::validar_fecha(&input.nueva_fecha_praind)
@@ -305,7 +312,8 @@ pub async fn actualizar_praind_con_historial(
 
     let mut update_data = serde_json::Map::new();
     update_data.insert("fecha_vencimiento_praind".to_string(), serde_json::json!(nueva_fecha));
-    update_data.insert("updated_at".to_string(), serde_json::json!(Utc::now()));
+    update_data
+        .insert("updated_at".to_string(), serde_json::json!(surrealdb::Datetime::from(Utc::now())));
 
     let updated =
         db::update(&id, serde_json::Value::Object(update_data)).await.map_err(map_db_error)?;

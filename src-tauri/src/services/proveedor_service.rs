@@ -17,25 +17,25 @@ use crate::services::search_service::SearchService;
 use chrono::Utc;
 use log::{error, info, warn};
 use std::sync::Arc;
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 /// Helper para parsear ID de proveedor (acepta con o sin prefijo)
-fn parse_proveedor_id(id_str: &str) -> Thing {
+fn parse_proveedor_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
-        Thing::from((parts[0], parts[1]))
+        RecordId::from_table_key(parts[0], parts[1])
     } else {
-        Thing::from(("proveedor", id_str))
+        RecordId::from_table_key("proveedor", id_str)
     }
 }
 
 /// Helper para parsear ID de empresa (acepta con o sin prefijo)
-fn parse_empresa_id(id_str: &str) -> Thing {
+fn parse_empresa_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
-        Thing::from((parts[0], parts[1]))
+        RecordId::from_table_key(parts[0], parts[1])
     } else {
-        Thing::from(("empresa", id_str))
+        RecordId::from_table_key("empresa", id_str)
     }
 }
 
@@ -286,7 +286,7 @@ pub async fn update_proveedor(
     if let Some(v) = input.estado {
         update_data.insert("estado".to_string(), serde_json::json!(v.to_uppercase()));
     }
-    update_data.insert("updated_at".to_string(), serde_json::json!(Utc::now()));
+    update_data.insert("updated_at".to_string(), serde_json::json!(surrealdb::Datetime::from(Utc::now())));
 
     // 3. Actualizar Proveedor en DB
     let proveedor = db::update(&id, serde_json::Value::Object(update_data)).await.map_err(|e| {

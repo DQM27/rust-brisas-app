@@ -1,17 +1,18 @@
 use serde::{Deserialize, Serialize};
+use surrealdb::RecordId;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Cita {
-    pub id: String,
-    pub visitante_id: String,
-    pub fecha_cita: String,
+    pub id: RecordId,
+    pub visitante_id: RecordId,
+    pub fecha_cita: surrealdb::Datetime,
     pub anfitrion: String,
     pub area_visitada: String,
     pub motivo: String,
     pub estado: String, // PENDIENTE, COMPLETADA, CANCELADA, EXPIRADA
     pub registrado_por: String,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: surrealdb::Datetime,
+    pub updated_at: surrealdb::Datetime,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

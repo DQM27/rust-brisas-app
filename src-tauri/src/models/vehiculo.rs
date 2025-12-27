@@ -2,9 +2,8 @@
 // src/models/vehiculo.rs
 // ==========================================
 
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use surrealdb::sql::Thing;
+use surrealdb::{Datetime, RecordId};
 
 // ==========================================
 // MODELO DE DOMINIO
@@ -13,18 +12,18 @@ use surrealdb::sql::Thing;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Vehiculo {
-    pub id: Thing,
-    pub contratista: Option<Thing>,
-    pub proveedor: Option<Thing>,
-    pub visitante: Option<Thing>,
+    pub id: RecordId,
+    pub contratista: Option<RecordId>,
+    pub proveedor: Option<RecordId>,
+    pub visitante: Option<RecordId>,
     pub tipo_vehiculo: TipoVehiculo,
     pub placa: String,
     pub marca: Option<String>,
     pub modelo: Option<String>,
     pub color: Option<String>,
     pub is_active: bool,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub created_at: Datetime,
+    pub updated_at: Datetime,
 }
 
 // ==========================================
@@ -98,9 +97,9 @@ pub struct UpdateVehiculoInput {
 
 #[derive(Debug, Serialize)]
 pub struct VehiculoCreateDTO {
-    pub contratista: Option<Thing>,
-    pub proveedor: Option<Thing>,
-    pub visitante: Option<Thing>,
+    pub contratista: Option<RecordId>,
+    pub proveedor: Option<RecordId>,
+    pub visitante: Option<RecordId>,
     pub tipo_vehiculo: TipoVehiculo,
     pub placa: String,
     pub marca: Option<String>,
@@ -174,8 +173,8 @@ impl From<Vehiculo> for VehiculoResponse {
             color: v.color,
             descripcion_completa,
             is_active: v.is_active,
-            created_at: v.created_at.to_rfc3339(),
-            updated_at: v.updated_at.to_rfc3339(),
+            created_at: v.created_at.to_string(),
+            updated_at: v.updated_at.to_string(),
         }
     }
 }

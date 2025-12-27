@@ -259,7 +259,7 @@ pub fn update_lista_negra_in_index(
     handles: &FieldHandles,
     lista_negra: &ListaNegra,
 ) -> Result<(), SearchError> {
-    delete_from_index(writer, handles, &lista_negra.id)?;
+    delete_from_index(writer, handles, &lista_negra.id.to_string())?;
     index_lista_negra(writer, handles, lista_negra)?;
     Ok(())
 }
@@ -334,7 +334,7 @@ mod tests {
     use crate::models::contratista::EstadoContratista;
     use crate::search::schema::build_search_schema;
     use chrono::Utc;
-    use surrealdb::sql::Thing;
+    use surrealdb::RecordId;
     use tantivy::Index;
 
     fn setup_test_index() -> (Index, FieldHandles) {
@@ -350,17 +350,17 @@ mod tests {
         let mut writer = get_index_writer(&index).unwrap();
 
         let contratista = Contratista {
-            id: Thing::from(("contratista", "1")),
+            id: RecordId::from_table_key("contratista", "1"),
             cedula: "123".to_string(),
             nombre: "John".to_string(),
             segundo_nombre: None,
             apellido: "Doe".to_string(),
             segundo_apellido: None,
-            empresa: Thing::from(("empresa", "emp-1")),
-            fecha_vencimiento_praind: Utc::now(),
+            empresa: RecordId::from_table_key("empresa", "emp-1"),
+            fecha_vencimiento_praind: surrealdb::Datetime::from(Utc::now()),
             estado: EstadoContratista::Activo,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
+            created_at: surrealdb::Datetime::from(Utc::now()),
+            updated_at: surrealdb::Datetime::from(Utc::now()),
         };
 
         index_contratista(&mut writer, &handles, &contratista, "Empresa A").unwrap();
@@ -377,14 +377,14 @@ mod tests {
         let mut writer = get_index_writer(&index).unwrap();
 
         let user = User {
-            id: Thing::from(("user", "user-1")),
+            id: RecordId::from_table_key("user", "user-1"),
             cedula: "456".to_string(),
             nombre: "Jane".to_string(),
             segundo_nombre: None,
             apellido: "Doe".to_string(),
             segundo_apellido: None,
             email: "jane@example.com".to_string(),
-            role: Thing::from(("role", "role-1")),
+            role: RecordId::from_table_key("role", "role-1"),
             is_active: true,
             must_change_password: false,
             fecha_inicio_labores: None,
@@ -395,8 +395,8 @@ mod tests {
             contacto_emergencia_nombre: None,
             contacto_emergencia_telefono: None,
             deleted_at: None,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
+            created_at: surrealdb::Datetime::from(Utc::now()),
+            updated_at: surrealdb::Datetime::from(Utc::now()),
             avatar_path: None,
         };
 

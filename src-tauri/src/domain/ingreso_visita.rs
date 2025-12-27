@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
+use surrealdb::RecordId;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IngresoVisita {
-    pub id: String,
-    pub visitante_id: String,
-    pub cita_id: Option<String>,
+    pub id: RecordId,
+    pub visitante_id: RecordId,
+    pub cita_id: Option<RecordId>,
     pub anfitrion: String,
     pub area_visitada: String,
     pub motivo: String,

@@ -9,7 +9,7 @@ use crate::models::ingreso::{
 use crate::models::lista_negra::BlockCheckResponse;
 use crate::services::{gafete_service, lista_negra_service};
 use serde::{Deserialize, Serialize};
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 // ==========================================
 // DTOs PÚBLICOS (requeridos por comandos)
@@ -91,9 +91,12 @@ pub struct IngresoExcepcionalResponse {
 pub async fn validar_ingreso_contratista(
     contratista_id_str: String,
 ) -> Result<ValidacionIngresoResponse, IngresoContratistaError> {
-    let contratista_id = Thing::try_from(contratista_id_str).map_err(|_| {
-        IngresoContratistaError::Validation("ID de contratista inválido".to_string())
-    })?;
+    let contratista_id = if contratista_id_str.contains(':') {
+        let parts: Vec<&str> = contratista_id_str.split(':').collect();
+        RecordId::from_table_key(parts[0], parts[1])
+    } else {
+        RecordId::from_table_key("contratista", &contratista_id_str)
+    };
 
     // 1. Obtener datos del contratista (SurrealDB)
     let contratista = contratista_queries::find_by_id(&contratista_id)
@@ -124,11 +127,20 @@ pub async fn validar_ingreso_contratista(
         });
     }
 
+    let fecha_vencimiento_str = {
+        let dt: chrono::DateTime<chrono::Utc> = contratista
+            .fecha_vencimiento_praind
+            .to_string()
+            .parse()
+            .unwrap_or_else(|_| chrono::Utc::now());
+        dt.format("%d-%m-%Y").to_string()
+    };
+
     // 4. Motor de Validación
     let ctx = ContextoIngreso::new_contratista(
         contratista.cedula.clone(),
         format!("{} {}", contratista.nombre, contratista.apellido),
-        &contratista.fecha_vencimiento_praind.format("%Y-%m-%d").to_string(),
+        &fecha_vencimiento_str,
         b.is_blocked,
         b.nivel_severidad,
         false, // TODO: verificar si es excepcional check
@@ -151,17 +163,30 @@ pub async fn crear_ingreso_contratista(
     input: CreateIngresoContratistaInput,
     usuario_id_str: String,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
-    let contratista_id = Thing::try_from(input.contratista_id.clone()).map_err(|_| {
-        IngresoContratistaError::Validation("ID de contratista inválido".to_string())
-    })?;
+    let contratista_id = if input.contratista_id.contains(':') {
+        input.contratista_id.parse::<RecordId>().map_err(|_| {
+            IngresoContratistaError::Validation("ID de contratista inválido".to_string())
+        })?
+    } else {
+        RecordId::from_table_key("contratista", &input.contratista_id)
+    };
 
-    let usuario_id = Thing::try_from(usuario_id_str)
-        .map_err(|_| IngresoContratistaError::Validation("ID de usuario inválido".to_string()))?;
+    let usuario_id = if usuario_id_str.contains(':') {
+        usuario_id_str.parse::<RecordId>().map_err(|_| {
+            IngresoContratistaError::Validation("ID de usuario inválido".to_string())
+        })?
+    } else {
+        RecordId::from_table_key("user", &usuario_id_str)
+    };
 
     let vehiculo_id = if let Some(vid) = &input.vehiculo_id {
-        Some(Thing::try_from(vid.clone()).map_err(|_| {
-            IngresoContratistaError::Validation("ID de vehículo inválido".to_string())
-        })?)
+        Some(if vid.contains(':') {
+            vid.parse::<RecordId>().map_err(|_| {
+                IngresoContratistaError::Validation("ID de vehículo inválido".to_string())
+            })?
+        } else {
+            RecordId::from_table_key("vehiculo", vid)
+        })
     } else {
         None
     };
@@ -198,9 +223,11 @@ pub async fn crear_ingreso_contratista(
         placa_temporal: None,
         gafete_numero: input.gafete_numero,
         gafete_tipo: input.gafete_tipo,
-        fecha_hora_ingreso: chrono::Utc::now(),
+        fecha_hora_ingreso: surrealdb::Datetime::from(chrono::Utc::now()),
         usuario_ingreso: usuario_id,
-        praind_vigente_al_ingreso: Some(contratista.fecha_vencimiento_praind > chrono::Utc::now()),
+        praind_vigente_al_ingreso: Some(
+            contratista.fecha_vencimiento_praind > surrealdb::Datetime::from(chrono::Utc::now()),
+        ),
         estado_contratista_al_ingreso: Some(contratista.estado.as_str().to_string()),
         observaciones: input.observaciones,
         anfitrion: None,
@@ -225,11 +252,21 @@ pub async fn registrar_salida(
     input: RegistrarSalidaInput,
     usuario_id_str: String,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
-    let ingreso_id = Thing::try_from(input.ingreso_id)
-        .map_err(|_| IngresoContratistaError::Validation("ID de ingreso inválido".to_string()))?;
+    let ingreso_id = if input.ingreso_id.contains(':') {
+        input.ingreso_id.parse::<RecordId>().map_err(|_| {
+            IngresoContratistaError::Validation("ID de ingreso inválido".to_string())
+        })?
+    } else {
+        RecordId::from_table_key("ingreso", &input.ingreso_id)
+    };
 
-    let usuario_id = Thing::try_from(usuario_id_str)
-        .map_err(|_| IngresoContratistaError::Validation("ID de usuario inválido".to_string()))?;
+    let usuario_id = if usuario_id_str.contains(':') {
+        usuario_id_str.parse::<RecordId>().map_err(|_| {
+            IngresoContratistaError::Validation("ID de usuario inválido".to_string())
+        })?
+    } else {
+        RecordId::from_table_key("user", &usuario_id_str)
+    };
 
     // 1. Actualizar salida en DB
     let ingreso_actualizado =

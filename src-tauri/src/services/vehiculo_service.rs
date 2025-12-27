@@ -13,7 +13,7 @@ use crate::models::vehiculo::{
 use crate::services::surrealdb_service::SurrealDbError;
 use chrono::Utc;
 use log::error;
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 fn map_db_error(e: SurrealDbError) -> VehiculoError {
     error!("Error de base de datos (SurrealDB): {}", e);
@@ -21,32 +21,32 @@ fn map_db_error(e: SurrealDbError) -> VehiculoError {
 }
 
 /// Helper para parsear ID de vehículo (acepta con o sin prefijo)
-fn parse_vehiculo_id(id_str: &str) -> Thing {
+fn parse_vehiculo_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
-        Thing::from((parts[0], parts[1]))
+        RecordId::from_table_key(parts[0], parts[1])
     } else {
-        Thing::from(("vehiculo", id_str))
+        RecordId::from_table_key("vehiculo", id_str)
     }
 }
 
 /// Helper para parsear ID de contratista
-fn parse_contratista_id(id_str: &str) -> Thing {
+fn parse_contratista_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
-        Thing::from((parts[0], parts[1]))
+        RecordId::from_table_key(parts[0], parts[1])
     } else {
-        Thing::from(("contratista", id_str))
+        RecordId::from_table_key("contratista", id_str)
     }
 }
 
 /// Helper para parsear ID de proveedor
-fn parse_proveedor_id(id_str: &str) -> Thing {
+fn parse_proveedor_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
-        Thing::from((parts[0], parts[1]))
+        RecordId::from_table_key(parts[0], parts[1])
     } else {
-        Thing::from(("proveedor", id_str))
+        RecordId::from_table_key("proveedor", id_str)
     }
 }
 
@@ -213,7 +213,8 @@ pub async fn update_vehiculo(
     if let Some(a) = input.is_active {
         update_data.insert("is_active".to_string(), serde_json::json!(a));
     }
-    update_data.insert("updated_at".to_string(), serde_json::json!(Utc::now()));
+    update_data
+        .insert("updated_at".to_string(), serde_json::json!(surrealdb::Datetime::from(Utc::now())));
 
     db::update(&id, serde_json::Value::Object(update_data)).await.map_err(map_db_error)?;
     get_vehiculo_by_id(&id_str).await

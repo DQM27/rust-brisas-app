@@ -1,10 +1,5 @@
-// ==========================================
-// src/models/user.rs
-// ==========================================
-
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use surrealdb::sql::Thing;
+use surrealdb::{Datetime, RecordId};
 
 // ==========================================
 // MODELO DE BASE DE DATOS (SurrealDB Native)
@@ -12,14 +7,14 @@ use surrealdb::sql::Thing;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
-    pub id: Thing,
+    pub id: RecordId,
     pub email: String,
     pub nombre: String,
     pub apellido: String,
-    pub role: Thing, // Según esquema: record<role>
+    pub role: RecordId, // Según esquema: record<role>
     pub is_active: bool,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub created_at: Datetime,
+    pub updated_at: Datetime,
     pub cedula: String,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
@@ -31,7 +26,7 @@ pub struct User {
     pub contacto_emergencia_nombre: Option<String>,
     pub contacto_emergencia_telefono: Option<String>,
     pub must_change_password: bool,
-    pub deleted_at: Option<DateTime<Utc>>,
+    pub deleted_at: Option<Datetime>,
     pub avatar_path: Option<String>,
 }
 
@@ -101,7 +96,7 @@ pub struct UserCreateDTO {
     pub password_hash: String,
     pub nombre: String,
     pub apellido: String,
-    pub role: Thing,
+    pub role: RecordId,
     pub cedula: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub segundo_nombre: Option<String>,
@@ -179,8 +174,8 @@ impl UserResponse {
             role_id: u.role.to_string(),
             role_name,
             is_active: u.is_active,
-            created_at: u.created_at.to_rfc3339(),
-            updated_at: u.updated_at.to_rfc3339(),
+            created_at: u.created_at.to_string(),
+            updated_at: u.updated_at.to_string(),
             cedula: u.cedula,
             segundo_nombre: u.segundo_nombre,
             segundo_apellido: u.segundo_apellido,

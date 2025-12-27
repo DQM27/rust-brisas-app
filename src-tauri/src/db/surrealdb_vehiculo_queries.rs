@@ -5,7 +5,7 @@
 
 use crate::models::vehiculo::{Vehiculo, VehiculoCreateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 pub async fn insert(dto: VehiculoCreateDTO) -> Result<Vehiculo, SurrealDbError> {
     let db = get_db().await?;
@@ -16,9 +16,9 @@ pub async fn insert(dto: VehiculoCreateDTO) -> Result<Vehiculo, SurrealDbError> 
     res.ok_or(SurrealDbError::TransactionError("Error al insertar vehículo".to_string()))
 }
 
-pub async fn find_by_id(id: &Thing) -> Result<Option<Vehiculo>, SurrealDbError> {
+pub async fn find_by_id(id: &RecordId) -> Result<Option<Vehiculo>, SurrealDbError> {
     let db = get_db().await?;
-    let res: Option<Vehiculo> = db.select((id.tb.clone(), id.id.to_string())).await?;
+    let res: Option<Vehiculo> = db.select(id.clone()).await?;
     Ok(res)
 }
 
@@ -43,16 +43,16 @@ pub async fn find_activos() -> Result<Vec<Vehiculo>, SurrealDbError> {
     Ok(result.take(0)?)
 }
 
-pub async fn update(id: &Thing, data: serde_json::Value) -> Result<Vehiculo, SurrealDbError> {
+pub async fn update(id: &RecordId, data: serde_json::Value) -> Result<Vehiculo, SurrealDbError> {
     let db = get_db().await?;
 
-    let res: Option<Vehiculo> = db.update((id.tb.clone(), id.id.to_string())).merge(data).await?;
+    let res: Option<Vehiculo> = db.update(id.clone()).merge(data).await?;
     res.ok_or(SurrealDbError::TransactionError("Error al actualizar vehículo".to_string()))
 }
 
-pub async fn delete(id: &Thing) -> Result<(), SurrealDbError> {
+pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    let _: Option<Vehiculo> = db.delete((id.tb.clone(), id.id.to_string())).await?;
+    let _: Option<Vehiculo> = db.delete(id.clone()).await?;
     Ok(())
 }
 
@@ -68,7 +68,9 @@ pub async fn count_by_placa(placa: &str) -> Result<i64, SurrealDbError> {
     Ok(count)
 }
 
-pub async fn find_by_contratista(contratista_id: &Thing) -> Result<Vec<Vehiculo>, SurrealDbError> {
+pub async fn find_by_contratista(
+    contratista_id: &RecordId,
+) -> Result<Vec<Vehiculo>, SurrealDbError> {
     let db = get_db().await?;
 
     let mut result = db
@@ -78,7 +80,7 @@ pub async fn find_by_contratista(contratista_id: &Thing) -> Result<Vec<Vehiculo>
     Ok(result.take(0)?)
 }
 
-pub async fn find_by_proveedor(proveedor_id: &Thing) -> Result<Vec<Vehiculo>, SurrealDbError> {
+pub async fn find_by_proveedor(proveedor_id: &RecordId) -> Result<Vec<Vehiculo>, SurrealDbError> {
     let db = get_db().await?;
 
     let mut result = db

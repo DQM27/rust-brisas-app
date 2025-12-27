@@ -9,7 +9,7 @@ use crate::domain::motor_validacion::{self as motor, ContextoIngreso};
 use crate::models::ingreso::{CreateIngresoVisitaInput, IngresoResponse};
 use crate::models::visitante::CreateVisitanteInput;
 use crate::services::{gafete_service, lista_negra_service, visitante_service};
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 // ==========================================
 // FUNCIONES DE SERVICIO REALES
@@ -19,8 +19,13 @@ pub async fn registrar_ingreso(
     input: CreateIngresoVisitaInput,
     usuario_id_str: String,
 ) -> Result<IngresoResponse, IngresoVisitaError> {
-    let usuario_id = Thing::try_from(usuario_id_str)
-        .map_err(|_| IngresoVisitaError::Validation("ID de usuario inválido".to_string()))?;
+    let usuario_id = if usuario_id_str.contains(':') {
+        usuario_id_str
+            .parse::<RecordId>()
+            .map_err(|_| IngresoVisitaError::Validation("ID de usuario inválido".to_string()))?
+    } else {
+        RecordId::from_table_key("user", &usuario_id_str)
+    };
 
     // 1. Validaciones
     // Gafete
@@ -64,7 +69,7 @@ pub async fn registrar_ingreso(
         placa_temporal: input.vehiculo_placa,
         gafete_numero: input.gafete_numero,
         gafete_tipo: Some("visita".to_string()),
-        fecha_hora_ingreso: chrono::Utc::now(),
+        fecha_hora_ingreso: surrealdb::Datetime::from(chrono::Utc::now()),
         usuario_ingreso: usuario_id,
         praind_vigente_al_ingreso: None,
         estado_contratista_al_ingreso: None,
@@ -139,11 +144,21 @@ pub async fn registrar_salida(
     devolvio_gafete: bool,
     observaciones: Option<String>,
 ) -> Result<IngresoResponse, IngresoVisitaError> {
-    let ingreso_id = Thing::try_from(id_str)
-        .map_err(|_| IngresoVisitaError::Validation("ID de ingreso inválido".to_string()))?;
+    let ingreso_id = if id_str.contains(':') {
+        id_str
+            .parse::<RecordId>()
+            .map_err(|_| IngresoVisitaError::Validation("ID de ingreso inválido".to_string()))?
+    } else {
+        RecordId::from_table_key("ingreso", &id_str)
+    };
 
-    let usuario_id = Thing::try_from(usuario_id_str)
-        .map_err(|_| IngresoVisitaError::Validation("ID de usuario inválido".to_string()))?;
+    let usuario_id = if usuario_id_str.contains(':') {
+        usuario_id_str
+            .parse::<RecordId>()
+            .map_err(|_| IngresoVisitaError::Validation("ID de usuario inválido".to_string()))?
+    } else {
+        RecordId::from_table_key("user", &usuario_id_str)
+    };
 
     let actualizado = db::update_salida(&ingreso_id, &usuario_id, observaciones)
         .await

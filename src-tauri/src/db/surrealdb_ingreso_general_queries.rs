@@ -5,7 +5,7 @@
 
 use crate::models::ingreso::Ingreso;
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 #[derive(Debug, Default)]
 pub struct IngresoDetails {
@@ -28,9 +28,9 @@ pub async fn find_ingresos_abiertos() -> Result<Vec<Ingreso>, SurrealDbError> {
     Ok(result.take(0)?)
 }
 
-pub async fn find_by_id(id: &Thing) -> Result<Option<Ingreso>, SurrealDbError> {
+pub async fn find_by_id(id: &RecordId) -> Result<Option<Ingreso>, SurrealDbError> {
     let db = get_db().await?;
-    let result: Option<Ingreso> = db.select((id.tb.clone(), id.id.to_string())).await?;
+    let result: Option<Ingreso> = db.select(id.clone()).await?;
     Ok(result)
 }
 
@@ -40,11 +40,8 @@ pub async fn find_details_for_ingreso(ingreso: &Ingreso) -> Result<IngresoDetail
 
     // Fetch usuario ingreso
     let uid = &ingreso.usuario_ingreso;
-    let mut res = db
-        .query("SELECT nombre, apellido FROM type::thing($tb, $id)")
-        .bind(("tb", uid.tb.clone()))
-        .bind(("id", uid.id.to_string()))
-        .await?;
+    let mut res =
+        db.query("SELECT nombre, apellido FROM type::thing($id)").bind(("id", uid.clone())).await?;
 
     #[derive(serde::Deserialize)]
     struct UserInfo {
@@ -60,9 +57,8 @@ pub async fn find_details_for_ingreso(ingreso: &Ingreso) -> Result<IngresoDetail
     // Fetch usuario salida
     if let Some(uid) = &ingreso.usuario_salida {
         let mut res = db
-            .query("SELECT nombre, apellido FROM type::thing($tb, $id)")
-            .bind(("tb", uid.tb.clone()))
-            .bind(("id", uid.id.to_string()))
+            .query("SELECT nombre, apellido FROM type::thing($id)")
+            .bind(("id", uid.clone()))
             .await?;
 
         let u: Option<UserInfo> = res.take(0).ok().flatten();

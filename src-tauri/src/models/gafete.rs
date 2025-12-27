@@ -2,9 +2,8 @@
 // src/models/gafete.rs
 // ==========================================
 
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use surrealdb::sql::Thing;
+use surrealdb::{Datetime, RecordId};
 
 // ==========================================
 // MODELO DE DOMINIO
@@ -13,12 +12,12 @@ use surrealdb::sql::Thing;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Gafete {
-    pub id: Thing,
+    pub id: RecordId,
     pub numero: String,
     pub tipo: TipoGafete,
     pub estado: GafeteEstado,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub created_at: Datetime,
+    pub updated_at: Datetime,
 }
 
 // ==========================================
@@ -173,8 +172,8 @@ impl From<Gafete> for GafeteResponse {
             tipo_display: g.tipo.display().to_string(),
             estado_fisico: g.estado.clone(),
             status: String::from("disponible"), // Logic for status in service
-            created_at: g.created_at.to_rfc3339(),
-            updated_at: g.updated_at.to_rfc3339(),
+            created_at: g.created_at.to_string(),
+            updated_at: g.updated_at.to_string(),
         }
     }
 }

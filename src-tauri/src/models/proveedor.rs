@@ -2,23 +2,22 @@
 // src/models/proveedor.rs
 // ==========================================
 
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use surrealdb::sql::Thing;
+use surrealdb::{Datetime, RecordId};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Proveedor {
-    pub id: Thing,
+    pub id: RecordId,
     pub cedula: String,
     pub nombre: String,
     pub segundo_nombre: Option<String>,
     pub apellido: String,
     pub segundo_apellido: Option<String>,
-    pub empresa: Thing,
+    pub empresa: RecordId,
     pub estado: EstadoProveedor,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub created_at: Datetime,
+    pub updated_at: Datetime,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -109,7 +108,7 @@ pub struct ProveedorCreateDTO {
     pub segundo_nombre: Option<String>,
     pub apellido: String,
     pub segundo_apellido: Option<String>,
-    pub empresa: Thing,
+    pub empresa: RecordId,
     pub estado: EstadoProveedor,
 }
 
@@ -173,8 +172,8 @@ impl From<Proveedor> for ProveedorResponse {
             vehiculo_marca: None,
             vehiculo_modelo: None,
             vehiculo_color: None,
-            created_at: p.created_at.to_rfc3339(),
-            updated_at: p.updated_at.to_rfc3339(),
+            created_at: p.created_at.to_string(),
+            updated_at: p.updated_at.to_string(),
         }
     }
 }

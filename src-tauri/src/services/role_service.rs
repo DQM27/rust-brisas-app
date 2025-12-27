@@ -10,6 +10,7 @@ use crate::models::role::{
     VisibleModule,
 };
 use chrono::Utc;
+use surrealdb::RecordId;
 
 // ==========================================
 // ERRORES
@@ -21,15 +22,13 @@ use crate::domain::errors::RoleError;
 // CONSULTAS DE ROLES
 // ==========================================
 
-use surrealdb::sql::Thing;
-
 /// Helper para parsear ID de rol (acepta con o sin prefijo)
-fn parse_role_id(id_str: &str) -> Thing {
+fn parse_role_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
-        Thing::from((parts[0], parts[1]))
+        RecordId::from_table_key(parts[0], parts[1])
     } else {
-        Thing::from(("role", id_str))
+        RecordId::from_table_key("role", id_str)
     }
 }
 
@@ -133,7 +132,8 @@ pub async fn update_role(
     if let Some(p) = input.permissions {
         update_data.insert("permissions".to_string(), serde_json::json!(p));
     }
-    update_data.insert("updated_at".to_string(), serde_json::json!(Utc::now()));
+    update_data
+        .insert("updated_at".to_string(), serde_json::json!(surrealdb::Datetime::from(Utc::now())));
 
     let updated = db::update(&role_id, serde_json::Value::Object(update_data))
         .await

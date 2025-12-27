@@ -4,7 +4,7 @@
 
 use crate::models::empresa::{Empresa, EmpresaCreateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 pub async fn create(dto: EmpresaCreateDTO) -> Result<Empresa, SurrealDbError> {
     let db = get_db().await?;
@@ -22,9 +22,19 @@ pub async fn create(dto: EmpresaCreateDTO) -> Result<Empresa, SurrealDbError> {
     result.ok_or(SurrealDbError::Query("No se pudo crear la empresa".to_string()))
 }
 
-pub async fn find_by_id(id: &Thing) -> Result<Option<Empresa>, SurrealDbError> {
+pub async fn exists_by_name(nombre: &str) -> Result<bool, SurrealDbError> {
     let db = get_db().await?;
-    let result: Option<Empresa> = db.select((id.tb.clone(), id.id.to_string())).await?;
+    let mut result = db
+        .query("SELECT * FROM empresa WHERE nombre = $nombre")
+        .bind(("nombre", nombre.to_uppercase()))
+        .await?;
+    let empresas: Vec<Empresa> = result.take(0)?;
+    Ok(!empresas.is_empty())
+}
+
+pub async fn find_by_id(id: &RecordId) -> Result<Option<Empresa>, SurrealDbError> {
+    let db = get_db().await?;
+    let result: Option<Empresa> = db.select(id.clone()).await?;
     Ok(result)
 }
 
@@ -41,21 +51,21 @@ pub async fn get_empresas_activas() -> Result<Vec<Empresa>, SurrealDbError> {
     Ok(empresas)
 }
 
-pub async fn update(id: &Thing, data: serde_json::Value) -> Result<Empresa, SurrealDbError> {
+pub async fn update(id: &RecordId, data: serde_json::Value) -> Result<Empresa, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<Empresa> = db.update((id.tb.clone(), id.id.to_string())).merge(data).await?;
+    let result: Option<Empresa> = db.update(id.clone()).merge(data).await?;
 
     result.ok_or(SurrealDbError::Query("No se pudo actualizar la empresa".to_string()))
 }
 
-pub async fn delete(id: &Thing) -> Result<(), SurrealDbError> {
+pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    let _: Option<Empresa> = db.delete((id.tb.clone(), id.id.to_string())).await?;
+    let _: Option<Empresa> = db.delete(id.clone()).await?;
     Ok(())
 }
 
-pub async fn count_contratistas_by_empresa(empresa_id: &Thing) -> Result<usize, SurrealDbError> {
+pub async fn count_contratistas_by_empresa(empresa_id: &RecordId) -> Result<usize, SurrealDbError> {
     let db = get_db().await?;
 
     let mut result = db

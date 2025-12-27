@@ -3,6 +3,7 @@
 // ==========================================
 
 use serde::{Deserialize, Serialize};
+use surrealdb::{Datetime, RecordId};
 
 // ==========================================
 // ENUMS PARA MÓDULOS Y ACCIONES
@@ -176,19 +177,16 @@ impl std::str::FromStr for Action {
 // MODELO DE DOMINIO (DB)
 // ==========================================
 
-use chrono::{DateTime, Utc};
-use surrealdb::sql::Thing;
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Role {
-    pub id: Thing,
+    pub id: RecordId,
     pub name: String,
     pub description: Option<String>,
     pub is_system: bool,
     pub permissions: Option<Vec<String>>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub created_at: Datetime,
+    pub updated_at: Datetime,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -262,8 +260,8 @@ impl RoleResponse {
             description: role.description,
             is_system: role.is_system,
             permissions: role.permissions.unwrap_or_default(),
-            created_at: role.created_at.to_rfc3339(),
-            updated_at: role.updated_at.to_rfc3339(),
+            created_at: role.created_at.to_string(),
+            updated_at: role.updated_at.to_string(),
         }
     }
 
@@ -274,8 +272,8 @@ impl RoleResponse {
             description: role.description,
             is_system: role.is_system,
             permissions,
-            created_at: role.created_at.to_rfc3339(),
-            updated_at: role.updated_at.to_rfc3339(),
+            created_at: role.created_at.to_string(),
+            updated_at: role.updated_at.to_string(),
         }
     }
 }

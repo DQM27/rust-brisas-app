@@ -2,23 +2,22 @@
 // MODELO DE DOMINIO
 // ==========================================
 
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use surrealdb::sql::Thing;
+use surrealdb::{Datetime, RecordId};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Visitante {
-    pub id: Thing,
+    pub id: RecordId,
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
-    pub empresa: Option<Thing>,
+    pub empresa: Option<RecordId>,
     pub has_vehicle: bool,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub created_at: Datetime,
+    pub updated_at: Datetime,
 }
 
 // ==========================================
@@ -49,7 +48,7 @@ pub struct VisitanteCreateDTO {
     pub apellido: String,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
-    pub empresa: Option<Thing>,
+    pub empresa: Option<RecordId>,
     pub has_vehicle: bool,
 }
 
@@ -85,8 +84,8 @@ impl From<Visitante> for VisitanteResponse {
             empresa: None, // Will be filled by service if name is needed
             empresa_id: v.empresa.map(|t| t.to_string()),
             has_vehicle: v.has_vehicle,
-            created_at: v.created_at.to_rfc3339(),
-            updated_at: v.updated_at.to_rfc3339(),
+            created_at: v.created_at.to_string(),
+            updated_at: v.updated_at.to_string(),
         }
     }
 }

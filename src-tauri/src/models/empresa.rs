@@ -8,18 +8,17 @@ use serde::{Deserialize, Serialize};
 // MODELO DE DOMINIO
 // ==========================================
 
-use chrono::{DateTime, Utc};
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Empresa {
-    pub id: Thing,
+    pub id: RecordId,
     pub nombre: String,
     pub direccion: Option<String>,
     pub is_active: bool,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub created_at: surrealdb::Datetime,
+    pub updated_at: surrealdb::Datetime,
 }
 
 // ==========================================
@@ -76,8 +75,8 @@ impl From<Empresa> for EmpresaResponse {
             direccion: e.direccion,
             is_active: e.is_active,
             total_contratistas: 0,
-            created_at: e.created_at.to_rfc3339(),
-            updated_at: e.updated_at.to_rfc3339(),
+            created_at: e.created_at.to_string(),
+            updated_at: e.updated_at.to_string(),
         }
     }
 }

@@ -4,7 +4,7 @@
 use crate::db::surrealdb_ingreso_general_queries as db;
 use crate::models::ingreso::{IngresoListResponse, IngresoResponse};
 use crate::services::surrealdb_service::SurrealDbError;
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -17,12 +17,12 @@ pub enum IngresoGeneralError {
 }
 
 /// Helper para parsear ID de ingreso
-fn parse_ingreso_id(id_str: &str) -> Thing {
+fn parse_ingreso_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
-        Thing::from((parts[0], parts[1]))
+        RecordId::from_table_key(parts[0], parts[1])
     } else {
-        Thing::from(("ingreso", id_str))
+        RecordId::from_table_key("ingreso", id_str)
     }
 }
 

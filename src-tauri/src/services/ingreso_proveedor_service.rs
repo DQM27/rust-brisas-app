@@ -3,18 +3,29 @@ use crate::db::surrealdb_ingreso_proveedor_queries as db;
 use crate::domain::errors::IngresoProveedorError;
 use crate::models::ingreso::{CreateIngresoProveedorInput, IngresoResponse};
 use crate::services::{gafete_service, lista_negra_service};
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 // Función principal
 pub async fn registrar_ingreso(
     input: CreateIngresoProveedorInput,
     usuario_id_str: String,
 ) -> Result<IngresoResponse, IngresoProveedorError> {
-    let _empresa_id = Thing::try_from(input.empresa_id.clone())
-        .map_err(|_| IngresoProveedorError::Validation("ID de empresa inválido".to_string()))?;
+    let _empresa_id = if input.empresa_id.contains(':') {
+        input
+            .empresa_id
+            .parse::<RecordId>()
+            .map_err(|_| IngresoProveedorError::Validation("ID de empresa inválido".to_string()))?
+    } else {
+        RecordId::from_table_key("empresa", &input.empresa_id)
+    };
 
-    let usuario_id = Thing::try_from(usuario_id_str)
-        .map_err(|_| IngresoProveedorError::Validation("ID de usuario inválido".to_string()))?;
+    let usuario_id = if usuario_id_str.contains(':') {
+        usuario_id_str
+            .parse::<RecordId>()
+            .map_err(|_| IngresoProveedorError::Validation("ID de usuario inválido".to_string()))?
+    } else {
+        RecordId::from_table_key("user", &usuario_id_str)
+    };
 
     // 1. Validar Gafete
     if let Some(ref g) = input.gafete_numero {
@@ -59,7 +70,7 @@ pub async fn registrar_ingreso(
         placa_temporal: input.vehiculo_placa,
         gafete_numero: input.gafete_numero,
         gafete_tipo: Some("proveedor".to_string()),
-        fecha_hora_ingreso: chrono::Utc::now(),
+        fecha_hora_ingreso: surrealdb::Datetime::from(chrono::Utc::now()),
         usuario_ingreso: usuario_id,
         praind_vigente_al_ingreso: None,
         estado_contratista_al_ingreso: None,
@@ -87,11 +98,21 @@ pub async fn registrar_salida(
     observaciones: Option<String>,
     devolvio_gafete: bool,
 ) -> Result<IngresoResponse, IngresoProveedorError> {
-    let ingreso_id = Thing::try_from(id_str)
-        .map_err(|_| IngresoProveedorError::Validation("ID de ingreso inválido".to_string()))?;
+    let ingreso_id = if id_str.contains(':') {
+        id_str
+            .parse::<RecordId>()
+            .map_err(|_| IngresoProveedorError::Validation("ID de ingreso inválido".to_string()))?
+    } else {
+        RecordId::from_table_key("ingreso", &id_str)
+    };
 
-    let usuario_id = Thing::try_from(usuario_id_str)
-        .map_err(|_| IngresoProveedorError::Validation("ID de usuario inválido".to_string()))?;
+    let usuario_id = if usuario_id_str.contains(':') {
+        usuario_id_str
+            .parse::<RecordId>()
+            .map_err(|_| IngresoProveedorError::Validation("ID de usuario inválido".to_string()))?
+    } else {
+        RecordId::from_table_key("user", &usuario_id_str)
+    };
 
     let actualizado = db::update_salida(&ingreso_id, &usuario_id, observaciones)
         .await

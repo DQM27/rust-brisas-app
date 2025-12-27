@@ -4,7 +4,7 @@
 
 use crate::models::contratista::{Contratista, ContratistaCreateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 pub async fn create(dto: ContratistaCreateDTO) -> Result<Contratista, SurrealDbError> {
     let db = get_db().await?;
@@ -15,9 +15,9 @@ pub async fn create(dto: ContratistaCreateDTO) -> Result<Contratista, SurrealDbE
     result.ok_or(SurrealDbError::Query("No se pudo crear el contratista".to_string()))
 }
 
-pub async fn find_by_id(id: &Thing) -> Result<Option<Contratista>, SurrealDbError> {
+pub async fn find_by_id(id: &RecordId) -> Result<Option<Contratista>, SurrealDbError> {
     let db = get_db().await?;
-    let result: Option<Contratista> = db.select((id.tb.clone(), id.id.to_string())).await?;
+    let result: Option<Contratista> = db.select(id.clone()).await?;
     Ok(result)
 }
 
@@ -37,7 +37,7 @@ pub async fn find_all() -> Result<Vec<Contratista>, SurrealDbError> {
     Ok(result)
 }
 
-pub async fn find_by_empresa(empresa_id: &Thing) -> Result<Vec<Contratista>, SurrealDbError> {
+pub async fn find_by_empresa(empresa_id: &RecordId) -> Result<Vec<Contratista>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
         .query("SELECT * FROM contratista WHERE empresa = $empresa")
@@ -47,33 +47,30 @@ pub async fn find_by_empresa(empresa_id: &Thing) -> Result<Vec<Contratista>, Sur
     Ok(contratistas)
 }
 
-pub async fn update(id: &Thing, data: serde_json::Value) -> Result<Contratista, SurrealDbError> {
+pub async fn update(id: &RecordId, data: serde_json::Value) -> Result<Contratista, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<Contratista> =
-        db.update((id.tb.clone(), id.id.to_string())).merge(data).await?;
+    let result: Option<Contratista> = db.update(id.clone()).merge(data).await?;
 
     result
         .ok_or(SurrealDbError::Query("Contratista no encontrado o error al actualizar".to_string()))
 }
 
-pub async fn update_status(id: &Thing, estado: &str) -> Result<Contratista, SurrealDbError> {
+pub async fn update_status(id: &RecordId, estado: &str) -> Result<Contratista, SurrealDbError> {
     let db = get_db().await?;
-    let result: Option<Contratista> = db
-        .update((id.tb.clone(), id.id.to_string()))
-        .merge(serde_json::json!({ "estado": estado }))
-        .await?;
+    let result: Option<Contratista> =
+        db.update(id.clone()).merge(serde_json::json!({ "estado": estado })).await?;
 
     result.ok_or(SurrealDbError::Query("No se pudo actualizar el estado".to_string()))
 }
 
-pub async fn delete(id: &Thing) -> Result<(), SurrealDbError> {
+pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    let _: Option<Contratista> = db.delete((id.tb.clone(), id.id.to_string())).await?;
+    let _: Option<Contratista> = db.delete(id.clone()).await?;
     Ok(())
 }
 
-pub async fn get_empresa_nombre(empresa_id: &Thing) -> Result<String, SurrealDbError> {
+pub async fn get_empresa_nombre(empresa_id: &RecordId) -> Result<String, SurrealDbError> {
     let db = get_db().await?;
 
     let mut result = db.query("SELECT nombre FROM $id").bind(("id", empresa_id.clone())).await?;

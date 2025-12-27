@@ -196,34 +196,34 @@ mod tests {
         let mut writer = get_index_writer(&index).unwrap();
 
         use chrono::Utc;
-        use surrealdb::sql::Thing;
+        use surrealdb::RecordId;
 
         // 1. Contratista
         let c = Contratista {
-            id: Thing::from(("contratista", "c1")),
+            id: RecordId::from_table_key("contratista", "c1"),
             cedula: "123".into(),
             nombre: "Alexander".into(),
             segundo_nombre: None,
             apellido: "Gomez".into(),
             segundo_apellido: None,
-            empresa: Thing::from(("empresa", "emp-1")),
-            fecha_vencimiento_praind: Utc::now(),
+            empresa: RecordId::from_table_key("empresa", "emp-1"),
+            fecha_vencimiento_praind: surrealdb::Datetime::from(Utc::now()),
             estado: EstadoContratista::Activo,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
+            created_at: surrealdb::Datetime::from(Utc::now()),
+            updated_at: surrealdb::Datetime::from(Utc::now()),
         };
         index_contratista(&mut writer, &handles, &c, "Intel").unwrap();
 
         // 2. Usuario
         let u = User {
-            id: Thing::from(("user", "u1")),
+            id: RecordId::from_table_key("user", "u1"),
             cedula: "456".into(),
             nombre: "John".into(),
             segundo_nombre: None,
             apellido: "Doe".into(),
             segundo_apellido: None,
             email: "john@doe.com".into(),
-            role: Thing::from(("role", "role-1")),
+            role: RecordId::from_table_key("role", "role-1"),
             is_active: true,
             must_change_password: false,
             fecha_inicio_labores: None,
@@ -234,8 +234,8 @@ mod tests {
             contacto_emergencia_nombre: None,
             contacto_emergencia_telefono: None,
             deleted_at: None,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
+            created_at: surrealdb::Datetime::from(Utc::now()),
+            updated_at: surrealdb::Datetime::from(Utc::now()),
             avatar_path: None,
         };
         index_user(&mut writer, &handles, &u).unwrap();

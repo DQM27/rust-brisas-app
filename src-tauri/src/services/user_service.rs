@@ -19,7 +19,7 @@ use log::{error, info, warn};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use std::sync::Arc;
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 // ==========================================
 // CREAR USUARIO
@@ -48,7 +48,7 @@ pub async fn create_user(
 
     // 4. Determinar rol (default: Guardia)
     let role_id_str = input.role_id.unwrap_or_else(|| ROLE_GUARDIA_ID.to_string());
-    let role_thing = Thing::from(("role", role_id_str.as_str()));
+    let role_record = RecordId::from_table_key("role", role_id_str);
 
     // 5. Generar o usar contraseña
     let (password_str, must_change_password) = match input.password {
@@ -63,7 +63,7 @@ pub async fn create_user(
         }
     };
 
-    info!("Creando usuario '{}' con rol '{}'", email_normalizado, role_thing);
+    info!("Creando usuario '{}' con rol '{}'", email_normalizado, role_record);
     let password_hash = auth::hash_password(&password_str)?;
 
     // 6. Preparar DTO
@@ -72,7 +72,7 @@ pub async fn create_user(
         password_hash,
         nombre: nombre_normalizado,
         apellido: apellido_normalizado,
-        role: role_thing,
+        role: role_record,
         cedula: input.cedula,
         segundo_nombre: input.segundo_nombre,
         segundo_apellido: input.segundo_apellido,
@@ -134,9 +134,10 @@ pub async fn get_user_by_id(id_str: &str) -> Result<UserResponse, UserError> {
 // ==========================================
 
 pub async fn get_all_users() -> Result<UserListResponse, UserError> {
-    let exclude_thing = Thing::from(("user", SUPERUSER_ID));
-    let users =
-        db::find_all(Some(&exclude_thing)).await.map_err(|e| UserError::Database(e.to_string()))?;
+    let exclude_record = RecordId::from_table_key("user", SUPERUSER_ID);
+    let users = db::find_all(Some(&exclude_record))
+        .await
+        .map_err(|e| UserError::Database(e.to_string()))?;
 
     let mut user_responses = Vec::new();
     for user in users {
@@ -194,7 +195,10 @@ pub async fn update_user(
         map.insert("apellido".to_string(), serde_json::json!(domain::normalizar_nombre(apellido)));
     }
     if let Some(ref role_id) = input.role_id {
-        map.insert("role".to_string(), serde_json::json!(Thing::from(("role", role_id.as_str()))));
+        map.insert(
+            "role".to_string(),
+            serde_json::json!(RecordId::from_table_key("role", role_id)),
+        );
     }
     if let Some(pwd) = input.password {
         if !pwd.trim().is_empty() {
@@ -357,11 +361,11 @@ pub async fn login(email: String, password: String) -> Result<UserResponse, User
 // HELPERS
 // ==========================================
 
-fn parse_user_id(id: &str) -> Thing {
+fn parse_user_id(id: &str) -> RecordId {
     if id.contains(':') {
         let parts: Vec<&str> = id.split(':').collect();
-        Thing::from((parts[0], parts[1]))
+        RecordId::from_table_key(parts[0], parts[1])
     } else {
-        Thing::from(("user", id))
+        RecordId::from_table_key("user", id)
     }
 }

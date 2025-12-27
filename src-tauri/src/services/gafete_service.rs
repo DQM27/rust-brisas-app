@@ -7,15 +7,15 @@ use crate::models::gafete::{
     CreateGafeteInput, CreateGafeteRangeInput, GafeteCreateDTO, GafeteEstado, GafeteResponse,
     TipoGafete,
 };
-use surrealdb::sql::Thing;
+use surrealdb::RecordId;
 
 /// Helper para parsear ID de gafete (acepta con o sin prefijo)
-fn parse_gafete_id(id_str: &str) -> Thing {
+fn parse_gafete_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
-        Thing::from((parts[0], parts[1]))
+        RecordId::from_table_key(parts[0], parts[1])
     } else {
-        Thing::from(("gafete", id_str))
+        RecordId::from_table_key("gafete", id_str)
     }
 }
 
