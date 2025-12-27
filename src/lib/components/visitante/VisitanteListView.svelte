@@ -1,7 +1,7 @@
 <!-- src/lib/components/visitante/VisitanteListView.svelte -->
 <script lang="ts">
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
-  import VisitanteTrashView from "./VisitanteTrashView.svelte";
+
   import VisitanteFormModal from "$lib/components/visitante/VisitanteFormModal.svelte";
   import {
     searchVisitantes,
@@ -30,7 +30,6 @@
   let error = $state<string | null>(null);
 
   // Filtros
-  let viewMode = $state<"active" | "trash">("active"); // Replaced activeFilter
 
   // Selección
   let selectedRows = $state<VisitanteResponse[]>([]);
@@ -69,8 +68,6 @@
   const loadData = async () => {
     loading = true;
     error = null;
-
-    if (viewMode === "trash") return;
 
     // Use listVisitantes for the main view
     let res = await listVisitantes();
@@ -121,15 +118,6 @@
           onClick: loadData,
           tooltip: "Recargar lista",
         },
-        {
-          id: "filter-trash",
-          label: "Papelera",
-          category: "ui",
-          onClick: () => {
-            viewMode = "trash";
-          },
-          tooltip: "Ver visitantes eliminados",
-        },
       ],
       singleSelect: [
         {
@@ -155,29 +143,18 @@
   ] as ColDef<VisitanteResponse>[]);
 
   $effect(() => {
-    if (viewMode === "active") loadData();
+    loadData();
   });
 </script>
 
 <div class="h-full flex flex-col space-y-4 p-4 animate-fade-in bg-[#1e1e1e]">
   <div class="flex items-center justify-between">
     <div>
-      <h2 class="text-xl font-semibold text-gray-100">
-        {viewMode === "active"
-          ? "Lista de Visitantes"
-          : "Papelera de Visitantes"}
-      </h2>
+      <h2 class="text-xl font-semibold text-gray-100">"Lista de Visitantes"</h2>
     </div>
   </div>
 
-  {#if viewMode === "trash"}
-    <VisitanteTrashView
-      onBack={() => {
-        viewMode = "active";
-        loadData();
-      }}
-    />
-  {:else if loading}
+  {#if loading}
     <div class="flex h-full items-center justify-center">
       <div class="text-center">
         <div class="animate-spin text-blue-500 text-4xl mb-4">⌛</div>

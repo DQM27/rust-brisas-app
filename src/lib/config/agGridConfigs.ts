@@ -614,6 +614,45 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     showColumnSelector: true,
     showThemeSelector: false,
     enableGrouping: false
+  },
+  'trash-contratista': {
+    gridId: 'trash-contratista',
+    availableButtons: {
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
+      ],
+      singleSelect: [],
+      multiSelect: []
+    },
+    showColumnSelector: true,
+    showThemeSelector: false,
+    enableGrouping: false
+  },
+  'trash-proveedor': {
+    gridId: 'trash-proveedor',
+    availableButtons: {
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
+      ],
+      singleSelect: [],
+      multiSelect: []
+    },
+    showColumnSelector: true,
+    showThemeSelector: false,
+    enableGrouping: false
+  },
+  'trash-visitante': {
+    gridId: 'trash-visitante',
+    availableButtons: {
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
+      ],
+      singleSelect: [],
+      multiSelect: []
+    },
+    showColumnSelector: true,
+    showThemeSelector: false,
+    enableGrouping: false
   }
 };
 

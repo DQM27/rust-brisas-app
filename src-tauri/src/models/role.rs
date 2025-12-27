@@ -26,6 +26,7 @@ pub enum Module {
     Config,
     Backup,
     Export,
+    Trash,
 }
 
 impl Module {
@@ -45,6 +46,7 @@ impl Module {
             Module::Config,
             Module::Backup,
             Module::Export,
+            Module::Trash,
         ]
     }
 
@@ -64,6 +66,7 @@ impl Module {
             Module::Config => "config",
             Module::Backup => "backup",
             Module::Export => "export",
+            Module::Trash => "trash",
         }
     }
 
@@ -83,6 +86,7 @@ impl Module {
             Module::Config => "Configuración",
             Module::Backup => "Respaldos",
             Module::Export => "Exportar",
+            Module::Trash => "Papelera",
         }
     }
 }
@@ -106,6 +110,7 @@ impl std::str::FromStr for Module {
             "config" => Ok(Module::Config),
             "backup" => Ok(Module::Backup),
             "export" => Ok(Module::Export),
+            "trash" => Ok(Module::Trash),
             _ => Err(format!("Unknown module: {}", s)),
         }
     }

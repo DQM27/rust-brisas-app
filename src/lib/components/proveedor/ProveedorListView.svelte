@@ -1,7 +1,7 @@
 <!-- src/lib/components/proveedor/ProveedorListView.svelte -->
 <script lang="ts">
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
-  import ProveedorTrashView from "./ProveedorTrashView.svelte";
+
   import ProveedorFormModal from "$lib/components/proveedor/ProveedorFormModal.svelte";
   import {
     fetchAllProveedores,
@@ -35,7 +35,6 @@
   let error = $state<string | null>(null);
 
   // Estado local de filtros
-  let viewMode = $state<"active" | "trash">("active"); // Replaced activeFilter
 
   // Estado del Modal
   let showModal = $state(false);
@@ -63,7 +62,6 @@
 
     // Solo cargamos activos/todos para el grid principal
     // TrashView maneja su propia carga
-    if (viewMode === "trash") return; // Should not happen via loadData triggers generally or handled inside component
 
     let res;
     // Default to active or all based on some future active-only filter if needed
@@ -170,15 +168,6 @@
           onClick: loadData,
           tooltip: "Recargar lista",
         },
-        {
-          id: "filter-trash",
-          label: "Papelera",
-          category: "ui",
-          onClick: () => {
-            viewMode = "trash";
-          },
-          tooltip: "Ver proveedores eliminados",
-        },
       ],
       singleSelect: [
         createCustomButton.editar(() => {
@@ -199,7 +188,7 @@
 
   // Effect para cargar datos al montar
   $effect(() => {
-    if (viewMode === "active") loadData();
+    loadData();
   });
 </script>
 
@@ -209,21 +198,12 @@
   <div class="flex items-center justify-between">
     <div>
       <h2 class="text-xl font-semibold text-gray-100">
-        {viewMode === "active"
-          ? "Lista de Proveedores"
-          : "Papelera de Proveedores"}
+        "Lista de Proveedores"
       </h2>
     </div>
   </div>
 
-  {#if viewMode === "trash"}
-    <ProveedorTrashView
-      onBack={() => {
-        viewMode = "active";
-        loadData();
-      }}
-    />
-  {:else if loading}
+  {#if loading}
     <div class="flex h-full items-center justify-center">
       <div class="text-center">
         <svg

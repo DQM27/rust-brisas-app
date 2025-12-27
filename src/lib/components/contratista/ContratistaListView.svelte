@@ -13,7 +13,7 @@
   import SearchBar from "$lib/components/shared/SearchBar.svelte";
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
   import ContratistaFormModal from "./ContratistaFormModal.svelte";
-  import ContratistaTrashView from "./ContratistaTrashView.svelte";
+
   import type { ContratistaResponse } from "$lib/types/contratista";
   import type { ColDef } from "@ag-grid-community/core";
   import {
@@ -28,7 +28,6 @@
   let loading = $state(false);
   let error = $state("");
   let isUpdatingStatus = false;
-  let viewMode = $state<"active" | "trash">("active"); // "active" or "trash"
 
   // States specific to Active Grid
   let selectedRows = $state<ContratistaResponse[]>([]);
@@ -110,16 +109,7 @@
     return {
       default: [
         createCustomButton.nuevo(() => openModal()),
-        {
-          id: "view-trash",
-          label: "Papelera",
-          icon: Trash2,
-          onClick: () => {
-            viewMode = "trash";
-          },
-          variant: "default" as const, // Changed from ghost to default
-          tooltip: "Ver contratistas eliminados",
-        },
+
         ...COMMON_DEFAULT_BUTTONS.filter((b) =>
           ["autosize-all", "reset-columns", "select-all"].includes(b.id),
         ).map((b) => ({
@@ -308,9 +298,7 @@
     <div class="flex items-center justify-between gap-4">
       <div>
         <h2 class="text-xl font-semibold text-gray-100">
-          {viewMode === "active"
-            ? "Lista de Contratistas"
-            : "Papelera de Reciclaje"}
+          "Lista de Contratistas"
         </h2>
         <p class="mt-1 text-sm text-gray-400">
           Gestión y visualización de contratistas registrados
@@ -319,26 +307,17 @@
       <div class="flex-1 max-w-md">
         <!-- Only show searchbar if in active mode or if trash view supports it (trash view has internal logic or we hide it) -->
         <!-- For now we hide searchbar in trash view to simplify as trash view component handles its own display -->
-        {#if viewMode === "active"}
-          <SearchBar
-            placeholder="Buscar por nombre, cédula o empresa..."
-            limit={10}
-          />
-        {/if}
+        <SearchBar
+          placeholder="Buscar por nombre, cédula o empresa..."
+          limit={10}
+        />
       </div>
     </div>
   </div>
 
   <!-- Content -->
   <div class="flex-1 overflow-hidden relative bg-[#1e1e1e]">
-    {#if viewMode === "trash"}
-      <ContratistaTrashView
-        onBack={() => {
-          viewMode = "active";
-          loadContratistas(); // Reload main list in case restoring happened
-        }}
-      />
-    {:else if error}
+    {#if error}
       <div class="p-6">
         <div
           class="flex items-center gap-3 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-red-400"
@@ -393,13 +372,6 @@
             >
               Nuevo Contratista
             </button>
-            <button
-              onclick={() => (viewMode = "trash")}
-              class="px-4 py-2 bg-[#2d2d2d] border border-white/10 text-gray-300 rounded-md hover:bg-[#353535] transition-colors flex items-center gap-2"
-            >
-              <Trash2 size={16} />
-              Papelera
-            </button>
           </div>
         </div>
       </div>
@@ -416,47 +388,45 @@
     {/if}
 
     <!-- Filter Dropdowns (Only active view) -->
-    {#if viewMode === "active"}
-      <div class="filter-dropdown-container">
-        {#if showEstadoDropdown}
-          <div
-            class="absolute top-16 left-6 z-50 bg-[#252526] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
-            transition:fade={{ duration: 150 }}
-          >
-            {#each [["todos", "Todos los estados"], ["activo", "Activos"], ["inactivo", "Inactivos"], ["suspendido", "Suspendidos"]] as [value, label]}
-              <button
-                onclick={() => handleEstadoSelect(value as any)}
-                class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors {estadoFilter ===
-                value
-                  ? 'bg-blue-500/20 text-blue-400'
-                  : ''}"
-              >
-                {label}
-              </button>
-            {/each}
-          </div>
-        {/if}
+    <div class="filter-dropdown-container">
+      {#if showEstadoDropdown}
+        <div
+          class="absolute top-16 left-6 z-50 bg-[#252526] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
+          transition:fade={{ duration: 150 }}
+        >
+          {#each [["todos", "Todos los estados"], ["activo", "Activos"], ["inactivo", "Inactivos"], ["suspendido", "Suspendidos"]] as [value, label]}
+            <button
+              onclick={() => handleEstadoSelect(value as any)}
+              class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors {estadoFilter ===
+              value
+                ? 'bg-blue-500/20 text-blue-400'
+                : ''}"
+            >
+              {label}
+            </button>
+          {/each}
+        </div>
+      {/if}
 
-        {#if showPraindDropdown}
-          <div
-            class="absolute top-16 left-52 z-50 bg-[#252526] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
-            transition:fade={{ duration: 150 }}
-          >
-            {#each [["todos", "Todos PRAIND"], ["vigente", "Vigentes"], ["por-vencer", "Por vencer (≤30 días)"], ["vencido", "Vencidos"]] as [value, label]}
-              <button
-                onclick={() => handlePraindSelect(value as any)}
-                class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors {praindFilter ===
-                value
-                  ? 'bg-blue-500/20 text-blue-400'
-                  : ''}"
-              >
-                {label}
-              </button>
-            {/each}
-          </div>
-        {/if}
-      </div>
-    {/if}
+      {#if showPraindDropdown}
+        <div
+          class="absolute top-16 left-52 z-50 bg-[#252526] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
+          transition:fade={{ duration: 150 }}
+        >
+          {#each [["todos", "Todos PRAIND"], ["vigente", "Vigentes"], ["por-vencer", "Por vencer (≤30 días)"], ["vencido", "Vencidos"]] as [value, label]}
+            <button
+              onclick={() => handlePraindSelect(value as any)}
+              class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors {praindFilter ===
+              value
+                ? 'bg-blue-500/20 text-blue-400'
+                : ''}"
+            >
+              {label}
+            </button>
+          {/each}
+        </div>
+      {/if}
+    </div>
   </div>
 </div>
 

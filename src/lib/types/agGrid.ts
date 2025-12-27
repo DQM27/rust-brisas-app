@@ -40,7 +40,10 @@ export type GridId =
   | 'visitante-list'
   | 'ingreso-list'
   | 'contratista-trash'
-  | 'universal-trash';
+  | 'universal-trash'
+  | 'trash-contratista'
+  | 'trash-proveedor'
+  | 'trash-visitante';
 
 
 // ============================================

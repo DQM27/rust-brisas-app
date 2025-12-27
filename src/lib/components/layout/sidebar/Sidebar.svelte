@@ -272,6 +272,21 @@
   $effect(() => {
     if ($currentUser) {
       loadUserAvatar($currentUser.id);
+      console.log("Current User Role Debug:", {
+        id: $currentUser.id,
+        roleId: $currentUser.roleId,
+        roleName: $currentUser.roleName,
+        adminId: ROLE_ADMIN_ID,
+        supervisorId: ROLE_SUPERVISOR_ID,
+        check:
+          [
+            ROLE_ADMIN_ID.toLowerCase(),
+            ROLE_SUPERVISOR_ID.toLowerCase(),
+          ].includes($currentUser.roleId.toLowerCase()) ||
+          ["admin", "administrador", "supervisor"].includes(
+            ($currentUser.roleName || "").toLowerCase(),
+          ),
+      });
     } else {
       avatarUrl = null;
     }
@@ -520,6 +535,19 @@
             >
               Generar Respaldo
             </button>
+
+            {#if $currentUser && ([ROLE_ADMIN_ID.toLowerCase(), ROLE_SUPERVISOR_ID.toLowerCase()].includes($currentUser.roleId.toLowerCase()) || ["admin", "administrador", "supervisor"].includes($currentUser.roleName.toLowerCase()))}
+              <div class="settings-menu-separator"></div>
+              <button
+                class="settings-menu-item text-red-400 hover:text-red-300"
+                onclick={() =>
+                  handleSettingsAction(() =>
+                    openView("trash-settings", "Papelera de Reciclaje"),
+                  )}
+              >
+                Papelera
+              </button>
+            {/if}
 
             <div class="settings-menu-separator"></div>
 
