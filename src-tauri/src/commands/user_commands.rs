@@ -6,7 +6,7 @@ use crate::models::user::{
 };
 use crate::services::search_service::SearchService;
 use crate::services::session::{SessionState, SessionUser};
-use crate::services::user_service; // Usar el servicio estándar migrado
+use crate::services::user_service;
 use std::sync::Arc;
 use tauri::State;
 
@@ -55,7 +55,7 @@ pub async fn login(
     email: String,
     password: String,
 ) -> Result<UserResponse, UserError> {
-    log::info!("🔐 Login request using SurrealDB");
+    log::info!("🔐 Login request using SurrealDB Native");
     let user_response = user_service::login(email, password).await?;
 
     // Update SessionState
@@ -85,8 +85,7 @@ pub async fn demo_login(
     session: State<'_, SessionState>,
     email: String,
 ) -> Result<UserResponse, UserError> {
-    log::warn!("⚠️ demo_login: seed_demo no implementado para SurrealDB");
-    // Asumimos que el usuario existe y probamos con un pass genérico o intentamos login
+    log::warn!("⚠️ demo_login (SurrealDB Native)");
     let user_response = user_service::login(email, "demo".to_string()).await?;
 
     // Update SessionState
@@ -109,10 +108,10 @@ pub async fn demo_login(
 
 #[tauri::command]
 pub async fn upload_user_avatar(_user_id: String, _file_path: String) -> Result<String, UserError> {
-    Err(UserError::Validation("Avatar upload no implementado para SurrealDB aún".to_string()))
+    Err(UserError::Validation("Avatar upload no implementado aún".to_string()))
 }
 
 #[tauri::command]
 pub async fn get_user_avatar(_user_id: String) -> Result<String, UserError> {
-    Err(UserError::Validation("Avatar retrieval no implementado para SurrealDB aún".to_string()))
+    Err(UserError::Validation("Avatar retrieval no implementado aún".to_string()))
 }

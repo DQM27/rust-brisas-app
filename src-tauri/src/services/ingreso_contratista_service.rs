@@ -9,6 +9,7 @@ use crate::models::ingreso::{
 use crate::models::lista_negra::BlockCheckResponse;
 use crate::services::{gafete_service, lista_negra_service};
 use serde::{Deserialize, Serialize};
+use surrealdb::sql::Thing;
 
 // ==========================================
 // DTOs PÚBLICOS (requeridos por comandos)
@@ -88,8 +89,12 @@ pub struct IngresoExcepcionalResponse {
 // ==========================================
 
 pub async fn validar_ingreso_contratista(
-    contratista_id: String,
+    contratista_id_str: String,
 ) -> Result<ValidacionIngresoResponse, IngresoContratistaError> {
+    let contratista_id = Thing::try_from(contratista_id_str).map_err(|_| {
+        IngresoContratistaError::Validation("ID de contratista inválido".to_string())
+    })?;
+
     // 1. Obtener datos del contratista (SurrealDB)
     let contratista = contratista_queries::find_by_id(&contratista_id)
         .await
@@ -97,8 +102,6 @@ pub async fn validar_ingreso_contratista(
         .ok_or(IngresoContratistaError::ContratistaNotFound)?;
 
     // 2. Verificar Lista Negra
-    // Asumimos lista_negra_service no pide pool.
-    // Si necesitara acceso a DB, debería usar surreal_lista_negra_queries internamente.
     let b = lista_negra_service::check_is_blocked(contratista.cedula.clone()).await.unwrap_or(
         BlockCheckResponse { is_blocked: false, nivel_severidad: None, bloqueado_desde: None },
     );
@@ -122,11 +125,10 @@ pub async fn validar_ingreso_contratista(
     }
 
     // 4. Motor de Validación
-    // Contratista struct fields: cedula, nombre, apellido, fecha_vencimiento_praind, estado...
     let ctx = ContextoIngreso::new_contratista(
         contratista.cedula.clone(),
         format!("{} {}", contratista.nombre, contratista.apellido),
-        &contratista.fecha_vencimiento_praind,
+        &contratista.fecha_vencimiento_praind.format("%Y-%m-%d").to_string(),
         b.is_blocked,
         b.nivel_severidad,
         false, // TODO: verificar si es excepcional check
@@ -147,8 +149,23 @@ pub async fn validar_ingreso_contratista(
 
 pub async fn crear_ingreso_contratista(
     input: CreateIngresoContratistaInput,
-    _usuario_id: String,
+    usuario_id_str: String,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
+    let contratista_id = Thing::try_from(input.contratista_id.clone()).map_err(|_| {
+        IngresoContratistaError::Validation("ID de contratista inválido".to_string())
+    })?;
+
+    let usuario_id = Thing::try_from(usuario_id_str)
+        .map_err(|_| IngresoContratistaError::Validation("ID de usuario inválido".to_string()))?;
+
+    let vehiculo_id = if let Some(vid) = &input.vehiculo_id {
+        Some(Thing::try_from(vid.clone()).map_err(|_| {
+            IngresoContratistaError::Validation("ID de vehículo inválido".to_string())
+        })?)
+    } else {
+        None
+    };
+
     // 2. Validar Gafete si aplica
     if let Some(ref g) = input.gafete_numero {
         let tipo_g = input.gafete_tipo.as_deref().unwrap_or("contratista");
@@ -162,18 +179,38 @@ pub async fn crear_ingreso_contratista(
     }
 
     // 3. Obtener datos del contratista para guardar snapshot
-    let contratista = contratista_queries::find_by_id(&input.contratista_id)
+    let contratista = contratista_queries::find_by_id(&contratista_id)
         .await
         .map_err(|e| IngresoContratistaError::Database(e.to_string()))?
         .ok_or(IngresoContratistaError::ContratistaNotFound)?;
 
-    let contratista_json = serde_json::json!(contratista);
+    // Construct DTO
+    let dto = crate::models::ingreso::IngresoCreateDTO {
+        contratista: Some(contratista.id.clone()),
+        cedula: contratista.cedula.clone(),
+        nombre: contratista.nombre.clone(),
+        apellido: contratista.apellido.clone(),
+        empresa_nombre: "".to_string(), // TODO: Fetch company name or use snapshot
+        tipo_ingreso: "contratista".to_string(),
+        tipo_autorizacion: input.tipo_autorizacion,
+        modo_ingreso: input.modo_ingreso,
+        vehiculo: vehiculo_id,
+        placa_temporal: None,
+        gafete_numero: input.gafete_numero,
+        gafete_tipo: input.gafete_tipo,
+        fecha_hora_ingreso: chrono::Utc::now(),
+        usuario_ingreso: usuario_id,
+        praind_vigente_al_ingreso: Some(contratista.fecha_vencimiento_praind > chrono::Utc::now()),
+        estado_contratista_al_ingreso: Some(contratista.estado.as_str().to_string()),
+        observaciones: input.observaciones,
+        anfitrion: None,
+        area_visitada: None,
+        motivo: None,
+    };
 
     // 4. Insertar en DB
-    let nuevo_ingreso = db::insert(input.into(), &contratista_json)
-        .await
-        .map_err(|e| IngresoContratistaError::Database(e.to_string()))?
-        .ok_or(IngresoContratistaError::Database("Error al crear ingreso".to_string()))?;
+    let nuevo_ingreso =
+        db::insert(dto).await.map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
 
     // 5. Marcar gafete como en uso
     if let Some(ref g) = nuevo_ingreso.gafete_numero {
@@ -186,14 +223,19 @@ pub async fn crear_ingreso_contratista(
 
 pub async fn registrar_salida(
     input: RegistrarSalidaInput,
-    usuario_id: String,
+    usuario_id_str: String,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
+    let ingreso_id = Thing::try_from(input.ingreso_id)
+        .map_err(|_| IngresoContratistaError::Validation("ID de ingreso inválido".to_string()))?;
+
+    let usuario_id = Thing::try_from(usuario_id_str)
+        .map_err(|_| IngresoContratistaError::Validation("ID de usuario inválido".to_string()))?;
+
     // 1. Actualizar salida en DB
     let ingreso_actualizado =
-        db::update_salida(&input.ingreso_id, &usuario_id, input.observaciones_salida)
+        db::update_salida(&ingreso_id, &usuario_id, input.observaciones_salida)
             .await
-            .map_err(|e| IngresoContratistaError::Database(e.to_string()))?
-            .ok_or(IngresoContratistaError::NotFound)?;
+            .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
 
     // 2. Liberar gafete si se devolvió
     if input.devolvio_gafete {

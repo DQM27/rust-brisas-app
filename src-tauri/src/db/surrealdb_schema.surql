@@ -1,100 +1,116 @@
--- ==========================================
--- SurrealDB Schema for Brisas
--- ==========================================
--- Esquema flexible sin SCHEMAFULL para desarrollo
+-- =========================================================
+-- SurrealDB Schema for Brisas - ENTERPRISE NATIVE
+-- =========================================================
 
--- ==========================================
--- TABLA: role (roles del sistema)
--- ==========================================
-DEFINE TABLE IF NOT EXISTS role;
-DEFINE INDEX IF NOT EXISTS idx_role_name ON role COLUMNS name UNIQUE;
+-- =========================================================
+-- 2. TABLAS MAESTRAS (Referenciales)
+-- =========================================================
 
--- ==========================================
--- TABLA: user (usuarios)
--- ==========================================
-DEFINE TABLE IF NOT EXISTS user;
-DEFINE INDEX IF NOT EXISTS idx_user_email ON user COLUMNS email UNIQUE;
-DEFINE INDEX IF NOT EXISTS idx_user_cedula ON user COLUMNS cedula UNIQUE;
+-- Tabla ROLE
+DEFINE TABLE role SCHEMAFULL;
+DEFINE FIELD name ON TABLE role TYPE string;
+DEFINE FIELD description ON TABLE role TYPE option<string>;
+DEFINE FIELD is_system ON TABLE role TYPE bool DEFAULT false;
+DEFINE FIELD permissions ON TABLE role TYPE option<array<string>>;
+DEFINE FIELD created_at ON TABLE role TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD updated_at ON TABLE role TYPE datetime VALUE time::now();
+DEFINE INDEX idx_role_name ON role COLUMNS name UNIQUE;
 
--- ==========================================
--- TABLA: empresa (empresas/compañías)
--- ==========================================
-DEFINE TABLE IF NOT EXISTS empresa;
-DEFINE INDEX IF NOT EXISTS idx_empresa_nombre ON empresa COLUMNS nombre UNIQUE;
+-- Tabla EMPRESA
+DEFINE TABLE empresa SCHEMAFULL;
+DEFINE FIELD nombre ON TABLE empresa TYPE string;
+DEFINE FIELD direccion ON TABLE empresa TYPE option<string>;
+DEFINE FIELD is_active ON TABLE empresa TYPE bool DEFAULT true;
+DEFINE FIELD created_at ON TABLE empresa TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD updated_at ON TABLE empresa TYPE datetime VALUE time::now();
+DEFINE INDEX idx_empresa_nombre ON empresa COLUMNS nombre UNIQUE;
 
--- ==========================================
--- TABLA: contratista (contratistas)
--- ==========================================
-DEFINE TABLE IF NOT EXISTS contratista;
-DEFINE INDEX IF NOT EXISTS idx_contratista_cedula ON contratista COLUMNS cedula UNIQUE;
-DEFINE INDEX IF NOT EXISTS idx_contratista_empresa ON contratista COLUMNS empresa_id;
+-- =========================================================
+-- 3. TABLA DE USUARIOS
+-- =========================================================
 
--- ==========================================
--- TABLA: proveedor (proveedores)
--- ==========================================
-DEFINE TABLE IF NOT EXISTS proveedor;
-DEFINE INDEX IF NOT EXISTS idx_proveedor_cedula ON proveedor COLUMNS cedula UNIQUE;
-DEFINE INDEX IF NOT EXISTS idx_proveedor_empresa ON proveedor COLUMNS empresa_id;
+DEFINE TABLE user SCHEMAFULL;
+DEFINE FIELD email ON TABLE user TYPE string ASSERT string::is::email($value);
+DEFINE INDEX idx_user_email ON user COLUMNS email UNIQUE;
+DEFINE FIELD password_hash ON TABLE user TYPE string;
+DEFINE FIELD is_active ON TABLE user TYPE bool DEFAULT true;
+DEFINE FIELD role ON TABLE user TYPE record<role>; 
+DEFINE FIELD nombre ON TABLE user TYPE string;
+DEFINE FIELD apellido ON TABLE user TYPE string;
+DEFINE FIELD cedula ON TABLE user TYPE string;
+DEFINE INDEX idx_user_cedula ON user COLUMNS cedula UNIQUE;
+DEFINE FIELD segundo_nombre ON TABLE user TYPE option<string>;
+DEFINE FIELD segundo_apellido ON TABLE user TYPE option<string>;
+DEFINE FIELD fecha_inicio_labores ON TABLE user TYPE option<string>;
+DEFINE FIELD numero_gafete ON TABLE user TYPE option<string>;
+DEFINE FIELD telefono ON TABLE user TYPE option<string>;
+DEFINE FIELD direccion ON TABLE user TYPE option<string>;
+DEFINE FIELD contacto_emergencia_nombre ON TABLE user TYPE option<string>;
+DEFINE FIELD contacto_emergencia_telefono ON TABLE user TYPE option<string>;
+DEFINE FIELD avatar_path ON TABLE user TYPE option<string>;
+DEFINE FIELD must_change_password ON TABLE user TYPE bool DEFAULT false;
+DEFINE FIELD created_at ON TABLE user TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD updated_at ON TABLE user TYPE datetime VALUE time::now();
+DEFINE FIELD deleted_at ON TABLE user TYPE option<datetime>;
+DEFINE FIELD nombre_completo ON TABLE user VALUE 
+    string::trim(nombre + ' ' + (segundo_nombre OR '') + ' ' + apellido + ' ' + (segundo_apellido OR ''));
 
--- ==========================================
--- TABLA: visitante (visitantes)
--- ==========================================
-DEFINE TABLE IF NOT EXISTS visitante;
-DEFINE INDEX IF NOT EXISTS idx_visitante_cedula ON visitante COLUMNS cedula UNIQUE;
+-- =========================================================
+-- 4. ACTORES EXTERNOS
+-- =========================================================
 
--- ==========================================
--- TABLA: vehiculo (vehículos)
--- ==========================================
-DEFINE TABLE IF NOT EXISTS vehiculo;
-DEFINE INDEX IF NOT EXISTS idx_vehiculo_placa ON vehiculo COLUMNS placa UNIQUE;
-DEFINE INDEX IF NOT EXISTS idx_vehiculo_contratista ON vehiculo COLUMNS contratista_id;
-DEFINE INDEX IF NOT EXISTS idx_vehiculo_proveedor ON vehiculo COLUMNS proveedor_id;
+DEFINE TABLE contratista SCHEMAFULL;
+DEFINE FIELD cedula ON TABLE contratista TYPE string;
+DEFINE FIELD nombre ON TABLE contratista TYPE string;
+DEFINE FIELD apellido ON TABLE contratista TYPE string;
+DEFINE FIELD empresa ON TABLE contratista TYPE record<empresa>;
+DEFINE FIELD estado ON TABLE contratista TYPE string ASSERT $value INSIDE ['activo', 'suspendido', 'bloqueado'];
+DEFINE FIELD fecha_vencimiento_praind ON TABLE contratista TYPE option<string>;
+DEFINE FIELD created_at ON TABLE contratista TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD updated_at ON TABLE contratista TYPE datetime VALUE time::now();
+DEFINE INDEX idx_contratista_cedula ON contratista COLUMNS cedula UNIQUE;
 
--- ==========================================
--- TABLA: gafete (gafetes/credenciales)
--- ==========================================
-DEFINE TABLE IF NOT EXISTS gafete;
-DEFINE INDEX IF NOT EXISTS idx_gafete_numero_tipo ON gafete COLUMNS numero, tipo UNIQUE;
+DEFINE TABLE proveedor SCHEMAFULL;
+DEFINE FIELD cedula ON TABLE proveedor TYPE string;
+DEFINE FIELD nombre ON TABLE proveedor TYPE string;
+DEFINE FIELD apellido ON TABLE proveedor TYPE string;
+DEFINE FIELD empresa ON TABLE proveedor TYPE record<empresa>;
+DEFINE FIELD created_at ON TABLE proveedor TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD updated_at ON TABLE proveedor TYPE datetime VALUE time::now();
+DEFINE INDEX idx_proveedor_cedula ON proveedor COLUMNS cedula UNIQUE;
 
--- ==========================================
--- TABLA: ingreso (ingresos unificados)
--- ==========================================
-DEFINE TABLE IF NOT EXISTS ingreso;
-DEFINE INDEX IF NOT EXISTS idx_ingreso_tipo ON ingreso COLUMNS tipo_ingreso;
-DEFINE INDEX IF NOT EXISTS idx_ingreso_cedula ON ingreso COLUMNS cedula;
-DEFINE INDEX IF NOT EXISTS idx_ingreso_fecha ON ingreso COLUMNS fecha_hora_ingreso;
-DEFINE INDEX IF NOT EXISTS idx_ingreso_contratista ON ingreso COLUMNS contratista_id;
-DEFINE INDEX IF NOT EXISTS idx_ingreso_proveedor ON ingreso COLUMNS proveedor_id;
-DEFINE INDEX IF NOT EXISTS idx_ingreso_visitante ON ingreso COLUMNS visitante_id;
+DEFINE TABLE visitante SCHEMAFULL;
+DEFINE FIELD cedula ON TABLE visitante TYPE string;
+DEFINE FIELD nombre ON TABLE visitante TYPE string;
+DEFINE FIELD apellido ON TABLE visitante TYPE string;
+DEFINE FIELD created_at ON TABLE visitante TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD updated_at ON TABLE visitante TYPE datetime VALUE time::now();
+DEFINE INDEX idx_visitante_cedula ON visitante COLUMNS cedula UNIQUE;
 
--- ==========================================
--- TABLA: cita (citas programadas)
--- ==========================================
-DEFINE TABLE IF NOT EXISTS cita;
-DEFINE INDEX IF NOT EXISTS idx_cita_visitante ON cita COLUMNS visitante_id;
-DEFINE INDEX IF NOT EXISTS idx_cita_fecha ON cita COLUMNS fecha_cita;
+-- =========================================================
+-- 5. OPERACIONES
+-- =========================================================
 
--- ==========================================
--- TABLA: lista_negra (personas bloqueadas)
--- ==========================================
-DEFINE TABLE IF NOT EXISTS lista_negra;
-DEFINE INDEX IF NOT EXISTS idx_lista_negra_cedula ON lista_negra COLUMNS cedula UNIQUE;
+DEFINE TABLE ingreso SCHEMAFULL;
+DEFINE FIELD fecha_hora_ingreso ON TABLE ingreso TYPE datetime VALUE $value OR time::now();
+DEFINE FIELD fecha_hora_salida ON TABLE ingreso TYPE option<datetime>;
+DEFINE FIELD tipo_ingreso ON TABLE ingreso TYPE string ASSERT $value INSIDE ['PEATONAL', 'VEHICULAR'];
+DEFINE FIELD sujeto ON TABLE ingreso TYPE record<user | contratista | proveedor | visitante>;
+DEFINE FIELD gafete_numero ON TABLE ingreso TYPE option<string>;
+DEFINE FIELD observacion ON TABLE ingreso TYPE option<string>;
 
--- ==========================================
--- TABLA: alerta_gafete (alertas por gafetes no devueltos)
--- ==========================================
-DEFINE TABLE IF NOT EXISTS alerta_gafete;
-DEFINE INDEX IF NOT EXISTS idx_alerta_gafete_cedula ON alerta_gafete COLUMNS cedula;
-DEFINE INDEX IF NOT EXISTS idx_alerta_gafete_numero ON alerta_gafete COLUMNS gafete_numero;
+-- =========================================================
+-- 6. EVENTOS Y AUDITORÍA
+-- =========================================================
 
--- ==========================================
--- TABLA: audit_praind (auditoría de cambios PRAIND)
--- ==========================================
-DEFINE TABLE IF NOT EXISTS audit_praind;
-DEFINE INDEX IF NOT EXISTS idx_audit_praind_contratista ON audit_praind COLUMNS contratista_id;
+DEFINE TABLE audit_log SCHEMAFULL;
+DEFINE FIELD action ON TABLE audit_log TYPE string;
+DEFINE FIELD target ON TABLE audit_log TYPE record;
+DEFINE FIELD timestamp ON TABLE audit_log TYPE datetime VALUE time::now();
 
--- ==========================================
--- TABLA: audit_estado (auditoría de cambios de estado)
--- ==========================================
-DEFINE TABLE IF NOT EXISTS audit_estado;
-DEFINE INDEX IF NOT EXISTS idx_audit_estado_contratista ON audit_estado COLUMNS contratista_id;
+DEFINE EVENT log_user_creation ON TABLE user WHEN $event = "CREATE" THEN {
+    CREATE audit_log SET 
+        action = "USER_CREATED", 
+        target = $after.id,
+        timestamp = time::now();
+};

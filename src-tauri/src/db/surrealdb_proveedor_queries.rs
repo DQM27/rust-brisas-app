@@ -3,62 +3,23 @@
 // Enterprise Quality SurrealDB Implementation
 // ==========================================
 
-use crate::models::proveedor::{
-    CreateProveedorInput, EstadoProveedor, Proveedor, UpdateProveedorInput,
-};
+use crate::models::proveedor::{Proveedor, ProveedorCreateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use uuid::Uuid;
+use surrealdb::sql::Thing;
 
-pub async fn create(input: CreateProveedorInput) -> Result<Proveedor, SurrealDbError> {
+pub async fn create(dto: ProveedorCreateDTO) -> Result<Proveedor, SurrealDbError> {
     let db = get_db().await?;
-    let id = Uuid::new_v4().to_string();
-    let estado = EstadoProveedor::Activo;
 
-    // Normalize names to uppercase
-    let nombre = input.nombre.to_uppercase();
-    let segundo_nombre = input.segundo_nombre.map(|s| s.to_uppercase());
-    let apellido = input.apellido.to_uppercase();
-    let segundo_apellido = input.segundo_apellido.map(|s| s.to_uppercase());
-    let empresa_id =
-        input.empresa_id.strip_prefix("empresa:").unwrap_or(&input.empresa_id).to_string();
+    let result: Option<Proveedor> =
+        db.query("CREATE proveedor CONTENT $dto").bind(("dto", dto)).await?.take(0)?;
 
-    let mut result = db
-        .query(
-            r#"
-            CREATE type::thing('proveedor', $id) CONTENT {
-                id: $id,
-                cedula: $cedula,
-                nombre: $nombre,
-                segundo_nombre: $segundo_nombre,
-                apellido: $apellido,
-                segundo_apellido: $segundo_apellido,
-                empresa_id: $empresa_id,
-                estado: $estado,
-                created_at: time::now(),
-                updated_at: time::now()
-            }
-        "#,
-        )
-        .bind(("id", id))
-        .bind(("cedula", input.cedula))
-        .bind(("nombre", nombre))
-        .bind(("segundo_nombre", segundo_nombre))
-        .bind(("apellido", apellido))
-        .bind(("segundo_apellido", segundo_apellido))
-        .bind(("empresa_id", format!("empresa:{}", empresa_id)))
-        .bind(("estado", estado))
-        .await?;
-
-    let created: Option<Proveedor> = result.take(0)?;
-    created.ok_or(SurrealDbError::Query("Error creando proveedor".to_string()))
+    result.ok_or(SurrealDbError::Query("Error creando proveedor".to_string()))
 }
 
-pub async fn find_by_id(id: &str) -> Result<Option<Proveedor>, SurrealDbError> {
+pub async fn find_by_id(id: &Thing) -> Result<Option<Proveedor>, SurrealDbError> {
     let db = get_db().await?;
-    let id_only = id.strip_prefix("proveedor:").unwrap_or(id).to_string();
-    let mut result =
-        db.query("SELECT * FROM type::thing('proveedor', $id)").bind(("id", id_only)).await?;
-    Ok(result.take(0)?)
+    let result: Option<Proveedor> = db.select((id.tb.clone(), id.id.to_string())).await?;
+    Ok(result)
 }
 
 pub async fn find_by_cedula(cedula: &str) -> Result<Option<Proveedor>, SurrealDbError> {
@@ -99,39 +60,31 @@ pub async fn search(query: &str, limit: usize) -> Result<Vec<Proveedor>, Surreal
     Ok(result.take(0)?)
 }
 
-pub async fn update(id: &str, input: UpdateProveedorInput) -> Result<Proveedor, SurrealDbError> {
+pub async fn update(id: &Thing, data: serde_json::Value) -> Result<Proveedor, SurrealDbError> {
     let db = get_db().await?;
-    let id_only = id.strip_prefix("proveedor:").unwrap_or(id).to_string();
 
-    let mut map = serde_json::Map::new();
+    let result: Option<Proveedor> =
+        db.update((id.tb.clone(), id.id.to_string())).merge(data).await?;
 
-    if let Some(v) = input.nombre {
-        map.insert("nombre".to_string(), serde_json::json!(v.to_uppercase()));
-    }
-    if let Some(v) = input.segundo_nombre {
-        map.insert("segundo_nombre".to_string(), serde_json::json!(v.to_uppercase()));
-    }
-    if let Some(v) = input.apellido {
-        map.insert("apellido".to_string(), serde_json::json!(v.to_uppercase()));
-    }
-    if let Some(v) = input.segundo_apellido {
-        map.insert("segundo_apellido".to_string(), serde_json::json!(v.to_uppercase()));
-    }
-    if let Some(v) = input.empresa_id {
-        let emp_id = v.strip_prefix("empresa:").unwrap_or(&v);
-        map.insert("empresa_id".to_string(), serde_json::json!(format!("empresa:{}", emp_id)));
-    }
-    if let Some(v) = input.estado {
-        map.insert("estado".to_string(), serde_json::json!(v));
+    result.ok_or(SurrealDbError::Query("Proveedor no encontrado o error al actualizar".to_string()))
+}
+
+pub async fn delete(id: &Thing) -> Result<(), SurrealDbError> {
+    let db = get_db().await?;
+    let _: Option<Proveedor> = db.delete((id.tb.clone(), id.id.to_string())).await?;
+    Ok(())
+}
+
+pub async fn get_empresa_nombre(empresa_id: &Thing) -> Result<String, SurrealDbError> {
+    let db = get_db().await?;
+
+    let mut result = db.query("SELECT nombre FROM $id").bind(("id", empresa_id.clone())).await?;
+
+    #[derive(serde::Deserialize)]
+    struct NombreResult {
+        nombre: String,
     }
 
-    let mut result = db
-        .query("UPDATE type::thing('proveedor', $id) MERGE $data")
-        .bind(("id", id_only))
-        .bind(("data", map))
-        .await?;
-
-    let updated: Option<Proveedor> = result.take(0)?;
-    updated
-        .ok_or(SurrealDbError::Query("Proveedor no encontrado o error al actualizar".to_string()))
+    let res: Option<NombreResult> = result.take(0)?;
+    Ok(res.map(|r| r.nombre).unwrap_or_else(|| "Empresa desconocida".to_string()))
 }

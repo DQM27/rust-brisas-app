@@ -7,9 +7,11 @@ use crate::db::surrealdb_lista_negra_queries as ln_db;
 use crate::db::surrealdb_visitante_queries as db;
 use crate::domain::errors::VisitanteError;
 use crate::domain::visitante as domain;
-use crate::models::visitante::{CreateVisitanteInput, Visitante};
+use crate::models::visitante::{CreateVisitanteInput, VisitanteCreateDTO, VisitanteResponse};
 use crate::services::surrealdb_service::SurrealDbError;
-use log::error;
+use chrono::Utc;
+use log::{error, info};
+use surrealdb::sql::Thing;
 
 // Helper para mapear errores de SurrealDB a VisitanteError
 fn map_db_error(e: SurrealDbError) -> VisitanteError {
@@ -17,9 +19,29 @@ fn map_db_error(e: SurrealDbError) -> VisitanteError {
     VisitanteError::Database(e.to_string())
 }
 
+/// Helper para parsear ID de visitante (acepta con o sin prefijo)
+fn parse_visitante_id(id_str: &str) -> Thing {
+    if id_str.contains(':') {
+        let parts: Vec<&str> = id_str.split(':').collect();
+        Thing::from((parts[0], parts[1]))
+    } else {
+        Thing::from(("visitante", id_str))
+    }
+}
+
+/// Helper para parsear ID de empresa (acepta con o sin prefijo)
+fn parse_empresa_id(id_str: &str) -> Thing {
+    if id_str.contains(':') {
+        let parts: Vec<&str> = id_str.split(':').collect();
+        Thing::from((parts[0], parts[1]))
+    } else {
+        Thing::from(("empresa", id_str))
+    }
+}
+
 pub async fn create_visitante(
     mut input: CreateVisitanteInput,
-) -> Result<Visitante, VisitanteError> {
+) -> Result<VisitanteResponse, VisitanteError> {
     // 1. Validar input
     domain::validar_create_input(&input)?;
 
@@ -54,17 +76,78 @@ pub async fn create_visitante(
         return Err(VisitanteError::CedulaExists);
     }
 
-    db::create_visitante(input).await.map_err(map_db_error)
+    // 5. Preparar DTO
+    let dto = VisitanteCreateDTO {
+        cedula: input.cedula,
+        nombre: input.nombre,
+        apellido: input.apellido,
+        segundo_nombre: input.segundo_nombre,
+        segundo_apellido: input.segundo_apellido,
+        empresa: input.empresa_id.map(|id| parse_empresa_id(&id)),
+        has_vehicle: input.has_vehicle,
+    };
+
+    info!("Creando visitante: {} {}", dto.nombre, dto.apellido);
+    let visitante = db::create_visitante(dto).await.map_err(map_db_error)?;
+
+    Ok(VisitanteResponse::from(visitante))
 }
 
-pub async fn search_visitantes(term: &str) -> Result<Vec<Visitante>, VisitanteError> {
-    db::search_visitantes(term).await.map_err(map_db_error)
+pub async fn search_visitantes(term: &str) -> Result<Vec<VisitanteResponse>, VisitanteError> {
+    let visitantes = db::search_visitantes(term).await.map_err(map_db_error)?;
+    Ok(visitantes.into_iter().map(VisitanteResponse::from).collect())
 }
 
-pub async fn get_visitante_by_id(id: &str) -> Result<Option<Visitante>, VisitanteError> {
-    db::get_visitante_by_id(id).await.map_err(map_db_error)
+pub async fn get_visitante_by_id(
+    id_str: &str,
+) -> Result<Option<VisitanteResponse>, VisitanteError> {
+    let id_thing = parse_visitante_id(id_str);
+    let opt = db::find_by_id(&id_thing).await.map_err(map_db_error)?;
+    Ok(opt.map(VisitanteResponse::from))
 }
 
-pub async fn get_visitante_by_cedula(cedula: &str) -> Result<Option<Visitante>, VisitanteError> {
-    db::get_visitante_by_cedula(cedula).await.map_err(map_db_error)
+pub async fn get_visitante_by_cedula(
+    cedula: &str,
+) -> Result<Option<VisitanteResponse>, VisitanteError> {
+    let cedula_norm = domain::normalizar_cedula(cedula);
+    let opt = db::get_visitante_by_cedula(&cedula_norm).await.map_err(map_db_error)?;
+    Ok(opt.map(VisitanteResponse::from))
+}
+
+pub async fn update_visitante(
+    id_str: &str,
+    mut input: CreateVisitanteInput,
+) -> Result<VisitanteResponse, VisitanteError> {
+    let id_thing = parse_visitante_id(id_str);
+
+    // 1. Validar si existe
+    db::find_by_id(&id_thing).await.map_err(map_db_error)?.ok_or(VisitanteError::NotFound)?;
+
+    // 2. Normalizar
+    input.nombre = domain::normalizar_nombre(&input.nombre);
+    input.apellido = domain::normalizar_nombre(&input.apellido);
+    // ... (rest of normalization) ...
+
+    let mut update_data = serde_json::Map::new();
+    update_data.insert("nombre".to_string(), serde_json::json!(input.nombre));
+    update_data.insert("apellido".to_string(), serde_json::json!(input.apellido));
+    update_data.insert("segundo_nombre".to_string(), serde_json::json!(input.segundo_nombre));
+    update_data.insert("segundo_apellido".to_string(), serde_json::json!(input.segundo_apellido));
+    update_data.insert(
+        "empresa".to_string(),
+        serde_json::json!(input.empresa_id.map(|id| parse_empresa_id(&id))),
+    );
+    update_data.insert("has_vehicle".to_string(), serde_json::json!(input.has_vehicle));
+    update_data.insert("updated_at".to_string(), serde_json::json!(Utc::now()));
+
+    let visitante = db::update(&id_thing, serde_json::Value::Object(update_data))
+        .await
+        .map_err(map_db_error)?;
+    Ok(VisitanteResponse::from(visitante))
+}
+
+pub async fn delete_visitante(id_str: &str) -> Result<(), VisitanteError> {
+    let id_thing = parse_visitante_id(id_str);
+    db::find_by_id(&id_thing).await.map_err(map_db_error)?.ok_or(VisitanteError::NotFound)?;
+    db::delete(&id_thing).await.map_err(map_db_error)
 }

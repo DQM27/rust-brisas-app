@@ -4,17 +4,17 @@
 // Capa de API: Tauri command handlers
 
 use crate::domain::errors::IngresoVisitaError;
-use crate::domain::ingreso_visita::{
-    CreateIngresoVisitaFullInput, IngresoVisita, IngresoVisitaPopulated,
-};
+use crate::domain::ingreso_visita::{CreateIngresoVisitaFullInput, IngresoVisitaPopulated};
+use crate::models::ingreso::IngresoResponse;
 use crate::services::ingreso_visita_service as service;
 use tauri::command;
 
 #[command]
 pub async fn crear_ingreso_visita_v2(
     input: CreateIngresoVisitaFullInput,
-) -> Result<IngresoVisita, IngresoVisitaError> {
-    service::registrar_ingreso_full(input).await
+    usuario_id: String,
+) -> Result<IngresoResponse, IngresoVisitaError> {
+    service::registrar_ingreso_full(input, usuario_id).await
 }
 
 #[command]
@@ -36,7 +36,7 @@ pub async fn registrar_salida_visita(
     usuario_id: String,
     devolvio_gafete: bool,
     observaciones: Option<String>,
-) -> Result<(), IngresoVisitaError> {
+) -> Result<IngresoResponse, IngresoVisitaError> {
     service::registrar_salida(id, usuario_id, devolvio_gafete, observaciones).await
 }
 

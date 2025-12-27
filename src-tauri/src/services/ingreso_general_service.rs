@@ -3,6 +3,8 @@
 
 use crate::db::surrealdb_ingreso_general_queries as db;
 use crate::models::ingreso::{IngresoListResponse, IngresoResponse};
+use crate::services::surrealdb_service::SurrealDbError;
+use surrealdb::sql::Thing;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -14,8 +16,18 @@ pub enum IngresoGeneralError {
     DataProcessing(String),
 }
 
-impl From<crate::services::surrealdb_service::SurrealDbError> for IngresoGeneralError {
-    fn from(e: crate::services::surrealdb_service::SurrealDbError) -> Self {
+/// Helper para parsear ID de ingreso
+fn parse_ingreso_id(id_str: &str) -> Thing {
+    if id_str.contains(':') {
+        let parts: Vec<&str> = id_str.split(':').collect();
+        Thing::from((parts[0], parts[1]))
+    } else {
+        Thing::from(("ingreso", id_str))
+    }
+}
+
+impl From<SurrealDbError> for IngresoGeneralError {
+    fn from(e: SurrealDbError) -> Self {
         IngresoGeneralError::Database(e.to_string())
     }
 }
@@ -58,8 +70,11 @@ pub async fn get_ingresos_abiertos() -> Result<Vec<IngresoResponse>, IngresoGene
 }
 
 /// Obtiene un ingreso por ID con detalles
-pub async fn get_ingreso_by_id(id: &str) -> Result<Option<IngresoResponse>, IngresoGeneralError> {
-    let ingreso = match db::find_by_id(id).await? {
+pub async fn get_ingreso_by_id(
+    id_str: &str,
+) -> Result<Option<IngresoResponse>, IngresoGeneralError> {
+    let id = parse_ingreso_id(id_str);
+    let ingreso = match db::find_by_id(&id).await? {
         Some(i) => i,
         None => return Ok(None),
     };

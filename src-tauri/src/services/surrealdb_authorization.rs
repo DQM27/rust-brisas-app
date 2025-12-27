@@ -8,6 +8,17 @@ use crate::domain::role::is_superuser;
 use crate::models::role::{Action, Module};
 use crate::services::surrealdb_service::SurrealDbError;
 use std::collections::HashSet;
+use surrealdb::sql::Thing;
+
+/// Helper para parsear ID de rol (acepta con o sin prefijo)
+fn parse_role_id(id_str: &str) -> Thing {
+    if id_str.contains(':') {
+        let parts: Vec<&str> = id_str.split(':').collect();
+        Thing::from((parts[0], parts[1]))
+    } else {
+        Thing::from(("role", id_str))
+    }
+}
 
 /// Define errores de autorización (compatible con legacy AuthError si se desea)
 #[derive(Debug, thiserror::Error)]
@@ -27,9 +38,10 @@ impl From<SurrealDbError> for AuthError {
 }
 
 /// Obtiene todos los permisos de un rol desde SurrealDB
-pub async fn get_role_permissions(role_id: &str) -> Result<HashSet<String>, SurrealDbError> {
+pub async fn get_role_permissions(role_id_str: &str) -> Result<HashSet<String>, SurrealDbError> {
+    let role_id = parse_role_id(role_id_str);
     // Delegamos a la query que sabe leer el array de permisos
-    let perms = surrealdb_role_queries::get_permissions(role_id).await?;
+    let perms = surrealdb_role_queries::get_permissions(&role_id).await?;
     Ok(perms.into_iter().collect())
 }
 

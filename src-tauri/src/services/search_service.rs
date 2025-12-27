@@ -92,7 +92,7 @@ impl SearchService {
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 
         let empresas_map: HashMap<String, String> =
-            empresas.into_iter().map(|e| (e.id, e.nombre)).collect();
+            empresas.into_iter().map(|e| (e.id.to_string(), e.nombre)).collect();
 
         // 2. Obtener datos
         let contratistas = contratista_queries::find_all()
@@ -100,7 +100,8 @@ impl SearchService {
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 
         // Obtener todos los usuarios (excluyendo superuser del índice)
-        let users = user_queries::find_all(SUPERUSER_ID)
+        let superuser_thing = surrealdb::sql::Thing::from(("user", SUPERUSER_ID));
+        let users = user_queries::find_all(Some(&superuser_thing))
             .await
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 
@@ -136,7 +137,7 @@ impl SearchService {
                 // Verificaré si Contratista model tiene empresa_id público.
                 // Asumiendo que sí:
                 let empresa_nombre = empresas_map
-                    .get(&contratista.empresa_id)
+                    .get(&contratista.empresa.to_string())
                     .map(|s| s.as_str())
                     .unwrap_or("Desconocida");
                 index_contratista(&mut writer, &self.handles, &contratista, empresa_nombre)?;
@@ -155,7 +156,7 @@ impl SearchService {
             // Indexar proveedores
             for proveedor in proveedores {
                 let empresa_nombre = empresas_map
-                    .get(&proveedor.empresa_id)
+                    .get(&proveedor.empresa.to_string())
                     .map(|s| s.as_str())
                     .unwrap_or("Desconocida");
                 index_proveedor(&mut writer, &self.handles, &proveedor, empresa_nombre)?;

@@ -1,55 +1,31 @@
 // ==========================================
 // src/db/surrealdb_visitante_queries.rs
-// Enterprise Quality SurrealDB Implementation
 // ==========================================
 
-use crate::models::visitante::{CreateVisitanteInput, Visitante};
+use crate::models::visitante::{Visitante, VisitanteCreateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use serde_json::json;
+use surrealdb::sql::Thing;
 
-pub async fn create_visitante(input: CreateVisitanteInput) -> Result<Visitante, SurrealDbError> {
+pub async fn create_visitante(dto: VisitanteCreateDTO) -> Result<Visitante, SurrealDbError> {
     let db = get_db().await?;
-    let empresa_link = input.empresa_id.as_ref().map(|id| {
-        let id_only = id.strip_prefix("empresa:").unwrap_or(id);
-        format!("empresa:{}", id_only)
-    });
 
     let res: Option<Visitante> = db
         .query(
             r#"
-            CREATE visitante CONTENT {
-                cedula: $cedula,
-                nombre: $nombre,
-                apellido: $apellido,
-                segundo_nombre: $segundo_nombre,
-                segundo_apellido: $segundo_apellido,
-                empresa: $empresa,
-                empresa_id: $empresa_id,
-                has_vehicle: $has_vehicle,
-                created_at: time::now(),
-                updated_at: time::now()
-            }
+            CREATE visitante CONTENT $dto
         "#,
         )
-        .bind(("cedula", input.cedula))
-        .bind(("nombre", input.nombre))
-        .bind(("apellido", input.apellido))
-        .bind(("segundo_nombre", input.segundo_nombre))
-        .bind(("segundo_apellido", input.segundo_apellido))
-        .bind(("empresa", input.empresa))
-        .bind(("empresa_id", empresa_link))
-        .bind(("has_vehicle", input.has_vehicle))
+        .bind(("dto", dto))
         .await?
         .take(0)?;
 
     res.ok_or(SurrealDbError::TransactionError("Error al crear visitante".to_string()))
 }
 
-pub async fn get_visitante_by_id(id: &str) -> Result<Option<Visitante>, SurrealDbError> {
+pub async fn find_by_id(id: &Thing) -> Result<Option<Visitante>, SurrealDbError> {
     let db = get_db().await?;
-    let id_only = id.strip_prefix("visitante:").unwrap_or(id).to_string();
-    let res: Option<Visitante> = db.select(("visitante", id_only)).await?;
-    Ok(res)
+    let result: Option<Visitante> = db.select((id.tb.clone(), id.id.to_string())).await?;
+    Ok(result)
 }
 
 pub async fn get_visitante_by_cedula(cedula: &str) -> Result<Option<Visitante>, SurrealDbError> {
@@ -70,36 +46,17 @@ pub async fn search_visitantes(term: &str) -> Result<Vec<Visitante>, SurrealDbEr
     Ok(result.take(0)?)
 }
 
-pub async fn update_visitante(
-    id: &str,
-    input: CreateVisitanteInput,
-) -> Result<Visitante, SurrealDbError> {
+pub async fn update(id: &Thing, data: serde_json::Value) -> Result<Visitante, SurrealDbError> {
     let db = get_db().await?;
-    let id_only = id.strip_prefix("visitante:").unwrap_or(id).to_string();
-    let empresa_link = input.empresa_id.as_ref().map(|id| {
-        let id_only = id.strip_prefix("empresa:").unwrap_or(id);
-        format!("empresa:{}", id_only)
-    });
 
-    let res: Option<Visitante> = db
-        .update(("visitante", id_only))
-        .merge(json!({
-            "nombre": input.nombre,
-            "apellido": input.apellido,
-            "segundo_nombre": input.segundo_nombre,
-            "segundo_apellido": input.segundo_apellido,
-            "empresa": input.empresa,
-            "empresa_id": empresa_link,
-            "has_vehicle": input.has_vehicle
-        }))
-        .await?;
+    let result: Option<Visitante> =
+        db.update((id.tb.clone(), id.id.to_string())).merge(data).await?;
 
-    res.ok_or(SurrealDbError::TransactionError("Error al actualizar visitante".to_string()))
+    result.ok_or(SurrealDbError::Query("Visitante no encontrado o error al actualizar".to_string()))
 }
 
-pub async fn delete_visitante(id: &str) -> Result<(), SurrealDbError> {
+pub async fn delete(id: &Thing) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    let id_only = id.strip_prefix("visitante:").unwrap_or(id).to_string();
-    let _: Option<Visitante> = db.delete(("visitante", id_only)).await?;
+    let _: Option<Visitante> = db.delete((id.tb.clone(), id.id.to_string())).await?;
     Ok(())
 }

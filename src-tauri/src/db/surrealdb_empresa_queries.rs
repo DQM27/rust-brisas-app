@@ -2,34 +2,29 @@
 // src/db/surrealdb_empresa_queries.rs
 // ==========================================
 
-use crate::models::empresa::{CreateEmpresaInput, Empresa, UpdateEmpresaInput};
+use crate::models::empresa::{Empresa, EmpresaCreateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
+use surrealdb::sql::Thing;
 
-pub async fn create(input: CreateEmpresaInput) -> Result<Empresa, SurrealDbError> {
+pub async fn create(dto: EmpresaCreateDTO) -> Result<Empresa, SurrealDbError> {
     let db = get_db().await?;
 
     let result: Option<Empresa> = db
         .query(
             r#"
-            CREATE empresa CONTENT {
-                nombre: $nombre,
-                is_active: true,
-                created_at: time::now(),
-                updated_at: time::now()
-            }
+            CREATE empresa CONTENT $dto
         "#,
         )
-        .bind(("nombre", input.nombre))
+        .bind(("dto", dto))
         .await?
         .take(0)?;
 
     result.ok_or(SurrealDbError::Query("No se pudo crear la empresa".to_string()))
 }
 
-pub async fn find_by_id(id: &str) -> Result<Option<Empresa>, SurrealDbError> {
+pub async fn find_by_id(id: &Thing) -> Result<Option<Empresa>, SurrealDbError> {
     let db = get_db().await?;
-    let id_only = id.strip_prefix("empresa:").unwrap_or(id);
-    let result: Option<Empresa> = db.select(("empresa", id_only)).await?;
+    let result: Option<Empresa> = db.select((id.tb.clone(), id.id.to_string())).await?;
     Ok(result)
 }
 
@@ -46,38 +41,26 @@ pub async fn get_empresas_activas() -> Result<Vec<Empresa>, SurrealDbError> {
     Ok(empresas)
 }
 
-pub async fn update(id: &str, input: UpdateEmpresaInput) -> Result<Empresa, SurrealDbError> {
+pub async fn update(id: &Thing, data: serde_json::Value) -> Result<Empresa, SurrealDbError> {
     let db = get_db().await?;
-    let id_only = id.strip_prefix("empresa:").unwrap_or(id);
 
-    let mut update_data = serde_json::Map::new();
-    if let Some(nombre) = input.nombre {
-        update_data.insert("nombre".to_string(), serde_json::Value::String(nombre));
-    }
-    if let Some(is_active) = input.is_active {
-        update_data.insert("is_active".to_string(), serde_json::Value::Bool(is_active));
-    }
-
-    let result: Option<Empresa> =
-        db.update(("empresa", id_only)).merge(serde_json::Value::Object(update_data)).await?;
+    let result: Option<Empresa> = db.update((id.tb.clone(), id.id.to_string())).merge(data).await?;
 
     result.ok_or(SurrealDbError::Query("No se pudo actualizar la empresa".to_string()))
 }
 
-pub async fn delete(id: &str) -> Result<(), SurrealDbError> {
+pub async fn delete(id: &Thing) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    let id_only = id.strip_prefix("empresa:").unwrap_or(id);
-    let _: Option<Empresa> = db.delete(("empresa", id_only)).await?;
+    let _: Option<Empresa> = db.delete((id.tb.clone(), id.id.to_string())).await?;
     Ok(())
 }
 
-pub async fn count_contratistas_by_empresa(empresa_id: &str) -> Result<usize, SurrealDbError> {
+pub async fn count_contratistas_by_empresa(empresa_id: &Thing) -> Result<usize, SurrealDbError> {
     let db = get_db().await?;
-    let id_only = empresa_id.strip_prefix("empresa:").unwrap_or(empresa_id);
 
     let mut result = db
-        .query("SELECT count() as count FROM contratista WHERE empresa_id = $empresa_id GROUP ALL")
-        .bind(("empresa_id", format!("empresa:{}", id_only)))
+        .query("SELECT count() as count FROM contratista WHERE empresa = $empresa_id GROUP ALL")
+        .bind(("empresa_id", empresa_id.clone()))
         .await?;
 
     #[derive(serde::Deserialize)]

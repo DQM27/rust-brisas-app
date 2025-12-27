@@ -1,23 +1,24 @@
 // ==========================================
 // src/models/contratista.rs
 // ==========================================
-use chrono::{NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use surrealdb::sql::Thing;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Contratista {
-    pub id: String,
+    pub id: Thing,
     pub cedula: String,
     pub nombre: String,
     pub segundo_nombre: Option<String>,
     pub apellido: String,
     pub segundo_apellido: Option<String>,
-    pub empresa_id: String,
-    pub fecha_vencimiento_praind: String,
+    pub empresa: Thing,
+    pub fecha_vencimiento_praind: DateTime<Utc>,
     pub estado: EstadoContratista,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -90,6 +91,22 @@ pub struct CambiarEstadoInput {
 }
 
 // ==========================================
+// DTOs PARA PERSISTENCIA (Service -> DB)
+// ==========================================
+
+#[derive(Debug, Serialize)]
+pub struct ContratistaCreateDTO {
+    pub cedula: String,
+    pub nombre: String,
+    pub segundo_nombre: Option<String>,
+    pub apellido: String,
+    pub segundo_apellido: Option<String>,
+    pub empresa: Thing,
+    pub fecha_vencimiento_praind: DateTime<Utc>,
+    pub estado: EstadoContratista,
+}
+
+// ==========================================
 // DTOs de salida (Response/ViewModel)
 // ==========================================
 
@@ -123,12 +140,9 @@ pub struct ContratistaResponse {
 
 impl From<Contratista> for ContratistaResponse {
     fn from(c: Contratista) -> Self {
-        let fecha_vencimiento = NaiveDate::parse_from_str(&c.fecha_vencimiento_praind, "%Y-%m-%d")
-            .unwrap_or_else(|_| Utc::now().date_naive());
-
-        let hoy = Utc::now().date_naive();
-        let dias_hasta_vencimiento = (fecha_vencimiento - hoy).num_days();
-        let praind_vencido = dias_hasta_vencimiento < 0;
+        let hoy = Utc::now();
+        let dias_hasta_vencimiento = (c.fecha_vencimiento_praind - hoy).num_days();
+        let praind_vencido = c.fecha_vencimiento_praind < hoy;
         let requiere_atencion = dias_hasta_vencimiento <= 30 && dias_hasta_vencimiento >= 0;
         let puede_ingresar = c.estado == EstadoContratista::Activo && !praind_vencido;
 
@@ -145,16 +159,16 @@ impl From<Contratista> for ContratistaResponse {
         }
 
         Self {
-            id: c.id,
+            id: c.id.to_string(),
             cedula: c.cedula.clone(),
             nombre: c.nombre.clone(),
             segundo_nombre: c.segundo_nombre.clone(),
             apellido: c.apellido.clone(),
             segundo_apellido: c.segundo_apellido.clone(),
             nombre_completo,
-            empresa_id: c.empresa_id,
-            empresa_nombre: String::new(),
-            fecha_vencimiento_praind: c.fecha_vencimiento_praind,
+            empresa_id: c.empresa.to_string(),
+            empresa_nombre: String::new(), // Will be filled by service
+            fecha_vencimiento_praind: c.fecha_vencimiento_praind.format("%Y-%m-%d").to_string(),
             estado: c.estado,
             puede_ingresar,
             praind_vencido,
@@ -166,8 +180,8 @@ impl From<Contratista> for ContratistaResponse {
             vehiculo_marca: None,
             vehiculo_modelo: None,
             vehiculo_color: None,
-            created_at: c.created_at,
-            updated_at: c.updated_at,
+            created_at: c.created_at.to_rfc3339(),
+            updated_at: c.updated_at.to_rfc3339(),
         }
     }
 }
@@ -187,7 +201,7 @@ pub struct ContratistaListResponse {
 // ==========================================
 
 pub mod validaciones {
-    use chrono::NaiveDate;
+    use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 
     pub fn validar_cedula(cedula: &str) -> Result<(), String> {
         let limpia = cedula.trim();
@@ -269,9 +283,11 @@ pub mod validaciones {
         Ok(())
     }
 
-    pub fn validar_fecha(fecha_str: &str) -> Result<NaiveDate, String> {
-        NaiveDate::parse_from_str(fecha_str, "%Y-%m-%d")
-            .map_err(|_| "Formato de fecha inválido. Use YYYY-MM-DD".to_string())
+    pub fn validar_fecha(fecha_str: &str) -> Result<DateTime<Utc>, String> {
+        let naive = NaiveDate::parse_from_str(fecha_str, "%Y-%m-%d")
+            .map_err(|_| "Formato de fecha inválido. Use YYYY-MM-DD".to_string())?;
+
+        Ok(Utc.from_utc_datetime(&naive.and_hms_opt(0, 0, 0).unwrap()))
     }
 
     pub fn validar_create_input(input: &super::CreateContratistaInput) -> Result<(), String> {

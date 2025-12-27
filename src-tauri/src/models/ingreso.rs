@@ -2,7 +2,9 @@
 // src/models/ingreso.rs
 // ==========================================
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use surrealdb::sql::Thing;
 
 // ==========================================
 // ENUMS DE DOMINIO
@@ -117,8 +119,8 @@ impl std::str::FromStr for ModoIngreso {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Ingreso {
-    pub id: String,
-    pub contratista_id: Option<String>,
+    pub id: Thing,
+    pub contratista: Option<Thing>,
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
@@ -126,23 +128,23 @@ pub struct Ingreso {
     pub tipo_ingreso: String,
     pub tipo_autorizacion: String,
     pub modo_ingreso: String,
-    pub vehiculo_id: Option<String>,
+    pub vehiculo: Option<Thing>,
     pub placa_temporal: Option<String>,
     pub gafete_numero: Option<String>,
     pub gafete_tipo: Option<String>,
-    pub fecha_hora_ingreso: String,
-    pub fecha_hora_salida: Option<String>,
+    pub fecha_hora_ingreso: DateTime<Utc>,
+    pub fecha_hora_salida: Option<DateTime<Utc>>,
     pub tiempo_permanencia_minutos: Option<i64>,
-    pub usuario_ingreso_id: String,
-    pub usuario_salida_id: Option<String>,
+    pub usuario_ingreso: Thing,
+    pub usuario_salida: Option<Thing>,
     pub praind_vigente_al_ingreso: Option<bool>,
     pub estado_contratista_al_ingreso: Option<String>,
     pub observaciones: Option<String>,
     pub anfitrion: Option<String>,
     pub area_visitada: Option<String>,
     pub motivo: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 // ==========================================
@@ -214,6 +216,34 @@ pub struct RegistrarSalidaInput {
 }
 
 // ==========================================
+// DTO PARA PERSISTENCIA (Service -> DB)
+// ==========================================
+
+#[derive(Debug, Serialize)]
+pub struct IngresoCreateDTO {
+    pub contratista: Option<Thing>,
+    pub cedula: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub empresa_nombre: String,
+    pub tipo_ingreso: String,
+    pub tipo_autorizacion: String,
+    pub modo_ingreso: String,
+    pub vehiculo: Option<Thing>,
+    pub placa_temporal: Option<String>,
+    pub gafete_numero: Option<String>,
+    pub gafete_tipo: Option<String>,
+    pub fecha_hora_ingreso: DateTime<Utc>,
+    pub usuario_ingreso: Thing,
+    pub praind_vigente_al_ingreso: Option<bool>,
+    pub estado_contratista_al_ingreso: Option<String>,
+    pub observaciones: Option<String>,
+    pub anfitrion: Option<String>,
+    pub area_visitada: Option<String>,
+    pub motivo: Option<String>,
+}
+
+// ==========================================
 // DTOs DE SALIDA
 // ==========================================
 
@@ -276,8 +306,8 @@ impl TryFrom<Ingreso> for IngresoResponse {
         let modo_ingreso: ModoIngreso = i.modo_ingreso.parse()?;
 
         Ok(Self {
-            id: i.id,
-            contratista_id: i.contratista_id,
+            id: i.id.to_string(),
+            contratista_id: i.contratista.as_ref().map(|t| t.to_string()),
             cedula: i.cedula.clone(),
             nombre: i.nombre.clone(),
             apellido: i.apellido.clone(),
@@ -293,25 +323,25 @@ impl TryFrom<Ingreso> for IngresoResponse {
             .to_string(),
             modo_ingreso: modo_ingreso.clone(),
             modo_ingreso_display: modo_ingreso.display().to_string(),
-            vehiculo_id: i.vehiculo_id,
+            vehiculo_id: i.vehiculo.as_ref().map(|t| t.to_string()),
             vehiculo_placa: None,
             placa_temporal: i.placa_temporal,
             gafete_numero: i.gafete_numero,
-            fecha_hora_ingreso: i.fecha_hora_ingreso,
-            fecha_hora_salida: i.fecha_hora_salida,
+            fecha_hora_ingreso: i.fecha_hora_ingreso.to_rfc3339(),
+            fecha_hora_salida: i.fecha_hora_salida.map(|d| d.to_rfc3339()),
             tiempo_permanencia_minutos: i.tiempo_permanencia_minutos,
             tiempo_permanencia_texto,
-            usuario_ingreso_id: i.usuario_ingreso_id,
+            usuario_ingreso_id: i.usuario_ingreso.to_string(),
             usuario_ingreso_nombre: String::new(),
-            usuario_salida_id: i.usuario_salida_id,
+            usuario_salida_id: i.usuario_salida.as_ref().map(|t| t.to_string()),
             usuario_salida_nombre: None,
             praind_vigente_al_ingreso: i.praind_vigente_al_ingreso,
             estado_contratista_al_ingreso: i.estado_contratista_al_ingreso,
             observaciones: i.observaciones,
             esta_adentro,
             tiene_gafete_asignado,
-            created_at: i.created_at,
-            updated_at: i.updated_at,
+            created_at: i.created_at.to_rfc3339(),
+            updated_at: i.updated_at.to_rfc3339(),
         })
     }
 }
@@ -343,22 +373,22 @@ pub struct ValidacionIngresoResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AlertaGafete {
-    pub id: String,
-    pub persona_id: Option<String>,
+    pub id: Thing,
+    pub persona: Option<Thing>,
     pub cedula: String,
     pub nombre_completo: String,
     pub gafete_numero: String,
-    pub ingreso_contratista_id: Option<String>,
-    pub ingreso_proveedor_id: Option<String>,
-    pub ingreso_visita_id: Option<String>,
-    pub fecha_reporte: String,
+    pub ingreso_contratista: Option<Thing>,
+    pub ingreso_proveedor: Option<Thing>,
+    pub ingreso_visita: Option<Thing>,
+    pub fecha_reporte: DateTime<Utc>,
     pub resuelto: bool,
-    pub fecha_resolucion: Option<String>,
-    pub resuelto_por: Option<String>,
+    pub fecha_resolucion: Option<DateTime<Utc>>,
+    pub resuelto_por: Option<Thing>,
     pub notas: Option<String>,
-    pub reportado_por: String,
-    pub created_at: String,
-    pub updated_at: String,
+    pub reportado_por: Thing,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -393,22 +423,22 @@ pub struct AlertaGafeteResponse {
 impl From<AlertaGafete> for AlertaGafeteResponse {
     fn from(a: AlertaGafete) -> Self {
         Self {
-            id: a.id,
-            persona_id: a.persona_id,
+            id: a.id.to_string(),
+            persona_id: a.persona.as_ref().map(|t| t.to_string()),
             cedula: a.cedula,
             nombre_completo: a.nombre_completo,
             gafete_numero: a.gafete_numero,
-            ingreso_contratista_id: a.ingreso_contratista_id,
-            ingreso_proveedor_id: a.ingreso_proveedor_id,
-            ingreso_visita_id: a.ingreso_visita_id,
-            fecha_reporte: a.fecha_reporte,
+            ingreso_contratista_id: a.ingreso_contratista.as_ref().map(|t| t.to_string()),
+            ingreso_proveedor_id: a.ingreso_proveedor.as_ref().map(|t| t.to_string()),
+            ingreso_visita_id: a.ingreso_visita.as_ref().map(|t| t.to_string()),
+            fecha_reporte: a.fecha_reporte.to_rfc3339(),
             resuelto: a.resuelto,
-            fecha_resolucion: a.fecha_resolucion,
+            fecha_resolucion: a.fecha_resolucion.map(|d| d.to_rfc3339()),
             notas: a.notas,
-            reportado_por: a.reportado_por,
+            reportado_por: a.reportado_por.to_string(),
             reportado_por_nombre: String::new(),
-            created_at: a.created_at,
-            updated_at: a.updated_at,
+            created_at: a.created_at.to_rfc3339(),
+            updated_at: a.updated_at.to_rfc3339(),
         }
     }
 }

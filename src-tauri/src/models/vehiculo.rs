@@ -2,7 +2,9 @@
 // src/models/vehiculo.rs
 // ==========================================
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use surrealdb::sql::Thing;
 
 // ==========================================
 // MODELO DE DOMINIO
@@ -11,18 +13,18 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Vehiculo {
-    pub id: String,
-    pub contratista_id: Option<String>,
-    pub proveedor_id: Option<String>,
-    pub visitante_id: Option<String>,
+    pub id: Thing,
+    pub contratista: Option<Thing>,
+    pub proveedor: Option<Thing>,
+    pub visitante: Option<Thing>,
     pub tipo_vehiculo: TipoVehiculo,
     pub placa: String,
     pub marca: Option<String>,
     pub modelo: Option<String>,
     pub color: Option<String>,
     pub is_active: bool,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 // ==========================================
@@ -80,7 +82,7 @@ pub struct CreateVehiculoInput {
     pub color: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateVehiculoInput {
     pub tipo_vehiculo: Option<String>,
@@ -88,6 +90,23 @@ pub struct UpdateVehiculoInput {
     pub modelo: Option<String>,
     pub color: Option<String>,
     pub is_active: Option<bool>,
+}
+
+// ==========================================
+// DTO PARA PERSISTENCIA (Service -> DB)
+// ==========================================
+
+#[derive(Debug, Serialize)]
+pub struct VehiculoCreateDTO {
+    pub contratista: Option<Thing>,
+    pub proveedor: Option<Thing>,
+    pub visitante: Option<Thing>,
+    pub tipo_vehiculo: TipoVehiculo,
+    pub placa: String,
+    pub marca: Option<String>,
+    pub modelo: Option<String>,
+    pub color: Option<String>,
+    pub is_active: bool,
 }
 
 // ==========================================
@@ -142,8 +161,8 @@ impl From<Vehiculo> for VehiculoResponse {
         };
 
         Self {
-            id: v.id,
-            contratista_id: v.contratista_id.unwrap_or_default(),
+            id: v.id.to_string(),
+            contratista_id: v.contratista.as_ref().map(|t| t.to_string()).unwrap_or_default(),
             contratista_nombre: String::new(),
             contratista_cedula: String::new(),
             empresa_nombre: String::new(),
@@ -155,8 +174,8 @@ impl From<Vehiculo> for VehiculoResponse {
             color: v.color,
             descripcion_completa,
             is_active: v.is_active,
-            created_at: v.created_at,
-            updated_at: v.updated_at,
+            created_at: v.created_at.to_rfc3339(),
+            updated_at: v.updated_at.to_rfc3339(),
         }
     }
 }

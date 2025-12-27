@@ -1,51 +1,108 @@
+// ==========================================
 // src/services/gafete_service.rs
+// ==========================================
+
 use crate::db::surrealdb_gafete_queries as db;
-use crate::models::gafete::{Gafete, GafeteEstado};
+use crate::models::gafete::{
+    CreateGafeteInput, CreateGafeteRangeInput, GafeteCreateDTO, GafeteEstado, GafeteResponse,
+    TipoGafete,
+};
+use surrealdb::sql::Thing;
+
+/// Helper para parsear ID de gafete (acepta con o sin prefijo)
+fn parse_gafete_id(id_str: &str) -> Thing {
+    if id_str.contains(':') {
+        let parts: Vec<&str> = id_str.split(':').collect();
+        Thing::from((parts[0], parts[1]))
+    } else {
+        Thing::from(("gafete", id_str))
+    }
+}
 
 pub async fn is_gafete_disponible(numero: &str, tipo: &str) -> Result<bool, String> {
     match db::get_gafete(numero, tipo).await {
-        Ok(Some(g)) => Ok(g.estado == GafeteEstado::Activo), // TODO: Verificar status "en_uso" si agregamos ese campo
+        Ok(Some(g)) => Ok(g.estado == GafeteEstado::Activo), // Logic can be more complex
         Ok(None) => Ok(false),
         Err(e) => Err(e.to_string()),
     }
 }
 
 pub async fn marcar_en_uso(numero: &str, tipo: &str) -> Result<(), String> {
-    // Por ahora solo verificamos que exista y sea activo.
-    // En una implementación más completa, actualizaríamos un flag `en_uso` = true.
-    // SurrealDB permite campos flexibles, podríamos agregarlo.
-    // Por simplicidad en este paso, asumimos que si el ingreso se crea, el gafete se está usando.
-    // Idealmente: db::set_gafete_usage(numero, tipo, true).await...
-
-    // De momento, delegamos a la DB si decidimos implementar el flag.
-    db::set_gafete_uso(numero, tipo, true).await.map_err(|e| e.to_string())
+    match db::get_gafete(numero, tipo).await {
+        Ok(Some(g)) => db::set_gafete_uso(&g.id, true).await.map_err(|e| e.to_string()),
+        Ok(None) => Err("Gafete no encontrado".to_string()),
+        Err(e) => Err(e.to_string()),
+    }
 }
 
 pub async fn liberar_gafete(numero: &str, tipo: &str) -> Result<(), String> {
-    db::set_gafete_uso(numero, tipo, false).await.map_err(|e| e.to_string())
+    match db::get_gafete(numero, tipo).await {
+        Ok(Some(g)) => db::set_gafete_uso(&g.id, false).await.map_err(|e| e.to_string()),
+        Ok(None) => Err("Gafete no encontrado".to_string()),
+        Err(e) => Err(e.to_string()),
+    }
 }
 
-pub async fn create_gafete(_n: &str, _t: &str) -> Result<Gafete, String> {
-    Err("Stubbed".to_string())
+pub async fn create_gafete(input: CreateGafeteInput) -> Result<GafeteResponse, String> {
+    let tipo = input.tipo.parse::<TipoGafete>().map_err(|e| e.to_string())?;
+
+    let dto = GafeteCreateDTO { numero: input.numero, tipo, estado: GafeteEstado::Activo };
+
+    let gafete = db::create_gafete(dto).await.map_err(|e| e.to_string())?;
+    Ok(GafeteResponse::from(gafete))
 }
-pub async fn create_gafete_range(_p: &str, _s: i32, _e: i32, _t: &str) -> Result<i32, String> {
-    Err("Stubbed".to_string())
+
+pub async fn create_gafete_range(input: CreateGafeteRangeInput) -> Result<i32, String> {
+    let tipo = input.tipo.parse::<TipoGafete>().map_err(|e| e.to_string())?;
+    let mut created = 0;
+
+    for i in input.start..=input.end {
+        let numero = if let Some(ref p) = input.prefix {
+            if let Some(pad) = input.padding {
+                format!("{}{:0width$}", p, i, width = pad)
+            } else {
+                format!("{}{}", p, i)
+            }
+        } else {
+            i.to_string()
+        };
+
+        let dto = GafeteCreateDTO { numero, tipo: tipo.clone(), estado: GafeteEstado::Activo };
+
+        if db::create_gafete(dto).await.is_ok() {
+            created += 1;
+        }
+    }
+
+    Ok(created)
 }
-pub async fn get_gafete(n: &str, t: &str) -> Result<Option<Gafete>, String> {
-    db::get_gafete(n, t).await.map_err(|e| e.to_string())
+
+pub async fn get_gafete_by_id(id_str: &str) -> Result<Option<GafeteResponse>, String> {
+    let id = parse_gafete_id(id_str);
+    db::find_by_id(&id).await.map(|opt| opt.map(GafeteResponse::from)).map_err(|e| e.to_string())
 }
-pub async fn get_all_gafetes() -> Result<Vec<Gafete>, String> {
-    db::get_all_gafetes().await.map_err(|e| e.to_string())
+
+pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, String> {
+    let gafetes = db::get_all_gafetes().await.map_err(|e| e.to_string())?;
+    Ok(gafetes.into_iter().map(GafeteResponse::from).collect())
 }
-pub async fn get_gafetes_disponibles(_t: &str) -> Result<Vec<Gafete>, String> {
-    Ok(vec![])
+
+pub async fn get_gafetes_disponibles(tipo_str: &str) -> Result<Vec<GafeteResponse>, String> {
+    let gafetes = db::get_gafetes_disponibles(tipo_str).await.map_err(|e| e.to_string())?;
+    Ok(gafetes.into_iter().map(GafeteResponse::from).collect())
 }
-pub async fn update_gafete(_n: &str, _t: &str, _nt: &str) -> Result<Gafete, String> {
-    Err("Stubbed".to_string())
+
+pub async fn update_gafete_status(
+    id_str: &str,
+    estado: GafeteEstado,
+) -> Result<GafeteResponse, String> {
+    let id = parse_gafete_id(id_str);
+    let gafete = db::update_estado(&id, estado.as_str()).await.map_err(|e| e.to_string())?;
+    Ok(GafeteResponse::from(gafete))
 }
-pub async fn update_gafete_status(_n: &str, _t: &str, _st: String) -> Result<Gafete, String> {
-    Err("Stubbed".to_string())
-}
-pub async fn delete_gafete(_n: &str, _t: &str) -> Result<(), String> {
-    Err("Stubbed".to_string())
+
+pub async fn delete_gafete(id_str: &str) -> Result<(), String> {
+    let id = parse_gafete_id(id_str);
+    db::find_by_id(&id).await.map_err(|e| e.to_string())?.ok_or("Gafete no encontrado")?;
+    db::delete_gafete_by_id(&id).await.map_err(|e| e.to_string())
 }

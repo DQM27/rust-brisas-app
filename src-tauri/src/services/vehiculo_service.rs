@@ -2,40 +2,78 @@
 // src/services/vehiculo_service.rs
 // ==========================================
 use crate::db::surrealdb_contratista_queries as contratista_db;
+use crate::db::surrealdb_proveedor_queries as proveedor_db;
 use crate::db::surrealdb_vehiculo_queries as db;
 use crate::domain::errors::VehiculoError;
 use crate::domain::vehiculo as domain;
 use crate::models::vehiculo::{
-    CreateVehiculoInput, TipoVehiculo, TipoVehiculoStats, UpdateVehiculoInput,
-    VehiculoListResponse, VehiculoResponse,
+    TipoVehiculo, TipoVehiculoStats, UpdateVehiculoInput, VehiculoCreateDTO, VehiculoListResponse,
+    VehiculoResponse,
 };
 use crate::services::surrealdb_service::SurrealDbError;
+use chrono::Utc;
 use log::error;
+use surrealdb::sql::Thing;
 
 fn map_db_error(e: SurrealDbError) -> VehiculoError {
     error!("Error de base de datos (SurrealDB): {}", e);
     VehiculoError::Database(e.to_string())
 }
 
+/// Helper para parsear ID de vehículo (acepta con o sin prefijo)
+fn parse_vehiculo_id(id_str: &str) -> Thing {
+    if id_str.contains(':') {
+        let parts: Vec<&str> = id_str.split(':').collect();
+        Thing::from((parts[0], parts[1]))
+    } else {
+        Thing::from(("vehiculo", id_str))
+    }
+}
+
+/// Helper para parsear ID de contratista
+fn parse_contratista_id(id_str: &str) -> Thing {
+    if id_str.contains(':') {
+        let parts: Vec<&str> = id_str.split(':').collect();
+        Thing::from((parts[0], parts[1]))
+    } else {
+        Thing::from(("contratista", id_str))
+    }
+}
+
+/// Helper para parsear ID de proveedor
+fn parse_proveedor_id(id_str: &str) -> Thing {
+    if id_str.contains(':') {
+        let parts: Vec<&str> = id_str.split(':').collect();
+        Thing::from((parts[0], parts[1]))
+    } else {
+        Thing::from(("proveedor", id_str))
+    }
+}
+
 pub async fn create_vehiculo(
-    input: CreateVehiculoInput,
+    input: crate::models::vehiculo::CreateVehiculoInput,
 ) -> Result<VehiculoResponse, VehiculoError> {
     domain::validar_create_input(&input)?;
     let placa_normalizada = domain::normalizar_placa(&input.placa);
     let tipo_vehiculo = domain::validar_tipo_vehiculo(&input.tipo_vehiculo)?;
-    let marca_normalizada =
-        input.marca.as_ref().map(|m| domain::normalizar_texto(m)).filter(|m| !m.is_empty());
-    let modelo_normalizado =
-        input.modelo.as_ref().map(|m| domain::normalizar_texto(m)).filter(|m| !m.is_empty());
-    let color_normalizado =
-        input.color.as_ref().map(|c| domain::normalizar_texto(c)).filter(|c| !c.is_empty());
 
-    // Verificar que el contratista existe si se proporciona un contratista_id
-    if let Some(ref cid) = input.contratista_id {
-        let exists = contratista_db::find_by_id(cid).await.map_err(map_db_error)?.is_some();
-        if !exists {
+    let contratista = input.contratista_id.as_ref().map(|id| parse_contratista_id(id));
+    let proveedor = input.proveedor_id.as_ref().map(|id| parse_proveedor_id(id));
+
+    // Verificar que el contratista existe si se proporciona
+    if let Some(ref c_id) = contratista {
+        if contratista_db::find_by_id(c_id).await.map_err(map_db_error)?.is_none() {
             return Err(VehiculoError::Validation(
                 "El contratista especificado no existe".to_string(),
+            ));
+        }
+    }
+
+    // Verificar que el proveedor existe si se proporciona
+    if let Some(ref p_id) = proveedor {
+        if proveedor_db::find_by_id(p_id).await.map_err(map_db_error)?.is_none() {
+            return Err(VehiculoError::Validation(
+                "El proveedor especificado no existe".to_string(),
             ));
         }
     }
@@ -45,33 +83,49 @@ pub async fn create_vehiculo(
         return Err(VehiculoError::PlacaExists);
     }
 
-    let input_db = CreateVehiculoInput {
-        contratista_id: input.contratista_id.clone(),
-        proveedor_id: None,
-        tipo_vehiculo: tipo_vehiculo.as_str().to_string(),
+    let dto = VehiculoCreateDTO {
+        contratista,
+        proveedor,
+        visitante: None,
+        tipo_vehiculo,
         placa: placa_normalizada,
-        marca: marca_normalizada,
-        modelo: modelo_normalizado,
-        color: color_normalizado,
+        marca: input.marca.as_ref().map(|s| s.trim().to_uppercase()),
+        modelo: input.modelo.as_ref().map(|s| s.trim().to_uppercase()),
+        color: input.color.as_ref().map(|s| s.trim().to_uppercase()),
+        is_active: true,
     };
 
-    let vehiculo_creado = db::insert(input_db).await.map_err(map_db_error)?;
-    get_vehiculo_by_id(&vehiculo_creado.id).await
+    let vehiculo_creado = db::insert(dto).await.map_err(map_db_error)?;
+    get_vehiculo_by_id(&vehiculo_creado.id.to_string()).await
 }
 
-pub async fn get_vehiculo_by_id(id: &str) -> Result<VehiculoResponse, VehiculoError> {
+pub async fn get_vehiculo_by_id(id_str: &str) -> Result<VehiculoResponse, VehiculoError> {
+    let id = parse_vehiculo_id(id_str);
     let vehiculo =
-        db::find_by_id(id).await.map_err(map_db_error)?.ok_or(VehiculoError::NotFound)?;
+        db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(VehiculoError::NotFound)?;
+
     let mut response = VehiculoResponse::from(vehiculo.clone());
-    if let Some(cid) = &vehiculo.contratista_id {
-        if let Some(c) = contratista_db::find_by_id(cid).await.map_err(map_db_error)? {
+
+    // Enriquecer según el dueño
+    if let Some(c_id) = &vehiculo.contratista {
+        if let Some(c) = contratista_db::find_by_id(c_id).await.map_err(map_db_error)? {
             response.contratista_nombre = format!("{} {}", c.nombre, c.apellido);
             response.contratista_cedula = c.cedula;
-            if let Ok(emp_nombre) = contratista_db::get_empresa_nombre(&c.empresa_id).await {
+            if let Ok(emp_nombre) = contratista_db::get_empresa_nombre(&c.empresa).await {
+                response.empresa_nombre = emp_nombre;
+            }
+        }
+    } else if let Some(p_id) = &vehiculo.proveedor {
+        if let Some(p) = proveedor_db::find_by_id(p_id).await.map_err(map_db_error)? {
+            response.contratista_nombre = format!("{} {}", p.nombre, p.apellido);
+            response.contratista_cedula = p.cedula;
+            // Para proveedores, podríamos buscar el nombre de la empresa también
+            if let Ok(emp_nombre) = proveedor_db::get_empresa_nombre(&p.empresa).await {
                 response.empresa_nombre = emp_nombre;
             }
         }
     }
+
     Ok(response)
 }
 
@@ -81,14 +135,14 @@ pub async fn get_vehiculo_by_placa(placa: String) -> Result<VehiculoResponse, Ve
         .await
         .map_err(map_db_error)?
         .ok_or(VehiculoError::NotFound)?;
-    get_vehiculo_by_id(&vehiculo.id).await
+    get_vehiculo_by_id(&vehiculo.id.to_string()).await
 }
 
 pub async fn get_all_vehiculos() -> Result<VehiculoListResponse, VehiculoError> {
     let vehiculos = db::find_all().await.map_err(map_db_error)?;
     let mut vehiculo_responses = Vec::new();
     for vehiculo in vehiculos {
-        if let Ok(res) = get_vehiculo_by_id(&vehiculo.id).await {
+        if let Ok(res) = get_vehiculo_by_id(&vehiculo.id.to_string()).await {
             vehiculo_responses.push(res);
         }
     }
@@ -112,7 +166,7 @@ pub async fn get_vehiculos_activos() -> Result<Vec<VehiculoResponse>, VehiculoEr
     let vehiculos = db::find_activos().await.map_err(map_db_error)?;
     let mut vehiculo_responses = Vec::new();
     for vehiculo in vehiculos {
-        if let Ok(res) = get_vehiculo_by_id(&vehiculo.id).await {
+        if let Ok(res) = get_vehiculo_by_id(&vehiculo.id.to_string()).await {
             vehiculo_responses.push(res);
         }
     }
@@ -120,12 +174,13 @@ pub async fn get_vehiculos_activos() -> Result<Vec<VehiculoResponse>, VehiculoEr
 }
 
 pub async fn get_vehiculos_by_contratista(
-    contratista_id: String,
+    id_str: String,
 ) -> Result<Vec<VehiculoResponse>, VehiculoError> {
-    let vehiculos = db::find_by_contratista(&contratista_id).await.map_err(map_db_error)?;
+    let id = parse_contratista_id(&id_str);
+    let vehiculos = db::find_by_contratista(&id).await.map_err(map_db_error)?;
     let mut vehiculo_responses = Vec::new();
     for vehiculo in vehiculos {
-        if let Ok(res) = get_vehiculo_by_id(&vehiculo.id).await {
+        if let Ok(res) = get_vehiculo_by_id(&vehiculo.id.to_string()).await {
             vehiculo_responses.push(res);
         }
     }
@@ -133,36 +188,40 @@ pub async fn get_vehiculos_by_contratista(
 }
 
 pub async fn update_vehiculo(
-    id: String,
+    id_str: String,
     input: UpdateVehiculoInput,
 ) -> Result<VehiculoResponse, VehiculoError> {
+    let id = parse_vehiculo_id(&id_str);
     domain::validar_update_input(&input)?;
-    let _ = db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(VehiculoError::NotFound)?;
-    let tipo_str = if let Some(ref t) = input.tipo_vehiculo {
-        Some(domain::validar_tipo_vehiculo(t)?.as_str().to_string())
-    } else {
-        None
-    };
-    let marca_normalizada =
-        input.marca.as_ref().map(|m| domain::normalizar_texto(m)).filter(|m| !m.is_empty());
-    let modelo_normalizado =
-        input.modelo.as_ref().map(|m| domain::normalizar_texto(m)).filter(|m| !m.is_empty());
-    let color_normalizado =
-        input.color.as_ref().map(|c| domain::normalizar_texto(c)).filter(|c| !c.is_empty());
 
-    let input_db = UpdateVehiculoInput {
-        tipo_vehiculo: tipo_str,
-        marca: marca_normalizada,
-        modelo: modelo_normalizado,
-        color: color_normalizado,
-        is_active: input.is_active,
-    };
-    db::update(&id, input_db).await.map_err(map_db_error)?;
-    get_vehiculo_by_id(&id).await
+    db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(VehiculoError::NotFound)?;
+
+    let mut update_data = serde_json::Map::new();
+    if let Some(t) = input.tipo_vehiculo {
+        let tipo = domain::validar_tipo_vehiculo(&t)?;
+        update_data.insert("tipo_vehiculo".to_string(), serde_json::json!(tipo));
+    }
+    if let Some(m) = input.marca {
+        update_data.insert("marca".to_string(), serde_json::json!(m.trim().to_uppercase()));
+    }
+    if let Some(m) = input.modelo {
+        update_data.insert("modelo".to_string(), serde_json::json!(m.trim().to_uppercase()));
+    }
+    if let Some(c) = input.color {
+        update_data.insert("color".to_string(), serde_json::json!(c.trim().to_uppercase()));
+    }
+    if let Some(a) = input.is_active {
+        update_data.insert("is_active".to_string(), serde_json::json!(a));
+    }
+    update_data.insert("updated_at".to_string(), serde_json::json!(Utc::now()));
+
+    db::update(&id, serde_json::Value::Object(update_data)).await.map_err(map_db_error)?;
+    get_vehiculo_by_id(&id_str).await
 }
 
-pub async fn delete_vehiculo(id: String) -> Result<(), VehiculoError> {
-    let _ = db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(VehiculoError::NotFound)?;
+pub async fn delete_vehiculo(id_str: String) -> Result<(), VehiculoError> {
+    let id = parse_vehiculo_id(&id_str);
+    db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(VehiculoError::NotFound)?;
     db::delete(&id).await.map_err(map_db_error)?;
     Ok(())
 }

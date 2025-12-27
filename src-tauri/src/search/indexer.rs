@@ -87,7 +87,7 @@ pub fn index_contratista(
 
     // Crear documento usando handles pre-cargados
     let mut doc = TantivyDocument::default();
-    doc.add_text(handles.id, &contratista.id);
+    doc.add_text(handles.id, &contratista.id.to_string());
     doc.add_text(handles.tipo, "contratista");
     doc.add_text(handles.cedula, &contratista.cedula);
     doc.add_text(handles.nombre, &contratista.nombre);
@@ -135,7 +135,7 @@ pub fn index_user(
 
     // Crear documento usando handles pre-cargados
     let mut doc = TantivyDocument::default();
-    doc.add_text(handles.id, &user.id);
+    doc.add_text(handles.id, &user.id.to_string());
     doc.add_text(handles.tipo, "usuario");
     doc.add_text(handles.cedula, &user.cedula);
     doc.add_text(handles.nombre, &user.nombre);
@@ -179,7 +179,7 @@ pub fn update_contratista_in_index(
     contratista: &Contratista,
     empresa_nombre: &str,
 ) -> Result<(), SearchError> {
-    delete_from_index(writer, handles, &contratista.id)?;
+    delete_from_index(writer, handles, &contratista.id.to_string())?;
     index_contratista(writer, handles, contratista, empresa_nombre)?;
     Ok(())
 }
@@ -190,7 +190,7 @@ pub fn update_user_in_index(
     handles: &FieldHandles,
     user: &User,
 ) -> Result<(), SearchError> {
-    delete_from_index(writer, handles, &user.id)?;
+    delete_from_index(writer, handles, &user.id.to_string())?;
     index_user(writer, handles, user)?;
     Ok(())
 }
@@ -291,7 +291,7 @@ pub fn index_proveedor(
 
     // Crear documento usando handles pre-cargados
     let mut doc = TantivyDocument::default();
-    doc.add_text(handles.id, &proveedor.id);
+    doc.add_text(handles.id, &proveedor.id.to_string());
     doc.add_text(handles.tipo, "proveedor");
     doc.add_text(handles.cedula, &proveedor.cedula);
     doc.add_text(handles.nombre, &proveedor.nombre);
@@ -324,7 +324,7 @@ pub fn update_proveedor_in_index(
     proveedor: &Proveedor,
     empresa_nombre: &str,
 ) -> Result<(), SearchError> {
-    delete_from_index(writer, handles, &proveedor.id)?;
+    delete_from_index(writer, handles, &proveedor.id.to_string())?;
     index_proveedor(writer, handles, proveedor, empresa_nombre)?;
     Ok(())
 }
@@ -333,6 +333,8 @@ mod tests {
     use super::*;
     use crate::models::contratista::EstadoContratista;
     use crate::search::schema::build_search_schema;
+    use chrono::Utc;
+    use surrealdb::sql::Thing;
     use tantivy::Index;
 
     fn setup_test_index() -> (Index, FieldHandles) {
@@ -348,17 +350,17 @@ mod tests {
         let mut writer = get_index_writer(&index).unwrap();
 
         let contratista = Contratista {
-            id: "1".to_string(),
+            id: Thing::from(("contratista", "1")),
             cedula: "123".to_string(),
             nombre: "John".to_string(),
             segundo_nombre: None,
             apellido: "Doe".to_string(),
             segundo_apellido: None,
-            empresa_id: "emp-1".to_string(),
-            fecha_vencimiento_praind: "2025-01-01".to_string(),
+            empresa: Thing::from(("empresa", "emp-1")),
+            fecha_vencimiento_praind: Utc::now(),
             estado: EstadoContratista::Activo,
-            created_at: "".to_string(),
-            updated_at: "".to_string(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         };
 
         index_contratista(&mut writer, &handles, &contratista, "Empresa A").unwrap();
@@ -375,14 +377,14 @@ mod tests {
         let mut writer = get_index_writer(&index).unwrap();
 
         let user = User {
-            id: "user-1".to_string(),
+            id: Thing::from(("user", "user-1")),
             cedula: "456".to_string(),
             nombre: "Jane".to_string(),
             segundo_nombre: None,
             apellido: "Doe".to_string(),
             segundo_apellido: None,
             email: "jane@example.com".to_string(),
-            role_id: "role-1".to_string(),
+            role: Thing::from(("role", "role-1")),
             is_active: true,
             must_change_password: false,
             fecha_inicio_labores: None,
@@ -393,8 +395,8 @@ mod tests {
             contacto_emergencia_nombre: None,
             contacto_emergencia_telefono: None,
             deleted_at: None,
-            created_at: "".to_string(),
-            updated_at: "".to_string(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
             avatar_path: None,
         };
 
@@ -405,7 +407,7 @@ mod tests {
         assert_eq!(reader.searcher().num_docs(), 1);
 
         // Delete
-        delete_from_index(&mut writer, &handles, "user-1").unwrap();
+        delete_from_index(&mut writer, &handles, &user.id.to_string()).unwrap();
         commit_index(&mut writer).unwrap();
 
         reader.reload().unwrap();

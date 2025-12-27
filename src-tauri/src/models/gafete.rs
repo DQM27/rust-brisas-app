@@ -2,7 +2,9 @@
 // src/models/gafete.rs
 // ==========================================
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use surrealdb::sql::Thing;
 
 // ==========================================
 // MODELO DE DOMINIO
@@ -11,11 +13,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Gafete {
+    pub id: Thing,
     pub numero: String,
     pub tipo: TipoGafete,
     pub estado: GafeteEstado,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 // ==========================================
@@ -134,27 +137,29 @@ pub struct UpdateGafeteStatusInput {
 }
 
 // ==========================================
+// DTOs PARA PERSISTENCIA (Service -> DB)
+// ==========================================
+
+#[derive(Debug, Serialize)]
+pub struct GafeteCreateDTO {
+    pub numero: String,
+    pub tipo: TipoGafete,
+    pub estado: GafeteEstado,
+}
+
+// ==========================================
 // DTOs DE SALIDA
 // ==========================================
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GafeteResponse {
+    pub id: String,
     pub numero: String,
     pub tipo: TipoGafete,
     pub tipo_display: String,
     pub estado_fisico: GafeteEstado,
-    pub esta_disponible: bool,
     pub status: String,
-    pub alerta_id: Option<String>,
-    pub fecha_perdido: Option<String>,
-    pub quien_perdio: Option<String>,
-    pub alerta_resuelta: Option<bool>,
-    pub reportado_por_nombre: Option<String>,
-    pub resuelto_por_nombre: Option<String>,
-    pub fecha_resolucion: Option<String>,
-    pub notas: Option<String>,
-
     pub created_at: String,
     pub updated_at: String,
 }
@@ -162,22 +167,14 @@ pub struct GafeteResponse {
 impl From<Gafete> for GafeteResponse {
     fn from(g: Gafete) -> Self {
         Self {
+            id: g.id.to_string(),
             numero: g.numero,
             tipo: g.tipo.clone(),
             tipo_display: g.tipo.display().to_string(),
             estado_fisico: g.estado.clone(),
-            esta_disponible: false,
-            status: String::from("disponible"),
-            alerta_id: None,
-            fecha_perdido: None,
-            quien_perdio: None,
-            alerta_resuelta: None,
-            reportado_por_nombre: None,
-            resuelto_por_nombre: None,
-            fecha_resolucion: None,
-            notas: None,
-            created_at: g.created_at,
-            updated_at: g.updated_at,
+            status: String::from("disponible"), // Logic for status in service
+            created_at: g.created_at.to_rfc3339(),
+            updated_at: g.updated_at.to_rfc3339(),
         }
     }
 }

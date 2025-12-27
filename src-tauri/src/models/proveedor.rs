@@ -2,21 +2,23 @@
 // src/models/proveedor.rs
 // ==========================================
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use surrealdb::sql::Thing;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Proveedor {
-    pub id: String,
+    pub id: Thing,
     pub cedula: String,
     pub nombre: String,
     pub segundo_nombre: Option<String>,
     pub apellido: String,
     pub segundo_apellido: Option<String>,
-    pub empresa_id: String,
+    pub empresa: Thing,
     pub estado: EstadoProveedor,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -97,6 +99,21 @@ pub struct UpdateProveedorInput {
 }
 
 // ==========================================
+// DTOs PARA PERSISTENCIA (Service -> DB)
+// ==========================================
+
+#[derive(Debug, Serialize)]
+pub struct ProveedorCreateDTO {
+    pub cedula: String,
+    pub nombre: String,
+    pub segundo_nombre: Option<String>,
+    pub apellido: String,
+    pub segundo_apellido: Option<String>,
+    pub empresa: Thing,
+    pub estado: EstadoProveedor,
+}
+
+// ==========================================
 // DTOs de salida (Response/ViewModel)
 // ==========================================
 
@@ -140,15 +157,15 @@ impl From<Proveedor> for ProveedorResponse {
         let puede_ingresar = p.estado == EstadoProveedor::Activo;
 
         Self {
-            id: p.id,
+            id: p.id.to_string(),
             cedula: p.cedula,
             nombre: p.nombre,
             segundo_nombre: p.segundo_nombre,
             apellido: p.apellido,
             segundo_apellido: p.segundo_apellido,
             nombre_completo,
-            empresa_id: p.empresa_id,
-            empresa_nombre: String::new(),
+            empresa_id: p.empresa.to_string(),
+            empresa_nombre: String::new(), // Will be filled by service
             estado: p.estado,
             puede_ingresar,
             vehiculo_tipo: None,
@@ -156,8 +173,8 @@ impl From<Proveedor> for ProveedorResponse {
             vehiculo_marca: None,
             vehiculo_modelo: None,
             vehiculo_color: None,
-            created_at: p.created_at,
-            updated_at: p.updated_at,
+            created_at: p.created_at.to_rfc3339(),
+            updated_at: p.updated_at.to_rfc3339(),
         }
     }
 }

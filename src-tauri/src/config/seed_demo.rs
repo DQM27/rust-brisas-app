@@ -54,7 +54,6 @@ pub async fn run_demo_seed() -> Result<(), Box<dyn std::error::Error>> {
 
 async fn seed_demo_users() -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    let now = Utc::now().to_rfc3339();
     let password_hash =
         hash_password("demo123").map_err(|e| SurrealDbError::Query(e.to_string()))?;
 
@@ -89,19 +88,19 @@ async fn seed_demo_users() -> Result<(), SurrealDbError> {
         let _: Option<serde_json::Value> = db
             .query(
                 r#"
-                UPSERT user SET
-                    id = $id,
-                    email = $email,
-                    password_hash = $password_hash,
-                    nombre = $nombre,
-                    apellido = $apellido,
-                    role_id = $role_id,
-                    is_active = true,
-                    cedula = $cedula,
-                    must_change_password = false,
-                    created_at = $now,
-                    updated_at = $now
-                WHERE id = $id
+                UPSERT user CONTENT {
+                    id: type::thing('user', $id),
+                    email: $email,
+                    password_hash: $password_hash,
+                    nombre: $nombre,
+                    apellido: $apellido,
+                    role: type::thing('role', $role_id),
+                    is_active: true,
+                    cedula: $cedula,
+                    must_change_password: false,
+                    created_at: time::now(),
+                    updated_at: time::now()
+                }
                 "#,
             )
             .bind(("id", id))
@@ -111,7 +110,6 @@ async fn seed_demo_users() -> Result<(), SurrealDbError> {
             .bind(("apellido", apellido))
             .bind(("role_id", role_id))
             .bind(("cedula", cedula))
-            .bind(("now", now.clone()))
             .await?
             .take(0)?;
     }

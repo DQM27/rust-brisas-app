@@ -10,6 +10,7 @@ use crate::models::empresa::{
     CreateEmpresaInput, EmpresaListResponse, EmpresaResponse, UpdateEmpresaInput,
 };
 use crate::services::surrealdb_service::SurrealDbError;
+use chrono::Utc;
 use log::{error, info};
 
 // Helper para mapear errores de SurrealDB a EmpresaError
@@ -18,8 +19,20 @@ fn map_db_error(e: SurrealDbError) -> EmpresaError {
 }
 
 // ==========================================
-// CREAR EMPRESA
+// CONSULTAS DE EMPRESA
 // ==========================================
+
+use surrealdb::sql::Thing;
+
+/// Helper para parsear ID de empresa (acepta con o sin prefijo)
+fn parse_empresa_id(id_str: &str) -> Thing {
+    if id_str.contains(':') {
+        let parts: Vec<&str> = id_str.split(':').collect();
+        Thing::from((parts[0], parts[1]))
+    } else {
+        Thing::from(("empresa", id_str))
+    }
+}
 
 pub async fn create_empresa(input: CreateEmpresaInput) -> Result<EmpresaResponse, EmpresaError> {
     // 1. Validar input
@@ -29,8 +42,6 @@ pub async fn create_empresa(input: CreateEmpresaInput) -> Result<EmpresaResponse
     let nombre_normalizado = domain::normalizar_nombre(&input.nombre);
 
     // 3. Verificar que no exista (SurrealDB check)
-    // Nota: El índice único en SurrealDB también lo atraparía,
-    // pero mantenemos la lógica de validación de negocio.
     let empresas = db::find_all().await.map_err(map_db_error)?;
     if empresas.iter().any(|e| domain::normalizar_nombre(&e.nombre) == nombre_normalizado) {
         return Err(EmpresaError::NameExists);
@@ -38,10 +49,13 @@ pub async fn create_empresa(input: CreateEmpresaInput) -> Result<EmpresaResponse
 
     // 4. Crear
     info!("Creando empresa '{}'", nombre_normalizado);
-    let mut create_input = input;
-    create_input.nombre = nombre_normalizado.clone();
+    let dto = crate::models::empresa::EmpresaCreateDTO {
+        nombre: nombre_normalizado.clone(),
+        direccion: input.direccion,
+        is_active: true,
+    };
 
-    let empresa = db::create(create_input).await.map_err(|e| {
+    let empresa = db::create(dto).await.map_err(|e| {
         error!("Error al insertar empresa '{}': {}", nombre_normalizado, e);
         map_db_error(e)
     })?;
@@ -52,26 +66,19 @@ pub async fn create_empresa(input: CreateEmpresaInput) -> Result<EmpresaResponse
     Ok(EmpresaResponse::from(empresa))
 }
 
-// ==========================================
-// OBTENER EMPRESA
-// ==========================================
-
-pub async fn get_empresa_by_id(id: String) -> Result<EmpresaResponse, EmpresaError> {
-    let empresa_opt = db::find_by_id(&id).await.map_err(map_db_error)?;
+pub async fn get_empresa_by_id(id_str: String) -> Result<EmpresaResponse, EmpresaError> {
+    let id_thing = parse_empresa_id(&id_str);
+    let empresa_opt = db::find_by_id(&id_thing).await.map_err(map_db_error)?;
     let empresa = empresa_opt.ok_or(EmpresaError::NotFound)?;
 
-    // Contar contratistas (placeholder por ahora en el query module)
-    let total_contratistas = db::count_contratistas_by_empresa(&id).await.map_err(map_db_error)?;
+    let total_contratistas =
+        db::count_contratistas_by_empresa(&id_thing).await.map_err(map_db_error)?;
 
     let mut response = EmpresaResponse::from(empresa);
     response.total_contratistas = total_contratistas;
 
     Ok(response)
 }
-
-// ==========================================
-// OBTENER TODAS
-// ==========================================
 
 pub async fn get_all_empresas() -> Result<EmpresaListResponse, EmpresaError> {
     let empresas = db::find_all().await.map_err(map_db_error)?;
@@ -91,10 +98,6 @@ pub async fn get_all_empresas() -> Result<EmpresaListResponse, EmpresaError> {
     Ok(EmpresaListResponse { empresas: responses, total, activas })
 }
 
-// ==========================================
-// OBTENER ACTIVAS
-// ==========================================
-
 pub async fn get_empresas_activas() -> Result<Vec<EmpresaResponse>, EmpresaError> {
     let empresas = db::get_empresas_activas().await.map_err(map_db_error)?;
 
@@ -110,68 +113,74 @@ pub async fn get_empresas_activas() -> Result<Vec<EmpresaResponse>, EmpresaError
     Ok(responses)
 }
 
-// ==========================================
-// ACTUALIZAR
-// ==========================================
-
 pub async fn update_empresa(
-    id: String,
+    id_str: String,
     input: UpdateEmpresaInput,
 ) -> Result<EmpresaResponse, EmpresaError> {
     // 1. Validar input
     domain::validar_update_input(&input)?;
 
-    // 2. Verificar que existe
-    let _ = db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(EmpresaError::NotFound)?;
+    let id_thing = parse_empresa_id(&id_str);
 
-    // 3. Normalizar y verificar nombre si viene
+    // 2. Verificar que existe
+    let _ = db::find_by_id(&id_thing).await.map_err(map_db_error)?.ok_or(EmpresaError::NotFound)?;
+
+    // 3. Normalizar y preparar data
+    let mut update_data = serde_json::Map::new();
     if let Some(ref nombre) = input.nombre {
         let normalizado = domain::normalizar_nombre(nombre);
-
         // Verificar si otra empresa tiene este nombre
         let empresas = db::find_all().await.map_err(map_db_error)?;
-        if empresas
-            .iter()
-            .any(|e| e.id != id && domain::normalizar_nombre(&e.nombre) == normalizado)
-        {
+        if empresas.iter().any(|e| {
+            e.id.to_string() != id_thing.to_string()
+                && domain::normalizar_nombre(&e.nombre) == normalizado
+        }) {
             return Err(EmpresaError::NameExists);
         }
+        update_data.insert("nombre".to_string(), serde_json::json!(normalizado));
     };
 
-    // 4. Actualizar
-    info!("Actualizando empresa con ID {}", id);
-    let empresa = db::update(&id, input).await.map_err(|e| {
-        error!("Error al actualizar empresa {}: {}", id, e);
-        map_db_error(e)
-    })?;
+    if let Some(ref direccion) = input.direccion {
+        update_data.insert("direccion".to_string(), serde_json::json!(direccion));
+    }
+    if let Some(is_active) = input.is_active {
+        update_data.insert("is_active".to_string(), serde_json::json!(is_active));
+    }
+    update_data.insert("updated_at".to_string(), serde_json::json!(Utc::now()));
 
-    info!("Empresa {} actualizada exitosamente", id);
+    // 4. Actualizar
+    info!("Actualizando empresa con ID {}", id_str);
+    let empresa =
+        db::update(&id_thing, serde_json::Value::Object(update_data)).await.map_err(|e| {
+            error!("Error al actualizar empresa {}: {}", id_str, e);
+            map_db_error(e)
+        })?;
+
+    info!("Empresa {} actualizada exitosamente", id_str);
 
     // 5. Retornar
     Ok(EmpresaResponse::from(empresa))
 }
 
-// ==========================================
-// ELIMINAR
-// ==========================================
+pub async fn delete_empresa(id_str: String) -> Result<(), EmpresaError> {
+    let id_thing = parse_empresa_id(&id_str);
 
-pub async fn delete_empresa(id: String) -> Result<(), EmpresaError> {
     // 1. Verificar que existe
-    let _ = db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(EmpresaError::NotFound)?;
+    let _ = db::find_by_id(&id_thing).await.map_err(map_db_error)?.ok_or(EmpresaError::NotFound)?;
 
     // 2. Verificar que no tenga contratistas
-    let count = db::count_contratistas_by_empresa(&id).await.map_err(map_db_error)?;
+    let count = db::count_contratistas_by_empresa(&id_thing).await.map_err(map_db_error)?;
     if count > 0 {
         return Err(EmpresaError::HasContratistas(count as i64));
     }
 
-    info!("Eliminando empresa con ID {}", id);
+    info!("Eliminando empresa con ID {}", id_str);
     // 3. Eliminar
-    db::delete(&id).await.map_err(|e| {
-        error!("Error al eliminar empresa {}: {}", id, e);
+    db::delete(&id_thing).await.map_err(|e| {
+        error!("Error al eliminar empresa {}: {}", id_str, e);
         map_db_error(e)
     })?;
 
-    info!("Empresa {} eliminada exitosamente", id);
+    info!("Empresa {} eliminada exitosamente", id_str);
     Ok(())
 }

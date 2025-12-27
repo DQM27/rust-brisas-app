@@ -2,14 +2,15 @@
 // src/services/user_service.rs
 // ==========================================
 // Capa de servicio: orquesta dominio, db y auth
-// Adaptado para SurrealDB
+// Adaptado para SurrealDB Native
 
 use crate::db::surrealdb_user_queries as db;
 use crate::domain::errors::UserError;
 use crate::domain::role::{ROLE_GUARDIA_ID, SUPERUSER_ID};
 use crate::domain::user as domain;
 use crate::models::user::{
-    ChangePasswordInput, CreateUserInput, UpdateUserInput, UserListResponse, UserResponse,
+    ChangePasswordInput, CreateUserInput, UpdateUserInput, UserCreateDTO, UserListResponse,
+    UserResponse,
 };
 use crate::services::auth;
 use crate::services::search_service::SearchService;
@@ -18,7 +19,7 @@ use log::{error, info, warn};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use std::sync::Arc;
-use uuid::Uuid;
+use surrealdb::sql::Thing;
 
 // ==========================================
 // CREAR USUARIO
@@ -26,33 +27,8 @@ use uuid::Uuid;
 
 pub async fn create_user(
     search_service: &Arc<SearchService>,
-    mut input: CreateUserInput,
+    input: CreateUserInput,
 ) -> Result<UserResponse, UserError> {
-    // 0. Normalizar input
-    if let Some(ref p) = input.password {
-        if p.trim().is_empty() {
-            input.password = None;
-        }
-    }
-
-    let clean_opt = |opt: &mut Option<String>| {
-        if let Some(s) = opt {
-            if s.trim().is_empty() {
-                *opt = None;
-            }
-        }
-    };
-
-    clean_opt(&mut input.segundo_nombre);
-    clean_opt(&mut input.segundo_apellido);
-    clean_opt(&mut input.fecha_inicio_labores);
-    clean_opt(&mut input.numero_gafete);
-    clean_opt(&mut input.fecha_nacimiento);
-    clean_opt(&mut input.telefono);
-    clean_opt(&mut input.direccion);
-    clean_opt(&mut input.contacto_emergencia_nombre);
-    clean_opt(&mut input.contacto_emergencia_telefono);
-
     // 1. Validar input
     domain::validar_create_input(&input)?;
 
@@ -71,7 +47,8 @@ pub async fn create_user(
     }
 
     // 4. Determinar rol (default: Guardia)
-    let role_id = input.role_id.unwrap_or_else(|| ROLE_GUARDIA_ID.to_string());
+    let role_id_str = input.role_id.unwrap_or_else(|| ROLE_GUARDIA_ID.to_string());
+    let role_thing = Thing::from(("role", role_id_str.as_str()));
 
     // 5. Generar o usar contraseña
     let (password_str, must_change_password) = match input.password {
@@ -86,57 +63,50 @@ pub async fn create_user(
         }
     };
 
-    info!("Creando usuario '{}' con rol '{}'", email_normalizado, role_id);
+    info!("Creando usuario '{}' con rol '{}'", email_normalizado, role_thing);
     let password_hash = auth::hash_password(&password_str)?;
 
-    // 6. Generar ID
-    let id = Uuid::new_v4().to_string();
+    // 6. Preparar DTO
+    let dto = UserCreateDTO {
+        email: email_normalizado.clone(),
+        password_hash,
+        nombre: nombre_normalizado,
+        apellido: apellido_normalizado,
+        role: role_thing,
+        cedula: input.cedula,
+        segundo_nombre: input.segundo_nombre,
+        segundo_apellido: input.segundo_apellido,
+        fecha_inicio_labores: input.fecha_inicio_labores,
+        numero_gafete: input.numero_gafete,
+        fecha_nacimiento: input.fecha_nacimiento,
+        telefono: input.telefono,
+        direccion: input.direccion,
+        contacto_emergencia_nombre: input.contacto_emergencia_nombre,
+        contacto_emergencia_telefono: input.contacto_emergencia_telefono,
+        must_change_password,
+        avatar_path: input.avatar_path,
+    };
 
     // 7. Insertar en DB
-    db::insert(
-        &id,
-        &email_normalizado,
-        &password_hash,
-        &nombre_normalizado,
-        &apellido_normalizado,
-        &role_id,
-        &input.cedula,
-        input.segundo_nombre.as_deref(),
-        input.segundo_apellido.as_deref(),
-        input.fecha_inicio_labores.as_deref(),
-        input.numero_gafete.as_deref(),
-        input.fecha_nacimiento.as_deref(),
-        input.telefono.as_deref(),
-        input.direccion.as_deref(),
-        input.contacto_emergencia_nombre.as_deref(),
-        input.contacto_emergencia_telefono.as_deref(),
-        must_change_password,
-        input.avatar_path.as_deref(),
-    )
-    .await
-    .map_err(|e| {
+    let user = db::insert(dto).await.map_err(|e| {
         error!("Error de base de datos al crear usuario {}: {}", email_normalizado, e);
         UserError::Database(e.to_string())
     })?;
 
-    info!("Usuario '{}' creado exitosamente con ID {}", email_normalizado, id);
+    info!("Usuario '{}' creado exitosamente con ID {}", email_normalizado, user.id);
 
-    // 8. Retornar usuario creado
-    let mut response = get_user_by_id(&id).await?;
+    // 8. Retornar respuesta
+    let mut response = UserResponse::from_user_with_role(
+        user.clone(),
+        db::get_role_name(&user.role).await.unwrap_or_else(|_| "Desconocido".to_string()),
+    );
     if must_change_password {
         response.temporary_password = Some(password_str);
     }
 
     // 9. Indexar en Tantivy
-    match db::find_by_id(&id).await {
-        Ok(Some(user)) => {
-            // Nota: search_service espera domain/models user. User de surreal queries es el mismo models::user::User? Sí.
-            if let Err(e) = search_service.add_user(&user).await {
-                warn!("Error al indexar usuario {}: {}", id, e);
-            }
-        }
-        Ok(None) => warn!("Usuario creado no encontrado inmediatamente para indexar: {}", id),
-        Err(e) => warn!("Error al obtener usuario para indexar {}: {}", id, e),
+    if let Err(e) = search_service.add_user(&user).await {
+        warn!("Error al indexar usuario {}: {}", user.id, e);
     }
 
     Ok(response)
@@ -146,14 +116,15 @@ pub async fn create_user(
 // OBTENER USUARIO POR ID
 // ==========================================
 
-pub async fn get_user_by_id(id: &str) -> Result<UserResponse, UserError> {
-    let user = db::find_by_id(id)
+pub async fn get_user_by_id(id_str: &str) -> Result<UserResponse, UserError> {
+    let id_thing = parse_user_id(id_str);
+    let user = db::find_by_id(&id_thing)
         .await
         .map_err(|e| UserError::Database(e.to_string()))?
         .ok_or(UserError::NotFound)?;
 
     let role_name =
-        db::get_role_name(&user.role_id).await.unwrap_or_else(|_| "Desconocido".to_string());
+        db::get_role_name(&user.role).await.unwrap_or_else(|_| "Desconocido".to_string());
 
     Ok(UserResponse::from_user_with_role(user, role_name))
 }
@@ -163,13 +134,14 @@ pub async fn get_user_by_id(id: &str) -> Result<UserResponse, UserError> {
 // ==========================================
 
 pub async fn get_all_users() -> Result<UserListResponse, UserError> {
-    // Excluir superuser del listado
-    let users = db::find_all(SUPERUSER_ID).await.map_err(|e| UserError::Database(e.to_string()))?;
+    let exclude_thing = Thing::from(("user", SUPERUSER_ID));
+    let users =
+        db::find_all(Some(&exclude_thing)).await.map_err(|e| UserError::Database(e.to_string()))?;
 
     let mut user_responses = Vec::new();
     for user in users {
         let role_name =
-            db::get_role_name(&user.role_id).await.unwrap_or_else(|_| "Desconocido".to_string());
+            db::get_role_name(&user.role).await.unwrap_or_else(|_| "Desconocido".to_string());
         user_responses.push(UserResponse::from_user_with_role(user, role_name));
     }
 
@@ -185,116 +157,132 @@ pub async fn get_all_users() -> Result<UserListResponse, UserError> {
 
 pub async fn update_user(
     search_service: &Arc<SearchService>,
-    id: String,
-    mut input: UpdateUserInput,
+    id_str: String,
+    input: UpdateUserInput,
 ) -> Result<UserResponse, UserError> {
-    // Limpiar password vacío
-    if let Some(ref p) = input.password {
-        if p.trim().is_empty() {
-            input.password = None;
-        }
-    }
+    let id_thing = parse_user_id(&id_str);
 
     // 1. Validar input
     domain::validar_update_input(&input)?;
 
-    info!("Actualizando usuario con ID {}", id);
+    info!("Actualizando usuario con ID {}", id_thing);
 
     // 2. Verificar que existe
-    let _ = db::find_by_id(&id)
+    let _ = db::find_by_id(&id_thing)
         .await
         .map_err(|e| UserError::Database(e.to_string()))?
         .ok_or(UserError::NotFound)?;
 
-    // 3. Normalizar email si viene
-    let email_normalizado = if let Some(ref email) = input.email {
+    // 3. Preparar Patch JSON
+    let mut map = serde_json::Map::new();
+
+    if let Some(ref email) = input.email {
         let normalizado = domain::normalizar_email(email);
-        let count = db::count_by_email_excluding_id(&normalizado, &id)
+        let count = db::count_by_email_excluding_id(&normalizado, &id_thing)
             .await
             .map_err(|e| UserError::Database(e.to_string()))?;
         if count > 0 {
             return Err(UserError::EmailExists);
         }
-        Some(normalizado)
-    } else {
-        None
-    };
-
-    // 4. Normalizar nombres
-    let nombre_normalizado = input.nombre.as_ref().map(|n| domain::normalizar_nombre(n));
-    let apellido_normalizado = input.apellido.as_ref().map(|a| domain::normalizar_nombre(a));
-
-    // 5. Hashear contraseña si viene
-    let password_hash =
-        if let Some(ref pwd) = input.password { Some(auth::hash_password(pwd)?) } else { None };
-
-    // 8. Actualizar en DB
-    db::update(
-        &id,
-        email_normalizado.as_deref(),
-        password_hash.as_deref(),
-        nombre_normalizado.as_deref(),
-        apellido_normalizado.as_deref(),
-        input.role_id.as_deref(),
-        input.is_active,
-        input.cedula.as_deref(),
-        input.segundo_nombre.as_deref(),
-        input.segundo_apellido.as_deref(),
-        input.fecha_inicio_labores.as_deref(),
-        input.numero_gafete.as_deref(),
-        input.fecha_nacimiento.as_deref(),
-        input.telefono.as_deref(),
-        input.direccion.as_deref(),
-        input.contacto_emergencia_nombre.as_deref(),
-        input.contacto_emergencia_telefono.as_deref(),
-        input.must_change_password,
-        input.avatar_path.as_deref(),
-    )
-    .await
-    .map_err(|e| {
-        error!("Error al actualizar usuario {}: {}", id, e);
-        UserError::Database(e.to_string())
-    })?;
-
-    info!("Usuario {} actualizado exitosamente", id);
-
-    // 9. Retornar actualizado
-    let response = get_user_by_id(&id).await?;
-
-    // 10. Actualizar índice
-    match db::find_by_id(&id).await {
-        Ok(Some(user)) => {
-            if let Err(e) = search_service.update_user(&user).await {
-                warn!("Error al actualizar índice del usuario {}: {}", id, e);
-            }
-        }
-        Ok(None) => warn!("Usuario actualizado no encontrado para indexar: {}", id),
-        Err(e) => warn!("Error al obtener usuario para actualizar índice {}: {}", id, e),
+        map.insert("email".to_string(), serde_json::json!(normalizado));
     }
 
-    Ok(response)
+    if let Some(ref nombre) = input.nombre {
+        map.insert("nombre".to_string(), serde_json::json!(domain::normalizar_nombre(nombre)));
+    }
+    if let Some(ref apellido) = input.apellido {
+        map.insert("apellido".to_string(), serde_json::json!(domain::normalizar_nombre(apellido)));
+    }
+    if let Some(ref role_id) = input.role_id {
+        map.insert("role".to_string(), serde_json::json!(Thing::from(("role", role_id.as_str()))));
+    }
+    if let Some(pwd) = input.password {
+        if !pwd.trim().is_empty() {
+            map.insert("password_hash".to_string(), serde_json::json!(auth::hash_password(&pwd)?));
+        }
+    }
+    if let Some(is_active) = input.is_active {
+        map.insert("is_active".to_string(), serde_json::json!(is_active));
+    }
+    if let Some(cedula) = input.cedula {
+        map.insert("cedula".to_string(), serde_json::json!(cedula));
+    }
+    if let Some(v) = input.segundo_nombre {
+        map.insert("segundo_nombre".to_string(), serde_json::json!(v));
+    }
+    if let Some(v) = input.segundo_apellido {
+        map.insert("segundo_apellido".to_string(), serde_json::json!(v));
+    }
+    if let Some(v) = input.fecha_inicio_labores {
+        map.insert("fecha_inicio_labores".to_string(), serde_json::json!(v));
+    }
+    if let Some(v) = input.numero_gafete {
+        map.insert("numero_gafete".to_string(), serde_json::json!(v));
+    }
+    if let Some(v) = input.fecha_nacimiento {
+        map.insert("fecha_nacimiento".to_string(), serde_json::json!(v));
+    }
+    if let Some(v) = input.telefono {
+        map.insert("telefono".to_string(), serde_json::json!(v));
+    }
+    if let Some(v) = input.direccion {
+        map.insert("direccion".to_string(), serde_json::json!(v));
+    }
+    if let Some(v) = input.contacto_emergencia_nombre {
+        map.insert("contacto_emergencia_nombre".to_string(), serde_json::json!(v));
+    }
+    if let Some(v) = input.contacto_emergencia_telefono {
+        map.insert("contacto_emergencia_telefono".to_string(), serde_json::json!(v));
+    }
+    if let Some(v) = input.must_change_password {
+        map.insert("must_change_password".to_string(), serde_json::json!(v));
+    }
+    if let Some(v) = input.avatar_path {
+        map.insert("avatar_path".to_string(), serde_json::json!(v));
+    }
+
+    map.insert("updated_at".to_string(), serde_json::json!(chrono::Utc::now()));
+
+    // 4. Actualizar en DB
+    let user = db::update(&id_thing, serde_json::Value::Object(map))
+        .await
+        .map_err(|e| {
+            error!("Error al actualizar usuario {}: {}", id_str, e);
+            UserError::Database(e.to_string())
+        })?
+        .ok_or(UserError::NotFound)?;
+
+    info!("Usuario {} actualizado exitosamente", id_str);
+
+    // 5. Indexar
+    if let Err(e) = search_service.update_user(&user).await {
+        warn!("Error al actualizar índice del usuario {}: {}", id_str, e);
+    }
+
+    Ok(UserResponse::from_user_with_role(
+        user.clone(),
+        db::get_role_name(&user.role).await.unwrap_or_else(|_| "Desconocido".to_string()),
+    ))
 }
 
 // ==========================================
 // ELIMINAR USUARIO
 // ==========================================
 
-pub async fn delete_user(search_service: &Arc<SearchService>, id: String) -> Result<(), UserError> {
-    let _ = db::find_by_id(&id)
-        .await
-        .map_err(|e| UserError::Database(e.to_string()))?
-        .ok_or(UserError::NotFound)?;
+pub async fn delete_user(
+    search_service: &Arc<SearchService>,
+    id_str: String,
+) -> Result<(), UserError> {
+    let id_thing = parse_user_id(&id_str);
 
-    info!("Eliminando usuario con ID {}", id);
-    db::delete(&id).await.map_err(|e| {
-        error!("Error al eliminar usuario {}: {}", id, e);
+    info!("Eliminando usuario con ID {}", id_thing);
+    db::delete(&id_thing).await.map_err(|e| {
+        error!("Error al eliminar usuario {}: {}", id_str, e);
         UserError::Database(e.to_string())
     })?;
 
-    info!("Usuario {} eliminado exitosamente", id);
-
-    if let Err(e) = search_service.delete_user(&id).await {
-        warn!("Error al eliminar usuario del índice {}: {}", id, e);
+    if let Err(e) = search_service.delete_user(&id_str).await {
+        warn!("Error al eliminar usuario del índice {}: {}", id_str, e);
     }
 
     Ok(())
@@ -304,58 +292,34 @@ pub async fn delete_user(search_service: &Arc<SearchService>, id: String) -> Res
 // CAMBIAR CONTRASEÑA
 // ==========================================
 
-pub async fn change_password(id: String, input: ChangePasswordInput) -> Result<(), UserError> {
-    let user = get_user_by_id(&id).await?;
-    let found = db::find_by_email_with_password(&user.email)
+pub async fn change_password(id_str: String, input: ChangePasswordInput) -> Result<(), UserError> {
+    let user_resp = get_user_by_id(&id_str).await?;
+    let found = db::find_by_email_with_password(&user_resp.email)
         .await
         .map_err(|e| UserError::Database(e.to_string()))?;
 
     let (_, current_hash) = found.ok_or(UserError::NotFound)?;
 
-    // Verificar contraseña actual si se provee
     if let Some(current) = input.current_password {
         let is_valid = auth::verify_password(&current, &current_hash)?;
         if !is_valid {
-            error!("Cambio de contraseña fallido para {}: clave actual incorrecta", id);
+            error!("Cambio de contraseña fallido para {}: clave actual incorrecta", id_str);
             return Err(UserError::InvalidCurrentPassword);
         }
     }
 
-    // Validar nueva contraseña
     domain::validar_password(&input.new_password)?;
-
-    // Hashear nueva
     let new_hash = auth::hash_password(&input.new_password)?;
 
-    // Actualizar y quitar flag
-    db::update(
-        &id,
-        None,
-        Some(&new_hash),
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        Some(false),
-        None,
-    )
-    .await
-    .map_err(|e| {
-        error!("Error al actualizar password para {}: {}", id, e);
+    let mut map = serde_json::Map::new();
+    map.insert("password_hash".to_string(), serde_json::json!(new_hash));
+    map.insert("must_change_password".to_string(), serde_json::json!(false));
+    map.insert("updated_at".to_string(), serde_json::json!(chrono::Utc::now()));
+
+    db::update(&parse_user_id(&id_str), serde_json::Value::Object(map)).await.map_err(|e| {
+        error!("Error al actualizar password para {}: {}", id_str, e);
         UserError::Database(e.to_string())
     })?;
-
-    info!("Contraseña cambiada para usuario {}", id);
 
     Ok(())
 }
@@ -384,13 +348,20 @@ pub async fn login(email: String, password: String) -> Result<UserResponse, User
     }
 
     let role_name =
-        db::get_role_name(&user.role_id).await.unwrap_or_else(|_| "Desconocido".to_string());
+        db::get_role_name(&user.role).await.unwrap_or_else(|_| "Desconocido".to_string());
 
     Ok(UserResponse::from_user_with_role(user, role_name))
 }
 
-#[cfg(test)]
-mod tests {
-    // Tests comentados hasta actualizar mock de SurrealDB si aplica
-    // use super::*;
+// ==========================================
+// HELPERS
+// ==========================================
+
+fn parse_user_id(id: &str) -> Thing {
+    if id.contains(':') {
+        let parts: Vec<&str> = id.split(':').collect();
+        Thing::from((parts[0], parts[1]))
+    } else {
+        Thing::from(("user", id))
+    }
 }

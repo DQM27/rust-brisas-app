@@ -9,7 +9,7 @@ use crate::models::role::{
     CreateRoleInput, Module, Permission, Role, RoleListResponse, RoleResponse, UpdateRoleInput,
     VisibleModule,
 };
-use uuid::Uuid;
+use chrono::Utc;
 
 // ==========================================
 // ERRORES
@@ -21,6 +21,18 @@ use crate::domain::errors::RoleError;
 // CONSULTAS DE ROLES
 // ==========================================
 
+use surrealdb::sql::Thing;
+
+/// Helper para parsear ID de rol (acepta con o sin prefijo)
+fn parse_role_id(id_str: &str) -> Thing {
+    if id_str.contains(':') {
+        let parts: Vec<&str> = id_str.split(':').collect();
+        Thing::from((parts[0], parts[1]))
+    } else {
+        Thing::from(("role", id_str))
+    }
+}
+
 pub async fn get_all_roles() -> Result<RoleListResponse, RoleError> {
     let roles: Vec<Role> = db::find_all().await.map_err(|e| RoleError::Database(e.to_string()))?;
 
@@ -28,20 +40,10 @@ pub async fn get_all_roles() -> Result<RoleListResponse, RoleError> {
     let mut system_count = 0;
 
     for role in roles {
-        // En Surreal guardamos permisos en el mismo rol
-        // Pero el struct Role legacy no tiene 'permissions' field, los cargabamos aparte.
-        // Si Role struct no ha cambiado, necesitamos mapear.
-        // Voy a asumir que Role struct en models NO tiene permissions.
-        // db::find_all retorna Role.
-        // db::get_permissions retorna los permisos del rol.
-
-        let permissions =
-            db::get_permissions(&role.id).await.map_err(|e| RoleError::Database(e.to_string()))?;
-
         if role.is_system {
             system_count += 1;
         }
-        responses.push(RoleResponse::from_role_with_permissions(role, permissions));
+        responses.push(RoleResponse::from_role(role));
     }
 
     let total = responses.len();
@@ -54,15 +56,14 @@ pub async fn get_all_roles() -> Result<RoleListResponse, RoleError> {
     })
 }
 
-pub async fn get_role_by_id(id: &str) -> Result<RoleResponse, RoleError> {
-    let role = db::find_by_id(id)
+pub async fn get_role_by_id(id_str: &str) -> Result<RoleResponse, RoleError> {
+    let role_id = parse_role_id(id_str);
+    let role = db::find_by_id(&role_id)
         .await
         .map_err(|e| RoleError::Database(e.to_string()))?
         .ok_or(RoleError::NotFound)?;
 
-    let permissions =
-        db::get_permissions(&role.id).await.map_err(|e| RoleError::Database(e.to_string()))?;
-    Ok(RoleResponse::from_role_with_permissions(role, permissions))
+    Ok(RoleResponse::from_role(role))
 }
 
 // ==========================================
@@ -82,20 +83,18 @@ pub async fn create_role(input: CreateRoleInput) -> Result<RoleResponse, RoleErr
     }
 
     // 3. Crear rol
-    let id = Uuid::new_v4().to_string();
-    let nombre = domain::normalizar_nombre(&input.name);
+    let id_slug = domain::normalizar_nombre(&input.name);
+    let dto = crate::models::role::RoleCreateDTO {
+        name: domain::normalizar_nombre(&input.name),
+        description: input.description,
+        is_system: false,
+        permissions: input.permissions,
+    };
 
-    db::create(
-        &id,
-        &nombre,
-        input.description.as_deref(),
-        input.permissions.clone(),
-        false, // is_system = false para roles creados
-    )
-    .await
-    .map_err(|e| RoleError::Database(e.to_string()))?;
+    let created_role =
+        db::create(&id_slug, dto).await.map_err(|e| RoleError::Database(e.to_string()))?;
 
-    get_role_by_id(&id).await
+    Ok(RoleResponse::from_role(created_role))
 }
 
 // ==========================================
@@ -103,44 +102,63 @@ pub async fn create_role(input: CreateRoleInput) -> Result<RoleResponse, RoleErr
 // ==========================================
 
 pub async fn update_role(
-    id: &str,
+    id_str: &str,
     input: UpdateRoleInput,
     requester_id: &str,
 ) -> Result<RoleResponse, RoleError> {
     // 1. Validar input
     domain::validar_update_input(&input)?;
 
+    let role_id = parse_role_id(id_str);
+
     // 2. Obtener rol actual
-    let role = get_role_by_id(id).await?;
+    let role = db::find_by_id(&role_id)
+        .await
+        .map_err(|e| RoleError::Database(e.to_string()))?
+        .ok_or(RoleError::NotFound)?;
 
     // 3. Solo root puede editar roles del sistema
     if role.is_system && !is_superuser(requester_id) {
         return Err(RoleError::CannotModifySystemRole);
     }
 
-    // 4. Actualizar
-    let nombre = input.name.as_ref().map(|n| domain::normalizar_nombre(n));
-    let perms_ref = input.permissions.as_deref();
+    // 4. Preparar data para MERGE
+    let mut update_data = serde_json::Map::new();
+    if let Some(n) = input.name {
+        update_data.insert("name".to_string(), serde_json::json!(domain::normalizar_nombre(&n)));
+    }
+    if let Some(d) = input.description {
+        update_data.insert("description".to_string(), serde_json::json!(d));
+    }
+    if let Some(p) = input.permissions {
+        update_data.insert("permissions".to_string(), serde_json::json!(p));
+    }
+    update_data.insert("updated_at".to_string(), serde_json::json!(Utc::now()));
 
-    db::update(id, nombre.as_deref(), input.description.as_deref(), perms_ref)
+    let updated = db::update(&role_id, serde_json::Value::Object(update_data))
         .await
-        .map_err(|e| RoleError::Database(e.to_string()))?;
+        .map_err(|e| RoleError::Database(e.to_string()))?
+        .ok_or(RoleError::NotFound)?;
 
-    get_role_by_id(id).await
+    Ok(RoleResponse::from_role(updated))
 }
 
 // ==========================================
 // ELIMINAR ROL
 // ==========================================
 
-pub async fn delete_role(id: &str) -> Result<(), RoleError> {
-    let role = get_role_by_id(id).await?;
+pub async fn delete_role(id_str: &str) -> Result<(), RoleError> {
+    let role_id = parse_role_id(id_str);
+    let role = db::find_by_id(&role_id)
+        .await
+        .map_err(|e| RoleError::Database(e.to_string()))?
+        .ok_or(RoleError::NotFound)?;
 
     if role.is_system {
         return Err(RoleError::CannotDeleteSystemRole);
     }
 
-    db::delete(id).await.map_err(|e| RoleError::Database(e.to_string()))?;
+    db::delete(&role_id).await.map_err(|e| RoleError::Database(e.to_string()))?;
 
     Ok(())
 }
@@ -150,11 +168,11 @@ pub async fn delete_role(id: &str) -> Result<(), RoleError> {
 // ==========================================
 
 pub async fn get_user_visible_modules(
-    user_id: &str,
-    role_id: &str,
+    user_id_str: &str,
+    role_id_str: &str,
 ) -> Result<Vec<VisibleModule>, RoleError> {
     // Superuser ve todo
-    if is_superuser(user_id) {
+    if is_superuser(user_id_str) {
         return Ok(Module::all()
             .into_iter()
             .map(|m| VisibleModule {
@@ -174,7 +192,7 @@ pub async fn get_user_visible_modules(
 
     // Aquí invocamos la lógica migrada de autorización
     // que revisa los permisos guardados en el rol (array strings)
-    let permissions = surrealdb_authorization::get_role_permissions(role_id)
+    let permissions = surrealdb_authorization::get_role_permissions(role_id_str)
         .await
         .map_err(|e| RoleError::Database(e.to_string()))?;
 
@@ -205,7 +223,6 @@ pub async fn get_user_visible_modules(
 
 pub async fn get_all_permissions() -> Result<Vec<Permission>, RoleError> {
     // Generar dinámicamente basado en enum Module
-    // Esto evita depender de tabla permissions en DB
     let mut perms = Vec::new();
 
     for module in Module::all() {

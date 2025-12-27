@@ -176,15 +176,19 @@ impl std::str::FromStr for Action {
 // MODELO DE DOMINIO (DB)
 // ==========================================
 
+use chrono::{DateTime, Utc};
+use surrealdb::sql::Thing;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Role {
-    pub id: String,
+    pub id: Thing,
     pub name: String,
     pub description: Option<String>,
     pub is_system: bool,
-    pub created_at: String,
-    pub updated_at: String,
+    pub permissions: Option<Vec<String>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -202,7 +206,7 @@ pub struct RolePermission {
 }
 
 // ==========================================
-// DTOs DE ENTRADA
+// DTOs DE ENTRADA (Frontend -> Command)
 // ==========================================
 
 #[derive(Debug, Deserialize)]
@@ -222,7 +226,20 @@ pub struct UpdateRoleInput {
 }
 
 // ==========================================
-// DTOs DE SALIDA
+// DTOs PARA PERSISTENCIA (Service -> DB)
+// ==========================================
+
+#[derive(Debug, Serialize)]
+pub struct RoleCreateDTO {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub is_system: bool,
+    pub permissions: Vec<String>,
+}
+
+// ==========================================
+// DTOs DE SALIDA (Service -> Frontend)
 // ==========================================
 
 #[derive(Debug, Clone, Serialize)]
@@ -238,15 +255,27 @@ pub struct RoleResponse {
 }
 
 impl RoleResponse {
+    pub fn from_role(role: Role) -> Self {
+        Self {
+            id: role.id.to_string(),
+            name: role.name,
+            description: role.description,
+            is_system: role.is_system,
+            permissions: role.permissions.unwrap_or_default(),
+            created_at: role.created_at.to_rfc3339(),
+            updated_at: role.updated_at.to_rfc3339(),
+        }
+    }
+
     pub fn from_role_with_permissions(role: Role, permissions: Vec<String>) -> Self {
         Self {
-            id: role.id,
+            id: role.id.to_string(),
             name: role.name,
             description: role.description,
             is_system: role.is_system,
             permissions,
-            created_at: role.created_at,
-            updated_at: role.updated_at,
+            created_at: role.created_at.to_rfc3339(),
+            updated_at: role.updated_at.to_rfc3339(),
         }
     }
 }

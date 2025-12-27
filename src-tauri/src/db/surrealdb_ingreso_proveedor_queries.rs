@@ -3,74 +3,19 @@
 // Enterprise Quality SurrealDB Implementation
 // ==========================================
 
-use crate::models::ingreso::{CreateIngresoProveedorInput, Ingreso};
+use crate::models::ingreso::{Ingreso, IngresoCreateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
+use surrealdb::sql::Thing;
 
-pub async fn insert(
-    input: CreateIngresoProveedorInput,
-    proveedor_data: &serde_json::Value,
-) -> Result<Option<Ingreso>, SurrealDbError> {
+pub async fn insert(dto: IngresoCreateDTO) -> Result<Ingreso, SurrealDbError> {
     let db = get_db().await?;
 
-    // Extract and normalize data
-    let nombre = input.nombre;
-    let apellido = input.apellido;
-    let cedula = input.cedula;
-    let empresa_nombre = proveedor_data["nombre"].as_str().unwrap_or("").to_string();
+    let result: Option<Ingreso> =
+        db.query("CREATE ingreso CONTENT $dto").bind(("dto", dto)).await?.take(0)?;
 
-    let empresa_id = {
-        let id = &input.empresa_id;
-        let id_only = id.strip_prefix("empresa:").unwrap_or(id);
-        format!("empresa:{}", id_only)
-    };
-
-    let usuario_id = {
-        let id = &input.usuario_ingreso_id;
-        let id_only = id.strip_prefix("user:").unwrap_or(id);
-        format!("user:{}", id_only)
-    };
-
-    let mut result = db
-        .query(
-            r#"
-            CREATE ingreso CONTENT {
-                empresa_id: $empresa_link,
-                usuario_ingreso_id: $usuario_id,
-                cedula: $cedula,
-                nombre: $nombre,
-                apellido: $apellido,
-                empresa_nombre: $empresa_nombre,
-                tipo_ingreso: 'proveedor',
-                tipo_autorizacion: $tipo_autorizacion,
-                modo_ingreso: $modo_ingreso,
-                vehiculo_placa: $vehiculo_placa,
-                gafete_numero: $gafete_numero,
-                gafete_tipo: 'proveedor',
-                fecha_hora_ingreso: time::now(),
-                observaciones: $observaciones,
-                motivo: $motivo,
-                area_visitada: $area_visitada,
-                created_at: time::now(),
-                updated_at: time::now()
-            }
-        "#,
-        )
-        .bind(("empresa_link", empresa_id))
-        .bind(("usuario_id", usuario_id))
-        .bind(("cedula", cedula))
-        .bind(("nombre", nombre))
-        .bind(("apellido", apellido))
-        .bind(("empresa_nombre", empresa_nombre))
-        .bind(("tipo_autorizacion", input.tipo_autorizacion))
-        .bind(("modo_ingreso", input.modo_ingreso))
-        .bind(("vehiculo_placa", input.vehiculo_placa))
-        .bind(("gafete_numero", input.gafete_numero))
-        .bind(("observaciones", input.observaciones))
-        .bind(("motivo", input.motivo))
-        .bind(("area_visitada", input.area_visitada))
-        .await?;
-
-    Ok(result.take(0)?)
+    result.ok_or(SurrealDbError::TransactionError(
+        "Error al insertar ingreso de proveedor".to_string(),
+    ))
 }
 
 pub async fn find_ingreso_abierto_by_cedula(
@@ -95,31 +40,40 @@ pub async fn find_ingreso_abierto_by_cedula(
 }
 
 pub async fn update_salida(
-    ingreso_id: &str,
-    usuario_salida_id: &str,
+    ingreso_id: &Thing,
+    usuario_salida_id: &Thing,
     observaciones: Option<String>,
-) -> Result<Option<Ingreso>, SurrealDbError> {
+) -> Result<Ingreso, SurrealDbError> {
     let db = get_db().await?;
 
-    let id_only = ingreso_id.strip_prefix("ingreso:").unwrap_or(ingreso_id).to_string();
-    let usuario_id_only = usuario_salida_id.strip_prefix("user:").unwrap_or(usuario_salida_id);
-    let usuario_link = format!("user:{}", usuario_id_only);
+    let mut map = serde_json::Map::new();
+    map.insert("fecha_hora_salida".to_string(), serde_json::json!(chrono::Utc::now()));
+    map.insert("usuario_salida".to_string(), serde_json::json!(usuario_salida_id));
+    map.insert("observaciones_salida".to_string(), serde_json::json!(observaciones));
+    map.insert("updated_at".to_string(), serde_json::json!(chrono::Utc::now()));
 
-    let mut result = db
-        .query(
-            r#"
-            UPDATE type::thing('ingreso', $id) MERGE {
-                fecha_hora_salida: time::now(),
-                usuario_salida_id: $usuario_link,
-                observaciones_salida: $observaciones,
-                updated_at: time::now()
-            }
-        "#,
-        )
-        .bind(("id", id_only))
-        .bind(("usuario_link", usuario_link))
-        .bind(("observaciones", observaciones))
+    let result: Option<Ingreso> = db
+        .update((ingreso_id.tb.clone(), ingreso_id.id.to_string()))
+        .merge(serde_json::Value::Object(map))
         .await?;
 
+    result.ok_or(SurrealDbError::TransactionError(
+        "Error al registrar salida de proveedor".to_string(),
+    ))
+}
+
+pub async fn find_activos() -> Result<Vec<Ingreso>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut result = db
+        .query("SELECT * FROM ingreso WHERE tipo_ingreso = 'proveedor' AND fecha_hora_salida IS NONE ORDER BY fecha_hora_ingreso DESC")
+        .await?;
+    Ok(result.take(0)?)
+}
+
+pub async fn find_historial() -> Result<Vec<Ingreso>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut result = db
+        .query("SELECT * FROM ingreso WHERE tipo_ingreso = 'proveedor' AND fecha_hora_salida IS NOT NONE ORDER BY fecha_hora_ingreso DESC LIMIT 100")
+        .await?;
     Ok(result.take(0)?)
 }

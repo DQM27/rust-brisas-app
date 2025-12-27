@@ -6,41 +6,23 @@ use crate::domain::errors::IngresoVisitaError;
 //     ValidacionIngresoVisitaResponse,
 // };
 use crate::domain::motor_validacion::{self as motor, ContextoIngreso};
-use crate::models::ingreso::CreateIngresoVisitaInput;
+use crate::models::ingreso::{CreateIngresoVisitaInput, IngresoResponse};
 use crate::models::visitante::CreateVisitanteInput;
 use crate::services::{gafete_service, lista_negra_service, visitante_service};
+use surrealdb::sql::Thing;
 
 // ==========================================
 // FUNCIONES DE SERVICIO REALES
 // ==========================================
-
+// Función principal
 pub async fn registrar_ingreso(
-    input_domain: crate::domain::ingreso_visita::CreateIngresoVisitaInput,
-) -> Result<crate::domain::ingreso_visita::IngresoVisita, IngresoVisitaError> {
-    // 1. Obtener datos del visitante para completar input
-    let v = visitante_service::get_visitante_by_id(&input_domain.visitante_id)
-        .await
-        .map_err(|e| IngresoVisitaError::Validation(e.to_string()))?
-        .ok_or(IngresoVisitaError::NotFound)?; // Visitante debe existir
+    input: CreateIngresoVisitaInput,
+    usuario_id_str: String,
+) -> Result<IngresoResponse, IngresoVisitaError> {
+    let usuario_id = Thing::try_from(usuario_id_str)
+        .map_err(|_| IngresoVisitaError::Validation("ID de usuario inválido".to_string()))?;
 
-    // 2. Mapear input legacy a nuevo input
-    // Ojo: models::ingreso::CreateIngresoVisitaInput requiere nombre, apellido, etc. que sacamos de visitante
-    let input = CreateIngresoVisitaInput {
-        cedula: v.cedula.clone(),
-        nombre: v.nombre.clone(),
-        apellido: v.apellido.clone(),
-        anfitrion: input_domain.anfitrion,
-        area_visitada: input_domain.area_visitada,
-        motivo_visita: input_domain.motivo,
-        tipo_autorizacion: "visita".to_string(), // Default, o ajustar si input legacy trae algo
-        modo_ingreso: "caminando".to_string(), // Default, legacy no lo pide explícito aquí a veces
-        vehiculo_placa: None,                  // Visita a pie por default en este flujo
-        gafete_numero: input_domain.gafete.clone(),
-        observaciones: input_domain.observaciones,
-        usuario_ingreso_id: input_domain.usuario_ingreso_id,
-    };
-
-    // 3. Validaciones
+    // 1. Validaciones
     // Gafete
     if let Some(ref g) = input.gafete_numero {
         if g != "S/G" {
@@ -68,52 +50,57 @@ pub async fn registrar_ingreso(
         return Err(IngresoVisitaError::Validation("Ya tiene ingreso activo".to_string()));
     }
 
-    // 4. Crear Ingreso
-    let nuevo_ingreso = db::insert(input)
-        .await
-        .map_err(|e| IngresoVisitaError::Database(e.to_string()))?
-        .ok_or(IngresoVisitaError::Database("Error creando ingreso".to_string()))?;
+    // 4. Construct DTO
+    let dto = crate::models::ingreso::IngresoCreateDTO {
+        contratista: None,
+        cedula: input.cedula,
+        nombre: input.nombre,
+        apellido: input.apellido,
+        empresa_nombre: "".to_string(), // Default, or derive from visitor if needed
+        tipo_ingreso: "visita".to_string(),
+        tipo_autorizacion: input.tipo_autorizacion,
+        modo_ingreso: input.modo_ingreso,
+        vehiculo: None, // Logic for vehicle needed if any (visita pie default here?)
+        placa_temporal: input.vehiculo_placa,
+        gafete_numero: input.gafete_numero,
+        gafete_tipo: Some("visita".to_string()),
+        fecha_hora_ingreso: chrono::Utc::now(),
+        usuario_ingreso: usuario_id,
+        praind_vigente_al_ingreso: None,
+        estado_contratista_al_ingreso: None,
+        observaciones: input.observaciones,
+        anfitrion: Some(input.anfitrion),
+        area_visitada: Some(input.area_visitada),
+        motivo: Some(input.motivo_visita),
+    };
 
-    // 5. Marcar Gafete
+    // 5. Crear Ingreso
+    let nuevo_ingreso =
+        db::insert(dto).await.map_err(|e| IngresoVisitaError::Database(e.to_string()))?;
+
+    // 6. Marcar Gafete
     if let Some(ref g) = nuevo_ingreso.gafete_numero {
         if g != "S/G" {
             let _ = gafete_service::marcar_en_uso(g, "visita").await;
         }
     }
 
-    // 6. Retorno Legacy (Mapeo manual)
-    let esta_adentro = nuevo_ingreso.fecha_hora_salida.is_none();
-    Ok(crate::domain::ingreso_visita::IngresoVisita {
-        id: nuevo_ingreso.id,
-        visitante_id: v.id, // ID original del visitante
-        anfitrion: nuevo_ingreso.anfitrion.unwrap_or_default(), // Recuperar de DB o input
-        area_visitada: nuevo_ingreso.area_visitada.unwrap_or_default(),
-        motivo: nuevo_ingreso.motivo.unwrap_or_default(),
-        gafete: nuevo_ingreso.gafete_numero,
-        fecha_ingreso: nuevo_ingreso.fecha_hora_ingreso,
-        fecha_salida: nuevo_ingreso.fecha_hora_salida,
-        estado: if esta_adentro { "activo".to_string() } else { "finalizado".to_string() },
-        observaciones: nuevo_ingreso.observaciones,
-        usuario_ingreso_id: nuevo_ingreso.usuario_ingreso_id,
-        usuario_salida_id: nuevo_ingreso.usuario_salida_id,
-        cita_id: None, // Cita ID se pierde si no está en modelo nuevo, TODO: agregar a Ingreso model si es crítico
-        created_at: nuevo_ingreso.created_at,
-        updated_at: nuevo_ingreso.updated_at,
-    })
+    IngresoResponse::try_from(nuevo_ingreso).map_err(|e| IngresoVisitaError::Validation(e))
 }
 
 pub async fn registrar_ingreso_full(
     input: crate::domain::ingreso_visita::CreateIngresoVisitaFullInput,
-) -> Result<crate::domain::ingreso_visita::IngresoVisita, IngresoVisitaError> {
+    usuario_id: String,
+) -> Result<IngresoResponse, IngresoVisitaError> {
     // Busca o crea el visitante y luego llama a registrar_ingreso
-    let v_id = match visitante_service::get_visitante_by_cedula(&input.cedula)
+    let v = match visitante_service::get_visitante_by_cedula(&input.cedula)
         .await
         .map_err(|e| IngresoVisitaError::Validation(e.to_string()))?
     {
-        Some(v) => v.id,
+        Some(v) => v,
         None => {
             let c_i = CreateVisitanteInput {
-                cedula: input.cedula.clone(), // Clone necesario si input se mueve
+                cedula: input.cedula.clone(),
                 nombre: input.nombre.clone(),
                 apellido: input.apellido.clone(),
                 segundo_nombre: None,
@@ -125,32 +112,42 @@ pub async fn registrar_ingreso_full(
             visitante_service::create_visitante(c_i)
                 .await
                 .map_err(|e| IngresoVisitaError::Validation(e.to_string()))?
-                .id // Option<Visitante> -> Visitante -> id
         }
     };
-    registrar_ingreso(crate::domain::ingreso_visita::CreateIngresoVisitaInput {
-        visitante_id: v_id,
-        cita_id: input.cita_id,
+
+    let ingreso_input = CreateIngresoVisitaInput {
+        cedula: v.cedula,
+        nombre: v.nombre,
+        apellido: v.apellido,
         anfitrion: input.anfitrion,
         area_visitada: input.area_visitada,
-        motivo: input.motivo,
-        gafete: input.gafete,
+        motivo_visita: input.motivo,
+        tipo_autorizacion: "visita".to_string(),
+        modo_ingreso: "caminando".to_string(),
+        vehiculo_placa: None,
+        gafete_numero: input.gafete,
         observaciones: input.observaciones,
-        usuario_ingreso_id: input.usuario_ingreso_id,
-    })
-    .await
+        usuario_ingreso_id: usuario_id.clone(),
+    };
+
+    registrar_ingreso(ingreso_input, usuario_id).await
 }
 
 pub async fn registrar_salida(
-    id: String,
-    usuario_id: String,
+    id_str: String,
+    usuario_id_str: String,
     devolvio_gafete: bool,
     observaciones: Option<String>,
-) -> Result<(), IngresoVisitaError> {
-    let actualizado = db::update_salida(&id, &usuario_id, observaciones)
+) -> Result<IngresoResponse, IngresoVisitaError> {
+    let ingreso_id = Thing::try_from(id_str)
+        .map_err(|_| IngresoVisitaError::Validation("ID de ingreso inválido".to_string()))?;
+
+    let usuario_id = Thing::try_from(usuario_id_str)
+        .map_err(|_| IngresoVisitaError::Validation("ID de usuario inválido".to_string()))?;
+
+    let actualizado = db::update_salida(&ingreso_id, &usuario_id, observaciones)
         .await
-        .map_err(|e| IngresoVisitaError::Database(e.to_string()))?
-        .ok_or(IngresoVisitaError::NotFound)?;
+        .map_err(|e| IngresoVisitaError::Database(e.to_string()))?;
 
     if devolvio_gafete {
         if let Some(ref g) = actualizado.gafete_numero {
@@ -159,7 +156,8 @@ pub async fn registrar_salida(
             }
         }
     }
-    Ok(())
+
+    IngresoResponse::try_from(actualizado).map_err(|e| IngresoVisitaError::Validation(e))
 }
 
 pub async fn get_activos(

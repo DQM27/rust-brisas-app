@@ -5,6 +5,7 @@
 
 use crate::models::ingreso::Ingreso;
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
+use surrealdb::sql::Thing;
 
 #[derive(Debug, Default)]
 pub struct IngresoDetails {
@@ -27,10 +28,9 @@ pub async fn find_ingresos_abiertos() -> Result<Vec<Ingreso>, SurrealDbError> {
     Ok(result.take(0)?)
 }
 
-pub async fn find_by_id(id: &str) -> Result<Option<Ingreso>, SurrealDbError> {
+pub async fn find_by_id(id: &Thing) -> Result<Option<Ingreso>, SurrealDbError> {
     let db = get_db().await?;
-    let id_only = id.strip_prefix("ingreso:").unwrap_or(id).to_string();
-    let result: Option<Ingreso> = db.select(("ingreso", id_only)).await?;
+    let result: Option<Ingreso> = db.select((id.tb.clone(), id.id.to_string())).await?;
     Ok(result)
 }
 
@@ -39,39 +39,31 @@ pub async fn find_details_for_ingreso(ingreso: &Ingreso) -> Result<IngresoDetail
     let mut details = IngresoDetails::default();
 
     // Fetch usuario ingreso
-    let uid = ingreso.usuario_ingreso_id.clone();
-    if !uid.is_empty() {
-        let uid_only = uid.strip_prefix("user:").unwrap_or(&uid).to_string();
-        let mut res = db
-            .query("SELECT nombre, apellido FROM type::thing('user', $id)")
-            .bind(("id", uid_only))
-            .await?;
+    let uid = &ingreso.usuario_ingreso;
+    let mut res = db
+        .query("SELECT nombre, apellido FROM type::thing($tb, $id)")
+        .bind(("tb", uid.tb.clone()))
+        .bind(("id", uid.id.to_string()))
+        .await?;
 
-        #[derive(serde::Deserialize)]
-        struct UserInfo {
-            nombre: String,
-            apellido: String,
-        }
+    #[derive(serde::Deserialize)]
+    struct UserInfo {
+        nombre: String,
+        apellido: String,
+    }
 
-        let u: Option<UserInfo> = res.take(0).ok().flatten();
-        if let Some(user) = u {
-            details.usuario_ingreso_nombre = Some(format!("{} {}", user.nombre, user.apellido));
-        }
+    let u: Option<UserInfo> = res.take(0).ok().flatten();
+    if let Some(user) = u {
+        details.usuario_ingreso_nombre = Some(format!("{} {}", user.nombre, user.apellido));
     }
 
     // Fetch usuario salida
-    if let Some(uid) = ingreso.usuario_salida_id.clone() {
-        let uid_only = uid.strip_prefix("user:").unwrap_or(&uid).to_string();
+    if let Some(uid) = &ingreso.usuario_salida {
         let mut res = db
-            .query("SELECT nombre, apellido FROM type::thing('user', $id)")
-            .bind(("id", uid_only))
+            .query("SELECT nombre, apellido FROM type::thing($tb, $id)")
+            .bind(("tb", uid.tb.clone()))
+            .bind(("id", uid.id.to_string()))
             .await?;
-
-        #[derive(serde::Deserialize)]
-        struct UserInfo {
-            nombre: String,
-            apellido: String,
-        }
 
         let u: Option<UserInfo> = res.take(0).ok().flatten();
         if let Some(user) = u {

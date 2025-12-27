@@ -1,6 +1,3 @@
-// use crate::db::contratista_queries as db;
-// use crate::db::empresa_queries;
-// use crate::db::lista_negra_queries;
 use crate::db::surrealdb_audit_queries as audit_db;
 use crate::db::surrealdb_contratista_queries as db;
 use crate::db::surrealdb_empresa_queries as empresa_db;
@@ -10,17 +7,39 @@ use crate::db::surrealdb_vehiculo_queries as veh_db;
 use crate::domain::contratista as domain;
 use crate::domain::errors::ContratistaError;
 use crate::models::contratista::{
-    CambiarEstadoInput, ContratistaListResponse, ContratistaResponse, CreateContratistaInput,
-    EstadoContratista, UpdateContratistaInput,
+    CambiarEstadoInput, ContratistaCreateDTO, ContratistaListResponse, ContratistaResponse,
+    CreateContratistaInput, EstadoContratista, UpdateContratistaInput,
 };
 use crate::services::search_service::SearchService;
 use crate::services::surrealdb_service::SurrealDbError;
+use chrono::Utc;
 use log::{error, info};
 use std::sync::Arc;
+use surrealdb::sql::Thing;
 
 // Helper para mapear errores de SurrealDB a ContratistaError
 fn map_db_error(e: SurrealDbError) -> ContratistaError {
     ContratistaError::Database(e.to_string())
+}
+
+/// Helper para parsear ID de contratista (acepta con o sin prefijo)
+fn parse_contratista_id(id_str: &str) -> Thing {
+    if id_str.contains(':') {
+        let parts: Vec<&str> = id_str.split(':').collect();
+        Thing::from((parts[0], parts[1]))
+    } else {
+        Thing::from(("contratista", id_str))
+    }
+}
+
+/// Helper para parsear ID de empresa (acepta con o sin prefijo)
+fn parse_empresa_id(id_str: &str) -> Thing {
+    if id_str.contains(':') {
+        let parts: Vec<&str> = id_str.split(':').collect();
+        Thing::from((parts[0], parts[1]))
+    } else {
+        Thing::from(("empresa", id_str))
+    }
 }
 
 // ==========================================
@@ -28,7 +47,7 @@ fn map_db_error(e: SurrealDbError) -> ContratistaError {
 // ==========================================
 
 pub async fn create_contratista(
-    _search_service: &Arc<SearchService>, // Mantenemos firma por compatibilidad, pero está stubbed
+    _search_service: &Arc<SearchService>,
     input: CreateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
     // 1. Validar input
@@ -56,24 +75,37 @@ pub async fn create_contratista(
     }
 
     // 5. Verificar que la empresa exista
-    info!(
-        "Creando contratista con cédula {} para empresa {}",
-        cedula_normalizada, input.empresa_id
-    );
-    let empresa_opt = empresa_db::find_by_id(&input.empresa_id).await.map_err(map_db_error)?;
+    let empresa_id = parse_empresa_id(&input.empresa_id);
+    let empresa_opt = empresa_db::find_by_id(&empresa_id).await.map_err(map_db_error)?;
     if empresa_opt.is_none() {
         return Err(ContratistaError::EmpresaNotFound);
     }
 
-    // 6. Insertar en DB
-    let contratista = db::create(input).await.map_err(|e| {
+    // 6. Preparar DTO
+    let fecha_vencimiento =
+        crate::models::contratista::validaciones::validar_fecha(&input.fecha_vencimiento_praind)
+            .map_err(ContratistaError::Validation)?;
+
+    let dto = ContratistaCreateDTO {
+        cedula: cedula_normalizada.clone(),
+        nombre: input.nombre.trim().to_uppercase(),
+        segundo_nombre: input.segundo_nombre.map(|s| s.trim().to_uppercase()),
+        apellido: input.apellido.trim().to_uppercase(),
+        segundo_apellido: input.segundo_apellido.map(|s| s.trim().to_uppercase()),
+        empresa: empresa_id,
+        fecha_vencimiento_praind: fecha_vencimiento,
+        estado: EstadoContratista::Activo,
+    };
+
+    // 7. Insertar en DB
+    let contratista = db::create(dto).await.map_err(|e| {
         error!("Error de base de datos al crear contratista {}: {}", cedula_normalizada, e);
         map_db_error(e)
     })?;
 
     info!("Contratista {} creado exitosamente con ID {}", cedula_normalizada, contratista.id);
 
-    // 7. Retornar respuesta
+    // 8. Retornar respuesta
     build_response(contratista).await
 }
 
@@ -81,9 +113,10 @@ pub async fn create_contratista(
 // OBTENER CONTRATISTA POR ID
 // ==========================================
 
-pub async fn get_contratista_by_id(id: &str) -> Result<ContratistaResponse, ContratistaError> {
+pub async fn get_contratista_by_id(id_str: &str) -> Result<ContratistaResponse, ContratistaError> {
+    let id = parse_contratista_id(id_str);
     let contratista =
-        db::find_by_id(id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
+        db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
     build_response(contratista).await
 }
 
@@ -94,7 +127,8 @@ pub async fn get_contratista_by_id(id: &str) -> Result<ContratistaResponse, Cont
 pub async fn get_contratista_by_cedula(
     cedula: &str,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    let contratista = db::find_by_cedula(cedula)
+    let cedula_norm = domain::normalizar_cedula(cedula);
+    let contratista = db::find_by_cedula(&cedula_norm)
         .await
         .map_err(map_db_error)?
         .ok_or(ContratistaError::NotFound)?;
@@ -132,7 +166,7 @@ pub async fn get_all_contratistas() -> Result<ContratistaListResponse, Contratis
 // ==========================================
 
 pub async fn get_contratistas_activos() -> Result<Vec<ContratistaResponse>, ContratistaError> {
-    let raw_list = db::find_all().await.map_err(map_db_error)?; // Simplificado para este paso
+    let raw_list = db::find_all().await.map_err(map_db_error)?;
 
     let mut contratistas = Vec::new();
     for c in raw_list {
@@ -151,32 +185,53 @@ pub async fn get_contratistas_activos() -> Result<Vec<ContratistaResponse>, Cont
 
 pub async fn update_contratista(
     _search_service: &Arc<SearchService>,
-    id: String,
+    id_str: String,
     input: UpdateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
+    let id = parse_contratista_id(&id_str);
+
     // 1. Validar input
     domain::validar_update_input(&input)?;
 
-    info!("Actualizando contratista con ID {}", id);
-
     // 2. Verificar que el contratista existe
-    let _ = db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
+    db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
-    // 3. Verificar que la empresa exista si viene
-    if let Some(ref empresa_id) = input.empresa_id {
-        let empresa_opt = empresa_db::find_by_id(empresa_id).await.map_err(map_db_error)?;
-        if empresa_opt.is_none() {
+    // 3. Preparar datos de actualización
+    let mut update_data = serde_json::Map::new();
+    if let Some(v) = input.nombre {
+        update_data.insert("nombre".to_string(), serde_json::json!(v.trim().to_uppercase()));
+    }
+    if let Some(v) = input.segundo_nombre {
+        update_data
+            .insert("segundo_nombre".to_string(), serde_json::json!(v.trim().to_uppercase()));
+    }
+    if let Some(v) = input.apellido {
+        update_data.insert("apellido".to_string(), serde_json::json!(v.trim().to_uppercase()));
+    }
+    if let Some(v) = input.segundo_apellido {
+        update_data
+            .insert("segundo_apellido".to_string(), serde_json::json!(v.trim().to_uppercase()));
+    }
+    if let Some(v) = input.empresa_id {
+        let emp_id = parse_empresa_id(&v);
+        // Verificar que la empresa exista
+        if empresa_db::find_by_id(&emp_id).await.map_err(map_db_error)?.is_none() {
             return Err(ContratistaError::EmpresaNotFound);
         }
+        update_data.insert("empresa".to_string(), serde_json::json!(emp_id));
     }
+    if let Some(v) = input.fecha_vencimiento_praind {
+        let fecha = crate::models::contratista::validaciones::validar_fecha(&v)
+            .map_err(ContratistaError::Validation)?;
+        update_data.insert("fecha_vencimiento_praind".to_string(), serde_json::json!(fecha));
+    }
+    update_data.insert("updated_at".to_string(), serde_json::json!(Utc::now()));
 
     // 4. Actualizar en DB
-    let updated = db::update(&id, input).await.map_err(|e| {
-        error!("Error al actualizar contratista {}: {}", id, e);
+    let updated = db::update(&id, serde_json::Value::Object(update_data)).await.map_err(|e| {
+        error!("Error al actualizar contratista {}: {}", id_str, e);
         map_db_error(e)
     })?;
-
-    info!("Contratista {} actualizado exitosamente", id);
 
     // 5. Retornar
     build_response(updated).await
@@ -188,21 +243,15 @@ pub async fn update_contratista(
 
 pub async fn cambiar_estado_contratista(
     _search_service: &Arc<SearchService>,
-    id: String,
+    id_str: String,
     input: CambiarEstadoInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    // 1. Validar estado
+    let id = parse_contratista_id(&id_str);
     let estado = domain::validar_estado(&input.estado)?;
 
-    info!("Cambiando estado de contratista {} a {}", id, input.estado);
+    db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
-    // 2. Verificar que el contratista existe
-    let _ = db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
-
-    // 3. Actualizar estado en DB
     let updated = db::update_status(&id, estado.as_str()).await.map_err(map_db_error)?;
-
-    // 4. Retornar
     build_response(updated).await
 }
 
@@ -212,20 +261,17 @@ pub async fn cambiar_estado_contratista(
 
 pub async fn delete_contratista(
     _search_service: &Arc<SearchService>,
-    id: String,
+    id_str: String,
 ) -> Result<(), ContratistaError> {
-    info!("Eliminando contratista con ID {}", id);
+    let id = parse_contratista_id(&id_str);
 
-    // Verificar que existe
-    let _ = db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
+    db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
-    // Eliminar de DB
     db::delete(&id).await.map_err(|e| {
-        error!("Error al eliminar contratista {}: {}", id, e);
+        error!("Error al eliminar contratista {}: {}", id_str, e);
         map_db_error(e)
     })?;
 
-    info!("Contratista {} eliminado exitosamente", id);
     Ok(())
 }
 
@@ -246,34 +292,24 @@ pub async fn actualizar_praind_con_historial(
     input: ActualizarPraindInput,
     usuario_id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    // 1. Obtener contratista actual
-    let contratista = db::find_by_id(&input.contratista_id)
-        .await
-        .map_err(map_db_error)?
-        .ok_or(ContratistaError::NotFound)?;
+    let id = parse_contratista_id(&input.contratista_id);
 
-    let fecha_anterior = contratista.fecha_vencimiento_praind.clone();
+    let contratista =
+        db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
-    // 2. Validar nueva fecha
-    crate::models::contratista::validaciones::validar_fecha(&input.nueva_fecha_praind)
-        .map_err(|e| ContratistaError::Validation(e))?;
+    let fecha_anterior = contratista.fecha_vencimiento_praind.format("%Y-%m-%d").to_string();
 
-    // 3. Actualizar contratista
-    info!(
-        "Actualizando PRAIND para contratista {} -> {}",
-        input.contratista_id, input.nueva_fecha_praind
-    );
-    let updated = db::update(
-        &input.contratista_id,
-        UpdateContratistaInput {
-            fecha_vencimiento_praind: Some(input.nueva_fecha_praind.clone()),
-            ..Default::default()
-        },
-    )
-    .await
-    .map_err(map_db_error)?;
+    let nueva_fecha =
+        crate::models::contratista::validaciones::validar_fecha(&input.nueva_fecha_praind)
+            .map_err(ContratistaError::Validation)?;
 
-    // 4. Registrar en historial
+    let mut update_data = serde_json::Map::new();
+    update_data.insert("fecha_vencimiento_praind".to_string(), serde_json::json!(nueva_fecha));
+    update_data.insert("updated_at".to_string(), serde_json::json!(Utc::now()));
+
+    let updated =
+        db::update(&id, serde_json::Value::Object(update_data)).await.map_err(map_db_error)?;
+
     audit_db::insert_praind_historial(
         &input.contratista_id,
         Some(&fecha_anterior),
@@ -284,7 +320,6 @@ pub async fn actualizar_praind_con_historial(
     .await
     .map_err(map_db_error)?;
 
-    // 5. Retornar
     build_response(updated).await
 }
 
@@ -305,24 +340,18 @@ pub async fn cambiar_estado_con_historial(
     input: CambiarEstadoConHistorialInput,
     usuario_id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    // 1. Obtener contratista actual
-    let contratista = db::find_by_id(&input.contratista_id)
-        .await
-        .map_err(map_db_error)?
-        .ok_or(ContratistaError::NotFound)?;
+    let id = parse_contratista_id(&input.contratista_id);
+
+    let contratista =
+        db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
     let estado_anterior = contratista.estado.as_str().to_string();
 
-    // 2. Validar nuevo estado
-    let nuevo_estado: crate::models::contratista::EstadoContratista =
-        input.nuevo_estado.parse().map_err(|e: String| ContratistaError::Validation(e))?;
+    let nuevo_estado: EstadoContratista =
+        input.nuevo_estado.parse().map_err(ContratistaError::Validation)?;
 
-    // 3. Actualizar estado
-    let updated = db::update_status(&input.contratista_id, nuevo_estado.as_str())
-        .await
-        .map_err(map_db_error)?;
+    let updated = db::update_status(&id, nuevo_estado.as_str()).await.map_err(map_db_error)?;
 
-    // 4. Registrar en historial
     audit_db::insert_historial_estado(
         &input.contratista_id,
         &estado_anterior,
@@ -333,7 +362,6 @@ pub async fn cambiar_estado_con_historial(
     .await
     .map_err(map_db_error)?;
 
-    // 5. Retornar
     build_response(updated).await
 }
 
@@ -348,7 +376,7 @@ async fn build_response(
 
     // Obtener nombre de empresa
     response.empresa_nombre =
-        db::get_empresa_nombre(&contratista.empresa_id).await.map_err(map_db_error)?;
+        db::get_empresa_nombre(&contratista.empresa).await.map_err(map_db_error)?;
 
     // Obtener vehículo
     let vehiculos = veh_db::find_by_contratista(&contratista.id).await.map_err(map_db_error)?;
@@ -370,33 +398,4 @@ async fn build_response(
     }
 
     Ok(response)
-}
-
-#[derive(Default)]
-pub struct DefaultUpdateContratistaInput {
-    pub nombre: Option<String>,
-    pub segundo_nombre: Option<String>,
-    pub apellido: Option<String>,
-    pub segundo_apellido: Option<String>,
-    pub empresa_id: Option<String>,
-    pub fecha_vencimiento_praind: Option<String>,
-}
-
-impl From<DefaultUpdateContratistaInput> for UpdateContratistaInput {
-    fn from(d: DefaultUpdateContratistaInput) -> Self {
-        Self {
-            nombre: d.nombre,
-            segundo_nombre: d.segundo_nombre,
-            apellido: d.apellido,
-            segundo_apellido: d.segundo_apellido,
-            empresa_id: d.empresa_id,
-            fecha_vencimiento_praind: d.fecha_vencimiento_praind,
-            tiene_vehiculo: None,
-            tipo_vehiculo: None,
-            placa: None,
-            marca: None,
-            modelo: None,
-            color: None,
-        }
-    }
 }

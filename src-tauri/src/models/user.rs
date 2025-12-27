@@ -2,23 +2,24 @@
 // src/models/user.rs
 // ==========================================
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use surrealdb::sql::Thing;
 
 // ==========================================
-// MODELO DE DOMINIO
+// MODELO DE BASE DE DATOS (SurrealDB Native)
 // ==========================================
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct User {
-    pub id: String,
+    pub id: Thing,
     pub email: String,
     pub nombre: String,
     pub apellido: String,
-    pub role_id: String,
+    pub role: Thing, // Según esquema: record<role>
     pub is_active: bool,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
     pub cedula: String,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
@@ -30,12 +31,12 @@ pub struct User {
     pub contacto_emergencia_nombre: Option<String>,
     pub contacto_emergencia_telefono: Option<String>,
     pub must_change_password: bool,
-    pub deleted_at: Option<String>,
+    pub deleted_at: Option<DateTime<Utc>>,
     pub avatar_path: Option<String>,
 }
 
 // ==========================================
-// DTOs DE ENTRADA
+// DTOs DE ENTRADA (Frontend Friendly)
 // ==========================================
 
 #[derive(Debug, Deserialize)]
@@ -91,7 +92,42 @@ pub struct ChangePasswordInput {
 }
 
 // ==========================================
-// DTOs DE SALIDA
+// DTOs DE BASE DE DATOS (SurrealDB Friendly)
+// ==========================================
+
+#[derive(Debug, Serialize)]
+pub struct UserCreateDTO {
+    pub email: String,
+    pub password_hash: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub role: Thing,
+    pub cedula: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_apellido: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fecha_inicio_labores: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub numero_gafete: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fecha_nacimiento: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub telefono: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub direccion: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub contacto_emergencia_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub contacto_emergencia_telefono: Option<String>,
+    pub must_change_password: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar_path: Option<String>,
+}
+
+// ==========================================
+// DTOs DE SALIDA (JSON Stable)
 // ==========================================
 
 #[derive(Debug, Serialize, Clone)]
@@ -135,16 +171,16 @@ impl UserResponse {
         let nombre_completo = parts.join(" ");
 
         Self {
-            id: u.id,
+            id: u.id.to_string(),
             email: u.email,
             nombre: u.nombre,
             apellido: u.apellido,
             nombre_completo,
-            role_id: u.role_id,
+            role_id: u.role.to_string(),
             role_name,
             is_active: u.is_active,
-            created_at: u.created_at,
-            updated_at: u.updated_at,
+            created_at: u.created_at.to_rfc3339(),
+            updated_at: u.updated_at.to_rfc3339(),
             cedula: u.cedula,
             segundo_nombre: u.segundo_nombre,
             segundo_apellido: u.segundo_apellido,

@@ -1,31 +1,27 @@
 // src/commands/ingreso_proveedor_commands.rs
 
 use crate::domain::errors::IngresoProveedorError;
-use crate::domain::ingreso_proveedor::{
-    CreateIngresoProveedorInput,
-    IngresoProveedor, // ProveedorSnapshot, // Usaremos serde_json::Value por ahora si hace falta
-    ValidacionIngresoProveedorResponse,
-};
+use crate::domain::ingreso_proveedor::ValidacionIngresoProveedorResponse;
+use crate::models::ingreso::{CreateIngresoProveedorInput, IngresoResponse};
 use crate::services::ingreso_proveedor_service as service;
 use tauri::command;
 
 #[command]
 pub async fn crear_ingreso_proveedor_v2(
     input: CreateIngresoProveedorInput,
-) -> Result<IngresoProveedor, IngresoProveedorError> {
-    service::registrar_ingreso(input).await
+    usuario_id: String,
+) -> Result<IngresoResponse, String> {
+    service::registrar_ingreso(input, usuario_id).await.map_err(|e| e.to_string())
 }
 
 #[command]
-pub async fn get_ingresos_proveedores_activos(
-) -> Result<Vec<IngresoProveedor>, IngresoProveedorError> {
-    service::get_activos().await
+pub async fn get_ingresos_proveedores_activos() -> Result<Vec<IngresoResponse>, String> {
+    service::get_activos().await.map_err(|e| e.to_string())
 }
 
 #[command]
-pub async fn get_ingresos_proveedores_historial(
-) -> Result<Vec<IngresoProveedor>, IngresoProveedorError> {
-    service::get_historial().await
+pub async fn get_ingresos_proveedores_historial() -> Result<Vec<IngresoResponse>, String> {
+    service::get_historial().await.map_err(|e| e.to_string())
 }
 
 #[command]
@@ -34,8 +30,10 @@ pub async fn registrar_salida_proveedor(
     usuario_id: String,
     observaciones: Option<String>,
     devolvio_gafete: bool,
-) -> Result<(), IngresoProveedorError> {
-    service::registrar_salida(id, usuario_id, observaciones, devolvio_gafete).await
+) -> Result<IngresoResponse, String> {
+    service::registrar_salida(id, usuario_id, observaciones, devolvio_gafete)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[command]

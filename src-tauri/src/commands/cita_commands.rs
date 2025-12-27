@@ -1,6 +1,6 @@
 use crate::domain::cita::{Cita, CitaPopulated, CreateCitaInput};
 use crate::domain::errors::CitaError;
-use crate::models::visitante::{CreateVisitanteInput, Visitante};
+use crate::models::visitante::{CreateVisitanteInput, VisitanteResponse};
 use log::debug;
 use tauri::command;
 
@@ -33,7 +33,9 @@ pub async fn procesar_ingreso_cita(
 }
 
 #[command]
-pub async fn get_visitante_by_cedula(cedula: String) -> Result<Option<Visitante>, CitaError> {
+pub async fn get_visitante_by_cedula(
+    cedula: String,
+) -> Result<Option<VisitanteResponse>, CitaError> {
     crate::services::visitante_service::get_visitante_by_cedula(&cedula)
         .await
         .map_err(|e| CitaError::Database(e.to_string()))
