@@ -1,9 +1,11 @@
+// ==========================================
+// src/db/surrealdb_user_queries.rs
+// Enterprise Quality SurrealDB Implementation
+// ==========================================
+
 use crate::models::user::User;
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use chrono::Utc;
 use serde::Deserialize;
-
-// Estructura auxiliar para query de password
 
 #[derive(Debug, Deserialize)]
 struct UserWithPassword {
@@ -32,57 +34,73 @@ pub async fn insert(
     must_change_password: bool,
     avatar_path: Option<&str>,
 ) -> Result<User, SurrealDbError> {
-    let client = get_db().await?;
-    let now = Utc::now().to_rfc3339();
+    let db = get_db().await?;
 
-    // Crear contenido. Nota: password_hash se guarda en la misma tabla normalmente
-    let sql = r#"
-        CREATE type::thing('users', $id) CONTENT {
-            id: $id,
-            email: $email,
-            password_hash: $password_hash,
-            nombre: $nombre,
-            apellido: $apellido,
-            role_id: $role_id,
-            cedula: $cedula,
-            segundo_nombre: $segundo_nombre,
-            segundo_apellido: $segundo_apellido,
-            fecha_inicio_labores: $fecha_inicio_labores,
-            numero_gafete: $numero_gafete,
-            fecha_nacimiento: $fecha_nacimiento,
-            telefono: $telefono,
-            direccion: $direccion,
-            contacto_emergencia_nombre: $contacto_emergencia_nombre,
-            contacto_emergencia_telefono: $contacto_emergencia_telefono,
-            must_change_password: $must_change_password,
-            avatar_path: $avatar_path,
-            is_active: true,
-            created_at: $now,
-            updated_at: $now
-        }
-    "#;
+    // Convert all to owned types for SurrealDB bind
+    let id_owned = id.to_string();
+    let email_owned = email.to_string();
+    let password_hash_owned = password_hash.to_string();
+    let nombre_owned = nombre.to_string();
+    let apellido_owned = apellido.to_string();
+    let role_id_owned = role_id.to_string();
+    let cedula_owned = cedula.to_string();
+    let segundo_nombre_owned = segundo_nombre.map(String::from);
+    let segundo_apellido_owned = segundo_apellido.map(String::from);
+    let fecha_inicio_owned = fecha_inicio_labores.map(String::from);
+    let numero_gafete_owned = numero_gafete.map(String::from);
+    let fecha_nacimiento_owned = fecha_nacimiento.map(String::from);
+    let telefono_owned = telefono.map(String::from);
+    let direccion_owned = direccion.map(String::from);
+    let contacto_nombre_owned = contacto_emergencia_nombre.map(String::from);
+    let contacto_telefono_owned = contacto_emergencia_telefono.map(String::from);
+    let avatar_path_owned = avatar_path.map(String::from);
 
-    let mut result = client
-        .query(sql)
-        .bind(("id", id.to_string()))
-        .bind(("email", email.to_string()))
-        .bind(("password_hash", password_hash.to_string()))
-        .bind(("nombre", nombre.to_string()))
-        .bind(("apellido", apellido.to_string()))
-        .bind(("role_id", role_id.to_string()))
-        .bind(("cedula", cedula.to_string()))
-        .bind(("segundo_nombre", segundo_nombre.map(String::from)))
-        .bind(("segundo_apellido", segundo_apellido.map(String::from)))
-        .bind(("fecha_inicio_labores", fecha_inicio_labores.map(String::from)))
-        .bind(("numero_gafete", numero_gafete.map(String::from)))
-        .bind(("fecha_nacimiento", fecha_nacimiento.map(String::from)))
-        .bind(("telefono", telefono.map(String::from)))
-        .bind(("direccion", direccion.map(String::from)))
-        .bind(("contacto_emergencia_nombre", contacto_emergencia_nombre.map(String::from)))
-        .bind(("contacto_emergencia_telefono", contacto_emergencia_telefono.map(String::from)))
+    let mut result = db
+        .query(
+            r#"
+            CREATE type::thing('user', $id) CONTENT {
+                id: $id,
+                email: $email,
+                password_hash: $password_hash,
+                nombre: $nombre,
+                apellido: $apellido,
+                role_id: $role_id,
+                cedula: $cedula,
+                segundo_nombre: $segundo_nombre,
+                segundo_apellido: $segundo_apellido,
+                fecha_inicio_labores: $fecha_inicio_labores,
+                numero_gafete: $numero_gafete,
+                fecha_nacimiento: $fecha_nacimiento,
+                telefono: $telefono,
+                direccion: $direccion,
+                contacto_emergencia_nombre: $contacto_emergencia_nombre,
+                contacto_emergencia_telefono: $contacto_emergencia_telefono,
+                must_change_password: $must_change_password,
+                avatar_path: $avatar_path,
+                is_active: true,
+                created_at: time::now(),
+                updated_at: time::now()
+            }
+        "#,
+        )
+        .bind(("id", id_owned))
+        .bind(("email", email_owned))
+        .bind(("password_hash", password_hash_owned))
+        .bind(("nombre", nombre_owned))
+        .bind(("apellido", apellido_owned))
+        .bind(("role_id", role_id_owned))
+        .bind(("cedula", cedula_owned))
+        .bind(("segundo_nombre", segundo_nombre_owned))
+        .bind(("segundo_apellido", segundo_apellido_owned))
+        .bind(("fecha_inicio_labores", fecha_inicio_owned))
+        .bind(("numero_gafete", numero_gafete_owned))
+        .bind(("fecha_nacimiento", fecha_nacimiento_owned))
+        .bind(("telefono", telefono_owned))
+        .bind(("direccion", direccion_owned))
+        .bind(("contacto_emergencia_nombre", contacto_nombre_owned))
+        .bind(("contacto_emergencia_telefono", contacto_telefono_owned))
         .bind(("must_change_password", must_change_password))
-        .bind(("avatar_path", avatar_path.map(String::from)))
-        .bind(("now", now))
+        .bind(("avatar_path", avatar_path_owned))
         .await?;
 
     let created: Option<User> = result.take(0)?;
@@ -90,33 +108,32 @@ pub async fn insert(
 }
 
 pub async fn find_by_id(id: &str) -> Result<Option<User>, SurrealDbError> {
-    let client = get_db().await?;
-    let sql = "SELECT * FROM type::thing('users', $id)";
-    let mut result = client.query(sql).bind(("id", id.to_string())).await?;
+    let db = get_db().await?;
+    let id_only = id.strip_prefix("user:").unwrap_or(id).to_string();
+    let mut result =
+        db.query("SELECT * FROM type::thing('user', $id)").bind(("id", id_only)).await?;
     Ok(result.take(0)?)
 }
 
 pub async fn find_by_email(email: &str) -> Result<Option<User>, SurrealDbError> {
-    let client = get_db().await?;
-    let sql = "SELECT * FROM users WHERE email = $email LIMIT 1";
-    let mut result = client.query(sql).bind(("email", email.to_string())).await?;
+    let db = get_db().await?;
+    let mut result = db
+        .query("SELECT * FROM user WHERE email = $email LIMIT 1")
+        .bind(("email", email.to_string()))
+        .await?;
     Ok(result.take(0)?)
 }
 
-// Retorna usuario y su hash, necesario para auth
 pub async fn find_by_email_with_password(
     email: &str,
 ) -> Result<Option<(User, String)>, SurrealDbError> {
-    let client = get_db().await?;
-    // Necesitamos traer el password_hash que usualmente no está en el struct User público si lo excluimos con serde skip,
-    // pero en models/user.rs User no tiene password_hash.
-    // Así que seleccionamos todo y lo mapeamos a una estructura intermedia que incluya password_hash.
-    let sql = "SELECT *, password_hash FROM users WHERE email = $email LIMIT 1";
-    let mut result = client.query(sql).bind(("email", email.to_string())).await?;
+    let db = get_db().await?;
+    let mut result = db
+        .query("SELECT *, password_hash FROM user WHERE email = $email LIMIT 1")
+        .bind(("email", email.to_string()))
+        .await?;
 
-    // Usamos UserWithPassword para deserializar
     let record: Option<UserWithPassword> = result.take(0)?;
-
     match record {
         Some(u) => Ok(Some((u.user, u.password_hash))),
         None => Ok(None),
@@ -144,17 +161,10 @@ pub async fn update(
     must_change_password: Option<bool>,
     avatar_path: Option<&str>,
 ) -> Result<Option<User>, SurrealDbError> {
-    let client = get_db().await?;
-    let now = Utc::now().to_rfc3339();
-
-    // Construimos query dinámico o usamos MERGE con valores opcionales.
-    // SurrealDB MERGE ignora nulos? No, MERGE sobreescribe si le pasas null (None en Rust -> null en JSON).
-    // Debemos construir el objeto solo con los campos Some.
-    // O usamos una query con `IF $val != NONE THEN ...` es complicado.
-    // Mejor estrategia: Crear un Map<String, Value> y pasarlo como CONTENT en MERGE.
+    let db = get_db().await?;
+    let id_only = id.strip_prefix("user:").unwrap_or(id).to_string();
 
     let mut map = serde_json::Map::new();
-    map.insert("updated_at".to_string(), serde_json::json!(now));
 
     if let Some(v) = email {
         map.insert("email".to_string(), serde_json::json!(v));
@@ -211,35 +221,43 @@ pub async fn update(
         map.insert("avatar_path".to_string(), serde_json::json!(v));
     }
 
-    let sql = "UPDATE type::thing('users', $id) MERGE $data";
-    let mut result = client.query(sql).bind(("id", id.to_string())).bind(("data", map)).await?;
+    let mut result = db
+        .query("UPDATE type::thing('user', $id) MERGE $data")
+        .bind(("id", id_only))
+        .bind(("data", map))
+        .await?;
 
     Ok(result.take(0)?)
 }
 
 pub async fn delete(id: &str) -> Result<(), SurrealDbError> {
-    let client = get_db().await?;
-    let sql = "DELETE type::thing('users', $id)";
-    let mut _result = client.query(sql).bind(("id", id.to_string())).await?;
+    let db = get_db().await?;
+    let id_only = id.strip_prefix("user:").unwrap_or(id).to_string();
+    db.query("DELETE type::thing('user', $id)").bind(("id", id_only)).await?;
     Ok(())
 }
 
 pub async fn find_all(exclude_id: &str) -> Result<Vec<User>, SurrealDbError> {
-    let client = get_db().await?;
-    let sql = "SELECT * FROM users WHERE id != $exclude_id ORDER BY created_at DESC";
-    let mut result = client.query(sql).bind(("exclude_id", exclude_id.to_string())).await?;
+    let db = get_db().await?;
+    let mut result = db
+        .query("SELECT * FROM user WHERE id != $exclude_id ORDER BY created_at DESC")
+        .bind(("exclude_id", exclude_id.to_string()))
+        .await?;
     Ok(result.take(0)?)
 }
 
 pub async fn count_by_email(email: &str) -> Result<i64, SurrealDbError> {
-    let client = get_db().await?;
-    let sql = "SELECT count() FROM users WHERE email = $email GROUP ALL";
-    let mut result = client.query(sql).bind(("email", email.to_string())).await?;
-    // Surreal retorna array de objetos { count: N }
+    let db = get_db().await?;
+    let mut result = db
+        .query("SELECT count() FROM user WHERE email = $email GROUP ALL")
+        .bind(("email", email.to_string()))
+        .await?;
+
     #[derive(Deserialize)]
     struct CountResult {
         count: i64,
     }
+
     let rows: Vec<CountResult> = result.take(0)?;
     Ok(rows.first().map(|c| c.count).unwrap_or(0))
 }
@@ -248,33 +266,34 @@ pub async fn count_by_email_excluding_id(
     email: &str,
     exclude_id: &str,
 ) -> Result<i64, SurrealDbError> {
-    let client = get_db().await?;
-    let sql = "SELECT count() FROM users WHERE email = $email AND id != $exclude_id GROUP ALL";
-    let mut result = client
-        .query(sql)
+    let db = get_db().await?;
+    let mut result = db
+        .query("SELECT count() FROM user WHERE email = $email AND id != $exclude_id GROUP ALL")
         .bind(("email", email.to_string()))
         .bind(("exclude_id", exclude_id.to_string()))
         .await?;
+
     #[derive(Deserialize)]
     struct CountResult {
         count: i64,
     }
+
     let rows: Vec<CountResult> = result.take(0)?;
     Ok(rows.first().map(|c| c.count).unwrap_or(0))
 }
 
-// Helper para roles (migración parcial)
 pub async fn get_role_name(role_id: &str) -> Result<String, SurrealDbError> {
-    // Si role_id es hardcoded "role-admin" o "role-guardia", retornamos nombre directo?
-    // O consultamos tabla roles.
-    // Asumiremos tabla roles existe en Surreal
-    let client = get_db().await?;
-    let sql = "SELECT name FROM type::thing('roles', $id)";
-    let mut result = client.query(sql).bind(("id", role_id.to_string())).await?;
+    let db = get_db().await?;
+    let role_id_only = role_id.strip_prefix("role:").unwrap_or(role_id).to_string();
+
+    let mut result =
+        db.query("SELECT name FROM type::thing('role', $id)").bind(("id", role_id_only)).await?;
+
     #[derive(Deserialize)]
     struct RoleName {
         name: String,
     }
+
     let row: Option<RoleName> = result.take(0)?;
     Ok(row.map(|r| r.name).unwrap_or_else(|| "Desconocido".to_string()))
 }

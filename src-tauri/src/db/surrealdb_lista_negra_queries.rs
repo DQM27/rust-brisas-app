@@ -2,17 +2,16 @@
 // src/db/surrealdb_lista_negra_queries.rs
 // ==========================================
 
-use crate::models::lista_negra::BlockCheckResponse;
-use crate::services::surrealdb_service::{get_surrealdb, SurrealDbError};
+use crate::models::lista_negra::{BlockCheckResponse, ListaNegra};
+use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use serde::Deserialize;
 
 pub async fn check_if_blocked_by_cedula(
     cedula: &str,
 ) -> Result<BlockCheckResponse, SurrealDbError> {
-    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
-    let client = db.get_client().await?;
+    let db = get_db().await?;
 
-    let mut result = client
+    let mut result = db
         .query("SELECT * FROM lista_negra WHERE cedula = $cedula AND is_active = true")
         .bind(("cedula", cedula.to_string()))
         .await?;
@@ -38,9 +37,8 @@ pub async fn check_if_blocked_by_cedula(
     }
 }
 
-pub async fn find_all() -> Result<Vec<crate::models::lista_negra::ListaNegra>, SurrealDbError> {
-    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
-    let client = db.get_client().await?;
-    let result: Vec<crate::models::lista_negra::ListaNegra> = client.select("lista_negra").await?;
+pub async fn find_all() -> Result<Vec<ListaNegra>, SurrealDbError> {
+    let db = get_db().await?;
+    let result: Vec<ListaNegra> = db.select("lista_negra").await?;
     Ok(result)
 }
