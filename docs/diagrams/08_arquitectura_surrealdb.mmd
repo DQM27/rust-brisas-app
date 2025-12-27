@@ -1,0 +1,34 @@
+%% Arquitectura SurrealDB Integration
+%% Pegar en https://mermaid.live para visualizar
+
+graph TD
+    A[🖥️ Frontend SvelteKit] -->|invoke| B[📡 Commands Layer]
+    B -->|llama| C[⚙️ Services Layer]
+    
+    subgraph "Feature Flag: surrealdb-backend"
+        C -->|"#[cfg(feature)]"| D1[🔷 SurrealDB Service]
+        D1 -->|SurrealQL| E1[(🔷 SurrealDB RocksDB)]
+    end
+    
+    subgraph "Default: SQLite"
+        C -->|"#[cfg(not(feature))]"| D2[📐 DB Queries Layer]
+        D2 -->|SQL| E2[(💾 SQLite)]
+    end
+    
+    subgraph Backend Rust/Tauri
+        B
+        C
+        D1
+        D2
+    end
+    
+    F[🔐 Keyring] -->|Argon2 Secret| C
+    
+    style A fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style B fill:#4ecdc4,stroke:#1a9c94,color:#fff
+    style C fill:#45b7d1,stroke:#2980b9,color:#fff
+    style D1 fill:#9b59b6,stroke:#8e44ad,color:#fff
+    style D2 fill:#ffeaa7,stroke:#fdcb6e,color:#333
+    style E1 fill:#9b59b6,stroke:#8e44ad,color:#fff
+    style E2 fill:#dfe6e9,stroke:#636e72,color:#333
+    style F fill:#e74c3c,stroke:#c0392b,color:#fff

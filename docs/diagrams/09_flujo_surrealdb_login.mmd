@@ -1,0 +1,70 @@
+%% Flujo de Autenticación con SurrealDB
+%% Pegar en https://mermaid.live para visualizar
+
+sequenceDiagram
+    autonumber
+    
+    participant U as 👤 Usuario
+    participant FE as 🖥️ Frontend
+    participant CMD as 📡 Commands
+    participant SVC as ⚙️ SurrealDB Service
+    participant KR as 🔐 Keyring
+    participant DB as 🔷 SurrealDB
+
+    rect rgb(230, 230, 250)
+        Note over U,DB: INICIALIZACIÓN (Startup)
+        FE->>CMD: initialize_surrealdb()
+        CMD->>SVC: connect("file:~/.local/share/Brisas/surrealdb/")
+        SVC->>DB: Db::new::<RocksDb>(path)
+        DB-->>SVC: Connected
+        SVC->>DB: USE ns brisas db main
+        SVC->>DB: Execute schema.surql
+        Note right of DB: DEFINE TABLE user<br/>DEFINE FIELD email<br/>DEFINE FIELD password_hash
+        SVC->>KR: get_argon2_params()
+        KR-->>SVC: {secret, salt, memory, iterations}
+        SVC->>SVC: Hash default passwords
+        SVC->>DB: CREATE seeds (roles, users)
+        DB-->>SVC: OK
+        SVC-->>CMD: Initialized
+        CMD-->>FE: Ready
+    end
+
+    rect rgb(255, 240, 245)
+        Note over U,DB: LOGIN
+        U->>FE: Ingresa email y contraseña
+        FE->>CMD: login(email, password)
+        CMD->>SVC: authenticate(email, password)
+        SVC->>DB: SELECT * FROM user WHERE email = $email
+        DB-->>SVC: User {id, password_hash, role, ...}
+        
+        SVC->>KR: get_argon2_params()
+        KR-->>SVC: {secret, salt, memory, iterations}
+        
+        SVC->>SVC: Argon2 verify(password, hash, secret)
+        
+        alt ✅ Credenciales Válidas
+            SVC->>DB: SELECT * FROM $role FETCH permissions
+            Note right of DB: SurrealDB FETCH<br/>resuelve relaciones
+            DB-->>SVC: Role + Permissions
+            SVC-->>CMD: AuthResult {user, role, permissions}
+            CMD-->>FE: Success
+            FE-->>U: Redirige a Dashboard
+        else ❌ Credenciales Inválidas
+            SVC-->>CMD: UserError::InvalidCredentials
+            CMD-->>FE: Error
+            FE-->>U: Muestra error
+        end
+    end
+
+    rect rgb(240, 255, 240)
+        Note over U,DB: LIVE QUERIES (Futuro)
+        FE->>CMD: subscribe_user_changes()
+        CMD->>SVC: live_query("LIVE SELECT * FROM user")
+        DB-->>SVC: Stream<Notification>
+        loop Cada cambio
+            DB-->>SVC: Notification(CREATE/UPDATE/DELETE)
+            SVC-->>CMD: emit("db:user:update", data)
+            CMD-->>FE: Event
+            FE->>FE: Actualiza UI
+        end
+    end

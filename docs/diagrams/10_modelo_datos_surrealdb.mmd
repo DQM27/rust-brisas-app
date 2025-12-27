@@ -1,0 +1,70 @@
+%% Modelo de Datos SurrealDB
+%% Pegar en https://mermaid.live para visualizar
+
+erDiagram
+    USER {
+        string id PK "user:uuid"
+        string email UK "Único"
+        string username
+        string password_hash "Argon2"
+        string first_name
+        string last_name
+        record role FK "role:uuid"
+        string avatar_id "Nullable"
+        bool is_active "Default true"
+        bool must_change_password "Default false"
+        datetime created_at
+        datetime updated_at
+        datetime deleted_at "Nullable (Soft Delete)"
+    }
+    
+    ROLE {
+        string id PK "role:uuid"
+        string name UK "admin, operator, viewer"
+        string description
+        int priority "1=más alto"
+        bool is_system "No editable"
+        datetime created_at
+    }
+    
+    PERMISSION {
+        string id PK "permission:uuid"
+        string module "users, ingresos, config"
+        string action "read, write, delete, admin"
+        string description
+    }
+    
+    ROLE_PERMISSION {
+        string id PK "role_permission:uuid"
+        record role FK "role:uuid"
+        record permission FK "permission:uuid"
+    }
+    
+    CONTRATISTA {
+        string id PK "contratista:uuid"
+        string cedula UK
+        string nombre
+        string empresa
+        string cargo
+        bool activo
+        bool en_lista_negra
+        datetime created_at
+    }
+    
+    INGRESO {
+        string id PK "ingreso:uuid"
+        record contratista FK "contratista:uuid"
+        record registrado_por FK "user:uuid"
+        string autorizacion
+        string motivo
+        datetime fecha_ingreso
+        datetime fecha_salida "Nullable"
+        string modo "peatonal, vehicular"
+        string tipo "normal, urgente"
+    }
+
+    USER ||--o{ ROLE : "tiene un"
+    ROLE ||--|{ ROLE_PERMISSION : "tiene muchos"
+    PERMISSION ||--|{ ROLE_PERMISSION : "asignado a"
+    CONTRATISTA ||--|{ INGRESO : "registra"
+    USER ||--|{ INGRESO : "registra"
