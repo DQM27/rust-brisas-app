@@ -40,3 +40,6 @@ pub mod surrealdb_service;
 
 #[cfg(feature = "surrealdb-backend")]
 pub mod surrealdb_user_service;
+
+#[cfg(feature = "surrealdb-backend")]
+pub mod surrealdb_authorization;

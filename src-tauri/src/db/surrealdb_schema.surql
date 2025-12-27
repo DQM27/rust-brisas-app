@@ -12,6 +12,22 @@ DEFINE TABLE IF NOT EXISTS roles;
 DEFINE INDEX IF NOT EXISTS idx_roles_name ON roles COLUMNS name UNIQUE;
 
 -- ==========================================
+-- TABLA: permissions
+-- ==========================================
+DEFINE TABLE IF NOT EXISTS permissions;
+
+-- Índice único por id (module:action)
+DEFINE INDEX IF NOT EXISTS idx_permissions_id ON permissions COLUMNS id UNIQUE;
+
+-- ==========================================
+-- TABLA: role_permissions (relación N:M)
+-- ==========================================
+DEFINE TABLE IF NOT EXISTS role_permissions;
+
+-- Índice compuesto para evitar duplicados
+DEFINE INDEX IF NOT EXISTS idx_role_permissions ON role_permissions COLUMNS role_id, permission_id UNIQUE;
+
+-- ==========================================
 -- TABLA: usuarios
 -- ==========================================
 DEFINE TABLE IF NOT EXISTS usuarios;

@@ -14,6 +14,8 @@ pub async fn seed_surrealdb() -> Result<(), Box<dyn std::error::Error>> {
     println!("🌱 [SURREALDB] Ejecutando seeds...");
 
     seed_roles().await?;
+    seed_permissions().await?;
+    seed_role_permissions().await?;
     seed_superuser().await?;
     seed_admin_user().await?;
 
@@ -84,6 +86,188 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
         .await?;
 
     println!("  ✓ Roles creados");
+    Ok(())
+}
+
+/// Seed de todos los permisos del sistema (module:action)
+async fn seed_permissions() -> Result<(), SurrealDbError> {
+    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
+    let client = db.get_client().await?;
+
+    // Módulos y acciones
+    let modules = [
+        "users",
+        "roles",
+        "contratistas",
+        "empresas",
+        "proveedores",
+        "visitantes",
+        "ingresos",
+        "citas",
+        "vehiculos",
+        "gafetes",
+        "lista_negra",
+        "config",
+        "backup",
+        "export",
+    ];
+    let actions = ["view", "create", "read", "update", "delete", "export"];
+
+    for module in &modules {
+        for action in &actions {
+            let perm_id = format!("{}:{}", module, action);
+            let description = format!("Permiso para {} en {}", action, module);
+
+            // UPSERT para que sea idempotente
+            client
+                .query(
+                    r#"
+                    UPSERT type::thing('permissions', $id) CONTENT {
+                        module: $module,
+                        action: $action,
+                        description: $description
+                    }
+                    "#,
+                )
+                .bind(("id", perm_id))
+                .bind(("module", *module))
+                .bind(("action", *action))
+                .bind(("description", description))
+                .await?;
+        }
+    }
+
+    println!(
+        "  ✓ Permisos creados ({} x {} = {})",
+        modules.len(),
+        actions.len(),
+        modules.len() * actions.len()
+    );
+    Ok(())
+}
+
+/// Seed de role_permissions - asigna todos los permisos al rol admin
+async fn seed_role_permissions() -> Result<(), SurrealDbError> {
+    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
+    let client = db.get_client().await?;
+
+    // Admin tiene TODOS los permisos
+    let modules = [
+        "users",
+        "roles",
+        "contratistas",
+        "empresas",
+        "proveedores",
+        "visitantes",
+        "ingresos",
+        "citas",
+        "vehiculos",
+        "gafetes",
+        "lista_negra",
+        "config",
+        "backup",
+        "export",
+    ];
+    let actions = ["view", "create", "read", "update", "delete", "export"];
+
+    for module in &modules {
+        for action in &actions {
+            let perm_id = format!("{}:{}", module, action);
+            let rp_id = format!("admin_{}", perm_id);
+
+            client
+                .query(
+                    r#"
+                    UPSERT type::thing('role_permissions', $rp_id) CONTENT {
+                        role_id: 'admin',
+                        permission_id: $perm_id
+                    }
+                    "#,
+                )
+                .bind(("rp_id", rp_id))
+                .bind(("perm_id", perm_id))
+                .await?;
+        }
+    }
+
+    // Guardia solo tiene permisos de vista en módulos básicos + create/read ingresos
+    let guardia_perms = [
+        "contratistas:view",
+        "contratistas:read",
+        "empresas:view",
+        "empresas:read",
+        "ingresos:view",
+        "ingresos:create",
+        "ingresos:read",
+        "ingresos:update",
+        "gafetes:view",
+        "gafetes:read",
+        "citas:view",
+        "citas:read",
+    ];
+
+    for perm_id in &guardia_perms {
+        let rp_id = format!("guardia_{}", perm_id);
+        client
+            .query(
+                r#"
+                UPSERT type::thing('role_permissions', $rp_id) CONTENT {
+                    role_id: 'guardia',
+                    permission_id: $perm_id
+                }
+                "#,
+            )
+            .bind(("rp_id", rp_id))
+            .bind(("perm_id", *perm_id))
+            .await?;
+    }
+
+    // Supervisor tiene más permisos que guardia
+    let supervisor_perms = [
+        "contratistas:view",
+        "contratistas:create",
+        "contratistas:read",
+        "contratistas:update",
+        "empresas:view",
+        "empresas:read",
+        "proveedores:view",
+        "proveedores:read",
+        "visitantes:view",
+        "visitantes:read",
+        "ingresos:view",
+        "ingresos:create",
+        "ingresos:read",
+        "ingresos:update",
+        "citas:view",
+        "citas:create",
+        "citas:read",
+        "citas:update",
+        "gafetes:view",
+        "gafetes:read",
+        "gafetes:update",
+        "lista_negra:view",
+        "lista_negra:read",
+        "export:view",
+        "export:create",
+    ];
+
+    for perm_id in &supervisor_perms {
+        let rp_id = format!("supervisor_{}", perm_id);
+        client
+            .query(
+                r#"
+                UPSERT type::thing('role_permissions', $rp_id) CONTENT {
+                    role_id: 'supervisor',
+                    permission_id: $perm_id
+                }
+                "#,
+            )
+            .bind(("rp_id", rp_id))
+            .bind(("perm_id", *perm_id))
+            .await?;
+    }
+
+    println!("  ✓ Permisos de roles asignados");
     Ok(())
 }
 

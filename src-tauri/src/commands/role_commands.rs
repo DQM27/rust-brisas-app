@@ -3,27 +3,38 @@
 // ==========================================
 // Comandos Tauri para gestión de roles
 
-use crate::db::DbPool;
 use crate::domain::errors::RoleError;
-
 use crate::models::role::{
-    CreateRoleInput, Permission, RoleListResponse, RoleResponse, UpdateRoleInput, VisibleModule,
+    CreateRoleInput, Module, Permission, RoleListResponse, RoleResponse, UpdateRoleInput,
+    VisibleModule,
 };
-use crate::services::{role_service, session::SessionState};
+use crate::services::session::SessionState;
 use tauri::State;
 
 // ==========================================
-// CONSULTAS
+// IMPORTS CONDICIONALES
 // ==========================================
 
-/// Obtiene todos los roles
+#[cfg(not(feature = "surrealdb-backend"))]
+use crate::db::DbPool;
+#[cfg(not(feature = "surrealdb-backend"))]
+use crate::services::role_service;
+
+#[cfg(feature = "surrealdb-backend")]
+use crate::services::surrealdb_authorization;
+
+// ==========================================
+// CONSULTAS - SQLite
+// ==========================================
+
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn get_all_roles(pool_state: State<'_, DbPool>) -> Result<RoleListResponse, RoleError> {
     let pool = pool_state.0.read().await;
     role_service::get_all_roles(&pool).await
 }
 
-/// Obtiene un rol por ID
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn get_role_by_id(
     pool_state: State<'_, DbPool>,
@@ -33,7 +44,7 @@ pub async fn get_role_by_id(
     role_service::get_role_by_id(&pool, &id).await
 }
 
-/// Obtiene todos los permisos disponibles
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn get_all_permissions(
     pool_state: State<'_, DbPool>,
@@ -42,7 +53,7 @@ pub async fn get_all_permissions(
     role_service::get_all_permissions(&pool).await
 }
 
-/// Obtiene los módulos visibles para el usuario actual
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn get_visible_modules(
     pool_state: State<'_, DbPool>,
@@ -54,10 +65,68 @@ pub async fn get_visible_modules(
 }
 
 // ==========================================
-// MUTACIONES
+// CONSULTAS - SurrealDB
 // ==========================================
 
-/// Crea un nuevo rol (solo admin)
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn get_all_roles() -> Result<RoleListResponse, RoleError> {
+    // TODO: Implementar para SurrealDB
+    Err(RoleError::NotFound)
+}
+
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn get_role_by_id(id: String) -> Result<RoleResponse, RoleError> {
+    // TODO: Implementar para SurrealDB
+    let _ = id;
+    Err(RoleError::NotFound)
+}
+
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn get_all_permissions() -> Result<Vec<Permission>, RoleError> {
+    // TODO: Implementar para SurrealDB - por ahora retorna lista vacía
+    Ok(vec![])
+}
+
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn get_visible_modules(
+    session: State<'_, SessionState>,
+) -> Result<Vec<VisibleModule>, RoleError> {
+    let user = session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
+
+    let modules = surrealdb_authorization::get_visible_modules(&user.id, &user.role_id)
+        .await
+        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
+
+    // Obtener permisos para cada módulo
+    let permissions = surrealdb_authorization::get_role_permissions(&user.role_id)
+        .await
+        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
+
+    let visible: Vec<VisibleModule> = modules
+        .into_iter()
+        .map(|m| VisibleModule {
+            module: m.as_str().to_string(),
+            display_name: m.display_name().to_string(),
+            can_create: permissions.contains(&format!("{}:create", m.as_str())),
+            can_read: permissions.contains(&format!("{}:read", m.as_str())),
+            can_update: permissions.contains(&format!("{}:update", m.as_str())),
+            can_delete: permissions.contains(&format!("{}:delete", m.as_str())),
+            can_export: permissions.contains(&format!("{}:export", m.as_str())),
+        })
+        .collect();
+
+    Ok(visible)
+}
+
+// ==========================================
+// MUTACIONES - SQLite
+// ==========================================
+
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn create_role(
     pool_state: State<'_, DbPool>,
@@ -66,25 +135,20 @@ pub async fn create_role(
 ) -> Result<RoleResponse, RoleError> {
     log::info!("🚀 create_role invoked. Input name: {}", input.name);
 
-    // Check actual session state
     let maybe_user = session.get_user();
     match &maybe_user {
         Some(u) => log::info!("✅ Session found for user: {} ({})", u.nombre, u.id),
         None => log::error!("❌ No active session found in SessionState!"),
     }
 
-    // Verificar sesión
     let _user = maybe_user
         .ok_or(RoleError::Unauthorized("Sesión requerida (Backend check failed)".to_string()))?;
-
-    // Por ahora permitimos a cualquier admin crear roles
-    // TODO: Verificar permiso roles:create
 
     let pool = pool_state.0.read().await;
     role_service::create_role(&pool, input).await
 }
 
-/// Actualiza un rol existente
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn update_role(
     pool_state: State<'_, DbPool>,
@@ -97,7 +161,7 @@ pub async fn update_role(
     role_service::update_role(&pool, &id, input, &user.id).await
 }
 
-/// Elimina un rol (solo roles custom, no del sistema)
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn delete_role(
     pool_state: State<'_, DbPool>,
@@ -109,4 +173,45 @@ pub async fn delete_role(
 
     let pool = pool_state.0.read().await;
     role_service::delete_role(&pool, &id).await
+}
+
+// ==========================================
+// MUTACIONES - SurrealDB (stubs)
+// ==========================================
+
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn create_role(
+    session: State<'_, SessionState>,
+    input: CreateRoleInput,
+) -> Result<RoleResponse, RoleError> {
+    let _user =
+        session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
+    let _ = input;
+    // TODO: Implementar para SurrealDB
+    Err(RoleError::Validation("create_role no implementado para SurrealDB aún".to_string()))
+}
+
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn update_role(
+    session: State<'_, SessionState>,
+    id: String,
+    input: UpdateRoleInput,
+) -> Result<RoleResponse, RoleError> {
+    let _user =
+        session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
+    let _ = (id, input);
+    // TODO: Implementar para SurrealDB
+    Err(RoleError::Validation("update_role no implementado para SurrealDB aún".to_string()))
+}
+
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn delete_role(session: State<'_, SessionState>, id: String) -> Result<(), RoleError> {
+    let _user =
+        session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
+    let _ = id;
+    // TODO: Implementar para SurrealDB
+    Err(RoleError::Validation("delete_role no implementado para SurrealDB aún".to_string()))
 }
