@@ -65,6 +65,8 @@ DEFINE FIELD nombre ON TABLE contratista TYPE string;
 DEFINE FIELD segundo_nombre ON TABLE contratista TYPE option<string>;
 DEFINE FIELD apellido ON TABLE contratista TYPE string;
 DEFINE FIELD segundo_apellido ON TABLE contratista TYPE option<string>;
+DEFINE FIELD nombre_completo ON TABLE contratista VALUE 
+    string::trim(nombre + ' ' + (segundo_nombre OR '') + ' ' + apellido + ' ' + (segundo_apellido OR ''));
 DEFINE FIELD empresa ON TABLE contratista TYPE record<empresa>;
 DEFINE FIELD estado ON TABLE contratista TYPE string ASSERT $value INSIDE ['activo', 'inactivo', 'bloqueado'];
 DEFINE FIELD fecha_vencimiento_praind ON TABLE contratista TYPE option<string>;
@@ -79,6 +81,8 @@ DEFINE FIELD nombre ON TABLE proveedor TYPE string;
 DEFINE FIELD segundo_nombre ON TABLE proveedor TYPE option<string>;
 DEFINE FIELD apellido ON TABLE proveedor TYPE string;
 DEFINE FIELD segundo_apellido ON TABLE proveedor TYPE option<string>;
+DEFINE FIELD nombre_completo ON TABLE proveedor VALUE 
+    string::trim(nombre + ' ' + (segundo_nombre OR '') + ' ' + apellido + ' ' + (segundo_apellido OR ''));
 DEFINE FIELD empresa ON TABLE proveedor TYPE record<empresa>;
 DEFINE FIELD created_at ON TABLE proveedor TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE proveedor TYPE datetime VALUE time::now();
@@ -90,6 +94,8 @@ DEFINE FIELD nombre ON TABLE visitante TYPE string;
 DEFINE FIELD segundo_nombre ON TABLE visitante TYPE option<string>;
 DEFINE FIELD apellido ON TABLE visitante TYPE string;
 DEFINE FIELD segundo_apellido ON TABLE visitante TYPE option<string>;
+DEFINE FIELD nombre_completo ON TABLE visitante VALUE 
+    string::trim(nombre + ' ' + (segundo_nombre OR '') + ' ' + apellido + ' ' + (segundo_apellido OR ''));
 DEFINE FIELD created_at ON TABLE visitante TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE visitante TYPE datetime VALUE time::now();
 DEFINE INDEX idx_visitante_cedula ON visitante COLUMNS cedula UNIQUE;
