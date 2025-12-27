@@ -18,6 +18,10 @@
   import { currentUser } from "$lib/stores/auth";
   import { activeTabId } from "$lib/stores/tabs";
   import { exportData, getAvailableFormats } from "$lib/logic/export";
+  import {
+    onIngresoChange,
+    type LiveNotification,
+  } from "$lib/services/liveEvents";
 
   // Types
   import type { CustomToolbarButton } from "$lib/types/agGrid";
@@ -383,6 +387,41 @@
   // ==========================================
   onMount(() => {
     loadIngresos();
+
+    // Suscribirse a cambios en tiempo real de la tabla ingreso
+    let unlistenFn: (() => void) | null = null;
+
+    onIngresoChange((notification: LiveNotification) => {
+      console.log("[LIVE] Cambio detectado en ingreso:", notification);
+
+      // Mostrar notificación al usuario según la acción
+      const actionMessages: Record<string, string> = {
+        create: "Nuevo ingreso registrado",
+        update: "Ingreso actualizado",
+        delete: "Ingreso eliminado",
+      };
+
+      const message = actionMessages[notification.action] || "Cambio detectado";
+      toast.success(`🔄 ${message}`, { duration: 2000 });
+
+      // Recargar la lista automáticamente
+      loadIngresos();
+    })
+      .then((unlisten) => {
+        unlistenFn = unlisten;
+        console.log("[LIVE] Suscrito a cambios de ingreso");
+      })
+      .catch((err) => {
+        console.warn("[LIVE] No se pudo suscribir a cambios:", err);
+      });
+
+    // Cleanup al desmontar el componente
+    return () => {
+      if (unlistenFn) {
+        unlistenFn();
+        console.log("[LIVE] Desuscrito de cambios de ingreso");
+      }
+    };
   });
 </script>
 
