@@ -114,9 +114,9 @@ pub async fn validar_ingreso_contratista(
         .await
         .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
 
-    if let Some(ref ing) = ing_ab {
-        let resp = IngresoResponse::try_from(ing.clone())
-            .map_err(|_| IngresoContratistaError::Validation("Error parsing".to_string()))?;
+    if let Some(ing) = ing_ab {
+        let resp = IngresoResponse::from_fetched(ing)
+            .map_err(|e| IngresoContratistaError::Validation(e))?;
         return Ok(ValidacionIngresoResponse {
             puede_ingresar: false,
             motivo_rechazo: Some("Ya tiene ingreso activo".to_string()),
@@ -204,7 +204,7 @@ pub async fn crear_ingreso_contratista(
     }
 
     // 3. Obtener datos del contratista para guardar snapshot
-    let contratista = contratista_queries::find_by_id(&contratista_id)
+    let contratista = contratista_queries::find_by_id_fetched(&contratista_id)
         .await
         .map_err(|e| IngresoContratistaError::Database(e.to_string()))?
         .ok_or(IngresoContratistaError::ContratistaNotFound)?;
@@ -215,7 +215,7 @@ pub async fn crear_ingreso_contratista(
         cedula: contratista.cedula.clone(),
         nombre: contratista.nombre.clone(),
         apellido: contratista.apellido.clone(),
-        empresa_nombre: "".to_string(), // TODO: Fetch company name or use snapshot
+        empresa_nombre: contratista.empresa.nombre.clone(),
         tipo_ingreso: "contratista".to_string(),
         tipo_autorizacion: input.tipo_autorizacion,
         modo_ingreso: input.modo_ingreso,
@@ -245,7 +245,7 @@ pub async fn crear_ingreso_contratista(
         let _ = gafete_service::marcar_en_uso(g, tipo_g).await;
     }
 
-    IngresoResponse::try_from(nuevo_ingreso).map_err(|e| IngresoContratistaError::Validation(e))
+    IngresoResponse::from_fetched(nuevo_ingreso).map_err(|e| IngresoContratistaError::Validation(e))
 }
 
 pub async fn registrar_salida(
@@ -282,7 +282,7 @@ pub async fn registrar_salida(
         }
     }
 
-    IngresoResponse::try_from(ingreso_actualizado)
+    IngresoResponse::from_fetched(ingreso_actualizado)
         .map_err(|e| IngresoContratistaError::Validation(e))
 }
 

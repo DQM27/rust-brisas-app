@@ -96,37 +96,15 @@ pub async fn create_vehiculo(
     };
 
     let vehiculo_creado = db::insert(dto).await.map_err(map_db_error)?;
-    get_vehiculo_by_id(&vehiculo_creado.id.to_string()).await
+    Ok(VehiculoResponse::from_fetched(vehiculo_creado))
 }
 
 pub async fn get_vehiculo_by_id(id_str: &str) -> Result<VehiculoResponse, VehiculoError> {
     let id = parse_vehiculo_id(id_str);
     let vehiculo =
-        db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(VehiculoError::NotFound)?;
+        db::find_by_id_fetched(&id).await.map_err(map_db_error)?.ok_or(VehiculoError::NotFound)?;
 
-    let mut response = VehiculoResponse::from(vehiculo.clone());
-
-    // Enriquecer según el dueño
-    if let Some(c_id) = &vehiculo.contratista {
-        if let Some(c) = contratista_db::find_by_id(c_id).await.map_err(map_db_error)? {
-            response.contratista_nombre = format!("{} {}", c.nombre, c.apellido);
-            response.contratista_cedula = c.cedula;
-            if let Ok(emp_nombre) = contratista_db::get_empresa_nombre(&c.empresa).await {
-                response.empresa_nombre = emp_nombre;
-            }
-        }
-    } else if let Some(p_id) = &vehiculo.proveedor {
-        if let Some(p) = proveedor_db::find_by_id(p_id).await.map_err(map_db_error)? {
-            response.contratista_nombre = format!("{} {}", p.nombre, p.apellido);
-            response.contratista_cedula = p.cedula;
-            // Para proveedores, podríamos buscar el nombre de la empresa también
-            if let Ok(emp_nombre) = proveedor_db::get_empresa_nombre(&p.empresa).await {
-                response.empresa_nombre = emp_nombre;
-            }
-        }
-    }
-
-    Ok(response)
+    Ok(VehiculoResponse::from_fetched(vehiculo))
 }
 
 pub async fn get_vehiculo_by_placa(placa: String) -> Result<VehiculoResponse, VehiculoError> {
@@ -135,16 +113,14 @@ pub async fn get_vehiculo_by_placa(placa: String) -> Result<VehiculoResponse, Ve
         .await
         .map_err(map_db_error)?
         .ok_or(VehiculoError::NotFound)?;
-    get_vehiculo_by_id(&vehiculo.id.to_string()).await
+    Ok(VehiculoResponse::from_fetched(vehiculo))
 }
 
 pub async fn get_all_vehiculos() -> Result<VehiculoListResponse, VehiculoError> {
-    let vehiculos = db::find_all().await.map_err(map_db_error)?;
-    let mut vehiculo_responses = Vec::new();
+    let vehiculos = db::find_all_fetched().await.map_err(map_db_error)?;
+    let mut vehiculo_responses = Vec::with_capacity(vehiculos.len());
     for vehiculo in vehiculos {
-        if let Ok(res) = get_vehiculo_by_id(&vehiculo.id.to_string()).await {
-            vehiculo_responses.push(res);
-        }
+        vehiculo_responses.push(VehiculoResponse::from_fetched(vehiculo));
     }
     let total = vehiculo_responses.len();
     let activos = vehiculo_responses.iter().filter(|v| v.is_active).count();
@@ -163,12 +139,10 @@ pub async fn get_all_vehiculos() -> Result<VehiculoListResponse, VehiculoError> 
 }
 
 pub async fn get_vehiculos_activos() -> Result<Vec<VehiculoResponse>, VehiculoError> {
-    let vehiculos = db::find_activos().await.map_err(map_db_error)?;
-    let mut vehiculo_responses = Vec::new();
+    let vehiculos = db::find_activos_fetched().await.map_err(map_db_error)?;
+    let mut vehiculo_responses = Vec::with_capacity(vehiculos.len());
     for vehiculo in vehiculos {
-        if let Ok(res) = get_vehiculo_by_id(&vehiculo.id.to_string()).await {
-            vehiculo_responses.push(res);
-        }
+        vehiculo_responses.push(VehiculoResponse::from_fetched(vehiculo));
     }
     Ok(vehiculo_responses)
 }
@@ -178,11 +152,9 @@ pub async fn get_vehiculos_by_contratista(
 ) -> Result<Vec<VehiculoResponse>, VehiculoError> {
     let id = parse_contratista_id(&id_str);
     let vehiculos = db::find_by_contratista(&id).await.map_err(map_db_error)?;
-    let mut vehiculo_responses = Vec::new();
+    let mut vehiculo_responses = Vec::with_capacity(vehiculos.len());
     for vehiculo in vehiculos {
-        if let Ok(res) = get_vehiculo_by_id(&vehiculo.id.to_string()).await {
-            vehiculo_responses.push(res);
-        }
+        vehiculo_responses.push(VehiculoResponse::from_fetched(vehiculo));
     }
     Ok(vehiculo_responses)
 }
@@ -215,8 +187,8 @@ pub async fn update_vehiculo(
     }
     dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
-    db::update(&id, dto).await.map_err(map_db_error)?;
-    get_vehiculo_by_id(&id_str).await
+    let updated = db::update(&id, dto).await.map_err(map_db_error)?;
+    Ok(VehiculoResponse::from_fetched(updated))
 }
 
 pub async fn delete_vehiculo(id_str: String) -> Result<(), VehiculoError> {

@@ -31,6 +31,31 @@ pub struct User {
     pub avatar_path: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserFetched {
+    pub id: RecordId,
+    pub email: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub role: Role,
+    pub is_active: bool,
+    pub created_at: Datetime,
+    pub updated_at: Datetime,
+    pub cedula: String,
+    pub segundo_nombre: Option<String>,
+    pub segundo_apellido: Option<String>,
+    pub fecha_inicio_labores: Option<String>,
+    pub numero_gafete: Option<String>,
+    pub fecha_nacimiento: Option<String>,
+    pub telefono: Option<String>,
+    pub direccion: Option<String>,
+    pub contacto_emergencia_nombre: Option<String>,
+    pub contacto_emergencia_telefono: Option<String>,
+    pub must_change_password: bool,
+    pub deleted_at: Option<Datetime>,
+    pub avatar_path: Option<String>,
+}
+
 // ==========================================
 // DTOs DE ENTRADA (Frontend Friendly)
 // ==========================================
@@ -220,6 +245,48 @@ impl UserResponse {
             role_id: u.role.to_string(),
             role_name,
             permissions, // Now included
+            is_active: u.is_active,
+            created_at: u.created_at.to_string(),
+            updated_at: u.updated_at.to_string(),
+            cedula: u.cedula,
+            segundo_nombre: u.segundo_nombre,
+            segundo_apellido: u.segundo_apellido,
+            fecha_inicio_labores: u.fecha_inicio_labores,
+            numero_gafete: u.numero_gafete,
+            fecha_nacimiento: u.fecha_nacimiento,
+            telefono: u.telefono,
+            direccion: u.direccion,
+            contacto_emergencia_nombre: u.contacto_emergencia_nombre,
+            contacto_emergencia_telefono: u.contacto_emergencia_telefono,
+            must_change_password: u.must_change_password,
+            temporary_password: None,
+        }
+    }
+
+    pub fn from_fetched(u: UserFetched, permissions: Vec<String>) -> Self {
+        let role_id = u.role.id.to_string();
+        let role_name = u.role.name.clone();
+
+        // Construir nombre completo
+        let mut parts = vec![u.nombre.as_str()];
+        if let Some(ref sn) = u.segundo_nombre {
+            parts.push(sn.as_str());
+        }
+        parts.push(u.apellido.as_str());
+        if let Some(ref sa) = u.segundo_apellido {
+            parts.push(sa.as_str());
+        }
+        let nombre_completo = parts.join(" ");
+
+        Self {
+            id: u.id.to_string(),
+            email: u.email,
+            nombre: u.nombre,
+            apellido: u.apellido,
+            nombre_completo,
+            role_id,
+            role_name,
+            permissions,
             is_active: u.is_active,
             created_at: u.created_at.to_string(),
             updated_at: u.updated_at.to_string(),

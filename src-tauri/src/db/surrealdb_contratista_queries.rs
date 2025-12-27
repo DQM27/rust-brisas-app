@@ -2,15 +2,20 @@
 // src/db/surrealdb_contratista_queries.rs
 // ==========================================
 
-use crate::models::contratista::{Contratista, ContratistaCreateDTO, ContratistaUpdateDTO};
+use crate::models::contratista::{
+    Contratista, ContratistaCreateDTO, ContratistaFetched, ContratistaUpdateDTO,
+};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
-pub async fn create(dto: ContratistaCreateDTO) -> Result<Contratista, SurrealDbError> {
+pub async fn create(dto: ContratistaCreateDTO) -> Result<ContratistaFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<Contratista> =
-        db.query("CREATE contratista CONTENT $dto").bind(("dto", dto)).await?.take(0)?;
+    let result: Option<ContratistaFetched> = db
+        .query("CREATE contratista CONTENT $dto FETCH empresa")
+        .bind(("dto", dto))
+        .await?
+        .take(0)?;
 
     result.ok_or(SurrealDbError::Query("No se pudo crear el contratista".to_string()))
 }
@@ -21,13 +26,21 @@ pub async fn find_by_id(id: &RecordId) -> Result<Option<Contratista>, SurrealDbE
     Ok(result)
 }
 
-pub async fn find_by_cedula(cedula: &str) -> Result<Option<Contratista>, SurrealDbError> {
+pub async fn find_by_id_fetched(
+    id: &RecordId,
+) -> Result<Option<ContratistaFetched>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut result = db.query("SELECT * FROM $id FETCH empresa").bind(("id", id.clone())).await?;
+    Ok(result.take(0)?)
+}
+
+pub async fn find_by_cedula(cedula: &str) -> Result<Option<ContratistaFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM contratista WHERE cedula = $cedula")
+        .query("SELECT * FROM contratista WHERE cedula = $cedula FETCH empresa")
         .bind(("cedula", cedula.to_string()))
         .await?;
-    let contratista: Option<Contratista> = result.take(0)?;
+    let contratista: Option<ContratistaFetched> = result.take(0)?;
     Ok(contratista)
 }
 
@@ -35,6 +48,12 @@ pub async fn find_all() -> Result<Vec<Contratista>, SurrealDbError> {
     let db = get_db().await?;
     let result: Vec<Contratista> = db.select("contratista").await?;
     Ok(result)
+}
+
+pub async fn find_all_fetched() -> Result<Vec<ContratistaFetched>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut result = db.query("SELECT * FROM contratista FETCH empresa").await?;
+    Ok(result.take(0)?)
 }
 
 pub async fn find_by_empresa(empresa_id: &RecordId) -> Result<Vec<Contratista>, SurrealDbError> {
@@ -50,22 +69,36 @@ pub async fn find_by_empresa(empresa_id: &RecordId) -> Result<Vec<Contratista>, 
 pub async fn update(
     id: &RecordId,
     dto: ContratistaUpdateDTO,
-) -> Result<Contratista, SurrealDbError> {
+) -> Result<ContratistaFetched, SurrealDbError> {
     println!(">>> DEBUG: Updating contratista {} with DTO: {:?}", id, dto);
     let db = get_db().await?;
 
-    // Use typed DTO with db.update().merge() - SDK handles RecordId serialization correctly
-    let result: Option<Contratista> = db.update(id.clone()).merge(dto).await?;
+    // Use query instead of update().merge() because merge() doesn't easily support FETCH in the same call in some SDK versions
+    // Actually db.update().merge().fetch("empresa") might work depending on version.
+    // Let's use query for consistency with FETCH.
+    let result: Option<ContratistaFetched> = db
+        .query("UPDATE $id MERGE $dto FETCH empresa")
+        .bind(("id", id.clone()))
+        .bind(("dto", dto))
+        .await?
+        .take(0)?;
 
     println!(">>> DEBUG: Update result: {:?}", result);
     result
         .ok_or(SurrealDbError::Query("Contratista no encontrado o error al actualizar".to_string()))
 }
 
-pub async fn update_status(id: &RecordId, estado: &str) -> Result<Contratista, SurrealDbError> {
+pub async fn update_status(
+    id: &RecordId,
+    estado: &str,
+) -> Result<ContratistaFetched, SurrealDbError> {
     let db = get_db().await?;
-    let result: Option<Contratista> =
-        db.update(id.clone()).merge(serde_json::json!({ "estado": estado })).await?;
+    let result: Option<ContratistaFetched> = db
+        .query("UPDATE $id SET estado = $estado FETCH empresa")
+        .bind(("id", id.clone()))
+        .bind(("estado", estado.to_string()))
+        .await?
+        .take(0)?;
 
     result.ok_or(SurrealDbError::Query("No se pudo actualizar el estado".to_string()))
 }

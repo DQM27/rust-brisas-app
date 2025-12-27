@@ -90,7 +90,7 @@ pub async fn registrar_ingreso(
         }
     }
 
-    IngresoResponse::try_from(nuevo_ingreso).map_err(|e| IngresoVisitaError::Validation(e))
+    IngresoResponse::from_fetched(nuevo_ingreso).map_err(|e| IngresoVisitaError::Validation(e))
 }
 
 pub async fn registrar_ingreso_full(
@@ -172,7 +172,7 @@ pub async fn registrar_salida(
         }
     }
 
-    IngresoResponse::try_from(actualizado).map_err(|e| IngresoVisitaError::Validation(e))
+    IngresoResponse::from_fetched(actualizado).map_err(|e| IngresoVisitaError::Validation(e))
 }
 
 pub async fn get_activos(

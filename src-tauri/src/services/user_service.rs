@@ -139,34 +139,19 @@ pub async fn create_user(
 // ==========================================
 
 pub async fn get_user_by_id(id_str: &str) -> Result<UserResponse, UserError> {
-    let id_thing = parse_user_id(id_str);
-    let user = db::find_by_id(&id_thing)
+    let id = parse_user_id(id_str);
+    let user = db::find_by_id_fetched(&id)
         .await
         .map_err(|e| UserError::Database(e.to_string()))?
         .ok_or(UserError::NotFound)?;
-    let role = role_db::find_by_id(&user.role)
-        .await
-        .map_err(|e| UserError::Database(e.to_string()))?
-        .unwrap_or_else(|| {
-            use crate::models::role::Role;
-            Role {
-                id: user.role.clone(),
-                name: "Desconocido".to_string(),
-                description: None,
-                is_system: false,
-                created_at: surrealdb::Datetime::default(),
-                updated_at: surrealdb::Datetime::default(),
-                permissions: Some(vec![]),
-            }
-        });
 
-    let permissions = surrealdb_authorization::get_role_permissions(&user.role.to_string())
+    let permissions = surrealdb_authorization::get_role_permissions(&user.role.id.to_string())
         .await
         .unwrap_or_default()
         .into_iter()
         .collect();
 
-    Ok(UserResponse::from_user_with_role(user, role, permissions))
+    Ok(UserResponse::from_fetched(user, permissions))
 }
 
 // ==========================================
@@ -175,35 +160,19 @@ pub async fn get_user_by_id(id_str: &str) -> Result<UserResponse, UserError> {
 
 pub async fn get_all_users() -> Result<UserListResponse, UserError> {
     let exclude_record = RecordId::from_table_key("user", SUPERUSER_ID);
-    let users = db::find_all(Some(&exclude_record))
+    let users = db::find_all_fetched(Some(&exclude_record))
         .await
         .map_err(|e| UserError::Database(e.to_string()))?;
 
     let mut user_responses = Vec::new();
     for user in users {
-        let role = role_db::find_by_id(&user.role)
-            .await
-            .unwrap_or(None) // Ignore DB error
-            .unwrap_or_else(|| {
-                use crate::models::role::Role; // Added this line to bring Role into scope
-                Role {
-                    id: user.role.clone(),
-                    name: "Desconocido".to_string(),
-                    description: None,
-                    is_system: false,
-                    created_at: surrealdb::Datetime::default(),
-                    updated_at: surrealdb::Datetime::default(),
-                    permissions: Some(vec![]),
-                }
-            });
-
-        let permissions = surrealdb_authorization::get_role_permissions(&user.role.to_string())
+        let permissions = surrealdb_authorization::get_role_permissions(&user.role.id.to_string())
             .await
             .unwrap_or_default()
             .into_iter()
             .collect();
 
-        user_responses.push(UserResponse::from_user_with_role(user, role, permissions));
+        user_responses.push(UserResponse::from_fetched(user, permissions));
     }
 
     let total = user_responses.len();

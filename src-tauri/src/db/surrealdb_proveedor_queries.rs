@@ -3,15 +3,20 @@
 // Enterprise Quality SurrealDB Implementation
 // ==========================================
 
-use crate::models::proveedor::{Proveedor, ProveedorCreateDTO, ProveedorUpdateDTO};
+use crate::models::proveedor::{
+    Proveedor, ProveedorCreateDTO, ProveedorFetched, ProveedorUpdateDTO,
+};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
-pub async fn create(dto: ProveedorCreateDTO) -> Result<Proveedor, SurrealDbError> {
+pub async fn create(dto: ProveedorCreateDTO) -> Result<ProveedorFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<Proveedor> =
-        db.query("CREATE proveedor CONTENT $dto").bind(("dto", dto)).await?.take(0)?;
+    let result: Option<ProveedorFetched> = db
+        .query("CREATE proveedor CONTENT $dto FETCH empresa")
+        .bind(("dto", dto))
+        .await?
+        .take(0)?;
 
     result.ok_or(SurrealDbError::Query("Error creando proveedor".to_string()))
 }
@@ -22,10 +27,16 @@ pub async fn find_by_id(id: &RecordId) -> Result<Option<Proveedor>, SurrealDbErr
     Ok(result)
 }
 
-pub async fn find_by_cedula(cedula: &str) -> Result<Option<Proveedor>, SurrealDbError> {
+pub async fn find_by_id_fetched(id: &RecordId) -> Result<Option<ProveedorFetched>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut result = db.query("SELECT * FROM $id FETCH empresa").bind(("id", id.clone())).await?;
+    Ok(result.take(0)?)
+}
+
+pub async fn find_by_cedula(cedula: &str) -> Result<Option<ProveedorFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM proveedor WHERE cedula = $cedula LIMIT 1")
+        .query("SELECT * FROM proveedor WHERE cedula = $cedula FETCH empresa LIMIT 1")
         .bind(("cedula", cedula.to_string()))
         .await?;
     Ok(result.take(0)?)
@@ -37,7 +48,14 @@ pub async fn find_all() -> Result<Vec<Proveedor>, SurrealDbError> {
     Ok(result.take(0)?)
 }
 
-pub async fn search(query: &str, limit: usize) -> Result<Vec<Proveedor>, SurrealDbError> {
+pub async fn find_all_fetched() -> Result<Vec<ProveedorFetched>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut result =
+        db.query("SELECT * FROM proveedor ORDER BY created_at DESC FETCH empresa").await?;
+    Ok(result.take(0)?)
+}
+
+pub async fn search(query: &str, limit: usize) -> Result<Vec<ProveedorFetched>, SurrealDbError> {
     let db = get_db().await?;
     let query_upper = query.to_uppercase();
 
@@ -46,11 +64,12 @@ pub async fn search(query: &str, limit: usize) -> Result<Vec<Proveedor>, Surreal
             r#"
             SELECT * FROM proveedor 
             WHERE 
-                nombre CONTAINS $q OR 
-                apellido CONTAINS $q OR 
+                string::uppercase(nombre) CONTAINS $q OR 
+                string::uppercase(apellido) CONTAINS $q OR 
                 cedula CONTAINS $q
             ORDER BY created_at DESC 
             LIMIT $limit
+            FETCH empresa
         "#,
         )
         .bind(("q", query_upper))
@@ -60,10 +79,18 @@ pub async fn search(query: &str, limit: usize) -> Result<Vec<Proveedor>, Surreal
     Ok(result.take(0)?)
 }
 
-pub async fn update(id: &RecordId, dto: ProveedorUpdateDTO) -> Result<Proveedor, SurrealDbError> {
+pub async fn update(
+    id: &RecordId,
+    dto: ProveedorUpdateDTO,
+) -> Result<ProveedorFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<Proveedor> = db.update(id.clone()).merge(dto).await?;
+    let result: Option<ProveedorFetched> = db
+        .query("UPDATE $id MERGE $dto FETCH empresa")
+        .bind(("id", id.clone()))
+        .bind(("dto", dto))
+        .await?
+        .take(0)?;
 
     result.ok_or(SurrealDbError::Query("Proveedor no encontrado o error al actualizar".to_string()))
 }

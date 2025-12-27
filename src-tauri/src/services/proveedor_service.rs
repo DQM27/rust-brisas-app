@@ -9,7 +9,7 @@ use crate::domain::errors::ProveedorError;
 use crate::domain::proveedor as proveedor_domain;
 use crate::domain::vehiculo as vehiculo_domain;
 use crate::models::proveedor::{
-    CreateProveedorInput, EstadoProveedor, Proveedor, ProveedorCreateDTO, ProveedorResponse,
+    CreateProveedorInput, EstadoProveedor, ProveedorCreateDTO, ProveedorResponse,
     ProveedorUpdateDTO, UpdateProveedorInput,
 };
 use crate::models::vehiculo::{TipoVehiculo, VehiculoCreateDTO};
@@ -125,12 +125,12 @@ pub async fn create_proveedor(
     }
 
     // 7. Indexar en búsqueda
-    if let Err(e) = search_service.add_proveedor(&proveedor, &empresa_nombre).await {
+    if let Err(e) = search_service.add_proveedor_fetched(&proveedor, &empresa_nombre).await {
         warn!("Error indexando proveedor: {}", e);
     }
 
     // 8. Enriquecer respuesta (nombre empresa y vehículo)
-    let resp = populate_response(proveedor).await.map_err(|e| {
+    let resp = populate_response_fetched(proveedor).await.map_err(|e| {
         error!("Error al poblar respuesta para proveedor: {}", e);
         e
     })?;
@@ -146,7 +146,7 @@ pub async fn search_proveedores(query: &str) -> Result<Vec<ProveedorResponse>, P
 
     let mut responses = Vec::with_capacity(proveedores.len());
     for prov in proveedores {
-        responses.push(populate_response(prov).await?);
+        responses.push(populate_response_fetched(prov).await?);
     }
     Ok(responses)
 }
@@ -159,7 +159,7 @@ pub async fn get_proveedor_by_cedula(
         db::find_by_cedula(cedula).await.map_err(|e| ProveedorError::Database(e.to_string()))?;
 
     if let Some(proveedor) = p {
-        Ok(Some(populate_response(proveedor).await?))
+        Ok(Some(populate_response_fetched(proveedor).await?))
     } else {
         Ok(None)
     }
@@ -185,32 +185,21 @@ pub async fn change_status(
     })?;
 
     // Obtener nombre de empresa para indexación
-    let empresa = empresa_db::find_by_id(&proveedor.empresa)
-        .await
-        .map_err(|e| ProveedorError::Database(e.to_string()))?;
-    let empresa_nombre = empresa.map(|e| e.nombre).unwrap_or_else(|| "Desconocida".to_string());
+    let empresa_nombre = proveedor.empresa.nombre.clone();
 
     // Actualizar en índice de búsqueda
-    if let Err(e) = search_service.update_proveedor(&proveedor, &empresa_nombre).await {
+    if let Err(e) = search_service.update_proveedor_fetched(&proveedor, &empresa_nombre).await {
         warn!("Error actualizando proveedor en índice: {}", e);
     }
 
-    populate_response(proveedor).await
+    populate_response_fetched(proveedor).await
 }
 
 // Helper para llenar datos de empresa y vehículos
-async fn populate_response(proveedor: Proveedor) -> Result<ProveedorResponse, ProveedorError> {
-    // Buscar empresa
-    let empresa_res = empresa_db::find_by_id(&proveedor.empresa)
-        .await
-        .map_err(|e| ProveedorError::Database(e.to_string()))?;
-
-    let mut response: ProveedorResponse = proveedor.clone().into();
-    if let Some(e) = empresa_res {
-        response.empresa_nombre = e.nombre;
-    } else {
-        response.empresa_nombre = "Empresa no encontrada".to_string();
-    }
+async fn populate_response_fetched(
+    proveedor: crate::models::proveedor::ProveedorFetched,
+) -> Result<ProveedorResponse, ProveedorError> {
+    let mut response = ProveedorResponse::from_fetched(proveedor.clone());
 
     // Buscar vehículos
     let vehiculos = vehiculo_db::find_by_proveedor(&proveedor.id).await.unwrap_or_default();
@@ -229,12 +218,12 @@ async fn populate_response(proveedor: Proveedor) -> Result<ProveedorResponse, Pr
 /// Obtiene un proveedor por ID con todos sus datos
 pub async fn get_proveedor_by_id(id_str: &str) -> Result<ProveedorResponse, ProveedorError> {
     let id = parse_proveedor_id(id_str);
-    let proveedor = db::find_by_id(&id)
+    let proveedor = db::find_by_id_fetched(&id)
         .await
         .map_err(|e| ProveedorError::Database(e.to_string()))?
         .ok_or(ProveedorError::NotFound)?;
 
-    populate_response(proveedor).await
+    populate_response_fetched(proveedor).await
 }
 
 /// Actualiza un proveedor
@@ -356,14 +345,9 @@ pub async fn update_proveedor(
     }
 
     // 5. Actualizar Search Index
-    let empresa_nombre =
-        if let Some(e) = empresa_db::find_by_id(&proveedor.empresa).await.unwrap_or(None) {
-            e.nombre
-        } else {
-            "Desconocida".to_string()
-        };
+    let empresa_nombre = proveedor.empresa.nombre.clone();
 
-    if let Err(e) = search_service.update_proveedor(&proveedor, &empresa_nombre).await {
+    if let Err(e) = search_service.update_proveedor_fetched(&proveedor, &empresa_nombre).await {
         warn!("Error actualizando índice: {}", e);
     }
 

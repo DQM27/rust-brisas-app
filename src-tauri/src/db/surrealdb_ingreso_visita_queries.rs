@@ -3,15 +3,18 @@
 // Enterprise Quality SurrealDB Implementation
 // ==========================================
 
-use crate::models::ingreso::{Ingreso, IngresoCreateDTO, IngresoUpdateDTO};
+use crate::models::ingreso::{IngresoCreateDTO, IngresoFetched, IngresoUpdateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
-pub async fn insert(dto: IngresoCreateDTO) -> Result<Ingreso, SurrealDbError> {
+pub async fn insert(dto: IngresoCreateDTO) -> Result<IngresoFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<Ingreso> =
-        db.query("CREATE ingreso CONTENT $dto").bind(("dto", dto)).await?.take(0)?;
+    let result: Option<IngresoFetched> = db
+        .query("CREATE ingreso CONTENT $dto FETCH usuario_ingreso, usuario_salida, vehiculo, contratista, contratista.empresa")
+        .bind(("dto", dto))
+        .await?
+        .take(0)?;
 
     result
         .ok_or(SurrealDbError::TransactionError("Error al insertar ingreso de visita".to_string()))
@@ -19,7 +22,7 @@ pub async fn insert(dto: IngresoCreateDTO) -> Result<Ingreso, SurrealDbError> {
 
 pub async fn find_ingreso_abierto_by_cedula(
     cedula: &str,
-) -> Result<Option<Ingreso>, SurrealDbError> {
+) -> Result<Option<IngresoFetched>, SurrealDbError> {
     let db = get_db().await?;
 
     let mut result = db
@@ -29,6 +32,7 @@ pub async fn find_ingreso_abierto_by_cedula(
             WHERE cedula = $cedula 
             AND tipo_ingreso = 'visita'
             AND fecha_hora_salida IS NONE
+            FETCH usuario_ingreso, usuario_salida, vehiculo, contratista, contratista.empresa
             LIMIT 1
         "#,
         )
@@ -42,7 +46,7 @@ pub async fn update_salida(
     ingreso_id: &RecordId,
     usuario_salida_id: &RecordId,
     observaciones: Option<String>,
-) -> Result<Ingreso, SurrealDbError> {
+) -> Result<IngresoFetched, SurrealDbError> {
     let db = get_db().await?;
 
     let mut dto = IngresoUpdateDTO::default();
@@ -51,7 +55,12 @@ pub async fn update_salida(
     dto.observaciones_salida = observaciones;
     dto.updated_at = Some(surrealdb::Datetime::from(chrono::Utc::now()));
 
-    let result: Option<Ingreso> = db.update(ingreso_id.clone()).merge(dto).await?;
+    let result: Option<IngresoFetched> = db
+        .query("UPDATE $id MERGE $dto FETCH usuario_ingreso, usuario_salida, vehiculo, contratista, contratista.empresa")
+        .bind(("id", ingreso_id.clone()))
+        .bind(("dto", dto))
+        .await?
+        .take(0)?;
 
     result
         .ok_or(SurrealDbError::TransactionError("Error al registrar salida de visita".to_string()))

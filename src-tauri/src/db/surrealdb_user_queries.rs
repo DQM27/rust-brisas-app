@@ -1,4 +1,4 @@
-use crate::models::user::{User, UserCreateDTO, UserUpdateDTO};
+use crate::models::user::{User, UserCreateDTO, UserFetched, UserUpdateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use log::{error, info};
 use serde::Deserialize;
@@ -107,6 +107,12 @@ pub async fn find_by_id(id: &RecordId) -> Result<Option<User>, SurrealDbError> {
     Ok(user)
 }
 
+pub async fn find_by_id_fetched(id: &RecordId) -> Result<Option<UserFetched>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut result = db.query("SELECT * FROM $id FETCH role").bind(("id", id.clone())).await?;
+    Ok(result.take(0)?)
+}
+
 pub async fn find_by_email(email: &str) -> Result<Option<User>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
@@ -182,6 +188,25 @@ pub async fn find_all(exclude_id: Option<&RecordId>) -> Result<Vec<User>, Surrea
         query.push_str(" WHERE id != $exclude_id");
     }
     query.push_str(" ORDER BY created_at DESC");
+
+    let mut result = db.query(&query);
+    if let Some(id) = exclude_id {
+        result = result.bind(("exclude_id", id.clone()));
+    }
+
+    let mut response = result.await?;
+    Ok(response.take(0)?)
+}
+
+pub async fn find_all_fetched(
+    exclude_id: Option<&RecordId>,
+) -> Result<Vec<UserFetched>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut query = "SELECT * FROM user".to_string();
+    if exclude_id.is_some() {
+        query.push_str(" WHERE id != $exclude_id");
+    }
+    query.push_str(" ORDER BY created_at DESC FETCH role");
 
     let mut result = db.query(&query);
     if let Some(id) = exclude_id {

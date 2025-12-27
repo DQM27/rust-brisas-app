@@ -34,14 +34,11 @@ impl From<SurrealDbError> for IngresoGeneralError {
 
 /// Obtiene todos los ingresos con estadísticas calculadas
 pub async fn get_all_ingresos_with_stats() -> Result<IngresoListResponse, IngresoGeneralError> {
-    let results = db::find_all_with_details().await?;
+    let results = db::find_all_fetched().await?;
 
-    let mut responses = Vec::new();
-    for (ingreso, details) in results {
-        if let Ok(mut response) = IngresoResponse::try_from(ingreso) {
-            response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
-            response.usuario_salida_nombre = details.usuario_salida_nombre;
-            response.vehiculo_placa = details.vehiculo_placa;
+    let mut responses = Vec::with_capacity(results.len());
+    for ingreso in results {
+        if let Ok(response) = IngresoResponse::from_fetched(ingreso) {
             responses.push(response);
         }
     }
@@ -55,14 +52,11 @@ pub async fn get_all_ingresos_with_stats() -> Result<IngresoListResponse, Ingres
 
 /// Obtiene ingresos abiertos (personas adentro)
 pub async fn get_ingresos_abiertos() -> Result<Vec<IngresoResponse>, IngresoGeneralError> {
-    let results = db::find_ingresos_abiertos_with_details().await?;
+    let results = db::find_ingresos_abiertos_fetched().await?;
 
-    let mut responses = Vec::new();
-    for (ingreso, details) in results {
-        if let Ok(mut response) = IngresoResponse::try_from(ingreso) {
-            response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
-            response.usuario_salida_nombre = details.usuario_salida_nombre;
-            response.vehiculo_placa = details.vehiculo_placa;
+    let mut responses = Vec::with_capacity(results.len());
+    for ingreso in results {
+        if let Ok(response) = IngresoResponse::from_fetched(ingreso) {
             responses.push(response);
         }
     }
@@ -74,19 +68,13 @@ pub async fn get_ingreso_by_id(
     id_str: &str,
 ) -> Result<Option<IngresoResponse>, IngresoGeneralError> {
     let id = parse_ingreso_id(id_str);
-    let ingreso = match db::find_by_id(&id).await? {
+    let ingreso = match db::find_by_id_fetched(&id).await? {
         Some(i) => i,
         None => return Ok(None),
     };
 
-    let details = db::find_details_for_ingreso(&ingreso).await?;
-
-    let mut response =
-        IngresoResponse::try_from(ingreso).map_err(|e| IngresoGeneralError::DataProcessing(e))?;
-
-    response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
-    response.usuario_salida_nombre = details.usuario_salida_nombre;
-    response.vehiculo_placa = details.vehiculo_placa;
+    let response = IngresoResponse::from_fetched(ingreso)
+        .map_err(|e| IngresoGeneralError::DataProcessing(e))?;
 
     Ok(Some(response))
 }
@@ -95,19 +83,13 @@ pub async fn get_ingreso_by_id(
 pub async fn get_ingreso_by_gafete(
     gafete_numero: &str,
 ) -> Result<Option<IngresoResponse>, IngresoGeneralError> {
-    let ingreso = match db::find_ingreso_by_gafete(gafete_numero).await? {
+    let ingreso = match db::find_ingreso_by_gafete_fetched(gafete_numero).await? {
         Some(i) => i,
         None => return Ok(None),
     };
 
-    let details = db::find_details_for_ingreso(&ingreso).await?;
-
-    let mut response =
-        IngresoResponse::try_from(ingreso).map_err(|e| IngresoGeneralError::DataProcessing(e))?;
-
-    response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
-    response.usuario_salida_nombre = details.usuario_salida_nombre;
-    response.vehiculo_placa = details.vehiculo_placa;
+    let response = IngresoResponse::from_fetched(ingreso)
+        .map_err(|e| IngresoGeneralError::DataProcessing(e))?;
 
     Ok(Some(response))
 }
@@ -117,14 +99,11 @@ pub async fn get_salidas_en_rango(
     fecha_inicio: &str,
     fecha_fin: &str,
 ) -> Result<Vec<IngresoResponse>, IngresoGeneralError> {
-    let results = db::find_salidas_in_range_with_details(fecha_inicio, fecha_fin).await?;
+    let results = db::find_salidas_in_range_fetched(fecha_inicio, fecha_fin).await?;
 
-    let mut responses = Vec::new();
-    for (ingreso, details) in results {
-        if let Ok(mut response) = IngresoResponse::try_from(ingreso) {
-            response.usuario_ingreso_nombre = details.usuario_ingreso_nombre.unwrap_or_default();
-            response.usuario_salida_nombre = details.usuario_salida_nombre;
-            response.vehiculo_placa = details.vehiculo_placa;
+    let mut responses = Vec::with_capacity(results.len());
+    for ingreso in results {
+        if let Ok(response) = IngresoResponse::from_fetched(ingreso) {
             responses.push(response);
         }
     }

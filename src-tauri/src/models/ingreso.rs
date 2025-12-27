@@ -2,6 +2,9 @@
 // src/models/ingreso.rs
 // ==========================================
 
+use crate::models::contratista::ContratistaFetched;
+use crate::models::user::User;
+use crate::models::vehiculo::VehiculoFetched;
 use serde::{Deserialize, Serialize};
 use surrealdb::RecordId;
 
@@ -136,6 +139,38 @@ pub struct Ingreso {
     pub tiempo_permanencia_minutos: Option<i64>,
     pub usuario_ingreso: RecordId,
     pub usuario_salida: Option<RecordId>,
+    pub praind_vigente_al_ingreso: Option<bool>,
+    pub estado_contratista_al_ingreso: Option<String>,
+    pub observaciones: Option<String>,
+    pub observaciones_salida: Option<String>,
+    pub anfitrion: Option<String>,
+    pub area_visitada: Option<String>,
+    pub motivo: Option<String>,
+    pub created_at: surrealdb::Datetime,
+    pub updated_at: surrealdb::Datetime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IngresoFetched {
+    pub id: RecordId,
+    pub contratista: Option<ContratistaFetched>,
+    pub cedula: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub empresa_nombre: String,
+    pub tipo_ingreso: String,
+    pub tipo_autorizacion: String,
+    pub modo_ingreso: String,
+    pub vehiculo: Option<VehiculoFetched>,
+    pub placa_temporal: Option<String>,
+    pub gafete_numero: Option<String>,
+    pub gafete_tipo: Option<String>,
+    pub fecha_hora_ingreso: surrealdb::Datetime,
+    pub fecha_hora_salida: Option<surrealdb::Datetime>,
+    pub tiempo_permanencia_minutos: Option<i64>,
+    pub usuario_ingreso: User,
+    pub usuario_salida: Option<User>,
     pub praind_vigente_al_ingreso: Option<bool>,
     pub estado_contratista_al_ingreso: Option<String>,
     pub observaciones: Option<String>,
@@ -349,6 +384,72 @@ impl TryFrom<Ingreso> for IngresoResponse {
             usuario_ingreso_nombre: String::new(),
             usuario_salida_id: i.usuario_salida.as_ref().map(|t| t.to_string()),
             usuario_salida_nombre: None,
+            praind_vigente_al_ingreso: i.praind_vigente_al_ingreso,
+            estado_contratista_al_ingreso: i.estado_contratista_al_ingreso,
+            observaciones: i.observaciones,
+            esta_adentro,
+            tiene_gafete_asignado,
+            created_at: i.created_at.to_string(),
+            updated_at: i.updated_at.to_string(),
+        })
+    }
+}
+
+impl IngresoResponse {
+    pub fn from_fetched(i: IngresoFetched) -> Result<Self, String> {
+        let esta_adentro = i.fecha_hora_salida.is_none();
+        let tiene_gafete_asignado = i.gafete_numero.is_some();
+
+        let tiempo_permanencia_texto = i.tiempo_permanencia_minutos.map(|mins| {
+            let horas = mins / 60;
+            let minutos = mins % 60;
+            if horas > 0 {
+                format!("{}h {}m", horas, minutos)
+            } else {
+                format!("{}m", minutos)
+            }
+        });
+
+        let tipo_ingreso: TipoIngreso = i.tipo_ingreso.parse()?;
+        let tipo_autorizacion: TipoAutorizacion = i.tipo_autorizacion.parse()?;
+        let modo_ingreso: ModoIngreso = i.modo_ingreso.parse()?;
+
+        Ok(Self {
+            id: i.id.to_string(),
+            contratista_id: i.contratista.as_ref().map(|t| t.id.to_string()),
+            cedula: i.cedula.clone(),
+            nombre: i.nombre.clone(),
+            apellido: i.apellido.clone(),
+            nombre_completo: format!("{} {}", i.nombre, i.apellido),
+            empresa_nombre: i.empresa_nombre,
+            tipo_ingreso: tipo_ingreso.clone(),
+            tipo_ingreso_display: tipo_ingreso.display().to_string(),
+            tipo_autorizacion: tipo_autorizacion.clone(),
+            tipo_autorizacion_display: match tipo_autorizacion {
+                TipoAutorizacion::Praind => "PRAIND",
+                TipoAutorizacion::Correo => "Correo",
+            }
+            .to_string(),
+            modo_ingreso: modo_ingreso.clone(),
+            modo_ingreso_display: modo_ingreso.display().to_string(),
+            vehiculo_id: i.vehiculo.as_ref().map(|t| t.id.to_string()),
+            vehiculo_placa: i.vehiculo.as_ref().map(|v| v.placa.clone()),
+            placa_temporal: i.placa_temporal,
+            gafete_numero: i.gafete_numero,
+            fecha_hora_ingreso: i.fecha_hora_ingreso.to_string(),
+            fecha_hora_salida: i.fecha_hora_salida.map(|d| d.to_string()),
+            tiempo_permanencia_minutos: i.tiempo_permanencia_minutos,
+            tiempo_permanencia_texto,
+            usuario_ingreso_id: i.usuario_ingreso.id.to_string(),
+            usuario_ingreso_nombre: format!(
+                "{} {}",
+                i.usuario_ingreso.nombre, i.usuario_ingreso.apellido
+            ),
+            usuario_salida_id: i.usuario_salida.as_ref().map(|t| t.id.to_string()),
+            usuario_salida_nombre: i
+                .usuario_salida
+                .as_ref()
+                .map(|u| format!("{} {}", u.nombre, u.apellido)),
             praind_vigente_al_ingreso: i.praind_vigente_al_ingreso,
             estado_contratista_al_ingreso: i.estado_contratista_al_ingreso,
             observaciones: i.observaciones,

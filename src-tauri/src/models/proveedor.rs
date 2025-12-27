@@ -2,6 +2,7 @@
 // src/models/proveedor.rs
 // ==========================================
 
+use crate::models::empresa::Empresa;
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};
 
@@ -17,6 +18,24 @@ pub struct Proveedor {
     #[serde(alias = "segundo_apellido")]
     pub segundo_apellido: Option<String>,
     pub empresa: RecordId,
+    pub estado: EstadoProveedor,
+    #[serde(alias = "created_at")]
+    pub created_at: Datetime,
+    #[serde(alias = "updated_at")]
+    pub updated_at: Datetime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProveedorFetched {
+    pub id: RecordId,
+    pub cedula: String,
+    pub nombre: String,
+    #[serde(alias = "segundo_nombre")]
+    pub segundo_nombre: Option<String>,
+    pub apellido: String,
+    #[serde(alias = "segundo_apellido")]
+    pub segundo_apellido: Option<String>,
+    pub empresa: Empresa,
     pub estado: EstadoProveedor,
     #[serde(alias = "created_at")]
     pub created_at: Datetime,
@@ -187,6 +206,45 @@ impl From<Proveedor> for ProveedorResponse {
             nombre_completo,
             empresa_id: p.empresa.to_string(),
             empresa_nombre: String::new(), // Will be filled by service
+            estado: p.estado,
+            puede_ingresar,
+            vehiculo_tipo: None,
+            vehiculo_placa: None,
+            vehiculo_marca: None,
+            vehiculo_modelo: None,
+            vehiculo_color: None,
+            created_at: p.created_at.to_string(),
+            updated_at: p.updated_at.to_string(),
+        }
+    }
+}
+
+impl ProveedorResponse {
+    pub fn from_fetched(p: ProveedorFetched) -> Self {
+        let mut nombre_completo = p.nombre.clone();
+        if let Some(ref s) = p.segundo_nombre {
+            nombre_completo.push(' ');
+            nombre_completo.push_str(s);
+        }
+        nombre_completo.push(' ');
+        nombre_completo.push_str(&p.apellido);
+        if let Some(ref s) = p.segundo_apellido {
+            nombre_completo.push(' ');
+            nombre_completo.push_str(s);
+        }
+
+        let puede_ingresar = p.estado == EstadoProveedor::Activo;
+
+        Self {
+            id: p.id.to_string(),
+            cedula: p.cedula,
+            nombre: p.nombre,
+            segundo_nombre: p.segundo_nombre,
+            apellido: p.apellido,
+            segundo_apellido: p.segundo_apellido,
+            nombre_completo,
+            empresa_id: p.empresa.id.to_string(),
+            empresa_nombre: p.empresa.nombre.clone(),
             estado: p.estado,
             puede_ingresar,
             vehiculo_tipo: None,

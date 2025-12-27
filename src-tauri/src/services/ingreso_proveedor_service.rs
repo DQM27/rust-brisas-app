@@ -1,4 +1,4 @@
-// src/services/ingreso_proveedor_service.rs
+use crate::db::surrealdb_empresa_queries as empresa_queries;
 use crate::db::surrealdb_ingreso_proveedor_queries as db;
 use crate::domain::errors::IngresoProveedorError;
 use crate::models::ingreso::{CreateIngresoProveedorInput, IngresoResponse};
@@ -56,17 +56,27 @@ pub async fn registrar_ingreso(
         return Err(IngresoProveedorError::Validation("Ya tiene un ingreso activo".to_string()));
     }
 
-    // 4. Construct DTO
+    // 4. Obtener nombre de empresa
+    let empresa_nombre = if let Some(emp) = empresa_queries::find_by_id(&_empresa_id)
+        .await
+        .map_err(|e| IngresoProveedorError::Database(e.to_string()))?
+    {
+        emp.nombre
+    } else {
+        "".to_string()
+    };
+
+    // 5. Construct DTO
     let dto = crate::models::ingreso::IngresoCreateDTO {
         contratista: None,
         cedula: input.cedula,
         nombre: input.nombre,
         apellido: input.apellido,
-        empresa_nombre: "".to_string(), // In reality fetch from empresa_id
+        empresa_nombre,
         tipo_ingreso: "proveedor".to_string(),
         tipo_autorizacion: input.tipo_autorizacion,
         modo_ingreso: input.modo_ingreso,
-        vehiculo: None, // Logic for vehicle needed if any
+        vehiculo: None,
         placa_temporal: input.vehiculo_placa,
         gafete_numero: input.gafete_numero,
         gafete_tipo: Some("proveedor".to_string()),
@@ -80,16 +90,16 @@ pub async fn registrar_ingreso(
         motivo: Some(input.motivo),
     };
 
-    // 5. Crear
+    // 6. Crear
     let nuevo_ingreso =
         db::insert(dto).await.map_err(|e| IngresoProveedorError::Database(e.to_string()))?;
 
-    // 6. Marcar gafete
+    // 7. Marcar gafete
     if let Some(ref g) = nuevo_ingreso.gafete_numero {
         let _ = gafete_service::marcar_en_uso(g, "proveedor").await;
     }
 
-    IngresoResponse::try_from(nuevo_ingreso).map_err(|e| IngresoProveedorError::Validation(e))
+    IngresoResponse::from_fetched(nuevo_ingreso).map_err(|e| IngresoProveedorError::Validation(e))
 }
 
 pub async fn registrar_salida(
@@ -124,16 +134,16 @@ pub async fn registrar_salida(
         }
     }
 
-    IngresoResponse::try_from(actualizado).map_err(|e| IngresoProveedorError::Validation(e))
+    IngresoResponse::from_fetched(actualizado).map_err(|e| IngresoProveedorError::Validation(e))
 }
 
 pub async fn get_activos() -> Result<Vec<IngresoResponse>, IngresoProveedorError> {
     let ingresos =
         db::find_activos().await.map_err(|e| IngresoProveedorError::Database(e.to_string()))?;
 
-    let mut responses = Vec::new();
+    let mut responses = Vec::with_capacity(ingresos.len());
     for i in ingresos {
-        if let Ok(res) = IngresoResponse::try_from(i) {
+        if let Ok(res) = IngresoResponse::from_fetched(i) {
             responses.push(res);
         }
     }
@@ -144,9 +154,9 @@ pub async fn get_historial() -> Result<Vec<IngresoResponse>, IngresoProveedorErr
     let ingresos =
         db::find_historial().await.map_err(|e| IngresoProveedorError::Database(e.to_string()))?;
 
-    let mut responses = Vec::new();
+    let mut responses = Vec::with_capacity(ingresos.len());
     for i in ingresos {
-        if let Ok(res) = IngresoResponse::try_from(i) {
+        if let Ok(res) = IngresoResponse::from_fetched(i) {
             responses.push(res);
         }
     }

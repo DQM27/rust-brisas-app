@@ -3,10 +3,10 @@
 // ==========================================
 // Funciones para indexar documentos en Tantivy
 
-use crate::models::contratista::Contratista;
+use crate::models::contratista::{Contratista, ContratistaFetched};
 use crate::models::lista_negra::ListaNegra;
-use crate::models::proveedor::Proveedor;
-use crate::models::user::User;
+use crate::models::proveedor::{Proveedor, ProveedorFetched};
+use crate::models::user::{User, UserFetched};
 use crate::search::errors::SearchError;
 use crate::search::schema::{build_search_schema, fields, FieldHandles};
 use std::path::Path;
@@ -118,11 +118,112 @@ pub fn index_contratista(
     Ok(())
 }
 
+/// Indexa un contratista (Fetched) con su nombre de empresa
+pub fn index_contratista_fetched(
+    writer: &mut IndexWriter,
+    handles: &FieldHandles,
+    contratista: &ContratistaFetched,
+    empresa_nombre: &str,
+) -> Result<(), SearchError> {
+    // Construir texto de búsqueda concatenado
+    let mut search_text_parts = vec![
+        contratista.cedula.clone(),
+        contratista.nombre.clone(),
+        contratista.apellido.clone(),
+        empresa_nombre.to_string(),
+    ];
+
+    if let Some(ref segundo_nombre) = contratista.segundo_nombre {
+        search_text_parts.push(segundo_nombre.clone());
+    }
+
+    if let Some(ref segundo_apellido) = contratista.segundo_apellido {
+        search_text_parts.push(segundo_apellido.clone());
+    }
+
+    let search_text = search_text_parts.join(" ");
+
+    // Crear documento usando handles pre-cargados
+    let mut doc = TantivyDocument::default();
+    doc.add_text(handles.id, &contratista.id.to_string());
+    doc.add_text(handles.tipo, "contratista");
+    doc.add_text(handles.cedula, &contratista.cedula);
+    doc.add_text(handles.nombre, &contratista.nombre);
+
+    if let Some(ref segundo_nombre) = contratista.segundo_nombre {
+        doc.add_text(handles.segundo_nombre, segundo_nombre);
+    }
+
+    doc.add_text(handles.apellido, &contratista.apellido);
+
+    if let Some(ref segundo_apellido) = contratista.segundo_apellido {
+        doc.add_text(handles.segundo_apellido, segundo_apellido);
+    }
+
+    doc.add_text(handles.empresa_nombre, empresa_nombre);
+    doc.add_text(handles.search_text, &search_text);
+
+    // Agregar al índice
+    writer
+        .add_document(doc)
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar documento: {}", e)))?;
+
+    Ok(())
+}
+
 /// Indexa un usuario
 pub fn index_user(
     writer: &mut IndexWriter,
     handles: &FieldHandles,
     user: &User,
+) -> Result<(), SearchError> {
+    // Construir texto de búsqueda concatenado
+    let mut search_text_parts =
+        vec![user.cedula.clone(), user.nombre.clone(), user.apellido.clone(), user.email.clone()];
+
+    if let Some(ref segundo_nombre) = user.segundo_nombre {
+        search_text_parts.push(segundo_nombre.clone());
+    }
+
+    if let Some(ref segundo_apellido) = user.segundo_apellido {
+        search_text_parts.push(segundo_apellido.clone());
+    }
+
+    let search_text = search_text_parts.join(" ");
+
+    // Crear documento usando handles pre-cargados
+    let mut doc = TantivyDocument::default();
+    doc.add_text(handles.id, &user.id.to_string());
+    doc.add_text(handles.tipo, "usuario");
+    doc.add_text(handles.cedula, &user.cedula);
+    doc.add_text(handles.nombre, &user.nombre);
+    doc.add_text(handles.email, &user.email);
+
+    if let Some(ref segundo_nombre) = user.segundo_nombre {
+        doc.add_text(handles.segundo_nombre, segundo_nombre);
+    }
+
+    doc.add_text(handles.apellido, &user.apellido);
+
+    if let Some(ref segundo_apellido) = user.segundo_apellido {
+        doc.add_text(handles.segundo_apellido, segundo_apellido);
+    }
+
+    doc.add_text(handles.search_text, &search_text);
+
+    // Agregar al índice
+    writer
+        .add_document(doc)
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar usuario: {}", e)))?;
+
+    Ok(())
+}
+
+/// Indexa un usuario (Fetched)
+pub fn index_user_fetched(
+    writer: &mut IndexWriter,
+    handles: &FieldHandles,
+    user: &UserFetched,
 ) -> Result<(), SearchError> {
     // Construir texto de búsqueda concatenado
     let mut search_text_parts =
@@ -189,6 +290,18 @@ pub fn update_contratista_in_index(
     Ok(())
 }
 
+/// Actualiza un contratista (Fetched) en el índice
+pub fn update_contratista_fetched_in_index(
+    writer: &mut IndexWriter,
+    handles: &FieldHandles,
+    contratista: &ContratistaFetched,
+    empresa_nombre: &str,
+) -> Result<(), SearchError> {
+    delete_from_index(writer, handles, &contratista.id.to_string())?;
+    index_contratista_fetched(writer, handles, contratista, empresa_nombre)?;
+    Ok(())
+}
+
 /// Actualiza un usuario (delete + insert)
 pub fn update_user_in_index(
     writer: &mut IndexWriter,
@@ -197,6 +310,17 @@ pub fn update_user_in_index(
 ) -> Result<(), SearchError> {
     delete_from_index(writer, handles, &user.id.to_string())?;
     index_user(writer, handles, user)?;
+    Ok(())
+}
+
+/// Actualiza un usuario (Fetched) en el índice
+pub fn update_user_fetched_in_index(
+    writer: &mut IndexWriter,
+    handles: &FieldHandles,
+    user: &UserFetched,
+) -> Result<(), SearchError> {
+    delete_from_index(writer, handles, &user.id.to_string())?;
+    index_user_fetched(writer, handles, user)?;
     Ok(())
 }
 
@@ -322,6 +446,59 @@ pub fn index_proveedor(
     Ok(())
 }
 
+/// Indexa un proveedor (Fetched) con su nombre de empresa
+pub fn index_proveedor_fetched(
+    writer: &mut IndexWriter,
+    handles: &FieldHandles,
+    proveedor: &ProveedorFetched,
+    empresa_nombre: &str,
+) -> Result<(), SearchError> {
+    // Construir texto de búsqueda concatenado
+    let mut search_text_parts = vec![
+        proveedor.cedula.clone(),
+        proveedor.nombre.clone(),
+        proveedor.apellido.clone(),
+        empresa_nombre.to_string(),
+    ];
+
+    if let Some(ref segundo_nombre) = proveedor.segundo_nombre {
+        search_text_parts.push(segundo_nombre.clone());
+    }
+
+    if let Some(ref segundo_apellido) = proveedor.segundo_apellido {
+        search_text_parts.push(segundo_apellido.clone());
+    }
+
+    let search_text = search_text_parts.join(" ");
+
+    // Crear documento usando handles pre-cargados
+    let mut doc = TantivyDocument::default();
+    doc.add_text(handles.id, &proveedor.id.to_string());
+    doc.add_text(handles.tipo, "proveedor");
+    doc.add_text(handles.cedula, &proveedor.cedula);
+    doc.add_text(handles.nombre, &proveedor.nombre);
+
+    if let Some(ref segundo_nombre) = proveedor.segundo_nombre {
+        doc.add_text(handles.segundo_nombre, segundo_nombre);
+    }
+
+    doc.add_text(handles.apellido, &proveedor.apellido);
+
+    if let Some(ref segundo_apellido) = proveedor.segundo_apellido {
+        doc.add_text(handles.segundo_apellido, segundo_apellido);
+    }
+
+    doc.add_text(handles.empresa_nombre, empresa_nombre);
+    doc.add_text(handles.search_text, &search_text);
+
+    // Agregar al índice
+    writer
+        .add_document(doc)
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar proveedor: {}", e)))?;
+
+    Ok(())
+}
+
 /// Actualiza un proveedor en el índice (delete + insert)
 pub fn update_proveedor_in_index(
     writer: &mut IndexWriter,
@@ -331,6 +508,18 @@ pub fn update_proveedor_in_index(
 ) -> Result<(), SearchError> {
     delete_from_index(writer, handles, &proveedor.id.to_string())?;
     index_proveedor(writer, handles, proveedor, empresa_nombre)?;
+    Ok(())
+}
+
+/// Actualiza un proveedor (Fetched) en el índice
+pub fn update_proveedor_fetched_in_index(
+    writer: &mut IndexWriter,
+    handles: &FieldHandles,
+    proveedor: &ProveedorFetched,
+    empresa_nombre: &str,
+) -> Result<(), SearchError> {
+    delete_from_index(writer, handles, &proveedor.id.to_string())?;
+    index_proveedor_fetched(writer, handles, proveedor, empresa_nombre)?;
     Ok(())
 }
 #[cfg(test)]

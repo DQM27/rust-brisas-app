@@ -1,25 +1,24 @@
 use crate::db::{
     surrealdb_contratista_queries as contratista_queries,
-    surrealdb_empresa_queries as empresa_queries,
     surrealdb_lista_negra_queries as lista_negra_queries,
     surrealdb_proveedor_queries as proveedor_queries, surrealdb_user_queries as user_queries,
 };
-use crate::domain::role::SUPERUSER_ID;
-use crate::models::contratista::Contratista;
+use crate::models::contratista::ContratistaFetched;
 use crate::models::lista_negra::ListaNegra;
-use crate::models::proveedor::Proveedor;
-use crate::models::user::User;
+use crate::models::proveedor::ProveedorFetched;
+use crate::models::user::{User, UserFetched};
 use crate::search::errors::SearchError;
 use crate::search::schema::FieldHandles;
 use crate::search::searcher::SearchResultDto;
 use crate::search::{
-    commit_index, create_field_handles, delete_from_index, index_contratista, index_lista_negra,
-    index_proveedor, index_user, update_contratista_in_index, update_lista_negra_in_index,
-    update_proveedor_in_index, update_user_in_index,
+    commit_index, create_field_handles, delete_from_index, index_contratista_fetched,
+    index_lista_negra, index_proveedor_fetched, index_user, index_user_fetched,
+    update_contratista_fetched_in_index, update_lista_negra_in_index,
+    update_proveedor_fetched_in_index, update_user_fetched_in_index, update_user_in_index,
 };
-use crate::search::{get_index_reader, get_index_writer, initialize_index};
-use crate::search::{search_index, SearchFields};
-use std::collections::HashMap;
+use crate::search::{
+    get_index_reader, get_index_writer, initialize_index, search_index, SearchFields,
+};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tantivy::{Index, IndexReader};
@@ -94,36 +93,24 @@ impl SearchService {
 
     /// Re-indexa todo (contratistas, usuarios, proveedores y lista negra) desde la base de datos
     pub async fn reindex_all(&self) -> Result<(), SearchError> {
-        // 1. Cargar Empresas para mapeo de nombres
-        let empresas = empresa_queries::find_all()
+        // 1. Obtener todos los datos de SurrealDB
+        let contratistas = contratista_queries::find_all_fetched()
             .await
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 
-        let empresas_map: HashMap<String, String> =
-            empresas.into_iter().map(|e| (e.id.to_string(), e.nombre)).collect();
-
-        // 2. Obtener datos
-        let contratistas = contratista_queries::find_all()
+        let users = user_queries::find_all_fetched(None)
             .await
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 
-        // Obtener todos los usuarios (excluyendo superuser del índice)
-        let superuser_record = surrealdb::RecordId::from_table_key("user", SUPERUSER_ID);
-        let users = user_queries::find_all(Some(&superuser_record))
-            .await
-            .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
-
-        // Obtener todos los registros de lista negra
         let lista_negra = lista_negra_queries::find_all()
             .await
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 
-        // Obtener todos los proveedores
-        let proveedores = proveedor_queries::find_all()
+        let proveedores = proveedor_queries::find_all_fetched()
             .await
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 
-        // 3. Adquirir lock para escribir en el índice
+        // 2. Adquirir lock para escribir en el índice
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -135,17 +122,13 @@ impl SearchService {
             })?;
 
             // Indexar contratistas
-            for contratista in contratistas {
-                let empresa_nombre = empresas_map
-                    .get(&contratista.empresa.to_string())
-                    .map(|s| s.as_str())
-                    .unwrap_or("Desconocida");
-                index_contratista(&mut writer, &self.handles, &contratista, empresa_nombre)?;
+            for c in contratistas {
+                index_contratista_fetched(&mut writer, &self.handles, &c, &c.empresa.nombre)?;
             }
 
             // Indexar usuarios
             for user in users {
-                index_user(&mut writer, &self.handles, &user)?;
+                index_user_fetched(&mut writer, &self.handles, &user)?;
             }
 
             // Indexar lista negra
@@ -154,12 +137,8 @@ impl SearchService {
             }
 
             // Indexar proveedores
-            for proveedor in proveedores {
-                let empresa_nombre = empresas_map
-                    .get(&proveedor.empresa.to_string())
-                    .map(|s| s.as_str())
-                    .unwrap_or("Desconocida");
-                index_proveedor(&mut writer, &self.handles, &proveedor, empresa_nombre)?;
+            for p in proveedores {
+                index_proveedor_fetched(&mut writer, &self.handles, &p, &p.empresa.nombre)?;
             }
 
             // Commit
@@ -179,10 +158,10 @@ impl SearchService {
         self.reindex_all().await
     }
 
-    /// Indexa un contratista nuevo
-    pub async fn add_contratista(
+    /// Indexa un contratista (Fetched) nuevo
+    pub async fn add_contratista_fetched(
         &self,
-        contratista: &Contratista,
+        contratista: &ContratistaFetched,
         empresa_nombre: &str,
     ) -> Result<(), SearchError> {
         let _lock = self.writer_mutex.lock().await;
@@ -190,7 +169,7 @@ impl SearchService {
         {
             let mut writer = get_index_writer(&self.index)?;
 
-            index_contratista(&mut writer, &self.handles, contratista, empresa_nombre)?;
+            index_contratista_fetched(&mut writer, &self.handles, contratista, empresa_nombre)?;
             commit_index(&mut writer)?;
         }
 
@@ -201,10 +180,10 @@ impl SearchService {
         Ok(())
     }
 
-    /// Actualiza un contratista en el índice
-    pub async fn update_contratista(
+    /// Actualiza un contratista (Fetched) en el índice
+    pub async fn update_contratista_fetched(
         &self,
-        contratista: &Contratista,
+        contratista: &ContratistaFetched,
         empresa_nombre: &str,
     ) -> Result<(), SearchError> {
         let _lock = self.writer_mutex.lock().await;
@@ -212,7 +191,12 @@ impl SearchService {
         {
             let mut writer = get_index_writer(&self.index)?;
 
-            update_contratista_in_index(&mut writer, &self.handles, contratista, empresa_nombre)?;
+            update_contratista_fetched_in_index(
+                &mut writer,
+                &self.handles,
+                contratista,
+                empresa_nombre,
+            )?;
             commit_index(&mut writer)?;
         }
 
@@ -295,6 +279,42 @@ impl SearchService {
         Ok(())
     }
 
+    /// Indexa un usuario (Fetched) nuevo
+    pub async fn add_user_fetched(&self, user: &UserFetched) -> Result<(), SearchError> {
+        let _lock = self.writer_mutex.lock().await;
+
+        {
+            let mut writer = get_index_writer(&self.index)?;
+
+            index_user_fetched(&mut writer, &self.handles, user)?;
+            commit_index(&mut writer)?;
+        }
+
+        self.reader
+            .reload()
+            .map_err(|e| SearchError::TantivyError(format!("Error al recargar reader: {}", e)))?;
+
+        Ok(())
+    }
+
+    /// Actualiza un usuario (Fetched) en el índice
+    pub async fn update_user_fetched(&self, user: &UserFetched) -> Result<(), SearchError> {
+        let _lock = self.writer_mutex.lock().await;
+
+        {
+            let mut writer = get_index_writer(&self.index)?;
+
+            update_user_fetched_in_index(&mut writer, &self.handles, user)?;
+            commit_index(&mut writer)?;
+        }
+
+        self.reader
+            .reload()
+            .map_err(|e| SearchError::TantivyError(format!("Error al recargar reader: {}", e)))?;
+
+        Ok(())
+    }
+
     /// Indexa un registro de lista negra
     pub async fn add_lista_negra(&self, lista_negra: &ListaNegra) -> Result<(), SearchError> {
         let _lock = self.writer_mutex.lock().await;
@@ -367,50 +387,6 @@ impl SearchService {
         searcher.num_docs()
     }
 
-    /// Indexa un proveedor nuevo
-    pub async fn add_proveedor(
-        &self,
-        proveedor: &Proveedor,
-        empresa_nombre: &str,
-    ) -> Result<(), SearchError> {
-        let _lock = self.writer_mutex.lock().await;
-
-        {
-            let mut writer = get_index_writer(&self.index)?;
-
-            index_proveedor(&mut writer, &self.handles, proveedor, empresa_nombre)?;
-            commit_index(&mut writer)?;
-        }
-
-        self.reader
-            .reload()
-            .map_err(|e| SearchError::TantivyError(format!("Error al recargar reader: {}", e)))?;
-
-        Ok(())
-    }
-
-    /// Actualiza un proveedor en el índice
-    pub async fn update_proveedor(
-        &self,
-        proveedor: &Proveedor,
-        empresa_nombre: &str,
-    ) -> Result<(), SearchError> {
-        let _lock = self.writer_mutex.lock().await;
-
-        {
-            let mut writer = get_index_writer(&self.index)?;
-
-            update_proveedor_in_index(&mut writer, &self.handles, proveedor, empresa_nombre)?;
-            commit_index(&mut writer)?;
-        }
-
-        self.reader
-            .reload()
-            .map_err(|e| SearchError::TantivyError(format!("Error al recargar reader: {}", e)))?;
-
-        Ok(())
-    }
-
     /// Elimina un proveedor del índice
     pub async fn delete_proveedor(&self, id: &str) -> Result<(), SearchError> {
         let _lock = self.writer_mutex.lock().await;
@@ -419,6 +395,55 @@ impl SearchService {
             let mut writer = get_index_writer(&self.index)?;
 
             delete_from_index(&mut writer, &self.handles, id)?;
+            commit_index(&mut writer)?;
+        }
+
+        self.reader
+            .reload()
+            .map_err(|e| SearchError::TantivyError(format!("Error al recargar reader: {}", e)))?;
+
+        Ok(())
+    }
+
+    /// Indexa un proveedor (Fetched) nuevo
+    pub async fn add_proveedor_fetched(
+        &self,
+        proveedor: &ProveedorFetched,
+        empresa_nombre: &str,
+    ) -> Result<(), SearchError> {
+        let _lock = self.writer_mutex.lock().await;
+
+        {
+            let mut writer = get_index_writer(&self.index)?;
+
+            index_proveedor_fetched(&mut writer, &self.handles, proveedor, empresa_nombre)?;
+            commit_index(&mut writer)?;
+        }
+
+        self.reader
+            .reload()
+            .map_err(|e| SearchError::TantivyError(format!("Error al recargar reader: {}", e)))?;
+
+        Ok(())
+    }
+
+    /// Actualiza un proveedor (Fetched) en el índice
+    pub async fn update_proveedor_fetched(
+        &self,
+        proveedor: &ProveedorFetched,
+        empresa_nombre: &str,
+    ) -> Result<(), SearchError> {
+        let _lock = self.writer_mutex.lock().await;
+
+        {
+            let mut writer = get_index_writer(&self.index)?;
+
+            update_proveedor_fetched_in_index(
+                &mut writer,
+                &self.handles,
+                proveedor,
+                empresa_nombre,
+            )?;
             commit_index(&mut writer)?;
         }
 

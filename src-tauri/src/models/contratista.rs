@@ -1,6 +1,7 @@
 // ==========================================
 // src/models/contratista.rs
 // ==========================================
+use crate::models::empresa::Empresa;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};
@@ -17,6 +18,26 @@ pub struct Contratista {
     #[serde(alias = "segundo_apellido")]
     pub segundo_apellido: Option<String>,
     pub empresa: RecordId,
+    #[serde(alias = "fecha_vencimiento_praind")]
+    pub fecha_vencimiento_praind: Datetime,
+    pub estado: EstadoContratista,
+    #[serde(alias = "created_at")]
+    pub created_at: Datetime,
+    #[serde(alias = "updated_at")]
+    pub updated_at: Datetime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContratistaFetched {
+    pub id: RecordId,
+    pub cedula: String,
+    pub nombre: String,
+    #[serde(alias = "segundo_nombre")]
+    pub segundo_nombre: Option<String>,
+    pub apellido: String,
+    #[serde(alias = "segundo_apellido")]
+    pub segundo_apellido: Option<String>,
+    pub empresa: Empresa,
     #[serde(alias = "fecha_vencimiento_praind")]
     pub fecha_vencimiento_praind: Datetime,
     pub estado: EstadoContratista,
@@ -230,6 +251,74 @@ impl From<Contratista> for ContratistaResponse {
             vehiculo_modelo: None,
             vehiculo_color: None,
             created_at: c.created_at.to_string(), // Keep default or change to rfc3339 if needed
+            updated_at: c.updated_at.to_string(),
+        }
+    }
+}
+
+impl ContratistaResponse {
+    pub fn from_fetched(c: ContratistaFetched) -> Self {
+        let hoy = Utc::now();
+        let raw_date_str = c.fecha_vencimiento_praind.to_string();
+        let raw_date = raw_date_str.trim_start_matches("d'").trim_end_matches('\'');
+
+        let fecha_venc: DateTime<Utc> = raw_date
+            .parse()
+            .or_else(|_| {
+                chrono::NaiveDate::parse_from_str(raw_date, "%Y-%m-%d").map(|d| {
+                    d.and_hms_opt(0, 0, 0).unwrap().and_local_timezone(Utc).unwrap()
+                })
+            })
+            .unwrap_or_else(|_| {
+                println!(
+                    ">>> CRITICAL: Error parseando fecha '{}' (original: '{}'). Usando fecha actual.",
+                    raw_date, raw_date_str
+                );
+                hoy
+            });
+
+        let venc_date = fecha_venc.date_naive();
+        let hoy_date = hoy.date_naive();
+        let dias_hasta_vencimiento = (venc_date - hoy_date).num_days();
+        let praind_vencido = venc_date < hoy_date;
+        let requiere_atencion = dias_hasta_vencimiento <= 30 && dias_hasta_vencimiento >= 0;
+        let puede_ingresar = c.estado == EstadoContratista::Activo && !praind_vencido;
+
+        let mut nombre_completo = c.nombre.clone();
+        if let Some(segundo) = &c.segundo_nombre {
+            nombre_completo.push(' ');
+            nombre_completo.push_str(segundo);
+        }
+        nombre_completo.push(' ');
+        nombre_completo.push_str(&c.apellido);
+        if let Some(segundo) = &c.segundo_apellido {
+            nombre_completo.push(' ');
+            nombre_completo.push_str(segundo);
+        }
+
+        Self {
+            id: c.id.to_string(),
+            cedula: c.cedula.clone(),
+            nombre: c.nombre.clone(),
+            segundo_nombre: c.segundo_nombre.clone(),
+            apellido: c.apellido.clone(),
+            segundo_apellido: c.segundo_apellido.clone(),
+            nombre_completo,
+            empresa_id: c.empresa.id.to_string(),
+            empresa_nombre: c.empresa.nombre.clone(),
+            fecha_vencimiento_praind: fecha_venc.to_rfc3339(),
+            estado: c.estado,
+            puede_ingresar,
+            praind_vencido,
+            esta_bloqueado: false,
+            dias_hasta_vencimiento,
+            requiere_atencion,
+            vehiculo_tipo: None,
+            vehiculo_placa: None,
+            vehiculo_marca: None,
+            vehiculo_modelo: None,
+            vehiculo_color: None,
+            created_at: c.created_at.to_string(),
             updated_at: c.updated_at.to_string(),
         }
     }

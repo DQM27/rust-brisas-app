@@ -46,7 +46,7 @@ fn parse_empresa_id(id_str: &str) -> RecordId {
 // ==========================================
 
 pub async fn create_contratista(
-    _search_service: &Arc<SearchService>,
+    search_service: &Arc<SearchService>,
     input: CreateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
     // 1. Validar input
@@ -104,8 +104,14 @@ pub async fn create_contratista(
 
     info!("Contratista {} creado exitosamente con ID {}", cedula_normalizada, contratista.id);
 
-    // 8. Retornar respuesta
-    build_response(contratista).await
+    // 8. Indexar en búsqueda
+    let empresa_nombre = contratista.empresa.nombre.clone();
+    if let Err(e) = search_service.add_contratista_fetched(&contratista, &empresa_nombre).await {
+        log::warn!("Error indexando contratista en búsqueda: {}", e);
+    }
+
+    // 9. Retornar respuesta
+    build_response_fetched(contratista).await
 }
 
 // ==========================================
@@ -114,9 +120,11 @@ pub async fn create_contratista(
 
 pub async fn get_contratista_by_id(id_str: &str) -> Result<ContratistaResponse, ContratistaError> {
     let id = parse_contratista_id(id_str);
-    let contratista =
-        db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
-    build_response(contratista).await
+    let contratista = db::find_by_id_fetched(&id)
+        .await
+        .map_err(map_db_error)?
+        .ok_or(ContratistaError::NotFound)?;
+    build_response_fetched(contratista).await
 }
 
 // ==========================================
@@ -131,7 +139,7 @@ pub async fn get_contratista_by_cedula(
         .await
         .map_err(map_db_error)?
         .ok_or(ContratistaError::NotFound)?;
-    build_response(contratista).await
+    build_response_fetched(contratista).await
 }
 
 // ==========================================
@@ -139,11 +147,11 @@ pub async fn get_contratista_by_cedula(
 // ==========================================
 
 pub async fn get_all_contratistas() -> Result<ContratistaListResponse, ContratistaError> {
-    let raw_list = db::find_all().await.map_err(map_db_error)?;
+    let raw_list = db::find_all_fetched().await.map_err(map_db_error)?;
 
     let mut contratistas = Vec::new();
     for c in raw_list {
-        contratistas.push(build_response(c).await?);
+        contratistas.push(build_response_fetched(c).await?);
     }
 
     let total = contratistas.len();
@@ -165,11 +173,11 @@ pub async fn get_all_contratistas() -> Result<ContratistaListResponse, Contratis
 // ==========================================
 
 pub async fn get_contratistas_activos() -> Result<Vec<ContratistaResponse>, ContratistaError> {
-    let raw_list = db::find_all().await.map_err(map_db_error)?;
+    let raw_list = db::find_all_fetched().await.map_err(map_db_error)?;
 
     let mut contratistas = Vec::new();
     for c in raw_list {
-        let res = build_response(c).await?;
+        let res = build_response_fetched(c).await?;
         if res.estado == EstadoContratista::Activo {
             contratistas.push(res);
         }
@@ -183,7 +191,7 @@ pub async fn get_contratistas_activos() -> Result<Vec<ContratistaResponse>, Cont
 // ==========================================
 
 pub async fn update_contratista(
-    _search_service: &Arc<SearchService>,
+    search_service: &Arc<SearchService>,
     id_str: String,
     input: UpdateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
@@ -243,8 +251,14 @@ pub async fn update_contratista(
         map_db_error(e)
     })?;
 
-    // 7. Retornar
-    build_response(updated).await
+    // 7. Indexar en búsqueda
+    let empresa_nombre = updated.empresa.nombre.clone();
+    if let Err(e) = search_service.update_contratista_fetched(&updated, &empresa_nombre).await {
+        log::warn!("Error actualizando contratista en búsqueda: {}", e);
+    }
+
+    // 8. Retornar
+    build_response_fetched(updated).await
 }
 
 // ==========================================
@@ -262,7 +276,7 @@ pub async fn cambiar_estado_contratista(
     db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
     let updated = db::update_status(&id, estado.as_str()).await.map_err(map_db_error)?;
-    build_response(updated).await
+    build_response_fetched(updated).await
 }
 
 // ==========================================
@@ -338,7 +352,7 @@ pub async fn actualizar_praind_con_historial(
     .await
     .map_err(map_db_error)?;
 
-    build_response(updated).await
+    build_response_fetched(updated).await
 }
 
 // ==========================================
@@ -380,21 +394,17 @@ pub async fn cambiar_estado_con_historial(
     .await
     .map_err(map_db_error)?;
 
-    build_response(updated).await
+    build_response_fetched(updated).await
 }
 
 // ==========================================
 // HELPERS
 // ==========================================
 
-async fn build_response(
-    contratista: crate::models::contratista::Contratista,
+async fn build_response_fetched(
+    contratista: crate::models::contratista::ContratistaFetched,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    let mut response = ContratistaResponse::from(contratista.clone());
-
-    // Obtener nombre de empresa
-    response.empresa_nombre =
-        db::get_empresa_nombre(&contratista.empresa).await.map_err(map_db_error)?;
+    let mut response = ContratistaResponse::from_fetched(contratista.clone());
 
     // Obtener vehículo
     let vehiculos = veh_db::find_by_contratista(&contratista.id).await.map_err(map_db_error)?;
