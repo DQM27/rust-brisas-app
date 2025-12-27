@@ -183,9 +183,12 @@ pub struct Role {
     pub id: RecordId,
     pub name: String,
     pub description: Option<String>,
+    #[serde(alias = "is_system")]
     pub is_system: bool,
     pub permissions: Option<Vec<String>>,
+    #[serde(alias = "created_at")]
     pub created_at: Datetime,
+    #[serde(alias = "updated_at")]
     pub updated_at: Datetime,
 }
 

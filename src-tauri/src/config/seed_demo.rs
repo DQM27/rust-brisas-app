@@ -85,9 +85,8 @@ async fn seed_demo_users() -> Result<(), SurrealDbError> {
     ];
 
     for (id, email, nombre, apellido, role_id, cedula) in users {
-        let _: Option<serde_json::Value> = db
-            .query(
-                r#"
+        db.query(
+            r#"
                 UPSERT user CONTENT {
                     id: type::thing('user', $id),
                     email: $email,
@@ -102,16 +101,16 @@ async fn seed_demo_users() -> Result<(), SurrealDbError> {
                     updated_at: time::now()
                 }
                 "#,
-            )
-            .bind(("id", id))
-            .bind(("email", email))
-            .bind(("password_hash", password_hash.clone()))
-            .bind(("nombre", nombre))
-            .bind(("apellido", apellido))
-            .bind(("role_id", role_id))
-            .bind(("cedula", cedula))
-            .await?
-            .take(0)?;
+        )
+        .bind(("id", id))
+        .bind(("email", email))
+        .bind(("password_hash", password_hash.clone()))
+        .bind(("nombre", nombre))
+        .bind(("apellido", apellido))
+        .bind(("role_id", role_id))
+        .bind(("cedula", cedula))
+        .await?
+        .check()?;
     }
 
     Ok(())
@@ -135,9 +134,8 @@ async fn seed_demo_empresas() -> Result<(), SurrealDbError> {
     ];
 
     for (id, nombre) in empresas {
-        let _: Option<serde_json::Value> = db
-            .query(
-                r#"
+        db.query(
+            r#"
                 UPSERT empresa SET
                     id = $id,
                     nombre = $nombre,
@@ -146,12 +144,12 @@ async fn seed_demo_empresas() -> Result<(), SurrealDbError> {
                     updated_at = $now
                 WHERE id = $id
                 "#,
-            )
-            .bind(("id", id))
-            .bind(("nombre", nombre))
-            .bind(("now", now.clone()))
-            .await?
-            .take(0)?;
+        )
+        .bind(("id", id))
+        .bind(("nombre", nombre))
+        .bind(("now", now.clone()))
+        .await?
+        .check()?;
     }
 
     Ok(())
@@ -168,9 +166,8 @@ async fn seed_demo_gafetes() -> Result<(), SurrealDbError> {
     // Gafetes de contratista (01 a 20)
     for i in 1..=20 {
         let numero = format!("{:02}", i);
-        let _: Option<serde_json::Value> = db
-            .query(
-                r#"
+        db.query(
+            r#"
                 UPSERT gafete SET
                     numero = $numero,
                     tipo = "contratista",
@@ -180,19 +177,18 @@ async fn seed_demo_gafetes() -> Result<(), SurrealDbError> {
                     updated_at = $now
                 WHERE numero = $numero AND tipo = "contratista"
                 "#,
-            )
-            .bind(("numero", numero.clone()))
-            .bind(("now", now.clone()))
-            .await?
-            .take(0)?;
+        )
+        .bind(("numero", numero.clone()))
+        .bind(("now", now.clone()))
+        .await?
+        .check()?;
     }
 
     // Gafetes de proveedor (01 a 10)
     for i in 1..=10 {
         let numero = format!("{:02}", i);
-        let _: Option<serde_json::Value> = db
-            .query(
-                r#"
+        db.query(
+            r#"
                 UPSERT gafete SET
                     numero = $numero,
                     tipo = "proveedor",
@@ -202,19 +198,18 @@ async fn seed_demo_gafetes() -> Result<(), SurrealDbError> {
                     updated_at = $now
                 WHERE numero = $numero AND tipo = "proveedor"
                 "#,
-            )
-            .bind(("numero", numero.clone()))
-            .bind(("now", now.clone()))
-            .await?
-            .take(0)?;
+        )
+        .bind(("numero", numero.clone()))
+        .bind(("now", now.clone()))
+        .await?
+        .check()?;
     }
 
     // Gafetes de visita (01 a 10)
     for i in 1..=10 {
         let numero = format!("{:02}", i);
-        let _: Option<serde_json::Value> = db
-            .query(
-                r#"
+        db.query(
+            r#"
                 UPSERT gafete SET
                     numero = $numero,
                     tipo = "visita",
@@ -224,11 +219,11 @@ async fn seed_demo_gafetes() -> Result<(), SurrealDbError> {
                     updated_at = $now
                 WHERE numero = $numero AND tipo = "visita"
                 "#,
-            )
-            .bind(("numero", numero.clone()))
-            .bind(("now", now.clone()))
-            .await?
-            .take(0)?;
+        )
+        .bind(("numero", numero.clone()))
+        .bind(("now", now.clone()))
+        .await?
+        .check()?;
     }
 
     Ok(())
@@ -256,9 +251,8 @@ async fn seed_demo_contratistas() -> Result<(), SurrealDbError> {
     for (id, cedula, nombre, apellido, empresa_id, praind_dias, estado) in contratistas {
         let praind_fecha = (hoy + Duration::days(praind_dias)).format("%Y-%m-%d").to_string();
 
-        let _: Option<serde_json::Value> = db
-            .query(
-                r#"
+        db.query(
+            r#"
                 UPSERT contratista CONTENT {
                     id: type::thing('contratista', $id),
                     cedula: $cedula,
@@ -271,16 +265,16 @@ async fn seed_demo_contratistas() -> Result<(), SurrealDbError> {
                     updated_at: time::now()
                 }
                 "#,
-            )
-            .bind(("id", id))
-            .bind(("cedula", cedula))
-            .bind(("nombre", nombre))
-            .bind(("apellido", apellido))
-            .bind(("empresa_id", empresa_id))
-            .bind(("praind_fecha", praind_fecha.clone()))
-            .bind(("estado", estado))
-            .await?
-            .take(0)?;
+        )
+        .bind(("id", id))
+        .bind(("cedula", cedula))
+        .bind(("nombre", nombre))
+        .bind(("apellido", apellido))
+        .bind(("empresa_id", empresa_id))
+        .bind(("praind_fecha", praind_fecha.clone()))
+        .bind(("estado", estado))
+        .await?
+        .check()?;
     }
 
     Ok(())
@@ -305,9 +299,8 @@ async fn seed_demo_proveedores() -> Result<(), SurrealDbError> {
     ];
 
     for (id, cedula, nombre, apellido, empresa_id) in proveedores {
-        let _: Option<serde_json::Value> = db
-            .query(
-                r#"
+        db.query(
+            r#"
                 UPSERT proveedor CONTENT {
                     id: type::thing('proveedor', $id),
                     cedula: $cedula,
@@ -318,14 +311,14 @@ async fn seed_demo_proveedores() -> Result<(), SurrealDbError> {
                     updated_at: time::now()
                 }
                 "#,
-            )
-            .bind(("id", id))
-            .bind(("cedula", cedula))
-            .bind(("nombre", nombre))
-            .bind(("apellido", apellido))
-            .bind(("empresa_id", empresa_id))
-            .await?
-            .take(0)?;
+        )
+        .bind(("id", id))
+        .bind(("cedula", cedula))
+        .bind(("nombre", nombre))
+        .bind(("apellido", apellido))
+        .bind(("empresa_id", empresa_id))
+        .await?
+        .check()?;
     }
 
     Ok(())
@@ -351,9 +344,8 @@ async fn seed_demo_visitantes() -> Result<(), SurrealDbError> {
     ];
 
     for (id, cedula, nombre, apellido) in visitantes {
-        let _: Option<serde_json::Value> = db
-            .query(
-                r#"
+        db.query(
+            r#"
                 UPSERT visitante SET
                     id = $id,
                     cedula = $cedula,
@@ -363,14 +355,14 @@ async fn seed_demo_visitantes() -> Result<(), SurrealDbError> {
                     updated_at = $now
                 WHERE id = $id
                 "#,
-            )
-            .bind(("id", id))
-            .bind(("cedula", cedula))
-            .bind(("nombre", nombre))
-            .bind(("apellido", apellido))
-            .bind(("now", now.clone()))
-            .await?
-            .take(0)?;
+        )
+        .bind(("id", id))
+        .bind(("cedula", cedula))
+        .bind(("nombre", nombre))
+        .bind(("apellido", apellido))
+        .bind(("now", now.clone()))
+        .await?
+        .check()?;
     }
 
     Ok(())
@@ -438,8 +430,7 @@ async fn seed_demo_vehiculos() -> Result<(), SurrealDbError> {
     ];
 
     for (id, contratista_id, proveedor_id, tipo, placa, marca, modelo, color) in vehiculos {
-        let _: Option<serde_json::Value> = db
-            .query(
+        db.query(
                 r#"
                 UPSERT vehiculo CONTENT {
                     id: type::thing('vehiculo', $id),
@@ -465,7 +456,7 @@ async fn seed_demo_vehiculos() -> Result<(), SurrealDbError> {
             .bind(("modelo", modelo))
             .bind(("color", color))
             .await?
-            .take(0)?;
+            .check()?;
     }
 
     Ok(())
@@ -501,9 +492,8 @@ async fn seed_demo_lista_negra() -> Result<(), SurrealDbError> {
     ];
 
     for (id, cedula, nombre, apellido, nivel, motivo, bloqueado_por) in bloqueados {
-        let _: Option<serde_json::Value> = db
-            .query(
-                r#"
+        db.query(
+            r#"
                 UPSERT lista_negra SET
                     id = $id,
                     cedula = $cedula,
@@ -517,17 +507,17 @@ async fn seed_demo_lista_negra() -> Result<(), SurrealDbError> {
                     updated_at = $now
                 WHERE id = $id
                 "#,
-            )
-            .bind(("id", id))
-            .bind(("cedula", cedula))
-            .bind(("nombre", nombre))
-            .bind(("apellido", apellido))
-            .bind(("nivel", nivel))
-            .bind(("motivo", motivo))
-            .bind(("bloqueado_por", bloqueado_por))
-            .bind(("now", now.clone()))
-            .await?
-            .take(0)?;
+        )
+        .bind(("id", id))
+        .bind(("cedula", cedula))
+        .bind(("nombre", nombre))
+        .bind(("apellido", apellido))
+        .bind(("nivel", nivel))
+        .bind(("motivo", motivo))
+        .bind(("bloqueado_por", bloqueado_por))
+        .bind(("now", now.clone()))
+        .await?
+        .check()?;
     }
 
     Ok(())

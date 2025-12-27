@@ -59,6 +59,41 @@ export function can(actor: UserResponse | null | undefined, action: Action, targ
         return true;
     }
 
+    // CHECK BACKEND PERMISSIONS
+    if (actor.permissions && Array.isArray(actor.permissions)) {
+        if (actor.permissions.includes(action)) {
+            return true;
+        }
+        // Try with module:action format if needed, but action provided here is usually unique enough or mapped.
+        // The backend returns "module:action" strings usually.
+        // Frontend Action type is like "VIEW_USER_LIST".
+        // We need to map Frontend Action -> Backend Permission String?
+        // OR, the backend returns permissions like "users:view".
+
+        // Let's assume for now we need a mapping or the permissions are just strings.
+        // Wait, the backend returns "users:view", "users:create", etc.
+        // The frontend uses "VIEW_USER_LIST".
+
+        // MAPPING:
+        const permissionMap: Record<Action, string> = {
+            'VIEW_USER_LIST': 'users:view',
+            'CREATE_USER': 'users:create',
+            'UPDATE_USER_PROFILE': 'users:update', // Partial mapping
+            'UPDATE_USER_SENSITIVE': 'users:update', // This separation is semantic in frontend
+            'DELETE_USER': 'users:delete',
+            'CHANGE_USER_PASSWORD': 'users:update', // Own password
+            'RESET_USER_PASSWORD': 'users:update', // Admin reset
+            'MANAGE_BLACKLIST': 'lista_negra:create', // Approximation
+            'VIEW_BLACKLIST_REASON': 'lista_negra:view', // Approximation
+            'VIEW_ADMIN_DASHBOARD': 'dashboard:view' // Not a real permission yet?
+        };
+
+        const backendPerm = permissionMap[action];
+        if (backendPerm && actor.permissions.includes(backendPerm)) {
+            return true;
+        }
+    }
+
     switch (action) {
         case 'DELETE_USER':
             // Only admins can do these (already handled by top check, but explicit here for clarity)

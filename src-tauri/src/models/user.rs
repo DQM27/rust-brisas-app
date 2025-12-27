@@ -1,3 +1,4 @@
+use crate::models::role::Role;
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};
 
@@ -138,6 +139,7 @@ pub struct UserResponse {
     pub is_active: bool,
     pub created_at: String,
     pub updated_at: String,
+    pub permissions: Vec<String>,
     pub cedula: String,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
@@ -153,9 +155,11 @@ pub struct UserResponse {
 }
 
 impl UserResponse {
-    pub fn from_user_with_role(u: User, role_name: String) -> Self {
-        let mut parts = Vec::new();
-        parts.push(u.nombre.as_str());
+    pub fn from_user_with_role(u: User, role: Role, permissions: Vec<String>) -> Self {
+        let role_name = role.name.clone();
+
+        // Construir nombre completo
+        let mut parts = vec![u.nombre.as_str()];
         if let Some(ref sn) = u.segundo_nombre {
             parts.push(sn.as_str());
         }
@@ -173,6 +177,7 @@ impl UserResponse {
             nombre_completo,
             role_id: u.role.to_string(),
             role_name,
+            permissions, // Now included
             is_active: u.is_active,
             created_at: u.created_at.to_string(),
             updated_at: u.updated_at.to_string(),

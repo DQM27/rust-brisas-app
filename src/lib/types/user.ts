@@ -14,6 +14,7 @@ export interface UserResponse {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  permissions: string[];
 
   // Campos adicionales
   cedula: string;

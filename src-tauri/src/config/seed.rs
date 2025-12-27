@@ -9,8 +9,8 @@ use crate::domain::role::{
 use crate::models::role::{Action, Module};
 use crate::services::auth::hash_password;
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use chrono::Utc;
 use log::info;
+use surrealdb::RecordId;
 
 /// Orquesta la ejecución de todos los seeds
 pub async fn seed_db() -> Result<(), Box<dyn std::error::Error>> {
@@ -23,7 +23,6 @@ pub async fn seed_db() -> Result<(), Box<dyn std::error::Error>> {
 /// Seed de roles del sistema
 async fn seed_roles() -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    let now = Utc::now().to_rfc3339();
 
     let roles = [
         (ROLE_ADMIN_ID, "Administrador", "Acceso completo al sistema"),
@@ -113,28 +112,29 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
             guardia_perms.iter().map(|s| s.to_string()).collect()
         };
 
-        // Upsert role: si existe, actualizar; si no, crear
-        let _: Option<serde_json::Value> = db
-            .query(
-                r#"
-                UPSERT role SET
-                    id = $id,
-                    name = $name,
-                    description = $desc,
-                    is_system = true,
-                    permissions = $permissions,
-                    created_at = $now,
-                    updated_at = $now
-                WHERE id = $id
+        // Primero eliminar cualquier registro existente (puede estar corrupto)
+        db.query("DELETE type::thing('role', $id)").bind(("id", id)).await?;
+
+        // Luego crear el rol fresco - debemos incluir created_at explícitamente
+        // porque READONLY + VALUE no funciona bien con CREATE CONTENT
+        db.query(
+            r#"
+                CREATE type::thing('role', $id) CONTENT {
+                    name: $name,
+                    description: $desc,
+                    is_system: true,
+                    permissions: $permissions,
+                    created_at: time::now(),
+                    updated_at: time::now()
+                }
                 "#,
-            )
-            .bind(("id", id))
-            .bind(("name", name))
-            .bind(("desc", desc))
-            .bind(("permissions", permissions.clone()))
-            .bind(("now", now.clone()))
-            .await?
-            .take(0)?;
+        )
+        .bind(("id", id))
+        .bind(("name", name))
+        .bind(("desc", desc))
+        .bind(("permissions", permissions.clone()))
+        .await?
+        .check()?;
     }
 
     info!("✅ Roles del sistema creados/actualizados");
@@ -145,25 +145,25 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
 async fn seed_superuser() -> Result<(), SurrealDbError> {
     let db = get_db().await?;
 
-    // Verificar si ya existe
-    let existing: Option<serde_json::Value> = db
-        .query("SELECT * FROM user WHERE id = $id LIMIT 1")
+    // Verificar si ya existe usando SELECT VALUE id
+    let existing: Vec<RecordId> = db
+        .query("SELECT VALUE id FROM user WHERE id = type::thing('user', $id)")
         .bind(("id", SUPERUSER_ID))
         .await?
         .take(0)?;
 
-    if existing.is_some() {
+    if !existing.is_empty() {
+        info!("🔐 Superuser ya existe, saltando creación.");
         return Ok(());
     }
 
     let password = std::env::var("BRISAS_ROOT_PASSWORD").unwrap_or_else(|_| "desing27".to_string());
     let password_hash =
         hash_password(&password).map_err(|e| SurrealDbError::Query(e.to_string()))?;
-    let now = Utc::now().to_rfc3339();
 
-    let _: Option<serde_json::Value> = db
-        .query(
-            r#"
+    // No deserializamos el resultado para evitar el bug de serde_json::Value con SurrealDB 2.x
+    db.query(
+        r#"
             CREATE user CONTENT {
                 id: type::thing('user', $id),
                 email: $email,
@@ -178,13 +178,13 @@ async fn seed_superuser() -> Result<(), SurrealDbError> {
                 updated_at: time::now()
             }
             "#,
-        )
-        .bind(("id", SUPERUSER_ID))
-        .bind(("email", SUPERUSER_EMAIL))
-        .bind(("password_hash", password_hash.clone()))
-        .bind(("role_id", ROLE_ADMIN_ID))
-        .await?
-        .take(0)?;
+    )
+    .bind(("id", SUPERUSER_ID))
+    .bind(("email", SUPERUSER_EMAIL))
+    .bind(("password_hash", password_hash.clone()))
+    .bind(("role_id", ROLE_ADMIN_ID))
+    .await?
+    .check()?; // Solo verificar errores, no deserializar
 
     info!("✅ Superuser creado");
     Ok(())
@@ -194,25 +194,25 @@ async fn seed_superuser() -> Result<(), SurrealDbError> {
 async fn seed_admin_user() -> Result<(), SurrealDbError> {
     let db = get_db().await?;
 
-    // Verificar si ya existe
-    let existing: Option<serde_json::Value> = db
-        .query("SELECT * FROM user WHERE email = $email LIMIT 1")
+    // Verificar si ya existe usando SELECT VALUE id
+    let existing: Vec<RecordId> = db
+        .query("SELECT VALUE id FROM user WHERE email = $email")
         .bind(("email", "daniel.bleach1@gmail.com"))
         .await?
         .take(0)?;
 
-    if existing.is_some() {
+    if !existing.is_empty() {
+        info!("👤 Admin de desarrollo ya existe, saltando creación.");
         return Ok(());
     }
 
     let id = uuid::Uuid::new_v4().to_string();
     let password_hash =
         hash_password("desing27").map_err(|e| SurrealDbError::Query(e.to_string()))?;
-    let now = Utc::now().to_rfc3339();
 
-    let _: Option<serde_json::Value> = db
-        .query(
-            r#"
+    // No deserializamos el resultado para evitar el bug de serde_json::Value con SurrealDB 2.x
+    db.query(
+        r#"
             CREATE user CONTENT {
                 id: type::thing('user', $id),
                 email: "daniel.bleach1@gmail.com",
@@ -227,12 +227,12 @@ async fn seed_admin_user() -> Result<(), SurrealDbError> {
                 updated_at: time::now()
             }
             "#,
-        )
-        .bind(("id", id.clone()))
-        .bind(("password_hash", password_hash.clone()))
-        .bind(("role_id", ROLE_ADMIN_ID))
-        .await?
-        .take(0)?;
+    )
+    .bind(("id", id.clone()))
+    .bind(("password_hash", password_hash.clone()))
+    .bind(("role_id", ROLE_ADMIN_ID))
+    .await?
+    .check()?; // Solo verificar errores, no deserializar
 
     info!("✅ Admin de desarrollo creado");
     Ok(())

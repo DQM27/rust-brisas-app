@@ -11,10 +11,12 @@ pub mod search;
 pub mod services;
 
 use crate::config::manager as config_manager;
+use crate::config::seed;
 use crate::config::settings::{AppConfig, AppConfigState};
 use crate::services::search_service::SearchService;
 use crate::services::session::SessionState;
 use crate::services::surrealdb_service::{setup_embedded_surrealdb, SurrealDbConfig};
+use log::{error, info};
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, RwLock};
 use tauri::Manager;
@@ -29,6 +31,14 @@ pub fn run() {
 
     #[cfg(desktop)]
     {
+        builder = builder.plugin(
+            tauri_plugin_log::Builder::new()
+                .level(log::LevelFilter::Info)
+                .level_for("zbus", log::LevelFilter::Warn)
+                .level_for("tantivy", log::LevelFilter::Warn)
+                .level_for("tracing", log::LevelFilter::Warn)
+                .build(),
+        );
         builder = builder.plugin(tauri_plugin_dialog::init());
         builder = builder.plugin(tauri_plugin_opener::init());
         builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
@@ -42,14 +52,17 @@ pub fn run() {
             // 0. CARGAR CONFIGURACIÓN (crea archivos si no existen)
             let app_config: AppConfig = match config_manager::load_config() {
                 Ok(config) => {
-                    println!("✅ Configuración cargada: terminal_id = {}", config.terminal.id);
+                    info!("✅ Configuración cargada: terminal_id = {}", config.terminal.id);
                     config
                 }
                 Err(e) => {
-                    eprintln!("⚠️ Error cargando configuración (usando defaults): {}", e);
+                    error!("⚠️ Error cargando configuración (usando defaults): {}", e);
                     AppConfig::default()
                 }
             };
+
+            // Guardar estado de configuración para seed condicional
+            let is_configured = app_config.setup.is_configured;
 
             // Gestionar AppConfigState para comandos de setup
             let config_state: AppConfigState = Arc::new(RwLock::new(app_config));
@@ -71,7 +84,20 @@ pub fn run() {
                     .await
                     .expect("❌ Error fatal: No se pudo inicializar SurrealDB");
             });
-            println!("✅ SurrealDB inicializado correctamente.");
+            info!("✅ SurrealDB inicializado correctamente.");
+
+            // 2.5. SEED DATABASE (condicional basado en is_configured)
+            // Solo sembrar si ya está configurado para evitar desincronización con Argon2
+            tauri::async_runtime::block_on(async {
+                if is_configured {
+                    info!("🌱 App configurada, ejecutando seed...");
+                    if let Err(e) = seed::seed_db().await {
+                        error!("❌ Error en seed: {}", e);
+                    }
+                } else {
+                    info!("⚠️ App NO configurada, saltando seed hasta completar Wizard.");
+                }
+            });
 
             // 3. INICIALIZAR SEARCH SERVICE (TANTIVY)
             // Usamos un subdirectorio para no ensuciar la raíz de app_data

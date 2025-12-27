@@ -16,15 +16,16 @@ use tantivy::{Index, IndexWriter, TantivyDocument};
 /// Inicializa el índice de Tantivy
 pub fn initialize_index(index_path: &Path) -> Result<Index, SearchError> {
     let schema = build_search_schema();
+    let meta_path = index_path.join("meta.json");
 
-    // Crear o abrir índice existente
-    if index_path.exists() {
+    // Solo intentar abrir si existe meta.json (índice válido)
+    if meta_path.exists() {
         let index = Index::open_in_dir(index_path)
             .map_err(|e| SearchError::TantivyError(format!("Error al abrir índice: {}", e)))?;
 
         // Verificar si existe el campo "email" (indicador simple de migración)
         if index.schema().get_field(fields::EMAIL).is_err() {
-            // Intentar eliminar directorio
+            // Schema obsoleto, recrear índice
             std::fs::remove_dir_all(index_path).map_err(|e| {
                 SearchError::IoError(format!("Error al eliminar índice obsoleto: {}", e))
             })?;
@@ -38,10 +39,14 @@ pub fn initialize_index(index_path: &Path) -> Result<Index, SearchError> {
             Ok(index)
         }
     } else {
-        std::fs::create_dir_all(index_path).map_err(|e| {
-            SearchError::IoError(format!("Error al crear directorio de índice: {}", e))
-        })?;
+        // Crear directorio si no existe
+        if !index_path.exists() {
+            std::fs::create_dir_all(index_path).map_err(|e| {
+                SearchError::IoError(format!("Error al crear directorio de índice: {}", e))
+            })?;
+        }
 
+        // Crear nuevo índice
         Index::create_in_dir(index_path, schema)
             .map_err(|e| SearchError::TantivyError(format!("Error al crear índice: {}", e)))
     }

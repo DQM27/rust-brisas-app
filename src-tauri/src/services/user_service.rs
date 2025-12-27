@@ -4,6 +4,7 @@
 // Capa de servicio: orquesta dominio, db y auth
 // Adaptado para SurrealDB Native
 
+use crate::db::surrealdb_role_queries as role_db;
 use crate::db::surrealdb_user_queries as db;
 use crate::domain::errors::UserError;
 use crate::domain::role::{ROLE_GUARDIA_ID, SUPERUSER_ID};
@@ -14,6 +15,7 @@ use crate::models::user::{
 };
 use crate::services::auth;
 use crate::services::search_service::SearchService;
+use crate::services::surrealdb_authorization;
 
 use log::{error, info, warn};
 use rand::distributions::Alphanumeric;
@@ -48,7 +50,7 @@ pub async fn create_user(
 
     // 4. Determinar rol (default: Guardia)
     let role_id_str = input.role_id.unwrap_or_else(|| ROLE_GUARDIA_ID.to_string());
-    let role_record = RecordId::from_table_key("role", role_id_str);
+    let role_record = RecordId::from_table_key("role", &role_id_str);
 
     // 5. Generar o usar contraseña
     let (password_str, must_change_password) = match input.password {
@@ -96,10 +98,30 @@ pub async fn create_user(
     info!("Usuario '{}' creado exitosamente con ID {}", email_normalizado, user.id);
 
     // 8. Retornar respuesta
-    let mut response = UserResponse::from_user_with_role(
-        user.clone(),
-        db::get_role_name(&user.role).await.unwrap_or_else(|_| "Desconocido".to_string()),
-    );
+    // 8. Retornar respuesta
+    let role_permissions = surrealdb_authorization::get_role_permissions(&role_id_str)
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .collect();
+
+    let role_obj = role_db::find_by_id(&user.role)
+        .await
+        .map_err(|e| UserError::Database(e.to_string()))?
+        .unwrap_or_else(|| {
+            use crate::models::role::Role;
+            Role {
+                id: user.role.clone(),
+                name: "Desconocido".to_string(),
+                description: None,
+                is_system: false,
+                created_at: surrealdb::Datetime::default(),
+                updated_at: surrealdb::Datetime::default(),
+                permissions: Some(vec![]),
+            }
+        });
+
+    let mut response = UserResponse::from_user_with_role(user.clone(), role_obj, role_permissions);
     if must_change_password {
         response.temporary_password = Some(password_str);
     }
@@ -122,11 +144,29 @@ pub async fn get_user_by_id(id_str: &str) -> Result<UserResponse, UserError> {
         .await
         .map_err(|e| UserError::Database(e.to_string()))?
         .ok_or(UserError::NotFound)?;
+    let role = role_db::find_by_id(&user.role)
+        .await
+        .map_err(|e| UserError::Database(e.to_string()))?
+        .unwrap_or_else(|| {
+            use crate::models::role::Role;
+            Role {
+                id: user.role.clone(),
+                name: "Desconocido".to_string(),
+                description: None,
+                is_system: false,
+                created_at: surrealdb::Datetime::default(),
+                updated_at: surrealdb::Datetime::default(),
+                permissions: Some(vec![]),
+            }
+        });
 
-    let role_name =
-        db::get_role_name(&user.role).await.unwrap_or_else(|_| "Desconocido".to_string());
+    let permissions = surrealdb_authorization::get_role_permissions(&user.role.to_string())
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .collect();
 
-    Ok(UserResponse::from_user_with_role(user, role_name))
+    Ok(UserResponse::from_user_with_role(user, role, permissions))
 }
 
 // ==========================================
@@ -141,9 +181,29 @@ pub async fn get_all_users() -> Result<UserListResponse, UserError> {
 
     let mut user_responses = Vec::new();
     for user in users {
-        let role_name =
-            db::get_role_name(&user.role).await.unwrap_or_else(|_| "Desconocido".to_string());
-        user_responses.push(UserResponse::from_user_with_role(user, role_name));
+        let role = role_db::find_by_id(&user.role)
+            .await
+            .unwrap_or(None) // Ignore DB error
+            .unwrap_or_else(|| {
+                use crate::models::role::Role; // Added this line to bring Role into scope
+                Role {
+                    id: user.role.clone(),
+                    name: "Desconocido".to_string(),
+                    description: None,
+                    is_system: false,
+                    created_at: surrealdb::Datetime::default(),
+                    updated_at: surrealdb::Datetime::default(),
+                    permissions: Some(vec![]),
+                }
+            });
+
+        let permissions = surrealdb_authorization::get_role_permissions(&user.role.to_string())
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .collect();
+
+        user_responses.push(UserResponse::from_user_with_role(user, role, permissions));
     }
 
     let total = user_responses.len();
@@ -263,10 +323,28 @@ pub async fn update_user(
         warn!("Error al actualizar índice del usuario {}: {}", id_str, e);
     }
 
-    Ok(UserResponse::from_user_with_role(
-        user.clone(),
-        db::get_role_name(&user.role).await.unwrap_or_else(|_| "Desconocido".to_string()),
-    ))
+    let role = role_db::find_by_id(&user.role)
+        .await
+        .map_err(|e| UserError::Database(e.to_string()))?
+        .unwrap_or_else(|| {
+            use crate::models::role::Role;
+            Role {
+                id: user.role.clone(),
+                name: "Desconocido".to_string(),
+                description: None,
+                is_system: false,
+                created_at: surrealdb::Datetime::default(),
+                updated_at: surrealdb::Datetime::default(),
+                permissions: Some(vec![]),
+            }
+        });
+    let permissions = surrealdb_authorization::get_role_permissions(&user.role.to_string())
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .collect();
+
+    Ok(UserResponse::from_user_with_role(user, role, permissions))
 }
 
 // ==========================================
@@ -315,16 +393,13 @@ pub async fn change_password(id_str: String, input: ChangePasswordInput) -> Resu
     domain::validar_password(&input.new_password)?;
     let new_hash = auth::hash_password(&input.new_password)?;
 
-    let mut map = serde_json::Map::new();
-    map.insert("password_hash".to_string(), serde_json::json!(new_hash));
-    map.insert("must_change_password".to_string(), serde_json::json!(false));
-    map.insert("updated_at".to_string(), serde_json::json!(chrono::Utc::now()));
-
-    db::update(&parse_user_id(&id_str), serde_json::Value::Object(map)).await.map_err(|e| {
+    // Usar update_password que usa time::now() nativo de SurrealDB
+    db::update_password(&parse_user_id(&id_str), &new_hash).await.map_err(|e| {
         error!("Error al actualizar password para {}: {}", id_str, e);
         UserError::Database(e.to_string())
     })?;
 
+    info!("✅ Contraseña actualizada para usuario {}", id_str);
     Ok(())
 }
 
@@ -351,10 +426,31 @@ pub async fn login(email: String, password: String) -> Result<UserResponse, User
         return Err(UserError::InactiveUser);
     }
 
-    let role_name =
-        db::get_role_name(&user.role).await.unwrap_or_else(|_| "Desconocido".to_string());
+    let role_permissions = surrealdb_authorization::get_role_permissions(&user.role.to_string())
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .collect();
 
-    Ok(UserResponse::from_user_with_role(user, role_name))
+    let role_obj = role_db::find_by_id(&user.role)
+        .await
+        .map_err(|e| UserError::Database(e.to_string()))?
+        .unwrap_or_else(|| {
+            // Fallback dummy role if not found (shouldn't happen with FKs but be safe)
+            use crate::models::role::Role;
+            Role {
+                id: user.role.clone(),
+                name: "Desconocido".to_string(),
+                description: None,
+                is_system: false,
+                created_at: surrealdb::Datetime::default(),
+                updated_at: surrealdb::Datetime::default(),
+                permissions: Some(vec![]),
+            }
+        });
+
+    let response = UserResponse::from_user_with_role(user.clone(), role_obj, role_permissions);
+    Ok(response)
 }
 
 // ==========================================
@@ -362,10 +458,22 @@ pub async fn login(email: String, password: String) -> Result<UserResponse, User
 // ==========================================
 
 fn parse_user_id(id: &str) -> RecordId {
-    if id.contains(':') {
-        let parts: Vec<&str> = id.split(':').collect();
-        RecordId::from_table_key(parts[0], parts[1])
+    // Limpiar brackets Unicode que SurrealDB agrega: ⟨uuid⟩ -> uuid
+    let clean_id = id
+        .trim_start_matches("⟨")
+        .trim_end_matches("⟩")
+        .trim_start_matches('<')
+        .trim_end_matches('>');
+
+    if clean_id.contains(':') {
+        let parts: Vec<&str> = clean_id.split(':').collect();
+        let key = parts[1]
+            .trim_start_matches("⟨")
+            .trim_end_matches("⟩")
+            .trim_start_matches('<')
+            .trim_end_matches('>');
+        RecordId::from_table_key(parts[0], key)
     } else {
-        RecordId::from_table_key("user", id)
+        RecordId::from_table_key("user", clean_id)
     }
 }

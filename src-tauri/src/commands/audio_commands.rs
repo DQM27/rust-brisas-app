@@ -4,6 +4,7 @@ use tauri::{command, State};
 
 #[command]
 pub async fn play_alert_sound(config: State<'_, AppConfigState>) -> Result<(), String> {
+    #[allow(unused_variables)]
     let (sound, custom_path, use_custom) = {
         let config_guard = config.read().expect("Error reading config");
         (
@@ -79,6 +80,15 @@ pub async fn upload_custom_sound(
     }
 
     Ok(dest_str)
+}
+
+#[tauri::command]
+pub async fn play_sound(
+    _sound: String,
+    _custom_path: Option<String>,
+    _use_custom: bool,
+) -> Result<(), String> {
+    Ok(())
 }
 
 #[command]

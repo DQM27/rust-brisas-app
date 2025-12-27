@@ -5,6 +5,7 @@
 
 use crate::models::role::{Role, RoleCreateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
+// use log::info;
 use surrealdb::RecordId;
 
 pub async fn find_all() -> Result<Vec<Role>, SurrealDbError> {
@@ -24,12 +25,13 @@ pub async fn get_permissions(role_id: &RecordId) -> Result<Vec<String>, SurrealD
     let mut result = db.query("SELECT permissions FROM $id").bind(("id", role_id.clone())).await?;
 
     #[derive(serde::Deserialize)]
-    struct Perms {
+    struct RolePermissionsRow {
         permissions: Option<Vec<String>>,
     }
 
-    let row: Option<Perms> = result.take(0)?;
-    Ok(row.and_then(|r| r.permissions).unwrap_or_default())
+    let row: Option<RolePermissionsRow> = result.take(0)?;
+    let perms = row.and_then(|r| r.permissions).unwrap_or_default();
+    Ok(perms)
 }
 
 pub async fn create(id: &str, dto: RoleCreateDTO) -> Result<Role, SurrealDbError> {
