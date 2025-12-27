@@ -11,11 +11,11 @@ use crate::models::vehiculo::{CreateVehiculoInput, TipoVehiculo, UpdateVehiculoI
 // VALIDACIONES DE CAMPOS INDIVIDUALES
 // ==========================================
 
-pub fn validar_contratista_id(contratista_id: &str) -> Result<(), VehiculoError> {
-    let limpio = contratista_id.trim();
+pub fn validar_propietario_id(propietario_id: &str) -> Result<(), VehiculoError> {
+    let limpio = propietario_id.trim();
 
     if limpio.is_empty() {
-        return Err(VehiculoError::Validation("Debe especificar un contratista".to_string()));
+        return Err(VehiculoError::Validation("Debe especificar un propietario".to_string()));
     }
 
     Ok(())
@@ -87,9 +87,7 @@ pub fn validar_texto_opcional(
 
 /// Valida todos los campos necesarios para crear un vehículo
 pub fn validar_create_input(input: &CreateVehiculoInput) -> Result<(), VehiculoError> {
-    if let Some(ref cid) = input.contratista_id {
-        validar_contratista_id(cid)?;
-    }
+    validar_propietario_id(&input.propietario_id)?;
     validar_tipo_vehiculo(&input.tipo_vehiculo)?;
     validar_placa(&input.placa)?;
 

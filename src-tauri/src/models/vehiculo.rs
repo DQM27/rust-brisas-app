@@ -4,6 +4,7 @@
 
 use crate::models::contratista::ContratistaFetched;
 use crate::models::proveedor::ProveedorFetched;
+use crate::models::visitante::VisitanteFetched;
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};
 
@@ -15,9 +16,7 @@ use surrealdb::{Datetime, RecordId};
 #[serde(rename_all = "camelCase")]
 pub struct Vehiculo {
     pub id: RecordId,
-    pub contratista: Option<RecordId>,
-    pub proveedor: Option<RecordId>,
-    pub visitante: Option<RecordId>,
+    pub propietario: RecordId,
     #[serde(alias = "tipo_vehiculo")]
     pub tipo_vehiculo: TipoVehiculo,
     pub placa: String,
@@ -35,9 +34,7 @@ pub struct Vehiculo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VehiculoFetched {
     pub id: RecordId,
-    pub contratista: Option<ContratistaFetched>,
-    pub proveedor: Option<ProveedorFetched>,
-    pub visitante: Option<RecordId>, // No fetched visitor yet
+    pub propietario: PropietarioFetched,
     #[serde(alias = "tipo_vehiculo")]
     pub tipo_vehiculo: TipoVehiculo,
     pub placa: String,
@@ -50,6 +47,14 @@ pub struct VehiculoFetched {
     pub created_at: Datetime,
     #[serde(alias = "updated_at")]
     pub updated_at: Datetime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PropietarioFetched {
+    Contratista(ContratistaFetched),
+    Proveedor(ProveedorFetched),
+    Visitante(VisitanteFetched),
 }
 
 // ==========================================
@@ -98,8 +103,7 @@ impl std::str::FromStr for TipoVehiculo {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateVehiculoInput {
-    pub contratista_id: Option<String>,
-    pub proveedor_id: Option<String>,
+    pub propietario_id: String,
     pub tipo_vehiculo: String,
     pub placa: String,
     pub marca: Option<String>,
@@ -123,9 +127,7 @@ pub struct UpdateVehiculoInput {
 
 #[derive(Debug, Serialize)]
 pub struct VehiculoCreateDTO {
-    pub contratista: Option<RecordId>,
-    pub proveedor: Option<RecordId>,
-    pub visitante: Option<RecordId>,
+    pub propietario: RecordId,
     pub tipo_vehiculo: TipoVehiculo,
     pub placa: String,
     pub marca: Option<String>,
@@ -158,9 +160,10 @@ pub struct VehiculoUpdateDTO {
 #[serde(rename_all = "camelCase")]
 pub struct VehiculoResponse {
     pub id: String,
-    pub contratista_id: String,
-    pub contratista_nombre: String,
-    pub contratista_cedula: String,
+    pub propietario_id: String,
+    pub propietario_nombre: String,
+    pub propietario_cedula: String,
+    pub propietario_tipo: String, // contratista, proveedor, visitante
     pub empresa_nombre: String,
     pub tipo_vehiculo: TipoVehiculo,
     pub tipo_vehiculo_display: String,
@@ -203,9 +206,10 @@ impl From<Vehiculo> for VehiculoResponse {
 
         Self {
             id: v.id.to_string(),
-            contratista_id: v.contratista.as_ref().map(|t| t.to_string()).unwrap_or_default(),
-            contratista_nombre: String::new(),
-            contratista_cedula: String::new(),
+            propietario_id: v.propietario.to_string(),
+            propietario_nombre: String::new(),
+            propietario_cedula: String::new(),
+            propietario_tipo: v.propietario.table().to_string(),
             empresa_nombre: String::new(),
             tipo_vehiculo: v.tipo_vehiculo.clone(),
             tipo_vehiculo_display: v.tipo_vehiculo.display().to_string(),
@@ -242,9 +246,10 @@ impl VehiculoResponse {
 
         let mut res = Self {
             id: v.id.to_string(),
-            contratista_id: String::new(),
-            contratista_nombre: String::new(),
-            contratista_cedula: String::new(),
+            propietario_id: String::new(),
+            propietario_nombre: String::new(),
+            propietario_cedula: String::new(),
+            propietario_tipo: String::new(),
             empresa_nombre: String::new(),
             tipo_vehiculo: v.tipo_vehiculo.clone(),
             tipo_vehiculo_display: v.tipo_vehiculo.display().to_string(),
@@ -258,16 +263,29 @@ impl VehiculoResponse {
             updated_at: v.updated_at.to_string(),
         };
 
-        if let Some(c) = v.contratista {
-            res.contratista_id = c.id.to_string();
-            res.contratista_nombre = format!("{} {}", c.nombre, c.apellido);
-            res.contratista_cedula = c.cedula;
-            res.empresa_nombre = c.empresa.nombre;
-        } else if let Some(p) = v.proveedor {
-            res.contratista_id = p.id.to_string();
-            res.contratista_nombre = format!("{} {}", p.nombre, p.apellido);
-            res.contratista_cedula = p.cedula;
-            res.empresa_nombre = p.empresa.nombre;
+        match v.propietario {
+            PropietarioFetched::Contratista(c) => {
+                res.propietario_id = c.id.to_string();
+                res.propietario_nombre = format!("{} {}", c.nombre, c.apellido);
+                res.propietario_cedula = c.cedula;
+                res.propietario_tipo = "contratista".to_string();
+                res.empresa_nombre = c.empresa.nombre;
+            }
+            PropietarioFetched::Proveedor(p) => {
+                res.propietario_id = p.id.to_string();
+                res.propietario_nombre = format!("{} {}", p.nombre, p.apellido);
+                res.propietario_cedula = p.cedula;
+                res.propietario_tipo = "proveedor".to_string();
+                res.empresa_nombre = p.empresa.nombre;
+            }
+            PropietarioFetched::Visitante(vis) => {
+                res.propietario_id = vis.id.to_string();
+                res.propietario_nombre = format!("{} {}", vis.nombre, vis.apellido);
+                res.propietario_cedula = vis.cedula;
+                res.propietario_tipo = "visitante".to_string();
+                res.empresa_nombre =
+                    vis.empresa.map(|e| e.nombre).unwrap_or_else(|| "N/A".to_string());
+            }
         }
 
         res

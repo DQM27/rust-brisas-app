@@ -104,9 +104,7 @@ pub async fn create_proveedor(
 
                 let placa_norm = vehiculo_domain::normalizar_placa(placa);
                 let dto_vehiculo = VehiculoCreateDTO {
-                    contratista: None,
-                    proveedor: Some(proveedor.id.clone()),
-                    visitante: None,
+                    propietario: proveedor.id.clone(),
                     tipo_vehiculo: tipo_norm
                         .parse::<TipoVehiculo>()
                         .map_err(|e| ProveedorError::Validation(e))?,
@@ -202,7 +200,7 @@ async fn populate_response_fetched(
     let mut response = ProveedorResponse::from_fetched(proveedor.clone());
 
     // Buscar vehículos
-    let vehiculos = vehiculo_db::find_by_proveedor(&proveedor.id).await.unwrap_or_default();
+    let vehiculos = vehiculo_db::find_by_propietario(&proveedor.id).await.unwrap_or_default();
 
     if let Some(v) = vehiculos.first() {
         response.vehiculo_tipo = Some(v.tipo_vehiculo.to_string());
@@ -283,7 +281,7 @@ pub async fn update_proveedor(
 
     // 4. Gestionar Vehículo
     if let Some(tiene) = input.tiene_vehiculo {
-        let vehiculos = vehiculo_db::find_by_proveedor(&id).await.unwrap_or_default();
+        let vehiculos = vehiculo_db::find_by_propietario(&id).await.unwrap_or_default();
         let vehiculo_existente = vehiculos.first();
 
         if tiene {
@@ -315,9 +313,7 @@ pub async fn update_proveedor(
                     } else {
                         // Create
                         let dto_vehiculo = VehiculoCreateDTO {
-                            contratista: None,
-                            proveedor: Some(id.clone()),
-                            visitante: None,
+                            propietario: id.clone(),
                             tipo_vehiculo: tipo_norm
                                 .parse::<TipoVehiculo>()
                                 .map_err(|e| ProveedorError::Validation(e))?,
@@ -363,7 +359,7 @@ pub async fn delete_proveedor(
     let id = parse_proveedor_id(id_str);
 
     // Verificar existencia
-    let proveedor = db::find_by_id_fetched(&id)
+    let _ = db::find_by_id_fetched(&id)
         .await
         .map_err(|e| ProveedorError::Database(e.to_string()))?
         .ok_or(ProveedorError::NotFound)?;
@@ -372,7 +368,7 @@ pub async fn delete_proveedor(
     db::delete(&id).await.map_err(|e| ProveedorError::Database(e.to_string()))?;
 
     // Eliminar de search index
-    if let Err(e) = search_service.remove_proveedor(&id.to_string()).await {
+    if let Err(e) = search_service.delete_proveedor(&id.to_string()).await {
         warn!("Error eliminando proveedor del índice: {}", e);
     }
 

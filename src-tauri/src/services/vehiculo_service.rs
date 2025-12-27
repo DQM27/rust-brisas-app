@@ -4,6 +4,7 @@
 use crate::db::surrealdb_contratista_queries as contratista_db;
 use crate::db::surrealdb_proveedor_queries as proveedor_db;
 use crate::db::surrealdb_vehiculo_queries as db;
+use crate::db::surrealdb_visitante_queries as visitante_db;
 use crate::domain::errors::VehiculoError;
 use crate::domain::vehiculo as domain;
 use crate::models::vehiculo::{
@@ -30,23 +31,16 @@ fn parse_vehiculo_id(id_str: &str) -> RecordId {
     }
 }
 
-/// Helper para parsear ID de contratista
-fn parse_contratista_id(id_str: &str) -> RecordId {
+/// Helper para parsear cualquier ID de propietario (contratista, proveedor, visitante)
+fn parse_propietario_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
         RecordId::from_table_key(parts[0], parts[1])
     } else {
+        // Fallback or error? For now assume it's a RecordId string or we need to know the table.
+        // If it's just a key, this might fail if we don't know the table.
+        // But usually we receive full RecordId strings from frontend.
         RecordId::from_table_key("contratista", id_str)
-    }
-}
-
-/// Helper para parsear ID de proveedor
-fn parse_proveedor_id(id_str: &str) -> RecordId {
-    if id_str.contains(':') {
-        let parts: Vec<&str> = id_str.split(':').collect();
-        RecordId::from_table_key(parts[0], parts[1])
-    } else {
-        RecordId::from_table_key("proveedor", id_str)
     }
 }
 
@@ -57,25 +51,27 @@ pub async fn create_vehiculo(
     let placa_normalizada = domain::normalizar_placa(&input.placa);
     let tipo_vehiculo = domain::validar_tipo_vehiculo(&input.tipo_vehiculo)?;
 
-    let contratista = input.contratista_id.as_ref().map(|id| parse_contratista_id(id));
-    let proveedor = input.proveedor_id.as_ref().map(|id| parse_proveedor_id(id));
+    let propietario_id = parse_propietario_id(&input.propietario_id);
 
-    // Verificar que el contratista existe si se proporciona
-    if let Some(ref c_id) = contratista {
-        if contratista_db::find_by_id(c_id).await.map_err(map_db_error)?.is_none() {
-            return Err(VehiculoError::Validation(
-                "El contratista especificado no existe".to_string(),
-            ));
+    // Verificar que el propietario existe
+    let exists = match propietario_id.table() {
+        "contratista" => {
+            contratista_db::find_by_id(&propietario_id).await.map_err(map_db_error)?.is_some()
         }
-    }
+        "proveedor" => {
+            proveedor_db::find_by_id(&propietario_id).await.map_err(map_db_error)?.is_some()
+        }
+        "visitante" => {
+            visitante_db::find_by_id(&propietario_id).await.map_err(map_db_error)?.is_some()
+        }
+        _ => return Err(VehiculoError::Validation("Tipo de propietario no válido".to_string())),
+    };
 
-    // Verificar que el proveedor existe si se proporciona
-    if let Some(ref p_id) = proveedor {
-        if proveedor_db::find_by_id(p_id).await.map_err(map_db_error)?.is_none() {
-            return Err(VehiculoError::Validation(
-                "El proveedor especificado no existe".to_string(),
-            ));
-        }
+    if !exists {
+        return Err(VehiculoError::Validation(format!(
+            "El propietario ({}) no existe",
+            propietario_id.table()
+        )));
     }
 
     let count = db::count_by_placa(&placa_normalizada).await.map_err(map_db_error)?;
@@ -84,9 +80,7 @@ pub async fn create_vehiculo(
     }
 
     let dto = VehiculoCreateDTO {
-        contratista,
-        proveedor,
-        visitante: None,
+        propietario: propietario_id,
         tipo_vehiculo,
         placa: placa_normalizada,
         marca: input.marca.as_ref().map(|s| s.trim().to_uppercase()),
@@ -147,11 +141,11 @@ pub async fn get_vehiculos_activos() -> Result<Vec<VehiculoResponse>, VehiculoEr
     Ok(vehiculo_responses)
 }
 
-pub async fn get_vehiculos_by_contratista(
+pub async fn get_vehiculos_by_propietario(
     id_str: String,
 ) -> Result<Vec<VehiculoResponse>, VehiculoError> {
-    let id = parse_contratista_id(&id_str);
-    let vehiculos = db::find_by_contratista(&id).await.map_err(map_db_error)?;
+    let id = parse_propietario_id(&id_str);
+    let vehiculos = db::find_by_propietario(&id).await.map_err(map_db_error)?;
     let mut vehiculo_responses = Vec::with_capacity(vehiculos.len());
     for vehiculo in vehiculos {
         vehiculo_responses.push(VehiculoResponse::from_fetched(vehiculo));

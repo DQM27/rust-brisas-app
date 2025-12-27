@@ -24,14 +24,14 @@ export const VISITANTE_COLUMNS: ColDef<VisitanteResponse>[] = [
         width: 150,
     },
     {
-        field: "empresa",
+        field: "empresaNombre",
         headerName: "Empresa",
         filter: "agTextColumnFilter",
         width: 200,
-        valueGetter: (params) => params.data?.empresa || 'N/A',
+        valueGetter: (params) => params.data?.empresaNombre || 'N/A',
     },
     {
-        field: "has_vehicle",
+        field: "hasVehicle",
         headerName: "Vehículo",
         width: 100,
         cellRenderer: (params: any) => {
@@ -39,7 +39,7 @@ export const VISITANTE_COLUMNS: ColDef<VisitanteResponse>[] = [
         },
     },
     {
-        field: "created_at",
+        field: "createdAt",
         headerName: "Fecha Registro",
         filter: "agDateColumnFilter",
         width: 180,

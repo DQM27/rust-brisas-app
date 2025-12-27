@@ -29,5 +29,9 @@ export const visitante = {
 
     listArchived: async (): Promise<VisitanteResponse[]> => {
         return await invoke<VisitanteResponse[]>('get_archived_visitantes');
+    },
+
+    list: async (): Promise<VisitanteResponse[]> => {
+        return await invoke<VisitanteResponse[]>('list_visitantes');
     }
 };

@@ -54,7 +54,7 @@ macro_rules! register_handlers {
             commands::vehiculo_commands::get_vehiculo_by_placa,
             commands::vehiculo_commands::get_all_vehiculos,
             commands::vehiculo_commands::get_vehiculos_activos,
-            commands::vehiculo_commands::get_vehiculos_by_contratista,
+            commands::vehiculo_commands::get_vehiculos_by_propietario,
             commands::vehiculo_commands::update_vehiculo,
             commands::vehiculo_commands::delete_vehiculo,
             // Comandos de gafetes
@@ -75,7 +75,6 @@ macro_rules! register_handlers {
             commands::cita_commands::get_citas_pendientes,
             commands::cita_commands::get_cita_by_id,
             commands::cita_commands::procesar_ingreso_cita,
-            commands::cita_commands::procesar_ingreso_cita,
             commands::cita_commands::cancelar_cita,
             commands::cita_commands::completar_cita,
             // ==========================================
@@ -88,6 +87,7 @@ macro_rules! register_handlers {
             commands::visitante_commands::delete_visitante,
             commands::visitante_commands::restore_visitante,
             commands::visitante_commands::get_archived_visitantes,
+            commands::visitante_commands::list_visitantes,
             // ==========================================
             // COMANDOS DE INGRESO VISITAS
             // ==========================================

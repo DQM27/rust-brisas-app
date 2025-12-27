@@ -4,7 +4,7 @@ export type TipoVehiculo = 'motocicleta' | 'automovil';
 
 export interface Vehiculo {
   id: string;
-  contrafistaId: string;
+  propietario: string; // RecordId string
   tipoVehiculo: TipoVehiculo;
   placa: string;
   marca?: string;
@@ -15,11 +15,14 @@ export interface Vehiculo {
   updatedAt: string;
 }
 
+export type PropietarioTipo = 'contratista' | 'proveedor' | 'visitante';
+
 export interface VehiculoResponse {
   id: string;
-  contratistaId: string;
-  contratistaNombre: string;
-  contratistaCedula: string;
+  propietarioId: string;
+  propietarioNombre: string;
+  propietarioCedula: string;
+  propietarioTipo: PropietarioTipo;
   empresaNombre: string;
   tipoVehiculo: TipoVehiculo;
   tipoVehiculoDisplay: string;
@@ -45,7 +48,7 @@ export interface VehiculoListResponse {
 }
 
 export interface CreateVehiculoInput {
-  contratistaId: string;
+  propietarioId: string;
   tipoVehiculo: TipoVehiculo;
   placa: string;
   marca?: string;

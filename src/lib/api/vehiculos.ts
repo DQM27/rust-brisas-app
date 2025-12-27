@@ -1,8 +1,8 @@
 // src/lib/api/vehiculos.ts
 
 import { invoke } from "@tauri-apps/api/core";
-import type { 
-  VehiculoResponse, 
+import type {
+  VehiculoResponse,
   VehiculoListResponse,
   CreateVehiculoInput,
   UpdateVehiculoInput
@@ -37,7 +37,7 @@ export const vehiculos = {
     return await invoke('get_vehiculos_activos');
   },
 
-  getByContratista: async (contratistaId: string): Promise<VehiculoResponse[]> => {
-    return await invoke('get_vehiculos_by_contratista', { contratistaId });
+  getByPropietario: async (propietarioId: string): Promise<VehiculoResponse[]> => {
+    return await invoke('get_vehiculos_by_propietario', { propietarioId });
   },
 };

@@ -6,14 +6,16 @@
   // I will comment out the modal import for now if it doesn't exist, but I should probably create it too or use a generic one.
   // User asked for soft delete, not necessarily full CRUD UI creation if it didn't exist, but "Visitante" usually implies CRUD.
   // I'll assume standard CRUD pattern.
-  // import VisitanteFormModal from "$lib/components/visitante/VisitanteFormModal.svelte";
-
   import {
     searchVisitantes,
     deleteVisitante,
     restoreVisitante,
     getArchivedVisitantes,
+    listVisitantes,
+    createVisitante,
+    updateVisitante,
   } from "$lib/logic/visitante/visitanteService";
+  import VisitanteFormModal from "$lib/components/visitante/VisitanteFormModal.svelte";
   import { VISITANTE_COLUMNS } from "$lib/logic/visitante/visitanteColumns";
   import { createCustomButton } from "$lib/config/agGridConfigs";
   import type { VisitanteResponse } from "$lib/types/visitante";
@@ -37,9 +39,35 @@
   // Selección
   let selectedRows = $state<VisitanteResponse[]>([]);
 
-  // TODO: Modal state if we implement Create/Edit
-  // let showModal = $state(false);
-  // let selectedVisitante = $state<VisitanteResponse | null>(null);
+  // Modal state
+  let showModal = $state(false);
+  let selectedVisitanteForEdit = $state<VisitanteResponse | null>(null);
+
+  function openFormModal(visitante: VisitanteResponse | null = null) {
+    selectedVisitanteForEdit = visitante;
+    showModal = true;
+  }
+
+  async function handleSave(data: any) {
+    loading = true;
+    let res;
+    if (selectedVisitanteForEdit) {
+      res = await updateVisitante(selectedVisitanteForEdit.id, data);
+    } else {
+      res = await createVisitante(data);
+    }
+
+    if (res.ok) {
+      toast.success(
+        selectedVisitanteForEdit ? "Visitante actualizado" : "Visitante creado",
+      );
+      showModal = false;
+      loadData();
+    } else {
+      toast.error(res.error);
+    }
+    loading = false;
+  }
 
   // Carga inicial
   const loadData = async () => {
@@ -50,8 +78,7 @@
     if (activeFilter === "papelera") {
       res = await getArchivedVisitantes();
     } else {
-      // Default search all (empty query)
-      res = await searchVisitantes("");
+      res = await listVisitantes();
     }
 
     if (res.ok) {
@@ -141,11 +168,13 @@
 
     return {
       default: [
-        // {
-        //   id: "nuevo",
-        //   label: "Nuevo",
-        //   ... createCustomButton.nuevo(() => openFormModal(null)) ...
-        // },
+        {
+          id: "nuevo",
+          label: "Nuevo",
+          category: "action",
+          onClick: () => openFormModal(null),
+          tooltip: "Registrar nuevo visitante",
+        },
         {
           id: "refresh",
           label: "Actualizar",
@@ -165,7 +194,15 @@
         },
       ],
       singleSelect: [
-        // Edit button would go here
+        {
+          id: "edit",
+          label: "Editar",
+          category: "action",
+          onClick: () => {
+            if (selected) openFormModal(selected);
+          },
+          tooltip: "Editar visitante seleccionado",
+        },
         createCustomButton.eliminar(() => {
           if (selected) confirmDelete(selected);
         }),
@@ -206,5 +243,12 @@
   {/if}
 </div>
 
-<!-- Modal Placeholder -->
-<!-- <VisitanteFormModal ... /> -->
+{#if showModal}
+  <VisitanteFormModal
+    show={showModal}
+    visitante={selectedVisitanteForEdit}
+    {loading}
+    onSave={handleSave}
+    onClose={() => (showModal = false)}
+  />
+{/if}

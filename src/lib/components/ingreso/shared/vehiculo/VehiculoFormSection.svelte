@@ -1,9 +1,11 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
 
+  import type { VehiculoResponse } from "$lib/types/vehiculo";
+
   export let tieneVehiculo: boolean = false;
   export let vehiculoId: string | null | undefined = undefined; // ID selected
-  export let vehiculosRegistrados: any[] = []; // List of vehicles available for the person
+  export let vehiculosRegistrados: VehiculoResponse[] = []; // List of vehicles available for the person
   export let error: string | undefined = undefined;
 
   // Si hay vehiculos registrados y se activa tieneVehiculo, preseleccionar el primero o dejar vacio?
@@ -41,7 +43,7 @@
             <option value="" disabled selected>-- Seleccione --</option>
             {#each vehiculosRegistrados as v}
               <option value={v.id}>
-                {v.placa || "Sin Placa"} - {v.marca || "Marca desc."}
+                {v.placa} - {v.marca || "Marca desc."}
                 {v.modelo || ""}
               </option>
             {/each}

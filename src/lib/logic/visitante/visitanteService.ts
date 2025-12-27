@@ -69,6 +69,15 @@ export async function getArchivedVisitantes(): Promise<ServiceResult<VisitanteRe
     }
 }
 
+export async function listVisitantes(): Promise<ServiceResult<VisitanteResponse[]>> {
+    try {
+        const data = await visitante.list();
+        return { ok: true, data };
+    } catch (err: any) {
+        return { ok: false, error: parseError(err) };
+    }
+}
+
 function parseError(err: any): string {
     if (typeof err === 'string') {
         if (/unique|cedula/i.test(err)) return 'La cédula ya existe.';

@@ -97,6 +97,7 @@ DEFINE FIELD apellido ON TABLE visitante TYPE string;
 DEFINE FIELD segundo_apellido ON TABLE visitante TYPE option<string>;
 DEFINE FIELD nombre_completo ON TABLE visitante VALUE 
     string::trim(nombre + ' ' + (segundo_nombre OR '') + ' ' + apellido + ' ' + (segundo_apellido OR ''));
+DEFINE FIELD empresa ON TABLE visitante TYPE option<record<empresa>>;
 DEFINE FIELD created_at ON TABLE visitante TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE visitante TYPE datetime VALUE time::now();
 DEFINE FIELD deleted_at ON TABLE visitante TYPE option<datetime>;
@@ -139,10 +140,8 @@ DEFINE FIELD created_at ON TABLE gafete TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE gafete TYPE datetime VALUE time::now();
 DEFINE INDEX idx_gafete_numero_tipo ON gafete COLUMNS numero, tipo UNIQUE;
 
--- Tabla VEHICULO
 DEFINE TABLE vehiculo SCHEMAFULL;
-DEFINE FIELD contratista ON TABLE vehiculo TYPE option<record<contratista>>;
-DEFINE FIELD proveedor ON TABLE vehiculo TYPE option<record<proveedor>>;
+DEFINE FIELD propietario ON TABLE vehiculo TYPE record<contratista | proveedor | visitante>;
 DEFINE FIELD tipo_vehiculo ON TABLE vehiculo TYPE string ASSERT $value INSIDE ['automovil', 'motocicleta', 'camion', 'otro'];
 DEFINE FIELD placa ON TABLE vehiculo TYPE string;
 DEFINE FIELD marca ON TABLE vehiculo TYPE option<string>;

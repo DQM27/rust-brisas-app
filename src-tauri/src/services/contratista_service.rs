@@ -407,7 +407,7 @@ async fn build_response_fetched(
     let mut response = ContratistaResponse::from_fetched(contratista.clone());
 
     // Obtener vehículo
-    let vehiculos = veh_db::find_by_contratista(&contratista.id).await.map_err(map_db_error)?;
+    let vehiculos = veh_db::find_by_propietario(&contratista.id).await.map_err(map_db_error)?;
     if let Some(v) = vehiculos.first() {
         response.vehiculo_tipo = Some(v.tipo_vehiculo.to_string());
         response.vehiculo_placa = Some(v.placa.clone());

@@ -10,16 +10,14 @@ use surrealdb::RecordId;
 pub async fn insert(dto: VehiculoCreateDTO) -> Result<VehiculoFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    // CREATE doesn't support FETCH, so we need two queries
     let created: Option<Vehiculo> =
         db.query("CREATE vehiculo CONTENT $dto").bind(("dto", dto)).await?.take(0)?;
 
     let vehiculo = created
         .ok_or(SurrealDbError::TransactionError("Error al insertar vehículo".to_string()))?;
 
-    // Fetch with all relations
     let mut result = db
-        .query("SELECT * FROM $id FETCH contratista, proveedor, contratista.empresa, proveedor.empresa")
+        .query("SELECT * FROM $id FETCH propietario, propietario.empresa")
         .bind(("id", vehiculo.id.clone()))
         .await?;
 
@@ -38,7 +36,7 @@ pub async fn find_by_id(id: &RecordId) -> Result<Option<Vehiculo>, SurrealDbErro
 pub async fn find_by_id_fetched(id: &RecordId) -> Result<Option<VehiculoFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM $id FETCH contratista, proveedor, contratista.empresa, proveedor.empresa")
+        .query("SELECT * FROM $id FETCH propietario, propietario.empresa")
         .bind(("id", id.clone()))
         .await?;
     Ok(result.take(0)?)
@@ -47,7 +45,7 @@ pub async fn find_by_id_fetched(id: &RecordId) -> Result<Option<VehiculoFetched>
 pub async fn find_by_placa(placa: &str) -> Result<Option<VehiculoFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM vehiculo WHERE placa = $placa AND is_active = true FETCH contratista, proveedor, contratista.empresa, proveedor.empresa")
+        .query("SELECT * FROM vehiculo WHERE placa = $placa AND is_active = true FETCH propietario, propietario.empresa")
         .bind(("placa", placa.to_string()))
         .await?;
     Ok(result.take(0)?)
@@ -56,7 +54,7 @@ pub async fn find_by_placa(placa: &str) -> Result<Option<VehiculoFetched>, Surre
 pub async fn find_all_fetched() -> Result<Vec<VehiculoFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM vehiculo ORDER BY created_at DESC FETCH contratista, proveedor, contratista.empresa, proveedor.empresa")
+        .query("SELECT * FROM vehiculo ORDER BY created_at DESC FETCH propietario, propietario.empresa")
         .await?;
     Ok(result.take(0)?)
 }
@@ -64,7 +62,9 @@ pub async fn find_all_fetched() -> Result<Vec<VehiculoFetched>, SurrealDbError> 
 pub async fn find_activos_fetched() -> Result<Vec<VehiculoFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM vehiculo WHERE is_active = true FETCH contratista, proveedor, contratista.empresa, proveedor.empresa")
+        .query(
+            "SELECT * FROM vehiculo WHERE is_active = true FETCH propietario, propietario.empresa",
+        )
         .await?;
     Ok(result.take(0)?)
 }
@@ -75,7 +75,6 @@ pub async fn update(
 ) -> Result<VehiculoFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    // UPDATE doesn't support FETCH, so we need two queries
     let _: Option<Vehiculo> = db
         .query("UPDATE $id MERGE $dto")
         .bind(("id", id.clone()))
@@ -83,9 +82,8 @@ pub async fn update(
         .await?
         .take(0)?;
 
-    // Fetch with all relations
     let mut result = db
-        .query("SELECT * FROM $id FETCH contratista, proveedor, contratista.empresa, proveedor.empresa")
+        .query("SELECT * FROM $id FETCH propietario, propietario.empresa")
         .bind(("id", id.clone()))
         .await?;
 
@@ -113,26 +111,14 @@ pub async fn count_by_placa(placa: &str) -> Result<i64, SurrealDbError> {
     Ok(count)
 }
 
-pub async fn find_by_contratista(
-    contratista_id: &RecordId,
+pub async fn find_by_propietario(
+    propietario_id: &RecordId,
 ) -> Result<Vec<VehiculoFetched>, SurrealDbError> {
     let db = get_db().await?;
 
     let mut result = db
-        .query("SELECT * FROM vehiculo WHERE contratista = $contratista AND is_active = true FETCH contratista, proveedor, contratista.empresa, proveedor.empresa")
-        .bind(("contratista", contratista_id.clone()))
-        .await?;
-    Ok(result.take(0)?)
-}
-
-pub async fn find_by_proveedor(
-    proveedor_id: &RecordId,
-) -> Result<Vec<VehiculoFetched>, SurrealDbError> {
-    let db = get_db().await?;
-
-    let mut result = db
-        .query("SELECT * FROM vehiculo WHERE proveedor = $proveedor AND is_active = true FETCH contratista, proveedor, contratista.empresa, proveedor.empresa")
-        .bind(("proveedor", proveedor_id.clone()))
+        .query("SELECT * FROM vehiculo WHERE propietario = $propietario AND is_active = true FETCH propietario, propietario.empresa")
+        .bind(("propietario", propietario_id.clone()))
         .await?;
     Ok(result.take(0)?)
 }

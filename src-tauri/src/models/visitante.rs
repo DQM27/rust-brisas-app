@@ -12,18 +12,27 @@ pub struct Visitante {
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
-    #[serde(alias = "segundo_nombre")]
     pub segundo_nombre: Option<String>,
-    #[serde(alias = "segundo_apellido")]
     pub segundo_apellido: Option<String>,
     pub empresa: Option<RecordId>,
-    #[serde(alias = "has_vehicle")]
     pub has_vehicle: bool,
-    #[serde(alias = "created_at")]
     pub created_at: Datetime,
-    #[serde(alias = "updated_at")]
     pub updated_at: Datetime,
-    #[serde(alias = "deleted_at")]
+    pub deleted_at: Option<Datetime>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VisitanteFetched {
+    pub id: RecordId,
+    pub cedula: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub segundo_nombre: Option<String>,
+    pub segundo_apellido: Option<String>,
+    pub empresa: Option<crate::models::empresa::Empresa>, // Reuse Empresa from its own module
+    pub has_vehicle: bool,
+    pub created_at: Datetime,
+    pub updated_at: Datetime,
     pub deleted_at: Option<Datetime>,
 }
 
@@ -109,6 +118,25 @@ impl From<Visitante> for VisitanteResponse {
             segundo_apellido: v.segundo_apellido,
             empresa: None, // Will be filled by service if name is needed
             empresa_id: v.empresa.map(|t| t.to_string()),
+            has_vehicle: v.has_vehicle,
+            created_at: v.created_at.to_string(),
+            updated_at: v.updated_at.to_string(),
+            deleted_at: v.deleted_at.map(|d| d.to_string()),
+        }
+    }
+}
+
+impl VisitanteResponse {
+    pub fn from_fetched(v: VisitanteFetched) -> Self {
+        Self {
+            id: v.id.to_string(),
+            cedula: v.cedula,
+            nombre: v.nombre,
+            apellido: v.apellido,
+            segundo_nombre: v.segundo_nombre,
+            segundo_apellido: v.segundo_apellido,
+            empresa: v.empresa.map(|e| e.nombre),
+            empresa_id: v.empresa.as_ref().map(|e| e.id.to_string()),
             has_vehicle: v.has_vehicle,
             created_at: v.created_at.to_string(),
             updated_at: v.updated_at.to_string(),

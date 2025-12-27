@@ -2,7 +2,9 @@
 // src/db/surrealdb_visitante_queries.rs
 // ==========================================
 
-use crate::models::visitante::{Visitante, VisitanteCreateDTO, VisitanteUpdateDTO};
+use crate::models::visitante::{
+    Visitante, VisitanteCreateDTO, VisitanteFetched, VisitanteUpdateDTO,
+};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
@@ -37,10 +39,16 @@ pub async fn get_visitante_by_cedula(cedula: &str) -> Result<Option<Visitante>, 
     Ok(result.take(0)?)
 }
 
-pub async fn search_visitantes(term: &str) -> Result<Vec<Visitante>, SurrealDbError> {
+pub async fn find_by_id_fetched(id: &RecordId) -> Result<Option<VisitanteFetched>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut result = db.query("SELECT * FROM $id FETCH empresa").bind(("id", id.clone())).await?;
+    Ok(result.take(0)?)
+}
+
+pub async fn search_visitantes(term: &str) -> Result<Vec<VisitanteFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM visitante WHERE (cedula CONTAINS $term OR nombre CONTAINS $term OR apellido CONTAINS $term) AND deleted_at IS NONE")
+        .query("SELECT * FROM visitante WHERE (cedula CONTAINS $term OR nombre CONTAINS $term OR apellido CONTAINS $term) AND deleted_at IS NONE FETCH empresa")
         .bind(("term", term.to_string()))
         .await?;
     Ok(result.take(0)?)
@@ -72,18 +80,18 @@ pub async fn restore(id: &RecordId) -> Result<Visitante, SurrealDbError> {
     res.ok_or(SurrealDbError::Query("Error restaurando visitante".to_string()))
 }
 
-pub async fn find_archived() -> Result<Vec<Visitante>, SurrealDbError> {
+pub async fn find_archived() -> Result<Vec<VisitanteFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM visitante WHERE deleted_at IS NOT NONE ORDER BY deleted_at DESC")
+        .query("SELECT * FROM visitante WHERE deleted_at IS NOT NONE ORDER BY deleted_at DESC FETCH empresa")
         .await?;
     Ok(result.take(0)?)
 }
 
-pub async fn find_all() -> Result<Vec<Visitante>, SurrealDbError> {
+pub async fn find_all() -> Result<Vec<VisitanteFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM visitante WHERE deleted_at IS NONE ORDER BY created_at DESC")
+        .query("SELECT * FROM visitante WHERE deleted_at IS NONE ORDER BY created_at DESC FETCH empresa")
         .await?;
     Ok(result.take(0)?)
 }

@@ -4,33 +4,31 @@ export interface VisitanteResponse {
     cedula: string;
     nombre: string;
     apellido: string;
-    segundo_nombre?: string;
-    segundo_apellido?: string;
-    empresa?: string;
-    empresa_id?: string;
-    has_vehicle: boolean;
-    created_at: string;
-    updated_at: string;
-    deleted_at?: string;
+    segundoNombre?: string;
+    segundoApellido?: string;
+    empresaId?: string;
+    empresaNombre?: string;
+    hasVehicle: boolean;
+    createdAt: string;
+    updatedAt: string;
+    deletedAt?: string;
 }
 
 export interface CreateVisitanteInput {
     cedula: string;
     nombre: string;
     apellido: string;
-    segundo_nombre?: string;
-    segundo_apellido?: string;
-    empresa?: string;
-    empresa_id?: string;
-    has_vehicle: boolean;
+    segundoNombre?: string;
+    segundoApellido?: string;
+    empresaId?: string;
+    hasVehicle: boolean;
 }
 
 export interface UpdateVisitanteInput {
     nombre?: string;
     apellido?: string;
-    segundo_nombre?: string;
-    segundo_apellido?: string;
-    empresa?: string;
-    empresa_id?: string;
-    has_vehicle?: boolean;
+    segundoNombre?: string;
+    segundoApellido?: string;
+    empresaId?: string;
+    hasVehicle?: boolean;
 }

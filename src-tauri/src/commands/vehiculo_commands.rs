@@ -40,12 +40,12 @@ pub async fn get_vehiculos_activos() -> Result<Vec<VehiculoResponse>, VehiculoEr
     service::get_vehiculos_activos().await
 }
 
-/// Obtiene todos los vehículos de un contratista específico
+/// Obtiene todos los vehículos de un propietario específico (contratista, proveedor, visitante)
 #[tauri::command]
-pub async fn get_vehiculos_by_contratista(
-    contratista_id: String,
+pub async fn get_vehiculos_by_propietario(
+    propietario_id: String,
 ) -> Result<Vec<VehiculoResponse>, VehiculoError> {
-    service::get_vehiculos_by_contratista(contratista_id).await
+    service::get_vehiculos_by_propietario(propietario_id).await
 }
 
 /// Actualiza información de un vehículo

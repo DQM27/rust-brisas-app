@@ -92,20 +92,25 @@ pub async fn create_visitante(
     info!("Creando visitante: {} {}", dto.nombre, dto.apellido);
     let visitante = db::create_visitante(dto).await.map_err(map_db_error)?;
 
+    // Fetch to get company name
+    if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
+        return Ok(VisitanteResponse::from_fetched(fetched));
+    }
+
     Ok(VisitanteResponse::from(visitante))
 }
 
 pub async fn search_visitantes(term: &str) -> Result<Vec<VisitanteResponse>, VisitanteError> {
     let visitantes = db::search_visitantes(term).await.map_err(map_db_error)?;
-    Ok(visitantes.into_iter().map(VisitanteResponse::from).collect())
+    Ok(visitantes.into_iter().map(VisitanteResponse::from_fetched).collect())
 }
 
 pub async fn get_visitante_by_id(
     id_str: &str,
 ) -> Result<Option<VisitanteResponse>, VisitanteError> {
     let id_thing = parse_visitante_id(id_str);
-    let opt = db::find_by_id(&id_thing).await.map_err(map_db_error)?;
-    Ok(opt.map(VisitanteResponse::from))
+    let opt = db::find_by_id_fetched(&id_thing).await.map_err(map_db_error)?;
+    Ok(opt.map(VisitanteResponse::from_fetched))
 }
 
 pub async fn get_visitante_by_cedula(
@@ -140,6 +145,12 @@ pub async fn update_visitante(
     dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
     let visitante = db::update(&id_thing, dto).await.map_err(map_db_error)?;
+
+    // Fetch to get company name
+    if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
+        return Ok(VisitanteResponse::from_fetched(fetched));
+    }
+
     Ok(VisitanteResponse::from(visitante))
 }
 
@@ -152,10 +163,21 @@ pub async fn delete_visitante(id_str: &str) -> Result<(), VisitanteError> {
 pub async fn restore_visitante(id_str: &str) -> Result<VisitanteResponse, VisitanteError> {
     let id_thing = parse_visitante_id(id_str);
     let visitante = db::restore(&id_thing).await.map_err(map_db_error)?;
+
+    // Fetch to get company name
+    if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
+        return Ok(VisitanteResponse::from_fetched(fetched));
+    }
+
     Ok(VisitanteResponse::from(visitante))
 }
 
 pub async fn get_archived_visitantes() -> Result<Vec<VisitanteResponse>, VisitanteError> {
     let visitantes = db::find_archived().await.map_err(map_db_error)?;
-    Ok(visitantes.into_iter().map(VisitanteResponse::from).collect())
+    Ok(visitantes.into_iter().map(VisitanteResponse::from_fetched).collect())
+}
+
+pub async fn get_all_visitantes() -> Result<Vec<VisitanteResponse>, VisitanteError> {
+    let visitantes = db::find_all().await.map_err(map_db_error)?;
+    Ok(visitantes.into_iter().map(VisitanteResponse::from_fetched).collect())
 }

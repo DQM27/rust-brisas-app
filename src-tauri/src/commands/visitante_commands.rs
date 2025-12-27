@@ -43,3 +43,8 @@ pub async fn restore_visitante(id: String) -> Result<VisitanteResponse, String> 
 pub async fn get_archived_visitantes() -> Result<Vec<VisitanteResponse>, String> {
     visitante_service::get_archived_visitantes().await.map_err(|e| e.to_string())
 }
+
+#[command]
+pub async fn list_visitantes() -> Result<Vec<VisitanteResponse>, String> {
+    visitante_service::get_all_visitantes().await.map_err(|e| e.to_string())
+}

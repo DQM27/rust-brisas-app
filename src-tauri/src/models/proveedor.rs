@@ -23,6 +23,8 @@ pub struct Proveedor {
     pub created_at: Datetime,
     #[serde(alias = "updated_at")]
     pub updated_at: Datetime,
+    #[serde(alias = "deleted_at")]
+    pub deleted_at: Option<Datetime>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,6 +43,8 @@ pub struct ProveedorFetched {
     pub created_at: Datetime,
     #[serde(alias = "updated_at")]
     pub updated_at: Datetime,
+    #[serde(alias = "deleted_at")]
+    pub deleted_at: Option<Datetime>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
