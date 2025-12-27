@@ -2,7 +2,7 @@
 // src/db/surrealdb_empresa_queries.rs
 // ==========================================
 
-use crate::models::empresa::{Empresa, EmpresaCreateDTO};
+use crate::models::empresa::{Empresa, EmpresaCreateDTO, EmpresaUpdateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
@@ -23,6 +23,7 @@ pub async fn exists_by_name(nombre: &str) -> Result<bool, SurrealDbError> {
         .await?;
 
     #[derive(serde::Deserialize)]
+    #[allow(dead_code)]
     struct IdOnly {
         id: RecordId,
     }
@@ -50,10 +51,10 @@ pub async fn get_empresas_activas() -> Result<Vec<Empresa>, SurrealDbError> {
     Ok(empresas)
 }
 
-pub async fn update(id: &RecordId, data: serde_json::Value) -> Result<Empresa, SurrealDbError> {
+pub async fn update(id: &RecordId, dto: EmpresaUpdateDTO) -> Result<Empresa, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<Empresa> = db.update(id.clone()).merge(data).await?;
+    let result: Option<Empresa> = db.update(id.clone()).merge(dto).await?;
 
     result.ok_or(SurrealDbError::Query("No se pudo actualizar la empresa".to_string()))
 }

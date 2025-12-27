@@ -3,7 +3,7 @@
 // Enterprise Quality SurrealDB Implementation
 // ==========================================
 
-use crate::models::ingreso::{Ingreso, IngresoCreateDTO};
+use crate::models::ingreso::{Ingreso, IngresoCreateDTO, IngresoUpdateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
@@ -46,20 +46,13 @@ pub async fn update_salida(
 ) -> Result<Ingreso, SurrealDbError> {
     let db = get_db().await?;
 
-    let mut map = serde_json::Map::new();
-    map.insert(
-        "fecha_hora_salida".to_string(),
-        serde_json::json!(surrealdb::Datetime::from(chrono::Utc::now())),
-    );
-    map.insert("usuario_salida".to_string(), serde_json::json!(usuario_salida_id));
-    map.insert("observaciones_salida".to_string(), serde_json::json!(observaciones));
-    map.insert(
-        "updated_at".to_string(),
-        serde_json::json!(surrealdb::Datetime::from(chrono::Utc::now())),
-    );
+    let mut dto = IngresoUpdateDTO::default();
+    dto.fecha_hora_salida = Some(surrealdb::Datetime::from(chrono::Utc::now()));
+    dto.usuario_salida = Some(usuario_salida_id.clone());
+    dto.observaciones_salida = observaciones;
+    dto.updated_at = Some(surrealdb::Datetime::from(chrono::Utc::now()));
 
-    let result: Option<Ingreso> =
-        db.update(ingreso_id.clone()).merge(serde_json::Value::Object(map)).await?;
+    let result: Option<Ingreso> = db.update(ingreso_id.clone()).merge(dto).await?;
 
     result.ok_or(SurrealDbError::TransactionError(
         "Error al registrar salida de proveedor".to_string(),

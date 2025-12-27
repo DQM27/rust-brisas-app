@@ -2,7 +2,7 @@
 // src/db/surrealdb_visitante_queries.rs
 // ==========================================
 
-use crate::models::visitante::{Visitante, VisitanteCreateDTO};
+use crate::models::visitante::{Visitante, VisitanteCreateDTO, VisitanteUpdateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
@@ -46,10 +46,10 @@ pub async fn search_visitantes(term: &str) -> Result<Vec<Visitante>, SurrealDbEr
     Ok(result.take(0)?)
 }
 
-pub async fn update(id: &RecordId, data: serde_json::Value) -> Result<Visitante, SurrealDbError> {
+pub async fn update(id: &RecordId, dto: VisitanteUpdateDTO) -> Result<Visitante, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<Visitante> = db.update(id.clone()).merge(data).await?;
+    let result: Option<Visitante> = db.update(id.clone()).merge(dto).await?;
 
     result.ok_or(SurrealDbError::Query("Visitante no encontrado o error al actualizar".to_string()))
 }

@@ -116,6 +116,24 @@ pub struct ProveedorCreateDTO {
     pub estado: EstadoProveedor,
 }
 
+#[derive(Debug, Serialize, Default)]
+pub struct ProveedorUpdateDTO {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub apellido: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_apellido: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub empresa: Option<RecordId>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub estado: Option<EstadoProveedor>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<Datetime>,
+}
+
 // ==========================================
 // DTOs de salida (Response/ViewModel)
 // ==========================================

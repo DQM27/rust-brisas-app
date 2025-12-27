@@ -122,6 +122,48 @@ pub struct UserCreateDTO {
     pub avatar_path: Option<String>,
 }
 
+#[derive(Debug, Serialize, Default)]
+pub struct UserUpdateDTO {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub apellido: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub role: Option<RecordId>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password_hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_active: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cedula: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_apellido: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fecha_inicio_labores: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub numero_gafete: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fecha_nacimiento: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub telefono: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub direccion: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub contacto_emergencia_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub contacto_emergencia_telefono: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub must_change_password: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<Datetime>,
+}
+
 // ==========================================
 // DTOs DE SALIDA (JSON Stable)
 // ==========================================

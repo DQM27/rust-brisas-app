@@ -1,4 +1,4 @@
-use crate::models::user::{User, UserCreateDTO};
+use crate::models::user::{User, UserCreateDTO, UserUpdateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use log::{error, info};
 use serde::Deserialize;
@@ -144,15 +144,10 @@ pub async fn find_by_email_with_password(
     Ok(record.map(|u| u.into_user_and_password()))
 }
 
-pub async fn update(
-    id: &RecordId,
-    data: serde_json::Value,
-) -> Result<Option<User>, SurrealDbError> {
+pub async fn update(id: &RecordId, dto: UserUpdateDTO) -> Result<Option<User>, SurrealDbError> {
     let db = get_db().await?;
-    let mut result =
-        db.query("UPDATE $id MERGE $data").bind(("id", id.clone())).bind(("data", data)).await?;
-
-    Ok(result.take(0)?)
+    let result: Option<User> = db.update(id.clone()).merge(dto).await?;
+    Ok(result)
 }
 
 /// Update password hash using native SurrealDB time::now()

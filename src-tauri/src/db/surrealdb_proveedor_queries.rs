@@ -3,7 +3,7 @@
 // Enterprise Quality SurrealDB Implementation
 // ==========================================
 
-use crate::models::proveedor::{Proveedor, ProveedorCreateDTO};
+use crate::models::proveedor::{Proveedor, ProveedorCreateDTO, ProveedorUpdateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
@@ -60,10 +60,10 @@ pub async fn search(query: &str, limit: usize) -> Result<Vec<Proveedor>, Surreal
     Ok(result.take(0)?)
 }
 
-pub async fn update(id: &RecordId, data: serde_json::Value) -> Result<Proveedor, SurrealDbError> {
+pub async fn update(id: &RecordId, dto: ProveedorUpdateDTO) -> Result<Proveedor, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<Proveedor> = db.update(id.clone()).merge(data).await?;
+    let result: Option<Proveedor> = db.update(id.clone()).merge(dto).await?;
 
     result.ok_or(SurrealDbError::Query("Proveedor no encontrado o error al actualizar".to_string()))
 }

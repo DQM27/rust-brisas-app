@@ -234,8 +234,8 @@ pub async fn update_user(
         .map_err(|e| UserError::Database(e.to_string()))?
         .ok_or(UserError::NotFound)?;
 
-    // 3. Preparar Patch JSON
-    let mut map = serde_json::Map::new();
+    // 3. Preparar DTO de actualización
+    let mut dto = crate::models::user::UserUpdateDTO::default();
 
     if let Some(ref email) = input.email {
         let normalizado = domain::normalizar_email(email);
@@ -245,70 +245,67 @@ pub async fn update_user(
         if count > 0 {
             return Err(UserError::EmailExists);
         }
-        map.insert("email".to_string(), serde_json::json!(normalizado));
+        dto.email = Some(normalizado);
     }
 
     if let Some(ref nombre) = input.nombre {
-        map.insert("nombre".to_string(), serde_json::json!(domain::normalizar_nombre(nombre)));
+        dto.nombre = Some(domain::normalizar_nombre(nombre));
     }
     if let Some(ref apellido) = input.apellido {
-        map.insert("apellido".to_string(), serde_json::json!(domain::normalizar_nombre(apellido)));
+        dto.apellido = Some(domain::normalizar_nombre(apellido));
     }
     if let Some(ref role_id) = input.role_id {
-        map.insert(
-            "role".to_string(),
-            serde_json::json!(RecordId::from_table_key("role", role_id)),
-        );
+        dto.role = Some(RecordId::from_table_key("role", role_id));
     }
     if let Some(pwd) = input.password {
         if !pwd.trim().is_empty() {
-            map.insert("password_hash".to_string(), serde_json::json!(auth::hash_password(&pwd)?));
+            dto.password_hash = Some(auth::hash_password(&pwd)?);
         }
     }
     if let Some(is_active) = input.is_active {
-        map.insert("is_active".to_string(), serde_json::json!(is_active));
+        dto.is_active = Some(is_active);
     }
     if let Some(cedula) = input.cedula {
-        map.insert("cedula".to_string(), serde_json::json!(cedula));
+        dto.cedula = Some(cedula);
     }
     if let Some(v) = input.segundo_nombre {
-        map.insert("segundo_nombre".to_string(), serde_json::json!(v));
+        dto.segundo_nombre = Some(v);
     }
     if let Some(v) = input.segundo_apellido {
-        map.insert("segundo_apellido".to_string(), serde_json::json!(v));
+        dto.segundo_apellido = Some(v);
     }
     if let Some(v) = input.fecha_inicio_labores {
-        map.insert("fecha_inicio_labores".to_string(), serde_json::json!(v));
+        dto.fecha_inicio_labores = Some(v);
     }
     if let Some(v) = input.numero_gafete {
-        map.insert("numero_gafete".to_string(), serde_json::json!(v));
+        dto.numero_gafete = Some(v);
     }
     if let Some(v) = input.fecha_nacimiento {
-        map.insert("fecha_nacimiento".to_string(), serde_json::json!(v));
+        dto.fecha_nacimiento = Some(v);
     }
     if let Some(v) = input.telefono {
-        map.insert("telefono".to_string(), serde_json::json!(v));
+        dto.telefono = Some(v);
     }
     if let Some(v) = input.direccion {
-        map.insert("direccion".to_string(), serde_json::json!(v));
+        dto.direccion = Some(v);
     }
     if let Some(v) = input.contacto_emergencia_nombre {
-        map.insert("contacto_emergencia_nombre".to_string(), serde_json::json!(v));
+        dto.contacto_emergencia_nombre = Some(v);
     }
     if let Some(v) = input.contacto_emergencia_telefono {
-        map.insert("contacto_emergencia_telefono".to_string(), serde_json::json!(v));
+        dto.contacto_emergencia_telefono = Some(v);
     }
     if let Some(v) = input.must_change_password {
-        map.insert("must_change_password".to_string(), serde_json::json!(v));
+        dto.must_change_password = Some(v);
     }
     if let Some(v) = input.avatar_path {
-        map.insert("avatar_path".to_string(), serde_json::json!(v));
+        dto.avatar_path = Some(v);
     }
 
-    map.insert("updated_at".to_string(), serde_json::json!(chrono::Utc::now()));
+    dto.updated_at = Some(surrealdb::Datetime::from(chrono::Utc::now()));
 
     // 4. Actualizar en DB
-    let user = db::update(&id_thing, serde_json::Value::Object(map))
+    let user = db::update(&id_thing, dto)
         .await
         .map_err(|e| {
             error!("Error al actualizar usuario {}: {}", id_str, e);

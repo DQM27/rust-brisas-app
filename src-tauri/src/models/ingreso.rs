@@ -139,6 +139,7 @@ pub struct Ingreso {
     pub praind_vigente_al_ingreso: Option<bool>,
     pub estado_contratista_al_ingreso: Option<String>,
     pub observaciones: Option<String>,
+    pub observaciones_salida: Option<String>,
     pub anfitrion: Option<String>,
     pub area_visitada: Option<String>,
     pub motivo: Option<String>,
@@ -240,6 +241,20 @@ pub struct IngresoCreateDTO {
     pub anfitrion: Option<String>,
     pub area_visitada: Option<String>,
     pub motivo: Option<String>,
+}
+
+#[derive(Debug, Serialize, Default)]
+pub struct IngresoUpdateDTO {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fecha_hora_salida: Option<surrealdb::Datetime>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub usuario_salida: Option<RecordId>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub observaciones_salida: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tiempo_permanencia_minutos: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<surrealdb::Datetime>,
 }
 
 // ==========================================

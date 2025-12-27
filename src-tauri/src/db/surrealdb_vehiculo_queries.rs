@@ -3,7 +3,7 @@
 // Enterprise Quality SurrealDB Implementation
 // ==========================================
 
-use crate::models::vehiculo::{Vehiculo, VehiculoCreateDTO};
+use crate::models::vehiculo::{Vehiculo, VehiculoCreateDTO, VehiculoUpdateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
@@ -43,10 +43,10 @@ pub async fn find_activos() -> Result<Vec<Vehiculo>, SurrealDbError> {
     Ok(result.take(0)?)
 }
 
-pub async fn update(id: &RecordId, data: serde_json::Value) -> Result<Vehiculo, SurrealDbError> {
+pub async fn update(id: &RecordId, dto: VehiculoUpdateDTO) -> Result<Vehiculo, SurrealDbError> {
     let db = get_db().await?;
 
-    let res: Option<Vehiculo> = db.update(id.clone()).merge(data).await?;
+    let res: Option<Vehiculo> = db.update(id.clone()).merge(dto).await?;
     res.ok_or(SurrealDbError::TransactionError("Error al actualizar vehículo".to_string()))
 }
 

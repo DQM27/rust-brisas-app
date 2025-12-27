@@ -7,7 +7,9 @@ use crate::db::surrealdb_lista_negra_queries as ln_db;
 use crate::db::surrealdb_visitante_queries as db;
 use crate::domain::errors::VisitanteError;
 use crate::domain::visitante as domain;
-use crate::models::visitante::{CreateVisitanteInput, VisitanteCreateDTO, VisitanteResponse};
+use crate::models::visitante::{
+    CreateVisitanteInput, VisitanteCreateDTO, VisitanteResponse, VisitanteUpdateDTO,
+};
 use crate::services::surrealdb_service::SurrealDbError;
 use chrono::Utc;
 use log::{error, info};
@@ -128,22 +130,16 @@ pub async fn update_visitante(
     input.apellido = domain::normalizar_nombre(&input.apellido);
     // ... (rest of normalization) ...
 
-    let mut update_data = serde_json::Map::new();
-    update_data.insert("nombre".to_string(), serde_json::json!(input.nombre));
-    update_data.insert("apellido".to_string(), serde_json::json!(input.apellido));
-    update_data.insert("segundo_nombre".to_string(), serde_json::json!(input.segundo_nombre));
-    update_data.insert("segundo_apellido".to_string(), serde_json::json!(input.segundo_apellido));
-    update_data.insert(
-        "empresa".to_string(),
-        serde_json::json!(input.empresa_id.map(|id| parse_empresa_id(&id))),
-    );
-    update_data.insert("has_vehicle".to_string(), serde_json::json!(input.has_vehicle));
-    update_data
-        .insert("updated_at".to_string(), serde_json::json!(surrealdb::Datetime::from(Utc::now())));
+    let mut dto = VisitanteUpdateDTO::default();
+    dto.nombre = Some(input.nombre);
+    dto.apellido = Some(input.apellido);
+    dto.segundo_nombre = Some(input.segundo_nombre);
+    dto.segundo_apellido = Some(input.segundo_apellido);
+    dto.empresa = Some(input.empresa_id.map(|id| parse_empresa_id(&id)));
+    dto.has_vehicle = Some(input.has_vehicle);
+    dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
-    let visitante = db::update(&id_thing, serde_json::Value::Object(update_data))
-        .await
-        .map_err(map_db_error)?;
+    let visitante = db::update(&id_thing, dto).await.map_err(map_db_error)?;
     Ok(VisitanteResponse::from(visitante))
 }
 

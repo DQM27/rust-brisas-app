@@ -8,7 +8,7 @@ use crate::domain::errors::VehiculoError;
 use crate::domain::vehiculo as domain;
 use crate::models::vehiculo::{
     TipoVehiculo, TipoVehiculoStats, UpdateVehiculoInput, VehiculoCreateDTO, VehiculoListResponse,
-    VehiculoResponse,
+    VehiculoResponse, VehiculoUpdateDTO,
 };
 use crate::services::surrealdb_service::SurrealDbError;
 use chrono::Utc;
@@ -196,27 +196,26 @@ pub async fn update_vehiculo(
 
     db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(VehiculoError::NotFound)?;
 
-    let mut update_data = serde_json::Map::new();
+    let mut dto = VehiculoUpdateDTO::default();
     if let Some(t) = input.tipo_vehiculo {
         let tipo = domain::validar_tipo_vehiculo(&t)?;
-        update_data.insert("tipo_vehiculo".to_string(), serde_json::json!(tipo));
+        dto.tipo_vehiculo = Some(tipo);
     }
     if let Some(m) = input.marca {
-        update_data.insert("marca".to_string(), serde_json::json!(m.trim().to_uppercase()));
+        dto.marca = Some(m.trim().to_uppercase());
     }
     if let Some(m) = input.modelo {
-        update_data.insert("modelo".to_string(), serde_json::json!(m.trim().to_uppercase()));
+        dto.modelo = Some(m.trim().to_uppercase());
     }
     if let Some(c) = input.color {
-        update_data.insert("color".to_string(), serde_json::json!(c.trim().to_uppercase()));
+        dto.color = Some(c.trim().to_uppercase());
     }
     if let Some(a) = input.is_active {
-        update_data.insert("is_active".to_string(), serde_json::json!(a));
+        dto.is_active = Some(a);
     }
-    update_data
-        .insert("updated_at".to_string(), serde_json::json!(surrealdb::Datetime::from(Utc::now())));
+    dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
-    db::update(&id, serde_json::Value::Object(update_data)).await.map_err(map_db_error)?;
+    db::update(&id, dto).await.map_err(map_db_error)?;
     get_vehiculo_by_id(&id_str).await
 }
 

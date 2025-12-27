@@ -54,6 +54,18 @@ pub struct EmpresaCreateDTO {
     pub is_active: bool,
 }
 
+#[derive(Debug, Serialize, Default)]
+pub struct EmpresaUpdateDTO {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub direccion: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_active: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<surrealdb::Datetime>,
+}
+
 // ==========================================
 // DTOs DE SALIDA (Service -> Frontend)
 // ==========================================

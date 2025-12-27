@@ -99,25 +99,23 @@ pub async fn update_empresa(
     // 2. Validar input
     domain::validar_update_input(&input)?;
 
-    // 3. Preparar update
-    let mut update_data = serde_json::Map::new();
+    // 3. Preparar DTO
+    let mut dto = crate::models::empresa::EmpresaUpdateDTO::default();
     if let Some(ref nombre) = input.nombre {
-        update_data.insert("nombre".to_string(), serde_json::json!(nombre.trim().to_uppercase()));
+        dto.nombre = Some(nombre.trim().to_uppercase());
     }
 
     if let Some(ref direccion) = input.direccion {
-        update_data.insert("direccion".to_string(), serde_json::json!(direccion));
+        dto.direccion = Some(direccion.clone());
     }
     if let Some(is_active) = input.is_active {
-        update_data.insert("is_active".to_string(), serde_json::json!(is_active));
+        dto.is_active = Some(is_active);
     }
-    update_data
-        .insert("updated_at".to_string(), serde_json::json!(surrealdb::Datetime::from(Utc::now())));
+    dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
     // 4. Actualizar
     info!("Actualizando empresa con ID {}", id_str);
-    let updated =
-        db::update(&id, serde_json::Value::Object(update_data)).await.map_err(map_db_error)?;
+    let updated = db::update(&id, dto).await.map_err(map_db_error)?;
 
     Ok(EmpresaResponse::from(updated))
 }

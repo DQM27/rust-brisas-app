@@ -239,6 +239,18 @@ pub struct RoleCreateDTO {
     pub permissions: Vec<String>,
 }
 
+#[derive(Debug, Serialize, Default)]
+pub struct RoleUpdateDTO {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permissions: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<Datetime>,
+}
+
 // ==========================================
 // DTOs DE SALIDA (Service -> Frontend)
 // ==========================================

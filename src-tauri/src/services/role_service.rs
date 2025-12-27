@@ -6,8 +6,8 @@
 use crate::db::surrealdb_role_queries as db;
 use crate::domain::role::{self as domain, is_superuser};
 use crate::models::role::{
-    CreateRoleInput, Module, Permission, Role, RoleListResponse, RoleResponse, UpdateRoleInput,
-    VisibleModule,
+    CreateRoleInput, Module, Permission, Role, RoleListResponse, RoleResponse, RoleUpdateDTO,
+    UpdateRoleInput, VisibleModule,
 };
 use chrono::Utc;
 use surrealdb::RecordId;
@@ -133,21 +133,20 @@ pub async fn update_role(
         return Err(RoleError::CannotModifySystemRole);
     }
 
-    // 4. Preparar data para MERGE
-    let mut update_data = serde_json::Map::new();
+    // 4. Preparar DTO
+    let mut dto = RoleUpdateDTO::default();
     if let Some(n) = input.name {
-        update_data.insert("name".to_string(), serde_json::json!(domain::normalizar_nombre(&n)));
+        dto.name = Some(domain::normalizar_nombre(&n));
     }
     if let Some(d) = input.description {
-        update_data.insert("description".to_string(), serde_json::json!(d));
+        dto.description = Some(d);
     }
     if let Some(p) = input.permissions {
-        update_data.insert("permissions".to_string(), serde_json::json!(p));
+        dto.permissions = Some(p);
     }
-    update_data
-        .insert("updated_at".to_string(), serde_json::json!(surrealdb::Datetime::from(Utc::now())));
+    dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
-    let updated = db::update(&role_id, serde_json::Value::Object(update_data))
+    let updated = db::update(&role_id, dto)
         .await
         .map_err(|e| RoleError::Database(e.to_string()))?
         .ok_or(RoleError::NotFound)?;

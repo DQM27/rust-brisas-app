@@ -57,6 +57,24 @@ pub struct VisitanteCreateDTO {
     pub has_vehicle: bool,
 }
 
+#[derive(Debug, Serialize, Default)]
+pub struct VisitanteUpdateDTO {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub apellido: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_nombre: Option<Option<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_apellido: Option<Option<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub empresa: Option<Option<RecordId>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub has_vehicle: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<Datetime>,
+}
+
 // ==========================================
 // DTOs DE SALIDA (Service -> Frontend)
 // ==========================================

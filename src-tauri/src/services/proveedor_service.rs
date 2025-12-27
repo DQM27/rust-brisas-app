@@ -10,9 +10,9 @@ use crate::domain::proveedor as proveedor_domain;
 use crate::domain::vehiculo as vehiculo_domain;
 use crate::models::proveedor::{
     CreateProveedorInput, EstadoProveedor, Proveedor, ProveedorCreateDTO, ProveedorResponse,
-    UpdateProveedorInput,
+    ProveedorUpdateDTO, UpdateProveedorInput,
 };
-use crate::models::vehiculo::{TipoVehiculo, UpdateVehiculoInput, VehiculoCreateDTO};
+use crate::models::vehiculo::{TipoVehiculo, VehiculoCreateDTO};
 use crate::services::search_service::SearchService;
 use chrono::Utc;
 use log::{error, info, warn};
@@ -175,11 +175,11 @@ pub async fn change_status(
 
     info!("Cambiando estado de proveedor {} a {}", id_str, new_status);
 
-    let mut map = serde_json::Map::new();
-    map.insert("estado".to_string(), serde_json::json!(new_status.to_uppercase()));
-    map.insert("updated_at".to_string(), serde_json::json!(Utc::now()));
+    let mut dto = ProveedorUpdateDTO::default();
+    dto.estado = Some(new_status.parse::<EstadoProveedor>().map_err(ProveedorError::Validation)?);
+    dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
-    let proveedor = db::update(&id, serde_json::Value::Object(map)).await.map_err(|e| {
+    let proveedor = db::update(&id, dto).await.map_err(|e| {
         error!("Error al actualizar estado del proveedor {}: {}", id_str, e);
         ProveedorError::Database(e.to_string())
     })?;
@@ -257,20 +257,18 @@ pub async fn update_proveedor(
         .ok_or(ProveedorError::NotFound)?;
 
     // 2. Preparar datos de actualización
-    let mut update_data = serde_json::Map::new();
+    let mut dto = ProveedorUpdateDTO::default();
     if let Some(v) = input.nombre {
-        update_data.insert("nombre".to_string(), serde_json::json!(v.trim().to_uppercase()));
+        dto.nombre = Some(v.trim().to_uppercase());
     }
     if let Some(v) = input.segundo_nombre {
-        update_data
-            .insert("segundo_nombre".to_string(), serde_json::json!(v.trim().to_uppercase()));
+        dto.segundo_nombre = Some(v.trim().to_uppercase());
     }
     if let Some(v) = input.apellido {
-        update_data.insert("apellido".to_string(), serde_json::json!(v.trim().to_uppercase()));
+        dto.apellido = Some(v.trim().to_uppercase());
     }
     if let Some(v) = input.segundo_apellido {
-        update_data
-            .insert("segundo_apellido".to_string(), serde_json::json!(v.trim().to_uppercase()));
+        dto.segundo_apellido = Some(v.trim().to_uppercase());
     }
     if let Some(v) = input.empresa_id {
         let emp_id = parse_empresa_id(&v);
@@ -281,15 +279,15 @@ pub async fn update_proveedor(
         {
             return Err(ProveedorError::EmpresaNotFound);
         }
-        update_data.insert("empresa".to_string(), serde_json::json!(emp_id));
+        dto.empresa = Some(emp_id);
     }
     if let Some(v) = input.estado {
-        update_data.insert("estado".to_string(), serde_json::json!(v.to_uppercase()));
+        dto.estado = Some(v.parse::<EstadoProveedor>().map_err(ProveedorError::Validation)?);
     }
-    update_data.insert("updated_at".to_string(), serde_json::json!(surrealdb::Datetime::from(Utc::now())));
+    dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
     // 3. Actualizar Proveedor en DB
-    let proveedor = db::update(&id, serde_json::Value::Object(update_data)).await.map_err(|e| {
+    let proveedor = db::update(&id, dto).await.map_err(|e| {
         error!("Error al actualizar proveedor {}: {}", id_str, e);
         ProveedorError::Database(e.to_string())
     })?;
@@ -310,21 +308,21 @@ pub async fn update_proveedor(
 
                     if let Some(v) = vehiculo_existente {
                         // Update
-                        let update_input = UpdateVehiculoInput {
-                            tipo_vehiculo: Some(tipo_norm),
-                            marca: input.marca.clone(),
-                            modelo: input.modelo.clone(),
-                            color: input.color.clone(),
-                            is_active: Some(true),
-                        };
+                        let mut veh_dto = crate::models::vehiculo::VehiculoUpdateDTO::default();
+                        veh_dto.tipo_vehiculo = Some(
+                            tipo_norm
+                                .parse::<crate::models::vehiculo::TipoVehiculo>()
+                                .map_err(|e| ProveedorError::Validation(e))?,
+                        );
+                        veh_dto.marca = input.marca.clone();
+                        veh_dto.modelo = input.modelo.clone();
+                        veh_dto.color = input.color.clone();
+                        veh_dto.is_active = Some(true);
+                        veh_dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
-                        vehiculo_db::update(
-                            &v.id,
-                            serde_json::to_value(update_input)
-                                .map_err(|e| ProveedorError::Database(e.to_string()))?,
-                        )
-                        .await
-                        .map_err(|e| ProveedorError::Database(e.to_string()))?;
+                        vehiculo_db::update(&v.id, veh_dto)
+                            .await
+                            .map_err(|e| ProveedorError::Database(e.to_string()))?;
                     } else {
                         // Create
                         let dto_vehiculo = VehiculoCreateDTO {

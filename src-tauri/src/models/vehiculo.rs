@@ -112,6 +112,22 @@ pub struct VehiculoCreateDTO {
     pub is_active: bool,
 }
 
+#[derive(Debug, Serialize, Default)]
+pub struct VehiculoUpdateDTO {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tipo_vehiculo: Option<TipoVehiculo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub marca: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub modelo: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_active: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<Datetime>,
+}
+
 // ==========================================
 // DTOs DE SALIDA
 // ==========================================
