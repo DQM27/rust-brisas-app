@@ -19,7 +19,6 @@ use crate::search::{
 };
 use crate::search::{get_index_reader, get_index_writer, initialize_index};
 use crate::search::{search_index, SearchFields};
-// use sqlx::SqlitePool; // REMOVED
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -42,10 +41,19 @@ pub struct SearchService {
 
 impl SearchService {
     /// Inicializa el servicio de búsqueda
-    pub fn new(data_dir: &str) -> Result<Self, SearchError> {
-        let index_path = PathBuf::from(data_dir).join("search_index");
+    /// `index_dir_path` debe ser la ruta completa a la carpeta del índice
+    pub fn new(index_dir_path: &str) -> Result<Self, SearchError> {
+        let index_path = PathBuf::from(index_dir_path);
 
-        // Inicializar índice
+        // CORRECCIÓN: Garantizar que el directorio específico del índice exista.
+        // lib.rs asegura 'app_data', pero aquí aseguramos 'app_data/search_index'.
+        if !index_path.exists() {
+            std::fs::create_dir_all(&index_path).map_err(|e| {
+                SearchError::TantivyError(format!("No se pudo crear directorio de índice: {}", e))
+            })?;
+        }
+
+        // Inicializar índice (Tantivy usará esta ruta directamente)
         let index = initialize_index(&index_path)?;
         let reader = get_index_reader(&index)?;
 
@@ -80,7 +88,7 @@ impl SearchService {
             fields,
             handles,
             writer_mutex: Mutex::new(()),
-            index_path: PathBuf::from("/tmp"),
+            index_path: PathBuf::from("memory"),
         }
     }
 
@@ -128,14 +136,6 @@ impl SearchService {
 
             // Indexar contratistas
             for contratista in contratistas {
-                // Resolver nombre empresa
-                // El contratista.empresa_id podría ser "empresas:XYZ" o "XYZ".
-                // empresas_map key también.
-                // Asumimos que vienen igual de la DB.
-                // Contratista struct field se llama 'empresa_id' en model? No, es 'empresa' o 'empresa_id'?
-                // En `surrealdb_contratista_queries`, el struct Contratista usado tiene fields.
-                // Verificaré si Contratista model tiene empresa_id público.
-                // Asumiendo que sí:
                 let empresa_nombre = empresas_map
                     .get(&contratista.empresa.to_string())
                     .map(|s| s.as_str())

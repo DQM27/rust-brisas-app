@@ -36,30 +36,51 @@ pub fn run() {
 
     builder
         .setup(|app| {
-            // Inicializar SurrealDB embebido
-            let config = SurrealDbConfig::default();
+            // 1. CONFIGURACIÓN DE RUTAS
+            // Es vital asegurar que el directorio de datos existe
+            let app_data_dir = app.path().app_data_dir()?;
+            if !app_data_dir.exists() {
+                std::fs::create_dir_all(&app_data_dir)?;
+            }
 
-            // Inicializar SearchService (Tantivy)
-            let app_data_dir = app.path().app_data_dir().unwrap_or(std::path::PathBuf::from("."));
-            let search_path = app_data_dir.to_string_lossy().to_string();
+            // 2. INICIALIZAR BASE DE DATOS (CRÍTICO: HACER ESTO PRIMERO)
+            // Bloqueamos el hilo principal aquí intencionalmente para garantizar
+            // que la DB esté lista antes de que cualquier comando o el indexador intenten usarla.
+            let db_config = SurrealDbConfig::default();
+            tauri::async_runtime::block_on(async {
+                setup_embedded_surrealdb(db_config)
+                    .await
+                    .expect("❌ Error fatal: No se pudo inicializar SurrealDB");
+            });
+            println!("✅ SurrealDB inicializado correctamente.");
 
-            // Estado de la aplicación
+            // 3. INICIALIZAR SEARCH SERVICE (TANTIVY)
+            // Usamos un subdirectorio para no ensuciar la raíz de app_data
+            let search_path = app_data_dir.join("search_index");
+            let search_path_str = search_path.to_string_lossy().to_string();
+
+            // Gestionar Estado Global
             let app_state = AppState { backend_ready: AtomicBool::new(true) };
             app.manage(app_state);
 
-            match SearchService::new(&search_path) {
+            match SearchService::new(&search_path_str) {
                 Ok(s) => {
                     let search_service = Arc::new(s);
                     app.manage(search_service.clone());
 
-                    // Reindexado en segundo plano si está vacío
+                    // 4. LÓGICA DE REINDEXADO (Solo ahora que la DB es segura)
                     if search_service.is_empty() {
-                        println!(
-                            "📇 Índice vacío, detectado. Iniciando reindexado en segundo plano..."
-                        );
+                        println!("📇 Índice vacío detectado. Programando reindexado...");
+
                         let search_service_clone = search_service.clone();
+
+                        // Spawn en background
                         tauri::async_runtime::spawn(async move {
-                            println!("🔄 Iniciando reindexado background task...");
+                            // Pequeña pausa de seguridad para dejar que la UI respire al inicio (opcional)
+                            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
+                            println!("🔄 Iniciando tarea de reindexado...");
+                            // Ahora es seguro llamar a reindex_all porque la DB ya pasó el block_on
                             if let Err(e) = search_service_clone.reindex_all().await {
                                 eprintln!("❌ Error al reindexar en background: {}", e);
                             } else {
@@ -72,15 +93,11 @@ pub fn run() {
                     }
                 }
                 Err(e) => {
-                    eprintln!("Error fatal inicializando SearchService: {}", e);
+                    eprintln!("❌ Error fatal inicializando SearchService: {}", e);
+                    // Aquí podrías decidir si quieres hacer panic! o dejar que la app corra sin búsqueda
+                    return Err(Box::new(e));
                 }
             }
-
-            // Inicializar DB (esto bloquea el inicio hasta que DB esté lista,
-            // lo cual es correcto para garantizar que los comandos funcionen)
-            tauri::async_runtime::block_on(async {
-                setup_embedded_surrealdb(config).await.expect("No se pudo inicializar SurrealDB");
-            });
 
             Ok(())
         })
