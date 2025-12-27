@@ -51,6 +51,13 @@ pub struct CreateVisitanteInput {
     pub empresa: Option<String>, // Nombre de la empresa (legacy/fallback)
     pub empresa_id: Option<String>, // ID de la empresa (link)
     pub has_vehicle: bool,
+
+    // Vehicle fields
+    pub tipo_vehiculo: Option<String>,
+    pub placa: Option<String>,
+    pub marca: Option<String>,
+    pub modelo: Option<String>,
+    pub color: Option<String>,
 }
 
 // ==========================================
@@ -135,7 +142,7 @@ impl VisitanteResponse {
             apellido: v.apellido,
             segundo_nombre: v.segundo_nombre,
             segundo_apellido: v.segundo_apellido,
-            empresa: v.empresa.map(|e| e.nombre),
+            empresa: v.empresa.as_ref().map(|e| e.nombre.clone()),
             empresa_id: v.empresa.as_ref().map(|e| e.id.to_string()),
             has_vehicle: v.has_vehicle,
             created_at: v.created_at.to_string(),

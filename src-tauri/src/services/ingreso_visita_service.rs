@@ -113,6 +113,11 @@ pub async fn registrar_ingreso_full(
                 empresa: input.empresa.clone(),
                 empresa_id: None,
                 has_vehicle: false,
+                tipo_vehiculo: None,
+                placa: None,
+                marca: None,
+                modelo: None,
+                color: None,
             };
             visitante_service::create_visitante(c_i)
                 .await

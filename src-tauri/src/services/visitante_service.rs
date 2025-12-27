@@ -4,9 +4,12 @@
 // Capa de servicio: Lógica de negocio para Visitantes
 
 use crate::db::surrealdb_lista_negra_queries as ln_db;
+use crate::db::surrealdb_vehiculo_queries as veh_db; // NEW IMPORT
 use crate::db::surrealdb_visitante_queries as db;
 use crate::domain::errors::VisitanteError;
+use crate::domain::vehiculo as vehiculo_domain; // NEW IMPORT
 use crate::domain::visitante as domain;
+use crate::models::vehiculo::{TipoVehiculo, VehiculoCreateDTO}; // NEW IMPORTS
 use crate::models::visitante::{
     CreateVisitanteInput, VisitanteCreateDTO, VisitanteResponse, VisitanteUpdateDTO,
 };
@@ -91,6 +94,40 @@ pub async fn create_visitante(
 
     info!("Creando visitante: {} {}", dto.nombre, dto.apellido);
     let visitante = db::create_visitante(dto).await.map_err(map_db_error)?;
+
+    // 6. Gestionar Vehículo (Opcional)
+    if input.has_vehicle {
+        if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
+            if !tipo.is_empty() && !placa.is_empty() {
+                // Validaciones
+                let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
+                    .map_err(|e| VisitanteError::Validation(e.to_string()))?
+                    .as_str()
+                    .to_string();
+
+                let placa_norm = vehiculo_domain::normalizar_placa(placa);
+
+                let dto_vehiculo = VehiculoCreateDTO {
+                    propietario: visitante.id.clone(),
+                    tipo_vehiculo: tipo_norm
+                        .parse::<TipoVehiculo>()
+                        .map_err(|e| VisitanteError::Validation(e))?,
+                    placa: placa_norm,
+                    marca: input.marca.as_ref().map(|s| s.trim().to_uppercase()),
+                    modelo: input.modelo.as_ref().map(|s| s.trim().to_uppercase()),
+                    color: input.color.as_ref().map(|s| s.trim().to_uppercase()),
+                    is_active: true,
+                };
+
+                if let Err(e) = veh_db::insert(dto_vehiculo).await {
+                    error!("Error al crear vehículo para visitante {}: {}", visitante.id, e);
+                    // Log error but don't fail visitor creation
+                } else {
+                    info!("Vehículo creado para visitante {}", visitante.id);
+                }
+            }
+        }
+    }
 
     // Fetch to get company name
     if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {

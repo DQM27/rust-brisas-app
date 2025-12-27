@@ -96,6 +96,14 @@ pub struct CreateContratistaInput {
     pub segundo_apellido: Option<String>,
     pub empresa_id: String,
     pub fecha_vencimiento_praind: String,
+
+    // Vehicle fields
+    pub tiene_vehiculo: Option<bool>,
+    pub tipo_vehiculo: Option<String>,
+    pub placa: Option<String>,
+    pub marca: Option<String>,
+    pub modelo: Option<String>,
+    pub color: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Default)]

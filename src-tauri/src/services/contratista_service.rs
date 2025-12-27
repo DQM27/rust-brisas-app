@@ -6,10 +6,12 @@ use crate::db::surrealdb_vehiculo_queries as veh_db;
 
 use crate::domain::contratista as domain;
 use crate::domain::errors::ContratistaError;
+use crate::domain::vehiculo as vehiculo_domain; // NEW IMPORT
 use crate::models::contratista::{
     CambiarEstadoInput, ContratistaCreateDTO, ContratistaListResponse, ContratistaResponse,
     CreateContratistaInput, EstadoContratista, UpdateContratistaInput,
 };
+use crate::models::vehiculo::{TipoVehiculo, VehiculoCreateDTO}; // NEW IMPORTS
 use crate::services::search_service::SearchService;
 use crate::services::surrealdb_service::SurrealDbError;
 use log::{error, info};
@@ -103,6 +105,45 @@ pub async fn create_contratista(
     })?;
 
     info!("Contratista {} creado exitosamente con ID {}", cedula_normalizada, contratista.id);
+
+    // 7.5. Gestionar Vehículo (Opcional)
+    if let Some(true) = input.tiene_vehiculo {
+        if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
+            if !tipo.is_empty() && !placa.is_empty() {
+                // Validaciones de dominio de vehículo
+                let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
+                    .map_err(|e| ContratistaError::Validation(e.to_string()))?
+                    .as_str()
+                    .to_string();
+
+                let placa_norm = vehiculo_domain::normalizar_placa(placa);
+
+                // Validar que placa no exista (opcional, o dejar que la DB falle)
+                // db::find_vehiculo_by_placa ...
+
+                let dto_vehiculo = VehiculoCreateDTO {
+                    propietario: contratista.id.clone(),
+                    tipo_vehiculo: tipo_norm
+                        .parse::<TipoVehiculo>()
+                        .map_err(|e| ContratistaError::Validation(e))?,
+                    placa: placa_norm,
+                    marca: input.marca.as_ref().map(|s| s.trim().to_uppercase()),
+                    modelo: input.modelo.as_ref().map(|s| s.trim().to_uppercase()),
+                    color: input.color.as_ref().map(|s| s.trim().to_uppercase()),
+                    is_active: true,
+                };
+
+                if let Err(e) = veh_db::insert(dto_vehiculo).await {
+                    error!("Error al crear vehículo para contratista {}: {}", contratista.id, e);
+                    // No fallamos la creación del contratista, solo logueamos (o podríamos retornar error)
+                    // Para consistencia con Proveedor, si falla vehículo, quizás deberíamos advertir.
+                    // Por ahora log error.
+                } else {
+                    info!("Vehículo creado para contratista {}", contratista.id);
+                }
+            }
+        }
+    }
 
     // 8. Indexar en búsqueda
     let empresa_nombre = contratista.empresa.nombre.clone();

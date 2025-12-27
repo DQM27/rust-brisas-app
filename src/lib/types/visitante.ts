@@ -22,6 +22,12 @@ export interface CreateVisitanteInput {
     segundoApellido?: string;
     empresaId?: string;
     hasVehicle: boolean;
+    // Vehicle fields
+    tipoVehiculo?: string;
+    placa?: string;
+    marca?: string;
+    modelo?: string;
+    color?: string;
 }
 
 export interface UpdateVisitanteInput {

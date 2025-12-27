@@ -43,6 +43,11 @@
     segundoApellido: "",
     empresaId: "",
     hasVehicle: false,
+    tipoVehiculo: "",
+    placa: "",
+    marca: "",
+    modelo: "",
+    color: "",
   });
 
   let empresas = $state<{ id: string; nombre: string }[]>([]);
@@ -51,7 +56,9 @@
   const isFormValid = $derived(
     formData.cedula.trim() &&
       formData.nombre.trim() &&
-      formData.apellido.trim(),
+      formData.apellido.trim() &&
+      (!formData.hasVehicle ||
+        (formData.tipoVehiculo && formData.placa.trim())),
   );
 
   onMount(async () => {
@@ -77,6 +84,11 @@
         segundoApellido: visitante.segundoApellido || "",
         empresaId: visitante.empresaId || "",
         hasVehicle: visitante.hasVehicle,
+        tipoVehiculo: (visitante as any).tipoVehiculo || "", // Assuming these might come from backend if we update response
+        placa: (visitante as any).placa || "", // We might need to handle this properly if response doesn't have it explicitly mapped yet
+        marca: (visitante as any).marca || "",
+        modelo: (visitante as any).modelo || "",
+        color: (visitante as any).color || "",
       };
     } else if (show && !visitante) {
       resetForm();
@@ -92,6 +104,11 @@
       segundoApellido: "",
       empresaId: "",
       hasVehicle: false,
+      tipoVehiculo: "",
+      placa: "",
+      marca: "",
+      modelo: "",
+      color: "",
     };
   }
 
@@ -219,6 +236,70 @@
             >¿Tiene vehículo?</label
           >
         </div>
+
+        {#if formData.hasVehicle}
+          <div class="p-4 rounded border border-gray-700 bg-black/20 space-y-3">
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onclick={() => (formData.tipoVehiculo = "motocicleta")}
+                class="py-2 px-3 rounded border text-sm font-medium transition-all {formData.tipoVehiculo ===
+                'motocicleta'
+                  ? 'border-[#2da44e] bg-[#2da44e]/10 text-[#2da44e]'
+                  : 'border-gray-600 text-gray-400 hover:border-gray-500'}"
+              >
+                🏍️ Moto
+              </button>
+              <button
+                type="button"
+                onclick={() => (formData.tipoVehiculo = "automovil")}
+                class="py-2 px-3 rounded border text-sm font-medium transition-all {formData.tipoVehiculo ===
+                'automovil'
+                  ? 'border-[#2da44e] bg-[#2da44e]/10 text-[#2da44e]'
+                  : 'border-gray-600 text-gray-400 hover:border-gray-500'}"
+              >
+                🚗 Auto
+              </button>
+            </div>
+
+            <div class="space-y-1">
+              <label class={labelClass} for="placa">Placa *</label>
+              <input
+                id="placa"
+                bind:value={formData.placa}
+                class="{inputClass} uppercase"
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <label class={labelClass} for="marca">Marca</label>
+                <input
+                  id="marca"
+                  bind:value={formData.marca}
+                  class={inputClass}
+                />
+              </div>
+              <div class="space-y-1">
+                <label class={labelClass} for="modelo">Modelo</label>
+                <input
+                  id="modelo"
+                  bind:value={formData.modelo}
+                  class={inputClass}
+                />
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <label class={labelClass} for="color">Color</label>
+              <input
+                id="color"
+                bind:value={formData.color}
+                class={inputClass}
+              />
+            </div>
+          </div>
+        {/if}
 
         <div class="flex justify-end gap-3 pt-4">
           <button
