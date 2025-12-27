@@ -33,5 +33,6 @@ pub mod vehiculo_service;
 pub mod visitante_service;
 
 // SurrealDB
+pub mod live_service;
 pub mod surrealdb_authorization;
 pub mod surrealdb_service;

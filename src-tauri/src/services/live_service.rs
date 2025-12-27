@@ -15,7 +15,6 @@ use futures::StreamExt;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use surrealdb::Notification;
 use tauri::{AppHandle, Emitter};
 
