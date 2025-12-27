@@ -52,7 +52,7 @@ pub struct ContratistaFetched {
 pub enum EstadoContratista {
     Activo,
     Inactivo,
-    Suspendido,
+    Bloqueado,
 }
 
 impl EstadoContratista {
@@ -60,7 +60,7 @@ impl EstadoContratista {
         match self {
             EstadoContratista::Activo => "activo",
             EstadoContratista::Inactivo => "inactivo",
-            EstadoContratista::Suspendido => "suspendido",
+            EstadoContratista::Bloqueado => "bloqueado",
         }
     }
 }
@@ -72,7 +72,7 @@ impl std::str::FromStr for EstadoContratista {
         match s.to_lowercase().as_str() {
             "activo" => Ok(EstadoContratista::Activo),
             "inactivo" => Ok(EstadoContratista::Inactivo),
-            "suspendido" => Ok(EstadoContratista::Suspendido),
+            "bloqueado" => Ok(EstadoContratista::Bloqueado),
             _ => Err(format!("Estado desconocido: {}", s)),
         }
     }
