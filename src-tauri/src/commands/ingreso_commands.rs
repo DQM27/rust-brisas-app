@@ -104,11 +104,7 @@ pub async fn resolver_alerta_gafete(
     let user =
         session.get_user().ok_or(AlertaError::Validation("No hay sesión activa".to_string()))?;
 
-    // Obtener fecha actual
-    let now = Utc::now().to_rfc3339();
-
-    alerta_service::resolver(&input.alerta_id, &now, input.notas.as_deref(), &user.id, &now)
-        .await?;
+    alerta_service::resolver(&input.alerta_id, input.notas.as_deref(), &user.id).await?;
 
     Ok(())
 }

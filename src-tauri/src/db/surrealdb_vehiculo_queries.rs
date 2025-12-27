@@ -1,73 +1,87 @@
 // ==========================================
 // src/db/surrealdb_vehiculo_queries.rs
+// Enterprise Quality SurrealDB Implementation
 // ==========================================
+
 use crate::models::vehiculo::{CreateVehiculoInput, UpdateVehiculoInput, Vehiculo};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use chrono::Utc;
 use serde_json::json;
 
 pub async fn insert(input: CreateVehiculoInput) -> Result<Vehiculo, SurrealDbError> {
-    let client = get_db().await?;
-    let now = Utc::now().to_rfc3339();
+    let db = get_db().await?;
 
-    let contratista_link = input.contratista_id.map(|id| format!("contratistas:{}", id));
-    let proveedor_link = input.proveedor_id.map(|id| format!("proveedores:{}", id));
+    let contratista_link = input.contratista_id.map(|id| {
+        let id_only = id.strip_prefix("contratista:").unwrap_or(&id);
+        format!("contratista:{}", id_only)
+    });
+    let proveedor_link = input.proveedor_id.map(|id| {
+        let id_only = id.strip_prefix("proveedor:").unwrap_or(&id);
+        format!("proveedor:{}", id_only)
+    });
 
-    let res: Option<Vehiculo> = client
-        .create("vehiculos")
-        .content(json!({
-            "placa": input.placa,
-            "marca": input.marca,
-            "modelo": input.modelo,
-            "color": input.color,
-            "tipo_vehiculo": input.tipo_vehiculo,
-            "is_active": true,
-            "contratista_id": contratista_link,
-            "proveedor_id": proveedor_link,
-            "created_at": now,
-            "updated_at": now
-        }))
-        .await?;
+    let res: Option<Vehiculo> = db
+        .query(
+            r#"
+            CREATE vehiculo CONTENT {
+                placa: $placa,
+                marca: $marca,
+                modelo: $modelo,
+                color: $color,
+                tipo_vehiculo: $tipo_vehiculo,
+                is_active: true,
+                contratista_id: $contratista_id,
+                proveedor_id: $proveedor_id,
+                created_at: time::now(),
+                updated_at: time::now()
+            }
+        "#,
+        )
+        .bind(("placa", input.placa))
+        .bind(("marca", input.marca))
+        .bind(("modelo", input.modelo))
+        .bind(("color", input.color))
+        .bind(("tipo_vehiculo", input.tipo_vehiculo))
+        .bind(("contratista_id", contratista_link))
+        .bind(("proveedor_id", proveedor_link))
+        .await?
+        .take(0)?;
 
     res.ok_or(SurrealDbError::TransactionError("Error al insertar vehículo".to_string()))
 }
 
 pub async fn find_by_id(id: &str) -> Result<Option<Vehiculo>, SurrealDbError> {
-    let client = get_db().await?;
-    let id_only = id.strip_prefix("vehiculos:").unwrap_or(id);
-    let res: Option<Vehiculo> = client.select(("vehiculos", id_only.to_string())).await?;
+    let db = get_db().await?;
+    let id_only = id.strip_prefix("vehiculo:").unwrap_or(id).to_string();
+    let res: Option<Vehiculo> = db.select(("vehiculo", id_only)).await?;
     Ok(res)
 }
 
 pub async fn find_by_placa(placa: &str) -> Result<Option<Vehiculo>, SurrealDbError> {
-    let client = get_db().await?;
-    let mut result = client
-        .query("SELECT * FROM vehiculos WHERE placa = $placa AND is_active = true")
+    let db = get_db().await?;
+    let mut result = db
+        .query("SELECT * FROM vehiculo WHERE placa = $placa AND is_active = true")
         .bind(("placa", placa.to_string()))
         .await?;
-    let vehiculo: Option<Vehiculo> = result.take(0)?;
-    Ok(vehiculo)
+    Ok(result.take(0)?)
 }
 
 pub async fn find_all() -> Result<Vec<Vehiculo>, SurrealDbError> {
-    let client = get_db().await?;
-    let res: Vec<Vehiculo> = client.select("vehiculos").await?;
+    let db = get_db().await?;
+    let res: Vec<Vehiculo> = db.select("vehiculo").await?;
     Ok(res)
 }
 
 pub async fn find_activos() -> Result<Vec<Vehiculo>, SurrealDbError> {
-    let client = get_db().await?;
-    let mut result = client.query("SELECT * FROM vehiculos WHERE is_active = true").await?;
-    let res: Vec<Vehiculo> = result.take(0)?;
-    Ok(res)
+    let db = get_db().await?;
+    let mut result = db.query("SELECT * FROM vehiculo WHERE is_active = true").await?;
+    Ok(result.take(0)?)
 }
 
 pub async fn update(id: &str, input: UpdateVehiculoInput) -> Result<Vehiculo, SurrealDbError> {
-    let client = get_db().await?;
-    let id_only = id.strip_prefix("vehiculos:").unwrap_or(id);
-    let now = Utc::now().to_rfc3339();
+    let db = get_db().await?;
+    let id_only = id.strip_prefix("vehiculo:").unwrap_or(id).to_string();
 
-    let mut update_data = json!({ "updated_at": now });
+    let mut update_data = json!({});
     if let Some(tipo) = input.tipo_vehiculo {
         update_data["tipo_vehiculo"] = json!(tipo);
     }
@@ -84,50 +98,49 @@ pub async fn update(id: &str, input: UpdateVehiculoInput) -> Result<Vehiculo, Su
         update_data["is_active"] = json!(active);
     }
 
-    let res: Option<Vehiculo> =
-        client.update(("vehiculos", id_only.to_string())).merge(update_data).await?;
-
+    let res: Option<Vehiculo> = db.update(("vehiculo", id_only)).merge(update_data).await?;
     res.ok_or(SurrealDbError::TransactionError("Error al actualizar vehículo".to_string()))
 }
 
 pub async fn delete(id: &str) -> Result<(), SurrealDbError> {
-    let client = get_db().await?;
-    let id_only = id.strip_prefix("vehiculos:").unwrap_or(id);
-    let _: Option<Vehiculo> = client.delete(("vehiculos", id_only.to_string())).await?;
+    let db = get_db().await?;
+    let id_only = id.strip_prefix("vehiculo:").unwrap_or(id).to_string();
+    let _: Option<Vehiculo> = db.delete(("vehiculo", id_only)).await?;
     Ok(())
 }
 
 pub async fn count_by_placa(placa: &str) -> Result<i64, SurrealDbError> {
-    let client = get_db().await?;
-    let mut result = client
-        .query("SELECT count() FROM vehiculos WHERE placa = $placa AND is_active = true")
+    let db = get_db().await?;
+    let mut result = db
+        .query("SELECT count() FROM vehiculo WHERE placa = $placa AND is_active = true GROUP ALL")
         .bind(("placa", placa.to_string()))
         .await?;
+
     let count_obj: Option<serde_json::Value> = result.take(0)?;
     let count = count_obj.and_then(|v| v.get("count").and_then(|c| c.as_i64())).unwrap_or(0);
     Ok(count)
 }
 
 pub async fn find_by_contratista(contratista_id: &str) -> Result<Vec<Vehiculo>, SurrealDbError> {
-    let client = get_db().await?;
-    let id_only = contratista_id.strip_prefix("contratistas:").unwrap_or(contratista_id);
-    let contratista_link = format!("contratistas:{}", id_only);
-    let mut result = client
-        .query(
-            "SELECT * FROM vehiculos WHERE contratista_id = $contratista_id AND is_active = true",
-        )
+    let db = get_db().await?;
+    let id_only = contratista_id.strip_prefix("contratista:").unwrap_or(contratista_id);
+    let contratista_link = format!("contratista:{}", id_only);
+
+    let mut result = db
+        .query("SELECT * FROM vehiculo WHERE contratista_id = $contratista_id AND is_active = true")
         .bind(("contratista_id", contratista_link))
         .await?;
-    let vehiculos: Vec<Vehiculo> = result.take(0)?;
-    Ok(vehiculos)
+    Ok(result.take(0)?)
 }
 
 pub async fn find_by_proveedor(proveedor_id: &str) -> Result<Vec<Vehiculo>, SurrealDbError> {
-    let client = get_db().await?;
-    let mut result = client
-        .query("SELECT * FROM vehiculos WHERE proveedor_id = type::thing('proveedores', $pid) AND is_active = true")
-        .bind(("pid", proveedor_id.to_string()))
+    let db = get_db().await?;
+    let id_only = proveedor_id.strip_prefix("proveedor:").unwrap_or(proveedor_id);
+    let proveedor_link = format!("proveedor:{}", id_only);
+
+    let mut result = db
+        .query("SELECT * FROM vehiculo WHERE proveedor_id = $proveedor_id AND is_active = true")
+        .bind(("proveedor_id", proveedor_link))
         .await?;
-    let vehiculos: Vec<Vehiculo> = result.take(0)?;
-    Ok(vehiculos)
+    Ok(result.take(0)?)
 }

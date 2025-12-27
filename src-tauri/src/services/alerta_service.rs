@@ -35,10 +35,7 @@ pub async fn insert(
     fecha_reporte: &str,
     notas: Option<&str>,
     reportado_por: &str,
-    created_at: &str,
-    updated_at: &str,
 ) -> Result<(), AlertaError> {
-    // Nota: db::insert ahora retorna Result<AlertaGafete, Error>
     db::insert(
         id,
         persona_id,
@@ -51,8 +48,6 @@ pub async fn insert(
         fecha_reporte,
         notas,
         reportado_por,
-        created_at,
-        updated_at,
     )
     .await
     .map_err(|e| {
@@ -64,15 +59,9 @@ pub async fn insert(
     Ok(())
 }
 
-pub async fn resolver(
-    id: &str,
-    fecha_resolucion: &str,
-    notas: Option<&str>,
-    usuario_id: &str,
-    updated_at: &str,
-) -> Result<(), AlertaError> {
+pub async fn resolver(id: &str, notas: Option<&str>, usuario_id: &str) -> Result<(), AlertaError> {
     info!("Resolviendo alerta {}", id);
-    db::resolver(id, fecha_resolucion, notas, usuario_id, updated_at).await.map_err(|e| {
+    db::resolver(id, notas, usuario_id).await.map_err(|e| {
         error!("Error al resolver alerta {}: {}", id, e);
         AlertaError::Database(e.to_string())
     })?;

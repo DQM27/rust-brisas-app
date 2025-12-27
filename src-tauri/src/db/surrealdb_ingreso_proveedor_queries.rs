@@ -1,36 +1,39 @@
+// ==========================================
 // src/db/surrealdb_ingreso_proveedor_queries.rs
+// Enterprise Quality SurrealDB Implementation
+// ==========================================
+
 use crate::models::ingreso::{CreateIngresoProveedorInput, Ingreso};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use chrono::Utc;
 
 pub async fn insert(
     input: CreateIngresoProveedorInput,
     proveedor_data: &serde_json::Value,
 ) -> Result<Option<Ingreso>, SurrealDbError> {
-    let client = get_db().await?;
-    let now = Utc::now().to_rfc3339();
+    let db = get_db().await?;
 
-    // Extraer datos del proveedor para desnormalizar
+    // Extract and normalize data
     let nombre = input.nombre;
     let apellido = input.apellido;
     let cedula = input.cedula;
-    let empresa_nombre = proveedor_data["nombre"].as_str().unwrap_or("").to_string(); // proveedor_data podría ser la empresa en este contexto?
-                                                                                      // Nota: en el modelo original, el proveedor suele ser una persona externa, y "empresa_id" es la empresa a la que visita o representa.
-                                                                                      // Asumiremos que proveedor_data trae info relevante de la empresa.
+    let empresa_nombre = proveedor_data["nombre"].as_str().unwrap_or("").to_string();
 
-    let empresa_id = format!("empresas:{}", input.empresa_id); // Asumiendo que empresas están en tabla empresas, si no, se guarda string.
-                                                               // Si empresa_id es solo referencia, guardamos el nombre obtenido previamente via SQL o similar.
+    let empresa_id = {
+        let id = &input.empresa_id;
+        let id_only = id.strip_prefix("empresa:").unwrap_or(id);
+        format!("empresa:{}", id_only)
+    };
 
-    let usuario_id = format!("users:{}", input.usuario_ingreso_id);
+    let usuario_id = {
+        let id = &input.usuario_ingreso_id;
+        let id_only = id.strip_prefix("user:").unwrap_or(id);
+        format!("user:{}", id_only)
+    };
 
-    // Ajuste: El input tiene `empresa_id`. Si queremos guardar el nombre denormalizado, el servicio debe pasarlo.
-    // Por simplicidad, guardamos empresa_id como referencia si es una tabla, o string si es un campo texto.
-    // En el modelo `Ingreso`, campo `empresa_nombre` es string.
-
-    let mut result = client
+    let mut result = db
         .query(
             r#"
-            CREATE ingresos CONTENT {
+            CREATE ingreso CONTENT {
                 empresa_id: $empresa_link,
                 usuario_ingreso_id: $usuario_id,
                 cedula: $cedula,
@@ -43,13 +46,13 @@ pub async fn insert(
                 vehiculo_placa: $vehiculo_placa,
                 gafete_numero: $gafete_numero,
                 gafete_tipo: 'proveedor',
-                fecha_hora_ingreso: $now,
+                fecha_hora_ingreso: time::now(),
                 observaciones: $observaciones,
                 motivo: $motivo,
                 area_visitada: $area_visitada,
-                created_at: $now,
-                updated_at: $now
-            };
+                created_at: time::now(),
+                updated_at: time::now()
+            }
         "#,
         )
         .bind(("empresa_link", empresa_id))
@@ -62,7 +65,6 @@ pub async fn insert(
         .bind(("modo_ingreso", input.modo_ingreso))
         .bind(("vehiculo_placa", input.vehiculo_placa))
         .bind(("gafete_numero", input.gafete_numero))
-        .bind(("now", now))
         .bind(("observaciones", input.observaciones))
         .bind(("motivo", input.motivo))
         .bind(("area_visitada", input.area_visitada))
@@ -74,12 +76,12 @@ pub async fn insert(
 pub async fn find_ingreso_abierto_by_cedula(
     cedula: &str,
 ) -> Result<Option<Ingreso>, SurrealDbError> {
-    let client = get_db().await?;
+    let db = get_db().await?;
 
-    let mut result = client
+    let mut result = db
         .query(
             r#"
-            SELECT * FROM ingresos 
+            SELECT * FROM ingreso 
             WHERE cedula = $cedula 
             AND tipo_ingreso = 'proveedor'
             AND fecha_hora_salida IS NONE
@@ -97,25 +99,26 @@ pub async fn update_salida(
     usuario_salida_id: &str,
     observaciones: Option<String>,
 ) -> Result<Option<Ingreso>, SurrealDbError> {
-    let client = get_db().await?;
-    let now = Utc::now().to_rfc3339();
-    let usuario_link = format!("users:{}", usuario_salida_id);
+    let db = get_db().await?;
 
-    let mut result = client
+    let id_only = ingreso_id.strip_prefix("ingreso:").unwrap_or(ingreso_id).to_string();
+    let usuario_id_only = usuario_salida_id.strip_prefix("user:").unwrap_or(usuario_salida_id);
+    let usuario_link = format!("user:{}", usuario_id_only);
+
+    let mut result = db
         .query(
             r#"
-            UPDATE type::thing('ingresos', $id) MERGE {
-                fecha_hora_salida: $now,
+            UPDATE type::thing('ingreso', $id) MERGE {
+                fecha_hora_salida: time::now(),
                 usuario_salida_id: $usuario_link,
                 observaciones_salida: $observaciones,
-                updated_at: $now
-            };
+                updated_at: time::now()
+            }
         "#,
         )
-        .bind(("id", ingreso_id.to_string()))
+        .bind(("id", id_only))
         .bind(("usuario_link", usuario_link))
         .bind(("observaciones", observaciones))
-        .bind(("now", now))
         .await?;
 
     Ok(result.take(0)?)

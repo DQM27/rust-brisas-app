@@ -1,16 +1,18 @@
+// ==========================================
 // src/db/surrealdb_ingreso_contratista_queries.rs
+// Enterprise Quality SurrealDB Implementation
+// ==========================================
+
 use crate::models::ingreso::{CreateIngresoContratistaInput, Ingreso};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use chrono::Utc;
 
 pub async fn insert(
     input: CreateIngresoContratistaInput,
     contratista_data: &serde_json::Value,
 ) -> Result<Option<Ingreso>, SurrealDbError> {
-    let client = get_db().await?;
-    let now = Utc::now().to_rfc3339();
+    let db = get_db().await?;
 
-    // Extraer datos del contratista para desnormalizar (backup)
+    // Extract data from contratista for denormalization
     let nombre = contratista_data["nombre"].as_str().unwrap_or("").to_string();
     let apellido = contratista_data["apellido"].as_str().unwrap_or("").to_string();
     let cedula = contratista_data["cedula"].as_str().unwrap_or("").to_string();
@@ -18,14 +20,27 @@ pub async fn insert(
     let praind_vigente = contratista_data["praind_vigente"].as_bool();
     let estado = contratista_data["estado"].as_str().map(|s| s.to_string());
 
-    let contratista_id = format!("contratistas:{}", input.contratista_id);
-    let vehiculo_id = input.vehiculo_id.map(|v| format!("vehiculos:{}", v));
-    let usuario_id = format!("users:{}", input.usuario_ingreso_id);
+    let contratista_id = {
+        let id = &input.contratista_id;
+        let id_only = id.strip_prefix("contratista:").unwrap_or(id);
+        format!("contratista:{}", id_only)
+    };
 
-    let mut result = client
+    let vehiculo_id = input.vehiculo_id.map(|v| {
+        let v_only = v.strip_prefix("vehiculo:").unwrap_or(&v);
+        format!("vehiculo:{}", v_only)
+    });
+
+    let usuario_id = {
+        let id = &input.usuario_ingreso_id;
+        let id_only = id.strip_prefix("user:").unwrap_or(id);
+        format!("user:{}", id_only)
+    };
+
+    let mut result = db
         .query(
             r#"
-            CREATE ingresos CONTENT {
+            CREATE ingreso CONTENT {
                 contratista_id: $contratista_id,
                 usuario_ingreso_id: $usuario_id,
                 cedula: $cedula,
@@ -38,13 +53,13 @@ pub async fn insert(
                 vehiculo_id: $vehiculo_id,
                 gafete_numero: $gafete_numero,
                 gafete_tipo: $gafete_tipo,
-                fecha_hora_ingreso: $now,
+                fecha_hora_ingreso: time::now(),
                 observaciones: $observaciones,
                 praind_vigente_al_ingreso: $praind_vigente,
                 estado_contratista_al_ingreso: $estado,
-                created_at: $now,
-                updated_at: $now
-            };
+                created_at: time::now(),
+                updated_at: time::now()
+            }
         "#,
         )
         .bind(("contratista_id", contratista_id))
@@ -58,7 +73,6 @@ pub async fn insert(
         .bind(("vehiculo_id", vehiculo_id))
         .bind(("gafete_numero", input.gafete_numero))
         .bind(("gafete_tipo", input.gafete_tipo))
-        .bind(("now", now))
         .bind(("observaciones", input.observaciones))
         .bind(("praind_vigente", praind_vigente))
         .bind(("estado", estado))
@@ -70,13 +84,14 @@ pub async fn insert(
 pub async fn find_ingreso_abierto_by_contratista(
     contratista_id: &str,
 ) -> Result<Option<Ingreso>, SurrealDbError> {
-    let client = get_db().await?;
-    let contratista_link = format!("contratistas:{}", contratista_id);
+    let db = get_db().await?;
+    let id_only = contratista_id.strip_prefix("contratista:").unwrap_or(contratista_id);
+    let contratista_link = format!("contratista:{}", id_only);
 
-    let mut result = client
+    let mut result = db
         .query(
             r#"
-            SELECT * FROM ingresos 
+            SELECT * FROM ingreso 
             WHERE contratista_id = $contratista_link 
             AND fecha_hora_salida IS NONE
             LIMIT 1
@@ -93,35 +108,37 @@ pub async fn update_salida(
     usuario_salida_id: &str,
     observaciones: Option<String>,
 ) -> Result<Option<Ingreso>, SurrealDbError> {
-    let client = get_db().await?;
-    let now = Utc::now().to_rfc3339();
-    let usuario_link = format!("users:{}", usuario_salida_id);
+    let db = get_db().await?;
 
-    let mut result = client
+    let id_only = ingreso_id.strip_prefix("ingreso:").unwrap_or(ingreso_id).to_string();
+    let usuario_id_only = usuario_salida_id.strip_prefix("user:").unwrap_or(usuario_salida_id);
+    let usuario_link = format!("user:{}", usuario_id_only);
+
+    let mut result = db
         .query(
             r#"
-            UPDATE type::thing('ingresos', $id) MERGE {
-                fecha_hora_salida: $now,
+            UPDATE type::thing('ingreso', $id) MERGE {
+                fecha_hora_salida: time::now(),
                 usuario_salida_id: $usuario_link,
                 observaciones_salida: $observaciones,
-                updated_at: $now
-            };
+                updated_at: time::now()
+            }
         "#,
         )
-        .bind(("id", ingreso_id.to_string()))
+        .bind(("id", id_only))
         .bind(("usuario_link", usuario_link))
         .bind(("observaciones", observaciones))
-        .bind(("now", now))
         .await?;
 
     Ok(result.take(0)?)
 }
 
 pub async fn find_by_id(id: &str) -> Result<Option<Ingreso>, SurrealDbError> {
-    let client = get_db().await?;
-    let mut result = client
-        .query("SELECT * FROM type::thing('ingresos', $id)")
-        .bind(("id", id.to_string()))
-        .await?;
+    let db = get_db().await?;
+    let id_only = id.strip_prefix("ingreso:").unwrap_or(id).to_string();
+
+    let mut result =
+        db.query("SELECT * FROM type::thing('ingreso', $id)").bind(("id", id_only)).await?;
+
     Ok(result.take(0)?)
 }

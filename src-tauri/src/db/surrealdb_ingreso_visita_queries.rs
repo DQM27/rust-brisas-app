@@ -1,39 +1,43 @@
+// ==========================================
 // src/db/surrealdb_ingreso_visita_queries.rs
+// Enterprise Quality SurrealDB Implementation
+// ==========================================
+
 use crate::models::ingreso::{CreateIngresoVisitaInput, Ingreso};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use chrono::Utc;
 
 pub async fn insert(input: CreateIngresoVisitaInput) -> Result<Option<Ingreso>, SurrealDbError> {
-    let client = get_db().await?;
-    let now = Utc::now().to_rfc3339();
-    let usuario_id = format!("users:{}", input.usuario_ingreso_id);
+    let db = get_db().await?;
 
-    // Nota: ingreso de visita guarda anfitrión. Puede ser un string o un link.
-    // Asumimos string por ahora segun input `anfitrión`
+    let usuario_id = {
+        let id = &input.usuario_ingreso_id;
+        let id_only = id.strip_prefix("user:").unwrap_or(id);
+        format!("user:{}", id_only)
+    };
 
-    let mut result = client
+    let mut result = db
         .query(
             r#"
-            CREATE ingresos CONTENT {
+            CREATE ingreso CONTENT {
                 usuario_ingreso_id: $usuario_id,
                 cedula: $cedula,
                 nombre: $nombre,
                 apellido: $apellido,
-                empresa_nombre: '', // Visitas suelen ser personales, o se podría poner anfitrión/area
+                empresa_nombre: '',
                 tipo_ingreso: 'visita',
                 tipo_autorizacion: $tipo_autorizacion,
                 modo_ingreso: $modo_ingreso,
                 vehiculo_placa: $placa_vehiculo,
                 gafete_numero: $gafete_numero,
                 gafete_tipo: 'visita',
-                fecha_hora_ingreso: $now,
+                fecha_hora_ingreso: time::now(),
                 observaciones: $observaciones,
                 motivo: $motivo,
                 area_visitada: $area,
                 anfitrion: $anfitrion,
-                created_at: $now,
-                updated_at: $now
-            };
+                created_at: time::now(),
+                updated_at: time::now()
+            }
         "#,
         )
         .bind(("usuario_id", usuario_id))
@@ -44,7 +48,6 @@ pub async fn insert(input: CreateIngresoVisitaInput) -> Result<Option<Ingreso>, 
         .bind(("modo_ingreso", input.modo_ingreso))
         .bind(("placa_vehiculo", input.vehiculo_placa))
         .bind(("gafete_numero", input.gafete_numero))
-        .bind(("now", now))
         .bind(("observaciones", input.observaciones))
         .bind(("motivo", input.motivo_visita))
         .bind(("area", input.area_visitada))
@@ -57,12 +60,12 @@ pub async fn insert(input: CreateIngresoVisitaInput) -> Result<Option<Ingreso>, 
 pub async fn find_ingreso_abierto_by_cedula(
     cedula: &str,
 ) -> Result<Option<Ingreso>, SurrealDbError> {
-    let client = get_db().await?;
+    let db = get_db().await?;
 
-    let mut result = client
+    let mut result = db
         .query(
             r#"
-            SELECT * FROM ingresos 
+            SELECT * FROM ingreso 
             WHERE cedula = $cedula 
             AND tipo_ingreso = 'visita'
             AND fecha_hora_salida IS NONE
@@ -80,25 +83,26 @@ pub async fn update_salida(
     usuario_salida_id: &str,
     observaciones: Option<String>,
 ) -> Result<Option<Ingreso>, SurrealDbError> {
-    let client = get_db().await?;
-    let now = Utc::now().to_rfc3339();
-    let usuario_link = format!("users:{}", usuario_salida_id);
+    let db = get_db().await?;
 
-    let mut result = client
+    let id_only = ingreso_id.strip_prefix("ingreso:").unwrap_or(ingreso_id).to_string();
+    let usuario_id_only = usuario_salida_id.strip_prefix("user:").unwrap_or(usuario_salida_id);
+    let usuario_link = format!("user:{}", usuario_id_only);
+
+    let mut result = db
         .query(
             r#"
-            UPDATE type::thing('ingresos', $id) MERGE {
-                fecha_hora_salida: $now,
+            UPDATE type::thing('ingreso', $id) MERGE {
+                fecha_hora_salida: time::now(),
                 usuario_salida_id: $usuario_link,
                 observaciones_salida: $observaciones,
-                updated_at: $now
-            };
+                updated_at: time::now()
+            }
         "#,
         )
-        .bind(("id", ingreso_id.to_string()))
+        .bind(("id", id_only))
         .bind(("usuario_link", usuario_link))
         .bind(("observaciones", observaciones))
-        .bind(("now", now))
         .await?;
 
     Ok(result.take(0)?)
