@@ -2,7 +2,7 @@
 // src/db/surrealdb_contratista_queries.rs
 // ==========================================
 
-use crate::models::contratista::{Contratista, ContratistaCreateDTO};
+use crate::models::contratista::{Contratista, ContratistaCreateDTO, ContratistaUpdateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 

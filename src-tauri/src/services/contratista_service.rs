@@ -12,7 +12,6 @@ use crate::models::contratista::{
 };
 use crate::services::search_service::SearchService;
 use crate::services::surrealdb_service::SurrealDbError;
-use chrono::Utc;
 use log::{error, info};
 use std::sync::Arc;
 use surrealdb::RecordId;
@@ -188,6 +187,8 @@ pub async fn update_contratista(
     id_str: String,
     input: UpdateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
+    use crate::models::contratista::ContratistaUpdateDTO;
+
     let id = parse_contratista_id(&id_str);
     println!(">>> DEBUG: update_contratista INPUT: {:?}", input);
 
@@ -198,58 +199,51 @@ pub async fn update_contratista(
     let existing =
         db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
-    // 3. Preparar datos de actualización
-    let mut update_data = serde_json::Map::new();
+    // 3. Construir DTO tipado para update
+    let mut dto = ContratistaUpdateDTO::default();
+
     if let Some(v) = input.nombre {
-        update_data.insert("nombre".to_string(), serde_json::json!(v.trim().to_uppercase()));
+        dto.nombre = Some(v.trim().to_uppercase());
     }
     if let Some(v) = input.segundo_nombre {
-        update_data
-            .insert("segundo_nombre".to_string(), serde_json::json!(v.trim().to_uppercase()));
+        dto.segundo_nombre = Some(v.trim().to_uppercase());
     }
     if let Some(v) = input.apellido {
-        update_data.insert("apellido".to_string(), serde_json::json!(v.trim().to_uppercase()));
+        dto.apellido = Some(v.trim().to_uppercase());
     }
     if let Some(v) = input.segundo_apellido {
-        update_data
-            .insert("segundo_apellido".to_string(), serde_json::json!(v.trim().to_uppercase()));
+        dto.segundo_apellido = Some(v.trim().to_uppercase());
     }
 
-    // 5. Verificar que la empresa exista (si se proporciona) Y si es diferente a la actual
-    let mut nuevo_empresa_id: Option<surrealdb::RecordId> = None;
+    // 4. Empresa: solo si cambió
     if let Some(empresa_id_str) = &input.empresa_id {
         let empresa_id = parse_empresa_id(empresa_id_str);
-        // Only update empresa if it's different from current
         if empresa_id != existing.empresa {
-            let e = empresa_db::find_by_id(&empresa_id).await.map_err(map_db_error)?;
-            if e.is_none() {
+            // Verify empresa exists
+            if empresa_db::find_by_id(&empresa_id).await.map_err(map_db_error)?.is_none() {
                 return Err(ContratistaError::EmpresaNotFound);
             }
-            nuevo_empresa_id = Some(empresa_id);
-            println!(
-                ">>> DEBUG: Empresa changed from {:?} to {:?}",
-                existing.empresa, nuevo_empresa_id
-            );
+            dto.empresa = Some(empresa_id);
+            println!(">>> DEBUG: Empresa changed to {:?}", dto.empresa);
         } else {
-            println!(">>> DEBUG: Empresa unchanged, skipping update for this field");
+            println!(">>> DEBUG: Empresa unchanged, skipping");
         }
     }
 
+    // 5. Fecha PRAIND
     if let Some(v) = input.fecha_vencimiento_praind {
         let fecha = crate::models::contratista::validaciones::validar_fecha(&v)
             .map_err(ContratistaError::Validation)?;
-        update_data.insert("fecha_vencimiento_praind".to_string(), serde_json::json!(fecha));
+        dto.fecha_vencimiento_praind = Some(fecha.into());
     }
 
-    // 4. Actualizar en DB
-    let updated = db::update(&id, serde_json::Value::Object(update_data), nuevo_empresa_id)
-        .await
-        .map_err(|e| {
+    // 6. Actualizar en DB con DTO tipado
+    let updated = db::update(&id, dto).await.map_err(|e| {
         error!("Error de base de datos al actualizar contratista {}: {}", id, e);
         map_db_error(e)
     })?;
 
-    // 5. Retornar
+    // 7. Retornar
     build_response(updated).await
 }
 
@@ -325,13 +319,14 @@ pub async fn actualizar_praind_con_historial(
         crate::models::contratista::validaciones::validar_fecha(&input.nueva_fecha_praind)
             .map_err(ContratistaError::Validation)?;
 
-    let mut update_data = serde_json::Map::new();
-    update_data.insert("fecha_vencimiento_praind".to_string(), serde_json::json!(nueva_fecha));
-    update_data.insert("fecha_vencimiento_praind".to_string(), serde_json::json!(nueva_fecha));
+    // Use typed DTO for update
+    use crate::models::contratista::ContratistaUpdateDTO;
+    let dto = ContratistaUpdateDTO {
+        fecha_vencimiento_praind: Some(nueva_fecha.into()),
+        ..Default::default()
+    };
 
-    let updated = db::update(&id, serde_json::Value::Object(update_data), None)
-        .await
-        .map_err(map_db_error)?;
+    let updated = db::update(&id, dto).await.map_err(map_db_error)?;
 
     audit_db::insert_praind_historial(
         &input.contratista_id,
