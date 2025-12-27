@@ -75,14 +75,24 @@ pub async fn update(
 ) -> Result<VehiculoFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    let res: Option<VehiculoFetched> = db
-        .query("UPDATE $id MERGE $dto FETCH contratista, proveedor, contratista.empresa, proveedor.empresa")
+    // UPDATE doesn't support FETCH, so we need two queries
+    let _: Option<Vehiculo> = db
+        .query("UPDATE $id MERGE $dto")
         .bind(("id", id.clone()))
         .bind(("dto", dto))
         .await?
         .take(0)?;
 
-    res.ok_or(SurrealDbError::TransactionError("Error al actualizar vehículo".to_string()))
+    // Fetch with all relations
+    let mut result = db
+        .query("SELECT * FROM $id FETCH contratista, proveedor, contratista.empresa, proveedor.empresa")
+        .bind(("id", id.clone()))
+        .await?;
+
+    let fetched: Option<VehiculoFetched> = result.take(0)?;
+    fetched.ok_or(SurrealDbError::TransactionError(
+        "Vehículo no encontrado o error al actualizar".to_string(),
+    ))
 }
 
 pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {

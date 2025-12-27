@@ -82,18 +82,20 @@ pub async fn update(
     println!(">>> DEBUG: Updating contratista {} with DTO: {:?}", id, dto);
     let db = get_db().await?;
 
-    // Use query instead of update().merge() because merge() doesn't easily support FETCH in the same call in some SDK versions
-    // Actually db.update().merge().fetch("empresa") might work depending on version.
-    // Let's use query for consistency with FETCH.
-    let result: Option<ContratistaFetched> = db
-        .query("UPDATE $id MERGE $dto FETCH empresa")
+    // UPDATE doesn't support FETCH, so we need two queries
+    let _: Option<Contratista> = db
+        .query("UPDATE $id MERGE $dto")
         .bind(("id", id.clone()))
         .bind(("dto", dto))
         .await?
         .take(0)?;
 
-    println!(">>> DEBUG: Update result: {:?}", result);
-    result
+    // Fetch with empresa populated
+    let mut result = db.query("SELECT * FROM $id FETCH empresa").bind(("id", id.clone())).await?;
+
+    let fetched: Option<ContratistaFetched> = result.take(0)?;
+    println!(">>> DEBUG: Update result: {:?}", fetched);
+    fetched
         .ok_or(SurrealDbError::Query("Contratista no encontrado o error al actualizar".to_string()))
 }
 
@@ -102,14 +104,20 @@ pub async fn update_status(
     estado: &str,
 ) -> Result<ContratistaFetched, SurrealDbError> {
     let db = get_db().await?;
-    let result: Option<ContratistaFetched> = db
-        .query("UPDATE $id SET estado = $estado FETCH empresa")
+
+    // UPDATE doesn't support FETCH
+    let _: Option<Contratista> = db
+        .query("UPDATE $id SET estado = $estado")
         .bind(("id", id.clone()))
         .bind(("estado", estado.to_string()))
         .await?
         .take(0)?;
 
-    result.ok_or(SurrealDbError::Query("No se pudo actualizar el estado".to_string()))
+    // Fetch with empresa populated
+    let mut result = db.query("SELECT * FROM $id FETCH empresa").bind(("id", id.clone())).await?;
+
+    let fetched: Option<ContratistaFetched> = result.take(0)?;
+    fetched.ok_or(SurrealDbError::Query("No se pudo actualizar el estado".to_string()))
 }
 
 pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {

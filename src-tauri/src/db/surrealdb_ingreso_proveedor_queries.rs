@@ -65,14 +65,22 @@ pub async fn update_salida(
     dto.observaciones_salida = observaciones;
     dto.updated_at = Some(surrealdb::Datetime::from(chrono::Utc::now()));
 
-    let result: Option<IngresoFetched> = db
-        .query("UPDATE $id MERGE $dto FETCH usuario_ingreso, usuario_salida, vehiculo, contratista, contratista.empresa")
+    // UPDATE doesn't support FETCH, so we need two queries
+    let _: Option<Ingreso> = db
+        .query("UPDATE $id MERGE $dto")
         .bind(("id", ingreso_id.clone()))
         .bind(("dto", dto))
         .await?
         .take(0)?;
 
-    result.ok_or(SurrealDbError::TransactionError(
+    // Fetch with all relations
+    let mut result = db
+        .query("SELECT * FROM $id FETCH usuario_ingreso, usuario_salida, vehiculo, contratista, contratista.empresa")
+        .bind(("id", ingreso_id.clone()))
+        .await?;
+
+    let fetched: Option<IngresoFetched> = result.take(0)?;
+    fetched.ok_or(SurrealDbError::TransactionError(
         "Error al registrar salida de proveedor".to_string(),
     ))
 }
