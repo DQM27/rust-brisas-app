@@ -1,17 +1,36 @@
 // src/commands/user_commands.rs
 
-use crate::db::DbPool;
 use crate::domain::errors::UserError;
 use crate::models::user::{
     ChangePasswordInput, CreateUserInput, UpdateUserInput, UserListResponse, UserResponse,
 };
-use crate::services::search_service::SearchState;
-use crate::services::user_service;
-
-use crate::services::session::{SessionState, SessionUser}; // Fix import
-
 use tauri::State;
 
+// Session imports (needed for both backends)
+#[cfg(not(feature = "surrealdb-backend"))]
+use crate::services::session::{SessionState, SessionUser};
+
+// ==========================================
+// SQLITE IMPORTS (default)
+// ==========================================
+#[cfg(not(feature = "surrealdb-backend"))]
+use crate::db::DbPool;
+#[cfg(not(feature = "surrealdb-backend"))]
+use crate::services::search_service::SearchState;
+#[cfg(not(feature = "surrealdb-backend"))]
+use crate::services::user_service;
+
+// ==========================================
+// SURREALDB IMPORTS (experimental)
+// ==========================================
+#[cfg(feature = "surrealdb-backend")]
+use crate::services::surrealdb_user_service as user_service;
+
+// ==========================================
+// COMMANDS - Conditional implementation
+// ==========================================
+
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn create_user(
     pool_state: State<'_, DbPool>,
@@ -23,6 +42,13 @@ pub async fn create_user(
     user_service::create_user(&pool, &search_service, input).await
 }
 
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn create_user(input: CreateUserInput) -> Result<UserResponse, UserError> {
+    user_service::create_user(input).await
+}
+
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn update_user(
     pool_state: State<'_, DbPool>,
@@ -35,6 +61,13 @@ pub async fn update_user(
     user_service::update_user(&pool, &search_service, id.clone(), input).await
 }
 
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn update_user(id: String, input: UpdateUserInput) -> Result<UserResponse, UserError> {
+    user_service::update_user(id, input).await
+}
+
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn delete_user(
     pool_state: State<'_, DbPool>,
@@ -46,6 +79,13 @@ pub async fn delete_user(
     user_service::delete_user(&pool, &search_service, id.clone()).await
 }
 
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn delete_user(id: String) -> Result<(), UserError> {
+    user_service::delete_user(id).await
+}
+
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn get_user_by_id(
     pool_state: State<'_, DbPool>,
@@ -55,12 +95,26 @@ pub async fn get_user_by_id(
     user_service::get_user_by_id(&pool, &id).await
 }
 
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn get_user_by_id(id: String) -> Result<UserResponse, UserError> {
+    user_service::get_user_by_id(&id).await
+}
+
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn get_all_users(pool_state: State<'_, DbPool>) -> Result<UserListResponse, UserError> {
     let pool = pool_state.0.read().await;
     user_service::get_all_users(&pool).await
 }
 
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn get_all_users() -> Result<UserListResponse, UserError> {
+    user_service::get_all_users().await
+}
+
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn login(
     pool_state: State<'_, DbPool>,
@@ -76,7 +130,7 @@ pub async fn login(
             .fetch_one(&*pool)
             .await
     {
-        log::info!("🔐 Login request using DB file: {}", path);
+        log::info!("🔐 Login request using SQLite DB: {}", path);
     }
 
     let user_response = user_service::login(&pool, email, password).await?;
@@ -97,6 +151,14 @@ pub async fn login(
     Ok(user_response)
 }
 
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn login(email: String, password: String) -> Result<UserResponse, UserError> {
+    log::info!("🔐 Login request using SurrealDB");
+    user_service::login(email, password).await
+}
+
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn change_password(
     pool_state: State<'_, DbPool>,
@@ -107,8 +169,15 @@ pub async fn change_password(
     user_service::change_password(&pool, id, input).await
 }
 
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn change_password(id: String, input: ChangePasswordInput) -> Result<(), UserError> {
+    user_service::change_password(id, input).await
+}
+
 /// Ejecuta el seed de demostración y logea con un usuario demo
 /// email debe ser uno de: marie.curie@demo.com, albert.einstein@demo.com, richard.feynman@demo.com
+#[cfg(not(feature = "surrealdb-backend"))]
 #[tauri::command]
 pub async fn demo_login(
     pool_state: State<'_, DbPool>,
@@ -256,4 +325,12 @@ pub async fn get_user_avatar(
 
     // 4. Retornar como Base64 para el frontend
     Ok(general_purpose::STANDARD.encode(decrypted_content))
+}
+
+#[cfg(feature = "surrealdb-backend")]
+#[tauri::command]
+pub async fn demo_login(email: String) -> Result<UserResponse, UserError> {
+    // TODO: Implementar seed_demo para SurrealDB
+    log::warn!("⚠️ demo_login: seed_demo no implementado para SurrealDB");
+    user_service::login(email, "demo123".to_string()).await
 }

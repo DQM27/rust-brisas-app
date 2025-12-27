@@ -34,3 +34,9 @@ pub mod search_service;
 pub mod user_service;
 pub mod vehiculo_service;
 pub mod visitante_service;
+
+// SurrealDB (experimental)
+pub mod surrealdb_service;
+
+#[cfg(feature = "surrealdb-backend")]
+pub mod surrealdb_user_service;

@@ -53,6 +53,30 @@ pub fn run() {
                 info!("⚠️ App NO configurada, saltando seed hasta que se complete el Wizard.");
             }
 
+            // ==========================================
+            // SURREALDB (EXPERIMENTAL)
+            // ==========================================
+            #[cfg(feature = "surrealdb-backend")]
+            {
+                println!("🚀 [SURREALDB] Inicializando SurrealDB embebido...");
+                let surreal_config = if app_config.setup.show_demo_mode {
+                    services::surrealdb_service::SurrealDbConfig::demo()
+                } else {
+                    services::surrealdb_service::SurrealDbConfig::default()
+                };
+
+                match services::surrealdb_service::setup_embedded_surrealdb(surreal_config).await {
+                    Ok(_) => {
+                        println!("✅ [SURREALDB] SurrealDB embebido inicializado correctamente");
+                        // Ejecutar seeds de SurrealDB
+                        if let Err(e) = config::surrealdb_seed::seed_surrealdb().await {
+                            println!("❌ [SURREALDB] Error en seeds: {}", e);
+                        }
+                    }
+                    Err(e) => println!("❌ [SURREALDB] Error inicializando: {}", e),
+                }
+            }
+
             // Solo reindexar si el índice está vacío (primera vez o después de restauración)
             if search_service.is_empty() {
                 info!("📇 Índice vacío, detectado. Iniciando reindexado en segundo plano...");

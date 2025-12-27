@@ -33,6 +33,11 @@ sqlx = { version = "0.7", features = [
     "migrate",
 ], default-features = false }
 
+# SurrealDB - Multi-model database (experimental, embedded)
+surrealdb = { version = "2.0", features = [
+    "kv-rocksdb",
+], default-features = false }
+
 # ==========================================
 # ASYNC RUNTIME
 # ==========================================
@@ -105,6 +110,7 @@ mimalloc = { version = "0.1", default-features = false }
 thiserror = "2.0.17"
 tauri-plugin-log = "2.7.1"
 log = "0.4.29"
+once_cell = "1.19"
 
 # macOS Keychain API
 [target.'cfg(target_os = "macos")'.dependencies]
@@ -136,6 +142,10 @@ export = ["export-pdf", "export-excel"]
 # Features individuales por formato
 export-pdf = ["typst", "typst-pdf", "ttf-parser"]
 export-excel = ["rust_xlsxwriter"]
+
+# Database backend (experimental)
+# Usar: cargo build --features surrealdb-backend
+surrealdb-backend = []
 
 # ==========================================
 # DEV DEPENDENCIES (Benchmarks, Testing)

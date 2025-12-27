@@ -29,6 +29,9 @@ pub mod visitante_queries;
 
 pub mod audit_queries; // Tablas de auditoría
 
+// SurrealDB (experimental)
+pub mod surrealdb_user_queries;
+
 /// Inicializa la conexión a la base de datos (Pool) tomando en cuenta el modo Demo
 pub async fn init_pool(config: &AppConfig) -> Result<SqlitePool, Box<dyn std::error::Error>> {
     // Verificar si estamos en modo Demo
