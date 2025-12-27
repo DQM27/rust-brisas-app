@@ -144,3 +144,27 @@ function parseError(err: any): string {
 
     return 'Ocurrió un error inesperado.';
 }
+
+// ============================================
+// ARCHIVED / RESTORE
+// ============================================
+
+export async function restoreContratista(id: string): Promise<ServiceResult<void>> {
+    try {
+        await contratistas.restore(id);
+        return { ok: true, data: undefined };
+    } catch (err: any) {
+        console.error('Error al restaurar contratista:', err);
+        return { ok: false, error: parseError(err) };
+    }
+}
+
+export async function getArchivedContratistas(): Promise<ServiceResult<ContratistaResponse[]>> {
+    try {
+        const result = await contratistas.listArchived();
+        return { ok: true, data: result };
+    } catch (err: any) {
+        console.error('Error al cargar contratistas archivados:', err);
+        return { ok: false, error: parseError(err) };
+    }
+}

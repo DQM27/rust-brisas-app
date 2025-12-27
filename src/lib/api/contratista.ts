@@ -39,4 +39,12 @@ export const contratistas = {
   changeEstado: async (id: string, estado: string): Promise<ContratistaResponse> => {
     return await invoke<ContratistaResponse>("cambiar_estado_contratista", { id, input: { id, estado } });
   },
+
+  restore: async (id: string): Promise<void> => {
+    return await invoke<void>("restore_contratista", { id });
+  },
+
+  listArchived: async (): Promise<ContratistaResponse[]> => {
+    return await invoke<ContratistaResponse[]>("get_archived_contratistas");
+  },
 };

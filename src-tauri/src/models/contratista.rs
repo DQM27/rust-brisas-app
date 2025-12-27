@@ -25,6 +25,8 @@ pub struct Contratista {
     pub created_at: Datetime,
     #[serde(alias = "updated_at")]
     pub updated_at: Datetime,
+    #[serde(alias = "deleted_at")]
+    pub deleted_at: Option<Datetime>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,6 +47,8 @@ pub struct ContratistaFetched {
     pub created_at: Datetime,
     #[serde(alias = "updated_at")]
     pub updated_at: Datetime,
+    #[serde(alias = "deleted_at")]
+    pub deleted_at: Option<Datetime>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -182,6 +186,7 @@ pub struct ContratistaResponse {
     pub vehiculo_color: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+    pub deleted_at: Option<String>,
 }
 
 impl From<Contratista> for ContratistaResponse {
@@ -252,6 +257,7 @@ impl From<Contratista> for ContratistaResponse {
             vehiculo_color: None,
             created_at: c.created_at.to_string(), // Keep default or change to rfc3339 if needed
             updated_at: c.updated_at.to_string(),
+            deleted_at: c.deleted_at.map(|d| d.to_string()),
         }
     }
 }
@@ -320,6 +326,7 @@ impl ContratistaResponse {
             vehiculo_color: None,
             created_at: c.created_at.to_string(),
             updated_at: c.updated_at.to_string(),
+            deleted_at: c.deleted_at.map(|d| d.to_string()),
         }
     }
 }

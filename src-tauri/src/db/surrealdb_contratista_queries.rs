@@ -46,7 +46,9 @@ pub async fn find_by_id_fetched(
 pub async fn find_by_cedula(cedula: &str) -> Result<Option<ContratistaFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM contratista WHERE cedula = $cedula FETCH empresa")
+        .query(
+            "SELECT * FROM contratista WHERE cedula = $cedula AND deleted_at IS NONE FETCH empresa",
+        )
         .bind(("cedula", cedula.to_string()))
         .await?;
     let contratista: Option<ContratistaFetched> = result.take(0)?;
@@ -55,20 +57,23 @@ pub async fn find_by_cedula(cedula: &str) -> Result<Option<ContratistaFetched>, 
 
 pub async fn find_all() -> Result<Vec<Contratista>, SurrealDbError> {
     let db = get_db().await?;
-    let result: Vec<Contratista> = db.select("contratista").await?;
+    // Only return non-deleted records
+    let result: Vec<Contratista> =
+        db.query("SELECT * FROM contratista WHERE deleted_at IS NONE").await?.take(0)?;
     Ok(result)
 }
 
 pub async fn find_all_fetched() -> Result<Vec<ContratistaFetched>, SurrealDbError> {
     let db = get_db().await?;
-    let mut result = db.query("SELECT * FROM contratista FETCH empresa").await?;
+    let mut result =
+        db.query("SELECT * FROM contratista WHERE deleted_at IS NONE FETCH empresa").await?;
     Ok(result.take(0)?)
 }
 
 pub async fn find_by_empresa(empresa_id: &RecordId) -> Result<Vec<Contratista>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM contratista WHERE empresa = $empresa")
+        .query("SELECT * FROM contratista WHERE empresa = $empresa AND deleted_at IS NONE")
         .bind(("empresa", empresa_id.clone()))
         .await?;
     let contratistas: Vec<Contratista> = result.take(0)?;
@@ -120,10 +125,30 @@ pub async fn update_status(
     fetched.ok_or(SurrealDbError::Query("No se pudo actualizar el estado".to_string()))
 }
 
+// Soft delete implementation
 pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    let _: Option<Contratista> = db.delete(id.clone()).await?;
+    let _: Option<Contratista> = db
+        .query("UPDATE $id SET deleted_at = time::now()")
+        .bind(("id", id.clone()))
+        .await?
+        .take(0)?;
     Ok(())
+}
+
+pub async fn restore(id: &RecordId) -> Result<(), SurrealDbError> {
+    let db = get_db().await?;
+    let _: Option<Contratista> =
+        db.query("UPDATE $id SET deleted_at = NONE").bind(("id", id.clone())).await?.take(0)?;
+    Ok(())
+}
+
+pub async fn find_archived() -> Result<Vec<ContratistaFetched>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut result = db
+        .query("SELECT * FROM contratista WHERE deleted_at IS NOT NONE ORDER BY deleted_at DESC FETCH empresa")
+        .await?;
+    Ok(result.take(0)?)
 }
 
 pub async fn get_empresa_nombre(empresa_id: &RecordId) -> Result<String, SurrealDbError> {

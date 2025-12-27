@@ -89,3 +89,16 @@ pub async fn cambiar_estado_con_historial(
 ) -> Result<ContratistaResponse, ContratistaError> {
     contratista_service::cambiar_estado_con_historial(&search_service, input, usuario_id).await
 }
+
+#[command]
+pub async fn restore_contratista(
+    search_service: State<'_, Arc<SearchService>>,
+    id: String,
+) -> Result<(), ContratistaError> {
+    contratista_service::restore_contratista(&search_service, id).await
+}
+
+#[command]
+pub async fn get_archived_contratistas() -> Result<Vec<ContratistaResponse>, ContratistaError> {
+    contratista_service::get_archived_contratistas().await
+}

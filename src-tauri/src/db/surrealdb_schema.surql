@@ -68,6 +68,7 @@ DEFINE FIELD estado ON TABLE contratista TYPE string ASSERT $value INSIDE ['acti
 DEFINE FIELD fecha_vencimiento_praind ON TABLE contratista TYPE option<string>;
 DEFINE FIELD created_at ON TABLE contratista TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE contratista TYPE datetime VALUE time::now();
+DEFINE FIELD deleted_at ON TABLE contratista TYPE option<datetime>;
 DEFINE INDEX idx_contratista_cedula ON contratista COLUMNS cedula UNIQUE;
 
 DEFINE TABLE proveedor SCHEMAFULL;

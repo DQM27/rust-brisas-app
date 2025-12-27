@@ -427,3 +427,44 @@ async fn build_response_fetched(
 
     Ok(response)
 }
+
+// ==========================================
+// RESTORE & ARCHIVED
+// ==========================================
+
+pub async fn restore_contratista(
+    search_service: &Arc<SearchService>,
+    id_str: String,
+) -> Result<(), ContratistaError> {
+    let id = parse_contratista_id(&id_str);
+
+    // Verify it exists (even if deleted, find_by_id checks physical existence)
+    let exists = db::find_by_id(&id).await.map_err(map_db_error)?;
+    if exists.is_none() {
+        return Err(ContratistaError::NotFound);
+    }
+
+    db::restore(&id).await.map_err(map_db_error)?;
+
+    // Re-index
+    if let Some(contratista) = db::find_by_id_fetched(&id).await.map_err(map_db_error)? {
+        let empresa_nombre = contratista.empresa.nombre.clone();
+        if let Err(e) = search_service.add_contratista_fetched(&contratista, &empresa_nombre).await
+        {
+            log::warn!("Error re-indexing restored contratista: {}", e);
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn get_archived_contratistas() -> Result<Vec<ContratistaResponse>, ContratistaError> {
+    let raw_list = db::find_archived().await.map_err(map_db_error)?;
+
+    let mut contratistas = Vec::new();
+    for c in raw_list {
+        contratistas.push(build_response_fetched(c).await?);
+    }
+
+    Ok(contratistas)
+}

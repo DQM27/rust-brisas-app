@@ -30,6 +30,8 @@ macro_rules! register_handlers {
             commands::contratista_commands::get_contratistas_activos,
             commands::contratista_commands::update_contratista,
             commands::contratista_commands::cambiar_estado_contratista,
+            commands::contratista_commands::restore_contratista,
+            commands::contratista_commands::get_archived_contratistas,
             commands::contratista_commands::delete_contratista,
             // Auditoría de contratista
             commands::contratista_commands::actualizar_praind_con_historial,
