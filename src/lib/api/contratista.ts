@@ -47,4 +47,8 @@ export const contratistas = {
   listArchived: async (): Promise<ContratistaResponse[]> => {
     return await invoke<ContratistaResponse[]>("get_archived_contratistas");
   },
+
+  reindex: async (): Promise<void> => {
+    return await invoke<void>("reindex_all_contratistas");
+  },
 };

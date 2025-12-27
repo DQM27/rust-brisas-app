@@ -168,3 +168,16 @@ export async function getArchivedContratistas(): Promise<ServiceResult<Contratis
         return { ok: false, error: parseError(err) };
     }
 }
+
+/**
+ * Reindexar búsqueda de contratistas
+ */
+export async function reindexContratistas(): Promise<ServiceResult<void>> {
+    try {
+        await contratistas.reindex();
+        return { ok: true, data: undefined };
+    } catch (err: any) {
+        console.error('Error al reindexar contratistas:', err);
+        return { ok: false, error: parseError(err) };
+    }
+}

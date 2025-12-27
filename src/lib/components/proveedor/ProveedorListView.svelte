@@ -1,6 +1,7 @@
 <!-- src/lib/components/proveedor/ProveedorListView.svelte -->
 <script lang="ts">
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
+  import ProveedorTrashView from "./ProveedorTrashView.svelte";
   import ProveedorFormModal from "$lib/components/proveedor/ProveedorFormModal.svelte";
   import {
     fetchAllProveedores,
@@ -34,8 +35,7 @@
   let error = $state<string | null>(null);
 
   // Estado local de filtros
-  // Toggle entre ver todos, solo activos, o papelera
-  let activeFilter = $state<"todos" | "activos" | "papelera">("activos");
+  let viewMode = $state<"active" | "trash">("active"); // Replaced activeFilter
 
   // Estado del Modal
   let showModal = $state(false);
@@ -61,16 +61,14 @@
     loading = true;
     error = null;
 
-    // Si el filtro es 'activos', usamos el servicio optimizado
-    // Si es 'todos', traemos todo
+    // Solo cargamos activos/todos para el grid principal
+    // TrashView maneja su propia carga
+    if (viewMode === "trash") return; // Should not happen via loadData triggers generally or handled inside component
+
     let res;
-    if (activeFilter === "activos") {
-      res = await fetchActiveProveedores();
-    } else if (activeFilter === "papelera") {
-      res = await getArchivedProveedores();
-    } else {
-      res = await fetchAllProveedores();
-    }
+    // Default to active or all based on some future active-only filter if needed
+    // For now matching previous optimized 'active' desire or just fetching all
+    res = await fetchAllProveedores(); // Or fetchActiveProveedores() if we want strict default
 
     if (res.ok) {
       proveedores = res.data;
@@ -118,9 +116,7 @@
     }
   }
 
-  // Cambio de estado (usado en columna toggle)
-  // Nota: PROVEEDOR_COLUMNS usa un formatter, pero la acción real debería ser via menu o botón custom.
-  // Sin embargo, si queremos toggle desde toolbar o menu context:
+  // Cambio de estado
   async function toggleStatus(proveedor: ProveedorResponse) {
     const newStatus = proveedor.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO";
     const toastId = toast.loading(`Cambiando estado a ${newStatus}...`);
@@ -160,60 +156,9 @@
     }
   }
 
-  // Restaurar
-  async function confirmRestore(proveedor: ProveedorResponse) {
-    if (
-      !confirm(`¿Estás seguro de restaurar al proveedor "${proveedor.nombre}"?`)
-    )
-      return;
-
-    const res = await restoreProveedor(proveedor.id);
-    if (res.ok) {
-      toast.success("Proveedor restaurado");
-      loadData();
-    } else {
-      toast.error(res.error);
-    }
-  }
   // Botones Custom
   const customButtons = $derived.by(() => {
     const selected = selectedRows[0];
-
-    if (activeFilter === "papelera") {
-      return {
-        default: [
-          {
-            id: "filter-active",
-            label: "Ver Activos", // Return to main view
-            category: "ui",
-            onClick: () => {
-              activeFilter = "activos";
-              loadData();
-            },
-            tooltip: "Volver a la lista de activos",
-          },
-          {
-            id: "refresh",
-            label: "Actualizar",
-            category: "data",
-            onClick: loadData,
-            tooltip: "Recargar lista",
-          },
-        ],
-        singleSelect: [
-          {
-            id: "restore",
-            label: "Restaurar",
-            category: "action",
-            onClick: () => {
-              if (selected) confirmRestore(selected);
-            },
-            tooltip: "Restaurar proveedor seleccionado",
-          },
-        ],
-        multiSelect: [],
-      };
-    }
 
     return {
       default: [
@@ -230,8 +175,7 @@
           label: "Papelera",
           category: "ui",
           onClick: () => {
-            activeFilter = "papelera";
-            loadData();
+            viewMode = "trash";
           },
           tooltip: "Ver proveedores eliminados",
         },
@@ -255,14 +199,31 @@
 
   // Effect para cargar datos al montar
   $effect(() => {
-    loadData();
+    if (viewMode === "active") loadData();
   });
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
 <div class="h-full flex flex-col space-y-4 p-4 animate-fade-in bg-[#1e1e1e]">
-  {#if loading}
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-xl font-semibold text-gray-100">
+        {viewMode === "active"
+          ? "Lista de Proveedores"
+          : "Papelera de Proveedores"}
+      </h2>
+    </div>
+  </div>
+
+  {#if viewMode === "trash"}
+    <ProveedorTrashView
+      onBack={() => {
+        viewMode = "active";
+        loadData();
+      }}
+    />
+  {:else if loading}
     <div class="flex h-full items-center justify-center">
       <div class="text-center">
         <svg

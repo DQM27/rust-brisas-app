@@ -526,6 +526,17 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     showThemeSelector: true,
     enableGrouping: false
   },
+  'visitante-list': {
+    gridId: 'visitante-list',
+    availableButtons: {
+      default: [...COMMON_DEFAULT_BUTTONS.filter(b => b.id === 'toggle-filters')],
+      singleSelect: [...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')],
+      multiSelect: [...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))]
+    },
+    showColumnSelector: true,
+    showThemeSelector: true,
+    enableGrouping: false
+  },
   'contratista-ingreso-list': {
     gridId: 'contratista-ingreso-list',
     availableButtons: {
@@ -570,6 +581,32 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     availableButtons: {
       default: [
         ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all', 'toggle-filters'].includes(b.id))
+      ],
+      singleSelect: [],
+      multiSelect: []
+    },
+    showColumnSelector: true,
+    showThemeSelector: false,
+    enableGrouping: false
+  },
+  'contratista-trash': {
+    gridId: 'contratista-trash',
+    availableButtons: {
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
+      ],
+      singleSelect: [],
+      multiSelect: []
+    },
+    showColumnSelector: true,
+    showThemeSelector: false,
+    enableGrouping: false
+  },
+  'universal-trash': {
+    gridId: 'universal-trash',
+    availableButtons: {
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
       ],
       singleSelect: [],
       multiSelect: []

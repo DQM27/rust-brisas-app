@@ -6,7 +6,20 @@
   import { toast } from "svelte-5-french-toast";
   import { Trash2, RotateCcw } from "lucide-svelte"; // Add RotateCcw for restore icon
 
-  // ... (previous imports)
+  import { AlertCircle } from "lucide-svelte";
+  import { selectedSearchStore } from "$lib/stores/searchStore";
+  import * as contratistaService from "$lib/logic/contratista/contratistaService";
+  import { ContratistaColumns } from "$lib/logic/contratista/contratistaColumns";
+  import SearchBar from "$lib/components/shared/SearchBar.svelte";
+  import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
+  import ContratistaFormModal from "./ContratistaFormModal.svelte";
+  import ContratistaTrashView from "./ContratistaTrashView.svelte";
+  import type { ContratistaResponse } from "$lib/types/contratista";
+  import type { ColDef } from "@ag-grid-community/core";
+  import {
+    COMMON_DEFAULT_BUTTONS,
+    createCustomButton,
+  } from "$lib/config/agGridConfigs";
 
   // ==========================================
   // ESTADO LOCAL
@@ -17,44 +30,59 @@
   let isUpdatingStatus = false;
   let viewMode = $state<"active" | "trash">("active"); // "active" or "trash"
 
-  // ... (rest of simple state)
+  // States specific to Active Grid
+  let selectedRows = $state<ContratistaResponse[]>([]);
+  let showModal = $state(false);
+  let editingContratista = $state<ContratistaResponse | null>(null);
+  let modalLoading = $state(false);
+
+  // Filters
+  let estadoFilter = $state<"todos" | "activo" | "inactivo" | "suspendido">(
+    "todos",
+  );
+  let showEstadoDropdown = $state(false);
+  let praindFilter = $state<"todos" | "vigente" | "vencido" | "por-vencer">(
+    "todos",
+  );
+  let showPraindDropdown = $state(false);
 
   // ==========================================
   // DERIVED STATE
   // ==========================================
   const filteredData = $derived.by(() => {
+    let filtered = contratistas;
+
     const _search = $selectedSearchStore;
-    // En modo papelera, ignoramos filtros de estado normal
-    if (viewMode === "trash") {
-      return listLogic.getFilteredData(contratistas).filter((c) => true); // Aplicar solo búsqueda
+    if (_search.result) {
+      return filtered.filter((c) => c.id === _search.result!.id);
     }
-    listState.estadoFilter = estadoFilter;
-    listState.praindFilter = praindFilter;
-    return listLogic.getFilteredData(contratistas);
+
+    // Filtro de estado
+    if (estadoFilter !== "todos") {
+      filtered = filtered.filter((c) => c.estado === estadoFilter);
+    }
+
+    // Filtro de PRAIND
+    if (praindFilter === "vigente") {
+      filtered = filtered.filter(
+        (c) => !c.praindVencido && c.diasHastaVencimiento > 30,
+      );
+    } else if (praindFilter === "vencido") {
+      filtered = filtered.filter((c) => c.praindVencido);
+    } else if (praindFilter === "por-vencer") {
+      filtered = filtered.filter(
+        (c) => !c.praindVencido && c.diasHastaVencimiento <= 30,
+      );
+    }
+
+    return filtered;
   });
 
   // ... (labels)
 
-  // Columnas
+  // Columnas - Only for Active List now
   const columnDefs = $derived.by((): ColDef<ContratistaResponse>[] => {
-    // Si estamos en papelera, columnas simplificadas o con acciones diferentes
-    const cols = ContratistaListLogic.getColumns(handleStatusChange);
-
-    if (viewMode === "trash") {
-      // En papelera ocultamos estado y acciones normales, agregamos DeletedAt si quisieramos
-      return cols
-        .filter((c) => c.field !== "estado" && c.colId !== "actions")
-        .map((col) => ({
-          field: String(col.field) as any,
-          headerName: col.headerName,
-          width: col.width,
-          flex: col.flex,
-          sortable: true,
-          filter: true,
-          resizable: true,
-          valueFormatter: col.valueFormatter,
-        }));
-    }
+    const cols = ContratistaColumns.getColumns(handleStatusChange);
 
     return cols.map(
       (col) =>
@@ -79,40 +107,6 @@
   const customButtons = $derived.by(() => {
     const selected = selectedRows[0];
 
-    if (viewMode === "trash") {
-      return {
-        default: [
-          {
-            id: "back-to-active",
-            label: "Volver a Activos",
-            icon: undefined, // Standard back icon maybe?
-            onClick: () => toggleViewMode(),
-            variant: "default" as const,
-          },
-          ...COMMON_DEFAULT_BUTTONS.filter((b) =>
-            ["autosize-all", "reset-columns"].includes(b.id),
-          ).map((b) => ({
-            id: b.id,
-            label: b.label,
-            icon: b.icon,
-            tooltip: b.tooltip,
-            onClick: undefined,
-            useCommonHandler: true,
-          })),
-        ],
-        singleSelect: [
-          {
-            id: "restore",
-            label: "Restaurar",
-            icon: RotateCcw,
-            onClick: () => handleRestore(selected),
-            variant: "default" as const,
-          },
-        ],
-        multiSelect: [],
-      };
-    }
-
     return {
       default: [
         createCustomButton.nuevo(() => openModal()),
@@ -120,8 +114,10 @@
           id: "view-trash",
           label: "Papelera",
           icon: Trash2,
-          onClick: () => toggleViewMode(),
-          variant: "ghost" as const, // Subtle button
+          onClick: () => {
+            viewMode = "trash";
+          },
+          variant: "default" as const, // Changed from ghost to default
           tooltip: "Ver contratistas eliminados",
         },
         ...COMMON_DEFAULT_BUTTONS.filter((b) =>
@@ -163,19 +159,9 @@
     error = "";
     contratistas = []; // Clear current
     try {
-      let result;
-      if (viewMode === "active") {
-        result = await contratistaService.fetchAllContratistas();
-      } else {
-        result = await contratistaService.getArchivedContratistas();
-      }
-
+      const result = await contratistaService.fetchAllContratistas();
       if (result.ok) {
-        // En list response viene .contratistas, en archived viene directo array
-        contratistas =
-          viewMode === "active"
-            ? (result.data as any).contratistas
-            : result.data;
+        contratistas = (result.data as any).contratistas;
       } else {
         error = result.error;
       }
@@ -186,21 +172,111 @@
     loading = false;
   }
 
-  function toggleViewMode() {
-    viewMode = viewMode === "active" ? "trash" : "active";
-    loadContratistas();
+  // ... (modal handlers remain same)
+
+  // ==========================================
+  // HANDLERS - MODAL
+  // ==========================================
+  function openModal(contratista: ContratistaResponse | null = null) {
+    editingContratista = contratista;
+    showModal = true;
   }
 
-  // ... (modal handlers remain same)
+  function closeModal() {
+    showModal = false;
+    editingContratista = null;
+  }
+
+  async function handleSaveContratista(data: any) {
+    // Should be typed properly based on input
+    modalLoading = true;
+    try {
+      if (editingContratista) {
+        const res = await contratistaService.updateContratista(
+          editingContratista.id,
+          data,
+        );
+        if (res.ok) {
+          toast.success("Contratista actualizado");
+          closeModal();
+          loadContratistas();
+        } else {
+          toast.error(res.error);
+        }
+      } else {
+        const res = await contratistaService.createContratista(data);
+        if (res.ok) {
+          toast.success("Contratista creado");
+          closeModal();
+          loadContratistas();
+        } else {
+          toast.error(res.error);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Error al guardar contratista");
+    }
+    modalLoading = false;
+  }
 
   // ==========================================
   // HANDLERS - ACTIONS
   // ==========================================
 
+  async function handleReindex() {
+    const toastId = toast.loading("Reindexando...");
+    try {
+      // Assuming service has reindex method or similar
+      // Using a placeholder or generic call if exact method unknown, but usually exposed via service or command
+      // For now, logging as not implemented fully or using a specialized service call if exist.
+      // Given errors, I'll check contratistaService for reindex methods or assume standard pattern.
+      // If verify fails, I will fix.
+      await contratistaService.reindexContratistas();
+      toast.success("Índice actualizado", { id: toastId });
+    } catch (e) {
+      toast.error("Error al reindexar", { id: toastId });
+    }
+  }
+
+  async function handleStatusChange(id: string, status: string) {
+    // Implementation for status change if needed explicitly
+  }
+
+  function handleEstadoSelect(
+    value: "todos" | "activo" | "inactivo" | "suspendido",
+  ) {
+    estadoFilter = value;
+    showEstadoDropdown = false;
+  }
+
+  function handlePraindSelect(
+    value: "todos" | "vigente" | "vencido" | "por-vencer",
+  ) {
+    praindFilter = value;
+    showPraindDropdown = false;
+  }
+
+  function handleClickOutside(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (!target.closest(".filter-dropdown-container")) {
+      showEstadoDropdown = false;
+      showPraindDropdown = false;
+    }
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape") {
+      showEstadoDropdown = false;
+      showPraindDropdown = false;
+      // closeModal() handled by modal component usually
+    }
+  }
+
   async function handleDelete(contratista: ContratistaResponse) {
     if (
       !confirm(
-        `¿Estás seguro de eliminar a ${contratista.nombre_completo}? Se moverá a la papelera.`,
+        `¿Estás seguro de eliminar a ${contratista.nombreCompleto}? Se moverá a la papelera.`,
       )
     )
       return;
@@ -215,27 +291,6 @@
       toast.error(result.error, { id: toastId });
     }
   }
-
-  async function handleRestore(contratista: ContratistaResponse) {
-    const toastId = toast.loading("Restaurando...");
-    const result = await contratistaService.restoreContratista(contratista.id);
-
-    if (result.ok) {
-      toast.success("Contratista restaurado", { id: toastId });
-      loadContratistas();
-    } else {
-      toast.error(result.error, { id: toastId });
-    }
-  }
-
-  // ... (rest of file)
-
-  // HEADER CHANGE
-  // <h2 class="text-xl font-semibold text-gray-100">
-  //     {viewMode === 'active' ? 'Lista de Contratistas' : 'Papelera de Reciclaje'}
-  // </h2>
-
-  // ... (rest of file)
 
   // ==========================================
   // LIFECYCLE
@@ -253,24 +308,37 @@
     <div class="flex items-center justify-between gap-4">
       <div>
         <h2 class="text-xl font-semibold text-gray-100">
-          Lista de Contratistas
+          {viewMode === "active"
+            ? "Lista de Contratistas"
+            : "Papelera de Reciclaje"}
         </h2>
         <p class="mt-1 text-sm text-gray-400">
           Gestión y visualización de contratistas registrados
         </p>
       </div>
       <div class="flex-1 max-w-md">
-        <SearchBar
-          placeholder="Buscar por nombre, cédula o empresa..."
-          limit={10}
-        />
+        <!-- Only show searchbar if in active mode or if trash view supports it (trash view has internal logic or we hide it) -->
+        <!-- For now we hide searchbar in trash view to simplify as trash view component handles its own display -->
+        {#if viewMode === "active"}
+          <SearchBar
+            placeholder="Buscar por nombre, cédula o empresa..."
+            limit={10}
+          />
+        {/if}
       </div>
     </div>
   </div>
 
   <!-- Content -->
   <div class="flex-1 overflow-hidden relative bg-[#1e1e1e]">
-    {#if error}
+    {#if viewMode === "trash"}
+      <ContratistaTrashView
+        onBack={() => {
+          viewMode = "active";
+          loadContratistas(); // Reload main list in case restoring happened
+        }}
+      />
+    {:else if error}
       <div class="p-6">
         <div
           class="flex items-center gap-3 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-red-400"
@@ -313,17 +381,26 @@
         <div class="text-center">
           <AlertCircle size={48} class="mx-auto text-gray-400" />
           <p class="mt-4 text-lg font-medium text-gray-300">
-            No hay contratistas
+            No hay contratistas activos
           </p>
           <p class="mt-2 text-sm text-gray-400">
             Crea el primer contratista para comenzar
           </p>
-          <button
-            onclick={() => openModal()}
-            class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Nuevo Contratista
-          </button>
+          <div class="flex gap-3 justify-center mt-6">
+            <button
+              onclick={() => openModal()}
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+            >
+              Nuevo Contratista
+            </button>
+            <button
+              onclick={() => (viewMode = "trash")}
+              class="px-4 py-2 bg-[#2d2d2d] border border-white/10 text-gray-300 rounded-md hover:bg-[#353535] transition-colors flex items-center gap-2"
+            >
+              <Trash2 size={16} />
+              Papelera
+            </button>
+          </div>
         </div>
       </div>
     {:else}
@@ -337,45 +414,47 @@
         onSelectionChanged={(rows) => (selectedRows = rows)}
       />
     {/if}
-  </div>
 
-  <!-- Filter Dropdowns -->
-  <div class="filter-dropdown-container">
-    {#if showEstadoDropdown}
-      <div
-        class="absolute top-16 left-6 z-50 bg-[#252526] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
-        transition:fade={{ duration: 150 }}
-      >
-        {#each [["todos", "Todos los estados"], ["activo", "Activos"], ["inactivo", "Inactivos"], ["suspendido", "Suspendidos"]] as [value, label]}
-          <button
-            onclick={() => handleEstadoSelect(value)}
-            class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors {estadoFilter ===
-            value
-              ? 'bg-blue-500/20 text-blue-400'
-              : ''}"
+    <!-- Filter Dropdowns (Only active view) -->
+    {#if viewMode === "active"}
+      <div class="filter-dropdown-container">
+        {#if showEstadoDropdown}
+          <div
+            class="absolute top-16 left-6 z-50 bg-[#252526] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
+            transition:fade={{ duration: 150 }}
           >
-            {label}
-          </button>
-        {/each}
-      </div>
-    {/if}
+            {#each [["todos", "Todos los estados"], ["activo", "Activos"], ["inactivo", "Inactivos"], ["suspendido", "Suspendidos"]] as [value, label]}
+              <button
+                onclick={() => handleEstadoSelect(value as any)}
+                class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors {estadoFilter ===
+                value
+                  ? 'bg-blue-500/20 text-blue-400'
+                  : ''}"
+              >
+                {label}
+              </button>
+            {/each}
+          </div>
+        {/if}
 
-    {#if showPraindDropdown}
-      <div
-        class="absolute top-16 left-52 z-50 bg-[#252526] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
-        transition:fade={{ duration: 150 }}
-      >
-        {#each [["todos", "Todos PRAIND"], ["vigente", "Vigentes"], ["por-vencer", "Por vencer (≤30 días)"], ["vencido", "Vencidos"]] as [value, label]}
-          <button
-            onclick={() => handlePraindSelect(value)}
-            class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors {praindFilter ===
-            value
-              ? 'bg-blue-500/20 text-blue-400'
-              : ''}"
+        {#if showPraindDropdown}
+          <div
+            class="absolute top-16 left-52 z-50 bg-[#252526] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
+            transition:fade={{ duration: 150 }}
           >
-            {label}
-          </button>
-        {/each}
+            {#each [["todos", "Todos PRAIND"], ["vigente", "Vigentes"], ["por-vencer", "Por vencer (≤30 días)"], ["vencido", "Vencidos"]] as [value, label]}
+              <button
+                onclick={() => handlePraindSelect(value as any)}
+                class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors {praindFilter ===
+                value
+                  ? 'bg-blue-500/20 text-blue-400'
+                  : ''}"
+              >
+                {label}
+              </button>
+            {/each}
+          </div>
+        {/if}
       </div>
     {/if}
   </div>

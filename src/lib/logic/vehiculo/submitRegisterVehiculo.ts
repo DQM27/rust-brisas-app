@@ -81,7 +81,7 @@ export async function fetchVehiculosActivos(): Promise<VehiculoResponse[]> {
  * Obtener vehículos por contratista
  */
 export async function fetchVehiculosByContratista(contratistaId: string): Promise<VehiculoResponse[]> {
-  return await vehiculos.getByContratista(contratistaId);
+  return await vehiculos.getByPropietario(contratistaId);
 }
 
 /**

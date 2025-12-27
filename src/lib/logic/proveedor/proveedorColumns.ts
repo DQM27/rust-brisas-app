@@ -49,67 +49,123 @@ export function formatAccesoBadge(row: ProveedorResponse): string {
  * Obtiene las definiciones de columnas para el Grid de Proveedores
  * @param onStatusToggle Callback opcional para cuando se hace click en el estado
  */
-export const PROVEEDOR_COLUMNS: ColDef<ProveedorResponse>[] = [
-    {
-        field: "cedula",
-        headerName: "Cédula",
-        width: 130,
-        pinned: "left",
-        cellStyle: { fontFamily: "monospace", fontSize: "13px" },
-        filter: "agTextColumnFilter",
-    },
-    {
-        field: "nombre",
-        headerName: "Nombre Completo",
-        flex: 1,
-        minWidth: 200,
-        cellStyle: { fontWeight: 500 },
-        valueGetter: (params) => {
-            const d = params.data;
-            if (!d) return "";
-            return [d.nombre, d.segundoNombre, d.apellido, d.segundoApellido]
-                .filter(Boolean)
-                .join(" ");
-        },
-        filter: "agTextColumnFilter",
-    },
-    {
-        field: "empresaNombre",
-        headerName: "Empresa",
-        flex: 1,
-        minWidth: 180,
-        filter: "agTextColumnFilter",
-    },
-    {
-        field: "vehiculoTipo",
-        headerName: "Vehículo",
-        width: 120,
-        valueFormatter: (params) => params.value || "-",
-    },
-    {
-        field: "vehiculoPlaca",
-        headerName: "Placa",
-        width: 100,
-        valueFormatter: (params) => params.value || "-",
-        cellStyle: { fontFamily: "monospace" },
-    },
-    {
-        field: "estado",
-        headerName: "Estado",
-        width: 130,
-        cellRenderer: (params: ICellRendererParams) => {
-            const estado = params.value as string;
-            return formatEstadoBadge(estado);
-        },
-        cellClass: "cursor-pointer", // Indicar interactividad
-    },
-    {
-        field: "puedeIngresar",
-        headerName: "Acceso",
-        width: 130,
-        cellRenderer: (params: ICellRendererParams) => {
-            const row = params.data as ProveedorResponse;
-            return formatAccesoBadge(row);
-        },
-    },
-];
+// ============================================
+// COLUMNAS - CLASSIC STYLE
+// ============================================
+
+export class ProveedorColumns {
+    static getColumns(onStatusToggle?: (id: string, currentStatus: any) => void): ColDef<ProveedorResponse>[] {
+        return [
+            {
+                field: "cedula",
+                headerName: "Cédula",
+                width: 130,
+                pinned: "left",
+                cellStyle: { fontFamily: "monospace", fontSize: "13px" },
+                filter: "agTextColumnFilter",
+            },
+            {
+                field: "nombre",
+                headerName: "Nombre Completo",
+                flex: 1,
+                minWidth: 200,
+                cellStyle: { fontWeight: 500 },
+                valueGetter: (params) => {
+                    const d = params.data;
+                    if (!d) return "";
+                    return [d.nombre, d.segundoNombre, d.apellido, d.segundoApellido]
+                        .filter(Boolean)
+                        .join(" ");
+                },
+                filter: "agTextColumnFilter",
+            },
+            {
+                field: "empresaNombre",
+                headerName: "Empresa",
+                flex: 1,
+                minWidth: 180,
+                filter: "agTextColumnFilter",
+            },
+            {
+                field: "vehiculoTipo",
+                headerName: "Vehículo",
+                width: 120,
+                valueFormatter: (params) => params.value || "-",
+            },
+            {
+                field: "vehiculoPlaca",
+                headerName: "Placa",
+                width: 100,
+                valueFormatter: (params) => params.value || "-",
+                cellStyle: { fontFamily: "monospace" },
+            },
+            {
+                field: "estado",
+                headerName: "Estado",
+                width: 130,
+                cellRenderer: (params: ICellRendererParams) => {
+                    const estado = params.value as string;
+                    return formatEstadoBadge(estado); // Using original function or refactor to static method
+                },
+                cellClass: "cursor-pointer",
+                onCellClicked: (params) => {
+                    if (onStatusToggle && params.data && params.event) {
+                        const target = params.event.target as HTMLElement;
+                        if (target && target.tagName !== "SPAN") return; // Adjusted for span based badge
+                        // Logic for toggle would go here if needed
+                    }
+                }
+            },
+            {
+                field: "puedeIngresar",
+                headerName: "Acceso",
+                width: 130,
+                cellRenderer: (params: ICellRendererParams) => {
+                    const row = params.data as ProveedorResponse;
+                    return formatAccesoBadge(row);
+                },
+            },
+        ];
+    }
+
+    static getTrashColumns(): ColDef<ProveedorResponse>[] {
+        return [
+            {
+                field: "cedula",
+                headerName: "Cédula",
+                width: 130,
+                pinned: "left",
+                cellStyle: { fontFamily: "monospace", fontSize: "13px" },
+            },
+            {
+                field: "nombre",
+                headerName: "Nombre Completo",
+                flex: 1,
+                minWidth: 200,
+                cellStyle: { fontWeight: 500 },
+                valueGetter: (params) => {
+                    const d = params.data;
+                    if (!d) return "";
+                    return [d.nombre, d.segundoNombre, d.apellido, d.segundoApellido]
+                        .filter(Boolean)
+                        .join(" ");
+                },
+            },
+            {
+                field: "empresaNombre",
+                headerName: "Empresa",
+                flex: 1,
+                minWidth: 180,
+            },
+            {
+                field: "deletedAt" as any,
+                headerName: "Eliminado",
+                width: 150,
+                valueFormatter: (params) => params.value ? new Date(params.value).toLocaleDateString() : 'Recientemente'
+            }
+        ];
+    }
+}
+
+// Keep export for backward compatibility if other files import PROVEEDOR_COLUMNS directly
+export const PROVEEDOR_COLUMNS = ProveedorColumns.getColumns();
