@@ -12,13 +12,20 @@ use surrealdb::RecordId;
 pub async fn create(dto: ProveedorCreateDTO) -> Result<ProveedorFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<ProveedorFetched> = db
-        .query("CREATE proveedor CONTENT $dto FETCH empresa")
-        .bind(("dto", dto))
-        .await?
-        .take(0)?;
+    // CREATE doesn't support FETCH, so we need two queries
+    let created: Option<Proveedor> =
+        db.query("CREATE proveedor CONTENT $dto").bind(("dto", dto)).await?.take(0)?;
 
-    result.ok_or(SurrealDbError::Query("Error creando proveedor".to_string()))
+    let proveedor = created.ok_or(SurrealDbError::Query("Error creando proveedor".to_string()))?;
+
+    // Fetch with empresa populated
+    let mut result =
+        db.query("SELECT * FROM $id FETCH empresa").bind(("id", proveedor.id.clone())).await?;
+
+    let fetched: Option<ProveedorFetched> = result.take(0)?;
+    fetched.ok_or(SurrealDbError::Query(
+        "Proveedor creado pero no se pudo obtener con FETCH".to_string(),
+    ))
 }
 
 pub async fn find_by_id(id: &RecordId) -> Result<Option<Proveedor>, SurrealDbError> {

@@ -10,13 +10,23 @@ use surrealdb::RecordId;
 pub async fn insert(dto: VehiculoCreateDTO) -> Result<VehiculoFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    let res: Option<VehiculoFetched> = db
-        .query("CREATE vehiculo CONTENT $dto FETCH contratista, proveedor, contratista.empresa, proveedor.empresa")
-        .bind(("dto", dto))
-        .await?
-        .take(0)?;
+    // CREATE doesn't support FETCH, so we need two queries
+    let created: Option<Vehiculo> =
+        db.query("CREATE vehiculo CONTENT $dto").bind(("dto", dto)).await?.take(0)?;
 
-    res.ok_or(SurrealDbError::TransactionError("Error al insertar vehículo".to_string()))
+    let vehiculo = created
+        .ok_or(SurrealDbError::TransactionError("Error al insertar vehículo".to_string()))?;
+
+    // Fetch with all relations
+    let mut result = db
+        .query("SELECT * FROM $id FETCH contratista, proveedor, contratista.empresa, proveedor.empresa")
+        .bind(("id", vehiculo.id.clone()))
+        .await?;
+
+    let fetched: Option<VehiculoFetched> = result.take(0)?;
+    fetched.ok_or(SurrealDbError::TransactionError(
+        "Vehículo creado pero no se pudo obtener con FETCH".to_string(),
+    ))
 }
 
 pub async fn find_by_id(id: &RecordId) -> Result<Option<Vehiculo>, SurrealDbError> {

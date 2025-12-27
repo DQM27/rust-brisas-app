@@ -3,21 +3,30 @@
 // Enterprise Quality SurrealDB Implementation
 // ==========================================
 
-use crate::models::ingreso::{IngresoCreateDTO, IngresoFetched, IngresoUpdateDTO};
+use crate::models::ingreso::{Ingreso, IngresoCreateDTO, IngresoFetched, IngresoUpdateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
 pub async fn insert(dto: IngresoCreateDTO) -> Result<IngresoFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<IngresoFetched> = db
-        .query("CREATE ingreso CONTENT $dto FETCH usuario_ingreso, usuario_salida, vehiculo, contratista, contratista.empresa")
-        .bind(("dto", dto))
-        .await?
-        .take(0)?;
+    // CREATE doesn't support FETCH, so we need two queries
+    let created: Option<Ingreso> =
+        db.query("CREATE ingreso CONTENT $dto").bind(("dto", dto)).await?.take(0)?;
 
-    result.ok_or(SurrealDbError::TransactionError(
+    let ingreso = created.ok_or(SurrealDbError::TransactionError(
         "Error al insertar ingreso de proveedor".to_string(),
+    ))?;
+
+    // Fetch with all relations
+    let mut result = db
+        .query("SELECT * FROM $id FETCH usuario_ingreso, usuario_salida, vehiculo, contratista, contratista.empresa")
+        .bind(("id", ingreso.id.clone()))
+        .await?;
+
+    let fetched: Option<IngresoFetched> = result.take(0)?;
+    fetched.ok_or(SurrealDbError::TransactionError(
+        "Ingreso creado pero no se pudo obtener con FETCH".to_string(),
     ))
 }
 

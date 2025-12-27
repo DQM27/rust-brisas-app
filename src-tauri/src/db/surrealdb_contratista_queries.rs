@@ -11,13 +11,22 @@ use surrealdb::RecordId;
 pub async fn create(dto: ContratistaCreateDTO) -> Result<ContratistaFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    let result: Option<ContratistaFetched> = db
-        .query("CREATE contratista CONTENT $dto FETCH empresa")
-        .bind(("dto", dto))
-        .await?
-        .take(0)?;
+    // CREATE doesn't support FETCH, so we need two queries:
+    // 1. Create the record and get the raw result
+    let created: Option<Contratista> =
+        db.query("CREATE contratista CONTENT $dto").bind(("dto", dto)).await?.take(0)?;
 
-    result.ok_or(SurrealDbError::Query("No se pudo crear el contratista".to_string()))
+    let contratista =
+        created.ok_or(SurrealDbError::Query("No se pudo crear el contratista".to_string()))?;
+
+    // 2. Fetch the created record with empresa populated
+    let mut result =
+        db.query("SELECT * FROM $id FETCH empresa").bind(("id", contratista.id.clone())).await?;
+
+    let fetched: Option<ContratistaFetched> = result.take(0)?;
+    fetched.ok_or(SurrealDbError::Query(
+        "Contratista creado pero no se pudo obtener con FETCH".to_string(),
+    ))
 }
 
 pub async fn find_by_id(id: &RecordId) -> Result<Option<Contratista>, SurrealDbError> {
