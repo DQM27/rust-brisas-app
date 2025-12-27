@@ -150,11 +150,11 @@ export class ContratistaListLogic {
         valueFormatter: (params) => {
           if (!params.value) return "";
           const date = new Date(params.value);
-          return date.toLocaleDateString("es-PA", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          });
+          // Use UTC components to avoid timezone shift
+          const day = date.getUTCDate();
+          const month = date.toLocaleDateString("es-PA", { month: "short", timeZone: "UTC" });
+          const year = date.getUTCFullYear();
+          return `${day} ${month} ${year}`;
         },
       },
       {

@@ -57,17 +57,27 @@ pub struct ListaNegra {
     pub id: RecordId,
     pub cedula: String,
     pub nombre: String,
+    #[serde(alias = "segundo_nombre")]
     pub segundo_nombre: Option<String>,
     pub apellido: String,
+    #[serde(alias = "segundo_apellido")]
     pub segundo_apellido: Option<String>,
+    #[serde(alias = "empresa_id")]
     pub empresa_id: Option<RecordId>,
+    #[serde(alias = "empresa_nombre")]
     pub empresa_nombre: Option<String>,
+    #[serde(alias = "nivel_severidad")]
     pub nivel_severidad: String,
+    #[serde(alias = "motivo_bloqueo")]
     pub motivo_bloqueo: String,
+    #[serde(alias = "bloqueado_por")]
     pub bloqueado_por: String,
     pub observaciones: Option<String>,
+    #[serde(alias = "is_active")]
     pub is_active: bool,
+    #[serde(alias = "created_at")]
     pub created_at: surrealdb::Datetime,
+    #[serde(alias = "updated_at")]
     pub updated_at: surrealdb::Datetime,
 }
 

@@ -263,7 +263,7 @@
               type="text"
               bind:value={formData.cedula}
               placeholder="1-2345-6789"
-              disabled={loading}
+              disabled={loading || isEditMode}
               class={inputClass}
             />
           </div>

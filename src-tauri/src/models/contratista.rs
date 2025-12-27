@@ -74,6 +74,7 @@ pub struct CreateContratistaInput {
 }
 
 #[derive(Debug, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateContratistaInput {
     pub nombre: Option<String>,
     pub segundo_nombre: Option<String>,
@@ -82,6 +83,8 @@ pub struct UpdateContratistaInput {
     pub empresa_id: Option<String>,
     pub fecha_vencimiento_praind: Option<String>,
     pub tiene_vehiculo: Option<bool>,
+
+    // Vehículo
     pub tipo_vehiculo: Option<String>,
     pub placa: Option<String>,
     pub marca: Option<String>,
@@ -109,6 +112,23 @@ pub struct ContratistaCreateDTO {
     pub empresa: RecordId,
     pub fecha_vencimiento_praind: Datetime,
     pub estado: EstadoContratista,
+}
+
+/// DTO tipado para partial updates - campos None se omiten en merge
+#[derive(Debug, Serialize, Default)]
+pub struct ContratistaUpdateDTO {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub apellido: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_apellido: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub empresa: Option<RecordId>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fecha_vencimiento_praind: Option<Datetime>,
 }
 
 // ==========================================
@@ -148,24 +168,30 @@ impl From<Contratista> for ContratistaResponse {
         let hoy = Utc::now();
         // Access inner DateTime<Utc> directly (assuming tuple struct or Deref)
         // If compilation fails, we will adjust to strict Into conversion
-        let raw_date = c.fecha_vencimiento_praind.to_string();
-        let fecha_venc: DateTime<Utc> = raw_date
-            .parse()
-            .or_else(|_| {
-                // Intenta parsear como fecha simple (YYYY-MM-DD)
-                chrono::NaiveDate::parse_from_str(&raw_date, "%Y-%m-%d")
-                    .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_local_timezone(Utc).unwrap())
-            })
-            .unwrap_or_else(|_| {
-                println!(
-                    ">>> CRITICAL: Error parseando fecha '{}'. Usando fecha actual.",
-                    raw_date
-                );
-                hoy
-            });
+        let raw_date_str = c.fecha_vencimiento_praind.to_string();
+        // Limpiar formato literal de SurrealDB (ej: d'2022-01-01...')
+        let raw_date = raw_date_str.trim_start_matches("d'").trim_end_matches('\'');
 
-        let dias_hasta_vencimiento = (fecha_venc - hoy).num_days();
-        let praind_vencido = fecha_venc < hoy;
+        let fecha_venc: DateTime<Utc> = raw_date.parse().or_else(|_| {
+            // Intenta parsear como fecha simple (YYYY-MM-DD)
+            chrono::NaiveDate::parse_from_str(raw_date, "%Y-%m-%d")
+                .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_local_timezone(Utc).unwrap())
+        }).unwrap_or_else(|_| {
+            println!(">>> CRITICAL: Error parseando fecha '{}' (original: '{}'). Usando fecha actual.", raw_date, raw_date_str);
+            hoy
+        });
+
+        // Use calendar dates for comparison to ignore time components (which cause 0-day diffs and premature expiration)
+        let venc_date = fecha_venc.date_naive();
+        let hoy_date = hoy.date_naive();
+
+        let dias_hasta_vencimiento = (venc_date - hoy_date).num_days();
+
+        // Expired only if the date is strictly in the past (yesterday or earlier)
+        let praind_vencido = venc_date < hoy_date;
+
+        // Requiere atención si faltan 30 días o menos (y no está vencido o venció hoy/ayer?)
+        // dias_hasta_vencimiento >= 0 covers today and future.
         let requiere_atencion = dias_hasta_vencimiento <= 30 && dias_hasta_vencimiento >= 0;
         let puede_ingresar = c.estado == EstadoContratista::Activo && !praind_vencido;
 

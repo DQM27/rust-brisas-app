@@ -12,11 +12,16 @@ pub struct Visitante {
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
+    #[serde(alias = "segundo_nombre")]
     pub segundo_nombre: Option<String>,
+    #[serde(alias = "segundo_apellido")]
     pub segundo_apellido: Option<String>,
     pub empresa: Option<RecordId>,
+    #[serde(alias = "has_vehicle")]
     pub has_vehicle: bool,
+    #[serde(alias = "created_at")]
     pub created_at: Datetime,
+    #[serde(alias = "updated_at")]
     pub updated_at: Datetime,
 }
 

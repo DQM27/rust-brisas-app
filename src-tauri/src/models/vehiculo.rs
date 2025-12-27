@@ -16,13 +16,17 @@ pub struct Vehiculo {
     pub contratista: Option<RecordId>,
     pub proveedor: Option<RecordId>,
     pub visitante: Option<RecordId>,
+    #[serde(alias = "tipo_vehiculo")]
     pub tipo_vehiculo: TipoVehiculo,
     pub placa: String,
     pub marca: Option<String>,
     pub modelo: Option<String>,
     pub color: Option<String>,
+    #[serde(alias = "is_active")]
     pub is_active: bool,
+    #[serde(alias = "created_at")]
     pub created_at: Datetime,
+    #[serde(alias = "updated_at")]
     pub updated_at: Datetime,
 }
 

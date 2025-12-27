@@ -189,12 +189,14 @@ pub async fn update_contratista(
     input: UpdateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
     let id = parse_contratista_id(&id_str);
+    println!(">>> DEBUG: update_contratista INPUT: {:?}", input);
 
     // 1. Validar input
     domain::validar_update_input(&input)?;
 
-    // 2. Verificar que el contratista existe
-    db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
+    // 2. Verificar que el contratista existe y obtener datos actuales
+    let existing =
+        db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
     // 3. Preparar datos de actualización
     let mut update_data = serde_json::Map::new();
@@ -212,25 +214,38 @@ pub async fn update_contratista(
         update_data
             .insert("segundo_apellido".to_string(), serde_json::json!(v.trim().to_uppercase()));
     }
-    if let Some(v) = input.empresa_id {
-        let emp_id = parse_empresa_id(&v);
-        // Verificar que la empresa exista
-        if empresa_db::find_by_id(&emp_id).await.map_err(map_db_error)?.is_none() {
-            return Err(ContratistaError::EmpresaNotFound);
+
+    // 5. Verificar que la empresa exista (si se proporciona) Y si es diferente a la actual
+    let mut nuevo_empresa_id: Option<surrealdb::RecordId> = None;
+    if let Some(empresa_id_str) = &input.empresa_id {
+        let empresa_id = parse_empresa_id(empresa_id_str);
+        // Only update empresa if it's different from current
+        if empresa_id != existing.empresa {
+            let e = empresa_db::find_by_id(&empresa_id).await.map_err(map_db_error)?;
+            if e.is_none() {
+                return Err(ContratistaError::EmpresaNotFound);
+            }
+            nuevo_empresa_id = Some(empresa_id);
+            println!(
+                ">>> DEBUG: Empresa changed from {:?} to {:?}",
+                existing.empresa, nuevo_empresa_id
+            );
+        } else {
+            println!(">>> DEBUG: Empresa unchanged, skipping update for this field");
         }
-        update_data.insert("empresa".to_string(), serde_json::json!(emp_id));
     }
+
     if let Some(v) = input.fecha_vencimiento_praind {
         let fecha = crate::models::contratista::validaciones::validar_fecha(&v)
             .map_err(ContratistaError::Validation)?;
         update_data.insert("fecha_vencimiento_praind".to_string(), serde_json::json!(fecha));
     }
-    update_data
-        .insert("updated_at".to_string(), serde_json::json!(surrealdb::Datetime::from(Utc::now())));
 
     // 4. Actualizar en DB
-    let updated = db::update(&id, serde_json::Value::Object(update_data)).await.map_err(|e| {
-        error!("Error al actualizar contratista {}: {}", id_str, e);
+    let updated = db::update(&id, serde_json::Value::Object(update_data), nuevo_empresa_id)
+        .await
+        .map_err(|e| {
+        error!("Error de base de datos al actualizar contratista {}: {}", id, e);
         map_db_error(e)
     })?;
 
@@ -312,11 +327,11 @@ pub async fn actualizar_praind_con_historial(
 
     let mut update_data = serde_json::Map::new();
     update_data.insert("fecha_vencimiento_praind".to_string(), serde_json::json!(nueva_fecha));
-    update_data
-        .insert("updated_at".to_string(), serde_json::json!(surrealdb::Datetime::from(Utc::now())));
+    update_data.insert("fecha_vencimiento_praind".to_string(), serde_json::json!(nueva_fecha));
 
-    let updated =
-        db::update(&id, serde_json::Value::Object(update_data)).await.map_err(map_db_error)?;
+    let updated = db::update(&id, serde_json::Value::Object(update_data), None)
+        .await
+        .map_err(map_db_error)?;
 
     audit_db::insert_praind_historial(
         &input.contratista_id,

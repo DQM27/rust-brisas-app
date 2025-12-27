@@ -1,5 +1,6 @@
 <script lang="ts">
   import { preventDefault } from "svelte/legacy";
+  import { onMount } from "svelte";
   import { LoginSchema } from "$lib/schemas/userSchema";
   import type { ZodIssue } from "zod";
   import { X, Minus, Lock } from "lucide-svelte";
@@ -23,6 +24,15 @@
   let password = $state("");
   let errors = $state<Record<string, string>>({});
   let showDemoModal = $state(false);
+  let rememberMe = $state(false);
+
+  onMount(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    if (savedEmail) {
+      email = savedEmail;
+      rememberMe = true;
+    }
+  });
 
   // Usuarios demo con científicos famosos
   const demoUsers = [
@@ -64,6 +74,12 @@
     }
 
     // 2. Enviar si es válido
+    if (rememberMe) {
+      localStorage.setItem("rememberedEmail", email);
+    } else {
+      localStorage.removeItem("rememberedEmail");
+    }
+
     onSubmit({ email, password });
   }
 
@@ -83,9 +99,15 @@
   }
 
   export function reset() {
-    email = "";
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    email = savedEmail || "";
     password = "";
     errors = {};
+    if (savedEmail) {
+      rememberMe = true;
+    } else {
+      rememberMe = false;
+    }
   }
 
   async function minimizeWindow() {
@@ -143,6 +165,21 @@
           >{errors.password}</span
         >
       {/if}
+    </div>
+
+    <!-- Options -->
+    <div class="flex items-center justify-center">
+      <label
+        class="flex items-center gap-2 cursor-pointer text-sm text-secondary hover:text-primary transition-colors select-none"
+      >
+        <input
+          type="checkbox"
+          bind:checked={rememberMe}
+          disabled={loading}
+          class="rounded border-surface-tertiary text-accent focus:ring-accent w-4 h-4 cursor-pointer"
+        />
+        Recordar usuario
+      </label>
     </div>
 
     <!-- Acciones -->

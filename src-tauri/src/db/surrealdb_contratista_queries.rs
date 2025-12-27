@@ -47,11 +47,17 @@ pub async fn find_by_empresa(empresa_id: &RecordId) -> Result<Vec<Contratista>, 
     Ok(contratistas)
 }
 
-pub async fn update(id: &RecordId, data: serde_json::Value) -> Result<Contratista, SurrealDbError> {
+pub async fn update(
+    id: &RecordId,
+    dto: ContratistaUpdateDTO,
+) -> Result<Contratista, SurrealDbError> {
+    println!(">>> DEBUG: Updating contratista {} with DTO: {:?}", id, dto);
     let db = get_db().await?;
 
-    let result: Option<Contratista> = db.update(id.clone()).merge(data).await?;
+    // Use typed DTO with db.update().merge() - SDK handles RecordId serialization correctly
+    let result: Option<Contratista> = db.update(id.clone()).merge(dto).await?;
 
+    println!(">>> DEBUG: Update result: {:?}", result);
     result
         .ok_or(SurrealDbError::Query("Contratista no encontrado o error al actualizar".to_string()))
 }

@@ -16,7 +16,9 @@ pub struct Gafete {
     pub numero: String,
     pub tipo: TipoGafete,
     pub estado: GafeteEstado,
+    #[serde(alias = "created_at")]
     pub created_at: Datetime,
+    #[serde(alias = "updated_at")]
     pub updated_at: Datetime,
 }
 

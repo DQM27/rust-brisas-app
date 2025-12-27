@@ -210,6 +210,7 @@
     data: CreateContratistaInput | UpdateContratistaInput,
   ): Promise<boolean> {
     modalLoading = true;
+    console.log("Saving Contratista. Editing:", editingContratista);
     try {
       if (editingContratista) {
         // Modo edición

@@ -11,12 +11,16 @@ pub struct Proveedor {
     pub id: RecordId,
     pub cedula: String,
     pub nombre: String,
+    #[serde(alias = "segundo_nombre")]
     pub segundo_nombre: Option<String>,
     pub apellido: String,
+    #[serde(alias = "segundo_apellido")]
     pub segundo_apellido: Option<String>,
     pub empresa: RecordId,
     pub estado: EstadoProveedor,
+    #[serde(alias = "created_at")]
     pub created_at: Datetime,
+    #[serde(alias = "updated_at")]
     pub updated_at: Datetime,
 }
 
