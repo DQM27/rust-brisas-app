@@ -10,10 +10,13 @@ pub mod models;
 pub mod search;
 pub mod services;
 
+use crate::config::manager as config_manager;
+use crate::config::settings::{AppConfig, AppConfigState};
 use crate::services::search_service::SearchService;
+use crate::services::session::SessionState;
 use crate::services::surrealdb_service::{setup_embedded_surrealdb, SurrealDbConfig};
 use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use tauri::Manager;
 
 pub struct AppState {
@@ -36,6 +39,22 @@ pub fn run() {
 
     builder
         .setup(|app| {
+            // 0. CARGAR CONFIGURACIÓN (crea archivos si no existen)
+            let app_config: AppConfig = match config_manager::load_config() {
+                Ok(config) => {
+                    println!("✅ Configuración cargada: terminal_id = {}", config.terminal.id);
+                    config
+                }
+                Err(e) => {
+                    eprintln!("⚠️ Error cargando configuración (usando defaults): {}", e);
+                    AppConfig::default()
+                }
+            };
+
+            // Gestionar AppConfigState para comandos de setup
+            let config_state: AppConfigState = Arc::new(RwLock::new(app_config));
+            app.manage(config_state);
+
             // 1. CONFIGURACIÓN DE RUTAS
             // Es vital asegurar que el directorio de datos existe
             let app_data_dir = app.path().app_data_dir()?;
@@ -62,6 +81,10 @@ pub fn run() {
             // Gestionar Estado Global
             let app_state = AppState { backend_ready: AtomicBool::new(true) };
             app.manage(app_state);
+
+            // Gestionar SessionState para autenticación
+            let session_state = SessionState::new();
+            app.manage(session_state);
 
             match SearchService::new(&search_path_str) {
                 Ok(s) => {

@@ -109,14 +109,12 @@ pub async fn setup_credentials(
     }
 
     // 4. 🔥 IMPORTANTE: Disparar el SEED ahora que la llave es segura
-    log::info!("🌱 Configuración completada. El sembrado de SurrealDB se realizará al reiniciar la app o vía login.");
-    // TODO: Implementar seed para SurrealDB aquí si es necesario dispararlo manualmente
-    /*
-    let db_pool = pool.0.read().await;
-    if let Err(e) = crate::config::seed::seed_db(&db_pool).await {
+    log::info!("🌱 Configuración completada. Ejecutando seed de base de datos...");
+    if let Err(e) = crate::config::seed::seed_db().await {
         log::error!("❌ Error al sembrar base de datos tras setup: {}", e);
+        return Err(KeyringError::Message(format!("Error en seed: {}", e)));
     }
-    */
+    log::info!("✅ Seed completado correctamente");
 
     Ok(SetupResult {
         success: true,

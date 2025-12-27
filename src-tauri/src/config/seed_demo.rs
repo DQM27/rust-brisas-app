@@ -240,7 +240,6 @@ async fn seed_demo_gafetes() -> Result<(), SurrealDbError> {
 
 async fn seed_demo_contratistas() -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    let now = Utc::now().to_rfc3339();
     let hoy = Utc::now().date_naive();
 
     let contratistas = [
@@ -260,17 +259,17 @@ async fn seed_demo_contratistas() -> Result<(), SurrealDbError> {
         let _: Option<serde_json::Value> = db
             .query(
                 r#"
-                UPSERT contratista SET
-                    id = $id,
-                    cedula = $cedula,
-                    nombre = $nombre,
-                    apellido = $apellido,
-                    empresa_id = $empresa_id,
-                    fecha_vencimiento_praind = $praind_fecha,
-                    estado = $estado,
-                    created_at = $now,
-                    updated_at = $now
-                WHERE id = $id
+                UPSERT contratista CONTENT {
+                    id: type::thing('contratista', $id),
+                    cedula: $cedula,
+                    nombre: $nombre,
+                    apellido: $apellido,
+                    empresa: type::thing('empresa', $empresa_id),
+                    fecha_vencimiento_praind: $praind_fecha,
+                    estado: $estado,
+                    created_at: time::now(),
+                    updated_at: time::now()
+                }
                 "#,
             )
             .bind(("id", id))
@@ -280,7 +279,6 @@ async fn seed_demo_contratistas() -> Result<(), SurrealDbError> {
             .bind(("empresa_id", empresa_id))
             .bind(("praind_fecha", praind_fecha.clone()))
             .bind(("estado", estado))
-            .bind(("now", now.clone()))
             .await?
             .take(0)?;
     }
@@ -294,7 +292,6 @@ async fn seed_demo_contratistas() -> Result<(), SurrealDbError> {
 
 async fn seed_demo_proveedores() -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    let now = Utc::now().to_rfc3339();
 
     let proveedores = [
         ("demo-prov-1", "17770100", "Carl", "Gauss", "demo-emp-4"),
@@ -311,16 +308,15 @@ async fn seed_demo_proveedores() -> Result<(), SurrealDbError> {
         let _: Option<serde_json::Value> = db
             .query(
                 r#"
-                UPSERT proveedor SET
-                    id = $id,
-                    cedula = $cedula,
-                    nombre = $nombre,
-                    apellido = $apellido,
-                    empresa_id = $empresa_id,
-                    estado = "activo",
-                    created_at = $now,
-                    updated_at = $now
-                WHERE id = $id
+                UPSERT proveedor CONTENT {
+                    id: type::thing('proveedor', $id),
+                    cedula: $cedula,
+                    nombre: $nombre,
+                    apellido: $apellido,
+                    empresa: type::thing('empresa', $empresa_id),
+                    created_at: time::now(),
+                    updated_at: time::now()
+                }
                 "#,
             )
             .bind(("id", id))
@@ -328,7 +324,6 @@ async fn seed_demo_proveedores() -> Result<(), SurrealDbError> {
             .bind(("nombre", nombre))
             .bind(("apellido", apellido))
             .bind(("empresa_id", empresa_id))
-            .bind(("now", now.clone()))
             .await?
             .take(0)?;
     }
@@ -387,7 +382,6 @@ async fn seed_demo_visitantes() -> Result<(), SurrealDbError> {
 
 async fn seed_demo_vehiculos() -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    let now = Utc::now().to_rfc3339();
 
     let vehiculos: Vec<(&str, Option<&str>, Option<&str>, &str, &str, &str, &str, &str)> = vec![
         (
@@ -447,19 +441,19 @@ async fn seed_demo_vehiculos() -> Result<(), SurrealDbError> {
         let _: Option<serde_json::Value> = db
             .query(
                 r#"
-                UPSERT vehiculo SET
-                    id = $id,
-                    contratista_id = $contratista_id,
-                    proveedor_id = $proveedor_id,
-                    tipo_vehiculo = $tipo,
-                    placa = $placa,
-                    marca = $marca,
-                    modelo = $modelo,
-                    color = $color,
-                    is_active = true,
-                    created_at = $now,
-                    updated_at = $now
-                WHERE id = $id
+                UPSERT vehiculo CONTENT {
+                    id: type::thing('vehiculo', $id),
+                    contratista: IF $contratista_id != NONE THEN type::thing('contratista', $contratista_id) ELSE NONE END,
+                    proveedor: IF $proveedor_id != NONE THEN type::thing('proveedor', $proveedor_id) ELSE NONE END,
+                    tipo_vehiculo: $tipo,
+                    placa: $placa,
+                    marca: $marca,
+                    modelo: $modelo,
+                    color: $color,
+                    is_active: true,
+                    created_at: time::now(),
+                    updated_at: time::now()
+                }
                 "#,
             )
             .bind(("id", id))
@@ -470,7 +464,6 @@ async fn seed_demo_vehiculos() -> Result<(), SurrealDbError> {
             .bind(("marca", marca))
             .bind(("modelo", modelo))
             .bind(("color", color))
-            .bind(("now", now.clone()))
             .await?
             .take(0)?;
     }

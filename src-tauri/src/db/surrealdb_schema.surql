@@ -99,6 +99,57 @@ DEFINE FIELD sujeto ON TABLE ingreso TYPE record<user | contratista | proveedor 
 DEFINE FIELD gafete_numero ON TABLE ingreso TYPE option<string>;
 DEFINE FIELD observacion ON TABLE ingreso TYPE option<string>;
 
+-- Tabla CITA (Appointments)
+DEFINE TABLE cita SCHEMAFULL;
+DEFINE FIELD visitante_id ON TABLE cita TYPE option<record<visitante>>;
+DEFINE FIELD usuario_id ON TABLE cita TYPE record<user>;
+DEFINE FIELD motivo ON TABLE cita TYPE string;
+DEFINE FIELD fecha_inicio ON TABLE cita TYPE datetime;
+DEFINE FIELD fecha_fin ON TABLE cita TYPE datetime;
+DEFINE FIELD estado ON TABLE cita TYPE string ASSERT $value INSIDE ['pendiente', 'completada', 'cancelada'] DEFAULT 'pendiente';
+DEFINE FIELD activa ON TABLE cita TYPE bool DEFAULT true;
+DEFINE FIELD visitante_nombre ON TABLE cita TYPE option<string>;
+DEFINE FIELD visitante_cedula ON TABLE cita TYPE option<string>;
+DEFINE FIELD created_at ON TABLE cita TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD updated_at ON TABLE cita TYPE datetime VALUE time::now();
+
+-- Tabla GAFETE
+DEFINE TABLE gafete SCHEMAFULL;
+DEFINE FIELD numero ON TABLE gafete TYPE string;
+DEFINE FIELD tipo ON TABLE gafete TYPE string ASSERT $value INSIDE ['contratista', 'proveedor', 'visita'];
+DEFINE FIELD estado ON TABLE gafete TYPE string ASSERT $value INSIDE ['activo', 'inactivo', 'perdido'] DEFAULT 'activo';
+DEFINE FIELD en_uso ON TABLE gafete TYPE bool DEFAULT false;
+DEFINE FIELD created_at ON TABLE gafete TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD updated_at ON TABLE gafete TYPE datetime VALUE time::now();
+DEFINE INDEX idx_gafete_numero_tipo ON gafete COLUMNS numero, tipo UNIQUE;
+
+-- Tabla VEHICULO
+DEFINE TABLE vehiculo SCHEMAFULL;
+DEFINE FIELD contratista ON TABLE vehiculo TYPE option<record<contratista>>;
+DEFINE FIELD proveedor ON TABLE vehiculo TYPE option<record<proveedor>>;
+DEFINE FIELD tipo_vehiculo ON TABLE vehiculo TYPE string ASSERT $value INSIDE ['automovil', 'motocicleta', 'camion', 'otro'];
+DEFINE FIELD placa ON TABLE vehiculo TYPE string;
+DEFINE FIELD marca ON TABLE vehiculo TYPE option<string>;
+DEFINE FIELD modelo ON TABLE vehiculo TYPE option<string>;
+DEFINE FIELD color ON TABLE vehiculo TYPE option<string>;
+DEFINE FIELD is_active ON TABLE vehiculo TYPE bool DEFAULT true;
+DEFINE FIELD created_at ON TABLE vehiculo TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD updated_at ON TABLE vehiculo TYPE datetime VALUE time::now();
+DEFINE INDEX idx_vehiculo_placa ON vehiculo COLUMNS placa UNIQUE;
+
+-- Tabla LISTA_NEGRA
+DEFINE TABLE lista_negra SCHEMAFULL;
+DEFINE FIELD cedula ON TABLE lista_negra TYPE string;
+DEFINE FIELD nombre ON TABLE lista_negra TYPE string;
+DEFINE FIELD apellido ON TABLE lista_negra TYPE string;
+DEFINE FIELD nivel_severidad ON TABLE lista_negra TYPE string ASSERT $value INSIDE ['BAJO', 'MEDIO', 'ALTO'];
+DEFINE FIELD motivo_bloqueo ON TABLE lista_negra TYPE string;
+DEFINE FIELD bloqueado_por ON TABLE lista_negra TYPE option<string>;
+DEFINE FIELD is_active ON TABLE lista_negra TYPE bool DEFAULT true;
+DEFINE FIELD created_at ON TABLE lista_negra TYPE datetime VALUE $value OR time::now() READONLY;
+DEFINE FIELD updated_at ON TABLE lista_negra TYPE datetime VALUE time::now();
+DEFINE INDEX idx_lista_negra_cedula ON lista_negra COLUMNS cedula UNIQUE;
+
 -- =========================================================
 -- 6. EVENTOS Y AUDITORÍA
 -- =========================================================

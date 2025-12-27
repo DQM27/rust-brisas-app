@@ -40,14 +40,20 @@ pub struct SurrealDbConfig {
 
 impl Default for SurrealDbConfig {
     fn default() -> Self {
-        let data_path = dirs::data_dir().unwrap_or_else(|| PathBuf::from(".")).join("Brisas").join("surrealdb");
+        let data_path = dirs::data_local_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("Brisas")
+            .join("surrealdb");
         Self { data_path, namespace: "brisas".to_string(), database: "produccion".to_string() }
     }
 }
 
 impl SurrealDbConfig {
     pub fn demo() -> Self {
-        let data_path = dirs::data_dir().unwrap_or_else(|| PathBuf::from(".")).join("Brisas").join("surrealdb_demo");
+        let data_path = dirs::data_local_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("Brisas")
+            .join("surrealdb_demo");
         Self { data_path, namespace: "brisas".to_string(), database: "demo".to_string() }
     }
 }
@@ -63,9 +69,12 @@ impl SurrealDbService {
     }
     pub async fn connect(&self) -> Result<(), SurrealDbError> {
         if !self.config.data_path.exists() {
-            std::fs::create_dir_all(&self.config.data_path).map_err(|e| SurrealDbError::Init(e.to_string()))?;
+            std::fs::create_dir_all(&self.config.data_path)
+                .map_err(|e| SurrealDbError::Init(e.to_string()))?;
         }
-        let db = Surreal::new::<SurrealKv>(self.config.data_path.clone()).await.map_err(|e| SurrealDbError::Connection(e.to_string()))?;
+        let db = Surreal::new::<SurrealKv>(self.config.data_path.clone())
+            .await
+            .map_err(|e| SurrealDbError::Connection(e.to_string()))?;
         db.use_ns(&self.config.namespace).use_db(&self.config.database).await?;
         *self.client.write().await = Some(db);
         Ok(())
@@ -94,7 +103,9 @@ pub fn init_surrealdb(config: SurrealDbConfig) -> Arc<SurrealDbService> {
 pub fn get_surrealdb() -> Option<Arc<SurrealDbService>> {
     SURREAL_SERVICE.get().cloned()
 }
-pub async fn setup_embedded_surrealdb(config: SurrealDbConfig) -> Result<Arc<SurrealDbService>, SurrealDbError> {
+pub async fn setup_embedded_surrealdb(
+    config: SurrealDbConfig,
+) -> Result<Arc<SurrealDbService>, SurrealDbError> {
     let service = init_surrealdb(config);
     service.connect().await?;
     service.init_schema().await?;

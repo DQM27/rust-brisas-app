@@ -164,25 +164,25 @@ async fn seed_superuser() -> Result<(), SurrealDbError> {
     let _: Option<serde_json::Value> = db
         .query(
             r#"
-            CREATE user SET
-                id = $id,
-                email = $email,
-                password_hash = $password_hash,
-                nombre = "System",
-                apellido = "Root",
-                role_id = $role_id,
-                is_active = true,
-                cedula = "0000000000",
-                must_change_password = true,
-                created_at = $now,
-                updated_at = $now
+            CREATE user CONTENT {
+                id: type::thing('user', $id),
+                email: $email,
+                password_hash: $password_hash,
+                nombre: "System",
+                apellido: "Root",
+                role: type::thing('role', $role_id),
+                is_active: true,
+                cedula: "0000000000",
+                must_change_password: true,
+                created_at: time::now(),
+                updated_at: time::now()
+            }
             "#,
         )
         .bind(("id", SUPERUSER_ID))
         .bind(("email", SUPERUSER_EMAIL))
         .bind(("password_hash", password_hash.clone()))
         .bind(("role_id", ROLE_ADMIN_ID))
-        .bind(("now", now.clone()))
         .await?
         .take(0)?;
 
@@ -213,24 +213,24 @@ async fn seed_admin_user() -> Result<(), SurrealDbError> {
     let _: Option<serde_json::Value> = db
         .query(
             r#"
-            CREATE user SET
-                id = $id,
-                email = "daniel.bleach1@gmail.com",
-                password_hash = $password_hash,
-                nombre = "Daniel",
-                apellido = "Quintana",
-                role_id = $role_id,
-                is_active = true,
-                cedula = "155824395105",
-                must_change_password = true,
-                created_at = $now,
-                updated_at = $now
+            CREATE user CONTENT {
+                id: type::thing('user', $id),
+                email: "daniel.bleach1@gmail.com",
+                password_hash: $password_hash,
+                nombre: "Daniel",
+                apellido: "Quintana",
+                role: type::thing('role', $role_id),
+                is_active: true,
+                cedula: "155824395105",
+                must_change_password: true,
+                created_at: time::now(),
+                updated_at: time::now()
+            }
             "#,
         )
         .bind(("id", id.clone()))
         .bind(("password_hash", password_hash.clone()))
         .bind(("role_id", ROLE_ADMIN_ID))
-        .bind(("now", now.clone()))
         .await?
         .take(0)?;
 
