@@ -397,7 +397,6 @@
     "text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-1 mb-2";
 </script>
 
-```
 {#if show}
   <div
     class="fixed inset-0 z-50 flex items-center justify-center p-4"
