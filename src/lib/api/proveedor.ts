@@ -7,7 +7,7 @@ import { invoke } from '@tauri-apps/api/core';
 import type {
     ProveedorResponse,
     CreateProveedorInput,
-    UpdateProveedorInput
+    UpdateProveedorInput,
 } from '$lib/types/proveedor';
 
 export const proveedor = {
@@ -43,11 +43,24 @@ export const proveedor = {
         await invoke('delete_proveedor', { id });
     },
 
-    restore: async (id: string): Promise<ProveedorResponse> => {
-        return await invoke<ProveedorResponse>('restore_proveedor', { id });
-    },
-
     listArchived: async (): Promise<ProveedorResponse[]> => {
         return await invoke<ProveedorResponse[]>('get_archived_proveedores');
     },
+    // Alias to satisfy TrashService interface
+    getArchived: async (): Promise<{ ok: boolean; data: ProveedorResponse[]; error?: string }> => {
+        try {
+            const data = await invoke<ProveedorResponse[]>('get_archived_proveedores');
+            return { ok: true, data };
+        } catch (e: any) {
+            return { ok: false, data: [], error: e.message || String(e) };
+        }
+    },
+    restore: async (id: string): Promise<{ ok: boolean; error?: string }> => {
+        try {
+            await invoke<ProveedorResponse>('restore_proveedor', { id });
+            return { ok: true };
+        } catch (e: any) {
+            return { ok: false, error: e.message || String(e) };
+        }
+    }
 };

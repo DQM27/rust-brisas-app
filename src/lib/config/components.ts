@@ -20,6 +20,7 @@ import DeviceSettingsPanel from '$lib/components/settings/DeviceSettingsPanel.sv
 import SecuritySettingsPanel from '$lib/components/settings/SecuritySettingsPanel.svelte';
 import SessionSettingsPanel from '$lib/components/settings/SessionSettingsPanel.svelte';
 import ExportSettingsPanel from '$lib/components/settings/ExportSettingsPanel.svelte';
+import TrashSettingsPanel from '$lib/components/settings/TrashSettingsPanel.svelte';
 import RolesSettingsPanel from '$lib/components/settings/RolesSettingsPanel.svelte';
 import ReportesListView from '$lib/components/settings/ReportesListView.svelte';
 import AboutPanel from '$lib/components/settings/AboutPanel.svelte';
@@ -60,6 +61,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'security-settings': SecuritySettingsPanel,
   'session-settings': SessionSettingsPanel,
   'export-settings': ExportSettingsPanel,
+  'trash-settings': TrashSettingsPanel,
   'roles-settings': RolesSettingsPanel,
   'shortcut-settings': WelcomePanel, // Placeholder hasta que se cree el panel real
   'reportes-list': ReportesListView,

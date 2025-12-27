@@ -23,12 +23,25 @@ export const visitante = {
         await invoke('delete_visitante', { id });
     },
 
-    restore: async (id: string): Promise<VisitanteResponse> => {
-        return await invoke<VisitanteResponse>('restore_visitante', { id });
-    },
-
     listArchived: async (): Promise<VisitanteResponse[]> => {
         return await invoke<VisitanteResponse[]>('get_archived_visitantes');
+    },
+    // Alias to satisfy TrashService interface
+    getArchived: async (): Promise<{ ok: boolean; data: VisitanteResponse[]; error?: string }> => {
+        try {
+            const data = await invoke<VisitanteResponse[]>('get_archived_visitantes');
+            return { ok: true, data };
+        } catch (e: any) {
+            return { ok: false, data: [], error: e.message || String(e) };
+        }
+    },
+    restore: async (id: string): Promise<{ ok: boolean; error?: string }> => {
+        try {
+            await invoke<VisitanteResponse>('restore_visitante', { id });
+            return { ok: true };
+        } catch (e: any) {
+            return { ok: false, error: e.message || String(e) };
+        }
     },
 
     list: async (): Promise<VisitanteResponse[]> => {

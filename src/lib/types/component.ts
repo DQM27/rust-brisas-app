@@ -25,6 +25,7 @@ export type ComponentKey =
   | 'security-settings'
   | 'session-settings'
   | 'export-settings'
+  | 'trash-settings'
   | 'roles-settings'
   | 'reportes-list'
   | 'shortcut-settings'

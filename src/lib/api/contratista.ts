@@ -40,12 +40,27 @@ export const contratistas = {
     return await invoke<ContratistaResponse>("cambiar_estado_contratista", { id, input: { id, estado } });
   },
 
-  restore: async (id: string): Promise<void> => {
-    return await invoke<void>("restore_contratista", { id });
+  restore: async (id: string): Promise<{ ok: boolean; error?: string }> => {
+    try {
+      await invoke<void>("restore_contratista", { id });
+      return { ok: true };
+    } catch (e: any) {
+      return { ok: false, error: e.message || String(e) };
+    }
   },
 
   listArchived: async (): Promise<ContratistaResponse[]> => {
     return await invoke<ContratistaResponse[]>("get_archived_contratistas");
+  },
+
+  // Alias to satisfy TrashService interface
+  getArchived: async (): Promise<{ ok: boolean; data: ContratistaResponse[]; error?: string }> => {
+    try {
+      const data = await invoke<ContratistaResponse[]>("get_archived_contratistas");
+      return { ok: true, data };
+    } catch (e: any) {
+      return { ok: false, data: [], error: e.message || String(e) };
+    }
   },
 
   reindex: async (): Promise<void> => {
