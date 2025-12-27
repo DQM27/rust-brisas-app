@@ -12,7 +12,7 @@ pub mod models;
 pub mod search;
 pub mod services;
 
-use log::{error, info};
+use log::error;
 use std::sync::{atomic::AtomicBool, Arc, RwLock};
 use tauri::Manager; // Import log macros
 
@@ -38,68 +38,36 @@ pub fn run() {
                 error!("❌ Error crítico al restaurar base de datos: {}", e);
             }
 
-            // Inicializar pool y servicio de búsqueda en paralelo
-            let pool = db::init_pool(&app_config).await?;
-            let search_service = search::init_search_service(&app_config)?;
+            // Inicializar servicio de búsqueda (placeholder por ahora)
+            // let search_service = search::init_search_service(&app_config)?;
 
-            // Migraciones (siempre necesarias)
-            db::migrate::run_migrations(&pool).await?;
-
-            // Solo sembrar DB si ya está configurado (para evitar desincronización de Argon2)
-            if app_config.setup.is_configured {
-                info!("🌱 App configurada, verificando integridad de datos...");
-                config::seed::seed_db(&pool).await?;
+            // ==========================================
+            // SURREALDB CORE
+            // ==========================================
+            println!("🚀 [SURREALDB] Inicializando SurrealDB embebido...");
+            let surreal_config = if app_config.setup.show_demo_mode {
+                services::surrealdb_service::SurrealDbConfig::demo()
             } else {
-                info!("⚠️ App NO configurada, saltando seed hasta que se complete el Wizard.");
-            }
+                services::surrealdb_service::SurrealDbConfig::default()
+            };
 
-            // ==========================================
-            // SURREALDB (EXPERIMENTAL)
-            // ==========================================
-            #[cfg(feature = "surrealdb-backend")]
-            {
-                println!("🚀 [SURREALDB] Inicializando SurrealDB embebido...");
-                let surreal_config = if app_config.setup.show_demo_mode {
-                    services::surrealdb_service::SurrealDbConfig::demo()
-                } else {
-                    services::surrealdb_service::SurrealDbConfig::default()
-                };
-
-                match services::surrealdb_service::setup_embedded_surrealdb(surreal_config).await {
-                    Ok(_) => {
-                        println!("✅ [SURREALDB] SurrealDB embebido inicializado correctamente");
-                        // Ejecutar seeds de SurrealDB
-                        if let Err(e) = config::surrealdb_seed::seed_surrealdb().await {
-                            println!("❌ [SURREALDB] Error en seeds: {}", e);
-                        }
+            match services::surrealdb_service::setup_embedded_surrealdb(surreal_config).await {
+                Ok(_) => {
+                    println!("✅ [SURREALDB] SurrealDB embebido inicializado correctamente");
+                    // Ejecutar seeds de SurrealDB
+                    if let Err(e) = config::surrealdb_seed::seed_surrealdb().await {
+                        println!("❌ [SURREALDB] Error en seeds: {}", e);
                     }
-                    Err(e) => println!("❌ [SURREALDB] Error inicializando: {}", e),
+                }
+                Err(e) => {
+                    error!("❌ [SURREALDB] Error inicializando: {}", e);
+                    // Convertir SurrealDbError a un error genérico para tauri
+                    return Err(format!("SurrealDB Init Error: {}", e).into());
                 }
             }
 
-            // Solo reindexar si el índice está vacío (primera vez o después de restauración)
-            if search_service.is_empty() {
-                info!("📇 Índice vacío, detectado. Iniciando reindexado en segundo plano...");
-                let pool_clone = pool.clone();
-                let search_service_clone = search_service.clone();
-
-                tokio::spawn(async move {
-                    info!("🔄 Iniciando reindexado background task...");
-                    if let Err(e) = search_service_clone.reindex_all(&pool_clone).await {
-                        error!("❌ Error al reindexar en background: {}", e);
-                    } else {
-                        info!(
-                            "✅ Reindexado background completado: {} documentos",
-                            search_service_clone.doc_count()
-                        );
-                    }
-                });
-            }
-
             // Estado de la aplicación
-            let app_state = AppState {
-                backend_ready: AtomicBool::new(true), // Backend listo tras inicialización
-            };
+            let app_state = AppState { backend_ready: AtomicBool::new(true) };
 
             // Estado de sesión del usuario
             let session_state = services::session::SessionState::new();
@@ -107,17 +75,16 @@ pub fn run() {
             tauri::Builder::default()
                 .plugin(
                     tauri_plugin_log::Builder::new()
-                        .level(log::LevelFilter::Info) // Solo INFO, WARN, ERROR
-                        .level_for("zbus", log::LevelFilter::Warn) // Silenciar D-Bus spam
-                        .level_for("tantivy", log::LevelFilter::Warn) // Silenciar Tantivy spam
-                        .level_for("tracing", log::LevelFilter::Warn) // Silenciar tracing spans
+                        .level(log::LevelFilter::Info)
+                        .level_for("zbus", log::LevelFilter::Warn)
+                        .level_for("tantivy", log::LevelFilter::Warn)
+                        .level_for("tracing", log::LevelFilter::Warn)
                         .build(),
-                ) // Logging Plugin
-                .manage(db::DbPool(tokio::sync::RwLock::new(pool)))
+                )
                 .manage(Arc::new(RwLock::new(app_config)))
-                .manage(services::search_service::SearchState(tokio::sync::RwLock::new(
-                    search_service,
-                )))
+                // .manage(services::search_service::SearchState(tokio::sync::RwLock::new(
+                //     search_service,
+                // )))
                 .manage(app_state)
                 .manage(session_state)
                 .plugin(tauri_plugin_dialog::init())

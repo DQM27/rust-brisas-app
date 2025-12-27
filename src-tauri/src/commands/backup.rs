@@ -1,35 +1,17 @@
 use crate::config::AppConfig;
-use crate::db::DbPool;
 use crate::domain::errors::ConfigError;
 use crate::services::backup;
 use log::info;
 use std::fs;
 use tauri::{command, State};
 
-/// Crea una copia de seguridad de la base de datos usando VACUUM INTO
+/// Crea una copia de seguridad de la base de datos (Stub para SurrealDB)
 #[command]
-pub async fn backup_database(
-    pool_state: State<'_, DbPool>,
-    destination_path: String,
-) -> Result<(), ConfigError> {
-    info!("Iniciando backup manual a: {}", destination_path);
-
-    // Usar SQL directo para el backup en caliente
-    // VACUUM INTO es la forma segura en SQLite de copiar mientras está en uso
-    let query = format!("VACUUM INTO '{}'", destination_path);
-
-    // Verificar si el archivo destino ya existe y borrarlo (VACUUM INTO falla si existe)
-    let dest_path = std::path::Path::new(&destination_path);
-    if dest_path.exists() {
-        fs::remove_file(dest_path)
-            .map_err(|e| ConfigError::Io(format!("No se pudo sobrescribir el archivo: {}", e)))?;
-    }
-
-    let pool = pool_state.0.read().await;
-    sqlx::query(&query).execute(&*pool).await.map_err(ConfigError::Database)?;
-
-    info!("Backup completado exitosamente");
-    Ok(())
+pub async fn backup_database(_destination_path: String) -> Result<(), ConfigError> {
+    info!("Backup manual solicitado (Stub SurrealDB)");
+    Err(ConfigError::Database(sqlx::Error::Protocol(
+        "No implementado para SurrealDB aún".to_string(),
+    )))
 }
 
 /// Prepara la restauración de una base de datos (copia a .restore y pide reinicio)

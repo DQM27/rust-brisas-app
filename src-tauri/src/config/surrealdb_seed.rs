@@ -3,9 +3,7 @@
 // ==========================================
 // Seeds para SurrealDB (separados de SQLite)
 
-use crate::domain::role::{
-    ROLE_ADMIN_ID, ROLE_GUARDIA_ID, ROLE_SUPERVISOR_ID, SUPERUSER_EMAIL, SUPERUSER_ID,
-};
+use crate::domain::role::{SUPERUSER_EMAIL, SUPERUSER_ID};
 use crate::services::auth::hash_password;
 use crate::services::surrealdb_service::{get_surrealdb, SurrealDbError};
 

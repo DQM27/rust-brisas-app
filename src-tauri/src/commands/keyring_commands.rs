@@ -67,7 +67,6 @@ pub fn needs_setup(config: State<'_, AppConfigState>) -> bool {
 #[command]
 pub async fn setup_credentials(
     input: SetupCredentialsInput,
-    pool: State<'_, crate::db::DbPool>,
     config: State<'_, crate::config::settings::AppConfigState>,
 ) -> Result<SetupResult, KeyringError> {
     // 1. Manejo inteligente del secreto Argon2
@@ -110,12 +109,14 @@ pub async fn setup_credentials(
     }
 
     // 4. 🔥 IMPORTANTE: Disparar el SEED ahora que la llave es segura
-    log::info!("🌱 Configuración completada. Iniciando sembrado de base de datos...");
+    log::info!("🌱 Configuración completada. El sembrado de SurrealDB se realizará al reiniciar la app o vía login.");
+    // TODO: Implementar seed para SurrealDB aquí si es necesario dispararlo manualmente
+    /*
     let db_pool = pool.0.read().await;
     if let Err(e) = crate::config::seed::seed_db(&db_pool).await {
         log::error!("❌ Error al sembrar base de datos tras setup: {}", e);
-        // No fallamos el comando completo porque la config ya se guardó, pero avisamos.
     }
+    */
 
     Ok(SetupResult {
         success: true,

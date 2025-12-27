@@ -144,9 +144,8 @@ export = ["export-pdf", "export-excel"]
 export-pdf = ["typst", "typst-pdf", "ttf-parser"]
 export-excel = ["rust_xlsxwriter"]
 
-# Database backend (experimental)
-# Usar: cargo build --features surrealdb-backend
-surrealdb-backend = []
+# Database backend
+# SurrealDB is now the default and only backend
 
 # ==========================================
 # DEV DEPENDENCIES (Benchmarks, Testing)

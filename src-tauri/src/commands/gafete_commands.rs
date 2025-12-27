@@ -2,103 +2,87 @@
 // src/commands/gafete_commands.rs
 // ==========================================
 
-use crate::db::DbPool;
 use crate::domain::errors::GafeteError;
 use crate::models::gafete::{
-    CreateGafeteInput, CreateGafeteRangeInput, GafeteListResponse, GafeteResponse, TipoGafete,
+    CreateGafeteInput, CreateGafeteRangeInput, GafeteListResponse, GafeteResponse,
     UpdateGafeteInput, UpdateGafeteStatusInput,
 };
-use crate::services::gafete_service;
-use tauri::State;
 
 #[tauri::command]
-pub async fn create_gafete(
-    pool_state: State<'_, DbPool>,
-    input: CreateGafeteInput,
-) -> Result<GafeteResponse, GafeteError> {
-    let pool = pool_state.0.read().await;
-    gafete_service::create_gafete(&pool, input).await
+pub async fn create_gafete(_input: CreateGafeteInput) -> Result<GafeteResponse, GafeteError> {
+    Err(GafeteError::Database(sqlx::Error::Protocol(
+        "No implementado para SurrealDB aún".to_string(),
+    )))
 }
 
 #[tauri::command]
 pub async fn create_gafete_range(
-    pool_state: State<'_, DbPool>,
-    input: CreateGafeteRangeInput,
+    _input: CreateGafeteRangeInput,
 ) -> Result<Vec<String>, GafeteError> {
-    let pool = pool_state.0.read().await;
-    gafete_service::create_gafete_range(&pool, input).await
+    Err(GafeteError::Database(sqlx::Error::Protocol(
+        "No implementado para SurrealDB aún".to_string(),
+    )))
 }
 
 #[tauri::command]
-pub async fn get_gafete(
-    pool_state: State<'_, DbPool>,
-    numero: String,
-    tipo: String,
-) -> Result<GafeteResponse, GafeteError> {
-    let pool = pool_state.0.read().await;
-    gafete_service::get_gafete(&pool, &numero, &tipo).await
+pub async fn get_gafete(_numero: String, _tipo: String) -> Result<GafeteResponse, GafeteError> {
+    Err(GafeteError::Database(sqlx::Error::Protocol(
+        "No implementado para SurrealDB aún".to_string(),
+    )))
 }
 
 #[tauri::command]
-pub async fn get_all_gafetes(
-    pool_state: State<'_, DbPool>,
-) -> Result<GafeteListResponse, GafeteError> {
-    let pool = pool_state.0.read().await;
-    gafete_service::get_all_gafetes(&pool).await
+pub async fn get_all_gafetes() -> Result<GafeteListResponse, GafeteError> {
+    Err(GafeteError::Database(sqlx::Error::Protocol(
+        "No implementado para SurrealDB aún".to_string(),
+    )))
 }
 
 #[tauri::command]
-pub async fn get_gafetes_disponibles(
-    pool_state: State<'_, DbPool>,
-    tipo: String,
-) -> Result<Vec<GafeteResponse>, GafeteError> {
-    let pool = pool_state.0.read().await;
-    let tipo_enum: TipoGafete = tipo.parse().map_err(GafeteError::Validation)?;
-    gafete_service::get_gafetes_disponibles(&pool, tipo_enum).await
+pub async fn get_gafetes_disponibles(_tipo: String) -> Result<Vec<GafeteResponse>, GafeteError> {
+    Err(GafeteError::Database(sqlx::Error::Protocol(
+        "No implementado para SurrealDB aún".to_string(),
+    )))
 }
 
 #[tauri::command]
-pub async fn is_gafete_disponible(
-    pool_state: State<'_, DbPool>,
-    numero: String,
-    tipo: String,
-) -> Result<bool, GafeteError> {
-    let pool = pool_state.0.read().await;
-    gafete_service::is_gafete_disponible(&pool, &numero, &tipo).await
+pub async fn is_gafete_disponible(_numero: String, _tipo: String) -> Result<bool, GafeteError> {
+    Err(GafeteError::Database(sqlx::Error::Protocol(
+        "No implementado para SurrealDB aún".to_string(),
+    )))
 }
 
 #[tauri::command]
 pub async fn update_gafete(
-    pool_state: State<'_, DbPool>,
-    numero: String,
-    tipo: String,
-    input: UpdateGafeteInput,
+    _numero: String,
+    _tipo: String,
+    _input: UpdateGafeteInput,
 ) -> Result<GafeteResponse, GafeteError> {
-    let pool = pool_state.0.read().await;
-    gafete_service::update_gafete(&pool, numero, tipo, input).await
+    Err(GafeteError::Database(sqlx::Error::Protocol(
+        "No implementado para SurrealDB aún".to_string(),
+    )))
 }
 
 #[tauri::command]
 pub async fn update_gafete_status(
-    pool_state: State<'_, DbPool>,
-    numero: String,
-    tipo: String,
-    input: UpdateGafeteStatusInput,
-    usuario_id: Option<String>,
-    motivo: Option<String>,
+    _numero: String,
+    _tipo: String,
+    _input: UpdateGafeteStatusInput,
+    _usuario_id: Option<String>,
+    _motivo: Option<String>,
 ) -> Result<GafeteResponse, GafeteError> {
-    let pool = pool_state.0.read().await;
-    gafete_service::update_gafete_status(&pool, numero, tipo, input.estado, usuario_id, motivo)
-        .await
+    Err(GafeteError::Database(sqlx::Error::Protocol(
+        "No implementado para SurrealDB aún".to_string(),
+    )))
 }
 
 #[tauri::command]
 pub async fn delete_gafete(
-    pool_state: State<'_, DbPool>,
-    numero: String,
-    tipo: String,
-    usuario_id: Option<String>,
+    _numero: String,
+    _tipo: String,
+    _usuario_id: Option<String>,
 ) -> Result<(), GafeteError> {
-    let pool = pool_state.0.read().await;
-    gafete_service::delete_gafete(&pool, numero, tipo, usuario_id).await
+    Err(GafeteError::Database(sqlx::Error::Protocol(
+        "No implementado para SurrealDB aún".to_string(),
+    )))
 }
