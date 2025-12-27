@@ -64,7 +64,7 @@ DEFINE FIELD cedula ON TABLE contratista TYPE string;
 DEFINE FIELD nombre ON TABLE contratista TYPE string;
 DEFINE FIELD apellido ON TABLE contratista TYPE string;
 DEFINE FIELD empresa ON TABLE contratista TYPE record<empresa>;
-DEFINE FIELD estado ON TABLE contratista TYPE string ASSERT $value INSIDE ['activo', 'suspendido', 'bloqueado'];
+DEFINE FIELD estado ON TABLE contratista TYPE string ASSERT $value INSIDE ['activo', 'inactivo', 'suspendido', 'bloqueado'];
 DEFINE FIELD fecha_vencimiento_praind ON TABLE contratista TYPE option<string>;
 DEFINE FIELD created_at ON TABLE contratista TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE contratista TYPE datetime VALUE time::now();
