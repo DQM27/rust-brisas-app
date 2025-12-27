@@ -9,6 +9,8 @@
     updateProveedor,
     deleteProveedor,
     changeStatus,
+    getArchivedProveedores,
+    restoreProveedor,
   } from "$lib/logic/proveedor/proveedorService";
   import { PROVEEDOR_COLUMNS } from "$lib/logic/proveedor/proveedorColumns";
   import { createCustomButton } from "$lib/config/agGridConfigs";
@@ -32,8 +34,8 @@
   let error = $state<string | null>(null);
 
   // Estado local de filtros
-  // Simplificado: Toggle entre ver todos o solo activos
-  let activeFilter = $state<"todos" | "activos">("activos");
+  // Toggle entre ver todos, solo activos, o papelera
+  let activeFilter = $state<"todos" | "activos" | "papelera">("activos");
 
   // Estado del Modal
   let showModal = $state(false);
@@ -61,10 +63,14 @@
 
     // Si el filtro es 'activos', usamos el servicio optimizado
     // Si es 'todos', traemos todo
-    const res =
-      activeFilter === "activos"
-        ? await fetchActiveProveedores()
-        : await fetchAllProveedores();
+    let res;
+    if (activeFilter === "activos") {
+      res = await fetchActiveProveedores();
+    } else if (activeFilter === "papelera") {
+      res = await getArchivedProveedores();
+    } else {
+      res = await fetchAllProveedores();
+    }
 
     if (res.ok) {
       proveedores = res.data;
@@ -154,9 +160,60 @@
     }
   }
 
+  // Restaurar
+  async function confirmRestore(proveedor: ProveedorResponse) {
+    if (
+      !confirm(`¿Estás seguro de restaurar al proveedor "${proveedor.nombre}"?`)
+    )
+      return;
+
+    const res = await restoreProveedor(proveedor.id);
+    if (res.ok) {
+      toast.success("Proveedor restaurado");
+      loadData();
+    } else {
+      toast.error(res.error);
+    }
+  }
   // Botones Custom
   const customButtons = $derived.by(() => {
     const selected = selectedRows[0];
+
+    if (activeFilter === "papelera") {
+      return {
+        default: [
+          {
+            id: "filter-active",
+            label: "Ver Activos", // Return to main view
+            category: "ui",
+            onClick: () => {
+              activeFilter = "activos";
+              loadData();
+            },
+            tooltip: "Volver a la lista de activos",
+          },
+          {
+            id: "refresh",
+            label: "Actualizar",
+            category: "data",
+            onClick: loadData,
+            tooltip: "Recargar lista",
+          },
+        ],
+        singleSelect: [
+          {
+            id: "restore",
+            label: "Restaurar",
+            category: "action",
+            onClick: () => {
+              if (selected) confirmRestore(selected);
+            },
+            tooltip: "Restaurar proveedor seleccionado",
+          },
+        ],
+        multiSelect: [],
+      };
+    }
 
     return {
       default: [
@@ -169,14 +226,14 @@
           tooltip: "Recargar lista",
         },
         {
-          id: "filter-active",
-          label: activeFilter === "activos" ? "Ver Todos" : "Ver Activos",
+          id: "filter-trash",
+          label: "Papelera",
           category: "ui",
           onClick: () => {
-            activeFilter = activeFilter === "activos" ? "todos" : "activos";
+            activeFilter = "papelera";
             loadData();
           },
-          tooltip: "Alternar entre ver solo activos o todos los registros",
+          tooltip: "Ver proveedores eliminados",
         },
       ],
       singleSelect: [

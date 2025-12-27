@@ -29,6 +29,7 @@ import AboutPanel from '$lib/components/settings/AboutPanel.svelte';
 import GafeteListView from '$lib/components/gafete/GafeteListView.svelte';
 import IngresoModule from '$lib/components/ingreso/IngresoModule.svelte';
 import VisitaListView from '$lib/components/visita/VisitaListView.svelte';
+import VisitanteListView from '$lib/components/visitante/VisitanteListView.svelte';
 
 /**
  * Registry central de componentes
@@ -41,6 +42,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'dashboard': WelcomePanel,
   'citas-view': VisitaListView,
   'visitas-list': VisitaListView,
+  'visitante-list': VisitanteListView,
 
   'contratista': ContratistaListView,
   'contratista-list': ContratistaListView,

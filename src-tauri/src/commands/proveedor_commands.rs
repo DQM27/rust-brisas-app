@@ -50,3 +50,24 @@ pub async fn update_proveedor(
 pub async fn get_proveedor_by_id(id: String) -> Result<ProveedorResponse, String> {
     proveedor_service::get_proveedor_by_id(&id).await.map_err(|e| e.to_string())
 }
+
+#[command]
+pub async fn delete_proveedor(
+    search_service: State<'_, Arc<SearchService>>,
+    id: String,
+) -> Result<(), String> {
+    proveedor_service::delete_proveedor(&search_service, &id).await.map_err(|e| e.to_string())
+}
+
+#[command]
+pub async fn restore_proveedor(
+    search_service: State<'_, Arc<SearchService>>,
+    id: String,
+) -> Result<ProveedorResponse, String> {
+    proveedor_service::restore_proveedor(&search_service, &id).await.map_err(|e| e.to_string())
+}
+
+#[command]
+pub async fn get_archived_proveedores() -> Result<Vec<ProveedorResponse>, String> {
+    proveedor_service::get_archived_proveedores().await.map_err(|e| e.to_string())
+}

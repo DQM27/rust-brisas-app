@@ -86,6 +86,7 @@ DEFINE FIELD nombre_completo ON TABLE proveedor VALUE
 DEFINE FIELD empresa ON TABLE proveedor TYPE record<empresa>;
 DEFINE FIELD created_at ON TABLE proveedor TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE proveedor TYPE datetime VALUE time::now();
+DEFINE FIELD deleted_at ON TABLE proveedor TYPE option<datetime>;
 DEFINE INDEX idx_proveedor_cedula ON proveedor COLUMNS cedula UNIQUE;
 
 DEFINE TABLE visitante SCHEMAFULL;
@@ -98,6 +99,8 @@ DEFINE FIELD nombre_completo ON TABLE visitante VALUE
     string::trim(nombre + ' ' + (segundo_nombre OR '') + ' ' + apellido + ' ' + (segundo_apellido OR ''));
 DEFINE FIELD created_at ON TABLE visitante TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE visitante TYPE datetime VALUE time::now();
+DEFINE FIELD deleted_at ON TABLE visitante TYPE option<datetime>;
+DEFINE INDEX idx_visitante_cedula ON visitante COLUMNS cedula UNIQUE;
 DEFINE INDEX idx_visitante_cedula ON visitante COLUMNS cedula UNIQUE;
 
 -- =========================================================

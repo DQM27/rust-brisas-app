@@ -148,3 +148,14 @@ pub async fn delete_visitante(id_str: &str) -> Result<(), VisitanteError> {
     db::find_by_id(&id_thing).await.map_err(map_db_error)?.ok_or(VisitanteError::NotFound)?;
     db::delete(&id_thing).await.map_err(map_db_error)
 }
+
+pub async fn restore_visitante(id_str: &str) -> Result<VisitanteResponse, VisitanteError> {
+    let id_thing = parse_visitante_id(id_str);
+    let visitante = db::restore(&id_thing).await.map_err(map_db_error)?;
+    Ok(VisitanteResponse::from(visitante))
+}
+
+pub async fn get_archived_visitantes() -> Result<Vec<VisitanteResponse>, VisitanteError> {
+    let visitantes = db::find_archived().await.map_err(map_db_error)?;
+    Ok(visitantes.into_iter().map(VisitanteResponse::from).collect())
+}

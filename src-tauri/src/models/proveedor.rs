@@ -178,6 +178,7 @@ pub struct ProveedorResponse {
     pub vehiculo_color: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+    pub deleted_at: Option<String>,
 }
 
 impl From<Proveedor> for ProveedorResponse {
@@ -215,6 +216,7 @@ impl From<Proveedor> for ProveedorResponse {
             vehiculo_color: None,
             created_at: p.created_at.to_string(),
             updated_at: p.updated_at.to_string(),
+            deleted_at: p.deleted_at.map(|d| d.to_string()),
         }
     }
 }
@@ -254,6 +256,7 @@ impl ProveedorResponse {
             vehiculo_color: None,
             created_at: p.created_at.to_string(),
             updated_at: p.updated_at.to_string(),
+            deleted_at: p.deleted_at.map(|d| d.to_string()),
         }
     }
 }

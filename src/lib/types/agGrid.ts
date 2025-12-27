@@ -37,6 +37,7 @@ export type GridId =
   | 'contratista-ingreso-list'
   | 'visita-ingreso-list'
   | 'proveedor-ingreso-list'
+  | 'visitante-list'
   | 'ingreso-list';
 
 

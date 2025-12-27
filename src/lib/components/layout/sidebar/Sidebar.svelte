@@ -86,6 +86,19 @@
       },
     },
     {
+      id: "visitantes",
+      icon: User, // Using User icon for now as placeholder
+      label: "Visitantes",
+      action: () => {
+        openTab({
+          componentKey: "visitante-list",
+          title: "Lista de Visitantes",
+          id: "visitante-list",
+          focusOnOpen: true,
+        });
+      },
+    },
+    {
       id: "blacklist",
       icon: Ban,
       label: "Lista Negra",

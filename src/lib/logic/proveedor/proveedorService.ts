@@ -155,6 +155,36 @@ export async function deleteProveedor(id: string): Promise<ServiceResult<void>> 
 // ERROR PARSING
 // ============================================
 
+// ============================================
+// SOFT DELETE OPERATIONS
+// ============================================
+
+/**
+ * Restaurar proveedor eliminado
+ */
+export async function restoreProveedor(id: string): Promise<ServiceResult<ProveedorResponse>> {
+    try {
+        const data = await proveedor.restore(id);
+        return { ok: true, data };
+    } catch (err: any) {
+        console.error('Error al restaurar proveedor:', err);
+        return { ok: false, error: parseError(err) };
+    }
+}
+
+/**
+ * Obtener proveedores archivados (eliminados)
+ */
+export async function getArchivedProveedores(): Promise<ServiceResult<ProveedorResponse[]>> {
+    try {
+        const data = await proveedor.listArchived();
+        return { ok: true, data };
+    } catch (err: any) {
+        console.error('Error al cargar proveedores archivados:', err);
+        return { ok: false, error: parseError(err) };
+    }
+}
+
 function parseError(err: any): string {
     if (!err) return 'Ocurrió un error desconocido.';
 

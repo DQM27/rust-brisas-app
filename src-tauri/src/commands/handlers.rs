@@ -75,9 +75,19 @@ macro_rules! register_handlers {
             commands::cita_commands::get_citas_pendientes,
             commands::cita_commands::get_cita_by_id,
             commands::cita_commands::procesar_ingreso_cita,
-            commands::cita_commands::get_visitante_by_cedula,
+            commands::cita_commands::procesar_ingreso_cita,
             commands::cita_commands::cancelar_cita,
             commands::cita_commands::completar_cita,
+            // ==========================================
+            // COMANDOS DE VISITANTE
+            // ==========================================
+            commands::visitante_commands::create_visitante,
+            commands::visitante_commands::search_visitantes_catalog,
+            commands::visitante_commands::get_visitante_by_cedula,
+            commands::visitante_commands::update_visitante,
+            commands::visitante_commands::delete_visitante,
+            commands::visitante_commands::restore_visitante,
+            commands::visitante_commands::get_archived_visitantes,
             // ==========================================
             // COMANDOS DE INGRESO VISITAS
             // ==========================================
@@ -104,6 +114,9 @@ macro_rules! register_handlers {
             commands::proveedor_commands::change_proveedor_status,
             commands::proveedor_commands::update_proveedor,
             commands::proveedor_commands::get_proveedor_by_id,
+            commands::proveedor_commands::delete_proveedor,
+            commands::proveedor_commands::restore_proveedor,
+            commands::proveedor_commands::get_archived_proveedores,
             // ==========================================
             // COMANDOS DE INGRESO CONTRATISTA (UNIFICADO)
             // ==========================================

@@ -42,4 +42,12 @@ export const proveedor = {
     delete: async (id: string): Promise<void> => {
         await invoke('delete_proveedor', { id });
     },
+
+    restore: async (id: string): Promise<ProveedorResponse> => {
+        return await invoke<ProveedorResponse>('restore_proveedor', { id });
+    },
+
+    listArchived: async (): Promise<ProveedorResponse[]> => {
+        return await invoke<ProveedorResponse[]>('get_archived_proveedores');
+    },
 };

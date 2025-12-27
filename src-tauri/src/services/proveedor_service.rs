@@ -354,3 +354,67 @@ pub async fn update_proveedor(
     // 6. Retornar actualizado
     get_proveedor_by_id(&id_str).await
 }
+
+/// Elimina (soft delete) un proveedor
+pub async fn delete_proveedor(
+    search_service: &Arc<SearchService>,
+    id_str: &str,
+) -> Result<(), ProveedorError> {
+    let id = parse_proveedor_id(id_str);
+
+    // Verificar existencia
+    let proveedor = db::find_by_id_fetched(&id)
+        .await
+        .map_err(|e| ProveedorError::Database(e.to_string()))?
+        .ok_or(ProveedorError::NotFound)?;
+
+    // Eliminar de DB (soft)
+    db::delete(&id).await.map_err(|e| ProveedorError::Database(e.to_string()))?;
+
+    // Eliminar de search index
+    if let Err(e) = search_service.remove_proveedor(&id.to_string()).await {
+        warn!("Error eliminando proveedor del índice: {}", e);
+    }
+
+    info!("Proveedor eliminado (soft): {}", id_str);
+    Ok(())
+}
+
+/// Restaura un proveedor eliminado
+pub async fn restore_proveedor(
+    search_service: &Arc<SearchService>,
+    id_str: &str,
+) -> Result<ProveedorResponse, ProveedorError> {
+    let id = parse_proveedor_id(id_str);
+
+    let proveedor_fetched =
+        db::restore(&id).await.map_err(|e| ProveedorError::Database(e.to_string()))?;
+
+    // Re-indexar
+    let empresa_nombre = proveedor_fetched.empresa.nombre.clone();
+    // Convert fetched to pure Proveedor for indexing (simplified) or specific method?
+    // Search service expects `Proveedor` struct usually.
+    // Let's rely on standard re-index logic or just manual update?
+    // We need to re-construct Proveedor struct or overload add_proveedor_fetched.
+    // `add_proveedor_fetched` takes `&Proveedor`, but we have `ProveedorFetched`.
+    // We can just query the pure Proveedor to be safe.
+    if let Ok(Some(p)) = db::find_by_id_fetched(&id).await {
+        if let Err(e) = search_service.add_proveedor_fetched(&p, &empresa_nombre).await {
+            warn!("Error re-indexando proveedor restaurado: {}", e);
+        }
+    }
+
+    populate_response_fetched(proveedor_fetched).await
+}
+
+/// Obtiene proveedores archivados
+pub async fn get_archived_proveedores() -> Result<Vec<ProveedorResponse>, ProveedorError> {
+    let proveedores =
+        db::find_archived().await.map_err(|e| ProveedorError::Database(e.to_string()))?;
+
+    let mut responses = Vec::with_capacity(proveedores.len());
+    for prov in proveedores {
+        responses.push(populate_response_fetched(prov).await?);
+    }
+    Ok(responses)
+}

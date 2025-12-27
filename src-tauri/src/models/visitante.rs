@@ -23,6 +23,8 @@ pub struct Visitante {
     pub created_at: Datetime,
     #[serde(alias = "updated_at")]
     pub updated_at: Datetime,
+    #[serde(alias = "deleted_at")]
+    pub deleted_at: Option<Datetime>,
 }
 
 // ==========================================
@@ -93,6 +95,7 @@ pub struct VisitanteResponse {
     pub has_vehicle: bool,
     pub created_at: String,
     pub updated_at: String,
+    pub deleted_at: Option<String>,
 }
 
 impl From<Visitante> for VisitanteResponse {
@@ -109,6 +112,7 @@ impl From<Visitante> for VisitanteResponse {
             has_vehicle: v.has_vehicle,
             created_at: v.created_at.to_string(),
             updated_at: v.updated_at.to_string(),
+            deleted_at: v.deleted_at.map(|d| d.to_string()),
         }
     }
 }

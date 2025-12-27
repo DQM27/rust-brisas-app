@@ -5,7 +5,7 @@
 
 use crate::domain::errors::CitaError;
 use crate::models::cita::{CitaResponse, CreateCitaInput};
-use crate::models::visitante::{CreateVisitanteInput, VisitanteResponse};
+use crate::models::visitante::CreateVisitanteInput;
 use crate::services::cita_service;
 use log::debug;
 use tauri::command;
@@ -27,15 +27,6 @@ pub async fn get_citas_pendientes() -> Result<Vec<CitaResponse>, CitaError> {
 #[command]
 pub async fn get_cita_by_id(id: String) -> Result<CitaResponse, CitaError> {
     cita_service::get_cita_by_id(id).await
-}
-
-#[command]
-pub async fn get_visitante_by_cedula(
-    cedula: String,
-) -> Result<Option<VisitanteResponse>, CitaError> {
-    crate::services::visitante_service::get_visitante_by_cedula(&cedula)
-        .await
-        .map_err(|e| CitaError::Database(e.to_string()))
 }
 
 // ==========================================

@@ -211,6 +211,7 @@ mod tests {
             estado: EstadoContratista::Activo,
             created_at: surrealdb::Datetime::from(Utc::now()),
             updated_at: surrealdb::Datetime::from(Utc::now()),
+            deleted_at: None,
         };
         index_contratista(&mut writer, &handles, &c, "Intel").unwrap();
 
