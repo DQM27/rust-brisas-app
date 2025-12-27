@@ -1,8 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
 import { save } from '@tauri-apps/plugin-dialog';
 import type { GridApi } from '@ag-grid-community/core';
-import type { ExportOptions, ExportRequest, ExportResponse } from './types';
-import { extractGridData, extractSelectedRows } from './grid';
+import type { ExportOptions, ExportRequest, ExportResponse } from '$lib/types/export';
+import { extractGridData, extractSelectedRows } from '$lib/logic/export/exportGrid';
 
 /**
  * Exporta datos usando el backend
@@ -99,5 +99,20 @@ export async function getAvailableFormats(): Promise<string[]> {
         return await invoke<string[]>('get_available_export_formats');
     } catch {
         return ['csv']; // CSV siempre disponible
+    }
+}
+/**
+ * Genera una vista previa del PDF
+ */
+export async function exportPreview(request: ExportRequest): Promise<{
+    bytes?: number[];
+    success: boolean;
+    message?: string;
+}> {
+    try {
+        return await invoke('export_preview', { request });
+    } catch (error) {
+        console.error('[ExportService] Preview Error:', error);
+        throw error;
     }
 }

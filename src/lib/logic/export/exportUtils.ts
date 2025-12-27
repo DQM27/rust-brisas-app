@@ -44,3 +44,19 @@ export function previewPDF(bytes: number[]) {
         throw error;
     }
 }
+
+/**
+ * Convierte un valor de margen a Centímetros según la unidad dada.
+ */
+export function marginToCm(value: number, unit: string): number {
+    switch (unit) {
+        case "mm":
+            return value / 10;
+        case "in":
+            return value * 2.54;
+        case "pt":
+            return value / 28.35; // 1cm = 28.35pt
+        default:
+            return value; // cm
+    }
+}

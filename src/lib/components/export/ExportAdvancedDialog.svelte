@@ -15,7 +15,16 @@
     Lock,
     Unlock,
   } from "lucide-svelte";
-  import type { ExportOptions } from "$lib/logic/export";
+  import type { ExportOptions } from "$lib/types/export";
+  import {
+    MARGIN_UNITS,
+    BANNER_COLORS,
+    FONT_VARIANTS,
+    PAPER_SIZES,
+    type MarginUnit,
+  } from "$lib/logic/export/exportConstants";
+  import { marginToCm } from "$lib/logic/export/exportUtils";
+  import { exportPreview } from "$lib/api/export";
   import { currentUser } from "$lib/stores/auth";
   import { fade, fly } from "svelte/transition";
   import { invoke } from "@tauri-apps/api/core";
@@ -68,44 +77,10 @@
   let marginBottom = $state(20);
   let marginLeft = $state(15);
   let marginRight = $state(15);
-  let marginUnit = $state<"mm" | "cm" | "in" | "pt">("mm"); // Unidad de medida
+  let marginUnit = $state<MarginUnit>("mm"); // Unidad de medida
   let paperSize = $state<"us-letter" | "a4" | "legal">("us-letter");
   let showPreview = $state(true);
   let bannerColor = $state("#059669"); // Color del banner
-
-  // Unidades de medida disponibles
-  const marginUnits = [
-    { id: "mm", label: "mm" },
-    { id: "cm", label: "cm" },
-    { id: "in", label: "in" },
-    { id: "pt", label: "pt" },
-  ];
-
-  // Colores predefinidos para el banner
-  const bannerColors = [
-    { id: "#059669", label: "Verde" },
-    { id: "#2563eb", label: "Azul" },
-    { id: "#7c3aed", label: "Violeta" },
-    { id: "#dc2626", label: "Rojo" },
-    { id: "#ea580c", label: "Naranja" },
-    { id: "#0891b2", label: "Cyan" },
-    { id: "#374151", label: "Gris" },
-    { id: "#000000", label: "Negro" },
-  ];
-
-  // Convertir márgenes a cm para el backend
-  function marginToCm(value: number): number {
-    switch (marginUnit) {
-      case "mm":
-        return value / 10;
-      case "in":
-        return value * 2.54;
-      case "pt":
-        return value / 28.35; // 1cm = 28.35pt
-      default:
-        return value; // cm
-    }
-  }
 
   // Estado de vinculación de márgenes
   let linkVertical = $state(false); // Top <-> Bottom
@@ -166,27 +141,6 @@
   let previewData = $state<Uint8Array | null>(null);
   let previewError = $state<string | null>(null);
 
-  // Fuentes disponibles con variantes
-  const fontVariants = {
-    Inter: [
-      "Inter",
-      "Inter Light",
-      "Inter Medium",
-      "Inter SemiBold",
-      "Inter Bold",
-    ],
-    Arial: ["Arial", "Arial Bold"],
-    "Segoe UI": ["Segoe UI", "Segoe UI Light", "Segoe UI Semibold"],
-    Calibri: ["Calibri", "Calibri Light", "Calibri Bold"],
-    "Times New Roman": ["Times New Roman", "Times New Roman Bold"],
-  };
-
-  const paperSizes = [
-    { id: "us-letter", label: "Carta (US Letter)" },
-    { id: "a4", label: "A4" },
-    { id: "legal", label: "Legal" },
-  ];
-
   // Generar preview (debounced)
   let previewTimeout: ReturnType<typeof setTimeout>;
 
@@ -218,27 +172,21 @@
         // Preparar datos para preview (máximo 5 filas)
         const previewRows = rows.slice(0, 5);
 
-        const result = await invoke<{
-          bytes?: number[];
-          success: boolean;
-          message?: string;
-        }>("export_preview", {
-          request: {
-            format: "pdf",
-            headers: selectedHeaders,
-            rows: previewRows,
-            title,
-            orientation,
-            fontSize,
-            fontFamily,
-            marginTop: marginToCm(marginTop),
-            marginBottom: marginToCm(marginBottom),
-            marginLeft: marginToCm(marginLeft),
-            marginRight: marginToCm(marginRight),
-            bannerColor,
-            generatedBy: $currentUser?.nombreCompleto || "",
-            showPreview: true,
-          },
+        const result = await exportPreview({
+          format: "pdf",
+          headers: selectedHeaders,
+          rows: previewRows,
+          title,
+          orientation,
+          fontSize,
+          fontFamily,
+          marginTop: marginToCm(marginTop, marginUnit),
+          marginBottom: marginToCm(marginBottom, marginUnit),
+          marginLeft: marginToCm(marginLeft, marginUnit),
+          marginRight: marginToCm(marginRight, marginUnit),
+          bannerColor,
+          generatedBy: $currentUser?.nombreCompleto || "",
+          showPreview: true,
         });
 
         if (result.bytes && result.bytes.length > 0) {
@@ -284,10 +232,10 @@
         fontFamily,
         showPreview: false,
         columnIds: columnSelection.filter((c) => c.selected).map((c) => c.id),
-        marginTop: marginToCm(marginTop),
-        marginBottom: marginToCm(marginBottom),
-        marginLeft: marginToCm(marginLeft),
-        marginRight: marginToCm(marginRight),
+        marginTop: marginToCm(marginTop, marginUnit),
+        marginBottom: marginToCm(marginBottom, marginUnit),
+        marginLeft: marginToCm(marginLeft, marginUnit),
+        marginRight: marginToCm(marginRight, marginUnit),
         bannerColor,
         generatedBy: $currentUser?.nombreCompleto || "",
       };
@@ -383,7 +331,7 @@
               disabled={isExporting}
               class="w-full px-2 py-1.5 text-sm rounded-md border border-[#30363d] bg-[#0d1117] text-[#e6edf3]"
             >
-              {#each paperSizes as size}
+              {#each PAPER_SIZES as size}
                 <option value={size.id}>{size.label}</option>
               {/each}
             </select>
@@ -421,7 +369,7 @@
             disabled={isExporting}
             class="w-full px-2 py-1.5 text-sm rounded-md border border-[#30363d] bg-[#0d1117] text-[#e6edf3]"
           >
-            {#each Object.entries(fontVariants) as [family, variants]}
+            {#each Object.entries(FONT_VARIANTS) as [family, variants]}
               <optgroup label={family}>
                 {#each variants as variant}
                   <option value={variant}>{variant}</option>
@@ -452,7 +400,7 @@
               disabled={isExporting}
               class="flex-1 px-2 py-1.5 text-sm rounded-md border border-[#30363d] bg-[#0d1117] text-[#e6edf3]"
             >
-              {#each bannerColors as color}
+              {#each BANNER_COLORS as color}
                 <option value={color.id}>{color.label}</option>
               {/each}
             </select>
@@ -489,7 +437,7 @@
                 bind:value={marginUnit}
                 class="px-2 py-0.5 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3]"
               >
-                {#each marginUnits as unit}
+                {#each MARGIN_UNITS as unit}
                   <option value={unit.id}>{unit.id}</option>
                 {/each}
               </select>

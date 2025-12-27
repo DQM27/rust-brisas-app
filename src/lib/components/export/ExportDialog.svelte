@@ -10,7 +10,7 @@
     Settings,
     Columns,
   } from "lucide-svelte";
-  import type { ExportOptions } from "$lib/logic/export";
+  import type { ExportOptions } from "$lib/types/export";
   import { currentUser } from "$lib/stores/auth";
   import { slide, fade, fly } from "svelte/transition";
   import ExportAdvancedDialog from "./ExportAdvancedDialog.svelte";

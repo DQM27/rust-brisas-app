@@ -1,5 +1,5 @@
 <script lang="ts">
-  import TrashView from "$lib/components/trash/TrashView.svelte";
+  import TrashListView from "$lib/components/trash/TrashListView.svelte";
   import * as visitanteService from "$lib/logic/visitante/visitanteService";
   import { VisitanteColumns } from "$lib/logic/visitante/visitanteColumns";
 
@@ -24,7 +24,7 @@
   const columns = VisitanteColumns.getTrashColumns();
 </script>
 
-<TrashView
+<TrashListView
   gridId="universal-trash"
   service={trashService}
   columnDefs={columns}

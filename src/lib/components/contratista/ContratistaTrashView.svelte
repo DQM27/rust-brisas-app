@@ -1,5 +1,5 @@
 <script lang="ts">
-  import TrashView from "$lib/components/trash/TrashView.svelte";
+  import TrashListView from "$lib/components/trash/TrashListView.svelte";
   import * as contratistaService from "$lib/logic/contratista/contratistaService";
   import { ContratistaColumns } from "$lib/logic/contratista/contratistaColumns";
 
@@ -25,7 +25,7 @@
   const columns = ContratistaColumns.getTrashColumns();
 </script>
 
-<TrashView
+<TrashListView
   gridId="contratista-trash"
   service={trashService}
   columnDefs={columns}
