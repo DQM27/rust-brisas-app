@@ -7,6 +7,7 @@ use crate::domain::errors::RoleError;
 use crate::models::role::{
     CreateRoleInput, Permission, RoleListResponse, RoleResponse, UpdateRoleInput, VisibleModule,
 };
+use crate::services::role_service; // Importamos el service correcto
 use crate::services::session::SessionState;
 use crate::services::surrealdb_authorization;
 use tauri::State;
@@ -17,21 +18,18 @@ use tauri::State;
 
 #[tauri::command]
 pub async fn get_all_roles() -> Result<RoleListResponse, RoleError> {
-    // TODO: Implementar en surrealdb_role_service
-    Err(RoleError::NotFound)
+    role_service::get_all_roles().await
 }
 
 #[tauri::command]
 pub async fn get_role_by_id(id: String) -> Result<RoleResponse, RoleError> {
-    let _ = id;
-    // TODO: Implementar en surrealdb_role_service
-    Err(RoleError::NotFound)
+    role_service::get_role_by_id(&id).await
 }
 
 #[tauri::command]
 pub async fn get_all_permissions() -> Result<Vec<Permission>, RoleError> {
-    // TODO: Implementar para SurrealDB - por ahora retorna lista vacía
-    Ok(vec![])
+    // Generado estáticamente en el servicio
+    Ok(role_service::get_all_permissions())
 }
 
 #[tauri::command]
@@ -74,11 +72,9 @@ pub async fn create_role(
     session: State<'_, SessionState>,
     input: CreateRoleInput,
 ) -> Result<RoleResponse, RoleError> {
-    let _user =
-        session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
-    let _ = input;
-    // TODO: Implementar en surrealdb_role_service
-    Err(RoleError::Validation("create_role no implementado para SurrealDB aún".to_string()))
+    // Validar permisos de admin si fuera necesario
+    let _ = session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
+    role_service::create_role(input).await
 }
 
 #[tauri::command]
@@ -87,18 +83,12 @@ pub async fn update_role(
     id: String,
     input: UpdateRoleInput,
 ) -> Result<RoleResponse, RoleError> {
-    let _user =
-        session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
-    let _ = (id, input);
-    // TODO: Implementar en surrealdb_role_service
-    Err(RoleError::Validation("update_role no implementado para SurrealDB aún".to_string()))
+    let _ = session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
+    role_service::update_role(id, input).await
 }
 
 #[tauri::command]
 pub async fn delete_role(session: State<'_, SessionState>, id: String) -> Result<(), RoleError> {
-    let _user =
-        session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
-    let _ = id;
-    // TODO: Implementar en surrealdb_role_service
-    Err(RoleError::Validation("delete_role no implementado para SurrealDB aún".to_string()))
+    let _ = session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
+    role_service::delete_role(&id).await
 }

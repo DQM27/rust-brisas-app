@@ -3,14 +3,13 @@
 // ==========================================
 // Capa de servicio: orquesta dominio, db y lógica
 
+use crate::db::surrealdb_role_queries as db;
 use crate::domain::role::{self as domain, is_superuser};
 use crate::models::role::{
     CreateRoleInput, Module, Permission, Role, RoleListResponse, RoleResponse, UpdateRoleInput,
     VisibleModule,
 };
 use crate::services::authorization;
-use chrono::Utc;
-use sqlx::SqlitePool;
 use uuid::Uuid;
 
 // ==========================================
@@ -23,20 +22,26 @@ use crate::domain::errors::RoleError;
 // CONSULTAS DE ROLES
 // ==========================================
 
-pub async fn get_all_roles(pool: &SqlitePool) -> Result<RoleListResponse, RoleError> {
-    let roles: Vec<Role> = sqlx::query_as(
-        r#"SELECT id, name, description, is_system, created_at, updated_at 
-           FROM roles 
-           ORDER BY is_system DESC, name ASC"#,
-    )
-    .fetch_all(pool)
-    .await?;
+pub async fn get_all_roles() -> Result<RoleListResponse, RoleError> {
+    let roles: Vec<Role> = db::find_all()
+        .await
+        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
 
     let mut responses = Vec::new();
     let mut system_count = 0;
 
     for role in roles {
-        let permissions = get_role_permission_ids(pool, &role.id).await?;
+        // En Surreal guardamos permisos en el mismo rol
+        // Pero el struct Role legacy no tiene 'permissions' field, los cargabamos aparte.
+        // Si Role struct no ha cambiado, necesitamos mapear.
+        // Voy a asumir que Role struct en models NO tiene permissions.
+        // db::find_all retorna Role.
+        // db::get_permissions retorna los permisos del rol.
+
+        let permissions = db::get_permissions(&role.id)
+            .await
+            .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
+
         if role.is_system {
             system_count += 1;
         }
@@ -53,83 +58,50 @@ pub async fn get_all_roles(pool: &SqlitePool) -> Result<RoleListResponse, RoleEr
     })
 }
 
-pub async fn get_role_by_id(pool: &SqlitePool, id: &str) -> Result<RoleResponse, RoleError> {
-    let role: Role = sqlx::query_as(
-        r#"SELECT id, name, description, is_system, created_at, updated_at 
-           FROM roles WHERE id = ?"#,
-    )
-    .bind(id)
-    .fetch_optional(pool)
-    .await?
-    .ok_or(RoleError::NotFound)?;
+pub async fn get_role_by_id(id: &str) -> Result<RoleResponse, RoleError> {
+    let role = db::find_by_id(id)
+        .await
+        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?
+        .ok_or(RoleError::NotFound)?;
 
-    let permissions = get_role_permission_ids(pool, &role.id).await?;
+    let permissions = db::get_permissions(&role.id)
+        .await
+        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
     Ok(RoleResponse::from_role_with_permissions(role, permissions))
-}
-
-async fn get_role_permission_ids(
-    pool: &SqlitePool,
-    role_id: &str,
-) -> Result<Vec<String>, RoleError> {
-    let perms: Vec<(String,)> =
-        sqlx::query_as("SELECT permission_id FROM role_permissions WHERE role_id = ?")
-            .bind(role_id)
-            .fetch_all(pool)
-            .await?;
-
-    Ok(perms.into_iter().map(|(id,)| id).collect())
 }
 
 // ==========================================
 // CREAR ROL
 // ==========================================
 
-pub async fn create_role(
-    pool: &SqlitePool,
-    input: CreateRoleInput,
-) -> Result<RoleResponse, RoleError> {
+pub async fn create_role(input: CreateRoleInput) -> Result<RoleResponse, RoleError> {
     // 1. Validar input (dominio)
     domain::validar_create_input(&input)?;
 
     // 2. Verificar nombre único
-    let count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM roles WHERE name = ?")
-        .bind(&input.name)
-        .fetch_one(pool)
-        .await?;
+    let exists = db::exists_by_name(&input.name)
+        .await
+        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
 
-    if count > 0 {
+    if exists {
         return Err(RoleError::NameExists);
     }
 
     // 3. Crear rol
     let id = Uuid::new_v4().to_string();
-    let now = Utc::now().to_rfc3339();
     let nombre = domain::normalizar_nombre(&input.name);
 
-    sqlx::query(
-        r#"INSERT INTO roles (id, name, description, is_system, created_at, updated_at)
-           VALUES (?, ?, ?, 0, ?, ?)"#,
+    db::create(
+        &id,
+        &nombre,
+        input.description.as_deref(),
+        &input.permissions,
+        false, // is_system = false para roles creados
     )
-    .bind(&id)
-    .bind(&nombre)
-    .bind(&input.description)
-    .bind(&now)
-    .bind(&now)
-    .execute(pool)
-    .await?;
+    .await
+    .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
 
-    // 4. Asignar permisos
-    for perm_id in &input.permissions {
-        let _ = sqlx::query(
-            "INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)",
-        )
-        .bind(&id)
-        .bind(perm_id)
-        .execute(pool)
-        .await;
-    }
-
-    get_role_by_id(pool, &id).await
+    get_role_by_id(&id).await
 }
 
 // ==========================================
@@ -137,7 +109,6 @@ pub async fn create_role(
 // ==========================================
 
 pub async fn update_role(
-    pool: &SqlitePool,
     id: &str,
     input: UpdateRoleInput,
     requester_id: &str,
@@ -146,67 +117,36 @@ pub async fn update_role(
     domain::validar_update_input(&input)?;
 
     // 2. Obtener rol actual
-    let role = get_role_by_id(pool, id).await?;
+    let role = get_role_by_id(id).await?;
 
     // 3. Solo root puede editar roles del sistema
     if role.is_system && !is_superuser(requester_id) {
         return Err(RoleError::CannotModifySystemRole);
     }
 
-    let now = Utc::now().to_rfc3339();
+    // 4. Actualizar
+    let nombre = input.name.as_ref().map(|n| domain::normalizar_nombre(n));
+    let perms_ref = input.permissions.as_deref();
 
-    // 4. Actualizar campos básicos
-    if input.name.is_some() || input.description.is_some() {
-        let nombre = input.name.as_ref().map(|n| domain::normalizar_nombre(n));
+    db::update(id, nombre.as_deref(), input.description.as_deref(), perms_ref)
+        .await
+        .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
 
-        sqlx::query(
-            r#"UPDATE roles SET 
-               name = COALESCE(?, name),
-               description = COALESCE(?, description),
-               updated_at = ?
-               WHERE id = ?"#,
-        )
-        .bind(&nombre)
-        .bind(&input.description)
-        .bind(&now)
-        .bind(id)
-        .execute(pool)
-        .await?;
-    }
-
-    // 5. Actualizar permisos si vienen
-    if let Some(permissions) = input.permissions {
-        sqlx::query("DELETE FROM role_permissions WHERE role_id = ?")
-            .bind(id)
-            .execute(pool)
-            .await?;
-
-        for perm_id in permissions {
-            let _ = sqlx::query(
-                "INSERT OR IGNORE INTO role_permissions (role_id, permission_id) VALUES (?, ?)",
-            )
-            .bind(id)
-            .bind(&perm_id)
-            .execute(pool)
-            .await;
-        }
-    }
-
-    get_role_by_id(pool, id).await
+    get_role_by_id(id).await
 }
 
 // ==========================================
 // ELIMINAR ROL
 // ==========================================
 
-pub async fn delete_role(pool: &SqlitePool, id: &str) -> Result<(), RoleError> {
-    let role = get_role_by_id(pool, id).await?;
+pub async fn delete_role(id: &str) -> Result<(), RoleError> {
+    let role = get_role_by_id(id).await?;
 
     if role.is_system {
         return Err(RoleError::CannotDeleteSystemRole);
     }
 
-    sqlx::query("DELETE FROM roles WHERE id = ?").bind(id).execute(pool).await?;
+    db::delete(id).await.map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
 
     Ok(())
 }
@@ -216,7 +156,6 @@ pub async fn delete_role(pool: &SqlitePool, id: &str) -> Result<(), RoleError> {
 // ==========================================
 
 pub async fn get_user_visible_modules(
-    pool: &SqlitePool,
     user_id: &str,
     role_id: &str,
 ) -> Result<Vec<VisibleModule>, RoleError> {
@@ -236,7 +175,12 @@ pub async fn get_user_visible_modules(
             .collect());
     }
 
-    let permissions = authorization::get_role_permissions(pool, role_id)
+    // Usar surrealdb_authorization
+    use crate::services::surrealdb_authorization;
+
+    // Aquí invocamos la lógica migrada de autorización
+    // que revisa los permisos guardados en el rol (array strings)
+    let permissions = surrealdb_authorization::get_role_permissions(role_id)
         .await
         .map_err(|e| RoleError::Database(sqlx::Error::Protocol(e.to_string())))?;
 
@@ -265,12 +209,22 @@ pub async fn get_user_visible_modules(
 // PERMISOS DISPONIBLES
 // ==========================================
 
-pub async fn get_all_permissions(pool: &SqlitePool) -> Result<Vec<Permission>, RoleError> {
-    let perms: Vec<Permission> = sqlx::query_as(
-        "SELECT id, module, action, description FROM permissions ORDER BY module, action",
-    )
-    .fetch_all(pool)
-    .await?;
+pub async fn get_all_permissions() -> Result<Vec<Permission>, RoleError> {
+    // Generar dinámicamente basado en enum Module
+    // Esto evita depender de tabla permissions en DB
+    let mut perms = Vec::new();
+
+    for module in Module::all() {
+        let actions = vec!["view", "create", "read", "update", "delete", "export"];
+        for action in actions {
+            perms.push(Permission {
+                id: format!("{}:{}", module.as_str(), action),
+                module: module.as_str().to_string(),
+                action: action.to_string(),
+                description: format!("{} {}", action, module.display_name()),
+            });
+        }
+    }
 
     Ok(perms)
 }

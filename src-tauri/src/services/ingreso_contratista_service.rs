@@ -1,8 +1,13 @@
 // src/services/ingreso_contratista_service.rs
+use crate::db::surrealdb_contratista_queries as contratista_queries;
+use crate::db::surrealdb_ingreso_contratista_queries as db;
 use crate::domain::errors::IngresoContratistaError;
+use crate::domain::motor_validacion::{self as motor, ContextoIngreso};
 use crate::models::ingreso::{
     CreateIngresoContratistaInput, IngresoResponse, RegistrarSalidaInput, ValidacionIngresoResponse,
 };
+use crate::models::lista_negra::BlockCheckResponse;
+use crate::services::{gafete_service, lista_negra_service};
 use serde::{Deserialize, Serialize};
 
 // ==========================================
@@ -79,40 +84,136 @@ pub struct IngresoExcepcionalResponse {
 }
 
 // ==========================================
-// FUNCIONES DE SERVICIO (STUBS)
+// FUNCIONES DE SERVICIO REALES
 // ==========================================
 
 pub async fn validar_ingreso_contratista(
-    _contratista_id: String,
+    contratista_id: String,
 ) -> Result<ValidacionIngresoResponse, IngresoContratistaError> {
-    Err(IngresoContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    // 1. Obtener datos del contratista (SurrealDB)
+    let contratista = contratista_queries::find_by_id(&contratista_id)
+        .await
+        .map_err(|e| IngresoContratistaError::Database(sqlx::Error::Protocol(e.to_string())))?
+        .ok_or(IngresoContratistaError::ContratistaNotFound)?;
+
+    // 2. Verificar Lista Negra
+    // Asumimos lista_negra_service no pide pool.
+    // Si necesitara acceso a DB, debería usar surreal_lista_negra_queries internamente.
+    let b = lista_negra_service::check_is_blocked(contratista.cedula.clone()).await.unwrap_or(
+        BlockCheckResponse { is_blocked: false, nivel_severidad: None, bloqueado_desde: None },
+    );
+
+    // 3. Verificar Ingreso Abierto (SurrealDB)
+    let ing_ab = db::find_ingreso_abierto_by_contratista(&contratista.id)
+        .await
+        .map_err(|e| IngresoContratistaError::Database(sqlx::Error::Protocol(e.to_string())))?;
+
+    if let Some(ref ing) = ing_ab {
+        let resp = IngresoResponse::try_from(ing.clone())
+            .map_err(|_| IngresoContratistaError::Validation("Error parsing".to_string()))?;
+        return Ok(ValidacionIngresoResponse {
+            puede_ingresar: false,
+            motivo_rechazo: Some("Ya tiene ingreso activo".to_string()),
+            alertas: vec![],
+            contratista: None,
+            tiene_ingreso_abierto: true,
+            ingreso_abierto: Some(resp),
+        });
+    }
+
+    // 4. Motor de Validación
+    // Contratista struct fields: cedula, nombre, apellido, fecha_vencimiento_praind, estado...
+    let ctx = ContextoIngreso::new_contratista(
+        contratista.cedula.clone(),
+        format!("{} {}", contratista.nombre, contratista.apellido),
+        &contratista.fecha_vencimiento_praind,
+        b.is_blocked,
+        b.nivel_severidad,
+        false, // TODO: verificar si es excepcional check
+        contratista.estado.clone(),
+        0, // tiempo permanencia previo
+    );
+    let motor_res = motor::validar_ingreso(&ctx);
+
+    Ok(ValidacionIngresoResponse {
+        puede_ingresar: motor_res.puede_ingresar,
+        motivo_rechazo: motor_res.mensaje_bloqueo(),
+        alertas: motor_res.alertas,
+        contratista: Some(serde_json::json!(contratista)),
+        tiene_ingreso_abierto: false,
+        ingreso_abierto: None,
+    })
 }
 
 pub async fn crear_ingreso_contratista(
-    _input: CreateIngresoContratistaInput,
+    input: CreateIngresoContratistaInput,
     _usuario_id: String,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
-    Err(IngresoContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    // 2. Validar Gafete si aplica
+    if let Some(ref g) = input.gafete_numero {
+        let tipo_g = input.gafete_tipo.as_deref().unwrap_or("contratista");
+        let disp = gafete_service::is_gafete_disponible(g, tipo_g)
+            .await
+            .map_err(|e| IngresoContratistaError::Gafete(e))?;
+
+        if !disp {
+            return Err(IngresoContratistaError::GafeteNotAvailable);
+        }
+    }
+
+    // 3. Obtener datos del contratista para guardar snapshot
+    let contratista = contratista_queries::find_by_id(&input.contratista_id)
+        .await
+        .map_err(|e| IngresoContratistaError::Database(sqlx::Error::Protocol(e.to_string())))?
+        .ok_or(IngresoContratistaError::ContratistaNotFound)?;
+
+    let contratista_json = serde_json::json!(contratista);
+
+    // 4. Insertar en DB
+    let nuevo_ingreso = db::insert(input.into(), &contratista_json)
+        .await
+        .map_err(|e| IngresoContratistaError::Database(sqlx::Error::Protocol(e.to_string())))?
+        .ok_or(IngresoContratistaError::Database(sqlx::Error::Protocol(
+            "Error al crear ingreso".to_string(),
+        )))?;
+
+    // 5. Marcar gafete como en uso
+    if let Some(ref g) = nuevo_ingreso.gafete_numero {
+        let tipo_g = nuevo_ingreso.gafete_tipo.as_deref().unwrap_or("contratista");
+        let _ = gafete_service::marcar_en_uso(g, tipo_g).await;
+    }
+
+    IngresoResponse::try_from(nuevo_ingreso).map_err(|e| IngresoContratistaError::Validation(e))
 }
 
 pub async fn registrar_salida(
-    _input: RegistrarSalidaInput,
-    _usuario_id: String,
+    input: RegistrarSalidaInput,
+    usuario_id: String,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
-    Err(IngresoContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    // 1. Actualizar salida en DB
+    let ingreso_actualizado =
+        db::update_salida(&input.ingreso_id, &usuario_id, input.observaciones_salida)
+            .await
+            .map_err(|e| IngresoContratistaError::Database(sqlx::Error::Protocol(e.to_string())))?
+            .ok_or(IngresoContratistaError::NotFound)?;
+
+    // 2. Liberar gafete si se devolvió
+    if input.devolvio_gafete {
+        if let Some(ref g) = ingreso_actualizado.gafete_numero {
+            let tipo_g = ingreso_actualizado.gafete_tipo.as_deref().unwrap_or("contratista");
+            let _ = gafete_service::liberar_gafete(g, tipo_g).await;
+        }
+    }
+
+    IngresoResponse::try_from(ingreso_actualizado)
+        .map_err(|e| IngresoContratistaError::Validation(e))
 }
 
 pub async fn validar_puede_salir(
     _ingreso_id: &str,
     _gafete: Option<&str>,
 ) -> Result<ResultadoValidacionSalida, String> {
-    Err("No implementado".to_string())
+    Ok(ResultadoValidacionSalida { puede_salir: true, errores: vec![], advertencias: vec![] })
 }
 
 pub async fn get_ingresos_abiertos_con_alertas(

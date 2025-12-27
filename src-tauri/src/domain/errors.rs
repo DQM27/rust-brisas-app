@@ -47,11 +47,7 @@ pub enum UserError {
     EmpresaHasContratistas(i64),
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de búsqueda: {0}")]
     Search(String),
@@ -67,6 +63,12 @@ pub enum UserError {
 
     #[error("Error de I/O: {0}")]
     IO(String),
+}
+
+impl From<sqlx::Error> for UserError {
+    fn from(e: sqlx::Error) -> Self {
+        UserError::Database(e.to_string())
+    }
 }
 
 // ==========================================
@@ -266,14 +268,16 @@ pub enum AlertaError {
     AlreadyResolved,
 
     #[error("Error de base de datos: {0}")]
-    Database(
-        #[from]
-        #[serde(serialize_with = "serialize_error_as_string")]
-        sqlx::Error,
-    ),
+    Database(String),
 
     #[error("Error de validación: {0}")]
     Validation(String),
+}
+
+impl From<sqlx::Error> for AlertaError {
+    fn from(e: sqlx::Error) -> Self {
+        AlertaError::Database(e.to_string())
+    }
 }
 
 // ==========================================

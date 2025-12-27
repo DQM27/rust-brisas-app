@@ -1,60 +1,57 @@
-// ==========================================
 // src/commands/ingreso_proveedor_commands.rs
-// ==========================================
-// Capa de API: Tauri command handlers
 
 use crate::domain::errors::IngresoProveedorError;
 use crate::domain::ingreso_proveedor::{
-    CreateIngresoProveedorInput, IngresoProveedor, ProveedorSnapshot,
+    CreateIngresoProveedorInput,
+    IngresoProveedor, // ProveedorSnapshot, // Usaremos serde_json::Value por ahora si hace falta
     ValidacionIngresoProveedorResponse,
 };
+use crate::services::ingreso_proveedor_service as service;
 use tauri::command;
 
 #[command]
 pub async fn crear_ingreso_proveedor_v2(
-    _input: CreateIngresoProveedorInput,
+    input: CreateIngresoProveedorInput,
 ) -> Result<IngresoProveedor, IngresoProveedorError> {
-    Err(IngresoProveedorError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::registrar_ingreso(input).await
 }
 
 #[command]
 pub async fn get_ingresos_proveedores_activos(
 ) -> Result<Vec<IngresoProveedor>, IngresoProveedorError> {
-    Ok(vec![])
+    service::get_activos().await
 }
 
 #[command]
 pub async fn get_ingresos_proveedores_historial(
 ) -> Result<Vec<IngresoProveedor>, IngresoProveedorError> {
-    Ok(vec![])
+    service::get_historial().await
 }
 
 #[command]
 pub async fn registrar_salida_proveedor(
-    _id: String,
-    _usuario_id: String,
-    _observaciones: Option<String>,
-    _devolvio_gafete: bool,
+    id: String,
+    usuario_id: String,
+    observaciones: Option<String>,
+    devolvio_gafete: bool,
 ) -> Result<(), IngresoProveedorError> {
-    Err(IngresoProveedorError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::registrar_salida(id, usuario_id, observaciones, devolvio_gafete).await
 }
 
 #[command]
 pub async fn search_proveedores(
-    _query: String,
-) -> Result<Vec<ProveedorSnapshot>, IngresoProveedorError> {
-    Ok(vec![])
+    query: String,
+) -> Result<Vec<serde_json::Value>, IngresoProveedorError> {
+    service::search_proveedores(&query).await
 }
 
 #[command]
 pub async fn validar_ingreso_proveedor(
-    _proveedor_id: String,
+    proveedor_id: String,
 ) -> Result<ValidacionIngresoProveedorResponse, IngresoProveedorError> {
-    Err(IngresoProveedorError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    let res = service::validar_ingreso(proveedor_id).await?;
+    // Convertir de Value a struct si es posible, o cambiar firma.
+    // Domain struct es ValidacionIngresoProveedorResponse { puedeIngresar: bool... }
+    serde_json::from_value(res)
+        .map_err(|_| IngresoProveedorError::Validation("Error parsing validation".to_string()))
 }

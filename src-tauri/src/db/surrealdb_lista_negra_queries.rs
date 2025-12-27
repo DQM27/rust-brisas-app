@@ -37,3 +37,10 @@ pub async fn check_if_blocked_by_cedula(
         }),
     }
 }
+
+pub async fn find_all() -> Result<Vec<crate::models::lista_negra::ListaNegra>, SurrealDbError> {
+    let db = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
+    let client = db.get_client().await?;
+    let result: Vec<crate::models::lista_negra::ListaNegra> = client.select("lista_negra").await?;
+    Ok(result)
+}

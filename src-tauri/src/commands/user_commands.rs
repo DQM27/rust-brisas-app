@@ -4,8 +4,10 @@ use crate::domain::errors::UserError;
 use crate::models::user::{
     ChangePasswordInput, CreateUserInput, UpdateUserInput, UserListResponse, UserResponse,
 };
+use crate::services::search_service::SearchService;
 use crate::services::session::{SessionState, SessionUser};
-use crate::services::surrealdb_user_service as user_service;
+use crate::services::user_service; // Usar el servicio estándar migrado
+use std::sync::Arc;
 use tauri::State;
 
 // ==========================================
@@ -13,18 +15,28 @@ use tauri::State;
 // ==========================================
 
 #[tauri::command]
-pub async fn create_user(input: CreateUserInput) -> Result<UserResponse, UserError> {
-    user_service::create_user(input).await
+pub async fn create_user(
+    search: State<'_, Arc<SearchService>>,
+    input: CreateUserInput,
+) -> Result<UserResponse, UserError> {
+    user_service::create_user(&search, input).await
 }
 
 #[tauri::command]
-pub async fn update_user(id: String, input: UpdateUserInput) -> Result<UserResponse, UserError> {
-    user_service::update_user(id, input).await
+pub async fn update_user(
+    search: State<'_, Arc<SearchService>>,
+    id: String,
+    input: UpdateUserInput,
+) -> Result<UserResponse, UserError> {
+    user_service::update_user(&search, id, input).await
 }
 
 #[tauri::command]
-pub async fn delete_user(id: String) -> Result<(), UserError> {
-    user_service::delete_user(id).await
+pub async fn delete_user(
+    search: State<'_, Arc<SearchService>>,
+    id: String,
+) -> Result<(), UserError> {
+    user_service::delete_user(&search, id).await
 }
 
 #[tauri::command]
@@ -73,9 +85,9 @@ pub async fn demo_login(
     session: State<'_, SessionState>,
     email: String,
 ) -> Result<UserResponse, UserError> {
-    // TODO: Implementar seed_demo para SurrealDB
     log::warn!("⚠️ demo_login: seed_demo no implementado para SurrealDB");
-    let user_response = user_service::login(email, "demo123".to_string()).await?;
+    // Asumimos que el usuario existe y probamos con un pass genérico o intentamos login
+    let user_response = user_service::login(email, "demo".to_string()).await?;
 
     // Update SessionState
     let session_user = SessionUser {
@@ -92,17 +104,15 @@ pub async fn demo_login(
 }
 
 // ==========================================
-// AVATAR COMMANDS
+// AVATAR COMMANDS (Stubs)
 // ==========================================
 
 #[tauri::command]
 pub async fn upload_user_avatar(_user_id: String, _file_path: String) -> Result<String, UserError> {
-    // TODO: Implementar para SurrealDB
     Err(UserError::Validation("Avatar upload no implementado para SurrealDB aún".to_string()))
 }
 
 #[tauri::command]
 pub async fn get_user_avatar(_user_id: String) -> Result<String, UserError> {
-    // TODO: Implementar para SurrealDB
     Err(UserError::Validation("Avatar retrieval no implementado para SurrealDB aún".to_string()))
 }

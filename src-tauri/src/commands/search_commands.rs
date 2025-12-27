@@ -5,24 +5,31 @@
 
 use crate::domain::errors::SearchError;
 use crate::search::searcher::SearchResultDto;
+use crate::services::search_service::SearchService;
+use std::sync::Arc;
+use tauri::State;
 
 #[tauri::command]
 pub async fn search_contratistas(
-    _query: String,
-    _limit: Option<usize>,
+    search_service: State<'_, Arc<SearchService>>,
+    query: String,
+    limit: Option<usize>,
 ) -> Result<Vec<SearchResultDto>, SearchError> {
-    Ok(vec![])
+    search_service.search(&query, limit.unwrap_or(20))
 }
 
 #[tauri::command]
-pub async fn reindex_all_contratistas() -> Result<(), SearchError> {
-    Err(SearchError::Index("No implementado para SurrealDB aún".to_string()))
+pub async fn reindex_all_contratistas(
+    search_service: State<'_, Arc<SearchService>>,
+) -> Result<(), SearchError> {
+    search_service.reindex_all().await
 }
 
 #[tauri::command]
 pub async fn search_global(
-    _query: String,
-    _limit: Option<usize>,
+    search_service: State<'_, Arc<SearchService>>,
+    query: String,
+    limit: Option<usize>,
 ) -> Result<Vec<SearchResultDto>, SearchError> {
-    Ok(vec![])
+    search_service.search(&query, limit.unwrap_or(20))
 }

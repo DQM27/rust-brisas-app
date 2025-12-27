@@ -139,6 +139,9 @@ pub struct Ingreso {
     pub praind_vigente_al_ingreso: Option<bool>,
     pub estado_contratista_al_ingreso: Option<String>,
     pub observaciones: Option<String>,
+    pub anfitrion: Option<String>,
+    pub area_visitada: Option<String>,
+    pub motivo: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }

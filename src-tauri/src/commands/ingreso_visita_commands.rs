@@ -7,46 +7,41 @@ use crate::domain::errors::IngresoVisitaError;
 use crate::domain::ingreso_visita::{
     CreateIngresoVisitaFullInput, IngresoVisita, IngresoVisitaPopulated,
 };
+use crate::services::ingreso_visita_service as service;
 use tauri::command;
 
 #[command]
 pub async fn crear_ingreso_visita_v2(
-    _input: CreateIngresoVisitaFullInput,
+    input: CreateIngresoVisitaFullInput,
 ) -> Result<IngresoVisita, IngresoVisitaError> {
-    Err(IngresoVisitaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::registrar_ingreso_full(input).await
 }
 
 #[command]
 pub async fn validar_ingreso_visita(
-    _visitante_id: String,
+    visitante_id: String,
 ) -> Result<crate::domain::ingreso_visita::ValidacionIngresoVisitaResponse, IngresoVisitaError> {
-    Err(IngresoVisitaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::validar_ingreso(&visitante_id).await
 }
 
 #[command]
 pub async fn get_ingresos_visitas_activos(
 ) -> Result<Vec<IngresoVisitaPopulated>, IngresoVisitaError> {
-    Ok(vec![])
+    service::get_activos().await
 }
 
 #[command]
 pub async fn registrar_salida_visita(
-    _id: String,
-    _usuario_id: String,
-    _devolvio_gafete: bool,
-    _observaciones: Option<String>,
+    id: String,
+    usuario_id: String,
+    devolvio_gafete: bool,
+    observaciones: Option<String>,
 ) -> Result<(), IngresoVisitaError> {
-    Err(IngresoVisitaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::registrar_salida(id, usuario_id, devolvio_gafete, observaciones).await
 }
 
 #[command]
 pub async fn get_ingresos_visitas_historial(
 ) -> Result<Vec<IngresoVisitaPopulated>, IngresoVisitaError> {
-    Ok(vec![])
+    service::get_historial().await
 }

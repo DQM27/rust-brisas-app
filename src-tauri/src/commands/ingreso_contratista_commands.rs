@@ -13,22 +13,18 @@ use crate::services::ingreso_contratista_service as service;
 /// Valida si un contratista puede ingresar (pre-chequeo)
 #[tauri::command]
 pub async fn validate_ingreso_contratista(
-    _contratista_id: String,
+    contratista_id: String,
 ) -> Result<ValidacionIngresoResponse, IngresoContratistaError> {
-    Err(IngresoContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::validar_ingreso_contratista(contratista_id).await
 }
 
 /// Crea el ingreso de un contratista
 #[tauri::command]
 pub async fn create_ingreso_contratista(
-    _input: CreateIngresoContratistaInput,
-    _usuario_id: String,
+    input: CreateIngresoContratistaInput,
+    usuario_id: String,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
-    Err(IngresoContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::crear_ingreso_contratista(input, usuario_id).await
 }
 
 // ==========================================
@@ -38,23 +34,21 @@ pub async fn create_ingreso_contratista(
 /// Valida si se puede registrar la salida (pre-chequeo)
 #[tauri::command]
 pub async fn validate_exit_contratista(
-    _ingreso_id: String,
-    _gafete_devuelto: Option<String>,
+    ingreso_id: String,
+    gafete_devuelto: Option<String>,
 ) -> Result<service::ResultadoValidacionSalida, IngresoContratistaError> {
-    Err(IngresoContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::validar_puede_salir(&ingreso_id, gafete_devuelto.as_deref())
+        .await
+        .map_err(|e| IngresoContratistaError::Validation(e))
 }
 
 /// Registra la salida
 #[tauri::command]
 pub async fn register_exit_contratista(
-    _input: RegistrarSalidaInput,
-    _usuario_id: String,
+    input: RegistrarSalidaInput,
+    usuario_id: String,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
-    Err(IngresoContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::registrar_salida(input, usuario_id).await
 }
 
 // ==========================================
@@ -65,14 +59,14 @@ pub async fn register_exit_contratista(
 #[tauri::command]
 pub async fn get_permanencia_status(
 ) -> Result<Vec<service::IngresoConEstadoResponse>, IngresoContratistaError> {
-    Ok(vec![])
+    service::get_ingresos_abiertos_con_alertas().await
 }
 
 /// Verifica alertas de tiempo excedido (para notificaciones)
 #[tauri::command]
 pub async fn check_time_alerts(
 ) -> Result<Vec<service::AlertaTiempoExcedido>, IngresoContratistaError> {
-    Ok(vec![])
+    service::verificar_tiempos_excedidos().await
 }
 
 // ==========================================
@@ -82,12 +76,10 @@ pub async fn check_time_alerts(
 /// Cierra un ingreso manualmente (cuando el guardia no registró salida)
 #[tauri::command]
 pub async fn cerrar_ingreso_manual(
-    _input: service::CerrarIngresoManualInput,
-    _usuario_id: String,
+    input: service::CerrarIngresoManualInput,
+    usuario_id: String,
 ) -> Result<service::ResultadoCierreManualResponse, IngresoContratistaError> {
-    Err(IngresoContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::cerrar_ingreso_manual(input, usuario_id).await
 }
 
 // ==========================================
@@ -97,10 +89,8 @@ pub async fn cerrar_ingreso_manual(
 /// Registra un ingreso excepcional (contratista que normalmente no podría entrar)
 #[tauri::command]
 pub async fn registrar_ingreso_excepcional(
-    _input: service::IngresoExcepcionalInput,
-    _usuario_id: String,
+    input: service::IngresoExcepcionalInput,
+    usuario_id: String,
 ) -> Result<service::IngresoExcepcionalResponse, IngresoContratistaError> {
-    Err(IngresoContratistaError::Database(sqlx::Error::Protocol(
-        "No implementado para SurrealDB aún".to_string(),
-    )))
+    service::registrar_ingreso_excepcional(input, usuario_id).await
 }

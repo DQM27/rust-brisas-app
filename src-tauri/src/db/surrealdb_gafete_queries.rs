@@ -18,3 +18,18 @@ pub async fn get_all_gafetes() -> Result<Vec<Gafete>, SurrealDbError> {
     let client = get_db().await?;
     Ok(client.select("gafetes").await?)
 }
+
+pub async fn set_gafete_uso(numero: &str, tipo: &str, en_uso: bool) -> Result<(), SurrealDbError> {
+    let client = get_db().await?;
+    let numero_owned = numero.to_string();
+    let tipo_owned = tipo.to_string();
+
+    let _result = client
+        .query("UPDATE gafetes SET en_uso = $uso WHERE numero = $n AND tipo = $t")
+        .bind(("uso", en_uso))
+        .bind(("n", numero_owned))
+        .bind(("t", tipo_owned))
+        .await?;
+    
+    Ok(())
+}

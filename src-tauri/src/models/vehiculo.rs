@@ -73,7 +73,8 @@ impl std::str::FromStr for TipoVehiculo {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateVehiculoInput {
-    pub contratista_id: String,
+    pub contratista_id: Option<String>,
+    pub proveedor_id: Option<String>,
     pub tipo_vehiculo: String,
     pub placa: String,
     pub marca: Option<String>,

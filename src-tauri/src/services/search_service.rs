@@ -1,7 +1,9 @@
-use crate::db::contratista_queries;
-use crate::db::lista_negra_queries;
-use crate::db::proveedor_queries;
-use crate::db::user_queries;
+use crate::db::{
+    surrealdb_contratista_queries as contratista_queries,
+    surrealdb_empresa_queries as empresa_queries,
+    surrealdb_lista_negra_queries as lista_negra_queries,
+    surrealdb_proveedor_queries as proveedor_queries, surrealdb_user_queries as user_queries,
+};
 use crate::domain::role::SUPERUSER_ID;
 use crate::models::contratista::Contratista;
 use crate::models::lista_negra::ListaNegra;
@@ -17,7 +19,8 @@ use crate::search::{
 };
 use crate::search::{get_index_reader, get_index_writer, initialize_index};
 use crate::search::{search_index, SearchFields};
-use sqlx::SqlitePool;
+// use sqlx::SqlitePool; // REMOVED
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tantivy::{Index, IndexReader};
@@ -82,28 +85,36 @@ impl SearchService {
     }
 
     /// Re-indexa todo (contratistas, usuarios, proveedores y lista negra) desde la base de datos
-    pub async fn reindex_all(&self, pool: &SqlitePool) -> Result<(), SearchError> {
-        // Obtener todos los contratistas con empresa (Async, sin lock)
-        let contratistas = contratista_queries::find_all_with_empresa(pool)
+    pub async fn reindex_all(&self) -> Result<(), SearchError> {
+        // 1. Cargar Empresas para mapeo de nombres
+        let empresas = empresa_queries::find_all()
+            .await
+            .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
+
+        let empresas_map: HashMap<String, String> =
+            empresas.into_iter().map(|e| (e.id, e.nombre)).collect();
+
+        // 2. Obtener datos
+        let contratistas = contratista_queries::find_all()
             .await
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 
         // Obtener todos los usuarios (excluyendo superuser del índice)
-        let users = user_queries::find_all(pool, SUPERUSER_ID)
+        let users = user_queries::find_all(Some(SUPERUSER_ID))
             .await
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 
         // Obtener todos los registros de lista negra
-        let lista_negra = lista_negra_queries::find_all(pool)
+        let lista_negra = lista_negra_queries::find_all()
             .await
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 
         // Obtener todos los proveedores
-        let proveedores = proveedor_queries::find_all_with_empresa(pool)
+        let proveedores = proveedor_queries::find_all()
             .await
             .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
 
-        // Adquirir lock para escribir en el índice
+        // 3. Adquirir lock para escribir en el índice
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -115,8 +126,20 @@ impl SearchService {
             })?;
 
             // Indexar contratistas
-            for (contratista, empresa_nombre, _, _, _) in contratistas {
-                index_contratista(&mut writer, &self.handles, &contratista, &empresa_nombre)?;
+            for contratista in contratistas {
+                // Resolver nombre empresa
+                // El contratista.empresa_id podría ser "empresas:XYZ" o "XYZ".
+                // empresas_map key también.
+                // Asumimos que vienen igual de la DB.
+                // Contratista struct field se llama 'empresa_id' en model? No, es 'empresa' o 'empresa_id'?
+                // En `surrealdb_contratista_queries`, el struct Contratista usado tiene fields.
+                // Verificaré si Contratista model tiene empresa_id público.
+                // Asumiendo que sí:
+                let empresa_nombre = empresas_map
+                    .get(&contratista.empresa_id)
+                    .map(|s| s.as_str())
+                    .unwrap_or("Desconocida");
+                index_contratista(&mut writer, &self.handles, &contratista, empresa_nombre)?;
             }
 
             // Indexar usuarios
@@ -130,8 +153,12 @@ impl SearchService {
             }
 
             // Indexar proveedores
-            for (proveedor, empresa_nombre) in proveedores {
-                index_proveedor(&mut writer, &self.handles, &proveedor, &empresa_nombre)?;
+            for proveedor in proveedores {
+                let empresa_nombre = empresas_map
+                    .get(&proveedor.empresa_id)
+                    .map(|s| s.as_str())
+                    .unwrap_or("Desconocida");
+                index_proveedor(&mut writer, &self.handles, &proveedor, empresa_nombre)?;
             }
 
             // Commit
@@ -147,8 +174,8 @@ impl SearchService {
     }
 
     /// Método legado para compatibilidad si es necesario, ahora llama a reindex_all
-    pub async fn reindex_all_contratistas(&self, pool: &SqlitePool) -> Result<(), SearchError> {
-        self.reindex_all(pool).await
+    pub async fn reindex_all_contratistas(&self) -> Result<(), SearchError> {
+        self.reindex_all().await
     }
 
     /// Indexa un contratista nuevo

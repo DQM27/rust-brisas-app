@@ -4,9 +4,8 @@
 // Estado de sesión del usuario actual
 
 use crate::models::role::{Action, Module};
-use crate::services::authorization::{self, AuthError};
+use crate::services::surrealdb_authorization::{self as authorization, AuthError};
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
 use std::sync::RwLock;
 
 // ==========================================
@@ -69,13 +68,12 @@ impl SessionState {
     /// Verifica permiso y retorna el usuario si tiene acceso
     pub async fn require_permission(
         &self,
-        pool: &SqlitePool,
         module: Module,
         action: Action,
     ) -> Result<SessionUser, AuthError> {
         let user = self.require_session()?;
 
-        authorization::check_permission(pool, &user.id, &user.role_id, module, action).await?;
+        authorization::check_permission(&user.id, &user.role_id, module, action).await?;
 
         Ok(user)
     }
