@@ -1,35 +1,32 @@
-use crate::domain::cita::{Cita, CitaPopulated, CreateCitaInput};
+// ==========================================
+// src/commands/cita_commands.rs
+// Enterprise Quality SurrealDB Implementation
+// ==========================================
+
 use crate::domain::errors::CitaError;
+use crate::models::cita::{CitaResponse, CreateCitaInput};
 use crate::models::visitante::{CreateVisitanteInput, VisitanteResponse};
+use crate::services::cita_service;
 use log::debug;
 use tauri::command;
 
+// ==========================================
+// QUERIES
+// ==========================================
+
 #[command]
-pub async fn create_cita(
-    cita: CreateCitaInput,
-    _visitante: Option<CreateVisitanteInput>,
-) -> Result<Cita, CitaError> {
-    debug!("Creating Cita: {:?}", cita);
-    Err(CitaError::Database("No implementado para SurrealDB aún".to_string()))
+pub async fn get_citas_hoy() -> Result<Vec<CitaResponse>, CitaError> {
+    cita_service::get_citas_hoy().await
 }
 
 #[command]
-pub async fn get_citas_hoy() -> Result<Vec<CitaPopulated>, CitaError> {
-    Ok(vec![])
+pub async fn get_citas_pendientes() -> Result<Vec<CitaResponse>, CitaError> {
+    cita_service::get_citas_pendientes().await
 }
 
 #[command]
-pub async fn get_citas_pendientes() -> Result<Vec<CitaPopulated>, CitaError> {
-    Ok(vec![])
-}
-
-#[command]
-pub async fn procesar_ingreso_cita(
-    _cita_id: String,
-    _gafete: String,
-    _usuario_id: String,
-) -> Result<String, CitaError> {
-    Err(CitaError::Database("No implementado para SurrealDB aún".to_string()))
+pub async fn get_cita_by_id(id: String) -> Result<CitaResponse, CitaError> {
+    cita_service::get_cita_by_id(id).await
 }
 
 #[command]
@@ -41,18 +38,45 @@ pub async fn get_visitante_by_cedula(
         .map_err(|e| CitaError::Database(e.to_string()))
 }
 
+// ==========================================
+// MUTATIONS
+// ==========================================
+
 #[command]
-pub async fn update_cita(
-    _id: String,
-    _fecha_cita: String,
-    _anfitrion: String,
-    _area_visitada: String,
-    _motivo: Option<String>,
-) -> Result<(), CitaError> {
-    Err(CitaError::Database("No implementado para SurrealDB aún".to_string()))
+pub async fn create_cita(
+    cita: CreateCitaInput,
+    visitante: Option<CreateVisitanteInput>,
+    usuario_id: String,
+) -> Result<CitaResponse, CitaError> {
+    debug!("Creating Cita: {:?}", cita);
+
+    cita_service::agendar_cita(
+        cita.visitante_id,
+        visitante,
+        cita.fecha_cita,
+        cita.anfitrion,
+        cita.area_visitada,
+        cita.motivo,
+        usuario_id,
+    )
+    .await
 }
 
 #[command]
-pub async fn cancelar_cita(_id: String) -> Result<(), CitaError> {
-    Err(CitaError::Database("No implementado para SurrealDB aún".to_string()))
+pub async fn procesar_ingreso_cita(
+    cita_id: String,
+    gafete: Option<String>,
+    usuario_id: String,
+) -> Result<CitaResponse, CitaError> {
+    cita_service::procesar_ingreso_cita(cita_id, gafete, usuario_id).await
+}
+
+#[command]
+pub async fn cancelar_cita(id: String) -> Result<(), CitaError> {
+    cita_service::cancelar_cita(id).await
+}
+
+#[command]
+pub async fn completar_cita(id: String) -> Result<CitaResponse, CitaError> {
+    cita_service::completar_cita(id).await
 }

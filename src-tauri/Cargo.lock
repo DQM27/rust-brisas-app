@@ -869,6 +869,7 @@ dependencies = [
  "criterion",
  "dirs 5.0.1",
  "dotenvy",
+ "futures",
  "hex",
  "keyring 2.3.3",
  "keyring 3.6.3",

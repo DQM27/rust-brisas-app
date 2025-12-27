@@ -1,170 +1,225 @@
 // src/services/cita_service.rs
+// ==========================================
+// Refactored to use FETCH joins and new models
+// ==========================================
+
 use crate::db::surrealdb_cita_queries as db;
-use crate::domain::cita::{Cita, CitaPopulated, CreateCitaInput};
 use crate::domain::errors::CitaError;
+use crate::models::cita::{CitaCreateDTO, CitaResponse};
 use crate::models::visitante::CreateVisitanteInput;
 use crate::services::visitante_service;
-use chrono::Local;
+use chrono::{Local, Utc};
 use surrealdb::RecordId;
 
-pub async fn agendar_cita(
-    cita_input: CreateCitaInput,
-    visitante_input: Option<CreateVisitanteInput>,
-) -> Result<Cita, CitaError> {
-    // 1. Resolver Visitante (Existente o Crear)
-    let mut visitante_id: RecordId;
+// ==========================================
+// PUBLIC API
+// ==========================================
 
-    if !cita_input.visitante_id.is_empty() {
-        let id_str = cita_input.visitante_id.clone();
-        // Asumimos formato simple o completo
-        if id_str.contains(':') {
-            let parts: Vec<&str> = id_str.split(':').collect();
-            visitante_id = RecordId::from_table_key(parts[0], parts[1]);
+/// Agenda una nueva cita, opcionalmente creando un visitante si no existe
+pub async fn agendar_cita(
+    visitante_id_str: Option<String>,
+    visitante_input: Option<CreateVisitanteInput>,
+    fecha_cita: String,
+    anfitrion: String,
+    area_visitada: String,
+    motivo: String,
+    usuario_id_str: String,
+) -> Result<CitaResponse, CitaError> {
+    // 1. Resolver el usuario que registra
+    let usuario_id = parse_record_id(&usuario_id_str, "user")?;
+
+    // 2. Resolver Visitante (Existente o Crear)
+    let visitante_id: Option<RecordId> = if let Some(id_str) = visitante_id_str {
+        if !id_str.is_empty() {
+            Some(parse_record_id(&id_str, "visitante")?)
         } else {
-            visitante_id = RecordId::from_table_key("visitante", &id_str);
+            None
         }
     } else {
-        // Placeholder temporal, se reasignará abajo
-        visitante_id = RecordId::from_table_key("visitante", "temp");
-    }
+        None
+    };
 
-    if let Some(v_input) = visitante_input {
-        // Si viene input de visitante, buscamos por cédula o creamos
+    let final_visitante_id = if let Some(vid) = visitante_id {
+        Some(vid)
+    } else if let Some(v_input) = visitante_input {
+        // Buscar por cédula o crear
         let existente = visitante_service::get_visitante_by_cedula(&v_input.cedula)
             .await
             .map_err(|e| CitaError::Database(e.to_string()))?;
 
         match existente {
-            Some(v) => {
-                visitante_id =
-                    v.id.parse().unwrap_or(RecordId::from_table_key("visitante", "invalid"));
-            }
+            Some(v) => Some(parse_record_id(&v.id, "visitante")?),
             None => {
                 let nuevo = visitante_service::create_visitante(v_input)
                     .await
                     .map_err(|e| CitaError::Database(e.to_string()))?;
-                visitante_id =
-                    nuevo.id.parse().unwrap_or(RecordId::from_table_key("visitante", "invalid"));
+                Some(parse_record_id(&nuevo.id, "visitante")?)
             }
         }
-    }
+    } else {
+        None
+    };
 
-    if visitante_id.key().to_string() == "temp" {
-        return Err(CitaError::Validation("Visitante requerido y no proporcionado".to_string()));
-    }
+    // 3. Parse fecha
+    let fecha_inicio = parse_datetime(&fecha_cita)?;
 
-    // 2. Preparar payload para SurrealDB
-    // Usamos serde_json::json! para construir el objeto flexiblemente
-    // 2. Preparar payload para SurrealDB
-    let cita_json = serde_json::json!({
-        "visitante_id": visitante_id,
-        "usuario_id": RecordId::from_table_key("user", &cita_input.registrado_por),
-        "motivo": cita_input.motivo,
-        "fecha_inicio": cita_input.fecha_cita, // Mapeamos fecha_cita -> fecha_inicio en DB
-        "fecha_fin": cita_input.fecha_cita, // Duplicamos para simplificar
-        "anfitrion": cita_input.anfitrion,
-        "area_visitada": cita_input.area_visitada,
-        "estado": "PENDIENTE", // Case sensitive? Revisar enum
-        "activa": true
-    });
+    // 4. Construct DTO
+    let dto = CitaCreateDTO {
+        visitante_id: final_visitante_id,
+        usuario_id,
+        motivo,
+        fecha_inicio: fecha_inicio.clone(),
+        fecha_fin: fecha_inicio, // Same as inicio for now
+        anfitrion: Some(anfitrion),
+        area_visitada: Some(area_visitada),
+        visitante_nombre: None,
+        visitante_cedula: None,
+    };
 
-    // 3. Insertar
-    let nueva_cita = db::insert(cita_json)
+    // 5. Insertar
+    let nueva_cita = db::insert(dto).await.map_err(|e| CitaError::Database(e.to_string()))?;
+
+    // 6. Fetch the created cita with relations
+    let fetched = db::find_by_id_fetched(&nueva_cita.id)
         .await
         .map_err(|e| CitaError::Database(e.to_string()))?
-        .ok_or(CitaError::Database("Error creando cita".to_string()))?;
+        .ok_or(CitaError::Database("Error obteniendo cita creada".to_string()))?;
 
-    // 4. Mapear a Domain
-    Ok(Cita {
-        id: nueva_cita.id,
-        visitante_id: nueva_cita
-            .visitante_id
-            .unwrap_or(RecordId::from_table_key("visitante", "unknown")),
-        fecha_cita: nueva_cita.fecha_inicio, // Mapeo inverso
-        anfitrion: cita_input.anfitrion, // Recuperar de input pues db::Cita quizas no lo traiga struct
-        area_visitada: cita_input.area_visitada,
-        motivo: nueva_cita.motivo,
-        estado: nueva_cita.estado,
-        registrado_por: nueva_cita.usuario_id.to_string(), // Mapeo inverso
-        created_at: nueva_cita.created_at,
-        updated_at: nueva_cita.updated_at,
-    })
+    Ok(CitaResponse::from_fetched(fetched))
 }
 
-pub async fn get_citas_hoy() -> Result<Vec<CitaPopulated>, CitaError> {
+/// Obtiene las citas del día actual con datos de visitante y usuario pre-poblados
+pub async fn get_citas_hoy() -> Result<Vec<CitaResponse>, CitaError> {
     let now = Local::now();
     let hoy_inicio = now.format("%Y-%m-%dT00:00:00").to_string();
     let hoy_fin = now.format("%Y-%m-%dT23:59:59").to_string();
 
-    let citas = db::find_activas_by_fecha(&hoy_inicio, &hoy_fin)
+    let citas = db::find_activas_by_fecha_fetched(&hoy_inicio, &hoy_fin)
         .await
         .map_err(|e| CitaError::Database(e.to_string()))?;
 
-    let mut populated = Vec::new();
-    for c in citas {
-        let v = if let Some(vid) = &c.visitante_id {
-            visitante_service::get_visitante_by_id(&vid.to_string()).await.unwrap_or(None)
-        } else {
-            None
-        };
-        let v_ref = v.as_ref();
-
-        populated.push(CitaPopulated {
-            id: c.id.to_string(),
-            fecha_cita: c.fecha_inicio.to_string(),
-            anfitrion: "Desconocido".to_string(), // TODO: Agregar anfitrion a db::Cita struct
-            area_visitada: "Desconocido".to_string(), // TODO: Agregar area a db::Cita struct
-            motivo: c.motivo,
-            estado: c.estado,
-            visitante_id: c.visitante_id.map(|v| v.to_string()).unwrap_or_default(),
-            visitante_nombre: v_ref.map(|x| x.nombre.clone()).unwrap_or_default(),
-            visitante_apellido: v_ref.map(|x| x.apellido.clone()).unwrap_or_default(),
-            visitante_cedula: v_ref.map(|x| x.cedula.clone()).unwrap_or_default(),
-            visitante_nombre_completo: v_ref
-                .map(|x| format!("{} {}", x.nombre, x.apellido))
-                .unwrap_or_default(),
-            visitante_empresa: v_ref.and_then(|x| x.empresa.clone()),
-        });
-    }
-    Ok(populated)
+    // Ahora es trivial - FETCH ya nos trajo los datos del visitante y usuario
+    Ok(citas.into_iter().map(CitaResponse::from_fetched).collect())
 }
 
-pub async fn get_citas_pendientes() -> Result<Vec<CitaPopulated>, CitaError> {
-    // Reutiliza get_citas_hoy por simplicidad o expande rango
-    get_citas_hoy().await
+/// Obtiene todas las citas pendientes
+pub async fn get_citas_pendientes() -> Result<Vec<CitaResponse>, CitaError> {
+    let citas =
+        db::find_pendientes_fetched().await.map_err(|e| CitaError::Database(e.to_string()))?;
+
+    Ok(citas.into_iter().map(CitaResponse::from_fetched).collect())
 }
 
-pub async fn update_cita(
-    // Stub funcional: updates completos se manejarian similar a insert
-    _id: String,
-    _fecha: String,
-    _anf: String,
-    _area: String,
-    _mot: Option<String>,
-) -> Result<(), CitaError> {
-    // TODO: Implementar update real en queries
-    Ok(())
+/// Obtiene una cita por su ID
+pub async fn get_cita_by_id(id_str: String) -> Result<CitaResponse, CitaError> {
+    let id = parse_record_id(&id_str, "cita")?;
+
+    let cita = db::find_by_id_fetched(&id)
+        .await
+        .map_err(|e| CitaError::Database(e.to_string()))?
+        .ok_or(CitaError::NotFound)?;
+
+    Ok(CitaResponse::from_fetched(cita))
 }
 
-pub async fn procesar_ingreso_cita(
-    _id: String,
-    _gafete: String,
-    _usuario_id: String,
-) -> Result<String, CitaError> {
-    // 1. Obtener cita y visitante
-    // (Simplificado: asumimos que frontend pasa datos necesarios a registrar_ingreso,
-    // pero si solo pasa ID cita, aqui deberíamos buscarla.
-    // Por ahora, stub funcional de error si no se implementa flujo completo)
-    Err(CitaError::Database("Flujo procesar_ingreso_cita requiere refactor mayor".to_string()))
-}
-
+/// Cancela una cita
 pub async fn cancelar_cita(id_str: String) -> Result<(), CitaError> {
-    let id: RecordId = if id_str.contains(':') {
-        id_str.parse().map_err(|_| CitaError::Validation("ID inválido".into()))?
-    } else {
-        RecordId::from_table_key("cita", &id_str)
-    };
+    let id = parse_record_id(&id_str, "cita")?;
 
     db::cancel(&id).await.map_err(|e| CitaError::Database(e.to_string()))?;
+
     Ok(())
+}
+
+/// Marca una cita como completada (cuando el visitante ingresa)
+pub async fn completar_cita(id_str: String) -> Result<CitaResponse, CitaError> {
+    let id = parse_record_id(&id_str, "cita")?;
+
+    let cita = db::completar(&id)
+        .await
+        .map_err(|e| CitaError::Database(e.to_string()))?
+        .ok_or(CitaError::NotFound)?;
+
+    Ok(CitaResponse::from_fetched(cita))
+}
+
+/// Procesa el ingreso de una cita - convierte la cita en un registro de ingreso
+pub async fn procesar_ingreso_cita(
+    cita_id_str: String,
+    gafete_numero: Option<String>,
+    usuario_id_str: String,
+) -> Result<CitaResponse, CitaError> {
+    // 1. Obtener la cita con datos de visitante
+    let cita_id = parse_record_id(&cita_id_str, "cita")?;
+    let cita = db::find_by_id_fetched(&cita_id)
+        .await
+        .map_err(|e| CitaError::Database(e.to_string()))?
+        .ok_or(CitaError::NotFound)?;
+
+    // 2. Verificar que la cita esté pendiente
+    if cita.estado != "pendiente" {
+        return Err(CitaError::Validation(format!("La cita ya está en estado: {}", cita.estado)));
+    }
+
+    // 3. Preparar datos del ingreso desde la cita
+    let visitante = cita.visitante_id.as_ref();
+
+    let ingreso_input = crate::models::ingreso::CreateIngresoVisitaInput {
+        cedula: visitante.map(|v| v.cedula.clone()).unwrap_or_default(),
+        nombre: visitante.map(|v| v.nombre.clone()).unwrap_or_default(),
+        apellido: visitante.map(|v| v.apellido.clone()).unwrap_or_default(),
+        anfitrion: cita.anfitrion.clone().unwrap_or_default(),
+        area_visitada: cita.area_visitada.clone().unwrap_or_default(),
+        motivo_visita: cita.motivo.clone(),
+        tipo_autorizacion: "cita".to_string(),
+        modo_ingreso: "peatonal".to_string(),
+        gafete_numero,
+        vehiculo_placa: None,
+        observaciones: Some(format!("Ingreso desde cita #{}", cita_id_str)),
+        usuario_ingreso_id: usuario_id_str.clone(),
+    };
+
+    // 4. Registrar el ingreso
+    crate::services::ingreso_visita_service::registrar_ingreso(ingreso_input, usuario_id_str)
+        .await
+        .map_err(|e| CitaError::Database(e.to_string()))?;
+
+    // 5. Marcar la cita como completada
+    let completed = db::completar(&cita_id)
+        .await
+        .map_err(|e| CitaError::Database(e.to_string()))?
+        .ok_or(CitaError::Database("Error completando cita".to_string()))?;
+
+    Ok(CitaResponse::from_fetched(completed))
+}
+
+// ==========================================
+// HELPERS
+// ==========================================
+
+fn parse_record_id(id_str: &str, table: &str) -> Result<RecordId, CitaError> {
+    if id_str.contains(':') {
+        id_str.parse().map_err(|_| CitaError::Validation(format!("ID inválido: {}", id_str)))
+    } else {
+        Ok(RecordId::from_table_key(table, id_str))
+    }
+}
+
+fn parse_datetime(date_str: &str) -> Result<surrealdb::Datetime, CitaError> {
+    // Try to parse ISO 8601 format
+    if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(date_str) {
+        return Ok(surrealdb::Datetime::from(dt.with_timezone(&Utc)));
+    }
+
+    // Try simple date format
+    if let Ok(date) = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+        let dt = date
+            .and_hms_opt(12, 0, 0)
+            .ok_or(CitaError::Validation("Fecha inválida".to_string()))?;
+        return Ok(surrealdb::Datetime::from(chrono::DateTime::<Utc>::from_naive_utc_and_offset(
+            dt, Utc,
+        )));
+    }
+
+    Err(CitaError::Validation(format!("Formato de fecha inválido: {}", date_str)))
 }

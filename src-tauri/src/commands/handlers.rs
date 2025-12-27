@@ -71,10 +71,11 @@ macro_rules! register_handlers {
             commands::cita_commands::create_cita,
             commands::cita_commands::get_citas_hoy,
             commands::cita_commands::get_citas_pendientes,
-            commands::cita_commands::update_cita,
+            commands::cita_commands::get_cita_by_id,
             commands::cita_commands::procesar_ingreso_cita,
             commands::cita_commands::get_visitante_by_cedula,
             commands::cita_commands::cancelar_cita,
+            commands::cita_commands::completar_cita,
             // ==========================================
             // COMANDOS DE INGRESO VISITAS
             // ==========================================
