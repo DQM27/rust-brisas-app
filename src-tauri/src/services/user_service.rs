@@ -257,7 +257,7 @@ pub async fn update_user(
     }
     if let Some(v) = input.fecha_nacimiento {
         if !v.is_empty() {
-            dto.fecha_nacimiento = Some(v);
+            dto.fecha_nacimiento = Some(v.clone());
         }
     }
     if let Some(v) = input.telefono {

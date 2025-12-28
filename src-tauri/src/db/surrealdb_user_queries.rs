@@ -152,8 +152,12 @@ pub async fn find_by_email_with_password(
 
 pub async fn update(id: &RecordId, dto: UserUpdateDTO) -> Result<Option<User>, SurrealDbError> {
     let db = get_db().await?;
-    let result: Option<User> = db.update(id.clone()).merge(dto).await?;
-    Ok(result)
+    // Usamos SQL directo para MERGE para garantizar que funcione correctamente con campos opcionales
+    let sql = "UPDATE $id MERGE $content RETURN AFTER";
+    let mut result = db.query(sql).bind(("id", id.clone())).bind(("content", dto)).await?;
+
+    let updated: Option<User> = result.take(0)?;
+    Ok(updated)
 }
 
 /// Update password hash using native SurrealDB time::now()
