@@ -133,7 +133,7 @@ pub async fn validar_ingreso_contratista(
             .to_string()
             .parse()
             .unwrap_or_else(|_| chrono::Utc::now());
-        dt.format("%d-%m-%Y").to_string()
+        dt.format("%Y-%m-%d").to_string() // ISO format expected by motor_validacion
     };
 
     // 4. Motor de Validación
