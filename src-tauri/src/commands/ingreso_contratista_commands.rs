@@ -24,7 +24,12 @@ pub async fn create_ingreso_contratista(
     input: CreateIngresoContratistaInput,
     usuario_id: String,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
-    service::crear_ingreso_contratista(input, usuario_id).await
+    println!(">>> DEBUG create_ingreso_contratista called");
+    println!(">>> DEBUG input: {:?}", input);
+    println!(">>> DEBUG usuario_id: {}", usuario_id);
+    let result = service::crear_ingreso_contratista(input, usuario_id).await;
+    println!(">>> DEBUG result: {:?}", result);
+    result
 }
 
 // ==========================================

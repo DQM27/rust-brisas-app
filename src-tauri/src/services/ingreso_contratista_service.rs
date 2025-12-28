@@ -204,15 +204,17 @@ pub async fn crear_ingreso_contratista(
         None
     };
 
-    // 2. Validar Gafete si aplica
+    // 2. Validar Gafete si aplica (skip "S/G" = Sin Gafete)
     if let Some(ref g) = input.gafete_numero {
-        let tipo_g = input.gafete_tipo.as_deref().unwrap_or("contratista");
-        let disp = gafete_service::is_gafete_disponible(g, tipo_g)
-            .await
-            .map_err(|e| IngresoContratistaError::Gafete(e))?;
+        if g != "S/G" && !g.is_empty() {
+            let tipo_g = input.gafete_tipo.as_deref().unwrap_or("contratista");
+            let disp = gafete_service::is_gafete_disponible(g, tipo_g)
+                .await
+                .map_err(|e| IngresoContratistaError::Gafete(e))?;
 
-        if !disp {
-            return Err(IngresoContratistaError::GafeteNotAvailable);
+            if !disp {
+                return Err(IngresoContratistaError::GafeteNotAvailable);
+            }
         }
     }
 
