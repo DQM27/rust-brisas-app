@@ -10,6 +10,7 @@
 // SurrealDB → LIVE Stream → live_service → Tauri Events → Frontend
 //
 
+use crate::models::contratista::Contratista;
 use crate::models::lista_negra::ListaNegra;
 use crate::models::user::User;
 use crate::services::surrealdb_service::{get_surrealdb, SurrealDbError};
@@ -61,8 +62,7 @@ pub struct LiveNotificationPayload<T: Serialize> {
 pub mod events {
     pub const USER_CHANGED: &str = "user:changed";
     pub const LISTA_NEGRA_CHANGED: &str = "lista_negra:changed";
-    // Futura fase:
-    // pub const CONTRATISTA_CHANGED: &str = "contratista:changed";
+    pub const CONTRATISTA_CHANGED: &str = "contratista:changed";
 }
 
 // ==========================================
@@ -117,9 +117,18 @@ pub async fn start_live_subscriptions(app_handle: AppHandle) -> Result<(), Surre
     }
 
     // ==========================================
-    // FUTURAS FASES (deshabilitadas temporalmente)
+    // PHASE 3: Contratista subscription (tipada)
     // ==========================================
-    // Phase 3: contratista
+    {
+        let app_handle_clone = app_handle.clone();
+        let db_clone = db.clone();
+        tokio::spawn(async move {
+            if let Err(e) = subscribe_to_contratista(db_clone, app_handle_clone).await {
+                error!("❌ Error en suscripción LIVE para contratista: {}", e);
+            }
+        });
+        info!("✅ Suscripción LIVE iniciada para tabla: contratista");
+    }
 
     info!("📡 Todas las suscripciones LIVE iniciadas correctamente");
     Ok(())
@@ -266,5 +275,71 @@ async fn process_lista_negra_notification(
         .map_err(|e| SurrealDbError::Query(format!("Error emitiendo evento Tauri: {}", e)))?;
 
     info!("✅ Evento '{}' emitido al frontend", events::LISTA_NEGRA_CHANGED);
+    Ok(())
+}
+
+/// Suscripción tipada para tabla `contratista`
+async fn subscribe_to_contratista(
+    db: surrealdb::Surreal<surrealdb::engine::local::Db>,
+    app_handle: AppHandle,
+) -> Result<(), SurrealDbError> {
+    info!("🔄 Iniciando LIVE query para tabla: contratista");
+
+    // Crear la suscripción LIVE con tipo específico
+    let mut stream = db
+        .select("contratista")
+        .live()
+        .await
+        .map_err(|e| SurrealDbError::Query(format!("Error creando LIVE query: {}", e)))?;
+
+    info!("📡 Stream LIVE activo para tabla: contratista");
+
+    // Procesar notificaciones del stream
+    while let Some(result) = stream.next().await {
+        // Verificar si debemos detenernos
+        if SHOULD_STOP.load(Ordering::SeqCst) {
+            info!("🛑 Deteniendo LIVE query para tabla: contratista");
+            break;
+        }
+
+        match result {
+            Ok(notification) => {
+                if let Err(e) = process_contratista_notification(notification, &app_handle).await {
+                    error!("❌ Error procesando notificación para contratista: {}", e);
+                }
+            }
+            Err(e) => {
+                error!("❌ Error en stream LIVE para contratista: {}", e);
+                // Continuar intentando recibir notificaciones
+            }
+        }
+    }
+
+    warn!("⚠️ Stream LIVE terminado para tabla: contratista (esto no debería pasar en operación normal)");
+    Ok(())
+}
+
+/// Procesa una notificación de contratista y la emite como evento Tauri
+async fn process_contratista_notification(
+    notification: Notification<Contratista>,
+    app_handle: &AppHandle,
+) -> Result<(), SurrealDbError> {
+    let action = LiveAction::from(notification.action);
+
+    info!("📨 Notificación LIVE recibida: tabla=contratista, acción={:?}", action);
+
+    // Convertir Contratista a JSON Value para el frontend
+    let data = serde_json::to_value(&notification.data).map_err(|e| {
+        SurrealDbError::Query(format!("Error serializando contratista data: {}", e))
+    })?;
+
+    let payload = LiveNotificationPayload { action, table: "contratista".to_string(), data };
+
+    // Emitir evento a todos los listeners del frontend
+    app_handle
+        .emit(events::CONTRATISTA_CHANGED, &payload)
+        .map_err(|e| SurrealDbError::Query(format!("Error emitiendo evento Tauri: {}", e)))?;
+
+    info!("✅ Evento '{}' emitido al frontend", events::CONTRATISTA_CHANGED);
     Ok(())
 }
