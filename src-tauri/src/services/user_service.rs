@@ -256,7 +256,9 @@ pub async fn update_user(
         dto.numero_gafete = Some(v);
     }
     if let Some(v) = input.fecha_nacimiento {
-        dto.fecha_nacimiento = Some(v);
+        if !v.is_empty() {
+            dto.fecha_nacimiento = Some(v);
+        }
     }
     if let Some(v) = input.telefono {
         dto.telefono = Some(v);
