@@ -214,7 +214,7 @@ export async function crearIngreso(
                     observaciones: formData.observaciones || null,
                     usuarioIngresoId: usuarioId
                 },
-                usuarioId: usuarioId
+                usuario_id: usuarioId
             });
         } else if (tipo === 'proveedor') {
             return await invoke('crear_ingreso_proveedor_v2', {
