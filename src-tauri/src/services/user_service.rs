@@ -239,7 +239,15 @@ pub async fn update_user(
         dto.apellido = Some(domain::normalizar_nombre(apellido));
     }
     if let Some(ref role_id) = input.role_id {
-        dto.role = Some(RecordId::from_table_key("role", role_id));
+        // Fix: Handle empty strings and double prefix
+        if !role_id.trim().is_empty() {
+            // Avoid double wrapping if frontend sends "role:uuid"
+            let clean_id = role_id.strip_prefix("role:").unwrap_or(role_id);
+            info!("Actualizando rol de usuario a: '{}' (original input: '{}')", clean_id, role_id);
+            dto.role = Some(RecordId::from_table_key("role", clean_id));
+        } else {
+            info!("Input role_id vacío, ignorando actualización de rol.");
+        }
     }
     if let Some(pwd) = input.password {
         if !pwd.trim().is_empty() {
