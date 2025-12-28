@@ -3,28 +3,31 @@
 // Enterprise Quality SurrealDB Implementation
 // ==========================================
 
-use crate::models::ingreso::{Ingreso, IngresoCreateDTO, IngresoFetched, IngresoUpdateDTO};
+use crate::models::ingreso::{
+    IngresoUpdateDTO, IngresoVisita, IngresoVisitaCreateDTO, IngresoVisitaFetched,
+};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
-pub async fn insert(dto: IngresoCreateDTO) -> Result<IngresoFetched, SurrealDbError> {
+const TABLE: &str = "ingreso_visita";
+
+pub async fn insert(dto: IngresoVisitaCreateDTO) -> Result<IngresoVisitaFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    // CREATE doesn't support FETCH, so we need two queries
-    let created: Option<Ingreso> =
-        db.query("CREATE ingreso CONTENT $dto").bind(("dto", dto)).await?.take(0)?;
+    let created: Option<IngresoVisita> =
+        db.query(format!("CREATE {} CONTENT $dto", TABLE)).bind(("dto", dto)).await?.take(0)?;
 
     let ingreso = created.ok_or(SurrealDbError::TransactionError(
         "Error al insertar ingreso de visita".to_string(),
     ))?;
 
-    // Fetch with all relations
+    // Fetch relations
     let mut result = db
-        .query("SELECT * FROM $id FETCH usuario_ingreso, usuario_salida, vehiculo, contratista, contratista.empresa")
+        .query("SELECT * FROM $id FETCH usuario_ingreso, usuario_salida")
         .bind(("id", ingreso.id.clone()))
         .await?;
 
-    let fetched: Option<IngresoFetched> = result.take(0)?;
+    let fetched: Option<IngresoVisitaFetched> = result.take(0)?;
     fetched.ok_or(SurrealDbError::TransactionError(
         "Ingreso creado pero no se pudo obtener con FETCH".to_string(),
     ))
@@ -32,20 +35,14 @@ pub async fn insert(dto: IngresoCreateDTO) -> Result<IngresoFetched, SurrealDbEr
 
 pub async fn find_ingreso_abierto_by_cedula(
     cedula: &str,
-) -> Result<Option<IngresoFetched>, SurrealDbError> {
+) -> Result<Option<IngresoVisitaFetched>, SurrealDbError> {
     let db = get_db().await?;
 
     let mut result = db
-        .query(
-            r#"
-            SELECT * FROM ingreso 
-            WHERE cedula = $cedula 
-            AND tipo_ingreso = 'visita'
-            AND fecha_hora_salida IS NONE
-            FETCH usuario_ingreso, usuario_salida, vehiculo, contratista, contratista.empresa
-            LIMIT 1
-        "#,
-        )
+        .query(format!(
+            "SELECT * FROM {} WHERE cedula = $cedula AND fecha_hora_salida IS NONE LIMIT 1 FETCH usuario_ingreso, usuario_salida",
+            TABLE
+        ))
         .bind(("cedula", cedula.to_string()))
         .await?;
 
@@ -56,30 +53,27 @@ pub async fn update_salida(
     ingreso_id: &RecordId,
     usuario_salida_id: &RecordId,
     observaciones: Option<String>,
-) -> Result<IngresoFetched, SurrealDbError> {
+) -> Result<IngresoVisitaFetched, SurrealDbError> {
     let db = get_db().await?;
 
     let mut dto = IngresoUpdateDTO::default();
     dto.fecha_hora_salida = Some(surrealdb::Datetime::from(chrono::Utc::now()));
     dto.usuario_salida = Some(usuario_salida_id.clone());
-    dto.observaciones_salida = observaciones;
-    dto.updated_at = Some(surrealdb::Datetime::from(chrono::Utc::now()));
+    dto.observaciones = observaciones;
 
-    // UPDATE doesn't support FETCH, so we need two queries
-    let _: Option<Ingreso> = db
+    let _: Option<IngresoVisita> = db
         .query("UPDATE $id MERGE $dto")
         .bind(("id", ingreso_id.clone()))
         .bind(("dto", dto))
         .await?
         .take(0)?;
 
-    // Fetch with all relations
     let mut result = db
-        .query("SELECT * FROM $id FETCH usuario_ingreso, usuario_salida, vehiculo, contratista, contratista.empresa")
+        .query("SELECT * FROM $id FETCH usuario_ingreso, usuario_salida")
         .bind(("id", ingreso_id.clone()))
         .await?;
 
-    let fetched: Option<IngresoFetched> = result.take(0)?;
+    let fetched: Option<IngresoVisitaFetched> = result.take(0)?;
     fetched
         .ok_or(SurrealDbError::TransactionError("Error al registrar salida de visita".to_string()))
 }

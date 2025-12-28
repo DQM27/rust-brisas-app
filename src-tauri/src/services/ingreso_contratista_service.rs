@@ -115,7 +115,7 @@ pub async fn validar_ingreso_contratista(
         .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
 
     if let Some(ing) = ing_ab {
-        let resp = IngresoResponse::from_fetched(ing)
+        let resp = IngresoResponse::from_contratista_fetched(ing)
             .map_err(|e| IngresoContratistaError::Validation(e))?;
         return Ok(ValidacionIngresoResponse {
             puede_ingresar: false,
@@ -184,6 +184,7 @@ pub async fn crear_ingreso_contratista(
         RecordId::from_table_key("contratista", &input.contratista_id)
     };
 
+    // usuario_id already handled or will be handled below
     let usuario_id = if usuario_id_str.contains(':') {
         usuario_id_str.parse::<RecordId>().map_err(|_| {
             IngresoContratistaError::Validation("ID de usuario inválido".to_string())
@@ -192,22 +193,10 @@ pub async fn crear_ingreso_contratista(
         RecordId::from_table_key("user", &usuario_id_str)
     };
 
-    let vehiculo_id = if let Some(vid) = &input.vehiculo_id {
-        Some(if vid.contains(':') {
-            vid.parse::<RecordId>().map_err(|_| {
-                IngresoContratistaError::Validation("ID de vehículo inválido".to_string())
-            })?
-        } else {
-            RecordId::from_table_key("vehiculo", vid)
-        })
-    } else {
-        None
-    };
-
     // 2. Validar Gafete si aplica (skip "S/G" = Sin Gafete)
     if let Some(ref g) = input.gafete_numero {
         if g != "S/G" && !g.is_empty() {
-            let tipo_g = input.gafete_tipo.as_deref().unwrap_or("contratista");
+            let tipo_g = "contratista"; // Hardcoded for this service
             let disp = gafete_service::is_gafete_disponible(g, tipo_g)
                 .await
                 .map_err(|e| IngresoContratistaError::Gafete(e))?;
@@ -225,29 +214,17 @@ pub async fn crear_ingreso_contratista(
         .ok_or(IngresoContratistaError::ContratistaNotFound)?;
 
     // Construct DTO
-    let dto = crate::models::ingreso::IngresoCreateDTO {
-        contratista: Some(contratista.id.clone()),
-        cedula: contratista.cedula.clone(),
+    let dto = crate::models::ingreso::IngresoContratistaCreateDTO {
+        contratista: contratista.id.clone(),
         nombre: contratista.nombre.clone(),
         apellido: contratista.apellido.clone(),
-        empresa_nombre: contratista.empresa.nombre.clone(),
-        tipo_ingreso: "contratista".to_string(),
+        cedula: contratista.cedula.clone(),
         tipo_autorizacion: input.tipo_autorizacion,
         modo_ingreso: input.modo_ingreso,
-        vehiculo: vehiculo_id,
-        placa_temporal: None,
+        placa_vehiculo: input.placa_vehiculo,
         gafete_numero: input.gafete_numero,
-        gafete_tipo: input.gafete_tipo,
-        fecha_hora_ingreso: surrealdb::Datetime::from(chrono::Utc::now()),
         usuario_ingreso: usuario_id,
-        praind_vigente_al_ingreso: Some(
-            contratista.fecha_vencimiento_praind > surrealdb::Datetime::from(chrono::Utc::now()),
-        ),
-        estado_contratista_al_ingreso: Some(contratista.estado.as_str().to_string()),
         observaciones: input.observaciones,
-        anfitrion: None,
-        area_visitada: None,
-        motivo: None,
     };
 
     // 4. Insertar en DB
@@ -256,11 +233,11 @@ pub async fn crear_ingreso_contratista(
 
     // 5. Marcar gafete como en uso
     if let Some(ref g) = nuevo_ingreso.gafete_numero {
-        let tipo_g = nuevo_ingreso.gafete_tipo.as_deref().unwrap_or("contratista");
-        let _ = gafete_service::marcar_en_uso(g, tipo_g).await;
+        let _ = gafete_service::marcar_en_uso(g, "contratista").await;
     }
 
-    IngresoResponse::from_fetched(nuevo_ingreso).map_err(|e| IngresoContratistaError::Validation(e))
+    IngresoResponse::from_contratista_fetched(nuevo_ingreso)
+        .map_err(|e| IngresoContratistaError::Validation(e))
 }
 
 pub async fn registrar_salida(
@@ -292,12 +269,11 @@ pub async fn registrar_salida(
     // 2. Liberar gafete si se devolvió
     if input.devolvio_gafete {
         if let Some(ref g) = ingreso_actualizado.gafete_numero {
-            let tipo_g = ingreso_actualizado.gafete_tipo.as_deref().unwrap_or("contratista");
-            let _ = gafete_service::liberar_gafete(g, tipo_g).await;
+            let _ = gafete_service::liberar_gafete(g, "contratista").await;
         }
     }
 
-    IngresoResponse::from_fetched(ingreso_actualizado)
+    IngresoResponse::from_contratista_fetched(ingreso_actualizado)
         .map_err(|e| IngresoContratistaError::Validation(e))
 }
 

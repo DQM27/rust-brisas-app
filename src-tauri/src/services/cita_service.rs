@@ -170,13 +170,11 @@ pub async fn procesar_ingreso_cita(
         apellido: visitante.map(|v| v.apellido.clone()).unwrap_or_default(),
         anfitrion: cita.anfitrion.clone().unwrap_or_default(),
         area_visitada: cita.area_visitada.clone().unwrap_or_default(),
-        motivo_visita: cita.motivo.clone(),
-        tipo_autorizacion: "cita".to_string(),
-        modo_ingreso: "peatonal".to_string(),
+        motivo: cita.motivo.clone(),
+        modo_ingreso: "caminando".to_string(),
         gafete_numero,
-        vehiculo_placa: None,
+        placa_vehiculo: None,
         observaciones: Some(format!("Ingreso desde cita #{}", cita_id_str)),
-        usuario_ingreso_id: usuario_id_str.clone(),
     };
 
     // 4. Registrar el ingreso

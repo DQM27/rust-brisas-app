@@ -1,10 +1,12 @@
-// ==========================================
-// src/models/ingreso.rs
-// ==========================================
+// src/models/ingreso/mod.rs
+pub mod contratista;
+pub mod proveedor;
+pub mod visita;
 
-use crate::models::contratista::ContratistaFetched;
-use crate::models::user::User;
-use crate::models::vehiculo::VehiculoFetched;
+pub use contratista::*;
+pub use proveedor::*;
+pub use visita::*;
+
 use serde::{Deserialize, Serialize};
 use surrealdb::RecordId;
 
@@ -115,123 +117,8 @@ impl std::str::FromStr for ModoIngreso {
 }
 
 // ==========================================
-// MODELO DE DOMINIO
+// DTOs COMPARTIDOS
 // ==========================================
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Ingreso {
-    pub id: RecordId,
-    pub contratista: Option<RecordId>,
-    pub cedula: String,
-    pub nombre: String,
-    pub apellido: String,
-    pub empresa_nombre: String,
-    pub tipo_ingreso: String,
-    pub tipo_autorizacion: String,
-    pub modo_ingreso: String,
-    pub vehiculo: Option<RecordId>,
-    pub placa_temporal: Option<String>,
-    pub gafete_numero: Option<String>,
-    pub gafete_tipo: Option<String>,
-    pub fecha_hora_ingreso: surrealdb::Datetime,
-    pub fecha_hora_salida: Option<surrealdb::Datetime>,
-    pub tiempo_permanencia_minutos: Option<i64>,
-    pub usuario_ingreso: RecordId,
-    pub usuario_salida: Option<RecordId>,
-    pub praind_vigente_al_ingreso: Option<bool>,
-    pub estado_contratista_al_ingreso: Option<String>,
-    pub observaciones: Option<String>,
-    pub observaciones_salida: Option<String>,
-    pub anfitrion: Option<String>,
-    pub area_visitada: Option<String>,
-    pub motivo: Option<String>,
-    pub created_at: surrealdb::Datetime,
-    pub updated_at: surrealdb::Datetime,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IngresoFetched {
-    pub id: RecordId,
-    pub contratista: Option<ContratistaFetched>,
-    pub cedula: String,
-    pub nombre: String,
-    pub apellido: String,
-    pub empresa_nombre: String,
-    pub tipo_ingreso: String,
-    pub tipo_autorizacion: String,
-    pub modo_ingreso: String,
-    pub vehiculo: Option<VehiculoFetched>,
-    pub placa_temporal: Option<String>,
-    pub gafete_numero: Option<String>,
-    pub gafete_tipo: Option<String>,
-    pub fecha_hora_ingreso: surrealdb::Datetime,
-    pub fecha_hora_salida: Option<surrealdb::Datetime>,
-    pub tiempo_permanencia_minutos: Option<i64>,
-    pub usuario_ingreso: User,
-    pub usuario_salida: Option<User>,
-    pub praind_vigente_al_ingreso: Option<bool>,
-    pub estado_contratista_al_ingreso: Option<String>,
-    pub observaciones: Option<String>,
-    pub observaciones_salida: Option<String>,
-    pub anfitrion: Option<String>,
-    pub area_visitada: Option<String>,
-    pub motivo: Option<String>,
-    pub created_at: surrealdb::Datetime,
-    pub updated_at: surrealdb::Datetime,
-}
-
-// ==========================================
-// DTOs DE ENTRADA
-// ==========================================
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateIngresoContratistaInput {
-    pub contratista_id: String,
-    pub vehiculo_id: Option<String>,
-    pub gafete_numero: Option<String>,
-    pub gafete_tipo: Option<String>,
-    pub tipo_autorizacion: String,
-    pub modo_ingreso: String,
-    pub observaciones: Option<String>,
-    pub usuario_ingreso_id: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateIngresoVisitaInput {
-    pub cedula: String,
-    pub nombre: String,
-    pub apellido: String,
-    pub anfitrion: String,
-    pub area_visitada: String,
-    pub motivo_visita: String,
-    pub tipo_autorizacion: String,
-    pub modo_ingreso: String,
-    pub vehiculo_placa: Option<String>,
-    pub gafete_numero: Option<String>,
-    pub observaciones: Option<String>,
-    pub usuario_ingreso_id: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateIngresoProveedorInput {
-    pub cedula: String,
-    pub nombre: String,
-    pub apellido: String,
-    pub empresa_id: String,
-    pub area_visitada: String,
-    pub motivo: String,
-    pub tipo_autorizacion: String,
-    pub modo_ingreso: String,
-    pub vehiculo_placa: Option<String>,
-    pub gafete_numero: Option<String>,
-    pub observaciones: Option<String>,
-    pub usuario_ingreso_id: String,
-}
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "tipo", rename_all = "lowercase")]
@@ -250,51 +137,19 @@ pub struct RegistrarSalidaInput {
     pub observaciones_salida: Option<String>,
 }
 
-// ==========================================
-// DTO PARA PERSISTENCIA (Service -> DB)
-// ==========================================
-
-#[derive(Debug, Serialize)]
-pub struct IngresoCreateDTO {
-    pub contratista: Option<RecordId>,
-    pub cedula: String,
-    pub nombre: String,
-    pub apellido: String,
-    pub empresa_nombre: String,
-    pub tipo_ingreso: String,
-    pub tipo_autorizacion: String,
-    pub modo_ingreso: String,
-    pub vehiculo: Option<RecordId>,
-    pub placa_temporal: Option<String>,
-    pub gafete_numero: Option<String>,
-    pub gafete_tipo: Option<String>,
-    pub fecha_hora_ingreso: surrealdb::Datetime,
-    pub usuario_ingreso: RecordId,
-    pub praind_vigente_al_ingreso: Option<bool>,
-    pub estado_contratista_al_ingreso: Option<String>,
-    pub observaciones: Option<String>,
-    pub anfitrion: Option<String>,
-    pub area_visitada: Option<String>,
-    pub motivo: Option<String>,
-}
-
-#[derive(Debug, Serialize, Default)]
+#[derive(Debug, Serialize, Default, Clone)]
 pub struct IngresoUpdateDTO {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fecha_hora_salida: Option<surrealdb::Datetime>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub usuario_salida: Option<RecordId>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub observaciones_salida: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tiempo_permanencia_minutos: Option<i64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub updated_at: Option<surrealdb::Datetime>,
+    pub observaciones: Option<String>,
 }
 
-// ==========================================
-// DTOs DE SALIDA
-// ==========================================
+pub type IngresoContratistaUpdateDTO = IngresoUpdateDTO;
+pub type IngresoProveedorUpdateDTO = IngresoUpdateDTO;
+pub type IngresoVisitaUpdateDTO = IngresoUpdateDTO;
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -333,113 +188,73 @@ pub struct IngresoResponse {
     pub updated_at: String,
 }
 
-impl TryFrom<Ingreso> for IngresoResponse {
-    type Error = String;
-
-    fn try_from(i: Ingreso) -> Result<Self, Self::Error> {
+impl IngresoResponse {
+    pub fn from_contratista(i: IngresoContratista) -> Self {
         let esta_adentro = i.fecha_hora_salida.is_none();
         let tiene_gafete_asignado = i.gafete_numero.is_some();
 
-        let tiempo_permanencia_texto = i.tiempo_permanencia_minutos.map(|mins| {
-            let horas = mins / 60;
-            let minutos = mins % 60;
-            if horas > 0 {
-                format!("{}h {}m", horas, minutos)
-            } else {
-                format!("{}m", minutos)
-            }
-        });
-
-        let tipo_ingreso: TipoIngreso = i.tipo_ingreso.parse()?;
-        let tipo_autorizacion: TipoAutorizacion = i.tipo_autorizacion.parse()?;
-        let modo_ingreso: ModoIngreso = i.modo_ingreso.parse()?;
-
-        Ok(Self {
+        Self {
             id: i.id.to_string(),
-            contratista_id: i.contratista.as_ref().map(|t| t.to_string()),
+            contratista_id: Some(i.contratista.to_string()),
             cedula: i.cedula.clone(),
             nombre: i.nombre.clone(),
             apellido: i.apellido.clone(),
             nombre_completo: format!("{} {}", i.nombre, i.apellido),
-            empresa_nombre: i.empresa_nombre,
-            tipo_ingreso: tipo_ingreso.clone(),
-            tipo_ingreso_display: tipo_ingreso.display().to_string(),
-            tipo_autorizacion: tipo_autorizacion.clone(),
-            tipo_autorizacion_display: match tipo_autorizacion {
-                TipoAutorizacion::Praind => "PRAIND",
-                TipoAutorizacion::Correo => "Correo",
-            }
-            .to_string(),
-            modo_ingreso: modo_ingreso.clone(),
-            modo_ingreso_display: modo_ingreso.display().to_string(),
-            vehiculo_id: i.vehiculo.as_ref().map(|t| t.to_string()),
-            vehiculo_placa: None,
-            placa_temporal: i.placa_temporal,
+            empresa_nombre: String::new(),
+            tipo_ingreso: TipoIngreso::Contratista,
+            tipo_ingreso_display: "Contratista".to_string(),
+            tipo_autorizacion: i.tipo_autorizacion.parse().unwrap_or(TipoAutorizacion::Praind),
+            tipo_autorizacion_display: i.tipo_autorizacion.to_uppercase(),
+            modo_ingreso: i.modo_ingreso.parse().unwrap_or(ModoIngreso::Caminando),
+            modo_ingreso_display: i.modo_ingreso.clone(),
+            vehiculo_id: None,
+            vehiculo_placa: i.placa_vehiculo.clone(),
+            placa_temporal: None,
             gafete_numero: i.gafete_numero,
             fecha_hora_ingreso: i.fecha_hora_ingreso.to_string(),
             fecha_hora_salida: i.fecha_hora_salida.map(|d| d.to_string()),
-            tiempo_permanencia_minutos: i.tiempo_permanencia_minutos,
-            tiempo_permanencia_texto,
+            tiempo_permanencia_minutos: None,
+            tiempo_permanencia_texto: None,
             usuario_ingreso_id: i.usuario_ingreso.to_string(),
             usuario_ingreso_nombre: String::new(),
             usuario_salida_id: i.usuario_salida.as_ref().map(|t| t.to_string()),
             usuario_salida_nombre: None,
-            praind_vigente_al_ingreso: i.praind_vigente_al_ingreso,
-            estado_contratista_al_ingreso: i.estado_contratista_al_ingreso,
+            praind_vigente_al_ingreso: None,
+            estado_contratista_al_ingreso: None,
             observaciones: i.observaciones,
             esta_adentro,
             tiene_gafete_asignado,
             created_at: i.created_at.to_string(),
             updated_at: i.updated_at.to_string(),
-        })
+        }
     }
-}
 
-impl IngresoResponse {
-    pub fn from_fetched(i: IngresoFetched) -> Result<Self, String> {
+    pub fn from_contratista_fetched(i: IngresoContratistaFetched) -> Result<Self, String> {
         let esta_adentro = i.fecha_hora_salida.is_none();
         let tiene_gafete_asignado = i.gafete_numero.is_some();
 
-        let tiempo_permanencia_texto = i.tiempo_permanencia_minutos.map(|mins| {
-            let horas = mins / 60;
-            let minutos = mins % 60;
-            if horas > 0 {
-                format!("{}h {}m", horas, minutos)
-            } else {
-                format!("{}m", minutos)
-            }
-        });
-
-        let tipo_ingreso: TipoIngreso = i.tipo_ingreso.parse()?;
-        let tipo_autorizacion: TipoAutorizacion = i.tipo_autorizacion.parse()?;
-        let modo_ingreso: ModoIngreso = i.modo_ingreso.parse()?;
-
         Ok(Self {
             id: i.id.to_string(),
-            contratista_id: i.contratista.as_ref().map(|t| t.id.to_string()),
+            contratista_id: Some(i.contratista.id.to_string()),
             cedula: i.cedula.clone(),
             nombre: i.nombre.clone(),
             apellido: i.apellido.clone(),
             nombre_completo: format!("{} {}", i.nombre, i.apellido),
-            empresa_nombre: i.empresa_nombre,
-            tipo_ingreso: tipo_ingreso.clone(),
-            tipo_ingreso_display: tipo_ingreso.display().to_string(),
-            tipo_autorizacion: tipo_autorizacion.clone(),
-            tipo_autorizacion_display: match tipo_autorizacion {
-                TipoAutorizacion::Praind => "PRAIND",
-                TipoAutorizacion::Correo => "Correo",
-            }
-            .to_string(),
-            modo_ingreso: modo_ingreso.clone(),
-            modo_ingreso_display: modo_ingreso.display().to_string(),
-            vehiculo_id: i.vehiculo.as_ref().map(|t| t.id.to_string()),
-            vehiculo_placa: i.vehiculo.as_ref().map(|v| v.placa.clone()),
-            placa_temporal: i.placa_temporal,
+            empresa_nombre: i.contratista.empresa.nombre.clone(),
+            tipo_ingreso: TipoIngreso::Contratista,
+            tipo_ingreso_display: "Contratista".to_string(),
+            tipo_autorizacion: i.tipo_autorizacion.parse().unwrap_or(TipoAutorizacion::Praind),
+            tipo_autorizacion_display: i.tipo_autorizacion.to_uppercase(),
+            modo_ingreso: i.modo_ingreso.parse().unwrap_or(ModoIngreso::Caminando),
+            modo_ingreso_display: i.modo_ingreso.clone(),
+            vehiculo_id: None,
+            vehiculo_placa: i.placa_vehiculo.clone(),
+            placa_temporal: None,
             gafete_numero: i.gafete_numero,
             fecha_hora_ingreso: i.fecha_hora_ingreso.to_string(),
             fecha_hora_salida: i.fecha_hora_salida.map(|d| d.to_string()),
-            tiempo_permanencia_minutos: i.tiempo_permanencia_minutos,
-            tiempo_permanencia_texto,
+            tiempo_permanencia_minutos: None,
+            tiempo_permanencia_texto: None,
             usuario_ingreso_id: i.usuario_ingreso.id.to_string(),
             usuario_ingreso_nombre: format!(
                 "{} {}",
@@ -450,14 +265,106 @@ impl IngresoResponse {
                 .usuario_salida
                 .as_ref()
                 .map(|u| format!("{} {}", u.nombre, u.apellido)),
-            praind_vigente_al_ingreso: i.praind_vigente_al_ingreso,
-            estado_contratista_al_ingreso: i.estado_contratista_al_ingreso,
+            praind_vigente_al_ingreso: None,
+            estado_contratista_al_ingreso: None,
             observaciones: i.observaciones,
             esta_adentro,
             tiene_gafete_asignado,
             created_at: i.created_at.to_string(),
             updated_at: i.updated_at.to_string(),
         })
+    }
+
+    pub fn from_visita_fetched(i: IngresoVisitaFetched) -> Self {
+        let esta_adentro = i.fecha_hora_salida.is_none();
+        let tiene_gafete_asignado = i.gafete_numero.is_some();
+
+        Self {
+            id: i.id.to_string(),
+            contratista_id: None,
+            cedula: i.cedula.clone(),
+            nombre: i.nombre.clone(),
+            apellido: i.apellido.clone(),
+            nombre_completo: format!("{} {}", i.nombre, i.apellido),
+            empresa_nombre: String::new(),
+            tipo_ingreso: TipoIngreso::Visita,
+            tipo_ingreso_display: "Visita".to_string(),
+            tipo_autorizacion: TipoAutorizacion::Correo,
+            tipo_autorizacion_display: "Visita".to_string(),
+            modo_ingreso: i.modo_ingreso.parse().unwrap_or(ModoIngreso::Caminando),
+            modo_ingreso_display: i.modo_ingreso.clone(),
+            vehiculo_id: None,
+            vehiculo_placa: i.placa_vehiculo.clone(),
+            placa_temporal: None,
+            gafete_numero: i.gafete_numero,
+            fecha_hora_ingreso: i.fecha_hora_ingreso.to_string(),
+            fecha_hora_salida: i.fecha_hora_salida.map(|d| d.to_string()),
+            tiempo_permanencia_minutos: None,
+            tiempo_permanencia_texto: None,
+            usuario_ingreso_id: i.usuario_ingreso.id.to_string(),
+            usuario_ingreso_nombre: format!(
+                "{} {}",
+                i.usuario_ingreso.nombre, i.usuario_ingreso.apellido
+            ),
+            usuario_salida_id: i.usuario_salida.as_ref().map(|t| t.id.to_string()),
+            usuario_salida_nombre: i
+                .usuario_salida
+                .as_ref()
+                .map(|u| format!("{} {}", u.nombre, u.apellido)),
+            praind_vigente_al_ingreso: None,
+            estado_contratista_al_ingreso: None,
+            observaciones: i.observaciones,
+            esta_adentro,
+            tiene_gafete_asignado,
+            created_at: i.created_at.to_string(),
+            updated_at: i.updated_at.to_string(),
+        }
+    }
+
+    pub fn from_proveedor_fetched(i: IngresoProveedorFetched) -> Self {
+        let esta_adentro = i.fecha_hora_salida.is_none();
+        let tiene_gafete_asignado = i.gafete_numero.is_some();
+
+        Self {
+            id: i.id.to_string(),
+            contratista_id: None,
+            cedula: i.cedula.clone(),
+            nombre: i.nombre.clone(),
+            apellido: i.apellido.clone(),
+            nombre_completo: format!("{} {}", i.nombre, i.apellido),
+            empresa_nombre: i.proveedor.empresa.nombre.clone(),
+            tipo_ingreso: TipoIngreso::Proveedor,
+            tipo_ingreso_display: "Proveedor".to_string(),
+            tipo_autorizacion: TipoAutorizacion::Correo,
+            tipo_autorizacion_display: "Proveedor".to_string(),
+            modo_ingreso: i.modo_ingreso.parse().unwrap_or(ModoIngreso::Caminando),
+            modo_ingreso_display: i.modo_ingreso.clone(),
+            vehiculo_id: None,
+            vehiculo_placa: i.placa_vehiculo.clone(),
+            placa_temporal: None,
+            gafete_numero: i.gafete_numero,
+            fecha_hora_ingreso: i.fecha_hora_ingreso.to_string(),
+            fecha_hora_salida: i.fecha_hora_salida.map(|d| d.to_string()),
+            tiempo_permanencia_minutos: None,
+            tiempo_permanencia_texto: None,
+            usuario_ingreso_id: i.usuario_ingreso.id.to_string(),
+            usuario_ingreso_nombre: format!(
+                "{} {}",
+                i.usuario_ingreso.nombre, i.usuario_ingreso.apellido
+            ),
+            usuario_salida_id: i.usuario_salida.as_ref().map(|t| t.id.to_string()),
+            usuario_salida_nombre: i
+                .usuario_salida
+                .as_ref()
+                .map(|u| format!("{} {}", u.nombre, u.apellido)),
+            praind_vigente_al_ingreso: None,
+            estado_contratista_al_ingreso: None,
+            observaciones: i.observaciones,
+            esta_adentro,
+            tiene_gafete_asignado,
+            created_at: i.created_at.to_string(),
+            updated_at: i.updated_at.to_string(),
+        }
     }
 }
 

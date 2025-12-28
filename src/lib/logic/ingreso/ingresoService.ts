@@ -203,16 +203,21 @@ export async function crearIngreso(
 
     try {
         if (tipo === 'contratista') {
+            // Resolve vehicle plate from ID if possible
+            let placaVehiculo = null;
+            if (formData.vehiculoId && extraData?.vehiculos) {
+                const v = extraData.vehiculos.find((v: any) => v.id === formData.vehiculoId);
+                if (v) placaVehiculo = v.placa;
+            }
+
             const payload = {
                 input: {
                     contratistaId: candidateId,
                     gafeteNumero: formData.gafete,
-                    gafeteTipo: 'contratista',
-                    vehiculoId: formData.vehiculoId || null,
+                    placaVehiculo: placaVehiculo,
                     tipoAutorizacion: formData.tipoAutorizacion || 'praind',
                     modoIngreso: formData.modoIngreso || 'caminando',
                     observaciones: formData.observaciones || null,
-                    usuarioIngresoId: usuarioId
                 },
                 usuarioId: usuarioId
             };
@@ -221,14 +226,18 @@ export async function crearIngreso(
         } else if (tipo === 'proveedor') {
             return await invoke('crear_ingreso_proveedor_v2', {
                 input: {
-                    proveedor_id: candidateId,
-                    gafete: formData.gafete,
-                    vehiculo_id: formData.vehiculoId || null,
+                    proveedorId: candidateId,
+                    nombre: extraData.nombre,
+                    apellido: extraData.apellido,
+                    cedula: extraData.cedula,
+                    areaVisitada: formData.areaVisitada || extraData.areaVisitada || '',
+                    motivo: formData.motivo || extraData.motivo || 'Proveedor',
+                    modoIngreso: formData.modoIngreso || 'caminando',
+                    placaVehiculo: formData.vehiculoId, // For proveedor, usually passed directly
+                    gafeteNumero: formData.gafete,
                     observaciones: formData.observaciones || null,
-                    autorizado_por: formData.esExcepcional ? formData.autorizadoPor : null,
-                    motivo: formData.esExcepcional ? formData.motivoExcepcional : null,
-                    guia_remision: extraData?.guiaRemision || null
-                }
+                },
+                usuarioId: usuarioId
             });
         } else if (tipo === 'visita') {
             if (!extraData || !extraData.cedula) {
@@ -242,13 +251,13 @@ export async function crearIngreso(
                     apellido: extraData.apellido,
                     anfitrion: extraData.anfitrion,
                     areaVisitada: extraData.areaVisitada,
-                    motivoVisita: extraData.motivo || 'Visita',
-                    tipoAutorizacion: formData.tipoAutorizacion || 'correo',
+                    motivo: extraData.motivo || 'Visita',
                     modoIngreso: formData.modoIngreso || 'caminando',
+                    placaVehiculo: null, // Visitas usually don't have vehicles in this form yet
                     gafeteNumero: formData.gafete,
                     observaciones: formData.observaciones || null,
-                    usuarioIngresoId: usuarioId,
-                }
+                },
+                usuarioId: usuarioId
             });
         }
     } catch (error) {

@@ -22,7 +22,7 @@ fn parse_ingreso_id(id_str: &str) -> RecordId {
         let parts: Vec<&str> = id_str.split(':').collect();
         RecordId::from_table_key(parts[0], parts[1])
     } else {
-        RecordId::from_table_key("ingreso", id_str)
+        RecordId::from_table_key("ingreso_contratista", id_str)
     }
 }
 
@@ -38,7 +38,7 @@ pub async fn get_all_ingresos_with_stats() -> Result<IngresoListResponse, Ingres
 
     let mut responses = Vec::with_capacity(results.len());
     for ingreso in results {
-        if let Ok(response) = IngresoResponse::from_fetched(ingreso) {
+        if let Ok(response) = IngresoResponse::from_contratista_fetched(ingreso) {
             responses.push(response);
         }
     }
@@ -56,7 +56,7 @@ pub async fn get_ingresos_abiertos() -> Result<Vec<IngresoResponse>, IngresoGene
 
     let mut responses = Vec::with_capacity(results.len());
     for ingreso in results {
-        if let Ok(response) = IngresoResponse::from_fetched(ingreso) {
+        if let Ok(response) = IngresoResponse::from_contratista_fetched(ingreso) {
             responses.push(response);
         }
     }
@@ -73,7 +73,7 @@ pub async fn get_ingreso_by_id(
         None => return Ok(None),
     };
 
-    let response = IngresoResponse::from_fetched(ingreso)
+    let response = IngresoResponse::from_contratista_fetched(ingreso)
         .map_err(|e| IngresoGeneralError::DataProcessing(e))?;
 
     Ok(Some(response))
@@ -88,7 +88,7 @@ pub async fn get_ingreso_by_gafete(
         None => return Ok(None),
     };
 
-    let response = IngresoResponse::from_fetched(ingreso)
+    let response = IngresoResponse::from_contratista_fetched(ingreso)
         .map_err(|e| IngresoGeneralError::DataProcessing(e))?;
 
     Ok(Some(response))
@@ -103,7 +103,7 @@ pub async fn get_salidas_en_rango(
 
     let mut responses = Vec::with_capacity(results.len());
     for ingreso in results {
-        if let Ok(response) = IngresoResponse::from_fetched(ingreso) {
+        if let Ok(response) = IngresoResponse::from_contratista_fetched(ingreso) {
             responses.push(response);
         }
     }

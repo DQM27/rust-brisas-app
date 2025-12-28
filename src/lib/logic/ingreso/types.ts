@@ -72,4 +72,6 @@ export interface FinalizarIngresoForm {
     // Campos específicos
     autorizadoPor?: string; // Para excepcional
     motivoExcepcional?: string; // Para excepcional
+    areaVisitada?: string;
+    motivo?: string;
 }
