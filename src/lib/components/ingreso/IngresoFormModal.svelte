@@ -212,6 +212,19 @@
               >
                 <span class="font-medium">✓ Autorizado para ingresar</span>
               </div>
+
+              <!-- Alertas/Warnings (amarillo) -->
+              {#if validationResult.alertas && validationResult.alertas.length > 0}
+                <div class="mt-2 space-y-1">
+                  {#each validationResult.alertas as alerta}
+                    <div
+                      class="flex items-center gap-2 text-sm text-amber-400 bg-amber-500 bg-opacity-10 px-3 py-2 rounded-md border border-amber-500/20"
+                    >
+                      <span>{alerta}</span>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
             {:else}
               <div
                 class="flex items-center gap-2 text-sm text-error bg-error bg-opacity-10 px-3 py-2 rounded-md"
