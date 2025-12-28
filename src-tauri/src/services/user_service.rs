@@ -49,14 +49,17 @@ pub async fn create_user(
     }
 
     // 4. Determinar rol (default: Guardia)
+    // 4. Determinar rol (default: Guardia)
     // Fix: Clone Option, filter out empty strings, then default.
-    let role_id_str = input
+    let raw_role_id = input
         .role_id
         .clone()
         .filter(|s| !s.trim().is_empty())
         .unwrap_or_else(|| ROLE_GUARDIA_ID.to_string());
 
-    let role_record = RecordId::from_table_key("role", &role_id_str);
+    // Fix: Remove "role:" prefix if present to avoid double wrapping
+    let role_id_str = raw_role_id.strip_prefix("role:").unwrap_or(&raw_role_id);
+    let role_record = RecordId::from_table_key("role", role_id_str);
 
     // 5. Generar o usar contraseña
     let (password_str, must_change_password) = match input.password {
