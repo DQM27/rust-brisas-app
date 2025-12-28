@@ -291,8 +291,8 @@
               : 'text-xl font-medium tracking-wide opacity-90 mt-6'}"
         >
           {isBirthday
-            ? "Te desea el equipo de Brisas App 🎉"
-            : "Brisas App - Sistema Integral de Control de Acceso"}
+            ? "Te desea el equipo de Mega Brisas 🎉"
+            : "Mega Brisas - Sistema Integral de Control de Acceso"}
         </p>
       </div>
     {/if}

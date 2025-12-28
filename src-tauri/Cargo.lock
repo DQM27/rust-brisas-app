@@ -857,58 +857,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "brisas-app"
-version = "0.1.0"
-dependencies = [
- "argon2",
- "async-trait",
- "base64 0.21.7",
- "calamine",
- "chacha20poly1305",
- "chrono",
- "criterion",
- "dirs 5.0.1",
- "dotenvy",
- "futures",
- "hex",
- "image",
- "keyring 2.3.3",
- "keyring 3.6.3",
- "log",
- "mac_address",
- "mimalloc",
- "once_cell",
- "rand 0.8.5",
- "regex",
- "rust_xlsxwriter",
- "secret-service 4.0.0",
- "serde",
- "serde_json",
- "serde_with",
- "shellexpand",
- "surrealdb",
- "sysinfo 0.30.13",
- "tantivy",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-log",
- "tauri-plugin-opener",
- "tauri-plugin-single-instance",
- "tauri-plugin-updater",
- "thiserror 2.0.17",
- "tokio",
- "toml 0.8.2",
- "ttf-parser 0.24.1",
- "typst",
- "typst-pdf",
- "unicode-normalization",
- "uuid",
- "winapi",
- "windows 0.58.0",
-]
-
-[[package]]
 name = "brotli"
 version = "8.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4481,6 +4429,58 @@ checksum = "dbefd235b0aadd181626f281e1d684e116972988c14c264e42069d5e8a5775cc"
 dependencies = [
  "instant",
  "log",
+]
+
+[[package]]
+name = "mega-brisas"
+version = "1.0.0-alpha"
+dependencies = [
+ "argon2",
+ "async-trait",
+ "base64 0.21.7",
+ "calamine",
+ "chacha20poly1305",
+ "chrono",
+ "criterion",
+ "dirs 5.0.1",
+ "dotenvy",
+ "futures",
+ "hex",
+ "image",
+ "keyring 2.3.3",
+ "keyring 3.6.3",
+ "log",
+ "mac_address",
+ "mimalloc",
+ "once_cell",
+ "rand 0.8.5",
+ "regex",
+ "rust_xlsxwriter",
+ "secret-service 4.0.0",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "shellexpand",
+ "surrealdb",
+ "sysinfo 0.30.13",
+ "tantivy",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-log",
+ "tauri-plugin-opener",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-updater",
+ "thiserror 2.0.17",
+ "tokio",
+ "toml 0.8.2",
+ "ttf-parser 0.24.1",
+ "typst",
+ "typst-pdf",
+ "unicode-normalization",
+ "uuid",
+ "winapi",
+ "windows 0.58.0",
 ]
 
 [[package]]

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Brisas App",
-  "version": "0.1.0",
-  "identifier": "com.femprobrisas.brisas-app",
+  "productName": "Mega Brisas",
+  "version": "1.0.0-alpha",
+  "identifier": "com.femprobrisas.mega-brisas",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Brisas App",
+        "title": "Mega Brisas",
         "width": 800,
         "height": 600,
         "visible": false

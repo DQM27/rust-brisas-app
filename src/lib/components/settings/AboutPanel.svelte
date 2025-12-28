@@ -9,7 +9,7 @@
     <!-- Header Section -->
     <div class="text-center space-y-4 mb-10">
       <h1 class="text-4xl font-extrabold tracking-tight">
-        Acerca de Brisas App
+        Acerca de Mega Brisas
       </h1>
       <p class="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto">
         Gestión integral de accesos y control de contratistas.
@@ -34,7 +34,7 @@
         <!-- Body -->
         <div class="p-6 space-y-6 text-sm">
           <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
-            Brisas App es una plataforma robusta construida con tecnologías de
+            Mega Brisas es una plataforma robusta construida con tecnologías de
             alto rendimiento para garantizar la eficiencia operativa.
           </p>
 

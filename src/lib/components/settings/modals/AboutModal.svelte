@@ -3,6 +3,7 @@
   import { X, Info, Code2, Globe, Users } from "lucide-svelte";
   import { scale } from "svelte/transition";
   import { onMount, onDestroy } from "svelte";
+  import { APP_CONFIG } from "$lib/config/app";
 
   interface Props {
     show: boolean;
@@ -85,10 +86,10 @@
       <!-- Body -->
       <div class="pb-8 px-6 text-center">
         <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-1">
-          Brisas App
+          {APP_CONFIG.name}
         </h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 font-medium">
-          Sistema ERP
+          {APP_CONFIG.description}
         </p>
 
         <div class="space-y-4">
@@ -116,7 +117,8 @@
             >
             <span
               class="font-mono text-xs font-medium text-gray-900 dark:text-gray-200"
-              >v1.2.0</span
+              >{APP_CONFIG.version}</span
+            >
             >
           </div>
 
@@ -174,7 +176,7 @@
 
 <style>
   .credits-scroll {
-    animation: scroll-up 30s linear infinite;
+    animation: scroll-up 50s linear infinite;
   }
 
   @keyframes scroll-up {

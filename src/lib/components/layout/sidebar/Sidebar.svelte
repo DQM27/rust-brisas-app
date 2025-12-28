@@ -567,7 +567,7 @@
               onclick={() =>
                 handleSettingsAction(() => (showAboutModal = true))}
             >
-              Acerca de Brisas App
+              Acerca de Mega Brisas
             </button>
           </div>
         {/if}

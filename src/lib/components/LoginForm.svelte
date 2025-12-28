@@ -120,7 +120,7 @@
   <form onsubmit={preventDefault(handleSubmit)} class="flex flex-col gap-6">
     <div class="text-center">
       <h1 class="text-3xl font-bold text-primary">Bienvenido</h1>
-      <p class="text-sm text-tertiary mt-2">Inicia sesión en Brisas App</p>
+      <p class="text-sm text-tertiary mt-2">Inicia sesión en Mega Brisas</p>
     </div>
 
     <!-- Email -->
