@@ -7,24 +7,13 @@ use crate::models::vehiculo::{Vehiculo, VehiculoCreateDTO, VehiculoFetched, Vehi
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
-pub async fn insert(dto: VehiculoCreateDTO) -> Result<VehiculoFetched, SurrealDbError> {
+pub async fn insert(dto: VehiculoCreateDTO) -> Result<Vehiculo, SurrealDbError> {
     let db = get_db().await?;
 
     let created: Option<Vehiculo> =
         db.query("CREATE vehiculo CONTENT $dto").bind(("dto", dto)).await?.take(0)?;
 
-    let vehiculo = created
-        .ok_or(SurrealDbError::TransactionError("Error al insertar vehículo".to_string()))?;
-
-    let mut result = db
-        .query("SELECT * FROM $id FETCH propietario, propietario.empresa")
-        .bind(("id", vehiculo.id.clone()))
-        .await?;
-
-    let fetched: Option<VehiculoFetched> = result.take(0)?;
-    fetched.ok_or(SurrealDbError::TransactionError(
-        "Vehículo creado pero no se pudo obtener con FETCH".to_string(),
-    ))
+    created.ok_or(SurrealDbError::TransactionError("Error al insertar vehículo".to_string()))
 }
 
 pub async fn find_by_id(id: &RecordId) -> Result<Option<Vehiculo>, SurrealDbError> {

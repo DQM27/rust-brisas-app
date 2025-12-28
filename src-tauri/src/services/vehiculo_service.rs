@@ -90,7 +90,7 @@ pub async fn create_vehiculo(
     };
 
     let vehiculo_creado = db::insert(dto).await.map_err(map_db_error)?;
-    Ok(VehiculoResponse::from_fetched(vehiculo_creado))
+    Ok(VehiculoResponse::from(vehiculo_creado))
 }
 
 pub async fn get_vehiculo_by_id(id_str: &str) -> Result<VehiculoResponse, VehiculoError> {
