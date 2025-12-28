@@ -214,7 +214,7 @@ export async function crearIngreso(
                     observaciones: formData.observaciones || null,
                     usuarioIngresoId: usuarioId
                 },
-                usuario_id: usuarioId
+                usuarioId: usuarioId
             };
             console.log('[IngresoService] >>> Payload to send:', JSON.stringify(payload, null, 2));
             return await invoke('create_ingreso_contratista', payload);
