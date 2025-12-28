@@ -102,11 +102,11 @@ pub async fn count_by_placa(placa: &str) -> Result<i64, SurrealDbError> {
 
 pub async fn find_by_propietario(
     propietario_id: &RecordId,
-) -> Result<Vec<VehiculoFetched>, SurrealDbError> {
+) -> Result<Vec<Vehiculo>, SurrealDbError> {
     let db = get_db().await?;
 
     let mut result = db
-        .query("SELECT * FROM vehiculo WHERE propietario = $propietario AND is_active = true FETCH propietario, propietario.empresa")
+        .query("SELECT * FROM vehiculo WHERE propietario = $propietario AND is_active = true")
         .bind(("propietario", propietario_id.clone()))
         .await?;
     Ok(result.take(0)?)

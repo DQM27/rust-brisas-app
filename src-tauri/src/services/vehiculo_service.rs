@@ -148,7 +148,7 @@ pub async fn get_vehiculos_by_propietario(
     let vehiculos = db::find_by_propietario(&id).await.map_err(map_db_error)?;
     let mut vehiculo_responses = Vec::with_capacity(vehiculos.len());
     for vehiculo in vehiculos {
-        vehiculo_responses.push(VehiculoResponse::from_fetched(vehiculo));
+        vehiculo_responses.push(VehiculoResponse::from(vehiculo));
     }
     Ok(vehiculo_responses)
 }
