@@ -126,14 +126,23 @@ pub async fn validar_ingreso_contratista(
             ingreso_abierto: Some(resp),
         });
     }
-
+    // Extract the date from SurrealDB Datetime
     let fecha_vencimiento_str = {
-        let dt: chrono::DateTime<chrono::Utc> = contratista
-            .fecha_vencimiento_praind
-            .to_string()
-            .parse()
-            .unwrap_or_else(|_| chrono::Utc::now());
-        dt.format("%Y-%m-%d").to_string() // ISO format expected by motor_validacion
+        // The inner DateTime<Utc> can be obtained via Into trait
+        let surreal_dt = &contratista.fecha_vencimiento_praind;
+        // Convert to string and extract just the date part (YYYY-MM-DD)
+        let dt_str = surreal_dt.to_string();
+        println!(">>> DEBUG fecha_vencimiento_praind raw: {}", dt_str);
+
+        // SurrealDB Datetime format: "2025-12-31T00:00:00Z" - extract YYYY-MM-DD
+        let date_only = if dt_str.len() >= 10 {
+            dt_str[0..10].to_string()
+        } else {
+            // Fallback: use current date (but this shouldn't happen)
+            chrono::Utc::now().format("%Y-%m-%d").to_string()
+        };
+        println!(">>> DEBUG fecha_vencimiento_str sent to motor: {}", date_only);
+        date_only
     };
 
     // 4. Motor de Validación

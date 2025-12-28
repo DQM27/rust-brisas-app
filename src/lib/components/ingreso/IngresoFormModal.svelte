@@ -218,9 +218,9 @@
                 <div class="mt-2 space-y-1">
                   {#each validationResult.alertas as alerta}
                     <div
-                      class="flex items-center gap-2 text-sm text-amber-400 bg-amber-500 bg-opacity-10 px-3 py-2 rounded-md border border-amber-500/20"
+                      class="flex items-center gap-2 text-sm text-yellow-900 bg-yellow-100 px-3 py-2 rounded-md border border-yellow-300"
                     >
-                      <span>{alerta}</span>
+                      <span class="font-medium">{alerta}</span>
                     </div>
                   {/each}
                 </div>
