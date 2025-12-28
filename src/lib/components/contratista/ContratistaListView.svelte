@@ -322,11 +322,29 @@
     loadContratistas();
 
     // Listen for real-time contratista updates from backend
-    unlistenFn = await listen("contratista:changed", (event) => {
-      console.log("📡 Contratista changed event received:", event.payload);
-      // Reload the full list to get updated data with computed fields
-      loadContratistas();
-    });
+    unlistenFn = await listen<{ action: string; data: any }>(
+      "contratista:changed",
+      (event) => {
+        console.log("📡 Contratista changed event received:", event.payload);
+
+        const { action, data } = event.payload;
+
+        if (action === "create") {
+          // New contratista - reload to get computed fields
+          loadContratistas();
+        } else if (action === "update" && data?.id) {
+          // Update existing - merge the change to avoid flicker
+          // Note: We might already have the optimistic update, so this is a no-op in that case
+          // But for external updates (other users), this will apply the change
+          contratistas = contratistas.map((c) =>
+            c.id === data.id ? { ...c, ...data } : c,
+          );
+        } else if (action === "delete" && data?.id) {
+          // Remove deleted item
+          contratistas = contratistas.filter((c) => c.id !== data.id);
+        }
+      },
+    );
   });
 
   onDestroy(() => {
