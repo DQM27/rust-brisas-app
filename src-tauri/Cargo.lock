@@ -871,6 +871,7 @@ dependencies = [
  "dotenvy",
  "futures",
  "hex",
+ "image",
  "keyring 2.3.3",
  "keyring 3.6.3",
  "log",

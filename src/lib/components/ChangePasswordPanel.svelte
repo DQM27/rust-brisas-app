@@ -79,17 +79,17 @@
   const errorClass = "text-xs text-red-500 mt-1";
 </script>
 
-<div class="w-full h-full flex flex-col justify-center p-8">
-  <div class="mb-6 text-center">
-    <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+<div class="w-full flex flex-col justify-center p-4">
+  <div class="mb-4 text-center">
+    <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
       Cambiar Contraseña
     </h2>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-      Por seguridad, debes establecer una nueva contraseña.
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+      Ingresa tu contraseña actual y la nueva contraseña.
     </p>
   </div>
 
-  <form onsubmit={handleSubmit} class="space-y-4">
+  <form onsubmit={handleSubmit} class="space-y-3">
     <!-- Contraseña Actual (Oculta si ya se proveyó) -->
     <div class={currentPassword ? "hidden" : "block"}>
       <label
@@ -150,11 +150,11 @@
     </div>
 
     <!-- Botones -->
-    <div class="pt-2 flex flex-col gap-3">
+    <div class="pt-3 flex flex-col gap-2">
       <button
         type="submit"
         disabled={loading}
-        class="w-full rounded-md bg-[#2da44e] px-4 py-2 font-medium text-white transition-all hover:bg-[#2c974b] disabled:cursor-not-allowed disabled:opacity-60 shadow-sm"
+        class="w-full rounded-md bg-[#2da44e] px-4 py-2 text-sm font-medium text-white transition-all hover:bg-[#2c974b] disabled:cursor-not-allowed disabled:opacity-60 shadow-sm"
       >
         {loading ? "Actualizando..." : "Confirmar Cambio"}
       </button>
@@ -163,7 +163,7 @@
         type="button"
         onclick={onCancel}
         disabled={loading}
-        class="w-full text-center text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
+        class="w-full text-center text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors py-1"
       >
         Cancelar
       </button>

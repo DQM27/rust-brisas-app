@@ -80,6 +80,11 @@ tantivy = "0.22"
 # UTILS
 # ==========================================
 base64 = "0.21"
+image = { version = "0.25", default-features = false, features = [
+    "png",
+    "jpeg",
+    "webp",
+] }
 # PDF generation - typst 0.14
 typst = { version = "0.14", optional = true }
 typst-pdf = { version = "0.14", optional = true }

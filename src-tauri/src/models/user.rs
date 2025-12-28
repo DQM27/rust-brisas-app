@@ -37,7 +37,7 @@ pub struct UserFetched {
     pub email: String,
     pub nombre: String,
     pub apellido: String,
-    pub role: Role,
+    pub role: Option<Role>, // Optional to handle missing roles gracefully
     pub is_active: bool,
     pub created_at: Datetime,
     pub updated_at: Datetime,
@@ -264,8 +264,11 @@ impl UserResponse {
     }
 
     pub fn from_fetched(u: UserFetched, permissions: Vec<String>) -> Self {
-        let role_id = u.role.id.to_string();
-        let role_name = u.role.name.clone();
+        // Handle optional role with defaults
+        let (role_id, role_name) = match &u.role {
+            Some(role) => (role.id.to_string(), role.name.clone()),
+            None => ("unknown".to_string(), "Sin Rol".to_string()),
+        };
 
         // Construir nombre completo
         let mut parts = vec![u.nombre.as_str()];

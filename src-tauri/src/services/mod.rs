@@ -1,5 +1,6 @@
 pub mod alerta_service;
 pub mod auth;
+pub mod avatar_service;
 // pub mod authorization; // Eliminado por surrealdb_authorization
 pub mod backup;
 pub mod session;

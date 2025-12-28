@@ -145,11 +145,14 @@ pub async fn get_user_by_id(id_str: &str) -> Result<UserResponse, UserError> {
         .map_err(|e| UserError::Database(e.to_string()))?
         .ok_or(UserError::NotFound)?;
 
-    let permissions = surrealdb_authorization::get_role_permissions(&user.role.id.to_string())
-        .await
-        .unwrap_or_default()
-        .into_iter()
-        .collect();
+    let permissions = match &user.role {
+        Some(role) => surrealdb_authorization::get_role_permissions(&role.id.to_string())
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .collect(),
+        None => vec![],
+    };
 
     Ok(UserResponse::from_fetched(user, permissions))
 }
@@ -166,11 +169,14 @@ pub async fn get_all_users() -> Result<UserListResponse, UserError> {
 
     let mut user_responses = Vec::new();
     for user in users {
-        let permissions = surrealdb_authorization::get_role_permissions(&user.role.id.to_string())
-            .await
-            .unwrap_or_default()
-            .into_iter()
-            .collect();
+        let permissions = match &user.role {
+            Some(role) => surrealdb_authorization::get_role_permissions(&role.id.to_string())
+                .await
+                .unwrap_or_default()
+                .into_iter()
+                .collect(),
+            None => vec![],
+        };
 
         user_responses.push(UserResponse::from_fetched(user, permissions));
     }

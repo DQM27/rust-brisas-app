@@ -82,9 +82,9 @@ export const CreateUserSchema = z.object({
     mustChangePassword: z.boolean().optional(),
 });
 
-export const UpdateUserSchema = CreateUserSchema.partial().extend({
-    // En update, password también es opcional pero si viene debe ser válida
-    password: z.union([passwordSchema, z.literal(''), z.undefined()]).optional(),
+// Update schema - NO incluye password ya que el cambio de contraseña 
+// se maneja por separado con ChangePasswordPanel
+export const UpdateUserSchema = CreateUserSchema.omit({ password: true }).partial().extend({
     mustChangePassword: z.boolean().optional(),
 });
 

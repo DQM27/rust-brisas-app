@@ -103,15 +103,17 @@ pub async fn demo_login(
 }
 
 // ==========================================
-// AVATAR COMMANDS (Stubs)
+// AVATAR COMMANDS (Encrypted Storage)
 // ==========================================
 
 #[tauri::command]
-pub async fn upload_user_avatar(_user_id: String, _file_path: String) -> Result<String, UserError> {
-    Err(UserError::Validation("Avatar upload no implementado aún".to_string()))
+pub async fn upload_user_avatar(user_id: String, file_path: String) -> Result<String, UserError> {
+    log::info!("📸 Comando: upload_user_avatar para {}", user_id);
+    crate::services::avatar_service::upload_avatar(&user_id, &file_path)
+        .map_err(|e| UserError::Validation(e))
 }
 
 #[tauri::command]
-pub async fn get_user_avatar(_user_id: String) -> Result<String, UserError> {
-    Err(UserError::Validation("Avatar retrieval no implementado aún".to_string()))
+pub async fn get_user_avatar(user_id: String) -> Result<String, UserError> {
+    crate::services::avatar_service::get_avatar(&user_id).map_err(|e| UserError::Validation(e))
 }

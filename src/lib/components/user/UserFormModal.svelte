@@ -103,7 +103,26 @@
 
   // Modo derivado
   const isEditMode = $derived(!!user);
-  const isSelf = $derived(user && $currentUser && user.id === $currentUser.id);
+  // Verificar si el usuario editado es el usuario logueado
+  const isSelf = $derived.by(() => {
+    if (!user || !$currentUser) {
+      console.log("isSelf: false (no user or currentUser)");
+      return false;
+    }
+    // Extraer solo el UUID (quitar prefijo "user:" y caracteres especiales)
+    const extractUUID = (id: string) => {
+      // Manejar formato "user:⟨uuid⟩" o "user:uuid" o solo "uuid"
+      return id
+        .replace(/^user:/, "")
+        .replace(/[⟨⟩<>]/g, "")
+        .trim();
+    };
+    const userId = extractUUID(user.id);
+    const currentId = extractUUID($currentUser.id);
+    const match = userId === currentId;
+    console.log("isSelf check:", { userId, currentId, match });
+    return match;
+  });
 
   const modalTitle = $derived(
     isEditMode
@@ -173,7 +192,7 @@
         segundoNombre: user.segundoNombre || "",
         segundoApellido: user.segundoApellido || "",
         email: user.email || "",
-        password: "", // No mostramos password existente
+        password: "", // Campo vacío - cambio de contraseña se maneja por separado
         roleId: user.roleId || ROLE_GUARDIA_ID,
         telefono: user.telefono || "",
         direccion: user.direccion || "",
@@ -232,22 +251,25 @@
     const result = schema.safeParse(formData);
 
     if (result.success) {
-      // Logic: If creation and password is empty, generate one automatically
-      let finalPassword = formData.password;
+      let payloadData = result.data;
+      let tempPassword: string | null = null;
 
-      if (!isEditMode && !finalPassword) {
-        finalPassword =
-          Math.random().toString(36).slice(-8) +
-          Math.random().toString(36).slice(-2).toUpperCase();
-        // Update payload
-        result.data.password = finalPassword;
-        result.data.mustChangePassword = true;
+      // Solo para creación: generar password si está vacía
+      if (!isEditMode) {
+        const createData = payloadData as CreateUserForm;
+        if (!createData.password) {
+          tempPassword =
+            Math.random().toString(36).slice(-8) +
+            Math.random().toString(36).slice(-2).toUpperCase();
+          createData.password = tempPassword;
+          createData.mustChangePassword = true;
+        } else {
+          tempPassword = createData.password;
+        }
+        payloadData = createData;
       }
 
-      // Capture password for modal (using the final one)
-      const tempPassword = !isEditMode ? finalPassword : null;
-
-      const success = await onSave(result.data);
+      const success = await onSave(payloadData);
       const isSuccess = typeof success === "boolean" ? success : true;
 
       if (isSuccess) {
@@ -433,14 +455,16 @@
       <!-- Form Content (Scrollable only if screen is very small, otherwise fits) -->
       <div class="flex-1 overflow-y-auto p-6">
         {#if isChangingPassword && user}
-          <div class="flex justify-center h-full items-center">
-            <ChangePasswordPanel
-              userId={user.id}
-              onSuccess={() => {
-                isChangingPassword = false;
-              }}
-              onCancel={() => (isChangingPassword = false)}
-            />
+          <div class="flex justify-center items-start py-4">
+            <div class="w-full max-w-md">
+              <ChangePasswordPanel
+                userId={user.id}
+                onSuccess={() => {
+                  isChangingPassword = false;
+                }}
+                onCancel={() => (isChangingPassword = false)}
+              />
+            </div>
           </div>
         {:else}
           <form
