@@ -1,9 +1,10 @@
 <!-- src/lib/components/contratista/ContratistaListView.svelte -->
 <!-- Vista unificada: Lista de contratistas + Modal para CRUD -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
   import { toast } from "svelte-5-french-toast";
+  import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { Trash2, RotateCcw } from "lucide-svelte"; // Add RotateCcw for restore icon
 
   import { AlertCircle } from "lucide-svelte";
@@ -308,8 +309,23 @@
   // ==========================================
   // LIFECYCLE
   // ==========================================
-  onMount(() => {
+  let unlistenFn: UnlistenFn | null = null;
+
+  onMount(async () => {
     loadContratistas();
+
+    // Listen for real-time contratista updates from backend
+    unlistenFn = await listen("contratista:changed", (event) => {
+      console.log("📡 Contratista changed event received:", event.payload);
+      // Reload the full list to get updated data with computed fields
+      loadContratistas();
+    });
+  });
+
+  onDestroy(() => {
+    if (unlistenFn) {
+      unlistenFn();
+    }
   });
 </script>
 
