@@ -38,12 +38,12 @@
           <X size={20} />
         </button>
         <div
-          class="p-3 bg-white dark:bg-[#161b22] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700"
+          class="overflow-hidden bg-white dark:bg-[#161b22] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700"
         >
           <img
             src="/icono-brisas.png"
             alt="Brisas"
-            class="w-12 h-12 object-contain"
+            class="w-24 h-24 object-cover"
           />
         </div>
       </div>
@@ -71,7 +71,7 @@
               >SvelteKit</span
             >
             <span class="px-2 py-1 rounded bg-gray-100 dark:bg-[#161b22]"
-              >SQLite</span
+              >SurrealDB</span
             >
           </div>
 
