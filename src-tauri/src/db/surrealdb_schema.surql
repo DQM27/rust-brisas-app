@@ -109,13 +109,9 @@ DEFINE INDEX idx_visitante_cedula ON visitante COLUMNS cedula UNIQUE;
 -- 5. OPERACIONES
 -- =========================================================
 
-DEFINE TABLE ingreso SCHEMAFULL;
-DEFINE FIELD fecha_hora_ingreso ON TABLE ingreso TYPE datetime VALUE $value OR time::now();
-DEFINE FIELD fecha_hora_salida ON TABLE ingreso TYPE option<datetime>;
-DEFINE FIELD tipo_ingreso ON TABLE ingreso TYPE string ASSERT $value INSIDE ['PEATONAL', 'VEHICULAR'];
-DEFINE FIELD sujeto ON TABLE ingreso TYPE record<user | contratista | proveedor | visitante>;
-DEFINE FIELD gafete_numero ON TABLE ingreso TYPE option<string>;
-DEFINE FIELD observacion ON TABLE ingreso TYPE option<string>;
+DEFINE TABLE ingreso SCHEMALESS;
+-- Core fields are managed by application code, not schema constraints
+-- This allows flexibility for the detailed ingreso model used by the app
 
 -- Tabla CITA (Appointments)
 DEFINE TABLE cita SCHEMAFULL;
