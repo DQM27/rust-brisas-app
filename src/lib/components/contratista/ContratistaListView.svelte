@@ -234,22 +234,29 @@
     if (isUpdatingStatus) return;
     isUpdatingStatus = true;
 
-    // TODO: Add proper type for status 'activo' | 'inactivo'
     const newStatus = status === "activo" ? "inactivo" : "activo";
+
+    // Optimistic update - save backup and update immediately
+    const oldContratistas = [...contratistas];
+    contratistas = contratistas.map((c) =>
+      c.id === id ? { ...c, estado: newStatus } : c,
+    );
+
     const toastId = toast.loading(`Cambiando a ${newStatus}...`);
 
     try {
-      // Optimistic update (optional, but good for UX if reliable)
       const res = await contratistaService.changeEstado(id, newStatus as any);
       if (res.ok) {
         toast.success(`Estado actualizado a ${newStatus}`, { id: toastId });
-        // Grid should update automatically via Live Query if working,
-        // otherwise we might need to manually update local state.
-        // For now relying on Live Query event.
+        // No need to reload - optimistic update already applied
       } else {
+        // Revert on error
+        contratistas = oldContratistas;
         toast.error(res.error, { id: toastId });
       }
     } catch (e) {
+      // Revert on error
+      contratistas = oldContratistas;
       console.error(e);
       toast.error("Error al cambiar estado", { id: toastId });
     } finally {
