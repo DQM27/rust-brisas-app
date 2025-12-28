@@ -86,9 +86,20 @@
 
       const finalGafete = gafete.trim() || "S/G";
 
+      // Convert RecordId object to string if necessary
+      const contratistaIdStr =
+        typeof selectedPerson.id === "object"
+          ? `${(selectedPerson.id as any).tb}:${(selectedPerson.id as any).id?.String || (selectedPerson.id as any).id}`
+          : String(selectedPerson.id);
+
+      const usuarioIdStr =
+        typeof $currentUser?.id === "object"
+          ? `${($currentUser.id as any).tb}:${($currentUser.id as any).id?.String || ($currentUser.id as any).id}`
+          : String($currentUser?.id || "");
+
       await ingresoService.crearIngreso(
         "contratista",
-        selectedPerson.id,
+        contratistaIdStr,
         {
           gafete: finalGafete,
           vehiculoId: tieneVehiculo ? vehiculoId : null,
@@ -98,7 +109,7 @@
           modoIngreso: tieneVehiculo ? "vehiculo" : "caminando",
         },
         selectedPerson,
-        $currentUser?.id,
+        usuarioIdStr,
       );
 
       toast.success("¡Ingreso registrado exitosamente!");

@@ -203,7 +203,7 @@ export async function crearIngreso(
 
     try {
         if (tipo === 'contratista') {
-            return await invoke('create_ingreso_contratista', {
+            const payload = {
                 input: {
                     contratistaId: candidateId,
                     gafeteNumero: formData.gafete,
@@ -215,7 +215,9 @@ export async function crearIngreso(
                     usuarioIngresoId: usuarioId
                 },
                 usuario_id: usuarioId
-            });
+            };
+            console.log('[IngresoService] >>> Payload to send:', JSON.stringify(payload, null, 2));
+            return await invoke('create_ingreso_contratista', payload);
         } else if (tipo === 'proveedor') {
             return await invoke('crear_ingreso_proveedor_v2', {
                 input: {
