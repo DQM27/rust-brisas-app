@@ -35,7 +35,7 @@ pub async fn find_ingreso_abierto_by_contratista(
     let db = get_db().await?;
 
     let mut result = db
-        .query("SELECT * FROM ingreso WHERE contratista = $contratista AND fecha_hora_salida IS NONE FETCH usuario_ingreso, usuario_salida, vehiculo, contratista, contratista.empresa LIMIT 1")
+        .query("SELECT * FROM ingreso WHERE contratista = $contratista AND fecha_hora_salida IS NONE LIMIT 1 FETCH usuario_ingreso, usuario_salida, vehiculo, contratista, contratista.empresa")
         .bind(("contratista", contratista_id.clone()))
         .await?;
 

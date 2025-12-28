@@ -43,7 +43,7 @@ pub async fn find_by_id_fetched(id: &RecordId) -> Result<Option<ProveedorFetched
 pub async fn find_by_cedula(cedula: &str) -> Result<Option<ProveedorFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM proveedor WHERE cedula = $cedula AND deleted_at IS NONE FETCH empresa LIMIT 1")
+        .query("SELECT * FROM proveedor WHERE cedula = $cedula AND deleted_at IS NONE LIMIT 1 FETCH empresa")
         .bind(("cedula", cedula.to_string()))
         .await?;
     Ok(result.take(0)?)

@@ -55,7 +55,7 @@ pub async fn find_ingreso_by_gafete_fetched(
 ) -> Result<Option<IngresoFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM ingreso WHERE gafete_numero = $gafete AND fecha_hora_salida IS NONE FETCH usuario_ingreso, usuario_salida, vehiculo, contratista, contratista.empresa LIMIT 1")
+        .query("SELECT * FROM ingreso WHERE gafete_numero = $gafete AND fecha_hora_salida IS NONE LIMIT 1 FETCH usuario_ingreso, usuario_salida, vehiculo, contratista, contratista.empresa")
         .bind(("gafete", gafete.to_string()))
         .await?;
     Ok(result.take(0)?)
