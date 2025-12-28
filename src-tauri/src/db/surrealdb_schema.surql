@@ -109,9 +109,33 @@ DEFINE INDEX idx_visitante_cedula ON visitante COLUMNS cedula UNIQUE;
 -- 5. OPERACIONES
 -- =========================================================
 
-DEFINE TABLE ingreso SCHEMALESS;
--- Core fields are managed by application code, not schema constraints
--- This allows flexibility for the detailed ingreso model used by the app
+DEFINE TABLE ingreso SCHEMAFULL;
+DEFINE FIELD contratista ON TABLE ingreso TYPE option<record<contratista>>;
+DEFINE FIELD cedula ON TABLE ingreso TYPE string;
+DEFINE FIELD nombre ON TABLE ingreso TYPE string;
+DEFINE FIELD apellido ON TABLE ingreso TYPE string;
+DEFINE FIELD empresa_nombre ON TABLE ingreso TYPE string;
+DEFINE FIELD tipo_ingreso ON TABLE ingreso TYPE string ASSERT $value INSIDE ['contratista', 'proveedor', 'visita'];
+DEFINE FIELD tipo_autorizacion ON TABLE ingreso TYPE string;
+DEFINE FIELD modo_ingreso ON TABLE ingreso TYPE string ASSERT $value INSIDE ['caminando', 'vehiculo'];
+DEFINE FIELD vehiculo ON TABLE ingreso TYPE option<record<vehiculo>>;
+DEFINE FIELD placa_temporal ON TABLE ingreso TYPE option<string>;
+DEFINE FIELD gafete_numero ON TABLE ingreso TYPE option<string>;
+DEFINE FIELD gafete_tipo ON TABLE ingreso TYPE option<string>;
+DEFINE FIELD fecha_hora_ingreso ON TABLE ingreso TYPE datetime VALUE $value OR time::now();
+DEFINE FIELD fecha_hora_salida ON TABLE ingreso TYPE option<datetime>;
+DEFINE FIELD tiempo_permanencia_minutos ON TABLE ingreso TYPE option<int>;
+DEFINE FIELD usuario_ingreso ON TABLE ingreso TYPE record<user>;
+DEFINE FIELD usuario_salida ON TABLE ingreso TYPE option<record<user>>;
+DEFINE FIELD praind_vigente_al_ingreso ON TABLE ingreso TYPE option<bool>;
+DEFINE FIELD estado_contratista_al_ingreso ON TABLE ingreso TYPE option<string>;
+DEFINE FIELD observaciones ON TABLE ingreso TYPE option<string>;
+DEFINE FIELD observaciones_salida ON TABLE ingreso TYPE option<string>;
+DEFINE FIELD anfitrion ON TABLE ingreso TYPE option<string>;
+DEFINE FIELD area_visitada ON TABLE ingreso TYPE option<string>;
+DEFINE FIELD motivo ON TABLE ingreso TYPE option<string>;
+DEFINE FIELD created_at ON TABLE ingreso TYPE datetime DEFAULT time::now();
+DEFINE FIELD updated_at ON TABLE ingreso TYPE datetime VALUE time::now();
 
 -- Tabla CITA (Appointments)
 DEFINE TABLE cita SCHEMAFULL;
