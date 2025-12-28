@@ -57,9 +57,8 @@ pub async fn create_user(
         .filter(|s| !s.trim().is_empty())
         .unwrap_or_else(|| ROLE_GUARDIA_ID.to_string());
 
-    // Fix: Remove "role:" prefix if present to avoid double wrapping
-    let role_id_str = raw_role_id.strip_prefix("role:").unwrap_or(&raw_role_id);
-    let role_record = RecordId::from_table_key("role", role_id_str);
+    // Fix: Use robust parser to clean brackets and prefixes
+    let role_record = parse_role_id(&raw_role_id);
 
     // 5. Generar o usar contraseña
     let (password_str, must_change_password) = match input.password {
@@ -110,8 +109,7 @@ pub async fn create_user(
     info!("Usuario '{}' creado exitosamente con ID {}", email_normalizado, user.id);
 
     // 8. Retornar respuesta
-    // 8. Retornar respuesta
-    let role_permissions = surrealdb_authorization::get_role_permissions(&role_id_str)
+    let role_permissions = surrealdb_authorization::get_role_permissions(&user.role.to_string())
         .await
         .unwrap_or_default()
         .into_iter()
@@ -242,12 +240,14 @@ pub async fn update_user(
         dto.apellido = Some(domain::normalizar_nombre(apellido));
     }
     if let Some(ref role_id) = input.role_id {
-        // Fix: Handle empty strings and double prefix
+        // Fix: Handle empty strings and robust parsing
         if !role_id.trim().is_empty() {
-            // Avoid double wrapping if frontend sends "role:uuid"
-            let clean_id = role_id.strip_prefix("role:").unwrap_or(role_id);
-            info!("Actualizando rol de usuario a: '{}' (original input: '{}')", clean_id, role_id);
-            dto.role = Some(RecordId::from_table_key("role", clean_id));
+            let role_record = parse_role_id(role_id);
+            info!(
+                "Actualizando rol de usuario a: '{}' (original input: '{}')",
+                role_record, role_id
+            );
+            dto.role = Some(role_record);
         } else {
             info!("Input role_id vacío, ignorando actualización de rol.");
         }
@@ -469,5 +469,29 @@ fn parse_user_id(id: &str) -> RecordId {
         RecordId::from_table_key(parts[0], key)
     } else {
         RecordId::from_table_key("user", clean_id)
+    }
+}
+
+fn parse_role_id(id: &str) -> RecordId {
+    // 1. Common cleanup (stripping brackets common in SurrealDB output logging/formats)
+    let clean_id = id
+        .trim()
+        .trim_start_matches("⟨")
+        .trim_end_matches("⟩")
+        .trim_start_matches('<')
+        .trim_end_matches('>');
+
+    // 2. Handle "role:uuid" format vs "uuid" format
+    if clean_id.to_lowercase().starts_with("role:") {
+        let parts: Vec<&str> = clean_id.splitn(2, ':').collect();
+        // Recurse/clean the ID part again just in case "role:⟨uuid⟩"
+        let key = parts[1]
+            .trim_start_matches("⟨")
+            .trim_end_matches("⟩")
+            .trim_start_matches('<')
+            .trim_end_matches('>');
+        RecordId::from_table_key("role", key)
+    } else {
+        RecordId::from_table_key("role", clean_id)
     }
 }
