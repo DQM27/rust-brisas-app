@@ -1,7 +1,8 @@
 <script lang="ts">
   import { fade, fly } from "svelte/transition";
-  import { X, Info, Code2, Globe } from "lucide-svelte";
+  import { X, Info, Code2, Globe, Users } from "lucide-svelte";
   import { scale } from "svelte/transition";
+  import { onMount, onDestroy } from "svelte";
 
   interface Props {
     show: boolean;
@@ -9,6 +10,39 @@
   }
 
   let { show, onClose }: Props = $props();
+
+  // Lista de colaboradores (hardcoded por ahora)
+  const contributors = [
+    "Daniel Quintana",
+    "María González",
+    "Carlos Rodríguez",
+    "Ana Martínez",
+    "José López",
+    "Laura Sánchez",
+    "Pedro García",
+    "Sofia Hernández",
+    "Miguel Torres",
+    "Valentina Díaz",
+  ];
+
+  let currentIndex = $state(0);
+  let intervalId: ReturnType<typeof setInterval> | null = null;
+
+  $effect(() => {
+    if (show) {
+      currentIndex = 0;
+      intervalId = setInterval(() => {
+        currentIndex = (currentIndex + 1) % contributors.length;
+      }, 2500);
+    } else if (intervalId) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+  });
+
+  onDestroy(() => {
+    if (intervalId) clearInterval(intervalId);
+  });
 </script>
 
 {#if show}
@@ -76,14 +110,37 @@
           </div>
 
           <div
-            class="flex flex-col gap-2 p-3 rounded-lg bg-gray-50 dark:bg-[#161b22] border border-gray-100 dark:border-gray-700/50"
+            class="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-[#161b22] border border-gray-100 dark:border-gray-700/50"
           >
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-gray-500 dark:text-gray-400">Versión</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">Versión</span
+            >
+            <span
+              class="font-mono text-xs font-medium text-gray-900 dark:text-gray-200"
+              >v1.2.0</span
+            >
+          </div>
+
+          <!-- Agradecimientos especiales con scroll suave -->
+          <div
+            class="p-3 rounded-lg bg-gray-50 dark:bg-[#161b22] border border-gray-100 dark:border-gray-700/50"
+          >
+            <div class="flex items-center justify-center gap-2 mb-2">
               <span
-                class="font-mono font-medium text-gray-900 dark:text-gray-200"
-                >v1.2.0</span
+                class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold"
               >
+                ✨ Agradecimiento Especial
+              </span>
+            </div>
+            <div class="h-5 overflow-hidden relative">
+              <div class="credits-scroll">
+                {#each [...contributors, ...contributors] as name}
+                  <span
+                    class="block text-center text-sm font-medium text-gray-700 dark:text-gray-300 py-0.5"
+                  >
+                    {name}
+                  </span>
+                {/each}
+              </div>
             </div>
           </div>
 
@@ -114,3 +171,22 @@
     </div>
   </div>
 {/if}
+
+<style>
+  .credits-scroll {
+    animation: scroll-up 30s linear infinite;
+  }
+
+  @keyframes scroll-up {
+    0% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(-50%);
+    }
+  }
+
+  .credits-scroll:hover {
+    animation-play-state: paused;
+  }
+</style>
