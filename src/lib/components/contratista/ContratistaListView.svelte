@@ -230,7 +230,30 @@
   }
 
   async function handleStatusChange(id: string, status: string) {
-    // Implementation for status change if needed explicitly
+    if (isUpdatingStatus) return;
+    isUpdatingStatus = true;
+
+    // TODO: Add proper type for status 'activo' | 'inactivo'
+    const newStatus = status === "activo" ? "inactivo" : "activo";
+    const toastId = toast.loading(`Cambiando a ${newStatus}...`);
+
+    try {
+      // Optimistic update (optional, but good for UX if reliable)
+      const res = await contratistaService.changeEstado(id, newStatus as any);
+      if (res.ok) {
+        toast.success(`Estado actualizado a ${newStatus}`, { id: toastId });
+        // Grid should update automatically via Live Query if working,
+        // otherwise we might need to manually update local state.
+        // For now relying on Live Query event.
+      } else {
+        toast.error(res.error, { id: toastId });
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Error al cambiar estado", { id: toastId });
+    } finally {
+      isUpdatingStatus = false;
+    }
   }
 
   function handleEstadoSelect(

@@ -10,10 +10,11 @@
 // SurrealDB → LIVE Stream → live_service → Tauri Events → Frontend
 //
 
+use crate::models::user::User;
 use crate::services::surrealdb_service::{get_surrealdb, SurrealDbError};
 use futures::StreamExt;
 use log::{error, info, warn};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::sync::atomic::{AtomicBool, Ordering};
 use surrealdb::Notification;
 use tauri::{AppHandle, Emitter};
@@ -23,7 +24,7 @@ use tauri::{AppHandle, Emitter};
 // ==========================================
 
 /// Acción que disparó la notificación LIVE
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LiveAction {
     Create,
@@ -43,14 +44,13 @@ impl From<surrealdb::Action> for LiveAction {
     }
 }
 
-/// Notificación enviada al frontend
+/// Notificación enviada al frontend (tipada)
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct LiveNotificationPayload {
+pub struct LiveNotificationPayload<T: Serialize> {
     pub action: LiveAction,
     pub table: String,
-    /// Los datos se envían como JSON Value para flexibilidad
-    pub data: serde_json::Value,
+    pub data: T,
 }
 
 // ==========================================
@@ -58,11 +58,10 @@ pub struct LiveNotificationPayload {
 // ==========================================
 
 pub mod events {
-    pub const INGRESO_CHANGED: &str = "ingreso:changed";
-    pub const ALERTA_GAFETE_CHANGED: &str = "alerta_gafete:changed";
-    pub const GAFETE_CHANGED: &str = "gafete:changed";
-    pub const CONTRATISTA_CHANGED: &str = "contratista:changed";
-    pub const PROVEEDOR_CHANGED: &str = "proveedor:changed";
+    pub const USER_CHANGED: &str = "user:changed";
+    // Futuras fases:
+    // pub const LISTA_NEGRA_CHANGED: &str = "lista_negra:changed";
+    // pub const CONTRATISTA_CHANGED: &str = "contratista:changed";
 }
 
 // ==========================================
@@ -88,32 +87,25 @@ pub async fn start_live_subscriptions(app_handle: AppHandle) -> Result<(), Surre
     let service = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
     let db = service.get_client().await?;
 
-    // Definir tablas y sus eventos correspondientes
-    let subscriptions: Vec<(&str, &str)> = vec![
-        ("ingreso", events::INGRESO_CHANGED),
-        ("alerta_gafete", events::ALERTA_GAFETE_CHANGED),
-        ("gafete", events::GAFETE_CHANGED),
-        ("contratista", events::CONTRATISTA_CHANGED),
-        ("proveedor", events::PROVEEDOR_CHANGED),
-    ];
-
-    for (table, event_name) in subscriptions {
+    // ==========================================
+    // PHASE 1: User subscription (tipada)
+    // ==========================================
+    {
         let app_handle_clone = app_handle.clone();
-        let table_name = table.to_string();
-        let event_name_owned = event_name.to_string();
         let db_clone = db.clone();
-
-        // Spawn una tarea async para cada suscripción
         tokio::spawn(async move {
-            if let Err(e) =
-                subscribe_to_table(db_clone, &table_name, &event_name_owned, app_handle_clone).await
-            {
-                error!("❌ Error en suscripción LIVE para {}: {}", table_name, e);
+            if let Err(e) = subscribe_to_user(db_clone, app_handle_clone).await {
+                error!("❌ Error en suscripción LIVE para usuario: {}", e);
             }
         });
-
-        info!("✅ Suscripción LIVE iniciada para tabla: {}", table);
+        info!("✅ Suscripción LIVE iniciada para tabla: usuario");
     }
+
+    // ==========================================
+    // FUTURAS FASES (deshabilitadas temporalmente)
+    // ==========================================
+    // Phase 2: lista_negra
+    // Phase 3: contratista
 
     info!("📡 Todas las suscripciones LIVE iniciadas correctamente");
     Ok(())
@@ -127,104 +119,72 @@ pub fn stop_all_subscriptions() {
 }
 
 // ==========================================
-// FUNCIONES INTERNAS
+// SUSCRIPCIONES TIPADAS POR TABLA
 // ==========================================
 
-/// Suscribe a una tabla específica y emite eventos cuando hay cambios
-async fn subscribe_to_table(
+/// Suscripción tipada para tabla `usuario`
+async fn subscribe_to_user(
     db: surrealdb::Surreal<surrealdb::engine::local::Db>,
-    table: &str,
-    event_name: &str,
     app_handle: AppHandle,
 ) -> Result<(), SurrealDbError> {
-    info!("🔄 Iniciando LIVE query para tabla: {}", table);
+    info!("🔄 Iniciando LIVE query para tabla: usuario");
 
-    // Crear la suscripción LIVE usando el método del SDK
-    // Usamos serde_json::Value para deserializar cualquier estructura
+    // Crear la suscripción LIVE con tipo específico
     let mut stream = db
-        .select(table)
+        .select("usuario")
         .live()
         .await
         .map_err(|e| SurrealDbError::Query(format!("Error creando LIVE query: {}", e)))?;
 
-    info!("📡 Stream LIVE activo para tabla: {}", table);
+    info!("📡 Stream LIVE activo para tabla: usuario");
 
     // Procesar notificaciones del stream
     while let Some(result) = stream.next().await {
         // Verificar si debemos detenernos
         if SHOULD_STOP.load(Ordering::SeqCst) {
-            info!("🛑 Deteniendo LIVE query para tabla: {}", table);
+            info!("🛑 Deteniendo LIVE query para tabla: usuario");
             break;
         }
 
         match result {
             Ok(notification) => {
-                if let Err(e) =
-                    process_notification(notification, table, event_name, &app_handle).await
-                {
-                    error!("❌ Error procesando notificación para {}: {}", table, e);
+                if let Err(e) = process_user_notification(notification, &app_handle).await {
+                    error!("❌ Error procesando notificación para usuario: {}", e);
                 }
             }
             Err(e) => {
-                error!("❌ Error en stream LIVE para {}: {}", table, e);
+                error!("❌ Error en stream LIVE para usuario: {}", e);
                 // Continuar intentando recibir notificaciones
             }
         }
     }
 
     warn!(
-        "⚠️ Stream LIVE terminado para tabla: {} (esto no debería pasar en operación normal)",
-        table
+        "⚠️ Stream LIVE terminado para tabla: usuario (esto no debería pasar en operación normal)"
     );
     Ok(())
 }
 
-/// Procesa una notificación individual y la emite como evento Tauri
-async fn process_notification(
-    notification: Notification<serde_json::Value>,
-    table: &str,
-    event_name: &str,
+/// Procesa una notificación de usuario y la emite como evento Tauri
+async fn process_user_notification(
+    notification: Notification<User>,
     app_handle: &AppHandle,
 ) -> Result<(), SurrealDbError> {
     let action = LiveAction::from(notification.action);
 
-    info!("📨 Notificación LIVE recibida: tabla={}, acción={:?}", table, action);
+    info!("📨 Notificación LIVE recibida: tabla=usuario, acción={:?}", action);
 
-    let payload =
-        LiveNotificationPayload { action, table: table.to_string(), data: notification.data };
+    // Convertir User a JSON Value para el frontend
+    let data = serde_json::to_value(&notification.data)
+        .map_err(|e| SurrealDbError::Query(format!("Error serializando user data: {}", e)))?;
+
+    let payload = LiveNotificationPayload { action, table: "usuario".to_string(), data };
 
     // Emitir evento a todos los listeners del frontend
     app_handle
-        .emit(event_name, &payload)
+        .emit(events::USER_CHANGED, &payload)
         .map_err(|e| SurrealDbError::Query(format!("Error emitiendo evento Tauri: {}", e)))?;
 
-    info!("✅ Evento '{}' emitido al frontend", event_name);
-    Ok(())
-}
-
-// ==========================================
-// UTILIDADES PARA AGREGAR TABLAS DINÁMICAMENTE
-// ==========================================
-
-/// Agrega una nueva suscripción LIVE para una tabla específica.
-/// Útil para agregar tablas después de la inicialización.
-pub async fn add_table_subscription(
-    app_handle: AppHandle,
-    table: &str,
-    event_name: &str,
-) -> Result<(), SurrealDbError> {
-    let service = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
-    let db = service.get_client().await?;
-
-    let table_owned = table.to_string();
-    let event_owned = event_name.to_string();
-
-    tokio::spawn(async move {
-        if let Err(e) = subscribe_to_table(db, &table_owned, &event_owned, app_handle).await {
-            error!("❌ Error agregando suscripción LIVE para {}: {}", table_owned, e);
-        }
-    });
-
-    info!("✅ Nueva suscripción LIVE agregada para tabla: {}", table);
+    info!("✅ Evento '{}' emitido al frontend", events::USER_CHANGED);
     Ok(())
 }
