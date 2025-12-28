@@ -261,7 +261,9 @@
   let avatarUrl = $state<string | null>(null);
 
   async function loadUserAvatar(userId: string) {
+    console.log("DEBUG: Loading avatar for user:", userId);
     const result = await userService.getUserAvatar(userId);
+    console.log("DEBUG: Avatar result:", result.ok ? "Success" : result.error);
     if (result.ok) {
       avatarUrl = `data:image/webp;base64,${result.data}`;
     } else {

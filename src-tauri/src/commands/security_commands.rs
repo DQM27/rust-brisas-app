@@ -1,49 +1,109 @@
-use keyring::Entry;
 use rand::rngs::OsRng;
 use rand::RngCore;
 use std::sync::OnceLock;
 
-// Nombre del servicio y usuario para el Credential Manager de Windows
-const SERVICE_NAME: &str = "BrisasApp";
-const USER_NAME: &str = "MasterKey";
+// Clave para almacenar la master key de encriptación
+const MASTER_KEY_NAME: &str = "encryption_master_key";
 
 // Singleton para mantener la llave en memoria y no pedirla al OS a cada rato
 static MASTER_KEY: OnceLock<[u8; 32]> = OnceLock::new();
 
+/// Obtiene la master key usando el mismo sistema que Argon2 (keyring_linux para Linux)
 pub fn get_master_key() -> Result<&'static [u8; 32], String> {
     if let Some(key) = MASTER_KEY.get() {
         return Ok(key);
     }
 
-    // Intentar obtener del OS Keyring
-    let entry = Entry::new(SERVICE_NAME, USER_NAME).map_err(|e| e.to_string())?;
+    // Usar el servicio de keyring apropiado según la plataforma
+    #[cfg(target_os = "linux")]
+    {
+        use crate::services::keyring_linux;
 
-    match entry.get_password() {
-        Ok(password_hex) => {
-            // Decodificar hex a bytes
-            let bytes =
-                hex::decode(password_hex).map_err(|_| "Error decoding master key".to_string())?;
-            if bytes.len() != 32 {
-                return Err("Invalid master key length".to_string());
+        // Intentar obtener del keyring
+        if let Some(hex_key) = keyring_linux::retrieve_secret(MASTER_KEY_NAME) {
+            if let Ok(bytes) = hex::decode(hex_key.trim()) {
+                if bytes.len() == 32 {
+                    let mut key_arr = [0u8; 32];
+                    key_arr.copy_from_slice(&bytes);
+                    let _ = MASTER_KEY.set(key_arr);
+                    log::info!("🔑 Master key cargada desde keyring (secret-tool)");
+                    return Ok(MASTER_KEY.get().unwrap());
+                }
             }
-            let mut key_arr = [0u8; 32];
-            key_arr.copy_from_slice(&bytes);
-            let _ = MASTER_KEY.set(key_arr);
         }
-        Err(_) => {
-            // No existe, crear nueva
-            let mut key = [0u8; 32];
-            OsRng.fill_bytes(&mut key);
 
-            // Guardar en hex para que sea string compatible
-            let hex_key = hex::encode(key);
-            entry.set_password(&hex_key).map_err(|e| e.to_string())?;
+        // No existe, crear nueva llave
+        let mut key = [0u8; 32];
+        OsRng.fill_bytes(&mut key);
+        log::info!("🔑 Generando nueva master key");
 
-            let _ = MASTER_KEY.set(key);
+        // Guardar en keyring usando secret-tool
+        let hex_key = hex::encode(key);
+        if let Err(e) = keyring_linux::store_secret(MASTER_KEY_NAME, &hex_key) {
+            log::error!("❌ Error guardando master key en keyring: {}", e);
+            return Err(format!("No se pudo guardar master key: {}", e));
         }
+        log::info!("🔑 Master key guardada en keyring (secret-tool)");
+
+        let _ = MASTER_KEY.set(key);
+        return Ok(MASTER_KEY.get().unwrap());
     }
 
-    Ok(MASTER_KEY.get().unwrap())
+    #[cfg(target_os = "windows")]
+    {
+        use crate::services::keyring_windows;
+
+        if let Some(hex_key) = keyring_windows::retrieve_secret(MASTER_KEY_NAME) {
+            if let Ok(bytes) = hex::decode(&hex_key) {
+                if bytes.len() == 32 {
+                    let mut key_arr = [0u8; 32];
+                    key_arr.copy_from_slice(&bytes);
+                    let _ = MASTER_KEY.set(key_arr);
+                    log::info!("🔑 Master key cargada desde Credential Manager");
+                    return Ok(MASTER_KEY.get().unwrap());
+                }
+            }
+        }
+
+        let mut key = [0u8; 32];
+        OsRng.fill_bytes(&mut key);
+        let hex_key = hex::encode(key);
+        keyring_windows::store_secret(MASTER_KEY_NAME, &hex_key)
+            .map_err(|e| format!("No se pudo guardar master key: {}", e))?;
+        log::info!("🔑 Master key guardada en Credential Manager");
+        let _ = MASTER_KEY.set(key);
+        return Ok(MASTER_KEY.get().unwrap());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        use keyring::Entry;
+
+        let entry = Entry::new("BrisasApp", MASTER_KEY_NAME).map_err(|e| e.to_string())?;
+
+        if let Ok(hex_key) = entry.get_password() {
+            if let Ok(bytes) = hex::decode(&hex_key) {
+                if bytes.len() == 32 {
+                    let mut key_arr = [0u8; 32];
+                    key_arr.copy_from_slice(&bytes);
+                    let _ = MASTER_KEY.set(key_arr);
+                    return Ok(MASTER_KEY.get().unwrap());
+                }
+            }
+        }
+
+        let mut key = [0u8; 32];
+        OsRng.fill_bytes(&mut key);
+        let hex_key = hex::encode(key);
+        entry.set_password(&hex_key).map_err(|e| e.to_string())?;
+        let _ = MASTER_KEY.set(key);
+        return Ok(MASTER_KEY.get().unwrap());
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
+    {
+        Err("Plataforma no soportada".to_string())
+    }
 }
 
 // Funciones de ayuda para encriptar/desencriptar

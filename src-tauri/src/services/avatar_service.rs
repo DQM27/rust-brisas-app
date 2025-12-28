@@ -90,7 +90,7 @@ fn process_image(image_path: &str) -> Result<Vec<u8>, String> {
 /// # Returns
 /// * `Ok(String)` - ID de referencia del archivo guardado
 /// * `Err(String)` - Error de procesamiento o encriptación
-pub fn upload_avatar(user_id: &str, file_path: &str) -> Result<String, String> {
+pub async fn upload_avatar(user_id: &str, file_path: &str) -> Result<String, String> {
     log::info!("📸 Subiendo avatar para usuario: {}", user_id);
 
     // 1. Procesar imagen (resize + WebP)
@@ -101,12 +101,41 @@ pub fn upload_avatar(user_id: &str, file_path: &str) -> Result<String, String> {
     let encrypted = encrypt_data(&image_data)?;
     log::info!("   ✓ Encriptado: {} bytes", encrypted.len());
 
-    // 3. Guardar archivo encriptado
-    let avatar_path = get_avatar_file_path(user_id)?;
-    fs::write(&avatar_path, &encrypted).map_err(|e| format!("Error guardando archivo: {e}"))?;
-    log::info!("   ✓ Guardado en: {:?}", avatar_path);
+    // 3. Generar UUID para el archivo (nombre ofuscado)
+    let file_uuid = uuid::Uuid::new_v4().to_string();
 
-    Ok(user_id.to_string())
+    // 4. Guardar archivo encriptado
+    let base_path = get_avatar_base_path()?;
+    let avatar_file_path = base_path.join(format!("{}.enc", file_uuid));
+    fs::write(&avatar_file_path, &encrypted)
+        .map_err(|e| format!("Error guardando archivo: {e}"))?;
+    log::info!("   ✓ Guardado en: {:?}", avatar_file_path);
+
+    // 5. Actualizar avatar_path en la DB
+    update_user_avatar_path(user_id, &file_uuid).await?;
+    log::info!("   ✓ DB actualizada con avatar_path: {}", file_uuid);
+
+    Ok(file_uuid)
+}
+
+/// Actualiza el campo avatar_path en el usuario
+async fn update_user_avatar_path(user_id: &str, avatar_uuid: &str) -> Result<(), String> {
+    use crate::services::surrealdb_service::get_db;
+
+    let db = get_db().await.map_err(|e| e.to_string())?;
+
+    // Parsear user_id a RecordId
+    let clean_id = user_id.trim_start_matches("user:").replace(['⟨', '⟩', '<', '>'], "");
+
+    let user_record = surrealdb::RecordId::from_table_key("user", &clean_id);
+
+    db.query("UPDATE $id SET avatar_path = $avatar_path, updated_at = time::now()")
+        .bind(("id", user_record))
+        .bind(("avatar_path", avatar_uuid.to_string()))
+        .await
+        .map_err(|e| format!("Error actualizando avatar_path: {e}"))?;
+
+    Ok(())
 }
 
 /// Obtiene un avatar desencriptado en formato Base64
@@ -117,31 +146,80 @@ pub fn upload_avatar(user_id: &str, file_path: &str) -> Result<String, String> {
 /// # Returns
 /// * `Ok(String)` - Imagen WebP en Base64
 /// * `Err(String)` - Error si no existe o no se puede desencriptar
-pub fn get_avatar(user_id: &str) -> Result<String, String> {
-    let avatar_path = get_avatar_file_path(user_id)?;
+pub async fn get_avatar(user_id: &str) -> Result<String, String> {
+    // 1. Obtener avatar_path de la DB
+    let avatar_uuid = get_user_avatar_path(user_id).await?;
 
-    // Leer archivo encriptado
-    let encrypted = fs::read(&avatar_path)
-        .map_err(|_| format!("No se encontró avatar para usuario: {user_id}"))?;
+    if avatar_uuid.is_empty() {
+        return Err(format!("No hay avatar configurado para usuario: {user_id}"));
+    }
 
-    // Desencriptar
+    // 2. Construir la ruta del archivo
+    let base_path = get_avatar_base_path()?;
+    let avatar_file_path = base_path.join(format!("{}.enc", avatar_uuid));
+
+    // 3. Leer archivo encriptado
+    let encrypted = fs::read(&avatar_file_path)
+        .map_err(|_| format!("No se encontró archivo de avatar: {}", avatar_uuid))?;
+
+    // 4. Desencriptar
     let decrypted = decrypt_data(&encrypted)?;
 
-    // Convertir a Base64
+    // 5. Convertir a Base64
     let b64 = STANDARD.encode(&decrypted);
 
     Ok(b64)
+}
+
+/// Obtiene el avatar_path del usuario desde la DB
+async fn get_user_avatar_path(user_id: &str) -> Result<String, String> {
+    use crate::services::surrealdb_service::get_db;
+    use serde::Deserialize;
+
+    let db = get_db().await.map_err(|e| e.to_string())?;
+
+    // Parsear user_id a RecordId
+    let clean_id = user_id.trim_start_matches("user:").replace(['⟨', '⟩', '<', '>'], "");
+
+    let user_record = surrealdb::RecordId::from_table_key("user", &clean_id);
+
+    #[derive(Deserialize)]
+    struct AvatarPath {
+        avatar_path: Option<String>,
+    }
+
+    let mut result = db
+        .query("SELECT avatar_path FROM $id")
+        .bind(("id", user_record))
+        .await
+        .map_err(|e| format!("Error consultando avatar_path: {e}"))?;
+
+    let row: Option<AvatarPath> = result.take(0).map_err(|e| e.to_string())?;
+
+    Ok(row.and_then(|r| r.avatar_path).unwrap_or_default())
 }
 
 /// Elimina el avatar de un usuario
 ///
 /// # Arguments
 /// * `user_id` - ID del usuario
-pub fn delete_avatar(user_id: &str) -> Result<(), String> {
-    let avatar_path = get_avatar_file_path(user_id)?;
-    if avatar_path.exists() {
-        fs::remove_file(&avatar_path).map_err(|e| format!("Error eliminando avatar: {e}"))?;
+pub async fn delete_avatar(user_id: &str) -> Result<(), String> {
+    // Obtener avatar_path de la DB
+    let avatar_uuid = get_user_avatar_path(user_id).await?;
+
+    if !avatar_uuid.is_empty() {
+        let base_path = get_avatar_base_path()?;
+        let avatar_file_path = base_path.join(format!("{}.enc", avatar_uuid));
+
+        if avatar_file_path.exists() {
+            fs::remove_file(&avatar_file_path)
+                .map_err(|e| format!("Error eliminando avatar: {e}"))?;
+        }
+
+        // Limpiar avatar_path en DB
+        update_user_avatar_path(user_id, "").await?;
     }
+
     Ok(())
 }
 

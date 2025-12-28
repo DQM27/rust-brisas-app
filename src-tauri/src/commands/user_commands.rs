@@ -110,10 +110,13 @@ pub async fn demo_login(
 pub async fn upload_user_avatar(user_id: String, file_path: String) -> Result<String, UserError> {
     log::info!("📸 Comando: upload_user_avatar para {}", user_id);
     crate::services::avatar_service::upload_avatar(&user_id, &file_path)
+        .await
         .map_err(|e| UserError::Validation(e))
 }
 
 #[tauri::command]
 pub async fn get_user_avatar(user_id: String) -> Result<String, UserError> {
-    crate::services::avatar_service::get_avatar(&user_id).map_err(|e| UserError::Validation(e))
+    crate::services::avatar_service::get_avatar(&user_id)
+        .await
+        .map_err(|e| UserError::Validation(e))
 }
