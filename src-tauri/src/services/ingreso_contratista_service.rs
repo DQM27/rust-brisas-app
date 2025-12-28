@@ -130,13 +130,17 @@ pub async fn validar_ingreso_contratista(
     let fecha_vencimiento_str = {
         // The inner DateTime<Utc> can be obtained via Into trait
         let surreal_dt = &contratista.fecha_vencimiento_praind;
-        // Convert to string and extract just the date part (YYYY-MM-DD)
+        // Convert to string - format may be: d'2025-12-31T00:00:00Z' or 2025-12-31T00:00:00Z
         let dt_str = surreal_dt.to_string();
         println!(">>> DEBUG fecha_vencimiento_praind raw: {}", dt_str);
 
-        // SurrealDB Datetime format: "2025-12-31T00:00:00Z" - extract YYYY-MM-DD
-        let date_only = if dt_str.len() >= 10 {
-            dt_str[0..10].to_string()
+        // Remove the d' prefix and ' suffix if present
+        let clean_str =
+            dt_str.trim_start_matches("d'").trim_start_matches('\'').trim_end_matches('\'');
+
+        // Extract YYYY-MM-DD (first 10 characters)
+        let date_only = if clean_str.len() >= 10 {
+            clean_str[0..10].to_string()
         } else {
             // Fallback: use current date (but this shouldn't happen)
             chrono::Utc::now().format("%Y-%m-%d").to_string()
