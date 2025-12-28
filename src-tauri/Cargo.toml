@@ -2,7 +2,7 @@
 name = "mega-brisas"
 version = "1.0.0-alpha"
 description = "Mega Brisas - Sistema ERP de Control de Acceso"
-authors = ["Daniel Thompson"]
+authors = ["Daniel Quintana"]
 edition = "2021"
 
 [lib]

@@ -31,20 +31,6 @@ fn get_avatar_base_path() -> Result<PathBuf, String> {
     Ok(avatar_path)
 }
 
-/// Obtiene la ruta del archivo de avatar encriptado para un usuario
-fn get_avatar_file_path(user_id: &str) -> Result<PathBuf, String> {
-    let base = get_avatar_base_path()?;
-    // Sanitizar user_id: quitar prefijo "user:" y caracteres problemáticos
-    // SurrealDB usa formato "user:⟨uuid⟩" o "user:uuid"
-    let clean_id = user_id
-        .trim_start_matches("user:")
-        .replace(['⟨', '⟩', '<', '>', '/', '\\', '.', ':', '*', '?', '"', '|'], "");
-
-    let file_path = base.join(format!("{clean_id}.enc"));
-    log::debug!("Avatar path for user '{}': {:?}", user_id, file_path);
-    Ok(file_path)
-}
-
 /// Procesa una imagen: la redimensiona y la convierte a WebP
 fn process_image(image_path: &str) -> Result<Vec<u8>, String> {
     // Leer imagen desde el path
@@ -221,15 +207,4 @@ pub async fn delete_avatar(user_id: &str) -> Result<(), String> {
     }
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_sanitize_user_id() {
-        let path = get_avatar_file_path("user/../../../etc/passwd").unwrap();
-        assert!(path.to_string_lossy().contains("user____________etc_passwd"));
-    }
 }
