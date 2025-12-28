@@ -42,6 +42,7 @@ DEFINE INDEX idx_user_cedula ON user COLUMNS cedula UNIQUE;
 DEFINE FIELD segundo_nombre ON TABLE user TYPE option<string>;
 DEFINE FIELD segundo_apellido ON TABLE user TYPE option<string>;
 DEFINE FIELD fecha_inicio_labores ON TABLE user TYPE option<string>;
+DEFINE FIELD fecha_nacimiento ON TABLE user TYPE option<string>;
 DEFINE FIELD numero_gafete ON TABLE user TYPE option<string>;
 DEFINE FIELD telefono ON TABLE user TYPE option<string>;
 DEFINE FIELD direccion ON TABLE user TYPE option<string>;
