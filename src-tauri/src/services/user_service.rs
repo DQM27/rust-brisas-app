@@ -49,7 +49,13 @@ pub async fn create_user(
     }
 
     // 4. Determinar rol (default: Guardia)
-    let role_id_str = input.role_id.unwrap_or_else(|| ROLE_GUARDIA_ID.to_string());
+    // Fix: Clone Option, filter out empty strings, then default.
+    let role_id_str = input
+        .role_id
+        .clone()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| ROLE_GUARDIA_ID.to_string());
+
     let role_record = RecordId::from_table_key("role", &role_id_str);
 
     // 5. Generar o usar contraseña
@@ -65,7 +71,10 @@ pub async fn create_user(
         }
     };
 
-    info!("Creando usuario '{}' con rol '{}'", email_normalizado, role_record);
+    info!(
+        "Creando usuario '{}' con rol_id resolved: '{}' (original input: {:?})",
+        email_normalizado, role_record, input.role_id
+    );
     let password_hash = auth::hash_password(&password_str)?;
 
     // 6. Preparar DTO
