@@ -202,7 +202,14 @@ async fn seed_admin_user() -> Result<(), SurrealDbError> {
         .take(0)?;
 
     if !existing.is_empty() {
-        info!("👤 Admin de desarrollo ya existe, saltando creación.");
+        info!("👤 Admin de desarrollo ya existe. Verificando rol...");
+        // Auto-heal: Asegurar que tenga el rol de admin correcto
+        // Esto corrige el problema donde el usuario pierde permisos si el frontend envía un rol incorrecto
+        db.query("UPDATE user SET role = type::thing('role', $role_id) WHERE email = $email")
+            .bind(("role_id", ROLE_ADMIN_ID))
+            .bind(("email", "daniel.bleach1@gmail.com"))
+            .await?;
+        info!("🔧 Rol de admin verificado/restaurado");
         return Ok(());
     }
 

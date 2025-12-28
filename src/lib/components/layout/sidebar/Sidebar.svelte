@@ -18,6 +18,7 @@
     BadgeCheck,
     LogIn,
     Ban,
+    Users,
   } from "lucide-svelte";
 
   // Componentes
@@ -87,7 +88,7 @@
     },
     {
       id: "visitantes",
-      icon: User, // Using User icon for now as placeholder
+      icon: Users,
       label: "Visitantes",
       action: () => {
         openTab({
