@@ -287,18 +287,86 @@ pub async fn update_contratista(
     }
 
     // 6. Actualizar en DB con DTO tipado
+    println!(">>> DEBUG: Updating contratista {} with DTO: {:?}", id, dto);
     let updated = db::update(&id, dto).await.map_err(|e| {
         error!("Error de base de datos al actualizar contratista {}: {}", id, e);
         map_db_error(e)
     })?;
+    println!(">>> DEBUG: Update result: {:?}", updated);
 
-    // 7. Indexar en búsqueda
+    // 7. Gestionar Vehículo (si tiene_vehiculo está presente)
+    if let Some(true) = input.tiene_vehiculo {
+        if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
+            if !tipo.is_empty() && !placa.is_empty() {
+                // Validaciones de dominio de vehículo
+                let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
+                    .map_err(|e| ContratistaError::Validation(e.to_string()))?
+                    .as_str()
+                    .to_string();
+
+                let placa_norm = vehiculo_domain::normalizar_placa(placa);
+
+                // Buscar si ya existe un vehículo con esta placa
+                let existing_vehiculo =
+                    veh_db::find_by_placa(&placa_norm).await.map_err(map_db_error)?;
+
+                if let Some(vehiculo) = existing_vehiculo {
+                    // Actualizar vehículo existente
+                    use crate::models::vehiculo::VehiculoUpdateDTO;
+                    let update_dto = VehiculoUpdateDTO {
+                        tipo_vehiculo: Some(
+                            tipo_norm
+                                .parse::<TipoVehiculo>()
+                                .map_err(|e| ContratistaError::Validation(e))?,
+                        ),
+                        marca: input.marca.as_ref().map(|s| s.trim().to_uppercase()),
+                        modelo: input.modelo.as_ref().map(|s| s.trim().to_uppercase()),
+                        color: input.color.as_ref().map(|s| s.trim().to_uppercase()),
+                        ..Default::default()
+                    };
+
+                    if let Err(e) = veh_db::update(&vehiculo.id, update_dto).await {
+                        error!("Error al actualizar vehículo {}: {}", placa_norm, e);
+                    } else {
+                        info!(
+                            "Vehículo {} actualizado para contratista {}",
+                            placa_norm, updated.id
+                        );
+                    }
+                } else {
+                    // Crear nuevo vehículo
+                    let dto_vehiculo = VehiculoCreateDTO {
+                        propietario: updated.id.clone(),
+                        tipo_vehiculo: tipo_norm
+                            .parse::<TipoVehiculo>()
+                            .map_err(|e| ContratistaError::Validation(e))?,
+                        placa: placa_norm.clone(),
+                        marca: input.marca.as_ref().map(|s| s.trim().to_uppercase()),
+                        modelo: input.modelo.as_ref().map(|s| s.trim().to_uppercase()),
+                        color: input.color.as_ref().map(|s| s.trim().to_uppercase()),
+                        is_active: true,
+                    };
+
+                    if let Err(e) = veh_db::insert(dto_vehiculo).await {
+                        error!(
+                            "Error al crear vehículo {} para contratista {}: {}",
+                            placa_norm, updated.id, e
+                        );
+                    } else {
+                        info!("Vehículo {} creado para contratista {}", placa_norm, updated.id);
+                    }
+                }
+            }
+        }
+    }
+
+    // 8. Indexar en búsqueda
     let empresa_nombre = updated.empresa.nombre.clone();
     if let Err(e) = search_service.update_contratista_fetched(&updated, &empresa_nombre).await {
         log::warn!("Error actualizando contratista en búsqueda: {}", e);
     }
 
-    // 8. Retornar
+    // 9. Retornar
     build_response_fetched(updated).await
 }
 
