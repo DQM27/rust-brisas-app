@@ -48,8 +48,6 @@
   let gridApi = $state<GridApi | null>(null);
   let selectedRows = $state<T[]>([]);
   let showSettings = $state(false);
-  let isRestoring = false;
-  let canSaveState = false;
 
   // Contexto de toolbar
   const context = $derived.by((): ToolbarContext => {
@@ -168,75 +166,15 @@
     }
   });
 
-  // Persistencia de columnas - Dual write: Tauri Store + localStorage
-  async function saveColumnState(api: GridApi = gridApi!) {
-    if (!api || !persistenceKey || isRestoring || !canSaveState) return;
-    try {
-      const state = api.getColumnState();
-      const key = `ag-grid-state-${persistenceKey}`;
-      const stateJson = JSON.stringify(state);
-
-      // Sync save to localStorage
-      localStorage.setItem(key, stateJson);
-
-      // Async save to Tauri Store
-      try {
-        const { setSetting } = await import("$lib/services/storeService");
-        await setSetting(key, state);
-      } catch {
-        // Tauri Store not available
-      }
-    } catch (e) {
-      console.warn("Error saving grid state:", e);
-    }
-  }
-
-  async function restoreColumnState(api: GridApi): Promise<boolean> {
-    if (!api || !persistenceKey) return false;
-
-    let savedState: string | null = null;
-    const key = `ag-grid-state-${persistenceKey}`;
-
-    // Try Tauri Store first, then localStorage
-    try {
-      const { getSetting } = await import("$lib/services/storeService");
-      const storedState = await getSetting<any>(key, null);
-      if (storedState) {
-        savedState = JSON.stringify(storedState);
-      }
-    } catch {
-      // Fallback to localStorage
-    }
-
-    if (!savedState) {
-      savedState = localStorage.getItem(key);
-    }
-
-    if (savedState) {
-      try {
-        isRestoring = true;
-        api.applyColumnState({
-          state: JSON.parse(savedState),
-          applyOrder: true,
-        });
-        setTimeout(() => {
-          isRestoring = false;
-        }, 500);
-        return true;
-      } catch (e) {
-        console.warn("Error restoring grid state:", e);
-        isRestoring = false;
-        return false;
-      }
-    }
-    return false;
-  }
-
-  // Debounce para eventos de columna
+  // Debounce para eventos de columna - usa gridState store
   let columnEventTimeout: ReturnType<typeof setTimeout>;
   function debouncedSaveColumnState(api: GridApi) {
+    if (!persistenceKey) return;
     clearTimeout(columnEventTimeout);
-    columnEventTimeout = setTimeout(() => saveColumnState(api), 300);
+    columnEventTimeout = setTimeout(
+      () => gridState.saveColumnState(api, persistenceKey),
+      300,
+    );
   }
 
   // Configuración del grid
@@ -302,7 +240,10 @@
 
         let restored = false;
         if (persistenceKey) {
-          restored = await restoreColumnState(params.api);
+          restored = await gridState.restoreColumnState(
+            params.api,
+            persistenceKey,
+          );
         }
 
         if (!restored) {
@@ -310,7 +251,7 @@
         }
 
         setTimeout(() => {
-          canSaveState = true;
+          if (persistenceKey) gridState.enableSaving(persistenceKey);
           params.api.setGridOption("suppressColumnMoveAnimation", false);
         }, 500);
       }, 200);

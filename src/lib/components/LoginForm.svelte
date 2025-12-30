@@ -5,6 +5,7 @@
   import type { ZodIssue } from "zod";
   import { X, Minus, Lock } from "lucide-svelte";
   import { exitApp } from "$lib/services/keyringService";
+  import { loginStore } from "$lib/stores/loginStore.svelte";
 
   interface Props {
     loading?: boolean;
@@ -26,23 +27,11 @@
   let showDemoModal = $state(false);
   let rememberMe = $state(false);
 
-  onMount(async () => {
-    // Sync load from localStorage first
-    const savedEmail = localStorage.getItem("rememberedEmail");
-    if (savedEmail) {
-      email = savedEmail;
+  onMount(() => {
+    // Load remembered email from store
+    if (loginStore.hasRememberedEmail) {
+      email = loginStore.rememberedEmail;
       rememberMe = true;
-    }
-    // Then async load from Tauri Store
-    try {
-      const { getSetting } = await import("$lib/services/storeService");
-      const storedEmail = await getSetting<string>("rememberedEmail", "");
-      if (storedEmail) {
-        email = storedEmail;
-        rememberMe = true;
-      }
-    } catch {
-      // Tauri Store not available
     }
   });
 
@@ -85,21 +74,11 @@
       return;
     }
 
-    // 2. Persist rememberedEmail (dual-write)
+    // 2. Persist rememberedEmail using loginStore
     if (rememberMe) {
-      localStorage.setItem("rememberedEmail", email);
-      import("$lib/services/storeService")
-        .then(({ setSetting }) => {
-          setSetting("rememberedEmail", email);
-        })
-        .catch(() => {});
+      loginStore.setRememberedEmail(email);
     } else {
-      localStorage.removeItem("rememberedEmail");
-      import("$lib/services/storeService")
-        .then(({ deleteSetting }) => {
-          deleteSetting("rememberedEmail");
-        })
-        .catch(() => {});
+      loginStore.clearRememberedEmail();
     }
 
     onSubmit({ email, password });
@@ -121,18 +100,12 @@
   }
 
   export async function reset() {
-    // Load from Tauri Store first, fallback to localStorage
-    let savedEmail: string | null = null;
-    try {
-      const { getSetting } = await import("$lib/services/storeService");
-      savedEmail = await getSetting<string | null>("rememberedEmail", null);
-    } catch {
-      savedEmail = localStorage.getItem("rememberedEmail");
-    }
-    email = savedEmail || "";
+    // Reload from store
+    await loginStore.reload();
+    email = loginStore.rememberedEmail;
     password = "";
     errors = {};
-    rememberMe = !!savedEmail;
+    rememberMe = loginStore.hasRememberedEmail;
   }
 
   async function minimizeWindow() {
