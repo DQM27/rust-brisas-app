@@ -83,7 +83,7 @@ function createExportProfileStore() {
         getDefault: () => {
             let defaultProfile: ExportProfile | null = null;
             subscribe(s => {
-                defaultProfile = s.profiles.find(p => p.is_default) || null;
+                defaultProfile = s.profiles.find(p => p.isDefault) || null;
             })();
             return defaultProfile;
         }

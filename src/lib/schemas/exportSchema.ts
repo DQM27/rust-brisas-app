@@ -43,7 +43,7 @@ export const ExportProfileSchema = z.object({
     id: z.string().uuid(),
     name: z.string().min(1, "El nombre es requerido"),
     format: z.enum(["pdf", "excel", "csv"]),
-    is_default: z.boolean(),
+    isDefault: z.boolean(),
     title: z.string().optional(),
     show_preview: z.boolean().optional(),
     pdf_design: PdfDesignSchema.optional(),

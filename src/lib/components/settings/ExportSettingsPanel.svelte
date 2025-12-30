@@ -31,7 +31,7 @@
       id: crypto.randomUUID(),
       name: "Nuevo Perfil",
       format: "pdf",
-      is_default: false,
+      isDefault: false,
       title: "Reporte",
       show_preview: false,
       pdf_design: { ...DEFAULT_PDF_DESIGN },
@@ -68,7 +68,7 @@
       ...JSON.parse(JSON.stringify(profile)),
       id: crypto.randomUUID(),
       name: `${profile.name} (Copia)`,
-      is_default: false,
+      isDefault: false,
     };
     await exportProfileStore.save(newProfile);
   }
@@ -174,7 +174,7 @@
                     <h3 class="font-medium text-gray-900 dark:text-gray-100">
                       {profile.name}
                     </h3>
-                    {#if profile.is_default}
+                    {#if profile.isDefault}
                       <span
                         class="px-2 py-0.5 text-xs rounded-full bg-[#2da44e]/10 text-[#2da44e] font-medium"
                       >
@@ -222,7 +222,7 @@
 
               <!-- Actions -->
               <div class="flex items-center gap-1">
-                {#if !profile.is_default}
+                {#if !profile.isDefault}
                   <button
                     onclick={() => setDefaultProfile(profile.id)}
                     class="p-2 rounded-md text-gray-400 hover:text-[#2da44e] hover:bg-gray-100 dark:hover:bg-[#161b22] transition-colors"

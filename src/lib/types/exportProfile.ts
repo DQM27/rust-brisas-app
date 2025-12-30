@@ -29,7 +29,7 @@ export interface ExportProfile {
   id: string;
   name: string;
   format: "pdf" | "excel" | "csv";
-  is_default: boolean;
+  isDefault: boolean;
 
   // Opciones comunes
   title?: string;
