@@ -161,7 +161,7 @@ fn construir_csv_config(request: &ExportRequest) -> ExportResult<CsvConfig> {
 // ==========================================
 
 /// Exporta a PDF usando Typst
-// Exporta a PDF usando Typst
+// Exporta a PDF usando Typst (con spawn_blocking para no bloquear UI)
 #[cfg(feature = "export")]
 async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse> {
     use crate::export::pdf;
@@ -197,8 +197,17 @@ async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse
         fonts: PdfFonts { family: "Inter".to_string(), size: 10, header_size: 11 },
     });
 
-    // Generar PDF
-    let pdf_bytes = pdf::generate_pdf(&data.headers, &data.rows, &config, &design)?;
+    // ✅ PERFORMANCE: Run CPU-intensive Typst compilation on blocking thread
+    let headers = data.headers.clone();
+    let rows = data.rows.clone();
+    let config_clone = config.clone();
+    let design_clone = design.clone();
+
+    let pdf_bytes = tokio::task::spawn_blocking(move || {
+        pdf::generate_pdf(&headers, &rows, &config_clone, &design_clone)
+    })
+    .await
+    .map_err(|e| ExportError::Unknown(format!("Error en thread de PDF: {}", e)))??;
 
     // Determinar si guardar en disco
     let file_path = if let Some(path) = data.target_path {
@@ -226,7 +235,7 @@ async fn export_to_pdf_internal(_data: ExportData) -> ExportResult<ExportRespons
     Err(ExportError::Unknown("Función de exportación PDF no disponible en esta build".to_string()))
 }
 
-/// Exporta a Excel usando rust_xlsxwriter
+/// Exporta a Excel usando rust_xlsxwriter (con spawn_blocking para no bloquear UI)
 #[cfg(feature = "export")]
 async fn export_to_excel_internal(data: ExportData) -> ExportResult<ExportResponse> {
     use crate::export::excel;
@@ -235,8 +244,16 @@ async fn export_to_excel_internal(data: ExportData) -> ExportResult<ExportRespon
         .excel_config
         .ok_or_else(|| ExportError::Unknown("Config Excel no encontrada".to_string()))?;
 
-    // ✅ Generar Excel con target_path opcional
-    let file_path = excel::generate_excel(&data.headers, &data.rows, &config, data.target_path)?;
+    // ✅ PERFORMANCE: Run CPU-intensive Excel generation on blocking thread
+    let headers = data.headers.clone();
+    let rows = data.rows.clone();
+    let target_path = data.target_path.clone();
+
+    let file_path = tokio::task::spawn_blocking(move || {
+        excel::generate_excel(&headers, &rows, &config, target_path)
+    })
+    .await
+    .map_err(|e| ExportError::Unknown(format!("Error en thread de Excel: {}", e)))??;
 
     Ok(ExportResponse {
         success: true,
