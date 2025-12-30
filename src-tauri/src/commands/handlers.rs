@@ -200,10 +200,8 @@ macro_rules! register_handlers {
             commands::keyring_commands::test_keyring,
             commands::keyring_commands::reset_all_credentials,
             // ==========================================
-            // COMANDOS DE DEBUG / SISTEMA
-            // ==========================================            // Debug
-            commands::debug_commands::get_app_memory_usage,
-            // System
+            // COMANDOS DE SISTEMA
+            // ==========================================
             commands::system_commands::get_system_idle_time,
             // ==========================================
             // COMANDOS DE ROLES

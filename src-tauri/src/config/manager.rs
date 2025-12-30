@@ -45,10 +45,7 @@ pub fn load_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
                 Ok(content) => {
                     match toml::from_str::<AppConfig>(&content) {
                         Ok(mut config) => {
-                            log::info!(
-                                "🔧 Config cargada: show_demo_mode = {}",
-                                config.setup.show_demo_mode
-                            );
+                            log::info!("🔧 Config cargada correctamente");
 
                             // Generar ID si está vacío
                             if config.terminal.id.is_empty() {
