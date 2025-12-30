@@ -168,23 +168,50 @@
     }
   });
 
-  // Persistencia de columnas
-  function saveColumnState(api: GridApi = gridApi!) {
+  // Persistencia de columnas - Dual write: Tauri Store + localStorage
+  async function saveColumnState(api: GridApi = gridApi!) {
     if (!api || !persistenceKey || isRestoring || !canSaveState) return;
     try {
       const state = api.getColumnState();
-      localStorage.setItem(
-        `ag-grid-state-${persistenceKey}`,
-        JSON.stringify(state),
-      );
+      const key = `ag-grid-state-${persistenceKey}`;
+      const stateJson = JSON.stringify(state);
+
+      // Sync save to localStorage
+      localStorage.setItem(key, stateJson);
+
+      // Async save to Tauri Store
+      try {
+        const { setSetting } = await import("$lib/services/storeService");
+        await setSetting(key, state);
+      } catch {
+        // Tauri Store not available
+      }
     } catch (e) {
       console.warn("Error saving grid state:", e);
     }
   }
 
-  function restoreColumnState(api: GridApi): boolean {
+  async function restoreColumnState(api: GridApi): Promise<boolean> {
     if (!api || !persistenceKey) return false;
-    const savedState = localStorage.getItem(`ag-grid-state-${persistenceKey}`);
+
+    let savedState: string | null = null;
+    const key = `ag-grid-state-${persistenceKey}`;
+
+    // Try Tauri Store first, then localStorage
+    try {
+      const { getSetting } = await import("$lib/services/storeService");
+      const storedState = await getSetting<any>(key, null);
+      if (storedState) {
+        savedState = JSON.stringify(storedState);
+      }
+    } catch {
+      // Fallback to localStorage
+    }
+
+    if (!savedState) {
+      savedState = localStorage.getItem(key);
+    }
+
     if (savedState) {
       try {
         isRestoring = true;
@@ -270,12 +297,12 @@
       gridApi = params.api;
       onGridReady?.(params.api);
 
-      setTimeout(() => {
+      setTimeout(async () => {
         if (params.api.isDestroyed()) return;
 
         let restored = false;
         if (persistenceKey) {
-          restored = restoreColumnState(params.api);
+          restored = await restoreColumnState(params.api);
         }
 
         if (!restored) {

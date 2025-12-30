@@ -26,11 +26,23 @@
   let showDemoModal = $state(false);
   let rememberMe = $state(false);
 
-  onMount(() => {
+  onMount(async () => {
+    // Sync load from localStorage first
     const savedEmail = localStorage.getItem("rememberedEmail");
     if (savedEmail) {
       email = savedEmail;
       rememberMe = true;
+    }
+    // Then async load from Tauri Store
+    try {
+      const { getSetting } = await import("$lib/services/storeService");
+      const storedEmail = await getSetting<string>("rememberedEmail", "");
+      if (storedEmail) {
+        email = storedEmail;
+        rememberMe = true;
+      }
+    } catch {
+      // Tauri Store not available
     }
   });
 
@@ -73,11 +85,21 @@
       return;
     }
 
-    // 2. Enviar si es válido
+    // 2. Persist rememberedEmail (dual-write)
     if (rememberMe) {
       localStorage.setItem("rememberedEmail", email);
+      import("$lib/services/storeService")
+        .then(({ setSetting }) => {
+          setSetting("rememberedEmail", email);
+        })
+        .catch(() => {});
     } else {
       localStorage.removeItem("rememberedEmail");
+      import("$lib/services/storeService")
+        .then(({ deleteSetting }) => {
+          deleteSetting("rememberedEmail");
+        })
+        .catch(() => {});
     }
 
     onSubmit({ email, password });
@@ -98,16 +120,19 @@
     showDemoModal = false;
   }
 
-  export function reset() {
-    const savedEmail = localStorage.getItem("rememberedEmail");
+  export async function reset() {
+    // Load from Tauri Store first, fallback to localStorage
+    let savedEmail: string | null = null;
+    try {
+      const { getSetting } = await import("$lib/services/storeService");
+      savedEmail = await getSetting<string | null>("rememberedEmail", null);
+    } catch {
+      savedEmail = localStorage.getItem("rememberedEmail");
+    }
     email = savedEmail || "";
     password = "";
     errors = {};
-    if (savedEmail) {
-      rememberMe = true;
-    } else {
-      rememberMe = false;
-    }
+    rememberMe = !!savedEmail;
   }
 
   async function minimizeWindow() {
