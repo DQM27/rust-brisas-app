@@ -1,11 +1,11 @@
 <script lang="ts">
   import { preventDefault } from "svelte/legacy";
   import { onMount } from "svelte";
-  import { LoginSchema } from "$lib/schemas/userSchema";
-  import type { ZodIssue } from "zod";
   import { X, Minus, Lock } from "lucide-svelte";
   import { exitApp } from "$lib/services/keyringService";
   import { loginStore } from "$lib/stores/loginStore.svelte";
+  import { DEMO_USERS } from "$lib/config/demoUsers";
+  import { validateLoginForm } from "$lib/logic/auth/loginValidation";
 
   interface Props {
     loading?: boolean;
@@ -35,44 +35,16 @@
     }
   });
 
-  // Usuarios demo con científicos famosos
-  const demoUsers = [
-    {
-      email: "marie.curie@demo.com",
-      role: "Supervisora",
-      name: "Marie Curie",
-      icon: "👩‍🔬",
-    },
-    {
-      email: "albert.einstein@demo.com",
-      role: "Administrador",
-      name: "Albert Einstein",
-      icon: "👨‍🔬",
-    },
-    {
-      email: "richard.feynman@demo.com",
-      role: "Guardia",
-      name: "Richard Feynman",
-      icon: "🧑‍🔬",
-    },
-  ];
-
   function handleSubmit() {
-    errors = {};
+    // 1. Validate using extracted logic
+    const result = validateLoginForm(email, password);
 
-    // 1. Validar localmente con Zod
-    const result = LoginSchema.safeParse({ email, password });
-
-    if (!result.success) {
-      const newErrors: Record<string, string> = {};
-      result.error.issues.forEach((issue: ZodIssue) => {
-        if (issue.path[0]) {
-          newErrors[String(issue.path[0])] = issue.message;
-        }
-      });
-      errors = newErrors;
+    if (!result.valid) {
+      errors = result.errors;
       return;
     }
+
+    errors = {};
 
     // 2. Persist rememberedEmail using loginStore
     if (rememberMe) {
@@ -268,7 +240,7 @@
 
       <!-- Users -->
       <div class="flex flex-col gap-2 mb-4">
-        {#each demoUsers as user}
+        {#each DEMO_USERS as user}
           <button
             type="button"
             onclick={() => handleDemoUserSelect(user.email)}
