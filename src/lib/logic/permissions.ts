@@ -60,6 +60,13 @@ export type Action =
     | 'UPDATE_GAFETE'
     | 'DELETE_GAFETE'
 
+    // Settings Modules
+    | 'VIEW_SETTINGS_GENERAL'
+    | 'VIEW_SETTINGS_VISUAL'
+    | 'VIEW_SETTINGS_SECURITY'
+    | 'VIEW_SETTINGS_SESSIONS'
+    | 'VIEW_SETTINGS_BACKUP'
+
     // Role Module
     | 'VIEW_ROLE_LIST'
     | 'CREATE_ROLE'
@@ -178,6 +185,13 @@ export function can(actor: UserResponse | null | undefined, action: Action, targ
             'CREATE_GAFETE': 'gafetes:create',
             'UPDATE_GAFETE': 'gafetes:update',
             'DELETE_GAFETE': 'gafetes:delete',
+
+            // Settings
+            'VIEW_SETTINGS_GENERAL': 'settings_general:read',
+            'VIEW_SETTINGS_VISUAL': 'settings_visual:read',
+            'VIEW_SETTINGS_SECURITY': 'settings_security:read',
+            'VIEW_SETTINGS_SESSIONS': 'settings_sessions:read',
+            'VIEW_SETTINGS_BACKUP': 'backup:read',
 
             // Roles
             'VIEW_ROLE_LIST': 'roles:read',

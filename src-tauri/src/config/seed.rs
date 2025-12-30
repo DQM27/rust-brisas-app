@@ -115,6 +115,15 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
         "visitantes:create",
         "visitantes:read",
         "visitantes:update",
+        "settings_general:view",
+        "settings_general:read",
+        "settings_visual:view",
+        "settings_visual:read",
+        "settings_visual:update",
+        "settings_security:view",
+        "settings_security:read",
+        "settings_sessions:view",
+        "settings_sessions:read",
     ];
 
     for (id, name, desc, inherits) in roles {

@@ -463,42 +463,50 @@
             onkeydown={(e) => e.key === "Escape" && closeSettingsMenu()}
           >
             <!-- Grupo 1: Configuración Principal -->
-            <button
-              class="settings-menu-item"
-              onclick={() =>
-                handleSettingsAction(() =>
-                  openView("general-settings", "Ajustes Generales"),
-                )}
-            >
-              Ajustes Generales
-            </button>
-            <button
-              class="settings-menu-item"
-              onclick={() =>
-                handleSettingsAction(() =>
-                  openView("visual-settings", "Ajustes Gráficos"),
-                )}
-            >
-              Ajustes Gráficos
-            </button>
-            <button
-              class="settings-menu-item"
-              onclick={() =>
-                handleSettingsAction(() =>
-                  openView("security-settings", "Seguridad y Credenciales"),
-                )}
-            >
-              Seguridad y Credenciales
-            </button>
-            <button
-              class="settings-menu-item"
-              onclick={() =>
-                handleSettingsAction(() =>
-                  openView("session-settings", "Gestión de Sesión"),
-                )}
-            >
-              Gestión de Sesión
-            </button>
+            {#if $currentUser && can($currentUser, "VIEW_SETTINGS_GENERAL")}
+              <button
+                class="settings-menu-item"
+                onclick={() =>
+                  handleSettingsAction(() =>
+                    openView("general-settings", "Ajustes Generales"),
+                  )}
+              >
+                Ajustes Generales
+              </button>
+            {/if}
+            {#if $currentUser && can($currentUser, "VIEW_SETTINGS_VISUAL")}
+              <button
+                class="settings-menu-item"
+                onclick={() =>
+                  handleSettingsAction(() =>
+                    openView("visual-settings", "Ajustes Gráficos"),
+                  )}
+              >
+                Ajustes Gráficos
+              </button>
+            {/if}
+            {#if $currentUser && can($currentUser, "VIEW_SETTINGS_SECURITY")}
+              <button
+                class="settings-menu-item"
+                onclick={() =>
+                  handleSettingsAction(() =>
+                    openView("security-settings", "Seguridad y Credenciales"),
+                  )}
+              >
+                Seguridad y Credenciales
+              </button>
+            {/if}
+            {#if $currentUser && can($currentUser, "VIEW_SETTINGS_SESSIONS")}
+              <button
+                class="settings-menu-item"
+                onclick={() =>
+                  handleSettingsAction(() =>
+                    openView("session-settings", "Gestión de Sesión"),
+                  )}
+              >
+                Gestión de Sesión
+              </button>
+            {/if}
 
             {#if $currentUser && can($currentUser, "VIEW_ROLE_LIST")}
               <button
@@ -529,22 +537,26 @@
             <div class="settings-menu-separator"></div>
 
             <!-- Grupo 3: Datos -->
-            <button
-              class="settings-menu-item"
-              onclick={() =>
-                handleSettingsAction(() =>
-                  openView("export-settings", "Configuración de Exportación"),
-                )}
-            >
-              Exportación
-            </button>
-            <button
-              class="settings-menu-item"
-              onclick={() =>
-                handleSettingsAction(() => (showBackupModal = true))}
-            >
-              Generar Respaldo
-            </button>
+            {#if $currentUser && can($currentUser, "VIEW_SETTINGS_BACKUP")}
+              <button
+                class="settings-menu-item"
+                onclick={() =>
+                  handleSettingsAction(() =>
+                    openView("export-settings", "Configuración de Exportación"),
+                  )}
+              >
+                Exportación
+              </button>
+            {/if}
+            {#if $currentUser && can($currentUser, "VIEW_SETTINGS_BACKUP")}
+              <button
+                class="settings-menu-item"
+                onclick={() =>
+                  handleSettingsAction(() => (showBackupModal = true))}
+              >
+                Generar Respaldo
+              </button>
+            {/if}
 
             {#if $currentUser && ([ROLE_ADMIN_ID.toLowerCase(), ROLE_SUPERVISOR_ID.toLowerCase()].includes($currentUser.roleId.toLowerCase()) || ["admin", "administrador", "supervisor"].includes($currentUser.roleName.toLowerCase()))}
               <div class="settings-menu-separator"></div>
