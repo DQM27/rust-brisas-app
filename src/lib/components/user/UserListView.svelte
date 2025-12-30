@@ -130,6 +130,7 @@
     const selected = selectedRows[0];
     const canCreate = $currentUser && can($currentUser, "CREATE_USER");
     const canDelete = $currentUser && can($currentUser, "DELETE_USER");
+    const canViewDetail = $currentUser && can($currentUser, "VIEW_USER_DETAIL");
 
     let defaultBtns = [];
     if (canCreate) {
@@ -160,16 +161,18 @@
         }),
       );
     } else {
-      singleSelectBtns.push({
-        id: "view-detail",
-        label: "Ver Detalle",
-        icon: Eye,
-        onClick: () => {
-          if (selected) openModal(selected, true);
-        },
-        variant: "default" as const,
-        tooltip: "Ver detalles del usuario",
-      });
+      if (canViewDetail) {
+        singleSelectBtns.push({
+          id: "view-detail",
+          label: "Ver Detalle",
+          icon: Eye,
+          onClick: () => {
+            if (selected) openModal(selected, true);
+          },
+          variant: "default" as const,
+          tooltip: "Ver detalles del usuario",
+        });
+      }
     }
 
     if (canDelete) {

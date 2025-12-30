@@ -18,9 +18,11 @@ export type Action =
     | 'CHANGE_USER_PASSWORD'
     | 'RESET_USER_PASSWORD'
     | 'DELETE_USER'
+    | 'VIEW_USER_DETAIL'
 
     // Contractor Module
     | 'VIEW_CONTRACTOR_LIST'
+    | 'VIEW_CONTRACTOR_DETAIL'
     | 'CREATE_CONTRACTOR'
     | 'UPDATE_CONTRACTOR'
     | 'DELETE_CONTRACTOR'
@@ -30,6 +32,7 @@ export type Action =
     | 'CREATE_PROVIDER'
     | 'UPDATE_PROVIDER'
     | 'DELETE_PROVIDER'
+    | 'VIEW_PROVIDER_DETAIL'
 
     // Visitor Module
     | 'VIEW_VISITOR_LIST'
@@ -143,6 +146,7 @@ export function can(actor: UserResponse | null | undefined, action: Action, targ
         const permissionMap: Record<Action, string> = {
             // User
             'VIEW_USER_LIST': 'users:read',
+            'VIEW_USER_DETAIL': 'users:view',
             'CREATE_USER': 'users:create',
             'UPDATE_USER_PROFILE': 'users:update',
             'UPDATE_USER_SENSITIVE': 'users:update',
@@ -152,12 +156,14 @@ export function can(actor: UserResponse | null | undefined, action: Action, targ
 
             // Contractor
             'VIEW_CONTRACTOR_LIST': 'contratistas:read',
+            'VIEW_CONTRACTOR_DETAIL': 'contratistas:view',
             'CREATE_CONTRACTOR': 'contratistas:create',
             'UPDATE_CONTRACTOR': 'contratistas:update',
             'DELETE_CONTRACTOR': 'contratistas:delete',
 
             // Provider
             'VIEW_PROVIDER_LIST': 'proveedores:read',
+            'VIEW_PROVIDER_DETAIL': 'proveedores:view',
             'CREATE_PROVIDER': 'proveedores:create',
             'UPDATE_PROVIDER': 'proveedores:update',
             'DELETE_PROVIDER': 'proveedores:delete',

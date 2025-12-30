@@ -111,6 +111,8 @@
     const canCreate = $currentUser && can($currentUser, "CREATE_CONTRACTOR");
     const canUpdate = $currentUser && can($currentUser, "UPDATE_CONTRACTOR");
     const canDelete = $currentUser && can($currentUser, "DELETE_CONTRACTOR");
+    const canViewDetail =
+      $currentUser && can($currentUser, "VIEW_CONTRACTOR_DETAIL");
 
     // Default buttons
     let defaultBtns = [];
@@ -151,17 +153,19 @@
         }),
       );
     } else {
-      // Si NO puede actualizar, mostramos botón "Ver Detalle"
-      singleSelectBtns.push({
-        id: "view-detail",
-        label: "Ver Detalle",
-        icon: Eye,
-        onClick: () => {
-          if (selected) openModal(selected, true); // true = readonly
-        },
-        variant: "default" as const,
-        tooltip: "Ver detalles del contratista",
-      });
+      // Si NO puede actualizar, mostramos botón "Ver Detalle" si tiene el permiso VIEW_CONTRACTOR_DETAIL
+      if (canViewDetail) {
+        singleSelectBtns.push({
+          id: "view-detail",
+          label: "Ver Detalle",
+          icon: Eye,
+          onClick: () => {
+            if (selected) openModal(selected, true); // true = readonly
+          },
+          variant: "default" as const,
+          tooltip: "Ver detalles del contratista",
+        });
+      }
     }
 
     if (canDelete) {

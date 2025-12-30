@@ -58,7 +58,7 @@
           focusOnOpen: true,
         });
       },
-      permission: "VIEW_USER_LIST",
+      permission: "VIEW_USER_DETAIL", // Changed from VIEW_USER_LIST so 'View' toggle controls sidebar
     },
     {
       id: "contractors",
@@ -72,7 +72,7 @@
           focusOnOpen: true,
         });
       },
-      permission: "VIEW_CONTRACTOR_LIST",
+      permission: "VIEW_CONTRACTOR_DETAIL", // Changed from VIEW_CONTRACTOR_LIST
     },
     {
       id: "proveedores",
@@ -86,7 +86,7 @@
           focusOnOpen: true,
         });
       },
-      permission: "VIEW_PROVIDER_LIST",
+      permission: "VIEW_PROVIDER_DETAIL", // Changed from VIEW_PROVIDER_LIST
     },
     {
       id: "visitantes",

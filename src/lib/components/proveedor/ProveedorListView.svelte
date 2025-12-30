@@ -169,6 +169,8 @@
     const canCreate = $currentUser && can($currentUser, "CREATE_PROVIDER");
     const canUpdate = $currentUser && can($currentUser, "UPDATE_PROVIDER");
     const canDelete = $currentUser && can($currentUser, "DELETE_PROVIDER");
+    const canViewDetail =
+      $currentUser && can($currentUser, "VIEW_PROVIDER_DETAIL");
 
     let defaultBtns = [];
     if (canCreate) {
@@ -192,16 +194,18 @@
         }),
       );
     } else {
-      singleSelectBtns.push({
-        id: "view-detail",
-        label: "Ver Detalle",
-        icon: Eye,
-        onClick: () => {
-          if (selected) openFormModal(selected, true);
-        },
-        variant: "default" as const,
-        tooltip: "Ver detalles del proveedor",
-      });
+      if (canViewDetail) {
+        singleSelectBtns.push({
+          id: "view-detail",
+          label: "Ver Detalle",
+          icon: Eye,
+          onClick: () => {
+            if (selected) openFormModal(selected, true);
+          },
+          variant: "default" as const,
+          tooltip: "Ver detalles del proveedor",
+        });
+      }
     }
 
     if (canDelete) {
