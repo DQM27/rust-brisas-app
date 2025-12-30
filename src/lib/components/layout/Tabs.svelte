@@ -1,3 +1,4 @@
+<script lang="ts">
   import {
     activeTabId,
     closeTab,
@@ -106,10 +107,7 @@
 <div class="flex h-full flex-col overflow-hidden">
   <!-- Tabs bar -->
   {#if !$generalSettings.isKioskMode}
-    <div
-      class="tab-bar scrollbar-hide"
-      role="tablist"
-    >
+    <div class="tab-bar scrollbar-hide" role="tablist">
       {#each items as { id, tab }, index (id)}
         {@const isActive = $activeTabId === id}
 
