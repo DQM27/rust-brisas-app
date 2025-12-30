@@ -10,11 +10,6 @@ pub async fn get_app_config(config: State<'_, AppConfigState>) -> Result<AppConf
         .read()
         .map_err(|e| ConfigError::Message(format!("Error al leer configuración: {}", e)))?;
 
-    log::debug!(
-        "📖 get_app_config llamado: show_demo_mode = {}",
-        config_guard.setup.show_demo_mode
-    );
-
     Ok(config_guard.clone())
 }
 
@@ -70,29 +65,4 @@ pub async fn update_audio_config(
         .map_err(|e| ConfigError::Message(format!("Error al guardar configuración: {}", e)))?;
 
     Ok(())
-}
-
-#[command]
-pub async fn toggle_demo_mode(
-    config: State<'_, AppConfigState>,
-    enabled: bool,
-) -> Result<bool, ConfigError> {
-    info!("🔄 Cambiando modo demo a: {}", enabled);
-
-    let mut config_guard = config
-        .write()
-        .map_err(|e| ConfigError::Message(format!("Error al escribir configuración: {}", e)))?;
-    config_guard.setup.show_demo_mode = enabled;
-
-    let config_path = if let Some(data_dir) = dirs::data_local_dir() {
-        data_dir.join("Brisas").join("brisas.toml")
-    } else {
-        std::path::PathBuf::from("./config/brisas.toml")
-    };
-    save_config(&config_guard, &config_path)
-        .map_err(|e| ConfigError::Message(format!("Error al guardar configuración: {}", e)))?;
-
-    info!("✅ Modo demo actualizado en configuración. Reinicie la app para aplicar cambios de base de datos.");
-
-    Ok(enabled)
 }

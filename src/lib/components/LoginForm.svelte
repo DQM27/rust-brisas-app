@@ -1,34 +1,23 @@
 <script lang="ts">
   import { preventDefault } from "svelte/legacy";
   import { onMount } from "svelte";
-  import { X, Minus, Lock } from "lucide-svelte";
   import { exitApp } from "$lib/services/keyringService";
   import { loginStore } from "$lib/stores/loginStore.svelte";
-  import { DEMO_USERS } from "$lib/config/demoUsers";
   import { validateLoginForm } from "$lib/logic/auth/loginValidation";
 
   interface Props {
     loading?: boolean;
-    showDemoLink?: boolean;
     onSubmit: (data: { email: string; password: string }) => void;
-    onDemoLogin?: (email: string) => void;
   }
 
-  let {
-    loading = false,
-    showDemoLink = false,
-    onSubmit,
-    onDemoLogin,
-  }: Props = $props();
+  let { loading = false, onSubmit }: Props = $props();
 
   let email = $state("");
   let password = $state("");
   let errors = $state<Record<string, string>>({});
-  let showDemoModal = $state(false);
   let rememberMe = $state(false);
 
   onMount(() => {
-    // Load remembered email from store
     if (loginStore.hasRememberedEmail) {
       email = loginStore.rememberedEmail;
       rememberMe = true;
@@ -36,7 +25,6 @@
   });
 
   function handleSubmit() {
-    // 1. Validate using extracted logic
     const result = validateLoginForm(email, password);
 
     if (!result.valid) {
@@ -46,7 +34,6 @@
 
     errors = {};
 
-    // 2. Persist rememberedEmail using loginStore
     if (rememberMe) {
       loginStore.setRememberedEmail(email);
     } else {
@@ -56,23 +43,7 @@
     onSubmit({ email, password });
   }
 
-  function handleDemoClick() {
-    showDemoModal = true;
-  }
-
-  function handleDemoUserSelect(userEmail: string) {
-    showDemoModal = false;
-    if (onDemoLogin) {
-      onDemoLogin(userEmail);
-    }
-  }
-
-  function closeDemoModal() {
-    showDemoModal = false;
-  }
-
   export async function reset() {
-    // Reload from store
     await loginStore.reload();
     email = loginStore.rememberedEmail;
     password = "";
@@ -195,98 +166,5 @@
         {/if}
       </button>
     </div>
-
-    <!-- Link de Demo (solo visible si está habilitado) -->
-    {#if showDemoLink}
-      <div class="text-center">
-        <button
-          type="button"
-          onclick={handleDemoClick}
-          disabled={loading}
-          class="text-sm text-amber-500 hover:text-amber-400 hover:underline transition-colors disabled:opacity-50"
-        >
-          ¿Modo Demo?
-        </button>
-      </div>
-    {/if}
   </form>
 </div>
-
-<!-- Modal de Demo -->
-{#if showDemoModal}
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in"
-    onclick={closeDemoModal}
-    onkeydown={(e) => e.key === "Escape" && closeDemoModal()}
-    role="dialog"
-    tabindex="-1"
-  >
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="w-full max-w-sm mx-4 rounded-lg bg-surface-2 p-6 shadow-2xl border border-surface-tertiary animate-scale-in"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
-    >
-      <!-- Header -->
-      <div class="flex items-center gap-3 mb-4">
-        <span class="text-2xl">🧪</span>
-        <div>
-          <h2 class="text-lg font-bold text-primary">Modo Demo</h2>
-          <p class="text-xs text-tertiary">
-            Selecciona un usuario para continuar
-          </p>
-        </div>
-      </div>
-
-      <!-- Users -->
-      <div class="flex flex-col gap-2 mb-4">
-        {#each DEMO_USERS as user}
-          <button
-            type="button"
-            onclick={() => handleDemoUserSelect(user.email)}
-            class="flex items-center gap-3 w-full rounded-lg bg-surface-1 px-4 py-3 text-left transition-all hover:bg-surface-3 hover:shadow-md border border-surface-tertiary hover:border-accent/50"
-          >
-            <span class="text-2xl">{user.icon}</span>
-            <div class="flex-1">
-              <div class="font-medium text-primary">{user.name}</div>
-              <div class="text-xs text-tertiary">{user.role}</div>
-            </div>
-            <span class="text-accent">→</span>
-          </button>
-        {/each}
-      </div>
-
-      <!-- Footer -->
-      <div
-        class="flex justify-between items-center pt-3 border-t border-surface-tertiary"
-      >
-        <p class="text-xs text-tertiary">
-          <span class="text-amber-500">⚡</span> Carga datos de prueba automáticamente
-        </p>
-        <button
-          type="button"
-          onclick={closeDemoModal}
-          class="text-sm text-tertiary hover:text-primary transition-colors"
-        >
-          Cancelar
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
-
-<style>
-  @keyframes scale-in {
-    from {
-      transform: scale(0.95);
-      opacity: 0;
-    }
-    to {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-  .animate-scale-in {
-    animation: scale-in 0.2s ease-out;
-  }
-</style>

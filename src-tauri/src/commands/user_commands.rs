@@ -79,29 +79,6 @@ pub async fn change_password(id: String, input: ChangePasswordInput) -> Result<(
     user_service::change_password(id, input).await
 }
 
-/// Ejecuta el seed de demostración y logea con un usuario demo
-#[tauri::command]
-pub async fn demo_login(
-    session: State<'_, SessionState>,
-    email: String,
-) -> Result<UserResponse, UserError> {
-    log::warn!("⚠️ demo_login (SurrealDB Native)");
-    let user_response = user_service::login(email, "demo".to_string()).await?;
-
-    // Update SessionState
-    let session_user = SessionUser {
-        id: user_response.id.clone(),
-        email: user_response.email.clone(),
-        nombre: user_response.nombre.clone(),
-        apellido: user_response.apellido.clone(),
-        role_id: user_response.role_id.clone(),
-        role_name: user_response.role_name.clone(),
-    };
-
-    session.set_user(session_user);
-    Ok(user_response)
-}
-
 // ==========================================
 // AVATAR COMMANDS (Encrypted Storage)
 // ==========================================

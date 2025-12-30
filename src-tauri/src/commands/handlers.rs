@@ -12,7 +12,6 @@ macro_rules! register_handlers {
             commands::user_commands::delete_user,
             commands::user_commands::login,
             commands::user_commands::change_password,
-            commands::user_commands::demo_login,
             commands::user_commands::upload_user_avatar,
             commands::user_commands::get_user_avatar,
             // Comandos de empresa
@@ -180,7 +179,6 @@ macro_rules! register_handlers {
             commands::config_commands::get_app_config,
             commands::config_commands::update_terminal_config,
             commands::config_commands::update_audio_config,
-            commands::config_commands::toggle_demo_mode,
             // ==========================================
             // COMANDOS DE VENTANA
             // ==========================================
