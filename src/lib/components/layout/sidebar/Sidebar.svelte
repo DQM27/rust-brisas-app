@@ -72,6 +72,7 @@
           focusOnOpen: true,
         });
       },
+      permission: "VIEW_CONTRACTOR_LIST",
     },
     {
       id: "proveedores",
@@ -85,6 +86,7 @@
           focusOnOpen: true,
         });
       },
+      permission: "VIEW_PROVIDER_LIST",
     },
     {
       id: "visitantes",
@@ -98,6 +100,7 @@
           focusOnOpen: true,
         });
       },
+      permission: "VIEW_VISITOR_LIST",
     },
     {
       id: "blacklist",
@@ -111,6 +114,7 @@
           focusOnOpen: true,
         });
       },
+      permission: "VIEW_BLACKLIST",
     },
     {
       id: "citas",
@@ -124,6 +128,7 @@
           focusOnOpen: true,
         });
       },
+      permission: "VIEW_APPOINTMENT_LIST",
     },
     {
       id: "gafetes",
@@ -137,6 +142,7 @@
           focusOnOpen: true,
         });
       },
+      permission: "VIEW_GAFETE_LIST",
     },
     {
       id: "ingresos",
@@ -150,6 +156,7 @@
           focusOnOpen: true,
         });
       },
+      permission: "VIEW_ENTRY_LIST",
     },
     {
       id: "logs",
@@ -493,7 +500,7 @@
               Gestión de Sesión
             </button>
 
-            {#if $currentUser && can($currentUser, "VIEW_USER_LIST")}
+            {#if $currentUser && can($currentUser, "VIEW_ROLE_LIST")}
               <button
                 class="settings-menu-item"
                 onclick={() =>

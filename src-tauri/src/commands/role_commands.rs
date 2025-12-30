@@ -17,17 +17,27 @@ use tauri::State;
 // ==========================================
 
 #[tauri::command]
-pub async fn get_all_roles() -> Result<RoleListResponse, RoleError> {
+pub async fn get_all_roles(
+    session: State<'_, SessionState>,
+) -> Result<RoleListResponse, RoleError> {
+    require_perm!(session, "roles:read")?;
     role_service::get_all_roles().await
 }
 
 #[tauri::command]
-pub async fn get_role_by_id(id: String) -> Result<RoleResponse, RoleError> {
+pub async fn get_role_by_id(
+    session: State<'_, SessionState>,
+    id: String,
+) -> Result<RoleResponse, RoleError> {
+    require_perm!(session, "roles:read")?;
     role_service::get_role_by_id(&id).await
 }
 
 #[tauri::command]
-pub async fn get_all_permissions() -> Result<Vec<Permission>, RoleError> {
+pub async fn get_all_permissions(
+    session: State<'_, SessionState>,
+) -> Result<Vec<Permission>, RoleError> {
+    require_perm!(session, "roles:read")?;
     role_service::get_all_permissions().await
 }
 
@@ -41,8 +51,8 @@ pub async fn get_visible_modules(
         .await
         .map_err(|e| RoleError::Database(e.to_string()))?;
 
-    // Obtener permisos para cada módulo
-    let permissions = surrealdb_authorization::get_role_permissions(&user.role_id)
+    // Obtener permisos efectivos (propios + heredados) para cada módulo
+    let permissions = surrealdb_authorization::get_effective_permissions(&user.role_id)
         .await
         .map_err(|e| RoleError::Database(e.to_string()))?;
 
@@ -71,8 +81,7 @@ pub async fn create_role(
     session: State<'_, SessionState>,
     input: CreateRoleInput,
 ) -> Result<RoleResponse, RoleError> {
-    // Validar permisos de admin si fuera necesario
-    let _ = session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
+    require_perm!(session, "roles:create", "Creando nuevo rol")?;
     role_service::create_role(input).await
 }
 
@@ -82,12 +91,13 @@ pub async fn update_role(
     id: String,
     input: UpdateRoleInput,
 ) -> Result<RoleResponse, RoleError> {
+    require_perm!(session, "roles:update", format!("Actualizando rol {}", id))?;
     let user = session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
     role_service::update_role(&id, input, &user.id).await
 }
 
 #[tauri::command]
 pub async fn delete_role(session: State<'_, SessionState>, id: String) -> Result<(), RoleError> {
-    let _ = session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
+    require_perm!(session, "roles:delete", format!("Eliminando rol {}", id))?;
     role_service::delete_role(&id).await
 }

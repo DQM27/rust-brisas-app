@@ -190,6 +190,8 @@ pub struct Role {
     pub description: Option<String>,
     #[serde(alias = "is_system")]
     pub is_system: bool,
+    #[serde(alias = "inherits_from")]
+    pub inherits_from: Option<RecordId>,
     pub permissions: Option<Vec<String>>,
     #[serde(alias = "created_at")]
     pub created_at: Datetime,
@@ -220,6 +222,7 @@ pub struct RolePermission {
 pub struct CreateRoleInput {
     pub name: String,
     pub description: Option<String>,
+    pub inherits_from: Option<String>,
     pub permissions: Vec<String>,
 }
 
@@ -228,6 +231,7 @@ pub struct CreateRoleInput {
 pub struct UpdateRoleInput {
     pub name: Option<String>,
     pub description: Option<String>,
+    pub inherits_from: Option<String>,
     pub permissions: Option<Vec<String>>,
 }
 
@@ -241,6 +245,8 @@ pub struct RoleCreateDTO {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     pub is_system: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub inherits_from: Option<surrealdb::RecordId>,
     pub permissions: Vec<String>,
 }
 
@@ -250,6 +256,8 @@ pub struct RoleUpdateDTO {
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub inherits_from: Option<surrealdb::RecordId>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub permissions: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -267,6 +275,7 @@ pub struct RoleResponse {
     pub name: String,
     pub description: Option<String>,
     pub is_system: bool,
+    pub inherits_from: Option<String>,
     pub permissions: Vec<String>,
     pub created_at: String,
     pub updated_at: String,
@@ -279,6 +288,7 @@ impl RoleResponse {
             name: role.name,
             description: role.description,
             is_system: role.is_system,
+            inherits_from: role.inherits_from.map(|r| r.to_string()),
             permissions: role.permissions.unwrap_or_default(),
             created_at: role.created_at.to_string(),
             updated_at: role.updated_at.to_string(),
@@ -291,6 +301,7 @@ impl RoleResponse {
             name: role.name,
             description: role.description,
             is_system: role.is_system,
+            inherits_from: role.inherits_from.map(|r| r.to_string()),
             permissions,
             created_at: role.created_at.to_string(),
             updated_at: role.updated_at.to_string(),

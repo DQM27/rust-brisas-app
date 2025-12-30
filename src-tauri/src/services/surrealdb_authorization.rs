@@ -50,14 +50,41 @@ impl From<SurrealDbError> for AuthError {
     }
 }
 
-/// Obtiene todos los permisos de un rol desde SurrealDB
+/// Obtiene permisos efectivos de un rol (incluye heredados)
+pub async fn get_effective_permissions(role_id_str: &str) -> Result<HashSet<String>, AuthError> {
+    let mut all_permissions = HashSet::new();
+    let mut visited = HashSet::new();
+    let mut current_id = Some(role_id_str.to_string());
+
+    // Recorrer cadena de herencia (máximo 10 niveles para evitar loops)
+    while let Some(id_str) = current_id.take() {
+        if visited.contains(&id_str) || visited.len() >= 10 {
+            break; // Prevenir ciclos infinitos
+        }
+        visited.insert(id_str.clone());
+
+        let role_id = parse_role_id(&id_str);
+        let role = surrealdb_role_queries::find_by_id(&role_id)
+            .await
+            .map_err(|e| AuthError::Database(e.to_string()))?;
+
+        if let Some(role) = role {
+            // Agregar permisos propios
+            if let Some(perms) = role.permissions {
+                all_permissions.extend(perms);
+            }
+            // Seguir cadena de herencia
+            current_id = role.inherits_from.map(|r| r.to_string());
+        }
+    }
+
+    Ok(all_permissions)
+}
+
+/// Obtiene todos los permisos de un rol desde SurrealDB (legacy, solo propios)
 pub async fn get_role_permissions(role_id_str: &str) -> Result<HashSet<String>, SurrealDbError> {
     let role_id = parse_role_id(role_id_str);
-
-    // Delegamos a la query que sabe leer el array de permisos
     let perms = surrealdb_role_queries::get_permissions(&role_id).await?;
-    // info!("🔍 get_role_permissions: permisos encontrados ({}) = {:?}", perms.len(), perms);
-
     Ok(perms.into_iter().collect())
 }
 
@@ -71,7 +98,9 @@ pub async fn get_visible_modules(
         return Ok(Module::all());
     }
 
-    let permissions = get_role_permissions(role_id).await?;
+    let permissions = get_effective_permissions(role_id)
+        .await
+        .map_err(|e| SurrealDbError::Query(e.to_string()))?;
 
     let visible: Vec<Module> = Module::all()
         .into_iter()
@@ -90,26 +119,40 @@ pub async fn role_has_permission(
     module: &str,
     action: &str,
 ) -> Result<bool, SurrealDbError> {
-    let permissions = get_role_permissions(role_id).await?;
+    let permissions = get_effective_permissions(role_id)
+        .await
+        .map_err(|e| SurrealDbError::Query(e.to_string()))?;
     let perm_id = format!("{}:{}", module, action);
     Ok(permissions.contains(&perm_id))
 }
 
-/// Verifica si un usuario tiene permiso (incluye lógica de superuser)
+/// Verifica si un usuario tiene permiso (incluye lógica de superuser y God Mode)
 pub async fn check_permission(
     user_id: &str,
     role_id: &str,
     module: Module,
     action: Action,
 ) -> Result<(), AuthError> {
+    // 1. God Mode bypassa todo (solo para operaciones internas de sistema)
+    if crate::domain::role::is_god_mode() {
+        log::info!(target: "audit", "[GOD_MODE] bypass para {}:{}", module.as_str(), action.as_str());
+        return Ok(());
+    }
+
+    // 2. Superuser siempre tiene permiso
     if is_superuser(user_id) {
         return Ok(());
     }
 
-    let has = role_has_permission(role_id, module.as_str(), action.as_str()).await?;
+    // 3. Verificar permisos efectivos (propios + heredados)
+    let has = role_has_permission(role_id, module.as_str(), action.as_str())
+        .await
+        .map_err(|e| AuthError::Database(e.to_string()))?;
+
     if has {
         Ok(())
     } else {
+        log::warn!(target: "audit", "[PERM_DENIED] user={} perm={}:{}", user_id, module.as_str(), action.as_str());
         Err(AuthError::PermissionDenied)
     }
 }

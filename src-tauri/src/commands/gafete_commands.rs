@@ -8,10 +8,15 @@ use crate::models::gafete::{
     StatsPorTipo, UpdateGafeteInput, UpdateGafeteStatusInput,
 };
 use crate::services::gafete_service;
-use tauri::command;
+use crate::services::session::SessionState;
+use tauri::{command, State};
 
 #[command]
-pub async fn create_gafete(input: CreateGafeteInput) -> Result<GafeteResponse, GafeteError> {
+pub async fn create_gafete(
+    session: State<'_, SessionState>,
+    input: CreateGafeteInput,
+) -> Result<GafeteResponse, GafeteError> {
+    require_perm!(session, "gafetes:create", "Creando gafete")?;
     gafete_service::create_gafete(input).await.map_err(|e| GafeteError::Validation(e))
 }
 
@@ -34,7 +39,10 @@ pub async fn get_gafete(id: String) -> Result<GafeteResponse, GafeteError> {
 }
 
 #[command]
-pub async fn get_all_gafetes() -> Result<GafeteListResponse, GafeteError> {
+pub async fn get_all_gafetes(
+    session: State<'_, SessionState>,
+) -> Result<GafeteListResponse, GafeteError> {
+    require_perm!(session, "gafetes:read")?;
     let list = gafete_service::get_all_gafetes().await.map_err(|e| GafeteError::Validation(e))?;
     let responses: Vec<GafeteResponse> = list.into_iter().map(GafeteResponse::from).collect();
     let total = responses.len();

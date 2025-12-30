@@ -99,6 +99,7 @@ pub async fn create_role(input: CreateRoleInput) -> Result<RoleResponse, RoleErr
         name: domain::normalizar_nombre(&input.name),
         description: input.description,
         is_system: false,
+        inherits_from: input.inherits_from.map(|i| parse_role_id(&i)),
         permissions: input.permissions,
     };
 
@@ -140,6 +141,9 @@ pub async fn update_role(
     }
     if let Some(d) = input.description {
         dto.description = Some(d);
+    }
+    if let Some(i) = input.inherits_from {
+        dto.inherits_from = Some(parse_role_id(&i));
     }
     if let Some(p) = input.permissions {
         dto.permissions = Some(p);

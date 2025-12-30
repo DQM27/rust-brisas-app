@@ -20,6 +20,8 @@
     ROLE_SUPERVISOR_ID,
     ROLE_GUARDIA_ID,
   } from "$lib/types/role";
+  import { can } from "$lib/logic/permissions";
+  import { currentUser } from "$lib/stores/auth";
 
   // Estado
   let roles = $state<RoleResponse[]>([]);
@@ -76,6 +78,18 @@
     return [ROLE_ADMIN_ID, ROLE_SUPERVISOR_ID, ROLE_GUARDIA_ID].includes(
       roleId,
     );
+  }
+
+  function canCreate() {
+    return $currentUser && can($currentUser, "CREATE_ROLE");
+  }
+
+  function canUpdate() {
+    return $currentUser && can($currentUser, "UPDATE_ROLE");
+  }
+
+  function canDelete() {
+    return $currentUser && can($currentUser, "DELETE_ROLE");
   }
 
   function startEdit(role: RoleResponse) {
@@ -201,7 +215,9 @@
       </div>
       <button
         onclick={startCreate}
-        class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-[#2da44e] hover:bg-[#2c974b] text-white"
+        disabled={!canCreate()}
+        class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-[#2da44e] hover:bg-[#2c974b] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        title={!canCreate() ? "No tienes permiso para crear roles" : ""}
       >
         <Plus class="w-4 h-4" />
         Nuevo Rol
@@ -344,63 +360,72 @@
       <div
         class="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0d1117] overflow-hidden"
       >
-        <div
-          class="bg-gray-50 dark:bg-[#161b22] px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2"
-        >
-          <Users class="w-4 h-4 text-gray-500" />
-          <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100">
-            Roles del Sistema ({roles.length})
-          </h3>
-        </div>
-        <div class="divide-y divide-gray-200 dark:divide-gray-700">
-          {#each roles as role}
-            <div
-              class="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#161b22] transition-colors"
-            >
-              <div class="flex-1">
-                <div class="flex items-center gap-2">
-                  <span class="font-medium text-gray-900 dark:text-gray-100"
-                    >{role.name}</span
-                  >
-                  {#if role.isSystem}
-                    <span
-                      class="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+        {#if !$currentUser || !can($currentUser, "VIEW_ROLE_LIST")}
+          <div class="p-8 text-center text-gray-500 dark:text-gray-400">
+            <Shield class="w-12 h-12 mx-auto mb-3 opacity-20" />
+            <p>No tienes permiso para ver la lista de roles.</p>
+          </div>
+        {:else}
+          <div
+            class="bg-gray-50 dark:bg-[#161b22] px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2"
+          >
+            <Users class="w-4 h-4 text-gray-500" />
+            <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100">
+              Roles del Sistema ({roles.length})
+            </h3>
+          </div>
+          <div class="divide-y divide-gray-200 dark:divide-gray-700">
+            {#each roles as role}
+              <div
+                class="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#161b22] transition-colors"
+              >
+                <div class="flex-1">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium text-gray-900 dark:text-gray-100"
+                      >{role.name}</span
                     >
-                      <Lock class="w-3 h-3" />
-                      Sistema
-                    </span>
+                    {#if role.isSystem}
+                      <span
+                        class="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                      >
+                        <Lock class="w-3 h-3" />
+                        Sistema
+                      </span>
+                    {/if}
+                  </div>
+                  {#if role.description}
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                      {role.description}
+                    </p>
+                  {/if}
+                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    {role.permissions.length} permisos
+                  </p>
+                </div>
+                <div class="flex items-center gap-2">
+                  {#if canUpdate()}
+                    <button
+                      onclick={() => startEdit(role)}
+                      class="p-1.5 rounded-md text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      title="Editar"
+                    >
+                      <Edit2 class="w-4 h-4" />
+                    </button>
+                  {/if}
+                  {#if !role.isSystem && canDelete()}
+                    <button
+                      onclick={() => handleDelete(role.id)}
+                      class="p-1.5 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      title="Eliminar"
+                    >
+                      <Trash2 class="w-4 h-4" />
+                    </button>
                   {/if}
                 </div>
-                {#if role.description}
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                    {role.description}
-                  </p>
-                {/if}
-                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  {role.permissions.length} permisos
-                </p>
               </div>
-              <div class="flex items-center gap-2">
-                <button
-                  onclick={() => startEdit(role)}
-                  class="p-1.5 rounded-md text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  title="Editar"
-                >
-                  <Edit2 class="w-4 h-4" />
-                </button>
-                {#if !role.isSystem}
-                  <button
-                    onclick={() => handleDelete(role.id)}
-                    class="p-1.5 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    title="Eliminar"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                {/if}
-              </div>
-            </div>
-          {/each}
-        </div>
+            {/each}
+          </div>
+        {/if}
       </div>
     {/if}
   </div>

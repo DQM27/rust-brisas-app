@@ -7,16 +7,69 @@ import { ROLE_ADMIN_ID, ROLE_SUPERVISOR_ID } from '$lib/types/role';
 // ==========================================
 
 export type Action =
+    // Core Actions
     | 'VIEW_ADMIN_DASHBOARD'
+
+    // User Module
     | 'VIEW_USER_LIST'
     | 'CREATE_USER'
-    | 'UPDATE_USER_PROFILE'    // Basic info: name, email, phone
-    | 'UPDATE_USER_SENSITIVE'  // Sensitive info: role, status, active/inactive
-    | 'CHANGE_USER_PASSWORD'   // Change own password
-    | 'RESET_USER_PASSWORD'    // Admin reset password (optional future)
+    | 'UPDATE_USER_PROFILE'
+    | 'UPDATE_USER_SENSITIVE'
+    | 'CHANGE_USER_PASSWORD'
+    | 'RESET_USER_PASSWORD'
     | 'DELETE_USER'
-    | 'MANAGE_BLACKLIST'       // Add/Remove from blacklist
-    | 'VIEW_BLACKLIST_REASON'; // View sensitive reason column
+
+    // Contractor Module
+    | 'VIEW_CONTRACTOR_LIST'
+    | 'CREATE_CONTRACTOR'
+    | 'UPDATE_CONTRACTOR'
+    | 'DELETE_CONTRACTOR'
+
+    // Provider Module
+    | 'VIEW_PROVIDER_LIST'
+    | 'CREATE_PROVIDER'
+    | 'UPDATE_PROVIDER'
+    | 'DELETE_PROVIDER'
+
+    // Visitor Module
+    | 'VIEW_VISITOR_LIST'
+    | 'CREATE_VISITOR'
+    | 'UPDATE_VISITOR'
+    | 'DELETE_VISITOR'
+
+    // Vehicle Module
+    | 'VIEW_VEHICLE_LIST'
+    | 'CREATE_VEHICLE'
+    | 'UPDATE_VEHICLE'
+    | 'DELETE_VEHICLE'
+
+    // Appointment (Citas) Module
+    | 'VIEW_APPOINTMENT_LIST'
+    | 'CREATE_APPOINTMENT'
+    | 'UPDATE_APPOINTMENT'
+    | 'DELETE_APPOINTMENT'
+
+    // Entry (Ingresos) Module
+    | 'VIEW_ENTRY_LIST'
+    | 'CREATE_ENTRY'
+    | 'UPDATE_ENTRY'
+
+    // Gafete Module
+    | 'VIEW_GAFETE_LIST'
+    | 'CREATE_GAFETE'
+    | 'UPDATE_GAFETE'
+    | 'DELETE_GAFETE'
+
+    // Role Module
+    | 'VIEW_ROLE_LIST'
+    | 'CREATE_ROLE'
+    | 'UPDATE_ROLE'
+    | 'DELETE_ROLE'
+
+    // Blacklist
+    | 'VIEW_BLACKLIST'
+    | 'MANAGE_BLACKLIST'
+    | 'VIEW_BLACKLIST_REASON';
 
 // ==========================================
 // HELPERS
@@ -76,16 +129,67 @@ export function can(actor: UserResponse | null | undefined, action: Action, targ
 
         // MAPPING:
         const permissionMap: Record<Action, string> = {
-            'VIEW_USER_LIST': 'users:view',
+            // User
+            'VIEW_USER_LIST': 'users:read',
             'CREATE_USER': 'users:create',
-            'UPDATE_USER_PROFILE': 'users:update', // Partial mapping
-            'UPDATE_USER_SENSITIVE': 'users:update', // This separation is semantic in frontend
+            'UPDATE_USER_PROFILE': 'users:update',
+            'UPDATE_USER_SENSITIVE': 'users:update',
             'DELETE_USER': 'users:delete',
-            'CHANGE_USER_PASSWORD': 'users:update', // Own password
-            'RESET_USER_PASSWORD': 'users:update', // Admin reset
-            'MANAGE_BLACKLIST': 'lista_negra:create', // Approximation
-            'VIEW_BLACKLIST_REASON': 'lista_negra:view', // Approximation
-            'VIEW_ADMIN_DASHBOARD': 'dashboard:view' // Not a real permission yet?
+            'CHANGE_USER_PASSWORD': 'users:update',
+            'RESET_USER_PASSWORD': 'users:update',
+
+            // Contractor
+            'VIEW_CONTRACTOR_LIST': 'contratistas:read',
+            'CREATE_CONTRACTOR': 'contratistas:create',
+            'UPDATE_CONTRACTOR': 'contratistas:update',
+            'DELETE_CONTRACTOR': 'contratistas:delete',
+
+            // Provider
+            'VIEW_PROVIDER_LIST': 'proveedores:read',
+            'CREATE_PROVIDER': 'proveedores:create',
+            'UPDATE_PROVIDER': 'proveedores:update',
+            'DELETE_PROVIDER': 'proveedores:delete',
+
+            // Visitor
+            'VIEW_VISITOR_LIST': 'visitantes:read',
+            'CREATE_VISITOR': 'visitantes:create',
+            'UPDATE_VISITOR': 'visitantes:update',
+            'DELETE_VISITOR': 'visitantes:delete',
+
+            // Vehicle
+            'VIEW_VEHICLE_LIST': 'vehiculos:read',
+            'CREATE_VEHICLE': 'vehiculos:create',
+            'UPDATE_VEHICLE': 'vehiculos:update',
+            'DELETE_VEHICLE': 'vehiculos:delete',
+
+            // Appointment (Citas)
+            'VIEW_APPOINTMENT_LIST': 'citas:read',
+            'CREATE_APPOINTMENT': 'citas:create',
+            'UPDATE_APPOINTMENT': 'citas:update',
+            'DELETE_APPOINTMENT': 'citas:delete',
+
+            // Entry (Ingresos)
+            'VIEW_ENTRY_LIST': 'ingresos:read',
+            'CREATE_ENTRY': 'ingresos:create',
+            'UPDATE_ENTRY': 'ingresos:update',
+
+            // Gafete
+            'VIEW_GAFETE_LIST': 'gafetes:read',
+            'CREATE_GAFETE': 'gafetes:create',
+            'UPDATE_GAFETE': 'gafetes:update',
+            'DELETE_GAFETE': 'gafetes:delete',
+
+            // Roles
+            'VIEW_ROLE_LIST': 'roles:read',
+            'CREATE_ROLE': 'roles:create',
+            'UPDATE_ROLE': 'roles:update',
+            'DELETE_ROLE': 'roles:delete',
+
+            // Blacklist
+            'VIEW_BLACKLIST': 'lista_negra:read',
+            'MANAGE_BLACKLIST': 'lista_negra:create',
+            'VIEW_BLACKLIST_REASON': 'lista_negra:read',
+            'VIEW_ADMIN_DASHBOARD': 'dashboard:view'
         };
 
         const backendPerm = permissionMap[action];

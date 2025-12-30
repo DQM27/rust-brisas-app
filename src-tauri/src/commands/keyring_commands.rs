@@ -7,6 +7,7 @@ use crate::config::save_config;
 use crate::config::settings::AppConfigState;
 use crate::domain::errors::KeyringError;
 use crate::services::keyring_service::{self, Argon2Params, CredentialStatus};
+use crate::services::session::SessionState;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use tauri::{command, State};
@@ -66,9 +67,12 @@ pub fn needs_setup(config: State<'_, AppConfigState>) -> bool {
 /// Configura todas las credenciales en el primer uso
 #[command]
 pub async fn setup_credentials(
+    session: State<'_, SessionState>,
     input: SetupCredentialsInput,
     config: State<'_, crate::config::settings::AppConfigState>,
 ) -> Result<SetupResult, KeyringError> {
+    require_perm!(session, "config:update", "Configuración inicial de credenciales")
+        .map_err(|e| KeyringError::Message(e.to_string()))?;
     // 1. Manejo inteligente del secreto Argon2
     // Si ya existe un secreto en el Keyring, lo REUTILIZAMOS para no perder acceso a datos
     // previos si solo se borró el TOML pero no las llaves de Windows.
@@ -128,14 +132,19 @@ pub async fn setup_credentials(
 
 /// Obtiene parámetros de Argon2 (sin el secret)
 #[command]
-pub fn get_argon2_config() -> Argon2ParamsSafe {
+pub async fn get_argon2_config(
+    session: State<'_, SessionState>,
+) -> Result<Argon2ParamsSafe, KeyringError> {
+    // Solo permitir lectura si tiene permiso config:read
+    require_perm!(session, "config:read").map_err(|e| KeyringError::Message(e.to_string()))?;
+
     let params = keyring_service::get_argon2_params();
-    Argon2ParamsSafe {
+    Ok(Argon2ParamsSafe {
         memory: params.memory,
         iterations: params.iterations,
         parallelism: params.parallelism,
         has_secret: !params.secret.is_empty(),
-    }
+    })
 }
 
 #[derive(Debug, Serialize)]
@@ -148,7 +157,12 @@ pub struct Argon2ParamsSafe {
 
 /// Actualiza parámetros de Argon2
 #[command]
-pub fn update_argon2_params(params: Argon2Params) -> Result<(), KeyringError> {
+pub async fn update_argon2_params(
+    session: State<'_, SessionState>,
+    params: Argon2Params,
+) -> Result<(), KeyringError> {
+    require_perm!(session, "config:update", "Actualizando parámetros Argon2")
+        .map_err(|e| KeyringError::Message(e.to_string()))?;
     keyring_service::store_argon2_params(&params)
         .map_err(|e| KeyringError::StoreError(e.to_string()))
 }
@@ -171,7 +185,9 @@ pub fn generate_random_secret() -> String {
 
 /// Comando de diagnóstico para probar el keyring
 #[command]
-pub fn test_keyring() -> Result<String, KeyringError> {
+pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, KeyringError> {
+    require_perm!(session, "config:read", "Diagnóstico de Keyring")
+        .map_err(|e| KeyringError::Message(e.to_string()))?;
     // Implementación multiplataforma usando el keyring_service
     #[cfg(target_os = "linux")]
     use crate::services::keyring_linux as keyring_impl;
@@ -317,10 +333,13 @@ pub fn test_keyring() -> Result<String, KeyringError> {
 
 /// Resetea todas las credenciales (usar con cuidado)
 #[command]
-pub fn reset_all_credentials(
+pub async fn reset_all_credentials(
+    session: State<'_, SessionState>,
     confirm: bool,
     config: State<'_, AppConfigState>,
 ) -> Result<(), KeyringError> {
+    require_perm!(session, "config:delete", "Reseteo total de credenciales")
+        .map_err(|e| KeyringError::Message(e.to_string()))?;
     if !confirm {
         return Err(KeyringError::Message("Debes confirmar la operación".to_string()));
     }

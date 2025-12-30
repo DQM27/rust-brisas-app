@@ -58,6 +58,12 @@ pub enum UserError {
     IO(String),
 }
 
+impl From<crate::services::surrealdb_authorization::AuthError> for UserError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        UserError::Auth(err.to_string())
+    }
+}
+
 // ==========================================
 // CONTRATISTA ERRORS
 // ==========================================
@@ -96,6 +102,12 @@ pub enum ContratistaError {
     Validation(String),
 }
 
+impl From<crate::services::surrealdb_authorization::AuthError> for ContratistaError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        ContratistaError::Validation(err.to_string())
+    }
+}
+
 // ==========================================
 // EMPRESA ERRORS
 // ==========================================
@@ -125,6 +137,12 @@ pub enum EmpresaError {
     Validation(String),
 }
 
+impl From<crate::services::surrealdb_authorization::AuthError> for EmpresaError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        EmpresaError::Validation(err.to_string())
+    }
+}
+
 // ==========================================
 // VEHICULO ERRORS
 // ==========================================
@@ -146,6 +164,12 @@ pub enum VehiculoError {
 
     #[error("Error de validación: {0}")]
     Validation(String),
+}
+
+impl From<crate::services::surrealdb_authorization::AuthError> for VehiculoError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        VehiculoError::Validation(err.to_string())
+    }
 }
 
 // ==========================================
@@ -183,6 +207,12 @@ pub enum ProveedorError {
     Validation(String),
 }
 
+impl From<crate::services::surrealdb_authorization::AuthError> for ProveedorError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        ProveedorError::Validation(err.to_string())
+    }
+}
+
 // ==========================================
 // GAFETE ERRORS
 // ==========================================
@@ -216,6 +246,12 @@ pub enum GafeteError {
 
     #[error("Error de validación: {0}")]
     Validation(String),
+}
+
+impl From<crate::services::surrealdb_authorization::AuthError> for GafeteError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        GafeteError::Validation(err.to_string())
+    }
 }
 
 // ==========================================
@@ -293,6 +329,12 @@ pub enum VisitanteError {
     Validation(String),
 }
 
+impl From<crate::services::surrealdb_authorization::AuthError> for VisitanteError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        VisitanteError::Validation(err.to_string())
+    }
+}
+
 // ==========================================
 // INGRESO VISITA ERRORS
 // ==========================================
@@ -320,6 +362,15 @@ pub enum IngresoVisitaError {
 
     #[error("Error de validación: {0}")]
     Validation(String),
+
+    #[error("No autorizado: {0}")]
+    Unauthorized(String),
+}
+
+impl From<crate::services::surrealdb_authorization::AuthError> for IngresoVisitaError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        IngresoVisitaError::Unauthorized(err.to_string())
+    }
 }
 
 impl From<crate::domain::common::CommonError> for IngresoVisitaError {
@@ -481,6 +532,15 @@ pub enum CitaError {
 
     #[error("Error de validación: {0}")]
     Validation(String),
+
+    #[error("No autorizado: {0}")]
+    Unauthorized(String),
+}
+
+impl From<crate::services::surrealdb_authorization::AuthError> for CitaError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        CitaError::Unauthorized(err.to_string())
+    }
 }
 
 // ==========================================
@@ -504,6 +564,15 @@ pub enum SearchError {
 
     #[error("Error del motor de búsqueda: {0}")]
     Engine(#[from] crate::search::errors::SearchError),
+
+    #[error("No autorizado: {0}")]
+    Unauthorized(String),
+}
+
+impl From<crate::services::surrealdb_authorization::AuthError> for SearchError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        SearchError::Unauthorized(err.to_string())
+    }
 }
 
 // ==========================================
@@ -564,6 +633,15 @@ pub enum KeyringError {
 
     #[error("Error de eliminación: {0}")]
     DeleteError(String),
+
+    #[error("No autorizado: {0}")]
+    Unauthorized(String),
+}
+
+impl From<crate::services::surrealdb_authorization::AuthError> for KeyringError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        KeyringError::Unauthorized(err.to_string())
+    }
 }
 
 // ==========================================
@@ -612,4 +690,10 @@ pub enum RoleError {
 
     #[error("No autorizado: {0}")]
     Unauthorized(String),
+}
+
+impl From<crate::services::surrealdb_authorization::AuthError> for RoleError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        RoleError::Unauthorized(err.to_string())
+    }
 }

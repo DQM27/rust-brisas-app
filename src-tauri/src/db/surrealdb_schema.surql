@@ -11,6 +11,7 @@ DEFINE TABLE role SCHEMAFULL;
 DEFINE FIELD name ON TABLE role TYPE string;
 DEFINE FIELD description ON TABLE role TYPE option<string>;
 DEFINE FIELD is_system ON TABLE role TYPE bool DEFAULT false;
+DEFINE FIELD inherits_from ON TABLE role TYPE option<record<role>>;
 DEFINE FIELD permissions ON TABLE role TYPE option<array<string>>;
 DEFINE FIELD created_at ON TABLE role TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE role TYPE datetime VALUE time::now();

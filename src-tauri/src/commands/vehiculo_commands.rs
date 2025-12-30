@@ -6,19 +6,26 @@ use crate::domain::errors::VehiculoError;
 use crate::models::vehiculo::{
     CreateVehiculoInput, UpdateVehiculoInput, VehiculoListResponse, VehiculoResponse,
 };
+use crate::services::session::SessionState;
 use crate::services::vehiculo_service as service;
+use tauri::State;
 
 /// Crea un nuevo vehículo para un contratista
 #[tauri::command]
 pub async fn create_vehiculo(
+    session: State<'_, SessionState>,
     input: CreateVehiculoInput,
 ) -> Result<VehiculoResponse, VehiculoError> {
+    require_perm!(session, "vehiculos:create", "Registrando vehículo")?;
     service::create_vehiculo(input).await
 }
 
-/// Obtiene un vehículo por ID
 #[tauri::command]
-pub async fn get_vehiculo_by_id(id: String) -> Result<VehiculoResponse, VehiculoError> {
+pub async fn get_vehiculo_by_id(
+    session: State<'_, SessionState>,
+    id: String,
+) -> Result<VehiculoResponse, VehiculoError> {
+    require_perm!(session, "vehiculos:read")?;
     service::get_vehiculo_by_id(&id).await
 }
 
@@ -30,7 +37,10 @@ pub async fn get_vehiculo_by_placa(placa: String) -> Result<VehiculoResponse, Ve
 
 /// Obtiene todos los vehículos del sistema
 #[tauri::command]
-pub async fn get_all_vehiculos() -> Result<VehiculoListResponse, VehiculoError> {
+pub async fn get_all_vehiculos(
+    session: State<'_, SessionState>,
+) -> Result<VehiculoListResponse, VehiculoError> {
+    require_perm!(session, "vehiculos:read")?;
     service::get_all_vehiculos().await
 }
 

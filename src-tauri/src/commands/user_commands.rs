@@ -16,36 +16,49 @@ use tauri::State;
 
 #[tauri::command]
 pub async fn create_user(
+    session: State<'_, SessionState>,
     search: State<'_, Arc<SearchService>>,
     input: CreateUserInput,
 ) -> Result<UserResponse, UserError> {
+    require_perm!(session, "users:create", "Creando nuevo usuario")?;
     user_service::create_user(&search, input).await
 }
 
 #[tauri::command]
 pub async fn update_user(
+    session: State<'_, SessionState>,
     search: State<'_, Arc<SearchService>>,
     id: String,
     input: UpdateUserInput,
 ) -> Result<UserResponse, UserError> {
+    require_perm!(session, "users:update", format!("Actualizando usuario {}", id))?;
     user_service::update_user(&search, id, input).await
 }
 
 #[tauri::command]
 pub async fn delete_user(
+    session: State<'_, SessionState>,
     search: State<'_, Arc<SearchService>>,
     id: String,
 ) -> Result<(), UserError> {
+    require_perm!(session, "users:delete", format!("Eliminando usuario {}", id))?;
     user_service::delete_user(&search, id).await
 }
 
 #[tauri::command]
-pub async fn get_user_by_id(id: String) -> Result<UserResponse, UserError> {
+pub async fn get_user_by_id(
+    session: State<'_, SessionState>,
+    id: String,
+) -> Result<UserResponse, UserError> {
+    require_perm!(session, "users:read")?;
     user_service::get_user_by_id(&id).await
 }
 
 #[tauri::command]
-pub async fn get_all_users() -> Result<UserListResponse, UserError> {
+pub async fn get_all_users(
+    session: State<'_, SessionState>,
+) -> Result<UserListResponse, UserError> {
+    require_perm!(session, "users:read")?;
     user_service::get_all_users().await
 }
 

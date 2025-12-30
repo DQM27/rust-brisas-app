@@ -14,6 +14,7 @@ use crate::models::role::{CreateRoleInput, UpdateRoleInput};
 pub const SUPERUSER_ID: &str = "e0d6da3e-07a8-48c6-9304-436154b7c845";
 pub const ROLE_ADMIN_ID: &str = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
 pub const ROLE_GUARDIA_ID: &str = "27221d6e-9818-430c-99c3-5694a971216b";
+pub const ROLE_GUARDIA_SENIOR_ID: &str = "9f27c73a-6c1b-4d7a-8dcf-7a54a01c801e";
 pub const ROLE_SUPERVISOR_ID: &str = "75438848-185d-400e-953a-7a54a01c801e";
 pub const SUPERUSER_EMAIL: &str = "admin@brisas.local";
 
@@ -25,6 +26,46 @@ pub fn is_superuser(user_id: &str) -> bool {
     // Let's assume user_id check.
     // Wait, create_superuser uses fixed ID.
     user_id == SUPERUSER_ID
+}
+
+// ==========================================
+// GOD MODE (INTERNAL ONLY)
+// ==========================================
+
+use std::sync::atomic::{AtomicBool, Ordering};
+
+/// Flag global de God Mode (solo activable por proceso interno)
+static GOD_MODE: AtomicBool = AtomicBool::new(false);
+
+/// Activa God Mode temporalmente (solo para operaciones de sistema)
+pub fn enable_god_mode() {
+    GOD_MODE.store(true, Ordering::SeqCst);
+    log::warn!(target: "audit", "[GOD_MODE] ⚡ ENABLED - Operaciones de sistema activas");
+}
+
+pub fn disable_god_mode() {
+    GOD_MODE.store(false, Ordering::SeqCst);
+    log::warn!(target: "audit", "[GOD_MODE] 🔒 DISABLED");
+}
+
+pub fn is_god_mode() -> bool {
+    GOD_MODE.load(Ordering::SeqCst)
+}
+
+/// Guard para God Mode que se desactiva automáticamente al salir del scope (RAII)
+pub struct GodModeGuard;
+
+impl GodModeGuard {
+    pub fn activate() -> Self {
+        enable_god_mode();
+        Self
+    }
+}
+
+impl Drop for GodModeGuard {
+    fn drop(&mut self) {
+        disable_god_mode();
+    }
 }
 
 // ==========================================

@@ -1,6 +1,8 @@
 // src/lib.rs
 
 #[macro_use]
+mod macros;
+#[macro_use]
 pub mod commands;
 pub mod config;
 pub mod db;

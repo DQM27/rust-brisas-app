@@ -22,15 +22,26 @@ pub async fn seed_db() -> Result<(), Box<dyn std::error::Error>> {
 
 /// Seed de roles del sistema
 async fn seed_roles() -> Result<(), SurrealDbError> {
+    use crate::domain::role::{GodModeGuard, ROLE_GUARDIA_SENIOR_ID};
+
+    // Activar God Mode para el seed
+    let _guard = GodModeGuard::activate();
     let db = get_db().await?;
 
+    // (id, name, desc, inherits_from)
     let roles = [
-        (ROLE_ADMIN_ID, "Administrador", "Acceso completo al sistema"),
-        (ROLE_SUPERVISOR_ID, "Supervisor", "Supervisión de operaciones"),
-        (ROLE_GUARDIA_ID, "Guardia", "Registro de ingresos"),
+        (ROLE_ADMIN_ID, "Administrador", "Acceso completo al sistema", None),
+        (ROLE_SUPERVISOR_ID, "Supervisor", "Supervisión de operaciones", None),
+        (
+            ROLE_GUARDIA_SENIOR_ID,
+            "Guardia Senior",
+            "Supervisor de turno con permisos de edición",
+            Some(ROLE_GUARDIA_ID),
+        ),
+        (ROLE_GUARDIA_ID, "Guardia", "Registro de ingresos", None),
     ];
 
-    // Generar permisos para admin
+    // Generar permisos para admin (todos)
     let all_permissions: Vec<String> = Module::all()
         .iter()
         .flat_map(|m| {
@@ -41,7 +52,27 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
         })
         .collect();
 
-    // Permisos para supervisor
+    // Permisos base para guardia
+    let guardia_perms = vec![
+        "contratistas:view",
+        "contratistas:read",
+        "ingresos:view",
+        "ingresos:create",
+        "ingresos:read",
+        "citas:view",
+        "citas:read",
+        "lista_negra:view",
+        "lista_negra:read",
+        "proveedores:view",
+        "proveedores:read",
+        "visitantes:view",
+        "visitantes:read",
+    ];
+
+    // Permisos extra para guardia senior (edición de ingresos)
+    let senior_perms = vec!["ingresos:update", "vehiculos:view", "vehiculos:read"];
+
+    // Permisos para supervisor (gestión pero no borrado masivo)
     let supervisor_perms = vec![
         "users:view",
         "users:read",
@@ -86,43 +117,25 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
         "visitantes:update",
     ];
 
-    // Permisos para guardia
-    let guardia_perms = vec![
-        "contratistas:view",
-        "contratistas:read",
-        "ingresos:view",
-        "ingresos:create",
-        "ingresos:read",
-        "citas:view",
-        "citas:read",
-        "lista_negra:view",
-        "lista_negra:read",
-        "proveedores:view",
-        "proveedores:read",
-        "visitantes:view",
-        "visitantes:read",
-    ];
-
-    for (id, name, desc) in roles {
-        let permissions: Vec<String> = if id == ROLE_ADMIN_ID {
-            all_permissions.clone()
-        } else if id == ROLE_SUPERVISOR_ID {
-            supervisor_perms.iter().map(|s| s.to_string()).collect()
-        } else {
-            guardia_perms.iter().map(|s| s.to_string()).collect()
+    for (id, name, desc, inherits) in roles {
+        let permissions: Vec<String> = match id {
+            ROLE_ADMIN_ID => all_permissions.clone(),
+            ROLE_SUPERVISOR_ID => supervisor_perms.iter().map(|s| s.to_string()).collect(),
+            ROLE_GUARDIA_SENIOR_ID => senior_perms.iter().map(|s| s.to_string()).collect(),
+            ROLE_GUARDIA_ID => guardia_perms.iter().map(|s| s.to_string()).collect(),
+            _ => vec![],
         };
 
-        // Primero eliminar cualquier registro existente (puede estar corrupto)
+        // Eliminar y re-crear
         db.query("DELETE type::thing('role', $id)").bind(("id", id)).await?;
 
-        // Luego crear el rol fresco - debemos incluir created_at explícitamente
-        // porque READONLY + VALUE no funciona bien con CREATE CONTENT
         db.query(
             r#"
                 CREATE type::thing('role', $id) CONTENT {
                     name: $name,
                     description: $desc,
                     is_system: true,
+                    inherits_from: $inherits,
                     permissions: $permissions,
                     created_at: time::now(),
                     updated_at: time::now()
@@ -132,12 +145,13 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
         .bind(("id", id))
         .bind(("name", name))
         .bind(("desc", desc))
-        .bind(("permissions", permissions.clone()))
+        .bind(("inherits", inherits.map(|i| RecordId::from_table_key("role", i))))
+        .bind(("permissions", permissions))
         .await?
         .check()?;
     }
 
-    info!("✅ Roles del sistema creados/actualizados");
+    info!("✅ Roles del sistema creados/actualizados con herencia");
     Ok(())
 }
 
