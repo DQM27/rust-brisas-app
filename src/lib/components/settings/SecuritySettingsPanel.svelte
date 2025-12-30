@@ -22,6 +22,13 @@
     type Argon2ParamsSafe,
     type Argon2Params,
   } from "$lib/services/keyringService";
+  import { can } from "$lib/logic/permissions";
+  import { currentUser } from "$lib/stores/auth";
+
+  // Permisos
+  const canUpdate = $derived(
+    $currentUser && can($currentUser, "UPDATE_SETTINGS_SECURITY"),
+  );
 
   // Estado
   let status = $state<CredentialStatus | null>(null);
@@ -193,7 +200,7 @@
               Parametros Argon2
             </h3>
           </div>
-          {#if !editingArgon2}
+          {#if !editingArgon2 && canUpdate}
             <button
               onclick={() => (editingArgon2 = true)}
               class="text-sm text-[#2da44e] hover:underline"

@@ -196,6 +196,40 @@
     }
     return grouped;
   }
+
+  // Traducción y Helpers
+  const actionTranslations: Record<string, string> = {
+    view: "Ver",
+    read: "Leer",
+    create: "Crear",
+    update: "Editar",
+    delete: "Eliminar",
+    export: "Exportar",
+  };
+
+  function translateAction(action: string): string {
+    return actionTranslations[action.toLowerCase()] || action;
+  }
+
+  function toggleModulePermissions(perms: Permission[]) {
+    const allSelected = perms.every((p) => formData.permissions.includes(p.id));
+    if (allSelected) {
+      // Deselect all
+      formData.permissions = formData.permissions.filter(
+        (id) => !perms.find((p) => p.id === id),
+      );
+    } else {
+      // Select all
+      const newIds = perms
+        .map((p) => p.id)
+        .filter((id) => !formData.permissions.includes(id));
+      formData.permissions = [...formData.permissions, ...newIds];
+    }
+  }
+
+  function isModuleSelected(perms: Permission[]): boolean {
+    return perms.every((p) => formData.permissions.includes(p.id));
+  }
 </script>
 
 <div
@@ -309,12 +343,30 @@
               >
                 {#each [...getGroupedPermissions()] as [moduleName, perms]}
                   <div class="mb-3">
-                    <div
-                      class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1"
-                    >
-                      {moduleName}
+                    <div class="flex items-center gap-2 mb-2">
+                      <button
+                        type="button"
+                        class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 p-1 rounded-md transition-colors"
+                        title={isModuleSelected(perms)
+                          ? "Desmarcar todo"
+                          : "Marcar todo"}
+                        onclick={() => toggleModulePermissions(perms)}
+                      >
+                        {#if isModuleSelected(perms)}
+                          <Check class="w-3 h-3 text-[#2da44e]" />
+                        {:else}
+                          <div
+                            class="w-3 h-3 rounded-sm border border-gray-400"
+                          ></div>
+                        {/if}
+                      </button>
+                      <div
+                        class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"
+                      >
+                        {moduleName}
+                      </div>
                     </div>
-                    <div class="flex flex-wrap gap-2">
+                    <div class="flex flex-wrap gap-2 ml-6">
                       {#each perms as perm}
                         <button
                           type="button"
@@ -325,7 +377,7 @@
                             ? 'bg-[#2da44e] text-white border-[#2da44e]'
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'}"
                         >
-                          {perm.action}
+                          {translateAction(perm.action)}
                         </button>
                       {/each}
                     </div>

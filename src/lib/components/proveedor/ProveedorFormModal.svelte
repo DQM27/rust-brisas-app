@@ -24,6 +24,7 @@
       data: CreateProveedorInput | UpdateProveedorInput,
     ) => Promise<boolean | void>;
     onClose: () => void;
+    readonly?: boolean;
   }
 
   let {
@@ -32,11 +33,16 @@
     loading = false,
     onSave,
     onClose,
+    readonly = false,
   }: Props = $props();
 
   const isEditMode = $derived(!!proveedor);
   const modalTitle = $derived(
-    isEditMode ? `Editar Proveedor: ${proveedor?.nombre}` : "Nuevo Proveedor",
+    readonly
+      ? `Detalle Proveedor: ${proveedor?.nombre}`
+      : isEditMode
+        ? `Editar Proveedor: ${proveedor?.nombre}`
+        : "Nuevo Proveedor",
   );
 
   // Empresas state
@@ -236,8 +242,10 @@
                 type="text"
                 value={formData.cedula}
                 oninput={handleCedulaInput}
-                disabled={loading || isEditMode}
-                class="{inputClass} {isEditMode ? 'opacity-70 bg-gray-50' : ''}"
+                disabled={loading || isEditMode || readonly}
+                class="{inputClass} {isEditMode || readonly
+                  ? 'opacity-70 bg-gray-50'
+                  : ''}"
                 placeholder="000-000000-0000A"
               />
               {#if errors.cedula}<p class={errorClass}>{errors.cedula}</p>{/if}
@@ -249,7 +257,7 @@
               <select
                 id="empresaId"
                 bind:value={formData.empresaId}
-                disabled={loading}
+                disabled={loading || readonly}
                 class={inputClass}
               >
                 <option value="">Seleccione una empresa</option>
@@ -269,7 +277,7 @@
                 id="nombre"
                 type="text"
                 bind:value={formData.nombre}
-                disabled={loading}
+                disabled={loading || readonly}
                 class={inputClass}
                 placeholder="Juan"
               />
@@ -284,7 +292,7 @@
                 id="segundoNombre"
                 type="text"
                 bind:value={formData.segundoNombre}
-                disabled={loading}
+                disabled={loading || readonly}
                 class={inputClass}
               />
             </div>
@@ -296,7 +304,7 @@
                 id="apellido"
                 type="text"
                 bind:value={formData.apellido}
-                disabled={loading}
+                disabled={loading || readonly}
                 class={inputClass}
                 placeholder="Pérez"
               />
@@ -313,7 +321,7 @@
                 id="segundoApellido"
                 type="text"
                 bind:value={formData.segundoApellido}
-                disabled={loading}
+                disabled={loading || readonly}
                 class={inputClass}
               />
             </div>
@@ -329,7 +337,7 @@
               <select
                 id="estado"
                 bind:value={formData.estado}
-                disabled={loading}
+                disabled={loading || readonly}
                 class={inputClass}
               >
                 <option value="ACTIVO">Activo</option>
@@ -357,7 +365,7 @@
                 type="checkbox"
                 bind:checked={formData.tieneVehiculo}
                 class="sr-only peer"
-                disabled={loading}
+                disabled={loading || readonly}
               />
               <div
                 class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
@@ -378,7 +386,7 @@
                   type="text"
                   value={formData.placa}
                   oninput={handlePlacaInput}
-                  disabled={loading}
+                  disabled={loading || readonly}
                   class={inputClass}
                   placeholder="M 123-456"
                 />
@@ -392,7 +400,7 @@
                 <select
                   id="tipoVehiculo"
                   bind:value={formData.tipoVehiculo}
-                  disabled={loading}
+                  disabled={loading || readonly}
                   class={inputClass}
                 >
                   <option value="">Seleccione tipo</option>
@@ -413,7 +421,7 @@
                   id="marca"
                   type="text"
                   bind:value={formData.marca}
-                  disabled={loading}
+                  disabled={loading || readonly}
                   class={inputClass}
                   placeholder="Toyota"
                 />
@@ -425,7 +433,7 @@
                   id="modelo"
                   type="text"
                   bind:value={formData.modelo}
-                  disabled={loading}
+                  disabled={loading || readonly}
                   class={inputClass}
                   placeholder="Hilux"
                 />
@@ -437,7 +445,7 @@
                   id="color"
                   type="text"
                   bind:value={formData.color}
-                  disabled={loading}
+                  disabled={loading || readonly}
                   class={inputClass}
                   placeholder="Blanco"
                 />
@@ -455,19 +463,21 @@
             onclick={onClose}
             class="flex-1 py-2.5 px-4 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
-            Cancelar
+            {readonly ? "Cerrar" : "Cancelar"}
           </button>
-          <button
-            type="submit"
-            disabled={loading}
-            class="flex-1 py-2.5 px-4 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            {loading
-              ? "Guardando..."
-              : isEditMode
-                ? "Guardar Cambios"
-                : "Crear Proveedor"}
-          </button>
+          {#if !readonly}
+            <button
+              type="submit"
+              disabled={loading}
+              class="flex-1 py-2.5 px-4 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {loading
+                ? "Guardando..."
+                : isEditMode
+                  ? "Guardar Cambios"
+                  : "Crear Proveedor"}
+            </button>
+          {/if}
         </div>
       </form>
     </div>

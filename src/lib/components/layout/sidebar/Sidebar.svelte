@@ -412,6 +412,13 @@
             <div class="px-3 py-2 border-b border-[#454545] mb-1">
               <p class="text-xs font-semibold text-white">{userName}</p>
               <p class="text-[10px] text-gray-400">{$currentUser?.email}</p>
+              {#if $currentUser?.roleName}
+                <div
+                  class="mt-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#2da44e]/20 text-[#2da44e] uppercase tracking-wide"
+                >
+                  {$currentUser.roleName}
+                </div>
+              {/if}
             </div>
 
             <button

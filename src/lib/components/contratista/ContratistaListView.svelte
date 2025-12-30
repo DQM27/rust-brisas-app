@@ -5,7 +5,9 @@
   import { fade } from "svelte/transition";
   import { toast } from "svelte-5-french-toast";
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-  import { Trash2, RotateCcw } from "lucide-svelte"; // Add RotateCcw for restore icon
+  import { Trash2, RotateCcw, Eye } from "lucide-svelte"; // Add RotateCcw for restore icon
+  import { can } from "$lib/logic/permissions";
+  import { currentUser } from "$lib/stores/auth";
 
   import { AlertCircle } from "lucide-svelte";
   import { selectedSearchStore } from "$lib/stores/searchStore";
@@ -106,38 +108,73 @@
   // Custom buttons
   const customButtons = $derived.by(() => {
     const selected = selectedRows[0];
+    const canCreate = $currentUser && can($currentUser, "CREATE_CONTRACTOR");
+    const canUpdate = $currentUser && can($currentUser, "UPDATE_CONTRACTOR");
+    const canDelete = $currentUser && can($currentUser, "DELETE_CONTRACTOR");
 
-    return {
-      default: [
-        createCustomButton.nuevo(() => openModal()),
+    // Default buttons
+    let defaultBtns = [];
+    if (canCreate) {
+      defaultBtns.push(createCustomButton.nuevo(() => openModal()));
+    }
 
-        ...COMMON_DEFAULT_BUTTONS.filter((b) =>
-          ["autosize-all", "reset-columns", "select-all"].includes(b.id),
-        ).map((b) => ({
-          id: b.id,
-          label: b.label,
-          icon: b.icon,
-          tooltip: b.tooltip,
-          onClick: undefined,
-          useCommonHandler: true,
-        })),
-        {
-          id: "reindex",
-          label: "Reindexar",
-          icon: AlertCircle,
-          onClick: () => handleReindex(),
-          variant: "default" as const,
-          tooltip: "Reparar índice de búsqueda",
-        },
-      ],
-      singleSelect: [
+    defaultBtns.push(
+      ...COMMON_DEFAULT_BUTTONS.filter((b) =>
+        ["autosize-all", "reset-columns", "select-all"].includes(b.id),
+      ).map((b) => ({
+        id: b.id,
+        label: b.label,
+        icon: b.icon,
+        tooltip: b.tooltip,
+        onClick: undefined,
+        useCommonHandler: true,
+      })),
+    );
+
+    defaultBtns.push({
+      id: "reindex",
+      label: "Reindexar",
+      icon: AlertCircle,
+      onClick: () => handleReindex(),
+      variant: "default" as const,
+      tooltip: "Reparar índice de búsqueda",
+    });
+
+    // Single select buttons
+    let singleSelectBtns = [];
+
+    // Si puede actualizar, mostramos botón Editar estándar
+    if (canUpdate) {
+      singleSelectBtns.push(
         createCustomButton.editar(() => {
           if (selected) openModal(selected);
         }),
+      );
+    } else {
+      // Si NO puede actualizar, mostramos botón "Ver Detalle"
+      singleSelectBtns.push({
+        id: "view-detail",
+        label: "Ver Detalle",
+        icon: Eye,
+        onClick: () => {
+          if (selected) openModal(selected, true); // true = readonly
+        },
+        variant: "default" as const,
+        tooltip: "Ver detalles del contratista",
+      });
+    }
+
+    if (canDelete) {
+      singleSelectBtns.push(
         createCustomButton.eliminar(() => {
           if (selected) handleDelete(selected);
         }),
-      ],
+      );
+    }
+
+    return {
+      default: defaultBtns,
+      singleSelect: singleSelectBtns,
       multiSelect: [],
     };
   });
@@ -168,8 +205,14 @@
   // ==========================================
   // HANDLERS - MODAL
   // ==========================================
-  function openModal(contratista: ContratistaResponse | null = null) {
+  let isReadOnlyModal = $state(false);
+
+  function openModal(
+    contratista: ContratistaResponse | null = null,
+    readonly: boolean = false,
+  ) {
     editingContratista = contratista;
+    isReadOnlyModal = readonly;
     showModal = true;
   }
 
@@ -430,12 +473,14 @@
             Crea el primer contratista para comenzar
           </p>
           <div class="flex gap-3 justify-center mt-6">
-            <button
-              onclick={() => openModal()}
-              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-            >
-              Nuevo Contratista
-            </button>
+            {#if $currentUser && can($currentUser, "CREATE_CONTRACTOR")}
+              <button
+                onclick={() => openModal()}
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+              >
+                Nuevo Contratista
+              </button>
+            {/if}
           </div>
         </div>
       </div>
@@ -498,6 +543,7 @@
 <ContratistaFormModal
   show={showModal}
   contratista={editingContratista}
+  readonly={isReadOnlyModal}
   loading={modalLoading}
   onSave={handleSaveContratista}
   onClose={closeModal}

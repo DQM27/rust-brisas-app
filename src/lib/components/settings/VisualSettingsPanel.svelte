@@ -21,6 +21,13 @@
     Umbrella,
   } from "lucide-svelte";
   import { LANDSCAPE_TYPES } from "$lib/components/visual/systems/landscapeData";
+  import { can } from "$lib/logic/permissions";
+  import { currentUser } from "$lib/stores/auth";
+
+  // Permisos
+  const canUpdate = $derived(
+    $currentUser && can($currentUser, "UPDATE_SETTINGS_VISUAL"),
+  );
 
   let showAdvancedCustomization = false;
   let showWeatherCustomization = false;
@@ -35,10 +42,16 @@
 </script>
 
 <!-- Reusable Toggle Switch -->
-{#snippet toggleSwitch(checked: boolean, onChange: () => void, srLabel: string)}
+{#snippet toggleSwitch(
+  checked: boolean,
+  onChange: () => void,
+  srLabel: string,
+  disabled: boolean = false,
+)}
   <button
     onclick={onChange}
-    class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2
+    {disabled}
+    class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed
     {checked ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}"
   >
     <span class="sr-only">{srLabel}</span>
@@ -63,6 +76,7 @@
   label: string,
   checked: boolean,
   onChange: () => void,
+  disabled: boolean = false,
 )}
   <div class="flex items-center justify-between py-3">
     <div class="flex items-center gap-3">
@@ -71,7 +85,7 @@
       </div>
       <span class="text-secondary font-medium">{label}</span>
     </div>
-    {@render toggleSwitch(checked, onChange, label)}
+    {@render toggleSwitch(checked, onChange, label, disabled)}
   </div>
 {/snippet}
 
@@ -115,6 +129,7 @@
           "Paisaje",
           $generalSettings.showBackground,
           () => generalSettings.toggleBackground(),
+          !canUpdate,
         )}
 
         {#if $generalSettings.showBackground}
@@ -129,7 +144,15 @@
             </button>
 
             {#if showLandscapeCustomization}
-              <div class="pl-12 pt-2" transition:slide={{ duration: 200 }}>
+              <div
+                class="pl-12 pt-2 relative"
+                transition:slide={{ duration: 200 }}
+              >
+                {#if !canUpdate}
+                  <div
+                    class="absolute inset-0 z-10 bg-white/50 dark:bg-black/50 cursor-not-allowed"
+                  ></div>
+                {/if}
                 <div class="grid grid-cols-3 gap-2">
                   {#each LANDSCAPE_TYPES as biome}
                     <button
@@ -171,6 +194,7 @@
           "Nubes Animadas",
           $generalSettings.showClouds,
           () => generalSettings.toggleClouds(),
+          !canUpdate,
         )}
 
         {#if $generalSettings.showClouds}
@@ -184,7 +208,14 @@
             </button>
 
             {#if showCloudCustomization}
-              <VisualCustomizationPanel embedded={true} mode="clouds" />
+              <div class="relative">
+                {#if !canUpdate}
+                  <div
+                    class="absolute inset-0 z-10 bg-white/50 dark:bg-black/50 cursor-not-allowed"
+                  ></div>
+                {/if}
+                <VisualCustomizationPanel embedded={true} mode="clouds" />
+              </div>
             {/if}
           </div>
         {/if}
@@ -196,6 +227,7 @@
           "Estrellas (Noche)",
           $generalSettings.showStars,
           () => generalSettings.toggleStars(),
+          !canUpdate,
         )}
 
         {#if $generalSettings.showStars}
@@ -209,7 +241,14 @@
             </button>
 
             {#if showStarCustomization}
-              <VisualCustomizationPanel embedded={true} mode="stars" />
+              <div class="relative">
+                {#if !canUpdate}
+                  <div
+                    class="absolute inset-0 z-10 bg-white/50 dark:bg-black/50 cursor-not-allowed"
+                  ></div>
+                {/if}
+                <VisualCustomizationPanel embedded={true} mode="stars" />
+              </div>
             {/if}
           </div>
         {/if}
@@ -221,6 +260,7 @@
           "Sol / Luna",
           $generalSettings.showCelestial,
           () => generalSettings.toggleCelestial(),
+          !canUpdate,
         )}
 
         {#if $generalSettings.showCelestial}
@@ -235,7 +275,14 @@
             </button>
 
             {#if showCelestialCustomization}
-              <VisualCustomizationPanel embedded={true} mode="celestial" />
+              <div class="relative">
+                {#if !canUpdate}
+                  <div
+                    class="absolute inset-0 z-10 bg-white/50 dark:bg-black/50 cursor-not-allowed"
+                  ></div>
+                {/if}
+                <VisualCustomizationPanel embedded={true} mode="celestial" />
+              </div>
             {/if}
           </div>
         {/if}
@@ -247,6 +294,7 @@
           "Efectos Climáticos",
           $generalSettings.enableWeatherEffects,
           () => generalSettings.toggleWeather(),
+          !canUpdate,
         )}
 
         {#if $generalSettings.enableWeatherEffects}
@@ -261,7 +309,14 @@
             </button>
 
             {#if showWeatherCustomization}
-              <VisualCustomizationPanel embedded={true} mode="weather" />
+              <div class="relative">
+                {#if !canUpdate}
+                  <div
+                    class="absolute inset-0 z-10 bg-white/50 dark:bg-black/50 cursor-not-allowed"
+                  ></div>
+                {/if}
+                <VisualCustomizationPanel embedded={true} mode="weather" />
+              </div>
             {/if}
           </div>
         {/if}
@@ -273,6 +328,7 @@
           "Efecto Bokeh",
           $generalSettings.showBokeh,
           () => generalSettings.toggleBokeh(),
+          !canUpdate,
         )}
 
         {#if $generalSettings.showBokeh}
@@ -287,7 +343,14 @@
             </button>
 
             {#if showAdvancedCustomization}
-              <VisualCustomizationPanel embedded={true} />
+              <div class="relative">
+                {#if !canUpdate}
+                  <div
+                    class="absolute inset-0 z-10 bg-white/50 dark:bg-black/50 cursor-not-allowed"
+                  ></div>
+                {/if}
+                <VisualCustomizationPanel embedded={true} />
+              </div>
             {/if}
           </div>
         {/if}
@@ -317,8 +380,9 @@
 
         {#if $generalSettings.overrideHour !== null}
           <button
-            class="flex items-center gap-1 text-xs text-accent hover:underline"
+            class="flex items-center gap-1 text-xs text-accent hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
             onclick={() => ($generalSettings.overrideHour = null)}
+            disabled={!canUpdate}
           >
             <RotateCcw size={12} />
             Auto
@@ -353,7 +417,8 @@
             min="0"
             max="24"
             step="0.25"
-            class="flex-1 h-2 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-accent"
+            disabled={!canUpdate}
+            class="flex-1 h-2 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-accent disabled:opacity-50"
             value={$generalSettings.overrideHour ??
               new Date().getHours() + new Date().getMinutes() / 60}
             oninput={(e) =>
@@ -367,11 +432,12 @@
         <div class="flex gap-2 pt-2">
           {#each [{ label: "🌅 6:00", hour: 6 }, { label: "☀️ 12:00", hour: 12 }, { label: "🌆 18:00", hour: 18 }, { label: "🌙 0:00", hour: 0 }] as preset}
             <button
-              class="flex-1 py-1.5 px-2 text-xs rounded-md transition-colors
+              class="flex-1 py-1.5 px-2 text-xs rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed
                 {$generalSettings.overrideHour === preset.hour
                 ? 'bg-accent text-white'
                 : 'bg-surface-2 hover:bg-surface-hover text-secondary'}"
               onclick={() => ($generalSettings.overrideHour = preset.hour)}
+              disabled={!canUpdate}
             >
               {preset.label}
             </button>
@@ -401,8 +467,9 @@
 
         {#if $generalSettings.overrideSeason !== null}
           <button
-            class="flex items-center gap-1 text-xs text-accent hover:underline"
+            class="flex items-center gap-1 text-xs text-accent hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
             onclick={() => ($generalSettings.overrideSeason = null)}
+            disabled={!canUpdate}
           >
             <RotateCcw size={12} />
             Auto
@@ -449,6 +516,7 @@
           $generalSettings.overrideBirthday,
           () => generalSettings.toggleBirthdayTest(),
           "Activar modo cumpleaños",
+          !canUpdate,
         )}
       </div>
 
@@ -467,15 +535,17 @@
     <!-- ================================================================== -->
     <div class="flex justify-end gap-2 pt-2">
       <button
-        class="btn-base bg-surface-2 hover:bg-surface-hover text-secondary text-sm"
+        class="btn-base bg-surface-2 hover:bg-surface-hover text-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         onclick={() => generalSettings.resetOverrides()}
+        disabled={!canUpdate}
       >
         <RotateCcw size={14} />
         Resetear Previews
       </button>
 
       <button
-        class="btn-base bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 text-sm"
+        class="btn-base bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={!canUpdate}
         onclick={() => {
           if (
             confirm(

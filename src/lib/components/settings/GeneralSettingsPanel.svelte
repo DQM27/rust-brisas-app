@@ -17,6 +17,13 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import { onMount } from "svelte";
   import { toast } from "svelte-5-french-toast";
+  import { can } from "$lib/logic/permissions";
+  import { currentUser } from "$lib/stores/auth";
+
+  // Permisos
+  const canUpdate = $derived(
+    $currentUser && can($currentUser, "UPDATE_SETTINGS_GENERAL"),
+  );
 
   // Estado del modo demo (se carga desde el backend)
   let showDemoMode = $state(false);
@@ -214,6 +221,7 @@
           "Texto de Bienvenida",
           $generalSettings.showWelcomeText,
           () => generalSettings.toggleWelcomeText(),
+          !canUpdate,
         )}
 
         {@render settingRow(
@@ -223,6 +231,7 @@
           "Tarjetas de Módulos",
           $generalSettings.showWelcomeCards,
           () => generalSettings.toggleCards(),
+          !canUpdate,
         )}
       </div>
     </div>
@@ -253,6 +262,7 @@
           "Deshabilitar Setup Wizard",
           $generalSettings.disableSetupWizard,
           () => generalSettings.toggleSetupWizard(),
+          !canUpdate,
         )}
 
         <!-- Modo Demo Toggle -->
@@ -263,7 +273,7 @@
           "Mostrar Modo Demo en Login",
           showDemoMode,
           toggleDemoMode,
-          loadingDemo,
+          loadingDemo || !canUpdate,
         )}
       </div>
 
@@ -315,7 +325,7 @@
             <select
               bind:value={alertSound}
               onchange={saveAudioConfig}
-              disabled={useCustomSound}
+              disabled={useCustomSound || !canUpdate}
               class="rounded-md border border-emphasis bg-surface-2 px-3 py-1.5 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
             >
               <option value="Hand">Crítico (Hand)</option>
@@ -358,8 +368,8 @@
             <div class="flex items-center gap-4">
               <button
                 onclick={pickCustomSound}
-                disabled={uploadingSound}
-                class="btn-secondary py-1.5 px-3 text-xs flex items-center gap-2"
+                disabled={uploadingSound || !canUpdate}
+                class="btn-secondary py-1.5 px-3 text-xs flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {#if uploadingSound}
                   <span class="animate-spin text-accent">⏳</span>
@@ -376,7 +386,7 @@
                   toggleCustomSound();
                 },
                 "Usar personalizado",
-                !customSoundPath,
+                !customSoundPath || !canUpdate,
               )}
             </div>
           </div>
@@ -389,7 +399,8 @@
     <!-- ================================================================== -->
     <div class="flex justify-end pt-2">
       <button
-        class="btn-base bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 text-sm"
+        class="btn-base bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={!canUpdate}
         onclick={() => {
           if (
             confirm(

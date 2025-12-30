@@ -29,6 +29,8 @@
   import { selectedSearchStore } from "$lib/stores/searchStore";
   import { currentUser } from "$lib/stores/auth";
   import { activeTabId } from "$lib/stores/tabs";
+  import { can } from "$lib/logic/permissions";
+  import { Eye } from "lucide-svelte";
 
   interface Props {
     tabId: string;
@@ -126,32 +128,71 @@
   // Botones personalizados por contexto
   const customButtons = $derived.by(() => {
     const selected = selectedRows[0];
+    const canCreate = $currentUser && can($currentUser, "CREATE_USER");
+    const canDelete = $currentUser && can($currentUser, "DELETE_USER");
 
-    return {
-      default: [
-        createCustomButton.nuevo(() => openModal(null)),
-        {
-          id: "refresh",
-          label: "Actualizar",
-          icon: RotateCw,
-          onClick: loadUsers,
-          variant: "default" as const,
-          tooltip: "Recargar lista de usuarios",
-        },
-      ],
-      singleSelect: [
+    let defaultBtns = [];
+    if (canCreate) {
+      defaultBtns.push(createCustomButton.nuevo(() => openModal(null)));
+    }
+
+    defaultBtns.push({
+      id: "refresh",
+      label: "Actualizar",
+      icon: RotateCw,
+      onClick: loadUsers,
+      variant: "default" as const,
+      tooltip: "Recargar lista de usuarios",
+    });
+
+    let singleSelectBtns = [];
+    // Chequear permiso de actualización para EL usuario seleccionado
+    // Si no tiene permiso de editar, mostrar "Ver Detalle"
+    const canUpdateSelected =
+      selected &&
+      $currentUser &&
+      can($currentUser, "UPDATE_USER_PROFILE", selected);
+
+    if (canUpdateSelected) {
+      singleSelectBtns.push(
         createCustomButton.editar(() => {
           if (selected) openModal(selected);
         }),
+      );
+    } else {
+      singleSelectBtns.push({
+        id: "view-detail",
+        label: "Ver Detalle",
+        icon: Eye,
+        onClick: () => {
+          if (selected) openModal(selected, true);
+        },
+        variant: "default" as const,
+        tooltip: "Ver detalles del usuario",
+      });
+    }
+
+    if (canDelete) {
+      singleSelectBtns.push(
         createCustomButton.eliminar(() => {
           if (selected) handleDeleteUser(selected);
         }),
-      ],
-      multiSelect: [
+      );
+    }
+
+    let multiSelectBtns = [];
+    if (canDelete) {
+      multiSelectBtns.push(
         createCustomButton.eliminar(() => {
           if (selectedRows.length > 0) handleDeleteMultiple(selectedRows);
         }),
-      ],
+      );
+    }
+
+    return {
+      default: defaultBtns,
+      singleSelect: singleSelectBtns,
+      multiSelect: multiSelectBtns,
     };
   });
 
@@ -179,8 +220,11 @@
   // HANDLERS - MODAL
   // ==========================================
 
-  function openModal(user: UserResponse | null) {
+  let isReadOnlyModal = $state(false);
+
+  function openModal(user: UserResponse | null, readonly: boolean = false) {
     editingUser = user;
+    isReadOnlyModal = readonly;
     showModal = true;
   }
 
@@ -421,12 +465,14 @@
           <p class="mt-2 text-sm text-gray-400">
             Crea el primer usuario para comenzar
           </p>
-          <button
-            onclick={() => openModal(null)}
-            class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Nuevo Usuario
-          </button>
+          {#if $currentUser && can($currentUser, "CREATE_USER")}
+            <button
+              onclick={() => openModal(null)}
+              class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Nuevo Usuario
+            </button>
+          {/if}
         </div>
       </div>
     {:else}
@@ -488,6 +534,7 @@
 <UserFormModal
   show={showModal}
   user={editingUser}
+  readonly={isReadOnlyModal}
   loading={modalLoading}
   onSave={handleSaveUser}
   onClose={closeModal}

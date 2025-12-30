@@ -1,6 +1,13 @@
 <script lang="ts">
   import { Clock, Shield, Moon, Power, RotateCcw } from "lucide-svelte";
   import { sessionSettings } from "$lib/stores/sessionSettingsStore";
+  import { can } from "$lib/logic/permissions";
+  import { currentUser } from "$lib/stores/auth";
+
+  // Permisos
+  const canUpdate = $derived(
+    $currentUser && can($currentUser, "UPDATE_SETTINGS_SESSIONS"),
+  );
 
   // Local state for editing
   let screensaverMinutes = $state($sessionSettings.screensaverTimeoutMinutes);
@@ -57,7 +64,8 @@
     <button
       type="button"
       onclick={handleReset}
-      class="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-surface-tertiary text-secondary hover:bg-surface-3 transition-colors"
+      disabled={!canUpdate}
+      class="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-surface-tertiary text-secondary hover:bg-surface-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       title="Restaurar valores por defecto"
     >
       <RotateCcw size={16} />
@@ -83,10 +91,11 @@
               type="checkbox"
               checked={$sessionSettings.enableAppLock}
               onchange={() => sessionSettings.toggleAppLock()}
+              disabled={!canUpdate}
               class="sr-only peer"
             />
             <div
-              class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full"
+              class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
             ></div>
           </label>
         </div>
@@ -120,7 +129,8 @@
                     sessionSettings.setAppLockTimeout(
                       Number((e.target as HTMLInputElement).value),
                     )}
-                  class="flex-1 h-2 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  disabled={!canUpdate}
+                  class="flex-1 h-2 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-amber-500 disabled:opacity-50"
                 />
                 <input
                   type="number"
@@ -131,7 +141,8 @@
                     sessionSettings.setAppLockTimeout(
                       Number((e.target as HTMLInputElement).value),
                     )}
-                  class="w-20 px-2 py-1 text-sm rounded border border-emphasis bg-surface-2 text-primary focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  disabled={!canUpdate}
+                  class="w-20 px-2 py-1 text-sm rounded border border-emphasis bg-surface-2 text-primary focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -159,10 +170,11 @@
               type="checkbox"
               checked={$sessionSettings.enableScreensaver}
               onchange={() => sessionSettings.toggleScreensaver()}
+              disabled={!canUpdate}
               class="sr-only peer"
             />
             <div
-              class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full"
+              class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
             ></div>
           </label>
         </div>
@@ -192,7 +204,8 @@
                   step="1"
                   bind:value={screensaverMinutes}
                   oninput={updateScreensaverTimeout}
-                  class="flex-1 h-2 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-accent"
+                  disabled={!canUpdate}
+                  class="flex-1 h-2 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-accent disabled:opacity-50"
                 />
                 <input
                   type="number"
@@ -200,7 +213,8 @@
                   max="120"
                   bind:value={screensaverMinutes}
                   onchange={updateScreensaverTimeout}
-                  class="w-20 px-2 py-1 text-sm rounded border border-emphasis bg-surface-2 text-primary focus:outline-none focus:ring-2 focus:ring-accent"
+                  disabled={!canUpdate}
+                  class="w-20 px-2 py-1 text-sm rounded border border-emphasis bg-surface-2 text-primary focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
                 />
               </div>
             </div>
@@ -227,10 +241,11 @@
                   type="checkbox"
                   checked={$sessionSettings.screensaverRequiresPassword}
                   onchange={() => sessionSettings.toggleScreensaverPassword()}
+                  disabled={!canUpdate}
                   class="sr-only peer"
                 />
                 <div
-                  class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full"
+                  class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
                 ></div>
               </label>
             </div>
@@ -256,10 +271,11 @@
               type="checkbox"
               checked={$sessionSettings.enableCompleteTimeout}
               onchange={() => sessionSettings.toggleCompleteTimeout()}
+              disabled={!canUpdate}
               class="sr-only peer"
             />
             <div
-              class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full"
+              class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-green-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-full peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
             ></div>
           </label>
         </div>
@@ -289,7 +305,8 @@
                   step="5"
                   bind:value={completeMinutes}
                   oninput={updateCompleteTimeout}
-                  class="flex-1 h-2 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-red-500"
+                  disabled={!canUpdate}
+                  class="flex-1 h-2 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-red-500 disabled:opacity-50"
                 />
                 <input
                   type="number"
@@ -298,7 +315,8 @@
                   step="5"
                   bind:value={completeMinutes}
                   onchange={updateCompleteTimeout}
-                  class="w-20 px-2 py-1 text-sm rounded border border-emphasis bg-surface-2 text-primary focus:outline-none focus:ring-2 focus:ring-red-500"
+                  disabled={!canUpdate}
+                  class="w-20 px-2 py-1 text-sm rounded border border-emphasis bg-surface-2 text-primary focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
                 />
               </div>
             </div>

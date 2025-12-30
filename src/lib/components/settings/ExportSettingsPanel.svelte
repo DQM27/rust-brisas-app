@@ -17,10 +17,17 @@
   import { exportProfileStore } from "$lib/stores/exportProfileStore";
   import type { ExportProfile, PdfDesign } from "$lib/types/exportProfile";
   import { DEFAULT_PDF_DESIGN } from "$lib/types/exportProfile";
+  import { can } from "$lib/logic/permissions";
+  import { currentUser } from "$lib/stores/auth";
 
   onMount(() => {
     exportProfileStore.load();
   });
+
+  // Permisos
+  const canUpdate = $derived(
+    $currentUser && can($currentUser, "UPDATE_SETTINGS_BACKUP"),
+  );
 
   // Profile Management
   let showProfileEditor = $state(false);
@@ -134,7 +141,8 @@
       </p>
       <button
         onclick={createProfile}
-        class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-[#2da44e] hover:bg-[#2c974b] text-white transition-colors"
+        disabled={!canUpdate}
+        class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-[#2da44e] hover:bg-[#2c974b] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Plus size={18} />
         Nuevo Perfil
@@ -225,7 +233,8 @@
                 {#if !profile.isDefault}
                   <button
                     onclick={() => setDefaultProfile(profile.id)}
-                    class="p-2 rounded-md text-gray-400 hover:text-[#2da44e] hover:bg-gray-100 dark:hover:bg-[#161b22] transition-colors"
+                    disabled={!canUpdate}
+                    class="p-2 rounded-md text-gray-400 hover:text-[#2da44e] hover:bg-gray-100 dark:hover:bg-[#161b22] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Predeterminado"
                   >
                     <Check size={16} />
@@ -233,21 +242,24 @@
                 {/if}
                 <button
                   onclick={() => duplicateProfile(profile)}
-                  class="p-2 rounded-md text-gray-400 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-[#161b22] transition-colors"
+                  disabled={!canUpdate}
+                  class="p-2 rounded-md text-gray-400 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-[#161b22] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Duplicar"
                 >
                   <Copy size={16} />
                 </button>
                 <button
                   onclick={() => editProfile(profile)}
-                  class="p-2 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#161b22] transition-colors"
+                  disabled={!canUpdate}
+                  class="p-2 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#161b22] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Editar"
                 >
                   <Edit2 size={16} />
                 </button>
                 <button
                   onclick={() => deleteProfile(profile.id)}
-                  class="p-2 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+                  disabled={!canUpdate}
+                  class="p-2 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Eliminar"
                 >
                   <Trash2 size={16} />

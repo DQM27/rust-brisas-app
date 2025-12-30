@@ -62,10 +62,15 @@ export type Action =
 
     // Settings Modules
     | 'VIEW_SETTINGS_GENERAL'
+    | 'UPDATE_SETTINGS_GENERAL'
     | 'VIEW_SETTINGS_VISUAL'
+    | 'UPDATE_SETTINGS_VISUAL'
     | 'VIEW_SETTINGS_SECURITY'
+    | 'UPDATE_SETTINGS_SECURITY'
     | 'VIEW_SETTINGS_SESSIONS'
+    | 'UPDATE_SETTINGS_SESSIONS'
     | 'VIEW_SETTINGS_BACKUP'
+    | 'UPDATE_SETTINGS_BACKUP'
 
     // Role Module
     | 'VIEW_ROLE_LIST'
@@ -187,11 +192,16 @@ export function can(actor: UserResponse | null | undefined, action: Action, targ
             'DELETE_GAFETE': 'gafetes:delete',
 
             // Settings
-            'VIEW_SETTINGS_GENERAL': 'settings_general:read',
-            'VIEW_SETTINGS_VISUAL': 'settings_visual:read',
-            'VIEW_SETTINGS_SECURITY': 'settings_security:read',
-            'VIEW_SETTINGS_SESSIONS': 'settings_sessions:read',
-            'VIEW_SETTINGS_BACKUP': 'backup:read',
+            'VIEW_SETTINGS_GENERAL': 'settings_general:view',
+            'UPDATE_SETTINGS_GENERAL': 'settings_general:update',
+            'VIEW_SETTINGS_VISUAL': 'settings_visual:view',
+            'UPDATE_SETTINGS_VISUAL': 'settings_visual:update',
+            'VIEW_SETTINGS_SECURITY': 'settings_security:view',
+            'UPDATE_SETTINGS_SECURITY': 'settings_security:update',
+            'VIEW_SETTINGS_SESSIONS': 'settings_sessions:view',
+            'UPDATE_SETTINGS_SESSIONS': 'settings_sessions:update',
+            'VIEW_SETTINGS_BACKUP': 'backup:view',
+            'UPDATE_SETTINGS_BACKUP': 'backup:create', // Backup creation implies update/create
 
             // Roles
             'VIEW_ROLE_LIST': 'roles:read',

@@ -23,6 +23,9 @@
   import { toast } from "svelte-5-french-toast";
   import type { ColDef } from "@ag-grid-community/core";
   import { activeTabId } from "$lib/stores/tabs";
+  import { can } from "$lib/logic/permissions";
+  import { currentUser } from "$lib/stores/auth";
+  import { Eye } from "lucide-svelte";
 
   interface Props {
     tabId?: string;
@@ -80,8 +83,14 @@
   // Manejadores del Grid
   const handleRefresh = () => loadData();
 
-  function openFormModal(proveedor: ProveedorResponse | null) {
+  let isReadOnlyModal = $state(false);
+
+  function openFormModal(
+    proveedor: ProveedorResponse | null,
+    readonly: boolean = false,
+  ) {
     selectedProveedor = proveedor;
+    isReadOnlyModal = readonly;
     showModal = true;
   }
 
@@ -157,26 +166,55 @@
   // Botones Custom
   const customButtons = $derived.by(() => {
     const selected = selectedRows[0];
+    const canCreate = $currentUser && can($currentUser, "CREATE_PROVIDER");
+    const canUpdate = $currentUser && can($currentUser, "UPDATE_PROVIDER");
+    const canDelete = $currentUser && can($currentUser, "DELETE_PROVIDER");
 
-    return {
-      default: [
-        createCustomButton.nuevo(() => openFormModal(null)),
-        {
-          id: "refresh",
-          label: "Actualizar",
-          category: "data",
-          onClick: loadData,
-          tooltip: "Recargar lista",
-        },
-      ],
-      singleSelect: [
+    let defaultBtns = [];
+    if (canCreate) {
+      defaultBtns.push(createCustomButton.nuevo(() => openFormModal(null)));
+    }
+
+    defaultBtns.push({
+      id: "refresh",
+      label: "Actualizar",
+      category: "data",
+      onClick: loadData,
+      tooltip: "Recargar lista",
+    });
+
+    let singleSelectBtns = [];
+
+    if (canUpdate) {
+      singleSelectBtns.push(
         createCustomButton.editar(() => {
           if (selected) openFormModal(selected);
         }),
+      );
+    } else {
+      singleSelectBtns.push({
+        id: "view-detail",
+        label: "Ver Detalle",
+        icon: Eye,
+        onClick: () => {
+          if (selected) openFormModal(selected, true);
+        },
+        variant: "default" as const,
+        tooltip: "Ver detalles del proveedor",
+      });
+    }
+
+    if (canDelete) {
+      singleSelectBtns.push(
         createCustomButton.eliminar(() => {
           if (selected) confirmDelete(selected);
         }),
-      ],
+      );
+    }
+
+    return {
+      default: defaultBtns,
+      singleSelect: singleSelectBtns,
       multiSelect: [],
     };
   });
@@ -245,6 +283,7 @@
 <ProveedorFormModal
   show={showModal}
   proveedor={selectedProveedor}
+  readonly={isReadOnlyModal}
   loading={modalLoading}
   onSave={handleSave}
   onClose={() => (showModal = false)}

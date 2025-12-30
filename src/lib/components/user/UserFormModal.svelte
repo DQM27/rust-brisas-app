@@ -37,9 +37,17 @@
       data: CreateUserInput | UpdateUserInput,
     ) => Promise<boolean | void>;
     onClose: () => void;
+    readonly?: boolean;
   }
 
-  let { show, user = null, loading = false, onSave, onClose }: Props = $props();
+  let {
+    show,
+    user = null,
+    loading = false,
+    onSave,
+    onClose,
+    readonly = false,
+  }: Props = $props();
 
   // Roles state
   let availableRoles = $state<RoleType[]>([]);
@@ -125,9 +133,11 @@
   });
 
   const modalTitle = $derived(
-    isEditMode
-      ? `Editar: ${user?.nombre} ${user?.apellido}`.trim()
-      : "Crear Nuevo Usuario",
+    readonly
+      ? `Ver Detalle: ${user?.nombre || ""} ${user?.apellido || ""}`.trim()
+      : isEditMode
+        ? `Editar: ${user?.nombre} ${user?.apellido}`.trim()
+        : "Crear Nuevo Usuario",
   );
 
   // Estado del formulario
@@ -510,8 +520,7 @@
                       </div>
                     {/if}
                   </div>
-
-                  {#if isEditMode}
+                  {#if isEditMode && !readonly}
                     <button
                       type="button"
                       onclick={handleAvatarUpload}
@@ -561,7 +570,7 @@
                   value={formData.cedula}
                   oninput={handleCedulaInput}
                   placeholder="Ej: 1-1122-0333"
-                  disabled={loading}
+                  disabled={loading || readonly}
                   class={inputClass}
                 />
                 {#if errors.cedula}<p class={errorClass}>
@@ -577,7 +586,7 @@
                     type="text"
                     value={formData.nombre}
                     oninput={(e) => handleNameInput(e, "nombre")}
-                    disabled={loading}
+                    disabled={loading || readonly}
                     class={inputClass}
                   />
                   {#if errors.nombre}<p class={errorClass}>
@@ -593,7 +602,7 @@
                     type="text"
                     value={formData.segundoNombre}
                     oninput={(e) => handleNameInput(e, "segundoNombre")}
-                    disabled={loading}
+                    disabled={loading || readonly}
                     class={inputClass}
                   />
                 </div>
@@ -607,7 +616,7 @@
                     type="text"
                     value={formData.apellido}
                     oninput={(e) => handleNameInput(e, "apellido")}
-                    disabled={loading}
+                    disabled={loading || readonly}
                     class={inputClass}
                   />
                   {#if errors.apellido}<p class={errorClass}>
@@ -623,7 +632,7 @@
                     type="text"
                     value={formData.segundoApellido}
                     oninput={(e) => handleNameInput(e, "segundoApellido")}
-                    disabled={loading}
+                    disabled={loading || readonly}
                     class={inputClass}
                   />
                 </div>
@@ -637,7 +646,7 @@
                   id="fechaNacimiento"
                   type="date"
                   bind:value={formData.fechaNacimiento}
-                  disabled={loading}
+                  disabled={loading || readonly}
                   class={inputClass}
                 />
               </div>
@@ -656,7 +665,7 @@
                     value={formData.numeroGafete}
                     oninput={handleGafeteInput}
                     placeholder="K-XXXXXX"
-                    disabled={loading}
+                    disabled={loading || readonly}
                     class={inputClass}
                   />
                 </div>
@@ -668,7 +677,7 @@
                     id="fechaInicioLabores"
                     type="date"
                     bind:value={formData.fechaInicioLabores}
-                    disabled={loading}
+                    disabled={loading || readonly}
                     class={inputClass}
                   />
                 </div>
@@ -680,7 +689,7 @@
                   id="email"
                   type="email"
                   bind:value={formData.email}
-                  disabled={loading}
+                  disabled={loading || readonly}
                   class={inputClass}
                 />
                 {#if errors.email}<p class={errorClass}>{errors.email}</p>{/if}
@@ -695,7 +704,7 @@
                   oninput={(e) => handleGenericPhoneInput(e, "telefono")}
                   onkeydown={handlePhoneKeydown}
                   placeholder="+505 8888-8888"
-                  disabled={loading}
+                  disabled={loading || readonly}
                   class={inputClass}
                 />
               </div>
@@ -707,7 +716,7 @@
                   <select
                     id="roleId"
                     bind:value={formData.roleId}
-                    disabled={loading || rolesLoading}
+                    disabled={loading || rolesLoading || readonly}
                     class={inputClass}
                   >
                     {#if rolesLoading}
@@ -753,7 +762,7 @@
                     value={formData.contactoEmergenciaNombre}
                     oninput={(e) =>
                       handleNameInput(e, "contactoEmergenciaNombre")}
-                    disabled={loading}
+                    disabled={loading || readonly}
                     class={inputClass}
                     placeholder="Nombre"
                   />
@@ -770,7 +779,7 @@
                       handleGenericPhoneInput(e, "contactoEmergenciaTelefono")}
                     onkeydown={handlePhoneKeydown}
                     placeholder="Teléfono"
-                    disabled={loading}
+                    disabled={loading || readonly}
                     class={inputClass}
                   />
                 </div>
@@ -781,7 +790,7 @@
                 <textarea
                   id="direccion"
                   bind:value={formData.direccion}
-                  disabled={loading}
+                  disabled={loading || readonly}
                   class={inputClass}
                   rows="3"
                   placeholder="Dirección completa..."
@@ -806,7 +815,7 @@
 
         <div class="flex-1"></div>
 
-        {#if isSelf && !isChangingPassword}
+        {#if isSelf && !isChangingPassword && !readonly}
           <button
             type="button"
             onclick={() => (isChangingPassword = true)}
@@ -831,7 +840,7 @@
           </button>
         {/if}
 
-        {#if isEditMode && !isSelf && $currentUser?.roleId === ROLE_ADMIN_ID && !isChangingPassword}
+        {#if isEditMode && !isSelf && $currentUser?.roleId === ROLE_ADMIN_ID && !isChangingPassword && !readonly}
           <button
             type="button"
             onclick={handleResetPasswordClick}
@@ -842,7 +851,7 @@
           </button>
         {/if}
 
-        {#if !isChangingPassword}
+        {#if !isChangingPassword && !readonly}
           <button
             onclick={handleSubmit}
             disabled={loading}

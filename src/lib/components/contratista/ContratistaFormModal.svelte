@@ -23,6 +23,7 @@
       data: CreateContratistaInput | UpdateContratistaInput,
     ) => Promise<boolean | void>;
     onClose: () => void;
+    readonly?: boolean;
   }
 
   let {
@@ -31,14 +32,17 @@
     loading = false,
     onSave,
     onClose,
+    readonly = false,
   }: Props = $props();
 
   // Modo derivado
   const isEditMode = $derived(!!contratista);
   const modalTitle = $derived(
-    isEditMode
-      ? `Editar: ${contratista?.nombre} ${contratista?.apellido}`
-      : "Nuevo Contratista",
+    readonly
+      ? `Ver Detalle: ${contratista?.nombre} ${contratista?.apellido}`
+      : isEditMode
+        ? `Editar: ${contratista?.nombre} ${contratista?.apellido}`
+        : "Nuevo Contratista",
   );
 
   // Estado del formulario
@@ -232,9 +236,11 @@
             {modalTitle}
           </h2>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            {isEditMode
-              ? "Modifique los datos necesarios"
-              : "Ingresa los datos del contratista"}
+            {readonly
+              ? "Información detallada del contratista en modo solo lectura"
+              : isEditMode
+                ? "Modifique los datos necesarios"
+                : "Ingresa los datos del contratista"}
           </p>
         </div>
         <button
@@ -263,7 +269,7 @@
               type="text"
               bind:value={formData.cedula}
               placeholder="1-2345-6789"
-              disabled={loading || isEditMode}
+              disabled={loading || isEditMode || readonly}
               class={inputClass}
             />
           </div>
@@ -279,7 +285,7 @@
                 type="text"
                 bind:value={formData.nombre}
                 placeholder="Juan"
-                disabled={loading}
+                disabled={loading || readonly}
                 class={inputClass}
               />
             </div>
@@ -319,14 +325,16 @@
                   {/each}
                 </select>
               </div>
-              <button
-                type="button"
-                onclick={() => (showEmpresaModal = true)}
-                disabled={loading}
-                class="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-[#21262d] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#30363d] transition-colors text-sm"
-              >
-                +
-              </button>
+              {#if !readonly}
+                <button
+                  type="button"
+                  onclick={() => (showEmpresaModal = true)}
+                  disabled={loading}
+                  class="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-[#21262d] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#30363d] transition-colors text-sm"
+                >
+                  +
+                </button>
+              {/if}
             </div>
           </div>
 
@@ -341,7 +349,7 @@
               bind:value={formData.fechaVencimientoPraind}
               placeholder="DD-MM-YYYY"
               maxlength="10"
-              disabled={loading}
+              disabled={loading || readonly}
               class={inputClass}
               oninput={(e) => {
                 const input = e.target as HTMLInputElement;
@@ -374,10 +382,13 @@
               role="switch"
               aria-checked={formData.tieneVehiculo}
               aria-label="Agregar vehículo"
-              onclick={() => (formData.tieneVehiculo = !formData.tieneVehiculo)}
+              onclick={() =>
+                !readonly && (formData.tieneVehiculo = !formData.tieneVehiculo)}
               class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#2da44e] {formData.tieneVehiculo
                 ? 'bg-[#2da44e]'
-                : 'bg-gray-300 dark:bg-gray-600'}"
+                : 'bg-gray-300 dark:bg-gray-600'} {readonly
+                ? 'opacity-60 cursor-not-allowed'
+                : ''}"
             >
               <span
                 class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {formData.tieneVehiculo
@@ -405,7 +416,9 @@
                   class="py-2 px-3 rounded-md border text-sm font-medium transition-all {formData.tipoVehiculo ===
                   'motocicleta'
                     ? 'border-[#2da44e] bg-[#2da44e]/10 text-[#2da44e]'
-                    : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400'}"
+                    : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400'} {readonly
+                    ? 'pointer-events-none opacity-60'
+                    : ''}"
                 >
                   🏍️ Moto
                 </button>
@@ -415,7 +428,9 @@
                   class="py-2 px-3 rounded-md border text-sm font-medium transition-all {formData.tipoVehiculo ===
                   'automovil'
                     ? 'border-[#2da44e] bg-[#2da44e]/10 text-[#2da44e]'
-                    : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400'}"
+                    : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400'} {readonly
+                    ? 'pointer-events-none opacity-60'
+                    : ''}"
                 >
                   🚗 Auto
                 </button>
@@ -431,7 +446,7 @@
                     type="text"
                     bind:value={formData.placa}
                     placeholder="ABC-123"
-                    disabled={loading}
+                    disabled={loading || readonly}
                     class="{inputClass} uppercase"
                   />
                 </div>
@@ -442,7 +457,7 @@
                     type="text"
                     bind:value={formData.marca}
                     placeholder="Toyota"
-                    disabled={loading}
+                    disabled={loading || readonly}
                     class={inputClass}
                   />
                 </div>
@@ -456,7 +471,7 @@
                     type="text"
                     bind:value={formData.modelo}
                     placeholder="Corolla"
-                    disabled={loading}
+                    disabled={loading || readonly}
                     class={inputClass}
                   />
                 </div>
@@ -467,7 +482,7 @@
                     type="text"
                     bind:value={formData.color}
                     placeholder="Blanco"
-                    disabled={loading}
+                    disabled={loading || readonly}
                     class={inputClass}
                   />
                 </div>
@@ -486,19 +501,21 @@
             disabled={loading}
             class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#30363d] transition-colors disabled:opacity-50"
           >
-            Cancelar
+            {readonly ? "Cerrar" : "Cancelar"}
           </button>
-          <button
-            type="submit"
-            disabled={loading || !isFormValid}
-            class="px-4 py-2 text-sm font-medium rounded-md bg-[#2da44e] hover:bg-[#2c974b] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading
-              ? "Guardando..."
-              : isEditMode
-                ? "Guardar Cambios"
-                : "Registrar"}
-          </button>
+          {#if !readonly}
+            <button
+              type="submit"
+              disabled={loading || !isFormValid}
+              class="px-4 py-2 text-sm font-medium rounded-md bg-[#2da44e] hover:bg-[#2c974b] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading
+                ? "Guardando..."
+                : isEditMode
+                  ? "Guardar Cambios"
+                  : "Registrar"}
+            </button>
+          {/if}
         </div>
       </form>
     </div>
