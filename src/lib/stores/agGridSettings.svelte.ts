@@ -381,45 +381,119 @@ class AGGridSettingsStore {
   // ============================================
 
   private loadFromStorage(): void {
-    if (typeof localStorage === 'undefined') return;
-
-    const stored = localStorage.getItem('agGridSettings');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-
-        if (parsed.configurations) {
-          const entries = Object.entries(parsed.configurations) as [GridId, GridConfiguration][];
-          this.settings.configurations = new Map(entries);
+    // Sync load from legacy localStorage (for initial render)
+    if (typeof localStorage !== 'undefined') {
+      // Try legacy format first
+      const stored = localStorage.getItem('agGridSettings');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed.configurations) {
+            const entries = Object.entries(parsed.configurations) as [GridId, GridConfiguration][];
+            this.settings.configurations = new Map(entries);
+          }
+          if (parsed.defaultTheme) this.settings.defaultTheme = parsed.defaultTheme;
+          if (parsed.defaultFont) this.settings.defaultFont = parsed.defaultFont;
+          if (parsed.buttonLimits) this.settings.buttonLimits = parsed.buttonLimits;
+        } catch (e) {
+          console.error('Error loading AG Grid settings:', e);
         }
+      }
 
-        if (parsed.defaultTheme) {
-          this.settings.defaultTheme = parsed.defaultTheme;
+      // Also check for granular format (per-grid keys)
+      const globalStored = localStorage.getItem('agGrid:global');
+      if (globalStored) {
+        try {
+          const global = JSON.parse(globalStored);
+          if (global.defaultTheme) this.settings.defaultTheme = global.defaultTheme;
+          if (global.defaultFont) this.settings.defaultFont = global.defaultFont;
+          if (global.buttonLimits) this.settings.buttonLimits = global.buttonLimits;
+        } catch {
+          // Ignore errors
         }
+      }
+    }
 
-        if (parsed.defaultFont) {
-          this.settings.defaultFont = parsed.defaultFont;
-        }
+    // Async load from Tauri Store after hydration
+    this.loadFromTauriStore();
+  }
 
-        if (parsed.buttonLimits) {
-          this.settings.buttonLimits = parsed.buttonLimits;
-        }
-      } catch (e) {
-        console.error('Error loading AG Grid settings:', e);
+  private async loadFromTauriStore(): Promise<void> {
+    try {
+      const { getSetting } = await import('$lib/services/storeService');
+
+      // Load global settings
+      interface GlobalSettings {
+        defaultTheme?: AGGridTheme;
+        defaultFont?: AGGridFont;
+        buttonLimits?: { default: number; singleSelect: number; multiSelect: number };
+      }
+      const global = await getSetting<GlobalSettings>('agGrid:global', {});
+
+      if (global.defaultTheme) this.settings.defaultTheme = global.defaultTheme;
+      if (global.defaultFont) this.settings.defaultFont = global.defaultFont;
+      if (global.buttonLimits) this.settings.buttonLimits = global.buttonLimits;
+
+      this.triggerUpdate();
+    } catch {
+      // Tauri Store not available, use localStorage values
+    }
+  }
+
+  // Load a specific grid config from Tauri Store
+  private async loadGridConfigFromStore(gridId: GridId): Promise<GridConfiguration | null> {
+    try {
+      const { getSetting } = await import('$lib/services/storeService');
+      const config = await getSetting<GridConfiguration | null>(`agGrid:${gridId}`, null);
+      return config;
+    } catch {
+      // Fallback to localStorage
+      if (typeof localStorage !== 'undefined') {
+        const stored = localStorage.getItem(`agGrid:${gridId}`);
+        if (stored) return JSON.parse(stored);
+      }
+      return null;
+    }
+  }
+
+  // Granular save: only save the specific grid that changed
+  private async saveGridConfig(gridId: GridId): Promise<void> {
+    const config = this.settings.configurations.get(gridId);
+    if (!config) return;
+
+    try {
+      const { setSetting } = await import('$lib/services/storeService');
+      await setSetting(`agGrid:${gridId}`, config);
+    } catch {
+      // Fallback to localStorage for single grid
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(`agGrid:${gridId}`, JSON.stringify(config));
       }
     }
   }
 
-  private saveToStorage(): void {
-    if (typeof localStorage === 'undefined') return;
-
-    const toSave = {
-      configurations: Object.fromEntries(this.settings.configurations),
+  // Save global settings (theme, font, limits) - rarely changes
+  private async saveGlobalSettings(): Promise<void> {
+    const global = {
       defaultTheme: this.settings.defaultTheme,
       defaultFont: this.settings.defaultFont,
       buttonLimits: this.settings.buttonLimits
     };
-    localStorage.setItem('agGridSettings', JSON.stringify(toSave));
+    try {
+      const { setSetting } = await import('$lib/services/storeService');
+      await setSetting('agGrid:global', global);
+    } catch {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('agGrid:global', JSON.stringify(global));
+      }
+    }
+  }
+
+  // Legacy method - now delegates to granular saves
+  private saveToStorage(): void {
+    // Save global settings
+    this.saveGlobalSettings();
+    // Note: Individual grid configs are saved in their update methods
   }
 
   // ============================================
