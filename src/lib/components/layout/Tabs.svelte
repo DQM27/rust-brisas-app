@@ -174,15 +174,22 @@
     </div>
   {/if}
 
-  <!-- Content area -->
+  <!-- Content area - KEEP ALIVE: Components mount once, hide with CSS -->
   <div class="tab-content-area">
     {#each tabs as tab (tab.id)}
-      {#if $activeTabId === tab.id}
-        {@const Component = tab.component}
-        <div class="tab-panel" role="tabpanel">
-          <Component tabId={tab.id} data={tab.data} />
-        </div>
-      {/if}
+      {@const Component = tab.component}
+      <div
+        class="tab-panel"
+        class:hidden={$activeTabId !== tab.id}
+        role="tabpanel"
+        aria-hidden={$activeTabId !== tab.id}
+      >
+        <Component
+          tabId={tab.id}
+          data={tab.data}
+          isActive={$activeTabId === tab.id}
+        />
+      </div>
     {/each}
   </div>
 </div>
@@ -258,5 +265,10 @@
     height: 1px;
     margin: 4px 0;
     background: var(--color-border-subtle, #3c3c3c);
+  }
+
+  /* Keep-alive pattern: hidden tabs take no space */
+  .tab-panel.hidden {
+    display: none;
   }
 </style>
