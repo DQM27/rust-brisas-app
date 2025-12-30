@@ -37,3 +37,6 @@ pub mod visitante_service;
 pub mod live_service;
 pub mod surrealdb_authorization;
 pub mod surrealdb_service;
+
+// Performance
+pub mod cache_service;

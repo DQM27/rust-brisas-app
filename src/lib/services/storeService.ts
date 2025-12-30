@@ -15,7 +15,7 @@ const STORE_FILE = 'settings.json';
  */
 export async function getStore(): Promise<Store> {
     if (!store) {
-        store = await Store.load(STORE_FILE, { autoSave: true });
+        store = await Store.load(STORE_FILE);
     }
     return store;
 }
