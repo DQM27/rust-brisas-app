@@ -28,9 +28,6 @@
     "lucide-svelte": "^0.553.0",
     "pdfjs-dist": "^5.4.449",
     "svelte-5-french-toast": "^2.0.6",
-    "svelte-dnd-action": "^0.9.67",
-    "svelte-persisted-store": "^0.12.0",
-    "svelte-splitpanes": "^8.0.9",
     "tinykeys": "^3.0.0",
     "zod": "^4.1.13"
   },

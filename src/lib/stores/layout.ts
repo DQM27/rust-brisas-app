@@ -1,4 +1,4 @@
-import { persisted } from 'svelte-persisted-store';
+import { persisted } from './persistent';
 
 export const panelLayout = persisted('panelLayout', {
   topHeight: 60,

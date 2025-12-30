@@ -1,12 +1,9 @@
-<script lang="ts">
-  import { dndzone } from "svelte-dnd-action";
   import {
     activeTabId,
     closeTab,
     closeAllTabs,
     closeOtherTabs,
     closeTabsToRight,
-    reorderTabs,
   } from "$lib/stores/tabs";
   import type { HydratedTab } from "$lib/types/tab";
   import { X } from "lucide-svelte";
@@ -18,8 +15,6 @@
   }
 
   let { tabs }: Props = $props();
-
-  const flipDurationMs = 200;
 
   let items = $derived(tabs.map((tab) => ({ id: tab.id, tab })));
 
@@ -37,16 +32,6 @@
     tabId: "",
     tabIndex: -1,
   });
-
-  function handleDndConsider(e: CustomEvent) {
-    items = e.detail.items;
-  }
-
-  function handleDndFinalize(e: CustomEvent) {
-    items = e.detail.items;
-    const newOrder = items.map((item) => item.id);
-    reorderTabs(newOrder);
-  }
 
   function setActive(id: string) {
     activeTabId.set(id);
@@ -122,11 +107,8 @@
   <!-- Tabs bar -->
   {#if !$generalSettings.isKioskMode}
     <div
-      class="tab-bar"
+      class="tab-bar scrollbar-hide"
       role="tablist"
-      use:dndzone={{ items, flipDurationMs, type: "tabs" }}
-      onconsider={handleDndConsider}
-      onfinalize={handleDndFinalize}
     >
       {#each items as { id, tab }, index (id)}
         {@const isActive = $activeTabId === id}
