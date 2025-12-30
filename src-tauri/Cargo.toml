@@ -170,7 +170,7 @@ harness = false
 # BUILD PROFILES (OPTIMIZATIONS)
 # ==========================================
 [profile.release]
-opt-level = "z"   # Optimizar para tamaño (Size)
+opt-level = 3     # Optimizar para VELOCIDAD (usuario prefiere performance)
 lto = true        # Link Time Optimization
 codegen-units = 1 # Código más compacto (compilación más lenta)
 panic = "abort"   # Ahorra espacio quitando unwind symbols
