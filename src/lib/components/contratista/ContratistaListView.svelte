@@ -4,7 +4,6 @@
   import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
   import { toast } from "svelte-5-french-toast";
-  import { listen, type UnlistenFn } from "@tauri-apps/api/event";
   import { Trash2, RotateCcw, Eye, Car } from "lucide-svelte"; // Add RotateCcw for restore icon
   import { can } from "$lib/logic/permissions";
   import { currentUser } from "$lib/stores/auth";
@@ -395,41 +394,12 @@
   // ==========================================
   // LIFECYCLE
   // ==========================================
-  let unlistenFn: UnlistenFn | null = null;
-
   onMount(async () => {
     loadContratistas();
-
-    // Listen for real-time contratista updates from backend
-    unlistenFn = await listen<{ action: string; data: any }>(
-      "contratista:changed",
-      (event) => {
-        console.log("📡 Contratista changed event received:", event.payload);
-
-        const { action, data } = event.payload;
-
-        if (action === "create") {
-          // New contratista - reload to get computed fields
-          loadContratistas();
-        } else if (action === "update" && data?.id) {
-          // Update existing - merge the change to avoid flicker
-          // Note: We might already have the optimistic update, so this is a no-op in that case
-          // But for external updates (other users), this will apply the change
-          contratistas = contratistas.map((c) =>
-            c.id === data.id ? { ...c, ...data } : c,
-          );
-        } else if (action === "delete" && data?.id) {
-          // Remove deleted item
-          contratistas = contratistas.filter((c) => c.id !== data.id);
-        }
-      },
-    );
   });
 
   onDestroy(() => {
-    if (unlistenFn) {
-      unlistenFn();
-    }
+    // Cleanup
   });
 </script>
 

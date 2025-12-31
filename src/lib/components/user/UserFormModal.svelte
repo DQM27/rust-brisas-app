@@ -419,14 +419,14 @@
     }
   }
 
-  // Styles
+  // GitHub-style styles with blue accent
   const inputClass =
-    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-2.5 py-1.5 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60";
+    "w-full rounded-md border border-gray-300 dark:border-[#30363d] bg-white dark:bg-[#0d1117] px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-[#161b22] transition-all";
   const labelClass =
-    "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1";
-  const errorClass = "text-xs text-red-500 mt-0.5";
+    "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1.5";
+  const errorClass = "text-xs text-red-500 mt-1";
   const sectionClass =
-    "text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-1 mb-2";
+    "text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-[#30363d] pb-2 mb-3";
 </script>
 
 {#if show}
@@ -448,7 +448,7 @@
     >
       <!-- Header -->
       <div
-        class="flex-none flex items-center justify-between px-6 py-4 bg-white dark:bg-[#0d1117] border-b border-gray-200 dark:border-gray-700"
+        class="flex-none flex items-center justify-between px-6 py-4 bg-gray-50 dark:bg-[#161b22] border-b border-gray-200 dark:border-[#30363d]"
       >
         <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
           {modalTitle}
@@ -484,55 +484,55 @@
             <!-- COL 1: Identidad -->
             <!-- COL 1: Identidad + Avatar -->
             <div class="space-y-4">
-              <!-- Secure Avatar Component -->
-              <div class="flex flex-col items-center justify-center mb-6">
-                <div class="relative group">
-                  <div
-                    class="w-28 h-28 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 border-4 border-white dark:border-gray-700 shadow-lg flex items-center justify-center relative"
-                  >
-                    {#if avatarLoading}
-                      <div
-                        class="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-sm z-10"
-                      >
+              <!-- Secure Avatar Component (Only in Edit Mode) -->
+              {#if isEditMode}
+                <div class="flex flex-col items-center justify-center mb-6">
+                  <div class="relative group">
+                    <div
+                      class="w-28 h-28 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 border-4 border-white dark:border-gray-700 shadow-lg flex items-center justify-center relative"
+                    >
+                      {#if avatarLoading}
                         <div
-                          class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
-                        ></div>
-                      </div>
-                    {/if}
+                          class="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-sm z-10"
+                        >
+                          <div
+                            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+                          ></div>
+                        </div>
+                      {/if}
 
-                    {#if activeAvatar}
-                      <img
-                        src={activeAvatar}
-                        alt="Avatar"
-                        class="w-full h-full object-cover"
-                      />
-                    {:else}
-                      <div
-                        class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-600"
+                      {#if activeAvatar}
+                        <img
+                          src={activeAvatar}
+                          alt="Avatar"
+                          class="w-full h-full object-cover"
+                        />
+                      {:else}
+                        <div
+                          class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-600"
+                        >
+                          <span class="text-3xl font-bold">
+                            {formData.nombre
+                              ? formData.nombre[0].toUpperCase()
+                              : "?"}{formData.apellido
+                              ? formData.apellido[0].toUpperCase()
+                              : ""}
+                          </span>
+                        </div>
+                      {/if}
+                    </div>
+                    {#if !readonly}
+                      <button
+                        type="button"
+                        onclick={handleAvatarUpload}
+                        disabled={avatarLoading}
+                        class="absolute bottom-1 right-1 p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all hover:scale-110 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 z-20"
+                        title="Subir foto segura"
                       >
-                        <span class="text-3xl font-bold">
-                          {formData.nombre
-                            ? formData.nombre[0].toUpperCase()
-                            : "?"}{formData.apellido
-                            ? formData.apellido[0].toUpperCase()
-                            : ""}
-                        </span>
-                      </div>
+                        <Camera size={16} />
+                      </button>
                     {/if}
                   </div>
-                  {#if isEditMode && !readonly}
-                    <button
-                      type="button"
-                      onclick={handleAvatarUpload}
-                      disabled={avatarLoading}
-                      class="absolute bottom-1 right-1 p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all hover:scale-110 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 z-20"
-                      title="Subir foto segura"
-                    >
-                      <Camera size={16} />
-                    </button>
-                  {/if}
-                </div>
-                {#if isEditMode}
                   <div
                     class="mt-3 flex items-center gap-1.5 px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-[10px] font-medium border border-green-100 dark:border-green-900/30"
                   >
@@ -557,8 +557,8 @@
                     >
                     Bóveda Encriptada
                   </div>
-                {/if}
-              </div>
+                </div>
+              {/if}
 
               <h3 class={sectionClass}>Identidad</h3>
 
@@ -803,12 +803,12 @@
 
       <!-- Footer Actions -->
       <div
-        class="flex-none flex gap-2 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#0d1117]/50"
+        class="flex-none flex gap-2 px-6 py-4 border-t border-gray-200 dark:border-[#30363d] bg-gray-50 dark:bg-[#161b22]"
       >
         <button
           type="button"
           onclick={onClose}
-          class="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 transition-colors text-sm font-medium"
+          class="px-4 py-2.5 rounded-md border border-gray-300 dark:border-[#30363d] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#21262d] transition-colors text-sm font-medium"
         >
           Cancelar
         </button>
@@ -855,7 +855,7 @@
           <button
             onclick={handleSubmit}
             disabled={loading}
-            class="px-6 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm shadow-sm"
+            class="px-6 py-2.5 rounded-md bg-[#2563eb] text-white font-medium hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
           >
             {loading
               ? "Guardando..."

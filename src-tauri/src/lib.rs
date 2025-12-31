@@ -110,21 +110,6 @@ pub fn run() {
                 }
             });
 
-            // 2.6. INICIALIZAR LIVE SUBSCRIPTIONS (Tiempo Real)
-            // Solo iniciar si la app está configurada
-            if is_configured {
-                let app_handle = app.handle().clone();
-                tauri::async_runtime::spawn(async move {
-                    // Pequeña pausa para asegurar que todo esté inicializado
-                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-                    if let Err(e) =
-                        services::live_service::start_live_subscriptions(app_handle).await
-                    {
-                        error!("❌ Error iniciando suscripciones LIVE: {}", e);
-                    }
-                });
-            }
-
             // 3. INICIALIZAR SEARCH SERVICE (TANTIVY)
             // Usamos un subdirectorio para no ensuciar la raíz de app_data
             let search_path = app_data_dir.join("search_index");
