@@ -24,9 +24,8 @@
       data: CreateProveedorInput | UpdateProveedorInput,
     ) => Promise<boolean | void>;
     onClose: () => void;
-    // Props para validación
     currentId?: string;
-    onCreateEmpresa?: () => void; // Callback para crear nueva empresa
+    onCreateEmpresa?: () => void;
   }
 
   let {
@@ -40,147 +39,134 @@
     onCreateEmpresa,
   }: Props = $props();
 
-  // 1. Esquema Completo para Validación (Refinements)
-  // Este es el que contiene las reglas complejas (ej: placa requerida si tiene vehiculo)
-  // Use $derived to make it reactive to isEditMode changes
+  // Combinar tipos para tener acceso a todos los campos posibles en el template
+  type CombinedForm = CreateProveedorForm & UpdateProveedorForm;
+
+  // Static default values for initial form setup
+  const emptyFormData: CombinedForm = {
+    cedula: "",
+    nombre: "",
+    segundoNombre: "",
+    apellido: "",
+    segundoApellido: "",
+    empresaId: "",
+    estado: "ACTIVO",
+    tieneVehiculo: false,
+    tipoVehiculo: "",
+    placa: "",
+    marca: "",
+    modelo: "",
+    color: "",
+  };
+
+  // Schema selection based on mode - use $derived for reactivity
   const validationSchema = $derived(
     isEditMode ? UpdateProveedorSchema : CreateProveedorSchema,
   );
 
-  // Combinar tipos para tener acceso a todos los campos posibles en el template
-  type CombinedForm = CreateProveedorForm & UpdateProveedorForm;
-
-  // 2. Construir datos iniciales manualmente para evitar el error de inferencia de Superforms
-  // Use $derived to react to data changes
-  const initialFormData: CombinedForm = $derived({
-    cedula: data?.cedula ?? "",
-    nombre: data?.nombre ?? "",
-    segundoNombre: data?.segundoNombre ?? "",
-    apellido: data?.apellido ?? "",
-    segundoApellido: data?.segundoApellido ?? "",
-    empresaId: data?.empresaId ?? "",
-    estado: data?.estado ?? "ACTIVO",
-    tieneVehiculo: data?.tieneVehiculo ?? false,
-    tipoVehiculo: data?.tipoVehiculo ?? "",
-    placa: data?.placa ?? "",
-    marca: data?.marca ?? "",
-    modelo: data?.modelo ?? "",
-    color: data?.color ?? "",
-  });
-
   // Inicializar el formulario con Superforms en modo SPA
-  // Usamos los datos iniciales manuales en lugar de defaults()
-  const { form, errors, constraints, enhance, validate, tainted } =
-    superForm<CombinedForm>(initialFormData as any, {
+  // Start with empty data, sync via $effect when props change
+  const { form, errors, constraints, enhance, validate, tainted, reset } =
+    superForm<CombinedForm>(emptyFormData, {
       SPA: true,
-      validators: zod4(validationSchema),
+      validators: zod4(CreateProveedorSchema), // Start with create schema
       dataType: "json",
-      async onUpdate({ form }) {
-        if (form.valid) {
-          // Si es válido, llamar a onSave con los datos
-          const success = await onSave(form.data as any);
+      async onUpdate({ form: f }) {
+        if (f.valid) {
+          const success = await onSave(f.data as any);
           if (success !== false) {
-            // Asumir éxito si devuelve true o void
             onClose();
           }
         }
       },
     });
 
-  // Clases CSS reutilizables
-  const labelClass =
-    "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
-  const errorClass = "text-xs text-red-500 mt-1";
-  const sectionClass =
-    "text-base font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2 mb-3 flex items-center gap-2";
-  const inputClass =
-    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60";
-
-  // Efecto reactivo para limpiar campos si se desmarca "Tiene Vehículo"
-  // IMPORTANTE: Usamos guardia para evitar ciclos infinitos al escribir en form
-  let previousTieneVehiculo = $form.tieneVehiculo;
+  // 🎯 Svelte 5 Idiomatic Pattern: Use $effect to sync form when props change
   $effect(() => {
-    const current = $form.tieneVehiculo;
-    // Solo limpiar si cambió de true a false
-    if (previousTieneVehiculo === true && current === false) {
-      $form.tipoVehiculo = "";
-      $form.placa = "";
-      $form.marca = "";
-      $form.modelo = "";
-      $form.color = "";
-    }
-    previousTieneVehiculo = current;
+    // This runs whenever `data` or `isEditMode` changes
+    const newData: CombinedForm = {
+      cedula: data?.cedula ?? "",
+      nombre: data?.nombre ?? "",
+      segundoNombre: data?.segundoNombre ?? "",
+      apellido: data?.apellido ?? "",
+      segundoApellido: data?.segundoApellido ?? "",
+      empresaId: data?.empresaId ?? "",
+      estado: data?.estado ?? "ACTIVO",
+      tieneVehiculo: data?.tieneVehiculo ?? false,
+      tipoVehiculo: data?.tipoVehiculo ?? "",
+      placa: data?.placa ?? "",
+      marca: data?.marca ?? "",
+      modelo: data?.modelo ?? "",
+      color: data?.color ?? "",
+    };
+
+    // Reset form with new data when props change
+    reset({ data: newData });
   });
+
+  // Clases CSS reutilizables
+  const labelClass = "text-sm font-medium text-gray-700 dark:text-gray-300";
+  const inputClass =
+    "w-full px-3 py-2 text-sm border rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:bg-gray-700 dark:border-gray-600 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed";
+  const errorInputClass = "border-red-500 focus:ring-red-500/50";
+  const buttonClass =
+    "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-150 focus:outline-none focus:ring-2";
 </script>
 
-<form use:enhance class="p-6 space-y-6">
-  <!-- Datos Personales (Componente Compartido) -->
+<!-- Same template as before -->
+<form use:enhance class="space-y-6">
   <PersonaFields
     {form}
     {errors}
     {constraints}
+    {empresas}
     {loading}
     {isEditMode}
-    {empresas}
-    showEmpresa={true}
+    {onCreateEmpresa}
     tableName="proveedor"
     {currentId}
-    {onCreateEmpresa}
   />
 
-  <!-- Estado (Solo Editar) -->
-  {#if isEditMode}
-    <div>
-      <h3 class={sectionClass}>Estado</h3>
-      <div>
-        <label for="estado" class={labelClass}>Estado Actual</label>
-        <select
-          id="estado"
-          name="estado"
-          bind:value={$form.estado}
-          disabled={loading}
-          class={inputClass}
-          {...$constraints.estado}
-        >
-          <option value="ACTIVO">Activo</option>
-          <option value="INACTIVO">Inactivo</option>
-          <option value="SUSPENDIDO">Suspendido</option>
-        </select>
-        {#if $errors.estado}<p class={errorClass}>{$errors.estado}</p>{/if}
-      </div>
-    </div>
-  {/if}
+  <VehiculoFields {form} {errors} {constraints} {loading} />
 
-  <!-- Datos Vehículo (Componente Compartido) -->
-  <VehiculoFields
-    {form}
-    {errors}
-    {constraints}
-    {loading}
-    tainted={$tainted}
-    originalPlaca={data?.placa || ""}
-  />
-
-  <!-- Buttons -->
-  <div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+  <!-- Botones -->
+  <div class="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
     <button
       type="button"
       onclick={onClose}
-      class="flex-1 py-2.5 px-4 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+      disabled={loading}
+      class="{buttonClass} bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
     >
       Cancelar
     </button>
-
     <button
       type="submit"
       disabled={loading}
-      class="flex-1 py-2.5 px-4 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+      class="{buttonClass} bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
     >
-      {loading
-        ? "Guardando..."
-        : isEditMode
-          ? "Guardar Cambios"
-          : "Crear Proveedor"}
+      {#if loading}
+        <span class="flex items-center gap-2">
+          <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+              fill="none"
+            />
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
+          Guardando...
+        </span>
+      {:else}
+        {isEditMode ? "Actualizar" : "Crear"}
+      {/if}
     </button>
   </div>
 </form>
