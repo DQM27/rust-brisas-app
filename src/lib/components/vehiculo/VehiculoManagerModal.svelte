@@ -195,10 +195,13 @@
     }, 400);
   }
 
+  // GitHub-style styles with blue accent
   const inputClass =
-    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50";
-  const errorInputClass = "border-red-500 focus:ring-red-500";
-  const labelClass = "text-xs font-medium text-gray-700 dark:text-gray-300";
+    "w-full rounded-md border border-gray-300 dark:border-[#30363d] bg-white dark:bg-[#0d1117] px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] focus:outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-[#161b22]";
+  const errorInputClass =
+    "border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500";
+  const labelClass =
+    "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1.5";
 </script>
 
 {#if show}
@@ -259,7 +262,7 @@
               </h3>
               <button
                 onclick={handleAddNew}
-                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-[#2da44e] text-white hover:bg-[#2c974b] transition-colors"
+                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-[#2563eb] text-white hover:bg-[#1d4ed8] transition-colors"
               >
                 <Plus class="w-3.5 h-3.5" /> Nuevo Vehículo
               </button>
@@ -455,7 +458,7 @@
                 <button
                   type="submit"
                   disabled={submitting || !!duplicateError}
-                  class="px-3 py-1.5 text-sm font-medium rounded-md bg-[#2da44e] text-white hover:bg-[#2c974b] disabled:opacity-50 flex items-center gap-1.5"
+                  class="px-3 py-1.5 text-sm font-medium rounded-md bg-[#2563eb] text-white hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
                   {#if submitting}
                     <span class="loading loading-spinner loading-xs"></span>
