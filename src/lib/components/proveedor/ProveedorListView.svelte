@@ -175,16 +175,10 @@
   // Botones Custom
   const customButtons = $derived.by(() => {
     const selected = selectedRows[0];
-    const canCreate = $currentUser && can($currentUser, "CREATE_PROVIDER");
-    const canUpdate = $currentUser && can($currentUser, "UPDATE_PROVIDER");
-    const canDelete = $currentUser && can($currentUser, "DELETE_PROVIDER");
-    const canViewDetail =
-      $currentUser && can($currentUser, "VIEW_PROVIDER_DETAIL");
-
     let defaultBtns = [];
-    if (canCreate) {
-      defaultBtns.push(createCustomButton.nuevo(() => openFormModal(null)));
-    }
+    // if (canCreate) {
+    defaultBtns.push(createCustomButton.nuevo(() => openFormModal(null)));
+    // }
 
     defaultBtns.push({
       id: "refresh",
@@ -196,34 +190,34 @@
 
     let singleSelectBtns = [];
 
-    if (canUpdate) {
-      singleSelectBtns.push(
-        createCustomButton.editar(() => {
-          if (selected) openFormModal(selected);
-        }),
-      );
-    } else {
-      if (canViewDetail) {
-        singleSelectBtns.push({
-          id: "view-detail",
-          label: "Ver Detalle",
-          icon: Eye,
-          onClick: () => {
-            if (selected) openFormModal(selected, true);
-          },
-          variant: "default" as const,
-          tooltip: "Ver detalles del proveedor",
-        });
-      }
-    }
+    // if (canUpdate) {
+    singleSelectBtns.push(
+      createCustomButton.editar(() => {
+        if (selected) openFormModal(selected);
+      }),
+    );
+    // } else {
+    //   if (canViewDetail) {
+    //     singleSelectBtns.push({
+    //       id: "view-detail",
+    //       label: "Ver Detalle",
+    //       icon: Eye,
+    //       onClick: () => {
+    //         if (selected) openFormModal(selected, true);
+    //       },
+    //       variant: "default" as const,
+    //       tooltip: "Ver detalles del proveedor",
+    //     });
+    //   }
+    // }
 
-    if (canDelete) {
-      singleSelectBtns.push(
-        createCustomButton.eliminar(() => {
-          if (selected) confirmDelete(selected);
-        }),
-      );
-    }
+    // if (canDelete) {
+    singleSelectBtns.push(
+      createCustomButton.eliminar(() => {
+        if (selected) confirmDelete(selected);
+      }),
+    );
+    // }
 
     return {
       default: defaultBtns,
@@ -308,7 +302,7 @@
     {:else}
       <AGGridWrapper
         gridId="proveedor-list"
-        persistenceKey="proveedor-list-columns-v2"
+        persistenceKey="proveedor-list-columns-v5"
         rowData={filteredData}
         {columnDefs}
         {customButtons}

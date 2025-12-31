@@ -70,7 +70,9 @@
   class="w-full h-full flex flex-col items-center justify-center bg-surface-1"
 >
   {#if view === "login"}
-    <LoginForm bind:this={formRef} {loading} onSubmit={handleLogin} />
+    <div class="w-full max-w-[450px]">
+      <LoginForm bind:this={formRef} {loading} onSubmit={handleLogin} />
+    </div>
   {:else if view === "change_password" && tempUser}
     <div
       class="flex-1 flex items-center justify-center p-8 bg-white dark:bg-[#0d1117] relative w-full"

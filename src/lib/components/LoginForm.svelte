@@ -57,7 +57,9 @@
   }
 </script>
 
-<div class="w-full h-full flex flex-col justify-center p-8">
+<div
+  class="w-full flex flex-col justify-center p-8 bg-[#1e1e1e] rounded-xl shadow-2xl border border-white/5"
+>
   <form onsubmit={preventDefault(handleSubmit)} class="flex flex-col gap-6">
     <div class="text-center">
       <h1 class="text-3xl font-bold text-primary">Bienvenido</h1>
