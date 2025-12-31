@@ -17,10 +17,18 @@
   let errors = $state<Record<string, string>>({});
   let rememberMe = $state(false);
 
+  let emailInput = $state<HTMLInputElement>();
+  let passwordInput = $state<HTMLInputElement>();
+
   onMount(() => {
     if (loginStore.hasRememberedEmail) {
       email = loginStore.rememberedEmail;
       rememberMe = true;
+      // Focus password if email is remembered
+      setTimeout(() => passwordInput?.focus(), 100);
+    } else {
+      // Focus email otherwise
+      setTimeout(() => emailInput?.focus(), 100);
     }
   });
 
@@ -49,6 +57,13 @@
     password = "";
     errors = {};
     rememberMe = loginStore.hasRememberedEmail;
+
+    // Reset focus logic
+    if (rememberMe) {
+      setTimeout(() => passwordInput?.focus(), 100);
+    } else {
+      setTimeout(() => emailInput?.focus(), 100);
+    }
   }
 
   async function minimizeWindow() {
@@ -73,6 +88,7 @@
       </label>
       <input
         id="email"
+        bind:this={emailInput}
         type="email"
         bind:value={email}
         placeholder="ejemplo@correo.com"
@@ -95,6 +111,7 @@
       </div>
       <input
         id="password"
+        bind:this={passwordInput}
         type="password"
         bind:value={password}
         placeholder="••••••••"

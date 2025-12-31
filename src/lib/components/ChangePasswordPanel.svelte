@@ -7,6 +7,8 @@
   import { authService } from "$lib/logic/auth/authService"; // Import authService
   import { toast } from "svelte-5-french-toast";
 
+  import { onMount } from "svelte"; // Added import
+
   interface Props {
     userId: string;
     currentPassword?: string; // Para pre-llenar si viene del login
@@ -37,6 +39,14 @@
   // Sync if currentPassword prop changes
   $effect(() => {
     formData = getInitialFormData(currentPassword);
+  });
+
+  let newPasswordInput = $state<HTMLInputElement>();
+
+  onMount(() => {
+    setTimeout(() => {
+      newPasswordInput?.focus();
+    }, 100);
   });
 
   let errors = $state<Record<string, string>>({});
@@ -118,6 +128,7 @@
       >
       <input
         id="new_password"
+        bind:this={newPasswordInput}
         type="password"
         bind:value={formData.newPassword}
         placeholder="Mínimo 6 caracteres"
