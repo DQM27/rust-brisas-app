@@ -16,6 +16,7 @@
   let password = $state("");
   let errors = $state<Record<string, string>>({});
   let rememberMe = $state(false);
+  let rememberPassword = $state(false);
 
   let emailInput = $state<HTMLInputElement>();
   let passwordInput = $state<HTMLInputElement>();
@@ -25,6 +26,13 @@
     if (loginStore.hasRememberedEmail) {
       email = loginStore.rememberedEmail;
       rememberMe = true;
+
+      if (loginStore.hasRememberedPassword) {
+        password = loginStore.rememberedPassword;
+        rememberPassword = true;
+        // Auto-submit logic could go here if desired, but user asked for "inicio de sesion con solo ingresar" which implies manual click or just pre-filled
+      }
+
       // Focus password if email is remembered
       setTimeout(() => passwordInput?.focus(), 100);
     } else {
@@ -37,8 +45,16 @@
   $effect(() => {
     if (mounted && !rememberMe) {
       loginStore.clearRememberedEmail();
+      rememberPassword = false;
       email = "";
+      password = "";
       setTimeout(() => emailInput?.focus(), 50);
+    }
+  });
+
+  $effect(() => {
+    if (mounted && !rememberPassword && loginStore.hasRememberedPassword) {
+      loginStore.clearRememberedPassword();
     }
   });
 
@@ -54,6 +70,11 @@
 
     if (rememberMe) {
       loginStore.setRememberedEmail(email);
+      if (rememberPassword) {
+        loginStore.setRememberedPassword(password);
+      } else {
+        loginStore.clearRememberedPassword();
+      }
     } else {
       loginStore.clearRememberedEmail();
     }
@@ -142,7 +163,7 @@
     </div>
 
     <!-- Options -->
-    <div class="flex items-center justify-center">
+    <div class="flex flex-col gap-2 items-center justify-center">
       <label
         class="flex items-center gap-2 cursor-pointer text-sm text-secondary hover:text-primary transition-colors select-none"
       >
@@ -154,6 +175,20 @@
         />
         Recordar usuario
       </label>
+
+      {#if rememberMe}
+        <label
+          class="flex items-center gap-2 cursor-pointer text-sm text-secondary hover:text-primary transition-colors select-none animate-fade-in"
+        >
+          <input
+            type="checkbox"
+            bind:checked={rememberPassword}
+            disabled={loading}
+            class="rounded border-surface-tertiary text-accent focus:ring-accent w-4 h-4 cursor-pointer"
+          />
+          Recordar contraseña
+        </label>
+      {/if}
     </div>
 
     <!-- Acciones -->

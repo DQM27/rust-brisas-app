@@ -105,3 +105,19 @@ export async function setWindowDecorations(decorations: boolean): Promise<void> 
 export async function setWindowSize(width: number, height: number): Promise<void> {
   return invoke('set_window_size', { width, height });
 }
+
+// ==========================================
+// SECRET STORE (Keyring)
+// ==========================================
+
+export async function saveSecret(key: string, value: string): Promise<void> {
+  return invoke('save_secret', { key, value });
+}
+
+export async function getSecret(key: string): Promise<string | null> {
+  return invoke<string | null>('get_secret', { key });
+}
+
+export async function deleteSecret(key: string): Promise<void> {
+  return invoke('delete_secret', { key });
+}

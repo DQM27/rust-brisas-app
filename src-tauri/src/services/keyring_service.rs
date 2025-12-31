@@ -211,3 +211,19 @@ pub fn generate_random_secret() -> String {
     let bytes: Vec<u8> = (0..32).map(|_| rng.gen()).collect();
     base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &bytes)
 }
+
+// ==========================================
+// PUBLIC API FOR COMMANDS
+// ==========================================
+
+pub fn save_secret(key: &str, value: &str) -> KeyringResult<()> {
+    store_value(key, value)
+}
+
+pub fn get_secret(key: &str) -> Option<String> {
+    retrieve_value(key)
+}
+
+pub fn delete_secret(key: &str) -> KeyringResult<()> {
+    delete_value(key)
+}

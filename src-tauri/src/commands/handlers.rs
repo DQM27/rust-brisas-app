@@ -199,6 +199,9 @@ macro_rules! register_handlers {
             commands::keyring_commands::generate_random_secret,
             commands::keyring_commands::test_keyring,
             commands::keyring_commands::reset_all_credentials,
+            commands::keyring_commands::save_secret,
+            commands::keyring_commands::get_secret,
+            commands::keyring_commands::delete_secret,
             // ==========================================
             // COMANDOS DE SISTEMA
             // ==========================================

@@ -17,6 +17,8 @@ const STORAGE_KEY = 'rememberedEmail';
 
 class LoginStore {
     private _rememberedEmail = $state<string>('');
+    private _rememberedPassword = $state<string>('');
+    private _rememberPasswordChecked = $state<boolean>(false);
     private _initialized = false;
 
     constructor() {
@@ -33,8 +35,20 @@ class LoginStore {
         return this._rememberedEmail;
     }
 
+    get rememberedPassword(): string {
+        return this._rememberedPassword;
+    }
+
+    get rememberPasswordChecked(): boolean {
+        return this._rememberPasswordChecked;
+    }
+
     get hasRememberedEmail(): boolean {
         return this._rememberedEmail.length > 0;
+    }
+
+    get hasRememberedPassword(): boolean {
+        return this._rememberedPassword.length > 0;
     }
 
     // ============================================
@@ -46,13 +60,32 @@ class LoginStore {
         await this.saveToStorage(email);
     }
 
+    async setRememberedPassword(password: string): Promise<void> {
+        this._rememberedPassword = password;
+        this._rememberPasswordChecked = true;
+        // Solo guardamos si tenemos un email asociado
+        if (this._rememberedEmail) {
+            await this.savePasswordToKeyring(this._rememberedEmail, password);
+        }
+    }
+
     async clearRememberedEmail(): Promise<void> {
         this._rememberedEmail = '';
         await this.removeFromStorage();
+        // Si borramos el email, también borramos cualquier password asociado (por seguridad)
+        this.clearRememberedPassword();
+    }
+
+    async clearRememberedPassword(): Promise<void> {
+        this._rememberedPassword = '';
+        this._rememberPasswordChecked = false;
+        if (this._rememberedEmail) {
+            await this.removePasswordFromKeyring(this._rememberedEmail);
+        }
     }
 
     // ============================================
-    // PERSISTENCE (Dual Write)
+    // PERSISTENCE (Dual Write + Keyring)
     // ============================================
 
     private loadInitial(): void {
@@ -62,7 +95,7 @@ class LoginStore {
             this._rememberedEmail = stored;
         }
 
-        // Async load from Tauri Store
+        // Async load from Tauri Store & Keyring
         this.loadFromTauriStore();
     }
 
@@ -77,6 +110,9 @@ class LoginStore {
                 this._rememberedEmail = stored;
                 // Sync localStorage with Tauri Store value
                 localStorage.setItem(STORAGE_KEY, stored);
+
+                // Try to load password for this email
+                await this.loadPasswordFromKeyring(stored);
             }
         } catch {
             // Tauri Store not available
@@ -108,6 +144,51 @@ class LoginStore {
             await deleteSetting(STORAGE_KEY);
         } catch {
             // localStorage already cleared
+        }
+    }
+
+    // ============================================
+    // KEYRING HELPERS
+    // ============================================
+
+    private async loadPasswordFromKeyring(email: string): Promise<void> {
+        try {
+            const { getSecret } = await import('$lib/services/keyringService');
+            // SINGLE USER MODE: Usamos una key constante para que solo exista UNA contraseña guardada a la vez
+            const key = 'brisas:current_user_password';
+            const password = await getSecret(key);
+
+            // Importante: Solo cargamos si tenemos un email (ya validado por el caller)
+            if (password && email) {
+                this._rememberedPassword = password;
+                this._rememberPasswordChecked = true;
+            } else {
+                this._rememberedPassword = '';
+                this._rememberPasswordChecked = false;
+            }
+        } catch (e) {
+            console.error('Error loading password from keyring:', e);
+        }
+    }
+
+    private async savePasswordToKeyring(email: string, password: string): Promise<void> {
+        try {
+            const { saveSecret } = await import('$lib/services/keyringService');
+            // SINGLE USER MODE: Sobreescribimos siempre la misma key
+            const key = 'brisas:current_user_password';
+            await saveSecret(key, password);
+        } catch (e) {
+            console.error('Error saving password to keyring:', e);
+        }
+    }
+
+    private async removePasswordFromKeyring(email: string): Promise<void> {
+        try {
+            const { deleteSecret } = await import('$lib/services/keyringService');
+            const key = 'brisas:current_user_password';
+            await deleteSecret(key);
+        } catch (e) {
+            console.error('Error removing password from keyring:', e);
         }
     }
 
