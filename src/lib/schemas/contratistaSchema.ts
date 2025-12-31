@@ -32,13 +32,13 @@ export const contratistaSchema = z.object({
     empresaId: z.string().min(1, "Debe seleccionar una empresa"),
     fechaVencimientoPraind: z
         .string()
-        .min(10, "Fecha inválida (DD-MM-YYYY)")
+        .min(10, "Fecha inválida (DD/MM/YYYY)")
         .refine((val) => {
-            // Validación básica de fecha
-            const regex = /^\d{2}-\d{2}-\d{4}$/;
+            // Validación básica de fecha DD/MM/YYYY
+            const regex = /^\d{2}\/\d{2}\/\d{4}$/;
             if (!regex.test(val)) return false;
 
-            const [day, month, year] = val.split('-').map(Number);
+            const [day, month, year] = val.split('/').map(Number);
             const date = new Date(year, month - 1, day);
             return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year;
         }, "Fecha inválida"),

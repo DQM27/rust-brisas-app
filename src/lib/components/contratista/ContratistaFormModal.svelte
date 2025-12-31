@@ -151,12 +151,12 @@
   function formatDateForDisplay(isoDate: string): string {
     if (!isoDate) return "";
     const [year, month, day] = isoDate.split("T")[0].split("-");
-    return `${day}-${month}-${year}`;
+    return `${day}/${month}/${year}`;
   }
 
   function formatDateForBackend(displayDate: string): string {
     if (!displayDate || displayDate.length !== 10) return "";
-    const [day, month, year] = displayDate.split("-");
+    const [day, month, year] = displayDate.split("/");
     return `${year}-${month}-${day}`;
   }
 
@@ -424,7 +424,7 @@
               name="fechaVencimientoPraind"
               type="text"
               bind:value={$form.fechaVencimientoPraind}
-              placeholder="DD-MM-YYYY"
+              placeholder="DD/MM/YYYY"
               maxlength="10"
               disabled={loading || readonly}
               class="{inputClass} {$errors.fechaVencimientoPraind
@@ -433,12 +433,12 @@
               {...$constraints.fechaVencimientoPraind}
               oninput={(e) => {
                 const input = e.target as HTMLInputElement;
-                let value = input.value.replace(/[^\d-]/g, "");
-                if (value.length >= 3 && value[2] !== "-") {
-                  value = value.slice(0, 2) + "-" + value.slice(2);
+                let value = input.value.replace(/[^\d/]/g, "");
+                if (value.length >= 3 && value[2] !== "/") {
+                  value = value.slice(0, 2) + "/" + value.slice(2);
                 }
-                if (value.length >= 6 && value[5] !== "-") {
-                  value = value.slice(0, 5) + "-" + value.slice(5);
+                if (value.length >= 6 && value[5] !== "/") {
+                  value = value.slice(0, 5) + "/" + value.slice(5);
                 }
                 value = value.slice(0, 10);
                 $form.fechaVencimientoPraind = value;
@@ -452,7 +452,7 @@
               </p>{/if}
           </div>
 
-          <!-- Sección Vehículos (Solo botón) -->
+          <!-- Sección Vehículos (solo en modo edición) -->
           {#if isEditMode && contratista?.id}
             <div class="flex items-center justify-between pt-2">
               <span class={labelClass}>Vehículos</span>
