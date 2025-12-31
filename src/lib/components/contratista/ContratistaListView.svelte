@@ -5,7 +5,7 @@
   import { fade } from "svelte/transition";
   import { toast } from "svelte-5-french-toast";
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-  import { Trash2, RotateCcw, Eye } from "lucide-svelte"; // Add RotateCcw for restore icon
+  import { Trash2, RotateCcw, Eye, Car } from "lucide-svelte"; // Add RotateCcw for restore icon
   import { can } from "$lib/logic/permissions";
   import { currentUser } from "$lib/stores/auth";
 
@@ -16,6 +16,7 @@
   import SearchBar from "$lib/components/shared/SearchBar.svelte";
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
   import ContratistaFormModal from "./ContratistaFormModal.svelte";
+  import VehiculoManagerModal from "$lib/components/vehiculo/VehiculoManagerModal.svelte";
 
   import type { ContratistaResponse } from "$lib/types/contratista";
   import type { ColDef } from "@ag-grid-community/core";
@@ -37,6 +38,10 @@
   let showModal = $state(false);
   let editingContratista = $state<ContratistaResponse | null>(null);
   let modalLoading = $state(false);
+
+  // Vehiculo Modal State
+  let showVehiculoModal = $state(false);
+  let selectedContratistaForVehicles = $state<ContratistaResponse | null>(null);
 
   // Filters
   let estadoFilter = $state<"todos" | "activo" | "inactivo" | "suspendido">(
@@ -166,6 +171,20 @@
           tooltip: "Ver detalles del contratista",
         });
       }
+    }
+
+    // Botón Gestión Vehículos
+    if (canUpdate || canViewDetail) {
+      singleSelectBtns.push({
+        id: "manage-vehicles",
+        label: "Vehículos",
+        icon: Car,
+        onClick: () => {
+          if (selected) openVehiculoModal(selected);
+        },
+        variant: "default" as const,
+        tooltip: "Gestionar vehículos",
+      });
     }
 
     if (canDelete) {
@@ -361,6 +380,19 @@
   }
 
   // ==========================================
+  // HANDLERS - VEHICULO MODAL
+  // ==========================================
+  function openVehiculoModal(contratista: ContratistaResponse) {
+    selectedContratistaForVehicles = contratista;
+    showVehiculoModal = true;
+  }
+
+  function closeVehiculoModal() {
+    showVehiculoModal = false;
+    selectedContratistaForVehicles = null;
+  }
+
+  // ==========================================
   // LIFECYCLE
   // ==========================================
   let unlistenFn: UnlistenFn | null = null;
@@ -552,3 +584,16 @@
   onSave={handleSaveContratista}
   onClose={closeModal}
 />
+
+<!-- Modal Vehículos -->
+{#if selectedContratistaForVehicles}
+  <VehiculoManagerModal
+    show={showVehiculoModal}
+    contratistaId={selectedContratistaForVehicles.id}
+    contratistaNombre={selectedContratistaForVehicles.nombreCompleto ||
+      selectedContratistaForVehicles.nombre +
+        " " +
+        selectedContratistaForVehicles.apellido}
+    onClose={closeVehiculoModal}
+  />
+{/if}

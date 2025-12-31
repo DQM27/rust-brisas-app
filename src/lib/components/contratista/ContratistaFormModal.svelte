@@ -1,18 +1,34 @@
-<!-- src/lib/components/contratista/ContratistaFormModal.svelte -->
-<!-- Modal reutilizable para crear y editar contratistas -->
 <script lang="ts">
   import { fade, fly, scale } from "svelte/transition";
-  import { X } from "lucide-svelte";
-  import { onMount } from "svelte";
+  import { X, Car, Plus } from "lucide-svelte";
+  import { onMount, onDestroy } from "svelte";
   import type {
     ContratistaResponse,
     CreateContratistaInput,
     UpdateContratistaInput,
   } from "$lib/types/contratista";
-  import type { TipoVehiculo } from "$lib/types/vehiculo";
   import { submitCreateEmpresa } from "$lib/logic/empresa/empresaService";
   import { invoke } from "@tauri-apps/api/core";
   import { empresaStore } from "$lib/stores/empresaStore.svelte";
+  import VehiculoManagerModal from "$lib/components/vehiculo/VehiculoManagerModal.svelte";
+
+  // Superforms & Zod v4
+  import { superForm } from "sveltekit-superforms";
+  import { zod4 } from "sveltekit-superforms/adapters";
+  import {
+    contratistaSchema,
+    type ContratistaFormData,
+  } from "$lib/schemas/contratistaSchema";
+
+  const defaultValues: ContratistaFormData = {
+    cedula: "",
+    nombre: "",
+    segundoNombre: "",
+    apellido: "",
+    segundoApellido: "",
+    empresaId: "",
+    fechaVencimientoPraind: "",
+  };
 
   interface Props {
     show: boolean;
@@ -34,7 +50,7 @@
     readonly = false,
   }: Props = $props();
 
-  // Modo derivado
+  // Derived Mode
   const isEditMode = $derived(!!contratista);
   const modalTitle = $derived(
     readonly
@@ -44,116 +60,119 @@
         : "Nuevo Contratista",
   );
 
-  // Estado del formulario
-  let formData = $state({
-    cedula: "",
-    nombre: "",
-    segundoNombre: "",
-    apellido: "",
-    segundoApellido: "",
-    empresaId: "",
-    fechaVencimientoPraind: "",
-    tieneVehiculo: false,
-    tipoVehiculo: "" as TipoVehiculo | "",
-    placa: "",
-    marca: "",
-    modelo: "",
-    color: "",
-  });
-
-  // Estado de errores
-  let cedulaDuplicateError = $state<string | null>(null);
-  let checkTimeout: any;
-
-  // Empresas (Global Store)
+  // Empresas State
   let showEmpresaModal = $state(false);
   let nuevaEmpresaNombre = $state("");
   let creatingEmpresa = $state(false);
   let empresaError = $state("");
 
-  // Validación
-  const isFormValid = $derived(
-    formData.cedula.trim() &&
-      formData.nombre.trim() &&
-      formData.apellido.trim() &&
-      formData.empresaId.trim() &&
-      formData.fechaVencimientoPraind.trim() &&
-      (!formData.tieneVehiculo ||
-        (formData.tipoVehiculo && formData.placa.trim())) &&
-      !cedulaDuplicateError,
-  );
+  // Vehicle Modal State
+  let showVehiculoModal = $state(false);
 
-  // Cargar empresas al montar (si es necesario)
+  // Validation State for Real-time checks
+  let checkTimeout: any;
+  let cedulaDuplicateError = $state<string | null>(null);
+
+  // Initial Data Construction
+  const initialData = $derived.by(() => {
+    return {
+      cedula: contratista?.cedula || "",
+      nombre: contratista?.nombre || "",
+      segundoNombre: contratista?.segundoNombre || "",
+      apellido: contratista?.apellido || "",
+      segundoApellido: contratista?.segundoApellido || "",
+      empresaId: contratista?.empresaId || "",
+      fechaVencimientoPraind: contratista?.fechaVencimientoPraind
+        ? formatDateForDisplay(contratista.fechaVencimientoPraind)
+        : "",
+    };
+  });
+
+  // Superform Initialization with Zod v4 adapter
+  // Pattern: Pass initial values directly (like ProveedorForm), use zod4 for validators only
+  const { form, errors, constraints, enhance, reset, validate } =
+    superForm<ContratistaFormData>(defaultValues, {
+      SPA: true,
+      validators: zod4(contratistaSchema),
+      resetForm: false, // We control reset manually when modal opens/closes
+      onUpdate: async ({ form: f }) => {
+        if (f.valid) {
+          if (cedulaDuplicateError) return; // Block submit if duplicate
+
+          const data = {
+            ...f.data,
+            fechaVencimientoPraind: formatDateForBackend(
+              f.data.fechaVencimientoPraind,
+            ),
+          };
+
+          const payload: any = {
+            cedula: data.cedula,
+            nombre: data.nombre,
+            apellido: data.apellido,
+            empresaId: data.empresaId,
+            fechaVencimientoPraind: data.fechaVencimientoPraind,
+          };
+
+          if (data.segundoNombre) payload.segundoNombre = data.segundoNombre;
+          if (data.segundoApellido)
+            payload.segundoApellido = data.segundoApellido;
+
+          const success = await onSave(payload);
+          if (success) {
+            handleClose();
+          }
+        }
+      },
+    });
+
+  // Sync form with props when modal opens/changes
+  $effect(() => {
+    if (show) {
+      if (contratista) {
+        reset({ data: initialData });
+      } else {
+        reset();
+        cedulaDuplicateError = null;
+      }
+    }
+  });
+
+  // Load companies
   onMount(async () => {
     await empresaStore.init();
   });
 
-  // async function loadEmpresas() ... (Eliminado, usa store)
+  onDestroy(() => {
+    if (checkTimeout) clearTimeout(checkTimeout);
+  });
 
-  // Helper: Convertir YYYY-MM-DD → DD-MM-YYYY
+  // Helpers
   function formatDateForDisplay(isoDate: string): string {
     if (!isoDate) return "";
     const [year, month, day] = isoDate.split("T")[0].split("-");
     return `${day}-${month}-${year}`;
   }
 
-  // Helper: Convertir DD-MM-YYYY → YYYY-MM-DD
   function formatDateForBackend(displayDate: string): string {
     if (!displayDate || displayDate.length !== 10) return "";
     const [day, month, year] = displayDate.split("-");
     return `${year}-${month}-${day}`;
   }
 
-  // Cargar datos del contratista cuando se abre en modo edición
-  $effect(() => {
-    if (show && contratista) {
-      formData = {
-        cedula: contratista.cedula || "",
-        nombre: contratista.nombre || "",
-        segundoNombre: "",
-        apellido: contratista.apellido || "",
-        segundoApellido: "",
-        empresaId: contratista.empresaId || "",
-        fechaVencimientoPraind: formatDateForDisplay(
-          contratista.fechaVencimientoPraind || "",
-        ),
-        tieneVehiculo: !!(
-          contratista.vehiculoTipo || contratista.vehiculoPlaca
-        ),
-        tipoVehiculo: (contratista.vehiculoTipo as TipoVehiculo) || "",
-        placa: contratista.vehiculoPlaca || "",
-        marca: "",
-        modelo: "",
-        color: "",
-      };
-    } else if (show && !contratista) {
-      resetForm();
+  function handleClose() {
+    if (!loading) {
+      onClose();
     }
-  });
-
-  function resetForm() {
-    formData = {
-      cedula: "",
-      nombre: "",
-      segundoNombre: "",
-      apellido: "",
-      segundoApellido: "",
-      empresaId: "",
-      fechaVencimientoPraind: "",
-      tieneVehiculo: false,
-      tipoVehiculo: "",
-      placa: "",
-      marca: "",
-      modelo: "",
-      color: "",
-    };
-    cedulaDuplicateError = null;
   }
 
-  // Validación de unicidad
+  // Real-time Validation for Cedula
   function handleCedulaInput(event: Event) {
     const input = event.target as HTMLInputElement;
     const value = input.value;
+
+    // Update superform store
+    $form.cedula = value;
 
     if (checkTimeout) clearTimeout(checkTimeout);
 
@@ -163,7 +182,6 @@
     }
 
     checkTimeout = setTimeout(async () => {
-      console.log(`🔍 Checking uniqueness for contratista.${value}...`);
       try {
         const isUnique = await invoke<boolean>("check_unique", {
           table: "contratista",
@@ -172,59 +190,15 @@
           excludeId: contratista?.id,
         });
 
-        console.log(`✅ Uniqueness result: ${isUnique}`);
-
         if (!isUnique) {
           cedulaDuplicateError = "Esta cédula ya está registrada.";
         } else {
           cedulaDuplicateError = null;
         }
       } catch (e) {
-        console.error("Error validando unicidad:", e);
+        console.error("Error checking uniqueness:", e);
       }
     }, 400);
-  }
-
-  // Estilo dinámico para inputs
-  function getInputClass(hasError: boolean, isReadonly: boolean) {
-    const baseInputClass =
-      "w-full rounded-md border px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 disabled:opacity-60 transition-colors";
-
-    const errorState = hasError
-      ? "border-red-500 focus:border-red-500 focus:ring-red-500 text-red-900 placeholder:text-red-300 dark:text-red-200 dark:placeholder:text-red-400/50"
-      : "border-gray-300 dark:border-gray-600 focus:ring-[#2da44e] text-gray-900 dark:text-gray-100 bg-white dark:bg-[#0d1117]";
-
-    const readonlyState = isReadonly
-      ? "opacity-70 bg-gray-50 dark:bg-gray-800"
-      : "";
-
-    return `${baseInputClass} ${errorState} ${readonlyState}`;
-  }
-
-  async function handleSubmit(e: Event) {
-    e.preventDefault();
-    if (!isFormValid) return;
-
-    const data = {
-      cedula: formData.cedula,
-      nombre: formData.nombre,
-      apellido: formData.apellido,
-      empresaId: formData.empresaId,
-      fechaVencimientoPraind: formatDateForBackend(
-        formData.fechaVencimientoPraind,
-      ),
-      tieneVehiculo: formData.tieneVehiculo,
-      tipoVehiculo: formData.tipoVehiculo || undefined,
-      placa: formData.placa,
-      marca: formData.marca,
-      modelo: formData.modelo,
-      color: formData.color,
-    };
-
-    const success = await onSave(data as CreateContratistaInput);
-    if (success) {
-      onClose();
-    }
   }
 
   async function handleCrearEmpresa() {
@@ -234,7 +208,7 @@
     const result = await submitCreateEmpresa(nuevaEmpresaNombre);
     if (result.ok) {
       empresaStore.add(result.empresa);
-      formData.empresaId = result.empresa.id;
+      $form.empresaId = result.empresa.id;
       nuevaEmpresaNombre = "";
       showEmpresaModal = false;
     } else {
@@ -243,16 +217,11 @@
     creatingEmpresa = false;
   }
 
-  function handleClose() {
-    if (!loading) {
-      onClose();
-    }
-  }
-
-  // Estilos compartidos
+  // Styles
   const labelClass = "text-xs font-medium text-gray-700 dark:text-gray-300";
   const inputClass =
     "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50";
+  const errorInputClass = "border-red-500 focus:ring-red-500";
 </script>
 
 {#if show}
@@ -261,9 +230,13 @@
     class="fixed inset-0 z-50 flex items-center justify-center p-4"
     transition:fade={{ duration: 200 }}
   >
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div class="absolute inset-0 bg-black/60" onclick={handleClose}></div>
+    <div
+      class="absolute inset-0 bg-black/60"
+      role="button"
+      tabindex="0"
+      onclick={handleClose}
+    ></div>
 
     <!-- Modal -->
     <div
@@ -280,7 +253,7 @@
           </h2>
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {readonly
-              ? "Información detallada del contratista en modo solo lectura"
+              ? "Información detallada del contratista"
               : isEditMode
                 ? "Modifique los datos necesarios"
                 : "Ingresa los datos del contratista"}
@@ -298,7 +271,8 @@
 
       <!-- Form -->
       <form
-        onsubmit={handleSubmit}
+        method="POST"
+        use:enhance
         class="overflow-y-auto max-h-[calc(90vh-180px)]"
       >
         <div class="p-6 space-y-4">
@@ -309,17 +283,20 @@
             >
             <input
               id="cedula"
+              name="cedula"
               type="text"
-              bind:value={formData.cedula}
+              bind:value={$form.cedula}
+              oninput={handleCedulaInput}
               placeholder="1-2345-6789"
               disabled={loading || isEditMode || readonly}
-              class={getInputClass(
-                !!cedulaDuplicateError,
-                loading || isEditMode || readonly,
-              )}
-              oninput={handleCedulaInput}
+              class="{inputClass} {$errors.cedula || cedulaDuplicateError
+                ? errorInputClass
+                : ''}"
+              {...$constraints.cedula}
             />
-            {#if cedulaDuplicateError}
+            {#if $errors.cedula}
+              <p class="text-xs text-red-500 mt-1">{$errors.cedula}</p>
+            {:else if cedulaDuplicateError}
               <p class="text-xs text-red-500 mt-1">{cedulaDuplicateError}</p>
             {/if}
           </div>
@@ -332,12 +309,17 @@
               >
               <input
                 id="nombre"
+                name="nombre"
                 type="text"
-                bind:value={formData.nombre}
+                bind:value={$form.nombre}
                 placeholder="Juan"
                 disabled={loading || readonly}
-                class={inputClass}
+                class="{inputClass} {$errors.nombre ? errorInputClass : ''}"
+                {...$constraints.nombre}
               />
+              {#if $errors.nombre}<p class="text-xs text-red-500 mt-1">
+                  {$errors.nombre}
+                </p>{/if}
             </div>
             <div class="space-y-1">
               <label for="apellido" class={labelClass}
@@ -345,11 +327,48 @@
               >
               <input
                 id="apellido"
+                name="apellido"
                 type="text"
-                bind:value={formData.apellido}
+                bind:value={$form.apellido}
                 placeholder="Pérez"
-                disabled={loading}
+                disabled={loading || readonly}
+                class="{inputClass} {$errors.apellido ? errorInputClass : ''}"
+                {...$constraints.apellido}
+              />
+              {#if $errors.apellido}<p class="text-xs text-red-500 mt-1">
+                  {$errors.apellido}
+                </p>{/if}
+            </div>
+          </div>
+
+          <!-- Segundo Nombre / Apellido (Opcional) -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label for="segundoNombre" class={labelClass}
+                >Segundo Nombre</label
+              >
+              <input
+                id="segundoNombre"
+                name="segundoNombre"
+                type="text"
+                bind:value={$form.segundoNombre}
+                disabled={loading || readonly}
                 class={inputClass}
+                {...$constraints.segundoNombre}
+              />
+            </div>
+            <div class="space-y-1">
+              <label for="segundoApellido" class={labelClass}
+                >Segundo Apellido</label
+              >
+              <input
+                id="segundoApellido"
+                name="segundoApellido"
+                type="text"
+                bind:value={$form.segundoApellido}
+                disabled={loading || readonly}
+                class={inputClass}
+                {...$constraints.segundoApellido}
               />
             </div>
           </div>
@@ -363,9 +382,13 @@
               <div class="relative flex-1">
                 <select
                   id="empresaId"
-                  bind:value={formData.empresaId}
-                  disabled={loading || empresaStore.loading}
-                  class={inputClass}
+                  name="empresaId"
+                  bind:value={$form.empresaId}
+                  disabled={loading || empresaStore.loading || readonly}
+                  class="{inputClass} {$errors.empresaId
+                    ? errorInputClass
+                    : ''}"
+                  {...$constraints.empresaId}
                 >
                   <option value="" disabled>
                     {empresaStore.loading
@@ -384,188 +407,106 @@
                   disabled={loading}
                   class="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-[#21262d] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#30363d] transition-colors text-sm"
                 >
-                  +
+                  <Plus class="w-4 h-4" />
                 </button>
               {/if}
             </div>
+            {#if $errors.empresaId}<p class="text-xs text-red-500 mt-1">
+                {$errors.empresaId}
+              </p>{/if}
           </div>
 
           <!-- Fecha PRAIND -->
           <div class="space-y-1">
-            <label for="fechaPraind" class={labelClass}
+            <label for="fechaVencimientoPraind" class={labelClass}
               >Vencimiento PRAIND <span class="text-red-500">*</span></label
             >
             <input
-              id="fechaPraind"
+              id="fechaVencimientoPraind"
+              name="fechaVencimientoPraind"
               type="text"
-              bind:value={formData.fechaVencimientoPraind}
+              bind:value={$form.fechaVencimientoPraind}
               placeholder="DD-MM-YYYY"
               maxlength="10"
               disabled={loading || readonly}
-              class={inputClass}
+              class="{inputClass} {$errors.fechaVencimientoPraind
+                ? errorInputClass
+                : ''}"
+              {...$constraints.fechaVencimientoPraind}
               oninput={(e) => {
                 const input = e.target as HTMLInputElement;
-                let value = input.value.replace(/[^\d-]/g, ""); // Solo números y guiones
-
-                // Auto-formatear como DD-MM-YYYY
+                let value = input.value.replace(/[^\d-]/g, "");
                 if (value.length >= 3 && value[2] !== "-") {
                   value = value.slice(0, 2) + "-" + value.slice(2);
                 }
                 if (value.length >= 6 && value[5] !== "-") {
                   value = value.slice(0, 5) + "-" + value.slice(5);
                 }
-
-                // Limitar a 10 caracteres
                 value = value.slice(0, 10);
-
-                formData.fechaVencimientoPraind = value;
+                $form.fechaVencimientoPraind = value;
                 input.value = value;
               }}
             />
+            {#if $errors.fechaVencimientoPraind}<p
+                class="text-xs text-red-500 mt-1"
+              >
+                {$errors.fechaVencimientoPraind}
+              </p>{/if}
           </div>
 
-          <!-- Toggle Vehículo -->
-          <div
-            class="flex items-center justify-between p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#161b22]"
-          >
-            <span class={labelClass}>¿Agregar Vehículo?</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={formData.tieneVehiculo}
-              aria-label="Agregar vehículo"
-              onclick={() =>
-                !readonly && (formData.tieneVehiculo = !formData.tieneVehiculo)}
-              class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#2da44e] {formData.tieneVehiculo
-                ? 'bg-[#2da44e]'
-                : 'bg-gray-300 dark:bg-gray-600'} {readonly
-                ? 'opacity-60 cursor-not-allowed'
-                : ''}"
-            >
-              <span
-                class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {formData.tieneVehiculo
-                  ? 'translate-x-4'
-                  : 'translate-x-0'}"
-              ></span>
-            </button>
+          <!-- Sección Vehículos (Botón de Gestión) -->
+          <div class="pt-2">
+            <span class={labelClass}>Vehículos</span>
+            {#if isEditMode && contratista?.id}
+              <div
+                class="mt-1 flex items-center justify-between p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#161b22]"
+              >
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                  Gestione los vehículos asociados a este contratista.
+                </div>
+                <button
+                  type="button"
+                  onclick={() => (showVehiculoModal = true)}
+                  class="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md bg-[#2da44e] text-white hover:bg-[#2c974b] transition-colors"
+                >
+                  <Car class="w-3.5 h-3.5" />
+                  Añadir/Gestionar Vehículos
+                </button>
+              </div>
+            {:else}
+              <div
+                class="mt-1 p-3 rounded-md border border-yellow-200 dark:border-yellow-900/30 bg-yellow-50 dark:bg-yellow-900/10 text-sm text-yellow-700 dark:text-yellow-400"
+              >
+                <span class="font-medium">Nota:</span> Guarde el contratista para
+                poder asignar vehículos.
+              </div>
+            {/if}
           </div>
-
-          <!-- Sección Vehículo -->
-          {#if formData.tieneVehiculo}
-            <div
-              class="p-4 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-[#161b22]/50 space-y-4"
-              transition:fly={{ y: -10, duration: 200 }}
-            >
-              <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Datos del Vehículo
-              </h4>
-
-              <!-- Tipo Vehículo -->
-              <div class="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onclick={() => (formData.tipoVehiculo = "motocicleta")}
-                  class="py-2 px-3 rounded-md border text-sm font-medium transition-all {formData.tipoVehiculo ===
-                  'motocicleta'
-                    ? 'border-[#2da44e] bg-[#2da44e]/10 text-[#2da44e]'
-                    : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400'} {readonly
-                    ? 'pointer-events-none opacity-60'
-                    : ''}"
-                >
-                  🏍️ Moto
-                </button>
-                <button
-                  type="button"
-                  onclick={() => (formData.tipoVehiculo = "automovil")}
-                  class="py-2 px-3 rounded-md border text-sm font-medium transition-all {formData.tipoVehiculo ===
-                  'automovil'
-                    ? 'border-[#2da44e] bg-[#2da44e]/10 text-[#2da44e]'
-                    : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-400'} {readonly
-                    ? 'pointer-events-none opacity-60'
-                    : ''}"
-                >
-                  🚗 Auto
-                </button>
-              </div>
-
-              <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-1">
-                  <label for="placa" class={labelClass}
-                    >Placa <span class="text-red-500">*</span></label
-                  >
-                  <input
-                    id="placa"
-                    type="text"
-                    bind:value={formData.placa}
-                    placeholder="ABC-123"
-                    disabled={loading || readonly}
-                    class="{inputClass} uppercase"
-                  />
-                </div>
-                <div class="space-y-1">
-                  <label for="marca" class={labelClass}>Marca</label>
-                  <input
-                    id="marca"
-                    type="text"
-                    bind:value={formData.marca}
-                    placeholder="Toyota"
-                    disabled={loading || readonly}
-                    class={inputClass}
-                  />
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-1">
-                  <label for="modelo" class={labelClass}>Modelo</label>
-                  <input
-                    id="modelo"
-                    type="text"
-                    bind:value={formData.modelo}
-                    placeholder="Corolla"
-                    disabled={loading || readonly}
-                    class={inputClass}
-                  />
-                </div>
-                <div class="space-y-1">
-                  <label for="color" class={labelClass}>Color</label>
-                  <input
-                    id="color"
-                    type="text"
-                    bind:value={formData.color}
-                    placeholder="Blanco"
-                    disabled={loading || readonly}
-                    class={inputClass}
-                  />
-                </div>
-              </div>
-            </div>
-          {/if}
         </div>
 
         <!-- Footer -->
         <div
-          class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#161b22]"
+          class="sticky bottom-0 z-20 flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#161b22]"
         >
           <button
             type="button"
             onclick={handleClose}
             disabled={loading}
-            class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#30363d] transition-colors disabled:opacity-50"
+            class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#21262d] transition-colors"
           >
-            {readonly ? "Cerrar" : "Cancelar"}
+            Cancelar
           </button>
+
           {#if !readonly}
             <button
               type="submit"
-              disabled={loading || !isFormValid}
-              class="px-4 py-2 text-sm font-medium rounded-md bg-[#2da44e] hover:bg-[#2c974b] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || !!cedulaDuplicateError}
+              class="px-4 py-2 text-sm font-medium rounded-md bg-[#2da44e] text-white hover:bg-[#2c974b] disabled:opacity-50 transition-colors flex items-center gap-2"
             >
-              {loading
-                ? "Guardando..."
-                : isEditMode
-                  ? "Guardar Cambios"
-                  : "Registrar"}
+              {#if loading}
+                <span class="loading loading-spinner loading-xs"></span>
+              {/if}
+              {isEditMode ? "Guardar Cambios" : "Crear Contratista"}
             </button>
           {/if}
         </div>
@@ -574,16 +515,17 @@
   </div>
 {/if}
 
-<!-- Modal Nueva Empresa -->
+<!-- Modal para crear nueva empresa -->
 {#if showEmpresaModal}
   <div
     class="fixed inset-0 z-[60] flex items-center justify-center p-4"
     transition:fade={{ duration: 200 }}
   >
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
       class="absolute inset-0 bg-black/50"
+      role="button"
+      tabindex="0"
       onclick={() => !creatingEmpresa && (showEmpresaModal = false)}
     ></div>
     <div
@@ -634,11 +576,21 @@
           type="button"
           disabled={creatingEmpresa || !nuevaEmpresaNombre.trim()}
           onclick={handleCrearEmpresa}
-          class="px-3 py-1.5 text-xs font-medium rounded-md bg-[#2da44e] text-white hover:bg-[#2c974b] disabled:opacity-50"
+          class="px-3 py-1.5 text-xs font-medium rounded-md bg-[#2da44e] text-white hover:bg-[#2c974b] disabled:opacity-50 transition-colors"
         >
           {creatingEmpresa ? "Guardando..." : "Guardar"}
         </button>
       </div>
     </div>
   </div>
+{/if}
+
+<!-- Vehiculo Modal (Nested) -->
+{#if showVehiculoModal && contratista}
+  <VehiculoManagerModal
+    show={showVehiculoModal}
+    contratistaId={contratista.id}
+    contratistaNombre={contratista?.nombre + " " + contratista?.apellido}
+    onClose={() => (showVehiculoModal = false)}
+  />
 {/if}

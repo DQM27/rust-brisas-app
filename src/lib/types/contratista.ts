@@ -12,7 +12,9 @@ export interface ContratistaBase {
     id?: string;
     cedula: string;
     nombre: string;
+    segundoNombre?: string;
     apellido: string;
+    segundoApellido?: string;
     empresaId: string;
     empresaNombre?: string;
     fechaVencimientoPraind: string; // YYYY-MM-DD
@@ -23,7 +25,9 @@ export interface ContratistaResponse {
     id: string;
     cedula: string;
     nombre: string;
+    segundoNombre?: string;
     apellido: string;
+    segundoApellido?: string;
     nombreCompleto: string;
     empresaId: string;
     empresaNombre: string;
@@ -43,7 +47,9 @@ export interface ContratistaResponse {
 export interface CreateContratistaInput {
     cedula: string;
     nombre: string;
+    segundoNombre?: string;
     apellido: string;
+    segundoApellido?: string;
     empresaId: string;
     fechaVencimientoPraind: string;
     // Campos de vehículo (opcionales, dependen del toggle)
@@ -59,7 +65,9 @@ export interface UpdateContratistaInput {
     id: string;
     cedula?: string;
     nombre?: string;
+    segundoNombre?: string;
     apellido?: string;
+    segundoApellido?: string;
     empresaId?: string;
     fechaVencimientoPraind?: string;
     isActive?: boolean;

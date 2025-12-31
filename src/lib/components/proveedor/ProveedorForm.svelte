@@ -1,6 +1,6 @@
 <script lang="ts">
   import { superForm } from "sveltekit-superforms";
-  import { zodClient } from "sveltekit-superforms/adapters";
+  import { zod4 } from "sveltekit-superforms/adapters";
   import {
     CreateProveedorSchema,
     UpdateProveedorSchema,
@@ -42,16 +42,17 @@
 
   // 1. Esquema Completo para Validación (Refinements)
   // Este es el que contiene las reglas complejas (ej: placa requerida si tiene vehiculo)
-  const validationSchema = isEditMode
-    ? UpdateProveedorSchema
-    : CreateProveedorSchema;
+  // Use $derived to make it reactive to isEditMode changes
+  const validationSchema = $derived(
+    isEditMode ? UpdateProveedorSchema : CreateProveedorSchema,
+  );
 
   // Combinar tipos para tener acceso a todos los campos posibles en el template
   type CombinedForm = CreateProveedorForm & UpdateProveedorForm;
 
   // 2. Construir datos iniciales manualmente para evitar el error de inferencia de Superforms
-  // Esto es más robusto que usar `defaults()` con esquemas complejos
-  const initialFormData: CombinedForm = {
+  // Use $derived to react to data changes
+  const initialFormData: CombinedForm = $derived({
     cedula: data?.cedula ?? "",
     nombre: data?.nombre ?? "",
     segundoNombre: data?.segundoNombre ?? "",
@@ -65,14 +66,14 @@
     marca: data?.marca ?? "",
     modelo: data?.modelo ?? "",
     color: data?.color ?? "",
-  };
+  });
 
   // Inicializar el formulario con Superforms en modo SPA
   // Usamos los datos iniciales manuales en lugar de defaults()
   const { form, errors, constraints, enhance, validate, tainted } =
     superForm<CombinedForm>(initialFormData as any, {
       SPA: true,
-      validators: zodClient(validationSchema as any),
+      validators: zod4(validationSchema),
       dataType: "json",
       async onUpdate({ form }) {
         if (form.valid) {
