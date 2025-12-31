@@ -1,7 +1,6 @@
 <!-- src/lib/components/proveedor/ProveedorListView.svelte -->
 <script lang="ts">
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
-
   import ProveedorFormModal from "$lib/components/proveedor/ProveedorFormModal.svelte";
   import {
     fetchAllProveedores,
@@ -26,6 +25,8 @@
   import { can } from "$lib/logic/permissions";
   import { currentUser } from "$lib/stores/auth";
   import { Eye } from "lucide-svelte";
+  import SearchBar from "$lib/components/shared/SearchBar.svelte";
+  import { selectedSearchStore } from "$lib/stores/searchStore";
 
   interface Props {
     tabId?: string;
@@ -36,8 +37,6 @@
   let proveedores = $state<ProveedorResponse[]>([]);
   let loading = $state(false);
   let error = $state<string | null>(null);
-
-  // Estado local de filtros
 
   // Estado del Modal
   let showModal = $state(false);
@@ -64,13 +63,9 @@
     loading = true;
     error = null;
 
-    // Solo cargamos activos/todos para el grid principal
-    // TrashView maneja su propia carga
-
     let res;
-    // Default to active or all based on some future active-only filter if needed
-    // For now matching previous optimized 'active' desire or just fetching all
-    res = await fetchAllProveedores(); // Or fetchActiveProveedores() if we want strict default
+    // Default to fetchAll based on previous logic, but can be adjusted
+    res = await fetchAllProveedores();
 
     if (res.ok) {
       proveedores = res.data;
@@ -237,6 +232,20 @@
   // Definición de columnas
   const columnDefs = $derived(ProveedorColumns.getColumns(handleStatusChange));
 
+  // Datos filtrados por buscador
+  const filteredData = $derived.by(() => {
+    let filtered = proveedores;
+    const _search = $selectedSearchStore;
+    if (_search.result && _search.result.tipo === "proveedor") {
+      // Si el resultado es una coincidencia exacta de ID
+      return filtered.filter((p) => p.id === _search.result!.id);
+    }
+    // Si quisieramos filtrar por texto libre se podría hacer aqui,
+    // pero SearchBar generalmente maneja la búsqueda global.
+    // Por consistencia con Contratista, solo filtramos si hay un resultado seleccionado en el store.
+    return filtered;
+  });
+
   // Effect para cargar datos al montar
   $effect(() => {
     loadData();
@@ -245,52 +254,67 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="h-full flex flex-col space-y-4 p-4 animate-fade-in bg-[#1e1e1e]">
-  <div class="flex items-center justify-between">
-    <div>
-      <h2 class="text-xl font-semibold text-gray-100">
-        "Lista de Proveedores"
-      </h2>
+<div class="flex h-full flex-col relative bg-[#1e1e1e]">
+  <!-- Header -->
+  <div class="border-b border-white/10 px-6 py-4 bg-[#252526]">
+    <div class="flex items-center justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-100">
+          "Lista de Proveedores"
+        </h2>
+        <p class="mt-1 text-sm text-gray-400">
+          Gestión y visualización de proveedores registrados
+        </p>
+      </div>
+      <div class="flex-1 max-w-md">
+        <SearchBar
+          placeholder="Buscar por nombre, cédula o empresa..."
+          limit={10}
+        />
+      </div>
     </div>
   </div>
 
-  {#if loading}
-    <div class="flex h-full items-center justify-center">
-      <div class="text-center">
-        <svg
-          class="mx-auto h-8 w-8 animate-spin text-blue-500"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          ></circle>
-          <path
-            class="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          ></path>
-        </svg>
-        <p class="mt-4 text-sm text-gray-400">Cargando proveedores...</p>
+  <!-- Content -->
+  <div class="flex-1 overflow-hidden relative bg-[#1e1e1e]">
+    {#if loading}
+      <div class="flex h-full items-center justify-center">
+        <div class="text-center">
+          <svg
+            class="mx-auto h-8 w-8 animate-spin text-blue-500"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          <p class="mt-4 text-sm text-gray-400">Cargando proveedores...</p>
+        </div>
       </div>
-    </div>
-  {:else}
-    <AGGridWrapper
-      gridId="proveedor-list"
-      rowData={proveedores}
-      {columnDefs}
-      {customButtons}
-      onSelectionChanged={(rows) => {
-        selectedRows = rows;
-      }}
-      getRowId={(params) => params.data.id}
-    />
-  {/if}
+    {:else}
+      <AGGridWrapper
+        gridId="proveedor-list"
+        rowData={filteredData}
+        {columnDefs}
+        {customButtons}
+        onSelectionChanged={(rows) => {
+          selectedRows = rows;
+        }}
+        getRowId={(params) => params.data.id}
+      />
+    {/if}
+  </div>
 </div>
 
 <ProveedorFormModal
