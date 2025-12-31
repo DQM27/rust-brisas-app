@@ -43,6 +43,9 @@ export const visitante = {
             return { ok: false, error: e.message || String(e) };
         }
     },
+    restoreWithData: async (id: string): Promise<VisitanteResponse> => {
+        return await invoke<VisitanteResponse>('restore_visitante', { id });
+    },
 
     list: async (): Promise<VisitanteResponse[]> => {
         return await invoke<VisitanteResponse[]>('list_visitantes');

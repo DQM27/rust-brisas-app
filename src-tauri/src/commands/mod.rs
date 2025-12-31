@@ -30,6 +30,7 @@ pub mod search_commands;
 pub mod security_commands;
 
 pub mod user_commands;
+pub mod validation_commands;
 pub mod vehiculo_commands;
 pub mod visitante_commands;
 pub mod window_commands;

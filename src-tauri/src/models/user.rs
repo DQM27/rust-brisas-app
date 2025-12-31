@@ -14,6 +14,8 @@ pub struct User {
     pub apellido: String,
     pub role: RecordId, // Según esquema: record<role>
     pub is_active: bool,
+    #[serde(default)]
+    pub is_superuser: bool,
     pub created_at: Datetime,
     pub updated_at: Datetime,
     pub cedula: String,
@@ -39,6 +41,8 @@ pub struct UserFetched {
     pub apellido: String,
     pub role: Option<Role>, // Optional to handle missing roles gracefully
     pub is_active: bool,
+    #[serde(default)]
+    pub is_superuser: bool,
     pub created_at: Datetime,
     pub updated_at: Datetime,
     pub cedula: String,
@@ -204,6 +208,7 @@ pub struct UserResponse {
     pub role_id: String,
     pub role_name: String,
     pub is_active: bool,
+    pub is_superuser: bool,
     pub created_at: String,
     pub updated_at: String,
     pub permissions: Vec<String>,
@@ -246,6 +251,7 @@ impl UserResponse {
             role_name,
             permissions, // Now included
             is_active: u.is_active,
+            is_superuser: u.is_superuser,
             created_at: u.created_at.to_string(),
             updated_at: u.updated_at.to_string(),
             cedula: u.cedula,
@@ -291,6 +297,7 @@ impl UserResponse {
             role_name,
             permissions,
             is_active: u.is_active,
+            is_superuser: u.is_superuser,
             created_at: u.created_at.to_string(),
             updated_at: u.updated_at.to_string(),
             cedula: u.cedula,

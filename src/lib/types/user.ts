@@ -12,6 +12,7 @@ export interface UserResponse {
   roleId: string;
   roleName: string;  // Nombre del rol para display
   isActive: boolean;
+  isSuperuser?: boolean;  // Flag para super usuario
   createdAt: string;
   updatedAt: string;
   permissions: string[];

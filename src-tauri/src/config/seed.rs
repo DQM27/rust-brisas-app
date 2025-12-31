@@ -175,26 +175,44 @@ async fn seed_superuser() -> Result<(), SurrealDbError> {
         .await?
         .take(0)?;
 
-    if !existing.is_empty() {
-        info!("🔐 Superuser ya existe, saltando creación.");
-        return Ok(());
-    }
-
     let password = std::env::var("BRISAS_ROOT_PASSWORD").unwrap_or_else(|_| "desing27".to_string());
     let password_hash =
         hash_password(&password).map_err(|e| SurrealDbError::Query(e.to_string()))?;
 
-    // No deserializamos el resultado para evitar el bug de serde_json::Value con SurrealDB 2.x
+    if !existing.is_empty() {
+        // Actualizar el superuser existente con los nuevos campos
+        db.query(
+            r#"
+            UPDATE type::thing('user', $id) SET
+                nombre = "DQM27",
+                apellido = "",
+                is_superuser = true,
+                must_change_password = true,
+                password_hash = $password_hash,
+                updated_at = time::now()
+            "#,
+        )
+        .bind(("id", SUPERUSER_ID))
+        .bind(("password_hash", password_hash))
+        .await?
+        .check()?;
+
+        info!("🔐 Superuser actualizado con nuevos campos");
+        return Ok(());
+    }
+
+    // Crear nuevo superuser si no existe
     db.query(
         r#"
             CREATE user CONTENT {
                 id: type::thing('user', $id),
                 email: $email,
                 password_hash: $password_hash,
-                nombre: "System",
-                apellido: "Root",
+                nombre: "DQM27",
+                apellido: "",
                 role: type::thing('role', $role_id),
                 is_active: true,
+                is_superuser: true,
                 cedula: "0000000000",
                 must_change_password: true,
                 created_at: time::now(),
@@ -207,7 +225,7 @@ async fn seed_superuser() -> Result<(), SurrealDbError> {
     .bind(("password_hash", password_hash.clone()))
     .bind(("role_id", ROLE_ADMIN_ID))
     .await?
-    .check()?; // Solo verificar errores, no deserializar
+    .check()?;
 
     info!("✅ Superuser creado");
     Ok(())

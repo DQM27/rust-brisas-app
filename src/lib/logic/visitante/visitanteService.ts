@@ -53,7 +53,7 @@ export async function deleteVisitante(id: string): Promise<ServiceResult<void>> 
 
 export async function restoreVisitante(id: string): Promise<ServiceResult<VisitanteResponse>> {
     try {
-        const data = await visitante.restore(id);
+        const data = await visitante.restoreWithData(id);
         return { ok: true, data };
     } catch (err: any) {
         return { ok: false, error: parseError(err) };

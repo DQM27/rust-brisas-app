@@ -40,22 +40,55 @@ const placaSchema = z.string()
 // SCHEMAS PRINCIPALES
 // ==========================================
 
-export const CreateProveedorSchema = z.object({
-    cedula: cedulaSchema,
-    nombre: nombreSchema,
-    segundoNombre: nombreOpcionalSchema,
-    apellido: apellidoSchema,
-    segundoApellido: nombreOpcionalSchema,
-    empresaId: z.string().min(1, 'Seleccione una empresa válida'),
+// ==========================================
+// SCHEMAS PRINCIPALES
+// ==========================================
+
+// 1. Base Schemas (Estructurales, sin refinamiento)
+// Exportamos estos para que Superforms pueda inferir los valores por defecto (shape)
+
+// 1. Base Schemas (Estructurales, sin refinamiento)
+// Exportamos estos para que Superforms pueda inferir los valores por defecto (shape)
+// Usamos .default('') para asegurar que el formulario inicie con strings vacíos y no undefined/unions complejos
+
+export const CreateProveedorSchemaBase = z.object({
+    cedula: z.string().default(''), // Simplified for defaults
+    nombre: z.string().default(''),
+    segundoNombre: z.string().default(''),
+    apellido: z.string().default(''),
+    segundoApellido: z.string().default(''),
+    empresaId: z.string().default(''),
 
     // Vehículo (opcional)
     tieneVehiculo: z.boolean().default(false),
-    tipoVehiculo: z.string().optional(),
-    placa: placaSchema,
-    marca: z.string().trim().max(50).optional().or(z.literal('')),
-    modelo: z.string().trim().max(50).optional().or(z.literal('')),
-    color: z.string().trim().max(30).optional().or(z.literal('')),
-}).superRefine((data, ctx) => {
+    tipoVehiculo: z.string().default(''),
+    placa: z.string().default(''),
+    marca: z.string().default(''),
+    modelo: z.string().default(''),
+    color: z.string().default(''),
+});
+
+export const UpdateProveedorSchemaBase = z.object({
+    nombre: z.string().default(''),
+    segundoNombre: z.string().default(''),
+    apellido: z.string().default(''),
+    segundoApellido: z.string().default(''),
+    empresaId: z.string().default(''),
+    estado: z.enum(['ACTIVO', 'INACTIVO', 'SUSPENDIDO']).default('ACTIVO'),
+
+    // Vehículo update
+    tieneVehiculo: z.boolean().default(false),
+    tipoVehiculo: z.string().default(''),
+    placa: z.string().default(''),
+    marca: z.string().default(''),
+    modelo: z.string().default(''),
+    color: z.string().default(''),
+});
+
+// 2. Schemas Refinados (Lógica condicional)
+// Estos son los que se usan para la validación final
+
+export const CreateProveedorSchema = CreateProveedorSchemaBase.superRefine((data, ctx) => {
     if (data.tieneVehiculo) {
         if (!data.placa || data.placa.trim() === '') {
             ctx.addIssue({
@@ -74,22 +107,7 @@ export const CreateProveedorSchema = z.object({
     }
 });
 
-export const UpdateProveedorSchema = z.object({
-    nombre: nombreSchema.optional(),
-    segundoNombre: nombreOpcionalSchema,
-    apellido: apellidoSchema.optional(),
-    segundoApellido: nombreOpcionalSchema,
-    empresaId: z.string().optional(),
-    estado: z.enum(['ACTIVO', 'INACTIVO', 'SUSPENDIDO']).optional(),
-
-    // Vehículo update
-    tieneVehiculo: z.boolean().optional(),
-    tipoVehiculo: z.string().optional(),
-    placa: placaSchema,
-    marca: z.string().trim().max(50).optional().or(z.literal('')),
-    modelo: z.string().trim().max(50).optional().or(z.literal('')),
-    color: z.string().trim().max(30).optional().or(z.literal('')),
-}).superRefine((data, ctx) => {
+export const UpdateProveedorSchema = UpdateProveedorSchemaBase.superRefine((data, ctx) => {
     // Si se activa tieneVehiculo explícitamente, validar
     if (data.tieneVehiculo === true) {
         if (!data.placa || data.placa.trim() === '') {
@@ -106,5 +124,6 @@ export const UpdateProveedorSchema = z.object({
 // TIPOS INFERIDOS
 // ==========================================
 
-export type CreateProveedorForm = z.infer<typeof CreateProveedorSchema>;
-export type UpdateProveedorForm = z.infer<typeof UpdateProveedorSchema>;
+// Usamos los Schemas Base para los tipos de formulario estructural
+export type CreateProveedorForm = z.infer<typeof CreateProveedorSchemaBase>;
+export type UpdateProveedorForm = z.infer<typeof UpdateProveedorSchemaBase>;

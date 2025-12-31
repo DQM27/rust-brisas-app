@@ -219,6 +219,10 @@ macro_rules! register_handlers {
             commands::audio_commands::play_alert_sound,
             commands::audio_commands::upload_custom_sound,
             commands::audio_commands::set_use_custom_sound,
+            // ==========================================
+            // COMANDOS DE VALIDACIÓN
+            // ==========================================
+            commands::validation_commands::check_unique,
         ]
     };
 }

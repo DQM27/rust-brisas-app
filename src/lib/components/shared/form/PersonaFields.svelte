@@ -1,0 +1,264 @@
+<script lang="ts">
+  import type { SuperForm } from "sveltekit-superforms";
+  import { invoke } from "@tauri-apps/api/core";
+  import { Plus } from "lucide-svelte";
+
+  interface Props {
+    // Aceptamos el objeto 'form' (store), 'errors' (store), y 'constraints' (store)
+    // Usamos 'any' genérico porque el esquema varía ligeramente entre Contratista/Proveedor
+    // pero los campos base (nombre, apellido, cedula) son coincidentes.
+    form: any;
+    errors: any;
+    constraints: any;
+    loading?: boolean;
+    isEditMode?: boolean;
+    readonly?: boolean;
+    empresas?: Array<{ id: string; nombre: string }>;
+    showEmpresa?: boolean;
+    tableName?: string; // Tabla para validar unicidad (ej: "proveedor", "contratista")
+    currentId?: string; // ID para excluir en validación (edición)
+    onCreateEmpresa?: () => void; // Callback para crear nueva empresa
+  }
+
+  let {
+    form,
+    errors,
+    constraints,
+    loading = false,
+    isEditMode = false,
+    readonly = false,
+    empresas = [],
+    showEmpresa = true,
+    tableName,
+    currentId,
+    onCreateEmpresa,
+  }: Props = $props();
+
+  let checkTimeout: any;
+
+  // Validación en tiempo real (debounced)
+  function handleCedulaInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
+
+    // Normalizar entrada (formato regex básico visual)
+    // Dejar que Zod maneje el formato estricto, aquí solo unicidad
+
+    if (checkTimeout) clearTimeout(checkTimeout);
+
+    // Solo validar si tiene longitud decente
+    if (value.length < 4 || !tableName) return;
+
+    checkTimeout = setTimeout(async () => {
+      try {
+        const isUnique = await invoke<boolean>("check_unique", {
+          table: tableName,
+          field: "cedula",
+          value,
+          excludeId: currentId,
+        });
+
+        if (!isUnique) {
+          // Manually set error on SuperForm
+          errors.update((errs: any) => ({
+            ...errs,
+            cedula: ["Esta cédula ya está registrada."],
+          }));
+        } else {
+          // Clear error ONLY if it was "Already exists" (to avoid clearing Zod format errors)
+          // This is tricky with SuperForms stores.
+          // A simple way: re-validate field via library or just clear if current error implies duplication
+          errors.update((errs: any) => {
+            if (errs.cedula && errs.cedula.includes("registrada")) {
+              const { cedula, ...rest } = errs;
+              return rest;
+            }
+            return errs;
+          });
+        }
+      } catch (e) {
+        console.error("Error validando unicidad:", e);
+      }
+    }, 400); // 400ms debounce
+  }
+
+  const inputClass =
+    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60";
+  const labelClass =
+    "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
+  const errorClass = "text-xs text-red-500 mt-1";
+  const sectionClass =
+    "text-base font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2 mb-3 flex items-center gap-2";
+</script>
+
+<div>
+  <h3 class={sectionClass}>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      ><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle
+        cx="9"
+        cy="7"
+        r="4"
+      /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path
+        d="M16 3.13a4 4 0 0 1 0 7.75"
+      /></svg
+    >
+    Datos Personales
+  </h3>
+
+  <!-- Fila 1: Cédula sola (campo principal de identificación) -->
+  <div class="mb-4">
+    <label for="cedula" class={labelClass}>Cédula de Identidad *</label>
+    <input
+      id="cedula"
+      name="cedula"
+      type="text"
+      bind:value={$form.cedula}
+      oninput={handleCedulaInput}
+      aria-invalid={$errors.cedula ? "true" : undefined}
+      disabled={loading || isEditMode || readonly}
+      class="{inputClass} {isEditMode || readonly
+        ? 'opacity-70 bg-gray-50 dark:bg-gray-800'
+        : ''}"
+      placeholder="Ej: 001-010203-0001A"
+      {...$constraints.cedula}
+    />
+    {#if $errors.cedula}<p class={errorClass}>{$errors.cedula}</p>{/if}
+  </div>
+
+  <!-- Fila 2: Nombres (Nombre + Segundo Nombre) -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div>
+      <label for="nombre" class={labelClass}>Primer Nombre *</label>
+      <input
+        id="nombre"
+        name="nombre"
+        type="text"
+        bind:value={$form.nombre}
+        disabled={loading || readonly}
+        class={inputClass}
+        placeholder="Juan"
+        {...$constraints.nombre}
+      />
+      {#if $errors.nombre}<p class={errorClass}>{$errors.nombre}</p>{/if}
+    </div>
+
+    <div>
+      <label for="segundoNombre" class={labelClass}>Segundo Nombre</label>
+      <input
+        id="segundoNombre"
+        name="segundoNombre"
+        type="text"
+        bind:value={$form.segundoNombre}
+        disabled={loading || readonly}
+        class={inputClass}
+        placeholder="Carlos"
+        {...$constraints.segundoNombre}
+      />
+      {#if $errors.segundoNombre}<p class={errorClass}>
+          {$errors.segundoNombre}
+        </p>{/if}
+    </div>
+  </div>
+
+  <!-- Fila 3: Apellidos (Apellido + Segundo Apellido) -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div>
+      <label for="apellido" class={labelClass}>Primer Apellido *</label>
+      <input
+        id="apellido"
+        name="apellido"
+        type="text"
+        bind:value={$form.apellido}
+        disabled={loading || readonly}
+        class={inputClass}
+        placeholder="Pérez"
+        {...$constraints.apellido}
+      />
+      {#if $errors.apellido}<p class={errorClass}>{$errors.apellido}</p>{/if}
+    </div>
+
+    <div>
+      <label for="segundoApellido" class={labelClass}>Segundo Apellido</label>
+      <input
+        id="segundoApellido"
+        name="segundoApellido"
+        type="text"
+        bind:value={$form.segundoApellido}
+        disabled={loading || readonly}
+        class={inputClass}
+        placeholder="González"
+        {...$constraints.segundoApellido}
+      />
+      {#if $errors.segundoApellido}<p class={errorClass}>
+          {$errors.segundoApellido}
+        </p>{/if}
+    </div>
+  </div>
+
+  <!-- Fila 4: Empresa (siempre visible si showEmpresa) -->
+  {#if showEmpresa}
+    <div>
+      <label for="empresaId" class={labelClass}>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="inline mr-1"
+          ><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" /><path
+            d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"
+          /><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" /><path
+            d="M10 6h4"
+          /><path d="M10 10h4" /><path d="M10 14h4" /><path d="M10 18h4" /></svg
+        >
+        Empresa Proveedora *
+      </label>
+      <div class="flex gap-2">
+        <select
+          id="empresaId"
+          name="empresaId"
+          bind:value={$form.empresaId}
+          disabled={loading || readonly || empresas.length === 0}
+          class="{inputClass} flex-1"
+          {...$constraints.empresaId}
+        >
+          {#if empresas.length === 0}
+            <option value="">Cargando empresas...</option>
+          {:else}
+            <option value="">Seleccione una empresa</option>
+            {#each empresas as emp}
+              <option value={emp.id}>{emp.nombre}</option>
+            {/each}
+          {/if}
+        </select>
+        {#if onCreateEmpresa && !readonly}
+          <button
+            type="button"
+            onclick={onCreateEmpresa}
+            disabled={loading}
+            class="px-3 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-1 text-sm disabled:opacity-50"
+            title="Crear nueva empresa"
+          >
+            <Plus size={16} />
+            <span class="hidden sm:inline">Nueva</span>
+          </button>
+        {/if}
+      </div>
+      {#if $errors.empresaId}<p class={errorClass}>{$errors.empresaId}</p>{/if}
+    </div>
+  {/if}
+</div>

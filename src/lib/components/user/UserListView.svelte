@@ -11,6 +11,7 @@
   import SearchBar from "$lib/components/shared/SearchBar.svelte";
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
   import UserFormModal from "./UserFormModal.svelte";
+  import ConfirmPasswordModal from "$lib/components/shared/ConfirmPasswordModal.svelte";
 
   // Logic & Config
   import * as userService from "$lib/logic/user/userService";
@@ -64,6 +65,13 @@
   let showModal = $state(false);
   let editingUser = $state<UserResponse | null>(null);
   let modalLoading = $state(false);
+
+  // Estado para modal de confirmación de auto-desactivación
+  let showSelfDeactivateModal = $state(false);
+  let pendingSelfDeactivation = $state<{
+    id: string;
+    currentStatus: boolean;
+  } | null>(null);
 
   // Keyboard shortcut handler for Ctrl+N
   function handleKeydown(e: KeyboardEvent) {
@@ -286,6 +294,19 @@
 
   async function handleStatusChange(id: string, currentStatus: boolean) {
     if (loading || isUpdatingStatus) return;
+
+    // ⚠️ AUTO-DESACTIVACIÓN: Mostrar modal de confirmación con contraseña
+    if ($currentUser && id === $currentUser.id && currentStatus === true) {
+      // Solo pedir confirmación si se va a DESACTIVAR (currentStatus es true = activo)
+      pendingSelfDeactivation = { id, currentStatus };
+      showSelfDeactivateModal = true;
+      return;
+    }
+
+    await executeStatusChange(id, currentStatus);
+  }
+
+  async function executeStatusChange(id: string, currentStatus: boolean) {
     try {
       isUpdatingStatus = true;
       const newStatus = !currentStatus;
@@ -296,18 +317,40 @@
         u.id === id ? { ...u, isActive: newStatus } : u,
       );
 
-      const toastId = toast.loading("Actualizando...");
+      const toastId = toast.loading("Actualizando estado...");
       const result = await userService.changeStatus(id, newStatus);
 
       if (result.ok) {
-        toast.success("Estado actualizado", { id: toastId });
+        toast.success(newStatus ? "Usuario activado" : "Usuario desactivado", {
+          id: toastId,
+        });
       } else {
         users = oldUsers;
-        toast.error(result.error, { id: toastId });
+        toast.error(result.error || "Error al cambiar estado", { id: toastId });
       }
     } finally {
       isUpdatingStatus = false;
     }
+  }
+
+  async function confirmSelfDeactivation() {
+    if (!pendingSelfDeactivation) return;
+
+    await executeStatusChange(
+      pendingSelfDeactivation.id,
+      pendingSelfDeactivation.currentStatus,
+    );
+
+    showSelfDeactivateModal = false;
+    pendingSelfDeactivation = null;
+
+    // Después de desactivarse, se cerrará la sesión automáticamente
+    // o quedará bloqueado según la lógica del sistema
+  }
+
+  function cancelSelfDeactivation() {
+    showSelfDeactivateModal = false;
+    pendingSelfDeactivation = null;
   }
 
   // ==========================================
@@ -315,6 +358,18 @@
   // ==========================================
 
   async function handleDeleteUser(user: UserResponse) {
+    // ⚠️ PROTECCIÓN: No permitir auto-eliminación
+    if ($currentUser && user.id === $currentUser.id) {
+      toast.error(
+        "No puedes eliminar tu propia cuenta. Solicita a otro administrador que lo haga.",
+        {
+          duration: 5000,
+          icon: "🚫",
+        },
+      );
+      return;
+    }
+
     if (!confirm(`¿Eliminar a ${user.nombre}?`)) return;
     const toastId = toast.loading("Eliminando...");
     const result = await userService.deleteUser(user.id);
@@ -327,6 +382,21 @@
   }
 
   async function handleDeleteMultiple(usersToDelete: UserResponse[]) {
+    // ⚠️ PROTECCIÓN: Filtrar el usuario actual de la selección
+    const selfIncluded =
+      $currentUser && usersToDelete.some((u) => u.id === $currentUser.id);
+    if (selfIncluded) {
+      toast.error(
+        "No puedes eliminarte a ti mismo. Te he excluido de la selección.",
+        {
+          duration: 4000,
+          icon: "⚠️",
+        },
+      );
+      usersToDelete = usersToDelete.filter((u) => u.id !== $currentUser!.id);
+      if (usersToDelete.length === 0) return;
+    }
+
     if (!confirm(`¿Eliminar ${usersToDelete.length} usuarios?`)) return;
     const toastId = toast.loading("Eliminando...");
     let errors = 0;
@@ -541,4 +611,15 @@
   loading={modalLoading}
   onSave={handleSaveUser}
   onClose={closeModal}
+/>
+
+<!-- Modal de Confirmación para Auto-Desactivación -->
+<ConfirmPasswordModal
+  show={showSelfDeactivateModal}
+  title="Desactivar Tu Cuenta"
+  warningMessage="⚠️ ADVERTENCIA: Estás a punto de desactivar tu propia cuenta. Una vez desactivada, NO podrás iniciar sesión hasta que otro administrador te reactive. ¿Estás seguro de que deseas continuar?"
+  confirmButtonText="Sí, Desactivar Mi Cuenta"
+  user={$currentUser}
+  onConfirm={confirmSelfDeactivation}
+  onCancel={cancelSelfDeactivation}
 />
