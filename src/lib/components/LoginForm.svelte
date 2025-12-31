@@ -83,10 +83,10 @@
 </script>
 
 <div
-  class="w-full flex flex-col justify-center pt-5 pb-14 px-8 bg-[#1e1e1e] rounded-xl shadow-2xl"
+  class="w-full flex flex-col justify-center pt-1 pb-14 px-8 bg-[#1e1e1e] rounded-xl shadow-2xl"
 >
   <form onsubmit={preventDefault(handleSubmit)} class="flex flex-col gap-4">
-    <div class="text-center flex flex-col items-center">
+    <div class="text-center flex flex-col items-center mb-5">
       <img
         src="/icono-brisas.png"
         alt="Logo"
