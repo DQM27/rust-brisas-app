@@ -26,7 +26,7 @@ export async function fetchAllProveedores(): Promise<ServiceResult<ProveedorResp
         const data = await proveedor.getAll();
         return { ok: true, data };
     } catch (err: any) {
-        console.error('Error al cargar proveedores:', err);
+        console.error('Error al cargar proveedores:', JSON.stringify(err));
         return { ok: false, error: parseError(err) };
     }
 }
@@ -45,7 +45,7 @@ export async function fetchActiveProveedores(): Promise<ServiceResult<ProveedorR
         }
         return result;
     } catch (err: any) {
-        console.error('Error al cargar proveedores activos:', err);
+        console.error('Error al cargar proveedores activos:', JSON.stringify(err));
         return { ok: false, error: parseError(err) };
     }
 }
@@ -58,7 +58,7 @@ export async function searchProveedores(query: string): Promise<ServiceResult<Pr
         const data = await proveedor.search(query);
         return { ok: true, data };
     } catch (err: any) {
-        console.error('Error al buscar proveedores:', err);
+        console.error('Error al buscar proveedores:', JSON.stringify(err));
         return { ok: false, error: parseError(err) };
     }
 }
@@ -74,7 +74,7 @@ export async function fetchProveedorById(id: string): Promise<ServiceResult<Prov
         }
         return { ok: true, data };
     } catch (err: any) {
-        console.error('Error al cargar proveedor:', err);
+        console.error('Error al cargar proveedor:', JSON.stringify(err));
         return { ok: false, error: parseError(err) };
     }
 }
@@ -90,7 +90,7 @@ export async function fetchProveedorByCedula(cedula: string): Promise<ServiceRes
         }
         return { ok: true, data };
     } catch (err: any) {
-        console.error('Error al cargar proveedor:', err);
+        console.error('Error al cargar proveedor:', JSON.stringify(err));
         return { ok: false, error: parseError(err) };
     }
 }
@@ -107,7 +107,7 @@ export async function createProveedor(input: CreateProveedorInput): Promise<Serv
         const data = await proveedor.create(input);
         return { ok: true, data };
     } catch (err: any) {
-        console.error('Error al crear proveedor:', err);
+        console.error('Error al crear proveedor:', JSON.stringify(err));
         return { ok: false, error: parseError(err) };
     }
 }
@@ -120,7 +120,7 @@ export async function updateProveedor(id: string, input: UpdateProveedorInput): 
         const data = await proveedor.update(id, input);
         return { ok: true, data };
     } catch (err: any) {
-        console.error('Error al actualizar proveedor:', err);
+        console.error('Error al actualizar proveedor:', JSON.stringify(err));
         return { ok: false, error: parseError(err) };
     }
 }
@@ -133,7 +133,7 @@ export async function changeStatus(id: string, newStatus: string): Promise<Servi
         const data = await proveedor.changeStatus(id, newStatus);
         return { ok: true, data };
     } catch (err: any) {
-        console.error('Error al cambiar estado:', err);
+        console.error('Error al cambiar estado:', JSON.stringify(err));
         return { ok: false, error: parseError(err) };
     }
 }
@@ -146,7 +146,7 @@ export async function deleteProveedor(id: string): Promise<ServiceResult<void>> 
         await proveedor.delete(id);
         return { ok: true, data: undefined };
     } catch (err: any) {
-        console.error('Error al eliminar proveedor:', err);
+        console.error('Error al eliminar proveedor:', JSON.stringify(err));
         return { ok: false, error: parseError(err) };
     }
 }
@@ -164,10 +164,13 @@ export async function deleteProveedor(id: string): Promise<ServiceResult<void>> 
  */
 export async function restoreProveedor(id: string): Promise<ServiceResult<ProveedorResponse>> {
     try {
-        const data = await proveedor.restore(id);
-        return { ok: true, data };
+        const result = await proveedor.restore(id);
+        if (!result.ok || !result.data) {
+            return { ok: false, error: result.error || 'No se pudo restaurar el proveedor.' };
+        }
+        return { ok: true, data: result.data };
     } catch (err: any) {
-        console.error('Error al restaurar proveedor:', err);
+        console.error('Error al restaurar proveedor:', JSON.stringify(err));
         return { ok: false, error: parseError(err) };
     }
 }
@@ -180,7 +183,7 @@ export async function getArchivedProveedores(): Promise<ServiceResult<ProveedorR
         const data = await proveedor.listArchived();
         return { ok: true, data };
     } catch (err: any) {
-        console.error('Error al cargar proveedores archivados:', err);
+        console.error('Error al cargar proveedores archivados:', JSON.stringify(err));
         return { ok: false, error: parseError(err) };
     }
 }
@@ -195,7 +198,18 @@ function parseError(err: any): string {
     }
 
     if (typeof err === 'object') {
-        const msg = err.message ?? err.toString();
+        // Handle Rust Serde Enum errors
+        if (err.type) {
+            switch (err.type) {
+                case 'CedulaExists': return 'Ya existe un proveedor con esa cédula.';
+                case 'EmpresaNotFound': return 'La empresa especificada no existe.';
+                case 'NotFound': return 'Proveedor no encontrado.';
+                case 'AlreadyInside': return 'El proveedor ya tiene un ingreso activo.';
+            }
+            if (err.message) return err.message;
+        }
+
+        const msg = err.message ?? JSON.stringify(err);
         if (/unique|cedula/i.test(msg)) return 'Ya existe un proveedor con esa cédula.';
         if (/empresa/i.test(msg)) return 'La empresa especificada no existe.';
         return msg;

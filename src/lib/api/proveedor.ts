@@ -55,10 +55,10 @@ export const proveedor = {
             return { ok: false, data: [], error: e.message || String(e) };
         }
     },
-    restore: async (id: string): Promise<{ ok: boolean; error?: string }> => {
+    restore: async (id: string): Promise<{ ok: boolean; data?: ProveedorResponse; error?: string }> => {
         try {
-            await invoke<ProveedorResponse>('restore_proveedor', { id });
-            return { ok: true };
+            const data = await invoke<ProveedorResponse>('restore_proveedor', { id });
+            return { ok: true, data };
         } catch (e: any) {
             return { ok: false, error: e.message || String(e) };
         }
