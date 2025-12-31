@@ -19,6 +19,7 @@
 
   let emailInput = $state<HTMLInputElement>();
   let passwordInput = $state<HTMLInputElement>();
+  let mounted = $state(false);
 
   onMount(() => {
     if (loginStore.hasRememberedEmail) {
@@ -29,6 +30,15 @@
     } else {
       // Focus email otherwise
       setTimeout(() => emailInput?.focus(), 100);
+    }
+    mounted = true;
+  });
+
+  $effect(() => {
+    if (mounted && !rememberMe) {
+      loginStore.clearRememberedEmail();
+      email = "";
+      setTimeout(() => emailInput?.focus(), 50);
     }
   });
 
