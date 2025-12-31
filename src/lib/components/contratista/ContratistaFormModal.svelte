@@ -217,11 +217,13 @@
     creatingEmpresa = false;
   }
 
-  // Styles
-  const labelClass = "text-xs font-medium text-gray-700 dark:text-gray-300";
+  // GitHub-style styles with blue accent
+  const labelClass =
+    "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1.5";
   const inputClass =
-    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50";
-  const errorInputClass = "border-red-500 focus:ring-red-500";
+    "w-full rounded-md border border-gray-300 dark:border-[#30363d] bg-white dark:bg-[#0d1117] px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] focus:outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-[#161b22]";
+  const errorInputClass =
+    "border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500";
 </script>
 
 {#if show}
@@ -270,11 +272,7 @@
       </div>
 
       <!-- Form -->
-      <form
-        method="POST"
-        use:enhance
-        class="overflow-y-auto max-h-[calc(90vh-180px)]"
-      >
+      <form method="POST" use:enhance>
         <div class="p-6 space-y-4">
           <!-- Cédula -->
           <div class="space-y-1">
@@ -454,34 +452,20 @@
               </p>{/if}
           </div>
 
-          <!-- Sección Vehículos (Botón de Gestión) -->
-          <div class="pt-2">
-            <span class={labelClass}>Vehículos</span>
-            {#if isEditMode && contratista?.id}
-              <div
-                class="mt-1 flex items-center justify-between p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#161b22]"
+          <!-- Sección Vehículos (Solo botón) -->
+          {#if isEditMode && contratista?.id}
+            <div class="flex items-center justify-between pt-2">
+              <span class={labelClass}>Vehículos</span>
+              <button
+                type="button"
+                onclick={() => (showVehiculoModal = true)}
+                class="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-[#30363d] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#21262d] transition-colors"
               >
-                <div class="text-sm text-gray-600 dark:text-gray-400">
-                  Gestione los vehículos asociados a este contratista.
-                </div>
-                <button
-                  type="button"
-                  onclick={() => (showVehiculoModal = true)}
-                  class="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md bg-[#2da44e] text-white hover:bg-[#2c974b] transition-colors"
-                >
-                  <Car class="w-3.5 h-3.5" />
-                  Añadir/Gestionar Vehículos
-                </button>
-              </div>
-            {:else}
-              <div
-                class="mt-1 p-3 rounded-md border border-yellow-200 dark:border-yellow-900/30 bg-yellow-50 dark:bg-yellow-900/10 text-sm text-yellow-700 dark:text-yellow-400"
-              >
-                <span class="font-medium">Nota:</span> Guarde el contratista para
-                poder asignar vehículos.
-              </div>
-            {/if}
-          </div>
+                <Car class="w-3.5 h-3.5" />
+                Gestionar
+              </button>
+            </div>
+          {/if}
         </div>
 
         <!-- Footer -->
@@ -501,7 +485,7 @@
             <button
               type="submit"
               disabled={loading || !!cedulaDuplicateError}
-              class="px-4 py-2 text-sm font-medium rounded-md bg-[#2da44e] text-white hover:bg-[#2c974b] disabled:opacity-50 transition-colors flex items-center gap-2"
+              class="px-4 py-2.5 text-sm font-medium rounded-md bg-[#2563eb] text-white hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
               {#if loading}
                 <span class="loading loading-spinner loading-xs"></span>
@@ -576,7 +560,7 @@
           type="button"
           disabled={creatingEmpresa || !nuevaEmpresaNombre.trim()}
           onclick={handleCrearEmpresa}
-          class="px-3 py-1.5 text-xs font-medium rounded-md bg-[#2da44e] text-white hover:bg-[#2c974b] disabled:opacity-50 transition-colors"
+          class="px-3 py-1.5 text-xs font-medium rounded-md bg-[#2563eb] text-white hover:bg-[#1d4ed8] disabled:opacity-50 transition-colors"
         >
           {creatingEmpresa ? "Guardando..." : "Guardar"}
         </button>
