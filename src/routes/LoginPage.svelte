@@ -67,17 +67,17 @@
 </script>
 
 <div
-  class="w-full h-full flex flex-col items-center justify-center bg-surface-1"
+  class="w-full h-full flex flex-col items-center justify-between py-8 bg-surface-1 overflow-hidden"
 >
-  {#if view === "login"}
-    <div class="w-full max-w-[450px]">
-      <LoginForm bind:this={formRef} {loading} onSubmit={handleLogin} />
-    </div>
-  {:else if view === "change_password" && tempUser}
-    <div
-      class="flex-1 flex items-center justify-center p-8 bg-white dark:bg-[#0d1117] relative w-full"
-    >
-      <div class="animate-fade-in w-full max-w-sm">
+  <div class="flex-1 flex items-center justify-center w-full pb-20">
+    {#if view === "login"}
+      <div class="w-full max-w-[450px]">
+        <LoginForm bind:this={formRef} {loading} onSubmit={handleLogin} />
+      </div>
+    {:else if view === "change_password" && tempUser}
+      <div
+        class="w-full max-w-sm bg-white dark:bg-[#0d1117] rounded-xl shadow-2xl overflow-hidden"
+      >
         <ChangePasswordPanel
           userId={tempUser.id}
           currentPassword={tempPassword}
@@ -85,6 +85,10 @@
           onCancel={handleCancelChange}
         />
       </div>
-    </div>
-  {/if}
+    {/if}
+  </div>
+
+  <div class="text-xs text-gray-500 font-medium opacity-60">
+    &copy; 2025 Mega Brisas. Todos los derechos reservados.
+  </div>
 </div>

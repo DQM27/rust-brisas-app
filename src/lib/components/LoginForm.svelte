@@ -83,12 +83,16 @@
 </script>
 
 <div
-  class="w-full flex flex-col justify-center p-8 bg-[#1e1e1e] rounded-xl shadow-2xl border border-white/5"
+  class="w-full flex flex-col justify-center pt-5 pb-14 px-8 bg-[#1e1e1e] rounded-xl shadow-2xl"
 >
-  <form onsubmit={preventDefault(handleSubmit)} class="flex flex-col gap-6">
-    <div class="text-center">
-      <h1 class="text-3xl font-bold text-primary">Bienvenido</h1>
-      <p class="text-sm text-tertiary mt-2">Inicia sesión en Mega Brisas</p>
+  <form onsubmit={preventDefault(handleSubmit)} class="flex flex-col gap-4">
+    <div class="text-center flex flex-col items-center">
+      <img
+        src="/icono-brisas.png"
+        alt="Logo"
+        class="w-20 h-20 active:scale-95 transition-transform mb-2"
+      />
+      <h1 class="text-3xl font-bold text-primary">MegaBrisas</h1>
     </div>
 
     <!-- Email -->
@@ -153,7 +157,7 @@
     </div>
 
     <!-- Acciones -->
-    <div class="flex gap-3 mt-2">
+    <div class="flex gap-3 mt-4">
       <button
         type="button"
         onclick={exitApp}
