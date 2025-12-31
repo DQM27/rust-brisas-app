@@ -4,6 +4,7 @@
   import { fade, fly } from "svelte/transition";
   import { X, Camera } from "lucide-svelte";
   import { open } from "@tauri-apps/plugin-dialog";
+  import { invoke } from "@tauri-apps/api/core";
   import type {
     UserResponse,
     CreateUserInput,
@@ -14,6 +15,8 @@
     UpdateUserSchema,
     type CreateUserForm,
   } from "$lib/schemas/userSchema";
+  import { superForm } from "sveltekit-superforms";
+  import { zod4 } from "sveltekit-superforms/adapters";
   import {
     ROLE_ADMIN_ID,
     ROLE_SUPERVISOR_ID,
@@ -140,8 +143,8 @@
         : "Crear Nuevo Usuario",
   );
 
-  // Estado del formulario
-  let formData = $state<CreateUserForm>({
+  // --- SUPERFORMS SETUP ---
+  const initialValues: CreateUserForm = {
     cedula: "",
     nombre: "",
     apellido: "",
@@ -157,9 +160,53 @@
     fechaNacimiento: "",
     contactoEmergenciaNombre: "",
     contactoEmergenciaTelefono: "",
-  });
+    mustChangePassword: false,
+  };
 
-  let errors = $state<Record<string, string>>({});
+  const {
+    form,
+    errors,
+    constraints,
+    enhance,
+    validateForm,
+    reset: resetForm,
+  } = superForm<CreateUserForm>(initialValues, {
+    SPA: true,
+    validators: zod4(CreateUserSchema),
+    onUpdate: async ({ form: f }) => {
+      if (!f.valid) return;
+
+      let payloadData = f.data as CreateUserForm;
+      let tempPassword: string | null = null;
+
+      // Solo para creación: generar password si está vacía
+      if (!isEditMode) {
+        if (!payloadData.password) {
+          tempPassword =
+            Math.random().toString(36).slice(-8) +
+            Math.random().toString(36).slice(-2).toUpperCase();
+          payloadData.password = tempPassword;
+          payloadData.mustChangePassword = true;
+        } else {
+          tempPassword = payloadData.password as string;
+        }
+      }
+
+      const success = await onSave(payloadData as CreateUserInput);
+      const isSuccess = typeof success === "boolean" ? success : true;
+
+      if (isSuccess) {
+        if (!isEditMode && tempPassword) {
+          generatedPassword = tempPassword;
+          showSuccessModal = true;
+        } else {
+          onClose();
+        }
+      }
+    },
+    resetForm: false, // Controlamos el reset manualmente
+    taintedMessage: null,
+  });
 
   // Cargar roles
   async function loadRoles() {
@@ -184,6 +231,29 @@
   // Estado para "Cambiar Contraseña" (Self)
   let isChangingPassword = $state(false);
 
+  // Validación de duplicados en tiempo real
+  let checkTimeout: any;
+  let cedulaDuplicateError = $state<string | null>(null);
+  let emailDuplicateError = $state<string | null>(null);
+
+  async function checkUniqueness(field: string, value: string) {
+    if (value.length < 3) return null;
+    try {
+      const isUnique = await invoke<boolean>("check_unique", {
+        table: "user",
+        field,
+        value,
+        excludeId: user?.id,
+      });
+      return isUnique
+        ? null
+        : `Este ${field === "cedula" ? "número de cédula" : "correo electrónico"} ya está registrado.`;
+    } catch (e) {
+      console.error(`Error checking unique ${field}:`, e);
+      return null;
+    }
+  }
+
   // Cargar datos del usuario cuando se abre en modo edición
   $effect(() => {
     if (show) {
@@ -191,18 +261,20 @@
       isChangingPassword = false;
       loadRoles();
       activeAvatar = null;
+      cedulaDuplicateError = null;
+      emailDuplicateError = null;
     }
 
     if (show && user) {
       loadAvatar(user.id);
-      formData = {
+      $form = {
         cedula: user.cedula || "",
         nombre: user.nombre || "",
         apellido: user.apellido || "",
         segundoNombre: user.segundoNombre || "",
         segundoApellido: user.segundoApellido || "",
         email: user.email || "",
-        password: "", // Campo vacío - cambio de contraseña se maneja por separado
+        password: "",
         roleId: user.roleId || ROLE_GUARDIA_ID,
         telefono: user.telefono || "",
         direccion: user.direccion || "",
@@ -211,102 +283,20 @@
         fechaNacimiento: user.fechaNacimiento || "",
         contactoEmergenciaNombre: user.contactoEmergenciaNombre || "",
         contactoEmergenciaTelefono: user.contactoEmergenciaTelefono || "",
+        mustChangePassword: user.mustChangePassword || false,
       };
-      errors = {};
     } else if (show && !user) {
       // Reset para creación
-      formData = {
-        cedula: "",
-        nombre: "",
-        apellido: "",
-        segundoNombre: "",
-        segundoApellido: "",
-        email: "",
-        password: "",
-        roleId: ROLE_GUARDIA_ID,
-        telefono: "",
-        direccion: "",
-        fechaInicioLabores: "",
-        numeroGafete: "",
-        fechaNacimiento: "",
-        contactoEmergenciaNombre: "",
-        contactoEmergenciaTelefono: "",
-      };
-      errors = {};
+      resetForm({ data: initialValues });
     }
   });
-
-  // Validación reactiva
-  $effect(() => {
-    if (Object.values(formData).some((v) => v !== "")) {
-      const schema = isEditMode ? UpdateUserSchema : CreateUserSchema;
-      const result = schema.safeParse(formData);
-      if (!result.success) {
-        const newErrors: Record<string, string> = {};
-        result.error.issues.forEach((issue) => {
-          if (issue.path[0]) {
-            newErrors[String(issue.path[0])] = issue.message;
-          }
-        });
-        errors = newErrors;
-      } else {
-        errors = {};
-      }
-    }
-  });
-
-  async function handleSubmit(event: Event) {
-    event.preventDefault();
-    const schema = isEditMode ? UpdateUserSchema : CreateUserSchema;
-    const result = schema.safeParse(formData);
-
-    if (result.success) {
-      let payloadData = result.data;
-      let tempPassword: string | null = null;
-
-      // Solo para creación: generar password si está vacía
-      if (!isEditMode) {
-        const createData = payloadData as CreateUserForm;
-        if (!createData.password) {
-          tempPassword =
-            Math.random().toString(36).slice(-8) +
-            Math.random().toString(36).slice(-2).toUpperCase();
-          createData.password = tempPassword;
-          createData.mustChangePassword = true;
-        } else {
-          tempPassword = createData.password;
-        }
-        payloadData = createData;
-      }
-
-      const success = await onSave(payloadData);
-      const isSuccess = typeof success === "boolean" ? success : true;
-
-      if (isSuccess) {
-        if (!isEditMode && tempPassword) {
-          generatedPassword = tempPassword;
-          showSuccessModal = true;
-        } else {
-          onClose();
-        }
-      }
-    } else {
-      const newErrors: Record<string, string> = {};
-      result.error.issues.forEach((issue) => {
-        if (issue.path[0]) {
-          newErrors[String(issue.path[0])] = issue.message;
-        }
-      });
-      errors = newErrors;
-    }
-  }
 
   // Input handlers
   function handleGafeteInput(event: Event) {
     const input = event.target as HTMLInputElement;
     const numbers = input.value.replace(/[^0-9]/g, "");
     const newValue = `K-${numbers}`;
-    formData.numeroGafete = newValue;
+    $form.numeroGafete = newValue;
     if (input.value !== newValue) {
       input.value = newValue;
       input.selectionStart = input.selectionEnd = newValue.length;
@@ -316,15 +306,31 @@
   function handleCedulaInput(event: Event) {
     const input = event.target as HTMLInputElement;
     const newValue = input.value.replace(/[^0-9-]/g, "");
-    formData.cedula = newValue;
+    $form.cedula = newValue;
     if (input.value !== newValue) input.value = newValue;
+
+    if (checkTimeout) clearTimeout(checkTimeout);
+    checkTimeout = setTimeout(async () => {
+      cedulaDuplicateError = await checkUniqueness("cedula", newValue);
+    }, 400);
+  }
+
+  function handleEmailInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const newValue = input.value;
+    $form.email = newValue;
+
+    if (checkTimeout) clearTimeout(checkTimeout);
+    checkTimeout = setTimeout(async () => {
+      emailDuplicateError = await checkUniqueness("email", newValue);
+    }, 400);
   }
 
   function handleNameInput(event: Event, field: keyof CreateUserForm) {
     const input = event.target as HTMLInputElement;
     const newValue = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "");
     // @ts-ignore
-    formData[field] = newValue;
+    $form[field] = newValue;
     if (input.value !== newValue) input.value = newValue;
   }
 
@@ -353,7 +359,7 @@
     if (value.length > 11) value = value.substring(0, 11);
     if (value === "") {
       // @ts-ignore
-      formData[field] = "";
+      $form[field] = "";
       return;
     }
     let formatted = "+";
@@ -361,7 +367,7 @@
     if (value.length > 3) formatted += " " + value.substring(3, 7);
     if (value.length > 7) formatted += "-" + value.substring(7, 11);
     // @ts-ignore
-    formData[field] = formatted;
+    $form[field] = formatted;
     if (input.value !== formatted) {
       input.value = formatted;
       input.setSelectionRange(formatted.length, formatted.length);
@@ -391,14 +397,12 @@
         Math.random().toString(36).slice(-8) +
         Math.random().toString(36).slice(-2).toUpperCase();
 
-      // 3. Update User (usando onSave con los datos actuales + password)
-      // Nota: onSave espera CreateUserInput o UpdateUserInput.
-      // Modificamos para enviar la password
+      // 3. Update User
       const updateData = {
-        ...formData,
+        ...$form,
         password: newPass,
         mustChangePassword: true,
-      } as unknown as UpdateUserInput; // Cast necesario porque formData no tiene password en UpdateUserForm
+      } as unknown as UpdateUserInput;
 
       await onSave(updateData);
 
@@ -477,392 +481,418 @@
             </div>
           </div>
         {:else}
-          <form
-            onsubmit={handleSubmit}
-            class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full"
-          >
-            <!-- COL 1: Identidad -->
-            <!-- COL 1: Identidad + Avatar -->
-            <div class="space-y-4">
-              <!-- Secure Avatar Component (Only in Edit Mode) -->
-              {#if isEditMode}
-                <div class="flex flex-col items-center justify-center mb-6">
-                  <div class="relative group">
-                    <div
-                      class="w-28 h-28 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 border-4 border-white dark:border-gray-700 shadow-lg flex items-center justify-center relative"
-                    >
-                      {#if avatarLoading}
+          <form id="user-form" use:enhance class="contents">
+            <!-- Form Scrollable Area -->
+            <div class="flex-1 overflow-y-auto p-6">
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+                <!-- COL 1: Identidad -->
+                <!-- COL 1: Identidad + Avatar -->
+                <div class="space-y-4">
+                  <!-- Secure Avatar Component (Only in Edit Mode) -->
+                  {#if isEditMode}
+                    <div class="flex flex-col items-center justify-center mb-6">
+                      <div class="relative group">
                         <div
-                          class="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-sm z-10"
+                          class="w-28 h-28 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 border-4 border-white dark:border-gray-700 shadow-lg flex items-center justify-center relative"
                         >
-                          <div
-                            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
-                          ></div>
-                        </div>
-                      {/if}
+                          {#if avatarLoading}
+                            <div
+                              class="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-sm z-10"
+                            >
+                              <div
+                                class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+                              ></div>
+                            </div>
+                          {/if}
 
-                      {#if activeAvatar}
-                        <img
-                          src={activeAvatar}
-                          alt="Avatar"
-                          class="w-full h-full object-cover"
-                        />
-                      {:else}
-                        <div
-                          class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-600"
-                        >
-                          <span class="text-3xl font-bold">
-                            {formData.nombre
-                              ? formData.nombre[0].toUpperCase()
-                              : "?"}{formData.apellido
-                              ? formData.apellido[0].toUpperCase()
-                              : ""}
-                          </span>
+                          {#if activeAvatar}
+                            <img
+                              src={activeAvatar}
+                              alt="Avatar"
+                              class="w-full h-full object-cover"
+                            />
+                          {:else}
+                            <div
+                              class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-600"
+                            >
+                              <span class="text-3xl font-bold">
+                                {$form.nombre
+                                  ? $form.nombre[0].toUpperCase()
+                                  : "?"}{$form.apellido
+                                  ? $form.apellido[0].toUpperCase()
+                                  : ""}
+                              </span>
+                            </div>
+                          {/if}
                         </div>
-                      {/if}
-                    </div>
-                    {#if !readonly}
-                      <button
-                        type="button"
-                        onclick={handleAvatarUpload}
-                        disabled={avatarLoading}
-                        class="absolute bottom-1 right-1 p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all hover:scale-110 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 z-20"
-                        title="Subir foto segura"
+                        {#if !readonly}
+                          <button
+                            type="button"
+                            onclick={handleAvatarUpload}
+                            disabled={avatarLoading}
+                            class="absolute bottom-1 right-1 p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all hover:scale-110 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 z-20"
+                            title="Subir foto segura"
+                          >
+                            <Camera size={16} />
+                          </button>
+                        {/if}
+                      </div>
+                      <div
+                        class="mt-3 flex items-center gap-1.5 px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-[10px] font-medium border border-green-100 dark:border-green-900/30"
                       >
-                        <Camera size={16} />
-                      </button>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          ><rect
+                            width="18"
+                            height="11"
+                            x="3"
+                            y="11"
+                            rx="2"
+                            ry="2"
+                          /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg
+                        >
+                        Bóveda Encriptada
+                      </div>
+                    </div>
+                  {/if}
+
+                  <h3 class={sectionClass}>Identidad</h3>
+
+                  <div>
+                    <label for="cedula" class={labelClass}>Cédula *</label>
+                    <input
+                      id="cedula"
+                      type="text"
+                      value={$form.cedula}
+                      oninput={handleCedulaInput}
+                      placeholder="Ej: 1-1122-0333"
+                      disabled={loading || readonly}
+                      class="{inputClass} {$errors.cedula ||
+                      cedulaDuplicateError
+                        ? 'border-red-500 ring-red-500 focus:ring-red-500'
+                        : ''}"
+                    />
+                    {#if $errors.cedula || cedulaDuplicateError}
+                      <p class={errorClass}>
+                        {$errors.cedula || cedulaDuplicateError}
+                      </p>
                     {/if}
                   </div>
-                  <div
-                    class="mt-3 flex items-center gap-1.5 px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-[10px] font-medium border border-green-100 dark:border-green-900/30"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      ><rect
-                        width="18"
-                        height="11"
-                        x="3"
-                        y="11"
-                        rx="2"
-                        ry="2"
-                      /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg
+
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label for="nombre" class={labelClass}>Nombre *</label>
+                      <input
+                        id="nombre"
+                        type="text"
+                        value={$form.nombre}
+                        oninput={(e) => handleNameInput(e, "nombre")}
+                        disabled={loading || readonly}
+                        class={inputClass}
+                      />
+                      {#if $errors.nombre}<p class={errorClass}>
+                          {$errors.nombre}
+                        </p>{/if}
+                    </div>
+                    <div>
+                      <label for="segundoNombre" class={labelClass}
+                        >2do Nombre</label
+                      >
+                      <input
+                        id="segundoNombre"
+                        type="text"
+                        value={$form.segundoNombre}
+                        oninput={(e) => handleNameInput(e, "segundoNombre")}
+                        disabled={loading || readonly}
+                        class={inputClass}
+                      />
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label for="apellido" class={labelClass}>Apellido *</label
+                      >
+                      <input
+                        id="apellido"
+                        type="text"
+                        value={$form.apellido}
+                        oninput={(e) => handleNameInput(e, "apellido")}
+                        disabled={loading || readonly}
+                        class={inputClass}
+                      />
+                      {#if $errors.apellido}<p class={errorClass}>
+                          {$errors.apellido}
+                        </p>{/if}
+                    </div>
+                    <div>
+                      <label for="segundoApellido" class={labelClass}
+                        >2do Apellido</label
+                      >
+                      <input
+                        id="segundoApellido"
+                        type="text"
+                        value={$form.segundoApellido}
+                        oninput={(e) => handleNameInput(e, "segundoApellido")}
+                        disabled={loading || readonly}
+                        class={inputClass}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="fechaNacimiento" class={labelClass}
+                      >Fecha Nacimiento</label
                     >
-                    Bóveda Encriptada
+                    <input
+                      id="fechaNacimiento"
+                      type="date"
+                      bind:value={$form.fechaNacimiento}
+                      disabled={loading || readonly}
+                      class={inputClass}
+                    />
                   </div>
                 </div>
-              {/if}
 
-              <h3 class={sectionClass}>Identidad</h3>
+                <!-- COL 2: Institucional -->
+                <div class="space-y-3">
+                  <h3 class={sectionClass}>Institucional & Cuenta</h3>
 
-              <div>
-                <label for="cedula" class={labelClass}>Cédula *</label>
-                <input
-                  id="cedula"
-                  type="text"
-                  value={formData.cedula}
-                  oninput={handleCedulaInput}
-                  placeholder="Ej: 1-1122-0333"
-                  disabled={loading || readonly}
-                  class={inputClass}
-                />
-                {#if errors.cedula}<p class={errorClass}>
-                    {errors.cedula}
-                  </p>{/if}
-              </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label for="numeroGafete" class={labelClass}>Gafete</label
+                      >
+                      <input
+                        id="numeroGafete"
+                        type="text"
+                        value={$form.numeroGafete}
+                        oninput={handleGafeteInput}
+                        placeholder="K-XXXXXX"
+                        disabled={loading || readonly}
+                        class={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label for="fechaInicioLabores" class={labelClass}
+                        >Fecha Inicio Labores</label
+                      >
+                      <input
+                        id="fechaInicioLabores"
+                        type="date"
+                        bind:value={$form.fechaInicioLabores}
+                        disabled={loading || readonly}
+                        class={inputClass}
+                      />
+                    </div>
+                  </div>
 
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label for="nombre" class={labelClass}>Nombre *</label>
-                  <input
-                    id="nombre"
-                    type="text"
-                    value={formData.nombre}
-                    oninput={(e) => handleNameInput(e, "nombre")}
-                    disabled={loading || readonly}
-                    class={inputClass}
-                  />
-                  {#if errors.nombre}<p class={errorClass}>
-                      {errors.nombre}
-                    </p>{/if}
-                </div>
-                <div>
-                  <label for="segundoNombre" class={labelClass}
-                    >2do Nombre</label
-                  >
-                  <input
-                    id="segundoNombre"
-                    type="text"
-                    value={formData.segundoNombre}
-                    oninput={(e) => handleNameInput(e, "segundoNombre")}
-                    disabled={loading || readonly}
-                    class={inputClass}
-                  />
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label for="apellido" class={labelClass}>Apellido *</label>
-                  <input
-                    id="apellido"
-                    type="text"
-                    value={formData.apellido}
-                    oninput={(e) => handleNameInput(e, "apellido")}
-                    disabled={loading || readonly}
-                    class={inputClass}
-                  />
-                  {#if errors.apellido}<p class={errorClass}>
-                      {errors.apellido}
-                    </p>{/if}
-                </div>
-                <div>
-                  <label for="segundoApellido" class={labelClass}
-                    >2do Apellido</label
-                  >
-                  <input
-                    id="segundoApellido"
-                    type="text"
-                    value={formData.segundoApellido}
-                    oninput={(e) => handleNameInput(e, "segundoApellido")}
-                    disabled={loading || readonly}
-                    class={inputClass}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label for="fechaNacimiento" class={labelClass}
-                  >Fecha Nacimiento</label
-                >
-                <input
-                  id="fechaNacimiento"
-                  type="date"
-                  bind:value={formData.fechaNacimiento}
-                  disabled={loading || readonly}
-                  class={inputClass}
-                />
-              </div>
-            </div>
-
-            <!-- COL 2: Institucional -->
-            <div class="space-y-3">
-              <h3 class={sectionClass}>Institucional & Cuenta</h3>
-
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label for="numeroGafete" class={labelClass}>Gafete</label>
-                  <input
-                    id="numeroGafete"
-                    type="text"
-                    value={formData.numeroGafete}
-                    oninput={handleGafeteInput}
-                    placeholder="K-XXXXXX"
-                    disabled={loading || readonly}
-                    class={inputClass}
-                  />
-                </div>
-                <div>
-                  <label for="fechaInicioLabores" class={labelClass}
-                    >Fecha Inicio Labores</label
-                  >
-                  <input
-                    id="fechaInicioLabores"
-                    type="date"
-                    bind:value={formData.fechaInicioLabores}
-                    disabled={loading || readonly}
-                    class={inputClass}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label for="email" class={labelClass}>Email *</label>
-                <input
-                  id="email"
-                  type="email"
-                  bind:value={formData.email}
-                  disabled={loading || readonly}
-                  class={inputClass}
-                />
-                {#if errors.email}<p class={errorClass}>{errors.email}</p>{/if}
-              </div>
-
-              <div>
-                <label for="telefono" class={labelClass}>Teléfono</label>
-                <input
-                  id="telefono"
-                  type="tel"
-                  value={formData.telefono}
-                  oninput={(e) => handleGenericPhoneInput(e, "telefono")}
-                  onkeydown={handlePhoneKeydown}
-                  placeholder="+505 8888-8888"
-                  disabled={loading || readonly}
-                  class={inputClass}
-                />
-              </div>
-
-              <!-- Roles -->
-              {#if !isSelf}
-                <div>
-                  <label for="roleId" class={labelClass}>Rol *</label>
-                  <select
-                    id="roleId"
-                    bind:value={formData.roleId}
-                    disabled={loading || rolesLoading || readonly}
-                    class={inputClass}
-                  >
-                    {#if rolesLoading}
-                      <option disabled selected>Cargando roles...</option>
-                    {:else}
-                      <optgroup label="Roles del Sistema">
-                        {#each availableRoles.filter((r) => r.isSystem) as role}
-                          <option value={role.id}>{role.name}</option>
-                        {/each}
-                      </optgroup>
-
-                      {#if availableRoles.some((r) => !r.isSystem)}
-                        <optgroup label="Roles Personalizados">
-                          {#each availableRoles.filter((r) => !r.isSystem) as role}
-                            <option value={role.id}>{role.name}</option>
-                          {/each}
-                        </optgroup>
-                      {/if}
+                  <div>
+                    <label for="email" class={labelClass}>Email *</label>
+                    <input
+                      id="email"
+                      type="email"
+                      value={$form.email}
+                      oninput={handleEmailInput}
+                      disabled={loading || readonly}
+                      class="{inputClass} {$errors.email || emailDuplicateError
+                        ? 'border-red-500 ring-red-500 focus:ring-red-500'
+                        : ''}"
+                    />
+                    {#if $errors.email || emailDuplicateError}
+                      <p class={errorClass}>
+                        {$errors.email || emailDuplicateError}
+                      </p>
                     {/if}
-                  </select>
+                  </div>
+
+                  <div>
+                    <label for="telefono" class={labelClass}>Teléfono</label>
+                    <input
+                      id="telefono"
+                      type="tel"
+                      value={$form.telefono}
+                      oninput={(e) => handleGenericPhoneInput(e, "telefono")}
+                      onkeydown={handlePhoneKeydown}
+                      placeholder="+505 8888-8888"
+                      disabled={loading || readonly}
+                      class={inputClass}
+                    />
+                  </div>
+
+                  <!-- Roles -->
+                  {#if !isSelf}
+                    <div>
+                      <label for="roleId" class={labelClass}>Rol *</label>
+                      <select
+                        id="roleId"
+                        bind:value={$form.roleId}
+                        disabled={loading || rolesLoading || readonly}
+                        class={inputClass}
+                      >
+                        {#if rolesLoading}
+                          <option disabled selected>Cargando roles...</option>
+                        {:else}
+                          <optgroup label="Roles del Sistema">
+                            {#each availableRoles.filter((r) => r.isSystem) as role}
+                              <option value={role.id}>{role.name}</option>
+                            {/each}
+                          </optgroup>
+
+                          {#if availableRoles.some((r) => !r.isSystem)}
+                            <optgroup label="Roles Personalizados">
+                              {#each availableRoles.filter((r) => !r.isSystem) as role}
+                                <option value={role.id}>{role.name}</option>
+                              {/each}
+                            </optgroup>
+                          {/if}
+                        {/if}
+                      </select>
+                    </div>
+                  {:else}
+                    <div
+                      class="p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 text-xs text-gray-500 text-center"
+                    >
+                      Tu rol y permisos son gestionados por un administrador.
+                    </div>
+                  {/if}
                 </div>
-              {:else}
-                <div
-                  class="p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 text-xs text-gray-500 text-center"
-                >
-                  Tu rol y permisos son gestionados por un administrador.
+
+                <!-- COL 3: Contacto -->
+                <div class="space-y-3">
+                  <h3 class={sectionClass}>Contacto</h3>
+
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label for="contactoEmergenciaNombre" class={labelClass}
+                        >Emergencia</label
+                      >
+                      <input
+                        id="contactoEmergenciaNombre"
+                        type="text"
+                        value={$form.contactoEmergenciaNombre}
+                        oninput={(e) =>
+                          handleNameInput(e, "contactoEmergenciaNombre")}
+                        disabled={loading || readonly}
+                        class={inputClass}
+                        placeholder="Nombre"
+                      />
+                    </div>
+                    <div>
+                      <label for="contactoEmergenciaTelefono" class={labelClass}
+                        >Tel. Emergencia</label
+                      >
+                      <input
+                        id="contactoEmergenciaTelefono"
+                        type="tel"
+                        value={$form.contactoEmergenciaTelefono}
+                        oninput={(e) =>
+                          handleGenericPhoneInput(
+                            e,
+                            "contactoEmergenciaTelefono",
+                          )}
+                        onkeydown={handlePhoneKeydown}
+                        placeholder="Teléfono"
+                        disabled={loading || readonly}
+                        class={inputClass}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="direccion" class={labelClass}>Dirección</label>
+                    <textarea
+                      id="direccion"
+                      bind:value={$form.direccion}
+                      disabled={loading || readonly}
+                      class={inputClass}
+                      rows="3"
+                      placeholder="Dirección completa..."
+                    ></textarea>
+                  </div>
                 </div>
-              {/if}
+              </div>
             </div>
 
-            <!-- COL 3: Contacto -->
-            <div class="space-y-3">
-              <h3 class={sectionClass}>Contacto</h3>
+            <!-- Footer Actions -->
+            <div
+              class="flex-none flex gap-2 px-6 py-4 border-t border-gray-200 dark:border-[#30363d] bg-gray-50 dark:bg-[#161b22]"
+            >
+              <button
+                type="button"
+                onclick={onClose}
+                class="px-4 py-2.5 rounded-md border border-gray-300 dark:border-[#30363d] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#21262d] transition-colors text-sm font-medium"
+              >
+                Cancelar
+              </button>
 
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label for="contactoEmergenciaNombre" class={labelClass}
-                    >Emergencia</label
-                  >
-                  <input
-                    id="contactoEmergenciaNombre"
-                    type="text"
-                    value={formData.contactoEmergenciaNombre}
-                    oninput={(e) =>
-                      handleNameInput(e, "contactoEmergenciaNombre")}
-                    disabled={loading || readonly}
-                    class={inputClass}
-                    placeholder="Nombre"
-                  />
-                </div>
-                <div>
-                  <label for="contactoEmergenciaTelefono" class={labelClass}
-                    >Tel. Emergencia</label
-                  >
-                  <input
-                    id="contactoEmergenciaTelefono"
-                    type="tel"
-                    value={formData.contactoEmergenciaTelefono}
-                    oninput={(e) =>
-                      handleGenericPhoneInput(e, "contactoEmergenciaTelefono")}
-                    onkeydown={handlePhoneKeydown}
-                    placeholder="Teléfono"
-                    disabled={loading || readonly}
-                    class={inputClass}
-                  />
-                </div>
-              </div>
+              <div class="flex-1"></div>
 
-              <div>
-                <label for="direccion" class={labelClass}>Dirección</label>
-                <textarea
-                  id="direccion"
-                  bind:value={formData.direccion}
-                  disabled={loading || readonly}
-                  class={inputClass}
-                  rows="3"
-                  placeholder="Dirección completa..."
-                ></textarea>
-              </div>
+              {#if isSelf && !isChangingPassword && !readonly}
+                <button
+                  type="button"
+                  onclick={() => (isChangingPassword = true)}
+                  disabled={loading}
+                  class="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 transition-colors flex items-center gap-2 text-sm font-medium"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><rect
+                      width="18"
+                      height="11"
+                      x="3"
+                      y="11"
+                      rx="2"
+                      ry="2"
+                    /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg
+                  >
+                  Cambiar Contraseña
+                </button>
+              {/if}
+
+              {#if isEditMode && !isSelf && $currentUser?.roleId === ROLE_ADMIN_ID && !isChangingPassword && !readonly}
+                <button
+                  type="button"
+                  onclick={handleResetPasswordClick}
+                  disabled={loading}
+                  class="px-4 py-2 rounded-md border border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors text-sm font-medium"
+                >
+                  Reset Password
+                </button>
+              {/if}
+
+              {#if !isChangingPassword && !readonly}
+                <button
+                  type="submit"
+                  disabled={loading ||
+                    !!cedulaDuplicateError ||
+                    !!emailDuplicateError}
+                  class="px-6 py-2.5 rounded-md bg-[#2563eb] text-white font-medium hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                >
+                  {loading
+                    ? "Guardando..."
+                    : isEditMode
+                      ? "Guardar Cambios"
+                      : "Crear Usuario"}
+                </button>
+              {/if}
             </div>
           </form>
-        {/if}
-      </div>
-
-      <!-- Footer Actions -->
-      <div
-        class="flex-none flex gap-2 px-6 py-4 border-t border-gray-200 dark:border-[#30363d] bg-gray-50 dark:bg-[#161b22]"
-      >
-        <button
-          type="button"
-          onclick={onClose}
-          class="px-4 py-2.5 rounded-md border border-gray-300 dark:border-[#30363d] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#21262d] transition-colors text-sm font-medium"
-        >
-          Cancelar
-        </button>
-
-        <div class="flex-1"></div>
-
-        {#if isSelf && !isChangingPassword && !readonly}
-          <button
-            type="button"
-            onclick={() => (isChangingPassword = true)}
-            disabled={loading}
-            class="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 transition-colors flex items-center gap-2 text-sm font-medium"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path
-                d="M7 11V7a5 5 0 0 1 10 0v4"
-              /></svg
-            >
-            Cambiar Contraseña
-          </button>
-        {/if}
-
-        {#if isEditMode && !isSelf && $currentUser?.roleId === ROLE_ADMIN_ID && !isChangingPassword && !readonly}
-          <button
-            type="button"
-            onclick={handleResetPasswordClick}
-            disabled={loading}
-            class="px-4 py-2 rounded-md border border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors text-sm font-medium"
-          >
-            Reset Password
-          </button>
-        {/if}
-
-        {#if !isChangingPassword && !readonly}
-          <button
-            onclick={handleSubmit}
-            disabled={loading}
-            class="px-6 py-2.5 rounded-md bg-[#2563eb] text-white font-medium hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-          >
-            {loading
-              ? "Guardando..."
-              : isEditMode
-                ? "Guardar Cambios"
-                : "Crear Usuario"}
-          </button>
         {/if}
       </div>
     </div>

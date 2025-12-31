@@ -29,12 +29,12 @@
     $currentUser && can($currentUser, "UPDATE_SETTINGS_VISUAL"),
   );
 
-  let showAdvancedCustomization = false;
-  let showWeatherCustomization = false;
-  let showCelestialCustomization = false;
-  let showStarCustomization = false;
-  let showCloudCustomization = false;
-  let showLandscapeCustomization = false;
+  let showAdvancedCustomization = $state(false);
+  let showWeatherCustomization = $state(false);
+  let showCelestialCustomization = $state(false);
+  let showStarCustomization = $state(false);
+  let showCloudCustomization = $state(false);
+  let showLandscapeCustomization = $state(false);
 
   // ==========================================================================
   // Toggle Component (reusable)
@@ -78,10 +78,11 @@
   onChange: () => void,
   disabled: boolean = false,
 )}
+  {@const Icon = icon}
   <div class="flex items-center justify-between py-3">
     <div class="flex items-center gap-3">
       <div class="p-2 rounded-md {iconBg}">
-        <svelte:component this={icon} size={18} class={iconColor} />
+        <Icon size={18} class={iconColor} />
       </div>
       <span class="text-secondary font-medium">{label}</span>
     </div>
