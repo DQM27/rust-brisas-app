@@ -1,6 +1,11 @@
 use crate::services::surrealdb_service::get_db;
 use tauri::command;
 
+#[derive(serde::Deserialize, Debug)]
+struct CountResult {
+    count: i64,
+}
+
 #[command]
 pub async fn check_unique(
     table: String,
@@ -10,7 +15,7 @@ pub async fn check_unique(
 ) -> Result<bool, String> {
     let db = get_db().await.map_err(|e| e.to_string())?;
 
-    // Sanitize table and field to prevent basic injection (allow only alphanumeric + underscore)
+    // Sanitize table and field
     if !table.chars().all(|c| c.is_alphanumeric() || c == '_') {
         return Err("Invalid table name".to_string());
     }
@@ -30,18 +35,16 @@ pub async fn check_unique(
     let mut query = db.query(&query_string).bind(("table", table)).bind(("value", value));
 
     if let Some(eid) = exclude_id {
-        // Ensure exclude_id is proper format or let database handle comparison
         query = query.bind(("exclude_id", eid));
     }
 
     let mut response = query.await.map_err(|e| e.to_string())?;
 
-    // Parse result: [{ count: 0 }] or similar
-    // SurrealDB 'count()' aggregation returns number
-    let count: Option<i64> = response.take(0).map_err(|e| e.to_string())?;
+    // Parse result: [{ count: N }]
+    let result: Vec<CountResult> =
+        response.take(0).map_err(|e| format!("Deserialization error: {}", e))?;
 
-    match count {
-        Some(c) => Ok(c == 0),
-        None => Ok(true), // Should not happen with count(), but safe default
-    }
+    let count = result.first().map(|r| r.count).unwrap_or(0);
+
+    Ok(count == 0)
 }

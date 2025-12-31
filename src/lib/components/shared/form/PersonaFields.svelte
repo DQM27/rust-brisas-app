@@ -35,6 +35,7 @@
   }: Props = $props();
 
   let checkTimeout: any;
+  let cedulaDuplicateError = $state<string | null>(null); // Estado independiente para persistencia
 
   // Validación en tiempo real (debounced)
   function handleCedulaInput(event: Event) {
@@ -50,6 +51,7 @@
     if (value.length < 4 || !tableName) return;
 
     checkTimeout = setTimeout(async () => {
+      console.log(`🔍 Checking uniqueness for ${tableName}.${value}...`);
       try {
         const isUnique = await invoke<boolean>("check_unique", {
           table: tableName,
@@ -58,16 +60,18 @@
           excludeId: currentId,
         });
 
+        console.log(`✅ Uniqueness result: ${isUnique}`);
+
         if (!isUnique) {
-          // Manually set error on SuperForm
+          cedulaDuplicateError = "Esta cédula ya está registrada.";
+          // También forzamos el error en el store para control (opcional)
           errors.update((errs: any) => ({
             ...errs,
             cedula: ["Esta cédula ya está registrada."],
           }));
         } else {
-          // Clear error ONLY if it was "Already exists" (to avoid clearing Zod format errors)
-          // This is tricky with SuperForms stores.
-          // A simple way: re-validate field via library or just clear if current error implies duplication
+          cedulaDuplicateError = null;
+          // Limpiamos error solo si era de duplicado
           errors.update((errs: any) => {
             if (errs.cedula && errs.cedula.includes("registrada")) {
               const { cedula, ...rest } = errs;
@@ -82,8 +86,22 @@
     }, 400); // 400ms debounce
   }
 
-  const inputClass =
-    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60";
+  // Lógica reactiva para clases de input
+  const baseInputClass =
+    "w-full rounded-md border px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 disabled:opacity-60 transition-colors";
+
+  function getInputClass(hasError: boolean, isReadonly: boolean) {
+    const errorState = hasError
+      ? "border-red-500 focus:border-red-500 focus:ring-red-500 text-red-900 placeholder:text-red-300 dark:text-red-200 dark:placeholder:text-red-400/50"
+      : "border-gray-300 dark:border-gray-600 focus:ring-blue-500 text-gray-900 dark:text-gray-100 bg-white dark:bg-[#0d1117]";
+
+    const readonlyState = isReadonly
+      ? "opacity-70 bg-gray-50 dark:bg-gray-800"
+      : "";
+
+    return `${baseInputClass} ${errorState} ${readonlyState}`;
+  }
+
   const labelClass =
     "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
   const errorClass = "text-xs text-red-500 mt-1";
@@ -123,15 +141,18 @@
       type="text"
       bind:value={$form.cedula}
       oninput={handleCedulaInput}
-      aria-invalid={$errors.cedula ? "true" : undefined}
+      aria-invalid={$errors.cedula || cedulaDuplicateError ? "true" : undefined}
       disabled={loading || isEditMode || readonly}
-      class="{inputClass} {isEditMode || readonly
-        ? 'opacity-70 bg-gray-50 dark:bg-gray-800'
-        : ''}"
+      class={getInputClass(
+        !!($errors.cedula || cedulaDuplicateError),
+        isEditMode || readonly,
+      )}
       placeholder="Ej: 001-010203-0001A"
       {...$constraints.cedula}
     />
-    {#if $errors.cedula}<p class={errorClass}>{$errors.cedula}</p>{/if}
+    {#if $errors.cedula || cedulaDuplicateError}
+      <p class={errorClass}>{$errors.cedula || cedulaDuplicateError}</p>
+    {/if}
   </div>
 
   <!-- Fila 2: Nombres (Nombre + Segundo Nombre) -->
@@ -144,7 +165,7 @@
         type="text"
         bind:value={$form.nombre}
         disabled={loading || readonly}
-        class={inputClass}
+        class={getInputClass(!!$errors.nombre, readonly)}
         placeholder="Juan"
         {...$constraints.nombre}
       />
@@ -159,7 +180,7 @@
         type="text"
         bind:value={$form.segundoNombre}
         disabled={loading || readonly}
-        class={inputClass}
+        class={getInputClass(!!$errors.segundoNombre, readonly)}
         placeholder="Carlos"
         {...$constraints.segundoNombre}
       />
@@ -179,7 +200,7 @@
         type="text"
         bind:value={$form.apellido}
         disabled={loading || readonly}
-        class={inputClass}
+        class={getInputClass(!!$errors.apellido, readonly)}
         placeholder="Pérez"
         {...$constraints.apellido}
       />
@@ -194,7 +215,7 @@
         type="text"
         bind:value={$form.segundoApellido}
         disabled={loading || readonly}
-        class={inputClass}
+        class={getInputClass(!!$errors.segundoApellido, readonly)}
         placeholder="González"
         {...$constraints.segundoApellido}
       />
@@ -233,7 +254,7 @@
           name="empresaId"
           bind:value={$form.empresaId}
           disabled={loading || readonly || empresas.length === 0}
-          class="{inputClass} flex-1"
+          class={`${getInputClass(!!$errors.empresaId, readonly)} flex-1`}
           {...$constraints.empresaId}
         >
           {#if empresas.length === 0}
