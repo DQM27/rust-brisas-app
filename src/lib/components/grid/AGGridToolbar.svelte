@@ -91,7 +91,7 @@
       variant: btn.variant,
       tooltip: btn.tooltip,
       category: "custom",
-      custom: !btn.useCommonHandler,
+      custom: true, // Always true for buttons passed via customButtons prop
       onClick: btn.onClick,
       disabled: btn.disabled,
       state: btn.state,

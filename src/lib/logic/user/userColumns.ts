@@ -57,9 +57,12 @@ export class UserColumns {
                 onCellClicked: (params) => {
                     if (onStatusToggle && params.data && params.event) {
                         const target = params.event.target as HTMLElement;
-                        // Prevenir toggle si se hace click en el header o algo raro (aunque onCellClicked debería ser seguro)
-                        // Verificamos si es el botón para evitar disparos accidentales si hubiera otros elementos
+                        // Prevenir toggle si se hace click en el header o algo raro
+                        // Verificamos si es el botón para evitar disparos accidentales
                         if (target && target.tagName !== "BUTTON") return;
+
+                        // Prevenir propagación para evitar disparos dobles
+                        params.event.stopPropagation();
 
                         const row = params.data as UserResponse;
                         onStatusToggle(row.id, row.isActive);

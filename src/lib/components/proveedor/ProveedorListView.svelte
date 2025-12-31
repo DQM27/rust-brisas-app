@@ -43,6 +43,7 @@
   let showModal = $state(false);
   let selectedProveedor = $state<ProveedorResponse | null>(null);
   let modalLoading = $state(false);
+  let isUpdatingStatus = false;
 
   // Selección
   let selectedRows = $state<ProveedorResponse[]>([]);
@@ -124,26 +125,36 @@
   }
 
   // Cambio de estado
-  async function toggleStatus(proveedor: ProveedorResponse) {
-    const newStatus = proveedor.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO";
+  async function handleStatusChange(id: string, currentStatus: any) {
+    if (isUpdatingStatus) return;
+    isUpdatingStatus = true;
+
+    const newStatus = currentStatus === "ACTIVO" ? "INACTIVO" : "ACTIVO";
     const toastId = toast.loading(`Cambiando estado a ${newStatus}...`);
 
-    const res = await changeStatus(proveedor.id, newStatus);
+    try {
+      const res = await changeStatus(id, newStatus);
 
-    if (res.ok) {
-      toast.success("Estado actualizado", { id: toastId });
-      // Optimistic update local
-      proveedores = proveedores.map((p) =>
-        p.id === proveedor.id
-          ? {
-              ...p,
-              estado: res.data.estado,
-              puedeIngresar: res.data.puedeIngresar,
-            }
-          : p,
-      );
-    } else {
-      toast.error(res.error, { id: toastId });
+      if (res.ok) {
+        toast.success("Estado actualizado", { id: toastId });
+        // Optimistic update local
+        proveedores = proveedores.map((p) =>
+          p.id === id
+            ? {
+                ...p,
+                estado: res.data.estado,
+                puedeIngresar: res.data.puedeIngresar,
+              }
+            : p,
+        );
+      } else {
+        toast.error(res.error, { id: toastId });
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Error al cambiar estado", { id: toastId });
+    } finally {
+      isUpdatingStatus = false;
     }
   }
 
@@ -224,12 +235,7 @@
   });
 
   // Definición de columnas
-  const columnDefs = $derived(
-    ProveedorColumns.getColumns((id: string, status: any) => {
-      const p = proveedores.find((p) => p.id === id);
-      if (p) toggleStatus(p);
-    }),
-  );
+  const columnDefs = $derived(ProveedorColumns.getColumns(handleStatusChange));
 
   // Effect para cargar datos al montar
   $effect(() => {

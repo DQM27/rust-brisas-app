@@ -113,6 +113,8 @@ export class ProveedorColumns {
                         const target = params.event.target as HTMLElement;
                         // Si se hace click en el badge (span) o su contenedor
                         if (target.closest('span')) {
+                            // Prevenir propagación para evitar disparos dobles
+                            params.event.stopPropagation();
                             onStatusToggle(params.data.id, params.data.estado);
                         }
                     }

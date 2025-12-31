@@ -54,6 +54,9 @@ export class ContratistaColumns {
             // Prevent toggle if clicking elsewhere (though cellClicked is usually specific)
             if (target && target.tagName !== "BUTTON") return;
 
+            // Prevenir propagación para evitar disparos dobles
+            params.event.stopPropagation();
+
             const row = params.data as ContratistaResponse;
             onStatusToggle(row.id, row.estado);
           }
