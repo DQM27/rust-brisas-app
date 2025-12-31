@@ -6,12 +6,10 @@
     CreateProveedorInput,
     UpdateProveedorInput,
   } from "$lib/types/proveedor";
-  import {
-    submitFetchActiveEmpresas,
-    submitCreateEmpresa,
-  } from "$lib/logic/empresa/empresaService";
+  import { submitCreateEmpresa } from "$lib/logic/empresa/empresaService";
   import { toast } from "svelte-5-french-toast";
   import ProveedorForm from "./ProveedorForm.svelte";
+  import { empresaStore } from "$lib/stores/empresaStore.svelte";
 
   interface Props {
     show: boolean;
@@ -42,8 +40,8 @@
         : "Nuevo Proveedor",
   );
 
-  // Empresas state
-  let empresas = $state<Array<{ id: string; nombre: string }>>([]);
+  // Empresas state (Global Store)
+  // let empresas = ... (Reemplazado por empresaStore.empresas)
 
   // Estado para modal de nueva empresa (inline)
   let showEmpresaModal = $state(false);
@@ -54,18 +52,11 @@
   // Cargar empresas
   $effect(() => {
     if (show) {
-      loadEmpresas();
+      empresaStore.init();
     }
   });
 
-  async function loadEmpresas() {
-    const res = await submitFetchActiveEmpresas();
-    if (res.ok) {
-      empresas = res.empresas.map((e: any) => ({ id: e.id, nombre: e.nombre }));
-    } else {
-      toast.error(res.error || "Error cargando empresas");
-    }
-  }
+  // async function loadEmpresas() ... (Eliminado, usa store)
 
   // Handlers para crear nueva empresa
   function handleCreateEmpresa() {
@@ -88,11 +79,8 @@
       if (result.ok) {
         toast.success(`Empresa "${result.empresa.nombre}" creada exitosamente`);
         // Agregar la nueva empresa a la lista y cerrar modal
-        const newEmpresa = {
-          id: result.empresa.id,
-          nombre: result.empresa.nombre,
-        };
-        empresas = [...empresas, newEmpresa];
+        // Agregar la nueva empresa a la lista y cerrar modal
+        empresaStore.add(result.empresa);
         showEmpresaModal = false;
         nuevaEmpresaNombre = "";
       } else {
@@ -189,7 +177,7 @@
         data={initialData}
         {isEditMode}
         {loading}
-        {empresas}
+        empresas={empresaStore.empresas}
         {onSave}
         {onClose}
         currentId={proveedor?.id || ""}

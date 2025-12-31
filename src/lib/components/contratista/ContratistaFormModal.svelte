@@ -10,11 +10,9 @@
     UpdateContratistaInput,
   } from "$lib/types/contratista";
   import type { TipoVehiculo } from "$lib/types/vehiculo";
-  import {
-    submitCreateEmpresa,
-    submitFetchActiveEmpresas,
-  } from "$lib/logic/empresa/empresaService";
+  import { submitCreateEmpresa } from "$lib/logic/empresa/empresaService";
   import { invoke } from "@tauri-apps/api/core";
+  import { empresaStore } from "$lib/stores/empresaStore.svelte";
 
   interface Props {
     show: boolean;
@@ -67,9 +65,7 @@
   let cedulaDuplicateError = $state<string | null>(null);
   let checkTimeout: any;
 
-  // Empresas
-  let empresas = $state<{ id: string; nombre: string }[]>([]);
-  let loadingEmpresas = $state(false);
+  // Empresas (Global Store)
   let showEmpresaModal = $state(false);
   let nuevaEmpresaNombre = $state("");
   let creatingEmpresa = $state(false);
@@ -81,27 +77,18 @@
       formData.nombre.trim() &&
       formData.apellido.trim() &&
       formData.empresaId.trim() &&
-      formData.empresaId.trim() &&
       formData.fechaVencimientoPraind.trim() &&
       (!formData.tieneVehiculo ||
         (formData.tipoVehiculo && formData.placa.trim())) &&
       !cedulaDuplicateError,
   );
 
-  // Cargar empresas al montar
+  // Cargar empresas al montar (si es necesario)
   onMount(async () => {
-    await loadEmpresas();
+    await empresaStore.init();
   });
 
-  async function loadEmpresas() {
-    if (empresas.length > 0) return;
-    loadingEmpresas = true;
-    const resultado = await submitFetchActiveEmpresas();
-    if (resultado.ok) {
-      empresas = resultado.empresas;
-    }
-    loadingEmpresas = false;
-  }
+  // async function loadEmpresas() ... (Eliminado, usa store)
 
   // Helper: Convertir YYYY-MM-DD → DD-MM-YYYY
   function formatDateForDisplay(isoDate: string): string {
@@ -246,10 +233,7 @@
     empresaError = "";
     const result = await submitCreateEmpresa(nuevaEmpresaNombre);
     if (result.ok) {
-      empresas = [
-        ...empresas,
-        { id: result.empresa.id, nombre: result.empresa.nombre },
-      ];
+      empresaStore.add(result.empresa);
       formData.empresaId = result.empresa.id;
       nuevaEmpresaNombre = "";
       showEmpresaModal = false;
@@ -380,13 +364,15 @@
                 <select
                   id="empresaId"
                   bind:value={formData.empresaId}
-                  disabled={loading || loadingEmpresas}
+                  disabled={loading || empresaStore.loading}
                   class={inputClass}
                 >
                   <option value="" disabled>
-                    {loadingEmpresas ? "Cargando..." : "Seleccione empresa"}
+                    {empresaStore.loading
+                      ? "Cargando..."
+                      : "Seleccione empresa"}
                   </option>
-                  {#each empresas as empresa}
+                  {#each empresaStore.empresas as empresa}
                     <option value={empresa.id}>{empresa.nombre}</option>
                   {/each}
                 </select>
