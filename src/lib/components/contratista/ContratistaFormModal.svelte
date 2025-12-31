@@ -14,6 +14,7 @@
     submitCreateEmpresa,
     submitFetchActiveEmpresas,
   } from "$lib/logic/empresa/empresaService";
+  import { invoke } from "@tauri-apps/api/core";
 
   interface Props {
     show: boolean;
@@ -62,6 +63,10 @@
     color: "",
   });
 
+  // Estado de errores
+  let cedulaDuplicateError = $state<string | null>(null);
+  let checkTimeout: any;
+
   // Empresas
   let empresas = $state<{ id: string; nombre: string }[]>([]);
   let loadingEmpresas = $state(false);
@@ -76,9 +81,11 @@
       formData.nombre.trim() &&
       formData.apellido.trim() &&
       formData.empresaId.trim() &&
+      formData.empresaId.trim() &&
       formData.fechaVencimientoPraind.trim() &&
       (!formData.tieneVehiculo ||
-        (formData.tipoVehiculo && formData.placa.trim())),
+        (formData.tipoVehiculo && formData.placa.trim())) &&
+      !cedulaDuplicateError,
   );
 
   // Cargar empresas al montar
@@ -153,6 +160,58 @@
       modelo: "",
       color: "",
     };
+    cedulaDuplicateError = null;
+  }
+
+  // Validación de unicidad
+  function handleCedulaInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
+
+    if (checkTimeout) clearTimeout(checkTimeout);
+
+    if (value.length < 4) {
+      cedulaDuplicateError = null;
+      return;
+    }
+
+    checkTimeout = setTimeout(async () => {
+      console.log(`🔍 Checking uniqueness for contratista.${value}...`);
+      try {
+        const isUnique = await invoke<boolean>("check_unique", {
+          table: "contratista",
+          field: "cedula",
+          value,
+          excludeId: contratista?.id,
+        });
+
+        console.log(`✅ Uniqueness result: ${isUnique}`);
+
+        if (!isUnique) {
+          cedulaDuplicateError = "Esta cédula ya está registrada.";
+        } else {
+          cedulaDuplicateError = null;
+        }
+      } catch (e) {
+        console.error("Error validando unicidad:", e);
+      }
+    }, 400);
+  }
+
+  // Estilo dinámico para inputs
+  function getInputClass(hasError: boolean, isReadonly: boolean) {
+    const baseInputClass =
+      "w-full rounded-md border px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 disabled:opacity-60 transition-colors";
+
+    const errorState = hasError
+      ? "border-red-500 focus:border-red-500 focus:ring-red-500 text-red-900 placeholder:text-red-300 dark:text-red-200 dark:placeholder:text-red-400/50"
+      : "border-gray-300 dark:border-gray-600 focus:ring-[#2da44e] text-gray-900 dark:text-gray-100 bg-white dark:bg-[#0d1117]";
+
+    const readonlyState = isReadonly
+      ? "opacity-70 bg-gray-50 dark:bg-gray-800"
+      : "";
+
+    return `${baseInputClass} ${errorState} ${readonlyState}`;
   }
 
   async function handleSubmit(e: Event) {
@@ -270,8 +329,15 @@
               bind:value={formData.cedula}
               placeholder="1-2345-6789"
               disabled={loading || isEditMode || readonly}
-              class={inputClass}
+              class={getInputClass(
+                !!cedulaDuplicateError,
+                loading || isEditMode || readonly,
+              )}
+              oninput={handleCedulaInput}
             />
+            {#if cedulaDuplicateError}
+              <p class="text-xs text-red-500 mt-1">{cedulaDuplicateError}</p>
+            {/if}
           </div>
 
           <!-- Nombre / Apellido -->
