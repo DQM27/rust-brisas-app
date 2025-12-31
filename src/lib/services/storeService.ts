@@ -35,6 +35,7 @@ export async function getSetting<T>(key: string, defaultValue: T): Promise<T> {
 export async function setSetting<T>(key: string, value: T): Promise<void> {
     const s = await getStore();
     await s.set(key, value);
+    await s.save();
 }
 
 /**
@@ -43,6 +44,7 @@ export async function setSetting<T>(key: string, value: T): Promise<void> {
 export async function deleteSetting(key: string): Promise<void> {
     const s = await getStore();
     await s.delete(key);
+    await s.save();
 }
 
 /**
@@ -51,4 +53,5 @@ export async function deleteSetting(key: string): Promise<void> {
 export async function clearAllSettings(): Promise<void> {
     const s = await getStore();
     await s.clear();
+    await s.save();
 }

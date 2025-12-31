@@ -10,6 +10,7 @@ import { browser } from '$app/environment';
 // ============================================
 
 const STORAGE_KEY = 'rememberedEmail';
+const PASSWORD_CHECKED_KEY = 'rememberPasswordChecked';
 
 // ============================================
 // STORE CLASS (Svelte 5 Runes)
@@ -66,6 +67,7 @@ class LoginStore {
         // Solo guardamos si tenemos un email asociado
         if (this._rememberedEmail) {
             await this.savePasswordToKeyring(this._rememberedEmail, password);
+            await this.savePersistenceFlags(this._rememberedEmail, true);
         }
     }
 
@@ -106,13 +108,18 @@ class LoginStore {
         try {
             const { getSetting } = await import('$lib/services/storeService');
             const stored = await getSetting<string>(STORAGE_KEY, '');
+            const passChecked = await getSetting<boolean>(PASSWORD_CHECKED_KEY, false);
+
             if (stored) {
                 this._rememberedEmail = stored;
+                this._rememberPasswordChecked = passChecked;
                 // Sync localStorage with Tauri Store value
                 localStorage.setItem(STORAGE_KEY, stored);
 
-                // Try to load password for this email
-                await this.loadPasswordFromKeyring(stored);
+                // Try to load password for this email if checked
+                if (passChecked) {
+                    await this.loadPasswordFromKeyring(stored);
+                }
             }
         } catch {
             // Tauri Store not available
@@ -168,6 +175,17 @@ class LoginStore {
             }
         } catch (e) {
             console.error('Error loading password from keyring:', e);
+        }
+    }
+
+    private async savePersistenceFlags(email: string, passwordChecked: boolean): Promise<void> {
+        if (!browser) return;
+        try {
+            const { setSetting } = await import('$lib/services/storeService');
+            await setSetting(STORAGE_KEY, email);
+            await setSetting(PASSWORD_CHECKED_KEY, passwordChecked);
+        } catch (e) {
+            console.error('Error saving persistence flags:', e);
         }
     }
 

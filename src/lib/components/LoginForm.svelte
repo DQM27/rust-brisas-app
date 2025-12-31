@@ -52,11 +52,22 @@
     }
   });
 
+  // Sync Store -> UI: When store finishes loading, update UI state
   $effect(() => {
-    if (mounted && !rememberPassword && loginStore.hasRememberedPassword) {
-      loginStore.clearRememberedPassword();
+    if (loginStore.rememberPasswordChecked) {
+      rememberPassword = true;
+      if (loginStore.rememberedPassword && !password) {
+        password = loginStore.rememberedPassword;
+      }
     }
   });
+
+  function handleRememberPasswordChange() {
+    if (!rememberPassword) {
+      loginStore.clearRememberedPassword();
+      password = "";
+    }
+  }
 
   function handleSubmit() {
     const result = validateLoginForm(email, password);
@@ -163,7 +174,7 @@
     </div>
 
     <!-- Options -->
-    <div class="flex flex-col gap-2 items-center justify-center">
+    <div class="flex flex-row gap-6 items-center justify-center">
       <label
         class="flex items-center gap-2 cursor-pointer text-sm text-secondary hover:text-primary transition-colors select-none"
       >
@@ -183,6 +194,7 @@
           <input
             type="checkbox"
             bind:checked={rememberPassword}
+            onchange={handleRememberPasswordChange}
             disabled={loading}
             class="rounded border-surface-tertiary text-accent focus:ring-accent w-4 h-4 cursor-pointer"
           />
