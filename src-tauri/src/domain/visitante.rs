@@ -96,7 +96,7 @@ pub fn validar_create_input(input: &CreateVisitanteInput) -> Result<(), Visitant
 // ==========================================
 
 pub fn normalizar_nombre(nombre: &str) -> String {
-    nombre.trim().to_uppercase()
+    nombre.trim().to_string()
 }
 
 pub fn normalizar_cedula(cedula: &str) -> String {

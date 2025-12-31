@@ -83,9 +83,9 @@ pub async fn create_vehiculo(
         propietario: propietario_id,
         tipo_vehiculo,
         placa: placa_normalizada,
-        marca: input.marca.as_ref().map(|s| s.trim().to_uppercase()),
-        modelo: input.modelo.as_ref().map(|s| s.trim().to_uppercase()),
-        color: input.color.as_ref().map(|s| s.trim().to_uppercase()),
+        marca: input.marca.as_ref().map(|s| s.trim().to_string()),
+        modelo: input.modelo.as_ref().map(|s| s.trim().to_string()),
+        color: input.color.as_ref().map(|s| s.trim().to_string()),
         is_active: true,
     };
 
@@ -168,13 +168,13 @@ pub async fn update_vehiculo(
         dto.tipo_vehiculo = Some(tipo);
     }
     if let Some(m) = input.marca {
-        dto.marca = Some(m.trim().to_uppercase());
+        dto.marca = Some(m.trim().to_string());
     }
     if let Some(m) = input.modelo {
-        dto.modelo = Some(m.trim().to_uppercase());
+        dto.modelo = Some(m.trim().to_string());
     }
     if let Some(c) = input.color {
-        dto.color = Some(c.trim().to_uppercase());
+        dto.color = Some(c.trim().to_string());
     }
     if let Some(a) = input.is_active {
         dto.is_active = Some(a);

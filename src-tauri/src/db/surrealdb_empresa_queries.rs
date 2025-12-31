@@ -18,8 +18,10 @@ pub async fn create(dto: EmpresaCreateDTO) -> Result<Empresa, SurrealDbError> {
 pub async fn exists_by_name(nombre: &str) -> Result<bool, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT id FROM empresa WHERE nombre = $nombre")
-        .bind(("nombre", nombre.to_uppercase()))
+        .query(
+            "SELECT id FROM empresa WHERE string::lowercase(nombre) = string::lowercase($nombre)",
+        )
+        .bind(("nombre", nombre.to_string()))
         .await?;
 
     #[derive(serde::Deserialize)]

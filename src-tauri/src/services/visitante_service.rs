@@ -60,8 +60,8 @@ pub async fn create_visitante(
     if let Some(s) = input.segundo_apellido.as_ref() {
         input.segundo_apellido = Some(domain::normalizar_nombre(s));
     }
-    if let Some(s) = input.empresa.as_ref() {
-        input.empresa = Some(s.trim().to_uppercase());
+    if let Some(s) = input.empresa {
+        input.empresa = Some(s.trim().to_string());
     }
 
     // 3. Verificar que NO esté en lista negra
@@ -113,9 +113,9 @@ pub async fn create_visitante(
                         .parse::<TipoVehiculo>()
                         .map_err(|e| VisitanteError::Validation(e))?,
                     placa: placa_norm,
-                    marca: input.marca.as_ref().map(|s| s.trim().to_uppercase()),
-                    modelo: input.modelo.as_ref().map(|s| s.trim().to_uppercase()),
-                    color: input.color.as_ref().map(|s| s.trim().to_uppercase()),
+                    marca: input.marca.as_ref().map(|s| s.trim().to_string()),
+                    modelo: input.modelo.as_ref().map(|s| s.trim().to_string()),
+                    color: input.color.as_ref().map(|s| s.trim().to_string()),
                     is_active: true,
                 };
 

@@ -95,15 +95,10 @@ pub async fn update(
 ) -> Result<ProveedorFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    // UPDATE doesn't support FETCH, so we need two queries
-    let _: Option<Proveedor> = db
-        .query("UPDATE $id MERGE $dto")
-        .bind(("id", id.clone()))
-        .bind(("dto", dto))
-        .await?
-        .take(0)?;
+    // 1. Update using native SDK (consistent with User module)
+    let _: Option<Proveedor> = db.update(id.clone()).merge(dto).await?;
 
-    // Fetch with empresa populated
+    // 2. Fetch with empresa populated in a separate atomic query
     let mut result = db.query("SELECT * FROM $id FETCH empresa").bind(("id", id.clone())).await?;
 
     let fetched: Option<ProveedorFetched> = result.take(0)?;

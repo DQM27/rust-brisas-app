@@ -89,10 +89,10 @@ pub async fn create_contratista(
 
     let dto = ContratistaCreateDTO {
         cedula: cedula_normalizada.clone(),
-        nombre: input.nombre.trim().to_uppercase(),
-        segundo_nombre: input.segundo_nombre.map(|s| s.trim().to_uppercase()),
-        apellido: input.apellido.trim().to_uppercase(),
-        segundo_apellido: input.segundo_apellido.map(|s| s.trim().to_uppercase()),
+        nombre: input.nombre.trim().to_string(),
+        segundo_nombre: input.segundo_nombre.map(|s| s.trim().to_string()),
+        apellido: input.apellido.trim().to_string(),
+        segundo_apellido: input.segundo_apellido.map(|s| s.trim().to_string()),
         empresa: empresa_id,
         fecha_vencimiento_praind: surrealdb::Datetime::from(fecha_vencimiento),
         estado: EstadoContratista::Activo,
@@ -127,9 +127,9 @@ pub async fn create_contratista(
                         .parse::<TipoVehiculo>()
                         .map_err(|e| ContratistaError::Validation(e))?,
                     placa: placa_norm,
-                    marca: input.marca.as_ref().map(|s| s.trim().to_uppercase()),
-                    modelo: input.modelo.as_ref().map(|s| s.trim().to_uppercase()),
-                    color: input.color.as_ref().map(|s| s.trim().to_uppercase()),
+                    marca: input.marca.as_ref().map(|s| s.trim().to_string()),
+                    modelo: input.modelo.as_ref().map(|s| s.trim().to_string()),
+                    color: input.color.as_ref().map(|s| s.trim().to_string()),
                     is_active: true,
                 };
 
@@ -252,16 +252,16 @@ pub async fn update_contratista(
     let mut dto = ContratistaUpdateDTO::default();
 
     if let Some(v) = input.nombre {
-        dto.nombre = Some(v.trim().to_uppercase());
+        dto.nombre = Some(v.trim().to_string());
     }
     if let Some(v) = input.segundo_nombre {
-        dto.segundo_nombre = Some(v.trim().to_uppercase());
+        dto.segundo_nombre = Some(v.trim().to_string());
     }
     if let Some(v) = input.apellido {
-        dto.apellido = Some(v.trim().to_uppercase());
+        dto.apellido = Some(v.trim().to_string());
     }
     if let Some(v) = input.segundo_apellido {
-        dto.segundo_apellido = Some(v.trim().to_uppercase());
+        dto.segundo_apellido = Some(v.trim().to_string());
     }
 
     // 4. Empresa: solo si cambió
@@ -319,9 +319,9 @@ pub async fn update_contratista(
                                 .parse::<TipoVehiculo>()
                                 .map_err(|e| ContratistaError::Validation(e))?,
                         ),
-                        marca: input.marca.as_ref().map(|s| s.trim().to_uppercase()),
-                        modelo: input.modelo.as_ref().map(|s| s.trim().to_uppercase()),
-                        color: input.color.as_ref().map(|s| s.trim().to_uppercase()),
+                        marca: input.marca.as_ref().map(|s| s.trim().to_string()),
+                        modelo: input.modelo.as_ref().map(|s| s.trim().to_string()),
+                        color: input.color.as_ref().map(|s| s.trim().to_string()),
                         ..Default::default()
                     };
 
@@ -341,9 +341,9 @@ pub async fn update_contratista(
                             .parse::<TipoVehiculo>()
                             .map_err(|e| ContratistaError::Validation(e))?,
                         placa: placa_norm.clone(),
-                        marca: input.marca.as_ref().map(|s| s.trim().to_uppercase()),
-                        modelo: input.modelo.as_ref().map(|s| s.trim().to_uppercase()),
-                        color: input.color.as_ref().map(|s| s.trim().to_uppercase()),
+                        marca: input.marca.as_ref().map(|s| s.trim().to_string()),
+                        modelo: input.modelo.as_ref().map(|s| s.trim().to_string()),
+                        color: input.color.as_ref().map(|s| s.trim().to_string()),
                         is_active: true,
                     };
 

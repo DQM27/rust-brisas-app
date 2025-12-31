@@ -47,9 +47,20 @@ pub async fn find_by_id_fetched(id: &RecordId) -> Result<Option<VisitanteFetched
 
 pub async fn search_visitantes(term: &str) -> Result<Vec<VisitanteFetched>, SurrealDbError> {
     let db = get_db().await?;
+    let term_upper = term.to_uppercase();
     let mut result = db
-        .query("SELECT * FROM visitante WHERE (cedula CONTAINS $term OR nombre CONTAINS $term OR apellido CONTAINS $term) AND deleted_at IS NONE FETCH empresa")
-        .bind(("term", term.to_string()))
+        .query(
+            r#"
+            SELECT * FROM visitante 
+            WHERE 
+                (string::uppercase(cedula) CONTAINS $term OR 
+                string::uppercase(nombre) CONTAINS $term OR 
+                string::uppercase(apellido) CONTAINS $term) 
+                AND deleted_at IS NONE 
+            FETCH empresa
+        "#,
+        )
+        .bind(("term", term_upper))
         .await?;
     Ok(result.take(0)?)
 }

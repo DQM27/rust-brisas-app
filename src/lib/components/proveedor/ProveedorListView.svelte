@@ -13,7 +13,7 @@
     getArchivedProveedores,
     restoreProveedor,
   } from "$lib/logic/proveedor/proveedorService";
-  import { PROVEEDOR_COLUMNS } from "$lib/logic/proveedor/proveedorColumns";
+  import { ProveedorColumns } from "$lib/logic/proveedor/proveedorColumns";
   import { createCustomButton } from "$lib/config/agGridConfigs";
   import type {
     ProveedorResponse,
@@ -224,9 +224,12 @@
   });
 
   // Definición de columnas
-  const columnDefs = $derived([
-    ...PROVEEDOR_COLUMNS,
-  ] as ColDef<ProveedorResponse>[]);
+  const columnDefs = $derived(
+    ProveedorColumns.getColumns((id: string, status: any) => {
+      const p = proveedores.find((p) => p.id === id);
+      if (p) toggleStatus(p);
+    }),
+  );
 
   // Effect para cargar datos al montar
   $effect(() => {

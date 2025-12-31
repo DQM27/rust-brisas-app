@@ -70,8 +70,8 @@ pub async fn create_empresa(input: CreateEmpresaInput) -> Result<EmpresaResponse
 
     // 3. Crear DTO
     let dto = crate::models::empresa::EmpresaCreateDTO {
-        nombre: input.nombre.trim().to_uppercase(),
-        direccion: input.direccion.map(|s| s.trim().to_uppercase()),
+        nombre: input.nombre.trim().to_string(),
+        direccion: input.direccion.map(|s| s.trim().to_string()),
         is_active: true,
     };
 
@@ -102,7 +102,7 @@ pub async fn update_empresa(
     // 3. Preparar DTO
     let mut dto = crate::models::empresa::EmpresaUpdateDTO::default();
     if let Some(ref nombre) = input.nombre {
-        dto.nombre = Some(nombre.trim().to_uppercase());
+        dto.nombre = Some(nombre.trim().to_string());
     }
 
     if let Some(ref direccion) = input.direccion {

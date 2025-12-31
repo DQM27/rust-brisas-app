@@ -87,15 +87,10 @@ pub async fn update(
     println!(">>> DEBUG: Updating contratista {} with DTO: {:?}", id, dto);
     let db = get_db().await?;
 
-    // UPDATE doesn't support FETCH, so we need two queries
-    let _: Option<Contratista> = db
-        .query("UPDATE $id MERGE $dto")
-        .bind(("id", id.clone()))
-        .bind(("dto", dto))
-        .await?
-        .take(0)?;
+    // 1. Update using native SDK (consistent with User module)
+    let _: Option<Contratista> = db.update(id.clone()).merge(dto).await?;
 
-    // Fetch with empresa populated
+    // 2. Fetch with empresa populated
     let mut result = db.query("SELECT * FROM $id FETCH empresa").bind(("id", id.clone())).await?;
 
     let fetched: Option<ContratistaFetched> = result.take(0)?;
@@ -110,7 +105,7 @@ pub async fn update_status(
 ) -> Result<ContratistaFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    // UPDATE doesn't support FETCH
+    // 1. Update status
     let _: Option<Contratista> = db
         .query("UPDATE $id SET estado = $estado")
         .bind(("id", id.clone()))
@@ -118,7 +113,7 @@ pub async fn update_status(
         .await?
         .take(0)?;
 
-    // Fetch with empresa populated
+    // 2. Fetch with empresa populated
     let mut result = db.query("SELECT * FROM $id FETCH empresa").bind(("id", id.clone())).await?;
 
     let fetched: Option<ContratistaFetched> = result.take(0)?;

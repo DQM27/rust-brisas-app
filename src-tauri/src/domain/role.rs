@@ -135,7 +135,7 @@ pub fn check_system_role_modification(role_id: &str) -> Result<(), RoleError> {
 // ==========================================
 
 pub fn normalizar_nombre(nombre: &str) -> String {
-    nombre.trim().to_uppercase()
+    nombre.trim().to_string()
 }
 
 // ==========================================

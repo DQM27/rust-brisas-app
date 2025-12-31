@@ -111,8 +111,10 @@ export class ProveedorColumns {
                 onCellClicked: (params) => {
                     if (onStatusToggle && params.data && params.event) {
                         const target = params.event.target as HTMLElement;
-                        if (target && target.tagName !== "SPAN") return; // Adjusted for span based badge
-                        // Logic for toggle would go here if needed
+                        // Si se hace click en el badge (span) o su contenedor
+                        if (target.closest('span')) {
+                            onStatusToggle(params.data.id, params.data.estado);
+                        }
                     }
                 }
             },
