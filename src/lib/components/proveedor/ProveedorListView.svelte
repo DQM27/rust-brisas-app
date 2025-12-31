@@ -13,7 +13,10 @@
     restoreProveedor,
   } from "$lib/logic/proveedor/proveedorService";
   import { ProveedorColumns } from "$lib/logic/proveedor/proveedorColumns";
-  import { createCustomButton } from "$lib/config/agGridConfigs";
+  import {
+    COMMON_DEFAULT_BUTTONS,
+    createCustomButton,
+  } from "$lib/config/agGridConfigs";
   import type {
     ProveedorResponse,
     CreateProveedorInput,
@@ -305,6 +308,7 @@
     {:else}
       <AGGridWrapper
         gridId="proveedor-list"
+        persistenceKey="proveedor-list-columns-v2"
         rowData={filteredData}
         {columnDefs}
         {customButtons}
