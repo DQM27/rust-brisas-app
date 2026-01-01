@@ -6,7 +6,9 @@ use crate::domain::errors::IngresoProveedorError;
 use crate::models::ingreso::proveedor::CreateIngresoProveedorInput;
 
 // Re-exportaciones de estructuras
-pub use crate::domain::common::{normalizar_numero_gafete, DecisionReporteGafete};
+pub use crate::domain::common::{
+    evaluar_devolucion_gafete, normalizar_gafete_a_int, DecisionReporteGafete,
+};
 pub use crate::models::ingreso::proveedor::ValidacionIngresoProveedorResponse;
 
 // Importación de lógica compartida
@@ -44,21 +46,6 @@ pub fn calcular_tiempo_permanencia(
 ) -> Result<i64, IngresoProveedorError> {
     common_domain::calcular_tiempo_permanencia(fecha_ingreso_str, fecha_salida_str)
         .map_err(|e| IngresoProveedorError::Validation(e.to_string()))
-}
-
-/// Evalúa las condiciones de devolución del gafete.
-pub fn evaluar_devolucion_gafete(
-    tenia_gafete: bool,
-    gafete_asignado: Option<&str>,
-    reporto_devolucion: bool,
-    gafete_devuelto_numero: Option<&str>,
-) -> DecisionReporteGafete {
-    common_domain::evaluar_devolucion_gafete(
-        tenia_gafete,
-        gafete_asignado,
-        reporto_devolucion,
-        gafete_devuelto_numero,
-    )
 }
 
 // --------------------------------------------------------------------------
