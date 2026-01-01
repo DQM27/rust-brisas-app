@@ -10,11 +10,17 @@ use crate::services::cita_service;
 use crate::services::session::SessionState;
 use tauri::{command, State};
 
-// ==========================================
+// --------------------------------------------------------------------------
 // CONSULTAS DE AGENDAMIENTO
-// ==========================================
+// --------------------------------------------------------------------------
 
-/// Lista todas las citas programadas para el día actual.
+/// [Comando Tauri] Lista todas las citas programadas para el día actual.
+///
+/// # Argumentos
+/// * `session` - Estado de la sesión actual para validación de permisos.
+///
+/// # Retorno
+/// Lista de citas del día o error de permisos/base de datos.
 #[command]
 pub async fn get_citas_hoy(
     session: State<'_, SessionState>,
@@ -23,7 +29,13 @@ pub async fn get_citas_hoy(
     cita_service::get_citas_hoy().await
 }
 
-/// Recupera las citas que aún no han sido procesadas o están pendientes de llegada.
+/// [Comando Tauri] Recupera las citas que aún no han sido procesadas.
+///
+/// # Argumentos
+/// * `session` - Estado de la sesión actual.
+///
+/// # Retorno
+/// Lista de citas en espera o error.
 #[command]
 pub async fn get_citas_pendientes(
     session: State<'_, SessionState>,
@@ -32,6 +44,14 @@ pub async fn get_citas_pendientes(
     cita_service::get_citas_pendientes().await
 }
 
+/// [Comando Tauri] Obtiene el detalle de una cita por su identificador.
+///
+/// # Argumentos
+/// * `session` - Estado de la sesión.
+/// * `id` - ID de la cita solicitada.
+///
+/// # Retorno
+/// Datos de la cita o error si no existe.
 #[command]
 pub async fn get_cita_by_id(
     session: State<'_, SessionState>,
@@ -41,12 +61,21 @@ pub async fn get_cita_by_id(
     cita_service::get_cita_by_id(id).await
 }
 
-// ==========================================
+// --------------------------------------------------------------------------
 // OPERACIONES DE GESTIÓN (MUTACIONES)
-// ==========================================
+// --------------------------------------------------------------------------
 
-/// Reserva un espacio en la agenda para una visita futura.
-/// Puede crear el perfil del visitante si es su primera vez.
+/// [Comando Tauri] Reserva un espacio en la agenda para una visita futura.
+///
+/// Permite crear el perfil del visitante si no existe previamente.
+///
+/// # Argumentos
+/// * `session` - Estado de la sesión.
+/// * `cita` - Datos de la programación.
+/// * `visitante` - Datos opcionales del nuevo visitante.
+///
+/// # Retorno
+/// La cita creada o error de validación/permisos.
 #[command]
 pub async fn create_cita(
     session: State<'_, SessionState>,
@@ -54,19 +83,30 @@ pub async fn create_cita(
     visitante: Option<CreateVisitanteInput>,
 ) -> Result<CitaResponse, CitaError> {
     let user = require_perm!(session, "citas:create", "Registrando nueva cita programada")?;
-    cita_service::agendar_cita(
-        cita.visitante_id,
-        visitante,
-        cita.fecha_cita,
-        cita.anfitrion,
-        cita.area_visitada,
-        cita.motivo,
-        user.id,
-    )
+    cita_service::agendar_cita(cita_service::AgendarCitaParams {
+        cita,
+        visitante_extra: visitante,
+        usuario_id: user.id,
+    })
     .await
 }
 
-/// Convierte una cita previa en un ingreso activo cuando el visitante llega a portería.
+/// [Comando Tauri] Convierte una cita previa en un ingreso activo.
+///
+/// Se ejecuta cuando el visitante llega físicamente a la portería.
+///
+/// # Argumentos
+/// * `session` - Estado de la sesión.
+/// * `cita_id` - ID de la cita a completar.
+/// * `gafete` - Número de identificación física asignada.
+///
+/// # Retorno
+/// La cita actualizada o error de procesamiento.
+///
+/// # Errores
+/// - `CitaError::Unauthorized`: Si el usuario no tiene permisos de actualización.
+/// - `CitaError::NotFound`: Si la cita no existe.
+/// - `CitaError::Database`: Fallo en la persistencia.
 #[command]
 pub async fn procesar_ingreso_cita(
     session: State<'_, SessionState>,
@@ -81,7 +121,14 @@ pub async fn procesar_ingreso_cita(
     cita_service::procesar_ingreso_cita(cita_id, gafete, user.id).await
 }
 
-/// Anula una cita antes de su ejecución.
+/// [Comando Tauri] Anula una cita antes de su ejecución.
+///
+/// # Argumentos
+/// * `session` - Estado de la sesión.
+/// * `id` - ID de la cita a cancelar.
+///
+/// # Retorno
+/// Ok(()) si se canceló correctamente.
 #[command]
 pub async fn cancelar_cita(session: State<'_, SessionState>, id: String) -> Result<(), CitaError> {
     require_perm!(session, "citas:delete", format!("Cancelando cita #{}", id))?;

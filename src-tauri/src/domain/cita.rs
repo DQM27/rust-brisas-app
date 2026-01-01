@@ -29,6 +29,12 @@ pub const MOTIVO_MAX_LEN: usize = 255;
 // --------------------------------------------------------------------------
 
 /// Verifica la integridad de los datos para la programación de una nueva cita.
+///
+/// # Argumentos
+/// * `input` - Estructura con los datos de entrada para la creación de la cita.
+///
+/// # Retorno
+/// Retorna `Ok(())` si todas las validaciones pasan, o `CitaError::Validation`.
 pub fn validar_create_input(input: &CreateCitaInput) -> Result<(), CitaError> {
     // 1. Validación de Identidad del Visitante
     if input.visitante_id.is_none() {
@@ -65,7 +71,7 @@ pub fn validar_create_input(input: &CreateCitaInput) -> Result<(), CitaError> {
     validar_nombre_entidad_estandar(&input.motivo, "motivo")
         .map_err(|e| CitaError::Validation(e.to_string()))?;
 
-    // 3. Validación de Fecha
+    // 3. Validación de Fecha (Estándar RFC 3339 / ISO 8601)
     validar_fecha_rfc3339(&input.fecha_cita).map_err(|e| CitaError::Validation(e.to_string()))?;
 
     Ok(())
