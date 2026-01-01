@@ -10,6 +10,22 @@ use crate::models::contratista::{
 use chrono::NaiveDate;
 
 // --------------------------------------------------------------------------
+// CONSTANTES DE VALIDACIÓN
+// --------------------------------------------------------------------------
+
+/// Longitud mínima de cédula de identidad.
+pub const CEDULA_MIN_LEN: usize = 7;
+
+/// Longitud máxima de cédula de identidad.
+pub const CEDULA_MAX_LEN: usize = 20;
+
+/// Longitud máxima de nombre/apellido.
+pub const NOMBRE_MAX_LEN: usize = 50;
+
+/// Caracteres prohibidos en campos de texto (prevención de inyecciones).
+const CHARS_PROHIBIDOS: &[char] = &['<', '>', '{', '}', '|', '\\', '^', '~', '[', ']', '`'];
+
+// --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
 // --------------------------------------------------------------------------
 
@@ -21,19 +37,29 @@ pub fn validar_cedula(cedula: &str) -> Result<(), ContratistaError> {
         return Err(ContratistaError::Validation("La cédula no puede estar vacía".to_string()));
     }
 
-    if !limpia.chars().all(|c| c.is_numeric() || c == '-') {
+    // Solo permite números, guiones y letras V/E (cédulas venezolanas)
+    if !limpia
+        .chars()
+        .all(|c| c.is_numeric() || c == '-' || c == 'V' || c == 'E' || c == 'v' || c == 'e')
+    {
         return Err(ContratistaError::Validation(
-            "La cédula solo puede contener números y guiones".to_string(),
+            "La cédula solo puede contener números, guiones y V/E".to_string(),
         ));
     }
 
-    if limpia.len() < 7 || limpia.len() > 20 {
-        return Err(ContratistaError::Validation(
-            "La cédula debe tener entre 7 y 20 caracteres".to_string(),
-        ));
+    if limpia.len() < CEDULA_MIN_LEN || limpia.len() > CEDULA_MAX_LEN {
+        return Err(ContratistaError::Validation(format!(
+            "La cédula debe tener entre {} y {} caracteres",
+            CEDULA_MIN_LEN, CEDULA_MAX_LEN
+        )));
     }
 
     Ok(())
+}
+
+/// Verifica que un texto no contenga caracteres peligrosos.
+fn contiene_chars_prohibidos(texto: &str) -> bool {
+    texto.chars().any(|c| CHARS_PROHIBIDOS.contains(&c))
 }
 
 /// Valida los requisitos mínimos del nombre.
@@ -44,9 +70,16 @@ pub fn validar_nombre(nombre: &str) -> Result<(), ContratistaError> {
         return Err(ContratistaError::Validation("El nombre no puede estar vacío".to_string()));
     }
 
-    if limpio.len() > 50 {
+    if limpio.len() > NOMBRE_MAX_LEN {
+        return Err(ContratistaError::Validation(format!(
+            "El nombre no puede exceder {} caracteres",
+            NOMBRE_MAX_LEN
+        )));
+    }
+
+    if contiene_chars_prohibidos(limpio) {
         return Err(ContratistaError::Validation(
-            "El nombre no puede exceder 50 caracteres".to_string(),
+            "El nombre contiene caracteres no permitidos".to_string(),
         ));
     }
 
@@ -61,9 +94,16 @@ pub fn validar_apellido(apellido: &str) -> Result<(), ContratistaError> {
         return Err(ContratistaError::Validation("El apellido no puede estar vacío".to_string()));
     }
 
-    if limpio.len() > 50 {
+    if limpio.len() > NOMBRE_MAX_LEN {
+        return Err(ContratistaError::Validation(format!(
+            "El apellido no puede exceder {} caracteres",
+            NOMBRE_MAX_LEN
+        )));
+    }
+
+    if contiene_chars_prohibidos(limpio) {
         return Err(ContratistaError::Validation(
-            "El apellido no puede exceder 50 caracteres".to_string(),
+            "El apellido contiene caracteres no permitidos".to_string(),
         ));
     }
 
@@ -145,4 +185,212 @@ pub fn validar_estado(estado: &str) -> Result<(), ContratistaError> {
         .parse::<EstadoContratista>()
         .map_err(|_| ContratistaError::Validation(format!("Estado inválido: {}", estado)))?;
     Ok(())
+}
+
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validar_cedula_valida() {
+        assert!(validar_cedula("12345678").is_ok());
+        assert!(validar_cedula("V-12345678").is_ok());
+        assert!(validar_cedula("E-1234567").is_ok());
+    }
+
+    #[test]
+    fn test_validar_cedula_vacia() {
+        assert!(validar_cedula("").is_err());
+        assert!(validar_cedula("   ").is_err());
+    }
+
+    #[test]
+    fn test_validar_cedula_caracteres_invalidos() {
+        assert!(validar_cedula("ABC123XYZ").is_err());
+        assert!(validar_cedula("12@34#56").is_err());
+    }
+
+    #[test]
+    fn test_validar_cedula_muy_corta() {
+        assert!(validar_cedula("123").is_err());
+    }
+
+    #[test]
+    fn test_validar_cedula_muy_larga() {
+        let cedula_larga = "1".repeat(21);
+        assert!(validar_cedula(&cedula_larga).is_err());
+    }
+
+    #[test]
+    fn test_validar_nombre_valido() {
+        assert!(validar_nombre("Juan").is_ok());
+        assert!(validar_nombre("María José").is_ok());
+    }
+
+    #[test]
+    fn test_validar_nombre_vacio() {
+        assert!(validar_nombre("").is_err());
+        assert!(validar_nombre("   ").is_err());
+    }
+
+    #[test]
+    fn test_validar_nombre_muy_largo() {
+        let nombre_largo = "A".repeat(51);
+        assert!(validar_nombre(&nombre_largo).is_err());
+    }
+
+    #[test]
+    fn test_validar_nombre_chars_prohibidos() {
+        assert!(validar_nombre("Juan<script>").is_err());
+        assert!(validar_nombre("Pedro{json}").is_err());
+        assert!(validar_nombre("Carlos|pipe").is_err());
+    }
+
+    #[test]
+    fn test_validar_apellido_valido() {
+        assert!(validar_apellido("Pérez").is_ok());
+        assert!(validar_apellido("De La Cruz").is_ok());
+        assert!(validar_apellido("O'Brien").is_ok()); // Apóstrofe permitido
+    }
+
+    #[test]
+    fn test_validar_apellido_vacio() {
+        assert!(validar_apellido("").is_err());
+    }
+
+    #[test]
+    fn test_validar_apellido_chars_prohibidos() {
+        assert!(validar_apellido("García<>").is_err());
+        assert!(validar_apellido("López{malware}").is_err());
+    }
+
+    #[test]
+    fn test_validar_empresa_id_valida() {
+        assert!(validar_empresa_id("empresa:abc123").is_ok());
+        assert!(validar_empresa_id("empresa:1").is_ok());
+    }
+
+    #[test]
+    fn test_validar_empresa_id_vacia() {
+        assert!(validar_empresa_id("").is_err());
+        assert!(validar_empresa_id("   ").is_err());
+    }
+
+    #[test]
+    fn test_validar_fecha_valida() {
+        assert!(validar_fecha("2025-12-31").is_ok());
+        assert!(validar_fecha("2024-01-01").is_ok());
+    }
+
+    #[test]
+    fn test_validar_fecha_formato_invalido() {
+        assert!(validar_fecha("31-12-2025").is_err());
+        assert!(validar_fecha("2025/12/31").is_err());
+        assert!(validar_fecha("").is_err());
+    }
+
+    #[test]
+    fn test_normalizar_cedula() {
+        assert_eq!(normalizar_cedula("  v-12345678  "), "V-12345678");
+        assert_eq!(normalizar_cedula("e-1234567"), "E-1234567");
+        assert_eq!(normalizar_cedula("12345678"), "12345678");
+    }
+
+    #[test]
+    fn test_validar_estado_activo() {
+        assert!(validar_estado("activo").is_ok());
+    }
+
+    #[test]
+    fn test_validar_estado_suspendido() {
+        assert!(validar_estado("suspendido").is_ok());
+    }
+
+    #[test]
+    fn test_validar_estado_invalido() {
+        assert!(validar_estado("invalido").is_err());
+        assert!(validar_estado("").is_err());
+    }
+
+    #[test]
+    fn test_validar_create_input_completo() {
+        let input = CreateContratistaInput {
+            cedula: "12345678".to_string(),
+            nombre: "Juan".to_string(),
+            segundo_nombre: None,
+            apellido: "Pérez".to_string(),
+            segundo_apellido: None,
+            empresa_id: "empresa:1".to_string(),
+            fecha_vencimiento_praind: "2025-12-31".to_string(),
+            tiene_vehiculo: None,
+            tipo_vehiculo: None,
+            placa: None,
+            marca: None,
+            modelo: None,
+            color: None,
+        };
+        assert!(validar_create_input(&input).is_ok());
+    }
+
+    #[test]
+    fn test_validar_create_input_cedula_invalida() {
+        let input = CreateContratistaInput {
+            cedula: "".to_string(),
+            nombre: "Juan".to_string(),
+            segundo_nombre: None,
+            apellido: "Pérez".to_string(),
+            segundo_apellido: None,
+            empresa_id: "empresa:1".to_string(),
+            fecha_vencimiento_praind: "2025-12-31".to_string(),
+            tiene_vehiculo: None,
+            tipo_vehiculo: None,
+            placa: None,
+            marca: None,
+            modelo: None,
+            color: None,
+        };
+        assert!(validar_create_input(&input).is_err());
+    }
+
+    #[test]
+    fn test_validar_update_input_parcial() {
+        let input = UpdateContratistaInput {
+            nombre: Some("Nuevo Nombre".to_string()),
+            segundo_nombre: None,
+            apellido: None,
+            segundo_apellido: None,
+            empresa_id: None,
+            fecha_vencimiento_praind: None,
+            tiene_vehiculo: None,
+            tipo_vehiculo: None,
+            placa: None,
+            marca: None,
+            modelo: None,
+            color: None,
+        };
+        assert!(validar_update_input(&input).is_ok());
+    }
+
+    #[test]
+    fn test_validar_update_input_fecha_invalida() {
+        let input = UpdateContratistaInput {
+            nombre: None,
+            segundo_nombre: None,
+            apellido: None,
+            segundo_apellido: None,
+            empresa_id: None,
+            fecha_vencimiento_praind: Some("fecha-invalida".to_string()),
+            tiene_vehiculo: None,
+            tipo_vehiculo: None,
+            placa: None,
+            marca: None,
+            modelo: None,
+            color: None,
+        };
+        assert!(validar_update_input(&input).is_err());
+    }
 }
