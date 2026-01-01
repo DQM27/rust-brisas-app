@@ -39,13 +39,7 @@ macro_rules! register_handlers {
             commands::lista_negra_commands::add_to_lista_negra,
             commands::lista_negra_commands::get_lista_negra_by_id,
             commands::lista_negra_commands::get_all_lista_negra,
-            commands::lista_negra_commands::get_lista_negra_activos,
             commands::lista_negra_commands::check_is_blocked,
-            commands::lista_negra_commands::get_blocked_by_cedula,
-            commands::lista_negra_commands::remove_from_lista_negra,
-            commands::lista_negra_commands::reactivate_lista_negra,
-            commands::lista_negra_commands::update_lista_negra,
-            commands::lista_negra_commands::delete_lista_negra,
             commands::lista_negra_commands::search_personas_for_block,
             // Comandos de vehículo
             commands::vehiculo_commands::create_vehiculo,
@@ -75,7 +69,6 @@ macro_rules! register_handlers {
             commands::cita_commands::get_cita_by_id,
             commands::cita_commands::procesar_ingreso_cita,
             commands::cita_commands::cancelar_cita,
-            commands::cita_commands::completar_cita,
             // ==========================================
             // COMANDOS DE VISITANTE
             // ==========================================
@@ -90,9 +83,8 @@ macro_rules! register_handlers {
             // ==========================================
             // COMANDOS DE INGRESO VISITAS
             // ==========================================
-            commands::ingreso_visita_commands::get_ingresos_visitas_activos,
-            commands::ingreso_visita_commands::get_ingresos_visitas_historial,
-            commands::ingreso_visita_commands::crear_ingreso_visita_v2,
+            commands::ingreso_visita_commands::get_ingresos_visita_activos,
+            commands::ingreso_visita_commands::crear_ingreso_visita,
             commands::ingreso_visita_commands::validar_ingreso_visita,
             commands::ingreso_visita_commands::registrar_salida_visita,
             // ==========================================
@@ -100,10 +92,9 @@ macro_rules! register_handlers {
             // ==========================================
             commands::ingreso_proveedor_commands::crear_ingreso_proveedor_v2,
             commands::ingreso_proveedor_commands::get_ingresos_proveedores_activos,
-            commands::ingreso_proveedor_commands::get_ingresos_proveedores_historial,
             commands::ingreso_proveedor_commands::registrar_salida_proveedor,
             commands::ingreso_proveedor_commands::validar_ingreso_proveedor,
-            commands::ingreso_proveedor_commands::search_proveedores,
+            commands::ingreso_proveedor_commands::search_proveedores_by_cedula,
             // ==========================================
             // COMANDOS DE PROVEEDORES (CATALOGO)
             // ==========================================
@@ -126,9 +117,6 @@ macro_rules! register_handlers {
             // Monitoreo
             commands::ingreso_contratista_commands::get_permanencia_status,
             commands::ingreso_contratista_commands::check_time_alerts,
-            // Cierre Manual e Ingreso Excepcional
-            commands::ingreso_contratista_commands::cerrar_ingreso_manual,
-            commands::ingreso_contratista_commands::registrar_ingreso_excepcional,
             // ==========================================
             // COMANDOS GENERALES DE CONSULTA DE INGRESOS
             // ==========================================

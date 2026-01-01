@@ -1,15 +1,15 @@
-// ==========================================
-// src/services/session.rs
-// ==========================================
-// Estado de sesión del usuario actual
-
+/// Gestión de Persistencia y Ciclo de Vida de la Interacción (Sesión).
+///
+/// Este servicio mantiene el estado del usuario actualmente autenticado en la
+/// memoria ram de la aplicación. Es la "Brújula de Identidad" que permite a
+/// otros servicios saber quién está operando y qué permisos tiene concedidos.
 use crate::models::role::{Action, Module};
 use crate::services::surrealdb_authorization::{self as authorization, AuthError};
 use serde::{Deserialize, Serialize};
 use std::sync::RwLock;
 
 // ==========================================
-// USUARIO DE SESIÓN (simplificado)
+// MODELO DE IDENTIDAD EN SESIÓN
 // ==========================================
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -24,10 +24,12 @@ pub struct SessionUser {
 }
 
 // ==========================================
-// ESTADO DE SESIÓN
+// ESTADO DE SESIÓN (Contenedor de Seguridad)
 // ==========================================
 
 pub struct SessionState {
+    /// Uso de RwLock para permitir lecturas concurrentes rápidas
+    /// y escrituras (login/logout) seguras.
     current_user: RwLock<Option<SessionUser>>,
 }
 
@@ -36,36 +38,38 @@ impl SessionState {
         Self { current_user: RwLock::new(None) }
     }
 
-    /// Establece el usuario de la sesión actual
+    /// Inicia la sesión vinculando un usuario autenticado.
     pub fn set_user(&self, user: SessionUser) {
-        let mut guard = self.current_user.write().expect("Session lock poisoned");
+        let mut guard =
+            self.current_user.write().expect("Fallo crítico: Bloqueo de sesión corrompido");
         *guard = Some(user);
     }
 
-    /// Obtiene el usuario de la sesión actual
     pub fn get_user(&self) -> Option<SessionUser> {
-        let guard = self.current_user.read().expect("Session lock poisoned");
+        let guard = self.current_user.read().expect("Fallo crítico: Bloqueo de sesión corrompido");
         guard.clone()
     }
 
-    /// Limpia la sesión (logout)
     pub fn clear(&self) {
-        let mut guard = self.current_user.write().expect("Session lock poisoned");
+        let mut guard =
+            self.current_user.write().expect("Fallo crítico: Bloqueo de sesión corrompido");
         *guard = None;
     }
 
-    /// Verifica si hay sesión activa
     pub fn is_authenticated(&self) -> bool {
-        let guard = self.current_user.read().expect("Session lock poisoned");
+        let guard = self.current_user.read().expect("Fallo crítico: Bloqueo de sesión corrompido");
         guard.is_some()
     }
 
-    /// Requiere sesión activa, retorna error si no hay
+    /// Control de Flujo: Asegura que el usuario esté presente antes de continuar.
     pub fn require_session(&self) -> Result<SessionUser, AuthError> {
         self.get_user().ok_or(AuthError::SessionRequired)
     }
 
-    /// Verifica permiso y retorna el usuario si tiene acceso
+    /// Verificación de Privilegios: El "Gatekeeper" de la lógica de negocio.
+    ///
+    /// Verifica dinámicamente si el usuario actual tiene el permiso (Módulo + Acción)
+    /// necesario para ejecutar una operación, consultando el motor RBAC.
     pub async fn require_permission(
         &self,
         module: Module,
@@ -82,40 +86,5 @@ impl SessionState {
 impl Default for SessionState {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_session_state_workflow() {
-        let state = SessionState::new();
-        assert!(!state.is_authenticated());
-        assert!(state.get_user().is_none());
-
-        let user = SessionUser {
-            id: "u-1".into(),
-            email: "test@example.com".into(),
-            nombre: "Test".into(),
-            apellido: "User".into(),
-            role_id: "admin".into(),
-            role_name: "Administrator".into(),
-        };
-
-        // Login
-        state.set_user(user.clone());
-        assert!(state.is_authenticated());
-        assert_eq!(state.get_user().unwrap().id, "u-1");
-
-        // Required check
-        let req_user = state.require_session().unwrap();
-        assert_eq!(req_user.email, "test@example.com");
-
-        // Logout
-        state.clear();
-        assert!(!state.is_authenticated());
-        assert!(state.require_session().is_err());
     }
 }

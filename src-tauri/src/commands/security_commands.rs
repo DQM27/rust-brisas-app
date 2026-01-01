@@ -1,49 +1,54 @@
+/// Núcleo de Seguridad: Criptografía y Gestión de Llaves Maestras (Cipher Core).
+///
+/// Este submódulo gestiona la persistencia de la 'Master Key' del sistema,
+/// integrándose con los llaveros nativos (Keyring) de cada sistema operativo
+/// (Windows Credential Manager, Linux Secret-tool, macOS Keychain) para
+/// garantizar que los datos sensibles (Avatares, etc.) permanezcan seguros.
 use rand::rngs::OsRng;
 use rand::RngCore;
 use std::sync::OnceLock;
 
-// Clave para almacenar la master key de encriptación
+/// Identificador único para localizar la llave en el almacén seguro del sistema operativo.
 const MASTER_KEY_NAME: &str = "encryption_master_key";
 
-// Singleton para mantener la llave en memoria y no pedirla al OS a cada rato
+/// Memoria Caché de Seguridad: Mantiene la llave descifrada en memoria RAM durante el
+/// tiempo de ejecución para optimizar las operaciones criptográficas reactivas.
 static MASTER_KEY: OnceLock<[u8; 32]> = OnceLock::new();
 
-/// Obtiene la master key usando el mismo sistema que Argon2 (keyring_linux para Linux)
+/// Protocolo de Recuperación: Establece un bridge con el Keyring nativo. Si la llave no existe,
+/// genera una nueva con entropía de grado militar y la guarda de forma persistente.
 pub fn get_master_key() -> Result<&'static [u8; 32], String> {
     if let Some(key) = MASTER_KEY.get() {
         return Ok(key);
     }
 
-    // Usar el servicio de keyring apropiado según la plataforma
+    // Adaptador Multiplataforma para Almacenamiento Seguro
     #[cfg(target_os = "linux")]
     {
         use crate::services::keyring_linux;
 
-        // Intentar obtener del keyring
         if let Some(hex_key) = keyring_linux::retrieve_secret(MASTER_KEY_NAME) {
             if let Ok(bytes) = hex::decode(hex_key.trim()) {
                 if bytes.len() == 32 {
                     let mut key_arr = [0u8; 32];
                     key_arr.copy_from_slice(&bytes);
                     let _ = MASTER_KEY.set(key_arr);
-                    log::info!("🔑 Master key cargada desde keyring (secret-tool)");
+                    log::info!("🔑 Llave Maestra cargada desde Llavero de Linux (secret-tool)");
                     return Ok(MASTER_KEY.get().unwrap());
                 }
             }
         }
 
-        // No existe, crear nueva llave
         let mut key = [0u8; 32];
         OsRng.fill_bytes(&mut key);
-        log::info!("🔑 Generando nueva master key");
+        log::info!("🔑 Iniciando generación de Llave Maestra por primera vez");
 
-        // Guardar en keyring usando secret-tool
         let hex_key = hex::encode(key);
         if let Err(e) = keyring_linux::store_secret(MASTER_KEY_NAME, &hex_key) {
-            log::error!("❌ Error guardando master key en keyring: {}", e);
-            return Err(format!("No se pudo guardar master key: {}", e));
+            log::error!("❌ Error crítico al persistir llave en el llavero: {}", e);
+            return Err(format!("Fallo de seguridad en el almacenamiento: {}", e));
         }
-        log::info!("🔑 Master key guardada en keyring (secret-tool)");
+        log::info!("🔑 Llave Maestra persistida en Llavero de Linux");
 
         let _ = MASTER_KEY.set(key);
         return Ok(MASTER_KEY.get().unwrap());
@@ -59,7 +64,7 @@ pub fn get_master_key() -> Result<&'static [u8; 32], String> {
                     let mut key_arr = [0u8; 32];
                     key_arr.copy_from_slice(&bytes);
                     let _ = MASTER_KEY.set(key_arr);
-                    log::info!("🔑 Master key cargada desde Credential Manager");
+                    log::info!("🔑 Llave Maestra cargada desde Windows Credential Manager");
                     return Ok(MASTER_KEY.get().unwrap());
                 }
             }
@@ -69,8 +74,8 @@ pub fn get_master_key() -> Result<&'static [u8; 32], String> {
         OsRng.fill_bytes(&mut key);
         let hex_key = hex::encode(key);
         keyring_windows::store_secret(MASTER_KEY_NAME, &hex_key)
-            .map_err(|e| format!("No se pudo guardar master key: {}", e))?;
-        log::info!("🔑 Master key guardada en Credential Manager");
+            .map_err(|e| format!("Error al blindar la llave maestra: {}", e))?;
+        log::info!("🔑 Llave Maestra generada y blindada en Windows");
         let _ = MASTER_KEY.set(key);
         return Ok(MASTER_KEY.get().unwrap());
     }
@@ -102,36 +107,38 @@ pub fn get_master_key() -> Result<&'static [u8; 32], String> {
 
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
-        Err("Plataforma no soportada".to_string())
+        Err("Entorno de ejecución no compatible con los estándares de seguridad requeridos"
+            .to_string())
     }
 }
 
-// Funciones de ayuda para encriptar/desencriptar
+// Motores Criptográficos: Implementan algoritmos de alto desempeño
 use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit},
     ChaCha20Poly1305, Nonce,
 };
 
+/// Encripta bloques de datos (Ej: Fotos de trabajadores) usando ChaCha20-Poly1305.
 pub fn encrypt_data(data: &[u8]) -> Result<Vec<u8>, String> {
     let key = get_master_key()?;
     let cipher = ChaCha20Poly1305::new(key.into());
-    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng); // 96-bits; unique per message
+    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
 
     let ciphertext = cipher.encrypt(&nonce, data).map_err(|e| e.to_string())?;
 
-    // Prepend nonce to ciphertext
     let mut result = nonce.to_vec();
     result.extend(ciphertext);
 
     Ok(result)
 }
 
+/// Descifra los bloques de datos tras validar su autenticidad.
 pub fn decrypt_data(encrypted_data: &[u8]) -> Result<Vec<u8>, String> {
     let key = get_master_key()?;
     let cipher = ChaCha20Poly1305::new(key.into());
 
     if encrypted_data.len() < 12 {
-        return Err("Data too short".to_string());
+        return Err("Payload de seguridad corrupto o incompleto".to_string());
     }
 
     let nonce = Nonce::from_slice(&encrypted_data[0..12]);

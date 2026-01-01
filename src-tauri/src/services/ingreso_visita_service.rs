@@ -1,10 +1,20 @@
-// src/services/ingreso_visita_service.rs
+/// Punto de Control: Admisión de Visitantes Ocasionales.
+///
+/// Gestiona la entrada y salida de personas que no tienen un vínculo permanente con
+/// la institución (visitas familiares, mensajería, técnicos externos).
+/// Se prioriza la agilidad del registro sin sacrificar la seguridad perimetral.
 use crate::db::surrealdb_ingreso_visita_queries as db;
 use crate::domain::errors::IngresoVisitaError;
 use crate::models::ingreso::{CreateIngresoVisitaInput, IngresoResponse, IngresoVisitaCreateDTO};
 use crate::services::{gafete_service, lista_negra_service};
 use surrealdb::RecordId;
 
+/// Registra el ingreso de un visitante.
+///
+/// El flujo de seguridad incluye:
+/// 1. Validación de Gafetes: Verifica disponibilidad física del recurso.
+/// 2. Filtro de Seguridad: Consulta inmediata a la Lista Negra.
+/// 3. Control de Permanencia: Evita ingresos duplicados para la misma identificación.
 pub async fn registrar_ingreso(
     input: CreateIngresoVisitaInput,
     usuario_id_str: String,
@@ -23,7 +33,9 @@ pub async fn registrar_ingreso(
                 .await
                 .map_err(|e| IngresoVisitaError::Validation(e.to_string()))?;
             if !disp {
-                return Err(IngresoVisitaError::Validation("Gafete no disponible".to_string()));
+                return Err(IngresoVisitaError::Validation(
+                    "El gafete seleccionado no está disponible".to_string(),
+                ));
             }
         }
     }
@@ -31,14 +43,18 @@ pub async fn registrar_ingreso(
     let check =
         lista_negra_service::check_is_blocked(input.cedula.clone()).await.unwrap_or_default();
     if check.is_blocked {
-        return Err(IngresoVisitaError::Validation("Visitante bloqueado".to_string()));
+        return Err(IngresoVisitaError::Validation(
+            "ACCESO RESTRINGIDO: El visitante se encuentra en Lista Negra".to_string(),
+        ));
     }
 
     let abierto = db::find_ingreso_abierto_by_cedula(&input.cedula)
         .await
         .map_err(|e| IngresoVisitaError::Database(e.to_string()))?;
     if abierto.is_some() {
-        return Err(IngresoVisitaError::Validation("Ya tiene ingreso activo".to_string()));
+        return Err(IngresoVisitaError::Validation(
+            "Ya existe un registro de ingreso activo para esta persona".to_string(),
+        ));
     }
 
     let dto = IngresoVisitaCreateDTO {
@@ -58,6 +74,7 @@ pub async fn registrar_ingreso(
     let nuevo_ingreso =
         db::insert(dto).await.map_err(|e| IngresoVisitaError::Database(e.to_string()))?;
 
+    // Marcado de activo físico.
     if let Some(ref g) = nuevo_ingreso.gafete_numero {
         if g != "S/G" && !g.is_empty() {
             let _ = gafete_service::marcar_en_uso(g, "visita").await;
@@ -67,26 +84,7 @@ pub async fn registrar_ingreso(
     Ok(IngresoResponse::from_visita_fetched(nuevo_ingreso))
 }
 
-pub async fn registrar_ingreso_full(
-    input: crate::domain::ingreso_visita::CreateIngresoVisitaFullInput,
-    usuario_id: String,
-) -> Result<IngresoResponse, IngresoVisitaError> {
-    // Dummy for now
-    let i = CreateIngresoVisitaInput {
-        cedula: input.cedula,
-        nombre: input.nombre,
-        apellido: input.apellido,
-        anfitrion: input.anfitrion,
-        area_visitada: input.area_visitada,
-        motivo: input.motivo,
-        modo_ingreso: "caminando".to_string(),
-        placa_vehiculo: None,
-        gafete_numero: input.gafete,
-        observaciones: input.observaciones,
-    };
-    registrar_ingreso(i, usuario_id).await
-}
-
+/// Registra la salida del visitante y libera los recursos.
 pub async fn registrar_salida(
     ingreso_id_str: String,
     usuario_id_str: String,
@@ -96,7 +94,7 @@ pub async fn registrar_salida(
     let ingreso_id = if ingreso_id_str.contains(':') {
         ingreso_id_str
             .parse::<RecordId>()
-            .map_err(|_| IngresoVisitaError::Validation("ID inválido".to_string()))?
+            .map_err(|_| IngresoVisitaError::Validation("ID de ingreso inválido".to_string()))?
     } else {
         RecordId::from_table_key("ingreso_visita", &ingreso_id_str)
     };
@@ -104,7 +102,7 @@ pub async fn registrar_salida(
     let usuario_id = if usuario_id_str.contains(':') {
         usuario_id_str
             .parse::<RecordId>()
-            .map_err(|_| IngresoVisitaError::Validation("ID inválido".to_string()))?
+            .map_err(|_| IngresoVisitaError::Validation("ID de usuario inválido".to_string()))?
     } else {
         RecordId::from_table_key("user", &usuario_id_str)
     };
@@ -129,11 +127,7 @@ pub async fn get_activos(
     Ok(vec![])
 }
 
-pub async fn get_historial(
-) -> Result<Vec<crate::domain::ingreso_visita::IngresoVisitaPopulated>, IngresoVisitaError> {
-    Ok(vec![])
-}
-
+/// Valida si un visitante es apto para entrar antes de proceder al registro manual.
 pub async fn validar_ingreso(
     _visitante_id: &str,
 ) -> Result<crate::domain::ingreso_visita::ValidacionIngresoVisitaResponse, IngresoVisitaError> {

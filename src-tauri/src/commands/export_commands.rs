@@ -1,29 +1,25 @@
-// ==========================================
-// src/commands/export_commands.rs
-// ==========================================
-
+/// Motor de Exportación: Extracción y Reportes de Datos (Tauri Bridge).
+///
+/// Proporciona los puntos de entrada para generar reportes en diversos formatos
+/// (PDF, Excel, CSV), permitiendo filtrar y previsualizar la información del sistema
+/// antes de su archivado o auditoría.
 use crate::domain::errors::ExportError;
 use crate::models::export::{ExportRequest, ExportResponse};
 use crate::services::export_service;
 
-// ==========================================
-// COMANDO PRINCIPAL DE EXPORTACIÓN
-// ==========================================
-
+/// Comando universal para la generación de archivos de exportación.
 #[tauri::command]
 pub async fn export_data(request: ExportRequest) -> Result<ExportResponse, ExportError> {
     Ok(export_service::export_data(request).await?)
 }
 
-// ==========================================
-// COMANDO DE VERIFICACIÓN DE DISPONIBILIDAD
-// ==========================================
-
+/// Verifica si el subsistema de exportación está activo y listo para operar.
 #[tauri::command]
 pub async fn check_export_available() -> Result<bool, ExportError> {
     Ok(export_service::is_export_available())
 }
 
+/// Retorna la lista de formatos de exportación soportados por la build actual.
 #[tauri::command]
 pub async fn get_available_export_formats() -> Result<Vec<String>, ExportError> {
     use crate::export;
@@ -33,6 +29,7 @@ pub async fn get_available_export_formats() -> Result<Vec<String>, ExportError> 
     Ok(formats)
 }
 
+/// Comprueba si un formato específico de archivo está disponible para su generación.
 #[tauri::command]
 pub async fn is_export_format_available(format: String) -> Result<bool, ExportError> {
     use crate::export;
@@ -40,10 +37,11 @@ pub async fn is_export_format_available(format: String) -> Result<bool, ExportEr
     Ok(export::is_format_available(&format))
 }
 
-// ==========================================
-// COMANDOS OPCIONALES (si quieres separar por formato)
-// ==========================================
+// --------------------------------------------------------------------------
+// COMANDOS ESPECIALIZADOS POR FORMATO
+// --------------------------------------------------------------------------
 
+/// Especialización para exportación directa a formato PDF.
 #[cfg(feature = "export-pdf")]
 #[tauri::command]
 pub async fn export_to_pdf(request: ExportRequest) -> Result<ExportResponse, ExportError> {
@@ -53,6 +51,7 @@ pub async fn export_to_pdf(request: ExportRequest) -> Result<ExportResponse, Exp
     Ok(export_service::export_data(pdf_request).await?)
 }
 
+/// Especialización para exportación directa a hojas de cálculo Excel.
 #[cfg(feature = "export-excel")]
 #[tauri::command]
 pub async fn export_to_excel(request: ExportRequest) -> Result<ExportResponse, ExportError> {
@@ -62,6 +61,7 @@ pub async fn export_to_excel(request: ExportRequest) -> Result<ExportResponse, E
     Ok(export_service::export_data(excel_request).await?)
 }
 
+/// Especialización para exportación directa a archivos CSV planos.
 #[tauri::command]
 pub async fn export_to_csv(request: ExportRequest) -> Result<ExportResponse, ExportError> {
     let mut csv_request = request;
@@ -70,10 +70,7 @@ pub async fn export_to_csv(request: ExportRequest) -> Result<ExportResponse, Exp
     Ok(export_service::export_data(csv_request).await?)
 }
 
-// ==========================================
-// PREVIEW PARA DIÁLOGO AVANZADO
-// ==========================================
-
+/// Genera una previsualización rápida sin guardar un archivo permanente en disco.
 #[tauri::command]
 pub async fn export_preview(request: ExportRequest) -> Result<ExportResponse, ExportError> {
     let mut preview_request = request;
@@ -84,9 +81,9 @@ pub async fn export_preview(request: ExportRequest) -> Result<ExportResponse, Ex
     Ok(export_service::export_data(preview_request).await?)
 }
 
-// ==========================================
-// STUBS CUANDO LOS FEATURES ESTÁN DESHABILITADOS
-// ==========================================
+// --------------------------------------------------------------------------
+// MANEJADORES DE ERROR CUANDO NO HAY SOPORTE (FALLBACKS)
+// --------------------------------------------------------------------------
 
 #[cfg(not(feature = "export-pdf"))]
 #[tauri::command]

@@ -1,21 +1,22 @@
-// ==========================================
-// src/commands/role_commands.rs
-// ==========================================
-// Comandos Tauri para gestión de roles (SurrealDB-native)
-
+/// Puertos de Entrada: Gestión de Roles y Permisos RBAC (Authorization Bridge).
+///
+/// Este módulo es el cerebro de la seguridad de la aplicación. Gestiona la
+/// jerarquía de roles y los permisos granulares, permitiendo al frontend
+/// adaptar su interfaz de manera reactiva según las capacidades del usuario.
 use crate::domain::errors::RoleError;
 use crate::models::role::{
     CreateRoleInput, Permission, RoleListResponse, RoleResponse, UpdateRoleInput, VisibleModule,
 };
-use crate::services::role_service; // Importamos el service correcto
+use crate::services::role_service;
 use crate::services::session::SessionState;
 use crate::services::surrealdb_authorization;
 use tauri::State;
 
 // ==========================================
-// CONSULTAS
+// CONSULTAS DE AUTORIZACIÓN
 // ==========================================
 
+/// Recupera el catálogo completo de niveles de acceso definidos.
 #[tauri::command]
 pub async fn get_all_roles(
     session: State<'_, SessionState>,
@@ -33,6 +34,7 @@ pub async fn get_role_by_id(
     role_service::get_role_by_id(&id).await
 }
 
+/// Lista todas las acciones granulares (Ej: 'users:create', 'ingresos:read') del sistema.
 #[tauri::command]
 pub async fn get_all_permissions(
     session: State<'_, SessionState>,
@@ -41,11 +43,15 @@ pub async fn get_all_permissions(
     role_service::get_all_permissions().await
 }
 
+/// Orquestador Reactivo: Determina qué módulos de la UI debe mostrar el frontend
+/// según los permisos efectivos del usuario actual. Ahorra lógica compleja en Svelte.
 #[tauri::command]
 pub async fn get_visible_modules(
     session: State<'_, SessionState>,
 ) -> Result<Vec<VisibleModule>, RoleError> {
-    let user = session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
+    let user = session
+        .get_user()
+        .ok_or(RoleError::Unauthorized("Sesión requerida para calcular visibilidad".to_string()))?;
 
     let modules = surrealdb_authorization::get_visible_modules(&user.id, &user.role_id)
         .await
@@ -73,31 +79,40 @@ pub async fn get_visible_modules(
 }
 
 // ==========================================
-// MUTACIONES
+// OPERACIONES DE SEGURIDAD (MUTACIONES)
 // ==========================================
 
+/// Define un nuevo nivel de acceso con un conjunto inicial de permisos.
 #[tauri::command]
 pub async fn create_role(
     session: State<'_, SessionState>,
     input: CreateRoleInput,
 ) -> Result<RoleResponse, RoleError> {
-    require_perm!(session, "roles:create", "Creando nuevo rol")?;
+    require_perm!(session, "roles:create", "Registrando nueva jerarquía de seguridad (Rol)")?;
     role_service::create_role(input).await
 }
 
+/// Modifica los permisos granulares de un rol, afectando inmediatamente a los usuarios vinculados.
 #[tauri::command]
 pub async fn update_role(
     session: State<'_, SessionState>,
     id: String,
     input: UpdateRoleInput,
 ) -> Result<RoleResponse, RoleError> {
-    require_perm!(session, "roles:update", format!("Actualizando rol {}", id))?;
-    let user = session.get_user().ok_or(RoleError::Unauthorized("Sesión requerida".to_string()))?;
+    require_perm!(
+        session,
+        "roles:update",
+        format!("Reestructurando permisos para el rol ID: {}", id)
+    )?;
+    let user = session
+        .get_user()
+        .ok_or(RoleError::Unauthorized("Sesión administrativa requerida".to_string()))?;
     role_service::update_role(&id, input, &user.id).await
 }
 
+/// Elimina un rol, siempre que no tenga usuarios activos vinculados (protección de integridad).
 #[tauri::command]
 pub async fn delete_role(session: State<'_, SessionState>, id: String) -> Result<(), RoleError> {
-    require_perm!(session, "roles:delete", format!("Eliminando rol {}", id))?;
+    require_perm!(session, "roles:delete", format!("Dando de baja jerarquía de acceso {}", id))?;
     role_service::delete_role(&id).await
 }

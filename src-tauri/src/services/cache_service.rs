@@ -1,9 +1,10 @@
-// ==========================================
-// src-tauri/src/services/cache_service.rs
-// ==========================================
-// Memory cache layer for frequently accessed data
-// TTL: 5 minutes (300 seconds) for contratistas
-
+/// Capa de Aceleración y Eficiencia Operativa (Cache In-Memory).
+///
+/// Este servicio reduce drásticamente la latencia y la carga sobre SurrealDB al
+/// mantener en memoria RAM los datos de acceso más frecuente (Contratistas y Proveedores).
+/// Utiliza una política de expiración (TTL) para garantizar que la información
+/// no sea obsoleta, liberando al disco de consultas redundantes durante las "horas pico"
+/// en garita.
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -14,7 +15,7 @@ use crate::models::contratista::ContratistaFetched;
 use crate::models::proveedor::ProveedorFetched;
 
 // ==========================================
-// CACHE ENTRY TYPE
+// ESTRUCTURAS DE ALMACENAMIENTO VOLÁTIL
 // ==========================================
 
 #[derive(Clone)]
@@ -29,6 +30,7 @@ impl<T: Clone> CacheEntry<T> {
         Self { data, expires_at: now + ttl_secs }
     }
 
+    /// Control de Obsolecencia: Determina si el dato debe ser refrescado desde DB.
     pub fn is_expired(&self) -> bool {
         let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
         now >= self.expires_at
@@ -36,25 +38,24 @@ impl<T: Clone> CacheEntry<T> {
 }
 
 // ==========================================
-// CACHE INSTANCES (Singletons)
+// INSTANCIAS DE CACHE (Singletons Dinámicos)
 // ==========================================
 
-/// TTL in seconds (5 minutes)
+/// Ventana de vigencia (5 minutos): Balance ideal entre rendimiento y frescura de datos.
 pub const CACHE_TTL: u64 = 300;
 
-/// Cache for contratistas by ID
+/// Depósitos de alta velocidad protegidos por bloqueos de lectura/escritura (RwLock).
 pub static CONTRATISTA_CACHE: Lazy<Arc<RwLock<HashMap<String, CacheEntry<ContratistaFetched>>>>> =
     Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
 
-/// Cache for proveedores by ID
 pub static PROVEEDOR_CACHE: Lazy<Arc<RwLock<HashMap<String, CacheEntry<ProveedorFetched>>>>> =
     Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
 
 // ==========================================
-// GENERIC CACHE OPERATIONS
+// OPERACIONES GENÉRICAS
 // ==========================================
 
-/// Gets a value from cache if it exists and is not expired
+/// Recuperación rápida: Retorna el dato si vive en RAM y no ha caducado.
 pub async fn get_cached<T: Clone>(
     cache: &RwLock<HashMap<String, CacheEntry<T>>>,
     key: &str,
@@ -68,7 +69,7 @@ pub async fn get_cached<T: Clone>(
     None
 }
 
-/// Sets a value in cache with TTL
+/// Inserción en Cache.
 pub async fn set_cached<T: Clone>(
     cache: &RwLock<HashMap<String, CacheEntry<T>>>,
     key: String,
@@ -79,7 +80,7 @@ pub async fn set_cached<T: Clone>(
     guard.insert(key, CacheEntry::new(data, ttl_secs));
 }
 
-/// Removes a value from cache
+/// Invalida manualmente una entrada (Ej: cuando se actualiza un registro en DB).
 pub async fn invalidate_cached<T: Clone>(
     cache: &RwLock<HashMap<String, CacheEntry<T>>>,
     key: &str,
@@ -88,7 +89,6 @@ pub async fn invalidate_cached<T: Clone>(
     guard.remove(key);
 }
 
-/// Clears all entries from a cache
 pub async fn clear_cache<T: Clone>(cache: &RwLock<HashMap<String, CacheEntry<T>>>) {
     let mut guard = cache.write().await;
     guard.clear();

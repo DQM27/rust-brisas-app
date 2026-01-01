@@ -1,9 +1,3 @@
-// ==========================================
-// src/services/user_service.rs
-// ==========================================
-// Capa de servicio: orquesta dominio, db y auth
-// Adaptado para SurrealDB Native
-
 use crate::db::surrealdb_role_queries as role_db;
 use crate::db::surrealdb_user_queries as db;
 use crate::domain::errors::UserError;
@@ -23,23 +17,29 @@ use rand::Rng;
 use std::sync::Arc;
 use surrealdb::RecordId;
 
-// ==========================================
-// CREAR USUARIO
-// ==========================================
-
+/// Crea un nuevo usuario en el sistema, gestionando todo el ciclo de vida inicial.
+///
+/// Este proceso incluye:
+/// 1. Validación estricta del formato de los datos.
+/// 2. Normalización de campos clave (como el email) para evitar duplicados por minúsculas/mayúsculas.
+/// 3. Verificación de unicidad en la base de datos.
+/// 4. Gestión de seguridad: hashing de la contraseña o generación de una temporal segura.
+/// 5. Asignación de roles y permisos.
+/// 6. Indexado en el motor de búsqueda Tantivy para que el usuario sea localizable de inmediato.
 pub async fn create_user(
     search_service: &Arc<SearchService>,
     input: CreateUserInput,
 ) -> Result<UserResponse, UserError> {
-    // 1. Validar input
+    // Validamos los campos de entrada según las reglas de negocio (ej. longitud de nombre).
     domain::validar_create_input(&input)?;
 
-    // 2. Normalizar datos
+    // Normalizamos el email a minúsculas y limpiamos espacios. Esto garantiza que 'Juan@Ejemplo.com'
+    // sea tratado exactamente igual que 'juan@ejemplo.com', evitando colisiones.
     let email_normalizado = domain::normalizar_email(&input.email);
     let nombre_normalizado = domain::normalizar_nombre(&input.nombre);
     let apellido_normalizado = domain::normalizar_nombre(&input.apellido);
 
-    // 3. Verificar email único
+    // Comprobamos si el email ya está en uso antes de intentar la inserción.
     let count = db::count_by_email(&email_normalizado)
         .await
         .map_err(|e| UserError::Database(e.to_string()))?;
@@ -48,19 +48,18 @@ pub async fn create_user(
         return Err(UserError::EmailExists);
     }
 
-    // 4. Determinar rol (default: Guardia)
-    // 4. Determinar rol (default: Guardia)
-    // Fix: Clone Option, filter out empty strings, then default.
+    // El sistema asigna por defecto el rol de 'Guardia' si no se provee uno.
+    // Esto asegura que cada usuario tenga un marco mínimo de permisos.
     let raw_role_id = input
         .role_id
         .clone()
         .filter(|s| !s.trim().is_empty())
         .unwrap_or_else(|| ROLE_GUARDIA_ID.to_string());
 
-    // Fix: Use robust parser to clean brackets and prefixes
     let role_record = parse_role_id(&raw_role_id);
 
-    // 5. Generar o usar contraseña
+    // Si no se proporciona una contraseña, se genera una aleatoria de alta entropía (12 caracteres).
+    // En este caso, se marca el flag 'must_change_password' para obligar al usuario a actualizarla en su primer inicio.
     let (password_str, must_change_password) = match input.password {
         Some(p) => {
             let force_change = input.must_change_password.unwrap_or(false);
@@ -73,13 +72,11 @@ pub async fn create_user(
         }
     };
 
-    info!(
-        "Creando usuario '{}' con rol_id resolved: '{}' (original input: {:?})",
-        email_normalizado, role_record, input.role_id
-    );
+    info!("Registrando usuario '{}' con rol: '{}'", email_normalizado, role_record);
+    // Nunca almacenamos la contraseña en texto plano. Usamos Argon2 para generar un hash seguro y resistente.
     let password_hash = auth::hash_password(&password_str)?;
 
-    // 6. Preparar DTO
+    // Construcción del DTO (Data Transfer Object) para la capa de persistencia.
     let dto = UserCreateDTO {
         email: email_normalizado.clone(),
         password_hash,
@@ -100,15 +97,15 @@ pub async fn create_user(
         avatar_path: input.avatar_path,
     };
 
-    // 7. Insertar en DB
     let user = db::insert(dto).await.map_err(|e| {
-        error!("Error de base de datos al crear usuario {}: {}", email_normalizado, e);
+        error!("Fallo en la inserción del usuario {}: {}", email_normalizado, e);
         UserError::Database(e.to_string())
     })?;
 
-    info!("Usuario '{}' creado exitosamente con ID {}", email_normalizado, user.id);
+    info!("Usuario '{}' creado y persistido correctamente.", email_normalizado);
 
-    // 8. Retornar respuesta
+    // Calculamos los permisos efectivos basados en el rol asignado.
+    // Esto es necesario para devolver al frontend una vista completa de lo que el usuario puede hacer.
     let role_permissions = surrealdb_authorization::get_role_permissions(&user.role.to_string())
         .await
         .unwrap_or_default()
@@ -137,18 +134,16 @@ pub async fn create_user(
         response.temporary_password = Some(password_str);
     }
 
-    // 9. Indexar en Tantivy
+    // Actualizamos el índice de búsqueda de forma asíncrona.
+    // Si falla, el usuario aún existe pero no será localizable mediante la búsqueda global hasta un reindexado.
     if let Err(e) = search_service.add_user(&user).await {
-        warn!("Error al indexar usuario {}: {}", user.id, e);
+        warn!("Fallo no crítico al indexar al usuario {}: {}", user.id, e);
     }
 
     Ok(response)
 }
 
-// ==========================================
-// OBTENER USUARIO POR ID
-// ==========================================
-
+/// Recupera la información detallada de un usuario junto con sus permisos de acceso.
 pub async fn get_user_by_id(id_str: &str) -> Result<UserResponse, UserError> {
     let id = parse_user_id(id_str);
     let user = db::find_by_id_fetched(&id)
@@ -168,10 +163,7 @@ pub async fn get_user_by_id(id_str: &str) -> Result<UserResponse, UserError> {
     Ok(UserResponse::from_fetched(user, permissions))
 }
 
-// ==========================================
-// OBTENER TODOS LOS USUARIOS
-// ==========================================
-
+/// Lista todos los usuarios registrados, excluyendo al superusuario del sistema.
 pub async fn get_all_users() -> Result<UserListResponse, UserError> {
     let exclude_record = RecordId::from_table_key("user", SUPERUSER_ID);
     let users = db::find_all_fetched(Some(&exclude_record))
@@ -198,10 +190,7 @@ pub async fn get_all_users() -> Result<UserListResponse, UserError> {
     Ok(UserListResponse { users: user_responses, total, activos })
 }
 
-// ==========================================
-// ACTUALIZAR USUARIO
-// ==========================================
-
+/// Actualiza parcialmente los datos de un usuario existente.
 pub async fn update_user(
     search_service: &Arc<SearchService>,
     id_str: String,
@@ -209,20 +198,17 @@ pub async fn update_user(
 ) -> Result<UserResponse, UserError> {
     let id_thing = parse_user_id(&id_str);
 
-    // 1. Validar input
     domain::validar_update_input(&input)?;
 
-    info!("Actualizando usuario con ID {}", id_thing);
-
-    // 2. Verificar que existe
+    // Verificación de existencia antes de proceder.
     let _ = db::find_by_id(&id_thing)
         .await
         .map_err(|e| UserError::Database(e.to_string()))?
         .ok_or(UserError::NotFound)?;
 
-    // 3. Preparar DTO de actualización
     let mut dto = crate::models::user::UserUpdateDTO::default();
 
+    // Actualización selectiva de campos basada en la entrada.
     if let Some(ref email) = input.email {
         let normalizado = domain::normalizar_email(email);
         let count = db::count_by_email_excluding_id(&normalizado, &id_thing)
@@ -241,16 +227,8 @@ pub async fn update_user(
         dto.apellido = Some(domain::normalizar_nombre(apellido));
     }
     if let Some(ref role_id) = input.role_id {
-        // Fix: Handle empty strings and robust parsing
         if !role_id.trim().is_empty() {
-            let role_record = parse_role_id(role_id);
-            info!(
-                "Actualizando rol de usuario a: '{}' (original input: '{}')",
-                role_record, role_id
-            );
-            dto.role = Some(role_record);
-        } else {
-            info!("Input role_id vacío, ignorando actualización de rol.");
+            dto.role = Some(parse_role_id(role_id));
         }
     }
     if let Some(pwd) = input.password {
@@ -302,20 +280,17 @@ pub async fn update_user(
 
     dto.updated_at = Some(surrealdb::Datetime::from(chrono::Utc::now()));
 
-    // 4. Actualizar en DB
     let user = db::update(&id_thing, dto)
         .await
         .map_err(|e| {
-            error!("Error al actualizar usuario {}: {}", id_str, e);
+            error!("Error al actualizar el usuario {}: {}", id_str, e);
             UserError::Database(e.to_string())
         })?
         .ok_or(UserError::NotFound)?;
 
-    info!("Usuario {} actualizado exitosamente", id_str);
-
-    // 5. Indexar
+    // Reflejar la actualización en el motor de búsqueda.
     if let Err(e) = search_service.update_user(&user).await {
-        warn!("Error al actualizar índice del usuario {}: {}", id_str, e);
+        warn!("Error al actualizar el índice de búsqueda para el usuario {}: {}", id_str, e);
     }
 
     let role = role_db::find_by_id(&user.role)
@@ -343,33 +318,26 @@ pub async fn update_user(
     Ok(UserResponse::from_user_with_role(user, role, permissions))
 }
 
-// ==========================================
-// ELIMINAR USUARIO
-// ==========================================
-
+/// Elimina un usuario del sistema y de los índices de búsqueda.
 pub async fn delete_user(
     search_service: &Arc<SearchService>,
     id_str: String,
 ) -> Result<(), UserError> {
     let id_thing = parse_user_id(&id_str);
 
-    info!("Eliminando usuario con ID {}", id_thing);
     db::delete(&id_thing).await.map_err(|e| {
-        error!("Error al eliminar usuario {}: {}", id_str, e);
+        error!("Error al eliminar el usuario {}: {}", id_str, e);
         UserError::Database(e.to_string())
     })?;
 
     if let Err(e) = search_service.delete_user(&id_str).await {
-        warn!("Error al eliminar usuario del índice {}: {}", id_str, e);
+        warn!("No se pudo eliminar al usuario del índice de búsqueda: {}", e);
     }
 
     Ok(())
 }
 
-// ==========================================
-// CAMBIAR CONTRASEÑA
-// ==========================================
-
+/// Cambia la contraseña de un usuario, verificando la contraseña actual si es proporcionada.
 pub async fn change_password(id_str: String, input: ChangePasswordInput) -> Result<(), UserError> {
     let user_resp = get_user_by_id(&id_str).await?;
     let found = db::find_by_email_with_password(&user_resp.email)
@@ -381,7 +349,7 @@ pub async fn change_password(id_str: String, input: ChangePasswordInput) -> Resu
     if let Some(current) = input.current_password {
         let is_valid = auth::verify_password(&current, &current_hash)?;
         if !is_valid {
-            error!("Cambio de contraseña fallido para {}: clave actual incorrecta", id_str);
+            error!("Fallo en cambio de contraseña para {}: contraseña actual incorrecta.", id_str);
             return Err(UserError::InvalidCurrentPassword);
         }
     }
@@ -389,20 +357,16 @@ pub async fn change_password(id_str: String, input: ChangePasswordInput) -> Resu
     domain::validar_password(&input.new_password)?;
     let new_hash = auth::hash_password(&input.new_password)?;
 
-    // Usar update_password que usa time::now() nativo de SurrealDB
     db::update_password(&parse_user_id(&id_str), &new_hash).await.map_err(|e| {
-        error!("Error al actualizar password para {}: {}", id_str, e);
+        error!("Error al actualizar contraseña para el usuario {}: {}", id_str, e);
         UserError::Database(e.to_string())
     })?;
 
-    info!("✅ Contraseña actualizada para usuario {}", id_str);
+    info!("✅ Contraseña actualizada exitosamente.");
     Ok(())
 }
 
-// ==========================================
-// LOGIN
-// ==========================================
-
+/// Realiza la autenticación del usuario mediante correo y contraseña.
 pub async fn login(email: String, password: String) -> Result<UserResponse, UserError> {
     let email_normalizado = domain::normalizar_email(&email);
 
@@ -414,7 +378,7 @@ pub async fn login(email: String, password: String) -> Result<UserResponse, User
 
     let is_valid = auth::verify_password(&password, &password_hash)?;
     if !is_valid {
-        warn!("Intento de login fallido para {}: credenciales inválidas", email_normalizado);
+        warn!("Intento fallido de inicio de sesión para: {}", email_normalizado);
         return Err(UserError::InvalidCredentials);
     }
 
@@ -432,7 +396,6 @@ pub async fn login(email: String, password: String) -> Result<UserResponse, User
         .await
         .map_err(|e| UserError::Database(e.to_string()))?
         .unwrap_or_else(|| {
-            // Fallback dummy role if not found (shouldn't happen with FKs but be safe)
             use crate::models::role::Role;
             Role {
                 id: user.role.clone(),
@@ -446,16 +409,12 @@ pub async fn login(email: String, password: String) -> Result<UserResponse, User
             }
         });
 
-    let response = UserResponse::from_user_with_role(user.clone(), role_obj, role_permissions);
-    Ok(response)
+    Ok(UserResponse::from_user_with_role(user.clone(), role_obj, role_permissions))
 }
 
-// ==========================================
-// HELPERS
-// ==========================================
+// Helpers internos para la gestión de IDs y registros.
 
 fn parse_user_id(id: &str) -> RecordId {
-    // Limpiar brackets Unicode que SurrealDB agrega: ⟨uuid⟩ -> uuid
     let clean_id = id
         .trim_start_matches("⟨")
         .trim_end_matches("⟩")
@@ -476,7 +435,6 @@ fn parse_user_id(id: &str) -> RecordId {
 }
 
 fn parse_role_id(id: &str) -> RecordId {
-    // 1. Common cleanup (stripping brackets common in SurrealDB output logging/formats)
     let clean_id = id
         .trim()
         .trim_start_matches("⟨")
@@ -484,10 +442,8 @@ fn parse_role_id(id: &str) -> RecordId {
         .trim_start_matches('<')
         .trim_end_matches('>');
 
-    // 2. Handle "role:uuid" format vs "uuid" format
     if clean_id.to_lowercase().starts_with("role:") {
         let parts: Vec<&str> = clean_id.splitn(2, ':').collect();
-        // Recurse/clean the ID part again just in case "role:⟨uuid⟩"
         let key = parts[1]
             .trim_start_matches("⟨")
             .trim_end_matches("⟩")

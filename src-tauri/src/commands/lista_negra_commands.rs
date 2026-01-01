@@ -1,21 +1,19 @@
-// ==========================================
-// src/commands/lista_negra_commands.rs
-// ==========================================
-// Capa de API: Tauri command handlers (thin wrappers)
-
+/// Puertos de Entrada: Gestión de Restricciones y Lista Negra (Security Barrier Bridge).
+///
+/// Este módulo es el núcleo de las políticas de denegación de acceso. Permite
+/// identificar, registrar y consultar a sujetos que han incurrido en faltas graves,
+/// asegurando que el sistema bloquee proactivamente su entrada en portería.
 use crate::domain::errors::ListaNegraError;
 use crate::models::lista_negra::{
     AddToListaNegraInput, BlockCheckResponse, ListaNegraListResponse, ListaNegraResponse,
-    NivelStats, UpdateListaNegraInput,
+    NivelStats,
 };
 use crate::services::lista_negra_service;
 use tauri::command;
 
-/// Agrega una persona a la lista negra
+/// Registra una nueva restricción de acceso para un individuo.
 #[command]
-pub async fn add_to_lista_negra(
-    input: AddToListaNegraInput,
-) -> Result<ListaNegraResponse, ListaNegraError> {
+pub async fn add_to_lista_negra(input: AddToListaNegraInput) -> Result<(), ListaNegraError> {
     lista_negra_service::add_to_lista_negra(
         input.cedula,
         input.nombre,
@@ -25,11 +23,9 @@ pub async fn add_to_lista_negra(
         input.bloqueado_por,
     )
     .await
-    .map(|l| l.into())
     .map_err(|e| ListaNegraError::Database(e))
 }
 
-/// Obtiene un registro de lista negra por ID
 #[command]
 pub async fn get_lista_negra_by_id(id: String) -> Result<ListaNegraResponse, ListaNegraError> {
     lista_negra_service::get_lista_negra_by_id(id)
@@ -38,7 +34,7 @@ pub async fn get_lista_negra_by_id(id: String) -> Result<ListaNegraResponse, Lis
         .ok_or(ListaNegraError::NotFound)
 }
 
-/// Obtiene todos los registros de lista negra
+/// Auditoría de Seguridad: Obtiene la relación completa de personas con restricciones vigentes.
 #[command]
 pub async fn get_all_lista_negra() -> Result<ListaNegraListResponse, ListaNegraError> {
     let list = lista_negra_service::get_all_lista_negra()
@@ -56,79 +52,13 @@ pub async fn get_all_lista_negra() -> Result<ListaNegraListResponse, ListaNegraE
     })
 }
 
-/// Obtiene solo los registros activos de lista negra
-#[command]
-pub async fn get_lista_negra_activos() -> Result<Vec<ListaNegraResponse>, ListaNegraError> {
-    lista_negra_service::get_lista_negra_activos().await.map_err(|e| ListaNegraError::Database(e))
-}
-
-/// Verifica si una cédula está bloqueada (CRÍTICO para validaciones)
+/// Motor de Validación: Comprueba en tiempo real si una cédula tiene prohibido el acceso (Punto Crítico).
 #[command]
 pub async fn check_is_blocked(cedula: String) -> Result<BlockCheckResponse, ListaNegraError> {
     lista_negra_service::check_is_blocked(cedula).await.map_err(|e| ListaNegraError::Database(e))
 }
 
-/// Obtiene información de bloqueo por cédula
-#[command]
-pub async fn get_blocked_by_cedula(
-    cedula: String,
-) -> Result<Option<ListaNegraResponse>, ListaNegraError> {
-    lista_negra_service::get_blocked_by_cedula(&cedula)
-        .await
-        .map_err(|e| ListaNegraError::Database(e))
-}
-
-/// Desactiva un bloqueo (quita de lista negra)
-#[command]
-pub async fn remove_from_lista_negra(id: String) -> Result<ListaNegraResponse, ListaNegraError> {
-    lista_negra_service::remove_from_lista_negra(
-        id,
-        "Desbloqueo manual".to_string(),
-        "admin".to_string(),
-    )
-    .await
-    .map_err(|e| ListaNegraError::Database(e))?;
-
-    Err(ListaNegraError::Database("Not implemented response".to_string()))
-}
-
-/// Reactiva un bloqueo
-#[command]
-pub async fn reactivate_lista_negra(
-    id: String,
-    _nivel_severidad: String,
-    motivo_bloqueo: String,
-    bloqueado_por: String,
-) -> Result<ListaNegraResponse, ListaNegraError> {
-    lista_negra_service::reactivate_lista_negra(id, motivo_bloqueo, bloqueado_por)
-        .await
-        .map_err(|e| ListaNegraError::Database(e))?;
-    Err(ListaNegraError::Database("Not implemented response".to_string()))
-}
-
-/// Actualiza información de un bloqueo
-#[command]
-pub async fn update_lista_negra(
-    id: String,
-    input: UpdateListaNegraInput,
-) -> Result<ListaNegraResponse, ListaNegraError> {
-    lista_negra_service::update_lista_negra(
-        id,
-        input.motivo_bloqueo.unwrap_or_default(),
-        input.nivel_severidad.unwrap_or_default(),
-        "admin".to_string(),
-    )
-    .await
-    .map_err(|e| ListaNegraError::Database(e))
-}
-
-/// Elimina permanentemente un registro de lista negra
-#[command]
-pub async fn delete_lista_negra(id: String) -> Result<(), ListaNegraError> {
-    lista_negra_service::delete_lista_negra(id).await.map_err(|e| ListaNegraError::Database(e))
-}
-
-/// Busca personas para formulario de bloqueo
+/// Asistente de Registro: Localiza perfiles existentes para facilitar su inclusión en lista negra.
 #[command]
 pub async fn search_personas_for_block(
     query: String,

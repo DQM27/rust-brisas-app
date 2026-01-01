@@ -1,9 +1,15 @@
+/// Gestión de la Configuración Global de la Aplicación.
+///
+/// Este módulo permite la persistencia y lectura de los ajustes del sistema,
+/// incluyendo la identidad de la terminal, preferencias de audio y otros
+/// parámetros operativos almacenados en el archivo local TOML.
 use crate::config::manager::save_config;
 use crate::config::settings::{AppConfig, AppConfigState, TerminalConfig};
 use crate::domain::errors::ConfigError;
 use log::info;
 use tauri::{command, State};
 
+/// Recupera la configuración actual cargada en memoria.
 #[command]
 pub async fn get_app_config(config: State<'_, AppConfigState>) -> Result<AppConfig, ConfigError> {
     let config_guard = config
@@ -13,6 +19,8 @@ pub async fn get_app_config(config: State<'_, AppConfigState>) -> Result<AppConf
     Ok(config_guard.clone())
 }
 
+/// Actualiza la identidad de la terminal (nombre y ubicación física).
+/// Los cambios se persisten inmediatamente en el archivo de configuración brisas.toml.
 #[command]
 pub async fn update_terminal_config(
     config: State<'_, AppConfigState>,
@@ -42,6 +50,7 @@ pub async fn update_terminal_config(
     Ok(config_guard.terminal.clone())
 }
 
+/// Actualiza la preferencia del sonido de alerta del sistema.
 #[command]
 pub async fn update_audio_config(
     config: State<'_, AppConfigState>,

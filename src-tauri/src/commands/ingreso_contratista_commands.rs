@@ -1,5 +1,9 @@
-// src/commands/ingreso_contratista_commands.rs
-
+/// Puertos de Entrada: Gestión de Admisión de Contratistas (UI Bridge).
+///
+/// Este módulo expone las funciones de Rust al frontend (Svelte) mediante Tauri.
+/// Actúa como un orquestador de bajo acoplamiento que recibe las peticiones de
+/// la interfaz de usuario, las delega al servicio especializado y retorna las
+/// respuestas tipadas para su visualización.
 use crate::domain::errors::IngresoContratistaError;
 use crate::models::ingreso::{
     CreateIngresoContratistaInput, IngresoResponse, RegistrarSalidaInput, ValidacionIngresoResponse,
@@ -7,10 +11,10 @@ use crate::models::ingreso::{
 use crate::services::ingreso_contratista_service as service;
 
 // ==========================================
-// 1. ENTRADA
+// 1. PROTOCOLOS DE ENTRADA
 // ==========================================
 
-/// Valida si un contratista puede ingresar (pre-chequeo)
+/// Ejecuta el pre-chequeo de identidad y seguridad antes de mostrar el formulario de ingreso.
 #[tauri::command]
 pub async fn validate_ingreso_contratista(
     contratista_id: String,
@@ -18,25 +22,20 @@ pub async fn validate_ingreso_contratista(
     service::validar_ingreso_contratista(contratista_id).await
 }
 
-/// Crea el ingreso de un contratista
+/// Registra físicamente la entrada de un contratista a las instalaciones.
 #[tauri::command]
 pub async fn create_ingreso_contratista(
     input: CreateIngresoContratistaInput,
     usuario_id: String,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
-    println!(">>> DEBUG create_ingreso_contratista called");
-    println!(">>> DEBUG input: {:?}", input);
-    println!(">>> DEBUG usuario_id: {}", usuario_id);
-    let result = service::crear_ingreso_contratista(input, usuario_id).await;
-    println!(">>> DEBUG result: {:?}", result);
-    result
+    service::crear_ingreso_contratista(input, usuario_id).await
 }
 
 // ==========================================
-// 2. SALIDA
+// 2. PROTOCOLOS DE SALIDA
 // ==========================================
 
-/// Valida si se puede registrar la salida (pre-chequeo)
+/// Realiza una validación previa a la salida (Ej: verificar estado del gafete).
 #[tauri::command]
 pub async fn validate_exit_contratista(
     ingreso_id: String,
@@ -47,7 +46,7 @@ pub async fn validate_exit_contratista(
         .map_err(|e| IngresoContratistaError::Validation(e))
 }
 
-/// Registra la salida
+/// Finaliza el registro de permanencia y libera los recursos.
 #[tauri::command]
 pub async fn register_exit_contratista(
     input: RegistrarSalidaInput,
@@ -57,17 +56,17 @@ pub async fn register_exit_contratista(
 }
 
 // ==========================================
-// 3. PERMANENCIA (MONITOREO)
+// 3. MONITOREO DE PLANTA
 // ==========================================
 
-/// Obtiene todos los ingresos abiertos con su estado de tiempo calculado
+/// Obtiene el estado de ocupación actual (Quiénes están dentro y cuánto tiempo llevan).
 #[tauri::command]
 pub async fn get_permanencia_status(
 ) -> Result<Vec<service::IngresoConEstadoResponse>, IngresoContratistaError> {
     service::get_ingresos_abiertos_con_alertas().await
 }
 
-/// Verifica alertas de tiempo excedido (para notificaciones)
+/// Consulta reactiva de alertas por tiempos de permanencia excedidos.
 #[tauri::command]
 pub async fn check_time_alerts(
 ) -> Result<Vec<service::AlertaTiempoExcedido>, IngresoContratistaError> {
@@ -75,27 +74,5 @@ pub async fn check_time_alerts(
 }
 
 // ==========================================
-// 4. CIERRE MANUAL
+// 4. GESTIÓN EXCEPCIONAL
 // ==========================================
-
-/// Cierra un ingreso manualmente (cuando el guardia no registró salida)
-#[tauri::command]
-pub async fn cerrar_ingreso_manual(
-    input: service::CerrarIngresoManualInput,
-    usuario_id: String,
-) -> Result<service::ResultadoCierreManualResponse, IngresoContratistaError> {
-    service::cerrar_ingreso_manual(input, usuario_id).await
-}
-
-// ==========================================
-// 5. INGRESO EXCEPCIONAL
-// ==========================================
-
-/// Registra un ingreso excepcional (contratista que normalmente no podría entrar)
-#[tauri::command]
-pub async fn registrar_ingreso_excepcional(
-    input: service::IngresoExcepcionalInput,
-    usuario_id: String,
-) -> Result<service::IngresoExcepcionalResponse, IngresoContratistaError> {
-    service::registrar_ingreso_excepcional(input, usuario_id).await
-}

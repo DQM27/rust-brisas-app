@@ -1,7 +1,8 @@
-// ==========================================
-// src/commands/vehiculo_commands.rs
-// ==========================================
-
+/// Puertos de Entrada: Gestión de Activos Móviles y Vehículos (Vehicle Bridge).
+///
+/// Este módulo controla el registro y trazabilidad de los vehículos que ingresan
+/// a la planta, vinculándolos con sus respectivos propietarios (Contratistas,
+/// Proveedores o Visitantes) para garantizar la seguridad patrimonial.
 use crate::domain::errors::VehiculoError;
 use crate::models::vehiculo::{
     CreateVehiculoInput, UpdateVehiculoInput, VehiculoListResponse, VehiculoResponse,
@@ -10,13 +11,13 @@ use crate::services::session::SessionState;
 use crate::services::vehiculo_service as service;
 use tauri::State;
 
-/// Crea un nuevo vehículo para un contratista
+/// Registra una nueva unidad móvil vinculada a un sujeto autorizado.
 #[tauri::command]
 pub async fn create_vehiculo(
     session: State<'_, SessionState>,
     input: CreateVehiculoInput,
 ) -> Result<VehiculoResponse, VehiculoError> {
-    require_perm!(session, "vehiculos:create", "Registrando vehículo")?;
+    require_perm!(session, "vehiculos:create", "Registrando nuevo activo móvil")?;
     service::create_vehiculo(input).await
 }
 
@@ -29,13 +30,13 @@ pub async fn get_vehiculo_by_id(
     service::get_vehiculo_by_id(&id).await
 }
 
-/// Obtiene un vehículo por placa
+/// Identificación Rápida: Localiza un registro de vehículo mediante su placa/matrícula.
 #[tauri::command]
 pub async fn get_vehiculo_by_placa(placa: String) -> Result<VehiculoResponse, VehiculoError> {
     service::get_vehiculo_by_placa(placa).await
 }
 
-/// Obtiene todos los vehículos del sistema
+/// Auditoría Global: Lista todo el parque automotor registrado en el sistema.
 #[tauri::command]
 pub async fn get_all_vehiculos(
     session: State<'_, SessionState>,
@@ -44,13 +45,13 @@ pub async fn get_all_vehiculos(
     service::get_all_vehiculos().await
 }
 
-/// Obtiene todos los vehículos activos
+/// Monitor de Planta: Obtiene los vehículos que se encuentran actualmente en movimiento o parqueados.
 #[tauri::command]
 pub async fn get_vehiculos_activos() -> Result<Vec<VehiculoResponse>, VehiculoError> {
     service::get_vehiculos_activos().await
 }
 
-/// Obtiene todos los vehículos de un propietario específico (contratista, proveedor, visitante)
+/// Trazabilidad por Propietario: Filtra vehículos asociados a un ID específico (Persona o Empresa).
 #[tauri::command]
 pub async fn get_vehiculos_by_propietario(
     propietario_id: String,
@@ -58,7 +59,7 @@ pub async fn get_vehiculos_by_propietario(
     service::get_vehiculos_by_propietario(propietario_id).await
 }
 
-/// Actualiza información de un vehículo
+/// Actualiza los detalles técnicos o legales de un vehículo registrado.
 #[tauri::command]
 pub async fn update_vehiculo(
     id: String,
@@ -67,7 +68,7 @@ pub async fn update_vehiculo(
     service::update_vehiculo(id, input).await
 }
 
-/// Elimina un vehículo (eliminación física)
+/// Baja definitiva del vehículo del sistema de control.
 #[tauri::command]
 pub async fn delete_vehiculo(id: String) -> Result<(), VehiculoError> {
     service::delete_vehiculo(id).await

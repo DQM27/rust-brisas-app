@@ -1,7 +1,7 @@
+// Módulos de servicios que contienen la lógica de negocio de la aplicación.
 pub mod alerta_service;
 pub mod auth;
 pub mod avatar_service;
-// pub mod authorization; // Eliminado por surrealdb_authorization
 pub mod backup;
 pub mod session;
 
@@ -33,9 +33,9 @@ pub mod user_service;
 pub mod vehiculo_service;
 pub mod visitante_service;
 
-// SurrealDB
+// Servicios específicos para SurrealDB
 pub mod surrealdb_authorization;
 pub mod surrealdb_service;
 
-// Performance
+// Servicios de rendimiento y optimización
 pub mod cache_service;

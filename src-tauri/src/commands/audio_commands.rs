@@ -1,7 +1,14 @@
+/// Gestión de Notificaciones Auditivas y Personalización de Sonidos.
+///
+/// Este módulo permite la reproducción de alertas sonoras del sistema y la gestión
+/// de archivos de audio personalizados, facilitando la identificación auditiva
+/// de eventos críticos en portería.
 use crate::config::settings::AppConfigState;
 use std::process::Command;
 use tauri::{command, State};
 
+/// Reproduce un sonido de alerta basado en la configuración actual.
+/// Soporta sonidos nativos del sistema y archivos WAV personalizados en Windows.
 #[command]
 pub async fn play_alert_sound(config: State<'_, AppConfigState>) -> Result<(), String> {
     #[allow(unused_variables)]
@@ -37,6 +44,8 @@ pub async fn play_alert_sound(config: State<'_, AppConfigState>) -> Result<(), S
     Ok(())
 }
 
+/// Sube y establece un archivo de sonido personalizado para las alertas.
+/// Copia el archivo al directorio de datos local para persistencia.
 #[command]
 pub async fn upload_custom_sound(
     config: State<'_, AppConfigState>,
@@ -82,6 +91,7 @@ pub async fn upload_custom_sound(
     Ok(dest_str)
 }
 
+/// Comando auxiliar para reproducción directa de archivos (Stub).
 #[tauri::command]
 pub async fn play_sound(
     _sound: String,
@@ -91,6 +101,7 @@ pub async fn play_sound(
     Ok(())
 }
 
+/// Activa o desactiva el uso del sonido personalizado en la configuración.
 #[command]
 pub async fn set_use_custom_sound(
     config: State<'_, AppConfigState>,

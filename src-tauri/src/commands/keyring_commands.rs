@@ -1,8 +1,8 @@
-// ==========================================
-// src/commands/keyring_commands.rs
-// ==========================================
-// Comandos Tauri para gestión segura de credenciales
-
+/// Gestión de Credenciales y Seguridad del Llavero (Keyring Bridge).
+///
+/// Este módulo es responsable del manejo seguro de secretos, parámetros de encriptación
+/// y la configuración inicial del sistema (Wizard). Integra el llavero nativo del OS
+/// (Windows Credential Manager, macOS Keychain) para proteger llaves maestras y tokens.
 use crate::config::save_config;
 use crate::config::settings::AppConfigState;
 use crate::domain::errors::KeyringError;
@@ -17,6 +17,7 @@ use tauri::{command, State};
 // DTOs PARA COMANDOS
 // ==========================================
 
+/// Datos necesarios para el asistente de configuración inicial.
 #[derive(Debug, Deserialize)]
 pub struct SetupCredentialsInput {
     pub argon2: Argon2Params,
@@ -24,6 +25,7 @@ pub struct SetupCredentialsInput {
     pub terminal_location: String,
 }
 
+/// Resultado de la operación de configuración inicial.
 #[derive(Debug, Serialize)]
 pub struct SetupResult {
     pub success: bool,
@@ -34,30 +36,29 @@ pub struct SetupResult {
 // COMANDOS DE ESTADO
 // ==========================================
 
-/// Obtiene el estado de configuración de credenciales
+/// Obtiene el estado actual de las credenciales del sistema.
 #[command]
 pub fn get_credential_status() -> CredentialStatus {
     ks::get_credential_status()
 }
 
-/// Verifica si la app está completamente configurada
+/// Verifica si la aplicación tiene su configuración básica y secreta completa.
 #[command]
 pub fn is_app_configured(config: State<'_, AppConfigState>) -> bool {
-    // Necesitamos un read lock porque AppConfigState es RwLock
     if let Ok(guard) = config.read() {
         guard.setup.is_configured && ks::is_fully_configured()
     } else {
-        false // Si falla el lock, asumimos no configurado
+        false
     }
 }
 
-/// Verifica si necesita ejecutar el wizard de configuración
+/// Determina si es necesario mostrar el asistente de configuración (Wizard).
 #[command]
 pub fn needs_setup(config: State<'_, AppConfigState>) -> bool {
     if let Ok(guard) = config.read() {
         !guard.setup.is_configured || !ks::is_fully_configured()
     } else {
-        true // Si falla el lock, asumimos setup necesario
+        true
     }
 }
 
@@ -65,7 +66,7 @@ pub fn needs_setup(config: State<'_, AppConfigState>) -> bool {
 // COMANDOS DE SETUP INICIAL
 // ==========================================
 
-/// Configura todas las credenciales en el primer uso
+/// Orquesta la configuración inicial: llavero, archivos TOML y siembra de DB.
 #[command]
 pub async fn setup_credentials(
     session: State<'_, SessionState>,
@@ -74,9 +75,7 @@ pub async fn setup_credentials(
 ) -> Result<SetupResult, KeyringError> {
     require_perm!(session, "config:update", "Configuración inicial de credenciales")
         .map_err(|e| KeyringError::Message(e.to_string()))?;
-    // 1. Manejo inteligente del secreto Argon2
-    // Si ya existe un secreto en el Keyring, lo REUTILIZAMOS para no perder acceso a datos
-    // previos si solo se borró el TOML pero no las llaves de Windows.
+
     let mut final_argon2 = input.argon2.clone();
     if ks::has_argon2_secret() {
         let existing = ks::get_argon2_params();
@@ -86,10 +85,8 @@ pub async fn setup_credentials(
         }
     }
 
-    // 2. Guardar parámetros (reutilizando secreto si existía)
     ks::store_argon2_params(&final_argon2).map_err(|e| KeyringError::StoreError(e.to_string()))?;
 
-    // 3. Actualizar configuración en TOML
     {
         let mut config_guard = config.write().map_err(|e| {
             KeyringError::Message(format!("Error escribiendo configuración: {}", e))
@@ -112,7 +109,6 @@ pub async fn setup_credentials(
             .map_err(|e| KeyringError::Message(format!("Error guardando configuración: {}", e)))?;
     }
 
-    // 4. 🔥 IMPORTANTE: Disparar el SEED ahora que la llave es segura
     log::info!("🌱 Configuración completada. Ejecutando seed de base de datos...");
     if let Err(e) = crate::config::seed::seed_db().await {
         log::error!("❌ Error al sembrar base de datos tras setup: {}", e);
@@ -127,15 +123,14 @@ pub async fn setup_credentials(
 }
 
 // ==========================================
-// COMANDOS ARGON2 (Solo admin)
+// COMANDOS ARGON2 (Administración Avanzada)
 // ==========================================
 
-/// Obtiene parámetros de Argon2 (sin el secret)
+/// Recupera la configuración técnica de Argon2 (excluyendo el secreto).
 #[command]
 pub async fn get_argon2_config(
     session: State<'_, SessionState>,
 ) -> Result<Argon2ParamsSafe, KeyringError> {
-    // Solo permitir lectura si tiene permiso config:read
     require_perm!(session, "config:read").map_err(|e| KeyringError::Message(e.to_string()))?;
 
     let params = ks::get_argon2_params();
@@ -155,7 +150,7 @@ pub struct Argon2ParamsSafe {
     pub has_secret: bool,
 }
 
-/// Actualiza parámetros de Argon2
+/// Actualiza los parámetros de seguridad para las derivaciones futuras de llaves.
 #[command]
 pub async fn update_argon2_params(
     session: State<'_, SessionState>,
@@ -166,28 +161,27 @@ pub async fn update_argon2_params(
     ks::store_argon2_params(&params).map_err(|e| KeyringError::StoreError(e.to_string()))
 }
 
-/// Genera un nuevo secret aleatorio para Argon2
+/// Genera un secreto aleatorio compatible con la encriptación del sistema.
 #[command]
 pub fn generate_argon2_secret() -> String {
     ks::generate_random_secret()
 }
 
 // ==========================================
-// COMANDOS DE UTILIDAD
+// COMANDOS DE UTILIDAD Y DIAGNÓSTICO
 // ==========================================
 
-/// Genera un secret aleatorio para usar en configuración
 #[command]
 pub fn generate_random_secret() -> String {
     ks::generate_random_secret()
 }
 
-/// Comando de diagnóstico para probar el keyring
+/// Ejecuta una batería de pruebas sobre el llavero del sistema para verificar permisos.
 #[command]
 pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, KeyringError> {
     require_perm!(session, "config:read", "Diagnóstico de Keyring")
         .map_err(|e| KeyringError::Message(e.to_string()))?;
-    // Implementación multiplataforma usando el keyring_service
+
     #[cfg(target_os = "linux")]
     use crate::services::keyring_linux as keyring_impl;
 
@@ -201,11 +195,9 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
     let test_value = "test-password-123";
     let mut results = Vec::new();
 
-    // Obtener información del OS
     results.push(format!("Sistema operativo: {}", std::env::consts::OS));
     results.push("".to_string());
 
-    // 1. Guardar credencial
     results.push("1. Guardando credencial de prueba...".to_string());
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     match keyring_impl::store_secret(test_key, test_value) {
@@ -230,7 +222,6 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
         }
     }
 
-    // 2. Recuperar credencial
     results.push("2. Recuperando credencial...".to_string());
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     match keyring_impl::retrieve_secret(test_key) {
@@ -275,7 +266,6 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
         }
     }
 
-    // 3. Eliminar credencial
     results.push("3. Eliminando credencial...".to_string());
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     match keyring_impl::delete_secret(test_key) {
@@ -298,7 +288,6 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
         }
     }
 
-    // 4. Verificar eliminación
     results.push("4. Verificando eliminación...".to_string());
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     match keyring_impl::retrieve_secret(test_key) {
@@ -330,7 +319,8 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
     Ok(results.join("\n"))
 }
 
-/// Resetea todas las credenciales (usar con cuidado)
+/// Elimina toda la configuración de seguridad y secretos del sistema.
+/// ¡ATENCIÓN!: Esta operación es destructiva y requiere reconfigurar la app.
 #[command]
 pub async fn reset_all_credentials(
     session: State<'_, SessionState>,
@@ -343,10 +333,8 @@ pub async fn reset_all_credentials(
         return Err(KeyringError::Message("Debes confirmar la operación".to_string()));
     }
 
-    // Eliminar credenciales del Keyring del OS
     let _ = ks::delete_argon2_params();
 
-    // Actualizar estado de configuración con write lock
     let mut config_guard = config
         .write()
         .map_err(|e| KeyringError::Message(format!("Error escribiendo configuración: {}", e)))?;
@@ -355,7 +343,6 @@ pub async fn reset_all_credentials(
     config_guard.setup.configured_at = None;
     config_guard.setup.configured_version = None;
 
-    // También borrar info de terminal para reset completo
     config_guard.terminal.nombre = String::new();
     config_guard.terminal.ubicacion = String::new();
 
@@ -372,28 +359,23 @@ pub async fn reset_all_credentials(
 }
 
 // ==========================================
-// COMANDOS DE CREDENCIALES (PÚBLICOS/LOCALES)
+// COMANDOS DE PERSISTENCIA SEGURA LOCAL
 // ==========================================
 
-/// Guarda un secreto en el llavero del sistema
+/// Almacena un par clave-valor en el llavero seguro del sistema operativo.
 #[command]
 pub async fn save_secret(key: String, value: String) -> Result<(), KeyringError> {
-    // No requiere sesión porque:
-    // 1. Es local al sistema (Keyring del usuario de SO)
-    // 2. Puede usarse en pre-login para guardar credenciales o configuraciones
     ks::save_secret(&key, &value).map_err(|e| KeyringError::StoreError(e.to_string()))
 }
 
-/// Recupera un secreto del llavero del sistema
+/// Recupera un valor secreto previamente guardado.
 #[command]
 pub async fn get_secret(key: String) -> Result<Option<String>, KeyringError> {
-    // No requiere sesión (necesario para autocompletar login)
     Ok(ks::get_secret(&key))
 }
 
-/// Elimina un secreto del llavero del sistema
+/// Borra una clave del llavero seguro para que no pueda ser recuperada.
 #[command]
 pub async fn delete_secret(key: String) -> Result<(), KeyringError> {
-    // No requiere sesión
     ks::delete_secret(&key).map_err(|e| KeyringError::DeleteError(e.to_string()))
 }

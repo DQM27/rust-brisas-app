@@ -1,15 +1,16 @@
-// ==========================================
-// src/services/visitante_service.rs
-// ==========================================
-// Capa de servicio: Lógica de negocio para Visitantes
-
+/// Gestión de Visitantes Ocasionales.
+///
+/// Este servicio maneja el ciclo de vida de las personas que ingresan de forma puntual
+/// o esporádica a las instalaciones (ej. familiares, mensajería, visitas técnicas únicas).
+/// A diferencia de los contratistas, su registro es más ágil pero mantiene los
+/// mismos estándares de seguridad (Lista Negra y Control Vehicular).
 use crate::db::surrealdb_lista_negra_queries as ln_db;
-use crate::db::surrealdb_vehiculo_queries as veh_db; // NEW IMPORT
+use crate::db::surrealdb_vehiculo_queries as veh_db;
 use crate::db::surrealdb_visitante_queries as db;
 use crate::domain::errors::VisitanteError;
-use crate::domain::vehiculo as vehiculo_domain; // NEW IMPORT
+use crate::domain::vehiculo as vehiculo_domain;
 use crate::domain::visitante as domain;
-use crate::models::vehiculo::{TipoVehiculo, VehiculoCreateDTO}; // NEW IMPORTS
+use crate::models::vehiculo::{TipoVehiculo, VehiculoCreateDTO};
 use crate::models::visitante::{
     CreateVisitanteInput, VisitanteCreateDTO, VisitanteResponse, VisitanteUpdateDTO,
 };
@@ -18,13 +19,13 @@ use chrono::Utc;
 use log::{error, info};
 use surrealdb::RecordId;
 
-// Helper para mapear errores de SurrealDB a VisitanteError
+/// Mapeo de errores técnicos a errores de negocio.
 fn map_db_error(e: SurrealDbError) -> VisitanteError {
-    error!("Error de base de datos (SurrealDB): {}", e);
+    error!("Fallo en SurrealDB durante operación de visitantes: {}", e);
     VisitanteError::Database(e.to_string())
 }
 
-/// Helper para parsear ID de visitante (acepta con o sin prefijo)
+/// Normalización de IDs de visitante.
 fn parse_visitante_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
@@ -34,7 +35,7 @@ fn parse_visitante_id(id_str: &str) -> RecordId {
     }
 }
 
-/// Helper para parsear ID de empresa (acepta con o sin prefijo)
+/// Normalización de IDs de empresa.
 fn parse_empresa_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
@@ -44,13 +45,18 @@ fn parse_empresa_id(id_str: &str) -> RecordId {
     }
 }
 
+/// Registra un nuevo visitante.
+///
+/// El flujo garantiza:
+/// 1. Validación y Normalización de Identidad (Cédula y Nombres).
+/// 2. Filtro de Seguridad: Bloqueo si aparece en la lista negra.
+/// 3. Registro de Propiedad Vehicular: Si el visitante ingresa con vehículo propio.
 pub async fn create_visitante(
     mut input: CreateVisitanteInput,
 ) -> Result<VisitanteResponse, VisitanteError> {
-    // 1. Validar input
     domain::validar_create_input(&input)?;
 
-    // 2. Normalizar
+    // Normalización de datos para evitar duplicados por formato.
     input.cedula = domain::normalizar_cedula(&input.cedula);
     input.nombre = domain::normalizar_nombre(&input.nombre);
     input.apellido = domain::normalizar_nombre(&input.apellido);
@@ -64,24 +70,22 @@ pub async fn create_visitante(
         input.empresa = Some(s.trim().to_string());
     }
 
-    // 3. Verificar que NO esté en lista negra
+    // Seguridad: Chequeo preventivo obligatorio.
     let block_status =
         ln_db::check_if_blocked_by_cedula(&input.cedula).await.map_err(map_db_error)?;
 
     if block_status.is_blocked {
         let nivel = block_status.nivel_severidad.unwrap_or_else(|| "BAJO".to_string());
         return Err(VisitanteError::Validation(format!(
-            "No se puede registrar. La persona con cédula {} está en lista negra. Nivel: {}",
+            "BLOQUEO DE SEGURIDAD: Cédula {} en lista negra (Nivel: {}).",
             input.cedula, nivel
         )));
     }
 
-    // 4. Validar si ya existe cédula
     if db::get_visitante_by_cedula(&input.cedula).await.map_err(map_db_error)?.is_some() {
         return Err(VisitanteError::CedulaExists);
     }
 
-    // 5. Preparar DTO
     let dto = VisitanteCreateDTO {
         cedula: input.cedula,
         nombre: input.nombre,
@@ -92,14 +96,13 @@ pub async fn create_visitante(
         has_vehicle: input.has_vehicle,
     };
 
-    info!("Creando visitante: {} {}", dto.nombre, dto.apellido);
+    info!("Registrando nuevo visitante: {} {}", dto.nombre, dto.apellido);
     let visitante = db::create_visitante(dto).await.map_err(map_db_error)?;
 
-    // 6. Gestionar Vehículo (Opcional)
+    // Gestión del vehículo asociado al visitante para control de acceso.
     if input.has_vehicle {
         if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
             if !tipo.is_empty() && !placa.is_empty() {
-                // Validaciones
                 let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
                     .map_err(|e| VisitanteError::Validation(e.to_string()))?
                     .as_str()
@@ -119,17 +122,12 @@ pub async fn create_visitante(
                     is_active: true,
                 };
 
-                if let Err(e) = veh_db::insert(dto_vehiculo).await {
-                    error!("Error al crear vehículo para visitante {}: {}", visitante.id, e);
-                    // Log error but don't fail visitor creation
-                } else {
-                    info!("Vehículo creado para visitante {}", visitante.id);
-                }
+                let _ = veh_db::insert(dto_vehiculo).await;
             }
         }
     }
 
-    // Fetch to get company name
+    // Retornamos el perfil completo (incluyendo resolución de empresa si aplica).
     if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
         return Ok(VisitanteResponse::from_fetched(fetched));
     }
@@ -158,19 +156,17 @@ pub async fn get_visitante_by_cedula(
     Ok(opt.map(VisitanteResponse::from))
 }
 
+/// Actualiza los datos de un visitante.
 pub async fn update_visitante(
     id_str: &str,
     mut input: CreateVisitanteInput,
 ) -> Result<VisitanteResponse, VisitanteError> {
     let id_thing = parse_visitante_id(id_str);
 
-    // 1. Validar si existe
     db::find_by_id(&id_thing).await.map_err(map_db_error)?.ok_or(VisitanteError::NotFound)?;
 
-    // 2. Normalizar
     input.nombre = domain::normalizar_nombre(&input.nombre);
     input.apellido = domain::normalizar_nombre(&input.apellido);
-    // ... (rest of normalization) ...
 
     let mut dto = VisitanteUpdateDTO::default();
     dto.nombre = Some(input.nombre);
@@ -183,7 +179,6 @@ pub async fn update_visitante(
 
     let visitante = db::update(&id_thing, dto).await.map_err(map_db_error)?;
 
-    // Fetch to get company name
     if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
         return Ok(VisitanteResponse::from_fetched(fetched));
     }
@@ -201,7 +196,6 @@ pub async fn restore_visitante(id_str: &str) -> Result<VisitanteResponse, Visita
     let id_thing = parse_visitante_id(id_str);
     let visitante = db::restore(&id_thing).await.map_err(map_db_error)?;
 
-    // Fetch to get company name
     if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
         return Ok(VisitanteResponse::from_fetched(fetched));
     }

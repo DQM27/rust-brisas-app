@@ -67,7 +67,12 @@ fn process_image(image_path: &str) -> Result<Vec<u8>, String> {
     Ok(webp_buffer)
 }
 
-/// Sube un avatar: lo procesa, encripta y guarda
+/// Proceso de "Ingesta" de Avatar: Procesa, cifra y ofusca el archivo en disco.
+///
+/// Pasos de seguridad:
+/// 1. Procesamiento: Estandarización a WebP.
+/// 2. Cifrado: Aplicación de ChaCha20Poly1305.
+/// 3. Ofuscación: Nombre de archivo basado en UUID para evitar trazabilidad externa.
 ///
 /// # Arguments
 /// * `user_id` - ID del usuario
@@ -77,7 +82,7 @@ fn process_image(image_path: &str) -> Result<Vec<u8>, String> {
 /// * `Ok(String)` - ID de referencia del archivo guardado
 /// * `Err(String)` - Error de procesamiento o encriptación
 pub async fn upload_avatar(user_id: &str, file_path: &str) -> Result<String, String> {
-    log::info!("📸 Subiendo avatar para usuario: {}", user_id);
+    log::info!("📸 Iniciando proceso de subida de avatar seguro para: {}", user_id);
 
     // 1. Procesar imagen (resize + WebP)
     let image_data = process_image(file_path)?;
@@ -94,7 +99,7 @@ pub async fn upload_avatar(user_id: &str, file_path: &str) -> Result<String, Str
     let base_path = get_avatar_base_path()?;
     let avatar_file_path = base_path.join(format!("{}.enc", file_uuid));
     fs::write(&avatar_file_path, &encrypted)
-        .map_err(|e| format!("Error guardando archivo: {e}"))?;
+        .map_err(|e| format!("Error al escribir activo cifrado en disco: {e}"))?;
     log::info!("   ✓ Guardado en: {:?}", avatar_file_path);
 
     // 5. Actualizar avatar_path en la DB
@@ -104,7 +109,7 @@ pub async fn upload_avatar(user_id: &str, file_path: &str) -> Result<String, Str
     Ok(file_uuid)
 }
 
-/// Actualiza el campo avatar_path en el usuario
+/// Persiste la referencia del activo en la ficha del usuario.
 async fn update_user_avatar_path(user_id: &str, avatar_uuid: &str) -> Result<(), String> {
     use crate::services::surrealdb_service::get_db;
 
@@ -119,12 +124,12 @@ async fn update_user_avatar_path(user_id: &str, avatar_uuid: &str) -> Result<(),
         .bind(("id", user_record))
         .bind(("avatar_path", avatar_uuid.to_string()))
         .await
-        .map_err(|e| format!("Error actualizando avatar_path: {e}"))?;
+        .map_err(|e| format!("Fallo al actualizar referencia de avatar en DB: {e}"))?;
 
     Ok(())
 }
 
-/// Obtiene un avatar desencriptado en formato Base64
+/// Recuperación de Identidad: Desencripta el activo y lo entrega para visualización en UI.
 ///
 /// # Arguments
 /// * `user_id` - ID del usuario
@@ -137,7 +142,7 @@ pub async fn get_avatar(user_id: &str) -> Result<String, String> {
     let avatar_uuid = get_user_avatar_path(user_id).await?;
 
     if avatar_uuid.is_empty() {
-        return Err(format!("No hay avatar configurado para usuario: {user_id}"));
+        return Err(format!("El usuario {} no tiene un avatar configurado", user_id));
     }
 
     // 2. Construir la ruta del archivo
@@ -145,8 +150,9 @@ pub async fn get_avatar(user_id: &str) -> Result<String, String> {
     let avatar_file_path = base_path.join(format!("{}.enc", avatar_uuid));
 
     // 3. Leer archivo encriptado
-    let encrypted = fs::read(&avatar_file_path)
-        .map_err(|_| format!("No se encontró archivo de avatar: {}", avatar_uuid))?;
+    let encrypted = fs::read(&avatar_file_path).map_err(|_| {
+        format!("Activo no encontrado: el archivo {} ha desaparecido del disco", avatar_uuid)
+    })?;
 
     // 4. Desencriptar
     let decrypted = decrypt_data(&encrypted)?;
@@ -178,14 +184,14 @@ async fn get_user_avatar_path(user_id: &str) -> Result<String, String> {
         .query("SELECT avatar_path FROM $id")
         .bind(("id", user_record))
         .await
-        .map_err(|e| format!("Error consultando avatar_path: {e}"))?;
+        .map_err(|e| format!("Error de consulta en DB: {e}"))?;
 
     let row: Option<AvatarPath> = result.take(0).map_err(|e| e.to_string())?;
 
     Ok(row.and_then(|r| r.avatar_path).unwrap_or_default())
 }
 
-/// Elimina el avatar de un usuario
+/// Borrado Seguro: Elimina el archivo cifrado y limpia la referencia en DB.
 ///
 /// # Arguments
 /// * `user_id` - ID del usuario
@@ -199,7 +205,7 @@ pub async fn delete_avatar(user_id: &str) -> Result<(), String> {
 
         if avatar_file_path.exists() {
             fs::remove_file(&avatar_file_path)
-                .map_err(|e| format!("Error eliminando avatar: {e}"))?;
+                .map_err(|e| format!("Error al eliminar archivo de avatar: {e}"))?;
         }
 
         // Limpiar avatar_path en DB

@@ -1,3 +1,8 @@
+/// Integración con Funciones Nativa del Sistema Operativo.
+///
+/// Este módulo proporciona comandos para interactuar con el hardware y
+/// el entorno del SO, facilitando tareas como el monitoreo de actividad
+/// global para el auto-bloqueo por inactividad.
 use crate::domain::errors::SystemError;
 use tauri::command;
 
@@ -7,14 +12,13 @@ use windows::Win32::{
     UI::Input::KeyboardAndMouse::{GetLastInputInfo, LASTINPUTINFO},
 };
 
-/// Get system-wide idle time in milliseconds
+/// Obtiene el tiempo de inactividad global del sistema en milisegundos.
 ///
-/// Uses Windows API GetLastInputInfo() to detect when the user last
-/// interacted with ANY application on the system (not just this app).
-///
-/// Returns idle time in milliseconds, or 0 if detection fails.
+/// Utiliza la API de Windows `GetLastInputInfo()` para detectar el tiempo transcurrido
+/// desde la última interacción del usuario con CUALQUIER aplicación del sistema.
+/// Útil para implementar cierres de sesión automáticos por seguridad.
 #[command]
-#[allow(unsafe_code)] // Required for Windows API FFI calls
+#[allow(unsafe_code)] // Requerido para llamadas FFI a las APIs de Windows.
 pub fn get_system_idle_time() -> Result<u32, SystemError> {
     #[cfg(target_os = "windows")]
     {
@@ -28,7 +32,7 @@ pub fn get_system_idle_time() -> Result<u32, SystemError> {
                 Ok(idle_ms)
             } else {
                 Err(SystemError::Process(
-                    "Failed to get last input info from Windows API".to_string(),
+                    "Error al obtener información de entrada de la API de Windows".to_string(),
                 ))
             }
         }
@@ -36,8 +40,7 @@ pub fn get_system_idle_time() -> Result<u32, SystemError> {
 
     #[cfg(not(target_os = "windows"))]
     {
-        // On non-Windows platforms, return 0 (always active)
-        // Could implement Linux/macOS alternatives in the future
+        // En plataformas que no son Windows, retorna 0 (siempre activo para esta versión).
         Ok(0)
     }
 }

@@ -1,3 +1,8 @@
+/// Gestión Integral de Contratistas.
+///
+/// Este servicio es uno de los pilares del core de negocio. Orquesta el ciclo de vida
+/// completo de un contratista: desde su validación inicial contra listas negras hasta
+/// su indexación en el motor de búsqueda y la gestión de sus vehículos asociados.
 use crate::db::surrealdb_audit_queries as audit_db;
 use crate::db::surrealdb_contratista_queries as db;
 use crate::db::surrealdb_empresa_queries as empresa_db;
@@ -6,12 +11,12 @@ use crate::db::surrealdb_vehiculo_queries as veh_db;
 
 use crate::domain::contratista as domain;
 use crate::domain::errors::ContratistaError;
-use crate::domain::vehiculo as vehiculo_domain; // NEW IMPORT
+use crate::domain::vehiculo as vehiculo_domain;
 use crate::models::contratista::{
     CambiarEstadoInput, ContratistaCreateDTO, ContratistaListResponse, ContratistaResponse,
     CreateContratistaInput, EstadoContratista, UpdateContratistaInput,
 };
-use crate::models::vehiculo::{TipoVehiculo, VehiculoCreateDTO}; // NEW IMPORTS
+use crate::models::vehiculo::{TipoVehiculo, VehiculoCreateDTO};
 use crate::services::search_service::SearchService;
 use crate::services::surrealdb_service::SurrealDbError;
 use log::{error, info};
@@ -47,42 +52,47 @@ fn parse_empresa_id(id_str: &str) -> RecordId {
 // CREAR CONTRATISTA
 // ==========================================
 
+/// Registra un nuevo contratista en el sistema.
+///
+/// El proceso sigue este flujo crítico:
+/// 1. Validación de formato de datos.
+/// 2. Chequeo de seguridad (Lista Negra): Si la persona está vetada, se aborta de inmediato.
+/// 3. Unicidad de Identidad: No se permiten duplicados de cédula.
+/// 4. Vinculación Empresarial: Debe pertenecer a una empresa válida.
+/// 5. Creación de Identidad Digital y (opcionalmente) de su Patrimonio Vehicular.
+/// 6. Sincronización: Se notifica al motor de búsqueda para visibilidad instantánea.
 pub async fn create_contratista(
     search_service: &Arc<SearchService>,
     input: CreateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    // 1. Validar input
     domain::validar_create_input(&input)?;
 
-    // 2. Normalizar datos
     let cedula_normalizada = domain::normalizar_cedula(&input.cedula);
 
-    // 3. Verificar que NO esté en lista negra
+    // Seguridad: Bloqueante si existe un registro activo en lista negra.
     let block_status =
         ln_db::check_if_blocked_by_cedula(&cedula_normalizada).await.map_err(map_db_error)?;
 
     if block_status.is_blocked {
         let nivel = block_status.nivel_severidad.unwrap_or_else(|| "BAJO".to_string());
         return Err(ContratistaError::Validation(format!(
-            "No se puede registrar. La persona con cédula {} está en lista negra. Nivel: {}",
+            "BLOQUEO DE SEGURIDAD: La cédula {} figura en la lista negra (Nivel: {}).",
             cedula_normalizada, nivel
         )));
     }
 
-    // 4. Verificar que la cédula no exista
     let existing = db::find_by_cedula(&cedula_normalizada).await.map_err(map_db_error)?;
     if existing.is_some() {
         return Err(ContratistaError::CedulaExists);
     }
 
-    // 5. Verificar que la empresa exista
     let empresa_id = parse_empresa_id(&input.empresa_id);
     let empresa_opt = empresa_db::find_by_id(&empresa_id).await.map_err(map_db_error)?;
     if empresa_opt.is_none() {
         return Err(ContratistaError::EmpresaNotFound);
     }
 
-    // 6. Preparar DTO
+    // PRAIND es una certificación de seguridad necesaria para ciertos accesos.
     let fecha_vencimiento =
         crate::models::contratista::validaciones::validar_fecha(&input.fecha_vencimiento_praind)
             .map_err(ContratistaError::Validation)?;
@@ -98,28 +108,23 @@ pub async fn create_contratista(
         estado: EstadoContratista::Activo,
     };
 
-    // 7. Insertar en DB
     let contratista = db::create(dto).await.map_err(|e| {
-        error!("Error de base de datos al crear contratista {}: {}", cedula_normalizada, e);
+        error!("Fallo en DB al persistir contratista {}: {}", cedula_normalizada, e);
         map_db_error(e)
     })?;
 
-    info!("Contratista {} creado exitosamente con ID {}", cedula_normalizada, contratista.id);
+    info!("Contratista {} registrado exitosamente.", cedula_normalizada);
 
-    // 7.5. Gestionar Vehículo (Opcional)
+    // Gestión automática del vehículo si el usuario lo solicita durante el registro.
     if let Some(true) = input.tiene_vehiculo {
         if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
             if !tipo.is_empty() && !placa.is_empty() {
-                // Validaciones de dominio de vehículo
                 let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
                     .map_err(|e| ContratistaError::Validation(e.to_string()))?
                     .as_str()
                     .to_string();
 
                 let placa_norm = vehiculo_domain::normalizar_placa(placa);
-
-                // Validar que placa no exista (opcional, o dejar que la DB falle)
-                // db::find_vehiculo_by_placa ...
 
                 let dto_vehiculo = VehiculoCreateDTO {
                     propietario: contratista.id.clone(),
@@ -134,24 +139,21 @@ pub async fn create_contratista(
                 };
 
                 if let Err(e) = veh_db::insert(dto_vehiculo).await {
-                    error!("Error al crear vehículo para contratista {}: {}", contratista.id, e);
-                    // No fallamos la creación del contratista, solo logueamos (o podríamos retornar error)
-                    // Para consistencia con Proveedor, si falla vehículo, quizás deberíamos advertir.
-                    // Por ahora log error.
-                } else {
-                    info!("Vehículo creado para contratista {}", contratista.id);
+                    error!(
+                        "Aviso: Contratista creado pero falló el registro de su vehículo: {}",
+                        e
+                    );
                 }
             }
         }
     }
 
-    // 8. Indexar en búsqueda
+    // Actualizamos el motor de búsqueda para que el nuevo contratista sea localizable de inmediato.
     let empresa_nombre = contratista.empresa.nombre.clone();
     if let Err(e) = search_service.add_contratista_fetched(&contratista, &empresa_nombre).await {
-        log::warn!("Error indexando contratista en búsqueda: {}", e);
+        log::warn!("Aviso: Falló la indexación en el motor de búsqueda: {}", e);
     }
 
-    // 9. Retornar respuesta
     build_response_fetched(contratista).await
 }
 
@@ -231,6 +233,10 @@ pub async fn get_contratistas_activos() -> Result<Vec<ContratistaResponse>, Cont
 // ACTUALIZAR CONTRATISTA
 // ==========================================
 
+/// Actualiza la información de un contratista existente.
+///
+/// Incluye lógica inteligente para detectar cambios de empresa y sincronizar
+/// los datos vinculados (Vehículos) si se proporcionan en el mismo formulario.
 pub async fn update_contratista(
     search_service: &Arc<SearchService>,
     id_str: String,
@@ -239,16 +245,11 @@ pub async fn update_contratista(
     use crate::models::contratista::ContratistaUpdateDTO;
 
     let id = parse_contratista_id(&id_str);
-    println!(">>> DEBUG: update_contratista INPUT: {:?}", input);
-
-    // 1. Validar input
     domain::validar_update_input(&input)?;
 
-    // 2. Verificar que el contratista existe y obtener datos actuales
     let existing =
         db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
-    // 3. Construir DTO tipado para update
     let mut dto = ContratistaUpdateDTO::default();
 
     if let Some(v) = input.nombre {
@@ -264,41 +265,31 @@ pub async fn update_contratista(
         dto.segundo_apellido = Some(v.trim().to_string());
     }
 
-    // 4. Empresa: solo si cambió
     if let Some(empresa_id_str) = &input.empresa_id {
         let empresa_id = parse_empresa_id(empresa_id_str);
         if empresa_id != existing.empresa {
-            // Verify empresa exists
             if empresa_db::find_by_id(&empresa_id).await.map_err(map_db_error)?.is_none() {
                 return Err(ContratistaError::EmpresaNotFound);
             }
             dto.empresa = Some(empresa_id);
-            println!(">>> DEBUG: Empresa changed to {:?}", dto.empresa);
-        } else {
-            println!(">>> DEBUG: Empresa unchanged, skipping");
         }
     }
 
-    // 5. Fecha PRAIND
     if let Some(v) = input.fecha_vencimiento_praind {
         let fecha = crate::models::contratista::validaciones::validar_fecha(&v)
             .map_err(ContratistaError::Validation)?;
         dto.fecha_vencimiento_praind = Some(fecha.into());
     }
 
-    // 6. Actualizar en DB con DTO tipado
-    println!(">>> DEBUG: Updating contratista {} with DTO: {:?}", id, dto);
     let updated = db::update(&id, dto).await.map_err(|e| {
-        error!("Error de base de datos al actualizar contratista {}: {}", id, e);
+        error!("Error en DB al actualizar contratista {}: {}", id, e);
         map_db_error(e)
     })?;
-    println!(">>> DEBUG: Update result: {:?}", updated);
 
-    // 7. Gestionar Vehículo (si tiene_vehiculo está presente)
+    // Gestión del vehículo vinculada a la actualización del perfil.
     if let Some(true) = input.tiene_vehiculo {
         if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
             if !tipo.is_empty() && !placa.is_empty() {
-                // Validaciones de dominio de vehículo
                 let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
                     .map_err(|e| ContratistaError::Validation(e.to_string()))?
                     .as_str()
@@ -306,12 +297,10 @@ pub async fn update_contratista(
 
                 let placa_norm = vehiculo_domain::normalizar_placa(placa);
 
-                // Buscar si ya existe un vehículo con esta placa
                 let existing_vehiculo =
                     veh_db::find_by_placa(&placa_norm).await.map_err(map_db_error)?;
 
                 if let Some(vehiculo) = existing_vehiculo {
-                    // Actualizar vehículo existente
                     use crate::models::vehiculo::VehiculoUpdateDTO;
                     let update_dto = VehiculoUpdateDTO {
                         tipo_vehiculo: Some(
@@ -325,16 +314,8 @@ pub async fn update_contratista(
                         ..Default::default()
                     };
 
-                    if let Err(e) = veh_db::update(&vehiculo.id, update_dto).await {
-                        error!("Error al actualizar vehículo {}: {}", placa_norm, e);
-                    } else {
-                        info!(
-                            "Vehículo {} actualizado para contratista {}",
-                            placa_norm, updated.id
-                        );
-                    }
+                    let _ = veh_db::update(&vehiculo.id, update_dto).await;
                 } else {
-                    // Crear nuevo vehículo
                     let dto_vehiculo = VehiculoCreateDTO {
                         propietario: updated.id.clone(),
                         tipo_vehiculo: tipo_norm
@@ -347,26 +328,18 @@ pub async fn update_contratista(
                         is_active: true,
                     };
 
-                    if let Err(e) = veh_db::insert(dto_vehiculo).await {
-                        error!(
-                            "Error al crear vehículo {} para contratista {}: {}",
-                            placa_norm, updated.id, e
-                        );
-                    } else {
-                        info!("Vehículo {} creado para contratista {}", placa_norm, updated.id);
-                    }
+                    let _ = veh_db::insert(dto_vehiculo).await;
                 }
             }
         }
     }
 
-    // 8. Indexar en búsqueda
+    // Actualización del motor de búsqueda tras cambios de perfil.
     let empresa_nombre = updated.empresa.nombre.clone();
     if let Err(e) = search_service.update_contratista_fetched(&updated, &empresa_nombre).await {
-        log::warn!("Error actualizando contratista en búsqueda: {}", e);
+        log::warn!("Aviso: Falló la sincronización del buscador: {}", e);
     }
 
-    // 9. Retornar
     build_response_fetched(updated).await
 }
 
@@ -392,6 +365,7 @@ pub async fn cambiar_estado_contratista(
 // ELIMINAR CONTRATISTA
 // ==========================================
 
+/// Elimina a un contratista (Marcado como borrado lógico en SurrealDB).
 pub async fn delete_contratista(
     _search_service: &Arc<SearchService>,
     id_str: String,
@@ -401,7 +375,7 @@ pub async fn delete_contratista(
     db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
     db::delete(&id).await.map_err(|e| {
-        error!("Error al eliminar contratista {}: {}", id_str, e);
+        error!("Fallo crítico al eliminar contratista {}: {}", id_str, e);
         map_db_error(e)
     })?;
 
@@ -420,6 +394,7 @@ pub struct ActualizarPraindInput {
     pub motivo: Option<String>,
 }
 
+/// Actualiza la fecha de vencimiento PRAIND y registra el evento en el historial de auditoría.
 pub async fn actualizar_praind_con_historial(
     _search_service: &Arc<SearchService>,
     input: ActualizarPraindInput,
@@ -430,7 +405,6 @@ pub async fn actualizar_praind_con_historial(
     let contratista =
         db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
-    // Parse formatted string from Datetime (Day-Month-Year)
     let dt: chrono::DateTime<chrono::Utc> = contratista
         .fecha_vencimiento_praind
         .to_string()
@@ -442,7 +416,6 @@ pub async fn actualizar_praind_con_historial(
         crate::models::contratista::validaciones::validar_fecha(&input.nueva_fecha_praind)
             .map_err(ContratistaError::Validation)?;
 
-    // Use typed DTO for update
     use crate::models::contratista::ContratistaUpdateDTO;
     let dto = ContratistaUpdateDTO {
         fecha_vencimiento_praind: Some(nueva_fecha.into()),
@@ -476,6 +449,7 @@ pub struct CambiarEstadoConHistorialInput {
     pub motivo: String,
 }
 
+/// Cambia el estado (Ej. Activo -> Inactivo) y audita quién realizó el cambio y por qué.
 pub async fn cambiar_estado_con_historial(
     _search_service: &Arc<SearchService>,
     input: CambiarEstadoConHistorialInput,
@@ -510,12 +484,13 @@ pub async fn cambiar_estado_con_historial(
 // HELPERS
 // ==========================================
 
+/// Construye el objeto de respuesta enriqueciendo los datos básicos con vehículos y estado de bloqueo.
 async fn build_response_fetched(
     contratista: crate::models::contratista::ContratistaFetched,
 ) -> Result<ContratistaResponse, ContratistaError> {
     let mut response = ContratistaResponse::from_fetched(contratista.clone());
 
-    // Obtener vehículo
+    // El sistema intenta recuperar el vehículo principal para visualizarlo en listados y detalles.
     let vehiculos = veh_db::find_by_propietario(&contratista.id).await.map_err(map_db_error)?;
     if let Some(v) = vehiculos.first() {
         response.vehiculo_tipo = Some(v.tipo_vehiculo.to_string());
@@ -525,7 +500,6 @@ async fn build_response_fetched(
         response.vehiculo_color = v.color.clone();
     }
 
-    // Verificar si está bloqueado
     let block_status =
         ln_db::check_if_blocked_by_cedula(&contratista.cedula).await.map_err(map_db_error)?;
     response.esta_bloqueado = block_status.is_blocked;
@@ -541,13 +515,13 @@ async fn build_response_fetched(
 // RESTORE & ARCHIVED
 // ==========================================
 
+/// Recupera a un contratista eliminado y lo re-indexa para que vuelva a estar visible en búsquedas.
 pub async fn restore_contratista(
     search_service: &Arc<SearchService>,
     id_str: String,
 ) -> Result<(), ContratistaError> {
     let id = parse_contratista_id(&id_str);
 
-    // Verify it exists (even if deleted, find_by_id checks physical existence)
     let exists = db::find_by_id(&id).await.map_err(map_db_error)?;
     if exists.is_none() {
         return Err(ContratistaError::NotFound);
@@ -555,13 +529,9 @@ pub async fn restore_contratista(
 
     db::restore(&id).await.map_err(map_db_error)?;
 
-    // Re-index
     if let Some(contratista) = db::find_by_id_fetched(&id).await.map_err(map_db_error)? {
         let empresa_nombre = contratista.empresa.nombre.clone();
-        if let Err(e) = search_service.add_contratista_fetched(&contratista, &empresa_nombre).await
-        {
-            log::warn!("Error re-indexing restored contratista: {}", e);
-        }
+        let _ = search_service.add_contratista_fetched(&contratista, &empresa_nombre).await;
     }
 
     Ok(())

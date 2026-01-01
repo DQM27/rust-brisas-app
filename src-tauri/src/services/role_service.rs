@@ -1,8 +1,9 @@
-// ==========================================
-// src/services/role_service.rs
-// ==========================================
-// Capa de servicio: orquesta dominio, db y lógica
-
+/// Gestión de Roles y Permisos (RBAC).
+///
+/// Este servicio constituye el motor de seguridad de la aplicación. Define qué
+/// acciones puede realizar cada usuario basándose en su rol asignado.
+/// Soporta herencia de roles y distingue entre roles de sistema (protegidos)
+/// y roles personalizados definidos por el cliente.
 use crate::db::surrealdb_role_queries as db;
 use crate::domain::role::{self as domain, is_superuser};
 use crate::models::role::{
@@ -12,17 +13,9 @@ use crate::models::role::{
 use chrono::Utc;
 use surrealdb::RecordId;
 
-// ==========================================
-// ERRORES
-// ==========================================
-
 use crate::domain::errors::RoleError;
 
-// ==========================================
-// CONSULTAS DE ROLES
-// ==========================================
-
-/// Helper para parsear ID de rol (acepta con o sin prefijo)
+/// Limpia y parsea identificadores de roles, manejando la sintaxis de SurrealDB.
 fn parse_role_id(id_str: &str) -> RecordId {
     let clean_id = id_str
         .trim_start_matches("⟨")
@@ -32,7 +25,6 @@ fn parse_role_id(id_str: &str) -> RecordId {
 
     if clean_id.contains(':') {
         let parts: Vec<&str> = clean_id.split(':').collect();
-        // Asegurarse de limpiar también la parte del ID si vino con brackets internos
         let key = parts[1]
             .trim_start_matches("⟨")
             .trim_end_matches("⟩")
@@ -44,6 +36,7 @@ fn parse_role_id(id_str: &str) -> RecordId {
     }
 }
 
+/// Obtiene todos los roles registrados, categorizándolos para la interfaz de administración.
 pub async fn get_all_roles() -> Result<RoleListResponse, RoleError> {
     let roles: Vec<Role> = db::find_all().await.map_err(|e| RoleError::Database(e.to_string()))?;
 
@@ -77,15 +70,14 @@ pub async fn get_role_by_id(id_str: &str) -> Result<RoleResponse, RoleError> {
     Ok(RoleResponse::from_role(role))
 }
 
-// ==========================================
-// CREAR ROL
-// ==========================================
-
+/// Crea un nuevo rol personalizado.
+///
+/// El nombre se normaliza a un 'slug' para ser usado como ID persistente,
+/// asegurando que las referencias a roles en el código no se rompan
+/// si el nombre visual cambia ligeramente.
 pub async fn create_role(input: CreateRoleInput) -> Result<RoleResponse, RoleError> {
-    // 1. Validar input (dominio)
     domain::validar_create_input(&input)?;
 
-    // 2. Verificar nombre único
     let exists =
         db::exists_by_name(&input.name).await.map_err(|e| RoleError::Database(e.to_string()))?;
 
@@ -93,12 +85,11 @@ pub async fn create_role(input: CreateRoleInput) -> Result<RoleResponse, RoleErr
         return Err(RoleError::NameExists);
     }
 
-    // 3. Crear rol
     let id_slug = domain::normalizar_nombre(&input.name);
     let dto = crate::models::role::RoleCreateDTO {
         name: domain::normalizar_nombre(&input.name),
         description: input.description,
-        is_system: false,
+        is_system: false, // Los roles creados por el usuario nunca son de sistema.
         inherits_from: input.inherits_from.map(|i| parse_role_id(&i)),
         permissions: input.permissions,
     };
@@ -109,32 +100,29 @@ pub async fn create_role(input: CreateRoleInput) -> Result<RoleResponse, RoleErr
     Ok(RoleResponse::from_role(created_role))
 }
 
-// ==========================================
-// ACTUALIZAR ROL
-// ==========================================
-
+/// Actualiza los atributos o permisos de un rol existente.
+///
+/// Se aplica una protección estricta: los roles marcados como 'is_system'
+/// (ej. Root, Admin, Guardia) tienen una estructura crítica y no pueden
+/// ser modificados por usuarios convencionales, solo por un 'Superuser'.
 pub async fn update_role(
     id_str: &str,
     input: UpdateRoleInput,
     requester_id: &str,
 ) -> Result<RoleResponse, RoleError> {
-    // 1. Validar input
     domain::validar_update_input(&input)?;
 
     let role_id = parse_role_id(id_str);
 
-    // 2. Obtener rol actual
     let role = db::find_by_id(&role_id)
         .await
         .map_err(|e| RoleError::Database(e.to_string()))?
         .ok_or(RoleError::NotFound)?;
 
-    // 3. Solo root puede editar roles del sistema
     if role.is_system && !is_superuser(requester_id) {
         return Err(RoleError::CannotModifySystemRole);
     }
 
-    // 4. Preparar DTO
     let mut dto = RoleUpdateDTO::default();
     if let Some(n) = input.name {
         dto.name = Some(domain::normalizar_nombre(&n));
@@ -158,10 +146,7 @@ pub async fn update_role(
     Ok(RoleResponse::from_role(updated))
 }
 
-// ==========================================
-// ELIMINAR ROL
-// ==========================================
-
+/// Elimina un rol, asegurando que no sea un rol protegido por el sistema.
 pub async fn delete_role(id_str: &str) -> Result<(), RoleError> {
     let role_id = parse_role_id(id_str);
     let role = db::find_by_id(&role_id)
@@ -178,15 +163,15 @@ pub async fn delete_role(id_str: &str) -> Result<(), RoleError> {
     Ok(())
 }
 
-// ==========================================
-// MÓDULOS VISIBLES
-// ==========================================
-
+/// Calcula el mapa de visibilidad de módulos para un usuario específico.
+///
+/// Esta función es clave para la interfaz svelte: le dice al frontend qué
+/// botones mostrar y qué secciones del menú lateral deben estar disponibles.
+/// El 'Superuser' siempre tiene acceso total sin importar el rol asignado.
 pub async fn get_user_visible_modules(
     user_id_str: &str,
     role_id_str: &str,
 ) -> Result<Vec<VisibleModule>, RoleError> {
-    // Superuser ve todo
     if is_superuser(user_id_str) {
         return Ok(Module::all()
             .into_iter()
@@ -202,11 +187,9 @@ pub async fn get_user_visible_modules(
             .collect());
     }
 
-    // Usar surrealdb_authorization
     use crate::services::surrealdb_authorization;
 
-    // Aquí invocamos la lógica migrada de autorización
-    // que revisa los permisos guardados en el rol (array strings)
+    // Recuperamos los permisos consolidados (incluyendo herencia si existe).
     let permissions = surrealdb_authorization::get_role_permissions(role_id_str)
         .await
         .map_err(|e| RoleError::Database(e.to_string()))?;
@@ -214,6 +197,8 @@ pub async fn get_user_visible_modules(
     let mut modules = Vec::new();
 
     for module in Module::all() {
+        // La visibilidad de un módulo depende del permiso 'view'.
+        // Si no puede ver el módulo, no tiene sentido calcular los demás permisos.
         let view_perm = format!("{}:view", module.as_str());
 
         if permissions.contains(&view_perm) {
@@ -232,15 +217,13 @@ pub async fn get_user_visible_modules(
     Ok(modules)
 }
 
-// ==========================================
-// PERMISOS DISPONIBLES
-// ==========================================
-
+/// Genera la lista completa de permisos granulares disponibles en el sistema.
+/// Se utiliza en el panel de creación/edición de roles.
 pub async fn get_all_permissions() -> Result<Vec<Permission>, RoleError> {
-    // Generar dinámicamente basado en enum Module
     let mut perms = Vec::new();
 
     for module in Module::all() {
+        // Para cada módulo (Usuarios, Empresas, etc.), definimos el set estándar de acciones.
         let actions = vec!["view", "create", "read", "update", "delete", "export"];
         for action in actions {
             perms.push(Permission {

@@ -1,41 +1,52 @@
+/// Sistema de Resiliencia de Datos y Recuperación ante Desastres.
+///
+/// Este módulo no es solo para copias de seguridad; es el guardián de la integridad
+/// de la base de datos durante el arranque. Implementa una lógica de auto-recuperación
+/// que detecta estados de restauración pendientes y asegura que siempre haya un
+/// "Rollback" disponible en caso de falla crítica.
 use crate::config::AppConfig;
 use log::info;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// Comprueba si hay una restauración pendiente y la ejecuta antes de iniciar la DB
+/// Orquestador de Restauración Reactiva.
+///
+/// Se ejecuta EN ANTES de que SurrealDB tome control del archivo de base de datos.
+/// Pasos:
+/// 1. Detección: Busca una señal de restauración (.restore).
+/// 2. Salvaguarda: Crea un backup de "último minuto" del estado actual antes de sobreescribir.
+/// 3. Aplicación: Reemplaza atómicamente la DB vieja por la nueva versión solicitada.
 pub fn check_and_restore_database(config: &AppConfig) -> Result<(), Box<dyn std::error::Error>> {
     let db_path = crate::config::manager::get_database_path(config);
     let verify_restore_path = get_restore_path(&db_path);
 
-    // Si existe archivo .restore, proceder con la restauración
     if verify_restore_path.exists() {
-        info!("Restauración pendiente detectada: {}", verify_restore_path.display());
+        info!("🔴 ALERTA DE SISTEMA: Restauración pendiente detectada. Iniciando protocolo de recuperación...");
 
-        // 1. Crear backup de seguridad de la actual (rollback)
         let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
         let safety_backup = db_path.with_extension(format!("bkp.{}", timestamp));
 
         if db_path.exists() {
-            info!("Creando backup de seguridad pre-restauración: {}", safety_backup.display());
+            info!(
+                "🛡️  Seguridad: Creando punto de restauración de emergencia en {}",
+                safety_backup.display()
+            );
             fs::copy(&db_path, &safety_backup)?;
         }
 
-        // 2. Reemplazar la base de datos
-        // Intentar renombrar primero (atómico), si falla (diferentes discos), copiar y borrar
-        info!("Aplicando restauración...");
+        info!("⚙️  Actualizando motor: Aplicando nueva base de datos...");
         if let Err(_) = fs::rename(&verify_restore_path, &db_path) {
             fs::copy(&verify_restore_path, &db_path)?;
             fs::remove_file(&verify_restore_path)?;
         }
 
-        info!("Base de datos restaurada correctamente.");
+        info!("✅ ÉXITO: Sistema restaurado y listo para operación.");
     }
 
     Ok(())
 }
 
-/// Genera la ruta del archivo de restauración pendiente (ej: brisas.db.restore)
+/// Genera el nombre del activo de intercambio para la señalización de restauración.
 pub fn get_restore_path(db_path: &Path) -> PathBuf {
     let mut path = db_path.to_path_buf();
     if let Some(filename) = path.file_name() {

@@ -1,6 +1,9 @@
-// ==========================================
-// src/services/vehiculo_service.rs
-// ==========================================
+/// Gestión Estratégica de Activos Móviles (Vehículos).
+///
+/// Este servicio gestiona el parque vehicular que ingresa a las instalaciones.
+/// Un vehículo es una entidad transversal que puede pertenecer a un Contratista,
+/// Proveedor o Visitante. Su control es crítico para la seguridad logística y
+/// la gestión de estacionamientos.
 use crate::db::surrealdb_contratista_queries as contratista_db;
 use crate::db::surrealdb_proveedor_queries as proveedor_db;
 use crate::db::surrealdb_vehiculo_queries as db;
@@ -16,12 +19,13 @@ use chrono::Utc;
 use log::error;
 use surrealdb::RecordId;
 
+/// Mapeo de errores de infraestructura a dominio.
 fn map_db_error(e: SurrealDbError) -> VehiculoError {
-    error!("Error de base de datos (SurrealDB): {}", e);
+    error!("Fallo en base de datos al gestionar vehículos: {}", e);
     VehiculoError::Database(e.to_string())
 }
 
-/// Helper para parsear ID de vehículo (acepta con o sin prefijo)
+/// Normalización de IDs de vehículo.
 fn parse_vehiculo_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
@@ -31,19 +35,23 @@ fn parse_vehiculo_id(id_str: &str) -> RecordId {
     }
 }
 
-/// Helper para parsear cualquier ID de propietario (contratista, proveedor, visitante)
+/// Identifica al propietario del vehículo analizando el prefijo de la tabla en SurrealDB.
 fn parse_propietario_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
         RecordId::from_table_key(parts[0], parts[1])
     } else {
-        // Fallback or error? For now assume it's a RecordId string or we need to know the table.
-        // If it's just a key, this might fail if we don't know the table.
-        // But usually we receive full RecordId strings from frontend.
+        // Por defecto asume contratista si no hay contexto de tabla.
         RecordId::from_table_key("contratista", id_str)
     }
 }
 
+/// Registra un nuevo vehículo garantizando la unicidad de su placa.
+///
+/// El flujo de validación asegura:
+/// 1. Existencia del Propietario: El vehículo debe estar vinculado a una persona válida.
+/// 2. Integridad de la Placa: No se permiten duplicados para evitar suplantaciones.
+/// 3. Normalización: La placa se guarda en un formato uniforme para facilitar búsquedas.
 pub async fn create_vehiculo(
     input: crate::models::vehiculo::CreateVehiculoInput,
 ) -> Result<VehiculoResponse, VehiculoError> {
@@ -53,7 +61,7 @@ pub async fn create_vehiculo(
 
     let propietario_id = parse_propietario_id(&input.propietario_id);
 
-    // Verificar que el propietario existe
+    // Validación Cross-Table: Comprueba la existencia física del dueño en su respectiva tabla.
     let exists = match propietario_id.table() {
         "contratista" => {
             contratista_db::find_by_id(&propietario_id).await.map_err(map_db_error)?.is_some()
@@ -64,12 +72,16 @@ pub async fn create_vehiculo(
         "visitante" => {
             visitante_db::find_by_id(&propietario_id).await.map_err(map_db_error)?.is_some()
         }
-        _ => return Err(VehiculoError::Validation("Tipo de propietario no válido".to_string())),
+        _ => {
+            return Err(VehiculoError::Validation(
+                "Tipo de ente propietario no reconocido".to_string(),
+            ))
+        }
     };
 
     if !exists {
         return Err(VehiculoError::Validation(format!(
-            "El propietario ({}) no existe",
+            "Protocolo de identidad fallido: El propietario no existe en la base de datos de {}",
             propietario_id.table()
         )));
     }
@@ -110,6 +122,7 @@ pub async fn get_vehiculo_by_placa(placa: String) -> Result<VehiculoResponse, Ve
     Ok(VehiculoResponse::from_fetched(vehiculo))
 }
 
+/// Obtiene todos los vehículos con estadísticas de composición de flota.
 pub async fn get_all_vehiculos() -> Result<VehiculoListResponse, VehiculoError> {
     let vehiculos = db::find_all_fetched().await.map_err(map_db_error)?;
     let mut vehiculo_responses = Vec::with_capacity(vehiculos.len());
@@ -141,6 +154,7 @@ pub async fn get_vehiculos_activos() -> Result<Vec<VehiculoResponse>, VehiculoEr
     Ok(vehiculo_responses)
 }
 
+/// Filtra los vehículos pertenecientes a una persona específica.
 pub async fn get_vehiculos_by_propietario(
     id_str: String,
 ) -> Result<Vec<VehiculoResponse>, VehiculoError> {
@@ -153,6 +167,7 @@ pub async fn get_vehiculos_by_propietario(
     Ok(vehiculo_responses)
 }
 
+/// Actualiza los detalles de un vehículo, como cambio de color o estado operativo.
 pub async fn update_vehiculo(
     id_str: String,
     input: UpdateVehiculoInput,

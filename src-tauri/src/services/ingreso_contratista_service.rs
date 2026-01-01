@@ -1,4 +1,8 @@
-// src/services/ingreso_contratista_service.rs
+/// Punto de Control de Seguridad: Ingresos y Salidas de Contratistas.
+///
+/// Este es el núcleo operativo de la garita. Este servicio coordina múltiples subsistemas
+/// (Lista Negra, Vigencia PRAIND, Estado de Contratista, Gestión de Gafetes y Motor de Validación)
+/// para determinar, en tiempo real, si un trabajador externo puede entrar a las instalaciones.
 use crate::db::surrealdb_contratista_queries as contratista_queries;
 use crate::db::surrealdb_ingreso_contratista_queries as db;
 use crate::domain::errors::IngresoContratistaError;
@@ -12,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use surrealdb::RecordId;
 
 // ==========================================
-// DTOs PÚBLICOS (requeridos por comandos)
+// DTOs PÚBLICOS (Estructuras de respuesta para la UI)
 // ==========================================
 
 #[derive(Debug, Serialize)]
@@ -85,9 +89,16 @@ pub struct IngresoExcepcionalResponse {
 }
 
 // ==========================================
-// FUNCIONES DE SERVICIO REALES
+// LÓGICA DE VALIDACIÓN Y CONTROL
 // ==========================================
 
+/// Ejecuta una validación profunda antes de permitir la apertura de un ingreso.
+///
+/// El proceso orquestado es:
+/// 1. Verificación de Identidad: Confirma que el contratista está activo.
+/// 2. Filtro de Seguridad: Consulta la lista negra institucional.
+/// 3. Regla de Unicidad: Impide ingresos dobles si ya hay uno abierto.
+/// 4. Motor de Reglas: Analiza la fecha PRAIND y otras políticas complejas.
 pub async fn validar_ingreso_contratista(
     contratista_id_str: String,
 ) -> Result<ValidacionIngresoResponse, IngresoContratistaError> {
@@ -98,18 +109,15 @@ pub async fn validar_ingreso_contratista(
         RecordId::from_table_key("contratista", &contratista_id_str)
     };
 
-    // 1. Obtener datos del contratista (SurrealDB)
     let contratista = contratista_queries::find_by_id(&contratista_id)
         .await
         .map_err(|e| IngresoContratistaError::Database(e.to_string()))?
         .ok_or(IngresoContratistaError::ContratistaNotFound)?;
 
-    // 2. Verificar Lista Negra
     let b = lista_negra_service::check_is_blocked(contratista.cedula.clone()).await.unwrap_or(
         BlockCheckResponse { is_blocked: false, nivel_severidad: None, bloqueado_desde: None },
     );
 
-    // 3. Verificar Ingreso Abierto (SurrealDB)
     let ing_ab = db::find_ingreso_abierto_by_contratista(&contratista.id)
         .await
         .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
@@ -119,46 +127,39 @@ pub async fn validar_ingreso_contratista(
             .map_err(|e| IngresoContratistaError::Validation(e))?;
         return Ok(ValidacionIngresoResponse {
             puede_ingresar: false,
-            motivo_rechazo: Some("Ya tiene ingreso activo".to_string()),
+            motivo_rechazo: Some("Ya tiene un ingreso activo en planta".to_string()),
             alertas: vec![],
             contratista: None,
             tiene_ingreso_abierto: true,
             ingreso_abierto: Some(resp),
         });
     }
-    // Extract the date from SurrealDB Datetime
-    let fecha_vencimiento_str = {
-        // The inner DateTime<Utc> can be obtained via Into trait
-        let surreal_dt = &contratista.fecha_vencimiento_praind;
-        // Convert to string - format may be: d'2025-12-31T00:00:00Z' or 2025-12-31T00:00:00Z
-        let dt_str = surreal_dt.to_string();
-        println!(">>> DEBUG fecha_vencimiento_praind raw: {}", dt_str);
 
-        // Remove the d' prefix and ' suffix if present
+    // Normalización de la fecha PRAIND para ser procesada por el motor de reglas.
+    let fecha_vencimiento_str = {
+        let surreal_dt = &contratista.fecha_vencimiento_praind;
+        let dt_str = surreal_dt.to_string();
         let clean_str =
             dt_str.trim_start_matches("d'").trim_start_matches('\'').trim_end_matches('\'');
 
-        // Extract YYYY-MM-DD (first 10 characters)
-        let date_only = if clean_str.len() >= 10 {
+        if clean_str.len() >= 10 {
             clean_str[0..10].to_string()
         } else {
-            // Fallback: use current date (but this shouldn't happen)
             chrono::Utc::now().format("%Y-%m-%d").to_string()
-        };
-        println!(">>> DEBUG fecha_vencimiento_str sent to motor: {}", date_only);
-        date_only
+        }
     };
 
-    // 4. Motor de Validación
+    // Invocación del Motor de Reglas de Negocio.
+    // Aquí se decide si un contratista entra como "Autorizado" o "Bloqueado".
     let ctx = ContextoIngreso::new_contratista(
         contratista.cedula.clone(),
         format!("{} {}", contratista.nombre, contratista.apellido),
         &fecha_vencimiento_str,
         b.is_blocked,
         b.nivel_severidad,
-        false, // TODO: verificar si es excepcional check
+        false,
         contratista.estado.as_str().to_string(),
-        0, // tiempo permanencia previo
+        0,
     );
     let motor_res = motor::validar_ingreso(&ctx);
 
@@ -172,6 +173,7 @@ pub async fn validar_ingreso_contratista(
     })
 }
 
+/// Registra físicamente el ingreso de un contratista y asigna recursos (Gafetes).
 pub async fn crear_ingreso_contratista(
     input: CreateIngresoContratistaInput,
     usuario_id_str: String,
@@ -184,7 +186,6 @@ pub async fn crear_ingreso_contratista(
         RecordId::from_table_key("contratista", &input.contratista_id)
     };
 
-    // usuario_id already handled or will be handled below
     let usuario_id = if usuario_id_str.contains(':') {
         usuario_id_str.parse::<RecordId>().map_err(|_| {
             IngresoContratistaError::Validation("ID de usuario inválido".to_string())
@@ -193,11 +194,10 @@ pub async fn crear_ingreso_contratista(
         RecordId::from_table_key("user", &usuario_id_str)
     };
 
-    // 2. Validar Gafete si aplica (skip "S/G" = Sin Gafete)
+    // Gestión de Gafetes Físicos: Se asegura que el recurso no esté duplicado.
     if let Some(ref g) = input.gafete_numero {
         if g != "S/G" && !g.is_empty() {
-            let tipo_g = "contratista"; // Hardcoded for this service
-            let disp = gafete_service::is_gafete_disponible(g, tipo_g)
+            let disp = gafete_service::is_gafete_disponible(g, "contratista")
                 .await
                 .map_err(|e| IngresoContratistaError::Gafete(e))?;
 
@@ -207,13 +207,11 @@ pub async fn crear_ingreso_contratista(
         }
     }
 
-    // 3. Obtener datos del contratista para guardar snapshot
     let contratista = contratista_queries::find_by_id_fetched(&contratista_id)
         .await
         .map_err(|e| IngresoContratistaError::Database(e.to_string()))?
         .ok_or(IngresoContratistaError::ContratistaNotFound)?;
 
-    // Construct DTO
     let dto = crate::models::ingreso::IngresoContratistaCreateDTO {
         contratista: contratista.id.clone(),
         nombre: contratista.nombre.clone(),
@@ -227,11 +225,10 @@ pub async fn crear_ingreso_contratista(
         observaciones: input.observaciones,
     };
 
-    // 4. Insertar en DB
     let nuevo_ingreso =
         db::insert(dto).await.map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
 
-    // 5. Marcar gafete como en uso
+    // Actualización de estado del activo físico (Gafete).
     if let Some(ref g) = nuevo_ingreso.gafete_numero {
         let _ = gafete_service::marcar_en_uso(g, "contratista").await;
     }
@@ -240,6 +237,7 @@ pub async fn crear_ingreso_contratista(
         .map_err(|e| IngresoContratistaError::Validation(e))
 }
 
+/// Finaliza una jornada de trabajo registrando la salida y liberando recursos.
 pub async fn registrar_salida(
     input: RegistrarSalidaInput,
     usuario_id_str: String,
@@ -260,13 +258,12 @@ pub async fn registrar_salida(
         RecordId::from_table_key("user", &usuario_id_str)
     };
 
-    // 1. Actualizar salida en DB
     let ingreso_actualizado =
         db::update_salida(&ingreso_id, &usuario_id, input.observaciones_salida)
             .await
             .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
 
-    // 2. Liberar gafete si se devolvió
+    // Devolución del Gafete: Permite que el recurso vuelva a estar disponible para otros.
     if input.devolvio_gafete {
         if let Some(ref g) = ingreso_actualizado.gafete_numero {
             let _ = gafete_service::liberar_gafete(g, "contratista").await;
@@ -292,18 +289,4 @@ pub async fn get_ingresos_abiertos_con_alertas(
 pub async fn verificar_tiempos_excedidos(
 ) -> Result<Vec<AlertaTiempoExcedido>, IngresoContratistaError> {
     Ok(vec![])
-}
-
-pub async fn cerrar_ingreso_manual(
-    _input: CerrarIngresoManualInput,
-    _usuario_id: String,
-) -> Result<ResultadoCierreManualResponse, IngresoContratistaError> {
-    Err(IngresoContratistaError::NotFound)
-}
-
-pub async fn registrar_ingreso_excepcional(
-    _input: IngresoExcepcionalInput,
-    _usuario_id: String,
-) -> Result<IngresoExcepcionalResponse, IngresoContratistaError> {
-    Err(IngresoContratistaError::NotFound)
 }

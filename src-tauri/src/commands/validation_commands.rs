@@ -1,11 +1,22 @@
+/// Motor de Validación: Integridad de Bases de Datos y Unicidad.
+///
+/// Este módulo proporciona comandos genéricos para validar datos antes de su
+/// persistencia, asegurando que campos críticos como cédulas o correos electrónicos
+/// no estén duplicados en el sistema.
 use crate::services::surrealdb_service::get_db;
 use tauri::command;
 
+/// Estructura interna para recibir el conteo de registros de SurrealDB.
 #[derive(serde::Deserialize, Debug)]
 struct CountResult {
     count: i64,
 }
 
+/// Verifica si un valor es único en una tabla y campo específicos.
+///
+/// Es altamente versátil: se usa para validar que una cédula no exista ya en
+/// contratistas, proveedores o usuarios, soportando la exclusión de un ID
+/// para permitir ediciones sin colisiones de unicidad consigo mismo.
 #[command]
 pub async fn check_unique(
     table: String,
@@ -15,16 +26,15 @@ pub async fn check_unique(
 ) -> Result<bool, String> {
     let db = get_db().await.map_err(|e| e.to_string())?;
 
-    // Sanitize table and field
+    // Sanitización básica de nombres de tabla y campos (Prevención de Inyección)
     if !table.chars().all(|c| c.is_alphanumeric() || c == '_') {
-        return Err("Invalid table name".to_string());
+        return Err("Nombre de tabla inválido".to_string());
     }
     if !field.chars().all(|c| c.is_alphanumeric() || c == '_') {
-        return Err("Invalid field name".to_string());
+        return Err("Nombre de campo inválido".to_string());
     }
 
-    // Construct query safely
-    // SELECT count() FROM type::table($table) WHERE field = $value AND id != $exclude_id
+    // Construcción segura de la consulta SurrealQL
     let mut query_string =
         format!("SELECT count() FROM type::table($table) WHERE {} = $value", field);
 
@@ -40,11 +50,12 @@ pub async fn check_unique(
 
     let mut response = query.await.map_err(|e| e.to_string())?;
 
-    // Parse result: [{ count: N }]
+    // Procesamiento del resultado: [{ count: N }]
     let result: Vec<CountResult> =
-        response.take(0).map_err(|e| format!("Deserialization error: {}", e))?;
+        response.take(0).map_err(|e| format!("Error de deserialización: {}", e))?;
 
     let count = result.first().map(|r| r.count).unwrap_or(0);
 
+    // Retorna true si no hay duplicados (count == 0)
     Ok(count == 0)
 }
