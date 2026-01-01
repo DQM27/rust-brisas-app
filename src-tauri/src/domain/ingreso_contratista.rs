@@ -15,7 +15,7 @@ pub use crate::models::ingreso::contratista::{
 // Re-exportaciones de funciones comunes
 pub use crate::domain::common::{
     calcular_tiempo_permanencia, evaluar_devolucion_gafete, normalizar_gafete_a_int,
-    validar_gafete_coincide, validar_tiempo_salida, DecisionReporteGafete,
+    parsear_fecha_simple, validar_gafete_coincide, validar_tiempo_salida, DecisionReporteGafete,
 };
 
 // --------------------------------------------------------------------------
@@ -110,13 +110,8 @@ pub fn praind_por_vencer(fecha_vencimiento_str: &str) -> Result<bool, IngresoCon
         return Ok(false);
     }
 
-    let fecha_venc =
-        chrono::NaiveDate::parse_from_str(fecha_vencimiento_str, "%Y-%m-%d").map_err(|_| {
-            IngresoContratistaError::Validation(format!(
-                "Formato de fecha inválido: {}",
-                fecha_vencimiento_str
-            ))
-        })?;
+    let fecha_venc = parsear_fecha_simple(fecha_vencimiento_str)
+        .map_err(|e| IngresoContratistaError::Validation(e.to_string()))?;
 
     let hoy = Utc::now().date_naive();
     let dias_restantes = (fecha_venc - hoy).num_days();
@@ -133,13 +128,8 @@ pub fn dias_hasta_vencimiento_praind(
         return Err(IngresoContratistaError::Validation("Fecha vacía".to_string()));
     }
 
-    let fecha_venc =
-        chrono::NaiveDate::parse_from_str(fecha_vencimiento_str, "%Y-%m-%d").map_err(|_| {
-            IngresoContratistaError::Validation(format!(
-                "Formato de fecha inválido: {}",
-                fecha_vencimiento_str
-            ))
-        })?;
+    let fecha_venc = parsear_fecha_simple(fecha_vencimiento_str)
+        .map_err(|e| IngresoContratistaError::Validation(e.to_string()))?;
 
     let hoy = Utc::now().date_naive();
     Ok((fecha_venc - hoy).num_days())

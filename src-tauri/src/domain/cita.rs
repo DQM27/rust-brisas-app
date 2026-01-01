@@ -5,7 +5,8 @@
 /// enfocándose exclusivamente en asegurar que los datos de entrada cumplan con los
 /// requerimientos operativos del sistema antes de ser procesados por los servicios.
 use crate::domain::common::{
-    validar_cedula_estandar, validar_nombre_entidad_estandar, validar_nombre_estandar,
+    validar_cedula_estandar, validar_fecha_rfc3339, validar_nombre_entidad_estandar,
+    validar_nombre_estandar,
 };
 use crate::domain::errors::CitaError;
 use crate::models::cita::CreateCitaInput;
@@ -22,9 +23,6 @@ pub const AREA_MAX_LEN: usize = 100;
 
 /// Longitud máxima para el motivo de la visita.
 pub const MOTIVO_MAX_LEN: usize = 255;
-
-/// Validar formato de fecha ISO 8601 básico.
-use chrono::DateTime;
 
 // --------------------------------------------------------------------------
 // VALIDACIONES DE NEGOCIO
@@ -68,11 +66,7 @@ pub fn validar_create_input(input: &CreateCitaInput) -> Result<(), CitaError> {
         .map_err(|e| CitaError::Validation(e.to_string()))?;
 
     // 3. Validación de Fecha
-    if let Err(_) = DateTime::parse_from_rfc3339(&input.fecha_cita) {
-        return Err(CitaError::Validation(
-            "La fecha de la cita no tiene un formato válido (ISO 8601)".to_string(),
-        ));
-    }
+    validar_fecha_rfc3339(&input.fecha_cita).map_err(|e| CitaError::Validation(e.to_string()))?;
 
     Ok(())
 }
