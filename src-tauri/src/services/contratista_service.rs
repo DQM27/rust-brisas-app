@@ -19,6 +19,7 @@ use crate::models::contratista::{
 use crate::models::vehiculo::{TipoVehiculo, VehiculoCreateDTO};
 use crate::services::search_service::SearchService;
 use crate::services::surrealdb_service::SurrealDbError;
+use chrono::{DateTime, TimeZone, Utc};
 use log::{error, info};
 use std::sync::Arc;
 use surrealdb::RecordId;

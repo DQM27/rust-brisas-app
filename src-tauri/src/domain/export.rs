@@ -4,11 +4,106 @@
 /// destinados a exportación en diversos formatos (PDF, CSV, Excel).
 /// No tiene dependencias de infraestructura ni de base de datos.
 use crate::models::export::{
-    CsvDelimiter, ExportFormat, ExportRequest, ExportValue, PageOrientation,
+    CsvDelimiter, ExportFormat, ExportRequest, ExportValue, PageOrientation, PdfConfig,
 };
 use chrono::DateTime;
 use std::borrow::Cow;
 use std::collections::HashMap;
+
+// --------------------------------------------------------------------------
+// BUILDER (Lógica de Construcción)
+// --------------------------------------------------------------------------
+
+/// Builder para facilitar la creación de `PdfConfig`.
+/// Mantenido en la capa de dominio para preservar el modelo anémico.
+#[derive(Debug, Clone, Default)]
+pub struct PdfConfigBuilder {
+    config: PdfConfig,
+}
+
+impl PdfConfigBuilder {
+    /// Inicia un nuevo builder con la configuración por defecto.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    #[must_use]
+    pub fn title(mut self, title: impl Into<String>) -> Self {
+        self.config.title = title.into();
+        self
+    }
+
+    #[must_use]
+    pub fn orientation(mut self, orientation: PageOrientation) -> Self {
+        self.config.orientation = orientation;
+        self
+    }
+
+    #[must_use]
+    pub fn headers(mut self, headers: Vec<String>) -> Self {
+        self.config.headers = headers;
+        self
+    }
+
+    #[must_use]
+    pub fn show_preview(mut self, show: bool) -> Self {
+        self.config.show_preview = show;
+        self
+    }
+
+    #[must_use]
+    pub fn template_id(mut self, id: impl Into<String>) -> Self {
+        self.config.template_id = Some(id.into());
+        self
+    }
+
+    #[must_use]
+    pub fn font_size(mut self, size: i32) -> Self {
+        self.config.font_size = size.clamp(8, 20);
+        self
+    }
+
+    #[must_use]
+    pub fn font_family(mut self, family: impl Into<String>) -> Self {
+        self.config.font_family = family.into();
+        self
+    }
+
+    #[must_use]
+    pub fn margins(mut self, top: f32, bottom: f32, left: f32, right: f32) -> Self {
+        self.config.margin_top = top;
+        self.config.margin_bottom = bottom;
+        self.config.margin_left = left;
+        self.config.margin_right = right;
+        self
+    }
+
+    #[must_use]
+    pub fn uniform_margins(mut self, margin: f32) -> Self {
+        self.config.margin_top = margin;
+        self.config.margin_bottom = margin;
+        self.config.margin_left = margin;
+        self.config.margin_right = margin;
+        self
+    }
+
+    #[must_use]
+    pub fn banner_color(mut self, color: impl Into<String>) -> Self {
+        self.config.banner_color = color.into();
+        self
+    }
+
+    #[must_use]
+    pub fn generated_by(mut self, name: impl Into<String>) -> Self {
+        self.config.generated_by = name.into();
+        self
+    }
+
+    #[must_use]
+    pub fn build(self) -> PdfConfig {
+        self.config
+    }
+}
 
 // --------------------------------------------------------------------------
 // CONSTANTES DE LÍMITES Y SEGURIDAD

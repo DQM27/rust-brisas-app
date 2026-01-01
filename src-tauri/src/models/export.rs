@@ -5,10 +5,11 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-// ==========================================
+// --------------------------------------------------------------------------
 // ENUMS
-// ==========================================
+// --------------------------------------------------------------------------
 
+/// Formatos soportados para la exportación de datos.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum ExportFormat {
@@ -40,6 +41,7 @@ impl std::str::FromStr for ExportFormat {
     }
 }
 
+/// Orientación de la página para PDFs.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum PageOrientation {
@@ -48,6 +50,7 @@ pub enum PageOrientation {
     Landscape,
 }
 
+/// Delimitadores soportados para archivos CSV.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum CsvDelimiter {
     #[default]
@@ -82,11 +85,11 @@ impl std::str::FromStr for CsvDelimiter {
     }
 }
 
-// ==========================================
+// --------------------------------------------------------------------------
 // DTOs DE ENTRADA
-// ==========================================
+// --------------------------------------------------------------------------
 
-/// Request principal de exportación
+/// Solicitud principal para procesos de exportación.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExportRequest {
@@ -110,6 +113,7 @@ pub struct ExportRequest {
     pub generated_by: Option<String>,
 }
 
+/// Configuración específica para generación de PDF.
 #[derive(Debug, Clone)]
 pub struct PdfConfig {
     pub title: String,
@@ -147,107 +151,7 @@ impl Default for PdfConfig {
     }
 }
 
-impl PdfConfig {
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// let config = PdfConfig::builder()
-    ///     .title("Monthly Report")
-    ///     .orientation(PageOrientation::Portrait)
-    ///     .font_size(12)
-    ///     .build();
-
-    #[must_use]
-    pub fn builder() -> PdfConfigBuilder {
-        PdfConfigBuilder::default()
-    }
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct PdfConfigBuilder {
-    config: PdfConfig,
-}
-
-impl PdfConfigBuilder {
-    #[must_use]
-    pub fn title(mut self, title: impl Into<String>) -> Self {
-        self.config.title = title.into();
-        self
-    }
-
-    #[must_use]
-    pub fn orientation(mut self, orientation: PageOrientation) -> Self {
-        self.config.orientation = orientation;
-        self
-    }
-
-    #[must_use]
-    pub fn headers(mut self, headers: Vec<String>) -> Self {
-        self.config.headers = headers;
-        self
-    }
-
-    #[must_use]
-    pub fn show_preview(mut self, show: bool) -> Self {
-        self.config.show_preview = show;
-        self
-    }
-
-    #[must_use]
-    pub fn template_id(mut self, id: impl Into<String>) -> Self {
-        self.config.template_id = Some(id.into());
-        self
-    }
-
-    #[must_use]
-    pub fn font_size(mut self, size: i32) -> Self {
-        self.config.font_size = size.clamp(8, 20);
-        self
-    }
-
-    #[must_use]
-    pub fn font_family(mut self, family: impl Into<String>) -> Self {
-        self.config.font_family = family.into();
-        self
-    }
-
-    #[must_use]
-    pub fn margins(mut self, top: f32, bottom: f32, left: f32, right: f32) -> Self {
-        self.config.margin_top = top;
-        self.config.margin_bottom = bottom;
-        self.config.margin_left = left;
-        self.config.margin_right = right;
-        self
-    }
-
-    #[must_use]
-    pub fn uniform_margins(mut self, margin: f32) -> Self {
-        self.config.margin_top = margin;
-        self.config.margin_bottom = margin;
-        self.config.margin_left = margin;
-        self.config.margin_right = margin;
-        self
-    }
-
-    #[must_use]
-    pub fn banner_color(mut self, color: impl Into<String>) -> Self {
-        self.config.banner_color = color.into();
-        self
-    }
-
-    #[must_use]
-    pub fn generated_by(mut self, name: impl Into<String>) -> Self {
-        self.config.generated_by = name.into();
-        self
-    }
-
-    #[must_use]
-    pub fn build(self) -> PdfConfig {
-        self.config
-    }
-}
-
+/// Configuración para exportación a Excel.
 #[derive(Debug, Clone)]
 pub struct ExcelConfig {
     pub filename: String,
@@ -260,6 +164,7 @@ impl Default for ExcelConfig {
     }
 }
 
+/// Configuración para exportación a CSV.
 #[derive(Debug, Clone)]
 pub struct CsvConfig {
     pub filename: String,
@@ -279,9 +184,9 @@ impl Default for CsvConfig {
     }
 }
 
-// ==========================================
+// --------------------------------------------------------------------------
 // DTOs DE SALIDA
-// ==========================================
+// --------------------------------------------------------------------------
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -318,10 +223,11 @@ pub struct ExportResponse {
     pub message: String,
 }
 
-// ==========================================
+// --------------------------------------------------------------------------
 // MODELO INTERNO NORMALIZADO
-// ==========================================
+// --------------------------------------------------------------------------
 
+/// Valor polimórfico para celdas de exportación.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum ExportValue {
@@ -346,6 +252,7 @@ impl std::fmt::Display for ExportValue {
     }
 }
 
+/// Contenedor agnóstico de datos para procesadores de exportación.
 #[derive(Debug, Clone)]
 pub struct ExportData {
     pub format: ExportFormat,
@@ -357,9 +264,9 @@ pub struct ExportData {
     pub target_path: Option<String>,
 }
 
-// ==========================================
+// --------------------------------------------------------------------------
 // PERFILES DE EXPORTACIÓN
-// ==========================================
+// --------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
