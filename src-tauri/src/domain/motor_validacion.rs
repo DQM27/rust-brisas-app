@@ -4,7 +4,8 @@
 /// tipo de acceso (Visitante, Contratista, Proveedor). Orquestra múltiples
 /// reglas de negocio: listas negras, vigencia de documentos y alertas de seguridad.
 use crate::models::validation::{
-    EstadoAutorizacion, MotorContexto, ValidationReason, ValidationResult, ValidationStatus,
+    EstadoAutorizacion, InfoIngresoActivoInt, InfoListaNegra, MotorContexto, NivelSeveridad,
+    TipoAcceso, ValidationReason, ValidationResult, ValidationStatus,
 };
 
 // --------------------------------------------------------------------------
