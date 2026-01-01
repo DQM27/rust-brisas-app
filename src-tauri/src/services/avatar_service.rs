@@ -1,10 +1,15 @@
-// src/services/avatar_service.rs
-//! Servicio para gestión de avatares encriptados
-//!
-//! Este servicio maneja el almacenamiento seguro de fotos de usuario
-//! utilizando encriptación ChaCha20Poly1305 con llave maestra del OS Keyring.
-
+/// Servicio: Gestión de Avatares Seguros.
+///
+/// Orquestador para el cifrado, almacenamiento y recuperación de fotos de perfil.
+/// Combina operaciones de sistema de archivos (encriptados) y base de datos (referencias).
+///
+/// Responsabilidades:
+/// - Ingesta segura de imágenes (Resize -> WebP -> ChaCha20Poly1305 -> Disk).
+/// - Recuperación desencriptada bajo demanda (Disk -> Decrypt -> Base64).
+/// - Eliminación segura (Shredding lógico).
 use crate::commands::security_commands::{decrypt_data, encrypt_data};
+use crate::db::surrealdb_user_queries as db;
+use crate::domain::errors::UserError;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use image::{DynamicImage, ImageReader};
 use std::fs;
@@ -17,27 +22,28 @@ const AVATAR_DIR: &str = "secure_avatars";
 const MAX_AVATAR_SIZE: u32 = 256;
 
 /// Obtiene la ruta base para avatares
-fn get_avatar_base_path() -> Result<PathBuf, String> {
+fn get_avatar_base_path() -> Result<PathBuf, UserError> {
     let data_dir = dirs::data_local_dir()
-        .ok_or_else(|| "No se pudo obtener directorio de datos".to_string())?;
+        .ok_or_else(|| UserError::IO("No se pudo obtener directorio de datos".to_string()))?;
 
     let avatar_path = data_dir.join("com.brisas.app").join(AVATAR_DIR);
 
     // Crear directorio si no existe
     if !avatar_path.exists() {
-        fs::create_dir_all(&avatar_path).map_err(|e| format!("Error creando directorio: {e}"))?;
+        fs::create_dir_all(&avatar_path)
+            .map_err(|e| UserError::IO(format!("Error creando directorio: {e}")))?;
     }
 
     Ok(avatar_path)
 }
 
 /// Procesa una imagen: la redimensiona y la convierte a WebP
-fn process_image(image_path: &str) -> Result<Vec<u8>, String> {
+fn process_image(image_path: &str) -> Result<Vec<u8>, UserError> {
     // Leer imagen desde el path
     let img: DynamicImage = ImageReader::open(image_path)
-        .map_err(|e| format!("Error abriendo imagen: {e}"))?
+        .map_err(|e| UserError::IO(format!("Error abriendo imagen: {e}")))?
         .decode()
-        .map_err(|e| format!("Error decodificando imagen: {e}"))?;
+        .map_err(|e| UserError::Validation(format!("Error decodificando imagen: {e}")))?;
 
     // Redimensionar si es necesario (mantiene aspect ratio)
     let resized = if img.width() > MAX_AVATAR_SIZE || img.height() > MAX_AVATAR_SIZE {
@@ -61,7 +67,7 @@ fn process_image(image_path: &str) -> Result<Vec<u8>, String> {
                 rgba_image.height(),
                 image::ExtendedColorType::Rgba8,
             )
-            .map_err(|e| format!("Error codificando WebP: {e}"))?;
+            .map_err(|e| UserError::Internal(format!("Error codificando WebP: {e}")))?;
     }
 
     Ok(webp_buffer)
@@ -69,28 +75,30 @@ fn process_image(image_path: &str) -> Result<Vec<u8>, String> {
 
 /// Proceso de "Ingesta" de Avatar: Procesa, cifra y ofusca el archivo en disco.
 ///
-/// Pasos de seguridad:
-/// 1. Procesamiento: Estandarización a WebP.
-/// 2. Cifrado: Aplicación de ChaCha20Poly1305.
-/// 3. Ofuscación: Nombre de archivo basado en UUID para evitar trazabilidad externa.
-///
 /// # Arguments
-/// * `user_id` - ID del usuario
-/// * `file_path` - Ruta al archivo de imagen original
+///
+/// * `user_id` - ID del usuario propietario.
+/// * `file_path` - Ruta absoluta al archivo de imagen original.
 ///
 /// # Returns
-/// * `Ok(String)` - ID de referencia del archivo guardado
-/// * `Err(String)` - Error de procesamiento o encriptación
-pub async fn upload_avatar(user_id: &str, file_path: &str) -> Result<String, String> {
-    log::info!("📸 Iniciando proceso de subida de avatar seguro para: {}", user_id);
+///
+/// Retorna el UUID del archivo guardado o error.
+///
+/// # Errors
+///
+/// * `UserError::IO`: Fallo en disco.
+/// * `UserError::Validation`: Imagen inválida.
+/// * `UserError::Database`: Fallo al actualizar usuario.
+pub async fn upload_avatar(user_id: &str, file_path: &str) -> Result<String, UserError> {
+    log::info!("📸 Iniciando subida segura de avatar para: {}", user_id);
 
     // 1. Procesar imagen (resize + WebP)
     let image_data = process_image(file_path)?;
-    log::info!("   ✓ Imagen procesada: {} bytes", image_data.len());
+    log::info!("   ✓ Procesado: {} bytes", image_data.len());
 
     // 2. Encriptar con ChaCha20Poly1305
-    let encrypted = encrypt_data(&image_data)?;
-    log::info!("   ✓ Encriptado: {} bytes", encrypted.len());
+    let encrypted = encrypt_data(&image_data)
+        .map_err(|e| UserError::Internal(format!("Error de encriptación: {e}")))?;
 
     // 3. Generar UUID para el archivo (nombre ofuscado)
     let file_uuid = uuid::Uuid::new_v4().to_string();
@@ -99,50 +107,35 @@ pub async fn upload_avatar(user_id: &str, file_path: &str) -> Result<String, Str
     let base_path = get_avatar_base_path()?;
     let avatar_file_path = base_path.join(format!("{}.enc", file_uuid));
     fs::write(&avatar_file_path, &encrypted)
-        .map_err(|e| format!("Error al escribir activo cifrado en disco: {e}"))?;
-    log::info!("   ✓ Guardado en: {:?}", avatar_file_path);
+        .map_err(|e| UserError::IO(format!("Error escribiendo archivo ofuscado: {e}")))?;
 
     // 5. Actualizar avatar_path en la DB
-    update_user_avatar_path(user_id, &file_uuid).await?;
-    log::info!("   ✓ DB actualizada con avatar_path: {}", file_uuid);
+    if let Err(e) = db::update_avatar_path(user_id, &file_uuid).await {
+        // Rollback manual: eliminar archivo si falla DB
+        let _ = fs::remove_file(&avatar_file_path);
+        return Err(UserError::Database(e.to_string()));
+    }
 
+    log::info!("   ✓ Avatar asegurado exitosamente: {}", file_uuid);
     Ok(file_uuid)
-}
-
-/// Persiste la referencia del activo en la ficha del usuario.
-async fn update_user_avatar_path(user_id: &str, avatar_uuid: &str) -> Result<(), String> {
-    use crate::services::surrealdb_service::get_db;
-
-    let db = get_db().await.map_err(|e| e.to_string())?;
-
-    // Parsear user_id a RecordId
-    let clean_id = user_id.trim_start_matches("user:").replace(['⟨', '⟩', '<', '>'], "");
-
-    let user_record = surrealdb::RecordId::from_table_key("user", &clean_id);
-
-    db.query("UPDATE $id SET avatar_path = $avatar_path, updated_at = time::now()")
-        .bind(("id", user_record))
-        .bind(("avatar_path", avatar_uuid.to_string()))
-        .await
-        .map_err(|e| format!("Fallo al actualizar referencia de avatar en DB: {e}"))?;
-
-    Ok(())
 }
 
 /// Recuperación de Identidad: Desencripta el activo y lo entrega para visualización en UI.
 ///
 /// # Arguments
-/// * `user_id` - ID del usuario
+///
+/// * `user_id` - ID del usuario.
 ///
 /// # Returns
-/// * `Ok(String)` - Imagen WebP en Base64
-/// * `Err(String)` - Error si no existe o no se puede desencriptar
-pub async fn get_avatar(user_id: &str) -> Result<String, String> {
+///
+/// Retorna string Base64 de la imagen WebP lista para `<img src="...">`.
+pub async fn get_avatar(user_id: &str) -> Result<String, UserError> {
     // 1. Obtener avatar_path de la DB
-    let avatar_uuid = get_user_avatar_path(user_id).await?;
+    let avatar_uuid =
+        db::get_avatar_path(user_id).await.map_err(|e| UserError::Database(e.to_string()))?;
 
     if avatar_uuid.is_empty() {
-        return Err(format!("El usuario {} no tiene un avatar configurado", user_id));
+        return Err(UserError::NotFound); // O manejar como Ok("") si UI lo prefiere vacio
     }
 
     // 2. Construir la ruta del archivo
@@ -151,11 +144,12 @@ pub async fn get_avatar(user_id: &str) -> Result<String, String> {
 
     // 3. Leer archivo encriptado
     let encrypted = fs::read(&avatar_file_path).map_err(|_| {
-        format!("Activo no encontrado: el archivo {} ha desaparecido del disco", avatar_uuid)
+        UserError::IO(format!("Archivo de avatar {} no encontrado en disco", avatar_uuid))
     })?;
 
     // 4. Desencriptar
-    let decrypted = decrypt_data(&encrypted)?;
+    let decrypted = decrypt_data(&encrypted)
+        .map_err(|e| UserError::Internal(format!("Error desencriptando avatar: {e}")))?;
 
     // 5. Convertir a Base64
     let b64 = STANDARD.encode(&decrypted);
@@ -163,41 +157,15 @@ pub async fn get_avatar(user_id: &str) -> Result<String, String> {
     Ok(b64)
 }
 
-/// Obtiene el avatar_path del usuario desde la DB
-async fn get_user_avatar_path(user_id: &str) -> Result<String, String> {
-    use crate::services::surrealdb_service::get_db;
-    use serde::Deserialize;
-
-    let db = get_db().await.map_err(|e| e.to_string())?;
-
-    // Parsear user_id a RecordId
-    let clean_id = user_id.trim_start_matches("user:").replace(['⟨', '⟩', '<', '>'], "");
-
-    let user_record = surrealdb::RecordId::from_table_key("user", &clean_id);
-
-    #[derive(Deserialize)]
-    struct AvatarPath {
-        avatar_path: Option<String>,
-    }
-
-    let mut result = db
-        .query("SELECT avatar_path FROM $id")
-        .bind(("id", user_record))
-        .await
-        .map_err(|e| format!("Error de consulta en DB: {e}"))?;
-
-    let row: Option<AvatarPath> = result.take(0).map_err(|e| e.to_string())?;
-
-    Ok(row.and_then(|r| r.avatar_path).unwrap_or_default())
-}
-
 /// Borrado Seguro: Elimina el archivo cifrado y limpia la referencia en DB.
 ///
 /// # Arguments
-/// * `user_id` - ID del usuario
-pub async fn delete_avatar(user_id: &str) -> Result<(), String> {
+///
+/// * `user_id` - ID del usuario.
+pub async fn delete_avatar(user_id: &str) -> Result<(), UserError> {
     // Obtener avatar_path de la DB
-    let avatar_uuid = get_user_avatar_path(user_id).await?;
+    let avatar_uuid =
+        db::get_avatar_path(user_id).await.map_err(|e| UserError::Database(e.to_string()))?;
 
     if !avatar_uuid.is_empty() {
         let base_path = get_avatar_base_path()?;
@@ -205,12 +173,27 @@ pub async fn delete_avatar(user_id: &str) -> Result<(), String> {
 
         if avatar_file_path.exists() {
             fs::remove_file(&avatar_file_path)
-                .map_err(|e| format!("Error al eliminar archivo de avatar: {e}"))?;
+                .map_err(|e| UserError::IO(format!("Error eliminando archivo: {e}")))?;
         }
 
         // Limpiar avatar_path en DB
-        update_user_avatar_path(user_id, "").await?;
+        db::update_avatar_path(user_id, "")
+            .await
+            .map_err(|e| UserError::Database(e.to_string()))?;
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Nota: Tests reales requieren un entorno de archivos temporal.
+    // Se deja como TODO: Integration Tests con crate `tempfile`.
+    #[test]
+    fn test_process_image_size() {
+        // Placeholder para test de lógica pura (si extrajemos resize logic)
+        assert_eq!(MAX_AVATAR_SIZE, 256);
+    }
 }

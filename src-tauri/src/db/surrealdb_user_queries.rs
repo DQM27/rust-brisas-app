@@ -270,3 +270,32 @@ pub async fn get_role_name(role: &RecordId) -> Result<String, SurrealDbError> {
     let row: Option<RoleName> = result.take(0)?;
     Ok(row.map(|r| r.name).unwrap_or_else(|| "Desconocido".to_string()))
 }
+
+pub async fn update_avatar_path(user_id: &str, avatar_path: &str) -> Result<(), SurrealDbError> {
+    let db = get_db().await?;
+    let clean_id = user_id.trim_start_matches("user:").replace(['⟨', '⟩', '<', '>'], "");
+    let user_record = RecordId::from_table_key("user", &clean_id);
+
+    db.query("UPDATE $id SET avatar_path = $avatar_path, updated_at = time::now()")
+        .bind(("id", user_record))
+        .bind(("avatar_path", avatar_path.to_string()))
+        .await?
+        .check()?;
+    Ok(())
+}
+
+pub async fn get_avatar_path(user_id: &str) -> Result<String, SurrealDbError> {
+    let db = get_db().await?;
+    let clean_id = user_id.trim_start_matches("user:").replace(['⟨', '⟩', '<', '>'], "");
+    let user_record = RecordId::from_table_key("user", &clean_id);
+
+    #[derive(Deserialize)]
+    struct AvatarPath {
+        avatar_path: Option<String>,
+    }
+
+    let mut result = db.query("SELECT avatar_path FROM $id").bind(("id", user_record)).await?;
+
+    let row: Option<AvatarPath> = result.take(0)?;
+    Ok(row.and_then(|r| r.avatar_path).unwrap_or_default())
+}

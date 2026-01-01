@@ -109,8 +109,6 @@ pub async fn resolver(
 mod tests {
     use super::*;
     use crate::services::surrealdb_service::{init_surrealdb, SurrealDbConfig};
-    use std::path::PathBuf;
-    use tokio::sync::OnceCell;
 
     // Use a separate setup to avoid race conditions on the singleton if possible,
     // but likely we just reuse the global one.

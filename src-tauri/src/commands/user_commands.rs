@@ -115,15 +115,11 @@ pub async fn change_password(id: String, input: ChangePasswordInput) -> Result<(
 #[tauri::command]
 pub async fn upload_user_avatar(user_id: String, file_path: String) -> Result<String, UserError> {
     log::info!("📸 Procesando nueva imagen de perfil para usuario: {}", user_id);
-    crate::services::avatar_service::upload_avatar(&user_id, &file_path)
-        .await
-        .map_err(|e| UserError::Validation(e))
+    crate::services::avatar_service::upload_avatar(&user_id, &file_path).await
 }
 
 /// Recupera la imagen del usuario en formato base64 tras su descifrado reactivo.
 #[tauri::command]
 pub async fn get_user_avatar(user_id: String) -> Result<String, UserError> {
-    crate::services::avatar_service::get_avatar(&user_id)
-        .await
-        .map_err(|e| UserError::Validation(e))
+    crate::services::avatar_service::get_avatar(&user_id).await
 }

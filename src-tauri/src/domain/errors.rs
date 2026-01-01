@@ -581,6 +581,25 @@ impl From<crate::services::surrealdb_authorization::AuthError> for RoleError {
         RoleError::Unauthorized(err.to_string())
     }
 }
+
+// ==========================================================================
+// ERRORES DE BACKUP Y RESTAURACIÓN
+// ==========================================================================
+
+/// Errores relacionados con el sistema de resiliencia y copias de seguridad.
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
+pub enum BackupError {
+    #[error("Archivo no encontrado: {0}")]
+    NotFound(String),
+    #[error("Error de I/O crítico: {0}")]
+    IO(String),
+    #[error("Fallo atómico al aplicar restauración: {0}")]
+    AtomicFailure(String),
+    #[error("Configuración de base de datos inválida")]
+    InvalidConfig,
+}
+
 // --------------------------------------------------------------------------
 // ERRORES COMUNES DE DOMINIO
 // --------------------------------------------------------------------------

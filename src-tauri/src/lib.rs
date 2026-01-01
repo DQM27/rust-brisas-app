@@ -70,22 +70,25 @@ pub fn run() {
                 }
             };
 
+            // Protocolo de Resiliencia: Verificamos restauración pendiente ANTES de abrir la DB.
+            // Se hace aquí para asegurar que app_config no haya sido movido aún.
+            let mut db_config = SurrealDbConfig::default();
+            db_config.data_path = config_manager::get_database_path(&app_config);
+
+            if let Err(e) = crate::services::backup::check_and_restore_database(&app_config) {
+                error!("❌ Error en el protocolo de resiliencia: {}", e);
+            }
+
             let is_configured = app_config.setup.is_configured;
             let config_state: AppConfigState = Arc::new(RwLock::new(app_config));
             app.manage(config_state);
 
             // Verificamos y creamos el directorio de datos de la aplicación si no existe.
-            // Esto es crucial para asegurar que la base de datos y los índices tengan un lugar donde escribirse.
             let app_data_dir = app.path().app_data_dir()?;
             if !app_data_dir.exists() {
                 std::fs::create_dir_all(&app_data_dir)?;
             }
 
-            // Inicialización de la base de datos embebida SurrealDB.
-            // Decidimos bloquear el hilo principal (block_on) intencionalmente aquí.
-            // El motivo es garantizar que la base de datos esté lista al 100% antes de habilitar
-            // cualquier comando o permitir que el motor de búsqueda intente leer datos.
-            let db_config = SurrealDbConfig::default();
             tauri::async_runtime::block_on(async {
                 setup_embedded_surrealdb(db_config)
                     .await

@@ -1,0 +1,21 @@
+    Blocking waiting for file lock on build directory
+    Checking mega-brisas v1.0.0-alpha (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+error[E0382]: borrow of moved value: `app_config`
+  --> src\lib.rs:86:69
+   |
+60 |             let app_config: AppConfig = match config_manager::load_config() {
+   |                 ---------- move occurs because `app_config` has type `settings::AppConfig`, which does not implement the `Copy` trait
+...
+74 |             let config_state: AppConfigState = Arc::new(RwLock::new(app_config));
+   |                                                                     ---------- value moved here
+...
+86 |             db_config.data_path = config_manager::get_database_path(&app_config);
+   |                                                                     ^^^^^^^^^^^ value borrowed here after move
+   |
+help: consider cloning the value if the performance cost is acceptable
+   |
+74 |             let config_state: AppConfigState = Arc::new(RwLock::new(app_config.clone()));
+   |                                                                               ++++++++
+
+For more information about this error, try `rustc --explain E0382`.
+error: could not compile `mega-brisas` (lib) due to 1 previous error
