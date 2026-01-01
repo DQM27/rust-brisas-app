@@ -1,20 +1,23 @@
-// ==========================================
-// src/models/gafete.rs
-// ==========================================
-
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};
 
-// ==========================================
+// --------------------------------------------------------------------------
 // MODELO DE DOMINIO
-// ==========================================
+// --------------------------------------------------------------------------
 
+/// Representa un gafete físico o tarjeta de acceso.
+///
+/// Un gafete es la credencial física que se entrega a un visitante, contratista o proveedor
+/// para permitir su acceso a las instalaciones.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Gafete {
     pub id: RecordId,
+    /// Número visible en el gafete físico.
     pub numero: i32,
+    /// Tipo de usuario al que está destinado este gafete.
     pub tipo: TipoGafete,
+    /// Estado físico del gafete.
     pub estado: GafeteEstado,
     #[serde(alias = "created_at")]
     pub created_at: Datetime,
@@ -22,10 +25,11 @@ pub struct Gafete {
     pub updated_at: Datetime,
 }
 
-// ==========================================
-// ENUM DE TIPOS
-// ==========================================
+// --------------------------------------------------------------------------
+// ENUMS (Tipos Estrictos)
+// --------------------------------------------------------------------------
 
+/// Clasificación del gafete según el tipo de visita.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum TipoGafete {
@@ -69,10 +73,7 @@ impl std::str::FromStr for TipoGafete {
     }
 }
 
-// ==========================================
-// ENUM DE ESTADO FISICO
-// ==========================================
-
+/// Estado operativo y físico del gafete.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum GafeteEstado {
@@ -104,10 +105,11 @@ impl std::str::FromStr for GafeteEstado {
     }
 }
 
-// ==========================================
+// --------------------------------------------------------------------------
 // DTOs DE ENTRADA
-// ==========================================
+// --------------------------------------------------------------------------
 
+/// Datos necesarios para crear un único gafete.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateGafeteInput {
@@ -115,6 +117,7 @@ pub struct CreateGafeteInput {
     pub tipo: String,
 }
 
+/// Datos para la creación masiva de gafetes por rango.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateGafeteRangeInput {
@@ -123,22 +126,25 @@ pub struct CreateGafeteRangeInput {
     pub tipo: String,
 }
 
+/// Datos para actualizar información general de un gafete.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateGafeteInput {
     pub tipo: Option<String>,
 }
 
+/// Datos para cambiar el estado de un gafete (ej. reportar daño).
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateGafeteStatusInput {
     pub estado: GafeteEstado,
 }
 
-// ==========================================
-// DTOs PARA PERSISTENCIA (Service -> DB)
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs PARA PERSISTENCIA
+// --------------------------------------------------------------------------
 
+/// DTO intermedio para insertar en base de datos.
 #[derive(Debug, Serialize)]
 pub struct GafeteCreateDTO {
     pub numero: i32,
@@ -146,10 +152,11 @@ pub struct GafeteCreateDTO {
     pub estado: GafeteEstado,
 }
 
-// ==========================================
-// DTOs DE SALIDA
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs DE RESPUESTA
+// --------------------------------------------------------------------------
 
+/// Respuesta estándar con la información pública del gafete.
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GafeteResponse {
@@ -171,13 +178,14 @@ impl From<Gafete> for GafeteResponse {
             tipo: g.tipo.clone(),
             tipo_display: g.tipo.display().to_string(),
             estado_fisico: g.estado.clone(),
-            status: String::from("disponible"), // Status logic is often enriched in service
+            status: String::from("disponible"), // La lógica de estado real (uso) suele enriquecerse en el servicio
             created_at: g.created_at.to_string(),
             updated_at: g.updated_at.to_string(),
         }
     }
 }
 
+/// Respuesta paginada para listas de gafetes.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GafeteListResponse {
@@ -186,6 +194,7 @@ pub struct GafeteListResponse {
     pub stats: StatsGafetes,
 }
 
+/// Estadísticas globales de inventario de gafetes.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StatsGafetes {
@@ -197,6 +206,7 @@ pub struct StatsGafetes {
     pub por_tipo: StatsPorTipo,
 }
 
+/// Desglose de estadísticas por tipo.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StatsPorTipo {

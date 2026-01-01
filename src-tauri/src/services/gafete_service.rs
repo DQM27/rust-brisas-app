@@ -51,6 +51,9 @@ pub async fn liberar_gafete(numero: i32, tipo: &str) -> Result<(), String> {
 
 /// Crea un único gafete de forma manual.
 pub async fn create_gafete(input: CreateGafeteInput) -> Result<GafeteResponse, String> {
+    use crate::domain::gafete as domain;
+    domain::validar_create_input(&input).map_err(|e| e.to_string())?;
+
     let tipo = input.tipo.parse::<TipoGafete>().map_err(|e| e.to_string())?;
 
     let dto = GafeteCreateDTO { numero: input.numero, tipo, estado: GafeteEstado::Activo };
@@ -65,6 +68,15 @@ pub async fn create_gafete(input: CreateGafeteInput) -> Result<GafeteResponse, S
 /// un prefijo (ej. 'EXT-') y el relleno de ceros (padding) para mantener
 /// la consistencia visual en las tarjetas.
 pub async fn create_gafete_range(input: CreateGafeteRangeInput) -> Result<i32, String> {
+    use crate::domain::gafete as domain;
+
+    // Validar rango y tipo
+    if input.start > input.end {
+        return Err("El inicio del rango no puede ser mayor que el fin.".to_string());
+    }
+    domain::validar_numero(input.start).map_err(|e| e.to_string())?;
+    domain::validar_numero(input.end).map_err(|e| e.to_string())?;
+
     let tipo = input.tipo.parse::<TipoGafete>().map_err(|e| e.to_string())?;
     let mut created = 0;
 
