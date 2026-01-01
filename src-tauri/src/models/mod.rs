@@ -8,5 +8,6 @@ pub mod lista_negra;
 pub mod proveedor;
 pub mod role;
 pub mod user;
+pub mod validation;
 pub mod vehiculo;
 pub mod visitante;

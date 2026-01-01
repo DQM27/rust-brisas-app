@@ -6,11 +6,16 @@
 use crate::db::surrealdb_contratista_queries as contratista_queries;
 use crate::db::surrealdb_ingreso_contratista_queries as db;
 use crate::domain::errors::IngresoContratistaError;
+use crate::domain::ingreso_contratista::{self};
 use crate::domain::motor_validacion as motor;
+use crate::models::contratista::ContratistaFetched;
 use crate::models::ingreso::{
     CreateIngresoContratistaInput, IngresoResponse, RegistrarSalidaInput, ValidacionIngresoResponse,
 };
 use crate::models::lista_negra::BlockCheckResponse;
+use crate::models::validation::{
+    EstadoAutorizacion, InfoListaNegra, MotorContexto, NivelSeveridad, TipoAcceso, ValidationStatus,
+};
 use crate::services::{gafete_service, lista_negra_service};
 use serde::{Deserialize, Serialize};
 use surrealdb::RecordId;
@@ -139,28 +144,28 @@ pub async fn validar_ingreso_contratista(
 
     // Invocación del Motor de Reglas de Negocio.
     // Aquí se decide si un contratista entra como "Autorizado" o "Bloqueado".
-    let motor_ctx = motor::MotorContexto {
+    let motor_ctx = MotorContexto {
         ident_cedula: contratista.cedula.clone(),
         ident_nombre: format!("{} {}", contratista.nombre, contratista.apellido),
-        tipo_acceso: motor::TipoAcceso::Contratista,
+        tipo_acceso: TipoAcceso::Contratista,
         lista_negra: if b.is_blocked {
-            Some(motor::InfoListaNegra {
+            Some(InfoListaNegra {
                 motivo: "Bloqueo detectado".to_string(), // Placeholder mejorado
-                severidad: motor::NivelSeveridad::Alto,  // Mapeo simple por ahora
+                severidad: NivelSeveridad::Alto,         // Mapeo simple por ahora
             })
         } else {
             None
         },
         ingreso_activo: None, // TODO: Verificar ingreso activo
-        estado_autorizacion: motor::EstadoAutorizacion::from_str_lossy(contratista.estado.as_str()),
+        estado_autorizacion: EstadoAutorizacion::from_str_lossy(contratista.estado.as_str()),
         alerta_gafete: None, // TODO: Verificar gafetes pendientes
     };
 
     let motor_res = motor::ejecutar_validacion_motor(&motor_ctx);
 
     Ok(ValidacionIngresoResponse {
-        puede_ingresar: motor_res.status == motor::ValidationStatus::Allowed,
-        motivo_rechazo: if motor_res.status != motor::ValidationStatus::Allowed {
+        puede_ingresar: motor_res.status == ValidationStatus::Allowed,
+        motivo_rechazo: if motor_res.status != ValidationStatus::Allowed {
             Some(motor_res.message)
         } else {
             None
