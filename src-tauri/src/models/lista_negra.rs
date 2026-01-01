@@ -6,10 +6,11 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use surrealdb::RecordId;
 
-// ==========================================
-// ENUMS
-// ==========================================
+// --------------------------------------------------------------------------
+// ENUMS (Tipos Estrictos)
+// --------------------------------------------------------------------------
 
+/// Nivel de severidad del bloqueo, indica la gravedad del incidente.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum NivelSeveridad {
@@ -46,15 +47,18 @@ impl Default for NivelSeveridad {
     }
 }
 
-// ==========================================
+// --------------------------------------------------------------------------
 // MODELO DE DOMINIO
-// ==========================================
+// --------------------------------------------------------------------------
 
-/// Representa una persona bloqueada en el sistema
+/// Representa una persona bloqueada en el sistema.
+///
+/// Contiene la información de la persona, el motivo del bloqueo y los metadatos de auditoría.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListaNegra {
     pub id: RecordId,
+    /// Cédula o identificador de la persona bloqueada.
     pub cedula: String,
     pub nombre: String,
     #[serde(alias = "segundo_nombre")]
@@ -66,10 +70,12 @@ pub struct ListaNegra {
     pub empresa_id: Option<RecordId>,
     #[serde(alias = "empresa_nombre")]
     pub empresa_nombre: Option<String>,
+    /// Nivel de riesgo asociado al individuo bloqueado.
     #[serde(alias = "nivel_severidad")]
-    pub nivel_severidad: String,
+    pub nivel_severidad: String, // TODO: Considerar usar NivelSeveridad enum si la DB lo soporta directamente o via string format
     #[serde(alias = "motivo_bloqueo")]
     pub motivo_bloqueo: String,
+    /// Usuario administrativo que realizó el bloqueo.
     #[serde(alias = "bloqueado_por")]
     pub bloqueado_por: String,
     pub observaciones: Option<String>,
@@ -81,10 +87,11 @@ pub struct ListaNegra {
     pub updated_at: surrealdb::Datetime,
 }
 
-// ==========================================
+// --------------------------------------------------------------------------
 // DTOs DE ENTRADA
-// ==========================================
+// --------------------------------------------------------------------------
 
+/// Datos requeridos para agregar a una persona a la lista negra.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddToListaNegraInput {
@@ -101,6 +108,7 @@ pub struct AddToListaNegraInput {
     pub observaciones: Option<String>,
 }
 
+/// Datos para actualizar un registro de bloqueo existente.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateListaNegraInput {
@@ -109,10 +117,11 @@ pub struct UpdateListaNegraInput {
     pub observaciones: Option<String>,
 }
 
-// ==========================================
+// --------------------------------------------------------------------------
 // DTOs DE SALIDA
-// ==========================================
+// --------------------------------------------------------------------------
 
+/// Respuesta detallada de un registro de lista negra.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListaNegraResponse {
@@ -179,6 +188,7 @@ impl From<ListaNegra> for ListaNegraResponse {
     }
 }
 
+/// Respuesta simplificada de verificación de bloqueo.
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockCheckResponse {
@@ -187,6 +197,7 @@ pub struct BlockCheckResponse {
     pub bloqueado_desde: Option<String>,
 }
 
+/// Lista paginada de personas bloqueadas.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListaNegraListResponse {
@@ -196,6 +207,7 @@ pub struct ListaNegraListResponse {
     pub por_nivel: NivelStats,
 }
 
+/// Estadísticas de bloqueos por nivel de severidad.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NivelStats {
@@ -204,6 +216,7 @@ pub struct NivelStats {
     pub bajo: usize,
 }
 
+/// Resultados de búsqueda para posibles candidatos a lista negra.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PersonaSearchResult {
