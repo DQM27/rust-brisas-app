@@ -10,8 +10,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 // CONSTANTES DE IDENTIDAD DE ROL
 // --------------------------------------------------------------------------
 
-/// Identificador único del Superusuario raíz.
-pub const SUPERUSER_ID: &str = "e0d6da3e-07a8-48c6-9304-436154b7c845";
+/// Identificador único del usuario raíz (God).
+pub const GOD_ID: &str = "e0d6da3e-07a8-48c6-9304-436154b7c845";
 
 /// Identificador único para el rol de Administrador.
 pub const ROLE_ADMIN_ID: &str = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
@@ -19,8 +19,8 @@ pub const ROLE_ADMIN_ID: &str = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
 /// Identificador único para el rol de Guardia de Seguridad.
 pub const ROLE_GUARDIA_ID: &str = "27221d6e-9818-430c-99c3-5694a971216b";
 
-/// Correo electrónico reservado para el Superusuario del sistema.
-pub const SUPERUSER_EMAIL: &str = "admin@brisas.local";
+/// Correo electrónico reservado para el usuario raíz (God Mode).
+pub const GOD_EMAIL: &str = "admin@brisas.local";
 
 // --------------------------------------------------------------------------
 // MECANISMO DE "GOD MODE" (SISTEMA INTERNO)
@@ -56,14 +56,14 @@ pub fn is_god_mode() -> bool {
 ///
 /// Se otorga autoridad si:
 /// 1. El modo Dios global está activo (`is_god_mode`).
-/// 2. El ID de usuario corresponde al Superusuario raíz.
+/// 2. El ID de usuario corresponde al usuario raíz (God).
 pub fn has_god_authority(user_id: Option<&str>) -> bool {
     if is_god_mode() {
         return true;
     }
 
     if let Some(id) = user_id {
-        return id == SUPERUSER_ID;
+        return id == GOD_ID;
     }
 
     false
@@ -147,7 +147,7 @@ pub fn validar_update_input(input: &UpdateRoleInput) -> Result<(), RoleError> {
 
 /// Protege los roles críticos del sistema contra modificaciones o eliminaciones accidentales.
 pub fn check_system_role_modification(role_id: &str) -> Result<(), RoleError> {
-    if role_id == SUPERUSER_ID || role_id == ROLE_ADMIN_ID || role_id == ROLE_GUARDIA_ID {
+    if role_id == GOD_ID || role_id == ROLE_ADMIN_ID || role_id == ROLE_GUARDIA_ID {
         return Err(RoleError::SystemRole);
     }
     Ok(())
@@ -172,7 +172,7 @@ mod tests {
 
     #[test]
     fn test_proteccion_roles_sistema() {
-        assert!(check_system_role_modification(SUPERUSER_ID).is_err());
+        assert!(check_system_role_modification(GOD_ID).is_err());
         assert!(check_system_role_modification("rol-personalizado").is_ok());
     }
 

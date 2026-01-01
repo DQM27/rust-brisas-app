@@ -1,7 +1,7 @@
 use crate::db::surrealdb_role_queries as role_db;
 use crate::db::surrealdb_user_queries as db;
 use crate::domain::errors::UserError;
-use crate::domain::role::{ROLE_GUARDIA_ID, SUPERUSER_ID};
+use crate::domain::role::{GOD_ID, ROLE_GUARDIA_ID};
 use crate::domain::user as domain;
 use crate::models::user::{
     ChangePasswordInput, CreateUserInput, UpdateUserInput, UserCreateDTO, UserListResponse,
@@ -163,9 +163,9 @@ pub async fn get_user_by_id(id_str: &str) -> Result<UserResponse, UserError> {
     Ok(UserResponse::from_fetched(user, permissions))
 }
 
-/// Lista todos los usuarios registrados, excluyendo al superusuario del sistema.
+/// Lista todos los usuarios registrados, excluyendo al usuario raíz (God) del sistema.
 pub async fn get_all_users() -> Result<UserListResponse, UserError> {
-    let exclude_record = RecordId::from_table_key("user", SUPERUSER_ID);
+    let exclude_record = RecordId::from_table_key("user", GOD_ID);
     let users = db::find_all_fetched(Some(&exclude_record))
         .await
         .map_err(|e| UserError::Database(e.to_string()))?;

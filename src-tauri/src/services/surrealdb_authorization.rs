@@ -126,7 +126,7 @@ pub async fn role_has_permission(
     Ok(permissions.contains(&perm_id))
 }
 
-/// Verifica si un usuario tiene permiso (incluye lógica de superuser y God Mode)
+/// Verifica si un usuario tiene permiso (incluye lógica de usuario God y God Mode)
 pub async fn check_permission(
     user_id: &str,
     role_id: &str,

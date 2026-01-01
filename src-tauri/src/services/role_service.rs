@@ -104,7 +104,7 @@ pub async fn create_role(input: CreateRoleInput) -> Result<RoleResponse, RoleErr
 ///
 /// Se aplica una protección estricta: los roles marcados como 'is_system'
 /// (ej. Root, Admin, Guardia) tienen una estructura crítica y no pueden
-/// ser modificados por usuarios convencionales, solo por un 'Superuser'.
+/// ser modificados por usuarios convencionales, solo por un usuario con 'God' authority.
 pub async fn update_role(
     id_str: &str,
     input: UpdateRoleInput,

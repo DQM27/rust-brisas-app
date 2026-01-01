@@ -1,38 +1,59 @@
+// ==========================================================================
 // src/config/seed.rs
-// ====================
-// Seeds esenciales para SurrealDB
-// ====================
+// ==========================================================================
+// Gestión de Datos Iniciales (Seeds) para SurrealDB.
+//
+// Este módulo se encarga de garantizar que la base de datos tenga siempre los
+// registros críticos necesarios para el funcionamiento del sistema:
+// 1. Roles base (Administrador, Guardia).
+// 2. Usuario raíz (God) con acceso total bypass.
+// 3. Usuario administrador de desarrollo (para pruebas locales).
+// ==========================================================================
 
-use crate::domain::role::{ROLE_ADMIN_ID, ROLE_GUARDIA_ID, SUPERUSER_EMAIL, SUPERUSER_ID};
+use crate::domain::role::{GOD_EMAIL, GOD_ID, ROLE_ADMIN_ID, ROLE_GUARDIA_ID};
 use crate::models::role::{Action, Module};
 use crate::services::auth::hash_password;
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use log::info;
 use surrealdb::RecordId;
 
-/// Orquesta la ejecución de todos los seeds
+/// Orquesta la ejecución secuencial de todos los seeds del sistema.
+/// Debe ser invocado durante el arranque de la aplicación si el estado es 'Setup'.
 pub async fn seed_db() -> Result<(), Box<dyn std::error::Error>> {
+    info!("🚀 Iniciando proceso de seeding de base de datos...");
     seed_roles().await?;
-    seed_superuser().await?;
+    seed_god_user().await?;
     seed_admin_user().await?;
+    info!("✨ Proceso de seeding completado satisfactoriamente");
     Ok(())
 }
 
-/// Seed de roles del sistema
+/// Provisiona los roles fundamentales del sistema.
+///
+/// Este proceso es destructivo para los roles de sistema (los elimina y re-crea)
+/// para asegurar que los permisos estén siempre actualizados con la última
+/// versión del código (Action/Module).
 async fn seed_roles() -> Result<(), SurrealDbError> {
     use crate::domain::role::GodModeGuard;
 
-    // Activar God Mode para el seed
+    // Activamos el GodModeGuard para poder manipular roles protegidos
+    // sin que el middleware de seguridad bloquee la operación.
     let _guard = GodModeGuard::activate();
     let db = get_db().await?;
 
-    // (id, name, desc, inherits_from)
+    // Definición de la matriz de roles base (id, nombre, descripción, herencia)
     let roles = [
         (ROLE_ADMIN_ID, "Administrador", "Acceso completo al sistema", None::<&'static str>),
-        (ROLE_GUARDIA_ID, "Guardia", "Registro de ingresos", None::<&'static str>),
+        (
+            ROLE_GUARDIA_ID,
+            "Guardia",
+            "Registro de ingresos y consultas básicas",
+            None::<&'static str>,
+        ),
     ];
 
-    // Generar permisos para admin (todos)
+    // Recolectamos todos los permisos posibles definidos en el código.
+    // El Administrador siempre recibe el set completo.
     let all_permissions: Vec<String> = Module::all()
         .iter()
         .flat_map(|m| {
@@ -43,7 +64,7 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
         })
         .collect();
 
-    // Permisos base para guardia
+    // Set restringido de permisos para el rol de Guardia.
     let guardia_perms = vec![
         "contratistas:view",
         "contratistas:read",
@@ -67,9 +88,10 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
             _ => vec![],
         };
 
-        // Eliminar y re-crear
+        // Limpieza previa para asegurar consistencia
         db.query("DELETE type::thing('role', $id)").bind(("id", id)).await?;
 
+        // Inserción del rol con metadatos de sistema
         db.query(
             r#"
                 CREATE type::thing('role', $id) CONTENT {
@@ -92,47 +114,50 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
         .check()?;
     }
 
-    info!("✅ Roles del sistema creados/actualizados con herencia");
+    info!("✅ Roles base de sistema sincronizados");
     Ok(())
 }
 
-/// Seed del superuser oculto
-async fn seed_superuser() -> Result<(), SurrealDbError> {
+/// Garantiza la existencia del usuario raíz ("God User").
+///
+/// Este usuario es especial porque posee un ID fijo referenciado en el código
+/// para otorgar autoridad total (God Authority). No depende de flags en BD.
+async fn seed_god_user() -> Result<(), SurrealDbError> {
     let db = get_db().await?;
 
-    // Verificar si ya existe usando SELECT VALUE id
+    // Verificamos existencia por ID estricto
     let existing: Vec<RecordId> = db
         .query("SELECT VALUE id FROM user WHERE id = type::thing('user', $id)")
-        .bind(("id", SUPERUSER_ID))
+        .bind(("id", GOD_ID))
         .await?
         .take(0)?;
 
-    let password = std::env::var("BRISAS_ROOT_PASSWORD").unwrap_or_else(|_| "desing27".to_string());
+    // Password por defecto: 'desing27' (Debe ser cambiada inmediatamente)
     let password_hash =
-        hash_password(&password).map_err(|e| SurrealDbError::Query(e.to_string()))?;
+        hash_password("desing27").map_err(|e| SurrealDbError::Query(e.to_string()))?;
 
     if !existing.is_empty() {
-        // Actualizar el superuser existente con los nuevos campos
+        // En cada arranque, refrescamos los datos críticos del God User (Auto-healing)
         db.query(
             r#"
             UPDATE type::thing('user', $id) SET
                 nombre = "DQM27",
-                apellido = "",
+                apellido = "SYSTEM",
                 must_change_password = true,
                 password_hash = $password_hash,
                 updated_at = time::now()
             "#,
         )
-        .bind(("id", SUPERUSER_ID))
+        .bind(("id", GOD_ID))
         .bind(("password_hash", password_hash))
         .await?
         .check()?;
 
-        info!("🔐 Superuser actualizado con nuevos campos");
+        info!("🔐 Usuario raíz actualizado (id={})", GOD_ID);
         return Ok(());
     }
 
-    // Crear nuevo superuser si no existe
+    // Creación inicial si la base de datos está vacía
     db.query(
         r#"
             CREATE user CONTENT {
@@ -140,7 +165,7 @@ async fn seed_superuser() -> Result<(), SurrealDbError> {
                 email: $email,
                 password_hash: $password_hash,
                 nombre: "DQM27",
-                apellido: "",
+                apellido: "SYSTEM",
                 role: type::thing('role', $role_id),
                 is_active: true,
                 cedula: "0000000000",
@@ -150,37 +175,37 @@ async fn seed_superuser() -> Result<(), SurrealDbError> {
             }
             "#,
     )
-    .bind(("id", SUPERUSER_ID))
-    .bind(("email", SUPERUSER_EMAIL))
+    .bind(("id", GOD_ID))
+    .bind(("email", GOD_EMAIL))
     .bind(("password_hash", password_hash.clone()))
     .bind(("role_id", ROLE_ADMIN_ID))
     .await?
     .check()?;
 
-    info!("✅ Superuser creado");
+    info!("✅ Usuario raíz (God) creado con éxito");
     Ok(())
 }
 
-/// Seed del primer admin (SOLO DESARROLLO)
+/// Seed para el administrador de Daniel Quintana (Entorno de Desarrollo).
+///
+/// Incluye lógica de 'Auto-healing' para restaurar el rol de admin si este
+/// es modificado accidentalmente mediante la interfaz de usuario.
 async fn seed_admin_user() -> Result<(), SurrealDbError> {
     let db = get_db().await?;
+    let dev_email = "daniel.bleach1@gmail.com";
 
-    // Verificar si ya existe usando SELECT VALUE id
     let existing: Vec<RecordId> = db
         .query("SELECT VALUE id FROM user WHERE email = $email")
-        .bind(("email", "daniel.bleach1@gmail.com"))
+        .bind(("email", dev_email))
         .await?
         .take(0)?;
 
     if !existing.is_empty() {
-        info!("👤 Admin de desarrollo ya existe. Verificando rol...");
-        // Auto-heal: Asegurar que tenga el rol de admin correcto
-        // Esto corrige el problema donde el usuario pierde permisos si el frontend envía un rol incorrecto
+        // Auto-heal: Aseguramos que Daniel tenga siempre el rol de administrador.
         db.query("UPDATE user SET role = type::thing('role', $role_id) WHERE email = $email")
             .bind(("role_id", ROLE_ADMIN_ID))
-            .bind(("email", "daniel.bleach1@gmail.com"))
+            .bind(("email", dev_email))
             .await?;
-        info!("🔧 Rol de admin verificado/restaurado");
         return Ok(());
     }
 
@@ -188,12 +213,11 @@ async fn seed_admin_user() -> Result<(), SurrealDbError> {
     let password_hash =
         hash_password("desing27").map_err(|e| SurrealDbError::Query(e.to_string()))?;
 
-    // No deserializamos el resultado para evitar el bug de serde_json::Value con SurrealDB 2.x
     db.query(
         r#"
             CREATE user CONTENT {
                 id: type::thing('user', $id),
-                email: "daniel.bleach1@gmail.com",
+                email: $email,
                 password_hash: $password_hash,
                 nombre: "Daniel",
                 apellido: "Quintana",
@@ -206,12 +230,13 @@ async fn seed_admin_user() -> Result<(), SurrealDbError> {
             }
             "#,
     )
-    .bind(("id", id.clone()))
+    .bind(("id", id))
+    .bind(("email", dev_email))
     .bind(("password_hash", password_hash.clone()))
     .bind(("role_id", ROLE_ADMIN_ID))
     .await?
-    .check()?; // Solo verificar errores, no deserializar
+    .check()?;
 
-    info!("✅ Admin de desarrollo creado");
+    info!("✅ Administrador de desarrollo registrado");
     Ok(())
 }
