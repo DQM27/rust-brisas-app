@@ -6,8 +6,25 @@
 use crate::models::export::{
     CsvDelimiter, ExportFormat, ExportRequest, ExportValue, PageOrientation,
 };
+use chrono::DateTime;
 use std::borrow::Cow;
 use std::collections::HashMap;
+
+// --------------------------------------------------------------------------
+// CONSTANTES DE LÍMITES Y SEGURIDAD
+// --------------------------------------------------------------------------
+
+/// Número máximo de filas permitidas en una exportación.
+pub const MAX_ROWS: usize = 100_000;
+
+/// Tamaño máximo estimado de datos en memoria (50MB).
+pub const MAX_SIZE: usize = 50 * 1024 * 1024;
+
+/// Longitud máxima del título del documento.
+pub const TITULO_MAX_LEN: usize = 200;
+
+/// Caracteres prohibidos en títulos (prevención de inyecciones y corrupción).
+const CHARS_PROHIBIDOS: &[char] = &['<', '>', '{', '}', '|', '\\', '^', '~', '[', ']', '`', '\0'];
 
 // --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
@@ -49,8 +66,6 @@ pub fn validar_rows(rows: &[HashMap<String, serde_json::Value>]) -> Result<(), S
         return Err("No hay datos para exportar".to_string());
     }
 
-    // Límite razonable para evitar crashes de memoria
-    const MAX_ROWS: usize = 100_000;
     if rows.len() > MAX_ROWS {
         return Err(format!("Demasiadas filas. Máximo: {}, recibido: {}", MAX_ROWS, rows.len()));
     }
@@ -94,13 +109,13 @@ pub fn validar_titulo(titulo: &str) -> Result<(), String> {
         return Err("El título no puede estar vacío".to_string());
     }
 
-    if limpio.len() > 200 {
-        return Err("El título no puede exceder 200 caracteres".to_string());
+    if limpio.len() > TITULO_MAX_LEN {
+        return Err(format!("El título no puede exceder {} caracteres", TITULO_MAX_LEN));
     }
 
-    // Validar caracteres especiales que puedan romper el PDF
-    if limpio.contains('\0') {
-        return Err("El título contiene caracteres inválidos".to_string());
+    // Validar caracteres prohibidos
+    if limpio.chars().any(|c| CHARS_PROHIBIDOS.contains(&c)) {
+        return Err("El título contiene caracteres no permitidos".to_string());
     }
 
     Ok(())
@@ -186,8 +201,6 @@ pub fn json_value_to_string(value: &serde_json::Value) -> Cow<'_, str> {
     }
 }
 
-use chrono::DateTime;
-
 /// Mapea una fila completa de datos crudos a una fila normalizada.
 pub fn normalizar_row(
     row: &HashMap<String, serde_json::Value>,
@@ -243,7 +256,6 @@ pub fn validar_tamano_total(request: &ExportRequest) -> Result<(), String> {
 
     let total_size = headers_size + rows_size;
 
-    const MAX_SIZE: usize = 50 * 1024 * 1024; // 50MB
     if total_size > MAX_SIZE {
         return Err(format!(
             "Datos demasiado grandes. Máximo: {}MB, estimado: {}MB",
@@ -306,6 +318,14 @@ mod tests {
         assert!(validar_titulo("Reporte Mensual").is_ok());
         assert!(validar_titulo("").is_err());
         assert!(validar_titulo(&"A".repeat(201)).is_err());
+    }
+
+    #[test]
+    fn test_validar_titulo_chars_prohibidos() {
+        assert!(validar_titulo("Reporte<script>").is_err());
+        assert!(validar_titulo("Export{malware}").is_err());
+        assert!(validar_titulo("Data|pipe").is_err());
+        assert!(validar_titulo("Null\0char").is_err());
     }
 
     #[test]
