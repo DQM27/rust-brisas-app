@@ -1,8 +1,13 @@
-/// Gestión Integral de Contratistas.
+/// Servicio: Gestión Integral de Contratistas
 ///
-/// Este servicio es uno de los pilares del core de negocio. Orquesta el ciclo de vida
-/// completo de un contratista: desde su validación inicial contra listas negras hasta
-/// su indexación en el motor de búsqueda y la gestión de sus vehículos asociados.
+/// Orquestador del ciclo de vida completo de un contratista: desde su validación
+/// inicial contra listas negras hasta su indexación en el motor de búsqueda.
+///
+/// Responsabilidades:
+/// - Registro con verificación de seguridad (Lista Negra).
+/// - Actualización de perfiles y certificaciones (PRAIND).
+/// - Gestión de vehículos vinculados.
+/// - Sincronización con motor de búsqueda.
 use crate::db::surrealdb_audit_queries as audit_db;
 use crate::db::surrealdb_contratista_queries as db;
 use crate::db::surrealdb_empresa_queries as empresa_db;
@@ -24,12 +29,16 @@ use log::{error, info};
 use std::sync::Arc;
 use surrealdb::RecordId;
 
-// Helper para mapear errores de SurrealDB a ContratistaError
+// --------------------------------------------------------------------------
+// HELPERS INTERNOS
+// --------------------------------------------------------------------------
+
+/// Mapeo de errores de infraestructura a dominio.
 fn map_db_error(e: SurrealDbError) -> ContratistaError {
     ContratistaError::Database(e.to_string())
 }
 
-/// Helper para parsear ID de contratista (acepta con o sin prefijo)
+/// Normalización de IDs de contratista para SurrealDB.
 fn parse_contratista_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
@@ -39,7 +48,7 @@ fn parse_contratista_id(id_str: &str) -> RecordId {
     }
 }
 
-/// Helper para parsear ID de empresa (acepta con o sin prefijo)
+/// Normalización de IDs de empresa para SurrealDB.
 fn parse_empresa_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
@@ -49,19 +58,32 @@ fn parse_empresa_id(id_str: &str) -> RecordId {
     }
 }
 
-// ==========================================
-// CREAR CONTRATISTA
-// ==========================================
+// --------------------------------------------------------------------------
+// OPERACIONES DE CREACIÓN
+// --------------------------------------------------------------------------
 
 /// Registra un nuevo contratista en el sistema.
 ///
 /// El proceso sigue este flujo crítico:
-/// 1. Validación de formato de datos.
-/// 2. Chequeo de seguridad (Lista Negra): Si la persona está vetada, se aborta de inmediato.
+/// 1. Validación de formato de datos (Dominio).
+/// 2. Chequeo de seguridad (Lista Negra): Si la persona está vetada, se aborta.
 /// 3. Unicidad de Identidad: No se permiten duplicados de cédula.
 /// 4. Vinculación Empresarial: Debe pertenecer a una empresa válida.
 /// 5. Creación de Identidad Digital y (opcionalmente) de su Patrimonio Vehicular.
-/// 6. Sincronización: Se notifica al motor de búsqueda para visibilidad instantánea.
+/// 6. Sincronización: Se notifica al motor de búsqueda.
+///
+/// # Argumentos
+/// * `search_service` - Referencia al servicio de indexación.
+/// * `input` - Datos del contratista a registrar.
+///
+/// # Retorno
+/// El perfil del contratista recién creado.
+///
+/// # Errores
+/// - `ContratistaError::Validation`: Datos inválidos o bloqueo de seguridad.
+/// - `ContratistaError::CedulaExists`: Cédula ya registrada.
+/// - `ContratistaError::EmpresaNotFound`: Empresa vinculada no existe.
+/// - `ContratistaError::Database`: Error de persistencia.
 pub async fn create_contratista(
     search_service: &Arc<SearchService>,
     input: CreateContratistaInput,
@@ -158,10 +180,21 @@ pub async fn create_contratista(
     build_response_fetched(contratista).await
 }
 
-// ==========================================
-// OBTENER CONTRATISTA POR ID
-// ==========================================
+// --------------------------------------------------------------------------
+// CONSULTAS DE CONTRATISTAS
+// --------------------------------------------------------------------------
 
+/// Obtiene el perfil completo de un contratista por su ID.
+///
+/// # Argumentos
+/// * `id_str` - ID del contratista (formato "contratista:id" o "id").
+///
+/// # Retorno
+/// Perfil enriquecido con datos de vehículo y estado de bloqueo.
+///
+/// # Errores
+/// - `ContratistaError::NotFound`: El contratista no existe.
+/// - `ContratistaError::Database`: Error de acceso a datos.
 pub async fn get_contratista_by_id(id_str: &str) -> Result<ContratistaResponse, ContratistaError> {
     let id = parse_contratista_id(id_str);
     let contratista = db::find_by_id_fetched(&id)
@@ -171,10 +204,16 @@ pub async fn get_contratista_by_id(id_str: &str) -> Result<ContratistaResponse, 
     build_response_fetched(contratista).await
 }
 
-// ==========================================
-// OBTENER CONTRATISTA POR CÉDULA
-// ==========================================
-
+/// Localiza un contratista por su número de cédula.
+///
+/// # Argumentos
+/// * `cedula` - Cédula de identidad.
+///
+/// # Retorno
+/// Perfil del contratista si existe.
+///
+/// # Errores
+/// - `ContratistaError::NotFound`: No existe contratista con esa cédula.
 pub async fn get_contratista_by_cedula(
     cedula: &str,
 ) -> Result<ContratistaResponse, ContratistaError> {
@@ -186,10 +225,13 @@ pub async fn get_contratista_by_cedula(
     build_response_fetched(contratista).await
 }
 
-// ==========================================
-// OBTENER TODOS LOS CONTRATISTAS
-// ==========================================
-
+/// Recupera el censo completo de contratistas con estadísticas.
+///
+/// # Retorno
+/// Lista de contratistas con conteos de activos, PRAIND vencido, etc.
+///
+/// # Errores
+/// - `ContratistaError::Database`: Error de consulta.
 pub async fn get_all_contratistas() -> Result<ContratistaListResponse, ContratistaError> {
     let raw_list = db::find_all_fetched().await.map_err(map_db_error)?;
 
@@ -212,10 +254,10 @@ pub async fn get_all_contratistas() -> Result<ContratistaListResponse, Contratis
     })
 }
 
-// ==========================================
-// OBTENER CONTRATISTAS ACTIVOS
-// ==========================================
-
+/// Filtra exclusivamente contratistas con estado Activo.
+///
+/// # Retorno
+/// Vector de contratistas habilitados para laborar.
 pub async fn get_contratistas_activos() -> Result<Vec<ContratistaResponse>, ContratistaError> {
     let raw_list = db::find_all_fetched().await.map_err(map_db_error)?;
 
@@ -230,14 +272,28 @@ pub async fn get_contratistas_activos() -> Result<Vec<ContratistaResponse>, Cont
     Ok(contratistas)
 }
 
-// ==========================================
-// ACTUALIZAR CONTRATISTA
-// ==========================================
+// --------------------------------------------------------------------------
+// OPERACIONES DE ACTUALIZACIÓN
+// --------------------------------------------------------------------------
 
 /// Actualiza la información de un contratista existente.
 ///
 /// Incluye lógica inteligente para detectar cambios de empresa y sincronizar
 /// los datos vinculados (Vehículos) si se proporcionan en el mismo formulario.
+///
+/// # Argumentos
+/// * `search_service` - Referencia al servicio de indexación.
+/// * `id_str` - ID del contratista.
+/// * `input` - Campos a actualizar.
+///
+/// # Retorno
+/// Perfil actualizado del contratista.
+///
+/// # Errores
+/// - `ContratistaError::NotFound`: Contratista no existe.
+/// - `ContratistaError::Validation`: Datos inválidos.
+/// - `ContratistaError::EmpresaNotFound`: Nueva empresa no existe.
+/// - `ContratistaError::Database`: Error de persistencia.
 pub async fn update_contratista(
     search_service: &Arc<SearchService>,
     id_str: String,
@@ -483,10 +539,6 @@ pub async fn cambiar_estado_con_historial(
 
     build_response_fetched(updated).await
 }
-
-// ==========================================
-// HELPERS
-// ==========================================
 
 /// Construye el objeto de respuesta enriqueciendo los datos básicos con vehículos y estado de bloqueo.
 async fn build_response_fetched(

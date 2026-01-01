@@ -18,17 +18,35 @@ use chrono::NaiveDate;
 // --------------------------------------------------------------------------
 
 /// Valida el formato y longitud de la cédula de identidad.
+///
+/// # Argumentos
+/// * `cedula` - Número de documento de identidad.
+///
+/// # Retorno
+/// `Ok(())` si la cédula cumple los requisitos de formato.
 pub fn validar_cedula(cedula: &str) -> Result<(), ContratistaError> {
     validar_cedula_estandar(cedula).map_err(|e| ContratistaError::Validation(e.to_string()))
 }
 
 /// Valida los requisitos mínimos del nombre.
+///
+/// # Argumentos
+/// * `nombre` - Nombre del contratista.
+///
+/// # Retorno
+/// `Ok(())` si el nombre es válido.
 pub fn validar_nombre(nombre: &str) -> Result<(), ContratistaError> {
     validar_nombre_estandar(nombre, "nombre")
         .map_err(|e| ContratistaError::Validation(e.to_string()))
 }
 
 /// Valida los requisitos mínimos del apellido.
+///
+/// # Argumentos
+/// * `apellido` - Apellido del contratista.
+///
+/// # Retorno
+/// `Ok(())` si el apellido es válido.
 pub fn validar_apellido(apellido: &str) -> Result<(), ContratistaError> {
     validar_nombre_estandar(apellido, "apellido")
         .map_err(|e| ContratistaError::Validation(e.to_string()))
@@ -48,6 +66,14 @@ pub fn validar_empresa_id(empresa_id: &str) -> Result<(), ContratistaError> {
 }
 
 /// Parsea y valida una fecha en formato estándar (YYYY-MM-DD).
+///
+/// Cumple con `docs/estandares-fechas.md` para entrada de fechas simples.
+///
+/// # Argumentos
+/// * `fecha_str` - Cadena de fecha en formato ISO 8601 (YYYY-MM-DD).
+///
+/// # Retorno
+/// `NaiveDate` parseada o error de validación.
 pub fn validar_fecha(fecha_str: &str) -> Result<NaiveDate, ContratistaError> {
     parsear_fecha_simple(fecha_str).map_err(|e| ContratistaError::Validation(e.to_string()))
 }
@@ -57,6 +83,12 @@ pub fn validar_fecha(fecha_str: &str) -> Result<NaiveDate, ContratistaError> {
 // --------------------------------------------------------------------------
 
 /// Valida el conjunto completo de datos para la creación de un contratista.
+///
+/// # Argumentos
+/// * `input` - DTO con los datos de creación.
+///
+/// # Retorno
+/// `Ok(())` si todos los campos son válidos.
 pub fn validar_create_input(input: &CreateContratistaInput) -> Result<(), ContratistaError> {
     validar_cedula(&input.cedula)?;
     validar_nombre(&input.nombre)?;
@@ -67,6 +99,12 @@ pub fn validar_create_input(input: &CreateContratistaInput) -> Result<(), Contra
 }
 
 /// Valida los cambios parciales solicitados en una actualización.
+///
+/// # Argumentos
+/// * `input` - DTO con los campos opcionales a actualizar.
+///
+/// # Retorno
+/// `Ok(())` si los cambios propuestos son válidos.
 pub fn validar_update_input(input: &UpdateContratistaInput) -> Result<(), ContratistaError> {
     if let Some(ref nombre) = input.nombre {
         validar_nombre(nombre)?;
