@@ -141,7 +141,7 @@ pub async fn procesar_ingreso_cita(
         .map_err(|e| CitaError::Database(e.to_string()))?
         .ok_or(CitaError::NotFound)?;
 
-    if cita.estado != "pendiente" {
+    if cita.estado != crate::models::cita::EstadoCita::Programada {
         return Err(CitaError::Validation(format!(
             "La cita no se puede procesar porque ya está en estado: {}",
             cita.estado

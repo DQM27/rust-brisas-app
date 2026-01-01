@@ -3,7 +3,7 @@
 // Enterprise Quality SurrealDB Implementation
 // ==========================================
 
-use crate::models::cita::{Cita, CitaCreateDTO, CitaFetched};
+use crate::models::cita::{Cita, CitaCreateDTO, CitaFetched, EstadoCita};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
@@ -69,11 +69,12 @@ pub async fn find_pendientes_fetched() -> Result<Vec<CitaFetched>, SurrealDbErro
         .query(
             r#"
             SELECT * FROM cita 
-            WHERE activa = true AND estado = 'pendiente'
+            WHERE activa = true AND estado = $estado
             ORDER BY fecha_inicio ASC
             FETCH visitante_id, usuario_id
         "#,
         )
+        .bind(("estado", EstadoCita::Programada))
         .await?;
     Ok(result.take(0)?)
 }
@@ -118,7 +119,7 @@ pub async fn insert(dto: CitaCreateDTO) -> Result<Cita, SurrealDbError> {
                 area_visitada: $area_visitada,
                 visitante_nombre: $visitante_nombre,
                 visitante_cedula: $visitante_cedula,
-                estado: 'pendiente',
+                estado: $estado,
                 activa: true,
                 created_at: time::now(),
                 updated_at: time::now()
@@ -134,6 +135,7 @@ pub async fn insert(dto: CitaCreateDTO) -> Result<Cita, SurrealDbError> {
         .bind(("area_visitada", dto.area_visitada))
         .bind(("visitante_nombre", dto.visitante_nombre))
         .bind(("visitante_cedula", dto.visitante_cedula))
+        .bind(("estado", EstadoCita::Programada))
         .await?;
 
     result.take::<Option<Cita>>(0)?.ok_or(SurrealDbError::Query("Error creando cita".to_string()))
@@ -146,12 +148,13 @@ pub async fn cancel(id: &RecordId) -> Result<Option<Cita>, SurrealDbError> {
             r#"
             UPDATE $id MERGE {
                 activa: false,
-                estado: 'cancelada',
+                estado: $estado,
                 updated_at: time::now()
             }
         "#,
         )
         .bind(("id", id.clone()))
+        .bind(("estado", EstadoCita::Cancelada))
         .await?;
 
     Ok(result.take(0)?)
@@ -164,13 +167,14 @@ pub async fn completar(id: &RecordId) -> Result<Option<CitaFetched>, SurrealDbEr
             r#"
             UPDATE $id MERGE {
                 activa: false,
-                estado: 'completada',
+                estado: $estado,
                 updated_at: time::now()
             };
             SELECT * FROM $id FETCH visitante_id, usuario_id
         "#,
         )
         .bind(("id", id.clone()))
+        .bind(("estado", EstadoCita::Finalizada))
         .await?;
 
     // Take the second statement result (the SELECT)
