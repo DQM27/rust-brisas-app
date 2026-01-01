@@ -136,6 +136,21 @@ pub fn validar_gafete_coincide(
 }
 
 // --------------------------------------------------------------------------
+// CONTROL DE INGRESOS: VALIDACIÓN DE ESTADO
+// --------------------------------------------------------------------------
+
+/// Valida que un registro de ingreso esté abierto (sin fecha de salida).
+///
+/// Retorna error si ya existe una fecha de salida, indicando que el ingreso
+/// ya fue cerrado y no puede procesarse nuevamente.
+pub fn validar_ingreso_abierto(fecha_salida: &Option<String>) -> Result<(), CommonError> {
+    if fecha_salida.is_some() {
+        return Err(CommonError::Validation("El ingreso ya fue cerrado".to_string()));
+    }
+    Ok(())
+}
+
+// --------------------------------------------------------------------------
 // CONTROL DE TIEMPO: REGLAS DE NEGOCIO
 // --------------------------------------------------------------------------
 

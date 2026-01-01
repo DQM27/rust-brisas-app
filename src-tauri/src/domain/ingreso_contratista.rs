@@ -96,10 +96,8 @@ pub fn construir_alerta_tiempo(minutos_transcurridos: i64) -> AlertaTiempo {
 pub fn validar_ingreso_abierto(
     fecha_salida: &Option<String>,
 ) -> Result<(), IngresoContratistaError> {
-    if fecha_salida.is_some() {
-        return Err(IngresoContratistaError::NoActiveIngreso);
-    }
-    Ok(())
+    crate::domain::common::validar_ingreso_abierto(fecha_salida)
+        .map_err(|e| IngresoContratistaError::Validation(e.to_string()))
 }
 
 // --------------------------------------------------------------------------

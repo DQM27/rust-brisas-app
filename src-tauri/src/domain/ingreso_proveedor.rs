@@ -20,10 +20,8 @@ use crate::domain::common as common_domain;
 
 /// Valida que el registro de ingreso no tenga ya una fecha de salida asignada.
 pub fn validar_ingreso_abierto(fecha_salida: &Option<String>) -> Result<(), IngresoProveedorError> {
-    if fecha_salida.is_some() {
-        return Err(IngresoProveedorError::NoActiveIngreso);
-    }
-    Ok(())
+    common_domain::validar_ingreso_abierto(fecha_salida)
+        .map_err(|e| IngresoProveedorError::Validation(e.to_string()))
 }
 
 // --------------------------------------------------------------------------
