@@ -1,3 +1,6 @@
+use crate::domain::common::{
+    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
+};
 /// Capa de Dominio: Reglas para Proveedores.
 ///
 /// Este módulo define la lógica pura para la gestión de proveedores,
@@ -9,40 +12,15 @@ use crate::models::proveedor::{CreateProveedorInput, UpdateProveedorInput};
 // VALIDACIONES DE CAMPOS INDIVIDUALES
 // --------------------------------------------------------------------------
 
-/// Valida que la cédula sea numérica y cumpla con la longitud mínima de seguridad.
+/// Valida que la cédula cumpla el estándar.
 pub fn validar_cedula(cedula: &str) -> Result<(), ProveedorError> {
-    let limpia = cedula.trim();
-
-    if limpia.is_empty() {
-        return Err(ProveedorError::Validation("La cédula no puede estar vacía".to_string()));
-    }
-
-    if !limpia.chars().all(|c| c.is_numeric()) {
-        return Err(ProveedorError::Validation("La cédula debe ser numérica".to_string()));
-    }
-
-    if limpia.len() < 7 {
-        return Err(ProveedorError::Validation("La cédula es demasiado corta".to_string()));
-    }
-
-    Ok(())
+    validar_cedula_estandar(cedula).map_err(|e| ProveedorError::Validation(e.to_string()))
 }
 
-/// Valida que el nombre de la persona sea textual y no exceda el límite de la base de datos.
+/// Valida que el nombre de la persona cumpla el estándar.
 pub fn validar_nombre_persona(nombre: &str) -> Result<(), ProveedorError> {
-    let limpio = nombre.trim();
-
-    if limpio.is_empty() {
-        return Err(ProveedorError::Validation("El nombre es obligatorio".to_string()));
-    }
-
-    if limpio.len() > 100 {
-        return Err(ProveedorError::Validation(
-            "El nombre no puede exceder 100 caracteres".to_string(),
-        ));
-    }
-
-    Ok(())
+    validar_nombre_estandar(nombre, "nombre/apellido")
+        .map_err(|e| ProveedorError::Validation(e.to_string()))
 }
 
 /// Valida que el ID de la empresa vinculada sea un identificador válido (no vacío).
@@ -91,9 +69,9 @@ pub fn normalizar_cedula(cedula: &str) -> String {
     cedula.trim().to_string()
 }
 
-/// Normaliza un nombre eliminando espacios redundantes.
+/// Normaliza un nombre a Title Case.
 pub fn normalizar_nombre(nombre: &str) -> String {
-    nombre.trim().to_string()
+    normalizar_nombre_propio(nombre)
 }
 
 pub fn normalizar_segundo_nombre(segundo_nombre: Option<&String>) -> Option<String> {
@@ -110,7 +88,7 @@ pub fn normalizar_segundo_nombre(segundo_nombre: Option<&String>) -> Option<Stri
 }
 
 pub fn normalizar_apellido(apellido: &str) -> String {
-    apellido.trim().to_string()
+    normalizar_nombre_propio(apellido)
 }
 
 pub fn normalizar_segundo_apellido(segundo_apellido: Option<&String>) -> Option<String> {

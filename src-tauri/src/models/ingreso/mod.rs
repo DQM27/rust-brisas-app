@@ -541,6 +541,7 @@ pub enum CommonError {
     FechaSalidaInvalida,
     SalidaAnteriorAIngreso,
     GafeteNoCoincide { devuelto: String, asignado: String },
+    Validation(String),
 }
 
 impl std::fmt::Display for CommonError {
@@ -558,6 +559,7 @@ impl std::fmt::Display for CommonError {
                 "El gafete devuelto ({}) no coincide con el asignado ({})",
                 devuelto, asignado
             ),
+            CommonError::Validation(msg) => write!(f, "{}", msg),
         }
     }
 }

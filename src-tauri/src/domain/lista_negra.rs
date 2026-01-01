@@ -1,3 +1,7 @@
+use crate::domain::common::{
+    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
+};
+
 /// Capa de Dominio: Gestión de Lista Negra y Restricciones de Acceso.
 ///
 /// Este módulo define la lógica pura para la validación de personas con acceso
@@ -9,44 +13,15 @@ use crate::models::lista_negra::{AddToListaNegraInput, NivelSeveridad, UpdateLis
 // VALIDACIONES DE CAMPOS INDIVIDUALES
 // --------------------------------------------------------------------------
 
-/// Valida que la cédula cumpla con los formatos numéricos y de longitud permitidos.
+/// Valida que la cédula sea estricta usando el estándar definido.
 pub fn validar_cedula(cedula: &str) -> Result<(), ListaNegraError> {
-    let limpia = cedula.trim();
-
-    if limpia.is_empty() {
-        return Err(ListaNegraError::Validation("La cédula no puede estar vacía".to_string()));
-    }
-
-    if !limpia.chars().all(|c| c.is_numeric() || c == '-') {
-        return Err(ListaNegraError::Validation(
-            "La cédula solo puede contener números y guiones".to_string(),
-        ));
-    }
-
-    if limpia.len() < 7 || limpia.len() > 20 {
-        return Err(ListaNegraError::Validation(
-            "La cédula debe tener entre 7 y 20 caracteres".to_string(),
-        ));
-    }
-
-    Ok(())
+    validar_cedula_estandar(cedula).map_err(|e| ListaNegraError::Validation(e.to_string()))
 }
 
-/// Valida que el nombre o apellido sea textual y no exceda los límites de longitud.
+/// Valida que el nombre cumpla el estándar (solo letras).
 pub fn validar_nombre(nombre: &str) -> Result<(), ListaNegraError> {
-    let limpio = nombre.trim();
-
-    if limpio.is_empty() {
-        return Err(ListaNegraError::Validation("El nombre no puede estar vacío".to_string()));
-    }
-
-    if limpio.len() > 100 {
-        return Err(ListaNegraError::Validation(
-            "El nombre no puede exceder 100 caracteres".to_string(),
-        ));
-    }
-
-    Ok(())
+    validar_nombre_estandar(nombre, "nombre/apellido")
+        .map_err(|e| ListaNegraError::Validation(e.to_string()))
 }
 
 /// Valida la obligatoriedad y extensión del motivo de bloqueo.
@@ -126,10 +101,15 @@ pub fn validar_update_input(input: &UpdateListaNegraInput) -> Result<(), ListaNe
 }
 
 // --------------------------------------------------------------------------
-// COMPORTAMIENTOS DE DOMINIO
+// COMPORTAMIENTOS DE DOMINIO ESTRUCTURAL
 // --------------------------------------------------------------------------
 
-/// Normaliza una cadena de texto eliminando espacios laterales.
+/// Formatea un nombre a estilo "Title Case".
+pub fn normalizar_nombre_titulo(nombre: &str) -> String {
+    normalizar_nombre_propio(nombre)
+}
+
+/// Normaliza texto genérico (trim).
 pub fn normalizar_texto(texto: &str) -> String {
     texto.trim().to_string()
 }

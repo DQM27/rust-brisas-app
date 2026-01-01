@@ -1,3 +1,6 @@
+use crate::domain::common::{
+    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
+};
 /// Capa de Dominio: Reglas de Negocio para Visitantes.
 ///
 /// Este módulo centraliza las validaciones de identidad para personas particulares
@@ -11,53 +14,18 @@ use crate::models::visitante::CreateVisitanteInput;
 
 /// Valida el formato y longitud de la cédula del visitante.
 pub fn validar_cedula(cedula: &str) -> Result<(), VisitanteError> {
-    let limpio = cedula.trim();
-
-    if limpio.is_empty() {
-        return Err(VisitanteError::Validation("La cédula no puede estar vacía".to_string()));
-    }
-
-    if limpio.len() > 20 {
-        return Err(VisitanteError::Validation(
-            "La cédula no puede exceder 20 caracteres".to_string(),
-        ));
-    }
-
-    Ok(())
+    validar_cedula_estandar(cedula).map_err(|e| VisitanteError::Validation(e.to_string()))
 }
 
 /// Valida el nombre del visitante.
 pub fn validar_nombre(nombre: &str) -> Result<(), VisitanteError> {
-    let limpio = nombre.trim();
-
-    if limpio.is_empty() {
-        return Err(VisitanteError::Validation("El nombre no puede estar vacío".to_string()));
-    }
-
-    if limpio.len() > 50 {
-        return Err(VisitanteError::Validation(
-            "El nombre no puede exceder 50 caracteres".to_string(),
-        ));
-    }
-
-    Ok(())
+    validar_nombre_estandar(nombre, "nombre").map_err(|e| VisitanteError::Validation(e.to_string()))
 }
 
 /// Valida el apellido del visitante.
 pub fn validar_apellido(apellido: &str) -> Result<(), VisitanteError> {
-    let limpio = apellido.trim();
-
-    if limpio.is_empty() {
-        return Err(VisitanteError::Validation("El apellido no puede estar vacío".to_string()));
-    }
-
-    if limpio.len() > 50 {
-        return Err(VisitanteError::Validation(
-            "El apellido no puede exceder 50 caracteres".to_string(),
-        ));
-    }
-
-    Ok(())
+    validar_nombre_estandar(apellido, "apellido")
+        .map_err(|e| VisitanteError::Validation(e.to_string()))
 }
 
 /// Valida campos opcionales con un límite de caracteres.
@@ -100,7 +68,7 @@ pub fn validar_create_input(input: &CreateVisitanteInput) -> Result<(), Visitant
 
 /// Limpia espacios redundantes en nombres.
 pub fn normalizar_nombre(nombre: &str) -> String {
-    nombre.trim().to_uppercase()
+    normalizar_nombre_propio(nombre)
 }
 
 /// Normaliza la cédula a mayúsculas para comparaciones consistentes.
@@ -123,7 +91,7 @@ mod tests {
 
     #[test]
     fn test_normalizar_documentacion() {
-        assert_eq!(normalizar_nombre("  pedro  "), "PEDRO");
-        assert_eq!(normalizar_cedula("  v-8.765.432  "), "V-8.765.432");
+        assert_eq!(normalizar_nombre("  pedro  "), "Pedro");
+        assert_eq!(normalizar_cedula("  8765432  "), "8765432");
     }
 }

@@ -1,3 +1,6 @@
+use crate::domain::common::{
+    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
+};
 /// Capa de Dominio: Reglas de Negocio para Contratistas.
 ///
 /// Este módulo define las validaciones y lógicas puras aplicables a los
@@ -31,30 +34,7 @@ const CHARS_PROHIBIDOS: &[char] = &['<', '>', '{', '}', '|', '\\', '^', '~', '['
 
 /// Valida el formato y longitud de la cédula de identidad.
 pub fn validar_cedula(cedula: &str) -> Result<(), ContratistaError> {
-    let limpia = cedula.trim();
-
-    if limpia.is_empty() {
-        return Err(ContratistaError::Validation("La cédula no puede estar vacía".to_string()));
-    }
-
-    // Solo permite números, guiones y letras V/E (cédulas venezolanas)
-    if !limpia
-        .chars()
-        .all(|c| c.is_numeric() || c == '-' || c == 'V' || c == 'E' || c == 'v' || c == 'e')
-    {
-        return Err(ContratistaError::Validation(
-            "La cédula solo puede contener números, guiones y V/E".to_string(),
-        ));
-    }
-
-    if limpia.len() < CEDULA_MIN_LEN || limpia.len() > CEDULA_MAX_LEN {
-        return Err(ContratistaError::Validation(format!(
-            "La cédula debe tener entre {} y {} caracteres",
-            CEDULA_MIN_LEN, CEDULA_MAX_LEN
-        )));
-    }
-
-    Ok(())
+    validar_cedula_estandar(cedula).map_err(|e| ContratistaError::Validation(e.to_string()))
 }
 
 /// Verifica que un texto no contenga caracteres peligrosos.
@@ -64,50 +44,14 @@ fn contiene_chars_prohibidos(texto: &str) -> bool {
 
 /// Valida los requisitos mínimos del nombre.
 pub fn validar_nombre(nombre: &str) -> Result<(), ContratistaError> {
-    let limpio = nombre.trim();
-
-    if limpio.is_empty() {
-        return Err(ContratistaError::Validation("El nombre no puede estar vacío".to_string()));
-    }
-
-    if limpio.len() > NOMBRE_MAX_LEN {
-        return Err(ContratistaError::Validation(format!(
-            "El nombre no puede exceder {} caracteres",
-            NOMBRE_MAX_LEN
-        )));
-    }
-
-    if contiene_chars_prohibidos(limpio) {
-        return Err(ContratistaError::Validation(
-            "El nombre contiene caracteres no permitidos".to_string(),
-        ));
-    }
-
-    Ok(())
+    validar_nombre_estandar(nombre, "nombre")
+        .map_err(|e| ContratistaError::Validation(e.to_string()))
 }
 
 /// Valida los requisitos mínimos del apellido.
 pub fn validar_apellido(apellido: &str) -> Result<(), ContratistaError> {
-    let limpio = apellido.trim();
-
-    if limpio.is_empty() {
-        return Err(ContratistaError::Validation("El apellido no puede estar vacío".to_string()));
-    }
-
-    if limpio.len() > NOMBRE_MAX_LEN {
-        return Err(ContratistaError::Validation(format!(
-            "El apellido no puede exceder {} caracteres",
-            NOMBRE_MAX_LEN
-        )));
-    }
-
-    if contiene_chars_prohibidos(limpio) {
-        return Err(ContratistaError::Validation(
-            "El apellido contiene caracteres no permitidos".to_string(),
-        ));
-    }
-
-    Ok(())
+    validar_nombre_estandar(apellido, "apellido")
+        .map_err(|e| ContratistaError::Validation(e.to_string()))
 }
 
 /// Valida que el ID de la empresa vinculada sea válido.
@@ -171,7 +115,7 @@ pub fn validar_update_input(input: &UpdateContratistaInput) -> Result<(), Contra
 
 /// Limpia y normaliza el texto para su persistencia.
 pub fn normalizar_texto(texto: &str) -> String {
-    texto.trim().to_string()
+    normalizar_nombre_propio(texto)
 }
 
 /// Normaliza una cédula eliminando espacios y convirtiéndola a mayúsculas.

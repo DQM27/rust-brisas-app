@@ -144,6 +144,91 @@ pub fn calcular_tiempo_permanencia(
 }
 
 // --------------------------------------------------------------------------
+// ESTÁNDARES DE VALIDACIÓN Y NORMALIZACIÓN (NOMBRES Y CÉDULAS)
+// --------------------------------------------------------------------------
+
+/// Valida un nombre o apellido bajo el estándar estricto:
+/// - Solo letras (Unicode, incluye acentos).
+/// - Espacios permitidos.
+/// - Sin números ni caracteres especiales.
+pub fn validar_nombre_estandar(texto: &str, campo: &str) -> Result<(), CommonError> {
+    let limpio = texto.trim();
+
+    if limpio.is_empty() {
+        return Err(CommonError::Validation(format!("El {} es obligatorio", campo)));
+    }
+
+    if limpio.len() > 100 {
+        return Err(CommonError::Validation(format!(
+            "El {} no puede exceder 100 caracteres",
+            campo
+        )));
+    }
+
+    // Permitimos alfabéticos (incluye áéí...) y espacios.
+    // Rechazamos todo lo demás (números, símbolos).
+    if !limpio.chars().all(|c| c.is_alphabetic() || c.is_whitespace()) {
+        return Err(CommonError::Validation(format!(
+            "El {} solo puede contener letras (sin números ni símbolos)",
+            campo
+        )));
+    }
+
+    Ok(())
+}
+
+/// Valida una cédula bajo el estándar estricto:
+/// - Solo números y guiones.
+/// - Sin letras (V/E prohibidas).
+/// - Al menos un dígito.
+pub fn validar_cedula_estandar(cedula: &str) -> Result<(), CommonError> {
+    let limpio = cedula.trim();
+
+    if limpio.is_empty() {
+        return Err(CommonError::Validation("La cédula es obligatoria".to_string()));
+    }
+
+    // Solo dígitos y guiones
+    if !limpio.chars().all(|c| c.is_ascii_digit() || c == '-') {
+        return Err(CommonError::Validation(
+            "La cédula solo puede contener números y guiones (sin letras)".to_string(),
+        ));
+    }
+
+    // Al menos un dígito
+    if !limpio.chars().any(|c| c.is_ascii_digit()) {
+        return Err(CommonError::Validation("La cédula debe contener números".to_string()));
+    }
+
+    if limpio.len() < 5 || limpio.len() > 20 {
+        return Err(CommonError::Validation(
+            "Longitud de cédula inválida (5-20 caracteres)".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+/// Normaliza un nombre propio a formato "Title Case".
+/// Ej: "JUAN pérez" -> "Juan Pérez"
+pub fn normalizar_nombre_propio(texto: &str) -> String {
+    texto
+        .trim()
+        .split_whitespace()
+        .map(|palabra| {
+            let mut chars = palabra.chars();
+            match chars.next() {
+                None => String::new(),
+                Some(primera) => {
+                    primera.to_uppercase().collect::<String>() + &chars.as_str().to_lowercase()
+                }
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+// --------------------------------------------------------------------------
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
 
@@ -180,5 +265,26 @@ mod tests {
         let salida = "2024-01-01T08:00:00Z";
         let result = validar_tiempo_salida(ingreso, salida);
         assert!(matches!(result.unwrap_err(), CommonError::SalidaAnteriorAIngreso));
+    }
+
+    #[test]
+    fn test_validar_nombre_estandar() {
+        assert!(validar_nombre_estandar("Juan Pérez", "nombre").is_ok()); // Acentos OK
+        assert!(validar_nombre_estandar("María José", "nombre").is_ok()); // Espacios OK
+        assert!(validar_nombre_estandar("Juan123", "nombre").is_err()); // Números fail
+        assert!(validar_nombre_estandar("Juan!", "nombre").is_err()); // Símbolos fail
+    }
+
+    #[test]
+    fn test_validar_cedula_estandar() {
+        assert!(validar_cedula_estandar("12345678").is_ok());
+        assert!(validar_cedula_estandar("12-345-678").is_ok());
+        assert!(validar_cedula_estandar("V-123456").is_err()); // Letras fail
+    }
+
+    #[test]
+    fn test_normalizar_nombre_propio() {
+        assert_eq!(normalizar_nombre_propio("juan pérez"), "Juan Pérez");
+        assert_eq!(normalizar_nombre_propio("MARÍA JOSÉ"), "María José");
     }
 }
