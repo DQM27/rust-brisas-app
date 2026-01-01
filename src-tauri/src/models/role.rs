@@ -5,10 +5,11 @@
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};
 
-// ==========================================
-// ENUMS PARA MÓDULOS Y ACCIONES
-// ==========================================
+// --------------------------------------------------------------------------
+// ENUMS (Módulos y Acciones)
+// --------------------------------------------------------------------------
 
+/// Módulos del sistema sobre los cuales se pueden ejercer permisos.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Module {
@@ -136,6 +137,7 @@ impl std::str::FromStr for Module {
     }
 }
 
+/// Acciones posibles sobre un módulo (CRUD + Especiales).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Action {
@@ -198,10 +200,11 @@ impl std::str::FromStr for Action {
     }
 }
 
-// ==========================================
-// MODELO DE DOMINIO (DB)
-// ==========================================
+// --------------------------------------------------------------------------
+// MODELO DE DOMINIO
+// --------------------------------------------------------------------------
 
+/// Representa un rol de usuario con permisos asociados.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Role {
@@ -212,6 +215,7 @@ pub struct Role {
     pub is_system: bool,
     #[serde(alias = "inherits_from")]
     pub inherits_from: Option<RecordId>,
+    /// Lista plana de permisos en formato string (ej. "users:create").
     pub permissions: Option<Vec<String>>,
     #[serde(alias = "created_at")]
     pub created_at: Datetime,
@@ -233,9 +237,9 @@ pub struct RolePermission {
     pub permission_id: String,
 }
 
-// ==========================================
-// DTOs DE ENTRADA (Frontend -> Command)
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs DE ENTRADA (Commands)
+// --------------------------------------------------------------------------
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -255,9 +259,9 @@ pub struct UpdateRoleInput {
     pub permissions: Option<Vec<String>>,
 }
 
-// ==========================================
-// DTOs PARA PERSISTENCIA (Service -> DB)
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs PARA PERSISTENCIA
+// --------------------------------------------------------------------------
 
 #[derive(Debug, Serialize)]
 pub struct RoleCreateDTO {
@@ -284,9 +288,9 @@ pub struct RoleUpdateDTO {
     pub updated_at: Option<Datetime>,
 }
 
-// ==========================================
-// DTOs DE SALIDA (Service -> Frontend)
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs DE SALIDA (Responses)
+// --------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -329,6 +333,7 @@ impl RoleResponse {
     }
 }
 
+/// Módulo visible con flags de acciones permitidas (para UI).
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VisibleModule {
