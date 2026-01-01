@@ -6,6 +6,14 @@ use crate::models::empresa::Empresa;
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};
 
+// --------------------------------------------------------------------------
+// MODELO DE DOMINIO
+// --------------------------------------------------------------------------
+
+/// Representa a un proveedor registrado en el sistema.
+///
+/// Un proveedor es una entidad que suministra bienes o servicios y tiene acceso recurrente.
+/// A diferencia del contratista, su relación suele ser de entrega/logística.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Proveedor {
@@ -17,6 +25,7 @@ pub struct Proveedor {
     pub apellido: String,
     #[serde(alias = "segundo_apellido")]
     pub segundo_apellido: Option<String>,
+    /// Referencia a la empresa que representa.
     pub empresa: RecordId,
     pub estado: EstadoProveedor,
     #[serde(alias = "created_at")]
@@ -27,6 +36,7 @@ pub struct Proveedor {
     pub deleted_at: Option<Datetime>,
 }
 
+/// Versión "poblada" del proveedor con datos completos de la empresa (FETCH).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProveedorFetched {
     pub id: RecordId,
@@ -47,6 +57,11 @@ pub struct ProveedorFetched {
     pub deleted_at: Option<Datetime>,
 }
 
+// --------------------------------------------------------------------------
+// ENUMS (Tipos Estrictos)
+// --------------------------------------------------------------------------
+
+/// Estado operativo del proveedor en la plataforma.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum EstadoProveedor {
@@ -86,10 +101,11 @@ impl TryFrom<String> for EstadoProveedor {
     }
 }
 
-// ==========================================
-// DTOs de entrada (Commands/Input)
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs DE ENTRADA (Commands)
+// --------------------------------------------------------------------------
 
+/// Datos necesarios para registrar un nuevo proveedor.
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateProveedorInput {
@@ -100,6 +116,7 @@ pub struct CreateProveedorInput {
     pub segundo_apellido: Option<String>,
     pub empresa_id: String,
     pub tiene_vehiculo: Option<bool>,
+    // Datos vehiculares opcionales
     pub tipo_vehiculo: Option<String>,
     pub placa: Option<String>,
     pub marca: Option<String>,
@@ -107,6 +124,7 @@ pub struct CreateProveedorInput {
     pub color: Option<String>,
 }
 
+/// Datos para la actualización parcial de un proveedor.
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateProveedorInput {
@@ -124,9 +142,9 @@ pub struct UpdateProveedorInput {
     pub color: Option<String>,
 }
 
-// ==========================================
-// DTOs PARA PERSISTENCIA (Service -> DB)
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs PARA PERSISTENCIA
+// --------------------------------------------------------------------------
 
 #[derive(Debug, Serialize)]
 pub struct ProveedorCreateDTO {
@@ -157,10 +175,11 @@ pub struct ProveedorUpdateDTO {
     pub updated_at: Option<Datetime>,
 }
 
-// ==========================================
-// DTOs de salida (Response/ViewModel)
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs DE SALIDA (Responsess)
+// --------------------------------------------------------------------------
 
+/// Respuesta detallada con toda la información del proveedor.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProveedorResponse {
@@ -175,6 +194,7 @@ pub struct ProveedorResponse {
     pub empresa_nombre: String,
     pub estado: EstadoProveedor,
     pub puede_ingresar: bool,
+    // Detalles vehiculares aplanados
     pub vehiculo_tipo: Option<String>,
     pub vehiculo_placa: Option<String>,
     pub vehiculo_marca: Option<String>,
@@ -210,7 +230,7 @@ impl From<Proveedor> for ProveedorResponse {
             segundo_apellido: p.segundo_apellido,
             nombre_completo,
             empresa_id: p.empresa.to_string(),
-            empresa_nombre: String::new(), // Will be filled by service
+            empresa_nombre: String::new(), // Se llena en la capa de servicio
             estado: p.estado,
             puede_ingresar,
             vehiculo_tipo: None,
@@ -226,6 +246,7 @@ impl From<Proveedor> for ProveedorResponse {
 }
 
 impl ProveedorResponse {
+    /// Crea la respuesta a partir de un proveedor con datos relacionados (FETCH).
     pub fn from_fetched(p: ProveedorFetched) -> Self {
         let mut nombre_completo = p.nombre.clone();
         if let Some(ref s) = p.segundo_nombre {
