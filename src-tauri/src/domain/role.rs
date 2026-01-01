@@ -19,19 +19,8 @@ pub const ROLE_ADMIN_ID: &str = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
 /// Identificador único para el rol de Guardia de Seguridad.
 pub const ROLE_GUARDIA_ID: &str = "27221d6e-9818-430c-99c3-5694a971216b";
 
-/// Identificador único para el rol de Guardia Senior.
-pub const ROLE_GUARDIA_SENIOR_ID: &str = "9f27c73a-6c1b-4d7a-8dcf-7a54a01c801e";
-
-/// Identificador único para el rol de Supervisor de Turno.
-pub const ROLE_SUPERVISOR_ID: &str = "75438848-185d-400e-953a-7a54a01c801e";
-
 /// Correo electrónico reservado para el Superusuario del sistema.
 pub const SUPERUSER_EMAIL: &str = "admin@brisas.local";
-
-/// Determina si un ID de usuario corresponde al Superusuario raíz.
-pub fn is_superuser(user_id: &str) -> bool {
-    user_id == SUPERUSER_ID
-}
 
 // --------------------------------------------------------------------------
 // MECANISMO DE "GOD MODE" (SISTEMA INTERNO)
@@ -58,6 +47,26 @@ pub fn disable_god_mode() {
 /// Consulta si el sistema se encuentra actualmente en estado de privilegios elevados.
 pub fn is_god_mode() -> bool {
     GOD_MODE.load(Ordering::SeqCst)
+}
+
+/// Autoridad Unificada de Sistema (God Mode).
+///
+/// Esta es la única fuente de verdad para determinar si una operación
+/// tiene privilegios de sistema.
+///
+/// Se otorga autoridad si:
+/// 1. El modo Dios global está activo (`is_god_mode`).
+/// 2. El ID de usuario corresponde al Superusuario raíz.
+pub fn has_god_authority(user_id: Option<&str>) -> bool {
+    if is_god_mode() {
+        return true;
+    }
+
+    if let Some(id) = user_id {
+        return id == SUPERUSER_ID;
+    }
+
+    false
 }
 
 /// Estructura RAII para garantizar la desactivación automática del God Mode al salir de un scope.

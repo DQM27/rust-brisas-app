@@ -226,7 +226,6 @@ mod tests {
             email: "john@doe.com".into(),
             role: RecordId::from_table_key("role", "role-1"),
             is_active: true,
-            is_superuser: false,
             must_change_password: false,
             fecha_inicio_labores: None,
             numero_gafete: None,

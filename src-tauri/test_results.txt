@@ -1,7 +1,0 @@
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.84s
-     Running unittests src\lib.rs (target\debug\deps\brisas_app_lib-a159f87455fd2560.exe)
-error: test failed, to rerun pass `--lib`
-
-Caused by:
-  process didn't exit successfully: `C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri\target\debug\deps\brisas_app_lib-a159f87455fd2560.exe domain` (exit code: 0xc0000139, STATUS_ENTRYPOINT_NOT_FOUND)
-note: test exited abnormally; to see the full output pass --no-capture to the harness.

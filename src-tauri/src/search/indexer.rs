@@ -581,7 +581,6 @@ mod tests {
             email: "jane@example.com".to_string(),
             role: RecordId::from_table_key("role", "role-1"),
             is_active: true,
-            is_superuser: false,
             must_change_password: false,
             fecha_inicio_labores: None,
             numero_gafete: None,

@@ -14,8 +14,6 @@ struct UserWithPassword {
     pub apellido: String,
     pub role: RecordId,
     pub is_active: bool,
-    #[serde(default)]
-    pub is_superuser: bool,
     pub created_at: Datetime,
     pub updated_at: Datetime,
     pub cedula: String,
@@ -43,7 +41,6 @@ impl UserWithPassword {
             apellido: self.apellido,
             role: self.role,
             is_active: self.is_active,
-            is_superuser: self.is_superuser,
             created_at: self.created_at,
             updated_at: self.updated_at,
             cedula: self.cedula,

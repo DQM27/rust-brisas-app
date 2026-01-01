@@ -4,7 +4,7 @@
 // Servicio de autorización para SurrealDB
 
 use crate::db::surrealdb_role_queries; // Usamos queries ya implementadas
-use crate::domain::role::is_superuser;
+/// Capa de Dominio no necesaria aquí directamente si usamos has_god_authority
 use crate::models::role::{Action, Module};
 use crate::services::surrealdb_service::SurrealDbError;
 // use log::info;
@@ -93,8 +93,8 @@ pub async fn get_visible_modules(
     user_id: &str,
     role_id: &str,
 ) -> Result<Vec<Module>, SurrealDbError> {
-    // Superuser ve todo
-    if is_superuser(user_id) {
+    // La autoridad de God Mode (por estado o por identidad) ve todo
+    if crate::domain::role::has_god_authority(Some(user_id)) {
         return Ok(Module::all());
     }
 
@@ -133,14 +133,9 @@ pub async fn check_permission(
     module: Module,
     action: Action,
 ) -> Result<(), AuthError> {
-    // 1. God Mode bypassa todo (solo para operaciones internas de sistema)
-    if crate::domain::role::is_god_mode() {
+    // La autoridad de God Mode (por estado o por identidad) bypassa todo
+    if crate::domain::role::has_god_authority(Some(user_id)) {
         log::info!(target: "audit", "[GOD_MODE] bypass para {}:{}", module.as_str(), action.as_str());
-        return Ok(());
-    }
-
-    // 2. Superuser siempre tiene permiso
-    if is_superuser(user_id) {
         return Ok(());
     }
 

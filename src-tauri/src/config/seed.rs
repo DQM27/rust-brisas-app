@@ -3,9 +3,7 @@
 // Seeds esenciales para SurrealDB
 // ====================
 
-use crate::domain::role::{
-    ROLE_ADMIN_ID, ROLE_GUARDIA_ID, ROLE_SUPERVISOR_ID, SUPERUSER_EMAIL, SUPERUSER_ID,
-};
+use crate::domain::role::{ROLE_ADMIN_ID, ROLE_GUARDIA_ID, SUPERUSER_EMAIL, SUPERUSER_ID};
 use crate::models::role::{Action, Module};
 use crate::services::auth::hash_password;
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
@@ -22,7 +20,7 @@ pub async fn seed_db() -> Result<(), Box<dyn std::error::Error>> {
 
 /// Seed de roles del sistema
 async fn seed_roles() -> Result<(), SurrealDbError> {
-    use crate::domain::role::{GodModeGuard, ROLE_GUARDIA_SENIOR_ID};
+    use crate::domain::role::GodModeGuard;
 
     // Activar God Mode para el seed
     let _guard = GodModeGuard::activate();
@@ -30,15 +28,8 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
 
     // (id, name, desc, inherits_from)
     let roles = [
-        (ROLE_ADMIN_ID, "Administrador", "Acceso completo al sistema", None),
-        (ROLE_SUPERVISOR_ID, "Supervisor", "Supervisión de operaciones", None),
-        (
-            ROLE_GUARDIA_SENIOR_ID,
-            "Guardia Senior",
-            "Supervisor de turno con permisos de edición",
-            Some(ROLE_GUARDIA_ID),
-        ),
-        (ROLE_GUARDIA_ID, "Guardia", "Registro de ingresos", None),
+        (ROLE_ADMIN_ID, "Administrador", "Acceso completo al sistema", None::<&'static str>),
+        (ROLE_GUARDIA_ID, "Guardia", "Registro de ingresos", None::<&'static str>),
     ];
 
     // Generar permisos para admin (todos)
@@ -69,68 +60,9 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
         "visitantes:read",
     ];
 
-    // Permisos extra para guardia senior (edición de ingresos)
-    let senior_perms = vec!["ingresos:update", "vehiculos:view", "vehiculos:read"];
-
-    // Permisos para supervisor (gestión pero no borrado masivo)
-    let supervisor_perms = vec![
-        "users:view",
-        "users:read",
-        "contratistas:view",
-        "contratistas:create",
-        "contratistas:read",
-        "contratistas:update",
-        "empresas:view",
-        "empresas:create",
-        "empresas:read",
-        "empresas:update",
-        "ingresos:view",
-        "ingresos:create",
-        "ingresos:read",
-        "ingresos:update",
-        "citas:view",
-        "citas:create",
-        "citas:read",
-        "citas:update",
-        "vehiculos:view",
-        "vehiculos:create",
-        "vehiculos:read",
-        "vehiculos:update",
-        "gafetes:view",
-        "gafetes:create",
-        "gafetes:read",
-        "gafetes:update",
-        "lista_negra:view",
-        "lista_negra:create",
-        "lista_negra:read",
-        "config:view",
-        "config:read",
-        "export:view",
-        "export:export",
-        "proveedores:view",
-        "proveedores:create",
-        "proveedores:read",
-        "proveedores:update",
-        "visitantes:view",
-        "visitantes:create",
-        "visitantes:read",
-        "visitantes:update",
-        "settings_general:view",
-        "settings_general:read",
-        "settings_visual:view",
-        "settings_visual:read",
-        "settings_visual:update",
-        "settings_security:view",
-        "settings_security:read",
-        "settings_sessions:view",
-        "settings_sessions:read",
-    ];
-
     for (id, name, desc, inherits) in roles {
         let permissions: Vec<String> = match id {
             ROLE_ADMIN_ID => all_permissions.clone(),
-            ROLE_SUPERVISOR_ID => supervisor_perms.iter().map(|s| s.to_string()).collect(),
-            ROLE_GUARDIA_SENIOR_ID => senior_perms.iter().map(|s| s.to_string()).collect(),
             ROLE_GUARDIA_ID => guardia_perms.iter().map(|s| s.to_string()).collect(),
             _ => vec![],
         };
@@ -186,7 +118,6 @@ async fn seed_superuser() -> Result<(), SurrealDbError> {
             UPDATE type::thing('user', $id) SET
                 nombre = "DQM27",
                 apellido = "",
-                is_superuser = true,
                 must_change_password = true,
                 password_hash = $password_hash,
                 updated_at = time::now()
@@ -212,7 +143,6 @@ async fn seed_superuser() -> Result<(), SurrealDbError> {
                 apellido: "",
                 role: type::thing('role', $role_id),
                 is_active: true,
-                is_superuser: true,
                 cedula: "0000000000",
                 must_change_password: true,
                 created_at: time::now(),

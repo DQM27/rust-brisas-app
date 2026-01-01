@@ -1,0 +1,28 @@
+    Blocking waiting for file lock on build directory
+    Checking mega-brisas v1.0.0-alpha (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+error[E0428]: the name `seed` is defined multiple times
+ --> src\config\mod.rs:5:1
+  |
+4 | pub mod seed;
+  | ------------- previous definition of the module `seed` here
+5 | pub mod seed;
+  | ^^^^^^^^^^^^^ `seed` redefined here
+  |
+  = note: `seed` must be defined only once in the type namespace of this module
+
+error[E0282]: type annotations needed for `[(&str, &str, &str, std::option::Option<_>); 2]`
+  --> src\config\seed.rs:30:9
+   |
+30 |     let roles = [
+   |         ^^^^^
+31 |         (ROLE_ADMIN_ID, "Administrador", "Acceso completo al sistema", None),
+   |         -------------------------------------------------------------------- type must be known at this point
+   |
+help: consider giving `roles` an explicit type, where the type for type parameter `T` is specified
+   |
+30 |     let roles: [(&_, &_, &_, std::option::Option<T>); 2] = [
+   |              +++++++++++++++++++++++++++++++++++++++++++
+
+Some errors have detailed explanations: E0282, E0428.
+For more information about an error, try `rustc --explain E0282`.
+error: could not compile `mega-brisas` (lib) due to 3 previous errors

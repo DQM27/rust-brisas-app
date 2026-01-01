@@ -5,7 +5,7 @@
 /// Soporta herencia de roles y distingue entre roles de sistema (protegidos)
 /// y roles personalizados definidos por el cliente.
 use crate::db::surrealdb_role_queries as db;
-use crate::domain::role::{self as domain, is_superuser};
+use crate::domain::role::{self as domain};
 use crate::models::role::{
     CreateRoleInput, Module, Permission, Role, RoleListResponse, RoleResponse, RoleUpdateDTO,
     UpdateRoleInput, VisibleModule,
@@ -119,7 +119,7 @@ pub async fn update_role(
         .map_err(|e| RoleError::Database(e.to_string()))?
         .ok_or(RoleError::NotFound)?;
 
-    if role.is_system && !is_superuser(requester_id) {
+    if role.is_system && !domain::has_god_authority(Some(requester_id)) {
         return Err(RoleError::CannotModifySystemRole);
     }
 
@@ -167,12 +167,12 @@ pub async fn delete_role(id_str: &str) -> Result<(), RoleError> {
 ///
 /// Esta función es clave para la interfaz svelte: le dice al frontend qué
 /// botones mostrar y qué secciones del menú lateral deben estar disponibles.
-/// El 'Superuser' siempre tiene acceso total sin importar el rol asignado.
+/// El 'God Mode' (por estado o identidad) siempre tiene acceso total.
 pub async fn get_user_visible_modules(
     user_id_str: &str,
     role_id_str: &str,
 ) -> Result<Vec<VisibleModule>, RoleError> {
-    if is_superuser(user_id_str) {
+    if domain::has_god_authority(Some(user_id_str)) {
         return Ok(Module::all()
             .into_iter()
             .map(|m| VisibleModule {
