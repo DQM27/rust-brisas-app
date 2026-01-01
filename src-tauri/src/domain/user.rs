@@ -2,6 +2,9 @@
 ///
 /// Este módulo define las políticas de identidad, seguridad y validaciones
 /// para los operadores y administradores de la plataforma.
+use crate::domain::common::{
+    validar_cedula_estandar, validar_email_estandar, validar_nombre_estandar,
+};
 use crate::domain::errors::UserError;
 use crate::models::user::{CreateUserInput, UpdateUserInput};
 
@@ -11,74 +14,22 @@ use crate::models::user::{CreateUserInput, UpdateUserInput};
 
 /// Valida el formato básico y longitud del correo electrónico.
 pub fn validar_email(email: &str) -> Result<(), UserError> {
-    let limpio = email.trim();
-
-    if limpio.is_empty() {
-        return Err(UserError::Validation("El email no puede estar vacío".to_string()));
-    }
-
-    if !limpio.contains('@') {
-        return Err(UserError::Validation("Formato de correo electrónico inválido".to_string()));
-    }
-
-    if limpio.len() > 100 {
-        return Err(UserError::Validation("El email no puede exceder 100 caracteres".to_string()));
-    }
-
-    Ok(())
+    validar_email_estandar(email).map_err(|e| UserError::Validation(e.to_string()))
 }
 
 /// Valida los requisitos mínimos del nombre del usuario.
 pub fn validar_nombre(nombre: &str) -> Result<(), UserError> {
-    let limpio = nombre.trim();
-
-    if limpio.is_empty() {
-        return Err(UserError::Validation("El nombre no puede estar vacío".to_string()));
-    }
-
-    if limpio.len() > 50 {
-        return Err(UserError::Validation("El nombre no puede exceder 50 caracteres".to_string()));
-    }
-
-    Ok(())
+    validar_nombre_estandar(nombre, "nombre").map_err(|e| UserError::Validation(e.to_string()))
 }
 
 /// Valida los requisitos mínimos del apellido del usuario.
 pub fn validar_apellido(apellido: &str) -> Result<(), UserError> {
-    let limpio = apellido.trim();
-
-    if limpio.is_empty() {
-        return Err(UserError::Validation("El apellido no puede estar vacío".to_string()));
-    }
-
-    if limpio.len() > 50 {
-        return Err(UserError::Validation(
-            "El apellido no puede exceder 50 caracteres".to_string(),
-        ));
-    }
-
-    Ok(())
+    validar_nombre_estandar(apellido, "apellido").map_err(|e| UserError::Validation(e.to_string()))
 }
 
 /// Valida el formato numérico de la cédula del usuario administrativo.
 pub fn validar_cedula(cedula: &str) -> Result<(), UserError> {
-    let limpio = cedula.trim();
-
-    if limpio.is_empty() {
-        return Err(UserError::Validation("La cédula no puede estar vacía".to_string()));
-    }
-
-    if !limpio.chars().all(|c| c.is_numeric() || c == '-') {
-        return Err(UserError::Validation(
-            "La cédula solo puede contener números y guiones".to_string(),
-        ));
-    }
-
-    if limpio.len() > 20 {
-        return Err(UserError::Validation("La cédula no puede exceder 20 caracteres".to_string()));
-    }
-
-    Ok(())
+    validar_cedula_estandar(cedula).map_err(|e| UserError::Validation(e.to_string()))
 }
 
 /// Valida los requisitos de robustez de la contraseña.

@@ -1,11 +1,11 @@
-use crate::domain::common::{
-    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
-};
 /// Capa de Dominio: Reglas de Negocio para Contratistas.
 ///
 /// Este módulo define las validaciones y lógicas puras aplicables a los
 /// contratistas externos. Estas reglas aseguran la integridad de los datos
 /// de filiación y laborales antes de su almacenamiento en la base de datos.
+use crate::domain::common::{
+    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
+};
 use crate::domain::errors::ContratistaError;
 use crate::models::contratista::{
     CreateContratistaInput, EstadoContratista, UpdateContratistaInput,
@@ -25,9 +25,6 @@ pub const CEDULA_MAX_LEN: usize = 20;
 /// Longitud máxima de nombre/apellido.
 pub const NOMBRE_MAX_LEN: usize = 50;
 
-/// Caracteres prohibidos en campos de texto (prevención de inyecciones).
-const CHARS_PROHIBIDOS: &[char] = &['<', '>', '{', '}', '|', '\\', '^', '~', '[', ']', '`'];
-
 // --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
 // --------------------------------------------------------------------------
@@ -35,11 +32,6 @@ const CHARS_PROHIBIDOS: &[char] = &['<', '>', '{', '}', '|', '\\', '^', '~', '['
 /// Valida el formato y longitud de la cédula de identidad.
 pub fn validar_cedula(cedula: &str) -> Result<(), ContratistaError> {
     validar_cedula_estandar(cedula).map_err(|e| ContratistaError::Validation(e.to_string()))
-}
-
-/// Verifica que un texto no contenga caracteres peligrosos.
-fn contiene_chars_prohibidos(texto: &str) -> bool {
-    texto.chars().any(|c| CHARS_PROHIBIDOS.contains(&c))
 }
 
 /// Valida los requisitos mínimos del nombre.

@@ -4,6 +4,9 @@
 /// Al pertenecer a la capa de dominio, no tiene dependencias de base de datos,
 /// enfocándose exclusivamente en asegurar que los datos de entrada cumplan con los
 /// requerimientos operativos del sistema antes de ser procesados por los servicios.
+use crate::domain::common::{
+    validar_cedula_estandar, validar_nombre_entidad_estandar, validar_nombre_estandar,
+};
 use crate::domain::errors::CitaError;
 use crate::models::cita::CreateCitaInput;
 
@@ -28,64 +31,47 @@ use chrono::DateTime;
 // --------------------------------------------------------------------------
 
 /// Verifica la integridad de los datos para la programación de una nueva cita.
-///
-/// # Reglas de Validación:
-/// 1. **Identificación**: Debe existir `visitante_id` o `visitante_cedula` + `visitante_nombre`.
-/// 2. **Responsabilidad**: `anfitrion` no vacío y dentro de límites.
-/// 3. **Ubicación**: `area_visitada` no vacía y dentro de límites.
-/// 4. **Propósito**: `motivo` explícito y dentro de límites.
-/// 5. **Temporalidad**: `fecha_cita` debe ser un formato ISO 8601 válido.
 pub fn validar_create_input(input: &CreateCitaInput) -> Result<(), CitaError> {
     // 1. Validación de Identidad del Visitante
     if input.visitante_id.is_none() {
-        if input.visitante_cedula.as_ref().map_or(true, |s| s.trim().is_empty()) {
+        if let Some(ref cedula) = input.visitante_cedula {
+            validar_cedula_estandar(cedula).map_err(|e| CitaError::Validation(e.to_string()))?;
+        } else {
             return Err(CitaError::Validation(
                 "Debe proporcionar un visitante registrado o la cédula para uno nuevo".to_string(),
             ));
         }
-        if input.visitante_nombre.as_ref().map_or(true, |s| s.trim().is_empty()) {
+
+        if let Some(ref nombre) = input.visitante_nombre {
+            validar_nombre_estandar(nombre, "nombre del visitante")
+                .map_err(|e| CitaError::Validation(e.to_string()))?;
+        } else {
             return Err(CitaError::Validation(
                 "El nombre del visitante es obligatorio para registros nuevos".to_string(),
             ));
         }
+
+        if let Some(ref apellido) = input.visitante_apellido {
+            validar_nombre_estandar(apellido, "apellido del visitante")
+                .map_err(|e| CitaError::Validation(e.to_string()))?;
+        }
     }
 
     // 2. Validación de Campos Operativos (Límites y Vacío)
-    validar_campo_texto(&input.anfitrion, "Anfitrión", ANFITRION_MAX_LEN)?;
-    validar_campo_texto(&input.area_visitada, "Área visitada", AREA_MAX_LEN)?;
-    validar_campo_texto(&input.motivo, "Motivo", MOTIVO_MAX_LEN)?;
+    validar_nombre_estandar(&input.anfitrion, "anfitrión")
+        .map_err(|e| CitaError::Validation(e.to_string()))?;
+
+    validar_nombre_entidad_estandar(&input.area_visitada, "área visitada")
+        .map_err(|e| CitaError::Validation(e.to_string()))?;
+
+    validar_nombre_entidad_estandar(&input.motivo, "motivo")
+        .map_err(|e| CitaError::Validation(e.to_string()))?;
 
     // 3. Validación de Fecha
     if let Err(_) = DateTime::parse_from_rfc3339(&input.fecha_cita) {
         return Err(CitaError::Validation(
             "La fecha de la cita no tiene un formato válido (ISO 8601)".to_string(),
         ));
-    }
-
-    Ok(())
-}
-
-/// Helper para validar campos de texto genéricos (no vacío, longitud, caracteres prohibidos).
-fn validar_campo_texto(texto: &str, nombre_campo: &str, max_len: usize) -> Result<(), CitaError> {
-    let limpio = texto.trim();
-
-    if limpio.is_empty() {
-        return Err(CitaError::Validation(format!("El campo '{}' es obligatorio", nombre_campo)));
-    }
-
-    if limpio.len() > max_len {
-        return Err(CitaError::Validation(format!(
-            "El campo '{}' excede el límite de {} caracteres",
-            nombre_campo, max_len
-        )));
-    }
-
-    // Caracteres prohibidos básicos (<, >) para evitar inyección HTML/Script simple
-    if limpio.contains('<') || limpio.contains('>') {
-        return Err(CitaError::Validation(format!(
-            "El campo '{}' contiene caracteres no permitidos",
-            nombre_campo
-        )));
     }
 
     Ok(())

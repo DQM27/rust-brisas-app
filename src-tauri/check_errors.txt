@@ -1,0 +1,26 @@
+    Checking mega-brisas v1.0.0-alpha (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+error[E0428]: the name `validar_opcional` is defined multiple times
+  --> src\domain\user.rs:65:1
+   |
+48 | / pub fn validar_opcional(
+49 | |     valor: Option<&String>,
+50 | |     max_len: usize,
+51 | |     nombre_campo: &str,
+...  |
+61 | |     Ok(())
+62 | | }
+   | |_- previous definition of the value `validar_opcional` here
+...
+65 | / pub fn validar_opcional(
+66 | |     valor: Option<&String>,
+67 | |     max_len: usize,
+68 | |     nombre_campo: &str,
+...  |
+78 | |     Ok(())
+79 | | }
+   | |_^ `validar_opcional` redefined here
+   |
+   = note: `validar_opcional` must be defined only once in the value namespace of this module
+
+For more information about this error, try `rustc --explain E0428`.
+error: could not compile `mega-brisas` (lib) due to 1 previous error

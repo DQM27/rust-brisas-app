@@ -2,6 +2,7 @@
 ///
 /// Este módulo gestiona las validaciones de propiedad y características técnicas
 /// de los vehículos que ingresan a las instalaciones.
+use crate::domain::common::validar_placa_estandar;
 use crate::domain::errors::VehiculoError;
 use crate::models::vehiculo::{CreateVehiculoInput, TipoVehiculo, UpdateVehiculoInput};
 
@@ -26,28 +27,8 @@ pub fn validar_tipo_vehiculo(tipo_str: &str) -> Result<TipoVehiculo, VehiculoErr
 }
 
 /// Valida el formato de la placa (matrícula) del vehículo.
-///
-/// Permite caracteres alfanuméricos, guiones y espacios. Longitud entre 2 y 15.
 pub fn validar_placa(placa: &str) -> Result<(), VehiculoError> {
-    let limpia = placa.trim().to_uppercase();
-
-    if limpia.is_empty() {
-        return Err(VehiculoError::Validation("La placa no puede estar vacía".to_string()));
-    }
-
-    if !limpia.chars().all(|c| c.is_alphanumeric() || c == '-' || c == ' ') {
-        return Err(VehiculoError::Validation(
-            "La placa solo puede contener letras, números, guiones y espacios".to_string(),
-        ));
-    }
-
-    if limpia.len() < 2 || limpia.len() > 15 {
-        return Err(VehiculoError::Validation(
-            "La placa debe tener entre 2 y 15 caracteres".to_string(),
-        ));
-    }
-
-    Ok(())
+    validar_placa_estandar(placa).map_err(|e| VehiculoError::Validation(e.to_string()))
 }
 
 /// Valida la marca del vehículo.

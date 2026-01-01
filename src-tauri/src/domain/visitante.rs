@@ -1,10 +1,10 @@
-use crate::domain::common::{
-    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
-};
 /// Capa de Dominio: Reglas de Negocio para Visitantes.
 ///
 /// Este módulo centraliza las validaciones de identidad para personas particulares
 /// que ingresan a las instalaciones (no son empleados ni contratistas fijos).
+use crate::domain::common::{
+    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
+};
 use crate::domain::errors::VisitanteError;
 use crate::models::visitante::CreateVisitanteInput;
 

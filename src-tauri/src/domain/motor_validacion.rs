@@ -3,35 +3,104 @@
 /// Este módulo implementa la lógica central para la validación de cualquier
 /// tipo de acceso (Visitante, Contratista, Proveedor). Orquestra múltiples
 /// reglas de negocio: listas negras, vigencia de documentos y alertas de seguridad.
-use crate::models::ingreso::{
-    CommonValidationContext, ValidationReason, ValidationResult, ValidationStatus,
-};
-use crate::models::lista_negra::NivelSeveridad;
+use serde::{Deserialize, Serialize};
 
 // --------------------------------------------------------------------------
-// DEFINICIONES DE CONTEXTO Y RESULTADOS
+// DEFINICIONES DE DOMINIO (PURO)
 // --------------------------------------------------------------------------
 
-/// Representa el conjunto de datos necesarios para evaluar la legitimidad de un acceso.
+/// Niveles de severidad para listas negras y alertas.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum NivelSeveridad {
+    Alto,
+    Medio,
+    Bajo,
+}
+
+/// Estados de validación del motor.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ValidationStatus {
+    Allowed,
+    Denied,
+    Warning,
+}
+
+/// Razones canónicas de rechazo o advertencia.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ValidationReason {
+    None,
+    Blacklisted,
+    AlreadyInside,
+    ExpiredDocuments,
+    GafeteAlert,
+}
+
+/// Resultado de la ejecución del motor.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ValidationResult {
+    pub status: ValidationStatus,
+    pub reason: ValidationReason,
+    pub message: String,
+}
+
+/// Tipo de acceso que solicita la persona.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum TipoAcceso {
+    Contratista,
+    Visitante,
+    Proveedor,
+    Manual, // Para casos especiales
+}
+
+/// Estado de los documentos o contratos de la persona.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EstadoAutorizacion {
+    Activo,
+    Vencido,
+    Inactivo,
+    Suspendido,
+    PorDefinir,
+}
+
+impl EstadoAutorizacion {
+    /// Convierte un string arbitrario (BD) a un estado del motor.
+    /// Esto actúa como un "anti-corruption layer" para normalizar los estados.
+    pub fn from_str_lossy(s: &str) -> Self {
+        match s.trim().to_lowercase().as_str() {
+            "activo" | "authorized" | "ok" => EstadoAutorizacion::Activo,
+            "vencido" | "expired" => EstadoAutorizacion::Vencido,
+            "inactivo" | "inactive" => EstadoAutorizacion::Inactivo,
+            "suspendido" | "suspended" => EstadoAutorizacion::Suspendido,
+            _ => EstadoAutorizacion::PorDefinir,
+        }
+    }
+}
+
+/// Contexto puro para evaluación de reglas.
 #[derive(Debug, Clone)]
 pub struct MotorContexto {
     pub ident_cedula: String,
     pub ident_nombre: String,
-    pub tipo_acceso: String,
+    pub tipo_acceso: TipoAcceso,
     pub lista_negra: Option<InfoListaNegra>,
     pub ingreso_activo: Option<InfoIngresoActivoInt>,
-    pub estado_autorizacion: String,
+    pub estado_autorizacion: EstadoAutorizacion,
     pub alerta_gafete: Option<String>,
 }
 
-/// Información simplificada de la lista negra para el motor.
+/// Detalle de restricción (Lista Negra).
 #[derive(Debug, Clone)]
 pub struct InfoListaNegra {
     pub motivo: String,
     pub severidad: NivelSeveridad,
 }
 
-/// Información simplificada sobre un ingreso que no ha registrado salida.
+/// Detalle de permanencia actual.
 #[derive(Debug, Clone)]
 pub struct InfoIngresoActivoInt {
     pub id: String,
@@ -59,67 +128,57 @@ pub fn ejecutar_validacion_motor(ctx: &MotorContexto) -> ValidationResult {
 
     // 2. REGLA: INGRESO DUPLICADO
     if let Some(ref activo) = ctx.ingreso_activo {
+        let info_gafete = if activo.gafete_numero == 0 {
+            "Sin Gafete Asignado".to_string()
+        } else {
+            format!("Gafete #{}", activo.gafete_numero)
+        };
+
         return ValidationResult {
             status: ValidationStatus::Denied,
             reason: ValidationReason::AlreadyInside,
             message: format!(
-                "Ya cuenta con un ingreso activo desde {} (Gafete #{})",
-                activo.fecha_ingreso, activo.gafete_numero
+                "Ya cuenta con un ingreso activo desde {} ({})",
+                activo.fecha_ingreso, info_gafete
             ),
         };
     }
 
     // 3. REGLA: ESTADO DE AUTORIZACIÓN (Vigencia de Documentos)
-    let status_lower = ctx.estado_autorizacion.to_lowercase();
-    if status_lower == "vencido" || status_lower == "inactivo" || status_lower == "suspendido" {
-        return ValidationResult {
+    match ctx.estado_autorizacion {
+        EstadoAutorizacion::Vencido => ValidationResult {
             status: ValidationStatus::Denied,
             reason: ValidationReason::ExpiredDocuments,
-            message: format!(
-                "Estado de autorización: {}. Debe actualizar documentos.",
-                ctx.estado_autorizacion
-            ),
-        };
-    }
+            message: "Estado de autorización: VENCIDO. Debe actualizar documentos.".to_string(),
+        },
+        EstadoAutorizacion::Inactivo => ValidationResult {
+            status: ValidationStatus::Denied,
+            reason: ValidationReason::ExpiredDocuments,
+            message: "Estado de autorización: INACTIVO. Acceso denegado.".to_string(),
+        },
+        EstadoAutorizacion::Suspendido => ValidationResult {
+            status: ValidationStatus::Denied,
+            reason: ValidationReason::ExpiredDocuments,
+            message: "Estado de autorización: SUSPENDIDO. Contacte administración.".to_string(),
+        },
+        _ => {
+            // 4. REGLA: ALERTAS DE GAFETE (Hardware/Pérdida)
+            // Se ejecuta solo si la autorización base es válida (Activo o PorDefinir)
+            if let Some(ref alerta) = ctx.alerta_gafete {
+                return ValidationResult {
+                    status: ValidationStatus::Warning,
+                    reason: ValidationReason::GafeteAlert,
+                    message: format!("Alerta de Gafete detectada: {}", alerta),
+                };
+            }
 
-    // 4. REGLA: ALERTAS DE GAFETE (Hardware/Pérdida)
-    if let Some(ref alerta) = ctx.alerta_gafete {
-        return ValidationResult {
-            status: ValidationStatus::Warning,
-            reason: ValidationReason::GafeteAlert,
-            message: format!("Alerta de Gafete detectada: {}", alerta),
-        };
-    }
-
-    // SI PASA TODO -> ACCESO PERMITIDO
-    ValidationResult {
-        status: ValidationStatus::Allowed,
-        reason: ValidationReason::None,
-        message: "Acceso validado correctamente".to_string(),
-    }
-}
-
-// --------------------------------------------------------------------------
-// MAPEO Y ADAPTACIÓN DE DATOS
-// --------------------------------------------------------------------------
-
-/// Convierte el contexto genérico de modelos al contexto específico de negocio del motor.
-pub fn map_to_motor_context(common: &CommonValidationContext) -> MotorContexto {
-    MotorContexto {
-        ident_cedula: common.cedula.clone(),
-        ident_nombre: common.nombre_completo.clone(),
-        tipo_acceso: common.tipo_identidad.clone(),
-        lista_negra: common.lista_negra_info.as_ref().map(|ln| InfoListaNegra {
-            motivo: ln.motivo.clone(),
-            severidad: ln.severidad.clone(),
-        }),
-        ingreso_activo: common.ingreso_activo_id.as_ref().map(|id| InfoIngresoActivoInt {
-            id: id.clone(),
-            fecha_ingreso: common.fecha_ingreso_activo.clone().unwrap_or_default(),
-            gafete_numero: common.gafete_activo_numero.clone().unwrap_or_default(),
-        }),
-        estado_autorizacion: common.estado_autorizacion.clone(),
-        alerta_gafete: common.alerta_gafete.clone(),
+            // SI PASA TODO -> ACCESO PERMITIDO
+            ValidationResult {
+                status: ValidationStatus::Allowed,
+                reason: ValidationReason::None,
+                message: "Acceso validado correctamente".to_string(),
+            }
+        }
     }
 }
 
@@ -135,10 +194,10 @@ mod tests {
         MotorContexto {
             ident_cedula: "123".to_string(),
             ident_nombre: "Test".to_string(),
-            tipo_acceso: "VISITANTE".to_string(),
+            tipo_acceso: TipoAcceso::Visitante,
             lista_negra: None,
             ingreso_activo: None,
-            estado_autorizacion: "ACTIVO".to_string(),
+            estado_autorizacion: EstadoAutorizacion::Activo,
             alerta_gafete: None,
         }
     }
@@ -176,7 +235,7 @@ mod tests {
     #[test]
     fn test_motor_deny_expired() {
         let mut ctx = create_base_context();
-        ctx.estado_autorizacion = "VENCIDO".to_string();
+        ctx.estado_autorizacion = EstadoAutorizacion::Vencido;
         let res = ejecutar_validacion_motor(&ctx);
         assert_eq!(res.status, ValidationStatus::Denied);
         assert_eq!(res.reason, ValidationReason::ExpiredDocuments);
@@ -189,5 +248,12 @@ mod tests {
         let res = ejecutar_validacion_motor(&ctx);
         assert_eq!(res.status, ValidationStatus::Warning);
         assert_eq!(res.reason, ValidationReason::GafeteAlert);
+    }
+
+    #[test]
+    fn test_estado_mapping() {
+        assert_eq!(EstadoAutorizacion::from_str_lossy("vencido"), EstadoAutorizacion::Vencido);
+        assert_eq!(EstadoAutorizacion::from_str_lossy("ACTIVE"), EstadoAutorizacion::Activo);
+        assert_eq!(EstadoAutorizacion::from_str_lossy("random"), EstadoAutorizacion::PorDefinir);
     }
 }

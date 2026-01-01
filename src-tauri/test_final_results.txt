@@ -1,0 +1,84 @@
+    Blocking waiting for file lock on build directory
+   Compiling mega-brisas v1.0.0-alpha (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+error[E0034]: multiple applicable items in scope
+   --> src\services\contratista_service.rs:463:46
+    |
+463 |     let estado_anterior = contratista.estado.as_str().to_string();
+    |                                              ^^^^^^ multiple `as_str` found
+    |
+note: candidate #1 is defined in an impl for the type `EstadoContratista`
+   --> src\models\contratista.rs:63:5
+    |
+ 63 |     pub fn as_str(&self) -> &str {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: candidate #2 is defined in an impl for the type `EstadoContratista`
+   --> src\models\contratista.rs:73:5
+    |
+ 73 |     pub fn as_str(&self) -> &str {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0034]: multiple applicable items in scope
+   --> src\services\contratista_service.rs:468:55
+    |
+468 |     let updated = db::update_status(&id, nuevo_estado.as_str()).await.map_err(map_db_error)?;
+    |                                                       ^^^^^^ multiple `as_str` found
+    |
+note: candidate #1 is defined in an impl for the type `EstadoContratista`
+   --> src\models\contratista.rs:63:5
+    |
+ 63 |     pub fn as_str(&self) -> &str {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: candidate #2 is defined in an impl for the type `EstadoContratista`
+   --> src\models\contratista.rs:73:5
+    |
+ 73 |     pub fn as_str(&self) -> &str {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0034]: multiple applicable items in scope
+   --> src\services\contratista_service.rs:473:22
+    |
+473 |         nuevo_estado.as_str(),
+    |                      ^^^^^^ multiple `as_str` found
+    |
+note: candidate #1 is defined in an impl for the type `EstadoContratista`
+   --> src\models\contratista.rs:63:5
+    |
+ 63 |     pub fn as_str(&self) -> &str {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: candidate #2 is defined in an impl for the type `EstadoContratista`
+   --> src\models\contratista.rs:73:5
+    |
+ 73 |     pub fn as_str(&self) -> &str {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0034]: multiple applicable items in scope
+   --> src\services\ingreso_contratista_service.rs:155:91
+    |
+155 |         estado_autorizacion: motor::EstadoAutorizacion::from_str_lossy(contratista.estado.as_str()),
+    |                                                                                           ^^^^^^ multiple `as_str` found
+    |
+note: candidate #1 is defined in an impl for the type `EstadoContratista`
+   --> src\models\contratista.rs:63:5
+    |
+ 63 |     pub fn as_str(&self) -> &str {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: candidate #2 is defined in an impl for the type `EstadoContratista`
+   --> src\models\contratista.rs:73:5
+    |
+ 73 |     pub fn as_str(&self) -> &str {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0592]: duplicate definitions with name `as_str`
+  --> src\models\contratista.rs:63:5
+   |
+63 |     pub fn as_str(&self) -> &str {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ duplicate definitions for `as_str`
+...
+73 |     pub fn as_str(&self) -> &str {
+   |     ---------------------------- other definition for `as_str`
+
+Some errors have detailed explanations: E0034, E0592.
+For more information about an error, try `rustc --explain E0034`.
+error: could not compile `mega-brisas` (lib) due to 5 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `mega-brisas` (lib test) due to 5 previous errors

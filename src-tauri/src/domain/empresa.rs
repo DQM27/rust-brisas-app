@@ -2,6 +2,7 @@
 ///
 /// Este módulo gestiona la integridad de los datos de las empresas (contratistas
 /// o proveedores) registradas en el sistema.
+use crate::domain::common::validar_nombre_entidad_estandar;
 use crate::domain::errors::EmpresaError;
 use crate::models::empresa::{CreateEmpresaInput, UpdateEmpresaInput};
 
@@ -15,62 +16,20 @@ pub const NOMBRE_MAX_LEN: usize = 100;
 /// Longitud máxima de la dirección.
 pub const DIRECCION_MAX_LEN: usize = 200;
 
-/// Caracteres prohibidos en campos de texto (prevención de inyecciones).
-const CHARS_PROHIBIDOS: &[char] = &['<', '>', '{', '}', '|', '\\', '^', '~', '[', ']', '`'];
-
 // --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
 // --------------------------------------------------------------------------
 
-/// Verifica que un texto no contenga caracteres peligrosos.
-fn contiene_chars_prohibidos(texto: &str) -> bool {
-    texto.chars().any(|c| CHARS_PROHIBIDOS.contains(&c))
-}
-
 /// Valida los requisitos de identidad de una empresa.
 pub fn validar_nombre(nombre: &str) -> Result<(), EmpresaError> {
-    let limpio = nombre.trim();
-
-    if limpio.is_empty() {
-        return Err(EmpresaError::Validation(
-            "El nombre de la empresa no puede estar vacío".to_string(),
-        ));
-    }
-
-    if limpio.len() > NOMBRE_MAX_LEN {
-        return Err(EmpresaError::Validation(format!(
-            "El nombre no puede exceder {} caracteres",
-            NOMBRE_MAX_LEN
-        )));
-    }
-
-    if contiene_chars_prohibidos(limpio) {
-        return Err(EmpresaError::Validation(
-            "El nombre contiene caracteres no permitidos".to_string(),
-        ));
-    }
-
-    Ok(())
+    validar_nombre_entidad_estandar(nombre, "nombre de la empresa")
+        .map_err(|e| EmpresaError::Validation(e.to_string()))
 }
 
 /// Valida la dirección de la empresa si se proporciona.
 pub fn validar_direccion(direccion: &str) -> Result<(), EmpresaError> {
-    let limpia = direccion.trim();
-
-    if limpia.len() > DIRECCION_MAX_LEN {
-        return Err(EmpresaError::Validation(format!(
-            "La dirección no puede exceder {} caracteres",
-            DIRECCION_MAX_LEN
-        )));
-    }
-
-    if contiene_chars_prohibidos(limpia) {
-        return Err(EmpresaError::Validation(
-            "La dirección contiene caracteres no permitidos".to_string(),
-        ));
-    }
-
-    Ok(())
+    validar_nombre_entidad_estandar(direccion, "dirección")
+        .map_err(|e| EmpresaError::Validation(e.to_string()))
 }
 
 // --------------------------------------------------------------------------

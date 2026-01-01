@@ -1,11 +1,11 @@
-use crate::domain::common::{
-    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
-};
-
 /// Capa de Dominio: Gestión de Lista Negra y Restricciones de Acceso.
 ///
 /// Este módulo define la lógica pura para la validación de personas con acceso
 /// denegado a las instalaciones por motivos de seguridad o administrativos.
+use crate::domain::common::{
+    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
+};
+
 use crate::domain::errors::ListaNegraError;
 use crate::models::lista_negra::{AddToListaNegraInput, NivelSeveridad, UpdateListaNegraInput};
 

@@ -228,6 +228,126 @@ pub fn normalizar_nombre_propio(texto: &str) -> String {
         .join(" ")
 }
 
+/// Valida una dirección de correo electrónico bajo un estándar básico pero estricto.
+pub fn validar_email_estandar(email: &str) -> Result<(), CommonError> {
+    let limpio = email.trim();
+
+    if limpio.is_empty() {
+        return Err(CommonError::Validation("El email es obligatorio".to_string()));
+    }
+
+    if !limpio.contains('@') || limpio.starts_with('@') || limpio.ends_with('@') {
+        return Err(CommonError::Validation("Formato de email inválido".to_string()));
+    }
+
+    if limpio.len() > 100 {
+        return Err(CommonError::Validation(
+            "El email no puede exceder 100 caracteres".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+/// Valida una placa de vehículo (matrícula).
+/// - Alfanumérico, guiones y espacios.
+/// - Longitud 2-15.
+pub fn validar_placa_estandar(placa: &str) -> Result<(), CommonError> {
+    let limpia = placa.trim().to_uppercase();
+
+    if limpia.is_empty() {
+        return Err(CommonError::Validation("La placa es obligatoria".to_string()));
+    }
+
+    if !limpia.chars().all(|c| c.is_alphanumeric() || c == '-' || c == ' ') {
+        return Err(CommonError::Validation(
+            "La placa solo puede contener letras, números, guiones y espacios".to_string(),
+        ));
+    }
+
+    if limpia.len() < 2 || limpia.len() > 15 {
+        return Err(CommonError::Validation(
+            "La placa debe tener entre 2 y 15 caracteres".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+/// Valida el nombre de una entidad (Empresa, Institución, etc).
+/// Permite números y caracteres especiales básicos pero rechaza inyecciones.
+pub fn validar_nombre_entidad_estandar(nombre: &str, campo: &str) -> Result<(), CommonError> {
+    let limpio = nombre.trim();
+
+    if limpio.is_empty() {
+        return Err(CommonError::Validation(format!("El {} es obligatorio", campo)));
+    }
+
+    if limpio.len() > 100 {
+        return Err(CommonError::Validation(format!(
+            "El {} no puede exceder 100 caracteres",
+            campo
+        )));
+    }
+
+    // Rechazamos caracteres sospechosos de inyección/formato roto
+    let prohibidos = ['<', '>', '{', '}', '|', '\\', '^', '`'];
+    if limpio.chars().any(|c| prohibidos.contains(&c)) {
+        return Err(CommonError::Validation(format!(
+            "El {} contiene caracteres no permitidos",
+            campo
+        )));
+    }
+
+    Ok(())
+}
+
+/// Valida un campo de texto opcional contra una longitud máxima.
+pub fn validar_opcional_estandar(
+    valor: Option<&String>,
+    max_len: usize,
+    campo: &str,
+) -> Result<(), CommonError> {
+    if let Some(v) = valor {
+        let limpio = v.trim();
+        if limpio.len() > max_len {
+            return Err(CommonError::Validation(format!(
+                "El {} no puede exceder {} caracteres",
+                campo, max_len
+            )));
+        }
+    }
+    Ok(())
+}
+
+// --------------------------------------------------------------------------
+// UTILIDADES DE NORMALIZACIÓN TRANSVERSAL
+// --------------------------------------------------------------------------
+
+/// Normaliza un campo opcional: trim y convierte strings vacíos en None.
+pub fn normalizar_opcional_estandar(valor: Option<&String>) -> Option<String> {
+    valor.and_then(|v| {
+        let limpio = v.trim();
+        if limpio.is_empty() {
+            None
+        } else {
+            Some(limpio.to_string())
+        }
+    })
+}
+
+/// Normaliza un nombre propio opcional a Title Case si existe.
+pub fn normalizar_nombre_opcional_estandar(valor: Option<&String>) -> Option<String> {
+    valor.and_then(|v| {
+        let limpio = v.trim();
+        if limpio.is_empty() {
+            None
+        } else {
+            Some(normalizar_nombre_propio(limpio))
+        }
+    })
+}
+
 // --------------------------------------------------------------------------
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------

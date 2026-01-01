@@ -142,25 +142,25 @@ pub async fn validar_ingreso_contratista(
     let motor_ctx = motor::MotorContexto {
         ident_cedula: contratista.cedula.clone(),
         ident_nombre: format!("{} {}", contratista.nombre, contratista.apellido),
-        tipo_acceso: "CONTRATISTA".to_string(),
+        tipo_acceso: motor::TipoAcceso::Contratista,
         lista_negra: if b.is_blocked {
             Some(motor::InfoListaNegra {
-                motivo: b.nivel_severidad.unwrap_or_default(),
-                severidad: crate::models::lista_negra::NivelSeveridad::Alto,
+                motivo: "Bloqueo detectado".to_string(), // Placeholder mejorado
+                severidad: motor::NivelSeveridad::Alto,  // Mapeo simple por ahora
             })
         } else {
             None
         },
         ingreso_activo: None, // TODO: Verificar ingreso activo
-        estado_autorizacion: contratista.estado.as_str().to_string(),
+        estado_autorizacion: motor::EstadoAutorizacion::from_str_lossy(contratista.estado.as_str()),
         alerta_gafete: None, // TODO: Verificar gafetes pendientes
     };
 
     let motor_res = motor::ejecutar_validacion_motor(&motor_ctx);
 
     Ok(ValidacionIngresoResponse {
-        puede_ingresar: motor_res.status == crate::models::ingreso::ValidationStatus::Allowed,
-        motivo_rechazo: if motor_res.status != crate::models::ingreso::ValidationStatus::Allowed {
+        puede_ingresar: motor_res.status == motor::ValidationStatus::Allowed,
+        motivo_rechazo: if motor_res.status != motor::ValidationStatus::Allowed {
             Some(motor_res.message)
         } else {
             None

@@ -1,10 +1,10 @@
 pub mod cita;
-pub mod common; // Funciones compartidas entre tipos de ingreso
+pub mod common;
 pub mod ingreso_contratista;
 pub mod ingreso_proveedor;
 pub mod ingreso_visita;
 pub mod lista_negra;
-pub mod motor_validacion; // Motor de Validación Unificado
+pub mod motor_validacion;
 pub mod role;
 pub mod user;
 pub mod vehiculo;
