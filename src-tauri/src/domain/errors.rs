@@ -1,15 +1,32 @@
-/// Capa de Dominio: Definiciones de Errores Corporativos.
-///
-/// Este módulo centraliza todos los tipos de errores del dominio, permitiendo
-/// un manejo de errores fuertemente tipado y consistente en toda la aplicación.
-/// Utiliza `thiserror` para la derivación automática de `Display` y `Serialize`.
+//! Capa de Dominio: Definiciones de Errores Corporativos.
+//!
+//! Este módulo centraliza todos los tipos de errores del dominio, permitiendo
+//! un manejo de errores fuertemente tipado y consistente en toda la aplicación.
+//!
+//! ## Diseño de Errores
+//!
+//! - Cada entidad tiene su propio enum de errores
+//! - Todos los errores son serializables para envío al frontend
+//! - Se usa `thiserror` para derivar `Display` y `Error` automáticamente
+//! - Formato JSON: `{ "type": "VariantName", "message": "descripción" }`
+//!
+//! ## Patrón Común
+//!
+//! Cada enum incluye variantes estándar:
+//! - `NotFound`: Recurso no encontrado
+//! - `Database(String)`: Error de persistencia
+//! - `Validation(String)`: Error de validación de datos
+
 use serde::Serialize;
 use thiserror::Error;
 
-// --------------------------------------------------------------------------
+// ==========================================================================
 // ERRORES DE USUARIO Y AUTENTICACIÓN
-// --------------------------------------------------------------------------
+// ==========================================================================
 
+/// Errores relacionados con la gestión de usuarios y autenticación.
+///
+/// Incluye: login, registro, cambio de contraseña, validación de roles.
 #[derive(Error, Debug, Serialize)]
 #[serde(tag = "type", content = "message")]
 pub enum UserError {
@@ -27,8 +44,6 @@ pub enum UserError {
     InactiveUser,
     #[error("Rol desconocido: {0}")]
     InvalidRole(String),
-    #[error("No se puede eliminar la empresa porque tiene {0} contratista(s) asociado(s)")]
-    EmpresaHasContratistas(i64),
     #[error("Error de base de datos: {0}")]
     Database(String),
     #[error("Error de búsqueda: {0}")]
@@ -49,10 +64,13 @@ impl From<crate::services::surrealdb_authorization::AuthError> for UserError {
     }
 }
 
-// --------------------------------------------------------------------------
+// ==========================================================================
 // ERRORES DE CONTRATISTAS
-// --------------------------------------------------------------------------
+// ==========================================================================
 
+/// Errores relacionados con la gestión de contratistas externos.
+///
+/// Incluye: registro, actualización, validación PRAIND, lista negra.
 #[derive(Error, Debug, Serialize)]
 #[serde(tag = "type", content = "message")]
 pub enum ContratistaError {
@@ -84,10 +102,13 @@ impl From<crate::services::surrealdb_authorization::AuthError> for ContratistaEr
     }
 }
 
-// --------------------------------------------------------------------------
+// ==========================================================================
 // ERRORES DE EMPRESA
-// --------------------------------------------------------------------------
+// ==========================================================================
 
+/// Errores relacionados con la gestión de empresas contratistas/proveedoras.
+///
+/// Incluye: registro, actualización, eliminación con dependencias.
 #[derive(Error, Debug, Serialize)]
 #[serde(tag = "type", content = "message")]
 pub enum EmpresaError {
@@ -204,10 +225,13 @@ impl From<crate::services::surrealdb_authorization::AuthError> for GafeteError {
     }
 }
 
-// --------------------------------------------------------------------------
+// ==========================================================================
 // ERRORES DE ALERTAS E INCIDENCIAS
-// --------------------------------------------------------------------------
+// ==========================================================================
 
+/// Errores relacionados con el sistema de alertas e incidencias de seguridad.
+///
+/// Incluye: creación, resolución, validación de tipos.
 #[derive(Error, Debug, Serialize)]
 #[serde(tag = "type", content = "message")]
 pub enum AlertaError {
@@ -221,6 +245,14 @@ pub enum AlertaError {
     Database(String),
     #[error("Error de validación: {0}")]
     Validation(String),
+    #[error("No autorizado: {0}")]
+    Unauthorized(String),
+}
+
+impl From<crate::services::surrealdb_authorization::AuthError> for AlertaError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        AlertaError::Unauthorized(err.to_string())
+    }
 }
 
 // --------------------------------------------------------------------------
