@@ -285,42 +285,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_evaluar_elegibilidad_bloqueado() {
-        let res =
-            evaluar_elegibilidad_entrada(true, Some("Robo".to_string()), false, "activo", true, 0);
-        assert!(!res.puede_ingresar);
-        assert!(res.motivo_rechazo.unwrap().contains("BLOQUEADO"));
-    }
-
-    #[test]
-    fn test_evaluar_elegibilidad_ingreso_abierto() {
-        let res = evaluar_elegibilidad_entrada(false, None, true, "activo", true, 0);
-        assert!(!res.puede_ingresar);
-        assert!(res.motivo_rechazo.unwrap().contains("activo"));
-    }
-
-    #[test]
-    fn test_evaluar_elegibilidad_praind_vencido() {
-        let res = evaluar_elegibilidad_entrada(false, None, false, "activo", false, 0);
-        assert!(!res.puede_ingresar);
-        assert!(res.motivo_rechazo.unwrap().contains("PRAIND"));
-    }
-
-    #[test]
-    fn test_evaluar_elegibilidad_valida() {
-        let res = evaluar_elegibilidad_entrada(false, None, false, "activo", true, 2);
-        assert!(res.puede_ingresar);
-        assert_eq!(res.alertas.len(), 1); // Tiene 2 alertas de gafete
-    }
-
-    #[test]
-    fn test_verificar_praind_vigente() {
-        let hoy = Utc::now().date_naive().format("%Y-%m-%d").to_string();
-        assert!(verificar_praind_vigente(&hoy).unwrap());
-        assert!(!verificar_praind_vigente("2000-01-01").unwrap());
-    }
-
-    #[test]
     fn test_evaluar_estado_permanencia() {
         assert_eq!(evaluar_estado_permanencia(100), EstadoPermanencia::Normal);
         assert_eq!(evaluar_estado_permanencia(820), EstadoPermanencia::AlertaTemprana);

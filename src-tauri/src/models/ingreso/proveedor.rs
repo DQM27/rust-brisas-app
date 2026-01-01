@@ -76,7 +76,7 @@ pub struct IngresoProveedorCreateDTO {
 }
 
 /// Respuesta de validación previa al ingreso de proveedor
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidacionIngresoProveedorResponse {
     pub puede_ingresar: bool,

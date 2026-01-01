@@ -70,7 +70,7 @@ pub fn validar_marca(marca: &str) -> Result<(), VehiculoError> {
 /// Valida la longitud de campos de texto opcionales.
 pub fn validar_texto_opcional(
     texto: &str,
-    campo: &get_dbstr,
+    campo: &str,
     max_len: usize,
 ) -> Result<(), VehiculoError> {
     let limpio = texto.trim();

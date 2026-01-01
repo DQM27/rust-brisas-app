@@ -102,7 +102,7 @@ pub struct IngresoVisitaPopulated {
 }
 
 /// Respuesta de validación previa al ingreso de visita
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidacionIngresoVisitaResponse {
     pub puede_ingresar: bool,

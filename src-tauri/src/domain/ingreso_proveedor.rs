@@ -3,6 +3,7 @@
 /// Este módulo define las reglas de negocio específicas para el control de acceso
 /// de proveedores de materiales y servicios a las instalaciones.
 use crate::domain::errors::IngresoProveedorError;
+use crate::models::ingreso::proveedor::CreateIngresoProveedorInput;
 
 // Re-exportaciones de estructuras
 pub use crate::domain::common::{normalizar_numero_gafete, DecisionReporteGafete};

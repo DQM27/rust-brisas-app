@@ -353,11 +353,11 @@ pub async fn cambiar_estado_contratista(
     input: CambiarEstadoInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
     let id = parse_contratista_id(&id_str);
-    let estado = domain::validar_estado(&input.estado)?;
+    domain::validar_estado(&input.estado)?;
 
     db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
-    let updated = db::update_status(&id, estado.as_str()).await.map_err(map_db_error)?;
+    let updated = db::update_status(&id, &input.estado).await.map_err(map_db_error)?;
     build_response_fetched(updated).await
 }
 

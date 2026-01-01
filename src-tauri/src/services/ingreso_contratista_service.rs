@@ -6,7 +6,7 @@
 use crate::db::surrealdb_contratista_queries as contratista_queries;
 use crate::db::surrealdb_ingreso_contratista_queries as db;
 use crate::domain::errors::IngresoContratistaError;
-use crate::domain::motor_validacion::{self as motor, ContextoIngreso};
+use crate::domain::motor_validacion as motor;
 use crate::models::ingreso::{
     CreateIngresoContratistaInput, IngresoResponse, RegistrarSalidaInput, ValidacionIngresoResponse,
 };
@@ -151,22 +151,33 @@ pub async fn validar_ingreso_contratista(
 
     // Invocación del Motor de Reglas de Negocio.
     // Aquí se decide si un contratista entra como "Autorizado" o "Bloqueado".
-    let ctx = ContextoIngreso::new_contratista(
-        contratista.cedula.clone(),
-        format!("{} {}", contratista.nombre, contratista.apellido),
-        &fecha_vencimiento_str,
-        b.is_blocked,
-        b.nivel_severidad,
-        false,
-        contratista.estado.as_str().to_string(),
-        0,
-    );
-    let motor_res = motor::validar_ingreso(&ctx);
+    let motor_ctx = motor::MotorContexto {
+        ident_cedula: contratista.cedula.clone(),
+        ident_nombre: format!("{} {}", contratista.nombre, contratista.apellido),
+        tipo_acceso: "CONTRATISTA".to_string(),
+        lista_negra: if b.is_blocked {
+            Some(motor::InfoListaNegra {
+                motivo: b.nivel_severidad.unwrap_or_default(),
+                severidad: crate::models::lista_negra::NivelSeveridad::Alto,
+            })
+        } else {
+            None
+        },
+        ingreso_activo: None, // TODO: Verificar ingreso activo
+        estado_autorizacion: contratista.estado.as_str().to_string(),
+        alerta_gafete: None, // TODO: Verificar gafetes pendientes
+    };
+
+    let motor_res = motor::ejecutar_validacion_motor(&motor_ctx);
 
     Ok(ValidacionIngresoResponse {
-        puede_ingresar: motor_res.puede_ingresar,
-        motivo_rechazo: motor_res.mensaje_bloqueo(),
-        alertas: motor_res.alertas,
+        puede_ingresar: motor_res.status == crate::models::ingreso::ValidationStatus::Allowed,
+        motivo_rechazo: if motor_res.status != crate::models::ingreso::ValidationStatus::Allowed {
+            Some(motor_res.message)
+        } else {
+            None
+        },
+        alertas: vec![],
         contratista: Some(serde_json::json!(contratista)),
         tiene_ingreso_abierto: false,
         ingreso_abierto: None,

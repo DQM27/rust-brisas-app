@@ -131,12 +131,14 @@ pub async fn get_activos(
 pub async fn validar_ingreso(
     _visitante_id: &str,
 ) -> Result<crate::domain::ingreso_visita::ValidacionIngresoVisitaResponse, IngresoVisitaError> {
+    // TODO: Implementar validación real consultando DB y motor de validación
     Ok(crate::domain::ingreso_visita::ValidacionIngresoVisitaResponse {
         puede_ingresar: true,
+        cedula: String::new(),
+        nombre: String::new(),
+        apellido: String::new(),
         motivo_rechazo: None,
-        alertas: vec![],
-        visitante: None,
-        tiene_ingreso_abierto: false,
-        ingreso_abierto: None,
+        alertas_gafete: vec![],
+        tiene_gafetes_pendientes: false,
     })
 }
