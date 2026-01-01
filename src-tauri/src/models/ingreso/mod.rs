@@ -321,15 +321,32 @@ impl IngresoResponse {
         let esta_adentro = i.fecha_hora_salida.is_none();
         let tiene_gafete_asignado = i.gafete_numero.is_some();
 
+        let nombre = i.nombre.clone();
+        let segundo_nombre = i.segundo_nombre.clone();
+        let apellido = i.apellido.clone();
+        let segundo_apellido = i.segundo_apellido.clone();
+
+        let mut nombre_completo = nombre.clone();
+        if let Some(ref s) = segundo_nombre {
+            nombre_completo.push_str(" ");
+            nombre_completo.push_str(s);
+        }
+        nombre_completo.push_str(" ");
+        nombre_completo.push_str(&apellido);
+        if let Some(ref s) = segundo_apellido {
+            nombre_completo.push_str(" ");
+            nombre_completo.push_str(s);
+        }
+
         Self {
             id: i.id.to_string(),
             contratista_id: None,
             cedula: i.cedula.clone(),
-            nombre: i.nombre.clone(),
-            apellido: i.apellido.clone(),
-            segundo_nombre: None,
-            segundo_apellido: None,
-            nombre_completo: format!("{} {}", i.nombre, i.apellido),
+            nombre,
+            apellido,
+            segundo_nombre,
+            segundo_apellido,
+            nombre_completo,
             empresa_nombre: String::new(),
             tipo_ingreso: TipoIngreso::Visita,
             tipo_ingreso_display: "Visita".to_string(),
