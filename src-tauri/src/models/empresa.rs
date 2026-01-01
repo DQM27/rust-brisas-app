@@ -3,13 +3,14 @@
 // ==========================================
 
 use serde::{Deserialize, Serialize};
-
-// ==========================================
-// MODELO DE DOMINIO
-// ==========================================
-
 use surrealdb::RecordId;
 
+// --------------------------------------------------------------------------
+// MODELO DE DOMINIO
+// --------------------------------------------------------------------------
+
+/// Entidad empresarial (Proveedores, Contratistas, Clientes).
+/// Actúa como agrupación para personal externo.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Empresa {
@@ -24,10 +25,11 @@ pub struct Empresa {
     pub updated_at: Option<surrealdb::Datetime>,
 }
 
-// ==========================================
-// DTOs DE ENTRADA (Frontend -> Command)
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs DE ENTRADA
+// --------------------------------------------------------------------------
 
+/// Datos requeridos para registrar una empresa.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateEmpresaInput {
@@ -35,6 +37,7 @@ pub struct CreateEmpresaInput {
     pub direccion: Option<String>,
 }
 
+/// Datos para actualización parcial de empresas.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateEmpresaInput {
@@ -43,9 +46,9 @@ pub struct UpdateEmpresaInput {
     pub is_active: Option<bool>,
 }
 
-// ==========================================
-// DTOs PARA PERSISTENCIA (Service -> DB)
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs PARA PERSISTENCIA
+// --------------------------------------------------------------------------
 
 #[derive(Debug, Serialize)]
 pub struct EmpresaCreateDTO {
@@ -66,10 +69,11 @@ pub struct EmpresaUpdateDTO {
     pub updated_at: Option<surrealdb::Datetime>,
 }
 
-// ==========================================
-// DTOs DE SALIDA (Service -> Frontend)
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs DE SALIDA
+// --------------------------------------------------------------------------
 
+/// Respuesta pública al cliente con datos de la empresa.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EmpresaResponse {
@@ -89,7 +93,7 @@ impl From<Empresa> for EmpresaResponse {
             nombre: e.nombre,
             direccion: e.direccion,
             is_active: e.is_active,
-            total_contratistas: 0,
+            total_contratistas: 0, // Se llena en capa de servicio si es necesario
             created_at: e
                 .created_at
                 .map(|d| d.to_string())
@@ -102,6 +106,7 @@ impl From<Empresa> for EmpresaResponse {
     }
 }
 
+/// Lista paginada de empresas.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EmpresaListResponse {
