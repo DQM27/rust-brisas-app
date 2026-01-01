@@ -89,7 +89,7 @@ mod tests {
     fn input_valido() -> CreateCitaInput {
         CreateCitaInput {
             visitante_id: Some("visitante:123".to_string()),
-            fecha_cita: "2024-01-01T10:00:00Z".to_string(), // ISO 8601 OK
+            fecha_cita: "2024-01-01T10:00:00Z".to_string(),
             anfitrion: "Ing. Pedro Perez".to_string(),
             area_visitada: "Sistemas".to_string(),
             motivo: "Soporte Técnico".to_string(),
@@ -110,7 +110,7 @@ mod tests {
         input.fecha_cita = "fecha-mala".to_string();
         assert!(validar_create_input(&input).is_err());
 
-        input.fecha_cita = "2024/01/01".to_string(); // Formato incorrecto
+        input.fecha_cita = "2024/01/01".to_string();
         assert!(validar_create_input(&input).is_err());
     }
 
@@ -120,7 +120,7 @@ mod tests {
         input.motivo = "Revisión <script>alert('xss')</script>".to_string();
         assert!(validar_create_input(&input).is_err());
 
-        input.motivo = "Hola".to_string(); // Reset
+        input.motivo = "Hola".to_string();
         input.anfitrion = "Juan <br>".to_string();
         assert!(validar_create_input(&input).is_err());
     }
@@ -134,11 +134,8 @@ mod tests {
 
     #[test]
     fn test_validar_visitante_faltante() {
-        let input = CreateCitaInput {
-            visitante_id: None,
-            visitante_cedula: None, // Faltan datos para crear uno nuevo
-            ..input_valido()
-        };
+        let input =
+            CreateCitaInput { visitante_id: None, visitante_cedula: None, ..input_valido() };
         assert!(validar_create_input(&input).is_err());
     }
 }
