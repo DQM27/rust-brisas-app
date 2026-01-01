@@ -10,26 +10,25 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  check:
-    name: Check & Lint
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: src-tauri
+  build:
+    name: Build & Release (Windows)
+    runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
 
-      - name: Install system dependencies (Linux)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
@@ -41,61 +40,34 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Check compilation
-        run: cargo check --all-features
+      - name: Install frontend dependencies
+        run: npm install
 
-      - name: Run Clippy
-        run: cargo clippy --all-features -- -D warnings
-
-      - name: Check formatting
-        run: cargo fmt -- --check
-
-  test:
-    name: Tests
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: src-tauri
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-action@stable
-
-      - name: Install system dependencies (Linux)
+      - name: Lint Frontend & Backend
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          npm run check
+          cd src-tauri
+          cargo clippy --all-features -- -D warnings
+          cargo fmt -- --check
 
-      - name: Cache cargo registry
-        uses: actions/cache@v4
+      - name: Run Tests
+        run: |
+          cd src-tauri
+          cargo test --all-features
+
+      - name: Build Tauri Application
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            src-tauri/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          tagName: 'v__VERSION__' # This will be replaced by the action
+          releaseName: 'Mega Brisas v__VERSION__'
+          releaseBody: 'Automatic build from CI'
+          releaseDraft: true
+          prerelease: false
 
-      - name: Run tests
-        run: cargo test --all-features
-
-  audit:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: src-tauri
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-action@stable
-      
-      - name: Install cargo-audit
-        run: cargo install cargo-audit --locked
-      
-      - name: Run security audit
-        run: cargo audit
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mega-Brisas-Windows
+          path: src-tauri/target/release/bundle/msi/*.msi

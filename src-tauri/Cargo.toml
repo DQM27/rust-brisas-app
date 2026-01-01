@@ -10,99 +10,118 @@ name = "brisas_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
+# Tauri build system
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-# ==========================================
-# CORE DEPENDENCIES
-# ==========================================
+# =============================================================================
+# NÚCLEO TAURI (UI & Framework)
+# =============================================================================
 tauri = { version = "2", features = ["test"] }
-tauri-plugin-opener = "2"
-tauri-plugin-dialog = "2"
-tauri-plugin-store = "2"
-tauri-plugin-single-instance = "2"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+tauri-plugin-opener = "2"                      # Apertura de archivos/URLs nativos
+tauri-plugin-dialog = "2"                      # Diálogos de sistema (archivos, alertas)
+tauri-plugin-store = "2"                       # Almacenamiento persistente simple
+tauri-plugin-single-instance = "2"             # Evita múltiples instancias de la app
+tauri-plugin-updater = "2"                     # Sistema de actualizaciones automáticas
+tauri-plugin-log = "2"                         # Registro de logs para Tauri
 
-# ==========================================
-# DATABASE
-# ==========================================
-# SurrealDB - Multi-model database (embedded, pure Rust)
-# Using surrealkv (pure Rust) instead of rocksdb (requires C++ compilation)
+# =============================================================================
+# BASE DE DATOS (SurrealDB)
+# =============================================================================
+# Usamos surrealkv (puro Rust) para máxima portabilidad (evita RocksDB/C++)
 surrealdb = { version = "2.0", features = [
     "kv-surrealkv",
 ], default-features = false }
 
-# ==========================================
-# ASYNC RUNTIME
-# ==========================================
+# =============================================================================
+# MOTOR DE BÚSQUEDA (Tantivy)
+# =============================================================================
+tantivy = "0.22" # Indexación y búsqueda de texto completo rápida
+
+# =============================================================================
+# ASÍNCRONO (Tokio Runtime)
+# =============================================================================
 tokio = { version = "1", features = ["full"] }
-futures = "0.3"
+futures = "0.3"                                # Utilidades para streams y futuros
+async-trait = "0.1"                            # Soporte para traits asíncronos
 
-# ==========================================
-# UTILITIES
-# ==========================================
-chrono = { version = "0.4", features = ["serde"] }
+# =============================================================================
+# SERIALIZACIÓN (JSON & Datos)
+# =============================================================================
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_with = "3.11.0"                            # Helpers avanzados para serde
 
-argon2 = { version = "0.5", features = ["std"] }
-uuid = { version = "1.0", features = ["v4"] }
-async-trait = "0.1"
+# =============================================================================
+# SEGURIDAD Y CRIPTOGRAFÍA
+# =============================================================================
+argon2 = { version = "0.5", features = ["std"] } # Hashing de contraseñas
+chacha20poly1305 = { version = "0.10", features = [
+    "std",
+] } # Cifrado autenticado symétrico
+hex = "0.4" # Conversión binario a hex
 
-# ==========================================
-# CONFIGURATION SYSTEM
-# ==========================================
-toml = "0.8"
-dirs = "5.0"
-mac_address = "1.1"
-shellexpand = "3.1"
+# =============================================================================
+# FECHAS Y HORAS
+# =============================================================================
+chrono = { version = "0.4", features = [
+    "serde",
+] } # Manejo de tiempo compatible con serde
 
+# =============================================================================
+# UTILIDADES GENERALES
+# =============================================================================
+uuid = { version = "1.0", features = ["v4"] } # Identificadores únicos
+rand = "0.8.5"                                # Generación de números aleatorios
+regex = "1"                                   # Expresiones regulares
+once_cell = "1.19"                            # Inicialización perezosa de variables globales
+base64 = "0.21"                               # Codificación de datos binarios
+thiserror = "2"                               # Macros para definición de errores personalizados
+log = "0.4"                                   # Facade de logging estándar de Rust
 
-# ==========================================
-# SEARCH
-# ==========================================
-tantivy = "0.22"
+# =============================================================================
+# CONFIGURACIÓN Y SISTEMA
+# =============================================================================
+toml = "0.8"        # Lectura de archivos de configuración TOML
+dirs = "5.0"        # Obtención de carpetas estándar del sistema (AppData, etc)
+mac_address = "1.1" # Obtención de la MAC del equipo (identificación)
+shellexpand = "3.1" # Expansión de variables de entorno en rutas
 
-
-# ==========================================
-# UTILS
-# ==========================================
-base64 = "0.21"
+# =============================================================================
+# MULTIMEDIA Y PROCESAMIENTO
+# =============================================================================
 image = { version = "0.25", default-features = false, features = [
     "png",
     "jpeg",
     "webp",
 ] }
-# PDF generation - typst 0.14
+
+# =============================================================================
+# EXPORTACIÓN Y GENERACIÓN DE DOCUMENTOS (Opcionales por Features)
+# =============================================================================
+# PDF Generation (Typst engine)
 typst = { version = "0.14", optional = true }
 typst-pdf = { version = "0.14", optional = true }
 ttf-parser = { version = "0.24", optional = true }
 
-# Excel export
+# Excel Export
 rust_xlsxwriter = { version = "0.69", optional = true }
-once_cell = "1.19"
-regex = "1"
-thiserror = "2"
-serde_with = "3.11.0"
-rand = "0.8.5"
-tauri-plugin-updater = "2"
 
-tauri-plugin-log = "2"
-log = "0.4"
+# =============================================================================
+# DEPENDENCIAS ESPECÍFICAS DE PLATAFORMA (Optimización y Compatibilidad)
+# =============================================================================
 
-# ==========================================
-# KEYRING - Platform-specific versions
-# ==========================================
-# Linux Secret Service API
+# -- LINUX
 [target.'cfg(target_os = "linux")'.dependencies]
-keyring = "3"
+keyring = "3" # Gestión de credenciales mediante Secret Service
 
-# macOS Keychain API
+# -- macOS
 [target.'cfg(target_os = "macos")'.dependencies]
-keyring = "3"
+keyring = "3" # Gestión de credenciales mediante Keychain
 
-# Windows Credential Manager API
+# -- WINDOWS
 [target.'cfg(target_os = "windows")'.dependencies]
-keyring = "2"
+keyring = "2"                                                    # Gestión de credenciales mediante Credential Manager
 winapi = { version = "0.3", features = ["wincred", "winerror"] }
 
 [target.'cfg(windows)'.dependencies]
@@ -111,18 +130,7 @@ windows = { version = "0.58", features = [
     "Win32_UI_Input_KeyboardAndMouse",
     "Win32_System_SystemInformation",
 ] }
-mimalloc = { version = "0.1", default-features = false }
-
-[dependencies.chacha20poly1305]
-version = "0.10"
-features = ["std"]
-
-
-[dependencies.hex]
-version = "0.4"
-
-
-# CSV export - sin dependencias (usa std)
+mimalloc = { version = "0.1", default-features = false } # Asignador de memoria de alto rendimiento
 
 [features]
 # Por default, todas las funciones de export están habilitadas
@@ -135,12 +143,9 @@ export = ["export-pdf", "export-excel"]
 export-pdf = ["typst", "typst-pdf", "ttf-parser"]
 export-excel = ["rust_xlsxwriter"]
 
-# Database backend
-# SurrealDB is now the default and only backend
-
-# ==========================================
-# DEV DEPENDENCIES (Benchmarks, Testing)
-# ==========================================
+# =============================================================================
+# DEPENDENCIAS DE DESARROLLO (Test y Benchmarks)
+# =============================================================================
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 
@@ -152,25 +157,24 @@ harness = false
 name = "search_bench"
 harness = false
 
-# ==========================================
-# BUILD PROFILES (OPTIMIZATIONS)
-# ==========================================
+# =============================================================================
+# PERFILES DE CONSTRUCCIÓN (Optimizaciones)
+# =============================================================================
 [profile.release]
-opt-level = 3     # Optimizar para VELOCIDAD (usuario prefiere performance)
-lto = true        # Link Time Optimization
-codegen-units = 1 # Código más compacto (compilación más lenta)
-panic = "abort"   # Ahorra espacio quitando unwind symbols
-strip = true      # Quita símbolos de debug
+opt-level = 3     # Priorizar velocidad máxima de ejecución
+lto = true        # Link Time Optimization para reducir binario y ganar velocidad
+codegen-units = 1 # Generación unitaria para máxima optimización
+panic = "abort"   # Elimina el stack unwinding para ahorrar espacio
+strip = true      # Elimina símbolos de depuración del binario final
 
-# ==========================================
-# CLIPPY LINTS (Code Quality)
-# ==========================================
+# =============================================================================
+# LINTS (Calidad de Código)
+# =============================================================================
 [lints.clippy]
-# Groups with lower priority so individual overrides work
 all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
-# Individual overrides (higher priority)
+# Excepciones personalizadas
 module_name_repetitions = "allow"
 too_many_arguments = "allow"
 must_use_candidate = "allow"
