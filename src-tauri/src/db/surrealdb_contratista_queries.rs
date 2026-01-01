@@ -101,7 +101,7 @@ pub async fn update(
 
 pub async fn update_status(
     id: &RecordId,
-    estado: &str,
+    estado: crate::models::contratista::EstadoContratista,
 ) -> Result<ContratistaFetched, SurrealDbError> {
     let db = get_db().await?;
 
@@ -109,7 +109,7 @@ pub async fn update_status(
     let _: Option<Contratista> = db
         .query("UPDATE $id SET estado = $estado")
         .bind(("id", id.clone()))
-        .bind(("estado", estado.to_string()))
+        .bind(("estado", estado))
         .await?
         .take(0)?;
 

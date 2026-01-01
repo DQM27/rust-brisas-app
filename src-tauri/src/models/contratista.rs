@@ -1,11 +1,15 @@
-// ==========================================
-// src/models/contratista.rs
-// ==========================================
+/// Modelo de Base de Datos: Contratista.
+///
+/// Este módulo define la estructura para personal externo (contratistas)
+/// que requiere acceso a las instalaciones.
 use crate::models::empresa::Empresa;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};
 
+// --------------------------------------------------------------------------
+// MODELO PRINCIPAL
+// --------------------------------------------------------------------------
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Contratista {
@@ -29,6 +33,9 @@ pub struct Contratista {
     pub deleted_at: Option<Datetime>,
 }
 
+// --------------------------------------------------------------------------
+// MODELO FETCHED
+// --------------------------------------------------------------------------
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContratistaFetched {
     pub id: RecordId,
@@ -51,8 +58,13 @@ pub struct ContratistaFetched {
     pub deleted_at: Option<Datetime>,
 }
 
+// --------------------------------------------------------------------------
+// ENUMS DE DOMINIO
+// --------------------------------------------------------------------------
+
+/// Estados posibles de un contratista en el sistema.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")] // "activo", "inactivo", "bloqueado"
 pub enum EstadoContratista {
     Activo,
     Inactivo,
@@ -97,7 +109,7 @@ pub struct CreateContratistaInput {
     pub empresa_id: String,
     pub fecha_vencimiento_praind: String,
 
-    // Vehicle fields
+    // Campos del Vehículo
     pub tiene_vehiculo: Option<bool>,
     pub tipo_vehiculo: Option<String>,
     pub placa: Option<String>,
@@ -147,7 +159,7 @@ pub struct ContratistaCreateDTO {
     pub estado: EstadoContratista,
 }
 
-/// DTO tipado para partial updates - campos None se omiten en merge
+/// DTO tipado para actualizaciones parciales (PATCH) - los campos None se omiten.
 #[derive(Debug, Serialize, Default)]
 pub struct ContratistaUpdateDTO {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -201,7 +213,7 @@ impl From<Contratista> for ContratistaResponse {
     fn from(c: Contratista) -> Self {
         let hoy = Utc::now();
         // Access inner DateTime<Utc> directly (assuming tuple struct or Deref)
-        // If compilation fails, we will adjust to strict Into conversion
+        // Si falla la compilación, ajustaremos a conversión Into estricta
         let raw_date_str = c.fecha_vencimiento_praind.to_string();
         // Limpiar formato literal de SurrealDB (ej: d'2022-01-01...')
         let raw_date = raw_date_str.trim_start_matches("d'").trim_end_matches('\'');
@@ -215,17 +227,17 @@ impl From<Contratista> for ContratistaResponse {
             hoy
         });
 
-        // Use calendar dates for comparison to ignore time components (which cause 0-day diffs and premature expiration)
+        // Usar fechas calendario para ignorar componentes de hora (que causan diffs de 0 días y vencimientos prematuros)
         let venc_date = fecha_venc.date_naive();
         let hoy_date = hoy.date_naive();
 
         let dias_hasta_vencimiento = (venc_date - hoy_date).num_days();
 
-        // Expired only if the date is strictly in the past (yesterday or earlier)
+        // Vencido solo si la fecha es estrictamente en el pasado (ayer o antes)
         let praind_vencido = venc_date < hoy_date;
 
         // Requiere atención si faltan 30 días o menos (y no está vencido o venció hoy/ayer?)
-        // dias_hasta_vencimiento >= 0 covers today and future.
+        // dias_hasta_vencimiento >= 0 cubre hoy y futuro.
         let requiere_atencion = dias_hasta_vencimiento <= 30 && dias_hasta_vencimiento >= 0;
         let puede_ingresar = c.estado == EstadoContratista::Activo && !praind_vencido;
 
@@ -250,7 +262,7 @@ impl From<Contratista> for ContratistaResponse {
             segundo_apellido: c.segundo_apellido.clone(),
             nombre_completo,
             empresa_id: c.empresa.to_string(),
-            empresa_nombre: String::new(), // Will be filled by service
+            empresa_nombre: String::new(), // Será llenado por el servicio
             fecha_vencimiento_praind: fecha_venc.to_rfc3339(),
             estado: c.estado,
             puede_ingresar,
@@ -263,7 +275,7 @@ impl From<Contratista> for ContratistaResponse {
             vehiculo_marca: None,
             vehiculo_modelo: None,
             vehiculo_color: None,
-            created_at: c.created_at.to_string(), // Keep default or change to rfc3339 if needed
+            created_at: c.created_at.to_string(), // Mantener default o cambiar a rfc3339 si es necesario
             updated_at: c.updated_at.to_string(),
             deleted_at: c.deleted_at.map(|d| d.to_string()),
         }
@@ -347,110 +359,4 @@ pub struct ContratistaListResponse {
     pub activos: usize,
     pub con_praind_vencido: usize,
     pub requieren_atencion: usize,
-}
-
-// ==========================================
-// Validaciones de dominio
-// ==========================================
-
-pub mod validaciones {
-    use chrono::{DateTime, NaiveDate, TimeZone, Utc};
-
-    pub fn validar_cedula(cedula: &str) -> Result<(), String> {
-        let limpia = cedula.trim();
-
-        if limpia.is_empty() {
-            return Err("La cédula no puede estar vacía".to_string());
-        }
-
-        if !limpia.chars().all(|c| c.is_numeric() || c == '-') {
-            return Err("La cédula solo puede contener números y guiones".to_string());
-        }
-
-        if limpia.len() < 7 || limpia.len() > 20 {
-            return Err("La cédula debe tener entre 7 y 20 caracteres".to_string());
-        }
-
-        Ok(())
-    }
-
-    pub fn validar_nombre(nombre: &str) -> Result<(), String> {
-        let limpio = nombre.trim();
-
-        if limpio.is_empty() {
-            return Err("El nombre no puede estar vacío".to_string());
-        }
-
-        if limpio.len() > 50 {
-            return Err("El nombre no puede exceder 50 caracteres".to_string());
-        }
-
-        Ok(())
-    }
-
-    pub fn validar_segundo_nombre(segundo_nombre: Option<&String>) -> Result<(), String> {
-        if let Some(nombre) = segundo_nombre {
-            let limpio = nombre.trim();
-
-            if !limpio.is_empty() && limpio.len() > 50 {
-                return Err("El segundo nombre no puede exceder 50 caracteres".to_string());
-            }
-        }
-
-        Ok(())
-    }
-
-    pub fn validar_apellido(apellido: &str) -> Result<(), String> {
-        let limpio = apellido.trim();
-
-        if limpio.is_empty() {
-            return Err("El apellido no puede estar vacío".to_string());
-        }
-
-        if limpio.len() > 50 {
-            return Err("El apellido no puede exceder 50 caracteres".to_string());
-        }
-
-        Ok(())
-    }
-
-    pub fn validar_segundo_apellido(segundo_apellido: Option<&String>) -> Result<(), String> {
-        if let Some(apellido) = segundo_apellido {
-            let limpio = apellido.trim();
-
-            if !limpio.is_empty() && limpio.len() > 50 {
-                return Err("El segundo apellido no puede exceder 50 caracteres".to_string());
-            }
-        }
-
-        Ok(())
-    }
-
-    pub fn validar_empresa_id(empresa_id: &str) -> Result<(), String> {
-        let limpia = empresa_id.trim();
-
-        if limpia.is_empty() {
-            return Err("Debe seleccionar una empresa".to_string());
-        }
-
-        Ok(())
-    }
-
-    pub fn validar_fecha(fecha_str: &str) -> Result<DateTime<Utc>, String> {
-        let naive = NaiveDate::parse_from_str(fecha_str, "%Y-%m-%d")
-            .map_err(|_| "Formato de fecha inválido. Use YYYY-MM-DD".to_string())?;
-
-        Ok(Utc.from_utc_datetime(&naive.and_hms_opt(0, 0, 0).unwrap()))
-    }
-
-    pub fn validar_create_input(input: &super::CreateContratistaInput) -> Result<(), String> {
-        validar_cedula(&input.cedula)?;
-        validar_nombre(&input.nombre)?;
-        validar_segundo_nombre(input.segundo_nombre.as_ref())?;
-        validar_apellido(&input.apellido)?;
-        validar_segundo_apellido(input.segundo_apellido.as_ref())?;
-        validar_empresa_id(&input.empresa_id)?;
-        validar_fecha(&input.fecha_vencimiento_praind)?;
-        Ok(())
-    }
 }

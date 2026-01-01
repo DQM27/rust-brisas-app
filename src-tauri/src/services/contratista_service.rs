@@ -93,9 +93,9 @@ pub async fn create_contratista(
     }
 
     // PRAIND es una certificación de seguridad necesaria para ciertos accesos.
-    let fecha_vencimiento =
-        crate::models::contratista::validaciones::validar_fecha(&input.fecha_vencimiento_praind)
-            .map_err(ContratistaError::Validation)?;
+    let fecha_vencimiento_naive = domain::validar_fecha(&input.fecha_vencimiento_praind)?;
+    let fecha_vencimiento: DateTime<Utc> =
+        chrono::Utc.from_utc_datetime(&fecha_vencimiento_naive.and_hms_opt(0, 0, 0).unwrap());
 
     let dto = ContratistaCreateDTO {
         cedula: cedula_normalizada.clone(),
@@ -276,9 +276,10 @@ pub async fn update_contratista(
     }
 
     if let Some(v) = input.fecha_vencimiento_praind {
-        let fecha = crate::models::contratista::validaciones::validar_fecha(&v)
-            .map_err(ContratistaError::Validation)?;
-        dto.fecha_vencimiento_praind = Some(fecha.into());
+        let fecha_naive = domain::validar_fecha(&v)?;
+        let fecha: DateTime<Utc> =
+            chrono::Utc.from_utc_datetime(&fecha_naive.and_hms_opt(0, 0, 0).unwrap());
+        dto.fecha_vencimiento_praind = Some(surrealdb::Datetime::from(fecha));
     }
 
     let updated = db::update(&id, dto).await.map_err(|e| {
@@ -357,7 +358,9 @@ pub async fn cambiar_estado_contratista(
 
     db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
-    let updated = db::update_status(&id, &input.estado).await.map_err(map_db_error)?;
+    let estado_enum: EstadoContratista =
+        input.estado.parse().map_err(ContratistaError::Validation)?;
+    let updated = db::update_status(&id, estado_enum).await.map_err(map_db_error)?;
     build_response_fetched(updated).await
 }
 
@@ -412,13 +415,13 @@ pub async fn actualizar_praind_con_historial(
         .unwrap_or_else(|_| chrono::Utc::now());
     let fecha_anterior = dt.format("%d-%m-%Y").to_string();
 
-    let nueva_fecha =
-        crate::models::contratista::validaciones::validar_fecha(&input.nueva_fecha_praind)
-            .map_err(ContratistaError::Validation)?;
+    let nueva_fecha_naive = domain::validar_fecha(&input.nueva_fecha_praind)?;
+    let nueva_fecha: DateTime<Utc> =
+        chrono::Utc.from_utc_datetime(&nueva_fecha_naive.and_hms_opt(0, 0, 0).unwrap());
 
     use crate::models::contratista::ContratistaUpdateDTO;
     let dto = ContratistaUpdateDTO {
-        fecha_vencimiento_praind: Some(nueva_fecha.into()),
+        fecha_vencimiento_praind: Some(surrealdb::Datetime::from(nueva_fecha)),
         ..Default::default()
     };
 
@@ -465,7 +468,7 @@ pub async fn cambiar_estado_con_historial(
     let nuevo_estado: EstadoContratista =
         input.nuevo_estado.parse().map_err(ContratistaError::Validation)?;
 
-    let updated = db::update_status(&id, nuevo_estado.as_str()).await.map_err(map_db_error)?;
+    let updated = db::update_status(&id, nuevo_estado.clone()).await.map_err(map_db_error)?;
 
     audit_db::insert_historial_estado(
         &input.contratista_id,
