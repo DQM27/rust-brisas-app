@@ -33,11 +33,12 @@ pub async fn registrar_ingreso(
     };
 
     // Validación de Gafetes: Asegura que el proveedor porte una identificación física controlada.
+    // Check 1: validate availability
     if let Some(ref g) = input.gafete_numero {
-        if g != "S/G" && !g.is_empty() {
-            let disp = gafete_service::is_gafete_disponible(g, "proveedor")
+        if *g != 0 {
+            let disp = gafete_service::is_gafete_disponible(*g, "proveedor")
                 .await
-                .map_err(|e| IngresoProveedorError::Validation(e))?;
+                .map_err(|e| IngresoProveedorError::Gafete(e))?;
             if !disp {
                 return Err(IngresoProveedorError::Validation(
                     "El gafete seleccionado ya está en uso".to_string(),
@@ -87,10 +88,10 @@ pub async fn registrar_ingreso(
 
     let nuevo_ingreso =
         db::insert(dto).await.map_err(|e| IngresoProveedorError::Database(e.to_string()))?;
-
+    // Update status
     if let Some(ref g) = nuevo_ingreso.gafete_numero {
-        if g != "S/G" && !g.is_empty() {
-            let _ = gafete_service::marcar_en_uso(g, "proveedor").await;
+        if *g != 0 {
+            let _ = gafete_service::marcar_en_uso(*g, "proveedor").await;
         }
     }
 
@@ -120,19 +121,19 @@ pub async fn registrar_salida(
         RecordId::from_table_key("user", &usuario_id_str)
     };
 
-    let actualizado = db::update_salida(&ingreso_id, &usuario_id, observaciones)
+    let ingreso_actualizado = db::update_salida(&ingreso_id, &usuario_id, observaciones)
         .await
         .map_err(|e| IngresoProveedorError::Database(e.to_string()))?;
 
     if devolvio_gafete {
-        if let Some(g) = &actualizado.gafete_numero {
-            if g != "S/G" && !g.is_empty() {
-                let _ = gafete_service::liberar_gafete(g, "proveedor").await;
+        if let Some(ref g) = ingreso_actualizado.gafete_numero {
+            if *g != 0 {
+                let _ = gafete_service::liberar_gafete(*g, "proveedor").await;
             }
         }
     }
 
-    Ok(IngresoResponse::from_proveedor_fetched(actualizado))
+    Ok(IngresoResponse::from_proveedor_fetched(ingreso_actualizado))
 }
 
 pub async fn get_activos() -> Result<Vec<IngresoResponse>, IngresoProveedorError> {

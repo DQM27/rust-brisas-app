@@ -19,7 +19,7 @@ pub struct MotorContexto {
     pub ident_nombre: String,
     pub tipo_acceso: String,
     pub lista_negra: Option<InfoListaNegra>,
-    pub ingreso_activo: Option<InfoIngresoActivo>,
+    pub ingreso_activo: Option<InfoIngresoActivoInt>,
     pub estado_autorizacion: String,
     pub alerta_gafete: Option<String>,
 }
@@ -33,10 +33,10 @@ pub struct InfoListaNegra {
 
 /// Información simplificada sobre un ingreso que no ha registrado salida.
 #[derive(Debug, Clone)]
-pub struct InfoIngresoActivo {
+pub struct InfoIngresoActivoInt {
     pub id: String,
     pub fecha_ingreso: String,
-    pub gafete_numero: String,
+    pub gafete_numero: i32,
 }
 
 // --------------------------------------------------------------------------
@@ -113,7 +113,7 @@ pub fn map_to_motor_context(common: &CommonValidationContext) -> MotorContexto {
             motivo: ln.motivo.clone(),
             severidad: ln.severidad.clone(),
         }),
-        ingreso_activo: common.ingreso_activo_id.as_ref().map(|id| InfoIngresoActivo {
+        ingreso_activo: common.ingreso_activo_id.as_ref().map(|id| InfoIngresoActivoInt {
             id: id.clone(),
             fecha_ingreso: common.fecha_ingreso_activo.clone().unwrap_or_default(),
             gafete_numero: common.gafete_activo_numero.clone().unwrap_or_default(),
@@ -163,10 +163,10 @@ mod tests {
     #[test]
     fn test_motor_deny_duplicate() {
         let mut ctx = create_base_context();
-        ctx.ingreso_activo = Some(InfoIngresoActivo {
+        ctx.ingreso_activo = Some(InfoIngresoActivoInt {
             id: "id".to_string(),
             fecha_ingreso: "2023-01-01".to_string(),
-            gafete_numero: "10".to_string(),
+            gafete_numero: 10,
         });
         let res = ejecutar_validacion_motor(&ctx);
         assert_eq!(res.status, ValidationStatus::Denied);

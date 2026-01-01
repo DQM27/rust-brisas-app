@@ -11,11 +11,11 @@ use crate::models::gafete::{Gafete, GafeteCreateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
-pub async fn get_gafete(numero: &str, tipo: &str) -> Result<Option<Gafete>, SurrealDbError> {
+pub async fn get_gafete(numero: i32, tipo: &str) -> Result<Option<Gafete>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
         .query("SELECT * FROM gafete WHERE numero = $n AND tipo = $t LIMIT 1")
-        .bind(("n", numero.to_string()))
+        .bind(("n", numero))
         .bind(("t", tipo.to_string()))
         .await?;
     Ok(result.take(0)?)

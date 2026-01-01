@@ -28,10 +28,10 @@ pub async fn registrar_ingreso(
     };
 
     if let Some(ref g) = input.gafete_numero {
-        if g != "S/G" && !g.is_empty() {
-            let disp = gafete_service::is_gafete_disponible(g, "visita")
+        if *g != 0 {
+            let disp = gafete_service::is_gafete_disponible(*g, "visita")
                 .await
-                .map_err(|e| IngresoVisitaError::Validation(e.to_string()))?;
+                .map_err(|e| IngresoVisitaError::Gafete(e))?;
             if !disp {
                 return Err(IngresoVisitaError::Validation(
                     "El gafete seleccionado no está disponible".to_string(),
@@ -76,8 +76,8 @@ pub async fn registrar_ingreso(
 
     // Marcado de activo físico.
     if let Some(ref g) = nuevo_ingreso.gafete_numero {
-        if g != "S/G" && !g.is_empty() {
-            let _ = gafete_service::marcar_en_uso(g, "visita").await;
+        if *g != 0 {
+            let _ = gafete_service::marcar_en_uso(*g, "visita").await;
         }
     }
 
@@ -113,8 +113,8 @@ pub async fn registrar_salida(
 
     if devolvio_gafete {
         if let Some(ref g) = actualizado.gafete_numero {
-            if g != "S/G" {
-                let _ = gafete_service::liberar_gafete(g, "visita").await;
+            if *g != 0 {
+                let _ = gafete_service::liberar_gafete(*g, "visita").await;
             }
         }
     }

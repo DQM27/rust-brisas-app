@@ -150,6 +150,19 @@ pub async fn procesar_ingreso_cita(
 
     let visitante = cita.visitante_id.as_ref();
 
+    let gafete_int = if let Some(g_str) = gafete_numero {
+        if g_str.trim().is_empty() {
+            None
+        } else {
+            Some(
+                crate::domain::common::normalizar_gafete_a_int(&g_str)
+                    .map_err(|e| CitaError::Validation(e))?,
+            )
+        }
+    } else {
+        None
+    };
+
     let ingreso_input = crate::models::ingreso::CreateIngresoVisitaInput {
         cedula: visitante.map(|v| v.cedula.clone()).unwrap_or_default(),
         nombre: visitante.map(|v| v.nombre.clone()).unwrap_or_default(),
@@ -158,7 +171,7 @@ pub async fn procesar_ingreso_cita(
         area_visitada: cita.area_visitada.clone().unwrap_or_default(),
         motivo: cita.motivo.clone(),
         modo_ingreso: "caminando".to_string(),
-        gafete_numero,
+        gafete_numero: gafete_int,
         placa_vehiculo: None,
         observaciones: Some(format!(
             "INGRESO AUTOMÁTICO: Procesado desde cita programada #{}",

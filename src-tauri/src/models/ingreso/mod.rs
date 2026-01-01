@@ -170,7 +170,7 @@ pub struct IngresoResponse {
     pub vehiculo_id: Option<String>,
     pub vehiculo_placa: Option<String>,
     pub placa_temporal: Option<String>,
-    pub gafete_numero: Option<String>,
+    pub gafete_numero: Option<i32>,
     pub fecha_hora_ingreso: String,
     pub fecha_hora_salida: Option<String>,
     pub tiempo_permanencia_minutos: Option<i64>,
@@ -399,7 +399,7 @@ pub struct AlertaGafete {
     pub persona: Option<RecordId>,
     pub cedula: String,
     pub nombre_completo: String,
-    pub gafete_numero: String,
+    pub gafete_numero: i32,
     pub ingreso_contratista: Option<RecordId>,
     pub ingreso_proveedor: Option<RecordId>,
     pub ingreso_visita: Option<RecordId>,
@@ -428,7 +428,7 @@ pub struct AlertaGafeteResponse {
     pub persona_id: Option<String>,
     pub cedula: String,
     pub nombre_completo: String,
-    pub gafete_numero: String,
+    pub gafete_numero: i32,
     pub ingreso_contratista_id: Option<String>,
     pub ingreso_proveedor_id: Option<String>,
     pub ingreso_visita_id: Option<String>,
@@ -508,7 +508,7 @@ pub struct CommonValidationContext {
     pub lista_negra_info: Option<ListaNegraInfo>,
     pub ingreso_activo_id: Option<String>,
     pub fecha_ingreso_activo: Option<String>,
-    pub gafete_activo_numero: Option<String>,
+    pub gafete_activo_numero: Option<i32>,
     pub estado_autorizacion: String,
     pub alerta_gafete: Option<String>,
 }
@@ -580,7 +580,7 @@ pub struct DecisionReporteGafete {
     /// Razón técnica o administrativa del reporte.
     pub motivo: Option<String>,
     /// El número del gafete que debería estar bajo custodia.
-    pub gafete_numero: Option<String>,
+    pub gafete_numero: Option<i32>,
 }
 
 impl Default for DecisionReporteGafete {

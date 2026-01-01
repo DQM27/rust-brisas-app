@@ -1,0 +1,14 @@
+    Blocking waiting for file lock on build directory
+   Compiling ring v0.17.14
+   Compiling psm v0.1.28
+   Compiling stacker v0.1.22
+   Compiling zstd-sys v2.0.16+zstd.1.5.7
+   Compiling blake3 v1.8.2
+   Compiling libmimalloc-sys v0.1.44
+    Checking cedar-policy-core v2.4.2
+   Compiling rustls v0.23.35
+    Checking typst-eval v0.14.2
+    Checking typst v0.14.2
+    Checking rustls-webpki v0.103.8
+    Checking jsonwebtoken v9.3.1
+    Checking mimalloc v0.1.48

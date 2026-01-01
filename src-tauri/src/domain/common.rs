@@ -15,41 +15,41 @@ pub use crate::models::ingreso::{CommonError, DecisionReporteGafete};
 // GESTIÓN DE GAFETES: REGLAS DE NEGOCIO
 // --------------------------------------------------------------------------
 
-/// Normaliza un número de gafete para asegurar comparaciones precisas.
+/// Normaliza un input de gafete (texto) a su representación numérica interna (INT).
 ///
 /// Reglas:
-/// 1. Elimina espacios (`trim`).
-/// 2. Convierte a mayúsculas.
-/// 3. Si es "0", lo convierte automáticamente a "S/G".
-/// 4. Si es numérico diferente de 0, elimina ceros a la izquierda.
-pub fn normalizar_numero_gafete(input: &str) -> String {
+/// - "S/G" (case insensitive) -> 0
+/// - "0" -> 0
+/// - "005" -> 5
+/// - "123" -> 123
+pub fn normalizar_gafete_a_int(input: &str) -> Result<i32, String> {
     let limpio = input.trim().to_uppercase();
 
-    // Alias rápido: 0 -> S/G
-    if limpio == "0" {
-        return "S/G".to_string();
+    // Alias S/G
+    if limpio == "S/G" || limpio == "0" {
+        return Ok(0);
     }
 
-    // Si es numérico, parsear para quitar ceros (ej: "04" -> "4")
-    if let Ok(num) = limpio.parse::<u32>() {
-        return num.to_string();
+    // Intentar parsear número
+    match limpio.parse::<i32>() {
+        Ok(n) if n >= 0 => Ok(n),
+        _ => Err(format!(
+            "Formato de gafete inválido: '{}'. Debe ser un número positivo o 'S/G'.",
+            input
+        )),
     }
-
-    limpio
 }
 
-/// Evalúa el estado de un gafete al cierre de una visita para detectar anomalías.
-///
-/// # Lógica de Decisión:
-/// 1. Si no hubo gafete asignado, no se genera reporte.
-/// 2. Si el usuario reporta que NO devolvió el gafete, se genera reporte de pérdida.
-/// 3. Si reporta que SÍ lo devolvió, pero el número no coincide con el original,
-///    se genera reporte por discrepancia (posible intercambio erróneo).
+// ... evaluar_devolucion_gafete ahora debe trabajar con INTs o normalizar antes?
+// Si gafete es INT en DB, aqui deberiamos recibir Option<i32>.
+// Pero los parámetros actuales son Option<&str>.
+// Necesito actualizar `evaluar_devolucion_gafete` para recibir `Option<i32>`.
+
 pub fn evaluar_devolucion_gafete(
     tenia_gafete: bool,
-    gafete_asignado: Option<&str>,
+    gafete_asignado: Option<i32>,
     reporto_devolucion: bool,
-    gafete_devuelto_numero: Option<&str>,
+    gafete_devuelto_numero: Option<i32>, // Input ya normalizado a int
 ) -> DecisionReporteGafete {
     if !tenia_gafete {
         return DecisionReporteGafete::default();
@@ -60,20 +60,20 @@ pub fn evaluar_devolucion_gafete(
         return DecisionReporteGafete {
             debe_generar_reporte: true,
             motivo: Some("Salida registrada sin devolver gafete físico".to_string()),
-            gafete_numero: gafete_asignado.map(|s| s.to_string()),
+            gafete_numero: gafete_asignado,
         };
     }
 
     // Incidencia: Discrepancia de identificación
     if let (Some(asignado), Some(devuelto)) = (gafete_asignado, gafete_devuelto_numero) {
-        if normalizar_numero_gafete(asignado) != normalizar_numero_gafete(devuelto) {
+        if asignado != devuelto {
             return DecisionReporteGafete {
                 debe_generar_reporte: true,
                 motivo: Some(format!(
                     "Discrepancia: Devolvió gafete incorrecto (Detectado: {} / Esperado: {})",
                     devuelto, asignado
                 )),
-                gafete_numero: Some(asignado.to_string()),
+                gafete_numero: Some(asignado),
             };
         }
     }
@@ -82,17 +82,20 @@ pub fn evaluar_devolucion_gafete(
 }
 
 /// Valida que el número de gafete devuelto coincida con el asignado.
-///
-/// Esta es una versión simplificada que retorna un Result<(), CommonError>
-/// para uso en validaciones estrictas durante el cierre de ingreso.
 pub fn validar_gafete_coincide(
-    gafete_asignado: &str,
-    gafete_devuelto: &str,
+    gafete_asignado: i32,
+    gafete_devuelto: i32,
 ) -> Result<(), CommonError> {
-    if normalizar_numero_gafete(gafete_asignado) != normalizar_numero_gafete(gafete_devuelto) {
+    if gafete_asignado != gafete_devuelto {
+        // Para el mensaje de error convertimos a string (0 mostrarlo como S/G seria ideal pero 0 esta ok)
+        let asignado_str =
+            if gafete_asignado == 0 { "S/G".to_string() } else { gafete_asignado.to_string() };
+        let devuelto_str =
+            if gafete_devuelto == 0 { "S/G".to_string() } else { gafete_devuelto.to_string() };
+
         return Err(CommonError::GafeteNoCoincide {
-            devuelto: gafete_devuelto.to_string(),
-            asignado: gafete_asignado.to_string(),
+            devuelto: devuelto_str,
+            asignado: asignado_str,
         });
     }
     Ok(())
@@ -150,25 +153,23 @@ mod tests {
 
     #[test]
     fn test_normalizacion_coherente() {
-        assert_eq!(normalizar_numero_gafete("  v-123  "), "V-123");
-        // Verifica eliminación de ceros
-        assert_eq!(normalizar_numero_gafete("005"), "5");
-        assert_eq!(normalizar_numero_gafete("  0010  "), "10");
-        // Verifica S/G
-        assert_eq!(normalizar_numero_gafete("s/g"), "S/G");
-        assert_eq!(normalizar_numero_gafete("0"), "S/G"); // Alias
+        assert_eq!(normalizar_gafete_a_int("  123  ").unwrap(), 123);
+        assert_eq!(normalizar_gafete_a_int("005").unwrap(), 5);
+        assert_eq!(normalizar_gafete_a_int("  0010  ").unwrap(), 10);
+        assert_eq!(normalizar_gafete_a_int("s/g").unwrap(), 0);
+        assert_eq!(normalizar_gafete_a_int("0").unwrap(), 0);
     }
 
     #[test]
     fn test_deteccion_perdida_gafete() {
-        let decision = evaluar_devolucion_gafete(true, Some("V-001"), false, None);
+        let decision = evaluar_devolucion_gafete(true, Some(1), false, None);
         assert!(decision.debe_generar_reporte);
         assert!(decision.motivo.unwrap().contains("sin devolver"));
     }
 
     #[test]
     fn test_deteccion_intercambio_gafete() {
-        let decision = evaluar_devolucion_gafete(true, Some("V-001"), true, Some("V-999"));
+        let decision = evaluar_devolucion_gafete(true, Some(1), true, Some(999));
         assert!(decision.debe_generar_reporte);
         assert!(decision.motivo.unwrap().contains("incorrecto"));
     }

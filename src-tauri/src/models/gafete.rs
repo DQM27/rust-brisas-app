@@ -13,7 +13,7 @@ use surrealdb::{Datetime, RecordId};
 #[serde(rename_all = "camelCase")]
 pub struct Gafete {
     pub id: RecordId,
-    pub numero: String,
+    pub numero: i32,
     pub tipo: TipoGafete,
     pub estado: GafeteEstado,
     #[serde(alias = "created_at")]
@@ -111,15 +111,15 @@ impl std::str::FromStr for GafeteEstado {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateGafeteInput {
-    pub numero: String,
+    pub numero: i32,
     pub tipo: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateGafeteRangeInput {
-    pub start: u32,
-    pub end: u32,
+    pub start: i32,
+    pub end: i32,
     pub tipo: String,
 }
 
@@ -141,7 +141,7 @@ pub struct UpdateGafeteStatusInput {
 
 #[derive(Debug, Serialize)]
 pub struct GafeteCreateDTO {
-    pub numero: String,
+    pub numero: i32,
     pub tipo: TipoGafete,
     pub estado: GafeteEstado,
 }
@@ -154,7 +154,7 @@ pub struct GafeteCreateDTO {
 #[serde(rename_all = "camelCase")]
 pub struct GafeteResponse {
     pub id: String,
-    pub numero: String,
+    pub numero: i32,
     pub tipo: TipoGafete,
     pub tipo_display: String,
     pub estado_fisico: GafeteEstado,
@@ -171,7 +171,7 @@ impl From<Gafete> for GafeteResponse {
             tipo: g.tipo.clone(),
             tipo_display: g.tipo.display().to_string(),
             estado_fisico: g.estado.clone(),
-            status: String::from("disponible"), // Logic for status in service
+            status: String::from("disponible"), // Status logic is often enriched in service
             created_at: g.created_at.to_string(),
             updated_at: g.updated_at.to_string(),
         }

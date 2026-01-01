@@ -135,19 +135,7 @@ pub async fn validar_ingreso_contratista(
         });
     }
 
-    // Normalización de la fecha PRAIND para ser procesada por el motor de reglas.
-    let fecha_vencimiento_str = {
-        let surreal_dt = &contratista.fecha_vencimiento_praind;
-        let dt_str = surreal_dt.to_string();
-        let clean_str =
-            dt_str.trim_start_matches("d'").trim_start_matches('\'').trim_end_matches('\'');
-
-        if clean_str.len() >= 10 {
-            clean_str[0..10].to_string()
-        } else {
-            chrono::Utc::now().format("%Y-%m-%d").to_string()
-        }
-    };
+    // (Fecha PRAIND eliminada por no ser utilizada en el contexto actual del motor)
 
     // Invocación del Motor de Reglas de Negocio.
     // Aquí se decide si un contratista entra como "Autorizado" o "Bloqueado".
@@ -207,8 +195,8 @@ pub async fn crear_ingreso_contratista(
 
     // Gestión de Gafetes Físicos: Se asegura que el recurso no esté duplicado.
     if let Some(ref g) = input.gafete_numero {
-        if g != "S/G" && !g.is_empty() {
-            let disp = gafete_service::is_gafete_disponible(g, "contratista")
+        if *g != 0 {
+            let disp = gafete_service::is_gafete_disponible(*g, "contratista")
                 .await
                 .map_err(|e| IngresoContratistaError::Gafete(e))?;
 
@@ -241,7 +229,7 @@ pub async fn crear_ingreso_contratista(
 
     // Actualización de estado del activo físico (Gafete).
     if let Some(ref g) = nuevo_ingreso.gafete_numero {
-        let _ = gafete_service::marcar_en_uso(g, "contratista").await;
+        let _ = gafete_service::marcar_en_uso(*g, "contratista").await;
     }
 
     IngresoResponse::from_contratista_fetched(nuevo_ingreso)
@@ -277,7 +265,7 @@ pub async fn registrar_salida(
     // Devolución del Gafete: Permite que el recurso vuelva a estar disponible para otros.
     if input.devolvio_gafete {
         if let Some(ref g) = ingreso_actualizado.gafete_numero {
-            let _ = gafete_service::liberar_gafete(g, "contratista").await;
+            let _ = gafete_service::liberar_gafete(*g, "contratista").await;
         }
     }
 

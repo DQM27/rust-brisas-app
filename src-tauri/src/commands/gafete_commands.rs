@@ -76,7 +76,11 @@ pub async fn get_gafetes_disponibles(tipo: String) -> Result<Vec<GafeteResponse>
 /// Comprobación de estado rápida para validaciones en caliente.
 #[command]
 pub async fn is_gafete_disponible(numero: String, tipo: String) -> Result<bool, GafeteError> {
-    gafete_service::is_gafete_disponible(&numero, &tipo)
+    let numero_int = numero
+        .parse::<i32>()
+        .map_err(|_| GafeteError::Validation("El número de gafete debe ser válido".to_string()))?;
+
+    gafete_service::is_gafete_disponible(numero_int, &tipo)
         .await
         .map_err(|e| GafeteError::Validation(e))
 }

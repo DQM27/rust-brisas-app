@@ -23,7 +23,7 @@ fn parse_gafete_id(id_str: &str) -> RecordId {
 
 /// Verifica si un gafete específico está disponible para ser entregado.
 /// Un gafete se considera disponible si existe y su estado es 'Activo' (no perdido ni bloqueado).
-pub async fn is_gafete_disponible(numero: &str, tipo: &str) -> Result<bool, String> {
+pub async fn is_gafete_disponible(numero: i32, tipo: &str) -> Result<bool, String> {
     match db::get_gafete(numero, tipo).await {
         Ok(Some(g)) => Ok(g.estado == GafeteEstado::Activo),
         Ok(None) => Ok(false),
@@ -32,7 +32,7 @@ pub async fn is_gafete_disponible(numero: &str, tipo: &str) -> Result<bool, Stri
 }
 
 /// Registra que un gafete ha sido entregado a una persona.
-pub async fn marcar_en_uso(numero: &str, tipo: &str) -> Result<(), String> {
+pub async fn marcar_en_uso(numero: i32, tipo: &str) -> Result<(), String> {
     match db::get_gafete(numero, tipo).await {
         Ok(Some(g)) => db::set_gafete_uso(&g.id, true).await.map_err(|e| e.to_string()),
         Ok(None) => Err("Gafete no encontrado en el inventario.".to_string()),
@@ -41,7 +41,7 @@ pub async fn marcar_en_uso(numero: &str, tipo: &str) -> Result<(), String> {
 }
 
 /// Marca un gafete como devuelto y disponible para el siguiente uso.
-pub async fn liberar_gafete(numero: &str, tipo: &str) -> Result<(), String> {
+pub async fn liberar_gafete(numero: i32, tipo: &str) -> Result<(), String> {
     match db::get_gafete(numero, tipo).await {
         Ok(Some(g)) => db::set_gafete_uso(&g.id, false).await.map_err(|e| e.to_string()),
         Ok(None) => Err("Gafete no encontrado en el inventario.".to_string()),
@@ -68,9 +68,7 @@ pub async fn create_gafete_range(input: CreateGafeteRangeInput) -> Result<i32, S
     let tipo = input.tipo.parse::<TipoGafete>().map_err(|e| e.to_string())?;
     let mut created = 0;
 
-    for i in input.start..=input.end {
-        let numero = i.to_string();
-
+    for numero in input.start..=input.end {
         let dto = GafeteCreateDTO { numero, tipo: tipo.clone(), estado: GafeteEstado::Activo };
 
         // Si falla la creación de un número individual (ej. por duplicado),

@@ -14,7 +14,7 @@ pub struct IngresoProveedor {
     pub motivo: String,
     pub modo_ingreso: String,
     pub placa_vehiculo: Option<String>,
-    pub gafete_numero: Option<String>,
+    pub gafete_numero: Option<i32>,
     pub fecha_hora_ingreso: surrealdb::Datetime,
     pub usuario_ingreso: RecordId,
     pub fecha_hora_salida: Option<surrealdb::Datetime>,
@@ -35,7 +35,7 @@ pub struct IngresoProveedorFetched {
     pub motivo: String,
     pub modo_ingreso: String,
     pub placa_vehiculo: Option<String>,
-    pub gafete_numero: Option<String>,
+    pub gafete_numero: Option<i32>,
     pub fecha_hora_ingreso: surrealdb::Datetime,
     pub usuario_ingreso: User,
     pub fecha_hora_salida: Option<surrealdb::Datetime>,
@@ -56,7 +56,7 @@ pub struct CreateIngresoProveedorInput {
     pub motivo: String,
     pub modo_ingreso: String,
     pub placa_vehiculo: Option<String>,
-    pub gafete_numero: Option<String>,
+    pub gafete_numero: Option<i32>,
     pub observaciones: Option<String>,
 }
 
@@ -70,7 +70,7 @@ pub struct IngresoProveedorCreateDTO {
     pub motivo: String,
     pub modo_ingreso: String,
     pub placa_vehiculo: Option<String>,
-    pub gafete_numero: Option<String>,
+    pub gafete_numero: Option<i32>,
     pub usuario_ingreso: RecordId,
     pub observaciones: Option<String>,
 }
