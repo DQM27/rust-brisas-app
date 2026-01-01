@@ -2,7 +2,9 @@
 ///
 /// Este módulo gestiona las validaciones de propiedad y características técnicas
 /// de los vehículos que ingresan a las instalaciones.
-use crate::domain::common::validar_placa_estandar;
+use crate::domain::common::{
+    validar_placa_estandar, MAX_LEN_COLOR_VEHICULO, MAX_LEN_MARCA_VEHICULO, MAX_LEN_MODELO_VEHICULO,
+};
 use crate::domain::errors::VehiculoError;
 use crate::models::vehiculo::{CreateVehiculoInput, TipoVehiculo, UpdateVehiculoInput};
 
@@ -39,10 +41,11 @@ pub fn validar_marca(marca: &str) -> Result<(), VehiculoError> {
         return Err(VehiculoError::Validation("La marca no puede estar vacía".to_string()));
     }
 
-    if limpia.len() > 50 {
-        return Err(VehiculoError::Validation(
-            "La marca no puede exceder 50 caracteres".to_string(),
-        ));
+    if limpia.len() > MAX_LEN_MARCA_VEHICULO {
+        return Err(VehiculoError::Validation(format!(
+            "La marca no puede exceder {} caracteres",
+            MAX_LEN_MARCA_VEHICULO
+        )));
     }
 
     Ok(())
@@ -83,11 +86,11 @@ pub fn validar_create_input(input: &CreateVehiculoInput) -> Result<(), VehiculoE
     }
 
     if let Some(ref modelo) = input.modelo {
-        validar_texto_opcional(modelo, "Modelo", 50)?;
+        validar_texto_opcional(modelo, "Modelo", MAX_LEN_MODELO_VEHICULO)?;
     }
 
     if let Some(ref color) = input.color {
-        validar_texto_opcional(color, "Color", 30)?;
+        validar_texto_opcional(color, "Color", MAX_LEN_COLOR_VEHICULO)?;
     }
 
     Ok(())
@@ -106,11 +109,11 @@ pub fn validar_update_input(input: &UpdateVehiculoInput) -> Result<(), VehiculoE
     }
 
     if let Some(ref modelo) = input.modelo {
-        validar_texto_opcional(modelo, "Modelo", 50)?;
+        validar_texto_opcional(modelo, "Modelo", MAX_LEN_MODELO_VEHICULO)?;
     }
 
     if let Some(ref color) = input.color {
-        validar_texto_opcional(color, "Color", 30)?;
+        validar_texto_opcional(color, "Color", MAX_LEN_COLOR_VEHICULO)?;
     }
 
     Ok(())
@@ -128,4 +131,97 @@ pub fn normalizar_placa(placa: &str) -> String {
 /// Limpia espacios redundantes en textos descriptivos.
 pub fn normalizar_texto(texto: &str) -> String {
     texto.trim().to_string()
+}
+
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // -----------------------------------------------------------------------
+    // Tests de validación de propietario
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_propietario_id_valido() {
+        assert!(validar_propietario_id("contratista:123").is_ok());
+        assert!(validar_propietario_id("proveedor:abc").is_ok());
+    }
+
+    #[test]
+    fn test_propietario_id_vacio() {
+        assert!(validar_propietario_id("").is_err());
+        assert!(validar_propietario_id("   ").is_err());
+    }
+
+    // -----------------------------------------------------------------------
+    // Tests de validación de tipo de vehículo
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_tipo_vehiculo_valido() {
+        assert!(validar_tipo_vehiculo("motocicleta").is_ok());
+        assert!(validar_tipo_vehiculo("automovil").is_ok());
+        assert!(validar_tipo_vehiculo("Automóvil").is_ok());
+    }
+
+    #[test]
+    fn test_tipo_vehiculo_invalido() {
+        assert!(validar_tipo_vehiculo("camion").is_err());
+        assert!(validar_tipo_vehiculo("").is_err());
+    }
+
+    // -----------------------------------------------------------------------
+    // Tests de validación de placa
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_placa_valida() {
+        assert!(validar_placa("ABC-123").is_ok());
+        assert!(validar_placa("XY123Z").is_ok());
+    }
+
+    #[test]
+    fn test_placa_vacia() {
+        assert!(validar_placa("").is_err());
+    }
+
+    // -----------------------------------------------------------------------
+    // Tests de validación de marca
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_marca_valida() {
+        assert!(validar_marca("Toyota").is_ok());
+        assert!(validar_marca("Mercedes-Benz").is_ok());
+    }
+
+    #[test]
+    fn test_marca_vacia() {
+        assert!(validar_marca("").is_err());
+    }
+
+    #[test]
+    fn test_marca_muy_larga() {
+        let marca_larga = "A".repeat(MAX_LEN_MARCA_VEHICULO + 1);
+        assert!(validar_marca(&marca_larga).is_err());
+    }
+
+    // -----------------------------------------------------------------------
+    // Tests de normalización
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_normalizar_placa() {
+        assert_eq!(normalizar_placa("  abc-123  "), "ABC-123");
+        assert_eq!(normalizar_placa("xy 456 z"), "XY 456 Z");
+    }
+
+    #[test]
+    fn test_normalizar_texto() {
+        assert_eq!(normalizar_texto("  Toyota  "), "Toyota");
+    }
 }

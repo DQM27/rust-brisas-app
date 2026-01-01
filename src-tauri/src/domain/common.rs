@@ -45,6 +45,15 @@ pub const MIN_DIGITOS_CEDULA: usize = 8;
 /// Longitud máxima de dígitos para cédula (sin contar guiones).
 pub const MAX_DIGITOS_CEDULA: usize = 14;
 
+/// Longitud máxima para marca de vehículo.
+pub const MAX_LEN_MARCA_VEHICULO: usize = 50;
+
+/// Longitud máxima para modelo de vehículo.
+pub const MAX_LEN_MODELO_VEHICULO: usize = 50;
+
+/// Longitud máxima para color de vehículo.
+pub const MAX_LEN_COLOR_VEHICULO: usize = 30;
+
 // --------------------------------------------------------------------------
 // GESTIÓN DE GAFETES: REGLAS DE NEGOCIO
 // --------------------------------------------------------------------------
