@@ -66,9 +66,6 @@ pub async fn create_visitante(
     if let Some(s) = input.segundo_apellido.as_ref() {
         input.segundo_apellido = Some(domain::normalizar_nombre(s));
     }
-    if let Some(s) = input.empresa {
-        input.empresa = Some(s.trim().to_string());
-    }
 
     // Seguridad: Chequeo preventivo obligatorio.
     let block_status =
@@ -92,7 +89,7 @@ pub async fn create_visitante(
         apellido: input.apellido,
         segundo_nombre: input.segundo_nombre,
         segundo_apellido: input.segundo_apellido,
-        empresa: input.empresa_id.map(|id| parse_empresa_id(&id)),
+        empresa: parse_empresa_id(&input.empresa_id),
         has_vehicle: input.has_vehicle,
     };
 
@@ -173,7 +170,7 @@ pub async fn update_visitante(
     dto.apellido = Some(input.apellido);
     dto.segundo_nombre = Some(input.segundo_nombre);
     dto.segundo_apellido = Some(input.segundo_apellido);
-    dto.empresa = Some(input.empresa_id.map(|id| parse_empresa_id(&id)));
+    dto.empresa = Some(parse_empresa_id(&input.empresa_id));
     dto.has_vehicle = Some(input.has_vehicle);
     dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 

@@ -58,7 +58,11 @@ pub fn validar_create_input(input: &CreateVisitanteInput) -> Result<(), Visitant
 
     validar_opcional(input.segundo_nombre.as_ref(), MAX_LEN_NOMBRE, "Segundo nombre")?;
     validar_opcional(input.segundo_apellido.as_ref(), MAX_LEN_NOMBRE, "Segundo apellido")?;
-    validar_opcional(input.empresa.as_ref(), MAX_LEN_EMPRESA, "Empresa")?;
+
+    // Strict mode: Validar que empresa_id esté presente y tenga formato válido si es necesario
+    if input.empresa_id.trim().is_empty() {
+        return Err(VisitanteError::Validation("Debe seleccionar una empresa válida".to_string()));
+    }
 
     Ok(())
 }
