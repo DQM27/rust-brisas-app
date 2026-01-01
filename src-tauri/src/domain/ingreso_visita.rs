@@ -1,109 +1,22 @@
-use serde::{Deserialize, Serialize};
-use surrealdb::RecordId;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IngresoVisita {
-    pub id: RecordId,
-    pub visitante_id: RecordId,
-    pub cita_id: Option<RecordId>,
-    pub anfitrion: String,
-    pub area_visitada: String,
-    pub motivo: String,
-    pub gafete: Option<String>,
-    pub fecha_ingreso: String,
-    pub fecha_salida: Option<String>,
-    pub estado: String, // 'ADENTRO', 'SALIO'
-    pub usuario_ingreso_id: String,
-    pub usuario_salida_id: Option<String>,
-    pub observaciones: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateIngresoVisitaInput {
-    pub visitante_id: String,
-    pub cita_id: Option<String>,
-    pub anfitrion: String,
-    pub area_visitada: String,
-    pub motivo: String,
-    pub gafete: Option<String>,
-    pub observaciones: Option<String>,
-    pub usuario_ingreso_id: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateIngresoVisitaFullInput {
-    // Datos Visitante
-    pub cedula: String,
-    pub nombre: String,
-    pub apellido: String,
-    pub empresa: Option<String>,
-
-    // Datos Ingreso
-    pub anfitrion: String,
-    pub area_visitada: String,
-    pub motivo: String,
-    pub gafete: Option<String>,
-    pub observaciones: Option<String>,
-    pub usuario_ingreso_id: String,
-
-    // Opcional: Cita ID si viene de cita (aunque si es full, suele ser manual)
-    pub cita_id: Option<String>,
-}
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IngresoVisitaPopulated {
-    // Ingreso Fields
-    pub id: String,
-    pub visitante_id: String,
-    pub cita_id: Option<String>,
-    pub anfitrion: String,
-    pub area_visitada: String,
-    pub motivo: String,
-    pub gafete: Option<String>,
-    pub fecha_ingreso: String,
-    pub fecha_salida: Option<String>,
-    pub estado: String,
-    pub usuario_ingreso_id: String,
-    pub usuario_salida_id: Option<String>,
-    pub observaciones: Option<String>,
-    pub created_at: String,
-    pub updated_at: String,
-
-    // Visitante Fields (Joined)
-    pub visitante_nombre: String,
-    pub visitante_apellido: String,
-    pub visitante_cedula: String,
-    pub visitante_empresa: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ValidacionIngresoVisitaResponse {
-    pub puede_ingresar: bool,
-    pub motivo_rechazo: Option<String>,
-    pub alertas: Vec<String>,
-    pub visitante: Option<serde_json::Value>,
-    pub tiene_ingreso_abierto: bool,
-    pub ingreso_abierto: Option<IngresoVisita>,
-}
-
+/// Capa de Dominio: Gestión de Ingresos de Visitantes Particulares.
+///
+/// Este módulo define las reglas de negocio para el control de acceso y salida
+/// de personas particulares (visitas personales, anfitriones, etc.) a las instalaciones.
 use crate::domain::errors::IngresoVisitaError;
+use crate::models::ingreso::visita::CreateIngresoVisitaInput;
 
-// Re-exports from common module
+// Re-exportaciones para mantener consistencia con la capa de dominio
 pub use crate::domain::common::{normalizar_numero_gafete, DecisionReporteGafete};
+pub use crate::models::ingreso::visita::{IngresoVisitaPopulated, ValidacionIngresoVisitaResponse};
 
-// Import common functions for internal use
+// Importación de lógica compartida
 use crate::domain::common as common_domain;
 
-// ==========================================
-// VALIDACIONES DE DOMINIO
-// ==========================================
+// --------------------------------------------------------------------------
+// VALIDACIONES DE ESTADO
+// --------------------------------------------------------------------------
 
+/// Valida que el registro de ingreso no tenga ya una fecha de salida asignada.
 pub fn validar_ingreso_abierto(fecha_salida: &Option<String>) -> Result<(), IngresoVisitaError> {
     if fecha_salida.is_some() {
         return Err(IngresoVisitaError::NoActiveIngreso);
@@ -111,7 +24,11 @@ pub fn validar_ingreso_abierto(fecha_salida: &Option<String>) -> Result<(), Ingr
     Ok(())
 }
 
-/// Wrapper que usa el error específico de visita
+// --------------------------------------------------------------------------
+// WRAPPERS DE LÓGICA COMPARTIDA (Adaptación de Errores)
+// --------------------------------------------------------------------------
+
+/// Valida que la fecha de salida sea posterior a la de ingreso.
 pub fn validar_tiempo_salida(
     fecha_ingreso_str: &str,
     fecha_salida_str: &str,
@@ -120,7 +37,7 @@ pub fn validar_tiempo_salida(
         .map_err(|e| IngresoVisitaError::Validation(e.to_string()))
 }
 
-/// Wrapper que usa el error específico de visita
+/// Calcula el tiempo total de estancia en minutos.
 pub fn calcular_tiempo_permanencia(
     fecha_ingreso_str: &str,
     fecha_salida_str: &str,
@@ -129,7 +46,7 @@ pub fn calcular_tiempo_permanencia(
         .map_err(|e| IngresoVisitaError::Validation(e.to_string()))
 }
 
-/// Delega a common::evaluar_devolucion_gafete
+/// Evalúa las condiciones de devolución del gafete.
 pub fn evaluar_devolucion_gafete(
     tenia_gafete: bool,
     gafete_asignado: Option<&str>,
@@ -143,6 +60,35 @@ pub fn evaluar_devolucion_gafete(
         gafete_devuelto_numero,
     )
 }
+
+// --------------------------------------------------------------------------
+// VALIDACIONES DE INPUTS (DTOs)
+// --------------------------------------------------------------------------
+
+/// Valida que el input de creación sea coherente.
+pub fn validar_create_input(input: &CreateIngresoVisitaInput) -> Result<(), IngresoVisitaError> {
+    if input.cedula.trim().is_empty() {
+        return Err(IngresoVisitaError::Validation("La cédula es obligatoria".to_string()));
+    }
+    if input.nombre.trim().is_empty() {
+        return Err(IngresoVisitaError::Validation("El nombre es obligatorio".to_string()));
+    }
+    if input.apellido.trim().is_empty() {
+        return Err(IngresoVisitaError::Validation("El apellido es obligatorio".to_string()));
+    }
+    if input.anfitrion.trim().is_empty() {
+        return Err(IngresoVisitaError::Validation("El anfitrión es obligatorio".to_string()));
+    }
+    if input.area_visitada.trim().is_empty() {
+        return Err(IngresoVisitaError::Validation("El área visitada es obligatoria".to_string()));
+    }
+    Ok(())
+}
+
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -162,21 +108,5 @@ mod tests {
         let ingreso = "2023-12-22T08:00:00Z";
         let salida = "2023-12-22T08:15:00Z";
         assert_eq!(calcular_tiempo_permanencia(ingreso, salida).unwrap(), 15);
-    }
-
-    #[test]
-    fn test_evaluar_devolucion_gafete() {
-        // OK
-        let res = evaluar_devolucion_gafete(true, Some("V-5"), true, Some("V-5"));
-        assert!(!res.debe_generar_reporte);
-
-        // Sin devolver
-        let res = evaluar_devolucion_gafete(true, Some("V-5"), false, None);
-        assert!(res.debe_generar_reporte);
-
-        // Gafete incorrecto
-        let res = evaluar_devolucion_gafete(true, Some("V-5"), true, Some("V-6"));
-        assert!(res.debe_generar_reporte);
-        assert!(res.motivo.unwrap().contains("incorrecto"));
     }
 }

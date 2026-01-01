@@ -464,3 +464,127 @@ impl From<AlertaGafete> for AlertaGafeteResponse {
         }
     }
 }
+
+// ==========================================
+// ESTRUCTURAS DE VALIDACIÓN
+// ==========================================
+
+/// Estados de validación para el motor unificado
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ValidationStatus {
+    Allowed,
+    Denied,
+    Warning,
+}
+
+/// Razones de rechazo o advertencia
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ValidationReason {
+    None,
+    Blacklisted,
+    AlreadyInside,
+    ExpiredDocuments,
+    GafeteAlert,
+}
+
+/// Resultado unificado de validación
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ValidationResult {
+    pub status: ValidationStatus,
+    pub reason: ValidationReason,
+    pub message: String,
+}
+
+/// Contexto común para validación (usado por el motor)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CommonValidationContext {
+    pub cedula: String,
+    pub nombre_completo: String,
+    pub tipo_identidad: String,
+    pub lista_negra_info: Option<ListaNegraInfo>,
+    pub ingreso_activo_id: Option<String>,
+    pub fecha_ingreso_activo: Option<String>,
+    pub gafete_activo_numero: Option<String>,
+    pub estado_autorizacion: String,
+    pub alerta_gafete: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListaNegraInfo {
+    pub motivo: String,
+    pub severidad: crate::models::lista_negra::NivelSeveridad,
+}
+
+/// Resultado de validación de entrada (legacy - para contratistas)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResultadoValidacionEntrada {
+    pub puede_ingresar: bool,
+    pub motivo_rechazo: Option<String>,
+    pub alertas: Vec<String>,
+}
+
+// ==========================================
+// ERRORES COMUNES DE DOMINIO
+// ==========================================
+
+/// Definición de errores comunes para validaciones transversales de dominio.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "message")]
+pub enum CommonError {
+    FechaIngresoInvalida,
+    FechaSalidaInvalida,
+    SalidaAnteriorAIngreso,
+    GafeteNoCoincide { devuelto: String, asignado: String },
+}
+
+impl std::fmt::Display for CommonError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CommonError::FechaIngresoInvalida => {
+                write!(f, "Datos corruptos: fecha de ingreso inválida")
+            }
+            CommonError::FechaSalidaInvalida => write!(f, "Fecha de salida inválida"),
+            CommonError::SalidaAnteriorAIngreso => {
+                write!(f, "La fecha de salida no puede ser anterior a la de ingreso")
+            }
+            CommonError::GafeteNoCoincide { devuelto, asignado } => write!(
+                f,
+                "El gafete devuelto ({}) no coincide con el asignado ({})",
+                devuelto, asignado
+            ),
+        }
+    }
+}
+
+impl std::error::Error for CommonError {}
+
+// ==========================================
+// ESTRUCTURAS COMUNES: GESTIÓN DE GAFETES
+// ==========================================
+
+/// Evaluación de la devolución de un gafete durante el proceso de salida.
+///
+/// Determina si el comportamiento del visitante requiere la generación automática
+/// de un reporte de incidencia (alerta) por pérdida o discrepancia.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DecisionReporteGafete {
+    /// Indica si se debe crear una alerta en el sistema.
+    pub debe_generar_reporte: bool,
+    /// Razón técnica o administrativa del reporte.
+    pub motivo: Option<String>,
+    /// El número del gafete que debería estar bajo custodia.
+    pub gafete_numero: Option<String>,
+}
+
+impl Default for DecisionReporteGafete {
+    fn default() -> Self {
+        Self { debe_generar_reporte: false, motivo: None, gafete_numero: None }
+    }
+}

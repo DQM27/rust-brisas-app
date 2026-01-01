@@ -1,16 +1,15 @@
-// ==========================================
-// src/domain/lista_negra.rs
-// ==========================================
-// Capa de dominio: validaciones y reglas de negocio puras
-// Sin dependencias de DB ni servicios externos
-
+/// Capa de Dominio: Gestión de Lista Negra y Restricciones de Acceso.
+///
+/// Este módulo define la lógica pura para la validación de personas con acceso
+/// denegado a las instalaciones por motivos de seguridad o administrativos.
 use crate::domain::errors::ListaNegraError;
 use crate::models::lista_negra::{AddToListaNegraInput, NivelSeveridad, UpdateListaNegraInput};
 
-// ==========================================
+// --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
-// ==========================================
+// --------------------------------------------------------------------------
 
+/// Valida que la cédula cumpla con los formatos numéricos y de longitud permitidos.
 pub fn validar_cedula(cedula: &str) -> Result<(), ListaNegraError> {
     let limpia = cedula.trim();
 
@@ -33,6 +32,7 @@ pub fn validar_cedula(cedula: &str) -> Result<(), ListaNegraError> {
     Ok(())
 }
 
+/// Valida que el nombre o apellido sea textual y no exceda los límites de longitud.
 pub fn validar_nombre(nombre: &str) -> Result<(), ListaNegraError> {
     let limpio = nombre.trim();
 
@@ -49,6 +49,7 @@ pub fn validar_nombre(nombre: &str) -> Result<(), ListaNegraError> {
     Ok(())
 }
 
+/// Valida la obligatoriedad y extensión del motivo de bloqueo.
 pub fn validar_motivo(motivo: &str) -> Result<(), ListaNegraError> {
     let limpio = motivo.trim();
 
@@ -67,6 +68,7 @@ pub fn validar_motivo(motivo: &str) -> Result<(), ListaNegraError> {
     Ok(())
 }
 
+/// Valida la identidad de la entidad que solicita el bloqueo.
 pub fn validar_bloqueado_por(bloqueado_por: &str) -> Result<(), ListaNegraError> {
     let limpio = bloqueado_por.trim();
 
@@ -85,6 +87,7 @@ pub fn validar_bloqueado_por(bloqueado_por: &str) -> Result<(), ListaNegraError>
     Ok(())
 }
 
+/// Valida que el nivel de severidad sea una opción reconocida por el sistema.
 pub fn validar_nivel_severidad(nivel: &str) -> Result<NivelSeveridad, ListaNegraError> {
     nivel.parse::<NivelSeveridad>().map_err(|_| {
         ListaNegraError::Validation(
@@ -93,13 +96,12 @@ pub fn validar_nivel_severidad(nivel: &str) -> Result<NivelSeveridad, ListaNegra
     })
 }
 
-// ==========================================
+// --------------------------------------------------------------------------
 // VALIDACIONES DE INPUTS COMPLETOS
-// ==========================================
+// --------------------------------------------------------------------------
 
-/// Valida todos los campos necesarios para agregar a lista negra
+/// Realiza una validación exhaustiva de los datos antes de agregar a la lista negra.
 pub fn validar_add_input(input: &AddToListaNegraInput) -> Result<(), ListaNegraError> {
-    // Siempre requiere cédula, nombre, apellido, motivo, bloqueado_por, nivel
     validar_cedula(&input.cedula)?;
     validar_nombre(&input.nombre)?;
     validar_nombre(&input.apellido)?;
@@ -110,7 +112,7 @@ pub fn validar_add_input(input: &AddToListaNegraInput) -> Result<(), ListaNegraE
     Ok(())
 }
 
-/// Valida los campos presentes en un update (solo los que no son None)
+/// Valida camapañas de actualización parcial de registros existentes.
 pub fn validar_update_input(input: &UpdateListaNegraInput) -> Result<(), ListaNegraError> {
     if let Some(ref motivo) = input.motivo_bloqueo {
         validar_motivo(motivo)?;
@@ -123,14 +125,18 @@ pub fn validar_update_input(input: &UpdateListaNegraInput) -> Result<(), ListaNe
     Ok(())
 }
 
-// ==========================================
-// HELPERS DE NORMALIZACIÓN
-// ==========================================
+// --------------------------------------------------------------------------
+// COMPORTAMIENTOS DE DOMINIO
+// --------------------------------------------------------------------------
 
-/// Normaliza texto genérico (trim)
+/// Normaliza una cadena de texto eliminando espacios laterales.
 pub fn normalizar_texto(texto: &str) -> String {
     texto.trim().to_string()
 }
+
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

@@ -1,192 +1,44 @@
-#![allow(deprecated)]
-// src/domain/ingreso_contratista.rs
-
+/// Capa de Dominio: Gestión de Permanencia y Seguridad de Contratistas.
+///
+/// Este módulo centraliza las reglas de negocio puras para el control de acceso de
+/// contratistas, incluyendo el cálculo de tiempos de permanencia, gestión de
+/// alertas por vencimiento de documentos (PRAIND) y cierres manuales.
 use crate::domain::errors::IngresoContratistaError;
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 
-// Re-exports from common module for backward compatibility
+// Re-exportaciones de estructuras desde models
+pub use crate::models::ingreso::contratista::{
+    AlertaTiempo, EstadoPermanencia, MotivoCierre, MotivoExcepcional, ResultadoCierreManual,
+    ResultadoIngresoExcepcional,
+};
+
+// Re-exportaciones de funciones comunes
 pub use crate::domain::common::{
     calcular_tiempo_permanencia, evaluar_devolucion_gafete, normalizar_numero_gafete,
     validar_gafete_coincide, validar_tiempo_salida, DecisionReporteGafete,
 };
 
-// ==========================================
-// CONSTANTES DE NEGOCIO
-// ==========================================
+// --------------------------------------------------------------------------
+// CONSTANTES DE SEGURIDAD INDUSTRIAL
+// --------------------------------------------------------------------------
 
-/// Tiempo máximo de permanencia en instalaciones (horas)
+/// Tiempo máximo de permanencia permitido en planta (horas).
 pub const TIEMPO_MAXIMO_HORAS: i64 = 14;
 
-/// Tiempo para alerta temprana (minutos) - 30 minutos antes del límite
-pub const TIEMPO_ALERTA_TEMPRANA_MINUTOS: i64 = 13 * 60 + 30; // 13h 30min
+/// Tiempo para disparo de alerta temprana de salida (13h 30min).
+pub const TIEMPO_ALERTA_TEMPRANA_MINUTOS: i64 = 13 * 60 + 30;
 
-/// Tiempo máximo en minutos
-pub const TIEMPO_MAXIMO_MINUTOS: i64 = TIEMPO_MAXIMO_HORAS * 60; // 840 minutos
+/// Tiempo máximo convertido a minutos para cálculos internos (840 min).
+pub const TIEMPO_MAXIMO_MINUTOS: i64 = TIEMPO_MAXIMO_HORAS * 60;
 
-// ==========================================
-// ENUMS DE ESTADO
-// ==========================================
+/// Ventana de anticipación para alertas de vencimiento de documentos (30 días).
+pub const DIAS_ALERTA_PRAIND: i64 = 30;
 
-/// Estado del tiempo de permanencia de un contratista
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum EstadoPermanencia {
-    /// Todo normal, tiempo < 13h 30min
-    Normal,
-    /// Alerta temprana, tiempo >= 13h 30min y < 14h
-    AlertaTemprana,
-    /// Tiempo excedido, >= 14h
-    TiempoExcedido,
-}
+// --------------------------------------------------------------------------
+// LÓGICA DE CONTROL: PERMANENCIA
+// --------------------------------------------------------------------------
 
-impl EstadoPermanencia {
-    pub fn as_str(&self) -> &str {
-        match self {
-            EstadoPermanencia::Normal => "normal",
-            EstadoPermanencia::AlertaTemprana => "alerta_temprana",
-            EstadoPermanencia::TiempoExcedido => "tiempo_excedido",
-        }
-    }
-}
-
-// ==========================================
-// ESTRUCTURAS DE VALIDACIÓN
-// ==========================================
-
-/// Resultado de validación de entrada
-#[deprecated(note = "Use motor_validacion::ResultadoValidacion instead")]
-#[derive(Debug, Clone)]
-pub struct ResultadoValidacionEntrada {
-    pub puede_ingresar: bool,
-    pub motivo_rechazo: Option<String>,
-    pub alertas: Vec<String>, // warnings no bloqueantes
-}
-
-/// Alerta de tiempo
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AlertaTiempo {
-    pub estado: EstadoPermanencia,
-    pub minutos_transcurridos: i64,
-    pub minutos_restantes: i64,
-    pub mensaje: Option<String>,
-}
-
-// DecisionReporteGafete ahora viene de common module (re-exportado arriba)
-
-// ==========================================
-// LOGICA DE DOMINIO: ENTRADA
-// ==========================================
-
-/// Evalúa todas las reglas para determinar si un contratista puede entrar
-#[deprecated(note = "Use motor_validacion::validar_ingreso instead")]
-pub fn evaluar_elegibilidad_entrada(
-    esta_bloqueado: bool,
-    motivo_bloqueo: Option<String>,
-    tiene_ingreso_abierto: bool,
-    estado_contratista: &str,
-    praind_vigente: bool,
-    cantidad_alertas_gafete: usize,
-) -> ResultadoValidacionEntrada {
-    let puede_ingresar = true;
-    let motivo_rechazo = None;
-    let mut alertas = Vec::new();
-
-    // 1. REGLA BLOQUEANTE: Lista Negra
-    if esta_bloqueado {
-        return ResultadoValidacionEntrada {
-            puede_ingresar: false,
-            motivo_rechazo: Some(format!(
-                "CONTRATISTA BLOQUEADO: {}",
-                motivo_bloqueo.unwrap_or_default()
-            )),
-            alertas,
-        };
-    }
-
-    // 2. REGLA BLOQUEANTE: Ingreso Abierto (Duplicado)
-    if tiene_ingreso_abierto {
-        return ResultadoValidacionEntrada {
-            puede_ingresar: false,
-            motivo_rechazo: Some("El contratista ya tiene un ingreso activo".to_string()),
-            alertas,
-        };
-    }
-
-    // 3. REGLA BLOQUEANTE: Estado Inactivo
-    if estado_contratista != "activo" {
-        return ResultadoValidacionEntrada {
-            puede_ingresar: false,
-            motivo_rechazo: Some(format!(
-                "El contratista no está activo (Estado: {})",
-                estado_contratista
-            )),
-            alertas,
-        };
-    }
-
-    // 4. REGLA BLOQUEANTE: PRAIND Vencido
-    if !praind_vigente {
-        return ResultadoValidacionEntrada {
-            puede_ingresar: false,
-            motivo_rechazo: Some("PRAIND vencido o no válido".to_string()),
-            alertas,
-        };
-    }
-
-    // 5. REGLA NO BLOQUEANTE: Alertas de Gafete
-    if cantidad_alertas_gafete > 0 {
-        alertas.push(format!("Tiene {} alerta(s) de gafete pendiente", cantidad_alertas_gafete));
-    }
-
-    ResultadoValidacionEntrada { puede_ingresar, motivo_rechazo, alertas }
-}
-
-#[deprecated(note = "Use motor_validacion logic instead")]
-pub fn verificar_praind_vigente(
-    fecha_vencimiento_str: &str,
-) -> Result<bool, IngresoContratistaError> {
-    if fecha_vencimiento_str.is_empty() {
-        return Ok(false);
-    }
-
-    // Intentar parsear solo fecha YYYY-MM-DD
-    let fecha_venc =
-        chrono::NaiveDate::parse_from_str(fecha_vencimiento_str, "%Y-%m-%d").map_err(|_| {
-            IngresoContratistaError::Validation(format!(
-                "Formato de fecha de vencimiento inválido: {}. Se espera YYYY-MM-DD",
-                fecha_vencimiento_str
-            ))
-        })?;
-
-    let hoy = Utc::now().date_naive();
-
-    // Es vigente si la fecha de vencimiento es mayor o igual a hoy
-    Ok(fecha_venc >= hoy)
-}
-
-// normalizar_numero_gafete -> ahora viene de domain::common
-
-pub fn validar_input_entrada(input: &impl InputEntrada) -> Result<(), IngresoContratistaError> {
-    if input.tipo_ingreso() != "contratista" {
-        return Err(IngresoContratistaError::Validation(
-            "Tipo de ingreso inválido para este servicio".to_string(),
-        ));
-    }
-    // Validaciones basicas adicionales si hicieran falta
-    Ok(())
-}
-
-// Trait helper para validar inputs genéricos
-pub trait InputEntrada {
-    fn tipo_ingreso(&self) -> &str;
-}
-
-// ==========================================
-// LOGICA DE DOMINIO: PERMANENCIA
-// ==========================================
-
+/// Calcula los minutos exactos transcurridos desde el ingreso.
 pub fn calcular_tiempo_transcurrido(
     fecha_ingreso_str: &str,
 ) -> Result<i64, IngresoContratistaError> {
@@ -202,10 +54,12 @@ pub fn calcular_tiempo_transcurrido(
     Ok(duration.num_minutes())
 }
 
+/// Calcula el margen de tiempo restante antes de incurrir en infracción.
 pub fn calcular_minutos_restantes(minutos_transcurridos: i64) -> i64 {
     TIEMPO_MAXIMO_MINUTOS - minutos_transcurridos
 }
 
+/// Determina la categoría de permanencia basada en el tiempo transcurrido.
 pub fn evaluar_estado_permanencia(minutos_transcurridos: i64) -> EstadoPermanencia {
     if minutos_transcurridos >= TIEMPO_MAXIMO_MINUTOS {
         EstadoPermanencia::TiempoExcedido
@@ -216,6 +70,7 @@ pub fn evaluar_estado_permanencia(minutos_transcurridos: i64) -> EstadoPermanenc
     }
 }
 
+/// Construye un objeto de alerta con metadatos descriptivos para la UI.
 pub fn construir_alerta_tiempo(minutos_transcurridos: i64) -> AlertaTiempo {
     let estado = evaluar_estado_permanencia(minutos_transcurridos);
     let minutos_restantes = calcular_minutos_restantes(minutos_transcurridos);
@@ -233,10 +88,11 @@ pub fn construir_alerta_tiempo(minutos_transcurridos: i64) -> AlertaTiempo {
     AlertaTiempo { estado, minutos_transcurridos, minutos_restantes, mensaje }
 }
 
-// ==========================================
-// LOGICA DE DOMINIO: SALIDA
-// ==========================================
+// --------------------------------------------------------------------------
+// LÓGICA DE CONTROL: SALIDA
+// --------------------------------------------------------------------------
 
+/// Valida que el ingreso esté abierto antes de registrar salida.
 pub fn validar_ingreso_abierto(
     fecha_salida: &Option<String>,
 ) -> Result<(), IngresoContratistaError> {
@@ -246,30 +102,21 @@ pub fn validar_ingreso_abierto(
     Ok(())
 }
 
-// validar_tiempo_salida -> ahora viene de domain::common
+// --------------------------------------------------------------------------
+// LÓGICA DE CONTROL: ELEGIBILIDAD DE ENTRADA (VISITANTES)
+// --------------------------------------------------------------------------
 
-// calcular_tiempo_permanencia -> ahora viene de domain::common
-
-// validar_gafete_coincide -> ahora viene de domain::common
-
-// evaluar_devolucion_gafete -> ahora viene de domain::common
-// La versión del common retorna DecisionReporteGafete directamente (no Result)
-
-// ==========================================
-// LOGICA DE DOMINIO: VISITANTES
-// ==========================================
-
-/// Evalúa todas las reglas para determinar si un visitante puede entrar
-/// Mismas reglas que contratistas EXCEPTO: no valida PRAIND ni estado
-#[deprecated(
-    note = "Use motor_validacion::validar_ingreso with ContextoIngreso::new_visita instead"
-)]
+/// Evalúa todas las reglas para determinar si un visitante puede entrar.
+/// Mismas reglas que contratistas EXCEPTO: no valida PRAIND ni estado.
+#[deprecated(note = "Use motor_validacion::ejecutar_validacion_motor with MotorContexto instead")]
 pub fn evaluar_elegibilidad_visita(
     esta_bloqueado: bool,
     motivo_bloqueo: Option<String>,
     tiene_ingreso_abierto: bool,
     cantidad_alertas_gafete: usize,
-) -> ResultadoValidacionEntrada {
+) -> crate::models::ingreso::ResultadoValidacionEntrada {
+    use crate::models::ingreso::ResultadoValidacionEntrada;
+
     let mut alertas = Vec::new();
 
     // 1. REGLA BLOQUEANTE: Lista Negra
@@ -313,12 +160,9 @@ pub fn evaluar_elegibilidad_visita(
     ResultadoValidacionEntrada { puede_ingresar: true, motivo_rechazo: None, alertas }
 }
 
-// ==========================================
-// LOGICA DE DOMINIO: PRAIND ALERTAS
-// ==========================================
-
-/// Días de anticipación para alerta de vencimiento PRAIND
-pub const DIAS_ALERTA_PRAIND: i64 = 30;
+// --------------------------------------------------------------------------
+// LÓGICA DE CONTROL: PRAIND ALERTAS
+// --------------------------------------------------------------------------
 
 /// Evalúa si el PRAIND está por vencer (dentro de los próximos 30 días)
 pub fn praind_por_vencer(fecha_vencimiento_str: &str) -> Result<bool, IngresoContratistaError> {
@@ -370,66 +214,9 @@ pub fn debe_suspender_por_praind(
     Ok(dias < 0)
 }
 
-// ==========================================
-// LOGICA DE DOMINIO: CIERRE MANUAL
-// ==========================================
-
-/// Motivo de cierre manual de un ingreso
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum MotivoCierre {
-    /// El guardia olvidó registrar la salida al momento
-    OlvidoRegistrarSalida,
-    /// Se confirmó que la persona salió sin registrar
-    SalioSinRegistrar,
-    /// No se encontró a la persona en las instalaciones
-    PersonaNoLocalizada,
-    /// Un supervisor autorizó el cierre (caso excepcional)
-    AutorizacionEspecial,
-}
-
-impl MotivoCierre {
-    pub fn as_str(&self) -> &str {
-        match self {
-            MotivoCierre::OlvidoRegistrarSalida => "olvido_registrar_salida",
-            MotivoCierre::SalioSinRegistrar => "salio_sin_registrar",
-            MotivoCierre::PersonaNoLocalizada => "persona_no_localizada",
-            MotivoCierre::AutorizacionEspecial => "autorizacion_especial",
-        }
-    }
-
-    pub fn descripcion(&self) -> &str {
-        match self {
-            MotivoCierre::OlvidoRegistrarSalida => "Se olvidó registrar la salida",
-            MotivoCierre::SalioSinRegistrar => "La persona salió sin registrar",
-            MotivoCierre::PersonaNoLocalizada => "No se localizó a la persona en instalaciones",
-            MotivoCierre::AutorizacionEspecial => "Cierre autorizado por supervisor",
-        }
-    }
-}
-
-impl std::str::FromStr for MotivoCierre {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "olvido_registrar_salida" => Ok(MotivoCierre::OlvidoRegistrarSalida),
-            "salio_sin_registrar" => Ok(MotivoCierre::SalioSinRegistrar),
-            "persona_no_localizada" => Ok(MotivoCierre::PersonaNoLocalizada),
-            "autorizacion_especial" => Ok(MotivoCierre::AutorizacionEspecial),
-            _ => Err(format!("Motivo de cierre desconocido: {}", s)),
-        }
-    }
-}
-
-/// Resultado de evaluación de cierre manual
-#[derive(Debug, Clone)]
-pub struct ResultadoCierreManual {
-    pub puede_cerrar: bool,
-    pub genera_reporte: bool,
-    pub tipo_reporte: Option<String>,
-    pub mensaje: Option<String>,
-}
+// --------------------------------------------------------------------------
+// LÓGICA DE CONTROL: CIERRE MANUAL
+// --------------------------------------------------------------------------
 
 /// Evalúa si un ingreso puede cerrarse manualmente y qué acciones tomar
 pub fn evaluar_cierre_manual(
@@ -462,60 +249,9 @@ pub fn evaluar_cierre_manual(
     Ok(ResultadoCierreManual { puede_cerrar, genera_reporte, tipo_reporte, mensaje })
 }
 
-// ==========================================
-// LOGICA DE DOMINIO: INGRESO EXCEPCIONAL
-// ==========================================
-
-/// Motivo para un ingreso excepcional (cuando normalmente no podría entrar)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum MotivoExcepcional {
-    /// Orden directa de Seguridad Industrial
-    OrdenSeguridadIndustrial,
-    /// Emergencia operativa que requiere presencia
-    EmergenciaOperativa,
-    /// Documentos en trámite con autorización temporal
-    DocumentosEnTramite,
-    /// Otro motivo especificado en texto libre
-    Otro,
-}
-
-impl MotivoExcepcional {
-    pub fn as_str(&self) -> &str {
-        match self {
-            MotivoExcepcional::OrdenSeguridadIndustrial => "orden_seguridad_industrial",
-            MotivoExcepcional::EmergenciaOperativa => "emergencia_operativa",
-            MotivoExcepcional::DocumentosEnTramite => "documentos_en_tramite",
-            MotivoExcepcional::Otro => "otro",
-        }
-    }
-}
-
-impl std::str::FromStr for MotivoExcepcional {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "orden_seguridad_industrial" => Ok(MotivoExcepcional::OrdenSeguridadIndustrial),
-            "emergencia_operativa" => Ok(MotivoExcepcional::EmergenciaOperativa),
-            "documentos_en_tramite" => Ok(MotivoExcepcional::DocumentosEnTramite),
-            "otro" => Ok(MotivoExcepcional::Otro),
-            _ => Err(format!("Motivo excepcional desconocido: {}", s)),
-        }
-    }
-}
-
-/// Resultado de evaluación de ingreso excepcional
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ResultadoIngresoExcepcional {
-    pub permitido: bool,
-    pub motivo_original_bloqueo: String,
-    pub autorizado_por: String,
-    pub motivo_excepcional: MotivoExcepcional,
-    pub notas: Option<String>,
-    pub valido_hasta: String, // Válido solo hasta 23:59 del día
-}
+// --------------------------------------------------------------------------
+// LÓGICA DE CONTROL: INGRESO EXCEPCIONAL
+// --------------------------------------------------------------------------
 
 /// Evalúa si un ingreso excepcional es válido
 ///

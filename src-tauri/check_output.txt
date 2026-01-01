@@ -1,0 +1,146 @@
+    Checking mega-brisas v1.0.0-alpha (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+error[E0425]: cannot find function `completar_cita` in module `cita_service`
+  --> src\commands\cita_commands.rs:98:19
+   |
+98 |     cita_service::completar_cita(id).await
+   |                   ^^^^^^^^^^^^^^ not found in `cita_service`
+
+error[E0425]: cannot find function `cerrar_ingreso_manual` in module `service`
+  --> src\commands\ingreso_contratista_commands.rs:86:14
+   |
+86 |     service::cerrar_ingreso_manual(input, usuario_id).await
+   |              ^^^^^^^^^^^^^^^^^^^^^ not found in `service`
+
+error[E0425]: cannot find function `registrar_ingreso_excepcional` in module `service`
+  --> src\commands\ingreso_contratista_commands.rs:95:14
+   |
+95 |     service::registrar_ingreso_excepcional(input, usuario_id).await
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in `service`
+
+error[E0425]: cannot find function `get_historial` in module `service`
+  --> src\commands\ingreso_proveedor_commands.rs:29:14
+   |
+29 |     service::get_historial().await.map_err(|e| e.to_string())
+   |              ^^^^^^^^^^^^^ not found in `service`
+
+error[E0425]: cannot find function `search_proveedores` in module `service`
+  --> src\commands\ingreso_proveedor_commands.rs:50:14
+   |
+50 |     service::search_proveedores(&query).await
+   |              ^^^^^^^^^^^^^^^^^^ not found in `service`
+   |
+help: consider importing this function
+   |
+ 1 + use crate::services::proveedor_service::search_proveedores;
+   |
+help: if you import `search_proveedores`, refer to it directly
+   |
+50 -     service::search_proveedores(&query).await
+50 +     search_proveedores(&query).await
+   |
+
+error[E0425]: cannot find function `registrar_ingreso_full` in module `service`
+  --> src\commands\ingreso_visita_commands.rs:22:14
+   |
+22 |       service::registrar_ingreso_full(input, usuario_id).await
+   |                ^^^^^^^^^^^^^^^^^^^^^^ help: a function with a similar name exists: `registrar_ingreso`
+   |
+  ::: src\services\ingreso_visita_service.rs:18:1
+   |
+18 | / pub async fn registrar_ingreso(
+19 | |     input: CreateIngresoVisitaInput,
+20 | |     usuario_id_str: String,
+21 | | ) -> Result<IngresoResponse, IngresoVisitaError> {
+...  |
+84 | |     Ok(IngresoResponse::from_visita_fetched(nuevo_ingreso))
+85 | | }
+   | |_- similarly named function `registrar_ingreso` defined here
+
+error[E0425]: cannot find function `get_historial` in module `service`
+  --> src\commands\ingreso_visita_commands.rs:67:14
+   |
+67 |     service::get_historial().await
+   |              ^^^^^^^^^^^^^ not found in `service`
+
+error[E0425]: cannot find function `get_lista_negra_activos` in module `lista_negra_service`
+  --> src\commands\lista_negra_commands.rs:60:26
+   |
+60 |     lista_negra_service::get_lista_negra_activos().await.map_err(|e| ListaNegraError::Database(e))
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^ help: a function with a similar name exists: `get_lista_negra_by_id`
+   |
+  ::: src\services\lista_negra_service.rs:32:1
+   |
+32 | pub async fn get_lista_negra_by_id(_id: String) -> Result<Option<ListaNegraResponse>, String> {
+   | --------------------------------------------------------------------------------------------- similarly named function `get_lista_negra_by_id` defined here
+
+error[E0425]: cannot find function `get_blocked_by_cedula` in module `lista_negra_service`
+  --> src\commands\lista_negra_commands.rs:74:26
+   |
+74 |     lista_negra_service::get_blocked_by_cedula(&cedula)
+   |                          ^^^^^^^^^^^^^^^^^^^^^ not found in `lista_negra_service`
+
+error[E0425]: cannot find function `remove_from_lista_negra` in module `lista_negra_service`
+  --> src\commands\lista_negra_commands.rs:82:26
+   |
+82 |     lista_negra_service::remove_from_lista_negra(
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^ not found in `lista_negra_service`
+
+error[E0425]: cannot find function `reactivate_lista_negra` in module `lista_negra_service`
+   --> src\commands\lista_negra_commands.rs:101:26
+    |
+101 |     lista_negra_service::reactivate_lista_negra(id, motivo_bloqueo, bloqueado_por)
+    |                          ^^^^^^^^^^^^^^^^^^^^^^ help: a function with a similar name exists: `get_all_lista_negra`
+    |
+   ::: src\services\lista_negra_service.rs:36:1
+    |
+ 36 | pub async fn get_all_lista_negra() -> Result<Vec<ListaNegraResponse>, String> {
+    | ----------------------------------------------------------------------------- similarly named function `get_all_lista_negra` defined here
+
+error[E0425]: cannot find function `update_lista_negra` in module `lista_negra_service`
+   --> src\commands\lista_negra_commands.rs:113:26
+    |
+113 |       lista_negra_service::update_lista_negra(
+    |                            ^^^^^^^^^^^^^^^^^^ help: a function with a similar name exists: `add_to_lista_negra`
+    |
+   ::: src\services\lista_negra_service.rs:21:1
+    |
+ 21 | / pub async fn add_to_lista_negra(
+ 22 | |     _c: String,
+ 23 | |     _n: String,
+ 24 | |     _a: String,
+...   |
+ 29 | |     Err("M├│dulo administrativo de lista negra en construcci├│n".to_string())
+ 30 | | }
+    | |_- similarly named function `add_to_lista_negra` defined here
+
+error[E0425]: cannot find function `delete_lista_negra` in module `lista_negra_service`
+   --> src\commands\lista_negra_commands.rs:126:26
+    |
+126 |       lista_negra_service::delete_lista_negra(id).await.map_err(|e| ListaNegraError::Database(e))
+    |                            ^^^^^^^^^^^^^^^^^^ help: a function with a similar name exists: `add_to_lista_negra`
+    |
+   ::: src\services\lista_negra_service.rs:21:1
+    |
+ 21 | / pub async fn add_to_lista_negra(
+ 22 | |     _c: String,
+ 23 | |     _n: String,
+ 24 | |     _a: String,
+...   |
+ 29 | |     Err("M├│dulo administrativo de lista negra en construcci├│n".to_string())
+ 30 | | }
+    | |_- similarly named function `add_to_lista_negra` defined here
+
+error[E0277]: the trait bound `ListaNegraResponse: std::convert::From<()>` is not satisfied
+  --> src\commands\lista_negra_commands.rs:28:16
+   |
+28 |     .map(|l| l.into())
+   |                ^^^^ unsatisfied trait bound
+   |
+   = help: the trait `From<()>` is not implemented for `ListaNegraResponse`
+           but trait `From<ListaNegra>` is implemented for it
+   = help: for that trait implementation, expected `ListaNegra`, found `()`
+   = note: required for `()` to implement `std::convert::Into<ListaNegraResponse>`
+
+Some errors have detailed explanations: E0277, E0425.
+For more information about an error, try `rustc --explain E0277`.
+error: could not compile `mega-brisas` (lib) due to 14 previous errors

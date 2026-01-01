@@ -1,19 +1,19 @@
-// ==========================================
-// src/domain/contratista.rs
-// ==========================================
-// Capa de dominio: validaciones y reglas de negocio puras
-// Sin dependencias de DB ni servicios externos
-
+/// Capa de Dominio: Reglas de Negocio para Contratistas.
+///
+/// Este módulo define las validaciones y lógicas puras aplicables a los
+/// contratistas externos. Estas reglas aseguran la integridad de los datos
+/// de filiación y laborales antes de su almacenamiento en la base de datos.
 use crate::domain::errors::ContratistaError;
 use crate::models::contratista::{
     CreateContratistaInput, EstadoContratista, UpdateContratistaInput,
 };
 use chrono::NaiveDate;
 
-// ==========================================
+// --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
-// ==========================================
+// --------------------------------------------------------------------------
 
+/// Valida el formato y longitud de la cédula de identidad.
 pub fn validar_cedula(cedula: &str) -> Result<(), ContratistaError> {
     let limpia = cedula.trim();
 
@@ -36,6 +36,7 @@ pub fn validar_cedula(cedula: &str) -> Result<(), ContratistaError> {
     Ok(())
 }
 
+/// Valida los requisitos mínimos del nombre.
 pub fn validar_nombre(nombre: &str) -> Result<(), ContratistaError> {
     let limpio = nombre.trim();
 
@@ -52,20 +53,7 @@ pub fn validar_nombre(nombre: &str) -> Result<(), ContratistaError> {
     Ok(())
 }
 
-pub fn validar_segundo_nombre(segundo_nombre: Option<&String>) -> Result<(), ContratistaError> {
-    if let Some(nombre) = segundo_nombre {
-        let limpio = nombre.trim();
-
-        if !limpio.is_empty() && limpio.len() > 50 {
-            return Err(ContratistaError::Validation(
-                "El segundo nombre no puede exceder 50 caracteres".to_string(),
-            ));
-        }
-    }
-
-    Ok(())
-}
-
+/// Valida los requisitos mínimos del apellido.
 pub fn validar_apellido(apellido: &str) -> Result<(), ContratistaError> {
     let limpio = apellido.trim();
 
@@ -82,72 +70,48 @@ pub fn validar_apellido(apellido: &str) -> Result<(), ContratistaError> {
     Ok(())
 }
 
-pub fn validar_segundo_apellido(segundo_apellido: Option<&String>) -> Result<(), ContratistaError> {
-    if let Some(apellido) = segundo_apellido {
-        let limpio = apellido.trim();
-
-        if !limpio.is_empty() && limpio.len() > 50 {
-            return Err(ContratistaError::Validation(
-                "El segundo apellido no puede exceder 50 caracteres".to_string(),
-            ));
-        }
-    }
-
-    Ok(())
-}
-
+/// Valida que el ID de la empresa vinculada sea válido.
 pub fn validar_empresa_id(empresa_id: &str) -> Result<(), ContratistaError> {
     let limpia = empresa_id.trim();
 
     if limpia.is_empty() {
-        return Err(ContratistaError::Validation("Debe seleccionar una empresa".to_string()));
+        return Err(ContratistaError::Validation(
+            "Debe seleccionar una empresa válida".to_string(),
+        ));
     }
 
     Ok(())
 }
 
+/// Parsea y valida una fecha en formato estándar (YYYY-MM-DD).
 pub fn validar_fecha(fecha_str: &str) -> Result<NaiveDate, ContratistaError> {
     NaiveDate::parse_from_str(fecha_str, "%Y-%m-%d").map_err(|_| {
         ContratistaError::Validation("Formato de fecha inválido. Use YYYY-MM-DD".to_string())
     })
 }
 
-pub fn validar_estado(estado_str: &str) -> Result<EstadoContratista, ContratistaError> {
-    estado_str
-        .parse()
-        .map_err(|_| ContratistaError::Validation(format!("Estado inválido: {}", estado_str)))
-}
+// --------------------------------------------------------------------------
+// VALIDACIONES DE INPUTS (DTOs)
+// --------------------------------------------------------------------------
 
-// ==========================================
-// VALIDACIONES DE INPUTS COMPLETOS
-// ==========================================
-
+/// Valida el conjunto completo de datos para la creación de un contratista.
 pub fn validar_create_input(input: &CreateContratistaInput) -> Result<(), ContratistaError> {
     validar_cedula(&input.cedula)?;
     validar_nombre(&input.nombre)?;
-    validar_segundo_nombre(input.segundo_nombre.as_ref())?;
     validar_apellido(&input.apellido)?;
-    validar_segundo_apellido(input.segundo_apellido.as_ref())?;
     validar_empresa_id(&input.empresa_id)?;
     validar_fecha(&input.fecha_vencimiento_praind)?;
     Ok(())
 }
 
+/// Valida los cambios parciales solicitados en una actualización.
 pub fn validar_update_input(input: &UpdateContratistaInput) -> Result<(), ContratistaError> {
     if let Some(ref nombre) = input.nombre {
         validar_nombre(nombre)?;
     }
 
-    if let Some(ref segundo_nombre) = input.segundo_nombre {
-        validar_segundo_nombre(Some(segundo_nombre))?;
-    }
-
     if let Some(ref apellido) = input.apellido {
         validar_apellido(apellido)?;
-    }
-
-    if let Some(ref segundo_apellido) = input.segundo_apellido {
-        validar_segundo_apellido(Some(segundo_apellido))?;
     }
 
     if let Some(ref empresa_id) = input.empresa_id {
@@ -161,44 +125,24 @@ pub fn validar_update_input(input: &UpdateContratistaInput) -> Result<(), Contra
     Ok(())
 }
 
-// ==========================================
-// HELPERS DE NORMALIZACIÓN
-// ==========================================
+// --------------------------------------------------------------------------
+// UTILIDADES DE NORMALIZACIÓN
+// --------------------------------------------------------------------------
 
+/// Limpia y normaliza el texto para su persistencia.
+pub fn normalizar_texto(texto: &str) -> String {
+    texto.trim().to_string()
+}
+
+/// Normaliza una cédula eliminando espacios y convirtiéndola a mayúsculas.
 pub fn normalizar_cedula(cedula: &str) -> String {
-    cedula.trim().to_string()
+    cedula.trim().to_uppercase()
 }
 
-pub fn normalizar_nombre(nombre: &str) -> String {
-    nombre.trim().to_string()
-}
-
-pub fn normalizar_segundo_nombre(segundo_nombre: Option<&String>) -> Option<String> {
-    segundo_nombre
-        .map(|n| {
-            let trimmed = n.trim();
-            if trimmed.is_empty() {
-                None
-            } else {
-                Some(trimmed.to_string())
-            }
-        })
-        .flatten()
-}
-
-pub fn normalizar_apellido(apellido: &str) -> String {
-    apellido.trim().to_string()
-}
-
-pub fn normalizar_segundo_apellido(segundo_apellido: Option<&String>) -> Option<String> {
-    segundo_apellido
-        .map(|a| {
-            let trimmed = a.trim();
-            if trimmed.is_empty() {
-                None
-            } else {
-                Some(trimmed.to_string())
-            }
-        })
-        .flatten()
+/// Valida que el estado del contratista sea uno de los valores permitidos.
+pub fn validar_estado(estado: &str) -> Result<(), ContratistaError> {
+    estado
+        .parse::<EstadoContratista>()
+        .map_err(|_| ContratistaError::Validation(format!("Estado inválido: {}", estado)))?;
+    Ok(())
 }

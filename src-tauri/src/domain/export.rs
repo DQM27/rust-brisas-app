@@ -1,25 +1,24 @@
-// ==========================================
-// src/domain/export.rs
-// ==========================================
-// Capa de dominio: validaciones y reglas de negocio puras
-// Sin dependencias de DB ni servicios externos
-
+/// Capa de Dominio: Reglas para Exportación de Datos.
+///
+/// Este módulo define la lógica pura para la preparación y validación de datos
+/// destinados a exportación en diversos formatos (PDF, CSV, Excel).
+/// No tiene dependencias de infraestructura ni de base de datos.
 use crate::models::export::{
     CsvDelimiter, ExportFormat, ExportRequest, ExportValue, PageOrientation,
 };
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-// ==========================================
+// --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
-// ==========================================
+// --------------------------------------------------------------------------
 
-/// Valida que el formato sea válido
+/// Valida que la cadena represente un formato de exportación soportado.
 pub fn validar_formato(formato: &str) -> Result<ExportFormat, String> {
     formato.parse()
 }
 
-/// Valida que los headers no estén vacíos
+/// Garantiza que la lista de encabezados sea válida y no contenga duplicados.
 pub fn validar_headers(headers: &[String]) -> Result<(), String> {
     if headers.is_empty() {
         return Err("Los headers no pueden estar vacíos".to_string());
@@ -44,7 +43,7 @@ pub fn validar_headers(headers: &[String]) -> Result<(), String> {
     Ok(())
 }
 
-/// Valida que haya datos para exportar
+/// Valida que el conjunto de datos a exportar cumpla con los límites de seguridad.
 pub fn validar_rows(rows: &[HashMap<String, serde_json::Value>]) -> Result<(), String> {
     if rows.is_empty() {
         return Err("No hay datos para exportar".to_string());
@@ -59,14 +58,11 @@ pub fn validar_rows(rows: &[HashMap<String, serde_json::Value>]) -> Result<(), S
     Ok(())
 }
 
-/// Valida que las filas tengan las columnas correctas
+/// Verifica que todas las filas contengan información procesable.
 pub fn validar_consistencia_columnas(
-    headers: &[String],
+    _headers: &[String],
     rows: &[HashMap<String, serde_json::Value>],
 ) -> Result<(), String> {
-    // ✅ FIX: Agregar underscore
-    let _headers_normalizados: Vec<String> = headers.iter().map(|h| normalizar_header(h)).collect();
-
     for (idx, row) in rows.iter().enumerate() {
         if row.is_empty() {
             return Err(format!("La fila {} está vacía", idx + 1));
@@ -76,7 +72,7 @@ pub fn validar_consistencia_columnas(
     Ok(())
 }
 
-/// Valida orientación de página (PDF)
+/// Valida la orientación de página solicitada para formatos visuales (PDF).
 pub fn validar_orientacion(orientacion: &str) -> Result<PageOrientation, String> {
     match orientacion.to_lowercase().as_str() {
         "portrait" | "vertical" => Ok(PageOrientation::Portrait),
@@ -85,12 +81,12 @@ pub fn validar_orientacion(orientacion: &str) -> Result<PageOrientation, String>
     }
 }
 
-/// Valida delimitador CSV
+/// Valida el delimitador de campos para formatos de texto plano (CSV).
 pub fn validar_delimitador(delimitador: &str) -> Result<CsvDelimiter, String> {
     delimitador.parse()
 }
 
-/// Valida título del documento
+/// Valida que el título del documento cumpla con los requisitos estéticos y técnicos.
 pub fn validar_titulo(titulo: &str) -> Result<(), String> {
     let limpio = titulo.trim();
 
@@ -110,68 +106,54 @@ pub fn validar_titulo(titulo: &str) -> Result<(), String> {
     Ok(())
 }
 
-// ==========================================
-// VALIDACIÓN COMPLETA DEL REQUEST
-// ==========================================
+// --------------------------------------------------------------------------
+// VALIDACIÓN INTEGRAL DEL REQUEST
+// --------------------------------------------------------------------------
 
-/// Valida todos los campos del ExportRequest
+/// Realiza una auditoría completa de una solicitud de exportación.
 pub fn validar_export_request(request: &ExportRequest) -> Result<(), String> {
-    // 1. Validar formato
     validar_formato(&request.format)?;
-
-    // 2. Validar headers
     validar_headers(&request.headers)?;
-
-    // 3. Validar que haya datos
     validar_rows(&request.rows)?;
-
-    // 4. Validar consistencia entre headers y rows
     validar_consistencia_columnas(&request.headers, &request.rows)?;
 
-    // 5. Validar configuraciones opcionales según formato
     let formato: ExportFormat = request.format.parse()?;
 
     match formato {
         ExportFormat::Pdf => {
-            // Validar orientación si viene
             if let Some(ref orient) = request.orientation {
                 validar_orientacion(orient)?;
             }
-
-            // Validar título si viene
             if let Some(ref titulo) = request.title {
                 validar_titulo(titulo)?;
             }
         }
         ExportFormat::Csv => {
-            // Validar delimitador si viene
             if let Some(ref delim) = request.delimiter {
                 validar_delimitador(delim)?;
             }
         }
-        ExportFormat::Excel => {
-            // Excel no tiene validaciones especiales por ahora
-        }
+        ExportFormat::Excel => {}
     }
 
     Ok(())
 }
 
-// ==========================================
-// HELPERS DE NORMALIZACIÓN
-// ==========================================
+// --------------------------------------------------------------------------
+// NORMALIZACIÓN Y TRANSFORMACIÓN
+// --------------------------------------------------------------------------
 
-/// Normaliza un header (trim + lowercase para comparación)
+/// Normaliza un encabezado para comparaciones internas (trim + lowercase).
 pub fn normalizar_header(header: &str) -> String {
     header.trim().to_lowercase()
 }
 
-/// Normaliza un título (trim + sanitizar)
+/// Limpia un título de espacios en blanco innecesarios.
 pub fn normalizar_titulo(titulo: &str) -> String {
     titulo.trim().to_string()
 }
 
-/// Convierte un valor JSON a ExportValue preservando tipos
+/// Convierte un valor JSON genérico a un valor tipado de exportación.
 pub fn normalizar_value(value: &serde_json::Value, header: &str) -> ExportValue {
     match value {
         serde_json::Value::Null => ExportValue::Text(String::new()),
@@ -184,21 +166,16 @@ pub fn normalizar_value(value: &serde_json::Value, header: &str) -> ExportValue 
             }
         }
         serde_json::Value::String(s) => {
-            // Intentar formatear si parece una fecha y es string
             let formatted = try_format_date(s, header);
             ExportValue::Text(formatted)
         }
         serde_json::Value::Array(_) | serde_json::Value::Object(_) => {
-            // Para arrays/objetos, usar JSON string
             ExportValue::Text(value.to_string())
         }
     }
 }
 
-/// Helper para convertir JSON a string.
-///
-/// Utiliza `Cow<'_, str>` para evitar allocations cuando el valor ya es un String.
-/// Retorna un borrowed `&str` para strings existentes, y owned `String` para otros tipos.
+/// Convierte un valor JSON a su representación en cadena de forma eficiente.
 pub fn json_value_to_string(value: &serde_json::Value) -> Cow<'_, str> {
     match value {
         serde_json::Value::Null => Cow::Borrowed(""),
@@ -211,7 +188,7 @@ pub fn json_value_to_string(value: &serde_json::Value) -> Cow<'_, str> {
 
 use chrono::DateTime;
 
-/// Normaliza una fila completa (preservando tipos)
+/// Mapea una fila completa de datos crudos a una fila normalizada.
 pub fn normalizar_row(
     row: &HashMap<String, serde_json::Value>,
     headers: &[String],
@@ -227,26 +204,21 @@ pub fn normalizar_row(
     normalized
 }
 
-/// Intenta formatear una cadena si es una fecha válida ISO 8601
+/// Intenta aplicar formatos de fecha amigables si detecta un ISO 8601.
 fn try_format_date(value: &str, header: &str) -> String {
-    // Optimización: si no tiene longitud de fecha mínima o separador, retornar original
     if value.len() < 10 || !value.contains('-') {
         return value.to_string();
     }
 
-    // Intentar parsear como DateTime RFC3339 (formato estándar de JSON/JS)
     if let Ok(dt) = DateTime::parse_from_rfc3339(value) {
         let local_dt = dt.with_timezone(&chrono::Local);
         let header_lower = header.to_lowercase();
 
         if header_lower.contains("hora") {
-            // Solo hora: 14:30
             return local_dt.format("%H:%M").to_string();
         } else if header_lower.contains("fecha") {
-            // Solo fecha: 21/12/2025
             return local_dt.format("%d/%m/%Y").to_string();
         } else {
-            // Fecha y Hora: 21/12/2025 14:30
             return local_dt.format("%d/%m/%Y %H:%M").to_string();
         }
     }
@@ -254,13 +226,12 @@ fn try_format_date(value: &str, header: &str) -> String {
     value.to_string()
 }
 
-// ==========================================
-// VALIDACIONES DE LÍMITES Y SEGURIDAD
-// ==========================================
+// --------------------------------------------------------------------------
+// LÍMITES Y SEGURIDAD OPERATIVA
+// --------------------------------------------------------------------------
 
-/// Valida que el tamaño total de datos sea razonable
+/// Estima el tamaño en memoria para prevenir desbordamientos durante la generación.
 pub fn validar_tamano_total(request: &ExportRequest) -> Result<(), String> {
-    // Estimar tamaño aproximado en bytes
     let headers_size: usize = request.headers.iter().map(|h| h.len()).sum();
 
     let mut rows_size: usize = 0;
@@ -272,7 +243,6 @@ pub fn validar_tamano_total(request: &ExportRequest) -> Result<(), String> {
 
     let total_size = headers_size + rows_size;
 
-    // Límite de 50MB para evitar crashes
     const MAX_SIZE: usize = 50 * 1024 * 1024; // 50MB
     if total_size > MAX_SIZE {
         return Err(format!(
@@ -285,9 +255,9 @@ pub fn validar_tamano_total(request: &ExportRequest) -> Result<(), String> {
     Ok(())
 }
 
-// ==========================================
-// TESTS
-// ==========================================
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {
@@ -298,7 +268,7 @@ mod tests {
         assert!(validar_formato("pdf").is_ok());
         assert!(validar_formato("excel").is_ok());
         assert!(validar_formato("csv").is_ok());
-        assert!(validar_formato("PDF").is_ok()); // Case insensitive
+        assert!(validar_formato("PDF").is_ok());
     }
 
     #[test]
@@ -321,7 +291,7 @@ mod tests {
 
     #[test]
     fn test_validar_headers_duplicados() {
-        let headers = vec!["Nombre".to_string(), "nombre".to_string()]; // Duplicado (case insensitive)
+        let headers = vec!["Nombre".to_string(), "nombre".to_string()];
         assert!(validar_headers(&headers).is_err());
     }
 

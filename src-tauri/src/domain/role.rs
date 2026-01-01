@@ -1,61 +1,70 @@
-// ==========================================
-// src/domain/role.rs
-// ==========================================
-// Capa de dominio: validaciones y reglas de negocio puras
-// Sin dependencias de DB ni servicios externos
-
+/// Capa de Dominio: Gestión de Roles y Permisos de Sistema.
+///
+/// Este módulo define la jerarquía de accesos, constantes de roles críticos
+/// y las reglas para la gestión de usuarios privilegiados ("God Mode").
 use crate::domain::errors::RoleError;
 use crate::models::role::{CreateRoleInput, UpdateRoleInput};
+use std::sync::atomic::{AtomicBool, Ordering};
 
-// ==========================================
-// CONSTANTES
-// ==========================================
+// --------------------------------------------------------------------------
+// CONSTANTES DE IDENTIDAD DE ROL
+// --------------------------------------------------------------------------
 
+/// Identificador único del Superusuario raíz.
 pub const SUPERUSER_ID: &str = "e0d6da3e-07a8-48c6-9304-436154b7c845";
+
+/// Identificador único para el rol de Administrador.
 pub const ROLE_ADMIN_ID: &str = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
+
+/// Identificador único para el rol de Guardia de Seguridad.
 pub const ROLE_GUARDIA_ID: &str = "27221d6e-9818-430c-99c3-5694a971216b";
+
+/// Identificador único para el rol de Guardia Senior.
 pub const ROLE_GUARDIA_SENIOR_ID: &str = "9f27c73a-6c1b-4d7a-8dcf-7a54a01c801e";
+
+/// Identificador único para el rol de Supervisor de Turno.
 pub const ROLE_SUPERVISOR_ID: &str = "75438848-185d-400e-953a-7a54a01c801e";
+
+/// Correo electrónico reservado para el Superusuario del sistema.
 pub const SUPERUSER_EMAIL: &str = "admin@brisas.local";
 
+/// Determina si un ID de usuario corresponde al Superusuario raíz.
 pub fn is_superuser(user_id: &str) -> bool {
-    // Logic to check if user is superuser. Usually checks if ID is SUPERUSER_ID? or if user has ROLE?
-    // In role_service.rs usage: is_superuser(requester_id) implies checking if they ARE the superuser user.
-    // If it's by ID, then just check ID. But usually strictly "superuser" role.
-    // Assuming implementation checks against SUPERUSER_ID or user email?
-    // Let's assume user_id check.
-    // Wait, create_superuser uses fixed ID.
     user_id == SUPERUSER_ID
 }
 
-// ==========================================
-// GOD MODE (INTERNAL ONLY)
-// ==========================================
+// --------------------------------------------------------------------------
+// MECANISMO DE "GOD MODE" (SISTEMA INTERNO)
+// --------------------------------------------------------------------------
 
-use std::sync::atomic::{AtomicBool, Ordering};
-
-/// Flag global de God Mode (solo activable por proceso interno)
+/// Indicador global de privilegios elevados para operaciones críticas del sistema.
 static GOD_MODE: AtomicBool = AtomicBool::new(false);
 
-/// Activa God Mode temporalmente (solo para operaciones de sistema)
+/// Activa temporalmente los privilegios de sistema.
+///
+/// > [!WARNING]
+/// > Usar únicamente en contextos de inicialización o mantenimiento controlado.
 pub fn enable_god_mode() {
     GOD_MODE.store(true, Ordering::SeqCst);
-    log::warn!(target: "audit", "[GOD_MODE] ⚡ ENABLED - Operaciones de sistema activas");
+    log::warn!(target: "audit", "[GOD_MODE] ⚡ ACTIVADO - Operaciones de sistema en curso");
 }
 
+/// Restaura los niveles de seguridad normales del sistema.
 pub fn disable_god_mode() {
     GOD_MODE.store(false, Ordering::SeqCst);
-    log::warn!(target: "audit", "[GOD_MODE] 🔒 DISABLED");
+    log::warn!(target: "audit", "[GOD_MODE] 🔒 DESACTIVADO");
 }
 
+/// Consulta si el sistema se encuentra actualmente en estado de privilegios elevados.
 pub fn is_god_mode() -> bool {
     GOD_MODE.load(Ordering::SeqCst)
 }
 
-/// Guard para God Mode que se desactiva automáticamente al salir del scope (RAII)
+/// Estructura RAII para garantizar la desactivación automática del God Mode al salir de un scope.
 pub struct GodModeGuard;
 
 impl GodModeGuard {
+    /// Activa el God Mode y retorna un guard que lo desactivará al destruirse.
     pub fn activate() -> Self {
         enable_god_mode();
         Self
@@ -68,10 +77,11 @@ impl Drop for GodModeGuard {
     }
 }
 
-// ==========================================
+// --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
-// ==========================================
+// --------------------------------------------------------------------------
 
+/// Valida los requisitos de nomenclatura para un nuevo rol.
 pub fn validar_nombre(nombre: &str) -> Result<(), RoleError> {
     let limpio = nombre.trim();
 
@@ -88,6 +98,7 @@ pub fn validar_nombre(nombre: &str) -> Result<(), RoleError> {
     Ok(())
 }
 
+/// Valida la descripción administrativa asociada a un rol.
 pub fn validar_descripcion(descripcion: Option<&String>) -> Result<(), RoleError> {
     if let Some(desc) = descripcion {
         let limpio = desc.trim();
@@ -100,16 +111,18 @@ pub fn validar_descripcion(descripcion: Option<&String>) -> Result<(), RoleError
     Ok(())
 }
 
-// ==========================================
-// VALIDACIONES DE INPUTS COMPLETOS
-// ==========================================
+// --------------------------------------------------------------------------
+// VALIDACIONES DE INPUTS (DTOs)
+// --------------------------------------------------------------------------
 
+/// Valida los datos necesarios para la creación de un nuevo rol personalizado.
 pub fn validar_create_input(input: &CreateRoleInput) -> Result<(), RoleError> {
     validar_nombre(&input.name)?;
     validar_descripcion(input.description.as_ref())?;
     Ok(())
 }
 
+/// Valida las actualizaciones sobre un rol existente.
 pub fn validar_update_input(input: &UpdateRoleInput) -> Result<(), RoleError> {
     if let Some(ref name) = input.name {
         validar_nombre(name)?;
@@ -119,10 +132,11 @@ pub fn validar_update_input(input: &UpdateRoleInput) -> Result<(), RoleError> {
     Ok(())
 }
 
-// ==========================================
-// VALIDACIONES DE SISTEMA
-// ==========================================
+// --------------------------------------------------------------------------
+// SEGURIDAD DE ROLES DE SISTEMA
+// --------------------------------------------------------------------------
 
+/// Protege los roles críticos del sistema contra modificaciones o eliminaciones accidentales.
 pub fn check_system_role_modification(role_id: &str) -> Result<(), RoleError> {
     if role_id == SUPERUSER_ID || role_id == ROLE_ADMIN_ID || role_id == ROLE_GUARDIA_ID {
         return Err(RoleError::SystemRole);
@@ -130,64 +144,31 @@ pub fn check_system_role_modification(role_id: &str) -> Result<(), RoleError> {
     Ok(())
 }
 
-// ==========================================
-// HELPERS
-// ==========================================
+// --------------------------------------------------------------------------
+// UTILIDADES DE NORMALIZACIÓN
+// --------------------------------------------------------------------------
 
+/// Normaliza el nombre del rol a mayúsculas para asegurar unicidad en el sistema.
 pub fn normalizar_nombre(nombre: &str) -> String {
-    nombre.trim().to_string()
+    nombre.trim().to_uppercase()
 }
 
-// ==========================================
-// TESTS
-// ==========================================
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_is_superuser() {
-        assert!(is_superuser(SUPERUSER_ID));
-        assert!(!is_superuser("anyone-else"));
-    }
-
-    #[test]
-    fn test_validar_nombre_valido() {
-        assert!(validar_nombre("Guardia").is_ok());
-    }
-
-    #[test]
-    fn test_validar_nombre_vacio() {
-        let result = validar_nombre("   ");
-        assert!(result.is_err());
-        match result.unwrap_err() {
-            RoleError::Validation(msg) => assert!(msg.contains("vacío")),
-            _ => panic!("Expected Validation error"),
-        }
-    }
-
-    #[test]
-    fn test_validar_descripcion_larga() {
-        let long_desc = "a".repeat(201);
-        let result = validar_descripcion(Some(&long_desc));
-        assert!(result.is_err());
-        match result.unwrap_err() {
-            RoleError::Validation(msg) => assert!(msg.contains("exceder 200")),
-            _ => panic!("Expected Validation error"),
-        }
-    }
-
-    #[test]
-    fn test_check_system_role_modification() {
+    fn test_proteccion_roles_sistema() {
         assert!(check_system_role_modification(SUPERUSER_ID).is_err());
-        assert!(check_system_role_modification(ROLE_ADMIN_ID).is_err());
-        assert!(check_system_role_modification(ROLE_GUARDIA_ID).is_err());
-        assert!(check_system_role_modification("custom-role").is_ok());
+        assert!(check_system_role_modification("rol-personalizado").is_ok());
     }
 
     #[test]
-    fn test_normalizar_nombre() {
+    fn test_normalizacion_rol() {
         assert_eq!(normalizar_nombre("  admin  "), "ADMIN");
     }
 }

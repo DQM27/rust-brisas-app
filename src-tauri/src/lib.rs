@@ -1,8 +1,5 @@
-// src/lib.rs
-
 #[macro_use]
 mod macros;
-#[macro_use]
 pub mod commands;
 pub mod config;
 pub mod db;
@@ -23,6 +20,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, RwLock};
 use tauri::Manager;
 
+/// Estado global de la aplicación.
 pub struct AppState {
     pub backend_ready: AtomicBool,
 }
@@ -31,8 +29,7 @@ pub struct AppState {
 pub fn run() {
     let mut builder = tauri::Builder::default();
 
-    // 1. SETUP LOGGING
-    // Inicializar logger una sola vez
+    // Configuración del sistema de logs.
     builder = builder.plugin(
         tauri_plugin_log::Builder::new()
             .level(log::LevelFilter::Info)
@@ -42,11 +39,6 @@ pub fn run() {
             .build(),
     );
 
-    // DEBUG BANNER
-    println!("\n\n***************************************************");
-    println!("***       DEBUG MODE: SERIALIZATION FIX ACTIVE    ***");
-    println!("***************************************************\n\n");
-
     #[cfg(desktop)]
     {
         builder = builder.plugin(tauri_plugin_dialog::init());
@@ -54,98 +46,95 @@ pub fn run() {
         builder = builder.plugin(tauri_plugin_store::Builder::new().build());
         builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            let _ = app.get_webview_window("main").expect("no main window").set_focus();
+            let _ = app
+                .get_webview_window("main")
+                .expect("Ventana principal no encontrada")
+                .set_focus();
         }));
     }
 
     builder
         .setup(|app| {
-            // 0. CARGAR CONFIGURACIÓN (crea archivos si no existen)
+            // Se carga la configuración global de la aplicación. Este paso es fundamental 
+            // porque define identificadores de terminal y preferencias que afectan a todo el sistema.
             let app_config: AppConfig = match config_manager::load_config() {
                 Ok(config) => {
                     info!("✅ Configuración cargada: terminal_id = {}", config.terminal.id);
                     config
                 }
                 Err(e) => {
-                    error!("⚠️ Error cargando configuración (usando defaults): {}", e);
+                    // Si falla la carga (ej. archivo corrupto), usamos defaults para no bloquear
+                    // el arranque, pero notificamos el error para su revisión.
+                    error!("⚠️ Error al cargar configuración (usando valores por defecto): {}", e);
                     AppConfig::default()
                 }
             };
 
-            // Guardar estado de configuración para seed condicional
             let is_configured = app_config.setup.is_configured;
-
-            // Gestionar AppConfigState para comandos de setup
             let config_state: AppConfigState = Arc::new(RwLock::new(app_config));
             app.manage(config_state);
 
-            // 1. CONFIGURACIÓN DE RUTAS
-            // Es vital asegurar que el directorio de datos existe
+            // Verificamos y creamos el directorio de datos de la aplicación si no existe.
+            // Esto es crucial para asegurar que la base de datos y los índices tengan un lugar donde escribirse.
             let app_data_dir = app.path().app_data_dir()?;
             if !app_data_dir.exists() {
                 std::fs::create_dir_all(&app_data_dir)?;
             }
 
-            // 2. INICIALIZAR BASE DE DATOS (CRÍTICO: HACER ESTO PRIMERO)
-            // Bloqueamos el hilo principal aquí intencionalmente para garantizar
-            // que la DB esté lista antes de que cualquier comando o el indexador intenten usarla.
+            // Inicialización de la base de datos embebida SurrealDB.
+            // Decidimos bloquear el hilo principal (block_on) intencionalmente aquí.
+            // El motivo es garantizar que la base de datos esté lista al 100% antes de habilitar
+            // cualquier comando o permitir que el motor de búsqueda intente leer datos.
             let db_config = SurrealDbConfig::default();
             tauri::async_runtime::block_on(async {
                 setup_embedded_surrealdb(db_config)
                     .await
-                    .expect("❌ Error fatal: No se pudo inicializar SurrealDB");
+                    .expect("❌ Error fatal: La aplicación no puede iniciar sin la base de datos");
             });
-            info!("✅ SurrealDB inicializado correctamente.");
+            info!("✅ Motor de base de datos listo.");
 
-            // 2.5. SEED DATABASE (condicional basado en is_configured)
-            // Solo sembrar si ya está configurado para evitar desincronización con Argon2
+            // Si el asistente de configuración ya terminó, ejecutamos el proceso de "seeding".
+            // Esto asegura que tengamos los roles y usuarios administrativos básicos necesarios para operar.
             tauri::async_runtime::block_on(async {
                 if is_configured {
-                    info!("🌱 App configurada, ejecutando seed...");
+                    info!("🌱 Sistema configurado previamente. Verificando datos base...");
                     if let Err(e) = seed::seed_db().await {
-                        error!("❌ Error en seed: {}", e);
+                        error!("❌ Error durante la verificación de datos iniciales: {}", e);
                     }
                 } else {
-                    info!("⚠️ App NO configurada, saltando seed hasta completar Wizard.");
+                    info!("⚠️ El sistema está en modo de espera hasta que el asistente de configuración se complete.");
                 }
             });
 
-            // 3. INICIALIZAR SEARCH SERVICE (TANTIVY)
-            // Usamos un subdirectorio para no ensuciar la raíz de app_data
             let search_path = app_data_dir.join("search_index");
             let search_path_str = search_path.to_string_lossy().to_string();
 
-            // Gestionar Estado Global
-            let app_state = AppState { backend_ready: AtomicBool::new(true) };
-            app.manage(app_state);
+            // Registramos los estados globales para que los comandos de Tauri puedan acceder a ellos mediante inyección de dependencias.
+            app.manage(AppState { backend_ready: AtomicBool::new(true) });
+            app.manage(SessionState::new());
 
-            // Gestionar SessionState para autenticación
-            let session_state = SessionState::new();
-            app.manage(session_state);
-
+            // Inicialización del servicio de búsqueda basado en Tantivy.
+            // Se usa el mismo directorio de datos para facilitar respaldos unificados.
             match SearchService::new(&search_path_str) {
                 Ok(s) => {
                     let search_service = Arc::new(s);
                     app.manage(search_service.clone());
 
-                    // 4. LÓGICA DE REINDEXADO (Solo ahora que la DB es segura)
+                    // Si el índice de búsqueda está vacío, programamos una reconstrucción en segundo plano.
+                    // Se hace en un hilo separado (spawn) para no retrasar la carga de la interfaz de usuario.
                     if search_service.is_empty() {
-                        println!("📇 Índice vacío detectado. Programando reindexado...");
-
                         let search_service_clone = search_service.clone();
 
-                        // Spawn en background
                         tauri::async_runtime::spawn(async move {
-                            // Pequeña pausa de seguridad para dejar que la UI respire al inicio (opcional)
+                            // Breve pausa para dar prioridad a la carga de la ventana principal.
                             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
-                            println!("🔄 Iniciando tarea de reindexado...");
-                            // Ahora es seguro llamar a reindex_all porque la DB ya pasó el block_on
+                            info!("🔄 Iniciando reconstrucción del índice de búsqueda en segundo plano...");
                             if let Err(e) = search_service_clone.reindex_all().await {
-                                eprintln!("❌ Error al reindexar en background: {}", e);
+                                eprintln!("❌ Fallo en la reindexación asíncrona: {}", e);
                             } else {
-                                println!(
-                                    "✅ Reindexado background completado: {} documentos",
+                                info!(
+                                    "✅ Índice reconstruido exitosamente con {} registros.",
                                     search_service_clone.doc_count()
                                 );
                             }
@@ -153,8 +142,7 @@ pub fn run() {
                     }
                 }
                 Err(e) => {
-                    eprintln!("❌ Error fatal inicializando SearchService: {}", e);
-                    // Aquí podrías decidir si quieres hacer panic! o dejar que la app corra sin búsqueda
+                    error!("❌ Fallo crítico al inicializar el índice de búsqueda: {}", e);
                     return Err(Box::new(e));
                 }
             }
@@ -163,5 +151,5 @@ pub fn run() {
         })
         .invoke_handler(register_handlers!())
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("Error al ejecutar la aplicación");
 }

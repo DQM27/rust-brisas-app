@@ -1,2 +1,12 @@
-Always answer in Spanish.
-Siempre contesta en español.
+Siempre contesta y comenta el código en Español.
+
+ESTÁNDARES DE DOCUMENTACIÓN Y ORDEN:
+1. DOCUMENTACIÓN DE MÓDULOS: Cada archivo debe empezar con triple barra (///) explicando su propósito en la arquitectura (Capa de Dominio, Modelos, etc.).
+2. COMENTARIOS DE RUST: Usa triple barra (///) para funciones, comandos y structs para habilitar rustdoc. Explica Resumen, Argumentos y Retorno.
+3. ORGANIZACIÓN VISUAL: Usa separadores claros: // --------------------------------------------------------------------------
+4. IDIOMA: Todo comentario técnico o descriptivo debe ser en Español profesional.
+5. LIMPIEZA: Elimina código comentado obsoleto y comentarios redundantes o evidentes.
+6. ARQUITECTURA: 
+   - `models/`: Define CÓMO se ven los datos (DTOs).
+   - `domain/`: Define QUÉ REGLAS se aplican (Validaciones, Lógica pura).
+7. TAURI: Documenta comandos con la etiqueta [Comando Tauri].

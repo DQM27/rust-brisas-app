@@ -74,3 +74,16 @@ pub struct IngresoProveedorCreateDTO {
     pub usuario_ingreso: RecordId,
     pub observaciones: Option<String>,
 }
+
+/// Respuesta de validación previa al ingreso de proveedor
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ValidacionIngresoProveedorResponse {
+    pub puede_ingresar: bool,
+    pub cedula: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub motivo_rechazo: Option<String>,
+    pub alertas_gafete: Vec<String>,
+    pub tiene_gafetes_pendientes: bool,
+}

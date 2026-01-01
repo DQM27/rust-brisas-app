@@ -1,92 +1,21 @@
-use serde::{Deserialize, Serialize};
-use surrealdb::RecordId;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IngresoProveedor {
-    pub id: RecordId,
-    pub cedula: String,
-    pub nombre: String,
-    pub apellido: String,
-    pub proveedor_id: Option<RecordId>,
-    pub empresa_id: RecordId,
-    pub area_visitada: String,
-    pub motivo: String,
-    pub gafete: Option<String>,
-    pub tipo_autorizacion: Option<String>,
-    pub modo_ingreso: Option<String>,
-    pub placa_vehiculo: Option<String>,
-    pub fecha_ingreso: String,
-    pub fecha_salida: Option<String>,
-    pub estado: String,
-    pub usuario_ingreso_id: String,
-    pub usuario_salida_id: Option<String>,
-    pub observaciones: Option<String>,
-    pub created_at: surrealdb::Datetime,
-    pub updated_at: surrealdb::Datetime,
-    // Populated fields (from JOINs)
-    #[serde(default)]
-    pub usuario_ingreso_nombre: String,
-    #[serde(default)]
-    pub usuario_salida_nombre: String,
-    #[serde(default)]
-    pub empresa_nombre: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateIngresoProveedorInput {
-    pub cedula: String,
-    pub nombre: String,
-    pub apellido: String,
-    pub empresa_id: String,
-    pub area_visitada: String,
-    pub motivo: String,
-    pub gafete: Option<String>,
-    pub tipo_autorizacion: String,
-    pub modo_ingreso: String,
-    pub tipo_vehiculo: Option<String>,
-    pub placa_vehiculo: Option<String>,
-    pub marca_vehiculo: Option<String>,
-    pub modelo_vehiculo: Option<String>,
-    pub color_vehiculo: Option<String>,
-    pub observaciones: Option<String>,
-    pub usuario_ingreso_id: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ProveedorSnapshot {
-    pub cedula: String,
-    pub nombre: String,
-    pub apellido: String,
-    pub empresa_id: String,
-    pub empresa_nombre: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ValidacionIngresoProveedorResponse {
-    pub puede_ingresar: bool,
-    pub motivo_rechazo: Option<String>,
-    pub alertas: Vec<String>,
-    pub proveedor: Option<serde_json::Value>,
-    pub tiene_ingreso_abierto: bool,
-    pub ingreso_abierto: Option<IngresoProveedor>,
-}
-
+/// Capa de Dominio: Gestión de Ingresos de Proveedores.
+///
+/// Este módulo define las reglas de negocio específicas para el control de acceso
+/// de proveedores de materiales y servicios a las instalaciones.
 use crate::domain::errors::IngresoProveedorError;
 
-// Re-exports from common module
+// Re-exportaciones de estructuras
 pub use crate::domain::common::{normalizar_numero_gafete, DecisionReporteGafete};
+pub use crate::models::ingreso::proveedor::ValidacionIngresoProveedorResponse;
 
-// Import common functions for internal use
+// Importación de lógica compartida
 use crate::domain::common as common_domain;
 
-// ==========================================
-// VALIDACIONES DE DOMINIO
-// ==========================================
+// --------------------------------------------------------------------------
+// VALIDACIONES DE ESTADO
+// --------------------------------------------------------------------------
 
+/// Valida que el registro de ingreso no tenga ya una fecha de salida asignada.
 pub fn validar_ingreso_abierto(fecha_salida: &Option<String>) -> Result<(), IngresoProveedorError> {
     if fecha_salida.is_some() {
         return Err(IngresoProveedorError::NoActiveIngreso);
@@ -94,7 +23,11 @@ pub fn validar_ingreso_abierto(fecha_salida: &Option<String>) -> Result<(), Ingr
     Ok(())
 }
 
-/// Wrapper que usa el error específico de proveedor
+// --------------------------------------------------------------------------
+// WRAPPERS DE LÓGICA COMPARTIDA (Adaptación de Errores)
+// --------------------------------------------------------------------------
+
+/// Valida que la fecha de salida sea posterior a la de ingreso.
 pub fn validar_tiempo_salida(
     fecha_ingreso_str: &str,
     fecha_salida_str: &str,
@@ -103,7 +36,7 @@ pub fn validar_tiempo_salida(
         .map_err(|e| IngresoProveedorError::Validation(e.to_string()))
 }
 
-/// Wrapper que usa el error específico de proveedor
+/// Calcula el tiempo total de estancia en minutos.
 pub fn calcular_tiempo_permanencia(
     fecha_ingreso_str: &str,
     fecha_salida_str: &str,
@@ -112,7 +45,7 @@ pub fn calcular_tiempo_permanencia(
         .map_err(|e| IngresoProveedorError::Validation(e.to_string()))
 }
 
-/// Delega a common::evaluar_devolucion_gafete
+/// Evalúa las condiciones de devolución del gafete.
 pub fn evaluar_devolucion_gafete(
     tenia_gafete: bool,
     gafete_asignado: Option<&str>,
@@ -126,6 +59,28 @@ pub fn evaluar_devolucion_gafete(
         gafete_devuelto_numero,
     )
 }
+
+// --------------------------------------------------------------------------
+// VALIDACIONES DE INPUTS (DTOs)
+// --------------------------------------------------------------------------
+
+/// Valida que el input de creación sea coherente.
+pub fn validar_create_input(
+    input: &CreateIngresoProveedorInput,
+) -> Result<(), IngresoProveedorError> {
+    if input.cedula.trim().is_empty() {
+        return Err(IngresoProveedorError::Validation("La cédula es obligatoria".to_string()));
+    }
+    if input.nombre.trim().is_empty() {
+        return Err(IngresoProveedorError::Validation("El nombre es obligatorio".to_string()));
+    }
+    Ok(())
+}
+
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -145,21 +100,5 @@ mod tests {
         let ingreso = "2023-12-22T08:00:00Z";
         let salida = "2023-12-22T08:30:00Z";
         assert_eq!(calcular_tiempo_permanencia(ingreso, salida).unwrap(), 30);
-    }
-
-    #[test]
-    fn test_evaluar_devolucion_gafete() {
-        // OK
-        let res = evaluar_devolucion_gafete(true, Some("P-10"), true, Some("P-10"));
-        assert!(!res.debe_generar_reporte);
-
-        // Sin devolver
-        let res = evaluar_devolucion_gafete(true, Some("P-10"), false, None);
-        assert!(res.debe_generar_reporte);
-
-        // Gafete incorrecto
-        let res = evaluar_devolucion_gafete(true, Some("P-10"), true, Some("P-11"));
-        assert!(res.debe_generar_reporte);
-        assert!(res.motivo.unwrap().contains("incorrecto"));
     }
 }

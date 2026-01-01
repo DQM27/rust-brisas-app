@@ -1,7 +1,7 @@
-// Prevents additional console window on Windows in release, DO NOT REMOVE!!
+// Evita que se abra una consola adicional en Windows en modo release.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-// Use mimalloc allocator on Windows for better performance
+// Usamos mimalloc para mejorar el rendimiento en Windows.
 #[cfg(windows)]
 use mimalloc::MiMalloc;
 
@@ -12,5 +12,3 @@ static GLOBAL: MiMalloc = MiMalloc;
 fn main() {
     brisas_app_lib::run()
 }
-
-// Force recompile: Schema changed
