@@ -219,6 +219,8 @@ pub async fn crear_ingreso_contratista(
         contratista: contratista.id.clone(),
         nombre: contratista.nombre.clone(),
         apellido: contratista.apellido.clone(),
+        segundo_nombre: contratista.segundo_nombre.clone(),
+        segundo_apellido: contratista.segundo_apellido.clone(),
         cedula: contratista.cedula.clone(),
         tipo_autorizacion: input.tipo_autorizacion,
         modo_ingreso: input.modo_ingreso,

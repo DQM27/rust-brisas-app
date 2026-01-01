@@ -159,6 +159,10 @@ pub struct IngresoResponse {
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_apellido: Option<String>,
     pub nombre_completo: String,
     pub empresa_nombre: String,
     pub tipo_ingreso: TipoIngreso,
@@ -193,13 +197,32 @@ impl IngresoResponse {
         let esta_adentro = i.fecha_hora_salida.is_none();
         let tiene_gafete_asignado = i.gafete_numero.is_some();
 
+        let nombre = i.nombre.clone();
+        let segundo_nombre = i.segundo_nombre.clone();
+        let apellido = i.apellido.clone();
+        let segundo_apellido = i.segundo_apellido.clone();
+
+        let mut nombre_completo = nombre.clone();
+        if let Some(ref s) = segundo_nombre {
+            nombre_completo.push_str(" ");
+            nombre_completo.push_str(s);
+        }
+        nombre_completo.push_str(" ");
+        nombre_completo.push_str(&apellido);
+        if let Some(ref s) = segundo_apellido {
+            nombre_completo.push_str(" ");
+            nombre_completo.push_str(s);
+        }
+
         Self {
             id: i.id.to_string(),
             contratista_id: Some(i.contratista.to_string()),
             cedula: i.cedula.clone(),
-            nombre: i.nombre.clone(),
-            apellido: i.apellido.clone(),
-            nombre_completo: format!("{} {}", i.nombre, i.apellido),
+            nombre,
+            apellido,
+            segundo_nombre,
+            segundo_apellido,
+            nombre_completo,
             empresa_nombre: String::new(),
             tipo_ingreso: TipoIngreso::Contratista,
             tipo_ingreso_display: "Contratista".to_string(),
@@ -233,13 +256,32 @@ impl IngresoResponse {
         let esta_adentro = i.fecha_hora_salida.is_none();
         let tiene_gafete_asignado = i.gafete_numero.is_some();
 
+        let nombre = i.nombre.clone();
+        let segundo_nombre = i.segundo_nombre.clone();
+        let apellido = i.apellido.clone();
+        let segundo_apellido = i.segundo_apellido.clone();
+
+        let mut nombre_completo = nombre.clone();
+        if let Some(ref s) = segundo_nombre {
+            nombre_completo.push_str(" ");
+            nombre_completo.push_str(s);
+        }
+        nombre_completo.push_str(" ");
+        nombre_completo.push_str(&apellido);
+        if let Some(ref s) = segundo_apellido {
+            nombre_completo.push_str(" ");
+            nombre_completo.push_str(s);
+        }
+
         Ok(Self {
             id: i.id.to_string(),
             contratista_id: Some(i.contratista.id.to_string()),
             cedula: i.cedula.clone(),
-            nombre: i.nombre.clone(),
-            apellido: i.apellido.clone(),
-            nombre_completo: format!("{} {}", i.nombre, i.apellido),
+            nombre,
+            apellido,
+            segundo_nombre,
+            segundo_apellido,
+            nombre_completo,
             empresa_nombre: i.contratista.empresa.nombre.clone(),
             tipo_ingreso: TipoIngreso::Contratista,
             tipo_ingreso_display: "Contratista".to_string(),
@@ -285,6 +327,8 @@ impl IngresoResponse {
             cedula: i.cedula.clone(),
             nombre: i.nombre.clone(),
             apellido: i.apellido.clone(),
+            segundo_nombre: None,
+            segundo_apellido: None,
             nombre_completo: format!("{} {}", i.nombre, i.apellido),
             empresa_nombre: String::new(),
             tipo_ingreso: TipoIngreso::Visita,
@@ -331,6 +375,8 @@ impl IngresoResponse {
             cedula: i.cedula.clone(),
             nombre: i.nombre.clone(),
             apellido: i.apellido.clone(),
+            segundo_nombre: None,
+            segundo_apellido: None,
             nombre_completo: format!("{} {}", i.nombre, i.apellido),
             empresa_nombre: i.proveedor.empresa.nombre.clone(),
             tipo_ingreso: TipoIngreso::Proveedor,

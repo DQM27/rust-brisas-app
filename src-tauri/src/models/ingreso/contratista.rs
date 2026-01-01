@@ -1,47 +1,74 @@
+// ==========================================
+// src/models/ingreso/contratista.rs
+// ==========================================
+
 use crate::models::contratista::ContratistaFetched;
 use crate::models::user::User;
 use serde::{Deserialize, Serialize};
-use surrealdb::RecordId;
+use surrealdb::{Datetime, RecordId};
 
+// --------------------------------------------------------------------------
+// MODELO DE DOMINIO: INGRESO DE CONTRATISTA
+// --------------------------------------------------------------------------
+
+/// Registro de entrada/salida de un contratista.
+///
+/// Captura una "instantánea" de los datos del contratista y del evento de acceso,
+/// permitiendo auditoría histórica incluso si los datos base cambian.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct IngresoContratista {
     pub id: RecordId,
     pub contratista: RecordId,
     pub nombre: String,
     pub apellido: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_apellido: Option<String>,
     pub cedula: String,
     pub tipo_autorizacion: String,
     pub modo_ingreso: String,
     pub placa_vehiculo: Option<String>,
     pub gafete_numero: Option<i32>,
-    pub fecha_hora_ingreso: surrealdb::Datetime,
+    pub fecha_hora_ingreso: Datetime,
     pub usuario_ingreso: RecordId,
-    pub fecha_hora_salida: Option<surrealdb::Datetime>,
+    pub fecha_hora_salida: Option<Datetime>,
     pub usuario_salida: Option<RecordId>,
     pub observaciones: Option<String>,
-    pub created_at: surrealdb::Datetime,
-    pub updated_at: surrealdb::Datetime,
+    pub created_at: Datetime,
+    pub updated_at: Datetime,
 }
 
+/// Versión "poblada" del ingreso con datos relacionales completos (FETCH).
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct IngresoContratistaFetched {
     pub id: RecordId,
     pub contratista: ContratistaFetched,
     pub nombre: String,
     pub apellido: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_apellido: Option<String>,
     pub cedula: String,
     pub tipo_autorizacion: String,
     pub modo_ingreso: String,
     pub placa_vehiculo: Option<String>,
     pub gafete_numero: Option<i32>,
-    pub fecha_hora_ingreso: surrealdb::Datetime,
+    pub fecha_hora_ingreso: Datetime,
     pub usuario_ingreso: User,
-    pub fecha_hora_salida: Option<surrealdb::Datetime>,
+    pub fecha_hora_salida: Option<Datetime>,
     pub usuario_salida: Option<User>,
     pub observaciones: Option<String>,
-    pub created_at: surrealdb::Datetime,
-    pub updated_at: surrealdb::Datetime,
+    pub created_at: Datetime,
+    pub updated_at: Datetime,
 }
+
+// --------------------------------------------------------------------------
+// DTOs DE ENTRADA (Commands)
+// --------------------------------------------------------------------------
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -54,23 +81,32 @@ pub struct CreateIngresoContratistaInput {
     pub observaciones: Option<String>,
 }
 
+// --------------------------------------------------------------------------
+// DTOs PARA PERSISTENCIA
+// --------------------------------------------------------------------------
+
 #[derive(Debug, Serialize)]
 pub struct IngresoContratistaCreateDTO {
     pub contratista: RecordId,
     pub nombre: String,
     pub apellido: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_apellido: Option<String>,
     pub cedula: String,
     pub tipo_autorizacion: String,
     pub modo_ingreso: String,
     pub placa_vehiculo: Option<String>,
     pub gafete_numero: Option<i32>,
     pub usuario_ingreso: RecordId,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub observaciones: Option<String>,
 }
 
-// ==========================================
-// ESTRUCTURAS DE NEGOCIO: PERMANENCIA
-// ==========================================
+// --------------------------------------------------------------------------
+// ENUMS DE NEGOCIO: PERMANENCIA
+// --------------------------------------------------------------------------
 
 /// Representación del estado temporal de un contratista dentro de las instalaciones.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -85,7 +121,6 @@ pub enum EstadoPermanencia {
 }
 
 impl EstadoPermanencia {
-    /// Retorna la representación en cadena del estado.
     pub fn as_str(&self) -> &str {
         match self {
             EstadoPermanencia::Normal => "normal",
@@ -105,9 +140,9 @@ pub struct AlertaTiempo {
     pub mensaje: Option<String>,
 }
 
-// ==========================================
+// --------------------------------------------------------------------------
 // ENUMS DE NEGOCIO: CIERRE MANUAL
-// ==========================================
+// --------------------------------------------------------------------------
 
 /// Motivo de cierre manual de un ingreso
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -124,15 +159,6 @@ pub enum MotivoCierre {
 }
 
 impl MotivoCierre {
-    pub fn as_str(&self) -> &str {
-        match self {
-            MotivoCierre::OlvidoRegistrarSalida => "olvido_registrar_salida",
-            MotivoCierre::SalioSinRegistrar => "salio_sin_registrar",
-            MotivoCierre::PersonaNoLocalizada => "persona_no_localizada",
-            MotivoCierre::AutorizacionEspecial => "autorizacion_especial",
-        }
-    }
-
     pub fn descripcion(&self) -> &str {
         match self {
             MotivoCierre::OlvidoRegistrarSalida => "Se olvidó registrar la salida",
@@ -167,9 +193,9 @@ pub struct ResultadoCierreManual {
     pub mensaje: Option<String>,
 }
 
-// ==========================================
+// --------------------------------------------------------------------------
 // ENUMS DE NEGOCIO: INGRESO EXCEPCIONAL
-// ==========================================
+// --------------------------------------------------------------------------
 
 /// Motivo para un ingreso excepcional (cuando normalmente no podría entrar)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -183,17 +209,6 @@ pub enum MotivoExcepcional {
     DocumentosEnTramite,
     /// Otro motivo especificado en texto libre
     Otro,
-}
-
-impl MotivoExcepcional {
-    pub fn as_str(&self) -> &str {
-        match self {
-            MotivoExcepcional::OrdenSeguridadIndustrial => "orden_seguridad_industrial",
-            MotivoExcepcional::EmergenciaOperativa => "emergencia_operativa",
-            MotivoExcepcional::DocumentosEnTramite => "documentos_en_tramite",
-            MotivoExcepcional::Otro => "otro",
-        }
-    }
 }
 
 impl std::str::FromStr for MotivoExcepcional {
