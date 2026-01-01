@@ -581,3 +581,22 @@ impl From<crate::services::surrealdb_authorization::AuthError> for RoleError {
         RoleError::Unauthorized(err.to_string())
     }
 }
+// --------------------------------------------------------------------------
+// ERRORES COMUNES DE DOMINIO
+// --------------------------------------------------------------------------
+
+/// Definición de errores comunes para validaciones transversales de dominio.
+#[derive(Debug, Clone, Error, Serialize)]
+#[serde(tag = "type", content = "message")]
+pub enum CommonError {
+    #[error("Datos corruptos: fecha de ingreso inválida")]
+    FechaIngresoInvalida,
+    #[error("Fecha de salida inválida")]
+    FechaSalidaInvalida,
+    #[error("La fecha de salida no puede ser anterior a la de ingreso")]
+    SalidaAnteriorAIngreso,
+    #[error("El gafete devuelto ({devuelto}) no coincide con el asignado ({asignado})")]
+    GafeteNoCoincide { devuelto: String, asignado: String },
+    #[error("{0}")]
+    Validation(String),
+}

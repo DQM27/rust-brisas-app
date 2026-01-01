@@ -9,7 +9,8 @@
 use chrono::DateTime;
 
 // Re-exportación de estructuras desde models
-pub use crate::models::ingreso::{CommonError, DecisionReporteGafete};
+pub use crate::domain::errors::CommonError;
+pub use crate::models::ingreso::DecisionReporteGafete;
 
 // --------------------------------------------------------------------------
 // CONSTANTES DE LÍMITES ESTÁNDAR
