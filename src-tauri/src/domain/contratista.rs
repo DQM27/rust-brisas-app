@@ -4,7 +4,7 @@
 /// contratistas externos. Estas reglas aseguran la integridad de los datos
 /// de filiación y laborales antes de su almacenamiento en la base de datos.
 use crate::domain::common::{
-    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
+    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar, MAX_LEN_NOMBRE,
 };
 use crate::domain::errors::ContratistaError;
 use crate::models::contratista::{
