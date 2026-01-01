@@ -6,8 +6,26 @@ use crate::domain::errors::EmpresaError;
 use crate::models::empresa::{CreateEmpresaInput, UpdateEmpresaInput};
 
 // --------------------------------------------------------------------------
+// CONSTANTES DE VALIDACIÓN
+// --------------------------------------------------------------------------
+
+/// Longitud máxima del nombre de empresa.
+pub const NOMBRE_MAX_LEN: usize = 100;
+
+/// Longitud máxima de la dirección.
+pub const DIRECCION_MAX_LEN: usize = 200;
+
+/// Caracteres prohibidos en campos de texto (prevención de inyecciones).
+const CHARS_PROHIBIDOS: &[char] = &['<', '>', '{', '}', '|', '\\', '^', '~', '[', ']', '`'];
+
+// --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
 // --------------------------------------------------------------------------
+
+/// Verifica que un texto no contenga caracteres peligrosos.
+fn contiene_chars_prohibidos(texto: &str) -> bool {
+    texto.chars().any(|c| CHARS_PROHIBIDOS.contains(&c))
+}
 
 /// Valida los requisitos de identidad de una empresa.
 pub fn validar_nombre(nombre: &str) -> Result<(), EmpresaError> {
@@ -19,9 +37,36 @@ pub fn validar_nombre(nombre: &str) -> Result<(), EmpresaError> {
         ));
     }
 
-    if limpio.len() > 100 {
+    if limpio.len() > NOMBRE_MAX_LEN {
+        return Err(EmpresaError::Validation(format!(
+            "El nombre no puede exceder {} caracteres",
+            NOMBRE_MAX_LEN
+        )));
+    }
+
+    if contiene_chars_prohibidos(limpio) {
         return Err(EmpresaError::Validation(
-            "El nombre no puede exceder 100 caracteres".to_string(),
+            "El nombre contiene caracteres no permitidos".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+/// Valida la dirección de la empresa si se proporciona.
+pub fn validar_direccion(direccion: &str) -> Result<(), EmpresaError> {
+    let limpia = direccion.trim();
+
+    if limpia.len() > DIRECCION_MAX_LEN {
+        return Err(EmpresaError::Validation(format!(
+            "La dirección no puede exceder {} caracteres",
+            DIRECCION_MAX_LEN
+        )));
+    }
+
+    if contiene_chars_prohibidos(limpia) {
+        return Err(EmpresaError::Validation(
+            "La dirección contiene caracteres no permitidos".to_string(),
         ));
     }
 
@@ -35,6 +80,9 @@ pub fn validar_nombre(nombre: &str) -> Result<(), EmpresaError> {
 /// Valida los datos requeridos para registrar una nueva empresa.
 pub fn validar_create_input(input: &CreateEmpresaInput) -> Result<(), EmpresaError> {
     validar_nombre(&input.nombre)?;
+    if let Some(ref direccion) = input.direccion {
+        validar_direccion(direccion)?;
+    }
     Ok(())
 }
 
@@ -42,6 +90,9 @@ pub fn validar_create_input(input: &CreateEmpresaInput) -> Result<(), EmpresaErr
 pub fn validar_update_input(input: &UpdateEmpresaInput) -> Result<(), EmpresaError> {
     if let Some(ref nombre) = input.nombre {
         validar_nombre(nombre)?;
+    }
+    if let Some(ref direccion) = input.direccion {
+        validar_direccion(direccion)?;
     }
     Ok(())
 }
@@ -92,6 +143,31 @@ mod tests {
         assert_eq!(normalizar_nombre("  Empresa XYZ  "), "Empresa XYZ");
         assert_eq!(normalizar_nombre("ABC"), "ABC");
         assert_eq!(normalizar_nombre("   "), "");
+    }
+
+    #[test]
+    fn test_validar_nombre_chars_prohibidos() {
+        assert!(validar_nombre("Empresa<script>").is_err());
+        assert!(validar_nombre("Corp{json}").is_err());
+        assert!(validar_nombre("Company|pipe").is_err());
+    }
+
+    #[test]
+    fn test_validar_direccion_valida() {
+        assert!(validar_direccion("Calle Principal 123").is_ok());
+        assert!(validar_direccion("Av. Libertador, Piso 5, Oficina 5-A").is_ok());
+    }
+
+    #[test]
+    fn test_validar_direccion_muy_larga() {
+        let direccion_larga = "A".repeat(201);
+        assert!(validar_direccion(&direccion_larga).is_err());
+    }
+
+    #[test]
+    fn test_validar_direccion_chars_prohibidos() {
+        assert!(validar_direccion("Calle <script>").is_err());
+        assert!(validar_direccion("Direccion{malware}").is_err());
     }
 
     #[test]

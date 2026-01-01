@@ -80,6 +80,14 @@ thiserror = "2"                               # Macros para definición de error
 log = "0.4"                                   # Facade de logging estándar de Rust
 
 # =============================================================================
+# FUTURAS IMPLEMENTACIONES (Comentadas)
+# =============================================================================
+# TODO: Habilitar para módulo de chat - Filtro de malas palabras/profanidad
+# rustrern = "0.1"                            # Filtro de profanidad multi-idioma
+# O alternativa más popular:
+# censor = "0.3"                              # Detección y censura de palabras ofensivas
+
+# =============================================================================
 # CONFIGURACIÓN Y SISTEMA
 # =============================================================================
 toml = "0.8"        # Lectura de archivos de configuración TOML
