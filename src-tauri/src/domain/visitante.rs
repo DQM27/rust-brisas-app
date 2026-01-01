@@ -3,8 +3,7 @@
 /// Este módulo centraliza las validaciones de identidad para personas particulares
 /// que ingresan a las instalaciones (no son empleados ni contratistas fijos).
 use crate::domain::common::{
-    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar, MAX_LEN_EMPRESA,
-    MAX_LEN_NOMBRE,
+    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
 };
 use crate::domain::errors::VisitanteError;
 use crate::models::visitante::CreateVisitanteInput;
@@ -46,6 +45,21 @@ pub fn validar_opcional(
     Ok(())
 }
 
+/// Valida un nombre opcional usando el estándar (si existe).
+pub fn validar_nombre_opcional(
+    valor: Option<&String>,
+    nombre_campo: &str,
+) -> Result<(), VisitanteError> {
+    if let Some(v) = valor {
+        // Ignorar si está vacío después de trim (se normalizará a None luego)
+        if !v.trim().is_empty() {
+            validar_nombre_estandar(v, nombre_campo)
+                .map_err(|e| VisitanteError::Validation(e.to_string()))?;
+        }
+    }
+    Ok(())
+}
+
 // --------------------------------------------------------------------------
 // VALIDACIONES DE INPUTS (DTOs)
 // --------------------------------------------------------------------------
@@ -56,8 +70,8 @@ pub fn validar_create_input(input: &CreateVisitanteInput) -> Result<(), Visitant
     validar_nombre(&input.nombre)?;
     validar_apellido(&input.apellido)?;
 
-    validar_opcional(input.segundo_nombre.as_ref(), MAX_LEN_NOMBRE, "Segundo nombre")?;
-    validar_opcional(input.segundo_apellido.as_ref(), MAX_LEN_NOMBRE, "Segundo apellido")?;
+    validar_nombre_opcional(input.segundo_nombre.as_ref(), "Segundo nombre")?;
+    validar_nombre_opcional(input.segundo_apellido.as_ref(), "Segundo apellido")?;
 
     // Strict mode: Validar que empresa_id esté presente y tenga formato válido si es necesario
     if input.empresa_id.trim().is_empty() {

@@ -164,9 +164,11 @@ pub async fn procesar_ingreso_cita(
     };
 
     let ingreso_input = crate::models::ingreso::CreateIngresoVisitaInput {
-        cedula: visitante.map(|v| v.cedula.clone()).unwrap_or_default(),
-        nombre: visitante.map(|v| v.nombre.clone()).unwrap_or_default(),
-        apellido: visitante.map(|v| v.apellido.clone()).unwrap_or_default(),
+        cedula: visitante.as_ref().map(|v| v.cedula.clone()).unwrap_or_default(),
+        nombre: visitante.as_ref().map(|v| v.nombre.clone()).unwrap_or_default(),
+        apellido: visitante.as_ref().map(|v| v.apellido.clone()).unwrap_or_default(),
+        segundo_nombre: visitante.as_ref().and_then(|v| v.segundo_nombre.clone()),
+        segundo_apellido: visitante.as_ref().and_then(|v| v.segundo_apellido.clone()),
         anfitrion: cita.anfitrion.clone().unwrap_or_default(),
         area_visitada: cita.area_visitada.clone().unwrap_or_default(),
         motivo: cita.motivo.clone(),
