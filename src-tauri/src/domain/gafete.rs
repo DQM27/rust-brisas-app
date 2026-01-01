@@ -64,11 +64,9 @@ pub fn validar_numero(numero: &str) -> Result<(), GafeteError> {
         ));
     }
 
-    // Gafete "0" no existe
+    // Gafete "0" es alias válido de S/G
     if limpio == "0" {
-        return Err(GafeteError::Validation(
-            "El gafete 0 no es válido, debe ser mayor a 0".to_string(),
-        ));
+        return Ok(());
     }
 
     // Gafete "0" no debería permitirse si es físico, pero si el usuario tiene un gafete marcado con 0...
@@ -130,19 +128,18 @@ mod tests {
 
     #[test]
     fn test_validar_numero_con_ceros_izquierda() {
-        // Deben fallar porque el usuario debe ser eficiente
         assert!(validar_numero("001").is_err());
         assert!(validar_numero("04").is_err());
     }
 
     #[test]
     fn test_validar_numero_cero() {
-        assert!(validar_numero("0").is_err());
+        assert!(validar_numero("0").is_ok());
     }
 
     #[test]
     fn test_validar_numero_letras_invalidas() {
-        assert!(validar_numero("GAF-001").is_err()); // Antes era válido, ahora NO
+        assert!(validar_numero("GAF-001").is_err());
         assert!(validar_numero("A1").is_err());
     }
 
@@ -158,7 +155,7 @@ mod tests {
 
     #[test]
     fn test_validar_numero_largo() {
-        let result = validar_numero("123456789012345678901"); // 21 dígitos
+        let result = validar_numero("123456789012345678901");
         assert!(result.is_err());
         match result.unwrap_err() {
             GafeteError::Validation(msg) => assert!(msg.contains("exceder 20")),
@@ -168,7 +165,6 @@ mod tests {
 
     #[test]
     fn test_validar_numero_reservado() {
-        // "S/G" ahora es VÁLIDO (es la excepción)
         assert!(validar_numero("s/g").is_ok());
         assert!(validar_numero("S/G").is_ok());
     }
@@ -177,7 +173,6 @@ mod tests {
     fn test_validar_numero_chars_prohibidos() {
         assert!(validar_numero("GAF<script>").is_err());
         assert!(validar_numero("123{json}").is_err());
-        // assert!(validar_numero("G-01|pipe").is_err()); // Ya falla por tener letras
     }
 
     #[test]

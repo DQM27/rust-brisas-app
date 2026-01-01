@@ -17,10 +17,25 @@ pub use crate::models::ingreso::{CommonError, DecisionReporteGafete};
 
 /// Normaliza un número de gafete para asegurar comparaciones precisas.
 ///
-/// Elimina espacios en blanco innecesarios y convierte el texto a mayúsculas,
-/// evitando fallos por errores de digitación del operador.
+/// Reglas:
+/// 1. Elimina espacios (`trim`).
+/// 2. Convierte a mayúsculas.
+/// 3. Si es "0", lo convierte automáticamente a "S/G".
+/// 4. Si es numérico diferente de 0, elimina ceros a la izquierda.
 pub fn normalizar_numero_gafete(input: &str) -> String {
-    input.trim().to_uppercase()
+    let limpio = input.trim().to_uppercase();
+
+    // Alias rápido: 0 -> S/G
+    if limpio == "0" {
+        return "S/G".to_string();
+    }
+
+    // Si es numérico, parsear para quitar ceros (ej: "04" -> "4")
+    if let Ok(num) = limpio.parse::<u32>() {
+        return num.to_string();
+    }
+
+    limpio
 }
 
 /// Evalúa el estado de un gafete al cierre de una visita para detectar anomalías.
@@ -136,7 +151,12 @@ mod tests {
     #[test]
     fn test_normalizacion_coherente() {
         assert_eq!(normalizar_numero_gafete("  v-123  "), "V-123");
-        assert_eq!(normalizar_numero_gafete("contratista-5"), "CONTRATISTA-5");
+        // Verifica eliminación de ceros
+        assert_eq!(normalizar_numero_gafete("005"), "5");
+        assert_eq!(normalizar_numero_gafete("  0010  "), "10");
+        // Verifica S/G
+        assert_eq!(normalizar_numero_gafete("s/g"), "S/G");
+        assert_eq!(normalizar_numero_gafete("0"), "S/G"); // Alias
     }
 
     #[test]
