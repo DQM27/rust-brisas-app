@@ -1,38 +1,31 @@
-/// Servicio: Resiliencia y Recuperación de Datos.
+/// Causa de Resiliencia: Gestión de Copias de Seguridad y Restauración.
 ///
-/// Orquestador para la detección y aplicación de restauraciones de base de datos.
+/// Este servicio centraliza la detección y aplicación de restauraciones de base de datos.
 /// Actúa como un guardián previo a la inicialización del motor SurrealDB.
 ///
-/// **SurrealDB Note**: A diferencia de SQLite, SurrealDB (SurrealKv) usa directorios.
+/// **Nota de Diseño (SurrealDB)**: A diferencia de SQLite, SurrealDB (SurrealKv) usa directorios.
 /// Este servicio maneja recursivamente tanto archivos como carpetas según sea necesario.
-///
-/// Responsabilidades:
-/// - Detectar señales de restauración (.restore).
-/// - Asegurar la integridad mediante backups de emergencia (directorio o archivo).
-/// - Aplicar reemplazos de base de datos de forma atómica.
 use crate::config::AppConfig;
 use crate::domain::errors::BackupError;
 use log::{error, info, warn};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+// --------------------------------------------------------------------------
+// LÓGICA DE RESTAURACIÓN
+// --------------------------------------------------------------------------
+
 /// Orquestador de Restauración Reactiva.
 ///
 /// Verifica si existe un archivo de señalización (.restore) y procede a
 /// reemplazar la base de datos operativa (directorio o archivo) por la versión solicitada.
 ///
-/// # Arguments
-///
+/// # Argumentos
 /// * `config` - Referencia a la configuración global de la aplicación.
 ///
-/// # Returns
-///
-/// `Ok(())` si no hay restauración pendiente o si se completó con éxito.
-///
-/// # Errors
-///
-/// * `BackupError::IO`: Si fallan las operaciones de copia o eliminación de archivos.
-/// * `BackupError::AtomicFailure`: Si el renombramiento de archivos/directorios falla críticamente.
+/// # Retorno
+/// Retorna `Ok(())` si el proceso se completa o no hay restauraciones pendientes.
+/// Entrega un `BackupError::IO` o `BackupError::AtomicFailure` si hay fallos críticos.
 pub fn check_and_restore_database(config: &AppConfig) -> Result<(), BackupError> {
     let db_path = crate::config::manager::get_database_path(config);
     let verify_restore_path = get_restore_path(&db_path);
@@ -92,9 +85,11 @@ pub fn check_and_restore_database(config: &AppConfig) -> Result<(), BackupError>
 
 /// Genera la ruta del archivo de señalización de restauración basado en la ruta de la DB.
 ///
-/// # Arguments
-///
+/// # Argumentos
 /// * `db_path` - Ruta al archivo/directorio principal de SurrealDB.
+///
+/// # Retorno
+/// Retorna un `PathBuf` con la ruta del archivo `.restore` correspondiente.
 pub fn get_restore_path(db_path: &Path) -> PathBuf {
     let mut path = db_path.to_path_buf();
     if let Some(filename) = path.file_name() {
@@ -107,9 +102,20 @@ pub fn get_restore_path(db_path: &Path) -> PathBuf {
     path
 }
 
+// --------------------------------------------------------------------------
+// UTILIDADES DE ARCHIVO
+// --------------------------------------------------------------------------
+
 /// Utilidad de copia recursiva compatible con archivos y directorios.
 ///
-/// Fundamental para SurrealDB ya que usa estructuras de directorios K/V.
+/// Es fundamental para SurrealDB ya que usa estructuras de directorios K/V.
+///
+/// # Argumentos
+/// * `src` - Ruta de origen.
+/// * `dst` - Ruta de destino.
+///
+/// # Retorno
+/// Retorna `Ok(())` si la copia fue exitosa o un error de I/O de la biblioteca estándar.
 pub fn copy_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
     if src.is_dir() {
         if !dst.exists() {
@@ -130,6 +136,9 @@ pub fn copy_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
 #[cfg(test)]
 mod tests {
     use super::*;

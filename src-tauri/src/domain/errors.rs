@@ -600,6 +600,17 @@ pub enum BackupError {
     InvalidConfig,
 }
 
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
+pub enum CacheError {
+    #[error("Error de acceso a memoria: {0}")]
+    LockContention(String),
+    #[error("Entrada de cache no encontrada")]
+    NotFound,
+    #[error("Error de serialización interna: {0}")]
+    Serialization(String),
+}
+
 // --------------------------------------------------------------------------
 // ERRORES COMUNES DE DOMINIO
 // --------------------------------------------------------------------------

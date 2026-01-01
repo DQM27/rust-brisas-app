@@ -8,10 +8,20 @@ use crate::services::backup;
 use log::{error, info};
 use tauri::{command, State};
 
-/// Realiza una copia de seguridad manual de la base de datos activa.
+// --------------------------------------------------------------------------
+// COMANDOS DE MANTENIMIENTO
+// --------------------------------------------------------------------------
+
+/// [Comando Tauri] Realiza una copia de seguridad manual de la base de datos activa.
 ///
 /// **Nota**: Actualmente devuelve error ya que SurrealDB requiere
 /// un proceso de exportación específico para hot-backups.
+///
+/// # Argumentos
+/// * `_destination_path` - Ruta de destino para el backup.
+///
+/// # Retorno
+/// Retorna error en esta versión (Pendiente de implementación).
 #[command]
 pub async fn backup_database(_destination_path: String) -> Result<(), BackupError> {
     info!("Backup manual solicitado (Pendiente de implementación para SurrealDB)");
@@ -20,20 +30,18 @@ pub async fn backup_database(_destination_path: String) -> Result<(), BackupErro
     ))
 }
 
-/// Prepara el sistema para una restauración de base de datos desde un archivo/directorio externo.
+/// [Comando Tauri] Prepara el sistema para una restauración de base de datos.
 ///
 /// La restauración efectiva NO ocurre inmediatamente. Este comando coloca los datos
 /// en un área de "staging" y el sistema los aplicará automáticamente en el próximo arranque.
 ///
-/// # Arguments
-///
+/// # Argumentos
 /// * `config` - Estado de la configuración de la aplicación.
 /// * `source_path` - Ruta absoluta al backup a restaurar.
 ///
-/// # Errors
-///
-/// * `BackupError::NotFound`: Si el archivo de origen no existe.
-/// * `BackupError::IO`: Si falla la copia al área de preparación.
+/// # Retorno
+/// Retorna `Ok(())` si la preparación fue exitosa. Entrega `BackupError::NotFound`
+/// si el origen no existe o `BackupError::IO` si falla la copia.
 #[command]
 pub async fn restore_database(
     config: State<'_, AppConfig>,
