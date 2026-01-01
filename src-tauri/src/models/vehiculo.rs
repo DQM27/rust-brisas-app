@@ -8,10 +8,14 @@ use crate::models::visitante::VisitanteFetched;
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};
 
-// ==========================================
+// --------------------------------------------------------------------------
 // MODELO DE DOMINIO
-// ==========================================
+// --------------------------------------------------------------------------
 
+/// Representa un vehículo registrado en el sistema.
+///
+/// Un vehículo siempre está asociado directamente a un propietario (Contratista,
+/// Proveedor o Visitante) para control de acceso y trazabilidad.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Vehiculo {
@@ -31,6 +35,7 @@ pub struct Vehiculo {
     pub updated_at: Datetime,
 }
 
+/// Versión "poblada" del vehículo con datos completos del propietario (FETCH).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VehiculoFetched {
     pub id: RecordId,
@@ -49,6 +54,7 @@ pub struct VehiculoFetched {
     pub updated_at: Datetime,
 }
 
+/// Enum polimórfico para manejar los distintos tipos de propietarios.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PropietarioFetched {
@@ -57,10 +63,11 @@ pub enum PropietarioFetched {
     Visitante(VisitanteFetched),
 }
 
-// ==========================================
-// ENUM DE TIPO DE VEHÍCULO
-// ==========================================
+// --------------------------------------------------------------------------
+// ENUMS (Tipos Estrictos)
+// --------------------------------------------------------------------------
 
+/// Categoría del vehículo para control de acceso.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum TipoVehiculo {
@@ -96,10 +103,17 @@ impl std::str::FromStr for TipoVehiculo {
     }
 }
 
-// ==========================================
-// DTOs DE ENTRADA
-// ==========================================
+impl std::fmt::Display for TipoVehiculo {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.display())
+    }
+}
 
+// --------------------------------------------------------------------------
+// DTOs DE ENTRADA (Commands)
+// --------------------------------------------------------------------------
+
+/// Datos necesarios para registrar un nuevo vehículo.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateVehiculoInput {
@@ -111,6 +125,7 @@ pub struct CreateVehiculoInput {
     pub color: Option<String>,
 }
 
+/// Datos para actualizar la información de un vehículo.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateVehiculoInput {
@@ -121,9 +136,9 @@ pub struct UpdateVehiculoInput {
     pub is_active: Option<bool>,
 }
 
-// ==========================================
-// DTO PARA PERSISTENCIA (Service -> DB)
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs PARA PERSISTENCIA
+// --------------------------------------------------------------------------
 
 #[derive(Debug, Serialize)]
 pub struct VehiculoCreateDTO {
@@ -152,9 +167,9 @@ pub struct VehiculoUpdateDTO {
     pub updated_at: Option<Datetime>,
 }
 
-// ==========================================
-// DTOs DE SALIDA
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs DE SALIDA (Responses)
+// --------------------------------------------------------------------------
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -175,14 +190,6 @@ pub struct VehiculoResponse {
     pub is_active: bool,
     pub created_at: String,
     pub updated_at: String,
-}
-
-use std::fmt;
-
-impl fmt::Display for TipoVehiculo {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.display())
-    }
 }
 
 impl From<Vehiculo> for VehiculoResponse {
