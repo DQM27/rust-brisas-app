@@ -97,7 +97,9 @@ pub async fn resolver_alerta_gafete(
         .get_user()
         .ok_or(AlertaError::Validation("Sesión de supervisor no válida o expirada".to_string()))?;
 
-    alerta_service::resolver(&input.alerta_id, input.notas.as_deref(), &user.id).await?;
+    let mut payload = input;
+    payload.usuario_id = Some(user.id.clone());
+    alerta_service::resolver(payload).await?;
 
     Ok(())
 }

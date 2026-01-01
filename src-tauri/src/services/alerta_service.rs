@@ -1,9 +1,11 @@
-/// Sistema de Notificación y Gestión de Alertas de Seguridad.
+/// Servicio: Gestión de Alertas.
 ///
-/// Este servicio gestiona las incidencias detectadas en los puntos de control,
-/// principalmente relacionadas con el mal uso o extravío de gafetes, permanencias
-/// excedidas o conductas sospechosas. Actúa como el historial de "banderas rojas"
-/// que el personal de seguridad debe resolver.
+/// Orquestador de la lógica de negocio para la gestión de incidencias de seguridad (AlertaGafete).
+///
+/// Responsabilidades:
+/// - Registrar nuevas alertas detectadas por el sistema o usuarios.
+/// - Consultar historial de alertas (pendientes vs resueltas).
+/// - Gestionar la resolución de alertas por parte de seguridad.
 use crate::db::surrealdb_alerta_queries as db;
 use crate::domain::errors::AlertaError;
 use crate::models::ingreso::AlertaGafete;
@@ -29,48 +31,47 @@ pub async fn find_all(resuelto: Option<bool>) -> Result<Vec<AlertaGafete>, Alert
 }
 
 /// Registra una nueva alerta en el sistema.
+///
 /// Se invoca automáticamente por el sistema de monitoreo o manualmente por el guardia.
-#[allow(clippy::too_many_arguments)]
-pub async fn insert(
-    id: &str,
-    persona_id: Option<&str>,
-    cedula: &str,
-    nombre_completo: &str,
-    gafete_numero: &str,
-    ingreso_contratista_id: Option<&str>,
-    ingreso_proveedor_id: Option<&str>,
-    ingreso_visita_id: Option<&str>,
-    fecha_reporte: &str,
-    notas: Option<&str>,
-    reportado_por: &str,
-) -> Result<(), AlertaError> {
-    db::insert(
-        id,
-        persona_id,
-        cedula,
-        nombre_completo,
-        gafete_numero,
-        ingreso_contratista_id,
-        ingreso_proveedor_id,
-        ingreso_visita_id,
-        fecha_reporte,
-        notas,
-        reportado_por,
-    )
-    .await
-    .map_err(|e| {
+///
+/// # Arguments
+///
+/// * `input` - DTO con los datos completos de la alerta.
+///
+/// # Errors
+///
+/// * `AlertaError::Database`: Fallo de conexión o inserción.
+pub async fn insert(input: crate::models::ingreso::CreateAlertaInput) -> Result<(), AlertaError> {
+    let cedula = input.cedula.clone();
+    let gafete = input.gafete_numero;
+
+    db::insert(input).await.map_err(|e| {
         error!("Error de base de datos al insertar alerta para {}: {}", cedula, e);
         AlertaError::Database(e.to_string())
     })?;
 
-    info!("Alerta crítica registrada para {} (Gafete: {})", cedula, gafete_numero);
+    info!("Alerta crítica registrada para {} (Gafete: {})", cedula, gafete);
     Ok(())
 }
 
-/// Marca una alerta como gestionada/resuelta, registrando quién la cerró y el motivo.
-pub async fn resolver(id: &str, notas: Option<&str>, usuario_id: &str) -> Result<(), AlertaError> {
+/// Marca una alerta como gestionada/resuelta.
+///
+/// Registra qué usuario resolvió la incidencia y las notas correspondientes.
+///
+/// # Arguments
+///
+/// * `input` - DTO con ID de alerta, usuario resolutor y notas.
+///
+/// # Errors
+///
+/// * `AlertaError::Database`: Fallo al actualizar el registro.
+pub async fn resolver(
+    input: crate::models::ingreso::ResolverAlertaInput,
+) -> Result<(), AlertaError> {
+    let id = input.alerta_id.clone();
+
     info!("Resolviendo alerta {}", id);
-    db::resolver(id, notas, usuario_id).await.map_err(|e| {
+    db::resolver(input).await.map_err(|e| {
         error!("Error al resolver alerta {}: {}", id, e);
         AlertaError::Database(e.to_string())
     })?;

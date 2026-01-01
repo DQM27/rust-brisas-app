@@ -7,33 +7,11 @@ use crate::models::ingreso::AlertaGafete;
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 
 pub async fn insert(
-    id: &str,
-    persona_id: Option<&str>,
-    cedula: &str,
-    nombre_completo: &str,
-    gafete_numero: &str,
-    ingreso_contratista_id: Option<&str>,
-    ingreso_proveedor_id: Option<&str>,
-    ingreso_visita_id: Option<&str>,
-    fecha_reporte: &str,
-    notas: Option<&str>,
-    reportado_por: &str,
+    input: crate::models::ingreso::CreateAlertaInput,
 ) -> Result<AlertaGafete, SurrealDbError> {
     let db = get_db().await?;
 
-    // Convert all to owned types
-    let id_owned = id.to_string();
-    let persona_id_owned = persona_id.map(String::from);
-    let cedula_owned = cedula.to_string();
-    let nombre_completo_owned = nombre_completo.to_string();
-    let gafete_numero_owned = gafete_numero.to_string();
-    let ingreso_contratista_owned = ingreso_contratista_id.map(String::from);
-    let ingreso_proveedor_owned = ingreso_proveedor_id.map(String::from);
-    let ingreso_visita_owned = ingreso_visita_id.map(String::from);
-    let fecha_reporte_owned = fecha_reporte.to_string();
-    let notas_owned = notas.map(String::from);
-    let reportado_por_owned = reportado_por.to_string();
-
+    // Owned conversions are handled by the DTO structure itself mostly, just ensuring binding types
     let mut result = db
         .query(
             r#"
@@ -55,17 +33,17 @@ pub async fn insert(
             }
         "#,
         )
-        .bind(("id", id_owned))
-        .bind(("persona_id", persona_id_owned))
-        .bind(("cedula", cedula_owned))
-        .bind(("nombre_completo", nombre_completo_owned))
-        .bind(("gafete_numero", gafete_numero_owned))
-        .bind(("ingreso_contratista_id", ingreso_contratista_owned))
-        .bind(("ingreso_proveedor_id", ingreso_proveedor_owned))
-        .bind(("ingreso_visita_id", ingreso_visita_owned))
-        .bind(("fecha_reporte", fecha_reporte_owned))
-        .bind(("notas", notas_owned))
-        .bind(("reportado_por", reportado_por_owned))
+        .bind(("id", input.id))
+        .bind(("persona_id", input.persona_id))
+        .bind(("cedula", input.cedula))
+        .bind(("nombre_completo", input.nombre_completo))
+        .bind(("gafete_numero", input.gafete_numero))
+        .bind(("ingreso_contratista_id", input.ingreso_contratista_id))
+        .bind(("ingreso_proveedor_id", input.ingreso_proveedor_id))
+        .bind(("ingreso_visita_id", input.ingreso_visita_id))
+        .bind(("fecha_reporte", input.fecha_reporte))
+        .bind(("notas", input.notas))
+        .bind(("reportado_por", input.reportado_por))
         .await?;
 
     let created: Option<AlertaGafete> = result.take(0)?;
@@ -110,14 +88,11 @@ pub async fn find_all(resuelto: Option<bool>) -> Result<Vec<AlertaGafete>, Surre
 }
 
 pub async fn resolver(
-    id: &str,
-    notas: Option<&str>,
-    usuario_id: &str,
+    input: crate::models::ingreso::ResolverAlertaInput,
 ) -> Result<Option<AlertaGafete>, SurrealDbError> {
     let db = get_db().await?;
-    let id_only = id.strip_prefix("alerta_gafete:").unwrap_or(id).to_string();
-    let notas_owned = notas.map(String::from);
-    let usuario_id_owned = usuario_id.to_string();
+    let id_only =
+        input.alerta_id.strip_prefix("alerta_gafete:").unwrap_or(&input.alerta_id).to_string();
 
     let mut result = db
         .query(
@@ -132,8 +107,8 @@ pub async fn resolver(
         "#,
         )
         .bind(("id", id_only))
-        .bind(("notas", notas_owned))
-        .bind(("usuario_id", usuario_id_owned))
+        .bind(("notas", input.notas))
+        .bind(("usuario_id", input.usuario_id))
         .await?;
 
     Ok(result.take(0)?)

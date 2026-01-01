@@ -38,11 +38,35 @@ pub struct AlertaGafete {
     pub updated_at: Datetime,
 }
 
+/// DTO de entrada para la creación de una nueva alerta.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateAlertaInput {
+    pub id: String,
+    /// ID de la persona asociada (si existe).
+    pub persona_id: Option<String>,
+    pub cedula: String,
+    pub nombre_completo: String,
+    pub gafete_numero: i32,
+    pub ingreso_contratista_id: Option<String>,
+    pub ingreso_proveedor_id: Option<String>,
+    pub ingreso_visita_id: Option<String>,
+    /// Fecha/Hora del incidente.
+    pub fecha_reporte: String,
+    /// Detalles adicionales de la incidencia.
+    pub notas: Option<String>,
+    /// ID del usuario o sistema que reporta.
+    pub reportado_por: String,
+}
+
+/// DTO para la resolución de una alerta.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolverAlertaInput {
     pub alerta_id: String,
+    /// Notas de resolución o descargo.
     pub notas: Option<String>,
+    /// ID del usuario que resuelve la alerta (Supervisor).
     pub usuario_id: Option<String>,
 }
 
