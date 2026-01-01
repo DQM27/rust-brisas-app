@@ -160,6 +160,61 @@ pub fn validar_ingreso_abierto(fecha_salida: &Option<String>) -> Result<(), Comm
 }
 
 // --------------------------------------------------------------------------
+// VALIDACIÓN DE FECHAS: ESTÁNDARES ISO 8601 / RFC 3339
+// --------------------------------------------------------------------------
+// GUÍA DE USO:
+// - Use `validar_fecha_rfc3339` para timestamps con hora (ingresos, salidas, created_at)
+// - Use `validar_fecha_simple` para fechas sin hora (vencimiento PRAIND, cumpleaños)
+// - El frontend puede mostrar DD/MM/YYYY pero debe enviar en estos formatos estándar
+
+/// Valida que una cadena sea un DateTime válido en formato RFC 3339.
+///
+/// Formato esperado: `YYYY-MM-DDThh:mm:ssZ` o con offset `+/-hh:mm`
+/// Ejemplo: `2026-01-15T08:30:00Z`
+///
+/// Uso: Timestamps de sistema (ingreso, salida, created_at, updated_at)
+pub fn validar_fecha_rfc3339(fecha_str: &str) -> Result<(), CommonError> {
+    if fecha_str.trim().is_empty() {
+        return Err(CommonError::Validation("La fecha/hora es obligatoria".to_string()));
+    }
+
+    DateTime::parse_from_rfc3339(fecha_str).map_err(|_| {
+        CommonError::Validation(
+            "Formato de fecha/hora inválido. Use ISO 8601 (ej: 2026-01-15T08:30:00Z)".to_string(),
+        )
+    })?;
+
+    Ok(())
+}
+
+/// Valida que una cadena sea una fecha válida en formato YYYY-MM-DD.
+///
+/// Formato esperado: `YYYY-MM-DD`
+/// Ejemplo: `2026-12-31`
+///
+/// Uso: Fechas conceptuales sin hora (vencimiento de documentos, cumpleaños)
+pub fn validar_fecha_simple(fecha_str: &str) -> Result<(), CommonError> {
+    if fecha_str.trim().is_empty() {
+        return Err(CommonError::Validation("La fecha es obligatoria".to_string()));
+    }
+
+    chrono::NaiveDate::parse_from_str(fecha_str, "%Y-%m-%d").map_err(|_| {
+        CommonError::Validation(
+            "Formato de fecha inválido. Use YYYY-MM-DD (ej: 2026-12-31)".to_string(),
+        )
+    })?;
+
+    Ok(())
+}
+
+/// Parsea una fecha simple (YYYY-MM-DD) y retorna un NaiveDate.
+pub fn parsear_fecha_simple(fecha_str: &str) -> Result<chrono::NaiveDate, CommonError> {
+    chrono::NaiveDate::parse_from_str(fecha_str.trim(), "%Y-%m-%d").map_err(|_| {
+        CommonError::Validation("Formato de fecha inválido. Use YYYY-MM-DD".to_string())
+    })
+}
+
+// --------------------------------------------------------------------------
 // CONTROL DE TIEMPO: REGLAS DE NEGOCIO
 // --------------------------------------------------------------------------
 
@@ -454,17 +509,17 @@ mod tests {
 
     #[test]
     fn test_validar_nombre_estandar() {
-        assert!(validar_nombre_estandar("Juan Pérez", "nombre").is_ok()); // Acentos OK
-        assert!(validar_nombre_estandar("María José", "nombre").is_ok()); // Espacios OK
-        assert!(validar_nombre_estandar("Juan123", "nombre").is_err()); // Números fail
-        assert!(validar_nombre_estandar("Juan!", "nombre").is_err()); // Símbolos fail
+        assert!(validar_nombre_estandar("Juan Pérez", "nombre").is_ok());
+        assert!(validar_nombre_estandar("María José", "nombre").is_ok());
+        assert!(validar_nombre_estandar("Juan123", "nombre").is_err());
+        assert!(validar_nombre_estandar("Juan!", "nombre").is_err());
     }
 
     #[test]
     fn test_validar_cedula_estandar() {
         assert!(validar_cedula_estandar("12345678").is_ok());
         assert!(validar_cedula_estandar("12-345-678").is_ok());
-        assert!(validar_cedula_estandar("V-123456").is_err()); // Letras fail
+        assert!(validar_cedula_estandar("V-123456").is_err());
     }
 
     #[test]

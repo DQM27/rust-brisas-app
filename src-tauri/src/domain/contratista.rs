@@ -4,7 +4,8 @@
 /// contratistas externos. Estas reglas aseguran la integridad de los datos
 /// de filiación y laborales antes de su almacenamiento en la base de datos.
 use crate::domain::common::{
-    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
+    normalizar_nombre_propio, parsear_fecha_simple, validar_cedula_estandar,
+    validar_nombre_estandar,
 };
 use crate::domain::errors::ContratistaError;
 use crate::models::contratista::{
@@ -48,9 +49,7 @@ pub fn validar_empresa_id(empresa_id: &str) -> Result<(), ContratistaError> {
 
 /// Parsea y valida una fecha en formato estándar (YYYY-MM-DD).
 pub fn validar_fecha(fecha_str: &str) -> Result<NaiveDate, ContratistaError> {
-    NaiveDate::parse_from_str(fecha_str, "%Y-%m-%d").map_err(|_| {
-        ContratistaError::Validation("Formato de fecha inválido. Use YYYY-MM-DD".to_string())
-    })
+    parsear_fecha_simple(fecha_str).map_err(|e| ContratistaError::Validation(e.to_string()))
 }
 
 // --------------------------------------------------------------------------
