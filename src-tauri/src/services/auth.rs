@@ -1,10 +1,12 @@
-/// Criptografía y Autenticación de Usuarios.
+/// Servicio: Criptografía y Autenticación.
 ///
-/// Implementamos Argon2id, el ganador de la Password Hashing Competition, por su
-/// resistencia superior contra ataques de diccionario y de fuerza bruta (GPU/ASIC).
-/// Complementamos la seguridad usando un "secreto" o pepper almacenado en el
-/// Keyring del sistema operativo, asegurando que incluso si la base de datos es
-/// comprometida, las contraseñas no puedan ser atacadas sin acceso físico al hardware.
+/// Orquestador de primitivas criptográficas para la seguridad de contraseñas.
+/// Utiliza Argon2id (v1.3) + Pepper (Keyring) para máxima protección.
+///
+/// Responsabilidades:
+/// - Hashear contraseñas de forma segura (Salt + Pepper).
+/// - Verificar credenciales contra hashes almacenados.
+/// - Gestionar parámetros de seguridad globales.
 use super::keyring_service;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
@@ -34,10 +36,19 @@ fn get_password_secret() -> String {
     keyring_service::get_argon2_params().secret
 }
 
-/// Genera un hash seguro para una contraseña en texto plano.
+/// Genera un hash seguro para una contraseña en texto plano utilizando Argon2id.
 ///
-/// El proceso utiliza un 'salt' aleatorio por cada contraseña para evitar ataques de
-/// tablas Rainbow, y el 'secret' global para añadir una capa de protección basada en hardware.
+/// # Arguments
+///
+/// * `password` - Contraseña en texto plano a proteger.
+///
+/// # Returns
+///
+/// Retorna el hash PHC string completo (incluye salt y parámetros) o un error.
+///
+/// # Errors
+///
+/// * `UserError::Auth`: Fallo en la inicialización del hasher.
 pub fn hash_password(password: &str) -> Result<String, UserError> {
     let salt = SaltString::generate(&mut OsRng);
     let secret = get_password_secret();
@@ -56,10 +67,22 @@ pub fn hash_password(password: &str) -> Result<String, UserError> {
         .map_err(|e| UserError::Auth(format!("Fallo crítico al hashear la contraseña: {}", e)))
 }
 
-/// Verifica si una contraseña entregada coincide con el hash almacenado.
+/// Verifica si una contraseña coincide con el hash almacenado.
 ///
-/// Al igual que en el hasheo, se requiere el mismo 'secret' del Keyring para
-/// poder reconstruir la validación correctamente.
+/// Utiliza comparación en tiempo constante para evitar ataques de timing.
+///
+/// # Arguments
+///
+/// * `password` - Contraseña candidata enviada por el usuario.
+/// * `hash` - Hash PHC almacenado en la base de datos.
+///
+/// # Returns
+///
+/// `Ok(true)` si coincide, `Ok(false)` si no, o Error si el hash está corrupto.
+///
+/// # Errors
+///
+/// * `UserError::Auth`: Si el formato del hash no es válido.
 pub fn verify_password(password: &str, hash: &str) -> Result<bool, UserError> {
     let parsed_hash = PasswordHash::new(hash)
         .map_err(|e| UserError::Auth(format!("El formato del hash es inválido: {}", e)))?;
