@@ -1,100 +1,71 @@
-/// Punto de Control de Seguridad: Ingresos y Salidas de Contratistas.
+/// Servicio: Punto de Control de Seguridad - Ingresos y Salidas de Contratistas.
 ///
-/// Este es el núcleo operativo de la garita. Este servicio coordina múltiples subsistemas
-/// (Lista Negra, Vigencia PRAIND, Estado de Contratista, Gestión de Gafetes y Motor de Validación)
-/// para determinar, en tiempo real, si un trabajador externo puede entrar a las instalaciones.
+/// Este es el núcleo operativo de la garita. Coordina múltiples subsistemas
+/// (Lista Negra, Vigencia PRAIND, Estado de Contratista, Gestión de Gafetes)
+/// para determinar en tiempo real si un trabajador externo puede ingresar.
+///
+/// Responsabilidades:
+/// - Validación de pre-ingreso (identidad, seguridad, unicidad).
+/// - Registro físico de entrada con asignación de recursos.
+/// - Control de salida y liberación de gafetes.
+/// - Monitoreo de tiempos de permanencia.
 use crate::db::surrealdb_contratista_queries as contratista_queries;
 use crate::db::surrealdb_ingreso_contratista_queries as db;
 use crate::domain::errors::IngresoContratistaError;
 
 use crate::domain::motor_validacion as motor;
 use crate::models::ingreso::{
-    CreateIngresoContratistaInput, IngresoResponse, RegistrarSalidaInput, ValidacionIngresoResponse,
+    AlertaTiempoExcedido, CreateIngresoContratistaInput, IngresoConEstadoResponse, IngresoResponse,
+    RegistrarSalidaInput, ResultadoValidacionSalida, ValidacionIngresoResponse,
 };
 use crate::models::lista_negra::BlockCheckResponse;
 use crate::models::validation::{
     EstadoAutorizacion, InfoListaNegra, MotorContexto, NivelSeveridad, TipoAcceso, ValidationStatus,
 };
 use crate::services::{gafete_service, lista_negra_service};
-use serde::{Deserialize, Serialize};
+use log::{error, info, warn};
 use surrealdb::RecordId;
 
-// ==========================================
-// DTOs PÚBLICOS (Estructuras de respuesta para la UI)
-// ==========================================
+// --------------------------------------------------------------------------
+// HELPERS INTERNOS
+// --------------------------------------------------------------------------
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ResultadoValidacionSalida {
-    pub puede_salir: bool,
-    pub errores: Vec<String>,
-    pub advertencias: Vec<String>,
+/// Parsea un ID de contratista (acepta "contratista:id" o "id").
+fn parse_contratista_id(id_str: &str) -> Result<RecordId, IngresoContratistaError> {
+    if id_str.contains(':') {
+        id_str.parse::<RecordId>().map_err(|_| {
+            IngresoContratistaError::Validation("ID de contratista inválido".to_string())
+        })
+    } else {
+        Ok(RecordId::from_table_key("contratista", id_str))
+    }
 }
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IngresoConEstadoResponse {
-    pub ingreso: IngresoResponse,
-    pub minutos_transcurridos: i64,
-    pub estado: String,
+/// Parsea un ID de usuario (acepta "user:id" o "id").
+fn parse_user_id(id_str: &str) -> Result<RecordId, IngresoContratistaError> {
+    if id_str.contains(':') {
+        id_str
+            .parse::<RecordId>()
+            .map_err(|_| IngresoContratistaError::Validation("ID de usuario inválido".to_string()))
+    } else {
+        Ok(RecordId::from_table_key("user", id_str))
+    }
 }
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AlertaTiempoExcedido {
-    pub ingreso_id: String,
-    pub cedula: String,
-    pub nombre_completo: String,
-    pub empresa_nombre: String,
-    pub fecha_hora_ingreso: String,
-    pub minutos_transcurridos: i64,
-    pub minutos_excedidos: i64,
-    pub estado: String,
+/// Parsea un ID de ingreso (acepta "ingreso:id" o "id").
+fn parse_ingreso_id(id_str: &str) -> Result<RecordId, IngresoContratistaError> {
+    if id_str.contains(':') {
+        id_str
+            .parse::<RecordId>()
+            .map_err(|_| IngresoContratistaError::Validation("ID de ingreso inválido".to_string()))
+    } else {
+        Ok(RecordId::from_table_key("ingreso", id_str))
+    }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CerrarIngresoManualInput {
-    pub ingreso_id: String,
-    pub motivo_cierre: String,
-    pub fecha_salida_estimada: Option<String>,
-    pub notas: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ResultadoCierreManualResponse {
-    pub ingreso: IngresoResponse,
-    pub genera_reporte: bool,
-    pub tipo_reporte: Option<String>,
-    pub mensaje: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IngresoExcepcionalInput {
-    pub contratista_id: String,
-    pub autorizado_por: String,
-    pub motivo_excepcional: String,
-    pub notas: Option<String>,
-    pub vehiculo_id: Option<String>,
-    pub gafete_numero: Option<String>,
-    pub modo_ingreso: String,
-    pub observaciones: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IngresoExcepcionalResponse {
-    pub ingreso: IngresoResponse,
-    pub motivo_original_bloqueo: String,
-    pub autorizado_por: String,
-    pub valido_hasta: String,
-}
-
-// ==========================================
+// --------------------------------------------------------------------------
 // LÓGICA DE VALIDACIÓN Y CONTROL
-// ==========================================
+// --------------------------------------------------------------------------
 
 /// Ejecuta una validación profunda antes de permitir la apertura de un ingreso.
 ///
@@ -103,20 +74,32 @@ pub struct IngresoExcepcionalResponse {
 /// 2. Filtro de Seguridad: Consulta la lista negra institucional.
 /// 3. Regla de Unicidad: Impide ingresos dobles si ya hay uno abierto.
 /// 4. Motor de Reglas: Analiza la fecha PRAIND y otras políticas complejas.
+///
+/// # Argumentos
+/// * `contratista_id_str` - ID del contratista a validar.
+///
+/// # Retorno
+/// Respuesta de validación con estado de autorización.
+///
+/// # Errores
+/// - `IngresoContratistaError::ContratistaNotFound`: Contratista no existe.
+/// - `IngresoContratistaError::Database`: Error de consulta.
 pub async fn validar_ingreso_contratista(
     contratista_id_str: String,
 ) -> Result<ValidacionIngresoResponse, IngresoContratistaError> {
-    let contratista_id = if contratista_id_str.contains(':') {
-        let parts: Vec<&str> = contratista_id_str.split(':').collect();
-        RecordId::from_table_key(parts[0], parts[1])
-    } else {
-        RecordId::from_table_key("contratista", &contratista_id_str)
-    };
+    let contratista_id = parse_contratista_id(&contratista_id_str)
+        .unwrap_or_else(|_| RecordId::from_table_key("contratista", &contratista_id_str));
 
     let contratista = contratista_queries::find_by_id(&contratista_id)
         .await
-        .map_err(|e| IngresoContratistaError::Database(e.to_string()))?
-        .ok_or(IngresoContratistaError::ContratistaNotFound)?;
+        .map_err(|e| {
+            error!("Error DB al buscar contratista para validación: {}", e);
+            IngresoContratistaError::Database(e.to_string())
+        })?
+        .ok_or_else(|| {
+            warn!("Contratista no encontrado para validación: {}", contratista_id_str);
+            IngresoContratistaError::ContratistaNotFound
+        })?;
 
     let b = lista_negra_service::check_is_blocked(contratista.cedula.clone()).await.unwrap_or(
         BlockCheckResponse { is_blocked: false, nivel_severidad: None, bloqueado_desde: None },
@@ -176,26 +159,29 @@ pub async fn validar_ingreso_contratista(
     })
 }
 
-/// Registra físicamente el ingreso de un contratista y asigna recursos (Gafetes).
+// --------------------------------------------------------------------------
+// REGISTRO DE INGRESOS
+// --------------------------------------------------------------------------
+
+/// Registra físicamente el ingreso de un contratista y asigna recursos.
+///
+/// # Argumentos
+/// * `input` - Datos del ingreso (contratista, gafete, vehículo, etc.).
+/// * `usuario_id_str` - ID del guardia que registra.
+///
+/// # Retorno
+/// Respuesta con los datos del ingreso creado.
+///
+/// # Errores
+/// - `IngresoContratistaError::GafeteNotAvailable`: Gafete no disponible.
+/// - `IngresoContratistaError::ContratistaNotFound`: Contratista no existe.
+/// - `IngresoContratistaError::Database`: Error de persistencia.
 pub async fn crear_ingreso_contratista(
     input: CreateIngresoContratistaInput,
     usuario_id_str: String,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
-    let contratista_id = if input.contratista_id.contains(':') {
-        input.contratista_id.parse::<RecordId>().map_err(|_| {
-            IngresoContratistaError::Validation("ID de contratista inválido".to_string())
-        })?
-    } else {
-        RecordId::from_table_key("contratista", &input.contratista_id)
-    };
-
-    let usuario_id = if usuario_id_str.contains(':') {
-        usuario_id_str.parse::<RecordId>().map_err(|_| {
-            IngresoContratistaError::Validation("ID de usuario inválido".to_string())
-        })?
-    } else {
-        RecordId::from_table_key("user", &usuario_id_str)
-    };
+    let contratista_id = parse_contratista_id(&input.contratista_id)?;
+    let usuario_id = parse_user_id(&usuario_id_str)?;
 
     // Gestión de Gafetes Físicos: Se asegura que el recurso no esté duplicado.
     if let Some(ref g) = input.gafete_numero {
@@ -205,6 +191,7 @@ pub async fn crear_ingreso_contratista(
                 .map_err(|e| IngresoContratistaError::Gafete(e))?;
 
             if !disp {
+                warn!("Gafete {} no disponible para ingreso", *g);
                 return Err(IngresoContratistaError::GafeteNotAvailable);
             }
         }
@@ -238,47 +225,64 @@ pub async fn crear_ingreso_contratista(
         let _ = gafete_service::marcar_en_uso(*g, "contratista").await;
     }
 
+    info!("Ingreso registrado: Contratista {} ingresó a planta", input.contratista_id);
+
     IngresoResponse::from_contratista_fetched(nuevo_ingreso)
         .map_err(|e| IngresoContratistaError::Validation(e))
 }
 
+// --------------------------------------------------------------------------
+// REGISTRO DE SALIDAS
+// --------------------------------------------------------------------------
+
 /// Finaliza una jornada de trabajo registrando la salida y liberando recursos.
+///
+/// # Argumentos
+/// * `input` - Datos de la salida (observaciones, estado gafete).
+/// * `usuario_id_str` - ID del guardia que registra la salida.
+///
+/// # Retorno
+/// Ingreso actualizado con hora de salida.
+///
+/// # Errores
+/// - `IngresoContratistaError::Database`: Error de actualización.
 pub async fn registrar_salida(
     input: RegistrarSalidaInput,
     usuario_id_str: String,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
-    let ingreso_id = if input.ingreso_id.contains(':') {
-        input.ingreso_id.parse::<RecordId>().map_err(|_| {
-            IngresoContratistaError::Validation("ID de ingreso inválido".to_string())
-        })?
-    } else {
-        RecordId::from_table_key("ingreso", &input.ingreso_id)
-    };
-
-    let usuario_id = if usuario_id_str.contains(':') {
-        usuario_id_str.parse::<RecordId>().map_err(|_| {
-            IngresoContratistaError::Validation("ID de usuario inválido".to_string())
-        })?
-    } else {
-        RecordId::from_table_key("user", &usuario_id_str)
-    };
+    let ingreso_id = parse_ingreso_id(&input.ingreso_id)?;
+    let usuario_id = parse_user_id(&usuario_id_str)?;
 
     let ingreso_actualizado =
         db::update_salida(&ingreso_id, &usuario_id, input.observaciones_salida)
             .await
             .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
 
-    // Devolución del Gafete: Permite que el recurso vuelva a estar disponible para otros.
+    // Devolución del Gafete: Permite que el recurso vuelva a estar disponible.
     if input.devolvio_gafete {
         if let Some(ref g) = ingreso_actualizado.gafete_numero {
             let _ = gafete_service::liberar_gafete(*g, "contratista").await;
         }
     }
 
+    info!("Salida registrada para ingreso: {}", input.ingreso_id);
+
     IngresoResponse::from_contratista_fetched(ingreso_actualizado)
         .map_err(|e| IngresoContratistaError::Validation(e))
 }
 
+// --------------------------------------------------------------------------
+// MONITOREO DE PLANTA
+// --------------------------------------------------------------------------
+
+/// Valida si un contratista puede salir de planta.
+///
+/// # Argumentos
+/// * `_ingreso_id` - ID del ingreso activo.
+/// * `_gafete` - Número de gafete a verificar (opcional).
+///
+/// # Retorno
+/// Resultado de validación con errores/advertencias.
 pub async fn validar_puede_salir(
     _ingreso_id: &str,
     _gafete: Option<&str>,
@@ -286,12 +290,67 @@ pub async fn validar_puede_salir(
     Ok(ResultadoValidacionSalida { puede_salir: true, errores: vec![], advertencias: vec![] })
 }
 
+/// Obtiene el estado de ocupación actual con alertas de tiempo.
+///
+/// # Retorno
+/// Lista de ingresos abiertos con minutos transcurridos.
 pub async fn get_ingresos_abiertos_con_alertas(
 ) -> Result<Vec<IngresoConEstadoResponse>, IngresoContratistaError> {
+    // TODO: Implementar lógica de monitoreo
     Ok(vec![])
 }
 
+/// Consulta reactiva de alertas por tiempos de permanencia excedidos.
+///
+/// # Retorno
+/// Lista de alertas para contratistas que exceden el límite.
 pub async fn verificar_tiempos_excedidos(
 ) -> Result<Vec<AlertaTiempoExcedido>, IngresoContratistaError> {
+    // TODO: Implementar lógica de alertas
     Ok(vec![])
+}
+
+// --------------------------------------------------------------------------
+// UNIT TESTS
+// --------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_contratista_id_con_prefijo() {
+        let id = parse_contratista_id("contratista:abc123").unwrap();
+        assert_eq!(id.to_string(), "contratista:abc123");
+    }
+
+    #[test]
+    fn test_parse_contratista_id_sin_prefijo() {
+        let id = parse_contratista_id("abc123").unwrap();
+        assert_eq!(id.to_string(), "contratista:abc123");
+    }
+
+    #[test]
+    fn test_parse_user_id_con_prefijo() {
+        let id = parse_user_id("user:guard01").unwrap();
+        assert_eq!(id.to_string(), "user:guard01");
+    }
+
+    #[test]
+    fn test_parse_user_id_sin_prefijo() {
+        let id = parse_user_id("guard01").unwrap();
+        assert_eq!(id.to_string(), "user:guard01");
+    }
+
+    #[test]
+    fn test_parse_ingreso_id_con_prefijo() {
+        let id = parse_ingreso_id("ingreso:ing001").unwrap();
+        assert_eq!(id.to_string(), "ingreso:ing001");
+    }
+
+    #[test]
+    fn test_parse_ingreso_id_sin_prefijo() {
+        let id = parse_ingreso_id("ing001").unwrap();
+        assert_eq!(id.to_string(), "ingreso:ing001");
+    }
 }

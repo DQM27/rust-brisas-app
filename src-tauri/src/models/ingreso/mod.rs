@@ -185,3 +185,83 @@ pub struct ValidacionIngresoResponse {
     pub tiene_ingreso_abierto: bool,
     pub ingreso_abierto: Option<IngresoResponse>,
 }
+
+// --------------------------------------------------------------------------
+// DTOs DE SERVICIO (Respuestas Enriquecidas)
+// --------------------------------------------------------------------------
+
+/// Resultado de validación previa a la salida.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResultadoValidacionSalida {
+    pub puede_salir: bool,
+    pub errores: Vec<String>,
+    pub advertencias: Vec<String>,
+}
+
+/// Respuesta de ingreso con estado de permanencia.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IngresoConEstadoResponse {
+    pub ingreso: IngresoResponse,
+    pub minutos_transcurridos: i64,
+    pub estado: String,
+}
+
+/// Alerta por tiempo de permanencia excedido.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AlertaTiempoExcedido {
+    pub ingreso_id: String,
+    pub cedula: String,
+    pub nombre_completo: String,
+    pub empresa_nombre: String,
+    pub fecha_hora_ingreso: String,
+    pub minutos_transcurridos: i64,
+    pub minutos_excedidos: i64,
+    pub estado: String,
+}
+
+/// Input para cierre manual de un ingreso.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CerrarIngresoManualInput {
+    pub ingreso_id: String,
+    pub motivo_cierre: String,
+    pub fecha_salida_estimada: Option<String>,
+    pub notas: Option<String>,
+}
+
+/// Respuesta de cierre manual con indicador de reporte.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResultadoCierreManualResponse {
+    pub ingreso: IngresoResponse,
+    pub genera_reporte: bool,
+    pub tipo_reporte: Option<String>,
+    pub mensaje: Option<String>,
+}
+
+/// Input para ingreso excepcional (bypass de bloqueos).
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IngresoExcepcionalInput {
+    pub contratista_id: String,
+    pub autorizado_por: String,
+    pub motivo_excepcional: String,
+    pub notas: Option<String>,
+    pub vehiculo_id: Option<String>,
+    pub gafete_numero: Option<String>,
+    pub modo_ingreso: String,
+    pub observaciones: Option<String>,
+}
+
+/// Respuesta de ingreso excepcional con trazabilidad.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IngresoExcepcionalResponse {
+    pub ingreso: IngresoResponse,
+    pub motivo_original_bloqueo: String,
+    pub autorizado_por: String,
+    pub valido_hasta: String,
+}
