@@ -72,10 +72,19 @@ pub async fn registrar_ingreso(
         ));
     }
 
+    // Obtener datos del proveedor para snapshot
+    use crate::db::surrealdb_proveedor_queries as proveedor_queries;
+    let proveedor = proveedor_queries::find_by_id(&proveedor_id)
+        .await
+        .map_err(|e| IngresoProveedorError::Database(e.to_string()))?
+        .ok_or(IngresoProveedorError::Validation("Proveedor no encontrado".to_string()))?;
+
     let dto = IngresoProveedorCreateDTO {
         proveedor: proveedor_id,
-        nombre: input.nombre,
-        apellido: input.apellido,
+        nombre: proveedor.nombre,
+        apellido: proveedor.apellido,
+        segundo_nombre: proveedor.segundo_nombre,
+        segundo_apellido: proveedor.segundo_apellido,
         cedula: input.cedula,
         area_visitada: input.area_visitada,
         motivo: input.motivo,
