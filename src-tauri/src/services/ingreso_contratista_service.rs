@@ -6,9 +6,9 @@
 use crate::db::surrealdb_contratista_queries as contratista_queries;
 use crate::db::surrealdb_ingreso_contratista_queries as db;
 use crate::domain::errors::IngresoContratistaError;
-use crate::domain::ingreso_contratista::{self};
+use crate::domain::ingreso_contratista;
 use crate::domain::motor_validacion as motor;
-use crate::models::contratista::ContratistaFetched;
+// use crate::models::contratista::ContratistaFetched; // Removed unused import
 use crate::models::ingreso::{
     CreateIngresoContratistaInput, IngresoResponse, RegistrarSalidaInput, ValidacionIngresoResponse,
 };
