@@ -7,16 +7,6 @@ use crate::domain::errors::EmpresaError;
 use crate::models::empresa::{CreateEmpresaInput, UpdateEmpresaInput};
 
 // --------------------------------------------------------------------------
-// CONSTANTES DE VALIDACIÓN
-// --------------------------------------------------------------------------
-
-/// Longitud máxima del nombre de empresa.
-pub const NOMBRE_MAX_LEN: usize = 100;
-
-/// Longitud máxima de la dirección.
-pub const DIRECCION_MAX_LEN: usize = 200;
-
-// --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
 // --------------------------------------------------------------------------
 
@@ -76,7 +66,7 @@ mod tests {
     #[test]
     fn test_validar_nombre_valido() {
         assert!(validar_nombre("Empresa ABC").is_ok());
-        assert!(validar_nombre("A").is_ok());
+        assert!(validar_nombre("AB").is_ok()); // Mínimo 2 caracteres
     }
 
     #[test]
@@ -87,13 +77,13 @@ mod tests {
 
     #[test]
     fn test_validar_nombre_muy_largo() {
-        let nombre_largo = "A".repeat(101);
+        let nombre_largo = "A".repeat(MAX_LEN_EMPRESA + 1);
         assert!(validar_nombre(&nombre_largo).is_err());
     }
 
     #[test]
     fn test_validar_nombre_limite() {
-        let nombre_100_chars = "A".repeat(100);
+        let nombre_100_chars = "A".repeat(MAX_LEN_EMPRESA);
         assert!(validar_nombre(&nombre_100_chars).is_ok());
     }
 
@@ -119,7 +109,7 @@ mod tests {
 
     #[test]
     fn test_validar_direccion_muy_larga() {
-        let direccion_larga = "A".repeat(201);
+        let direccion_larga = "A".repeat(MAX_LEN_DIRECCION + 1);
         assert!(validar_direccion(&direccion_larga).is_err());
     }
 

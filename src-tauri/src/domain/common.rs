@@ -24,6 +24,9 @@ pub const MAX_LEN_NOMBRE: usize = 50;
 /// Longitud máxima para direcciones postales.
 pub const MAX_LEN_DIRECCION: usize = 200;
 
+/// Longitud máxima para nombres de empresa.
+pub const MAX_LEN_EMPRESA: usize = 50;
+
 /// Longitud máxima para números de teléfono.
 pub const MAX_LEN_TELEFONO: usize = 20;
 
@@ -34,7 +37,7 @@ pub const MAX_LEN_GAFETE: usize = 20;
 pub const MIN_LEN_PASSWORD: usize = 6;
 
 /// Longitud máxima para emails.
-pub const MAX_LEN_EMAIL: usize = 60;
+pub const MAX_LEN_EMAIL: usize = 50;
 
 /// Longitud mínima de dígitos para cédula (sin contar guiones).
 pub const MIN_DIGITOS_CEDULA: usize = 8;

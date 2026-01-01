@@ -4,7 +4,7 @@
 /// incluyendo validaciones de identidad, integridad de datos y coherencia vehicular.
 use crate::domain::common::{
     normalizar_nombre_opcional_estandar, normalizar_nombre_propio, normalizar_opcional_estandar,
-    validar_cedula_estandar, validar_nombre_estandar, validar_opcional_estandar,
+    validar_cedula_estandar, validar_nombre_estandar, validar_opcional_estandar, MAX_LEN_NOMBRE,
 };
 use crate::domain::errors::ProveedorError;
 use crate::domain::vehiculo as vehiculo_domain;
@@ -54,8 +54,8 @@ pub fn validar_create_input(input: &CreateProveedorInput) -> Result<(), Proveedo
     validar_empresa_id(&input.empresa_id)?;
 
     // Validaciones de nombres opcionales
-    validar_opcional(input.segundo_nombre.as_ref(), 50, "segundo nombre")?;
-    validar_opcional(input.segundo_apellido.as_ref(), 50, "segundo apellido")?;
+    validar_opcional(input.segundo_nombre.as_ref(), MAX_LEN_NOMBRE, "segundo nombre")?;
+    validar_opcional(input.segundo_apellido.as_ref(), MAX_LEN_NOMBRE, "segundo apellido")?;
 
     // Validación vehicular si se declara
     if let Some(true) = input.tiene_vehiculo {
@@ -71,7 +71,7 @@ pub fn validar_create_input(input: &CreateProveedorInput) -> Result<(), Proveedo
             vehiculo_domain::validar_marca(marca)
                 .map_err(|e| ProveedorError::Validation(e.to_string()))?;
         }
-        validar_opcional(input.modelo.as_ref(), 50, "modelo de vehículo")?;
+        validar_opcional(input.modelo.as_ref(), MAX_LEN_NOMBRE, "modelo de vehículo")?;
         validar_opcional(input.color.as_ref(), 30, "color de vehículo")?;
     }
 
@@ -91,8 +91,8 @@ pub fn validar_update_input(input: &UpdateProveedorInput) -> Result<(), Proveedo
     }
 
     // Nombres opcionales
-    validar_opcional(input.segundo_nombre.as_ref(), 50, "segundo nombre")?;
-    validar_opcional(input.segundo_apellido.as_ref(), 50, "segundo apellido")?;
+    validar_opcional(input.segundo_nombre.as_ref(), MAX_LEN_NOMBRE, "segundo nombre")?;
+    validar_opcional(input.segundo_apellido.as_ref(), MAX_LEN_NOMBRE, "segundo apellido")?;
 
     // Datos vehiculares reactivos
     if let Some(true) = input.tiene_vehiculo {
@@ -108,7 +108,7 @@ pub fn validar_update_input(input: &UpdateProveedorInput) -> Result<(), Proveedo
             vehiculo_domain::validar_marca(marca)
                 .map_err(|e| ProveedorError::Validation(e.to_string()))?;
         }
-        validar_opcional(input.modelo.as_ref(), 50, "modelo de vehículo")?;
+        validar_opcional(input.modelo.as_ref(), MAX_LEN_NOMBRE, "modelo de vehículo")?;
         validar_opcional(input.color.as_ref(), 30, "color de vehículo")?;
     }
 
@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn test_validar_cedula_valida() {
-        assert!(validar_cedula("1234567").is_ok());
+        assert!(validar_cedula("12345678").is_ok());
     }
 
     #[test]

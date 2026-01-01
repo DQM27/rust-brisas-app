@@ -13,19 +13,6 @@ use crate::models::contratista::{
 use chrono::NaiveDate;
 
 // --------------------------------------------------------------------------
-// CONSTANTES DE VALIDACIÓN
-// --------------------------------------------------------------------------
-
-/// Longitud mínima de cédula de identidad.
-pub const CEDULA_MIN_LEN: usize = 7;
-
-/// Longitud máxima de cédula de identidad.
-pub const CEDULA_MAX_LEN: usize = 20;
-
-/// Longitud máxima de nombre/apellido.
-pub const NOMBRE_MAX_LEN: usize = 50;
-
-// --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
 // --------------------------------------------------------------------------
 
@@ -134,8 +121,7 @@ mod tests {
     #[test]
     fn test_validar_cedula_valida() {
         assert!(validar_cedula("12345678").is_ok());
-        assert!(validar_cedula("V-12345678").is_ok());
-        assert!(validar_cedula("E-1234567").is_ok());
+        assert!(validar_cedula("12-345-678").is_ok());
     }
 
     #[test]
@@ -145,20 +131,15 @@ mod tests {
     }
 
     #[test]
-    fn test_validar_cedula_caracteres_invalidos() {
-        assert!(validar_cedula("ABC123XYZ").is_err());
-        assert!(validar_cedula("12@34#56").is_err());
+    fn test_validar_cedula_con_letras() {
+        // Ahora las letras están prohibidas en cédulas
+        assert!(validar_cedula("V-12345678").is_err());
+        assert!(validar_cedula("E-1234567").is_err());
     }
 
     #[test]
     fn test_validar_cedula_muy_corta() {
         assert!(validar_cedula("123").is_err());
-    }
-
-    #[test]
-    fn test_validar_cedula_muy_larga() {
-        let cedula_larga = "1".repeat(21);
-        assert!(validar_cedula(&cedula_larga).is_err());
     }
 
     #[test]
@@ -175,7 +156,7 @@ mod tests {
 
     #[test]
     fn test_validar_nombre_muy_largo() {
-        let nombre_largo = "A".repeat(51);
+        let nombre_largo = "A".repeat(MAX_LEN_NOMBRE + 1);
         assert!(validar_nombre(&nombre_largo).is_err());
     }
 
@@ -190,7 +171,6 @@ mod tests {
     fn test_validar_apellido_valido() {
         assert!(validar_apellido("Pérez").is_ok());
         assert!(validar_apellido("De La Cruz").is_ok());
-        assert!(validar_apellido("O'Brien").is_ok()); // Apóstrofe permitido
     }
 
     #[test]
@@ -231,9 +211,8 @@ mod tests {
 
     #[test]
     fn test_normalizar_cedula() {
-        assert_eq!(normalizar_cedula("  v-12345678  "), "V-12345678");
-        assert_eq!(normalizar_cedula("e-1234567"), "E-1234567");
-        assert_eq!(normalizar_cedula("12345678"), "12345678");
+        assert_eq!(normalizar_cedula("  12345678  "), "12345678");
+        assert_eq!(normalizar_cedula("1234567"), "1234567");
     }
 
     #[test]

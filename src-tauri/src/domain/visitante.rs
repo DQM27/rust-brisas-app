@@ -3,7 +3,8 @@
 /// Este módulo centraliza las validaciones de identidad para personas particulares
 /// que ingresan a las instalaciones (no son empleados ni contratistas fijos).
 use crate::domain::common::{
-    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
+    normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar, MAX_LEN_EMPRESA,
+    MAX_LEN_NOMBRE,
 };
 use crate::domain::errors::VisitanteError;
 use crate::models::visitante::CreateVisitanteInput;
@@ -55,9 +56,9 @@ pub fn validar_create_input(input: &CreateVisitanteInput) -> Result<(), Visitant
     validar_nombre(&input.nombre)?;
     validar_apellido(&input.apellido)?;
 
-    validar_opcional(input.segundo_nombre.as_ref(), 50, "Segundo nombre")?;
-    validar_opcional(input.segundo_apellido.as_ref(), 50, "Segundo apellido")?;
-    validar_opcional(input.empresa.as_ref(), 100, "Empresa")?;
+    validar_opcional(input.segundo_nombre.as_ref(), MAX_LEN_NOMBRE, "Segundo nombre")?;
+    validar_opcional(input.segundo_apellido.as_ref(), MAX_LEN_NOMBRE, "Segundo apellido")?;
+    validar_opcional(input.empresa.as_ref(), MAX_LEN_EMPRESA, "Empresa")?;
 
     Ok(())
 }
