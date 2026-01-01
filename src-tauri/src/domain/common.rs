@@ -12,6 +12,37 @@ use chrono::DateTime;
 pub use crate::models::ingreso::{CommonError, DecisionReporteGafete};
 
 // --------------------------------------------------------------------------
+// CONSTANTES DE LÍMITES ESTÁNDAR
+// --------------------------------------------------------------------------
+
+/// Longitud mínima para nombres y apellidos.
+pub const MIN_LEN_NOMBRE: usize = 2;
+
+/// Longitud máxima para nombres y apellidos (primeros y segundos).
+pub const MAX_LEN_NOMBRE: usize = 50;
+
+/// Longitud máxima para direcciones postales.
+pub const MAX_LEN_DIRECCION: usize = 200;
+
+/// Longitud máxima para números de teléfono.
+pub const MAX_LEN_TELEFONO: usize = 20;
+
+/// Longitud máxima para identificador de gafete (texto).
+pub const MAX_LEN_GAFETE: usize = 20;
+
+/// Longitud mínima requerida para contraseñas de usuario.
+pub const MIN_LEN_PASSWORD: usize = 6;
+
+/// Longitud máxima para emails.
+pub const MAX_LEN_EMAIL: usize = 60;
+
+/// Longitud mínima de dígitos para cédula (sin contar guiones).
+pub const MIN_DIGITOS_CEDULA: usize = 8;
+
+/// Longitud máxima de dígitos para cédula (sin contar guiones).
+pub const MAX_DIGITOS_CEDULA: usize = 14;
+
+// --------------------------------------------------------------------------
 // GESTIÓN DE GAFETES: REGLAS DE NEGOCIO
 // --------------------------------------------------------------------------
 
@@ -151,6 +182,7 @@ pub fn calcular_tiempo_permanencia(
 /// - Solo letras (Unicode, incluye acentos).
 /// - Espacios permitidos.
 /// - Sin números ni caracteres especiales.
+/// - Entre `MIN_LEN_NOMBRE` y `MAX_LEN_NOMBRE` caracteres.
 pub fn validar_nombre_estandar(texto: &str, campo: &str) -> Result<(), CommonError> {
     let limpio = texto.trim();
 
@@ -158,10 +190,17 @@ pub fn validar_nombre_estandar(texto: &str, campo: &str) -> Result<(), CommonErr
         return Err(CommonError::Validation(format!("El {} es obligatorio", campo)));
     }
 
-    if limpio.len() > 100 {
+    if limpio.len() < MIN_LEN_NOMBRE {
         return Err(CommonError::Validation(format!(
-            "El {} no puede exceder 100 caracteres",
-            campo
+            "El {} debe tener al menos {} caracteres",
+            campo, MIN_LEN_NOMBRE
+        )));
+    }
+
+    if limpio.len() > MAX_LEN_NOMBRE {
+        return Err(CommonError::Validation(format!(
+            "El {} no puede exceder {} caracteres",
+            campo, MAX_LEN_NOMBRE
         )));
     }
 
@@ -180,7 +219,7 @@ pub fn validar_nombre_estandar(texto: &str, campo: &str) -> Result<(), CommonErr
 /// Valida una cédula bajo el estándar estricto:
 /// - Solo números y guiones.
 /// - Sin letras (V/E prohibidas).
-/// - Al menos un dígito.
+/// - Entre `MIN_DIGITOS_CEDULA` y `MAX_DIGITOS_CEDULA` dígitos (sin contar guiones).
 pub fn validar_cedula_estandar(cedula: &str) -> Result<(), CommonError> {
     let limpio = cedula.trim();
 
@@ -195,15 +234,14 @@ pub fn validar_cedula_estandar(cedula: &str) -> Result<(), CommonError> {
         ));
     }
 
-    // Al menos un dígito
-    if !limpio.chars().any(|c| c.is_ascii_digit()) {
-        return Err(CommonError::Validation("La cédula debe contener números".to_string()));
-    }
+    // Contar solo los dígitos (ignorando guiones)
+    let cantidad_digitos = limpio.chars().filter(|c| c.is_ascii_digit()).count();
 
-    if limpio.len() < 5 || limpio.len() > 20 {
-        return Err(CommonError::Validation(
-            "Longitud de cédula inválida (5-20 caracteres)".to_string(),
-        ));
+    if cantidad_digitos < MIN_DIGITOS_CEDULA || cantidad_digitos > MAX_DIGITOS_CEDULA {
+        return Err(CommonError::Validation(format!(
+            "La cédula debe tener entre {} y {} dígitos (actualmente tiene {})",
+            MIN_DIGITOS_CEDULA, MAX_DIGITOS_CEDULA, cantidad_digitos
+        )));
     }
 
     Ok(())

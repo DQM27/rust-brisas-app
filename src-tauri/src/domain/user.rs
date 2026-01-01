@@ -3,7 +3,9 @@
 /// Este módulo define las políticas de identidad, seguridad y validaciones
 /// para los operadores y administradores de la plataforma.
 use crate::domain::common::{
-    validar_cedula_estandar, validar_email_estandar, validar_nombre_estandar,
+    normalizar_nombre_propio, validar_cedula_estandar, validar_email_estandar,
+    validar_nombre_estandar, MAX_LEN_DIRECCION, MAX_LEN_GAFETE, MAX_LEN_NOMBRE, MAX_LEN_TELEFONO,
+    MIN_LEN_PASSWORD,
 };
 use crate::domain::errors::UserError;
 use crate::models::user::{CreateUserInput, UpdateUserInput};
@@ -34,17 +36,23 @@ pub fn validar_cedula(cedula: &str) -> Result<(), UserError> {
 
 /// Valida los requisitos de robustez de la contraseña.
 ///
-/// Mínimo 6 caracteres para asegurar un nivel base de seguridad.
+/// Mínimo `MIN_LEN_PASSWORD` caracteres para asegurar un nivel base de seguridad.
 pub fn validar_password(password: &str) -> Result<(), UserError> {
-    if password.len() < 6 {
-        return Err(UserError::Validation(
-            "La contraseña debe tener al menos 6 caracteres".to_string(),
-        ));
+    if password.len() < MIN_LEN_PASSWORD {
+        return Err(UserError::Validation(format!(
+            "La contraseña debe tener al menos {} caracteres",
+            MIN_LEN_PASSWORD
+        )));
     }
     Ok(())
 }
 
 /// Valida campos opcionales del perfil de usuario.
+///
+/// # Argumentos
+/// * `valor` - El valor opcional a validar.
+/// * `max_len` - Longitud máxima permitida.
+/// * `nombre_campo` - Nombre del campo para mensajes de error.
 pub fn validar_opcional(
     valor: Option<&String>,
     max_len: usize,
@@ -76,11 +84,11 @@ pub fn validar_create_input(input: &CreateUserInput) -> Result<(), UserError> {
         validar_password(pwd)?;
     }
 
-    validar_opcional(input.segundo_nombre.as_ref(), 50, "Segundo nombre")?;
-    validar_opcional(input.segundo_apellido.as_ref(), 50, "Segundo apellido")?;
-    validar_opcional(input.telefono.as_ref(), 20, "Teléfono")?;
-    validar_opcional(input.direccion.as_ref(), 200, "Dirección")?;
-    validar_opcional(input.numero_gafete.as_ref(), 20, "Gafete")?;
+    validar_opcional(input.segundo_nombre.as_ref(), MAX_LEN_NOMBRE, "Segundo nombre")?;
+    validar_opcional(input.segundo_apellido.as_ref(), MAX_LEN_NOMBRE, "Segundo apellido")?;
+    validar_opcional(input.telefono.as_ref(), MAX_LEN_TELEFONO, "Teléfono")?;
+    validar_opcional(input.direccion.as_ref(), MAX_LEN_DIRECCION, "Dirección")?;
+    validar_opcional(input.numero_gafete.as_ref(), MAX_LEN_GAFETE, "Gafete")?;
 
     Ok(())
 }
@@ -107,11 +115,11 @@ pub fn validar_update_input(input: &UpdateUserInput) -> Result<(), UserError> {
         validar_password(pwd)?;
     }
 
-    validar_opcional(input.segundo_nombre.as_ref(), 50, "Segundo nombre")?;
-    validar_opcional(input.segundo_apellido.as_ref(), 50, "Segundo apellido")?;
-    validar_opcional(input.telefono.as_ref(), 20, "Teléfono")?;
-    validar_opcional(input.direccion.as_ref(), 200, "Dirección")?;
-    validar_opcional(input.numero_gafete.as_ref(), 20, "Gafete")?;
+    validar_opcional(input.segundo_nombre.as_ref(), MAX_LEN_NOMBRE, "Segundo nombre")?;
+    validar_opcional(input.segundo_apellido.as_ref(), MAX_LEN_NOMBRE, "Segundo apellido")?;
+    validar_opcional(input.telefono.as_ref(), MAX_LEN_TELEFONO, "Teléfono")?;
+    validar_opcional(input.direccion.as_ref(), MAX_LEN_DIRECCION, "Dirección")?;
+    validar_opcional(input.numero_gafete.as_ref(), MAX_LEN_GAFETE, "Gafete")?;
 
     Ok(())
 }
@@ -125,7 +133,128 @@ pub fn normalizar_email(email: &str) -> String {
     email.trim().to_lowercase()
 }
 
-/// Limpia espacios laterales en el nombre.
+/// Normaliza un nombre o apellido aplicando Title Case.
+///
+/// Ej: "JUAN pérez" → "Juan Pérez"
 pub fn normalizar_nombre(nombre: &str) -> String {
-    nombre.trim().to_string()
+    normalizar_nombre_propio(nombre)
+}
+
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // -----------------------------------------------------------------------
+    // Tests de validación de email
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_email_valido() {
+        assert!(validar_email("usuario@ejemplo.com").is_ok());
+        assert!(validar_email("admin@brisas.local").is_ok());
+    }
+
+    #[test]
+    fn test_email_invalido_sin_arroba() {
+        assert!(validar_email("usuarioejemplo.com").is_err());
+    }
+
+    #[test]
+    fn test_email_invalido_vacio() {
+        assert!(validar_email("").is_err());
+    }
+
+    // -----------------------------------------------------------------------
+    // Tests de validación de nombre/apellido
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_nombre_valido() {
+        assert!(validar_nombre("Daniel").is_ok());
+        assert!(validar_apellido("Quintana").is_ok());
+    }
+
+    #[test]
+    fn test_nombre_vacio() {
+        assert!(validar_nombre("").is_err());
+        assert!(validar_apellido("   ").is_err());
+    }
+
+    // -----------------------------------------------------------------------
+    // Tests de validación de cédula
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_cedula_valida() {
+        assert!(validar_cedula("123456789").is_ok());
+        assert!(validar_cedula("0000000000").is_ok());
+    }
+
+    #[test]
+    fn test_cedula_invalida_con_letras() {
+        assert!(validar_cedula("12345ABC").is_err());
+    }
+
+    #[test]
+    fn test_cedula_vacia() {
+        assert!(validar_cedula("").is_err());
+    }
+
+    // -----------------------------------------------------------------------
+    // Tests de validación de contraseña
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_password_valida() {
+        assert!(validar_password("123456").is_ok());
+        assert!(validar_password("contraseña_segura_123").is_ok());
+    }
+
+    #[test]
+    fn test_password_muy_corta() {
+        assert!(validar_password("12345").is_err());
+        assert!(validar_password("abc").is_err());
+    }
+
+    // -----------------------------------------------------------------------
+    // Tests de validación de campos opcionales
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_opcional_dentro_de_limite() {
+        let valor = Some("Texto corto".to_string());
+        assert!(validar_opcional(valor.as_ref(), MAX_LEN_NOMBRE, "Campo").is_ok());
+    }
+
+    #[test]
+    fn test_opcional_excede_limite() {
+        let valor = Some("A".repeat(MAX_LEN_DIRECCION + 1));
+        assert!(validar_opcional(valor.as_ref(), MAX_LEN_DIRECCION, "Dirección").is_err());
+    }
+
+    #[test]
+    fn test_opcional_none_siempre_valido() {
+        assert!(validar_opcional(None, 10, "Campo").is_ok());
+    }
+
+    // -----------------------------------------------------------------------
+    // Tests de normalización
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_normalizar_email_minusculas() {
+        assert_eq!(normalizar_email("USUARIO@EJEMPLO.COM"), "usuario@ejemplo.com");
+        assert_eq!(normalizar_email("  Admin@Brisas.Local  "), "admin@brisas.local");
+    }
+
+    #[test]
+    fn test_normalizar_nombre_title_case() {
+        assert_eq!(normalizar_nombre("JUAN PÉREZ"), "Juan Pérez");
+        assert_eq!(normalizar_nombre("maría josé"), "María José");
+        assert_eq!(normalizar_nombre("  daniel  "), "Daniel");
+    }
 }
