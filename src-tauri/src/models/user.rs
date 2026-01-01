@@ -1,18 +1,27 @@
+// ==========================================
+// src/models/user.rs
+// ==========================================
+
 use crate::models::role::Role;
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};
 
-// ==========================================
-// MODELO DE BASE DE DATOS (SurrealDB Native)
-// ==========================================
+// --------------------------------------------------------------------------
+// MODELO DE DOMINIO
+// --------------------------------------------------------------------------
 
+/// Representa a un operador del sistema (Usuario).
+///
+/// Un usuario tiene credenciales de acceso, un rol asignado y datos personales
+/// básicos para identificación y auditoría.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     pub id: RecordId,
     pub email: String,
     pub nombre: String,
     pub apellido: String,
-    pub role: RecordId, // Según esquema: record<role>
+    /// Referencia al rol asignado (record<role>).
+    pub role: RecordId,
     pub is_active: bool,
     pub created_at: Datetime,
     pub updated_at: Datetime,
@@ -26,18 +35,20 @@ pub struct User {
     pub direccion: Option<String>,
     pub contacto_emergencia_nombre: Option<String>,
     pub contacto_emergencia_telefono: Option<String>,
+    /// Indica si el usuario debe cambiar su contraseña en el próximo inicio de sesión.
     pub must_change_password: bool,
     pub deleted_at: Option<Datetime>,
     pub avatar_path: Option<String>,
 }
 
+/// Versión "poblada" del usuario con la estructura completa de su Rol (FETCH).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserFetched {
     pub id: RecordId,
     pub email: String,
     pub nombre: String,
     pub apellido: String,
-    pub role: Option<Role>, // Optional to handle missing roles gracefully
+    pub role: Option<Role>, // Opcional para manejar inconsistencias de integridad
     pub is_active: bool,
     pub created_at: Datetime,
     pub updated_at: Datetime,
@@ -56,10 +67,11 @@ pub struct UserFetched {
     pub avatar_path: Option<String>,
 }
 
-// ==========================================
-// DTOs DE ENTRADA (Frontend Friendly)
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs DE ENTRADA (Commands)
+// --------------------------------------------------------------------------
 
+/// Datos necesarios para crear un nuevo usuario.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateUserInput {
@@ -82,6 +94,7 @@ pub struct CreateUserInput {
     pub avatar_path: Option<String>,
 }
 
+/// Datos para actualizar un usuario existente.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUserInput {
@@ -105,6 +118,7 @@ pub struct UpdateUserInput {
     pub avatar_path: Option<String>,
 }
 
+/// Datos para cambio de contraseña.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChangePasswordInput {
@@ -112,9 +126,9 @@ pub struct ChangePasswordInput {
     pub new_password: String,
 }
 
-// ==========================================
-// DTOs DE BASE DE DATOS (SurrealDB Friendly)
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs PARA PERSISTENCIA
+// --------------------------------------------------------------------------
 
 #[derive(Debug, Serialize)]
 pub struct UserCreateDTO {
@@ -189,10 +203,11 @@ pub struct UserUpdateDTO {
     pub updated_at: Option<Datetime>,
 }
 
-// ==========================================
-// DTOs DE SALIDA (JSON Stable)
-// ==========================================
+// --------------------------------------------------------------------------
+// DTOs DE SALIDA (Responses)
+// --------------------------------------------------------------------------
 
+/// Respuesta estándar de Usuario para el Frontend.
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserResponse {
