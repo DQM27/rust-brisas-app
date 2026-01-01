@@ -16,14 +16,17 @@ pub const NUMERO_MAX_LEN: usize = 20;
 /// Número reservado del sistema para casos "sin gafete".
 pub const NUMERO_RESERVADO: &str = "S/G";
 
-/// Caracteres prohibidos en números de gafete (prevención de inyecciones).
-const CHARS_PROHIBIDOS: &[char] = &['<', '>', '{', '}', '|', '\\', '^', '~', '[', ']', '`'];
-
 // --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
 // --------------------------------------------------------------------------
 
 /// Valida el formato y longitud del número de gafete.
+///
+/// Reglas:
+/// - No vacío.
+/// - Máximo 20 caracteres.
+/// - Debe ser "S/G" o un número entero positivo (sin ceros a la izquierda).
+/// - No se permiten letras ni caracteres especiales (salvo en "S/G").
 pub fn validar_numero(numero: &str) -> Result<(), GafeteError> {
     let limpio = numero.trim();
 
@@ -40,19 +43,38 @@ pub fn validar_numero(numero: &str) -> Result<(), GafeteError> {
         )));
     }
 
+    // Caso especial: Comodín "Sin Gafete"
     if limpio.to_uppercase() == NUMERO_RESERVADO {
-        return Err(GafeteError::Validation(format!(
-            "'{}' es un número reservado del sistema",
-            NUMERO_RESERVADO
-        )));
+        return Ok(());
     }
 
-    // Validar caracteres prohibidos
-    if limpio.chars().any(|c| CHARS_PROHIBIDOS.contains(&c)) {
+    // Caso especial: "0" no es un gafete válido comunmente, pero si el usuario quiere permitirlo:
+    // Asumiremos que gafetes son 1..N. Si "0" es válido, cambiar regex a ^(0|[1-9][0-9]*)$.
+    // Por ahora: ^[1-9][0-9]*$ (Enteros positivos sin ceros a la izquierda)
+
+    let es_numero_valido = limpio.chars().all(|c| c.is_ascii_digit());
+    if !es_numero_valido {
+        return Err(GafeteError::Validation("El número solo puede contener dígitos".to_string()));
+    }
+
+    // Validar ceros a la izquierda (ej: "04", "001")
+    if limpio.starts_with('0') && limpio.len() > 1 {
         return Err(GafeteError::Validation(
-            "El número contiene caracteres no permitidos".to_string(),
+            "El número no puede tener ceros a la izquierda".to_string(),
         ));
     }
+
+    // Gafete "0" no existe
+    if limpio == "0" {
+        return Err(GafeteError::Validation(
+            "El gafete 0 no es válido, debe ser mayor a 0".to_string(),
+        ));
+    }
+
+    // Gafete "0" no debería permitirse si es físico, pero si el usuario tiene un gafete marcado con 0...
+    // Asumiremos que "0" es válido si es un solo dígito.
+    // EDIT: "no quiero que el user defina manualmente para que el ponga 0003... es mas rapido escribir 4"
+    // Esto implica que 3 es válido. 0 podría serlo.
 
     Ok(())
 }
@@ -102,7 +124,26 @@ mod tests {
     #[test]
     fn test_validar_numero_valido() {
         assert!(validar_numero("123").is_ok());
-        assert!(validar_numero("GAF-001").is_ok());
+        assert!(validar_numero("4").is_ok());
+        assert!(validar_numero("20").is_ok());
+    }
+
+    #[test]
+    fn test_validar_numero_con_ceros_izquierda() {
+        // Deben fallar porque el usuario debe ser eficiente
+        assert!(validar_numero("001").is_err());
+        assert!(validar_numero("04").is_err());
+    }
+
+    #[test]
+    fn test_validar_numero_cero() {
+        assert!(validar_numero("0").is_err());
+    }
+
+    #[test]
+    fn test_validar_numero_letras_invalidas() {
+        assert!(validar_numero("GAF-001").is_err()); // Antes era válido, ahora NO
+        assert!(validar_numero("A1").is_err());
     }
 
     #[test]
@@ -117,7 +158,7 @@ mod tests {
 
     #[test]
     fn test_validar_numero_largo() {
-        let result = validar_numero("ESTE_ES_UN_NUMERO_MUY_LARGO_QUE_EXCEDE_LOS_LIMITES");
+        let result = validar_numero("123456789012345678901"); // 21 dígitos
         assert!(result.is_err());
         match result.unwrap_err() {
             GafeteError::Validation(msg) => assert!(msg.contains("exceder 20")),
@@ -127,15 +168,16 @@ mod tests {
 
     #[test]
     fn test_validar_numero_reservado() {
-        assert!(validar_numero("s/g").is_err());
-        assert!(validar_numero("S/G").is_err());
+        // "S/G" ahora es VÁLIDO (es la excepción)
+        assert!(validar_numero("s/g").is_ok());
+        assert!(validar_numero("S/G").is_ok());
     }
 
     #[test]
     fn test_validar_numero_chars_prohibidos() {
         assert!(validar_numero("GAF<script>").is_err());
         assert!(validar_numero("123{json}").is_err());
-        assert!(validar_numero("G-01|pipe").is_err());
+        // assert!(validar_numero("G-01|pipe").is_err()); // Ya falla por tener letras
     }
 
     #[test]

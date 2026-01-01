@@ -120,8 +120,6 @@ pub struct CreateGafeteInput {
 pub struct CreateGafeteRangeInput {
     pub start: u32,
     pub end: u32,
-    pub prefix: Option<String>,
-    pub padding: Option<usize>,
     pub tipo: String,
 }
 

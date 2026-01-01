@@ -165,7 +165,7 @@ async fn seed_demo_gafetes() -> Result<(), SurrealDbError> {
 
     // Gafetes de contratista (01 a 20)
     for i in 1..=20 {
-        let numero = format!("{:02}", i);
+        let numero = i.to_string();
         db.query(
             r#"
                 UPSERT gafete SET
@@ -186,7 +186,7 @@ async fn seed_demo_gafetes() -> Result<(), SurrealDbError> {
 
     // Gafetes de proveedor (01 a 10)
     for i in 1..=10 {
-        let numero = format!("{:02}", i);
+        let numero = i.to_string();
         db.query(
             r#"
                 UPSERT gafete SET
@@ -207,7 +207,7 @@ async fn seed_demo_gafetes() -> Result<(), SurrealDbError> {
 
     // Gafetes de visita (01 a 10)
     for i in 1..=10 {
-        let numero = format!("{:02}", i);
+        let numero = i.to_string();
         db.query(
             r#"
                 UPSERT gafete SET

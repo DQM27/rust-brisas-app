@@ -69,15 +69,7 @@ pub async fn create_gafete_range(input: CreateGafeteRangeInput) -> Result<i32, S
     let mut created = 0;
 
     for i in input.start..=input.end {
-        let numero = if let Some(ref p) = input.prefix {
-            if let Some(pad) = input.padding {
-                format!("{}{:0width$}", p, i, width = pad)
-            } else {
-                format!("{}{}", p, i)
-            }
-        } else {
-            i.to_string()
-        };
+        let numero = i.to_string();
 
         let dto = GafeteCreateDTO { numero, tipo: tipo.clone(), estado: GafeteEstado::Activo };
 
