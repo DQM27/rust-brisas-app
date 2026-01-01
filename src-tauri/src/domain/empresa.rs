@@ -2,7 +2,7 @@
 ///
 /// Este módulo gestiona la integridad de los datos de las empresas (contratistas
 /// o proveedores) registradas en el sistema.
-use crate::domain::common::{validar_nombre_entidad_estandar, MAX_LEN_DIRECCION, MAX_LEN_EMPRESA};
+use crate::domain::common::validar_nombre_entidad_estandar;
 use crate::domain::errors::EmpresaError;
 use crate::models::empresa::{CreateEmpresaInput, UpdateEmpresaInput};
 
@@ -62,6 +62,7 @@ pub fn normalizar_nombre(nombre: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::common::{MAX_LEN_DIRECCION, MAX_LEN_EMPRESA};
 
     #[test]
     fn test_validar_nombre_valido() {
