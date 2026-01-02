@@ -1,9 +1,21 @@
-/// Servicio de Búsqueda Global basado en Tantivy.
-///
-/// Esta capa se encarga de proporcionar capacidades de búsqueda de texto completo (Full-Text Search)
-/// sobre los datos de la aplicación. Mientras que SurrealDB es excelente para relaciones y persistencia,
-/// Tantivy nos permite realizar búsquedas rápidas, aproximadas (fuzzy) y segmentadas
-/// sobre múltiples entidades (Contratistas, Usuarios, etc.) simultáneamente.
+//! # Servicio: Motor de Búsqueda Global (Tantivy)
+//!
+//! Proporciona capacidades de búsqueda full-text sobre los datos de la aplicación.
+//! Mientras que SurrealDB es excelente para relaciones y persistencia, Tantivy
+//! permite búsquedas rápidas, fuzzy y segmentadas sobre múltiples entidades.
+//!
+//! ## Responsabilidades
+//! - Inicialización y gestión del índice de búsqueda
+//! - Indexación de entidades (Contratistas, Usuarios, Proveedores, ListaNegra)
+//! - Reindexación completa desde SurrealDB
+//! - Búsqueda multi-entidad de alto rendimiento
+//!
+//! ## Arquitectura
+//! - **Index**: Índice persistido en disco
+//! - **Reader**: Lector para consultas (recargable tras commits)
+//! - **Writer**: Escritor protegido por Mutex
+//! - **FieldHandles**: Cache de campos para acceso O(1)
+
 use crate::db::{
     surrealdb_contratista_queries as contratista_queries,
     surrealdb_lista_negra_queries as lista_negra_queries,
@@ -25,6 +37,7 @@ use crate::search::{
 use crate::search::{
     get_index_reader, get_index_writer, initialize_index, search_index, SearchFields,
 };
+use log::{debug, error, info};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tantivy::{Index, IndexReader};
@@ -105,22 +118,36 @@ impl SearchService {
     /// Este proceso es intensivo en recursos. Se utiliza principalmente en el arranque inicial
     /// o cuando se detecta una inconsistencia grave entre la base de datos y el motor de búsqueda.
     pub async fn reindex_all(&self) -> Result<(), SearchError> {
+        info!("🔄 Iniciando reindexación completa del motor de búsqueda");
+
         // Obtenemos una fotografía actual de todas las entidades relevantes de la DB.
-        let contratistas = contratista_queries::find_all_fetched()
-            .await
-            .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
+        let contratistas = contratista_queries::find_all_fetched().await.map_err(|e| {
+            error!("❌ Error al cargar contratistas para reindexación: {}", e);
+            SearchError::DatabaseError(e.to_string())
+        })?;
 
-        let users = user_queries::find_all_fetched(None)
-            .await
-            .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
+        let users = user_queries::find_all_fetched(None).await.map_err(|e| {
+            error!("❌ Error al cargar usuarios para reindexación: {}", e);
+            SearchError::DatabaseError(e.to_string())
+        })?;
 
-        let lista_negra = lista_negra_queries::find_all()
-            .await
-            .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
+        let lista_negra = lista_negra_queries::find_all().await.map_err(|e| {
+            error!("❌ Error al cargar lista negra para reindexación: {}", e);
+            SearchError::DatabaseError(e.to_string())
+        })?;
 
-        let proveedores = proveedor_queries::find_all_fetched()
-            .await
-            .map_err(|e| SearchError::DatabaseError(e.to_string()))?;
+        let proveedores = proveedor_queries::find_all_fetched().await.map_err(|e| {
+            error!("❌ Error al cargar proveedores para reindexación: {}", e);
+            SearchError::DatabaseError(e.to_string())
+        })?;
+
+        debug!(
+            "📊 Entidades a indexar: {} contratistas, {} usuarios, {} lista_negra, {} proveedores",
+            contratistas.len(),
+            users.len(),
+            lista_negra.len(),
+            proveedores.len()
+        );
 
         // Adquirimos el lock de escritura para evitar que otras actualizaciones parciales
         // interfieran con el vaciado y reconstrucción total del índice.
@@ -131,21 +158,22 @@ impl SearchService {
 
             // Vaciamos el índice para asegurar una reconstrucción limpia y sin duplicados.
             writer.delete_all_documents().map_err(|e| {
+                error!("❌ Error al limpiar índice: {}", e);
                 SearchError::TantivyError(format!("Error al limpiar el índice: {}", e))
             })?;
 
             // Procesamos e indexamos cada tipo de entidad secuencialmente.
-            for c in contratistas {
-                index_contratista_fetched(&mut writer, &self.handles, &c, &c.empresa.nombre)?;
+            for c in &contratistas {
+                index_contratista_fetched(&mut writer, &self.handles, c, &c.empresa.nombre)?;
             }
-            for user in users {
-                index_user_fetched(&mut writer, &self.handles, &user)?;
+            for user in &users {
+                index_user_fetched(&mut writer, &self.handles, user)?;
             }
-            for ln in lista_negra {
-                index_lista_negra(&mut writer, &self.handles, &ln)?;
+            for ln in &lista_negra {
+                index_lista_negra(&mut writer, &self.handles, ln)?;
             }
-            for p in proveedores {
-                index_proveedor_fetched(&mut writer, &self.handles, &p, &p.empresa.nombre)?;
+            for p in &proveedores {
+                index_proveedor_fetched(&mut writer, &self.handles, p, &p.empresa.nombre)?;
             }
 
             // El commit persiste los cambios en disco.
@@ -154,8 +182,12 @@ impl SearchService {
 
         // Obligamos al lector a recargarse para que las búsquedas reflejen los nuevos datos de inmediato.
         self.reader.reload().map_err(|e| {
+            error!("❌ Error al recargar lector de búsqueda: {}", e);
             SearchError::TantivyError(format!("Error al recargar el lector de búsqueda: {}", e))
         })?;
+
+        let total = contratistas.len() + users.len() + lista_negra.len() + proveedores.len();
+        info!("✅ Reindexación completa: {} documentos indexados", total);
 
         Ok(())
     }
@@ -165,11 +197,13 @@ impl SearchService {
     }
 
     /// Agrega un nuevo contratista al índice de búsqueda.
+    /// Agrega un nuevo contratista al índice de búsqueda.
     pub async fn add_contratista_fetched(
         &self,
         contratista: &ContratistaFetched,
         empresa_nombre: &str,
     ) -> Result<(), SearchError> {
+        debug!("➕ Indexando contratista: {}", contratista.id);
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -184,11 +218,13 @@ impl SearchService {
     }
 
     /// Actualiza la información de un contratista en el índice basándose en su ID único.
+    /// Actualiza la información de un contratista en el índice basándose en su ID único.
     pub async fn update_contratista_fetched(
         &self,
         contratista: &ContratistaFetched,
         empresa_nombre: &str,
     ) -> Result<(), SearchError> {
+        debug!("✏️ Actualizando índice contratista: {}", contratista.id);
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -208,7 +244,9 @@ impl SearchService {
     }
 
     /// Elimina a un contratista del motor de búsqueda (generalmente por eliminación o archivado).
+    /// Elimina a un contratista del motor de búsqueda (generalmente por eliminación o archivado).
     pub async fn delete_contratista(&self, id: &str) -> Result<(), SearchError> {
+        debug!("🗑️ Eliminando contratista del índice: {}", id);
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -223,7 +261,9 @@ impl SearchService {
     }
 
     /// Indexa a un nuevo usuario del sistema.
+    /// Indexa a un nuevo usuario del sistema.
     pub async fn add_user(&self, user: &User) -> Result<(), SearchError> {
+        debug!("➕ Indexando usuario: {}", user.id);
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -238,7 +278,9 @@ impl SearchService {
     }
 
     /// Sincroniza los cambios de perfil de un usuario con el motor de búsqueda.
+    /// Sincroniza los cambios de perfil de un usuario con el motor de búsqueda.
     pub async fn update_user(&self, user: &User) -> Result<(), SearchError> {
+        debug!("✏️ Actualizando índice usuario: {}", user.id);
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -253,7 +295,9 @@ impl SearchService {
     }
 
     /// Revoca la visibilidad de un usuario en las búsquedas globales.
+    /// Revoca la visibilidad de un usuario en las búsquedas globales.
     pub async fn delete_user(&self, id: &str) -> Result<(), SearchError> {
+        debug!("🗑️ Eliminando usuario del índice: {}", id);
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -268,6 +312,7 @@ impl SearchService {
     }
 
     pub async fn add_user_fetched(&self, user: &UserFetched) -> Result<(), SearchError> {
+        debug!("➕ Indexando usuario (fetched): {}", user.id);
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -282,6 +327,7 @@ impl SearchService {
     }
 
     pub async fn update_user_fetched(&self, user: &UserFetched) -> Result<(), SearchError> {
+        debug!("✏️ Actualizando índice usuario (fetched): {}", user.id);
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -296,7 +342,9 @@ impl SearchService {
     }
 
     /// Registra un ingreso en la lista negra para bloquear el acceso visual mediante búsquedas.
+    /// Registra un ingreso en la lista negra para bloquear el acceso visual mediante búsquedas.
     pub async fn add_lista_negra(&self, lista_negra: &ListaNegra) -> Result<(), SearchError> {
+        debug!("➕ Indexando lista negra: {}", lista_negra.id);
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -311,6 +359,7 @@ impl SearchService {
     }
 
     pub async fn update_lista_negra(&self, lista_negra: &ListaNegra) -> Result<(), SearchError> {
+        debug!("✏️ Actualizando índice lista negra: {}", lista_negra.id);
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -325,6 +374,7 @@ impl SearchService {
     }
 
     pub async fn delete_lista_negra(&self, id: &str) -> Result<(), SearchError> {
+        debug!("🗑️ Eliminando lista negra del índice: {}", id);
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -357,6 +407,7 @@ impl SearchService {
     }
 
     pub async fn delete_proveedor(&self, id: &str) -> Result<(), SearchError> {
+        debug!("🗑️ Eliminando proveedor del índice: {}", id);
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -375,6 +426,7 @@ impl SearchService {
         proveedor: &ProveedorFetched,
         empresa_nombre: &str,
     ) -> Result<(), SearchError> {
+        debug!("➕ Indexando proveedor: {}", proveedor.id);
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -393,6 +445,7 @@ impl SearchService {
         proveedor: &ProveedorFetched,
         empresa_nombre: &str,
     ) -> Result<(), SearchError> {
+        debug!("✏️ Actualizando índice proveedor: {}", proveedor.id);
         let _lock = self.writer_mutex.lock().await;
 
         {

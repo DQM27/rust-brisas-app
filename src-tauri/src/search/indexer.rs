@@ -1,7 +1,14 @@
-// ==========================================
-// src/search/indexer.rs
-// ==========================================
-// Funciones para indexar documentos en Tantivy
+//! # Indexer: Motor de Indexación Tantivy
+//!
+//! Este módulo contiene las funciones de bajo nivel para interactuar con el índice de Tantivy.
+//! Se encarga de transformar las entidades de negocio (Contratista, User, etc.) en
+//! documentos Tantivy y escribirlos en el disco.
+//!
+//! ## Responsabilidades
+//! - Inicialización del índice (manejo de directorios y schema)
+//! - Creación de `IndexWriter`
+//! - Conversión de structs Rust -> `TantivyDocument`
+//! - Operaciones atómicas de indexación (add, delete, update)
 
 use crate::models::contratista::{Contratista, ContratistaFetched};
 use crate::models::lista_negra::ListaNegra;
