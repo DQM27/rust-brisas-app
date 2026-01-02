@@ -151,6 +151,65 @@ fn save_all_profiles(profiles: &[ExportProfile]) -> Result<(), ExportError> {
     Ok(())
 }
 
+// --------------------------------------------------------------------------
+// LÓGICA DE NEGOCIO PURA (Desacoplada de IO)
+// --------------------------------------------------------------------------
+
+/// Lógica pura para Upsert de perfil.
+/// Retorna `true` si se insertó uno nuevo, `false` si se actualizó.
+fn upsert_profile_in_list(profiles: &mut Vec<ExportProfile>, profile: ExportProfile) -> bool {
+    if let Some(idx) = profiles.iter().position(|p| p.id == profile.id) {
+        profiles[idx] = profile;
+        false
+    } else {
+        profiles.push(profile);
+        true
+    }
+}
+
+/// Lógica pura para eliminar perfil.
+fn delete_profile_from_list(
+    profiles: &mut Vec<ExportProfile>,
+    id: &str,
+) -> Result<bool, ExportError> {
+    let default_count = profiles.iter().filter(|p| p.is_default).count();
+
+    // Regla de Negocio: No borrar el único default.
+    if default_count == 1 {
+        if let Some(profile) = profiles.iter().find(|p| p.id == id) {
+            if profile.is_default {
+                return Err(ExportError::InvalidProfileOperation(
+                    "Operación denegada: Debe existir al menos un perfil predeterminado activo."
+                        .to_string(),
+                ));
+            }
+        }
+    }
+
+    let initial_len = profiles.len();
+    profiles.retain(|p| p.id != id);
+    Ok(profiles.len() != initial_len)
+}
+
+/// Lógica pura para setear default.
+fn set_default_profile_in_list(
+    profiles: &mut Vec<ExportProfile>,
+    id: &str,
+) -> Result<(), ExportError> {
+    if !profiles.iter().any(|p| p.id == id) {
+        return Err(ExportError::ProfileNotFound);
+    }
+
+    for profile in profiles.iter_mut() {
+        profile.is_default = profile.id == id;
+    }
+    Ok(())
+}
+
+// --------------------------------------------------------------------------
+// ORQUESTACIÓN (IO + Lógica)
+// --------------------------------------------------------------------------
+
 /// Agrega un nuevo perfil o actualiza uno existente mediante su ID (Upsert).
 ///
 /// # Argumentos
@@ -161,12 +220,17 @@ fn save_all_profiles(profiles: &[ExportProfile]) -> Result<(), ExportError> {
 pub fn save_profile(profile: ExportProfile) -> Result<(), ExportError> {
     let mut profiles = get_all_profiles()?;
 
-    if let Some(idx) = profiles.iter().position(|p| p.id == profile.id) {
-        warn!("Sobrescribiendo perfil existente: {} ({})", profile.name, profile.id);
-        profiles[idx] = profile;
+    // Log antes de mutar para trazabilidad de intención
+    let is_new = !profiles.iter().any(|p| p.id == profile.id);
+    let name = profile.name.clone();
+    let id = profile.id.clone();
+
+    upsert_profile_in_list(&mut profiles, profile);
+
+    if is_new {
+        info!("Creando nuevo perfil de exportación: {}", name);
     } else {
-        info!("Creando nuevo perfil de exportación: {}", profile.name);
-        profiles.push(profile);
+        warn!("Sobrescribiendo perfil existente: {} ({})", name, id);
     }
 
     save_all_profiles(&profiles)?;
@@ -184,23 +248,11 @@ pub fn save_profile(profile: ExportProfile) -> Result<(), ExportError> {
 pub fn delete_profile(id: String) -> Result<(), ExportError> {
     let mut profiles = get_all_profiles()?;
 
-    let default_count = profiles.iter().filter(|p| p.is_default).count();
-    if default_count == 1 {
-        if let Some(profile) = profiles.iter().find(|p| p.id == id) {
-            if profile.is_default {
-                return Err(ExportError::InvalidProfileOperation(
-                    "Operación denegada: Debe existir al menos un perfil predeterminado activo."
-                        .to_string(),
-                ));
-            }
-        }
-    }
+    let changed = delete_profile_from_list(&mut profiles, &id)?;
 
-    let initial_len = profiles.len();
-    profiles.retain(|p| p.id != id);
-
-    if profiles.len() != initial_len {
+    if changed {
         save_all_profiles(&profiles)?;
+        info!("Perfil eliminado correctamente: {}", id);
     }
 
     Ok(())
@@ -216,16 +268,10 @@ pub fn delete_profile(id: String) -> Result<(), ExportError> {
 pub fn set_default_profile(id: String) -> Result<(), ExportError> {
     let mut profiles = get_all_profiles()?;
 
-    if !profiles.iter().any(|p| p.id == id) {
-        return Err(ExportError::ProfileNotFound);
-    }
-
-    // Desmarcamos todos los anteriores para asegurar que solo haya uno predeterminado.
-    for profile in profiles.iter_mut() {
-        profile.is_default = profile.id == id;
-    }
+    set_default_profile_in_list(&mut profiles, &id)?;
 
     save_all_profiles(&profiles)?;
+    info!("Perfil predeterminado actualizado a: {}", id);
     Ok(())
 }
 
@@ -246,4 +292,97 @@ pub fn get_default_profile() -> Option<ExportProfile> {
 /// El perfil encontrado o None.
 pub fn get_profile_by_id(id: &str) -> Option<ExportProfile> {
     get_all_profiles().ok()?.into_iter().find(|p| p.id == id)
+}
+
+// --------------------------------------------------------------------------
+// TESTS UNITARIOS (Lógica Pura)
+// --------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn mock_profile(id: &str, default: bool) -> ExportProfile {
+        ExportProfile::new(id.to_string(), "Test".to_string(), "pdf".to_string())
+            .with_default(default)
+    }
+
+    // Extension helper for creating profiles easily in tests
+    impl ExportProfile {
+        fn with_default(mut self, default: bool) -> Self {
+            self.is_default = default;
+            self
+        }
+    }
+
+    #[test]
+    fn test_upsert_inserta_nuevo() {
+        let mut list = vec![];
+        let p = mock_profile("p1", false);
+
+        let inserted = upsert_profile_in_list(&mut list, p);
+
+        assert!(inserted);
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].id, "p1");
+    }
+
+    #[test]
+    fn test_upsert_actualiza_existente() {
+        let mut list = vec![mock_profile("p1", false)];
+        let p_update =
+            ExportProfile::new("p1".to_string(), "Updated".to_string(), "pdf".to_string());
+
+        let inserted = upsert_profile_in_list(&mut list, p_update);
+
+        assert!(!inserted);
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].name, "Updated");
+    }
+
+    #[test]
+    fn test_delete_borra_correctamente() {
+        let mut list = vec![mock_profile("p1", false), mock_profile("p2", true)];
+
+        let res = delete_profile_from_list(&mut list, "p1");
+
+        assert!(res.is_ok());
+        assert!(res.unwrap());
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].id, "p2");
+    }
+
+    #[test]
+    fn test_delete_protege_unico_default() {
+        let mut list = vec![mock_profile("p1", true)]; // Único y default
+
+        let res = delete_profile_from_list(&mut list, "p1");
+
+        assert!(res.is_err());
+        match res.unwrap_err() {
+            ExportError::InvalidProfileOperation(_) => (), // OK
+            _ => panic!("Error incorrecto"),
+        }
+    }
+
+    #[test]
+    fn test_set_default_cambia_flag() {
+        let mut list = vec![mock_profile("p1", true), mock_profile("p2", false)];
+
+        let res = set_default_profile_in_list(&mut list, "p2");
+
+        assert!(res.is_ok());
+        assert!(!list[0].is_default); // p1 ya no es default
+        assert!(list[1].is_default); // p2 ahora es default
+    }
+
+    #[test]
+    fn test_set_default_error_si_no_existe() {
+        let mut list = vec![mock_profile("p1", true)];
+
+        let res = set_default_profile_in_list(&mut list, "ghost");
+
+        assert!(res.is_err());
+        assert!(matches!(res.unwrap_err(), ExportError::ProfileNotFound));
+    }
 }
