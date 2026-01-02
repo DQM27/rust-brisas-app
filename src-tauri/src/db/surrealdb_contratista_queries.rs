@@ -1,14 +1,24 @@
-// ==========================================
-// src/db/surrealdb_contratista_queries.rs
-// ==========================================
+//! # Queries SurrealDB: Contratistas
+//!
+//! Operaciones de base de datos para gestión de contratistas externos.
+//!
+//! ## Responsabilidades
+//! - CRUD completo de registros de contratistas
+//! - Consultas con FETCH para relaciones (empresa)
+//! - Soft delete con campo `deleted_at`
+//!
+//! ## Tabla: `contratista`
 
 use crate::models::contratista::{
     Contratista, ContratistaCreateDTO, ContratistaFetched, ContratistaUpdateDTO,
 };
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
+use log::{debug, info, warn};
 use surrealdb::RecordId;
 
+/// Crea un nuevo contratista en la base de datos.
 pub async fn create(dto: ContratistaCreateDTO) -> Result<ContratistaFetched, SurrealDbError> {
+    debug!("➕ Creando nuevo contratista");
     let db = get_db().await?;
 
     // CREATE doesn't support FETCH, so we need two queries:
@@ -24,9 +34,18 @@ pub async fn create(dto: ContratistaCreateDTO) -> Result<ContratistaFetched, Sur
         db.query("SELECT * FROM $id FETCH empresa").bind(("id", contratista.id.clone())).await?;
 
     let fetched: Option<ContratistaFetched> = result.take(0)?;
-    fetched.ok_or(SurrealDbError::Query(
-        "Contratista creado pero no se pudo obtener con FETCH".to_string(),
-    ))
+    match fetched {
+        Some(f) => {
+            info!("✅ Contratista creado: id={}, cédula={}", f.id, f.cedula);
+            Ok(f)
+        }
+        None => {
+            warn!("⚠️ Contratista creado pero FETCH falló: id={}", contratista.id);
+            Err(SurrealDbError::Query(
+                "Contratista creado pero no se pudo obtener con FETCH".to_string(),
+            ))
+        }
+    }
 }
 
 pub async fn find_by_id(id: &RecordId) -> Result<Option<Contratista>, SurrealDbError> {
@@ -84,7 +103,7 @@ pub async fn update(
     id: &RecordId,
     dto: ContratistaUpdateDTO,
 ) -> Result<ContratistaFetched, SurrealDbError> {
-    println!(">>> DEBUG: Updating contratista {} with DTO: {:?}", id, dto);
+    debug!("✏️ Actualizando contratista {}", id);
     let db = get_db().await?;
 
     // 1. Update using native SDK (consistent with User module)
@@ -94,7 +113,7 @@ pub async fn update(
     let mut result = db.query("SELECT * FROM $id FETCH empresa").bind(("id", id.clone())).await?;
 
     let fetched: Option<ContratistaFetched> = result.take(0)?;
-    println!(">>> DEBUG: Update result: {:?}", fetched);
+    debug!("✅ Contratista actualizado: {}", id);
     fetched
         .ok_or(SurrealDbError::Query("Contratista no encontrado o error al actualizar".to_string()))
 }

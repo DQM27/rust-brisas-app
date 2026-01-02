@@ -1,6 +1,18 @@
+//! # Queries SurrealDB: Usuarios
+//!
+//! Operaciones de base de datos para gestión de usuarios e autenticación.
+//!
+//! ## Responsabilidades
+//! - CRUD de usuarios
+//! - Autenticación (find_by_email_with_password)
+//! - Gestión de avatares
+//! - Conteo y validación de unicidad
+//!
+//! ## Tabla: `user`
+
 use crate::models::user::{User, UserCreateDTO, UserFetched, UserUpdateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use log::{error, info};
+use log::{debug, error, info, warn};
 use serde::Deserialize;
 use surrealdb::{Datetime, RecordId};
 
@@ -61,7 +73,9 @@ impl UserWithPassword {
     }
 }
 
+/// Crea un nuevo usuario en el sistema.
 pub async fn insert(dto: UserCreateDTO) -> Result<User, SurrealDbError> {
+    debug!("➕ Creando nuevo usuario");
     let db = get_db().await?;
 
     let mut result = db
@@ -95,25 +109,39 @@ pub async fn insert(dto: UserCreateDTO) -> Result<User, SurrealDbError> {
         .await?;
 
     let created: Option<User> = result.take(0)?;
-    created.ok_or(SurrealDbError::Query("No se pudo crear el usuario".to_string()))
+    match created {
+        Some(user) => {
+            info!("✅ Usuario creado: id={}, email={}", user.id, user.email);
+            Ok(user)
+        }
+        None => {
+            warn!("⚠️ Error al crear usuario: CREATE no retornó registro");
+            Err(SurrealDbError::Query("No se pudo crear el usuario".to_string()))
+        }
+    }
 }
 
+/// Busca un usuario por su ID.
 pub async fn find_by_id(id: &RecordId) -> Result<Option<User>, SurrealDbError> {
+    debug!("🔍 Buscando usuario por ID: {}", id);
     let db = get_db().await?;
-    info!("🔍 find_by_id buscando: {:?}", id);
     let mut result = db.query("SELECT * FROM $id").bind(("id", id.clone())).await?;
     let user: Option<User> = result.take(0)?;
-    info!("🔍 find_by_id resultado: {:?}", user.is_some());
+    debug!("🔍 Resultado: encontrado={}", user.is_some());
     Ok(user)
 }
 
+/// Busca un usuario por ID con su rol poblado.
 pub async fn find_by_id_fetched(id: &RecordId) -> Result<Option<UserFetched>, SurrealDbError> {
+    debug!("🔍 Buscando usuario (fetched) por ID: {}", id);
     let db = get_db().await?;
     let mut result = db.query("SELECT * FROM $id FETCH role").bind(("id", id.clone())).await?;
     Ok(result.take(0)?)
 }
 
+/// Busca un usuario por email.
 pub async fn find_by_email(email: &str) -> Result<Option<User>, SurrealDbError> {
+    debug!("🔍 Buscando usuario por email: {}", email);
     let db = get_db().await?;
     let mut result = db
         .query("SELECT * FROM user WHERE email = $email LIMIT 1")
@@ -122,11 +150,12 @@ pub async fn find_by_email(email: &str) -> Result<Option<User>, SurrealDbError> 
     Ok(result.take(0)?)
 }
 
+/// Busca un usuario por email incluyendo el password_hash para autenticación.
 pub async fn find_by_email_with_password(
     email: &str,
 ) -> Result<Option<(User, String)>, SurrealDbError> {
     let db = get_db().await?;
-    info!("🔍 Buscando usuario con password: {}", email);
+    debug!("🔐 Autenticando usuario: {}", email);
 
     let mut result = db
         .query("SELECT *, password_hash FROM user WHERE email = $email LIMIT 1")
@@ -141,28 +170,32 @@ pub async fn find_by_email_with_password(
         }
     };
 
-    if record.is_some() {
-        info!("✅ Usuario encontrado con password_hash");
-    } else {
-        info!("⚠️ Usuario no encontrado para email: {}", email);
+    match &record {
+        Some(_) => info!("✅ Usuario encontrado para autenticación: {}", email),
+        None => warn!("⚠️ Usuario no encontrado para login: {}", email),
     }
 
     Ok(record.map(|u| u.into_user_and_password()))
 }
 
+/// Actualiza un usuario existente.
 pub async fn update(id: &RecordId, dto: UserUpdateDTO) -> Result<Option<User>, SurrealDbError> {
+    debug!("✏️ Actualizando usuario: {}", id);
     let db = get_db().await?;
-
-    // 1. MERGE principal usando el cliente
-    // Nota: El merge usando cliente a veces tiene problemas con campos opcionales en ciertas versiones,
-    // pero mantenemos la implementación estándar
     let updated: Option<User> = db.update(id.clone()).merge(dto).await?;
+
+    if updated.is_some() {
+        info!("✅ Usuario actualizado: {}", id);
+    } else {
+        warn!("⚠️ Usuario no encontrado para actualizar: {}", id);
+    }
 
     Ok(updated)
 }
 
-/// Update password hash using native SurrealDB time::now()
+/// Actualiza el password_hash de un usuario.
 pub async fn update_password(id: &RecordId, password_hash: &str) -> Result<(), SurrealDbError> {
+    debug!("🔐 Actualizando contraseña para usuario: {}", id);
     let db = get_db().await?;
     db.query(
         r#"
@@ -177,12 +210,16 @@ pub async fn update_password(id: &RecordId, password_hash: &str) -> Result<(), S
     .await?
     .check()?;
 
+    info!("✅ Contraseña actualizada para usuario: {}", id);
     Ok(())
 }
 
+/// Elimina un usuario del sistema.
 pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
+    warn!("🗑️ Eliminando usuario: {}", id);
     let db = get_db().await?;
     db.query("DELETE $id").bind(("id", id.clone())).await?;
+    warn!("🗑️ Usuario eliminado: {}", id);
     Ok(())
 }
 

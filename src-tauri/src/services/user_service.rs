@@ -1,3 +1,20 @@
+//! # Servicio: Gestión de Usuarios e Identidad
+//!
+//! Orquestador del ciclo de vida de usuarios del sistema: registro, autenticación,
+//! actualización de perfiles y gestión de credenciales.
+//!
+//! ## Responsabilidades
+//! - **Creación**: Validación, hashing de contraseñas, asignación de roles
+//! - **Autenticación**: Login con verificación Argon2
+//! - **Actualización**: Cambios parciales con validación de unicidad
+//! - **Indexado**: Sincronización con Tantivy para búsqueda
+//!
+//! ## Dependencias
+//! - `domain::user` - Validaciones y normalización
+//! - `db::surrealdb_user_queries` - Persistencia
+//! - `auth` - Hashing de contraseñas (Argon2)
+//! - `surrealdb_authorization` - Permisos por rol
+
 use crate::db::surrealdb_role_queries as role_db;
 use crate::db::surrealdb_user_queries as db;
 use crate::domain::errors::UserError;
@@ -17,15 +34,75 @@ use rand::Rng;
 use std::sync::Arc;
 use surrealdb::RecordId;
 
-/// Crea un nuevo usuario en el sistema, gestionando todo el ciclo de vida inicial.
+// --------------------------------------------------------------------------
+// HELPERS INTERNOS
+// --------------------------------------------------------------------------
+
+/// Parsea un ID de usuario (acepta "user:id" o "id").
+fn parse_user_id(id: &str) -> RecordId {
+    let clean_id = id
+        .trim_start_matches("⟨")
+        .trim_end_matches("⟩")
+        .trim_start_matches('<')
+        .trim_end_matches('>');
+
+    if clean_id.contains(':') {
+        let parts: Vec<&str> = clean_id.split(':').collect();
+        let key = parts[1]
+            .trim_start_matches("⟨")
+            .trim_end_matches("⟩")
+            .trim_start_matches('<')
+            .trim_end_matches('>');
+        RecordId::from_table_key(parts[0], key)
+    } else {
+        RecordId::from_table_key("user", clean_id)
+    }
+}
+
+/// Parsea un ID de rol (acepta "role:id" o "id").
+fn parse_role_id(id: &str) -> RecordId {
+    let clean_id = id
+        .trim()
+        .trim_start_matches("⟨")
+        .trim_end_matches("⟩")
+        .trim_start_matches('<')
+        .trim_end_matches('>');
+
+    if clean_id.to_lowercase().starts_with("role:") {
+        let parts: Vec<&str> = clean_id.splitn(2, ':').collect();
+        let key = parts[1]
+            .trim_start_matches("⟨")
+            .trim_end_matches("⟩")
+            .trim_start_matches('<')
+            .trim_end_matches('>');
+        RecordId::from_table_key("role", key)
+    } else {
+        RecordId::from_table_key("role", clean_id)
+    }
+}
+
+// --------------------------------------------------------------------------
+// OPERACIONES DE CREACIÓN
+// --------------------------------------------------------------------------
+
+/// Crea un nuevo usuario en el sistema.
 ///
-/// Este proceso incluye:
-/// 1. Validación estricta del formato de los datos.
-/// 2. Normalización de campos clave (como el email) para evitar duplicados por minúsculas/mayúsculas.
-/// 3. Verificación de unicidad en la base de datos.
-/// 4. Gestión de seguridad: hashing de la contraseña o generación de una temporal segura.
-/// 5. Asignación de roles y permisos.
-/// 6. Indexado en el motor de búsqueda Tantivy para que el usuario sea localizable de inmediato.
+/// ## Proceso
+/// 1. Validación de formato (dominio)
+/// 2. Normalización de email/nombre
+/// 3. Verificación de unicidad
+/// 4. Hashing de contraseña (Argon2)
+/// 5. Asignación de rol (default: Guardia)
+/// 6. Indexado en Tantivy
+///
+/// ## Argumentos
+/// * `search_service` - Servicio de indexación Tantivy
+/// * `input` - Datos del nuevo usuario
+///
+/// ## Errores
+/// - `UserError::Validation` - Datos inválidos
+/// - `UserError::EmailExists` - Email duplicado
+/// - `UserError::Database` - Error de persistencia
 pub async fn create_user(
     search_service: &Arc<SearchService>,
     input: CreateUserInput,
@@ -412,45 +489,61 @@ pub async fn login(email: String, password: String) -> Result<UserResponse, User
     Ok(UserResponse::from_user_with_role(user.clone(), role_obj, role_permissions))
 }
 
-// Helpers internos para la gestión de IDs y registros.
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
 
-fn parse_user_id(id: &str) -> RecordId {
-    let clean_id = id
-        .trim_start_matches("⟨")
-        .trim_end_matches("⟩")
-        .trim_start_matches('<')
-        .trim_end_matches('>');
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    if clean_id.contains(':') {
-        let parts: Vec<&str> = clean_id.split(':').collect();
-        let key = parts[1]
-            .trim_start_matches("⟨")
-            .trim_end_matches("⟩")
-            .trim_start_matches('<')
-            .trim_end_matches('>');
-        RecordId::from_table_key(parts[0], key)
-    } else {
-        RecordId::from_table_key("user", clean_id)
+    // -----------------------------------------------------------------------
+    // Tests de parse_user_id
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_parse_user_id_simple() {
+        let id = parse_user_id("abc123");
+        assert_eq!(id.table().to_string(), "user");
+        assert_eq!(id.key().to_string(), "abc123");
     }
-}
 
-fn parse_role_id(id: &str) -> RecordId {
-    let clean_id = id
-        .trim()
-        .trim_start_matches("⟨")
-        .trim_end_matches("⟩")
-        .trim_start_matches('<')
-        .trim_end_matches('>');
+    #[test]
+    fn test_parse_user_id_con_prefijo() {
+        let id = parse_user_id("user:abc123");
+        assert_eq!(id.table().to_string(), "user");
+        assert_eq!(id.key().to_string(), "abc123");
+    }
 
-    if clean_id.to_lowercase().starts_with("role:") {
-        let parts: Vec<&str> = clean_id.splitn(2, ':').collect();
-        let key = parts[1]
-            .trim_start_matches("⟨")
-            .trim_end_matches("⟩")
-            .trim_start_matches('<')
-            .trim_end_matches('>');
-        RecordId::from_table_key("role", key)
-    } else {
-        RecordId::from_table_key("role", clean_id)
+    #[test]
+    fn test_parse_user_id_con_brackets() {
+        let id = parse_user_id("user:⟨abc123⟩");
+        assert_eq!(id.table().to_string(), "user");
+        assert_eq!(id.key().to_string(), "abc123");
+    }
+
+    // -----------------------------------------------------------------------
+    // Tests de parse_role_id
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_parse_role_id_simple() {
+        let id = parse_role_id("admin");
+        assert_eq!(id.table().to_string(), "role");
+        assert_eq!(id.key().to_string(), "admin");
+    }
+
+    #[test]
+    fn test_parse_role_id_con_prefijo() {
+        let id = parse_role_id("role:admin");
+        assert_eq!(id.table().to_string(), "role");
+        assert_eq!(id.key().to_string(), "admin");
+    }
+
+    #[test]
+    fn test_parse_role_id_mayusculas() {
+        let id = parse_role_id("ROLE:ADMIN");
+        assert_eq!(id.table().to_string(), "role");
+        assert_eq!(id.key().to_string(), "ADMIN");
     }
 }
