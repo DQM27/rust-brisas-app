@@ -5,10 +5,11 @@
 /// mediante un flujo seguro que integra el estado de sesión (RBAC).
 use crate::domain::errors::UserError;
 use crate::models::user::{
-    ChangePasswordInput, CreateUserInput, UpdateUserInput, UserListResponse, UserResponse,
+    self, ChangePasswordInput, CreateUserInput, SessionUser, UpdateUserInput, UserListResponse,
+    UserResponse,
 };
 use crate::services::search_service::SearchService;
-use crate::services::session::{SessionState, SessionUser};
+use crate::services::session::SessionState;
 use crate::services::user_service;
 use std::sync::Arc;
 use tauri::State;

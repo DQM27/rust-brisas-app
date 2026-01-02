@@ -29,7 +29,7 @@ macro_rules! require_perm {
         surrealdb_authorization::check_permission(&session.id, &session.role_id, module, action)
             .await?;
 
-        Ok::<crate::services::session::SessionUser, surrealdb_authorization::AuthError>(session)
+        Ok::<crate::models::user::SessionUser, surrealdb_authorization::AuthError>(session)
     }};
 
     // Variante con mensaje de auditoría

@@ -1,13 +1,18 @@
-// ==========================================
-// src/services/surrealdb_authorization.rs
-// ==========================================
-// Servicio de autorización para SurrealDB
+//! # Servicio: Autorización Basada en Roles (RBAC)
+//!
+//! Implementa la lógica de verificación de permisos dinámicos, incluyendo la
+//! resolución de la cadena de herencia de roles y la autoridad especial "God Mode".
+//!
+//! ## Características
+//! - Herencia de roles recursiva (hasta 10 niveles).
+//! - Caché reactiva de permisos mediante `HashSet`.
+//! - Integración con Auditoría (Trazas de acceso denegado/bypass).
 
 use crate::db::surrealdb_role_queries; // Usamos queries ya implementadas
 /// Capa de Dominio no necesaria aquí directamente si usamos has_god_authority
 use crate::models::role::{Action, Module};
 use crate::services::surrealdb_service::SurrealDbError;
-// use log::info;
+use log::{debug, info, warn};
 use std::collections::HashSet;
 use surrealdb::RecordId;
 
@@ -56,9 +61,14 @@ pub async fn get_effective_permissions(role_id_str: &str) -> Result<HashSet<Stri
     let mut visited = HashSet::new();
     let mut current_id = Some(role_id_str.to_string());
 
+    debug!("🕸️ Resolviendo herencia de permisos para: {}", role_id_str);
+
     // Recorrer cadena de herencia (máximo 10 niveles para evitar loops)
     while let Some(id_str) = current_id.take() {
         if visited.contains(&id_str) || visited.len() >= 10 {
+            if visited.len() >= 10 {
+                warn!("⚠️ Límite de herencia de roles alcanzado (10) para: {}", role_id_str);
+            }
             break; // Prevenir ciclos infinitos
         }
         visited.insert(id_str.clone());
@@ -71,6 +81,7 @@ pub async fn get_effective_permissions(role_id_str: &str) -> Result<HashSet<Stri
         if let Some(role) = role {
             // Agregar permisos propios
             if let Some(perms) = role.permissions {
+                debug!("  ├─ Rol: {} -> +{} permisos", role.name, perms.len());
                 all_permissions.extend(perms);
             }
             // Seguir cadena de herencia
@@ -78,6 +89,7 @@ pub async fn get_effective_permissions(role_id_str: &str) -> Result<HashSet<Stri
         }
     }
 
+    debug!("✨ Total permisos encontrados: {}", all_permissions.len());
     Ok(all_permissions)
 }
 
@@ -135,7 +147,7 @@ pub async fn check_permission(
 ) -> Result<(), AuthError> {
     // La autoridad de God Mode (por estado o por identidad) bypassa todo
     if crate::domain::role::has_god_authority(Some(user_id)) {
-        log::info!(target: "audit", "[GOD_MODE] bypass para {}:{}", module.as_str(), action.as_str());
+        info!(target: "audit", "[GOD_MODE] bypass para {}:{}", module.as_str(), action.as_str());
         return Ok(());
     }
 
@@ -147,7 +159,33 @@ pub async fn check_permission(
     if has {
         Ok(())
     } else {
-        log::warn!(target: "audit", "[PERM_DENIED] user={} perm={}:{}", user_id, module.as_str(), action.as_str());
+        warn!(target: "audit", "[PERM_DENIED] user={} perm={}:{}", user_id, module.as_str(), action.as_str());
         Err(AuthError::PermissionDenied)
+    }
+}
+
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_role_id_variants() {
+        let cases = vec![
+            ("admin", "role", "admin"),
+            ("role:admin", "role", "admin"),
+            ("⟨role:admin⟩", "role", "admin"),
+            ("<role:admin>", "role", "admin"),
+            ("⟨admin⟩", "role", "admin"),
+        ];
+
+        for (input, expected_table, expected_id) in cases {
+            let res = parse_role_id(input);
+            assert_eq!(res.table(), expected_table, "Fallo en tabla para {}", input);
+            assert_eq!(res.key().to_string(), expected_id, "Fallo en ID para {}", input);
+        }
     }
 }

@@ -324,6 +324,23 @@ impl UserResponse {
     }
 }
 
+// --------------------------------------------------------------------------
+// DTOs PARA SESIÓN
+// --------------------------------------------------------------------------
+
+/// Representa el subconjunto de datos del usuario que se mantiene en RAM
+/// para la gestión de la sesión activa y control de permisos.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionUser {
+    pub id: String,
+    pub email: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub role_id: String,
+    pub role_name: String,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserListResponse {
