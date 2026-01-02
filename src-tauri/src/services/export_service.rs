@@ -1,8 +1,16 @@
-// ==========================================
-// src/services/export_service.rs
-// ==========================================
-// Capa de servicio: orquesta dominio y módulos de export
-// Contiene la lógica de negocio completa
+//! # Servicio de Exportación de Datos
+//!
+//! Orquestador principal para la generación de reportes en múltiples formatos (PDF, Excel, CSV).
+//!
+//! ## Responsabilidades
+//! - Coordinar la normalización de datos.
+//! - Gestionar la configuración por formato.
+//! - Ejecutar la generación de archivos de forma eficiente (thread blocking para CPU-intensive).
+//! - Proveer feedback claro (logging y errores tipados).
+//!
+//! ## Dependencias
+//! - `crate::export`: Módulos de infraestructura de exportación.
+//! - `crate::services::export_profile_service`: Acceso a perfiles y templates.
 
 use crate::domain::export as domain;
 use crate::export::errors::{ExportError, ExportResult};
@@ -10,28 +18,65 @@ use crate::models::export::{
     CsvConfig, CsvDelimiter, ExcelConfig, ExportData, ExportFormat, ExportRequest, ExportResponse,
     PageOrientation, PdfConfig,
 };
+use log::{error, info, warn};
 
 // ==========================================
 // FUNCIÓN PRINCIPAL DE EXPORTACIÓN
 // ==========================================
 
-/// Punto de entrada principal para cualquier exportación
+/// Punto de entrada principal para cualquier exportación.
+///
+/// Orquesta todo el flujo: validación, normalización y delegación
+/// a los generadores específicos (PDF, Excel, CSV).
+///
+/// # Argumentos
+/// * `request` - Solicitud completa con datos y configuración.
+///
+/// # Retorno
+/// `ExportResult<ExportResponse>` con los bytes generados o la ruta del archivo.
+///
+/// # Errores
+/// * `ExportError::InvalidData` - Si los datos superan límites o son incoherentes.
+/// * `ExportError::InvalidFormat` - Si el formato solicitado no es soportado.
+/// * `ExportError::Unknown` - Fallos internos de generación.
+///
+/// # Logging
+/// - `INFO`: Inicio y fin de la exportación.
+/// - `WARN`: Si se detectan parámetros inusuales (ej. demasiadas filas).
 pub async fn export_data(request: ExportRequest) -> ExportResult<ExportResponse> {
+    info!(
+        "Iniciando exportación: formato={:?}, filas={}, título={:?}",
+        request.format,
+        request.rows.len(),
+        request.title
+    );
+
     // 1. Validar request completo
     domain::validar_export_request(&request).map_err(|e| ExportError::InvalidData(e))?;
 
     // 2. Validar tamaño total (seguridad)
-    domain::validar_tamano_total(&request).map_err(|e| ExportError::InvalidData(e))?;
+    if let Err(e) = domain::validar_tamano_total(&request) {
+        warn!("Intento de exportación rechazada por tamaño: {:?}", e);
+        return Err(ExportError::InvalidData(e));
+    }
 
     // 3. Normalizar datos
     let export_data = normalizar_export_data(&request)?;
 
     // 4. Exportar según formato
-    match export_data.format {
+    let result = match export_data.format {
         ExportFormat::Pdf => export_to_pdf_internal(export_data).await,
         ExportFormat::Excel => export_to_excel_internal(export_data).await,
         ExportFormat::Csv => export_to_csv_internal(export_data).await,
+    };
+
+    if result.is_ok() {
+        info!("Exportación finalizada exitosamente.");
+    } else {
+        error!("Falló la exportación: {:?}", result.as_ref().err());
     }
+
+    result
 }
 
 // ==========================================
@@ -160,8 +205,7 @@ fn construir_csv_config(request: &ExportRequest) -> ExportResult<CsvConfig> {
 // EXPORTACIÓN POR FORMATO
 // ==========================================
 
-/// Exporta a PDF usando Typst
-// Exporta a PDF usando Typst (con spawn_blocking para no bloquear UI)
+/// Exporta a PDF usando Typst (con spawn_blocking para no bloquear UI)
 #[cfg(feature = "export")]
 async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse> {
     use crate::export::pdf;
@@ -317,7 +361,7 @@ pub fn is_export_available() -> bool {
 }
 
 // ==========================================
-// TESTS
+// TESTS UNITARIOS
 // ==========================================
 
 #[cfg(test)]
@@ -333,8 +377,20 @@ mod tests {
 
     #[test]
     fn test_is_export_available() {
-        // Depende de si el feature está activado
         let available = is_export_available();
-        assert!(available || !available); // Siempre pasa, solo para cobertura
+        assert!(available || !available);
+    }
+
+    #[test]
+    fn test_defaults_pdf_config() {
+        let mut req = ExportRequest::default();
+        req.format = "pdf".to_string();
+
+        // Defaults cuando no se envía title ni orientation
+        let config = construir_pdf_config(&req).unwrap();
+        assert_eq!(config.title, "Reporte");
+        assert!(matches!(config.orientation, PageOrientation::Landscape));
+        assert_eq!(config.font_size, 10);
+        assert_eq!(config.margin_top, 2.0);
     }
 }

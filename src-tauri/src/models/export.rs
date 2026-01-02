@@ -113,6 +113,31 @@ pub struct ExportRequest {
     pub generated_by: Option<String>,
 }
 
+impl Default for ExportRequest {
+    fn default() -> Self {
+        Self {
+            format: "pdf".to_string(), // Default safe
+            headers: Vec::new(),
+            rows: Vec::new(),
+            title: None,
+            orientation: None,
+            show_preview: None,
+            template_id: None,
+            font_size: None,
+            font_family: None,
+            margin_top: None,
+            margin_bottom: None,
+            margin_left: None,
+            margin_right: None,
+            banner_color: None,
+            delimiter: None,
+            include_bom: None,
+            target_path: None,
+            generated_by: None,
+        }
+    }
+}
+
 /// Configuración específica para generación de PDF.
 #[derive(Debug, Clone)]
 pub struct PdfConfig {
