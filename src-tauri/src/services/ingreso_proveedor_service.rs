@@ -36,7 +36,7 @@ async fn validar_gafete_disponible(gafete: Option<i32>) -> Result<(), IngresoPro
         if g != 0 {
             let disp = gafete_service::is_gafete_disponible(g, "proveedor")
                 .await
-                .map_err(|e| IngresoProveedorError::Gafete(e))?;
+                .map_err(|e| IngresoProveedorError::Gafete(e.to_string()))?;
             if !disp {
                 return Err(IngresoProveedorError::Validation(
                     "El gafete seleccionado ya está en uso".to_string(),

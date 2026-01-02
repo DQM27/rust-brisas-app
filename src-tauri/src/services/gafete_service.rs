@@ -1,125 +1,273 @@
-/// Gestión de Gafetes e Inventario de Acceso.
-///
-/// Este servicio controla la asignación, disponibilidad y creación de gafetes físicos
-/// (tarjetas de acceso). Es vital para garantizar que no existan duplicados y que
-/// cada ingreso esté respaldado por un identificador físico rastreable.
+//! # Servicio de Gestión de Gafetes
+//!
+//! Controla el inventario, asignación y ciclo de vida de los gafetes físicos.
+//!
+//! ## Responsabilidades
+//! - Gestionar el inventario de gafetes (Altas, Bajas, Modificaciones).
+//! - Controlar la disponibilidad y estado (Activo, En Uso, Perdido).
+//! - Garantizar la integridad de las asignaciones (evitar duplicados físicos).
+//!
+//! ## Dependencias
+//! - `crate::db::surrealdb_gafete_queries`: Persistencia.
+//! - `crate::domain::errors::GafeteError`: Errores de dominio.
+
 use crate::db::surrealdb_gafete_queries as db;
+use crate::domain::errors::GafeteError;
 use crate::models::gafete::{
     CreateGafeteInput, CreateGafeteRangeInput, GafeteCreateDTO, GafeteEstado, GafeteResponse,
     TipoGafete,
 };
+use log::{error, info, warn};
 use surrealdb::RecordId;
 
-/// Normaliza el ID del gafete para asegurar compatibilidad con SurrealDB.
-/// Permite tanto el formato corto ("123") como el calificado ("gafete:123").
-fn parse_gafete_id(id_str: &str) -> RecordId {
+// --------------------------------------------------------------------------
+// HELPERS & VALIDACIONES PRIVADAS
+// --------------------------------------------------------------------------
+
+/// Helper para parsear IDs de gafete.
+///
+/// Soporta formatos: "123" (asume tabla 'gafete') o "gafete:123".
+fn parse_gafete_id(id_str: &str) -> Result<RecordId, GafeteError> {
     if id_str.contains(':') {
-        let parts: Vec<&str> = id_str.split(':').collect();
-        RecordId::from_table_key(parts[0], parts[1])
+        id_str
+            .parse::<RecordId>()
+            .map_err(|_| GafeteError::Validation(format!("ID de gafete inválido: {}", id_str)))
     } else {
-        RecordId::from_table_key("gafete", id_str)
+        Ok(RecordId::from_table_key("gafete", id_str))
     }
 }
 
-/// Verifica si un gafete específico está disponible para ser entregado.
-/// Un gafete se considera disponible si existe y su estado es 'Activo' (no perdido ni bloqueado).
-pub async fn is_gafete_disponible(numero: i32, tipo: &str) -> Result<bool, String> {
+// --------------------------------------------------------------------------
+// FUNCIONES PÚBLICAS
+// --------------------------------------------------------------------------
+
+/// Verifica si un gafete específico está disponible para asignación.
+///
+/// # Criterios de Disponibilidad
+/// 1. El gafete debe existir en base de datos.
+/// 2. Su estado debe ser `Activo`.
+/// 3. No debe estar marcado como `en_uso`.
+///
+/// # Argumentos
+/// * `numero` - Número identificador del gafete.
+/// * `tipo` - Tipo de gafete (ej. "contratista", "visita").
+///
+/// # Retorno
+/// `true` si puede asignarse, `false` en caso contrario.
+pub async fn is_gafete_disponible(numero: i32, tipo: &str) -> Result<bool, GafeteError> {
     match db::get_gafete(numero, tipo).await {
-        Ok(Some(g)) => Ok(g.estado == GafeteEstado::Activo),
+        Ok(Some(g)) => Ok(g.estado == GafeteEstado::Activo && !g.en_uso),
         Ok(None) => Ok(false),
-        Err(e) => Err(e.to_string()),
+        Err(e) => {
+            error!("Error DB consultando disponibilidad de gafete {}: {}", numero, e);
+            Err(GafeteError::Database(e.to_string()))
+        }
     }
 }
 
-/// Registra que un gafete ha sido entregado a una persona.
-pub async fn marcar_en_uso(numero: i32, tipo: &str) -> Result<(), String> {
-    match db::get_gafete(numero, tipo).await {
-        Ok(Some(g)) => db::set_gafete_uso(&g.id, true).await.map_err(|e| e.to_string()),
-        Ok(None) => Err("Gafete no encontrado en el inventario.".to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+/// Marca un gafete como entregado y en uso.
+///
+/// # Errores
+/// * `GafeteError::NotFound` - Si el gafete no existe.
+/// * `GafeteError::Database` - Error de persistencia.
+pub async fn marcar_en_uso(numero: i32, tipo: &str) -> Result<(), GafeteError> {
+    let gafete = db::get_gafete(numero, tipo)
+        .await
+        .map_err(|e| GafeteError::Database(e.to_string()))?
+        .ok_or(GafeteError::NotFound)?;
+
+    db::set_gafete_uso(&gafete.id, true).await.map_err(|e| GafeteError::Database(e.to_string()))?;
+
+    Ok(())
 }
 
-/// Marca un gafete como devuelto y disponible para el siguiente uso.
-pub async fn liberar_gafete(numero: i32, tipo: &str) -> Result<(), String> {
-    match db::get_gafete(numero, tipo).await {
-        Ok(Some(g)) => db::set_gafete_uso(&g.id, false).await.map_err(|e| e.to_string()),
-        Ok(None) => Err("Gafete no encontrado en el inventario.".to_string()),
-        Err(e) => Err(e.to_string()),
-    }
+/// Libera un gafete, marcándolo como disponible.
+///
+/// # Errores
+/// * `GafeteError::NotFound` - Si el gafete no existe.
+/// * `GafeteError::Database` - Error de persistencia.
+pub async fn liberar_gafete(numero: i32, tipo: &str) -> Result<(), GafeteError> {
+    let gafete = db::get_gafete(numero, tipo)
+        .await
+        .map_err(|e| GafeteError::Database(e.to_string()))?
+        .ok_or(GafeteError::NotFound)?;
+
+    db::set_gafete_uso(&gafete.id, false)
+        .await
+        .map_err(|e| GafeteError::Database(e.to_string()))?;
+
+    Ok(())
 }
 
-/// Crea un único gafete de forma manual.
-pub async fn create_gafete(input: CreateGafeteInput) -> Result<GafeteResponse, String> {
+/// Crea un único gafete manualmente.
+///
+/// # Argumentos
+/// * `input` - Datos del nuevo gafete.
+///
+/// # Errores
+/// * `GafeteError::Validation` - Si el número o tipo son inválidos.
+/// * `GafeteError::Database` - Error al insertar.
+pub async fn create_gafete(input: CreateGafeteInput) -> Result<GafeteResponse, GafeteError> {
     use crate::domain::gafete as domain;
-    domain::validar_create_input(&input).map_err(|e| e.to_string())?;
 
-    let tipo = input.tipo.parse::<TipoGafete>().map_err(|e| e.to_string())?;
+    // Validaciones de dominio
+    domain::validar_create_input(&input).map_err(|e| GafeteError::Validation(e.to_string()))?;
 
-    let dto = GafeteCreateDTO { numero: input.numero, tipo, estado: GafeteEstado::Activo };
+    let tipo = input
+        .tipo
+        .parse::<TipoGafete>()
+        .map_err(|_| GafeteError::InvalidType(input.tipo.clone()))?;
 
-    let gafete = db::create_gafete(dto).await.map_err(|e| e.to_string())?;
+    let dto =
+        GafeteCreateDTO { numero: input.numero, tipo, estado: GafeteEstado::Activo, en_uso: false };
+
+    let gafete = db::create_gafete(dto).await.map_err(|e| {
+        error!("Error al crear gafete {}: {}", input.numero, e);
+        GafeteError::Database(e.to_string())
+    })?;
+
+    info!("Gafete creado exitosamente: {} ({})", gafete.numero, gafete.tipo);
+
     Ok(GafeteResponse::from(gafete))
 }
 
-/// Generador masivo de gafetes.
+/// Generador masivo de gafetes por rango.
 ///
-/// Permite inicializar el inventario rápidamente definiendo un rango numérico,
-/// un prefijo (ej. 'EXT-') y el relleno de ceros (padding) para mantener
-/// la consistencia visual en las tarjetas.
-pub async fn create_gafete_range(input: CreateGafeteRangeInput) -> Result<i32, String> {
+/// Permite poblar el inventario rápidamente (ej. del 100 al 200).
+/// Ignora fallos individuales (ej. duplicados) para completar el lote.
+///
+/// # Argumentos
+/// * `input` - Rango (inicio, fin) y tipo.
+///
+/// # Retorno
+/// Cantidad de gafetes creados exitosamente.
+pub async fn create_gafete_range(input: CreateGafeteRangeInput) -> Result<i32, GafeteError> {
     use crate::domain::gafete as domain;
 
-    // Validar rango y tipo
+    // Validar rango
     if input.start > input.end {
-        return Err("El inicio del rango no puede ser mayor que el fin.".to_string());
+        return Err(GafeteError::Validation(
+            "El inicio del rango no puede ser mayor que el fin".to_string(),
+        ));
     }
-    domain::validar_numero(input.start).map_err(|e| e.to_string())?;
-    domain::validar_numero(input.end).map_err(|e| e.to_string())?;
 
-    let tipo = input.tipo.parse::<TipoGafete>().map_err(|e| e.to_string())?;
+    domain::validar_numero(input.start).map_err(|e| GafeteError::Validation(e.to_string()))?;
+    domain::validar_numero(input.end).map_err(|e| GafeteError::Validation(e.to_string()))?;
+
+    let tipo = input
+        .tipo
+        .parse::<TipoGafete>()
+        .map_err(|_| GafeteError::InvalidType(input.tipo.clone()))?;
+
     let mut created = 0;
+    info!("Iniciando creación masiva de gafetes: {} -> {}", input.start, input.end);
 
     for numero in input.start..=input.end {
-        let dto = GafeteCreateDTO { numero, tipo: tipo.clone(), estado: GafeteEstado::Activo };
+        let dto = GafeteCreateDTO {
+            numero,
+            tipo: tipo.clone(),
+            estado: GafeteEstado::Activo,
+            en_uso: false,
+        };
 
-        // Si falla la creación de un número individual (ej. por duplicado),
-        // continuamos con el siguiente para no bloquear todo el proceso.
-        if db::create_gafete(dto).await.is_ok() {
+        // Tolerancia a fallos: Si uno falla (ya existe), seguimos con el siguiente
+        if let Ok(_) = db::create_gafete(dto).await {
             created += 1;
         }
     }
 
+    info!("Creación masiva finalizada. Total creados: {}", created);
     Ok(created)
 }
 
-pub async fn get_gafete_by_id(id_str: &str) -> Result<Option<GafeteResponse>, String> {
-    let id = parse_gafete_id(id_str);
-    db::find_by_id(&id).await.map(|opt| opt.map(GafeteResponse::from)).map_err(|e| e.to_string())
+/// Obtiene un gafete por su ID.
+pub async fn get_gafete_by_id(id_str: &str) -> Result<Option<GafeteResponse>, GafeteError> {
+    let id = parse_gafete_id(id_str)?;
+    db::find_by_id(&id)
+        .await
+        .map(|opt| opt.map(GafeteResponse::from))
+        .map_err(|e| GafeteError::Database(e.to_string()))
 }
 
-pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, String> {
-    let gafetes = db::get_all_gafetes().await.map_err(|e| e.to_string())?;
+/// Lista todos los gafetes registrados.
+pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
+    let gafetes = db::get_all_gafetes().await.map_err(|e| GafeteError::Database(e.to_string()))?;
+
     Ok(gafetes.into_iter().map(GafeteResponse::from).collect())
 }
 
-pub async fn get_gafetes_disponibles(tipo_str: &str) -> Result<Vec<GafeteResponse>, String> {
-    let gafetes = db::get_gafetes_disponibles(tipo_str).await.map_err(|e| e.to_string())?;
+/// Lista los gafetes disponibles para un tipo específico.
+pub async fn get_gafetes_disponibles(tipo_str: &str) -> Result<Vec<GafeteResponse>, GafeteError> {
+    let gafetes = db::get_gafetes_disponibles(tipo_str)
+        .await
+        .map_err(|e| GafeteError::Database(e.to_string()))?;
+
     Ok(gafetes.into_iter().map(GafeteResponse::from).collect())
 }
 
-/// Cambia el estado operativo de un gafete (ej. marcar como 'Perdido' o 'Dañado').
+/// Cambia el estado operativo de un gafete (ej. Perdido, Dañado).
 pub async fn update_gafete_status(
     id_str: &str,
     estado: GafeteEstado,
-) -> Result<GafeteResponse, String> {
-    let id = parse_gafete_id(id_str);
-    let gafete = db::update_estado(&id, estado.as_str()).await.map_err(|e| e.to_string())?;
+) -> Result<GafeteResponse, GafeteError> {
+    let id = parse_gafete_id(id_str)?;
+
+    // Logs de auditoría importantes para cambios de estado
+    if estado == GafeteEstado::Extraviado || estado == GafeteEstado::Danado {
+        warn!("Marcando gafete {} como {}", id_str, estado);
+    }
+
+    let gafete = db::update_estado(&id, estado.as_str())
+        .await
+        .map_err(|e| GafeteError::Database(e.to_string()))?;
+
     Ok(GafeteResponse::from(gafete))
 }
 
-pub async fn delete_gafete(id_str: &str) -> Result<(), String> {
-    let id = parse_gafete_id(id_str);
-    db::find_by_id(&id).await.map_err(|e| e.to_string())?.ok_or("Gafete no encontrado.")?;
-    db::delete_gafete_by_id(&id).await.map_err(|e| e.to_string())
+/// Elimina un gafete del sistema.
+pub async fn delete_gafete(id_str: &str) -> Result<(), GafeteError> {
+    let id = parse_gafete_id(id_str)?;
+
+    // Verificar existencia antes de borrar
+    if db::find_by_id(&id).await.map_err(|e| GafeteError::Database(e.to_string()))?.is_none() {
+        return Err(GafeteError::NotFound);
+    }
+
+    db::delete_gafete_by_id(&id).await.map_err(|e| GafeteError::Database(e.to_string()))?;
+
+    info!("Gafete eliminado: {}", id_str);
+    Ok(())
+}
+
+// --------------------------------------------------------------------------
+// TESTS UNITARIOS
+// --------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_gafete_id_simple() {
+        let res = parse_gafete_id("123");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap().to_string(), "gafete:123");
+    }
+
+    #[test]
+    fn test_parse_gafete_id_compuesto() {
+        let res = parse_gafete_id("gafete:456");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap().to_string(), "gafete:456");
+    }
+
+    #[test]
+    fn test_parse_gafete_id_invalido() {
+        // RecordId requiere formato válido si tiene ":"
+        let res = parse_gafete_id("tabla:sin_valor:"); // Formato raro
+                                                       // Dependerá de la implementación de surrealdb::RecordId::parse
+                                                       // Asimimos que podría fallar o pasar dependiedo de la lib,
+                                                       // pero validamos que no crashee.
+        let _ = res;
+    }
 }

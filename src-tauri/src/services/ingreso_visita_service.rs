@@ -33,7 +33,7 @@ async fn validar_gafete_disponible(gafete: Option<i32>) -> Result<(), IngresoVis
         if g != 0 {
             let disp = gafete_service::is_gafete_disponible(g, "visita")
                 .await
-                .map_err(|e| IngresoVisitaError::Gafete(e))?;
+                .map_err(|e| IngresoVisitaError::Gafete(e.to_string()))?;
             if !disp {
                 return Err(IngresoVisitaError::Validation(
                     "El gafete seleccionado no está disponible".to_string(),

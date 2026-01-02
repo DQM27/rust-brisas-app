@@ -19,6 +19,9 @@ pub struct Gafete {
     pub tipo: TipoGafete,
     /// Estado físico del gafete.
     pub estado: GafeteEstado,
+    /// Indica si el gafete está actualmente asignado a un ingreso activo.
+    #[serde(default)]
+    pub en_uso: bool,
     #[serde(alias = "created_at")]
     pub created_at: Datetime,
     #[serde(alias = "updated_at")]
@@ -37,6 +40,12 @@ pub enum TipoGafete {
     Proveedor,
     Visita,
     Otro,
+}
+
+impl std::fmt::Display for TipoGafete {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
 }
 
 impl TipoGafete {
@@ -82,6 +91,12 @@ pub enum GafeteEstado {
     Extraviado,
 }
 
+impl std::fmt::Display for GafeteEstado {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
 impl GafeteEstado {
     pub fn as_str(&self) -> &str {
         match self {
@@ -99,7 +114,7 @@ impl std::str::FromStr for GafeteEstado {
         match s.to_lowercase().as_str() {
             "activo" => Ok(GafeteEstado::Activo),
             "danado" => Ok(GafeteEstado::Danado),
-            "extraviado" => Ok(GafeteEstado::Extraviado),
+            "perdido" | "extraviado" => Ok(GafeteEstado::Extraviado),
             _ => Err(format!("Estado de gafete desconocido: {}", s)),
         }
     }
@@ -150,6 +165,8 @@ pub struct GafeteCreateDTO {
     pub numero: i32,
     pub tipo: TipoGafete,
     pub estado: GafeteEstado,
+    #[serde(default)]
+    pub en_uso: bool,
 }
 
 // --------------------------------------------------------------------------
@@ -172,13 +189,23 @@ pub struct GafeteResponse {
 
 impl From<Gafete> for GafeteResponse {
     fn from(g: Gafete) -> Self {
+        let status = if g.estado == GafeteEstado::Activo {
+            if g.en_uso {
+                "en_uso".to_string()
+            } else {
+                "disponible".to_string()
+            }
+        } else {
+            g.estado.as_str().to_string()
+        };
+
         Self {
             id: g.id.to_string(),
             numero: g.numero,
             tipo: g.tipo.clone(),
             tipo_display: g.tipo.display().to_string(),
             estado_fisico: g.estado.clone(),
-            status: String::from("disponible"), // La lógica de estado real (uso) suele enriquecerse en el servicio
+            status,
             created_at: g.created_at.to_string(),
             updated_at: g.updated_at.to_string(),
         }

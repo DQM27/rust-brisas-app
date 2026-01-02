@@ -188,7 +188,7 @@ pub async fn crear_ingreso_contratista(
         if *g != 0 {
             let disp = gafete_service::is_gafete_disponible(*g, "contratista")
                 .await
-                .map_err(|e| IngresoContratistaError::Gafete(e))?;
+                .map_err(|e| IngresoContratistaError::Gafete(e.to_string()))?;
 
             if !disp {
                 warn!("Gafete {} no disponible para ingreso", *g);
