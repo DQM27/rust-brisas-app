@@ -4,7 +4,7 @@
 /// Combina operaciones de sistema de archivos (encriptados) y base de datos (referencias).
 ///
 /// Responsabilidades:
-/// - Ingesta segura de imágenes (Resize -> WebP -> ChaCha20Poly1305 -> Disk).
+/// - Ingesta segura de imágenes (Resize -> WebP -> `ChaCha20Poly1305` -> Disk).
 /// - Recuperación desencriptada bajo demanda (Disk -> Decrypt -> Base64).
 /// - Eliminación segura (Shredding lógico).
 use crate::commands::security_commands::{decrypt_data, encrypt_data};
@@ -90,7 +90,7 @@ fn process_image(image_path: &str) -> Result<Vec<u8>, UserError> {
 /// * `UserError::Validation`: Imagen inválida.
 /// * `UserError::Database`: Fallo al actualizar usuario.
 pub async fn upload_avatar(user_id: &str, file_path: &str) -> Result<String, UserError> {
-    log::info!("📸 Iniciando subida segura de avatar para: {}", user_id);
+    log::info!("📸 Iniciando subida segura de avatar para: {user_id}");
 
     // 1. Procesar imagen (resize + WebP)
     let image_data = process_image(file_path)?;
@@ -105,7 +105,7 @@ pub async fn upload_avatar(user_id: &str, file_path: &str) -> Result<String, Use
 
     // 4. Guardar archivo encriptado
     let base_path = get_avatar_base_path()?;
-    let avatar_file_path = base_path.join(format!("{}.enc", file_uuid));
+    let avatar_file_path = base_path.join(format!("{file_uuid}.enc"));
     fs::write(&avatar_file_path, &encrypted)
         .map_err(|e| UserError::IO(format!("Error escribiendo archivo ofuscado: {e}")))?;
 
@@ -116,7 +116,7 @@ pub async fn upload_avatar(user_id: &str, file_path: &str) -> Result<String, Use
         return Err(UserError::Database(e.to_string()));
     }
 
-    log::info!("   ✓ Avatar asegurado exitosamente: {}", file_uuid);
+    log::info!("   ✓ Avatar asegurado exitosamente: {file_uuid}");
     Ok(file_uuid)
 }
 
@@ -140,11 +140,11 @@ pub async fn get_avatar(user_id: &str) -> Result<String, UserError> {
 
     // 2. Construir la ruta del archivo
     let base_path = get_avatar_base_path()?;
-    let avatar_file_path = base_path.join(format!("{}.enc", avatar_uuid));
+    let avatar_file_path = base_path.join(format!("{avatar_uuid}.enc"));
 
     // 3. Leer archivo encriptado
     let encrypted = fs::read(&avatar_file_path).map_err(|_| {
-        UserError::IO(format!("Archivo de avatar {} no encontrado en disco", avatar_uuid))
+        UserError::IO(format!("Archivo de avatar {avatar_uuid} no encontrado en disco"))
     })?;
 
     // 4. Desencriptar
@@ -169,7 +169,7 @@ pub async fn delete_avatar(user_id: &str) -> Result<(), UserError> {
 
     if !avatar_uuid.is_empty() {
         let base_path = get_avatar_base_path()?;
-        let avatar_file_path = base_path.join(format!("{}.enc", avatar_uuid));
+        let avatar_file_path = base_path.join(format!("{avatar_uuid}.enc"));
 
         if avatar_file_path.exists() {
             fs::remove_file(&avatar_file_path)

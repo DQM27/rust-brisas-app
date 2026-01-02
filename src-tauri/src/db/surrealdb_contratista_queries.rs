@@ -1,4 +1,4 @@
-//! # Queries SurrealDB: Contratistas
+//! # Queries `SurrealDB`: Contratistas
 //!
 //! Operaciones de base de datos para gestión de contratistas externos.
 //!
@@ -48,7 +48,7 @@ pub async fn create(dto: ContratistaCreateDTO) -> Result<ContratistaFetched, Sur
 /// ```
 ///
 /// ## Parámetros
-/// * `id` - RecordId del contratista
+/// * `id` - `RecordId` del contratista
 ///
 /// ## Retorno
 /// * `Ok(Some(Contratista))` - Contratista encontrado
@@ -70,7 +70,7 @@ pub async fn find_by_id(id: &RecordId) -> Result<Option<Contratista>, SurrealDbE
 /// Popula `empresa` para evitar query adicional al mostrar detalles.
 ///
 /// ## Parámetros
-/// * `id` - RecordId del contratista
+/// * `id` - `RecordId` del contratista
 ///
 /// ## Retorno
 /// * `Ok(Some(ContratistaFetched))` - Con empresa populated
@@ -183,7 +183,7 @@ pub async fn find_all_fetched() -> Result<Vec<ContratistaFetched>, SurrealDbErro
 /// ```
 ///
 /// ## Parámetros
-/// * `empresa_id` - RecordId de la empresa
+/// * `empresa_id` - `RecordId` de la empresa
 ///
 /// ## Retorno
 /// * `Ok(Vec<Contratista>)` - Contratistas de esa empresa (máx 500)
@@ -205,10 +205,10 @@ pub async fn find_by_empresa(empresa_id: &RecordId) -> Result<Vec<Contratista>, 
 /// 1. `UPDATE $id MERGE $dto` - Actualiza campos
 /// 2. `SELECT * FROM $id FETCH empresa` - Retorna con relación
 ///
-/// SurrealDB no soporta `UPDATE ... FETCH` en un solo query.
+/// `SurrealDB` no soporta `UPDATE ... FETCH` en un solo query.
 ///
 /// ## Parámetros
-/// * `id` - RecordId del contratista
+/// * `id` - `RecordId` del contratista
 /// * `dto` - Campos a actualizar (solo los presentes se modifican)
 ///
 /// ## Retorno
@@ -230,7 +230,7 @@ pub async fn update(
 
     let fetched: Option<ContratistaFetched> = result.take(0)?;
     fetched.ok_or_else(|| {
-        SurrealDbError::Query(format!("Contratista no encontrado después de UPDATE: {}", id))
+        SurrealDbError::Query(format!("Contratista no encontrado después de UPDATE: {id}"))
     })
 }
 
@@ -242,7 +242,7 @@ pub async fn update(
 /// ```
 ///
 /// ## Parámetros
-/// * `id` - RecordId del contratista
+/// * `id` - `RecordId` del contratista
 /// * `estado` - Nuevo estado (Activo, Inactivo, Bloqueado)
 ///
 /// ## Retorno
@@ -269,7 +269,7 @@ pub async fn update_status(
 
     let fetched: Option<ContratistaFetched> = result.take(0)?;
     fetched.ok_or_else(|| {
-        SurrealDbError::Query(format!("No se pudo actualizar estado del contratista: {}", id))
+        SurrealDbError::Query(format!("No se pudo actualizar estado del contratista: {id}"))
     })
 }
 
@@ -285,7 +285,7 @@ pub async fn update_status(
 /// Los queries normales filtran `deleted_at IS NONE`.
 ///
 /// ## Parámetros
-/// * `id` - RecordId del contratista a eliminar
+/// * `id` - `RecordId` del contratista a eliminar
 ///
 /// ## Retorno
 /// * `Ok(())` - Eliminado exitosamente
@@ -311,7 +311,7 @@ pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
 /// nuevamente en queries normales.
 ///
 /// ## Parámetros
-/// * `id` - RecordId del contratista a restaurar
+/// * `id` - `RecordId` del contratista a restaurar
 ///
 /// ## Retorno
 /// * `Ok(())` - Restaurado exitosamente
@@ -353,10 +353,10 @@ pub async fn find_archived() -> Result<Vec<ContratistaFetched>, SurrealDbError> 
 /// ```
 ///
 /// ## Uso
-/// Útil para mostrar el nombre de empresa cuando solo se tiene el RecordId.
+/// Útil para mostrar el nombre de empresa cuando solo se tiene el `RecordId`.
 ///
 /// ## Parámetros
-/// * `empresa_id` - RecordId de la empresa
+/// * `empresa_id` - `RecordId` de la empresa
 ///
 /// ## Retorno
 /// * `Ok(String)` - Nombre de la empresa, o "Empresa desconocida" si no existe
@@ -371,5 +371,5 @@ pub async fn get_empresa_nombre(empresa_id: &RecordId) -> Result<String, Surreal
     }
 
     let res: Option<NombreResult> = result.take(0)?;
-    Ok(res.map(|r| r.nombre).unwrap_or_else(|| "Empresa desconocida".to_string()))
+    Ok(res.map_or_else(|| "Empresa desconocida".to_string(), |r| r.nombre))
 }

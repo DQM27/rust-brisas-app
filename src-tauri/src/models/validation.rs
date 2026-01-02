@@ -13,7 +13,7 @@ pub enum NivelSeveridad {
 }
 
 /// Estados de validación del motor.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ValidationStatus {
     Allowed,
@@ -22,7 +22,7 @@ pub enum ValidationStatus {
 }
 
 /// Razones canónicas de rechazo o advertencia.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ValidationReason {
     None,
@@ -67,11 +67,11 @@ impl EstadoAutorizacion {
     /// Esto actúa como un "anti-corruption layer" para normalizar los estados.
     pub fn from_str_lossy(s: &str) -> Self {
         match s.trim().to_lowercase().as_str() {
-            "activo" | "authorized" | "ok" => EstadoAutorizacion::Activo,
-            "vencido" | "expired" => EstadoAutorizacion::Vencido,
-            "inactivo" | "inactive" => EstadoAutorizacion::Inactivo,
-            "suspendido" | "suspended" => EstadoAutorizacion::Suspendido,
-            _ => EstadoAutorizacion::PorDefinir,
+            "activo" | "authorized" | "ok" => Self::Activo,
+            "vencido" | "expired" => Self::Vencido,
+            "inactivo" | "inactive" => Self::Inactivo,
+            "suspendido" | "suspended" => Self::Suspendido,
+            _ => Self::PorDefinir,
         }
     }
 }

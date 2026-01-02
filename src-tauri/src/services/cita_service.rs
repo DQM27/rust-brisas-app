@@ -34,7 +34,7 @@ pub struct AgendarCitaParams {
 ///
 /// # Errores
 /// - `CitaError::Validation`: Si los datos de entrada no cumplen las reglas de dominio.
-/// - `CitaError::Database`: Si ocurre un error de persistencia o red con SurrealDB.
+/// - `CitaError::Database`: Si ocurre un error de persistencia o red con `SurrealDB`.
 pub async fn agendar_cita(params: AgendarCitaParams) -> Result<CitaResponse, CitaError> {
     // 1. Validación de Dominio (Capa Pura)
     crate::domain::cita::validar_create_input(&params.cita)?;
@@ -43,10 +43,10 @@ pub async fn agendar_cita(params: AgendarCitaParams) -> Result<CitaResponse, Cit
 
     // 2. Orquestación de Identidad del Visitante
     let visitante_id: Option<RecordId> = if let Some(ref id_str) = params.cita.visitante_id {
-        if !id_str.is_empty() {
-            Some(parse_record_id(id_str, "visitante")?)
-        } else {
+        if id_str.is_empty() {
             None
+        } else {
+            Some(parse_record_id(id_str, "visitante")?)
         }
     } else {
         None
@@ -59,14 +59,11 @@ pub async fn agendar_cita(params: AgendarCitaParams) -> Result<CitaResponse, Cit
             .await
             .map_err(|e| CitaError::Database(e.to_string()))?;
 
-        match existente {
-            Some(v) => Some(parse_record_id(&v.id, "visitante")?),
-            None => {
-                let nuevo = visitante_service::create_visitante(v_input)
-                    .await
-                    .map_err(|e| CitaError::Database(e.to_string()))?;
-                Some(parse_record_id(&nuevo.id, "visitante")?)
-            }
+        if let Some(v) = existente { Some(parse_record_id(&v.id, "visitante")?) } else {
+            let nuevo = visitante_service::create_visitante(v_input)
+                .await
+                .map_err(|e| CitaError::Database(e.to_string()))?;
+            Some(parse_record_id(&nuevo.id, "visitante")?)
         }
     } else {
         None
@@ -208,7 +205,7 @@ pub async fn procesar_ingreso_cita(
         } else {
             Some(
                 crate::domain::common::normalizar_gafete_a_int(&g_str)
-                    .map_err(|e| CitaError::Validation(e))?,
+                    .map_err(CitaError::Validation)?,
             )
         }
     } else {
@@ -228,8 +225,7 @@ pub async fn procesar_ingreso_cita(
         gafete_numero: gafete_int,
         placa_vehiculo: None,
         observaciones: Some(format!(
-            "INGRESO AUTOMÁTICO: Procesado desde cita programada #{}",
-            cita_id_str
+            "INGRESO AUTOMÁTICO: Procesado desde cita programada #{cita_id_str}"
         )),
     };
 
@@ -251,18 +247,18 @@ pub async fn procesar_ingreso_cita(
 // HELPERS INTERNOS
 // --------------------------------------------------------------------------
 
-/// Convierte un ID de texto en un RecordId de SurrealDB.
+/// Convierte un ID de texto en un `RecordId` de `SurrealDB`.
 fn parse_record_id(id_str: &str, table: &str) -> Result<RecordId, CitaError> {
     if id_str.contains(':') {
         id_str
             .parse()
-            .map_err(|_| CitaError::Validation(format!("Formato de ID inválido: {}", id_str)))
+            .map_err(|_| CitaError::Validation(format!("Formato de ID inválido: {id_str}")))
     } else {
         Ok(RecordId::from_table_key(table, id_str))
     }
 }
 
-/// Parsea una cadena de fecha a formato Datetime de SurrealDB.
+/// Parsea una cadena de fecha a formato Datetime de `SurrealDB`.
 ///
 /// Soporta RFC 3339 (fecha con hora) y YYYY-MM-DD (fecha simple).
 /// Para la fecha simple, se asume el mediodía como hora por defecto.
@@ -283,8 +279,7 @@ fn parse_datetime(date_str: &str) -> Result<surrealdb::Datetime, CitaError> {
     }
 
     Err(CitaError::Validation(format!(
-        "El formato de fecha '{}' no es reconocido (ISO 8601 esperado o YYYY-MM-DD)",
-        date_str
+        "El formato de fecha '{date_str}' no es reconocido (ISO 8601 esperado o YYYY-MM-DD)"
     )))
 }
 

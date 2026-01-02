@@ -45,7 +45,7 @@ where
     V: VehiculoRepository,
     A: AuditRepository,
 {
-    pub fn new(
+    pub const fn new(
         repo: R,
         sec_repo: S,
         emp_repo: E,
@@ -104,16 +104,15 @@ where
             .map_err(map_db_error)?;
         if block_status.is_blocked {
             let nivel = block_status.nivel_severidad.unwrap_or_else(|| "BAJO".to_string());
-            warn!("INTENTO DE BLOQUEO: {} (Nivel: {})", cedula_normalizada, nivel);
+            warn!("INTENTO DE BLOQUEO: {cedula_normalizada} (Nivel: {nivel})");
             return Err(ContratistaError::Validation(format!(
-                "BLOQUEO DE SEGURIDAD: La cédula {} figura en la lista negra (Nivel: {}).",
-                cedula_normalizada, nivel
+                "BLOQUEO DE SEGURIDAD: La cédula {cedula_normalizada} figura en la lista negra (Nivel: {nivel})."
             )));
         }
 
         let existing = self.repo.find_by_cedula(&cedula_normalizada).await.map_err(map_db_error)?;
         if existing.is_some() {
-            warn!("Intento de duplicado para CI: {}", cedula_normalizada);
+            warn!("Intento de duplicado para CI: {cedula_normalizada}");
             return Err(ContratistaError::CedulaExists);
         }
 
@@ -140,7 +139,7 @@ where
         };
 
         let contratista = self.repo.create(dto).await.map_err(|e| {
-            error!("Fallo en DB al persistir contratista {}: {}", cedula_normalizada, e);
+            error!("Fallo en DB al persistir contratista {cedula_normalizada}: {e}");
             map_db_error(e)
         })?;
 
@@ -152,7 +151,7 @@ where
         let empresa_nombre = contratista.empresa.nombre.clone();
         if let Some(search) = &self.search_service {
             if let Err(e) = search.add_contratista_fetched(&contratista, &empresa_nombre).await {
-                log::warn!("Aviso: Falló la indexación en el motor de búsqueda: {}", e);
+                log::warn!("Aviso: Falló la indexación en el motor de búsqueda: {e}");
             }
         }
 
@@ -273,7 +272,7 @@ where
         let updated = self.repo.update(&id, dto).await.map_err(map_db_error)?;
 
         // Gestión del vehículo
-        if let Some(true) = input.tiene_vehiculo {
+        if input.tiene_vehiculo == Some(true) {
             if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
                 if !tipo.is_empty() && !placa.is_empty() {
                     let tipo_norm = crate::domain::vehiculo::validar_tipo_vehiculo(tipo)
@@ -293,7 +292,7 @@ where
                             tipo_vehiculo: Some(
                                 tipo_norm
                                     .parse::<crate::models::vehiculo::TipoVehiculo>()
-                                    .map_err(|e| ContratistaError::Validation(e))?,
+                                    .map_err(ContratistaError::Validation)?,
                             ),
                             marca: input.marca.as_ref().map(|s| s.trim().to_string()),
                             modelo: input.modelo.as_ref().map(|s| s.trim().to_string()),
@@ -306,7 +305,7 @@ where
                             propietario: updated.id.clone(),
                             tipo_vehiculo: tipo_norm
                                 .parse::<crate::models::vehiculo::TipoVehiculo>()
-                                .map_err(|e| ContratistaError::Validation(e))?,
+                                .map_err(ContratistaError::Validation)?,
                             placa: placa_norm.clone(),
                             marca: input.marca.as_ref().map(|s| s.trim().to_string()),
                             modelo: input.modelo.as_ref().map(|s| s.trim().to_string()),
@@ -322,7 +321,7 @@ where
         let empresa_nombre = updated.empresa.nombre.clone();
         if let Some(search) = &self.search_service {
             if let Err(e) = search.update_contratista_fetched(&updated, &empresa_nombre).await {
-                log::warn!("Aviso: Falló la sincronización del buscador: {}", e);
+                log::warn!("Aviso: Falló la sincronización del buscador: {e}");
             }
         }
 

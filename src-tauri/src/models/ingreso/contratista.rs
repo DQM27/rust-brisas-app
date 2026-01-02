@@ -109,7 +109,7 @@ pub struct IngresoContratistaCreateDTO {
 // --------------------------------------------------------------------------
 
 /// Representación del estado temporal de un contratista dentro de las instalaciones.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum EstadoPermanencia {
     /// Situación normal, tiempo < 13h 30min.
@@ -121,11 +121,11 @@ pub enum EstadoPermanencia {
 }
 
 impl EstadoPermanencia {
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         match self {
-            EstadoPermanencia::Normal => "normal",
-            EstadoPermanencia::AlertaTemprana => "alerta_temprana",
-            EstadoPermanencia::TiempoExcedido => "tiempo_excedido",
+            Self::Normal => "normal",
+            Self::AlertaTemprana => "alerta_temprana",
+            Self::TiempoExcedido => "tiempo_excedido",
         }
     }
 }
@@ -145,7 +145,7 @@ pub struct AlertaTiempo {
 // --------------------------------------------------------------------------
 
 /// Motivo de cierre manual de un ingreso
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MotivoCierre {
     /// El guardia olvidó registrar la salida al momento
@@ -159,12 +159,12 @@ pub enum MotivoCierre {
 }
 
 impl MotivoCierre {
-    pub fn descripcion(&self) -> &str {
+    pub const fn descripcion(&self) -> &str {
         match self {
-            MotivoCierre::OlvidoRegistrarSalida => "Se olvidó registrar la salida",
-            MotivoCierre::SalioSinRegistrar => "La persona salió sin registrar",
-            MotivoCierre::PersonaNoLocalizada => "No se localizó a la persona en instalaciones",
-            MotivoCierre::AutorizacionEspecial => "Cierre autorizado por supervisor",
+            Self::OlvidoRegistrarSalida => "Se olvidó registrar la salida",
+            Self::SalioSinRegistrar => "La persona salió sin registrar",
+            Self::PersonaNoLocalizada => "No se localizó a la persona en instalaciones",
+            Self::AutorizacionEspecial => "Cierre autorizado por supervisor",
         }
     }
 }
@@ -174,11 +174,11 @@ impl std::str::FromStr for MotivoCierre {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "olvido_registrar_salida" => Ok(MotivoCierre::OlvidoRegistrarSalida),
-            "salio_sin_registrar" => Ok(MotivoCierre::SalioSinRegistrar),
-            "persona_no_localizada" => Ok(MotivoCierre::PersonaNoLocalizada),
-            "autorizacion_especial" => Ok(MotivoCierre::AutorizacionEspecial),
-            _ => Err(format!("Motivo de cierre desconocido: {}", s)),
+            "olvido_registrar_salida" => Ok(Self::OlvidoRegistrarSalida),
+            "salio_sin_registrar" => Ok(Self::SalioSinRegistrar),
+            "persona_no_localizada" => Ok(Self::PersonaNoLocalizada),
+            "autorizacion_especial" => Ok(Self::AutorizacionEspecial),
+            _ => Err(format!("Motivo de cierre desconocido: {s}")),
         }
     }
 }
@@ -198,7 +198,7 @@ pub struct ResultadoCierreManual {
 // --------------------------------------------------------------------------
 
 /// Motivo para un ingreso excepcional (cuando normalmente no podría entrar)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MotivoExcepcional {
     /// Orden directa de Seguridad Industrial
@@ -216,11 +216,11 @@ impl std::str::FromStr for MotivoExcepcional {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "orden_seguridad_industrial" => Ok(MotivoExcepcional::OrdenSeguridadIndustrial),
-            "emergencia_operativa" => Ok(MotivoExcepcional::EmergenciaOperativa),
-            "documentos_en_tramite" => Ok(MotivoExcepcional::DocumentosEnTramite),
-            "otro" => Ok(MotivoExcepcional::Otro),
-            _ => Err(format!("Motivo excepcional desconocido: {}", s)),
+            "orden_seguridad_industrial" => Ok(Self::OrdenSeguridadIndustrial),
+            "emergencia_operativa" => Ok(Self::EmergenciaOperativa),
+            "documentos_en_tramite" => Ok(Self::DocumentosEnTramite),
+            "otro" => Ok(Self::Otro),
+            _ => Err(format!("Motivo excepcional desconocido: {s}")),
         }
     }
 }

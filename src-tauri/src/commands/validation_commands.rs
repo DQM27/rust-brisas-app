@@ -6,7 +6,7 @@
 use crate::services::surrealdb_service::get_db;
 use tauri::command;
 
-/// Estructura interna para recibir el conteo de registros de SurrealDB.
+/// Estructura interna para recibir el conteo de registros de `SurrealDB`.
 #[derive(serde::Deserialize, Debug)]
 struct CountResult {
     count: i64,
@@ -36,7 +36,7 @@ pub async fn check_unique(
 
     // Construcción segura de la consulta SurrealQL
     let mut query_string =
-        format!("SELECT count() FROM type::table($table) WHERE {} = $value", field);
+        format!("SELECT count() FROM type::table($table) WHERE {field} = $value");
 
     if exclude_id.is_some() {
         query_string.push_str(" AND id != $exclude_id");
@@ -52,9 +52,9 @@ pub async fn check_unique(
 
     // Procesamiento del resultado: [{ count: N }]
     let result: Vec<CountResult> =
-        response.take(0).map_err(|e| format!("Error de deserialización: {}", e))?;
+        response.take(0).map_err(|e| format!("Error de deserialización: {e}"))?;
 
-    let count = result.first().map(|r| r.count).unwrap_or(0);
+    let count = result.first().map_or(0, |r| r.count);
 
     // Retorna true si no hay duplicados (count == 0)
     Ok(count == 0)

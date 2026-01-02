@@ -62,7 +62,7 @@ pub struct ProveedorFetched {
 // --------------------------------------------------------------------------
 
 /// Estado operativo del proveedor en la plataforma.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum EstadoProveedor {
     Activo,
@@ -71,11 +71,11 @@ pub enum EstadoProveedor {
 }
 
 impl EstadoProveedor {
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         match self {
-            EstadoProveedor::Activo => "ACTIVO",
-            EstadoProveedor::Inactivo => "INACTIVO",
-            EstadoProveedor::Suspendido => "SUSPENDIDO",
+            Self::Activo => "ACTIVO",
+            Self::Inactivo => "INACTIVO",
+            Self::Suspendido => "SUSPENDIDO",
         }
     }
 }
@@ -85,10 +85,10 @@ impl std::str::FromStr for EstadoProveedor {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_uppercase().as_str() {
-            "ACTIVO" => Ok(EstadoProveedor::Activo),
-            "INACTIVO" => Ok(EstadoProveedor::Inactivo),
-            "SUSPENDIDO" => Ok(EstadoProveedor::Suspendido),
-            _ => Err(format!("Estado desconocido: {}", s)),
+            "ACTIVO" => Ok(Self::Activo),
+            "INACTIVO" => Ok(Self::Inactivo),
+            "SUSPENDIDO" => Ok(Self::Suspendido),
+            _ => Err(format!("Estado desconocido: {s}")),
         }
     }
 }

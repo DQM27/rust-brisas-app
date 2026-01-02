@@ -29,20 +29,20 @@ pub fn initialize_index(index_path: &Path) -> Result<Index, SearchError> {
     // Solo intentar abrir si existe meta.json (índice válido)
     if meta_path.exists() {
         let index = Index::open_in_dir(index_path)
-            .map_err(|e| SearchError::TantivyError(format!("Error al abrir índice: {}", e)))?;
+            .map_err(|e| SearchError::TantivyError(format!("Error al abrir índice: {e}")))?;
 
         // Verificar si existe el campo "email" (indicador simple de migración)
         if index.schema().get_field(fields::EMAIL).is_err() {
             // Schema obsoleto, recrear índice
             std::fs::remove_dir_all(index_path).map_err(|e| {
-                SearchError::IoError(format!("Error al eliminar índice obsoleto: {}", e))
+                SearchError::IoError(format!("Error al eliminar índice obsoleto: {e}"))
             })?;
             std::fs::create_dir_all(index_path).map_err(|e| {
-                SearchError::IoError(format!("Error al crear directorio de índice: {}", e))
+                SearchError::IoError(format!("Error al crear directorio de índice: {e}"))
             })?;
 
             Index::create_in_dir(index_path, schema)
-                .map_err(|e| SearchError::TantivyError(format!("Error al crear índice: {}", e)))
+                .map_err(|e| SearchError::TantivyError(format!("Error al crear índice: {e}")))
         } else {
             Ok(index)
         }
@@ -50,18 +50,18 @@ pub fn initialize_index(index_path: &Path) -> Result<Index, SearchError> {
         // Crear directorio si no existe
         if !index_path.exists() {
             std::fs::create_dir_all(index_path).map_err(|e| {
-                SearchError::IoError(format!("Error al crear directorio de índice: {}", e))
+                SearchError::IoError(format!("Error al crear directorio de índice: {e}"))
             })?;
         }
 
         // Crear nuevo índice
-        info!("📂 Creando nuevo índice en: {:?}", index_path);
+        info!("📂 Creando nuevo índice en: {index_path:?}");
         Index::create_in_dir(index_path, schema)
-            .map_err(|e| SearchError::TantivyError(format!("Error al crear índice: {}", e)))
+            .map_err(|e| SearchError::TantivyError(format!("Error al crear índice: {e}")))
     }
 }
 
-/// Crea los FieldHandles desde el schema del índice.
+/// Crea los `FieldHandles` desde el schema del índice.
 pub fn create_field_handles(schema: &Schema) -> Result<FieldHandles, SearchError> {
     FieldHandles::new(schema)
 }
@@ -72,7 +72,7 @@ pub fn get_index_writer(index: &Index) -> Result<IndexWriter, SearchError> {
     // Budget ajustado a 15MB (Mínimo requerido por Tantivy)
     index
         .writer(15_000_000)
-        .map_err(|e| SearchError::TantivyError(format!("Error al crear writer: {}", e)))
+        .map_err(|e| SearchError::TantivyError(format!("Error al crear writer: {e}")))
 }
 
 /// Indexa un contratista con su nombre de empresa
@@ -102,7 +102,7 @@ pub fn index_contratista(
 
     // Crear documento usando handles pre-cargados
     let mut doc = TantivyDocument::default();
-    doc.add_text(handles.id, &contratista.id.to_string());
+    doc.add_text(handles.id, contratista.id.to_string());
     doc.add_text(handles.tipo, "contratista");
     doc.add_text(handles.cedula, &contratista.cedula);
     doc.add_text(handles.nombre, &contratista.nombre);
@@ -124,7 +124,7 @@ pub fn index_contratista(
     // Agregar al índice
     writer
         .add_document(doc)
-        .map_err(|e| SearchError::TantivyError(format!("Error al agregar documento: {}", e)))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar documento: {e}")))?;
 
     Ok(())
 }
@@ -156,7 +156,7 @@ pub fn index_contratista_fetched(
 
     // Crear documento usando handles pre-cargados
     let mut doc = TantivyDocument::default();
-    doc.add_text(handles.id, &contratista.id.to_string());
+    doc.add_text(handles.id, contratista.id.to_string());
     doc.add_text(handles.tipo, "contratista");
     doc.add_text(handles.cedula, &contratista.cedula);
     doc.add_text(handles.nombre, &contratista.nombre);
@@ -178,7 +178,7 @@ pub fn index_contratista_fetched(
     // Agregar al índice
     writer
         .add_document(doc)
-        .map_err(|e| SearchError::TantivyError(format!("Error al agregar documento: {}", e)))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar documento: {e}")))?;
 
     Ok(())
 }
@@ -205,7 +205,7 @@ pub fn index_user(
 
     // Crear documento usando handles pre-cargados
     let mut doc = TantivyDocument::default();
-    doc.add_text(handles.id, &user.id.to_string());
+    doc.add_text(handles.id, user.id.to_string());
     doc.add_text(handles.tipo, "usuario");
     doc.add_text(handles.cedula, &user.cedula);
     doc.add_text(handles.nombre, &user.nombre);
@@ -227,7 +227,7 @@ pub fn index_user(
     // Agregar al índice
     writer
         .add_document(doc)
-        .map_err(|e| SearchError::TantivyError(format!("Error al agregar usuario: {}", e)))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar usuario: {e}")))?;
 
     Ok(())
 }
@@ -254,7 +254,7 @@ pub fn index_user_fetched(
 
     // Crear documento usando handles pre-cargados
     let mut doc = TantivyDocument::default();
-    doc.add_text(handles.id, &user.id.to_string());
+    doc.add_text(handles.id, user.id.to_string());
     doc.add_text(handles.tipo, "usuario");
     doc.add_text(handles.cedula, &user.cedula);
     doc.add_text(handles.nombre, &user.nombre);
@@ -276,7 +276,7 @@ pub fn index_user_fetched(
     // Agregar al índice
     writer
         .add_document(doc)
-        .map_err(|e| SearchError::TantivyError(format!("Error al agregar usuario: {}", e)))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar usuario: {e}")))?;
 
     Ok(())
 }
@@ -342,7 +342,7 @@ pub fn update_user_fetched_in_index(
 pub fn commit_index(writer: &mut IndexWriter) -> Result<(), SearchError> {
     writer
         .commit()
-        .map_err(|e| SearchError::TantivyError(format!("Error al hacer commit: {}", e)))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error al hacer commit: {e}")))?;
     Ok(())
 }
 
@@ -391,7 +391,7 @@ pub fn index_lista_negra(
 
     writer
         .add_document(doc)
-        .map_err(|e| SearchError::TantivyError(format!("Error al agregar lista negra: {}", e)))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar lista negra: {e}")))?;
 
     Ok(())
 }
@@ -434,7 +434,7 @@ pub fn index_proveedor(
 
     // Crear documento usando handles pre-cargados
     let mut doc = TantivyDocument::default();
-    doc.add_text(handles.id, &proveedor.id.to_string());
+    doc.add_text(handles.id, proveedor.id.to_string());
     doc.add_text(handles.tipo, "proveedor");
     doc.add_text(handles.cedula, &proveedor.cedula);
     doc.add_text(handles.nombre, &proveedor.nombre);
@@ -455,7 +455,7 @@ pub fn index_proveedor(
     // Agregar al índice
     writer
         .add_document(doc)
-        .map_err(|e| SearchError::TantivyError(format!("Error al agregar proveedor: {}", e)))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar proveedor: {e}")))?;
 
     Ok(())
 }
@@ -487,7 +487,7 @@ pub fn index_proveedor_fetched(
 
     // Crear documento usando handles pre-cargados
     let mut doc = TantivyDocument::default();
-    doc.add_text(handles.id, &proveedor.id.to_string());
+    doc.add_text(handles.id, proveedor.id.to_string());
     doc.add_text(handles.tipo, "proveedor");
     doc.add_text(handles.cedula, &proveedor.cedula);
     doc.add_text(handles.nombre, &proveedor.nombre);
@@ -508,7 +508,7 @@ pub fn index_proveedor_fetched(
     // Agregar al índice
     writer
         .add_document(doc)
-        .map_err(|e| SearchError::TantivyError(format!("Error al agregar proveedor: {}", e)))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar proveedor: {e}")))?;
 
     Ok(())
 }

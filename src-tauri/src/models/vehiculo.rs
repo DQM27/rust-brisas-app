@@ -70,7 +70,7 @@ pub enum PropietarioFetched {
 // --------------------------------------------------------------------------
 
 /// Categoría del vehículo para control de acceso.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum TipoVehiculo {
     Motocicleta,
@@ -78,17 +78,17 @@ pub enum TipoVehiculo {
 }
 
 impl TipoVehiculo {
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         match self {
-            TipoVehiculo::Motocicleta => "motocicleta",
-            TipoVehiculo::Automovil => "automovil",
+            Self::Motocicleta => "motocicleta",
+            Self::Automovil => "automovil",
         }
     }
 
-    pub fn display(&self) -> &str {
+    pub const fn display(&self) -> &str {
         match self {
-            TipoVehiculo::Motocicleta => "Motocicleta",
-            TipoVehiculo::Automovil => "Automóvil",
+            Self::Motocicleta => "Motocicleta",
+            Self::Automovil => "Automóvil",
         }
     }
 }
@@ -98,9 +98,9 @@ impl std::str::FromStr for TipoVehiculo {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "motocicleta" => Ok(TipoVehiculo::Motocicleta),
-            "automóvil" | "automovil" => Ok(TipoVehiculo::Automovil),
-            _ => Err(format!("Tipo de vehículo desconocido: {}", s)),
+            "motocicleta" => Ok(Self::Motocicleta),
+            "automóvil" | "automovil" => Ok(Self::Automovil),
+            _ => Err(format!("Tipo de vehículo desconocido: {s}")),
         }
     }
 }
@@ -293,7 +293,7 @@ impl VehiculoResponse {
                 res.propietario_cedula = vis.cedula;
                 res.propietario_tipo = "visitante".to_string();
                 res.empresa_nombre =
-                    vis.empresa.map(|e| e.nombre).unwrap_or_else(|| "N/A".to_string());
+                    vis.empresa.map_or_else(|| "N/A".to_string(), |e| e.nombre);
             }
         }
 

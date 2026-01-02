@@ -28,7 +28,7 @@ use surrealdb::RecordId;
 /// Retorna `EmpresaListResponse` con la lista de empresas y conteos totales/activos.
 ///
 /// # Errores
-/// - `EmpresaError::Database`: Fallo en la comunicación con SurrealDB.
+/// - `EmpresaError::Database`: Fallo en la comunicación con `SurrealDB`.
 pub async fn get_all_empresas() -> Result<EmpresaListResponse, EmpresaError> {
     let empresas = db::find_all().await.map_err(map_db_error)?;
     let total = empresas.len();
@@ -119,7 +119,7 @@ pub async fn create_empresa(input: CreateEmpresaInput) -> Result<EmpresaResponse
 /// # Errores
 /// - `EmpresaError::NotFound`: La empresa no existe.
 /// - `EmpresaError::Validation`: Reglas de dominio fallidas.
-/// - `EmpresaError::Database`: Error de SurrealDB.
+/// - `EmpresaError::Database`: Error de `SurrealDB`.
 pub async fn update_empresa(
     id_str: &str,
     input: UpdateEmpresaInput,
@@ -145,7 +145,7 @@ pub async fn update_empresa(
     }
     dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
-    info!("Actualizando empresa: {}", id_str);
+    info!("Actualizando empresa: {id_str}");
     let updated = db::update(&id, dto).await.map_err(map_db_error)?;
 
     Ok(EmpresaResponse::from(updated))
@@ -175,7 +175,7 @@ pub async fn delete_empresa(id_str: &str) -> Result<(), EmpresaError> {
 
     db::delete(&id).await.map_err(map_db_error)?;
 
-    info!("Empresa eliminada físicamente: {}", id_str);
+    info!("Empresa eliminada físicamente: {id_str}");
     Ok(())
 }
 
@@ -188,7 +188,7 @@ fn map_db_error(e: SurrealDbError) -> EmpresaError {
     EmpresaError::Database(e.to_string())
 }
 
-/// Normalización de IDs de empresa para SurrealDB.
+/// Normalización de IDs de empresa para `SurrealDB`.
 fn parse_empresa_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();

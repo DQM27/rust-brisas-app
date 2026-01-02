@@ -1,6 +1,6 @@
 /// Servicio: Gestión de Alertas.
 ///
-/// Orquestador de la lógica de negocio para la gestión de incidencias de seguridad (AlertaGafete).
+/// Orquestador de la lógica de negocio para la gestión de incidencias de seguridad (`AlertaGafete`).
 ///
 /// Responsabilidades:
 /// - Registrar nuevas alertas detectadas por el sistema o usuarios.
@@ -71,11 +71,11 @@ pub async fn insert(input: crate::models::ingreso::CreateAlertaInput) -> Result<
     let gafete = input.gafete_numero;
 
     db::insert(input).await.map_err(|e| {
-        error!("Error de base de datos al insertar alerta para {}: {}", cedula, e);
+        error!("Error de base de datos al insertar alerta para {cedula}: {e}");
         AlertaError::Database(e.to_string())
     })?;
 
-    info!("Alerta crítica registrada para {} (Gafete: {})", cedula, gafete);
+    info!("Alerta crítica registrada para {cedula} (Gafete: {gafete})");
     Ok(())
 }
 
@@ -95,13 +95,13 @@ pub async fn resolver(
 ) -> Result<(), AlertaError> {
     let id = input.alerta_id.clone();
 
-    info!("Resolviendo alerta {}", id);
+    info!("Resolviendo alerta {id}");
     db::resolver(input).await.map_err(|e| {
-        error!("Error al resolver alerta {}: {}", id, e);
+        error!("Error al resolver alerta {id}: {e}");
         AlertaError::Database(e.to_string())
     })?;
 
-    info!("Alerta {} resuelta exitosamente", id);
+    info!("Alerta {id} resuelta exitosamente");
     Ok(())
 }
 

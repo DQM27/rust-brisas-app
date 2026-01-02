@@ -137,19 +137,16 @@ pub async fn create_user(
 
     // Si no se proporciona una contraseña, se genera una aleatoria de alta entropía (12 caracteres).
     // En este caso, se marca el flag 'must_change_password' para obligar al usuario a actualizarla en su primer inicio.
-    let (password_str, must_change_password) = match input.password {
-        Some(p) => {
-            let force_change = input.must_change_password.unwrap_or(false);
-            (p, force_change)
-        }
-        None => {
-            let rng = rand::thread_rng();
-            let temp: String = rng.sample_iter(&Alphanumeric).take(12).map(char::from).collect();
-            (temp, true)
-        }
+    let (password_str, must_change_password) = if let Some(p) = input.password {
+        let force_change = input.must_change_password.unwrap_or(false);
+        (p, force_change)
+    } else {
+        let rng = rand::thread_rng();
+        let temp: String = rng.sample_iter(&Alphanumeric).take(12).map(char::from).collect();
+        (temp, true)
     };
 
-    info!("Registrando usuario '{}' con rol: '{}'", email_normalizado, role_record);
+    info!("Registrando usuario '{email_normalizado}' con rol: '{role_record}'");
     // Nunca almacenamos la contraseña en texto plano. Usamos Argon2 para generar un hash seguro y resistente.
     let password_hash = auth::hash_password(&password_str)?;
 
@@ -175,11 +172,11 @@ pub async fn create_user(
     };
 
     let user = db::insert(dto).await.map_err(|e| {
-        error!("Fallo en la inserción del usuario {}: {}", email_normalizado, e);
+        error!("Fallo en la inserción del usuario {email_normalizado}: {e}");
         UserError::Database(e.to_string())
     })?;
 
-    info!("Usuario '{}' creado y persistido correctamente.", email_normalizado);
+    info!("Usuario '{email_normalizado}' creado y persistido correctamente.");
 
     // Calculamos los permisos efectivos basados en el rol asignado.
     // Esto es necesario para devolver al frontend una vista completa de lo que el usuario puede hacer.
@@ -333,7 +330,7 @@ pub async fn update_user(
     }
     if let Some(v) = input.fecha_nacimiento {
         if !v.is_empty() {
-            dto.fecha_nacimiento = Some(v.clone());
+            dto.fecha_nacimiento = Some(v);
         }
     }
     if let Some(v) = input.telefono {
@@ -360,14 +357,14 @@ pub async fn update_user(
     let user = db::update(&id_thing, dto)
         .await
         .map_err(|e| {
-            error!("Error al actualizar el usuario {}: {}", id_str, e);
+            error!("Error al actualizar el usuario {id_str}: {e}");
             UserError::Database(e.to_string())
         })?
         .ok_or(UserError::NotFound)?;
 
     // Reflejar la actualización en el motor de búsqueda.
     if let Err(e) = search_service.update_user(&user).await {
-        warn!("Error al actualizar el índice de búsqueda para el usuario {}: {}", id_str, e);
+        warn!("Error al actualizar el índice de búsqueda para el usuario {id_str}: {e}");
     }
 
     let role = role_db::find_by_id(&user.role)
@@ -403,12 +400,12 @@ pub async fn delete_user(
     let id_thing = parse_user_id(&id_str);
 
     db::delete(&id_thing).await.map_err(|e| {
-        error!("Error al eliminar el usuario {}: {}", id_str, e);
+        error!("Error al eliminar el usuario {id_str}: {e}");
         UserError::Database(e.to_string())
     })?;
 
     if let Err(e) = search_service.delete_user(&id_str).await {
-        warn!("No se pudo eliminar al usuario del índice de búsqueda: {}", e);
+        warn!("No se pudo eliminar al usuario del índice de búsqueda: {e}");
     }
 
     Ok(())
@@ -426,7 +423,7 @@ pub async fn change_password(id_str: String, input: ChangePasswordInput) -> Resu
     if let Some(current) = input.current_password {
         let is_valid = auth::verify_password(&current, &current_hash)?;
         if !is_valid {
-            error!("Fallo en cambio de contraseña para {}: contraseña actual incorrecta.", id_str);
+            error!("Fallo en cambio de contraseña para {id_str}: contraseña actual incorrecta.");
             return Err(UserError::InvalidCurrentPassword);
         }
     }
@@ -435,7 +432,7 @@ pub async fn change_password(id_str: String, input: ChangePasswordInput) -> Resu
     let new_hash = auth::hash_password(&input.new_password)?;
 
     db::update_password(&parse_user_id(&id_str), &new_hash).await.map_err(|e| {
-        error!("Error al actualizar contraseña para el usuario {}: {}", id_str, e);
+        error!("Error al actualizar contraseña para el usuario {id_str}: {e}");
         UserError::Database(e.to_string())
     })?;
 
@@ -455,7 +452,7 @@ pub async fn login(email: String, password: String) -> Result<UserResponse, User
 
     let is_valid = auth::verify_password(&password, &password_hash)?;
     if !is_valid {
-        warn!("Intento fallido de inicio de sesión para: {}", email_normalizado);
+        warn!("Intento fallido de inicio de sesión para: {email_normalizado}");
         return Err(UserError::InvalidCredentials);
     }
 

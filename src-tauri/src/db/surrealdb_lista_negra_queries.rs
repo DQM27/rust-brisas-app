@@ -1,4 +1,4 @@
-//! # Queries SurrealDB: Lista Negra
+//! # Queries `SurrealDB`: Lista Negra
 //!
 //! Operaciones de base de datos para el módulo de restricciones de acceso.
 //!
@@ -53,7 +53,7 @@ const MAX_QUERY_RESULTS: usize = 1000;
 /// * `cedula` - Cédula normalizada a verificar
 ///
 /// ## Retorno
-/// * `Ok(BlockCheckResponse)` - Estado de bloqueo (is_blocked, nivel, fecha)
+/// * `Ok(BlockCheckResponse)` - Estado de bloqueo (`is_blocked`, nivel, fecha)
 ///
 /// ## Errores
 /// * `SurrealDbError::Connection` - Fallo de conexión
@@ -61,7 +61,7 @@ const MAX_QUERY_RESULTS: usize = 1000;
 pub async fn check_if_blocked_by_cedula(
     cedula: &str,
 ) -> Result<BlockCheckResponse, SurrealDbError> {
-    debug!("🔍 Verificando bloqueo para cédula: {}", cedula);
+    debug!("🔍 Verificando bloqueo para cédula: {cedula}");
 
     let db = get_db().await?;
 
@@ -76,29 +76,25 @@ pub async fn check_if_blocked_by_cedula(
         .bind(("cedula", cedula.to_string()))
         .await
         .map_err(|e| SurrealDbError::Query(format!(
-            "Error al verificar bloqueo para cédula '{}': {}",
-            cedula, e
+            "Error al verificar bloqueo para cédula '{cedula}': {e}"
         )))?;
 
     let res: Option<LN> = result.take(0)?;
 
-    match res {
-        Some(ln) => {
-            debug!("🚫 Cédula {} BLOQUEADA - nivel: {:?}", cedula, ln.nivel_severidad);
-            Ok(BlockCheckResponse {
-                is_blocked: true,
-                nivel_severidad: ln.nivel_severidad,
-                bloqueado_desde: ln.created_at.map(|d| d.to_string()),
-            })
-        }
-        None => {
-            debug!("✅ Cédula {} no bloqueada", cedula);
-            Ok(BlockCheckResponse {
-                is_blocked: false,
-                nivel_severidad: None,
-                bloqueado_desde: None,
-            })
-        }
+    if let Some(ln) = res {
+        debug!("🚫 Cédula {} BLOQUEADA - nivel: {:?}", cedula, ln.nivel_severidad);
+        Ok(BlockCheckResponse {
+            is_blocked: true,
+            nivel_severidad: ln.nivel_severidad,
+            bloqueado_desde: ln.created_at.map(|d| d.to_string()),
+        })
+    } else {
+        debug!("✅ Cédula {cedula} no bloqueada");
+        Ok(BlockCheckResponse {
+            is_blocked: false,
+            nivel_severidad: None,
+            bloqueado_desde: None,
+        })
     }
 }
 
@@ -137,7 +133,7 @@ pub async fn find_all() -> Result<Vec<ListaNegra>, SurrealDbError> {
         )
         .bind(("limit", MAX_QUERY_RESULTS))
         .await
-        .map_err(|e| SurrealDbError::Query(format!("Error al obtener lista negra: {}", e)))?;
+        .map_err(|e| SurrealDbError::Query(format!("Error al obtener lista negra: {e}")))?;
 
     let registros: Vec<ListaNegra> = result.take(0)?;
 
@@ -153,13 +149,13 @@ pub async fn find_all() -> Result<Vec<ListaNegra>, SurrealDbError> {
 /// ```
 ///
 /// ## Parámetros
-/// * `id` - RecordId del registro (ej: "lista_negra:abc123")
+/// * `id` - `RecordId` del registro (ej: "`lista_negra:abc123`")
 ///
 /// ## Retorno
 /// * `Ok(Some(ListaNegra))` - Registro encontrado
 /// * `Ok(None)` - No existe o está eliminado (soft delete)
 pub async fn find_by_id(id: &RecordId) -> Result<Option<ListaNegra>, SurrealDbError> {
-    debug!("🔍 Buscando lista negra por ID: {}", id);
+    debug!("🔍 Buscando lista negra por ID: {id}");
 
     let db = get_db().await?;
 
@@ -168,7 +164,7 @@ pub async fn find_by_id(id: &RecordId) -> Result<Option<ListaNegra>, SurrealDbEr
         .bind(("id", id.clone()))
         .await
         .map_err(|e| {
-            SurrealDbError::Query(format!("Error al buscar lista negra por ID '{}': {}", id, e))
+            SurrealDbError::Query(format!("Error al buscar lista negra por ID '{id}': {e}"))
         })?;
 
     let registro: Option<ListaNegra> = result.take(0)?;
@@ -194,7 +190,7 @@ pub async fn find_by_id(id: &RecordId) -> Result<Option<ListaNegra>, SurrealDbEr
 /// * `Ok(Some(ListaNegra))` - Registro encontrado
 /// * `Ok(None)` - No existe bloqueo activo para esa cédula
 pub async fn find_by_cedula(cedula: &str) -> Result<Option<ListaNegra>, SurrealDbError> {
-    debug!("🔍 Buscando lista negra por cédula: {}", cedula);
+    debug!("🔍 Buscando lista negra por cédula: {cedula}");
 
     let db = get_db().await?;
 
@@ -204,8 +200,7 @@ pub async fn find_by_cedula(cedula: &str) -> Result<Option<ListaNegra>, SurrealD
         .await
         .map_err(|e| {
             SurrealDbError::Query(format!(
-                "Error al buscar lista negra por cédula '{}': {}",
-                cedula, e
+                "Error al buscar lista negra por cédula '{cedula}': {e}"
             ))
         })?;
 
@@ -314,7 +309,7 @@ pub async fn create(input: &AddToListaNegraInput) -> Result<ListaNegra, SurrealD
 /// ```
 ///
 /// ## Campos Actualizables
-/// Solo se pueden modificar: nivel_severidad, motivo_bloqueo, observaciones.
+/// Solo se pueden modificar: `nivel_severidad`, `motivo_bloqueo`, observaciones.
 /// Campos como cedula, nombre, etc. son inmutables.
 ///
 /// ## Parámetros
@@ -330,7 +325,7 @@ pub async fn update(
     id: &RecordId,
     input: &UpdateListaNegraInput,
 ) -> Result<ListaNegra, SurrealDbError> {
-    debug!("✏️ Actualizando registro de lista negra: {}", id);
+    debug!("✏️ Actualizando registro de lista negra: {id}");
 
     let db = get_db().await?;
 
@@ -357,7 +352,7 @@ pub async fn update(
         .bind(("observaciones", input.observaciones.clone()))
         .await
         .map_err(|e| {
-            SurrealDbError::Query(format!("Error al actualizar lista negra '{}': {}", id, e))
+            SurrealDbError::Query(format!("Error al actualizar lista negra '{id}': {e}"))
         })?;
 
     let updated: Option<ListaNegra> = result.take(0)?;
@@ -368,8 +363,7 @@ pub async fn update(
             Ok(registro)
         }
         None => Err(SurrealDbError::Query(format!(
-            "Registro de lista negra no encontrado o eliminado: {}",
-            id
+            "Registro de lista negra no encontrado o eliminado: {id}"
         ))),
     }
 }
@@ -397,7 +391,7 @@ pub async fn update(
 /// ## Restauración
 /// Para restaurar un registro, usar `restore()`.
 pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
-    warn!("🗑️ Eliminando (soft delete) registro de lista negra: {}", id);
+    warn!("🗑️ Eliminando (soft delete) registro de lista negra: {id}");
 
     let db = get_db().await?;
 
@@ -406,19 +400,18 @@ pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
         .bind(("id", id.clone()))
         .await
         .map_err(|e| {
-            SurrealDbError::Query(format!("Error al eliminar lista negra '{}': {}", id, e))
+            SurrealDbError::Query(format!("Error al eliminar lista negra '{id}': {e}"))
         })?;
 
     let updated: Option<ListaNegra> = result.take(0)?;
 
     match updated {
         Some(_) => {
-            warn!("🗑️ Lista negra eliminada (desactivada): id={}", id);
+            warn!("🗑️ Lista negra eliminada (desactivada): id={id}");
             Ok(())
         }
         None => Err(SurrealDbError::Query(format!(
-            "Registro de lista negra no encontrado o ya eliminado: {}",
-            id
+            "Registro de lista negra no encontrado o ya eliminado: {id}"
         ))),
     }
 }
@@ -440,7 +433,7 @@ pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
 /// ## Errores
 /// * `SurrealDbError::Query` - Registro no existe o ya está activo
 pub async fn restore(id: &RecordId) -> Result<ListaNegra, SurrealDbError> {
-    warn!("♻️ Restaurando registro de lista negra: {}", id);
+    warn!("♻️ Restaurando registro de lista negra: {id}");
 
     let db = get_db().await?;
 
@@ -449,7 +442,7 @@ pub async fn restore(id: &RecordId) -> Result<ListaNegra, SurrealDbError> {
         .bind(("id", id.clone()))
         .await
         .map_err(|e| {
-            SurrealDbError::Query(format!("Error al restaurar lista negra '{}': {}", id, e))
+            SurrealDbError::Query(format!("Error al restaurar lista negra '{id}': {e}"))
         })?;
 
     let restored: Option<ListaNegra> = result.take(0)?;
@@ -460,8 +453,7 @@ pub async fn restore(id: &RecordId) -> Result<ListaNegra, SurrealDbError> {
             Ok(registro)
         }
         None => Err(SurrealDbError::Query(format!(
-            "Registro de lista negra no encontrado o ya activo: {}",
-            id
+            "Registro de lista negra no encontrado o ya activo: {id}"
         ))),
     }
 }
@@ -496,7 +488,7 @@ pub async fn search(query: &str) -> Result<Vec<ListaNegra>, SurrealDbError> {
         return Ok(vec![]);
     }
 
-    debug!("🔍 Buscando en lista negra: '{}'", query_trimmed);
+    debug!("🔍 Buscando en lista negra: '{query_trimmed}'");
 
     let db = get_db().await?;
 
@@ -513,7 +505,7 @@ pub async fn search(query: &str) -> Result<Vec<ListaNegra>, SurrealDbError> {
         )
         .bind(("query", query_trimmed.to_string()))
         .await
-        .map_err(|e| SurrealDbError::Query(format!("Error en búsqueda de lista negra: {}", e)))?;
+        .map_err(|e| SurrealDbError::Query(format!("Error en búsqueda de lista negra: {e}")))?;
 
     let registros: Vec<ListaNegra> = result.take(0)?;
 

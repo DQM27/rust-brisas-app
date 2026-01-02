@@ -40,8 +40,7 @@ pub fn validar_cedula(cedula: &str) -> Result<(), UserError> {
 pub fn validar_password(password: &str) -> Result<(), UserError> {
     if password.len() < MIN_LEN_PASSWORD {
         return Err(UserError::Validation(format!(
-            "La contraseña debe tener al menos {} caracteres",
-            MIN_LEN_PASSWORD
+            "La contraseña debe tener al menos {MIN_LEN_PASSWORD} caracteres"
         )));
     }
     Ok(())
@@ -61,8 +60,7 @@ pub fn validar_opcional(
     if let Some(v) = valor {
         if v.trim().len() > max_len {
             return Err(UserError::Validation(format!(
-                "{} no puede exceder {} caracteres",
-                nombre_campo, max_len
+                "{nombre_campo} no puede exceder {max_len} caracteres"
             )));
         }
     }

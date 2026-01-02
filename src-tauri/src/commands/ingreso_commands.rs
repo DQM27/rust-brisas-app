@@ -60,8 +60,8 @@ pub async fn get_salidas_en_rango(
 /// [Comando Tauri]
 #[command]
 pub async fn get_salidas_del_dia(fecha: String) -> Result<Vec<IngresoResponse>, IngresoError> {
-    let start = format!("{}T00:00:00Z", fecha);
-    let end = format!("{}T23:59:59Z", fecha);
+    let start = format!("{fecha}T00:00:00Z");
+    let end = format!("{fecha}T23:59:59Z");
     ingreso_general_service::get_salidas_en_rango(&start, &end).await
 }
 

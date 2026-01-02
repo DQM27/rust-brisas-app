@@ -75,7 +75,7 @@ pub async fn get_all_users(
 // PROTOCOLOS DE AUTENTICACIÓN
 // ==========================================
 
-/// Gatekeeper: Valida las credenciales contra SurrealDB y establece el estado de sesión global.
+/// Gatekeeper: Valida las credenciales contra `SurrealDB` y establece el estado de sesión global.
 /// Es el punto de entrada principal para el acceso a la aplicación.
 #[tauri::command]
 pub async fn login(
@@ -83,7 +83,7 @@ pub async fn login(
     email: String,
     password: String,
 ) -> Result<UserResponse, UserError> {
-    log::info!("🔐 Intento de acceso detectado para: {}", email);
+    log::info!("🔐 Intento de acceso detectado para: {email}");
     let user_response = user_service::login(email, password).await?;
 
     // Inyecta el usuario en el gestor de sesiones de Rust (Thread-safe)
@@ -112,10 +112,10 @@ pub async fn change_password(id: String, input: ChangePasswordInput) -> Result<(
 // ==========================================
 
 /// Carga y procesa la foto del usuario.
-/// Delega al AvatarService el cifrado persistente.
+/// Delega al `AvatarService` el cifrado persistente.
 #[tauri::command]
 pub async fn upload_user_avatar(user_id: String, file_path: String) -> Result<String, UserError> {
-    log::info!("📸 Procesando nueva imagen de perfil para usuario: {}", user_id);
+    log::info!("📸 Procesando nueva imagen de perfil para usuario: {user_id}");
     crate::services::avatar_service::upload_avatar(&user_id, &file_path).await
 }
 

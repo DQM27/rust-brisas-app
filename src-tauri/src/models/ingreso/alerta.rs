@@ -95,13 +95,13 @@ impl From<AlertaGafete> for AlertaGafeteResponse {
     fn from(a: AlertaGafete) -> Self {
         Self {
             id: a.id.to_string(),
-            persona_id: a.persona.as_ref().map(|t| t.to_string()),
+            persona_id: a.persona.as_ref().map(std::string::ToString::to_string),
             cedula: a.cedula,
             nombre_completo: a.nombre_completo,
             gafete_numero: a.gafete_numero,
-            ingreso_contratista_id: a.ingreso_contratista.as_ref().map(|t| t.to_string()),
-            ingreso_proveedor_id: a.ingreso_proveedor.as_ref().map(|t| t.to_string()),
-            ingreso_visita_id: a.ingreso_visita.as_ref().map(|t| t.to_string()),
+            ingreso_contratista_id: a.ingreso_contratista.as_ref().map(std::string::ToString::to_string),
+            ingreso_proveedor_id: a.ingreso_proveedor.as_ref().map(std::string::ToString::to_string),
+            ingreso_visita_id: a.ingreso_visita.as_ref().map(std::string::ToString::to_string),
             fecha_reporte: a.fecha_reporte.to_string(),
             resuelto: a.resuelto,
             fecha_resolucion: a.fecha_resolucion.map(|d| d.to_string()),
@@ -122,7 +122,7 @@ impl From<AlertaGafete> for AlertaGafeteResponse {
 ///
 /// Determina si el comportamiento del visitante requiere la generación automática
 /// de un reporte de incidencia (alerta) por pérdida o discrepancia.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct DecisionReporteGafete {
     /// Indica si se debe crear una alerta en el sistema.

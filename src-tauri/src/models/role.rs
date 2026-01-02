@@ -35,75 +35,75 @@ pub enum Module {
 }
 
 impl Module {
-    pub fn all() -> Vec<Module> {
+    pub fn all() -> Vec<Self> {
         vec![
-            Module::Users,
-            Module::Roles,
-            Module::Contratistas,
-            Module::Empresas,
-            Module::Proveedores,
-            Module::Visitantes,
-            Module::Ingresos,
-            Module::Citas,
-            Module::Vehiculos,
-            Module::Gafetes,
-            Module::ListaNegra,
-            Module::Config,
-            Module::SettingsGeneral,
-            Module::SettingsVisual,
-            Module::SettingsSecurity,
-            Module::SettingsSessions,
-            Module::Backup,
-            Module::Export,
-            Module::Trash,
+            Self::Users,
+            Self::Roles,
+            Self::Contratistas,
+            Self::Empresas,
+            Self::Proveedores,
+            Self::Visitantes,
+            Self::Ingresos,
+            Self::Citas,
+            Self::Vehiculos,
+            Self::Gafetes,
+            Self::ListaNegra,
+            Self::Config,
+            Self::SettingsGeneral,
+            Self::SettingsVisual,
+            Self::SettingsSecurity,
+            Self::SettingsSessions,
+            Self::Backup,
+            Self::Export,
+            Self::Trash,
         ]
     }
 
-    pub fn as_str(&self) -> &'static str {
+    pub const fn as_str(&self) -> &'static str {
         match self {
-            Module::Users => "users",
-            Module::Roles => "roles",
-            Module::Contratistas => "contratistas",
-            Module::Empresas => "empresas",
-            Module::Proveedores => "proveedores",
-            Module::Visitantes => "visitantes",
-            Module::Ingresos => "ingresos",
-            Module::Citas => "citas",
-            Module::Vehiculos => "vehiculos",
-            Module::Gafetes => "gafetes",
-            Module::ListaNegra => "lista_negra",
-            Module::Config => "config",
-            Module::SettingsGeneral => "settings_general",
-            Module::SettingsVisual => "settings_visual",
-            Module::SettingsSecurity => "settings_security",
-            Module::SettingsSessions => "settings_sessions",
-            Module::Backup => "backup",
-            Module::Export => "export",
-            Module::Trash => "trash",
+            Self::Users => "users",
+            Self::Roles => "roles",
+            Self::Contratistas => "contratistas",
+            Self::Empresas => "empresas",
+            Self::Proveedores => "proveedores",
+            Self::Visitantes => "visitantes",
+            Self::Ingresos => "ingresos",
+            Self::Citas => "citas",
+            Self::Vehiculos => "vehiculos",
+            Self::Gafetes => "gafetes",
+            Self::ListaNegra => "lista_negra",
+            Self::Config => "config",
+            Self::SettingsGeneral => "settings_general",
+            Self::SettingsVisual => "settings_visual",
+            Self::SettingsSecurity => "settings_security",
+            Self::SettingsSessions => "settings_sessions",
+            Self::Backup => "backup",
+            Self::Export => "export",
+            Self::Trash => "trash",
         }
     }
 
-    pub fn display_name(&self) -> &'static str {
+    pub const fn display_name(&self) -> &'static str {
         match self {
-            Module::Users => "Usuarios",
-            Module::Roles => "Roles",
-            Module::Contratistas => "Contratistas",
-            Module::Empresas => "Empresas",
-            Module::Proveedores => "Proveedores",
-            Module::Visitantes => "Visitantes",
-            Module::Ingresos => "Ingresos",
-            Module::Citas => "Citas",
-            Module::Vehiculos => "Vehículos",
-            Module::Gafetes => "Gafetes",
-            Module::ListaNegra => "Lista Negra",
-            Module::Config => "Configuración",
-            Module::SettingsGeneral => "Ajustes Generales",
-            Module::SettingsVisual => "Ajustes Visuales",
-            Module::SettingsSecurity => "Seguridad",
-            Module::SettingsSessions => "Sesiones",
-            Module::Backup => "Respaldos",
-            Module::Export => "Exportar",
-            Module::Trash => "Papelera",
+            Self::Users => "Usuarios",
+            Self::Roles => "Roles",
+            Self::Contratistas => "Contratistas",
+            Self::Empresas => "Empresas",
+            Self::Proveedores => "Proveedores",
+            Self::Visitantes => "Visitantes",
+            Self::Ingresos => "Ingresos",
+            Self::Citas => "Citas",
+            Self::Vehiculos => "Vehículos",
+            Self::Gafetes => "Gafetes",
+            Self::ListaNegra => "Lista Negra",
+            Self::Config => "Configuración",
+            Self::SettingsGeneral => "Ajustes Generales",
+            Self::SettingsVisual => "Ajustes Visuales",
+            Self::SettingsSecurity => "Seguridad",
+            Self::SettingsSessions => "Sesiones",
+            Self::Backup => "Respaldos",
+            Self::Export => "Exportar",
+            Self::Trash => "Papelera",
         }
     }
 }
@@ -113,26 +113,26 @@ impl std::str::FromStr for Module {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "users" => Ok(Module::Users),
-            "roles" => Ok(Module::Roles),
-            "contratistas" => Ok(Module::Contratistas),
-            "empresas" => Ok(Module::Empresas),
-            "proveedores" => Ok(Module::Proveedores),
-            "visitantes" => Ok(Module::Visitantes),
-            "ingresos" => Ok(Module::Ingresos),
-            "citas" => Ok(Module::Citas),
-            "vehiculos" => Ok(Module::Vehiculos),
-            "gafetes" => Ok(Module::Gafetes),
-            "lista_negra" => Ok(Module::ListaNegra),
-            "config" => Ok(Module::Config),
-            "settings_general" => Ok(Module::SettingsGeneral),
-            "settings_visual" => Ok(Module::SettingsVisual),
-            "settings_security" => Ok(Module::SettingsSecurity),
-            "settings_sessions" => Ok(Module::SettingsSessions),
-            "backup" => Ok(Module::Backup),
-            "export" => Ok(Module::Export),
-            "trash" => Ok(Module::Trash),
-            _ => Err(format!("Unknown module: {}", s)),
+            "users" => Ok(Self::Users),
+            "roles" => Ok(Self::Roles),
+            "contratistas" => Ok(Self::Contratistas),
+            "empresas" => Ok(Self::Empresas),
+            "proveedores" => Ok(Self::Proveedores),
+            "visitantes" => Ok(Self::Visitantes),
+            "ingresos" => Ok(Self::Ingresos),
+            "citas" => Ok(Self::Citas),
+            "vehiculos" => Ok(Self::Vehiculos),
+            "gafetes" => Ok(Self::Gafetes),
+            "lista_negra" => Ok(Self::ListaNegra),
+            "config" => Ok(Self::Config),
+            "settings_general" => Ok(Self::SettingsGeneral),
+            "settings_visual" => Ok(Self::SettingsVisual),
+            "settings_security" => Ok(Self::SettingsSecurity),
+            "settings_sessions" => Ok(Self::SettingsSessions),
+            "backup" => Ok(Self::Backup),
+            "export" => Ok(Self::Export),
+            "trash" => Ok(Self::Trash),
+            _ => Err(format!("Unknown module: {s}")),
         }
     }
 }
@@ -150,36 +150,36 @@ pub enum Action {
 }
 
 impl Action {
-    pub fn all() -> Vec<Action> {
+    pub fn all() -> Vec<Self> {
         vec![
-            Action::View,
-            Action::Create,
-            Action::Read,
-            Action::Update,
-            Action::Delete,
-            Action::Export,
+            Self::View,
+            Self::Create,
+            Self::Read,
+            Self::Update,
+            Self::Delete,
+            Self::Export,
         ]
     }
 
-    pub fn as_str(&self) -> &'static str {
+    pub const fn as_str(&self) -> &'static str {
         match self {
-            Action::View => "view",
-            Action::Create => "create",
-            Action::Read => "read",
-            Action::Update => "update",
-            Action::Delete => "delete",
-            Action::Export => "export",
+            Self::View => "view",
+            Self::Create => "create",
+            Self::Read => "read",
+            Self::Update => "update",
+            Self::Delete => "delete",
+            Self::Export => "export",
         }
     }
 
-    pub fn display_name(&self) -> &'static str {
+    pub const fn display_name(&self) -> &'static str {
         match self {
-            Action::View => "Ver",
-            Action::Create => "Crear",
-            Action::Read => "Leer",
-            Action::Update => "Actualizar",
-            Action::Delete => "Eliminar",
-            Action::Export => "Exportar",
+            Self::View => "Ver",
+            Self::Create => "Crear",
+            Self::Read => "Leer",
+            Self::Update => "Actualizar",
+            Self::Delete => "Eliminar",
+            Self::Export => "Exportar",
         }
     }
 }
@@ -189,13 +189,13 @@ impl std::str::FromStr for Action {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "view" => Ok(Action::View),
-            "create" => Ok(Action::Create),
-            "read" => Ok(Action::Read),
-            "update" => Ok(Action::Update),
-            "delete" => Ok(Action::Delete),
-            "export" => Ok(Action::Export),
-            _ => Err(format!("Unknown action: {}", s)),
+            "view" => Ok(Self::View),
+            "create" => Ok(Self::Create),
+            "read" => Ok(Self::Read),
+            "update" => Ok(Self::Update),
+            "delete" => Ok(Self::Delete),
+            "export" => Ok(Self::Export),
+            _ => Err(format!("Unknown action: {s}")),
         }
     }
 }

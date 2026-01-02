@@ -78,8 +78,7 @@ pub fn normalizar_gafete_a_int(input: &str) -> Result<i32, String> {
     match limpio.parse::<i32>() {
         Ok(n) if n >= 0 => Ok(n),
         _ => Err(format!(
-            "Formato de gafete inválido: '{}'. Debe ser un número positivo o 'S/G'.",
-            input
+            "Formato de gafete inválido: '{input}'. Debe ser un número positivo o 'S/G'."
         )),
     }
 }
@@ -114,8 +113,7 @@ pub fn evaluar_devolucion_gafete(
             return DecisionReporteGafete {
                 debe_generar_reporte: true,
                 motivo: Some(format!(
-                    "Discrepancia: Devolvió gafete incorrecto (Detectado: {} / Esperado: {})",
-                    devuelto, asignado
+                    "Discrepancia: Devolvió gafete incorrecto (Detectado: {devuelto} / Esperado: {asignado})"
                 )),
                 gafete_numero: Some(asignado),
             };
@@ -168,12 +166,12 @@ pub fn validar_ingreso_abierto(fecha_salida: &Option<String>) -> Result<(), Comm
 // - Use `validar_fecha_simple` para fechas sin hora (vencimiento PRAIND, cumpleaños)
 // - El frontend puede mostrar DD/MM/YYYY pero debe enviar en estos formatos estándar
 
-/// Valida que una cadena sea un DateTime válido en formato RFC 3339.
+/// Valida que una cadena sea un `DateTime` válido en formato RFC 3339.
 ///
 /// Formato esperado: `YYYY-MM-DDThh:mm:ssZ` o con offset `+/-hh:mm`
 /// Ejemplo: `2026-01-15T08:30:00Z`
 ///
-/// Uso: Timestamps de sistema (ingreso, salida, created_at, updated_at)
+/// Uso: Timestamps de sistema (ingreso, salida, `created_at`, `updated_at`)
 pub fn validar_fecha_rfc3339(fecha_str: &str) -> Result<(), CommonError> {
     if fecha_str.trim().is_empty() {
         return Err(CommonError::Validation("La fecha/hora es obligatoria".to_string()));
@@ -208,7 +206,7 @@ pub fn validar_fecha_simple(fecha_str: &str) -> Result<(), CommonError> {
     Ok(())
 }
 
-/// Parsea una fecha simple (YYYY-MM-DD) y retorna un NaiveDate.
+/// Parsea una fecha simple (YYYY-MM-DD) y retorna un `NaiveDate`.
 pub fn parsear_fecha_simple(fecha_str: &str) -> Result<chrono::NaiveDate, CommonError> {
     chrono::NaiveDate::parse_from_str(fecha_str.trim(), "%Y-%m-%d").map_err(|_| {
         CommonError::Validation("Formato de fecha inválido. Use YYYY-MM-DD".to_string())
@@ -270,20 +268,18 @@ pub fn validar_nombre_estandar(texto: &str, campo: &str) -> Result<(), CommonErr
     let limpio = texto.trim();
 
     if limpio.is_empty() {
-        return Err(CommonError::Validation(format!("El {} es obligatorio", campo)));
+        return Err(CommonError::Validation(format!("El {campo} es obligatorio")));
     }
 
     if limpio.len() < MIN_LEN_NOMBRE {
         return Err(CommonError::Validation(format!(
-            "El {} debe tener al menos {} caracteres",
-            campo, MIN_LEN_NOMBRE
+            "El {campo} debe tener al menos {MIN_LEN_NOMBRE} caracteres"
         )));
     }
 
     if limpio.len() > MAX_LEN_NOMBRE {
         return Err(CommonError::Validation(format!(
-            "El {} no puede exceder {} caracteres",
-            campo, MAX_LEN_NOMBRE
+            "El {campo} no puede exceder {MAX_LEN_NOMBRE} caracteres"
         )));
     }
 
@@ -291,8 +287,7 @@ pub fn validar_nombre_estandar(texto: &str, campo: &str) -> Result<(), CommonErr
     // Rechazamos todo lo demás (números, símbolos).
     if !limpio.chars().all(|c| c.is_alphabetic() || c.is_whitespace()) {
         return Err(CommonError::Validation(format!(
-            "El {} solo puede contener letras (sin números ni símbolos)",
-            campo
+            "El {campo} solo puede contener letras (sin números ni símbolos)"
         )));
     }
 
@@ -318,12 +313,11 @@ pub fn validar_cedula_estandar(cedula: &str) -> Result<(), CommonError> {
     }
 
     // Contar solo los dígitos (ignorando guiones)
-    let cantidad_digitos = limpio.chars().filter(|c| c.is_ascii_digit()).count();
+    let cantidad_digitos = limpio.chars().filter(char::is_ascii_digit).count();
 
-    if cantidad_digitos < MIN_DIGITOS_CEDULA || cantidad_digitos > MAX_DIGITOS_CEDULA {
+    if !(MIN_DIGITOS_CEDULA..=MAX_DIGITOS_CEDULA).contains(&cantidad_digitos) {
         return Err(CommonError::Validation(format!(
-            "La cédula debe tener entre {} y {} dígitos (actualmente tiene {})",
-            MIN_DIGITOS_CEDULA, MAX_DIGITOS_CEDULA, cantidad_digitos
+            "La cédula debe tener entre {MIN_DIGITOS_CEDULA} y {MAX_DIGITOS_CEDULA} dígitos (actualmente tiene {cantidad_digitos})"
         )));
     }
 
@@ -334,7 +328,6 @@ pub fn validar_cedula_estandar(cedula: &str) -> Result<(), CommonError> {
 /// Ej: "JUAN pérez" -> "Juan Pérez"
 pub fn normalizar_nombre_propio(texto: &str) -> String {
     texto
-        .trim()
         .split_whitespace()
         .map(|palabra| {
             let mut chars = palabra.chars();
@@ -401,13 +394,12 @@ pub fn validar_nombre_entidad_estandar(nombre: &str, campo: &str) -> Result<(), 
     let limpio = nombre.trim();
 
     if limpio.is_empty() {
-        return Err(CommonError::Validation(format!("El {} es obligatorio", campo)));
+        return Err(CommonError::Validation(format!("El {campo} es obligatorio")));
     }
 
     if limpio.len() > 100 {
         return Err(CommonError::Validation(format!(
-            "El {} no puede exceder 100 caracteres",
-            campo
+            "El {campo} no puede exceder 100 caracteres"
         )));
     }
 
@@ -415,8 +407,7 @@ pub fn validar_nombre_entidad_estandar(nombre: &str, campo: &str) -> Result<(), 
     let prohibidos = ['<', '>', '{', '}', '|', '\\', '^', '`'];
     if limpio.chars().any(|c| prohibidos.contains(&c)) {
         return Err(CommonError::Validation(format!(
-            "El {} contiene caracteres no permitidos",
-            campo
+            "El {campo} contiene caracteres no permitidos"
         )));
     }
 
@@ -433,8 +424,7 @@ pub fn validar_opcional_estandar(
         let limpio = v.trim();
         if limpio.len() > max_len {
             return Err(CommonError::Validation(format!(
-                "El {} no puede exceder {} caracteres",
-                campo, max_len
+                "El {campo} no puede exceder {max_len} caracteres"
             )));
         }
     }
@@ -445,11 +435,11 @@ pub fn validar_opcional_estandar(
 // PARSEO DE IDENTIFICADORES (IDs de SurrealDB)
 // --------------------------------------------------------------------------
 
-/// Parsea un string de ID a un RecordId de SurrealDB.
+/// Parsea un string de ID a un `RecordId` de `SurrealDB`.
 ///
 /// Acepta dos formatos:
-/// - Compuesto: `"tabla:id123"` → RecordId { tabla, "id123" }
-/// - Simple: `"id123"` → RecordId { tabla_default, "id123" }
+/// - Compuesto: `"tabla:id123"` → `RecordId` { tabla, "id123" }
+/// - Simple: `"id123"` → `RecordId` { `tabla_default`, "id123" }
 ///
 /// # Argumentos
 /// * `id_str` - El string con el ID (puede incluir o no el nombre de tabla)

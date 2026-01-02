@@ -1,4 +1,4 @@
-//! # Queries SurrealDB: Roles
+//! # Queries `SurrealDB`: Roles
 //!
 //! Operaciones de base de datos para gestión de roles y permisos.
 //!
@@ -24,7 +24,7 @@ pub async fn find_all() -> Result<Vec<Role>, SurrealDbError> {
 
 /// Busca un rol por su ID.
 pub async fn find_by_id(id: &RecordId) -> Result<Option<Role>, SurrealDbError> {
-    debug!("🔍 Buscando rol: {}", id);
+    debug!("🔍 Buscando rol: {id}");
     let db = get_db().await?;
     let mut result = db.query("SELECT * FROM $id").bind(("id", id.clone())).await?;
     Ok(result.take(0)?)
@@ -32,7 +32,7 @@ pub async fn find_by_id(id: &RecordId) -> Result<Option<Role>, SurrealDbError> {
 
 /// Obtiene los permisos de un rol.
 pub async fn get_permissions(role_id: &RecordId) -> Result<Vec<String>, SurrealDbError> {
-    debug!("📋 Consultando permisos para rol: {}", role_id);
+    debug!("📋 Consultando permisos para rol: {role_id}");
     let db = get_db().await?;
     let mut result = db.query("SELECT permissions FROM $id").bind(("id", role_id.clone())).await?;
 
@@ -48,48 +48,45 @@ pub async fn get_permissions(role_id: &RecordId) -> Result<Vec<String>, SurrealD
 
 /// Crea un nuevo rol con ID personalizado.
 pub async fn create(id: &str, dto: RoleCreateDTO) -> Result<Role, SurrealDbError> {
-    debug!("➕ Creando rol: {}", id);
+    debug!("➕ Creando rol: {id}");
     let db = get_db().await?;
 
     let mut result = db
         .query(
-            r#"
+            r"
             CREATE type::thing('role', $id) CONTENT $dto
-        "#,
+        ",
         )
         .bind(("id", id.to_string()))
         .bind(("dto", dto))
         .await?;
 
     let created: Option<Role> = result.take(0)?;
-    match created {
-        Some(role) => {
-            info!("✅ Rol creado: id={}, name={}", role.id, role.name);
-            Ok(role)
-        }
-        None => {
-            warn!("⚠️ Error al crear rol: {}", id);
-            Err(SurrealDbError::Query("Error creando rol".to_string()))
-        }
+    if let Some(role) = created {
+        info!("✅ Rol creado: id={}, name={}", role.id, role.name);
+        Ok(role)
+    } else {
+        warn!("⚠️ Error al crear rol: {id}");
+        Err(SurrealDbError::Query("Error creando rol".to_string()))
     }
 }
 
 /// Actualiza un rol existente.
 pub async fn update(id: &RecordId, dto: RoleUpdateDTO) -> Result<Option<Role>, SurrealDbError> {
-    debug!("✏️ Actualizando rol: {}", id);
+    debug!("✏️ Actualizando rol: {id}");
     let db = get_db().await?;
     let result: Option<Role> = db.update(id.clone()).merge(dto).await?;
     if result.is_some() {
-        info!("✅ Rol actualizado: {}", id);
+        info!("✅ Rol actualizado: {id}");
     } else {
-        warn!("⚠️ Rol no encontrado para actualizar: {}", id);
+        warn!("⚠️ Rol no encontrado para actualizar: {id}");
     }
     Ok(result)
 }
 
 /// Elimina un rol.
 pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
-    warn!("🗑️ Eliminando rol: {}", id);
+    warn!("🗑️ Eliminando rol: {id}");
     let db = get_db().await?;
     db.query("DELETE $id").bind(("id", id.clone())).await?;
     Ok(())
@@ -97,7 +94,7 @@ pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
 
 /// Verifica si existe un rol con el nombre dado.
 pub async fn exists_by_name(name: &str) -> Result<bool, SurrealDbError> {
-    debug!("🔍 Verificando existencia de rol: {}", name);
+    debug!("🔍 Verificando existencia de rol: {name}");
     let db = get_db().await?;
     let mut result = db
         .query("SELECT count() FROM role WHERE name = $name GROUP ALL")
@@ -110,5 +107,5 @@ pub async fn exists_by_name(name: &str) -> Result<bool, SurrealDbError> {
     }
 
     let rows: Vec<Count> = result.take(0)?;
-    Ok(rows.first().map(|c| c.count > 0).unwrap_or(false))
+    Ok(rows.first().is_some_and(|c| c.count > 0))
 }

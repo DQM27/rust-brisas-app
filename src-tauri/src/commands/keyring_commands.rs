@@ -89,7 +89,7 @@ pub async fn setup_credentials(
 
     {
         let mut config_guard = config.write().map_err(|e| {
-            KeyringError::Message(format!("Error escribiendo configuración: {}", e))
+            KeyringError::Message(format!("Error escribiendo configuración: {e}"))
         })?;
 
         config_guard.setup.is_configured = true;
@@ -106,13 +106,13 @@ pub async fn setup_credentials(
         };
 
         crate::config::save_config(&config_guard, &config_path)
-            .map_err(|e| KeyringError::Message(format!("Error guardando configuración: {}", e)))?;
+            .map_err(|e| KeyringError::Message(format!("Error guardando configuración: {e}")))?;
     }
 
     log::info!("🌱 Configuración completada. Ejecutando seed de base de datos...");
     if let Err(e) = crate::config::seed::seed_db().await {
-        log::error!("❌ Error al sembrar base de datos tras setup: {}", e);
-        return Err(KeyringError::Message(format!("Error en seed: {}", e)));
+        log::error!("❌ Error al sembrar base de datos tras setup: {e}");
+        return Err(KeyringError::Message(format!("Error en seed: {e}")));
     }
     log::info!("✅ Seed completado correctamente");
 
@@ -196,14 +196,14 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
     let mut results = Vec::new();
 
     results.push(format!("Sistema operativo: {}", std::env::consts::OS));
-    results.push("".to_string());
+    results.push(String::new());
 
     results.push("1. Guardando credencial de prueba...".to_string());
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     match keyring_impl::store_secret(test_key, test_value) {
-        Ok(_) => results.push("   ✓ Credencial guardada correctamente".to_string()),
+        Ok(()) => results.push("   ✓ Credencial guardada correctamente".to_string()),
         Err(e) => {
-            results.push(format!("   ✗ Error guardando credencial: {}", e));
+            results.push(format!("   ✗ Error guardando credencial: {e}"));
             return Ok(results.join("\n"));
         }
     }
@@ -224,22 +224,18 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
 
     results.push("2. Recuperando credencial...".to_string());
     #[cfg(any(target_os = "linux", target_os = "windows"))]
-    match keyring_impl::retrieve_secret(test_key) {
-        Some(password) => {
-            results.push(format!("   ✓ Credencial recuperada: {}", password));
-            if password == test_value {
-                results.push("   ✓ La credencial coincide!".to_string());
-            } else {
-                results.push(format!(
-                    "   ✗ La credencial NO coincide! Esperado: {}, Obtenido: {}",
-                    test_value, password
-                ));
-            }
+    if let Some(password) = keyring_impl::retrieve_secret(test_key) {
+        results.push(format!("   ✓ Credencial recuperada: {password}"));
+        if password == test_value {
+            results.push("   ✓ La credencial coincide!".to_string());
+        } else {
+            results.push(format!(
+                "   ✗ La credencial NO coincide! Esperado: {test_value}, Obtenido: {password}"
+            ));
         }
-        None => {
-            results.push("   ✗ Error recuperando credencial".to_string());
-            return Ok(results.join("\n"));
-        }
+    } else {
+        results.push("   ✗ Error recuperando credencial".to_string());
+        return Ok(results.join("\n"));
     }
 
     #[cfg(target_os = "macos")]
@@ -269,9 +265,9 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
     results.push("3. Eliminando credencial...".to_string());
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     match keyring_impl::delete_secret(test_key) {
-        Ok(_) => results.push("   ✓ Credencial eliminada correctamente".to_string()),
+        Ok(()) => results.push("   ✓ Credencial eliminada correctamente".to_string()),
         Err(e) => {
-            results.push(format!("   ✗ Error eliminando credencial: {}", e));
+            results.push(format!("   ✗ Error eliminando credencial: {e}"));
         }
     }
 
@@ -292,7 +288,7 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     match keyring_impl::retrieve_secret(test_key) {
         Some(password) => {
-            results.push(format!("   ✗ La credencial aún existe: {}", password));
+            results.push(format!("   ✗ La credencial aún existe: {password}"));
         }
         None => {
             results.push("   ✓ La credencial fue eliminada correctamente".to_string());
@@ -314,7 +310,7 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
         }
     }
 
-    results.push("".to_string());
+    results.push(String::new());
     results.push("✓ Test completado exitosamente".to_string());
     Ok(results.join("\n"))
 }
@@ -337,7 +333,7 @@ pub async fn reset_all_credentials(
 
     let mut config_guard = config
         .write()
-        .map_err(|e| KeyringError::Message(format!("Error escribiendo configuración: {}", e)))?;
+        .map_err(|e| KeyringError::Message(format!("Error escribiendo configuración: {e}")))?;
 
     config_guard.setup.is_configured = false;
     config_guard.setup.configured_at = None;
@@ -353,7 +349,7 @@ pub async fn reset_all_credentials(
     };
 
     save_config(&config_guard, &config_path)
-        .map_err(|e| KeyringError::Message(format!("Error guardando configuración: {}", e)))?;
+        .map_err(|e| KeyringError::Message(format!("Error guardando configuración: {e}")))?;
 
     Ok(())
 }

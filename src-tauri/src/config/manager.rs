@@ -56,14 +56,13 @@ pub fn load_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
                         }
                         Err(e) => {
                             log::error!(
-                                "❌ Error parsing config file: {}. Intentando cargar backup...",
-                                e
+                                "❌ Error parsing config file: {e}. Intentando cargar backup..."
                             );
                         }
                     }
                 }
                 Err(e) => {
-                    log::error!("❌ Error reading config file: {}. Intentando cargar backup...", e);
+                    log::error!("❌ Error reading config file: {e}. Intentando cargar backup...");
                 }
             }
 
@@ -121,7 +120,7 @@ pub fn save_config(config: &AppConfig, path: &PathBuf) -> Result<(), Box<dyn std
     if path.exists() {
         let backup_path = path.with_extension("toml.bak");
         if let Err(e) = fs::copy(path, &backup_path) {
-            log::warn!("⚠️ No se pudo crear backup de config: {}", e);
+            log::warn!("⚠️ No se pudo crear backup de config: {e}");
         } else {
             log::debug!("📦 Backup de config creado en: {}", backup_path.display());
         }
@@ -138,13 +137,13 @@ fn generate_hardware_id() -> Result<String, Box<dyn std::error::Error>> {
     // Intentar obtener MAC address
     if let Ok(mac) = mac_address::get_mac_address() {
         if let Some(mac) = mac {
-            let mac_str = mac.to_string().replace(":", "");
-            return Ok(format!("HW-{}", mac_str));
+            let mac_str = mac.to_string().replace(':', "");
+            return Ok(format!("HW-{mac_str}"));
         }
     }
 
     // Fallback: UUID aleatorio
-    Ok(format!("HW-{}", uuid::Uuid::new_v4().to_string().replace("-", "")))
+    Ok(format!("HW-{}", uuid::Uuid::new_v4().to_string().replace('-', "")))
 }
 
 /// Obtiene la ruta de la base de datos según la configuración

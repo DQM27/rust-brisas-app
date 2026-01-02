@@ -50,7 +50,7 @@ macro_rules! require_perm {
 /// * `cedula` - Cédula a verificar
 ///
 /// ## Retorno
-/// * `Ok(BlockCheckResponse)` - Estado de bloqueo (is_blocked, nivel, fecha)
+/// * `Ok(BlockCheckResponse)` - Estado de bloqueo (`is_blocked`, nivel, fecha)
 ///
 /// ## Ejemplo TypeScript
 /// ```typescript
@@ -70,7 +70,7 @@ pub async fn check_is_blocked(cedula: String) -> Result<BlockCheckResponse, List
 /// Requiere sesión activa.
 ///
 /// ## Parámetros
-/// * `id` - ID del registro (formato: "lista_negra:xxx")
+/// * `id` - ID del registro (formato: "`lista_negra:xxx`")
 ///
 /// ## Errores
 /// * `ListaNegraError::NotFound` - Registro no existe
@@ -244,5 +244,5 @@ pub async fn search_personas_for_block(
 ) -> Result<Vec<crate::models::lista_negra::PersonaSearchResult>, ListaNegraError> {
     lista_negra_service::search_personas_for_block(&query)
         .await
-        .map_err(|e| ListaNegraError::Database(e))
+        .map_err(ListaNegraError::Database)
 }

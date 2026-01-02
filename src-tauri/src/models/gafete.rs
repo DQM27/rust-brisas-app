@@ -33,7 +33,7 @@ pub struct Gafete {
 // --------------------------------------------------------------------------
 
 /// Clasificación del gafete según el tipo de visita.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum TipoGafete {
     Contratista,
@@ -49,21 +49,21 @@ impl std::fmt::Display for TipoGafete {
 }
 
 impl TipoGafete {
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         match self {
-            TipoGafete::Contratista => "contratista",
-            TipoGafete::Proveedor => "proveedor",
-            TipoGafete::Visita => "visita",
-            TipoGafete::Otro => "otro",
+            Self::Contratista => "contratista",
+            Self::Proveedor => "proveedor",
+            Self::Visita => "visita",
+            Self::Otro => "otro",
         }
     }
 
-    pub fn display(&self) -> &str {
+    pub const fn display(&self) -> &str {
         match self {
-            TipoGafete::Contratista => "Contratista",
-            TipoGafete::Proveedor => "Proveedor",
-            TipoGafete::Visita => "Visita",
-            TipoGafete::Otro => "Otro",
+            Self::Contratista => "Contratista",
+            Self::Proveedor => "Proveedor",
+            Self::Visita => "Visita",
+            Self::Otro => "Otro",
         }
     }
 }
@@ -73,17 +73,17 @@ impl std::str::FromStr for TipoGafete {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "contratista" => Ok(TipoGafete::Contratista),
-            "proveedor" => Ok(TipoGafete::Proveedor),
-            "visita" => Ok(TipoGafete::Visita),
-            "otro" => Ok(TipoGafete::Otro),
-            _ => Err(format!("Tipo de gafete desconocido: {}", s)),
+            "contratista" => Ok(Self::Contratista),
+            "proveedor" => Ok(Self::Proveedor),
+            "visita" => Ok(Self::Visita),
+            "otro" => Ok(Self::Otro),
+            _ => Err(format!("Tipo de gafete desconocido: {s}")),
         }
     }
 }
 
 /// Estado operativo y físico del gafete.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum GafeteEstado {
     Activo,
@@ -98,11 +98,11 @@ impl std::fmt::Display for GafeteEstado {
 }
 
 impl GafeteEstado {
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         match self {
-            GafeteEstado::Activo => "activo",
-            GafeteEstado::Danado => "danado",
-            GafeteEstado::Extraviado => "extraviado",
+            Self::Activo => "activo",
+            Self::Danado => "danado",
+            Self::Extraviado => "extraviado",
         }
     }
 }
@@ -112,10 +112,10 @@ impl std::str::FromStr for GafeteEstado {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "activo" => Ok(GafeteEstado::Activo),
-            "danado" => Ok(GafeteEstado::Danado),
-            "perdido" | "extraviado" => Ok(GafeteEstado::Extraviado),
-            _ => Err(format!("Estado de gafete desconocido: {}", s)),
+            "activo" => Ok(Self::Activo),
+            "danado" => Ok(Self::Danado),
+            "perdido" | "extraviado" => Ok(Self::Extraviado),
+            _ => Err(format!("Estado de gafete desconocido: {s}")),
         }
     }
 }

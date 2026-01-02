@@ -84,7 +84,7 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
     for (id, name, desc, inherits) in roles {
         let permissions: Vec<String> = match id {
             ROLE_ADMIN_ID => all_permissions.clone(),
-            ROLE_GUARDIA_ID => guardia_perms.iter().map(|s| s.to_string()).collect(),
+            ROLE_GUARDIA_ID => guardia_perms.iter().map(|s| (*s).to_string()).collect(),
             _ => vec![],
         };
 
@@ -93,7 +93,7 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
 
         // Inserción del rol con metadatos de sistema
         db.query(
-            r#"
+            r"
                 CREATE type::thing('role', $id) CONTENT {
                     name: $name,
                     description: $desc,
@@ -103,7 +103,7 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
                     created_at: time::now(),
                     updated_at: time::now()
                 }
-                "#,
+                ",
         )
         .bind(("id", id))
         .bind(("name", name))
@@ -153,7 +153,7 @@ async fn seed_god_user() -> Result<(), SurrealDbError> {
         .await?
         .check()?;
 
-        info!("🔐 Usuario raíz actualizado (id={})", GOD_ID);
+        info!("🔐 Usuario raíz actualizado (id={GOD_ID})");
         return Ok(());
     }
 

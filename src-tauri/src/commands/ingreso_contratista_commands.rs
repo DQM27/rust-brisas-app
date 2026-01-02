@@ -29,8 +29,8 @@ use tauri::{command, State};
 // HELPERS: Construcción del Servicio
 // --------------------------------------------------------------------------
 
-/// Crea una instancia del servicio con las implementaciones concretas de SurrealDB.
-fn create_service() -> IngresoContratistaService<
+/// Crea una instancia del servicio con las implementaciones concretas de `SurrealDB`.
+const fn create_service() -> IngresoContratistaService<
     SurrealIngresoContratistaRepository,
     SurrealGafeteRepository,
     SurrealContratistaRepository,
@@ -60,7 +60,7 @@ pub async fn validate_ingreso_contratista(
 }
 
 /// [Comando Tauri] Registra la entrada física de un contratista.
-/// El usuario_id se extrae de la sesión para evitar suplantación.
+/// El `usuario_id` se extrae de la sesión para evitar suplantación.
 #[command]
 pub async fn create_ingreso_contratista(
     session: State<'_, SessionState>,
@@ -68,7 +68,7 @@ pub async fn create_ingreso_contratista(
 ) -> Result<IngresoResponse, IngresoContratistaError> {
     let user = require_session!(session);
     require_perm!(session, "IngresoContratista:Create")?;
-    create_service().crear_ingreso_contratista(input, user.id.to_string()).await
+    create_service().crear_ingreso_contratista(input, user.id.clone()).await
 }
 
 // --------------------------------------------------------------------------
@@ -88,11 +88,11 @@ pub async fn validate_exit_contratista(
     create_service()
         .validar_puede_salir(&ingreso_id, gafete_devuelto.as_deref())
         .await
-        .map_err(|e| IngresoContratistaError::Validation(e))
+        .map_err(IngresoContratistaError::Validation)
 }
 
 /// [Comando Tauri] Finaliza el registro de permanencia y libera recursos.
-/// El usuario_id se extrae de la sesión para evitar suplantación.
+/// El `usuario_id` se extrae de la sesión para evitar suplantación.
 #[command]
 pub async fn register_exit_contratista(
     session: State<'_, SessionState>,
@@ -100,7 +100,7 @@ pub async fn register_exit_contratista(
 ) -> Result<IngresoResponse, IngresoContratistaError> {
     let user = require_session!(session);
     require_perm!(session, "IngresoContratista:Update")?;
-    create_service().registrar_salida(input, user.id.to_string()).await
+    create_service().registrar_salida(input, user.id.clone()).await
 }
 
 // --------------------------------------------------------------------------

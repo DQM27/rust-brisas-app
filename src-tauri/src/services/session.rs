@@ -27,7 +27,7 @@ pub struct SessionState {
 }
 
 impl SessionState {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { current_user: RwLock::new(None) }
     }
 

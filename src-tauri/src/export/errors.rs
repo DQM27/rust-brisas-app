@@ -99,7 +99,7 @@ pub enum ExportError {
 // y necesitamos que ExportError lo sea para enviarlo al frontend.
 impl From<std::io::Error> for ExportError {
     fn from(err: std::io::Error) -> Self {
-        ExportError::IoError(err.to_string())
+        Self::IoError(err.to_string())
     }
 }
 

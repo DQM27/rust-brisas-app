@@ -123,12 +123,12 @@ pub fn get_all_profiles() -> Result<Vec<ExportProfile>, ExportError> {
 
     if path.exists() {
         let content = fs::read_to_string(path).map_err(|e| {
-            error!("Error de IO al leer perfiles: {}", e);
+            error!("Error de IO al leer perfiles: {e}");
             ExportError::IoError(e.to_string())
         })?;
         let profiles: Vec<ExportProfile> = serde_json::from_str(&content).map_err(|e| {
-            error!("JSON de perfiles corrupto: {}", e);
-            ExportError::ProfileSerializationError(format!("Error de lectura: {}", e))
+            error!("JSON de perfiles corrupto: {e}");
+            ExportError::ProfileSerializationError(format!("Error de lectura: {e}"))
         })?;
         Ok(profiles)
     } else {
@@ -145,7 +145,7 @@ fn save_all_profiles(profiles: &[ExportProfile]) -> Result<(), ExportError> {
     let json = serde_json::to_string_pretty(profiles)
         .map_err(|e| ExportError::ProfileSerializationError(e.to_string()))?;
     fs::write(path, json).map_err(|e| {
-        error!("Error al escribir perfiles en disco: {}", e);
+        error!("Error al escribir perfiles en disco: {e}");
         ExportError::IoError(e.to_string())
     })?;
     Ok(())
@@ -228,9 +228,9 @@ pub fn save_profile(profile: ExportProfile) -> Result<(), ExportError> {
     upsert_profile_in_list(&mut profiles, profile);
 
     if is_new {
-        info!("Creando nuevo perfil de exportación: {}", name);
+        info!("Creando nuevo perfil de exportación: {name}");
     } else {
-        warn!("Sobrescribiendo perfil existente: {} ({})", name, id);
+        warn!("Sobrescribiendo perfil existente: {name} ({id})");
     }
 
     save_all_profiles(&profiles)?;
@@ -252,7 +252,7 @@ pub fn delete_profile(id: String) -> Result<(), ExportError> {
 
     if changed {
         save_all_profiles(&profiles)?;
-        info!("Perfil eliminado correctamente: {}", id);
+        info!("Perfil eliminado correctamente: {id}");
     }
 
     Ok(())
@@ -271,7 +271,7 @@ pub fn set_default_profile(id: String) -> Result<(), ExportError> {
     set_default_profile_in_list(&mut profiles, &id)?;
 
     save_all_profiles(&profiles)?;
-    info!("Perfil predeterminado actualizado a: {}", id);
+    info!("Perfil predeterminado actualizado a: {id}");
     Ok(())
 }
 

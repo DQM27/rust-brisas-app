@@ -68,7 +68,7 @@ pub fn run() {
                 Err(e) => {
                     // Si falla la carga (ej. archivo corrupto), usamos defaults para no bloquear
                     // el arranque, pero notificamos el error para su revisión.
-                    error!("⚠️ Error al cargar configuración (usando valores por defecto): {}", e);
+                    error!("⚠️ Error al cargar configuración (usando valores por defecto): {e}");
                     AppConfig::default()
                 }
             };
@@ -79,7 +79,7 @@ pub fn run() {
             db_config.data_path = config_manager::get_database_path(&app_config);
 
             if let Err(e) = crate::services::backup::check_and_restore_database(&app_config) {
-                error!("❌ Error en el protocolo de resiliencia: {}", e);
+                error!("❌ Error en el protocolo de resiliencia: {e}");
             }
 
             let is_configured = app_config.setup.is_configured;
@@ -105,7 +105,7 @@ pub fn run() {
                 if is_configured {
                     info!("🌱 Sistema configurado previamente. Verificando datos base...");
                     if let Err(e) = seed::seed_db().await {
-                        error!("❌ Error durante la verificación de datos iniciales: {}", e);
+                        error!("❌ Error durante la verificación de datos iniciales: {e}");
                     }
                 } else {
                     info!("⚠️ El sistema está en modo de espera hasta que el asistente de configuración se complete.");
@@ -129,7 +129,7 @@ pub fn run() {
                     // Si el índice de búsqueda está vacío, programamos una reconstrucción en segundo plano.
                     // Se hace en un hilo separado (spawn) para no retrasar la carga de la interfaz de usuario.
                     if search_service.is_empty() {
-                        let search_service_clone = search_service.clone();
+                        let search_service_clone = search_service;
 
                         tauri::async_runtime::spawn(async move {
                             // Breve pausa para dar prioridad a la carga de la ventana principal.
@@ -137,7 +137,7 @@ pub fn run() {
 
                             info!("🔄 Iniciando reconstrucción del índice de búsqueda en segundo plano...");
                             if let Err(e) = search_service_clone.reindex_all().await {
-                                eprintln!("❌ Fallo en la reindexación asíncrona: {}", e);
+                                eprintln!("❌ Fallo en la reindexación asíncrona: {e}");
                             } else {
                                 info!(
                                     "✅ Índice reconstruido exitosamente con {} registros.",
@@ -148,7 +148,7 @@ pub fn run() {
                     }
                 }
                 Err(e) => {
-                    error!("❌ Fallo crítico al inicializar el índice de búsqueda: {}", e);
+                    error!("❌ Fallo crítico al inicializar el índice de búsqueda: {e}");
                     return Err(Box::new(e));
                 }
             }

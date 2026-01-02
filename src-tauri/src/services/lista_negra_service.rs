@@ -50,7 +50,7 @@ use surrealdb::RecordId;
 /// - `DEBUG`: Cédula verificada
 /// - No se loguea resultado por privacidad (frecuencia alta)
 pub async fn check_is_blocked(cedula: String) -> Result<BlockCheckResponse, ListaNegraError> {
-    debug!("🔍 Verificando bloqueo: {}", cedula);
+    debug!("🔍 Verificando bloqueo: {cedula}");
 
     db::check_if_blocked_by_cedula(&cedula)
         .await
@@ -64,22 +64,22 @@ pub async fn check_is_blocked(cedula: String) -> Result<BlockCheckResponse, List
 /// Obtiene un registro de lista negra por su ID.
 ///
 /// ## Parámetros
-/// * `id` - ID del registro (formato: "lista_negra:xxx")
+/// * `id` - ID del registro (formato: "`lista_negra:xxx`")
 ///
 /// ## Retorno
 /// * `Ok(Some(ListaNegraResponse))` - Registro encontrado
 /// * `Ok(None)` - No existe o está eliminado
 pub async fn get_by_id(id: String) -> Result<Option<ListaNegraResponse>, ListaNegraError> {
-    debug!("🔍 Obteniendo lista negra por ID: {}", id);
+    debug!("🔍 Obteniendo lista negra por ID: {id}");
 
     // Parsear el ID a RecordId
     let record_id: RecordId =
-        id.parse().map_err(|_| ListaNegraError::Validation(format!("ID inválido: {}", id)))?;
+        id.parse().map_err(|_| ListaNegraError::Validation(format!("ID inválido: {id}")))?;
 
     let registro =
         db::find_by_id(&record_id).await.map_err(|e| ListaNegraError::Database(e.to_string()))?;
 
-    Ok(registro.map(|r| r.into()))
+    Ok(registro.map(std::convert::Into::into))
 }
 
 /// Obtiene todos los registros de lista negra con estadísticas.
@@ -108,11 +108,10 @@ pub async fn get_all() -> Result<ListaNegraListResponse, ListaNegraError> {
     let bajo = registros.iter().filter(|r| r.nivel_severidad.to_uppercase() == "BAJO").count();
 
     // Convertir a responses
-    let bloqueados: Vec<ListaNegraResponse> = registros.into_iter().map(|r| r.into()).collect();
+    let bloqueados: Vec<ListaNegraResponse> = registros.into_iter().map(std::convert::Into::into).collect();
 
     debug!(
-        "📊 Lista negra: {} total, {} activos, {} alto, {} medio, {} bajo",
-        total, activos, alto, medio, bajo
+        "📊 Lista negra: {total} total, {activos} activos, {alto} alto, {medio} medio, {bajo} bajo"
     );
 
     Ok(ListaNegraListResponse {
@@ -131,12 +130,12 @@ pub async fn get_all() -> Result<ListaNegraListResponse, ListaNegraError> {
 /// ## Retorno
 /// Lista de registros que coinciden (máximo 50)
 pub async fn search(query: &str) -> Result<Vec<ListaNegraResponse>, ListaNegraError> {
-    debug!("🔍 Buscando en lista negra: '{}'", query);
+    debug!("🔍 Buscando en lista negra: '{query}'");
 
     let registros =
         db::search(query).await.map_err(|e| ListaNegraError::Database(e.to_string()))?;
 
-    Ok(registros.into_iter().map(|r| r.into()).collect())
+    Ok(registros.into_iter().map(std::convert::Into::into).collect())
 }
 
 // --------------------------------------------------------------------------
@@ -228,14 +227,14 @@ pub async fn update(
     id: String,
     input: UpdateListaNegraInput,
 ) -> Result<ListaNegraResponse, ListaNegraError> {
-    info!("✏️ Actualizando lista negra: id={}", id);
+    info!("✏️ Actualizando lista negra: id={id}");
 
     // Validar input
     domain::validar_update_input(&input)?;
 
     // Parsear ID
     let record_id: RecordId =
-        id.parse().map_err(|_| ListaNegraError::Validation(format!("ID inválido: {}", id)))?;
+        id.parse().map_err(|_| ListaNegraError::Validation(format!("ID inválido: {id}")))?;
 
     // Actualizar
     let updated = db::update(&record_id, &input).await.map_err(|e| {
@@ -263,11 +262,11 @@ pub async fn update(
 /// ## Logging
 /// - `WARN`: Persona removida de lista negra (operación notable)
 pub async fn delete(id: String) -> Result<(), ListaNegraError> {
-    warn!("🗑️ Removiendo de lista negra: id={}", id);
+    warn!("🗑️ Removiendo de lista negra: id={id}");
 
     // Parsear ID
     let record_id: RecordId =
-        id.parse().map_err(|_| ListaNegraError::Validation(format!("ID inválido: {}", id)))?;
+        id.parse().map_err(|_| ListaNegraError::Validation(format!("ID inválido: {id}")))?;
 
     // Verificar que existe (para log)
     let existente =
@@ -291,11 +290,11 @@ pub async fn delete(id: String) -> Result<(), ListaNegraError> {
 /// ## Logging
 /// - `WARN`: Persona restaurada a lista negra
 pub async fn restore(id: String) -> Result<ListaNegraResponse, ListaNegraError> {
-    warn!("♻️ Restaurando a lista negra: id={}", id);
+    warn!("♻️ Restaurando a lista negra: id={id}");
 
     // Parsear ID
     let record_id: RecordId =
-        id.parse().map_err(|_| ListaNegraError::Validation(format!("ID inválido: {}", id)))?;
+        id.parse().map_err(|_| ListaNegraError::Validation(format!("ID inválido: {id}")))?;
 
     // Restaurar
     let restored = db::restore(&record_id).await.map_err(|e| {
@@ -336,6 +335,6 @@ pub async fn search_personas_for_block(
 ) -> Result<Vec<crate::models::lista_negra::PersonaSearchResult>, String> {
     // TODO: Implementar búsqueda cross-module (contratistas, proveedores, visitantes)
     // Por ahora retorna vacío
-    debug!("🔍 search_personas_for_block: '{}' (pendiente implementación cross-module)", query);
+    debug!("🔍 search_personas_for_block: '{query}' (pendiente implementación cross-module)");
     Ok(vec![])
 }

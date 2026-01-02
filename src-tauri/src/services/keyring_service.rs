@@ -224,7 +224,7 @@ pub fn get_argon2_params() -> Argon2Params {
 /// * `true` - Si existe y no está vacío.
 /// * `false` - Si no existe o está vacío.
 pub fn has_argon2_secret() -> bool {
-    retrieve_value(KEY_PASSWORD_SECRET).map(|s| !s.is_empty()).unwrap_or(false)
+    retrieve_value(KEY_PASSWORD_SECRET).is_some_and(|s| !s.is_empty())
 }
 
 /// Elimina toda la configuración de Argon2 del keyring.
@@ -339,7 +339,7 @@ pub fn generate_random_secret() -> String {
 /// - El valor persiste hasta eliminación manual o desinstalación
 ///
 /// # Argumentos
-/// * `key` - Identificador único de la clave (ej: "user_token", "api_key")
+/// * `key` - Identificador único de la clave (ej: "`user_token`", "`api_key`")
 /// * `value` - Valor secreto a guardar (cualquier string)
 ///
 /// # Retorno
@@ -355,10 +355,10 @@ pub fn generate_random_secret() -> String {
 /// - `DEBUG`: Identificador de la clave guardada
 /// - `INFO`: Confirmación de operación exitosa
 pub fn save_secret(key: &str, value: &str) -> KeyringResult<()> {
-    debug!("Guardando secreto genérico en keyring: {}", key);
-    let result = store_value(key, value)?;
-    info!("✅ Secreto guardado exitosamente: {}", key);
-    Ok(result)
+    debug!("Guardando secreto genérico en keyring: {key}");
+    store_value(key, value)?;
+    info!("✅ Secreto guardado exitosamente: {key}");
+    Ok(())
 }
 
 /// Recupera un secreto genérico del keyring del sistema operativo.
@@ -416,10 +416,10 @@ pub fn get_secret(key: &str) -> Option<String> {
 /// - `DEBUG`: Identificador de la clave eliminada
 /// - `INFO`: Confirmación de eliminación
 pub fn delete_secret(key: &str) -> KeyringResult<()> {
-    debug!("Eliminando secreto genérico del keyring: {}", key);
-    let result = delete_value(key)?;
-    info!("✅ Secreto eliminado: {}", key);
-    Ok(result)
+    debug!("Eliminando secreto genérico del keyring: {key}");
+    delete_value(key)?;
+    info!("✅ Secreto eliminado: {key}");
+    Ok(())
 }
 
 // ==========================================

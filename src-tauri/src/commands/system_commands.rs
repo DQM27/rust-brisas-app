@@ -26,7 +26,7 @@ pub fn get_system_idle_time() -> Result<u32, SystemError> {
             let mut last_input_info =
                 LASTINPUTINFO { cbSize: std::mem::size_of::<LASTINPUTINFO>() as u32, dwTime: 0 };
 
-            if GetLastInputInfo(&mut last_input_info).as_bool() {
+            if GetLastInputInfo(&raw mut last_input_info).as_bool() {
                 let current_tick = GetTickCount();
                 let idle_ms = current_tick - last_input_info.dwTime;
                 Ok(idle_ms)

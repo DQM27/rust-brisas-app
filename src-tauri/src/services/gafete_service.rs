@@ -31,7 +31,7 @@ fn parse_gafete_id(id_str: &str) -> Result<RecordId, GafeteError> {
     if id_str.contains(':') {
         id_str
             .parse::<RecordId>()
-            .map_err(|_| GafeteError::Validation(format!("ID de gafete inválido: {}", id_str)))
+            .map_err(|_| GafeteError::Validation(format!("ID de gafete inválido: {id_str}")))
     } else {
         Ok(RecordId::from_table_key("gafete", id_str))
     }
@@ -59,7 +59,7 @@ pub async fn is_gafete_disponible(numero: i32, tipo: &str) -> Result<bool, Gafet
         Ok(Some(g)) => Ok(g.estado == GafeteEstado::Activo && !g.en_uso),
         Ok(None) => Ok(false),
         Err(e) => {
-            error!("Error DB consultando disponibilidad de gafete {}: {}", numero, e);
+            error!("Error DB consultando disponibilidad de gafete {numero}: {e}");
             Err(GafeteError::Database(e.to_string()))
         }
     }
@@ -176,7 +176,7 @@ pub async fn create_gafete_range(input: CreateGafeteRangeInput) -> Result<i32, G
         }
     }
 
-    info!("Creación masiva finalizada. Total creados: {}", created);
+    info!("Creación masiva finalizada. Total creados: {created}");
     Ok(created)
 }
 
@@ -214,7 +214,7 @@ pub async fn update_gafete_status(
 
     // Logs de auditoría importantes para cambios de estado
     if estado == GafeteEstado::Extraviado || estado == GafeteEstado::Danado {
-        warn!("Marcando gafete {} como {}", id_str, estado);
+        warn!("Marcando gafete {id_str} como {estado}");
     }
 
     let gafete = db::update_estado(&id, estado.as_str())
@@ -235,7 +235,7 @@ pub async fn delete_gafete(id_str: &str) -> Result<(), GafeteError> {
 
     db::delete_gafete_by_id(&id).await.map_err(|e| GafeteError::Database(e.to_string()))?;
 
-    info!("Gafete eliminado: {}", id_str);
+    info!("Gafete eliminado: {id_str}");
     Ok(())
 }
 

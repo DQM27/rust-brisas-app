@@ -10,5 +10,5 @@ use mimalloc::MiMalloc;
 static GLOBAL: MiMalloc = MiMalloc;
 
 fn main() {
-    brisas_app_lib::run()
+    brisas_app_lib::run();
 }

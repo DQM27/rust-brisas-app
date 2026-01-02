@@ -1,9 +1,9 @@
 /// Causa de Resiliencia: Gestión de Copias de Seguridad y Restauración.
 ///
 /// Este servicio centraliza la detección y aplicación de restauraciones de base de datos.
-/// Actúa como un guardián previo a la inicialización del motor SurrealDB.
+/// Actúa como un guardián previo a la inicialización del motor `SurrealDB`.
 ///
-/// **Nota de Diseño (SurrealDB)**: A diferencia de SQLite, SurrealDB (SurrealKv) usa directorios.
+/// **Nota de Diseño (`SurrealDB`)**: A diferencia de `SQLite`, `SurrealDB` (`SurrealKv`) usa directorios.
 /// Este servicio maneja recursivamente tanto archivos como carpetas según sea necesario.
 use crate::config::AppConfig;
 use crate::domain::errors::BackupError;
@@ -37,14 +37,14 @@ pub fn check_and_restore_database(config: &AppConfig) -> Result<(), BackupError>
         );
 
         let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
-        let safety_backup = db_path.with_extension(format!("bkp.{}", timestamp));
+        let safety_backup = db_path.with_extension(format!("bkp.{timestamp}"));
 
         // 1. Crear backup de seguridad del estado actual
         if db_path.exists() {
             info!("🛡️  Seguridad: Creando punto de salvaguarda en {}", safety_backup.display());
             copy_recursive(&db_path, &safety_backup).map_err(|e| {
-                error!("Fallo crítico al crear salvaguarda de emergencia: {}", e);
-                BackupError::IO(format!("Fallo al crear salvaguarda: {}", e))
+                error!("Fallo crítico al crear salvaguarda de emergencia: {e}");
+                BackupError::IO(format!("Fallo al crear salvaguarda: {e}"))
             })?;
         }
 
@@ -61,12 +61,12 @@ pub fn check_and_restore_database(config: &AppConfig) -> Result<(), BackupError>
 
         // 3. Intento de movimiento atómico (solo funciona en mismo filesystem)
         if let Err(e) = fs::rename(&verify_restore_path, &db_path) {
-            warn!("Rename fallido ({}), intentando transplante manual...", e);
+            warn!("Rename fallido ({e}), intentando transplante manual...");
 
             // Fallback: Copia recursiva y limpieza
             copy_recursive(&verify_restore_path, &db_path).map_err(|e| {
-                error!("Fallo atómico en transplante de datos: {}", e);
-                BackupError::AtomicFailure(format!("Fallo al copiar restauración: {}", e))
+                error!("Fallo atómico en transplante de datos: {e}");
+                BackupError::AtomicFailure(format!("Fallo al copiar restauración: {e}"))
             })?;
 
             // Limpieza de staging
@@ -86,7 +86,7 @@ pub fn check_and_restore_database(config: &AppConfig) -> Result<(), BackupError>
 /// Genera la ruta del archivo de señalización de restauración basado en la ruta de la DB.
 ///
 /// # Argumentos
-/// * `db_path` - Ruta al archivo/directorio principal de SurrealDB.
+/// * `db_path` - Ruta al archivo/directorio principal de `SurrealDB`.
 ///
 /// # Retorno
 /// Retorna un `PathBuf` con la ruta del archivo `.restore` correspondiente.
@@ -108,7 +108,7 @@ pub fn get_restore_path(db_path: &Path) -> PathBuf {
 
 /// Utilidad de copia recursiva compatible con archivos y directorios.
 ///
-/// Es fundamental para SurrealDB ya que usa estructuras de directorios K/V.
+/// Es fundamental para `SurrealDB` ya que usa estructuras de directorios K/V.
 ///
 /// # Argumentos
 /// * `src` - Ruta de origen.

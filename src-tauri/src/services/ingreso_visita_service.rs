@@ -17,11 +17,11 @@ use surrealdb::RecordId;
 // HELPERS & VALIDACIONES PRIVADAS
 // --------------------------------------------------------------------------
 
-/// Helper para parsear IDs de SurrealDB (Table:Key o solo Key).
+/// Helper para parsear IDs de `SurrealDB` (Table:Key o solo Key).
 fn parse_id(id: &str, table: &str) -> Result<RecordId, IngresoVisitaError> {
     if id.contains(':') {
         id.parse::<RecordId>()
-            .map_err(|_| IngresoVisitaError::Validation(format!("ID de {} inválido", table)))
+            .map_err(|_| IngresoVisitaError::Validation(format!("ID de {table} inválido")))
     } else {
         Ok(RecordId::from_table_key(table, id))
     }
@@ -49,7 +49,7 @@ async fn validar_lista_negra(cedula: String) -> Result<(), IngresoVisitaError> {
     let check = lista_negra_service::check_is_blocked(cedula.clone()).await.unwrap_or_default();
 
     if check.is_blocked {
-        warn!("Intento de ingreso bloqueado por Lista Negra: {}", cedula);
+        warn!("Intento de ingreso bloqueado por Lista Negra: {cedula}");
         return Err(IngresoVisitaError::Validation(
             "ACCESO RESTRINGIDO: El visitante se encuentra en Lista Negra".to_string(),
         ));
@@ -64,10 +64,10 @@ async fn validar_ingreso_unico_cedula(cedula: &str) -> Result<(), IngresoVisitaE
         .map_err(|e| IngresoVisitaError::Database(e.to_string()))?;
 
     if let Some(ingreso) = abierto {
-        warn!("Intento de ingreso duplicado para cédula: {}", cedula);
+        warn!("Intento de ingreso duplicado para cédula: {cedula}");
         return Err(IngresoVisitaError::Validation(format!(
             "Ya existe un registro de ingreso activo (ID: {}) para esta persona",
-            ingreso.id.to_string()
+            ingreso.id
         )));
     }
     Ok(())
@@ -122,7 +122,7 @@ pub async fn registrar_ingreso(
     };
 
     let nuevo_ingreso = db::insert(dto).await.map_err(|e| {
-        error!("Error DB al insertar ingreso visita: {}", e);
+        error!("Error DB al insertar ingreso visita: {e}");
         IngresoVisitaError::Database(e.to_string())
     })?;
 
@@ -130,7 +130,7 @@ pub async fn registrar_ingreso(
     if let Some(ref g) = nuevo_ingreso.gafete_numero {
         if *g != 0 {
             if let Err(e) = gafete_service::marcar_en_uso(*g, "visita").await {
-                error!("Error crítico: Gafete {} no se pudo marcar en uso: {:?}", g, e);
+                error!("Error crítico: Gafete {g} no se pudo marcar en uso: {e:?}");
             }
         }
     }
@@ -171,7 +171,7 @@ pub async fn registrar_salida(
 
     let actualizado =
         db::update_salida(&ingreso_id, &usuario_id, observaciones).await.map_err(|e| {
-            error!("Error DB al registrar salida de visita: {}", e);
+            error!("Error DB al registrar salida de visita: {e}");
             IngresoVisitaError::Database(e.to_string())
         })?;
 
@@ -180,17 +180,16 @@ pub async fn registrar_salida(
             if *g != 0 {
                 if let Err(e) = gafete_service::liberar_gafete(*g, "visita").await {
                     error!(
-                        "Error no fatal: No se pudo liberar gafete {} en salida visita: {:?}",
-                        g, e
+                        "Error no fatal: No se pudo liberar gafete {g} en salida visita: {e:?}"
                     );
                 } else {
-                    info!("Gafete {} (visita) liberado correctamente.", g);
+                    info!("Gafete {g} (visita) liberado correctamente.");
                 }
             }
         }
     } else if let Some(g) = actualizado.gafete_numero {
         if g != 0 {
-            warn!("ALERTA: Visitante salió SIN devolver gafete {}", g);
+            warn!("ALERTA: Visitante salió SIN devolver gafete {g}");
         }
     }
 

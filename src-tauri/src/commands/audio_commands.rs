@@ -26,12 +26,11 @@ pub async fn play_alert_sound(config: State<'_, AppConfigState>) -> Result<(), S
         if use_custom && custom_path.is_some() {
             let path = custom_path.unwrap();
             let cmd = format!(
-                "$player = New-Object System.Media.SoundPlayer('{}'); $player.Play();",
-                path
+                "$player = New-Object System.Media.SoundPlayer('{path}'); $player.Play();"
             );
             let _ = Command::new("powershell").args(["-NoProfile", "-Command", &cmd]).spawn();
         } else {
-            let cmd = format!("[System.Media.SystemSounds]:: {}.Play()", sound);
+            let cmd = format!("[System.Media.SystemSounds]:: {sound}.Play()");
             let _ = Command::new("powershell").args(["-NoProfile", "-Command", &cmd]).spawn();
         }
     }

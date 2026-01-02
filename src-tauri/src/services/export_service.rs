@@ -52,11 +52,11 @@ pub async fn export_data(request: ExportRequest) -> ExportResult<ExportResponse>
     );
 
     // 1. Validar request completo
-    domain::validar_export_request(&request).map_err(|e| ExportError::InvalidData(e))?;
+    domain::validar_export_request(&request).map_err(ExportError::InvalidData)?;
 
     // 2. Validar tamaño total (seguridad)
     if let Err(e) = domain::validar_tamano_total(&request) {
-        warn!("Intento de exportación rechazada por tamaño: {:?}", e);
+        warn!("Intento de exportación rechazada por tamaño: {e:?}");
         return Err(ExportError::InvalidData(e));
     }
 
@@ -83,10 +83,10 @@ pub async fn export_data(request: ExportRequest) -> ExportResult<ExportResponse>
 // NORMALIZACIÓN DE DATOS
 // ==========================================
 
-/// Convierte ExportRequest en ExportData normalizado
+/// Convierte `ExportRequest` en `ExportData` normalizado
 fn normalizar_export_data(request: &ExportRequest) -> ExportResult<ExportData> {
     // 1. Parsear formato
-    let format = request.format.parse().map_err(|e| ExportError::InvalidFormat(e))?;
+    let format = request.format.parse().map_err(ExportError::InvalidFormat)?;
 
     // 2. Clonar headers
     let headers = request.headers.clone();
@@ -120,7 +120,7 @@ fn normalizar_export_data(request: &ExportRequest) -> ExportResult<ExportData> {
 fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
     // Título
     let title = if let Some(ref t) = request.title {
-        domain::validar_titulo(t).map_err(|e| ExportError::InvalidTitle(e))?;
+        domain::validar_titulo(t).map_err(ExportError::InvalidTitle)?;
         domain::normalizar_titulo(t)
     } else {
         "Reporte".to_string()
@@ -128,7 +128,7 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
 
     // Orientación
     let orientation = if let Some(ref o) = request.orientation {
-        domain::validar_orientacion(o).map_err(|e| ExportError::InvalidOrientation(e))?
+        domain::validar_orientacion(o).map_err(ExportError::InvalidOrientation)?
     } else {
         PageOrientation::Landscape
     };
@@ -185,7 +185,7 @@ fn construir_csv_config(request: &ExportRequest) -> ExportResult<CsvConfig> {
 
     // Delimitador
     let delimiter = if let Some(ref d) = request.delimiter {
-        domain::validar_delimitador(d).map_err(|e| ExportError::InvalidDelimiter(e))?
+        domain::validar_delimitador(d).map_err(ExportError::InvalidDelimiter)?
     } else {
         CsvDelimiter::Comma
     };
@@ -205,7 +205,7 @@ fn construir_csv_config(request: &ExportRequest) -> ExportResult<CsvConfig> {
 // EXPORTACIÓN POR FORMATO
 // ==========================================
 
-/// Exporta a PDF usando Typst (con spawn_blocking para no bloquear UI)
+/// Exporta a PDF usando Typst (con `spawn_blocking` para no bloquear UI)
 #[cfg(feature = "export")]
 async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse> {
     use crate::export::pdf;
@@ -219,7 +219,7 @@ async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse
     // ✅ Obtener PERFIL (usando template_id como profile_id por compatibilidad o default)
     let profile = if let Some(ref id) = config.template_id {
         export_profile_service::get_profile_by_id(id)
-            .or_else(|| export_profile_service::get_default_profile())
+            .or_else(export_profile_service::get_default_profile)
     } else {
         export_profile_service::get_default_profile()
     };
@@ -251,12 +251,12 @@ async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse
         pdf::generate_pdf(&headers, &rows, &config_clone, &design_clone)
     })
     .await
-    .map_err(|e| ExportError::Unknown(format!("Error en thread de PDF: {}", e)))??;
+    .map_err(|e| ExportError::Unknown(format!("Error en thread de PDF: {e}")))??;
 
     // Determinar si guardar en disco
     let file_path = if let Some(path) = data.target_path {
         std::fs::write(&path, &pdf_bytes)
-            .map_err(|e| ExportError::FileSystemError(format!("Error escribiendo PDF: {}", e)))?;
+            .map_err(|e| ExportError::FileSystemError(format!("Error escribiendo PDF: {e}")))?;
         Some(path)
     } else {
         None
@@ -279,7 +279,7 @@ async fn export_to_pdf_internal(_data: ExportData) -> ExportResult<ExportRespons
     Err(ExportError::Unknown("Función de exportación PDF no disponible en esta build".to_string()))
 }
 
-/// Exporta a Excel usando rust_xlsxwriter (con spawn_blocking para no bloquear UI)
+/// Exporta a Excel usando `rust_xlsxwriter` (con `spawn_blocking` para no bloquear UI)
 #[cfg(feature = "export")]
 async fn export_to_excel_internal(data: ExportData) -> ExportResult<ExportResponse> {
     use crate::export::excel;
@@ -297,7 +297,7 @@ async fn export_to_excel_internal(data: ExportData) -> ExportResult<ExportRespon
         excel::generate_excel(&headers, &rows, &config, target_path)
     })
     .await
-    .map_err(|e| ExportError::Unknown(format!("Error en thread de Excel: {}", e)))??;
+    .map_err(|e| ExportError::Unknown(format!("Error en thread de Excel: {e}")))??;
 
     Ok(ExportResponse {
         success: true,
@@ -356,7 +356,7 @@ fn sanitizar_filename(filename: &str) -> String {
 }
 
 /// Verifica si el módulo de export está disponible
-pub fn is_export_available() -> bool {
+pub const fn is_export_available() -> bool {
     cfg!(feature = "export")
 }
 

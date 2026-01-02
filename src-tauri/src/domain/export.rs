@@ -34,7 +34,7 @@ impl PdfConfigBuilder {
     }
 
     #[must_use]
-    pub fn orientation(mut self, orientation: PageOrientation) -> Self {
+    pub const fn orientation(mut self, orientation: PageOrientation) -> Self {
         self.config.orientation = orientation;
         self
     }
@@ -46,7 +46,7 @@ impl PdfConfigBuilder {
     }
 
     #[must_use]
-    pub fn show_preview(mut self, show: bool) -> Self {
+    pub const fn show_preview(mut self, show: bool) -> Self {
         self.config.show_preview = show;
         self
     }
@@ -70,7 +70,7 @@ impl PdfConfigBuilder {
     }
 
     #[must_use]
-    pub fn margins(mut self, top: f32, bottom: f32, left: f32, right: f32) -> Self {
+    pub const fn margins(mut self, top: f32, bottom: f32, left: f32, right: f32) -> Self {
         self.config.margin_top = top;
         self.config.margin_bottom = bottom;
         self.config.margin_left = left;
@@ -79,7 +79,7 @@ impl PdfConfigBuilder {
     }
 
     #[must_use]
-    pub fn uniform_margins(mut self, margin: f32) -> Self {
+    pub const fn uniform_margins(mut self, margin: f32) -> Self {
         self.config.margin_top = margin;
         self.config.margin_bottom = margin;
         self.config.margin_left = margin;
@@ -148,7 +148,7 @@ pub fn validar_headers(headers: &[String]) -> Result<(), String> {
     for header in headers {
         let normalizado = normalizar_header(header);
         if !seen.insert(normalizado.clone()) {
-            return Err(format!("Header duplicado: {}", header));
+            return Err(format!("Header duplicado: {header}"));
         }
     }
 
@@ -187,7 +187,7 @@ pub fn validar_orientacion(orientacion: &str) -> Result<PageOrientation, String>
     match orientacion.to_lowercase().as_str() {
         "portrait" | "vertical" => Ok(PageOrientation::Portrait),
         "landscape" | "horizontal" => Ok(PageOrientation::Landscape),
-        _ => Err(format!("Orientación inválida: {}", orientacion)),
+        _ => Err(format!("Orientación inválida: {orientacion}")),
     }
 }
 
@@ -205,7 +205,7 @@ pub fn validar_titulo(titulo: &str) -> Result<(), String> {
     }
 
     if limpio.len() > TITULO_MAX_LEN {
-        return Err(format!("El título no puede exceder {} caracteres", TITULO_MAX_LEN));
+        return Err(format!("El título no puede exceder {TITULO_MAX_LEN} caracteres"));
     }
 
     // Validar caracteres prohibidos
@@ -326,9 +326,8 @@ fn try_format_date(value: &str, header: &str) -> String {
             return local_dt.format("%H:%M").to_string();
         } else if header_lower.contains("fecha") {
             return local_dt.format("%d/%m/%Y").to_string();
-        } else {
-            return local_dt.format("%d/%m/%Y %H:%M").to_string();
         }
+        return local_dt.format("%d/%m/%Y %H:%M").to_string();
     }
 
     value.to_string()
@@ -340,7 +339,7 @@ fn try_format_date(value: &str, header: &str) -> String {
 
 /// Estima el tamaño en memoria para prevenir desbordamientos durante la generación.
 pub fn validar_tamano_total(request: &ExportRequest) -> Result<(), String> {
-    let headers_size: usize = request.headers.iter().map(|h| h.len()).sum();
+    let headers_size: usize = request.headers.iter().map(std::string::String::len).sum();
 
     let mut rows_size: usize = 0;
     for row in &request.rows {

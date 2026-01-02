@@ -112,7 +112,7 @@ pub async fn create_proveedor(
     let proveedor = db::create(dto).await.map_err(|e| ProveedorError::Database(e.to_string()))?;
 
     // Registro automático del vehículo si se proporciona durante el alta.
-    if let Some(true) = input.tiene_vehiculo {
+    if input.tiene_vehiculo == Some(true) {
         debug!("🚗 Registrando vehículo vinculado al nuevo proveedor...");
         if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
             if !tipo.is_empty() && !placa.is_empty() {
@@ -126,7 +126,7 @@ pub async fn create_proveedor(
                     propietario: proveedor.id.clone(),
                     tipo_vehiculo: tipo_norm
                         .parse::<TipoVehiculo>()
-                        .map_err(|e| ProveedorError::Validation(e))?,
+                        .map_err(ProveedorError::Validation)?,
                     placa: placa_norm,
                     marca: input.marca.as_ref().map(|s| s.trim().to_string()),
                     modelo: input.modelo.as_ref().map(|s| s.trim().to_string()),
@@ -142,11 +142,11 @@ pub async fn create_proveedor(
     // Sincronización con el motor de búsqueda Tantivy.
     debug!("🔍 Sincronizando proveedor con motor de búsqueda...");
     if let Err(e) = search_service.add_proveedor_fetched(&proveedor, &empresa_nombre).await {
-        warn!("Aviso: Falló la indexación del proveedor en el buscador: {}", e);
+        warn!("Aviso: Falló la indexación del proveedor en el buscador: {e}");
     }
 
     let resp = populate_response_fetched(proveedor).await.map_err(|e| {
-        error!("Error interno al enriquecer respuesta de proveedor: {}", e);
+        error!("Error interno al enriquecer respuesta de proveedor: {e}");
         e
     })?;
 
@@ -188,14 +188,14 @@ pub async fn change_status(
 ) -> Result<ProveedorResponse, ProveedorError> {
     let id = parse_proveedor_id(id_str);
 
-    info!("🔄 Cambiando estado de proveedor {} a {}", id_str, new_status);
+    info!("🔄 Cambiando estado de proveedor {id_str} a {new_status}");
 
     let mut dto = ProveedorUpdateDTO::default();
     dto.estado = Some(new_status.parse::<EstadoProveedor>().map_err(ProveedorError::Validation)?);
     dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
     let proveedor = db::update(&id, dto).await.map_err(|e| {
-        error!("❌ Error técnico al actualizar estado del proveedor {}: {}", id_str, e);
+        error!("❌ Error técnico al actualizar estado del proveedor {id_str}: {e}");
         ProveedorError::Database(e.to_string())
     })?;
 
@@ -204,7 +204,7 @@ pub async fn change_status(
     // Es vital que el buscador refleje el nuevo estado para evitar ingresos de proveedores inactivos.
     debug!("🔍 Sincronizando nuevo estado en el motor de búsqueda...");
     if let Err(e) = search_service.update_proveedor_fetched(&proveedor, &empresa_nombre).await {
-        warn!("⚠️ Aviso: Falló la actualización del proveedor en el índice: {}", e);
+        warn!("⚠️ Aviso: Falló la actualización del proveedor en el índice: {e}");
     }
 
     populate_response_fetched(proveedor).await
@@ -250,7 +250,7 @@ pub async fn update_proveedor(
     let id = parse_proveedor_id(&id_str);
     proveedor_domain::validar_update_input(&input)?;
 
-    info!("Actualizando perfil del proveedor {}", id_str);
+    info!("Actualizando perfil del proveedor {id_str}");
 
     db::find_by_id(&id)
         .await
@@ -283,7 +283,7 @@ pub async fn update_proveedor(
     dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
     let proveedor = db::update(&id, dto).await.map_err(|e| {
-        error!("Error en DB al actualizar proveedor {}: {}", id_str, e);
+        error!("Error en DB al actualizar proveedor {id_str}: {e}");
         ProveedorError::Database(e.to_string())
     })?;
 
@@ -308,7 +308,7 @@ pub async fn update_proveedor(
                         veh_dto.tipo_vehiculo = Some(
                             tipo_norm
                                 .parse::<crate::models::vehiculo::TipoVehiculo>()
-                                .map_err(|e| ProveedorError::Validation(e))?,
+                                .map_err(ProveedorError::Validation)?,
                         );
                         veh_dto.marca = input.marca.clone();
                         veh_dto.modelo = input.modelo.clone();
@@ -323,7 +323,7 @@ pub async fn update_proveedor(
                             propietario: id.clone(),
                             tipo_vehiculo: tipo_norm
                                 .parse::<TipoVehiculo>()
-                                .map_err(|e| ProveedorError::Validation(e))?,
+                                .map_err(ProveedorError::Validation)?,
                             placa: placa.clone(),
                             marca: input.marca.clone(),
                             modelo: input.modelo.clone(),
@@ -347,7 +347,7 @@ pub async fn update_proveedor(
     let empresa_nombre = proveedor.empresa.nombre.clone();
     debug!("🔍 Sincronizando cambios en el motor de búsqueda...");
     if let Err(e) = search_service.update_proveedor_fetched(&proveedor, &empresa_nombre).await {
-        warn!("⚠️ Aviso: Falló la sincronización con el motor de búsqueda: {}", e);
+        warn!("⚠️ Aviso: Falló la sincronización con el motor de búsqueda: {e}");
     }
 
     get_proveedor_by_id(&id_str).await
@@ -370,7 +370,7 @@ pub async fn delete_proveedor(
     // Es fundamental removerlo del motor de búsqueda para que no aparezca en los resultados activos.
     let _ = search_service.delete_proveedor(&id.to_string()).await;
 
-    info!("Proveedor archivado (borrado lógico): {}", id_str);
+    info!("Proveedor archivado (borrado lógico): {id_str}");
     Ok(())
 }
 

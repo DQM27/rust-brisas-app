@@ -1,7 +1,7 @@
 /// Modelo de Base de Datos: Gestión de Citas.
 ///
 /// Este módulo define la estructura de datos para el agendamiento de visitas,
-/// manejando estados estrictos (EstadoCita) y relaciones con Visitantes y Usuarios.
+/// manejando estados estrictos (`EstadoCita`) y relaciones con Visitantes y Usuarios.
 use crate::models::user::User;
 use crate::models::visitante::Visitante;
 use serde::{Deserialize, Serialize};
@@ -47,12 +47,12 @@ pub enum EstadoCita {
 impl fmt::Display for EstadoCita {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            EstadoCita::Programada => write!(f, "PROGRAMADA"),
-            EstadoCita::EnCurso => write!(f, "EN_CURSO"),
-            EstadoCita::Finalizada => write!(f, "FINALIZADA"),
-            EstadoCita::Cancelada => write!(f, "CANCELADA"),
-            EstadoCita::Vencida => write!(f, "VENCIDA"),
-            EstadoCita::Desconocido(s) => write!(f, "{}", s),
+            Self::Programada => write!(f, "PROGRAMADA"),
+            Self::EnCurso => write!(f, "EN_CURSO"),
+            Self::Finalizada => write!(f, "FINALIZADA"),
+            Self::Cancelada => write!(f, "CANCELADA"),
+            Self::Vencida => write!(f, "VENCIDA"),
+            Self::Desconocido(s) => write!(f, "{s}"),
         }
     }
 }
@@ -61,19 +61,19 @@ impl fmt::Display for EstadoCita {
 impl From<String> for EstadoCita {
     fn from(s: String) -> Self {
         match s.to_uppercase().as_str() {
-            "PROGRAMADA" => EstadoCita::Programada,
-            "EN_CURSO" => EstadoCita::EnCurso,
-            "FINALIZADA" => EstadoCita::Finalizada,
-            "CANCELADA" => EstadoCita::Cancelada,
-            "VENCIDA" => EstadoCita::Vencida,
-            _ => EstadoCita::Desconocido(s),
+            "PROGRAMADA" => Self::Programada,
+            "EN_CURSO" => Self::EnCurso,
+            "FINALIZADA" => Self::Finalizada,
+            "CANCELADA" => Self::Cancelada,
+            "VENCIDA" => Self::Vencida,
+            _ => Self::Desconocido(s),
         }
     }
 }
 
 impl From<&str> for EstadoCita {
     fn from(s: &str) -> Self {
-        EstadoCita::from(s.to_string())
+        Self::from(s.to_string())
     }
 }
 
@@ -81,7 +81,7 @@ impl From<&str> for EstadoCita {
 // MODELO DE BASE DE DATOS (SurrealDB Native)
 // --------------------------------------------------------------------------
 
-/// Modelo de Cita (SurrealDB).
+/// Modelo de Cita (`SurrealDB`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Cita {
     pub id: RecordId,
@@ -91,7 +91,7 @@ pub struct Cita {
     pub motivo: String,
     pub fecha_inicio: Datetime,
     pub fecha_fin: Datetime,
-    /// Estado del flujo (programada -> en_curso -> finalizada).
+    /// Estado del flujo (programada -> `en_curso` -> finalizada).
     pub estado: EstadoCita,
     pub activa: bool,
 

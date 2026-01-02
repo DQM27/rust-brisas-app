@@ -13,12 +13,12 @@
 //! - [`CambiarEstadoInput`]: Input para cambio de estado
 //!
 //! ## Convenciones de Fechas
-//! - Campos `*_at`: Timestamps en formato SurrealDB `Datetime`
+//! - Campos `*_at`: Timestamps en formato `SurrealDB` `Datetime`
 //! - Campo `fecha_vencimiento_praind`: Fecha en formato YYYY-MM-DD
 //! - La validación de formatos ocurre en [`crate::domain::contratista`]
 //!
 //! ## Enums de Estado
-//! [`EstadoContratista`] usa `lowercase` para serialización y es compatible con SurrealDB.
+//! [`EstadoContratista`] usa `lowercase` para serialización y es compatible con `SurrealDB`.
 
 use crate::models::empresa::Empresa;
 use serde::{Deserialize, Serialize};
@@ -46,7 +46,7 @@ use surrealdb::{Datetime, RecordId};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Contratista {
-    /// ID único en SurrealDB (formato: contratista:ulid)
+    /// ID único en `SurrealDB` (formato: contratista:ulid)
     pub id: RecordId,
     /// Cédula de identidad (formato validado: números y guiones)
     pub cedula: String,
@@ -127,7 +127,7 @@ impl From<ContratistaFetched> for Contratista {
 // --------------------------------------------------------------------------
 
 /// Estados posibles de un contratista en el sistema.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")] // "activo", "inactivo", "bloqueado"
 pub enum EstadoContratista {
     Activo,
@@ -136,11 +136,11 @@ pub enum EstadoContratista {
 }
 
 impl EstadoContratista {
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         match self {
-            EstadoContratista::Activo => "activo",
-            EstadoContratista::Inactivo => "inactivo",
-            EstadoContratista::Bloqueado => "bloqueado",
+            Self::Activo => "activo",
+            Self::Inactivo => "inactivo",
+            Self::Bloqueado => "bloqueado",
         }
     }
 }
@@ -150,10 +150,10 @@ impl std::str::FromStr for EstadoContratista {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "activo" => Ok(EstadoContratista::Activo),
-            "inactivo" => Ok(EstadoContratista::Inactivo),
-            "bloqueado" => Ok(EstadoContratista::Bloqueado),
-            _ => Err(format!("Estado desconocido: {}", s)),
+            "activo" => Ok(Self::Activo),
+            "inactivo" => Ok(Self::Inactivo),
+            "bloqueado" => Ok(Self::Bloqueado),
+            _ => Err(format!("Estado desconocido: {s}")),
         }
     }
 }
@@ -362,7 +362,7 @@ impl From<Contratista> for ContratistaResponse {
 }
 
 impl ContratistaResponse {
-    /// Construye un response desde un ContratistaFetched (con empresa expandida).
+    /// Construye un response desde un `ContratistaFetched` (con empresa expandida).
     pub fn from_fetched(c: ContratistaFetched) -> Self {
         use crate::domain::contratista::{
             calcular_estado_praind, construir_nombre_completo, puede_ingresar,

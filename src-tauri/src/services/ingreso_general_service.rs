@@ -30,7 +30,7 @@ fn parse_ingreso_id(id_str: &str) -> Result<RecordId, IngresoError> {
     if id_str.contains(':') {
         id_str
             .parse::<RecordId>()
-            .map_err(|_| IngresoError::Validation(format!("ID de ingreso inválido: {}", id_str)))
+            .map_err(|_| IngresoError::Validation(format!("ID de ingreso inválido: {id_str}")))
     } else {
         // Por defecto asume ingreso de contratista (el más común en sistema legacy).
         Ok(RecordId::from_table_key("ingreso_contratista", id_str))
@@ -52,7 +52,7 @@ fn parse_ingreso_id(id_str: &str) -> Result<RecordId, IngresoError> {
 /// * `IngresoError::Database` - Fallo de conexión o consulta.
 pub async fn get_all_ingresos_with_stats() -> Result<IngresoListResponse, IngresoError> {
     let results = db::find_all_fetched().await.map_err(|e| {
-        error!("Error al obtener todos los ingresos: {}", e);
+        error!("Error al obtener todos los ingresos: {e}");
         IngresoError::Database(e.to_string())
     })?;
 
@@ -64,20 +64,20 @@ pub async fn get_all_ingresos_with_stats() -> Result<IngresoListResponse, Ingres
             Ok(response) => responses.push(response),
             Err(e) => {
                 errores_conversion += 1;
-                warn!("Error convirtiendo ingreso (ignorado): {}", e);
+                warn!("Error convirtiendo ingreso (ignorado): {e}");
             }
         }
     }
 
     if errores_conversion > 0 {
-        warn!("Se omitieron {} ingresos corruptos o incompatibles", errores_conversion);
+        warn!("Se omitieron {errores_conversion} ingresos corruptos o incompatibles");
     }
 
     let total = responses.len();
     let adentro = responses.iter().filter(|i| i.fecha_hora_salida.is_none()).count();
     let salieron = total - adentro;
 
-    info!("Dashboard actualizado: Total={}, Adentro={}, Salieron={}", total, adentro, salieron);
+    info!("Dashboard actualizado: Total={total}, Adentro={adentro}, Salieron={salieron}");
 
     Ok(IngresoListResponse { ingresos: responses, total, adentro, salieron })
 }
@@ -93,7 +93,7 @@ pub async fn get_all_ingresos_with_stats() -> Result<IngresoListResponse, Ingres
 /// * `IngresoError::Database` - Fallo de consulta.
 pub async fn get_ingresos_abiertos() -> Result<Vec<IngresoResponse>, IngresoError> {
     let results = db::find_ingresos_abiertos_fetched().await.map_err(|e| {
-        error!("Error buscando ingresos abiertos: {}", e);
+        error!("Error buscando ingresos abiertos: {e}");
         IngresoError::Database(e.to_string())
     })?;
 
@@ -131,7 +131,7 @@ pub async fn get_ingreso_by_id(id_str: &str) -> Result<Option<IngresoResponse>, 
     };
 
     let response = IngresoResponse::from_contratista_fetched(ingreso).map_err(|e| {
-        IngresoError::Validation(format!("Error procesando datos de ingreso: {}", e))
+        IngresoError::Validation(format!("Error procesando datos de ingreso: {e}"))
     })?;
 
     Ok(Some(response))
@@ -147,19 +147,16 @@ pub async fn get_ingreso_by_id(id_str: &str) -> Result<Option<IngresoResponse>, 
 pub async fn get_ingreso_by_gafete(
     gafete_numero: &str,
 ) -> Result<Option<IngresoResponse>, IngresoError> {
-    let ingreso = match db::find_ingreso_by_gafete_fetched(gafete_numero).await.map_err(|e| {
-        error!("Error buscando ingreso por gafete {}: {}", gafete_numero, e);
+    let ingreso = if let Some(i) = db::find_ingreso_by_gafete_fetched(gafete_numero).await.map_err(|e| {
+        error!("Error buscando ingreso por gafete {gafete_numero}: {e}");
         IngresoError::Database(e.to_string())
-    })? {
-        Some(i) => i,
-        None => {
-            info!("No se encontró ingreso activo para el gafete {}", gafete_numero);
-            return Ok(None);
-        }
+    })? { i } else {
+        info!("No se encontró ingreso activo para el gafete {gafete_numero}");
+        return Ok(None);
     };
 
     let response = IngresoResponse::from_contratista_fetched(ingreso).map_err(|e| {
-        IngresoError::Validation(format!("Error procesando ingreso encontrado: {}", e))
+        IngresoError::Validation(format!("Error procesando ingreso encontrado: {e}"))
     })?;
 
     info!("Gafete {} localizado: Asignado a {}", gafete_numero, response.nombre_completo);
@@ -177,7 +174,7 @@ pub async fn get_salidas_en_rango(
 ) -> Result<Vec<IngresoResponse>, IngresoError> {
     let results =
         db::find_salidas_in_range_fetched(fecha_inicio, fecha_fin).await.map_err(|e| {
-            error!("Error reporte salidas {} - {}: {}", fecha_inicio, fecha_fin, e);
+            error!("Error reporte salidas {fecha_inicio} - {fecha_fin}: {e}");
             IngresoError::Database(e.to_string())
         })?;
 

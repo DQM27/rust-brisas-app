@@ -29,7 +29,7 @@ use surrealdb::RecordId;
 // ENUMS DE DOMINIO
 // ==========================================
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum TipoIngreso {
     Contratista,
@@ -38,19 +38,19 @@ pub enum TipoIngreso {
 }
 
 impl TipoIngreso {
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         match self {
-            TipoIngreso::Contratista => "contratista",
-            TipoIngreso::Visita => "visita",
-            TipoIngreso::Proveedor => "proveedor",
+            Self::Contratista => "contratista",
+            Self::Visita => "visita",
+            Self::Proveedor => "proveedor",
         }
     }
 
-    pub fn display(&self) -> &str {
+    pub const fn display(&self) -> &str {
         match self {
-            TipoIngreso::Contratista => "Contratista",
-            TipoIngreso::Visita => "Visita",
-            TipoIngreso::Proveedor => "Proveedor",
+            Self::Contratista => "Contratista",
+            Self::Visita => "Visita",
+            Self::Proveedor => "Proveedor",
         }
     }
 }
@@ -60,15 +60,15 @@ impl std::str::FromStr for TipoIngreso {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "contratista" => Ok(TipoIngreso::Contratista),
-            "visita" => Ok(TipoIngreso::Visita),
-            "proveedor" => Ok(TipoIngreso::Proveedor),
-            _ => Err(format!("Tipo de ingreso desconocido: {}", s)),
+            "contratista" => Ok(Self::Contratista),
+            "visita" => Ok(Self::Visita),
+            "proveedor" => Ok(Self::Proveedor),
+            _ => Err(format!("Tipo de ingreso desconocido: {s}")),
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum TipoAutorizacion {
     Praind,
@@ -76,10 +76,10 @@ pub enum TipoAutorizacion {
 }
 
 impl TipoAutorizacion {
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         match self {
-            TipoAutorizacion::Praind => "praind",
-            TipoAutorizacion::Correo => "correo",
+            Self::Praind => "praind",
+            Self::Correo => "correo",
         }
     }
 }
@@ -89,14 +89,14 @@ impl std::str::FromStr for TipoAutorizacion {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "praind" => Ok(TipoAutorizacion::Praind),
-            "correo" => Ok(TipoAutorizacion::Correo),
-            _ => Err(format!("Tipo de autorización desconocido: {}", s)),
+            "praind" => Ok(Self::Praind),
+            "correo" => Ok(Self::Correo),
+            _ => Err(format!("Tipo de autorización desconocido: {s}")),
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ModoIngreso {
     Caminando,
@@ -104,17 +104,17 @@ pub enum ModoIngreso {
 }
 
 impl ModoIngreso {
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         match self {
-            ModoIngreso::Caminando => "caminando",
-            ModoIngreso::Vehiculo => "vehiculo",
+            Self::Caminando => "caminando",
+            Self::Vehiculo => "vehiculo",
         }
     }
 
-    pub fn display(&self) -> &str {
+    pub const fn display(&self) -> &str {
         match self {
-            ModoIngreso::Caminando => "Caminando",
-            ModoIngreso::Vehiculo => "Vehículo",
+            Self::Caminando => "Caminando",
+            Self::Vehiculo => "Vehículo",
         }
     }
 }
@@ -124,9 +124,9 @@ impl std::str::FromStr for ModoIngreso {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "caminando" => Ok(ModoIngreso::Caminando),
-            "vehiculo" => Ok(ModoIngreso::Vehiculo),
-            _ => Err(format!("Modo de ingreso desconocido: {}", s)),
+            "caminando" => Ok(Self::Caminando),
+            "vehiculo" => Ok(Self::Vehiculo),
+            _ => Err(format!("Modo de ingreso desconocido: {s}")),
         }
     }
 }

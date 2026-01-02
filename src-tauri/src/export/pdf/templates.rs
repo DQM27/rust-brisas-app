@@ -98,10 +98,10 @@ fn generate_showybox_content(
     let table_content = generate_table(headers, rows, config)?;
 
     // ... (rest unchanged) ...
-    let footer_text = if !config.generated_by.is_empty() {
-        format!("Generado por: {} | Fecha: {}", config.generated_by, now)
+    let footer_text = if config.generated_by.is_empty() {
+        format!("Generado: {now}")
     } else {
-        format!("Generado: {}", now)
+        format!("Generado por: {} | Fecha: {}", config.generated_by, now)
     };
 
     // Tema claro con borde personalizable - centrado
@@ -203,12 +203,11 @@ fn generate_table(
     // Usamos columns con fracciones para evitar desbordamiento
     let mut markup = format!(
         "#table(\n\
-    columns: ({}),\n\
+    columns: ({columns_spec}),\n\
     inset: 4pt,\n\
     stroke: 0.5pt + rgb(\"#d0d7de\"),\n\
     fill: (x, y) => if y == 0 {{ rgb(\"#f6f8fa\") }} else if calc.odd(y) {{ white }} else {{ rgb(\"#f6f8fa\") }},\n\
-    align: (x, y) => center + horizon,\n",
-        columns_spec
+    align: (x, y) => center + horizon,\n"
     );
 
     // Headers con hyphenate: true (Usuario pide explícitamente que todo se pueda dividir)
@@ -216,15 +215,14 @@ fn generate_table(
         let short_header = shorten_header(header);
         let escaped_header = escape_typst_string(&short_header);
         markup.push_str(&format!(
-            "    [#set par(justify: false); *#text(fill: rgb(\"#1f2328\"), size: {}, hyphenate: true)[{}]*],\n",
-            header_size, escaped_header
+            "    [#set par(justify: false); *#text(fill: rgb(\"#1f2328\"), size: {header_size}, hyphenate: true)[{escaped_header}]*],\n"
         ));
     }
 
     // Rows con word-break ON
     for row in rows {
         for header in headers {
-            let value = row.get(header).map(|v| v.to_string()).unwrap_or_else(|| "-".to_string());
+            let value = row.get(header).map_or_else(|| "-".to_string(), std::string::ToString::to_string);
             let lower_header = header.to_lowercase();
 
             // Para identificadores largos sin espacios, forzamos quiebre
@@ -242,8 +240,7 @@ fn generate_table(
 
             let escaped_value = escape_typst_string(&processed_value);
             markup.push_str(&format!(
-                "    [#set par(justify: false); #text(fill: rgb(\"#1f2328\"), size: {}, hyphenate: true)[{}]],\n",
-                body_size, escaped_value
+                "    [#set par(justify: false); #text(fill: rgb(\"#1f2328\"), size: {body_size}, hyphenate: true)[{escaped_value}]],\n"
             ));
         }
     }
@@ -327,8 +324,7 @@ pub fn validate_markup(markup: &str) -> ExportResult<()> {
 
     if open_brackets != close_brackets {
         return Err(ExportError::TemplateGenerationError(format!(
-            "Brackets desbalanceados: {} abiertos, {} cerrados",
-            open_brackets, close_brackets
+            "Brackets desbalanceados: {open_brackets} abiertos, {close_brackets} cerrados"
         )));
     }
 

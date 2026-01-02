@@ -1,7 +1,7 @@
-//! # Servicio: Infraestructura SurrealDB (Modo Embebido)
+//! # Servicio: Infraestructura `SurrealDB` (Modo Embebido)
 //!
 //! Este servicio es el núcleo de persistencia de Brisas APP. Gestiona el ciclo
-//! de vida de la conexión a SurrealDB, la inicialización del esquema y provee
+//! de vida de la conexión a `SurrealDB`, la inicialización del esquema y provee
 //! acceso thread-safe al cliente mediante un patrón Singleton.
 //!
 //! ## Características
@@ -113,7 +113,7 @@ impl SurrealDbConfig {
 // SERVICIO PRINCIPAL
 // ==========================================
 
-/// Servicio principal para interactuar con SurrealDB.
+/// Servicio principal para interactuar con `SurrealDB`.
 pub struct SurrealDbService {
     client: Arc<RwLock<Option<Surreal<Db>>>>,
     config: SurrealDbConfig,
@@ -124,7 +124,7 @@ impl SurrealDbService {
         Self { client: Arc::new(RwLock::new(None)), config }
     }
 
-    /// Establece la conexión con el motor SurrealKv y selecciona el entorno de trabajo.
+    /// Establece la conexión con el motor `SurrealKv` y selecciona el entorno de trabajo.
     pub async fn connect(&self) -> Result<(), SurrealDbError> {
         info!("🔌 Conectando a SurrealDB (Modo: Embebido)...");
         debug!("📂 Ruta de datos: {:?}", self.config.data_path);
@@ -154,7 +154,7 @@ impl SurrealDbService {
         let client = self.get_client().await?;
 
         client.query(include_str!("../db/surrealdb_schema.surql")).await.map_err(|e| {
-            error!("❌ Error al aplicar el esquema: {}", e);
+            error!("❌ Error al aplicar el esquema: {e}");
             SurrealDbError::Query(e.to_string())
         })?;
 

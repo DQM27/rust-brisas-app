@@ -1,6 +1,6 @@
 /// Capa de Aceleración: Gestión de Cache In-Memory.
 ///
-/// Este servicio reduce la latencia y la carga sobre SurrealDB al mantener en
+/// Este servicio reduce la latencia y la carga sobre `SurrealDB` al mantener en
 /// memoria RAM los datos de acceso más frecuente (Contratistas y Proveedores).
 ///
 /// Utiliza una política de expiración (TTL) para garantizar que la información
@@ -24,7 +24,7 @@ use crate::models::proveedor::ProveedorFetched;
 pub struct CacheEntry<T: Clone> {
     /// Los datos reales almacenados.
     pub data: T,
-    /// Timestamp (segundos desde UNIX_EPOCH) en el que esta entrada deja de ser válida.
+    /// Timestamp (segundos desde `UNIX_EPOCH`) en el que esta entrada deja de ser válida.
     pub expires_at: u64,
 }
 
@@ -70,7 +70,7 @@ pub static PROVEEDOR_CACHE: Lazy<Arc<RwLock<HashMap<String, CacheEntry<Proveedor
 /// Recupera un valor del cache si existe y es válido.
 ///
 /// # Argumentos
-/// * `cache` - El mapa de cache protegido por RwLock.
+/// * `cache` - El mapa de cache protegido por `RwLock`.
 /// * `key` - La clave única del registro.
 ///
 /// # Retorno
@@ -91,7 +91,7 @@ pub async fn get_cached<T: Clone>(
 /// Inserta o actualiza un valor en el cache con un TTL específico.
 ///
 /// # Argumentos
-/// * `cache` - El mapa de cache protegido por RwLock.
+/// * `cache` - El mapa de cache protegido por `RwLock`.
 /// * `key` - Clave única para el registro.
 /// * `data` - Los datos a almacenar.
 /// * `ttl_secs` - Tiempo de vida en segundos.

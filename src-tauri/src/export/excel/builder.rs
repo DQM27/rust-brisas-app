@@ -37,7 +37,7 @@ pub fn generate_excel(
     // 5. Guardar archivo
     workbook
         .save(&output_path)
-        .map_err(|e| ExportError::XlsxWriteError(format!("Error guardando Excel: {}", e)))?;
+        .map_err(|e| ExportError::XlsxWriteError(format!("Error guardando Excel: {e}")))?;
 
     // 6. Retornar path como string
     Ok(output_path
@@ -64,7 +64,7 @@ fn write_excel_content(
     for (col_idx, header) in headers.iter().enumerate() {
         worksheet
             .write_string_with_format(0, col_idx as u16, header, &header_format)
-            .map_err(|e| ExportError::XlsxWriteError(format!("Error escribiendo header: {}", e)))?;
+            .map_err(|e| ExportError::XlsxWriteError(format!("Error escribiendo header: {e}")))?;
     }
 
     // 3. Escribir rows (empezando en fila 1)
@@ -116,7 +116,7 @@ fn write_excel_content(
     // 5. Freeze headers (congelar primera fila)
     worksheet
         .set_freeze_panes(1, 0)
-        .map_err(|e| ExportError::XlsxFormatError(format!("Error congelando headers: {}", e)))?;
+        .map_err(|e| ExportError::XlsxFormatError(format!("Error congelando headers: {e}")))?;
 
     Ok(())
 }
@@ -168,7 +168,7 @@ fn autofit_columns(
         let width = max_width.clamp(10.0, 50.0);
 
         worksheet.set_column_width(col_idx as u16, width).map_err(|e| {
-            ExportError::XlsxFormatError(format!("Error ajustando columna {}: {}", col_idx, e))
+            ExportError::XlsxFormatError(format!("Error ajustando columna {col_idx}: {e}"))
         })?;
     }
 
@@ -200,7 +200,7 @@ fn calculate_column_width(header: &str, rows: &[HashMap<String, ExportValue>]) -
 // PATH MANAGEMENT
 // ==========================================
 
-/// Obtiene el path de salida (prioritiza target_path del usuario, luego Downloads)
+/// Obtiene el path de salida (prioritiza `target_path` del usuario, luego Downloads)
 fn get_output_path(filename: &str, target_path: Option<String>) -> ExportResult<PathBuf> {
     // ✅ Prioridad 1: Usar target_path si fue proporcionado por el usuario
     if let Some(path) = target_path {

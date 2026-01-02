@@ -96,7 +96,7 @@ impl Default for AppConfig {
                     "./data/brisas.db".to_string(),
                     "C:/ProgramData/Brisas/brisas.db".to_string(),
                 ],
-                default_path: "".to_string(), // Se calculará en runtime
+                default_path: String::new(), // Se calculará en runtime
             },
             app: AppInfo { version: env!("CARGO_PKG_VERSION").to_string() },
             audio: AudioConfig::default(),
@@ -105,6 +105,6 @@ impl Default for AppConfig {
     }
 }
 
-/// Type alias para AppConfig mutable compartido
+/// Type alias para `AppConfig` mutable compartido
 /// Permite actualizar la configuración en runtime desde cualquier comando
 pub type AppConfigState = std::sync::Arc<std::sync::RwLock<AppConfig>>;

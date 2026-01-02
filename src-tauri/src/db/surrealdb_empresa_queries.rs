@@ -81,5 +81,5 @@ pub async fn count_contratistas_by_empresa(empresa_id: &RecordId) -> Result<usiz
     }
 
     let count: Option<CountResult> = result.take(0)?;
-    Ok(count.map(|c| c.count).unwrap_or(0))
+    Ok(count.map_or(0, |c| c.count))
 }

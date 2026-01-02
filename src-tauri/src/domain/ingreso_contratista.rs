@@ -55,12 +55,12 @@ pub fn calcular_tiempo_transcurrido(
 }
 
 /// Calcula el margen de tiempo restante antes de incurrir en infracción.
-pub fn calcular_minutos_restantes(minutos_transcurridos: i64) -> i64 {
+pub const fn calcular_minutos_restantes(minutos_transcurridos: i64) -> i64 {
     TIEMPO_MAXIMO_MINUTOS - minutos_transcurridos
 }
 
 /// Determina la categoría de permanencia basada en el tiempo transcurrido.
-pub fn evaluar_estado_permanencia(minutos_transcurridos: i64) -> EstadoPermanencia {
+pub const fn evaluar_estado_permanencia(minutos_transcurridos: i64) -> EstadoPermanencia {
     if minutos_transcurridos >= TIEMPO_MAXIMO_MINUTOS {
         EstadoPermanencia::TiempoExcedido
     } else if minutos_transcurridos >= TIEMPO_ALERTA_TEMPRANA_MINUTOS {
@@ -80,7 +80,7 @@ pub fn construir_alerta_tiempo(minutos_transcurridos: i64) -> AlertaTiempo {
             Some(format!("TIEMPO EXCEDIDO por {} min", minutos_restantes.abs()))
         }
         EstadoPermanencia::AlertaTemprana => {
-            Some(format!("Alerta: Quedan {} min", minutos_restantes))
+            Some(format!("Alerta: Quedan {minutos_restantes} min"))
         }
         EstadoPermanencia::Normal => None,
     };
@@ -117,7 +117,7 @@ pub fn praind_por_vencer(fecha_vencimiento_str: &str) -> Result<bool, IngresoCon
     let dias_restantes = (fecha_venc - hoy).num_days();
 
     // Está por vencer si: 0 <= días_restantes <= 30
-    Ok(dias_restantes >= 0 && dias_restantes <= DIAS_ALERTA_PRAIND)
+    Ok((0..=DIAS_ALERTA_PRAIND).contains(&dias_restantes))
 }
 
 /// Calcula los días restantes hasta el vencimiento del PRAIND
@@ -204,7 +204,7 @@ pub fn evaluar_ingreso_excepcional(
         motivo_original_bloqueo: motivo_bloqueo_original.to_string(),
         autorizado_por: autorizado_por_id.to_string(),
         motivo_excepcional: motivo.clone(),
-        notas: notas.map(|s| s.to_string()),
+        notas: notas.map(std::string::ToString::to_string),
         valido_hasta: fin_del_dia.to_string(),
     }
 }

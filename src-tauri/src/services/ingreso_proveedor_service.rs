@@ -20,11 +20,11 @@ use surrealdb::RecordId;
 // HELPERS & VALIDACIONES PRIVADAS
 // --------------------------------------------------------------------------
 
-/// Helper para parsear IDs de SurrealDB (Table:Key o solo Key).
+/// Helper para parsear IDs de `SurrealDB` (Table:Key o solo Key).
 fn parse_id(id: &str, table: &str) -> Result<RecordId, IngresoProveedorError> {
     if id.contains(':') {
         id.parse::<RecordId>()
-            .map_err(|_| IngresoProveedorError::Validation(format!("ID de {} inválido", table)))
+            .map_err(|_| IngresoProveedorError::Validation(format!("ID de {table} inválido")))
     } else {
         Ok(RecordId::from_table_key(table, id))
     }
@@ -56,7 +56,7 @@ async fn validar_lista_negra(cedula: String) -> Result<(), IngresoProveedorError
     })?;
 
     if check.is_blocked {
-        warn!("Intento de ingreso bloqueado por Lista Negra: {}", cedula);
+        warn!("Intento de ingreso bloqueado por Lista Negra: {cedula}");
         return Err(IngresoProveedorError::Validation(
             "ACCESO DENEGADO: El proveedor se encuentra en Lista Negra".to_string(),
         ));
@@ -71,10 +71,10 @@ async fn validar_ingreso_unico(proveedor_id: &RecordId) -> Result<(), IngresoPro
         .map_err(|e| IngresoProveedorError::Database(e.to_string()))?;
 
     if let Some(ingreso) = abierto {
-        warn!("Intento de ingreso duplicado para proveedor: {}", proveedor_id);
+        warn!("Intento de ingreso duplicado para proveedor: {proveedor_id}");
         return Err(IngresoProveedorError::Validation(format!(
             "Ya existe un registro de ingreso abierto (ID: {}) para esta persona",
-            ingreso.id.to_string()
+            ingreso.id
         )));
     }
     Ok(())
@@ -135,7 +135,7 @@ pub async fn registrar_ingreso(
     };
 
     let nuevo_ingreso = db::insert(dto).await.map_err(|e| {
-        error!("Error DB al insertar ingreso proveedor: {}", e);
+        error!("Error DB al insertar ingreso proveedor: {e}");
         IngresoProveedorError::Database(e.to_string())
     })?;
 
@@ -143,7 +143,7 @@ pub async fn registrar_ingreso(
     if let Some(g) = input.gafete_numero {
         if g != 0 {
             if let Err(e) = gafete_service::marcar_en_uso(g, "proveedor").await {
-                error!("Error crítico: Gafete {} no se pudo marcar en uso: {:?}", g, e);
+                error!("Error crítico: Gafete {g} no se pudo marcar en uso: {e:?}");
                 // No fallamos el ingreso, pero logueamos el error de consistencia.
             }
         }
@@ -185,7 +185,7 @@ pub async fn registrar_salida(
 
     let ingreso_actualizado =
         db::update_salida(&ingreso_id, &usuario_id, observaciones).await.map_err(|e| {
-            error!("Error DB al registrar salida de proveedor: {}", e);
+            error!("Error DB al registrar salida de proveedor: {e}");
             IngresoProveedorError::Database(e.to_string())
         })?;
 
@@ -194,15 +194,15 @@ pub async fn registrar_salida(
         if let Some(ref g) = ingreso_actualizado.gafete_numero {
             if *g != 0 {
                 if let Err(e) = gafete_service::liberar_gafete(*g, "proveedor").await {
-                    error!("Error no fatal: No se pudo liberar gafete {} en salida: {:?}", g, e);
+                    error!("Error no fatal: No se pudo liberar gafete {g} en salida: {e:?}");
                 } else {
-                    info!("Gafete {} liberado correctamente.", g);
+                    info!("Gafete {g} liberado correctamente.");
                 }
             }
         }
     } else if let Some(g) = ingreso_actualizado.gafete_numero {
         if g != 0 {
-            warn!("ALERTA: Proveedor salió SIN devolver gafete {}", g);
+            warn!("ALERTA: Proveedor salió SIN devolver gafete {g}");
         }
     }
 
@@ -253,7 +253,7 @@ pub async fn validar_ingreso(
     Ok(serde_json::json!({
         "puedeIngresar": puede_ingresar,
         "proveedor": p,
-        "mensajeBloqueo": if !puede_ingresar { "Ya tiene un ingreso activo" } else { "" }
+        "mensajeBloqueo": if puede_ingresar { "" } else { "Ya tiene un ingreso activo" }
     }))
 }
 

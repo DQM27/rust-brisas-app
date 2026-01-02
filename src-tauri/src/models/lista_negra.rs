@@ -13,18 +13,20 @@ use surrealdb::RecordId;
 /// Nivel de severidad del bloqueo, indica la gravedad del incidente.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "UPPERCASE")]
+#[derive(Default)]
 pub enum NivelSeveridad {
     Alto,
     Medio,
+    #[default]
     Bajo,
 }
 
 impl fmt::Display for NivelSeveridad {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            NivelSeveridad::Alto => write!(f, "ALTO"),
-            NivelSeveridad::Medio => write!(f, "MEDIO"),
-            NivelSeveridad::Bajo => write!(f, "BAJO"),
+            Self::Alto => write!(f, "ALTO"),
+            Self::Medio => write!(f, "MEDIO"),
+            Self::Bajo => write!(f, "BAJO"),
         }
     }
 }
@@ -33,19 +35,14 @@ impl std::str::FromStr for NivelSeveridad {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_uppercase().as_str() {
-            "ALTO" => Ok(NivelSeveridad::Alto),
-            "MEDIO" => Ok(NivelSeveridad::Medio),
-            "BAJO" => Ok(NivelSeveridad::Bajo),
-            _ => Err(format!("Nivel de severidad inválido: {}", s)),
+            "ALTO" => Ok(Self::Alto),
+            "MEDIO" => Ok(Self::Medio),
+            "BAJO" => Ok(Self::Bajo),
+            _ => Err(format!("Nivel de severidad inválido: {s}")),
         }
     }
 }
 
-impl Default for NivelSeveridad {
-    fn default() -> Self {
-        NivelSeveridad::Bajo
-    }
-}
 
 // --------------------------------------------------------------------------
 // MODELO DE DOMINIO

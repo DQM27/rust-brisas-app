@@ -10,7 +10,7 @@
 //! - Generación de permisos granulares
 //!
 //! ## Dependencias
-//! - `domain::role` - Validaciones y constantes (GOD_ID, etc.)
+//! - `domain::role` - Validaciones y constantes (`GOD_ID`, etc.)
 //! - `db::surrealdb_role_queries` - Persistencia
 //! - `surrealdb_authorization` - Permisos efectivos
 
@@ -88,13 +88,13 @@ pub async fn get_all_roles() -> Result<RoleListResponse, RoleError> {
 
 /// Obtiene un rol por su ID.
 pub async fn get_role_by_id(id_str: &str) -> Result<RoleResponse, RoleError> {
-    debug!("🔍 Buscando rol: {}", id_str);
+    debug!("🔍 Buscando rol: {id_str}");
     let role_id = parse_role_id(id_str);
     let role = db::find_by_id(&role_id)
         .await
         .map_err(|e| RoleError::Database(e.to_string()))?
         .ok_or_else(|| {
-            warn!("⚠️ Rol no encontrado: {}", id_str);
+            warn!("⚠️ Rol no encontrado: {id_str}");
             RoleError::NotFound
         })?;
 
@@ -134,7 +134,7 @@ pub async fn create_role(input: CreateRoleInput) -> Result<RoleResponse, RoleErr
 
 /// Actualiza los atributos o permisos de un rol existente.
 ///
-/// Se aplica una protección estricta: los roles marcados como 'is_system'
+/// Se aplica una protección estricta: los roles marcados como '`is_system`'
 /// (ej. Root, Admin, Guardia) tienen una estructura crítica y no pueden
 /// ser modificados por usuarios convencionales, solo por un usuario con 'God' authority.
 pub async fn update_role(
@@ -180,7 +180,7 @@ pub async fn update_role(
 
 /// Elimina un rol no protegido del sistema.
 pub async fn delete_role(id_str: &str) -> Result<(), RoleError> {
-    debug!("🗑️ Eliminando rol: {}", id_str);
+    debug!("🗑️ Eliminando rol: {id_str}");
     let role_id = parse_role_id(id_str);
     let role = db::find_by_id(&role_id)
         .await
@@ -188,12 +188,12 @@ pub async fn delete_role(id_str: &str) -> Result<(), RoleError> {
         .ok_or(RoleError::NotFound)?;
 
     if role.is_system {
-        warn!("⚠️ Intento de eliminar rol de sistema: {}", id_str);
+        warn!("⚠️ Intento de eliminar rol de sistema: {id_str}");
         return Err(RoleError::CannotDeleteSystemRole);
     }
 
     db::delete(&role_id).await.map_err(|e| RoleError::Database(e.to_string()))?;
-    warn!("🗑️ Rol eliminado: {}", id_str);
+    warn!("🗑️ Rol eliminado: {id_str}");
 
     Ok(())
 }

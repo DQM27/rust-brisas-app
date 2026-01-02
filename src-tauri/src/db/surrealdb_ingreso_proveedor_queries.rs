@@ -17,7 +17,7 @@ pub async fn insert(
     let db = get_db().await?;
 
     let created: Option<IngresoProveedor> =
-        db.query(format!("CREATE {} CONTENT $dto", TABLE)).bind(("dto", dto)).await?.take(0)?;
+        db.query(format!("CREATE {TABLE} CONTENT $dto")).bind(("dto", dto)).await?.take(0)?;
 
     let ingreso = created.ok_or(SurrealDbError::TransactionError(
         "Error al insertar ingreso de proveedor".to_string(),
@@ -44,8 +44,7 @@ pub async fn find_ingreso_abierto_by_proveedor(
 
     let mut result = db
         .query(format!(
-            "SELECT * FROM {} WHERE proveedor = $proveedor AND fecha_hora_salida IS NONE LIMIT 1 FETCH usuario_ingreso, usuario_salida, proveedor, proveedor.empresa",
-            TABLE
+            "SELECT * FROM {TABLE} WHERE proveedor = $proveedor AND fecha_hora_salida IS NONE LIMIT 1 FETCH usuario_ingreso, usuario_salida, proveedor, proveedor.empresa"
         ))
         .bind(("proveedor", proveedor_id.clone()))
         .await?;

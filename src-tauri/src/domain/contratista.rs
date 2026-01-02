@@ -71,7 +71,7 @@ pub fn validar_apellido(apellido: &str) -> Result<(), ContratistaError> {
 
 /// Valida que el ID de la empresa vinculada sea válido.
 ///
-/// El ID debe ser un identificador no vacío en formato SurrealDB.
+/// El ID debe ser un identificador no vacío en formato `SurrealDB`.
 ///
 /// # Argumentos
 /// * `empresa_id` - Identificador de empresa (ej: "empresa:abc123")
@@ -189,7 +189,7 @@ pub fn normalizar_cedula(cedula: &str) -> String {
 pub fn validar_estado(estado: &str) -> Result<(), ContratistaError> {
     estado
         .parse::<EstadoContratista>()
-        .map_err(|_| ContratistaError::Validation(format!("Estado inválido: {}", estado)))?;
+        .map_err(|_| ContratistaError::Validation(format!("Estado inválido: {estado}")))?;
     Ok(())
 }
 
@@ -232,7 +232,7 @@ pub fn calcular_estado_praind(fecha_vencimiento_str: &str) -> EstadoPraind {
             let dias_hasta_vencimiento = (venc_date - hoy_date).num_days();
             let vencido = venc_date < hoy_date;
             let requiere_atencion =
-                dias_hasta_vencimiento <= DIAS_ALERTA_VENCIMIENTO && dias_hasta_vencimiento >= 0;
+                (0..=DIAS_ALERTA_VENCIMIENTO).contains(&dias_hasta_vencimiento);
 
             EstadoPraind { dias_hasta_vencimiento, vencido, requiere_atencion }
         }

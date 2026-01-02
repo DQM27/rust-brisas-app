@@ -22,8 +22,8 @@ use tauri::{command, State};
 // HELPERS: Construcción del Servicio
 // --------------------------------------------------------------------------
 
-/// Crea una instancia del servicio con implementaciones concretas de SurrealDB.
-fn create_service(
+/// Crea una instancia del servicio con implementaciones concretas de `SurrealDB`.
+const fn create_service(
     search_service: Option<Arc<SearchService>>,
 ) -> ContratistaService<
     SurrealContratistaRepository,

@@ -24,8 +24,8 @@ macro_rules! require_session {
 #[macro_export]
 macro_rules! require_perm {
     ($state:expr, $perm:expr) => {{
-        use crate::services::surrealdb_authorization;
-        use crate::models::role::{Module, Action};
+        use $crate::services::surrealdb_authorization;
+        use $crate::models::role::{Module, Action};
 
         // Parsear permiso
         let parts: Vec<&str> = $perm.split(':').collect();

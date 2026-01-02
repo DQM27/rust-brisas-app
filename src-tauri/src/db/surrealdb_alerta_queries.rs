@@ -14,7 +14,7 @@ pub async fn insert(
     // Owned conversions are handled by the DTO structure itself mostly, just ensuring binding types
     let mut result = db
         .query(
-            r#"
+            r"
             CREATE type::thing('alerta_gafete', $id) CONTENT {
                 id: $id,
                 persona_id: $persona_id,
@@ -31,7 +31,7 @@ pub async fn insert(
                 created_at: time::now(),
                 updated_at: time::now()
             }
-        "#,
+        ",
         )
         .bind(("id", input.id))
         .bind(("persona_id", input.persona_id))
@@ -96,7 +96,7 @@ pub async fn resolver(
 
     let mut result = db
         .query(
-            r#"
+            r"
             UPDATE type::thing('alerta_gafete', $id) MERGE {
                 resuelto: true,
                 fecha_resolucion: time::now(),
@@ -104,7 +104,7 @@ pub async fn resolver(
                 resuelto_por: $usuario_id,
                 updated_at: time::now()
             }
-        "#,
+        ",
         )
         .bind(("id", id_only))
         .bind(("notas", input.notas))

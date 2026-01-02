@@ -67,7 +67,7 @@ pub fn ejecutar_validacion_motor(ctx: &MotorContexto) -> ValidationResult {
                 return ValidationResult {
                     status: ValidationStatus::Warning,
                     reason: ValidationReason::GafeteAlert,
-                    message: format!("Alerta de Gafete detectada: {}", alerta),
+                    message: format!("Alerta de Gafete detectada: {alerta}"),
                 };
             }
 

@@ -1,7 +1,7 @@
-//! # Consultas: Proveedor (SurrealDB)
+//! # Consultas: Proveedor (`SurrealDB`)
 //!
 //! Este módulo implementa el acceso a datos para la entidad `proveedor`.
-//! Utiliza el SDK nativo de SurrealDB y aprovecha la capacidad de `FETCH`
+//! Utiliza el SDK nativo de `SurrealDB` y aprovecha la capacidad de `FETCH`
 //! para la hidratación de relaciones con `empresa`.
 
 use crate::models::proveedor::{
@@ -42,14 +42,14 @@ pub async fn find_by_id(id: &RecordId) -> Result<Option<Proveedor>, SurrealDbErr
 
 pub async fn find_by_id_fetched(id: &RecordId) -> Result<Option<ProveedorFetched>, SurrealDbError> {
     let db = get_db().await?;
-    debug!("🔍 Obteniendo proveedor por ID (FETCH): {}", id);
+    debug!("🔍 Obteniendo proveedor por ID (FETCH): {id}");
     let mut result = db.query("SELECT * FROM $id FETCH empresa").bind(("id", id.clone())).await?;
     Ok(result.take(0)?)
 }
 
 pub async fn find_by_cedula(cedula: &str) -> Result<Option<ProveedorFetched>, SurrealDbError> {
     let db = get_db().await?;
-    debug!("🔍 Buscando proveedor por cédula: {}", cedula);
+    debug!("🔍 Buscando proveedor por cédula: {cedula}");
     let mut result = db
         .query("SELECT * FROM proveedor WHERE cedula = $cedula AND deleted_at IS NONE LIMIT 1 FETCH empresa")
         .bind(("cedula", cedula.to_string()))
@@ -75,11 +75,11 @@ pub async fn find_all_fetched() -> Result<Vec<ProveedorFetched>, SurrealDbError>
 pub async fn search(query: &str, limit: usize) -> Result<Vec<ProveedorFetched>, SurrealDbError> {
     let db = get_db().await?;
     let query_upper = query.to_uppercase();
-    debug!("🔎 Ejecutando búsqueda de proveedores: '{}' (Limit: {})", query, limit);
+    debug!("🔎 Ejecutando búsqueda de proveedores: '{query}' (Limit: {limit})");
 
     let mut result = db
         .query(
-            r#"
+            r"
             SELECT * FROM proveedor 
             WHERE 
                 (string::uppercase(nombre) CONTAINS $q OR 
@@ -89,7 +89,7 @@ pub async fn search(query: &str, limit: usize) -> Result<Vec<ProveedorFetched>, 
             ORDER BY created_at DESC 
             LIMIT $limit
             FETCH empresa
-        "#,
+        ",
         )
         .bind(("q", query_upper))
         .bind(("limit", limit))
@@ -105,7 +105,7 @@ pub async fn update(
     let db = get_db().await?;
 
     // 1. Update using native SDK (consistent with User module)
-    debug!("📝 Actualizando datos de proveedor: {}", id);
+    debug!("📝 Actualizando datos de proveedor: {id}");
     let _: Option<Proveedor> = db.update(id.clone()).merge(dto).await?;
 
     // 2. Fetch with empresa populated in a separate atomic query
@@ -113,7 +113,7 @@ pub async fn update(
 
     let fetched: Option<ProveedorFetched> = result.take(0)?;
     fetched.ok_or_else(|| {
-        warn!("⚠️ Falló la recuperación del proveedor {} tras la actualización (FETCH)", id);
+        warn!("⚠️ Falló la recuperación del proveedor {id} tras la actualización (FETCH)");
         SurrealDbError::Query("Proveedor no encontrado o error al actualizar".to_string())
     })
 }
@@ -121,7 +121,7 @@ pub async fn update(
 pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
     // Soft delete
     let db = get_db().await?;
-    debug!("🗑️ Archivando proveedor (Soft Delete): {}", id);
+    debug!("🗑️ Archivando proveedor (Soft Delete): {id}");
     let _: Option<Proveedor> = db
         .query("UPDATE $id SET deleted_at = time::now()")
         .bind(("id", id.clone()))
@@ -139,7 +139,7 @@ pub async fn restore(id: &RecordId) -> Result<ProveedorFetched, SurrealDbError> 
     let mut result = db.query("SELECT * FROM $id FETCH empresa").bind(("id", id.clone())).await?;
     let fetched: Option<ProveedorFetched> = result.take(0)?;
     fetched.ok_or_else(|| {
-        warn!("⚠️ Error al recuperar el proveedor {} tras la restauración", id);
+        warn!("⚠️ Error al recuperar el proveedor {id} tras la restauración");
         SurrealDbError::Query("Error restaurando proveedor".to_string())
     })
 }
@@ -162,5 +162,5 @@ pub async fn get_empresa_nombre(empresa_id: &RecordId) -> Result<String, Surreal
     }
 
     let res: Option<NombreResult> = result.take(0)?;
-    Ok(res.map(|r| r.nombre).unwrap_or_else(|| "Empresa desconocida".to_string()))
+    Ok(res.map_or_else(|| "Empresa desconocida".to_string(), |r| r.nombre))
 }

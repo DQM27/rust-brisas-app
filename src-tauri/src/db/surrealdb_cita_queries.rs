@@ -15,11 +15,11 @@ pub async fn find_all_fetched() -> Result<Vec<CitaFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
         .query(
-            r#"
+            r"
             SELECT * FROM cita 
             ORDER BY fecha_inicio DESC
             FETCH visitante_id, usuario_id
-        "#,
+        ",
         )
         .await?;
     Ok(result.take(0)?)
@@ -29,10 +29,10 @@ pub async fn find_by_id_fetched(id: &RecordId) -> Result<Option<CitaFetched>, Su
     let db = get_db().await?;
     let mut result = db
         .query(
-            r#"
+            r"
             SELECT * FROM $id
             FETCH visitante_id, usuario_id
-        "#,
+        ",
         )
         .bind(("id", id.clone()))
         .await?;
@@ -47,14 +47,14 @@ pub async fn find_activas_by_fecha_fetched(
 
     let mut result = db
         .query(
-            r#"
+            r"
             SELECT * FROM cita 
             WHERE fecha_inicio >= $f_inicio 
             AND fecha_inicio <= $f_fin 
             AND activa = true
             ORDER BY fecha_inicio ASC
             FETCH visitante_id, usuario_id
-        "#,
+        ",
         )
         .bind(("f_inicio", fecha_inicio.to_string()))
         .bind(("f_fin", fecha_fin.to_string()))
@@ -67,12 +67,12 @@ pub async fn find_pendientes_fetched() -> Result<Vec<CitaFetched>, SurrealDbErro
     let db = get_db().await?;
     let mut result = db
         .query(
-            r#"
+            r"
             SELECT * FROM cita 
             WHERE activa = true AND estado = $estado
             ORDER BY fecha_inicio ASC
             FETCH visitante_id, usuario_id
-        "#,
+        ",
         )
         .bind(("estado", EstadoCita::Programada))
         .await?;
@@ -108,7 +108,7 @@ pub async fn insert(dto: CitaCreateDTO) -> Result<Cita, SurrealDbError> {
 
     let mut result = db
         .query(
-            r#"
+            r"
             CREATE cita CONTENT {
                 visitante_id: $visitante_id,
                 usuario_id: $usuario_id,
@@ -124,7 +124,7 @@ pub async fn insert(dto: CitaCreateDTO) -> Result<Cita, SurrealDbError> {
                 created_at: time::now(),
                 updated_at: time::now()
             }
-        "#,
+        ",
         )
         .bind(("visitante_id", dto.visitante_id))
         .bind(("usuario_id", dto.usuario_id))
@@ -145,13 +145,13 @@ pub async fn cancel(id: &RecordId) -> Result<Option<Cita>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
         .query(
-            r#"
+            r"
             UPDATE $id MERGE {
                 activa: false,
                 estado: $estado,
                 updated_at: time::now()
             }
-        "#,
+        ",
         )
         .bind(("id", id.clone()))
         .bind(("estado", EstadoCita::Cancelada))
@@ -164,14 +164,14 @@ pub async fn completar(id: &RecordId) -> Result<Option<CitaFetched>, SurrealDbEr
     let db = get_db().await?;
     let mut result = db
         .query(
-            r#"
+            r"
             UPDATE $id MERGE {
                 activa: false,
                 estado: $estado,
                 updated_at: time::now()
             };
             SELECT * FROM $id FETCH visitante_id, usuario_id
-        "#,
+        ",
         )
         .bind(("id", id.clone()))
         .bind(("estado", EstadoCita::Finalizada))

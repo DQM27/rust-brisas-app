@@ -69,13 +69,13 @@ impl IngresoResponse {
 
         let mut nombre_completo = nombre.clone();
         if let Some(ref s) = segundo_nombre {
-            nombre_completo.push_str(" ");
+            nombre_completo.push(' ');
             nombre_completo.push_str(s);
         }
-        nombre_completo.push_str(" ");
+        nombre_completo.push(' ');
         nombre_completo.push_str(&apellido);
         if let Some(ref s) = segundo_apellido {
-            nombre_completo.push_str(" ");
+            nombre_completo.push(' ');
             nombre_completo.push_str(s);
         }
 
@@ -105,7 +105,7 @@ impl IngresoResponse {
             tiempo_permanencia_texto: None,
             usuario_ingreso_id: i.usuario_ingreso.to_string(),
             usuario_ingreso_nombre: String::new(),
-            usuario_salida_id: i.usuario_salida.as_ref().map(|t| t.to_string()),
+            usuario_salida_id: i.usuario_salida.as_ref().map(std::string::ToString::to_string),
             usuario_salida_nombre: None,
             praind_vigente_al_ingreso: None,
             estado_contratista_al_ingreso: None,
@@ -128,13 +128,13 @@ impl IngresoResponse {
 
         let mut nombre_completo = nombre.clone();
         if let Some(ref s) = segundo_nombre {
-            nombre_completo.push_str(" ");
+            nombre_completo.push(' ');
             nombre_completo.push_str(s);
         }
-        nombre_completo.push_str(" ");
+        nombre_completo.push(' ');
         nombre_completo.push_str(&apellido);
         if let Some(ref s) = segundo_apellido {
-            nombre_completo.push_str(" ");
+            nombre_completo.push(' ');
             nombre_completo.push_str(s);
         }
 
@@ -193,13 +193,13 @@ impl IngresoResponse {
 
         let mut nombre_completo = nombre.clone();
         if let Some(ref s) = segundo_nombre {
-            nombre_completo.push_str(" ");
+            nombre_completo.push(' ');
             nombre_completo.push_str(s);
         }
-        nombre_completo.push_str(" ");
+        nombre_completo.push(' ');
         nombre_completo.push_str(&apellido);
         if let Some(ref s) = segundo_apellido {
-            nombre_completo.push_str(" ");
+            nombre_completo.push(' ');
             nombre_completo.push_str(s);
         }
 
@@ -258,13 +258,13 @@ impl IngresoResponse {
 
         let mut nombre_completo = nombre.clone();
         if let Some(ref s) = segundo_nombre {
-            nombre_completo.push_str(" ");
+            nombre_completo.push(' ');
             nombre_completo.push_str(s);
         }
-        nombre_completo.push_str(" ");
+        nombre_completo.push(' ');
         nombre_completo.push_str(&apellido);
         if let Some(ref s) = segundo_apellido {
-            nombre_completo.push_str(" ");
+            nombre_completo.push(' ');
             nombre_completo.push_str(s);
         }
 

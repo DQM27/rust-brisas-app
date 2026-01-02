@@ -6,7 +6,7 @@
 //!
 //! ## Responsabilidades
 //! - Registro y normalización de placas vehiculares.
-//! - Validación cross-table de propietarios en SurrealDB.
+//! - Validación cross-table de propietarios en `SurrealDB`.
 //! - Gestión de estatus y estadísticas de flota.
 //! - Auditoría de cambios en activos móviles.
 use crate::db::surrealdb_contratista_queries as contratista_db;
@@ -30,7 +30,7 @@ use surrealdb::RecordId;
 
 /// Mapeo de errores de infraestructura a dominio.
 fn map_db_error(e: SurrealDbError) -> VehiculoError {
-    error!("❌ Fallo técnico en persistencia de vehículos: {}", e);
+    error!("❌ Fallo técnico en persistencia de vehículos: {e}");
     VehiculoError::Database(e.to_string())
 }
 
@@ -73,7 +73,7 @@ pub async fn create_vehiculo(
     let tipo_vehiculo = domain::validar_tipo_vehiculo(&input.tipo_vehiculo)?;
 
     let propietario_id = parse_propietario_id(&input.propietario_id);
-    info!("🚗 Iniciando registro de unidad móvil para {}...", propietario_id);
+    info!("🚗 Iniciando registro de unidad móvil para {propietario_id}...");
 
     // Validación Cross-Table: Comprueba la existencia física del dueño en su respectiva tabla.
     debug!("🔍 Verificando existencia del propietario en tabla {}", propietario_id.table());
@@ -99,7 +99,7 @@ pub async fn create_vehiculo(
     };
 
     if !exists {
-        warn!("🚨 Protocolo de identidad fallido: El propietario {} no existe", propietario_id);
+        warn!("🚨 Protocolo de identidad fallido: El propietario {propietario_id} no existe");
         return Err(VehiculoError::Validation(format!(
             "Protocolo de identidad fallido: El propietario no existe en la base de datos de {}",
             propietario_id.table()
@@ -108,7 +108,7 @@ pub async fn create_vehiculo(
 
     let count = db::count_by_placa(&placa_normalizada).await.map_err(map_db_error)?;
     if count > 0 {
-        warn!("⚠️ Intento de duplicar placa ya registrada: {}", placa_normalizada);
+        warn!("⚠️ Intento de duplicar placa ya registrada: {placa_normalizada}");
         return Err(VehiculoError::PlacaExists);
     }
 
@@ -123,7 +123,7 @@ pub async fn create_vehiculo(
     };
 
     let vehiculo_creado = db::insert(dto).await.map_err(map_db_error)?;
-    info!("✅ Vehículo [{}] registrado exitosamente para {}", placa_normalizada, propietario_id);
+    info!("✅ Vehículo [{placa_normalizada}] registrado exitosamente para {propietario_id}");
     Ok(VehiculoResponse::from(vehiculo_creado))
 }
 
@@ -219,7 +219,7 @@ pub async fn update_vehiculo(
     dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
     let updated = db::update(&id, dto).await.map_err(map_db_error)?;
-    info!("📝 Perfil de vehículo {} actualizado correctamente.", id_str);
+    info!("📝 Perfil de vehículo {id_str} actualizado correctamente.");
     Ok(VehiculoResponse::from_fetched(updated))
 }
 
@@ -227,9 +227,9 @@ pub async fn delete_vehiculo(id_str: String) -> Result<(), VehiculoError> {
     let id = parse_vehiculo_id(&id_str);
     db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(VehiculoError::NotFound)?;
 
-    info!("🗑️ Procesando baja del vehículo {}...", id_str);
+    info!("🗑️ Procesando baja del vehículo {id_str}...");
     db::delete(&id).await.map_err(map_db_error)?;
-    info!("✅ Vehículo {} eliminado del sistema de control.", id_str);
+    info!("✅ Vehículo {id_str} eliminado del sistema de control.");
     Ok(())
 }
 

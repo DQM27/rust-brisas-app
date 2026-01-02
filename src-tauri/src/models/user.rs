@@ -238,7 +238,7 @@ pub struct UserResponse {
 
 impl UserResponse {
     pub fn from_user_with_role(u: User, role: Role, permissions: Vec<String>) -> Self {
-        let role_name = role.name.clone();
+        let role_name = role.name;
 
         // Construir nombre completo
         let mut parts = vec![u.nombre.as_str()];

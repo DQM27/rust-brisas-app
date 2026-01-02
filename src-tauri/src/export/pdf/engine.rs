@@ -65,7 +65,7 @@ fn compile_typst_to_pdf(markup: &str) -> ExportResult<Vec<u8>> {
     // ✅ FIX: pdf() ahora toma (&document, &PdfOptions) y retorna Result
     let options = typst_pdf::PdfOptions::default();
     let pdf_bytes = typst_pdf::pdf(&document, &options)
-        .map_err(|e| ExportError::TypstCompilationError(format!("Error generando PDF: {:?}", e)))?;
+        .map_err(|e| ExportError::TypstCompilationError(format!("Error generando PDF: {e:?}")))?;
 
     Ok(pdf_bytes)
 }

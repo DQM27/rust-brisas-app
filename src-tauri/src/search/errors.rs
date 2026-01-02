@@ -32,13 +32,13 @@ pub enum SearchError {
 
 impl From<std::io::Error> for SearchError {
     fn from(err: std::io::Error) -> Self {
-        SearchError::IoError(err.to_string())
+        Self::IoError(err.to_string())
     }
 }
 
 impl From<tantivy::TantivyError> for SearchError {
     fn from(err: tantivy::TantivyError) -> Self {
-        SearchError::TantivyError(err.to_string())
+        Self::TantivyError(err.to_string())
     }
 }
 

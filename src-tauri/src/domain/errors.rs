@@ -60,7 +60,7 @@ pub enum UserError {
 
 impl From<crate::services::surrealdb_authorization::AuthError> for UserError {
     fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        UserError::Auth(err.to_string())
+        Self::Auth(err.to_string())
     }
 }
 
@@ -100,7 +100,7 @@ pub enum ContratistaError {
 
 impl From<crate::services::surrealdb_authorization::AuthError> for ContratistaError {
     fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        ContratistaError::Validation(err.to_string())
+        Self::Validation(err.to_string())
     }
 }
 
@@ -132,7 +132,7 @@ pub enum EmpresaError {
 
 impl From<crate::services::surrealdb_authorization::AuthError> for EmpresaError {
     fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        EmpresaError::Validation(err.to_string())
+        Self::Validation(err.to_string())
     }
 }
 
@@ -157,7 +157,7 @@ pub enum VehiculoError {
 
 impl From<crate::services::surrealdb_authorization::AuthError> for VehiculoError {
     fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        VehiculoError::Validation(err.to_string())
+        Self::Validation(err.to_string())
     }
 }
 
@@ -190,7 +190,7 @@ pub enum ProveedorError {
 
 impl From<crate::services::surrealdb_authorization::AuthError> for ProveedorError {
     fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        ProveedorError::Validation(err.to_string())
+        Self::Validation(err.to_string())
     }
 }
 
@@ -223,7 +223,7 @@ pub enum GafeteError {
 
 impl From<crate::services::surrealdb_authorization::AuthError> for GafeteError {
     fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        GafeteError::Validation(err.to_string())
+        Self::Validation(err.to_string())
     }
 }
 
@@ -253,7 +253,7 @@ pub enum AlertaError {
 
 impl From<crate::services::surrealdb_authorization::AuthError> for AlertaError {
     fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        AlertaError::Unauthorized(err.to_string())
+        Self::Unauthorized(err.to_string())
     }
 }
 
@@ -301,7 +301,7 @@ pub enum VisitanteError {
 
 impl From<crate::services::surrealdb_authorization::AuthError> for VisitanteError {
     fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        VisitanteError::Validation(err.to_string())
+        Self::Validation(err.to_string())
     }
 }
 
@@ -332,13 +332,13 @@ pub enum IngresoVisitaError {
 
 impl From<crate::services::surrealdb_authorization::AuthError> for IngresoVisitaError {
     fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        IngresoVisitaError::Unauthorized(err.to_string())
+        Self::Unauthorized(err.to_string())
     }
 }
 
 impl From<crate::domain::common::CommonError> for IngresoVisitaError {
     fn from(err: crate::domain::common::CommonError) -> Self {
-        IngresoVisitaError::Validation(err.to_string())
+        Self::Validation(err.to_string())
     }
 }
 
@@ -363,7 +363,7 @@ pub enum IngresoProveedorError {
 
 impl From<crate::domain::common::CommonError> for IngresoProveedorError {
     fn from(err: crate::domain::common::CommonError) -> Self {
-        IngresoProveedorError::Validation(err.to_string())
+        Self::Validation(err.to_string())
     }
 }
 
@@ -398,13 +398,13 @@ pub enum IngresoContratistaError {
 
 impl From<crate::domain::common::CommonError> for IngresoContratistaError {
     fn from(err: crate::domain::common::CommonError) -> Self {
-        IngresoContratistaError::Validation(err.to_string())
+        Self::Validation(err.to_string())
     }
 }
 
 impl From<crate::services::surrealdb_authorization::AuthError> for IngresoContratistaError {
     fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        IngresoContratistaError::Validation(err.to_string())
+        Self::Validation(err.to_string())
     }
 }
 
@@ -466,7 +466,7 @@ pub enum CitaError {
 
 impl From<crate::services::surrealdb_authorization::AuthError> for CitaError {
     fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        CitaError::Unauthorized(err.to_string())
+        Self::Unauthorized(err.to_string())
     }
 }
 
@@ -493,7 +493,7 @@ pub enum SearchError {
 
 impl From<crate::services::surrealdb_authorization::AuthError> for SearchError {
     fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        SearchError::Unauthorized(err.to_string())
+        Self::Unauthorized(err.to_string())
     }
 }
 
@@ -544,7 +544,7 @@ pub enum KeyringError {
 
 impl From<crate::services::surrealdb_authorization::AuthError> for KeyringError {
     fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        KeyringError::Unauthorized(err.to_string())
+        Self::Unauthorized(err.to_string())
     }
 }
 
@@ -586,7 +586,7 @@ pub enum RoleError {
 
 impl From<crate::services::surrealdb_authorization::AuthError> for RoleError {
     fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        RoleError::Unauthorized(err.to_string())
+        Self::Unauthorized(err.to_string())
     }
 }
 

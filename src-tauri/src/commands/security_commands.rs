@@ -74,10 +74,10 @@ pub fn get_master_key() -> Result<&'static [u8; 32], String> {
         OsRng.fill_bytes(&mut key);
         let hex_key = hex::encode(key);
         keyring_windows::store_secret(MASTER_KEY_NAME, &hex_key)
-            .map_err(|e| format!("Error al blindar la llave maestra: {}", e))?;
+            .map_err(|e| format!("Error al blindar la llave maestra: {e}"))?;
         log::info!("🔑 Llave Maestra generada y blindada en Windows");
         let _ = MASTER_KEY.set(key);
-        return Ok(MASTER_KEY.get().unwrap());
+        Ok(MASTER_KEY.get().unwrap())
     }
 
     #[cfg(target_os = "macos")]

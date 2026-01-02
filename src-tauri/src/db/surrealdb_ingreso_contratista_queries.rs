@@ -1,4 +1,4 @@
-//! # Queries SurrealDB: Ingreso Contratista
+//! # Queries `SurrealDB`: Ingreso Contratista
 //!
 //! Operaciones de base de datos para control de acceso de contratistas.
 //!
@@ -16,7 +16,7 @@ use crate::models::ingreso::{
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use surrealdb::RecordId;
 
-/// Tabla en SurrealDB
+/// Tabla en `SurrealDB`
 const TABLE: &str = "ingreso_contratista";
 
 /// Registra un nuevo ingreso de contratista.
@@ -27,7 +27,7 @@ pub async fn insert(
 
     // CREATE doesn't support FETCH, so we need two queries
     let created: Option<IngresoContratista> =
-        db.query(format!("CREATE {} CONTENT $dto", TABLE)).bind(("dto", dto)).await?.take(0)?;
+        db.query(format!("CREATE {TABLE} CONTENT $dto")).bind(("dto", dto)).await?.take(0)?;
 
     let ingreso = created.ok_or(SurrealDbError::TransactionError(
         "Error al insertar ingreso_contratista".to_string(),
@@ -57,8 +57,7 @@ pub async fn find_ingreso_abierto_by_contratista(
 
     let mut result = db
         .query(format!(
-            "SELECT * FROM {} WHERE contratista = $contratista AND fecha_hora_salida IS NONE LIMIT 1 FETCH usuario_ingreso, usuario_salida, contratista, contratista.empresa",
-            TABLE
+            "SELECT * FROM {TABLE} WHERE contratista = $contratista AND fecha_hora_salida IS NONE LIMIT 1 FETCH usuario_ingreso, usuario_salida, contratista, contratista.empresa"
         ))
         .bind(("contratista", contratista_id.clone()))
         .await?;

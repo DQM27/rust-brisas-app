@@ -62,8 +62,7 @@ pub fn validar_opcional(
     if let Some(v) = valor {
         if v.trim().len() > max_len {
             return Err(VisitanteError::Validation(format!(
-                "{} no puede exceder {} caracteres",
-                nombre_campo, max_len
+                "{nombre_campo} no puede exceder {max_len} caracteres"
             )));
         }
     }
@@ -108,8 +107,7 @@ pub fn validar_create_input(input: &CreateVisitanteInput) -> Result<(), Visitant
 
     if input.empresa_id.trim().is_empty() {
         return Err(VisitanteError::Validation(format!(
-            "Debe seleccionar una {} válida",
-            CAMPO_EMPRESA
+            "Debe seleccionar una {CAMPO_EMPRESA} válida"
         )));
     }
 

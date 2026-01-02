@@ -19,13 +19,13 @@ pub async fn insert_praind_historial(
         contratista_id.strip_prefix("contratista:").unwrap_or(contratista_id)
     );
     let u_id = format!("user:{}", usuario_id.strip_prefix("user:").unwrap_or(usuario_id));
-    let fecha_anterior_owned = fecha_anterior.map(|s| s.to_string());
+    let fecha_anterior_owned = fecha_anterior.map(std::string::ToString::to_string);
     let fecha_nueva_owned = fecha_nueva.to_string();
-    let motivo_owned = motivo.map(|s| s.to_string());
+    let motivo_owned = motivo.map(std::string::ToString::to_string);
 
     let _: Option<serde_json::Value> = db
         .query(
-            r#"
+            r"
             CREATE audit_praind CONTENT {
                 contratista_id: $contratista_id,
                 fecha_anterior: $fecha_anterior,
@@ -34,7 +34,7 @@ pub async fn insert_praind_historial(
                 motivo: $motivo,
                 created_at: time::now()
             }
-        "#,
+        ",
         )
         .bind(("contratista_id", c_id))
         .bind(("fecha_anterior", fecha_anterior_owned))
@@ -68,7 +68,7 @@ pub async fn insert_historial_estado(
 
     let _: Option<serde_json::Value> = db
         .query(
-            r#"
+            r"
             CREATE audit_estado CONTENT {
                 contratista_id: $contratista_id,
                 estado_anterior: $estado_anterior,
@@ -77,7 +77,7 @@ pub async fn insert_historial_estado(
                 motivo: $motivo,
                 created_at: time::now()
             }
-        "#,
+        ",
         )
         .bind(("contratista_id", c_id))
         .bind(("estado_anterior", estado_anterior_owned))

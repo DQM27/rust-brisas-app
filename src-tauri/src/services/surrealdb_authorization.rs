@@ -9,7 +9,7 @@
 //! - Integración con Auditoría (Trazas de acceso denegado/bypass).
 
 use crate::db::surrealdb_role_queries; // Usamos queries ya implementadas
-/// Capa de Dominio no necesaria aquí directamente si usamos has_god_authority
+/// Capa de Dominio no necesaria aquí directamente si usamos `has_god_authority`
 use crate::models::role::{Action, Module};
 use crate::services::surrealdb_service::SurrealDbError;
 use log::{debug, info, warn};
@@ -38,7 +38,7 @@ fn parse_role_id(id_str: &str) -> RecordId {
     }
 }
 
-/// Define errores de autorización (compatible con legacy AuthError si se desea)
+/// Define errores de autorización (compatible con legacy `AuthError` si se desea)
 #[derive(Debug, thiserror::Error)]
 pub enum AuthError {
     #[error("Permiso denegado")]
@@ -51,7 +51,7 @@ pub enum AuthError {
 
 impl From<SurrealDbError> for AuthError {
     fn from(e: SurrealDbError) -> Self {
-        AuthError::Database(e.to_string())
+        Self::Database(e.to_string())
     }
 }
 
@@ -61,13 +61,13 @@ pub async fn get_effective_permissions(role_id_str: &str) -> Result<HashSet<Stri
     let mut visited = HashSet::new();
     let mut current_id = Some(role_id_str.to_string());
 
-    debug!("🕸️ Resolviendo herencia de permisos para: {}", role_id_str);
+    debug!("🕸️ Resolviendo herencia de permisos para: {role_id_str}");
 
     // Recorrer cadena de herencia (máximo 10 niveles para evitar loops)
     while let Some(id_str) = current_id.take() {
         if visited.contains(&id_str) || visited.len() >= 10 {
             if visited.len() >= 10 {
-                warn!("⚠️ Límite de herencia de roles alcanzado (10) para: {}", role_id_str);
+                warn!("⚠️ Límite de herencia de roles alcanzado (10) para: {role_id_str}");
             }
             break; // Prevenir ciclos infinitos
         }
@@ -93,7 +93,7 @@ pub async fn get_effective_permissions(role_id_str: &str) -> Result<HashSet<Stri
     Ok(all_permissions)
 }
 
-/// Obtiene todos los permisos de un rol desde SurrealDB (legacy, solo propios)
+/// Obtiene todos los permisos de un rol desde `SurrealDB` (legacy, solo propios)
 pub async fn get_role_permissions(role_id_str: &str) -> Result<HashSet<String>, SurrealDbError> {
     let role_id = parse_role_id(role_id_str);
     let perms = surrealdb_role_queries::get_permissions(&role_id).await?;
@@ -134,7 +134,7 @@ pub async fn role_has_permission(
     let permissions = get_effective_permissions(role_id)
         .await
         .map_err(|e| SurrealDbError::Query(e.to_string()))?;
-    let perm_id = format!("{}:{}", module, action);
+    let perm_id = format!("{module}:{action}");
     Ok(permissions.contains(&perm_id))
 }
 

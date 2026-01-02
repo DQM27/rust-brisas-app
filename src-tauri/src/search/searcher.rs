@@ -87,7 +87,7 @@ pub fn get_index_reader(index: &Index) -> Result<IndexReader, SearchError> {
         .reader_builder()
         .reload_policy(ReloadPolicy::Manual)
         .try_into()
-        .map_err(|e| SearchError::TantivyError(format!("Error al crear reader: {}", e)))
+        .map_err(|e| SearchError::TantivyError(format!("Error al crear reader: {e}")))
 }
 
 /// Busca en el índice con fuzzy search (Optimizado)
@@ -121,12 +121,12 @@ pub fn search_index(
     // Parsear query
     let query = query_parser
         .parse_query(query_str)
-        .map_err(|e| SearchError::QueryError(format!("Query inválido: {}", e)))?;
+        .map_err(|e| SearchError::QueryError(format!("Query inválido: {e}")))?;
 
     // Ejecutar búsqueda
     let top_docs = searcher
         .search(&query, &TopDocs::with_limit(limit))
-        .map_err(|e| SearchError::TantivyError(format!("Error búsqueda: {}", e)))?;
+        .map_err(|e| SearchError::TantivyError(format!("Error búsqueda: {e}")))?;
 
     let mut results = Vec::with_capacity(top_docs.len());
 
@@ -158,24 +158,24 @@ pub fn search_contratistas(
     limit: usize,
 ) -> Result<Vec<SearchResultDto>, SearchError> {
     // Agregar filtro de tipo
-    let filtered_query = format!("+tipo:contratista +({})", query_str);
+    let filtered_query = format!("+tipo:contratista +({query_str})");
     search_index(index, reader, fields, &filtered_query, limit)
 }
 
 // Helpers optimizados (reciben Field u32, no string name)
 fn get_val(doc: &TantivyDocument, field: Field) -> Option<String> {
     // Acceso directo sin lookup
-    doc.get_first(field)?.as_str().map(|s| s.to_string())
+    doc.get_first(field)?.as_str().map(std::string::ToString::to_string)
 }
 
 fn build_full_name(doc: &TantivyDocument, fields: &SearchFields) -> Option<String> {
     let nombre = get_val(doc, fields.nombre)?;
     let apellido = get_val(doc, fields.apellido)?;
 
-    let mut nombre_completo = format!("{} {}", nombre, apellido);
+    let mut nombre_completo = format!("{nombre} {apellido}");
 
     if let Some(segundo_nombre) = get_val(doc, fields.segundo_nombre) {
-        nombre_completo = format!("{} {} {}", nombre, segundo_nombre, apellido);
+        nombre_completo = format!("{nombre} {segundo_nombre} {apellido}");
     }
 
     if let Some(segundo_apellido) = get_val(doc, fields.segundo_apellido) {

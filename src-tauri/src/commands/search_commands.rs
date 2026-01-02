@@ -22,7 +22,7 @@ pub async fn search_contratistas(
     search_service.search(&query, limit.unwrap_or(20)).map_err(SearchError::Engine)
 }
 
-/// Sincronización Manual: Forza la reconstrucción del índice de búsqueda desde SurrealDB.
+/// Sincronización Manual: Forza la reconstrucción del índice de búsqueda desde `SurrealDB`.
 #[tauri::command]
 pub async fn reindex_all_contratistas(
     session: State<'_, SessionState>,

@@ -58,7 +58,7 @@ pub fn validar_create_input(input: &CreateProveedorInput) -> Result<(), Proveedo
     validar_opcional(input.segundo_apellido.as_ref(), MAX_LEN_NOMBRE, "segundo apellido")?;
 
     // Validación vehicular si se declara
-    if let Some(true) = input.tiene_vehiculo {
+    if input.tiene_vehiculo == Some(true) {
         if let Some(ref tipo) = input.tipo_vehiculo {
             vehiculo_domain::validar_tipo_vehiculo(tipo)
                 .map_err(|e| ProveedorError::Validation(e.to_string()))?;
@@ -95,7 +95,7 @@ pub fn validar_update_input(input: &UpdateProveedorInput) -> Result<(), Proveedo
     validar_opcional(input.segundo_apellido.as_ref(), MAX_LEN_NOMBRE, "segundo apellido")?;
 
     // Datos vehiculares reactivos
-    if let Some(true) = input.tiene_vehiculo {
+    if input.tiene_vehiculo == Some(true) {
         if let Some(ref tipo) = input.tipo_vehiculo {
             vehiculo_domain::validar_tipo_vehiculo(tipo)
                 .map_err(|e| ProveedorError::Validation(e.to_string()))?;

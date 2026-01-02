@@ -32,7 +32,7 @@ pub fn generate_csv(
 
     // 3. Escribir archivo
     std::fs::write(&output_path, csv_content)
-        .map_err(|e| ExportError::CsvWriteError(format!("Error escribiendo archivo: {}", e)))?;
+        .map_err(|e| ExportError::CsvWriteError(format!("Error escribiendo archivo: {e}")))?;
 
     // 4. Retornar path como string
     Ok(output_path
@@ -55,7 +55,7 @@ fn build_csv_content(
 
     // 1. UTF-8 BOM (para Excel)
     if config.include_bom {
-        content.push_str("\u{FEFF}");
+        content.push('\u{FEFF}');
     }
 
     // 2. Headers
@@ -67,7 +67,7 @@ fn build_csv_content(
     for row in rows {
         let values: Vec<String> = headers
             .iter()
-            .map(|header| row.get(header).map(|v| v.to_string()).unwrap_or_default())
+            .map(|header| row.get(header).map(std::string::ToString::to_string).unwrap_or_default())
             .collect();
 
         let row_line = encode_csv_line(&values, config.delimiter.as_char());
@@ -98,7 +98,7 @@ fn escape_csv_field(field: &str, delimiter: char) -> String {
     if needs_quoting {
         // Escapar comillas dobles duplicándolas
         let escaped = field.replace('"', "\"\"");
-        format!("\"{}\"", escaped)
+        format!("\"{escaped}\"")
     } else {
         field.to_string()
     }

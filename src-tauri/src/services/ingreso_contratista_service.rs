@@ -45,7 +45,7 @@ where
     C: ContratistaRepository,
     S: SecurityRepository,
 {
-    pub fn new(ingreso_repo: R, gafete_repo: G, contratista_repo: C, security_repo: S) -> Self {
+    pub const fn new(ingreso_repo: R, gafete_repo: G, contratista_repo: C, security_repo: S) -> Self {
         Self { ingreso_repo, gafete_repo, contratista_repo, security_repo }
     }
 
@@ -61,11 +61,11 @@ where
             .find_by_id(&contratista_id)
             .await
             .map_err(|e| {
-                error!("Error DB al buscar contratista para validación: {}", e);
+                error!("Error DB al buscar contratista para validación: {e}");
                 IngresoContratistaError::Database(e.to_string())
             })?
             .ok_or_else(|| {
-                warn!("Contratista no encontrado para validación: {}", contratista_id_str);
+                warn!("Contratista no encontrado para validación: {contratista_id_str}");
                 IngresoContratistaError::ContratistaNotFound
             })?;
 
@@ -81,7 +81,7 @@ where
 
         if let Some(ing) = ing_ab {
             let resp = IngresoResponse::from_contratista_fetched(ing)
-                .map_err(|e| IngresoContratistaError::Validation(e))?;
+                .map_err(IngresoContratistaError::Validation)?;
             return Ok(ValidacionIngresoResponse {
                 puede_ingresar: false,
                 motivo_rechazo: Some("Ya tiene un ingreso activo en planta".to_string()),
@@ -113,10 +113,10 @@ where
 
         Ok(ValidacionIngresoResponse {
             puede_ingresar: motor_res.status == ValidationStatus::Allowed,
-            motivo_rechazo: if motor_res.status != ValidationStatus::Allowed {
-                Some(motor_res.message)
-            } else {
+            motivo_rechazo: if motor_res.status == ValidationStatus::Allowed {
                 None
+            } else {
+                Some(motor_res.message)
             },
             alertas: vec![],
             contratista: Some(serde_json::json!(contratista)),
@@ -183,7 +183,7 @@ where
         info!("Ingreso registrado: Contratista {} ingresó a planta", input.contratista_id);
 
         IngresoResponse::from_contratista_fetched(nuevo_ingreso)
-            .map_err(|e| IngresoContratistaError::Validation(e))
+            .map_err(IngresoContratistaError::Validation)
     }
 
     pub async fn registrar_salida(
@@ -209,7 +209,7 @@ where
         info!("Salida registrada para ingreso: {}", input.ingreso_id);
 
         IngresoResponse::from_contratista_fetched(ingreso_actualizado)
-            .map_err(|e| IngresoContratistaError::Validation(e))
+            .map_err(IngresoContratistaError::Validation)
     }
 
     pub async fn validar_puede_salir(

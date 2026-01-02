@@ -1,20 +1,20 @@
 //! # Servicio: Motor de Búsqueda Global (Tantivy)
 //!
 //! Proporciona capacidades de búsqueda full-text sobre los datos de la aplicación.
-//! Mientras que SurrealDB es excelente para relaciones y persistencia, Tantivy
+//! Mientras que `SurrealDB` es excelente para relaciones y persistencia, Tantivy
 //! permite búsquedas rápidas, fuzzy y segmentadas sobre múltiples entidades.
 //!
 //! ## Responsabilidades
 //! - Inicialización y gestión del índice de búsqueda
-//! - Indexación de entidades (Contratistas, Usuarios, Proveedores, ListaNegra)
-//! - Reindexación completa desde SurrealDB
+//! - Indexación de entidades (Contratistas, Usuarios, Proveedores, `ListaNegra`)
+//! - Reindexación completa desde `SurrealDB`
 //! - Búsqueda multi-entidad de alto rendimiento
 //!
 //! ## Arquitectura
 //! - **Index**: Índice persistido en disco
 //! - **Reader**: Lector para consultas (recargable tras commits)
 //! - **Writer**: Escritor protegido por Mutex
-//! - **FieldHandles**: Cache de campos para acceso O(1)
+//! - **`FieldHandles`**: Cache de campos para acceso O(1)
 
 use crate::db::{
     surrealdb_contratista_queries as contratista_queries,
@@ -71,8 +71,7 @@ impl SearchService {
         if !index_path.exists() {
             std::fs::create_dir_all(&index_path).map_err(|e| {
                 SearchError::TantivyError(format!(
-                    "No se pudo crear el directorio del índice de búsqueda: {}",
-                    e
+                    "No se pudo crear el directorio del índice de búsqueda: {e}"
                 ))
             })?;
         }
@@ -113,7 +112,7 @@ impl SearchService {
         }
     }
 
-    /// Reconstruye el índice completo sincronizándolo con los datos actuales de SurrealDB.
+    /// Reconstruye el índice completo sincronizándolo con los datos actuales de `SurrealDB`.
     ///
     /// Este proceso es intensivo en recursos. Se utiliza principalmente en el arranque inicial
     /// o cuando se detecta una inconsistencia grave entre la base de datos y el motor de búsqueda.
@@ -122,22 +121,22 @@ impl SearchService {
 
         // Obtenemos una fotografía actual de todas las entidades relevantes de la DB.
         let contratistas = contratista_queries::find_all_fetched().await.map_err(|e| {
-            error!("❌ Error al cargar contratistas para reindexación: {}", e);
+            error!("❌ Error al cargar contratistas para reindexación: {e}");
             SearchError::DatabaseError(e.to_string())
         })?;
 
         let users = user_queries::find_all_fetched(None).await.map_err(|e| {
-            error!("❌ Error al cargar usuarios para reindexación: {}", e);
+            error!("❌ Error al cargar usuarios para reindexación: {e}");
             SearchError::DatabaseError(e.to_string())
         })?;
 
         let lista_negra = lista_negra_queries::find_all().await.map_err(|e| {
-            error!("❌ Error al cargar lista negra para reindexación: {}", e);
+            error!("❌ Error al cargar lista negra para reindexación: {e}");
             SearchError::DatabaseError(e.to_string())
         })?;
 
         let proveedores = proveedor_queries::find_all_fetched().await.map_err(|e| {
-            error!("❌ Error al cargar proveedores para reindexación: {}", e);
+            error!("❌ Error al cargar proveedores para reindexación: {e}");
             SearchError::DatabaseError(e.to_string())
         })?;
 
@@ -158,8 +157,8 @@ impl SearchService {
 
             // Vaciamos el índice para asegurar una reconstrucción limpia y sin duplicados.
             writer.delete_all_documents().map_err(|e| {
-                error!("❌ Error al limpiar índice: {}", e);
-                SearchError::TantivyError(format!("Error al limpiar el índice: {}", e))
+                error!("❌ Error al limpiar índice: {e}");
+                SearchError::TantivyError(format!("Error al limpiar el índice: {e}"))
             })?;
 
             // Procesamos e indexamos cada tipo de entidad secuencialmente.
@@ -182,12 +181,12 @@ impl SearchService {
 
         // Obligamos al lector a recargarse para que las búsquedas reflejen los nuevos datos de inmediato.
         self.reader.reload().map_err(|e| {
-            error!("❌ Error al recargar lector de búsqueda: {}", e);
-            SearchError::TantivyError(format!("Error al recargar el lector de búsqueda: {}", e))
+            error!("❌ Error al recargar lector de búsqueda: {e}");
+            SearchError::TantivyError(format!("Error al recargar el lector de búsqueda: {e}"))
         })?;
 
         let total = contratistas.len() + users.len() + lista_negra.len() + proveedores.len();
-        info!("✅ Reindexación completa: {} documentos indexados", total);
+        info!("✅ Reindexación completa: {total} documentos indexados");
 
         Ok(())
     }
@@ -246,7 +245,7 @@ impl SearchService {
     /// Elimina a un contratista del motor de búsqueda (generalmente por eliminación o archivado).
     /// Elimina a un contratista del motor de búsqueda (generalmente por eliminación o archivado).
     pub async fn delete_contratista(&self, id: &str) -> Result<(), SearchError> {
-        debug!("🗑️ Eliminando contratista del índice: {}", id);
+        debug!("🗑️ Eliminando contratista del índice: {id}");
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -297,7 +296,7 @@ impl SearchService {
     /// Revoca la visibilidad de un usuario en las búsquedas globales.
     /// Revoca la visibilidad de un usuario en las búsquedas globales.
     pub async fn delete_user(&self, id: &str) -> Result<(), SearchError> {
-        debug!("🗑️ Eliminando usuario del índice: {}", id);
+        debug!("🗑️ Eliminando usuario del índice: {id}");
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -374,7 +373,7 @@ impl SearchService {
     }
 
     pub async fn delete_lista_negra(&self, id: &str) -> Result<(), SearchError> {
-        debug!("🗑️ Eliminando lista negra del índice: {}", id);
+        debug!("🗑️ Eliminando lista negra del índice: {id}");
         let _lock = self.writer_mutex.lock().await;
 
         {
@@ -407,7 +406,7 @@ impl SearchService {
     }
 
     pub async fn delete_proveedor(&self, id: &str) -> Result<(), SearchError> {
-        debug!("🗑️ Eliminando proveedor del índice: {}", id);
+        debug!("🗑️ Eliminando proveedor del índice: {id}");
         let _lock = self.writer_mutex.lock().await;
 
         {

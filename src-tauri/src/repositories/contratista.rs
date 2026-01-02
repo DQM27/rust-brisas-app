@@ -30,7 +30,7 @@ impl ContratistaRepository for SurrealContratistaRepository {
     async fn find_by_cedula(&self, cedula: &str) -> Result<Option<Contratista>, SurrealDbError> {
         // En teoria db::find_by_cedula devuelve ContratistaFetched, asi que mapeamos a Contratista
         let fetched = db::find_by_cedula(cedula).await?;
-        Ok(fetched.map(|f| f.into()))
+        Ok(fetched.map(std::convert::Into::into))
     }
 
     async fn find_by_cedula_fetched(

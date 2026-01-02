@@ -27,7 +27,7 @@ fn to_wide_string(s: &str) -> Vec<u16> {
 
 /// Genera el nombre completo del target para la credencial
 fn get_target_name(key: &str) -> String {
-    format!("{}:{}", SERVICE_NAME, key)
+    format!("{SERVICE_NAME}:{key}")
 }
 
 /// Almacena un secreto en el Credential Manager de Windows.
@@ -35,7 +35,7 @@ fn get_target_name(key: &str) -> String {
 /// # Safety
 /// Usa `winapi::CredWriteW` con punteros validados localmente.
 pub fn store_secret(key: &str, value: &str) -> Result<(), KeyringError> {
-    debug!("Almacenando secreto en Windows Credential Manager: {}", key);
+    debug!("Almacenando secreto en Windows Credential Manager: {key}");
 
     let target_name = get_target_name(key);
     let target_wide = to_wide_string(&target_name);
@@ -45,28 +45,28 @@ pub fn store_secret(key: &str, value: &str) -> Result<(), KeyringError> {
     let mut credential = CREDENTIALW {
         Flags: 0,
         Type: CRED_TYPE_GENERIC,
-        TargetName: target_wide.as_ptr() as *mut _,
+        TargetName: target_wide.as_ptr().cast_mut(),
         Comment: ptr::null_mut(),
         // SAFETY: FILETIME es POD, zeroed es válido.
         LastWritten: unsafe { std::mem::zeroed() },
         CredentialBlobSize: value_bytes.len() as u32,
-        CredentialBlob: value_bytes.as_ptr() as *mut _,
+        CredentialBlob: value_bytes.as_ptr().cast_mut(),
         Persist: CRED_PERSIST_LOCAL_MACHINE,
         AttributeCount: 0,
         Attributes: ptr::null_mut(),
         TargetAlias: ptr::null_mut(),
-        UserName: username_wide.as_ptr() as *mut _,
+        UserName: username_wide.as_ptr().cast_mut(),
     };
 
     // SAFETY: credential y sus punteros internos son válidos durante la llamada.
-    let result = unsafe { CredWriteW(&mut credential, 0) };
+    let result = unsafe { CredWriteW(&raw mut credential, 0) };
 
     if result == 0 {
         let err = std::io::Error::last_os_error();
-        error!("Fallo al escribir credencial '{}': {}", key, err);
-        Err(KeyringError::StorageError(format!("Windows error: {}", err)))
+        error!("Fallo al escribir credencial '{key}': {err}");
+        Err(KeyringError::StorageError(format!("Windows error: {err}")))
     } else {
-        info!("Credencial almacenada exitosamente: {}", key);
+        info!("Credencial almacenada exitosamente: {key}");
         Ok(())
     }
 }
@@ -76,7 +76,7 @@ pub fn store_secret(key: &str, value: &str) -> Result<(), KeyringError> {
 /// # Safety
 /// Usa `winapi::CredReadW` y `CredFree` para gestionar memoria asignada por el sistema.
 pub fn retrieve_secret(key: &str) -> Option<String> {
-    debug!("Recuperando secreto de Windows CM: {}", key);
+    debug!("Recuperando secreto de Windows CM: {key}");
 
     let target_name = get_target_name(key);
     let target_wide = to_wide_string(&target_name);
@@ -84,7 +84,7 @@ pub fn retrieve_secret(key: &str) -> Option<String> {
 
     // SAFETY: Punteros válidos. credential_ptr será sobrescrito.
     let result =
-        unsafe { CredReadW(target_wide.as_ptr(), CRED_TYPE_GENERIC, 0, &mut credential_ptr) };
+        unsafe { CredReadW(target_wide.as_ptr(), CRED_TYPE_GENERIC, 0, &raw mut credential_ptr) };
 
     if result == 0 {
         // No logueamos error aquí porque es normal que no exista
@@ -107,7 +107,7 @@ pub fn retrieve_secret(key: &str) -> Option<String> {
         };
 
         // SAFETY: Liberar memoria del sistema.
-        winapi::um::wincred::CredFree(credential_ptr as *mut _);
+        winapi::um::wincred::CredFree(credential_ptr.cast());
 
         Some(value)
     }
@@ -118,7 +118,7 @@ pub fn retrieve_secret(key: &str) -> Option<String> {
 /// # Safety
 /// Usa `winapi::CredDeleteW`.
 pub fn delete_secret(key: &str) -> Result<(), KeyringError> {
-    debug!("Eliminando secreto de Windows CM: {}", key);
+    debug!("Eliminando secreto de Windows CM: {key}");
 
     let target_name = get_target_name(key);
     let target_wide = to_wide_string(&target_name);
@@ -132,14 +132,14 @@ pub fn delete_secret(key: &str) -> Result<(), KeyringError> {
 
         // ERROR_NOT_FOUND = 1168
         if err_code == 1168 {
-            debug!("Intento de borrar credencial inexistente: {} (ignorado)", key);
+            debug!("Intento de borrar credencial inexistente: {key} (ignorado)");
             Ok(())
         } else {
-            error!("Fallo al eliminar credencial '{}': {}", key, err);
-            Err(KeyringError::DeletionError(format!("Windows error: {}", err)))
+            error!("Fallo al eliminar credencial '{key}': {err}");
+            Err(KeyringError::DeletionError(format!("Windows error: {err}")))
         }
     } else {
-        info!("Credencial eliminada exitosamente: {}", key);
+        info!("Credencial eliminada exitosamente: {key}");
         Ok(())
     }
 }

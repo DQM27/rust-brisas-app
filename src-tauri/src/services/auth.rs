@@ -28,7 +28,7 @@ fn get_argon2_params() -> Result<Params, UserError> {
         keyring_params.parallelism,
         Some(32), // Longitud del hash de salida (256 bits).
     )
-    .map_err(|e| UserError::Internal(format!("Parámetros Argon2 no válidos: {}", e)))
+    .map_err(|e| UserError::Internal(format!("Parámetros Argon2 no válidos: {e}")))
 }
 
 /// Obtiene el "pepper" (secreto adicional) desde el almacén seguro de credenciales.
@@ -59,12 +59,12 @@ pub fn hash_password(password: &str) -> Result<String, UserError> {
         Version::V0x13,
         get_argon2_params()?,
     )
-    .map_err(|e| UserError::Auth(format!("Error en la inicialización de Argon2: {}", e)))?;
+    .map_err(|e| UserError::Auth(format!("Error en la inicialización de Argon2: {e}")))?;
 
     argon2
         .hash_password(password.as_bytes(), &salt)
         .map(|hash| hash.to_string())
-        .map_err(|e| UserError::Auth(format!("Fallo crítico al hashear la contraseña: {}", e)))
+        .map_err(|e| UserError::Auth(format!("Fallo crítico al hashear la contraseña: {e}")))
 }
 
 /// Verifica si una contraseña coincide con el hash almacenado.
@@ -85,7 +85,7 @@ pub fn hash_password(password: &str) -> Result<String, UserError> {
 /// * `UserError::Auth`: Si el formato del hash no es válido.
 pub fn verify_password(password: &str, hash: &str) -> Result<bool, UserError> {
     let parsed_hash = PasswordHash::new(hash)
-        .map_err(|e| UserError::Auth(format!("El formato del hash es inválido: {}", e)))?;
+        .map_err(|e| UserError::Auth(format!("El formato del hash es inválido: {e}")))?;
 
     let secret = get_password_secret();
 
@@ -95,7 +95,7 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, UserError> {
         Version::V0x13,
         get_argon2_params()?,
     )
-    .map_err(|e| UserError::Auth(format!("Error de configuración en la verificación: {}", e)))?;
+    .map_err(|e| UserError::Auth(format!("Error de configuración en la verificación: {e}")))?;
 
     // La comparación se realiza en tiempo constante para mitigar ataques de temporización.
     Ok(argon2.verify_password(password.as_bytes(), &parsed_hash).is_ok())

@@ -37,7 +37,7 @@ use log::{debug, error, info, warn};
 
 /// Mapeo de errores técnicos a errores de negocio.
 fn map_db_error(e: SurrealDbError) -> VisitanteError {
-    error!("Fallo en SurrealDB durante operación de visitantes: {}", e);
+    error!("Fallo en SurrealDB durante operación de visitantes: {e}");
     VisitanteError::Database(e.to_string())
 }
 
@@ -123,7 +123,7 @@ pub async fn create_visitante(
     if let Some((tipo_opt, placa_opt, marca, modelo, color)) = vehicle_data {
         if let (Some(tipo), Some(placa)) = (tipo_opt, placa_opt) {
             if !tipo.is_empty() && !placa.is_empty() {
-                debug!("Registrando activo móvil vinculado: Placa {}", placa);
+                debug!("Registrando activo móvil vinculado: Placa {placa}");
 
                 match registrar_vehiculo_visitante(
                     &visitante.id,
@@ -135,11 +135,11 @@ pub async fn create_visitante(
                 )
                 .await
                 {
-                    Ok(_) => info!("🚗 Vehículo Placa {} registrado y vinculado con éxito", placa),
+                    Ok(()) => info!("🚗 Vehículo Placa {placa} registrado y vinculado con éxito"),
                     Err(e) => {
                         let msg =
-                            format!("Visitante creado pero falló registro de vehículo: {}", e);
-                        warn!("⚠️ {}", msg);
+                            format!("Visitante creado pero falló registro de vehículo: {e}");
+                        warn!("⚠️ {msg}");
                         vehicle_warning = Some(msg);
                     }
                 }
@@ -178,7 +178,7 @@ async fn registrar_vehiculo_visitante(
 
     let dto_vehiculo = VehiculoCreateDTO {
         propietario: visitante_id.clone(),
-        tipo_vehiculo: tipo_norm.parse::<TipoVehiculo>().map_err(|e| e)?,
+        tipo_vehiculo: tipo_norm.parse::<TipoVehiculo>()?,
         placa: placa_norm,
         marca: marca.as_ref().map(|s| s.trim().to_string()),
         modelo: modelo.as_ref().map(|s| s.trim().to_string()),
@@ -226,7 +226,7 @@ pub async fn update_visitante(
     mut input: CreateVisitanteInput,
 ) -> Result<VisitanteResponse, VisitanteError> {
     let id_thing = parse_record_id(id_str, "visitante");
-    debug!("Actualizando perfil de visitante: {}", id_str);
+    debug!("Actualizando perfil de visitante: {id_str}");
 
     db::find_by_id(&id_thing).await.map_err(map_db_error)?.ok_or(VisitanteError::NotFound)?;
 
@@ -242,7 +242,7 @@ pub async fn update_visitante(
     dto.has_vehicle = Some(input.has_vehicle);
     dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
-    info!("📝 Actualizando datos del visitante ID: {}", id_str);
+    info!("📝 Actualizando datos del visitante ID: {id_str}");
     let visitante = db::update(&id_thing, dto).await.map_err(map_db_error)?;
 
     if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
@@ -259,14 +259,14 @@ pub async fn delete_visitante(id_str: &str) -> Result<(), VisitanteError> {
     let id_thing = parse_record_id(id_str, "visitante");
     db::find_by_id(&id_thing).await.map_err(map_db_error)?.ok_or(VisitanteError::NotFound)?;
 
-    info!("🗑️ Archivando visitante: {}", id_str);
+    info!("🗑️ Archivando visitante: {id_str}");
     db::delete(&id_thing).await.map_err(map_db_error)
 }
 
 /// Restaura un visitante previamente archivado.
 pub async fn restore_visitante(id_str: &str) -> Result<VisitanteResponse, VisitanteError> {
     let id_thing = parse_record_id(id_str, "visitante");
-    info!("♻️ Restaurando visitante: {}", id_str);
+    info!("♻️ Restaurando visitante: {id_str}");
     let visitante = db::restore(&id_thing).await.map_err(map_db_error)?;
 
     if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {

@@ -76,8 +76,7 @@ pub fn validar_marca(marca: &str) -> Result<(), VehiculoError> {
 
     if limpia.len() > MAX_LEN_MARCA_VEHICULO {
         return Err(VehiculoError::Validation(format!(
-            "La marca no puede exceder {} caracteres",
-            MAX_LEN_MARCA_VEHICULO
+            "La marca no puede exceder {MAX_LEN_MARCA_VEHICULO} caracteres"
         )));
     }
 
@@ -94,8 +93,7 @@ pub fn validar_texto_opcional(
 
     if limpio.len() > max_len {
         return Err(VehiculoError::Validation(format!(
-            "{} no puede exceder {} caracteres",
-            campo, max_len
+            "{campo} no puede exceder {max_len} caracteres"
         )));
     }
 

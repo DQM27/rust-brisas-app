@@ -10,7 +10,7 @@ use std::collections::HashMap;
 // --------------------------------------------------------------------------
 
 /// Formatos soportados para la exportación de datos.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ExportFormat {
     Pdf,
@@ -19,11 +19,11 @@ pub enum ExportFormat {
 }
 
 impl ExportFormat {
-    pub fn as_str(&self) -> &str {
+    pub const fn as_str(&self) -> &str {
         match self {
-            ExportFormat::Pdf => "pdf",
-            ExportFormat::Excel => "excel",
-            ExportFormat::Csv => "csv",
+            Self::Pdf => "pdf",
+            Self::Excel => "excel",
+            Self::Csv => "csv",
         }
     }
 }
@@ -33,16 +33,16 @@ impl std::str::FromStr for ExportFormat {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "pdf" => Ok(ExportFormat::Pdf),
-            "excel" => Ok(ExportFormat::Excel),
-            "csv" => Ok(ExportFormat::Csv),
-            _ => Err(format!("Formato desconocido: {}", s)),
+            "pdf" => Ok(Self::Pdf),
+            "excel" => Ok(Self::Excel),
+            "csv" => Ok(Self::Csv),
+            _ => Err(format!("Formato desconocido: {s}")),
         }
     }
 }
 
 /// Orientación de la página para PDFs.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum PageOrientation {
     Portrait,
@@ -51,7 +51,7 @@ pub enum PageOrientation {
 }
 
 /// Delimitadores soportados para archivos CSV.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum CsvDelimiter {
     #[default]
     Comma,
@@ -61,12 +61,12 @@ pub enum CsvDelimiter {
 }
 
 impl CsvDelimiter {
-    pub fn as_char(&self) -> char {
+    pub const fn as_char(&self) -> char {
         match self {
-            CsvDelimiter::Comma => ',',
-            CsvDelimiter::Semicolon => ';',
-            CsvDelimiter::Tab => '\t',
-            CsvDelimiter::Pipe => '|',
+            Self::Comma => ',',
+            Self::Semicolon => ';',
+            Self::Tab => '\t',
+            Self::Pipe => '|',
         }
     }
 }
@@ -76,11 +76,11 @@ impl std::str::FromStr for CsvDelimiter {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "comma" | "," => Ok(CsvDelimiter::Comma),
-            "semicolon" | ";" => Ok(CsvDelimiter::Semicolon),
-            "tab" | "\\t" => Ok(CsvDelimiter::Tab),
-            "pipe" | "|" => Ok(CsvDelimiter::Pipe),
-            _ => Err(format!("Delimitador desconocido: {}", s)),
+            "comma" | "," => Ok(Self::Comma),
+            "semicolon" | ";" => Ok(Self::Semicolon),
+            "tab" | "\\t" => Ok(Self::Tab),
+            "pipe" | "|" => Ok(Self::Pipe),
+            _ => Err(format!("Delimitador desconocido: {s}")),
         }
     }
 }
@@ -171,7 +171,7 @@ impl Default for PdfConfig {
             margin_left: 1.5,
             margin_right: 1.5,
             banner_color: "#059669".to_string(),
-            generated_by: "".to_string(),
+            generated_by: String::new(),
         }
     }
 }
@@ -263,16 +263,16 @@ pub enum ExportValue {
 
 impl Default for ExportValue {
     fn default() -> Self {
-        ExportValue::Text(String::new())
+        Self::Text(String::new())
     }
 }
 
 impl std::fmt::Display for ExportValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ExportValue::Text(s) => write!(f, "{}", s),
-            ExportValue::Number(n) => write!(f, "{}", n),
-            ExportValue::Bool(b) => write!(f, "{}", b),
+            Self::Text(s) => write!(f, "{s}"),
+            Self::Number(n) => write!(f, "{n}"),
+            Self::Bool(b) => write!(f, "{b}"),
         }
     }
 }
@@ -348,7 +348,7 @@ pub struct ExportProfile {
 }
 
 impl ExportProfile {
-    pub fn new(id: String, name: String, format: String) -> Self {
+    pub const fn new(id: String, name: String, format: String) -> Self {
         Self {
             id,
             name,

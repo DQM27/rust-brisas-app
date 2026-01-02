@@ -14,7 +14,7 @@ use tauri::{command, State};
 
 /// [Comando Tauri] Realiza una copia de seguridad manual de la base de datos activa.
 ///
-/// **Nota**: Actualmente devuelve error ya que SurrealDB requiere
+/// **Nota**: Actualmente devuelve error ya que `SurrealDB` requiere
 /// un proceso de exportación específico para hot-backups.
 ///
 /// # Argumentos
@@ -47,14 +47,14 @@ pub async fn restore_database(
     config: State<'_, AppConfig>,
     source_path: String,
 ) -> Result<(), BackupError> {
-    info!("🔄 Preparando protocolo de restauración desde: {}", source_path);
+    info!("🔄 Preparando protocolo de restauración desde: {source_path}");
 
     let db_path = crate::config::manager::get_database_path(&config);
     let restore_path = backup::get_restore_path(&db_path);
 
     let source = std::path::Path::new(&source_path);
     if !source.exists() {
-        error!("Fallo en restauración: Origen inexistente en {}", source_path);
+        error!("Fallo en restauración: Origen inexistente en {source_path}");
         return Err(BackupError::NotFound(source_path));
     }
 
@@ -70,8 +70,8 @@ pub async fn restore_database(
     }
 
     backup::copy_recursive(source, &restore_path).map_err(|e| {
-        error!("Error al preparar staging de restauración: {}", e);
-        BackupError::IO(format!("Fallo al copiar datos a staging: {}", e))
+        error!("Error al preparar staging de restauración: {e}");
+        BackupError::IO(format!("Fallo al copiar datos a staging: {e}"))
     })?;
 
     info!("✅ Protocolo listo. El sistema se restaurará en el próximo reinicio.");
