@@ -405,19 +405,18 @@ pub async fn update_contratista(
 // CAMBIAR ESTADO
 // ==========================================
 
+/// Cambia el estado de un contratista (Activo, Inactivo, Bloqueado).
 pub async fn cambiar_estado_contratista(
     _search_service: &Arc<SearchService>,
     id_str: String,
     input: CambiarEstadoInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
     let id = parse_contratista_id(&id_str);
-    domain::validar_estado(&input.estado)?;
 
     db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
-    let estado_enum: EstadoContratista =
-        input.estado.parse().map_err(ContratistaError::Validation)?;
-    let updated = db::update_status(&id, estado_enum).await.map_err(map_db_error)?;
+    // input.estado ya es EstadoContratista (Type-Driven Design)
+    let updated = db::update_status(&id, input.estado).await.map_err(map_db_error)?;
     build_response_fetched(updated).await
 }
 

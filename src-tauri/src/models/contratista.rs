@@ -1,34 +1,79 @@
-/// Modelo de Base de Datos: Contratista.
-///
-/// Este módulo define la estructura para personal externo (contratistas)
-/// que requiere acceso a las instalaciones.
+//! # Models: Contratista
+//!
+//! Estructuras de datos para el dominio de contratistas externos.
+//!
+//! ## Entidades Principales
+//! - [`Contratista`]: Representación completa desde base de datos
+//! - [`ContratistaFetched`]: Con empresa expandida (fetch)
+//! - [`ContratistaResponse`]: DTO de salida al frontend
+//!
+//! ## DTOs de Entrada
+//! - [`CreateContratistaInput`]: Input desde frontend para creación
+//! - [`UpdateContratistaInput`]: Input para actualización parcial
+//! - [`CambiarEstadoInput`]: Input para cambio de estado
+//!
+//! ## Convenciones de Fechas
+//! - Campos `*_at`: Timestamps en formato SurrealDB `Datetime`
+//! - Campo `fecha_vencimiento_praind`: Fecha en formato YYYY-MM-DD
+//! - La validación de formatos ocurre en [`crate::domain::contratista`]
+//!
+//! ## Enums de Estado
+//! [`EstadoContratista`] usa `lowercase` para serialización y es compatible con SurrealDB.
+
 use crate::models::empresa::Empresa;
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};
 
 // --------------------------------------------------------------------------
 // MODELO PRINCIPAL
 // --------------------------------------------------------------------------
+
+/// Representa un contratista externo registrado en el sistema.
+///
+/// ## Ciclo de Vida
+/// 1. Creado con estado [`EstadoContratista::Activo`] y PRAIND válido
+/// 2. Cambia a [`EstadoContratista::Inactivo`] si PRAIND vence
+/// 3. Puede ser [`EstadoContratista::Bloqueado`] por decisión administrativa
+///
+/// ## Relaciones
+/// - Pertenece a una [`Empresa`] (campo `empresa`)
+/// - Puede tener vehículos asociados
+/// - Puede estar en lista negra
+///
+/// ## Campos Críticos para Seguridad
+/// - `cedula`: Identificador único, validado en [`crate::domain::contratista`]
+/// - `fecha_vencimiento_praind`: Determina si puede ingresar
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Contratista {
+    /// ID único en SurrealDB (formato: contratista:ulid)
     pub id: RecordId,
+    /// Cédula de identidad (formato validado: números y guiones)
     pub cedula: String,
+    /// Primer nombre del contratista
     pub nombre: String,
+    /// Segundo nombre (opcional)
     #[serde(alias = "segundo_nombre")]
     pub segundo_nombre: Option<String>,
+    /// Primer apellido del contratista
     pub apellido: String,
+    /// Segundo apellido (opcional)
     #[serde(alias = "segundo_apellido")]
     pub segundo_apellido: Option<String>,
+    /// Referencia a la empresa empleadora
     pub empresa: RecordId,
+    /// Fecha de vencimiento de certificación PRAIND
     #[serde(alias = "fecha_vencimiento_praind")]
     pub fecha_vencimiento_praind: Datetime,
+    /// Estado actual del contratista
     pub estado: EstadoContratista,
+    /// Timestamp de creación
     #[serde(alias = "created_at")]
     pub created_at: Datetime,
+    /// Timestamp de última actualización
     #[serde(alias = "updated_at")]
     pub updated_at: Datetime,
+    /// Timestamp de eliminación lógica (soft delete)
     #[serde(alias = "deleted_at")]
     pub deleted_at: Option<Datetime>,
 }
@@ -137,10 +182,12 @@ pub struct UpdateContratistaInput {
     pub color: Option<String>,
 }
 
+/// Input para cambiar el estado de un contratista.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CambiarEstadoInput {
-    pub estado: String,
+    /// Nuevo estado a aplicar
+    pub estado: EstadoContratista,
 }
 
 // ==========================================
@@ -211,47 +258,29 @@ pub struct ContratistaResponse {
 
 impl From<Contratista> for ContratistaResponse {
     fn from(c: Contratista) -> Self {
-        let hoy = Utc::now();
-        // Access inner DateTime<Utc> directly (assuming tuple struct or Deref)
-        // Si falla la compilación, ajustaremos a conversión Into estricta
+        use crate::domain::contratista::{
+            calcular_estado_praind, construir_nombre_completo, puede_ingresar,
+        };
+
         let raw_date_str = c.fecha_vencimiento_praind.to_string();
-        // Limpiar formato literal de SurrealDB (ej: d'2022-01-01...')
-        let raw_date = raw_date_str.trim_start_matches("d'").trim_end_matches('\'');
 
-        let fecha_venc: DateTime<Utc> = raw_date.parse().or_else(|_| {
-            // Intenta parsear como fecha simple (YYYY-MM-DD)
-            chrono::NaiveDate::parse_from_str(raw_date, "%Y-%m-%d")
-                .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_local_timezone(Utc).unwrap())
-        }).unwrap_or_else(|_| {
-            println!(">>> CRITICAL: Error parseando fecha '{}' (original: '{}'). Usando fecha actual.", raw_date, raw_date_str);
-            hoy
-        });
+        // Delegar cálculo de estado PRAIND a domain (lógica pura)
+        let estado_praind = calcular_estado_praind(&raw_date_str);
 
-        // Usar fechas calendario para ignorar componentes de hora (que causan diffs de 0 días y vencimientos prematuros)
-        let venc_date = fecha_venc.date_naive();
-        let hoy_date = hoy.date_naive();
+        // Delegar construcción de nombre completo a domain
+        let nombre_completo = construir_nombre_completo(
+            &c.nombre,
+            c.segundo_nombre.as_deref(),
+            &c.apellido,
+            c.segundo_apellido.as_deref(),
+        );
 
-        let dias_hasta_vencimiento = (venc_date - hoy_date).num_days();
+        // Delegar regla de negocio "puede ingresar" a domain
+        let puede = puede_ingresar(&c.estado, estado_praind.vencido);
 
-        // Vencido solo si la fecha es estrictamente en el pasado (ayer o antes)
-        let praind_vencido = venc_date < hoy_date;
-
-        // Requiere atención si faltan 30 días o menos (y no está vencido o venció hoy/ayer?)
-        // dias_hasta_vencimiento >= 0 cubre hoy y futuro.
-        let requiere_atencion = dias_hasta_vencimiento <= 30 && dias_hasta_vencimiento >= 0;
-        let puede_ingresar = c.estado == EstadoContratista::Activo && !praind_vencido;
-
-        let mut nombre_completo = c.nombre.clone();
-        if let Some(segundo) = &c.segundo_nombre {
-            nombre_completo.push(' ');
-            nombre_completo.push_str(segundo);
-        }
-        nombre_completo.push(' ');
-        nombre_completo.push_str(&c.apellido);
-        if let Some(segundo) = &c.segundo_apellido {
-            nombre_completo.push(' ');
-            nombre_completo.push_str(segundo);
-        }
+        // Parsear fecha para formato de salida
+        let fecha_venc_str =
+            raw_date_str.trim_start_matches("d'").trim_end_matches('\'').to_string();
 
         Self {
             id: c.id.to_string(),
@@ -263,19 +292,19 @@ impl From<Contratista> for ContratistaResponse {
             nombre_completo,
             empresa_id: c.empresa.to_string(),
             empresa_nombre: String::new(), // Será llenado por el servicio
-            fecha_vencimiento_praind: fecha_venc.to_rfc3339(),
+            fecha_vencimiento_praind: fecha_venc_str,
             estado: c.estado,
-            puede_ingresar,
-            praind_vencido,
+            puede_ingresar: puede,
+            praind_vencido: estado_praind.vencido,
             esta_bloqueado: false,
-            dias_hasta_vencimiento,
-            requiere_atencion,
+            dias_hasta_vencimiento: estado_praind.dias_hasta_vencimiento,
+            requiere_atencion: estado_praind.requiere_atencion,
             vehiculo_tipo: None,
             vehiculo_placa: None,
             vehiculo_marca: None,
             vehiculo_modelo: None,
             vehiculo_color: None,
-            created_at: c.created_at.to_string(), // Mantener default o cambiar a rfc3339 si es necesario
+            created_at: c.created_at.to_string(),
             updated_at: c.updated_at.to_string(),
             deleted_at: c.deleted_at.map(|d| d.to_string()),
         }
@@ -283,44 +312,31 @@ impl From<Contratista> for ContratistaResponse {
 }
 
 impl ContratistaResponse {
+    /// Construye un response desde un ContratistaFetched (con empresa expandida).
     pub fn from_fetched(c: ContratistaFetched) -> Self {
-        let hoy = Utc::now();
+        use crate::domain::contratista::{
+            calcular_estado_praind, construir_nombre_completo, puede_ingresar,
+        };
+
         let raw_date_str = c.fecha_vencimiento_praind.to_string();
-        let raw_date = raw_date_str.trim_start_matches("d'").trim_end_matches('\'');
 
-        let fecha_venc: DateTime<Utc> = raw_date
-            .parse()
-            .or_else(|_| {
-                chrono::NaiveDate::parse_from_str(raw_date, "%Y-%m-%d").map(|d| {
-                    d.and_hms_opt(0, 0, 0).unwrap().and_local_timezone(Utc).unwrap()
-                })
-            })
-            .unwrap_or_else(|_| {
-                println!(
-                    ">>> CRITICAL: Error parseando fecha '{}' (original: '{}'). Usando fecha actual.",
-                    raw_date, raw_date_str
-                );
-                hoy
-            });
+        // Delegar cálculo de estado PRAIND a domain (lógica pura)
+        let estado_praind = calcular_estado_praind(&raw_date_str);
 
-        let venc_date = fecha_venc.date_naive();
-        let hoy_date = hoy.date_naive();
-        let dias_hasta_vencimiento = (venc_date - hoy_date).num_days();
-        let praind_vencido = venc_date < hoy_date;
-        let requiere_atencion = dias_hasta_vencimiento <= 30 && dias_hasta_vencimiento >= 0;
-        let puede_ingresar = c.estado == EstadoContratista::Activo && !praind_vencido;
+        // Delegar construcción de nombre completo a domain
+        let nombre_completo = construir_nombre_completo(
+            &c.nombre,
+            c.segundo_nombre.as_deref(),
+            &c.apellido,
+            c.segundo_apellido.as_deref(),
+        );
 
-        let mut nombre_completo = c.nombre.clone();
-        if let Some(segundo) = &c.segundo_nombre {
-            nombre_completo.push(' ');
-            nombre_completo.push_str(segundo);
-        }
-        nombre_completo.push(' ');
-        nombre_completo.push_str(&c.apellido);
-        if let Some(segundo) = &c.segundo_apellido {
-            nombre_completo.push(' ');
-            nombre_completo.push_str(segundo);
-        }
+        // Delegar regla de negocio "puede ingresar" a domain
+        let puede = puede_ingresar(&c.estado, estado_praind.vencido);
+
+        // Parsear fecha para formato de salida
+        let fecha_venc_str =
+            raw_date_str.trim_start_matches("d'").trim_end_matches('\'').to_string();
 
         Self {
             id: c.id.to_string(),
@@ -332,13 +348,13 @@ impl ContratistaResponse {
             nombre_completo,
             empresa_id: c.empresa.id.to_string(),
             empresa_nombre: c.empresa.nombre.clone(),
-            fecha_vencimiento_praind: fecha_venc.to_rfc3339(),
+            fecha_vencimiento_praind: fecha_venc_str,
             estado: c.estado,
-            puede_ingresar,
-            praind_vencido,
+            puede_ingresar: puede,
+            praind_vencido: estado_praind.vencido,
             esta_bloqueado: false,
-            dias_hasta_vencimiento,
-            requiere_atencion,
+            dias_hasta_vencimiento: estado_praind.dias_hasta_vencimiento,
+            requiere_atencion: estado_praind.requiere_atencion,
             vehiculo_tipo: None,
             vehiculo_placa: None,
             vehiculo_marca: None,

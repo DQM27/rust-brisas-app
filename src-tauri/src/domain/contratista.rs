@@ -1,8 +1,23 @@
-/// Capa de Dominio: Reglas de Negocio para Contratistas.
-///
-/// Este módulo define las validaciones y lógicas puras aplicables a los
-/// contratistas externos. Estas reglas aseguran la integridad de los datos
-/// de filiación y laborales antes de su almacenamiento en la base de datos.
+//! # Dominio: Contratista
+//!
+//! Contiene las reglas de negocio puras y validaciones para contratistas externos.
+//!
+//! ## Responsabilidades
+//! - Validar formatos de entrada (cédulas, nombres, fechas PRAIND)
+//! - Normalizar datos (mayúsculas, espacios, Title Case)
+//! - Validar estados permitidos (activo, suspendido, etc.)
+//! - Validar DTOs de creación y actualización
+//!
+//! ## Principios
+//! - **Sin efectos secundarios**: Todas las funciones son puras
+//! - **Sin dependencias de infraestructura**: No accede a DB ni servicios
+//! - **Testing obligatorio**: Cada función tiene al menos un test
+//!
+//! ## Estándares de Fechas
+//! - Fechas de vencimiento PRAIND: YYYY-MM-DD (ej: "2026-12-31")
+//!
+//! Ver [`common`](crate::domain::common) para funciones centralizadas de validación.
+
 use crate::domain::common::{
     normalizar_nombre_propio, parsear_fecha_simple, validar_cedula_estandar,
     validar_nombre_estandar,
@@ -53,6 +68,23 @@ pub fn validar_apellido(apellido: &str) -> Result<(), ContratistaError> {
 }
 
 /// Valida que el ID de la empresa vinculada sea válido.
+///
+/// El ID debe ser un identificador no vacío en formato SurrealDB.
+///
+/// # Argumentos
+/// * `empresa_id` - Identificador de empresa (ej: "empresa:abc123")
+///
+/// # Errores
+/// * [`ContratistaError::Validation`] - Si el ID está vacío o solo espacios
+///
+/// # Ejemplo
+/// ```rust,ignore
+/// use brisas_app_lib::domain::contratista::validar_empresa_id;
+///
+/// assert!(validar_empresa_id("empresa:abc123").is_ok());
+/// assert!(validar_empresa_id("").is_err());
+/// assert!(validar_empresa_id("   ").is_err());
+/// ```
 pub fn validar_empresa_id(empresa_id: &str) -> Result<(), ContratistaError> {
     let limpia = empresa_id.trim();
 
@@ -129,12 +161,18 @@ pub fn validar_update_input(input: &UpdateContratistaInput) -> Result<(), Contra
 // UTILIDADES DE NORMALIZACIÓN
 // --------------------------------------------------------------------------
 
-/// Limpia y normaliza el texto para su persistencia.
-pub fn normalizar_texto(texto: &str) -> String {
-    normalizar_nombre_propio(texto)
-}
-
 /// Normaliza una cédula eliminando espacios y convirtiéndola a mayúsculas.
+///
+/// # Argumentos
+/// * `cedula` - Cédula en cualquier formato
+///
+/// # Ejemplo
+/// ```rust,ignore
+/// use brisas_app_lib::domain::contratista::normalizar_cedula;
+///
+/// assert_eq!(normalizar_cedula("  12345678  "), "12345678");
+/// assert_eq!(normalizar_cedula("12-345-678"), "12-345-678");
+/// ```
 pub fn normalizar_cedula(cedula: &str) -> String {
     cedula.trim().to_uppercase()
 }
@@ -145,6 +183,130 @@ pub fn validar_estado(estado: &str) -> Result<(), ContratistaError> {
         .parse::<EstadoContratista>()
         .map_err(|_| ContratistaError::Validation(format!("Estado inválido: {}", estado)))?;
     Ok(())
+}
+
+// --------------------------------------------------------------------------
+// REGLAS DE NEGOCIO: PRAIND Y ACCESO
+// --------------------------------------------------------------------------
+
+/// Resultado del análisis del estado PRAIND de un contratista.
+#[derive(Debug, Clone)]
+pub struct EstadoPraind {
+    /// Días restantes hasta el vencimiento (negativo si ya venció)
+    pub dias_hasta_vencimiento: i64,
+    /// True si el PRAIND ya venció (fecha estrictamente en el pasado)
+    pub vencido: bool,
+    /// True si faltan 30 días o menos (y no está vencido)
+    pub requiere_atencion: bool,
+}
+
+/// Calcula el estado del PRAIND basado en la fecha de vencimiento.
+///
+/// # Argumentos
+/// * `fecha_vencimiento` - Fecha de vencimiento en formato RFC 3339 o YYYY-MM-DD
+///
+/// # Retorno
+/// Estructura `EstadoPraind` con los cálculos de vencimiento
+///
+/// # Ejemplo
+/// ```rust,ignore
+/// let estado = calcular_estado_praind("2026-12-31");
+/// if estado.vencido {
+///     println!("PRAIND vencido hace {} días", -estado.dias_hasta_vencimiento);
+/// }
+/// ```
+pub fn calcular_estado_praind(fecha_vencimiento_str: &str) -> EstadoPraind {
+    use chrono::{DateTime, NaiveDate, Utc};
+
+    let hoy = Utc::now();
+    let hoy_date = hoy.date_naive();
+
+    // Limpiar formato literal de SurrealDB (ej: d'2022-01-01...')
+    let raw_date = fecha_vencimiento_str.trim_start_matches("d'").trim_end_matches('\'');
+
+    // Intentar parsear como RFC 3339 primero, luego como fecha simple
+    let fecha_venc: Option<NaiveDate> = DateTime::parse_from_rfc3339(raw_date)
+        .map(|dt| dt.date_naive())
+        .ok()
+        .or_else(|| NaiveDate::parse_from_str(raw_date, "%Y-%m-%d").ok());
+
+    match fecha_venc {
+        Some(venc_date) => {
+            let dias_hasta_vencimiento = (venc_date - hoy_date).num_days();
+            let vencido = venc_date < hoy_date;
+            let requiere_atencion = dias_hasta_vencimiento <= 30 && dias_hasta_vencimiento >= 0;
+
+            EstadoPraind { dias_hasta_vencimiento, vencido, requiere_atencion }
+        }
+        None => {
+            // Fecha inválida: tratar como vencido para seguridad
+            log::warn!(
+                "Error parseando fecha PRAIND '{}'. Tratando como vencido.",
+                fecha_vencimiento_str
+            );
+            EstadoPraind { dias_hasta_vencimiento: -1, vencido: true, requiere_atencion: false }
+        }
+    }
+}
+
+/// Construye el nombre completo de un contratista.
+///
+/// # Argumentos
+/// * `nombre` - Primer nombre (obligatorio)
+/// * `segundo_nombre` - Segundo nombre (opcional)
+/// * `apellido` - Primer apellido (obligatorio)
+/// * `segundo_apellido` - Segundo apellido (opcional)
+///
+/// # Ejemplo
+/// ```rust,ignore
+/// let nombre = construir_nombre_completo("Juan", Some("Carlos"), "Pérez", None);
+/// assert_eq!(nombre, "Juan Carlos Pérez");
+/// ```
+pub fn construir_nombre_completo(
+    nombre: &str,
+    segundo_nombre: Option<&str>,
+    apellido: &str,
+    segundo_apellido: Option<&str>,
+) -> String {
+    let mut completo = nombre.to_string();
+
+    if let Some(segundo) = segundo_nombre {
+        if !segundo.is_empty() {
+            completo.push(' ');
+            completo.push_str(segundo);
+        }
+    }
+
+    completo.push(' ');
+    completo.push_str(apellido);
+
+    if let Some(segundo) = segundo_apellido {
+        if !segundo.is_empty() {
+            completo.push(' ');
+            completo.push_str(segundo);
+        }
+    }
+
+    completo
+}
+
+/// Determina si un contratista puede ingresar a las instalaciones.
+///
+/// # Reglas de Negocio
+/// - El contratista debe estar en estado "Activo"
+/// - Su PRAIND no debe estar vencido
+///
+/// # Argumentos
+/// * `estado` - Estado actual del contratista
+/// * `praind_vencido` - Si el PRAIND está vencido
+///
+/// # Retorno
+/// `true` si el contratista puede ingresar
+pub fn puede_ingresar(
+    estado: &crate::models::contratista::EstadoContratista,
+    praind_vencido: bool,
+) -> bool {
+    *estado == crate::models::contratista::EstadoContratista::Activo && !praind_vencido
 }
 
 // --------------------------------------------------------------------------
