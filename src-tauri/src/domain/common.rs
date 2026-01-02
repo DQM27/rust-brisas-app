@@ -442,6 +442,34 @@ pub fn validar_opcional_estandar(
 }
 
 // --------------------------------------------------------------------------
+// PARSEO DE IDENTIFICADORES (IDs de SurrealDB)
+// --------------------------------------------------------------------------
+
+/// Parsea un string de ID a un RecordId de SurrealDB.
+///
+/// Acepta dos formatos:
+/// - Compuesto: `"tabla:id123"` → RecordId { tabla, "id123" }
+/// - Simple: `"id123"` → RecordId { tabla_default, "id123" }
+///
+/// # Argumentos
+/// * `id_str` - El string con el ID (puede incluir o no el nombre de tabla)
+/// * `default_table` - Tabla a usar si el ID no incluye prefijo de tabla
+///
+/// # Ejemplo
+/// ```rust
+/// let id = parse_record_id("visitante:abc123", "visitante"); // tabla: visitante, key: abc123
+/// let id = parse_record_id("abc123", "visitante");           // tabla: visitante, key: abc123
+/// ```
+pub fn parse_record_id(id_str: &str, default_table: &str) -> surrealdb::RecordId {
+    if id_str.contains(':') {
+        let parts: Vec<&str> = id_str.split(':').collect();
+        surrealdb::RecordId::from_table_key(parts[0], parts[1])
+    } else {
+        surrealdb::RecordId::from_table_key(default_table, id_str)
+    }
+}
+
+// --------------------------------------------------------------------------
 // UTILIDADES DE NORMALIZACIÓN TRANSVERSAL
 // --------------------------------------------------------------------------
 

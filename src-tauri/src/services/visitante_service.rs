@@ -3,10 +3,23 @@
 //! Este servicio orquesta el registro y seguimiento de personas externas.
 //! Implementa filtros de seguridad (Lista Negra) y vinculación opcional
 //! de activos móviles (Vehículos).
+//!
+//! ## Responsabilidades
+//! - Validar datos de visitantes mediante `domain::visitante`
+//! - Verificar bloqueos de seguridad en Lista Negra
+//! - Registrar vehículos asociados al visitante
+//!
+//! ## Flujo de Creación
+//! 1. Validación y normalización de datos
+//! 2. Verificación de Lista Negra (bloqueo preventivo)
+//! 3. Verificación de duplicados por cédula
+//! 4. Creación del visitante
+//! 5. Registro de vehículo (si aplica)
 
 use crate::db::surrealdb_lista_negra_queries as ln_db;
 use crate::db::surrealdb_vehiculo_queries as veh_db;
 use crate::db::surrealdb_visitante_queries as db;
+use crate::domain::common::parse_record_id;
 use crate::domain::errors::VisitanteError;
 use crate::domain::vehiculo as vehiculo_domain;
 use crate::domain::visitante as domain;
@@ -17,7 +30,10 @@ use crate::models::visitante::{
 use crate::services::surrealdb_service::SurrealDbError;
 use chrono::Utc;
 use log::{debug, error, info, warn};
-use surrealdb::RecordId;
+
+// --------------------------------------------------------------------------
+// UTILIDADES INTERNAS
+// --------------------------------------------------------------------------
 
 /// Mapeo de errores técnicos a errores de negocio.
 fn map_db_error(e: SurrealDbError) -> VisitanteError {
@@ -25,25 +41,9 @@ fn map_db_error(e: SurrealDbError) -> VisitanteError {
     VisitanteError::Database(e.to_string())
 }
 
-/// Normalización de IDs de visitante.
-fn parse_visitante_id(id_str: &str) -> RecordId {
-    if id_str.contains(':') {
-        let parts: Vec<&str> = id_str.split(':').collect();
-        RecordId::from_table_key(parts[0], parts[1])
-    } else {
-        RecordId::from_table_key("visitante", id_str)
-    }
-}
-
-/// Normalización de IDs de empresa.
-fn parse_empresa_id(id_str: &str) -> RecordId {
-    if id_str.contains(':') {
-        let parts: Vec<&str> = id_str.split(':').collect();
-        RecordId::from_table_key(parts[0], parts[1])
-    } else {
-        RecordId::from_table_key("empresa", id_str)
-    }
-}
+// --------------------------------------------------------------------------
+// OPERACIONES CRUD
+// --------------------------------------------------------------------------
 
 /// Registra un nuevo visitante.
 ///
@@ -90,13 +90,26 @@ pub async fn create_visitante(
         return Err(VisitanteError::CedulaExists);
     }
 
+    // Capturamos datos de vehículo antes de mover el input
+    let vehicle_data = if input.has_vehicle {
+        Some((
+            input.tipo_vehiculo.take(),
+            input.placa.take(),
+            input.marca.take(),
+            input.modelo.take(),
+            input.color.take(),
+        ))
+    } else {
+        None
+    };
+
     let dto = VisitanteCreateDTO {
         cedula: input.cedula,
         nombre: input.nombre,
         apellido: input.apellido,
         segundo_nombre: input.segundo_nombre,
         segundo_apellido: input.segundo_apellido,
-        empresa: parse_empresa_id(&input.empresa_id),
+        empresa: parse_record_id(&input.empresa_id, "empresa"),
         has_vehicle: input.has_vehicle,
     };
 
@@ -104,58 +117,101 @@ pub async fn create_visitante(
     let visitante = db::create_visitante(dto).await.map_err(map_db_error)?;
 
     // Gestión del vehículo asociado al visitante para control de acceso.
-    if input.has_vehicle {
-        if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
+    // NOTA: Error en vehículo no bloquea la creación del visitante (error parcial).
+    let mut vehicle_warning: Option<String> = None;
+
+    if let Some((tipo_opt, placa_opt, marca, modelo, color)) = vehicle_data {
+        if let (Some(tipo), Some(placa)) = (tipo_opt, placa_opt) {
             if !tipo.is_empty() && !placa.is_empty() {
                 debug!("Registrando activo móvil vinculado: Placa {}", placa);
-                let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
-                    .map_err(|e| VisitanteError::Validation(e.to_string()))?
-                    .as_str()
-                    .to_string();
 
-                let placa_norm = vehiculo_domain::normalizar_placa(placa);
-
-                let dto_vehiculo = VehiculoCreateDTO {
-                    propietario: visitante.id.clone(),
-                    tipo_vehiculo: tipo_norm
-                        .parse::<TipoVehiculo>()
-                        .map_err(|e| VisitanteError::Validation(e))?,
-                    placa: placa_norm,
-                    marca: input.marca.as_ref().map(|s| s.trim().to_string()),
-                    modelo: input.modelo.as_ref().map(|s| s.trim().to_string()),
-                    color: input.color.as_ref().map(|s| s.trim().to_string()),
-                    is_active: true,
-                };
-
-                match veh_db::insert(dto_vehiculo).await {
+                match registrar_vehiculo_visitante(
+                    &visitante.id,
+                    &tipo,
+                    &placa,
+                    marca,
+                    modelo,
+                    color,
+                )
+                .await
+                {
                     Ok(_) => info!("🚗 Vehículo Placa {} registrado y vinculado con éxito", placa),
-                    Err(e) => error!("Fallo al vincular vehículo en registro de visitante: {}", e),
+                    Err(e) => {
+                        let msg =
+                            format!("Visitante creado pero falló registro de vehículo: {}", e);
+                        warn!("⚠️ {}", msg);
+                        vehicle_warning = Some(msg);
+                    }
                 }
             }
         }
     }
 
     // Retornamos el perfil completo (incluyendo resolución de empresa si aplica).
-    if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
-        return Ok(VisitanteResponse::from_fetched(fetched));
-    }
+    let mut response = if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
+        VisitanteResponse::from_fetched(fetched)
+    } else {
+        VisitanteResponse::from(visitante)
+    };
 
-    Ok(VisitanteResponse::from(visitante))
+    // Adjuntar warning si hubo error parcial con el vehículo
+    response.warning = vehicle_warning;
+
+    Ok(response)
 }
 
+/// Registra un vehículo asociado a un visitante (función auxiliar).
+async fn registrar_vehiculo_visitante(
+    visitante_id: &surrealdb::RecordId,
+    tipo: &str,
+    placa: &str,
+    marca: Option<String>,
+    modelo: Option<String>,
+    color: Option<String>,
+) -> Result<(), String> {
+    let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
+        .map_err(|e| e.to_string())?
+        .as_str()
+        .to_string();
+
+    let placa_norm = vehiculo_domain::normalizar_placa(placa);
+
+    let dto_vehiculo = VehiculoCreateDTO {
+        propietario: visitante_id.clone(),
+        tipo_vehiculo: tipo_norm.parse::<TipoVehiculo>().map_err(|e| e)?,
+        placa: placa_norm,
+        marca: marca.as_ref().map(|s| s.trim().to_string()),
+        modelo: modelo.as_ref().map(|s| s.trim().to_string()),
+        color: color.as_ref().map(|s| s.trim().to_string()),
+        is_active: true,
+    };
+
+    veh_db::insert(dto_vehiculo).await.map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Busca visitantes por término de búsqueda (cédula, nombre o apellido).
+///
+/// La búsqueda es case-insensitive y filtra visitantes no archivados.
 pub async fn search_visitantes(term: &str) -> Result<Vec<VisitanteResponse>, VisitanteError> {
     let visitantes = db::search_visitantes(term).await.map_err(map_db_error)?;
     Ok(visitantes.into_iter().map(VisitanteResponse::from_fetched).collect())
 }
 
+/// Obtiene un visitante por su ID interno.
+///
+/// Retorna `None` si el visitante no existe.
 pub async fn get_visitante_by_id(
     id_str: &str,
 ) -> Result<Option<VisitanteResponse>, VisitanteError> {
-    let id_thing = parse_visitante_id(id_str);
+    let id_thing = parse_record_id(id_str, "visitante");
     let opt = db::find_by_id_fetched(&id_thing).await.map_err(map_db_error)?;
     Ok(opt.map(VisitanteResponse::from_fetched))
 }
 
+/// Busca un visitante por su número de cédula.
+///
+/// La cédula se normaliza antes de buscar para garantizar consistencia.
 pub async fn get_visitante_by_cedula(
     cedula: &str,
 ) -> Result<Option<VisitanteResponse>, VisitanteError> {
@@ -169,7 +225,7 @@ pub async fn update_visitante(
     id_str: &str,
     mut input: CreateVisitanteInput,
 ) -> Result<VisitanteResponse, VisitanteError> {
-    let id_thing = parse_visitante_id(id_str);
+    let id_thing = parse_record_id(id_str, "visitante");
     debug!("Actualizando perfil de visitante: {}", id_str);
 
     db::find_by_id(&id_thing).await.map_err(map_db_error)?.ok_or(VisitanteError::NotFound)?;
@@ -182,7 +238,7 @@ pub async fn update_visitante(
     dto.apellido = Some(input.apellido);
     dto.segundo_nombre = Some(input.segundo_nombre);
     dto.segundo_apellido = Some(input.segundo_apellido);
-    dto.empresa = Some(parse_empresa_id(&input.empresa_id));
+    dto.empresa = Some(parse_record_id(&input.empresa_id, "empresa"));
     dto.has_vehicle = Some(input.has_vehicle);
     dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
@@ -196,16 +252,20 @@ pub async fn update_visitante(
     Ok(VisitanteResponse::from(visitante))
 }
 
+/// Archiva un visitante (borrado lógico).
+///
+/// El visitante permanece en la base de datos pero marcado como eliminado.
 pub async fn delete_visitante(id_str: &str) -> Result<(), VisitanteError> {
-    let id_thing = parse_visitante_id(id_str);
+    let id_thing = parse_record_id(id_str, "visitante");
     db::find_by_id(&id_thing).await.map_err(map_db_error)?.ok_or(VisitanteError::NotFound)?;
 
     info!("🗑️ Archivando visitante: {}", id_str);
     db::delete(&id_thing).await.map_err(map_db_error)
 }
 
+/// Restaura un visitante previamente archivado.
 pub async fn restore_visitante(id_str: &str) -> Result<VisitanteResponse, VisitanteError> {
-    let id_thing = parse_visitante_id(id_str);
+    let id_thing = parse_record_id(id_str, "visitante");
     info!("♻️ Restaurando visitante: {}", id_str);
     let visitante = db::restore(&id_thing).await.map_err(map_db_error)?;
 
@@ -216,12 +276,14 @@ pub async fn restore_visitante(id_str: &str) -> Result<VisitanteResponse, Visita
     Ok(VisitanteResponse::from(visitante))
 }
 
+/// Lista todos los visitantes archivados (eliminados lógicamente).
 pub async fn get_archived_visitantes() -> Result<Vec<VisitanteResponse>, VisitanteError> {
     debug!("Consultando catálogo de visitantes archivados");
     let visitantes = db::find_archived().await.map_err(map_db_error)?;
     Ok(visitantes.into_iter().map(VisitanteResponse::from_fetched).collect())
 }
 
+/// Obtiene todos los visitantes activos (no archivados).
 pub async fn get_all_visitantes() -> Result<Vec<VisitanteResponse>, VisitanteError> {
     debug!("Consultando listado total de visitantes");
     let visitantes = db::find_all().await.map_err(map_db_error)?;
@@ -237,23 +299,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_visitante_id() {
-        let id = parse_visitante_id("123");
+    fn test_parse_record_id_visitante() {
+        let id = parse_record_id("123", "visitante");
         assert_eq!(id.table(), "visitante");
         assert_eq!(id.key().to_string(), "123");
 
-        let id_comp = parse_visitante_id("visitante:abc");
+        let id_comp = parse_record_id("visitante:abc", "visitante");
         assert_eq!(id_comp.table(), "visitante");
         assert_eq!(id_comp.key().to_string(), "abc");
     }
 
     #[test]
-    fn test_parse_empresa_id() {
-        let id = parse_empresa_id("brisa");
+    fn test_parse_record_id_empresa() {
+        let id = parse_record_id("brisa", "empresa");
         assert_eq!(id.table(), "empresa");
         assert_eq!(id.key().to_string(), "brisa");
 
-        let id_comp = parse_empresa_id("empresa:x");
+        let id_comp = parse_record_id("empresa:x", "empresa");
         assert_eq!(id_comp.table(), "empresa");
         assert_eq!(id_comp.key().to_string(), "x");
     }

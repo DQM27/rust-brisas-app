@@ -75,6 +75,7 @@ macro_rules! register_handlers {
             commands::visitante_commands::create_visitante,
             commands::visitante_commands::search_visitantes_catalog,
             commands::visitante_commands::get_visitante_by_cedula,
+            commands::visitante_commands::get_visitante_by_id,
             commands::visitante_commands::update_visitante,
             commands::visitante_commands::delete_visitante,
             commands::visitante_commands::restore_visitante,

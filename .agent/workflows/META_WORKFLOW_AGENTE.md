@@ -1,10 +1,8 @@
-# 🎯 META-WORKFLOW: Guía del Agente para Refactorización de Brisas APP
-
-**Versión**: 1.0  
-**Propósito**: Instrucciones estrictas para el agente IA sobre cómo usar los workflows  
-**Audiencia**: Agente IA (Claude) que ejecutará los refactors  
-
 ---
+description: 
+---
+
+
 
 ## ⚠️ REGLAS DE ORO (NUNCA OLVIDAR)
 

@@ -112,6 +112,10 @@ pub struct VisitanteUpdateDTO {
 // --------------------------------------------------------------------------
 
 /// Respuesta detallada de información de visitante.
+///
+/// ## Campo `warning`
+/// Se utiliza para comunicar errores parciales al frontend. Por ejemplo,
+/// cuando un visitante se crea exitosamente pero su vehículo no pudo registrarse.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VisitanteResponse {
@@ -127,6 +131,9 @@ pub struct VisitanteResponse {
     pub created_at: String,
     pub updated_at: String,
     pub deleted_at: Option<String>,
+    /// Mensaje de advertencia si hubo un error parcial durante la operación.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub warning: Option<String>,
 }
 
 impl From<Visitante> for VisitanteResponse {
@@ -144,6 +151,7 @@ impl From<Visitante> for VisitanteResponse {
             created_at: v.created_at.to_string(),
             updated_at: v.updated_at.to_string(),
             deleted_at: v.deleted_at.map(|d| d.to_string()),
+            warning: None,
         }
     }
 }
@@ -167,6 +175,7 @@ impl VisitanteResponse {
             created_at: v.created_at.to_string(),
             updated_at: v.updated_at.to_string(),
             deleted_at: v.deleted_at.map(|d| d.to_string()),
+            warning: None,
         }
     }
 }

@@ -41,6 +41,16 @@ pub async fn get_visitante_by_cedula(
     service::get_visitante_by_cedula(&cedula).await
 }
 
+/// Obtiene el perfil completo de un visitante por su ID interno.
+#[command]
+pub async fn get_visitante_by_id(
+    session: State<'_, SessionState>,
+    id: String,
+) -> Result<Option<VisitanteResponse>, VisitanteError> {
+    require_perm!(session, "visitantes:read")?;
+    service::get_visitante_by_id(&id).await
+}
+
 /// Actualiza la información personal o motivos recurrentes de un visitante.
 #[command]
 pub async fn update_visitante(
