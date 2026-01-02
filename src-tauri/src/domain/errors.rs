@@ -94,6 +94,8 @@ pub enum ContratistaError {
     Search(String),
     #[error("Error de validación: {0}")]
     Validation(String),
+    #[error("No autorizado: {0}")]
+    Unauthorized(String),
 }
 
 impl From<crate::services::surrealdb_authorization::AuthError> for ContratistaError {

@@ -191,11 +191,14 @@ impl From<ListaNegra> for ListaNegraResponse {
 /// Respuesta simplificada de verificación de bloqueo.
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct BlockCheckResponse {
+pub struct BlockStatus {
     pub is_blocked: bool,
     pub nivel_severidad: Option<String>,
     pub bloqueado_desde: Option<String>,
 }
+
+/// Respuesta simplificada de verificación de bloqueo (Legacy alias replacement).
+pub type BlockCheckResponse = BlockStatus;
 
 /// Lista paginada de personas bloqueadas.
 #[derive(Debug, Clone, Serialize)]

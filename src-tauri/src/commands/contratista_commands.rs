@@ -190,9 +190,15 @@ pub async fn delete_contratista(
 /// Ok(()) si la restauración fue exitosa.
 #[command]
 pub async fn restore_contratista(
+    session: State<'_, SessionState>,
     search_service: State<'_, Arc<SearchService>>,
     id: String,
 ) -> Result<(), ContratistaError> {
+    require_perm!(
+        session,
+        "contratistas:delete",
+        format!("Restaurando perfil de contratista {}", id)
+    )?;
     contratista_service::restore_contratista(&search_service, id).await
 }
 
@@ -211,11 +217,14 @@ pub async fn restore_contratista(
 /// Perfil con fecha PRAIND actualizada.
 #[command]
 pub async fn actualizar_praind_con_historial(
+    session: State<'_, SessionState>,
     search_service: State<'_, Arc<SearchService>>,
     input: ActualizarPraindInput,
-    usuario_id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    contratista_service::actualizar_praind_con_historial(&search_service, input, usuario_id).await
+    let user =
+        session.get_user().ok_or(ContratistaError::Unauthorized("Sesión no válida".to_string()))?;
+    contratista_service::actualizar_praind_con_historial(&search_service, input, user.id.clone())
+        .await
 }
 
 /// [Comando Tauri] Cambia estado con registro de auditoría.
@@ -229,9 +238,11 @@ pub async fn actualizar_praind_con_historial(
 /// Perfil con estado actualizado.
 #[command]
 pub async fn cambiar_estado_con_historial(
+    session: State<'_, SessionState>,
     search_service: State<'_, Arc<SearchService>>,
     input: CambiarEstadoConHistorialInput,
-    usuario_id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    contratista_service::cambiar_estado_con_historial(&search_service, input, usuario_id).await
+    let user =
+        session.get_user().ok_or(ContratistaError::Unauthorized("Sesión no válida".to_string()))?;
+    contratista_service::cambiar_estado_con_historial(&search_service, input, user.id.clone()).await
 }

@@ -13,12 +13,10 @@ use crate::models::contratista::{
     Contratista, ContratistaCreateDTO, ContratistaFetched, ContratistaUpdateDTO,
 };
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use log::{debug, info, warn};
 use surrealdb::RecordId;
 
 /// Crea un nuevo contratista en la base de datos.
 pub async fn create(dto: ContratistaCreateDTO) -> Result<ContratistaFetched, SurrealDbError> {
-    debug!("➕ Creando nuevo contratista");
     let db = get_db().await?;
 
     // CREATE doesn't support FETCH, so we need two queries:
@@ -35,16 +33,10 @@ pub async fn create(dto: ContratistaCreateDTO) -> Result<ContratistaFetched, Sur
 
     let fetched: Option<ContratistaFetched> = result.take(0)?;
     match fetched {
-        Some(f) => {
-            info!("✅ Contratista creado: id={}, cédula={}", f.id, f.cedula);
-            Ok(f)
-        }
-        None => {
-            warn!("⚠️ Contratista creado pero FETCH falló: id={}", contratista.id);
-            Err(SurrealDbError::Query(
-                "Contratista creado pero no se pudo obtener con FETCH".to_string(),
-            ))
-        }
+        Some(f) => Ok(f),
+        None => Err(SurrealDbError::Query(
+            "Contratista creado pero no se pudo obtener con FETCH".to_string(),
+        )),
     }
 }
 
@@ -228,7 +220,6 @@ pub async fn update(
     id: &RecordId,
     dto: ContratistaUpdateDTO,
 ) -> Result<ContratistaFetched, SurrealDbError> {
-    debug!("✏️ Actualizando contratista {}", id);
     let db = get_db().await?;
 
     // 1. Update using native SDK (consistent with User module)
@@ -238,7 +229,6 @@ pub async fn update(
     let mut result = db.query("SELECT * FROM $id FETCH empresa").bind(("id", id.clone())).await?;
 
     let fetched: Option<ContratistaFetched> = result.take(0)?;
-    debug!("✅ Contratista actualizado: {}", id);
     fetched.ok_or_else(|| {
         SurrealDbError::Query(format!("Contratista no encontrado después de UPDATE: {}", id))
     })
@@ -306,7 +296,6 @@ pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
         .bind(("id", id.clone()))
         .await?
         .take(0)?;
-    info!("🗑️ Contratista eliminado (soft delete): {}", id);
     Ok(())
 }
 
@@ -330,7 +319,6 @@ pub async fn restore(id: &RecordId) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
     let _: Option<Contratista> =
         db.query("UPDATE $id SET deleted_at = NONE").bind(("id", id.clone())).await?.take(0)?;
-    info!("♻️ Contratista restaurado: {}", id);
     Ok(())
 }
 

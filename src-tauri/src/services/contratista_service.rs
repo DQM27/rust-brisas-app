@@ -1,3 +1,11 @@
+use crate::domain::contratista as domain;
+use crate::domain::errors::ContratistaError;
+use crate::models::contratista::{
+    ActualizarPraindInput, CambiarEstadoConHistorialInput, CambiarEstadoInput,
+    ContratistaCreateDTO, ContratistaListResponse, ContratistaResponse, CreateContratistaInput,
+    EstadoContratista, UpdateContratistaInput,
+};
+use crate::models::vehiculo::VehiculoCreateDTO;
 /// Servicio: Gestión Integral de Contratistas
 ///
 /// Orquestador del ciclo de vida completo de un contratista: desde su validación
@@ -8,21 +16,11 @@
 /// - Actualización de perfiles y certificaciones (PRAIND).
 /// - Gestión de vehículos vinculados.
 /// - Sincronización con motor de búsqueda.
-use crate::db::surrealdb_audit_queries as audit_db;
-use crate::db::surrealdb_contratista_queries as db;
-use crate::db::surrealdb_empresa_queries as empresa_db;
-use crate::db::surrealdb_lista_negra_queries as ln_db;
-use crate::db::surrealdb_vehiculo_queries as veh_db;
-
-use crate::domain::contratista as domain;
-use crate::domain::errors::ContratistaError;
-use crate::domain::vehiculo as vehiculo_domain;
-use crate::models::contratista::{
-    ActualizarPraindInput, CambiarEstadoConHistorialInput, CambiarEstadoInput,
-    ContratistaCreateDTO, ContratistaListResponse, ContratistaResponse, CreateContratistaInput,
-    EstadoContratista, UpdateContratistaInput,
+// crate::db::* imports removed in favor of repositories
+use crate::repositories::traits::{
+    AuditRepository, ContratistaRepository, EmpresaRepository, SecurityRepository,
+    VehiculoRepository,
 };
-use crate::models::vehiculo::{TipoVehiculo, VehiculoCreateDTO};
 use crate::services::search_service::SearchService;
 use crate::services::surrealdb_service::SurrealDbError;
 use chrono::{DateTime, TimeZone, Utc};
@@ -89,6 +87,14 @@ pub async fn create_contratista(
     search_service: &Arc<SearchService>,
     input: CreateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
+    // Instanciar repositorios (Inyección manual por simplicidad en esta fase)
+    use crate::repositories::contratista::{
+        SurrealContratistaRepository, SurrealEmpresaRepository, SurrealSecurityRepository,
+    };
+    let repo = SurrealContratistaRepository;
+    let security_repo = SurrealSecurityRepository;
+    let empresa_repo = SurrealEmpresaRepository;
+
     debug!("Iniciando registro de contratista: {} {}", input.nombre, input.apellido);
 
     domain::validar_create_input(&input)?;
@@ -96,9 +102,11 @@ pub async fn create_contratista(
 
     let cedula_normalizada = domain::normalizar_cedula(&input.cedula);
 
-    // Seguridad: Bloqueante si existe un registro activo en lista negra.
-    let block_status =
-        ln_db::check_if_blocked_by_cedula(&cedula_normalizada).await.map_err(map_db_error)?;
+    // 1. Seguridad: Verificar lista negra
+    let block_status = security_repo
+        .check_if_blocked_by_cedula(&cedula_normalizada)
+        .await
+        .map_err(map_db_error)?;
 
     if block_status.is_blocked {
         let nivel = block_status.nivel_severidad.unwrap_or_else(|| "BAJO".to_string());
@@ -112,20 +120,22 @@ pub async fn create_contratista(
         )));
     }
 
-    let existing = db::find_by_cedula(&cedula_normalizada).await.map_err(map_db_error)?;
+    // 2. Unicidad: Verificar si ya existe
+    let existing = repo.find_by_cedula(&cedula_normalizada).await.map_err(map_db_error)?;
     if existing.is_some() {
         warn!("Intento de duplicado para CI: {}", cedula_normalizada);
         return Err(ContratistaError::CedulaExists);
     }
 
+    // 3. Integridad: Verificar empresa
     let empresa_id = parse_empresa_id(&input.empresa_id);
-    let empresa_opt = empresa_db::find_by_id(&empresa_id).await.map_err(map_db_error)?;
+    let empresa_opt = empresa_repo.find_by_id(&empresa_id).await.map_err(map_db_error)?;
     if empresa_opt.is_none() {
         error!("Error de integridad: Empresa {} no encontrada", input.empresa_id);
         return Err(ContratistaError::EmpresaNotFound);
     }
 
-    // PRAIND es una certificación de seguridad necesaria para ciertos accesos.
+    // 4. Preparar DTO
     let fecha_vencimiento_naive = domain::validar_fecha(&input.fecha_vencimiento_praind)?;
     let fecha_vencimiento: DateTime<Utc> =
         chrono::Utc.from_utc_datetime(&fecha_vencimiento_naive.and_hms_opt(0, 0, 0).unwrap());
@@ -143,47 +153,17 @@ pub async fn create_contratista(
 
     debug!("Persistiendo contratista en DB: {:?}", dto);
 
-    let contratista = db::create(dto).await.map_err(|e| {
+    // 5. Persistencia
+    let contratista = repo.create(dto).await.map_err(|e| {
         error!("Fallo en DB al persistir contratista {}: {}", cedula_normalizada, e);
         map_db_error(e)
     })?;
 
     info!("Contratista {} registrado exitosamente (ID: {})", cedula_normalizada, contratista.id);
 
-    // Gestión automática del vehículo si el usuario lo solicita durante el registro.
-    if let Some(true) = input.tiene_vehiculo {
-        if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
-            if !tipo.is_empty() && !placa.is_empty() {
-                let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
-                    .map_err(|e| ContratistaError::Validation(e.to_string()))?
-                    .as_str()
-                    .to_string();
+    // Nota: La creación de vehículos se ha desacoplado y movido al frontend.
 
-                let placa_norm = vehiculo_domain::normalizar_placa(placa);
-
-                let dto_vehiculo = VehiculoCreateDTO {
-                    propietario: contratista.id.clone(),
-                    tipo_vehiculo: tipo_norm
-                        .parse::<TipoVehiculo>()
-                        .map_err(|e| ContratistaError::Validation(e))?,
-                    placa: placa_norm,
-                    marca: input.marca.as_ref().map(|s| s.trim().to_string()),
-                    modelo: input.modelo.as_ref().map(|s| s.trim().to_string()),
-                    color: input.color.as_ref().map(|s| s.trim().to_string()),
-                    is_active: true,
-                };
-
-                if let Err(e) = veh_db::insert(dto_vehiculo).await {
-                    error!(
-                        "Aviso: Contratista creado pero falló el registro de su vehículo: {}",
-                        e
-                    );
-                }
-            }
-        }
-    }
-
-    // Actualizamos el motor de búsqueda para que el nuevo contratista sea localizable de inmediato.
+    // 6. Indexación
     let empresa_nombre = contratista.empresa.nombre.clone();
     if let Err(e) = search_service.add_contratista_fetched(&contratista, &empresa_nombre).await {
         log::warn!("Aviso: Falló la indexación en el motor de búsqueda: {}", e);
@@ -212,10 +192,14 @@ pub async fn create_contratista(
 /// - `ContratistaError::NotFound`: El contratista no existe.
 /// - `ContratistaError::Database`: Error de acceso a datos.
 pub async fn get_contratista_by_id(id_str: &str) -> Result<ContratistaResponse, ContratistaError> {
+    use crate::repositories::contratista::SurrealContratistaRepository;
+    let repo = SurrealContratistaRepository;
+
     let id = parse_contratista_id(id_str);
     debug!("Consultando contratista por ID: {}", id);
 
-    let contratista = db::find_by_id_fetched(&id)
+    let contratista = repo
+        .find_by_id_fetched(&id)
         .await
         .map_err(map_db_error)?
         .ok_or(ContratistaError::NotFound)?;
@@ -235,10 +219,14 @@ pub async fn get_contratista_by_id(id_str: &str) -> Result<ContratistaResponse, 
 pub async fn get_contratista_by_cedula(
     cedula: &str,
 ) -> Result<ContratistaResponse, ContratistaError> {
+    use crate::repositories::contratista::SurrealContratistaRepository;
+    let repo = SurrealContratistaRepository;
+
     let cedula_norm = domain::normalizar_cedula(cedula);
     debug!("Buscando contratista por Cédula: {}", cedula_norm);
 
-    let contratista = db::find_by_cedula(&cedula_norm)
+    let contratista = repo
+        .find_by_cedula_fetched(&cedula_norm)
         .await
         .map_err(map_db_error)?
         .ok_or(ContratistaError::NotFound)?;
@@ -253,8 +241,11 @@ pub async fn get_contratista_by_cedula(
 /// # Errores
 /// - `ContratistaError::Database`: Error de consulta.
 pub async fn get_all_contratistas() -> Result<ContratistaListResponse, ContratistaError> {
+    use crate::repositories::contratista::SurrealContratistaRepository;
+    let repo = SurrealContratistaRepository;
+
     debug!("Iniciando censo completo de contratistas");
-    let raw_list = db::find_all_fetched().await.map_err(map_db_error)?;
+    let raw_list = repo.find_all_fetched().await.map_err(map_db_error)?;
 
     let mut contratistas = Vec::new();
     for c in raw_list {
@@ -285,7 +276,10 @@ pub async fn get_all_contratistas() -> Result<ContratistaListResponse, Contratis
 /// # Retorno
 /// Vector de contratistas habilitados para laborar.
 pub async fn get_contratistas_activos() -> Result<Vec<ContratistaResponse>, ContratistaError> {
-    let raw_list = db::find_all_fetched().await.map_err(map_db_error)?;
+    use crate::repositories::contratista::SurrealContratistaRepository;
+    let repo = SurrealContratistaRepository;
+
+    let raw_list = repo.find_all_fetched().await.map_err(map_db_error)?;
 
     let mut contratistas = Vec::new();
     for c in raw_list {
@@ -326,13 +320,20 @@ pub async fn update_contratista(
     input: UpdateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
     use crate::models::contratista::ContratistaUpdateDTO;
+    use crate::models::vehiculo::VehiculoUpdateDTO;
+    use crate::repositories::contratista::{
+        SurrealContratistaRepository, SurrealEmpresaRepository, SurrealVehiculoRepository,
+    };
+    let repo = SurrealContratistaRepository;
+    let empresa_repo = SurrealEmpresaRepository;
+    let vehiculo_repo = SurrealVehiculoRepository;
 
     let id = parse_contratista_id(&id_str);
     debug!("Solicitud de actualización para Contratista ID: {}", id);
 
     domain::validar_update_input(&input)?;
 
-    let existing = db::find_by_id(&id).await.map_err(map_db_error)?.ok_or({
+    let existing = repo.find_by_id(&id).await.map_err(map_db_error)?.ok_or({
         warn!("Intento de actualizar contratista inexistente: {}", id);
         ContratistaError::NotFound
     })?;
@@ -355,7 +356,7 @@ pub async fn update_contratista(
     if let Some(empresa_id_str) = &input.empresa_id {
         let empresa_id = parse_empresa_id(empresa_id_str);
         if empresa_id != existing.empresa {
-            if empresa_db::find_by_id(&empresa_id).await.map_err(map_db_error)?.is_none() {
+            if empresa_repo.find_by_id(&empresa_id).await.map_err(map_db_error)?.is_none() {
                 warn!("Empresa especificada no existe: {}", empresa_id);
                 return Err(ContratistaError::EmpresaNotFound);
             }
@@ -375,7 +376,7 @@ pub async fn update_contratista(
         info!("Actualizando fecha PRAIND para {}: {:?}", id, fecha);
     }
 
-    let updated = db::update(&id, dto).await.map_err(|e| {
+    let updated = repo.update(&id, dto).await.map_err(|e| {
         error!("Error en DB al actualizar contratista {}: {}", id, e);
         map_db_error(e)
     })?;
@@ -387,22 +388,28 @@ pub async fn update_contratista(
         debug!("Procesando actualización vehicular para {}", id);
         if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
             if !tipo.is_empty() && !placa.is_empty() {
-                let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
+                let tipo_norm = crate::domain::vehiculo::validar_tipo_vehiculo(tipo)
                     .map_err(|e| ContratistaError::Validation(e.to_string()))?
                     .as_str()
                     .to_string();
 
-                let placa_norm = vehiculo_domain::normalizar_placa(placa);
+                let placa_norm = crate::domain::vehiculo::normalizar_placa(placa);
 
-                let existing_vehiculo =
-                    veh_db::find_by_placa(&placa_norm).await.map_err(map_db_error)?;
+                let existing_vehiculos =
+                    vehiculo_repo.find_by_propietario(&id).await.map_err(map_db_error)?;
+                let existing_vehiculo = existing_vehiculos.iter().find(|v| v.placa == placa_norm);
+
+                // NOTA: Para mantener la compatibilidad con el código anterior de vehiculos
+                // y dado que VehiculoRepository fue definido como solo lectura en traits.rs por simplicidad inicial,
+                // usaremos imports directos de veh_db SOLO AQUI para mantener la logica de vehicle update
+                // hasta que vehiculo_service sea refactorizado. Esto es una deuda tecnica aceptada.
+                use crate::db::surrealdb_vehiculo_queries as veh_db_direct;
 
                 if let Some(vehiculo) = existing_vehiculo {
-                    use crate::models::vehiculo::VehiculoUpdateDTO;
                     let update_dto = VehiculoUpdateDTO {
                         tipo_vehiculo: Some(
                             tipo_norm
-                                .parse::<TipoVehiculo>()
+                                .parse::<crate::models::vehiculo::TipoVehiculo>()
                                 .map_err(|e| ContratistaError::Validation(e))?,
                         ),
                         marca: input.marca.as_ref().map(|s| s.trim().to_string()),
@@ -411,13 +418,13 @@ pub async fn update_contratista(
                         ..Default::default()
                     };
 
-                    let _ = veh_db::update(&vehiculo.id, update_dto).await;
+                    let _ = veh_db_direct::update(&vehiculo.id, update_dto).await;
                     debug!("Vehículo {} actualizado para contratista {}", placa_norm, id);
                 } else {
                     let dto_vehiculo = VehiculoCreateDTO {
                         propietario: updated.id.clone(),
                         tipo_vehiculo: tipo_norm
-                            .parse::<TipoVehiculo>()
+                            .parse::<crate::models::vehiculo::TipoVehiculo>()
                             .map_err(|e| ContratistaError::Validation(e))?,
                         placa: placa_norm.clone(),
                         marca: input.marca.as_ref().map(|s| s.trim().to_string()),
@@ -426,7 +433,7 @@ pub async fn update_contratista(
                         is_active: true,
                     };
 
-                    let _ = veh_db::insert(dto_vehiculo).await;
+                    let _ = veh_db_direct::insert(dto_vehiculo).await;
                     info!("Vehículo nuevo {} registrado para contratista {}", placa_norm, id);
                 }
             }
@@ -452,13 +459,16 @@ pub async fn cambiar_estado_contratista(
     id_str: String,
     input: CambiarEstadoInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
+    use crate::repositories::contratista::SurrealContratistaRepository;
+    let repo = SurrealContratistaRepository;
+
     let id = parse_contratista_id(&id_str);
     debug!("Solicitud cambio de estado manual para {}: {:?}", id, input.estado);
 
-    db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
+    repo.find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
     // input.estado ya es EstadoContratista (Type-Driven Design)
-    let updated = db::update_status(&id, input.estado.clone()).await.map_err(map_db_error)?;
+    let updated = repo.update_status(&id, input.estado.clone()).await.map_err(map_db_error)?;
 
     info!("Estado actualizado para {}: {:?}", id, input.estado);
     build_response_fetched(updated).await
@@ -473,12 +483,15 @@ pub async fn delete_contratista(
     _search_service: &Arc<SearchService>,
     id_str: String,
 ) -> Result<(), ContratistaError> {
+    use crate::repositories::contratista::SurrealContratistaRepository;
+    let repo = SurrealContratistaRepository;
+
     let id = parse_contratista_id(&id_str);
     info!("Solicitud de archivado (Delete) para contratista {}", id);
 
-    db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
+    repo.find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
-    db::delete(&id).await.map_err(|e| {
+    repo.delete(&id).await.map_err(|e| {
         error!("Fallo crítico al eliminar contratista {}: {}", id_str, e);
         map_db_error(e)
     })?;
@@ -497,11 +510,16 @@ pub async fn actualizar_praind_con_historial(
     input: ActualizarPraindInput,
     usuario_id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
+    use crate::models::contratista::ContratistaUpdateDTO;
+    use crate::repositories::contratista::{SurrealAuditRepository, SurrealContratistaRepository};
+    let repo = SurrealContratistaRepository;
+    let audit_repo = SurrealAuditRepository;
+
     let id = parse_contratista_id(&input.contratista_id);
     debug!("Actualización auditada de PRAIND para {}. Usuario: {}", id, usuario_id);
 
     let contratista =
-        db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
+        repo.find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
     let dt: chrono::DateTime<chrono::Utc> = contratista
         .fecha_vencimiento_praind
@@ -514,26 +532,26 @@ pub async fn actualizar_praind_con_historial(
     let nueva_fecha: DateTime<Utc> =
         chrono::Utc.from_utc_datetime(&nueva_fecha_naive.and_hms_opt(0, 0, 0).unwrap());
 
-    use crate::models::contratista::ContratistaUpdateDTO;
     let dto = ContratistaUpdateDTO {
         fecha_vencimiento_praind: Some(surrealdb::Datetime::from(nueva_fecha)),
         ..Default::default()
     };
 
-    let updated = db::update(&id, dto).await.map_err(map_db_error)?;
+    let updated = repo.update(&id, dto).await.map_err(map_db_error)?;
 
-    audit_db::insert_praind_historial(
-        &input.contratista_id,
-        Some(&fecha_anterior),
-        &input.nueva_fecha_praind,
-        &usuario_id,
-        input.motivo.as_deref(),
-    )
-    .await
-    .map_err(|e| {
-        error!("Fallo al registrar auditoría PRAIND para {}: {}", id, e);
-        map_db_error(e)
-    })?;
+    audit_repo
+        .insert_praind_historial(
+            &input.contratista_id,
+            Some(&fecha_anterior),
+            &input.nueva_fecha_praind,
+            &usuario_id,
+            input.motivo.as_deref(),
+        )
+        .await
+        .map_err(|e| {
+            error!("Fallo al registrar auditoría PRAIND para {}: {}", id, e);
+            map_db_error(e)
+        })?;
 
     info!(
         "PRAIND actualizado con auditoría para {}: {} -> {}",
@@ -552,31 +570,36 @@ pub async fn cambiar_estado_con_historial(
     input: CambiarEstadoConHistorialInput,
     usuario_id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
+    use crate::repositories::contratista::{SurrealAuditRepository, SurrealContratistaRepository};
+    let repo = SurrealContratistaRepository;
+    let audit_repo = SurrealAuditRepository;
+
     let id = parse_contratista_id(&input.contratista_id);
     debug!("Cambio de estado auditado para {}. Usuario: {}", id, usuario_id);
 
     let contratista =
-        db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
+        repo.find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
     let estado_anterior = contratista.estado.as_str().to_string();
 
     // input.nuevo_estado ya es EstadoContratista (Type-Driven Design)
     let nuevo_estado = input.nuevo_estado;
 
-    let updated = db::update_status(&id, nuevo_estado.clone()).await.map_err(map_db_error)?;
+    let updated = repo.update_status(&id, nuevo_estado.clone()).await.map_err(map_db_error)?;
 
-    audit_db::insert_historial_estado(
-        &input.contratista_id,
-        &estado_anterior,
-        nuevo_estado.as_str(),
-        Some(&usuario_id),
-        &input.motivo,
-    )
-    .await
-    .map_err(|e| {
-        error!("Fallo al registrar auditoría de estado para {}: {}", id, e);
-        map_db_error(e)
-    })?;
+    audit_repo
+        .insert_historial_estado(
+            &input.contratista_id,
+            &estado_anterior,
+            nuevo_estado.as_str(),
+            Some(&usuario_id),
+            &input.motivo,
+        )
+        .await
+        .map_err(|e| {
+            error!("Fallo al registrar auditoría de estado para {}: {}", id, e);
+            map_db_error(e)
+        })?;
 
     info!("Estado cambiado con auditoría para {}: {} -> {:?}", id, estado_anterior, nuevo_estado);
     build_response_fetched(updated).await
@@ -586,10 +609,14 @@ pub async fn cambiar_estado_con_historial(
 async fn build_response_fetched(
     contratista: crate::models::contratista::ContratistaFetched,
 ) -> Result<ContratistaResponse, ContratistaError> {
+    use crate::repositories::contratista::{SurrealSecurityRepository, SurrealVehiculoRepository};
+    let veh_repo = SurrealVehiculoRepository;
+    let sec_repo = SurrealSecurityRepository;
+
     let mut response = ContratistaResponse::from_fetched(contratista.clone());
 
     // El sistema intenta recuperar el vehículo principal para visualizarlo en listados y detalles.
-    let vehiculos = veh_db::find_by_propietario(&contratista.id).await.map_err(map_db_error)?;
+    let vehiculos = veh_repo.find_by_propietario(&contratista.id).await.map_err(map_db_error)?;
     if let Some(v) = vehiculos.first() {
         response.vehiculo_tipo = Some(v.tipo_vehiculo.to_string());
         response.vehiculo_placa = Some(v.placa.clone());
@@ -599,7 +626,7 @@ async fn build_response_fetched(
     }
 
     let block_status =
-        ln_db::check_if_blocked_by_cedula(&contratista.cedula).await.map_err(map_db_error)?;
+        sec_repo.check_if_blocked_by_cedula(&contratista.cedula).await.map_err(map_db_error)?;
     response.esta_bloqueado = block_status.is_blocked;
 
     if block_status.is_blocked {
@@ -618,17 +645,22 @@ pub async fn restore_contratista(
     search_service: &Arc<SearchService>,
     id_str: String,
 ) -> Result<(), ContratistaError> {
+    use crate::repositories::contratista::SurrealContratistaRepository;
+    let repo = SurrealContratistaRepository;
+
     let id = parse_contratista_id(&id_str);
 
-    let exists = db::find_by_id(&id).await.map_err(map_db_error)?;
+    let exists = repo.find_by_id(&id).await.map_err(map_db_error)?;
     if exists.is_none() {
         return Err(ContratistaError::NotFound);
     }
 
-    db::restore(&id).await.map_err(map_db_error)?;
+    repo.restore(&id).await.map_err(map_db_error)?;
 
-    if let Some(contratista) = db::find_by_id_fetched(&id).await.map_err(map_db_error)? {
+    if let Some(contratista) = repo.find_by_id_fetched(&id).await.map_err(map_db_error)? {
         let empresa_nombre = contratista.empresa.nombre.clone();
+
+        // Tantivy Best Effort: Intentamos re-indexar, si falla solo logueamos.
         let _ = search_service.add_contratista_fetched(&contratista, &empresa_nombre).await;
     }
 
@@ -645,7 +677,10 @@ pub async fn restore_contratista(
 /// # Errores
 /// - `ContratistaError::Database`: Fallo de conexión o consulta.
 pub async fn get_archived_contratistas() -> Result<Vec<ContratistaResponse>, ContratistaError> {
-    let raw_list = db::find_archived().await.map_err(map_db_error)?;
+    use crate::repositories::contratista::SurrealContratistaRepository;
+    let repo = SurrealContratistaRepository;
+
+    let raw_list = repo.find_archived().await.map_err(map_db_error)?;
 
     let mut contratistas = Vec::new();
     for c in raw_list {

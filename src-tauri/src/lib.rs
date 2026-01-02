@@ -6,6 +6,7 @@ pub mod db;
 pub mod domain;
 pub mod export;
 pub mod models;
+pub mod repositories;
 pub mod search;
 pub mod services;
 

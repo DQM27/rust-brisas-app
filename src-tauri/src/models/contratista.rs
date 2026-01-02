@@ -103,6 +103,25 @@ pub struct ContratistaFetched {
     pub deleted_at: Option<Datetime>,
 }
 
+impl From<ContratistaFetched> for Contratista {
+    fn from(fetched: ContratistaFetched) -> Self {
+        Self {
+            id: fetched.id,
+            cedula: fetched.cedula,
+            nombre: fetched.nombre,
+            segundo_nombre: fetched.segundo_nombre,
+            apellido: fetched.apellido,
+            segundo_apellido: fetched.segundo_apellido,
+            empresa: fetched.empresa.id, // Extract ID from the fetched entity
+            fecha_vencimiento_praind: fetched.fecha_vencimiento_praind,
+            estado: fetched.estado,
+            created_at: fetched.created_at,
+            updated_at: fetched.updated_at,
+            deleted_at: fetched.deleted_at,
+        }
+    }
+}
+
 // --------------------------------------------------------------------------
 // ENUMS DE DOMINIO
 // --------------------------------------------------------------------------
