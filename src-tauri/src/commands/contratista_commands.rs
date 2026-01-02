@@ -5,8 +5,8 @@
 /// de contratistas.
 use crate::domain::errors::ContratistaError;
 use crate::models::contratista::{
-    CambiarEstadoInput, ContratistaListResponse, ContratistaResponse, CreateContratistaInput,
-    UpdateContratistaInput,
+    ActualizarPraindInput, CambiarEstadoConHistorialInput, CambiarEstadoInput,
+    ContratistaListResponse, ContratistaResponse, CreateContratistaInput, UpdateContratistaInput,
 };
 use crate::services::contratista_service;
 use crate::services::search_service::SearchService;
@@ -212,7 +212,7 @@ pub async fn restore_contratista(
 #[command]
 pub async fn actualizar_praind_con_historial(
     search_service: State<'_, Arc<SearchService>>,
-    input: contratista_service::ActualizarPraindInput,
+    input: ActualizarPraindInput,
     usuario_id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
     contratista_service::actualizar_praind_con_historial(&search_service, input, usuario_id).await
@@ -230,7 +230,7 @@ pub async fn actualizar_praind_con_historial(
 #[command]
 pub async fn cambiar_estado_con_historial(
     search_service: State<'_, Arc<SearchService>>,
-    input: contratista_service::CambiarEstadoConHistorialInput,
+    input: CambiarEstadoConHistorialInput,
     usuario_id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
     contratista_service::cambiar_estado_con_historial(&search_service, input, usuario_id).await

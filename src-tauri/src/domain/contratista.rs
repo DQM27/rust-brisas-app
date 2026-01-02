@@ -19,8 +19,7 @@
 //! Ver [`common`](crate::domain::common) para funciones centralizadas de validación.
 
 use crate::domain::common::{
-    normalizar_nombre_propio, parsear_fecha_simple, validar_cedula_estandar,
-    validar_nombre_estandar,
+    parsear_fecha_simple, validar_cedula_estandar, validar_nombre_estandar,
 };
 use crate::domain::errors::ContratistaError;
 use crate::models::contratista::{

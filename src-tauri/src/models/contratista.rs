@@ -190,6 +190,24 @@ pub struct CambiarEstadoInput {
     pub estado: EstadoContratista,
 }
 
+/// Input para actualizar PRAIND con motivo para historial.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ActualizarPraindInput {
+    pub contratista_id: String,
+    pub nueva_fecha_praind: String,
+    pub motivo: Option<String>,
+}
+
+/// Input para cambiar estado con registro histórico detallado.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CambiarEstadoConHistorialInput {
+    pub contratista_id: String,
+    pub nuevo_estado: EstadoContratista,
+    pub motivo: String,
+}
+
 // ==========================================
 // DTOs PARA PERSISTENCIA (Service -> DB)
 // ==========================================

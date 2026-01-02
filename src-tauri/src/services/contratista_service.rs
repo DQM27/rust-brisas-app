@@ -18,8 +18,9 @@ use crate::domain::contratista as domain;
 use crate::domain::errors::ContratistaError;
 use crate::domain::vehiculo as vehiculo_domain;
 use crate::models::contratista::{
-    CambiarEstadoInput, ContratistaCreateDTO, ContratistaListResponse, ContratistaResponse,
-    CreateContratistaInput, EstadoContratista, UpdateContratistaInput,
+    ActualizarPraindInput, CambiarEstadoConHistorialInput, CambiarEstadoInput,
+    ContratistaCreateDTO, ContratistaListResponse, ContratistaResponse, CreateContratistaInput,
+    EstadoContratista, UpdateContratistaInput,
 };
 use crate::models::vehiculo::{TipoVehiculo, VehiculoCreateDTO};
 use crate::services::search_service::SearchService;
@@ -445,14 +446,6 @@ pub async fn delete_contratista(
 // ACTUALIZAR PRAIND CON HISTORIAL
 // ==========================================
 
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ActualizarPraindInput {
-    pub contratista_id: String,
-    pub nueva_fecha_praind: String,
-    pub motivo: Option<String>,
-}
-
 /// Actualiza la fecha de vencimiento PRAIND y registra el evento en el historial de auditoría.
 pub async fn actualizar_praind_con_historial(
     _search_service: &Arc<SearchService>,
@@ -500,14 +493,6 @@ pub async fn actualizar_praind_con_historial(
 // CAMBIAR ESTADO CON HISTORIAL
 // ==========================================
 
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CambiarEstadoConHistorialInput {
-    pub contratista_id: String,
-    pub nuevo_estado: String,
-    pub motivo: String,
-}
-
 /// Cambia el estado (Ej. Activo -> Inactivo) y audita quién realizó el cambio y por qué.
 pub async fn cambiar_estado_con_historial(
     _search_service: &Arc<SearchService>,
@@ -521,8 +506,8 @@ pub async fn cambiar_estado_con_historial(
 
     let estado_anterior = contratista.estado.as_str().to_string();
 
-    let nuevo_estado: EstadoContratista =
-        input.nuevo_estado.parse().map_err(ContratistaError::Validation)?;
+    // input.nuevo_estado ya es EstadoContratista (Type-Driven Design)
+    let nuevo_estado = input.nuevo_estado;
 
     let updated = db::update_status(&id, nuevo_estado.clone()).await.map_err(map_db_error)?;
 
