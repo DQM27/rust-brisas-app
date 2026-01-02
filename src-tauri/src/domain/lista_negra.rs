@@ -87,7 +87,7 @@ pub fn validar_add_input(input: &AddToListaNegraInput) -> Result<(), ListaNegraE
     Ok(())
 }
 
-/// Valida camapañas de actualización parcial de registros existentes.
+/// Valida campos de actualización parcial de registros existentes.
 pub fn validar_update_input(input: &UpdateListaNegraInput) -> Result<(), ListaNegraError> {
     if let Some(ref motivo) = input.motivo_bloqueo {
         validar_motivo(motivo)?;
