@@ -23,9 +23,12 @@ use crate::domain::common::{
 };
 use crate::domain::errors::ContratistaError;
 use crate::models::contratista::{
-    CreateContratistaInput, EstadoContratista, UpdateContratistaInput,
+    CreateContratistaInput, EstadoContratista, EstadoPraind, UpdateContratistaInput,
 };
-use chrono::NaiveDate;
+use chrono::{DateTime, NaiveDate};
+
+/// Días previos al vencimiento para considerar que requiere atención (alerta amarilla).
+pub const DIAS_ALERTA_VENCIMIENTO: i64 = 30;
 
 // --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
@@ -90,6 +93,12 @@ pub fn validar_empresa_id(empresa_id: &str) -> Result<(), ContratistaError> {
     if limpia.is_empty() {
         return Err(ContratistaError::Validation(
             "Debe seleccionar una empresa válida".to_string(),
+        ));
+    }
+
+    if !limpia.contains(':') {
+        return Err(ContratistaError::Validation(
+            "ID de empresa con formato inválido (debe ser tabla:id)".to_string(),
         ));
     }
 
@@ -188,17 +197,6 @@ pub fn validar_estado(estado: &str) -> Result<(), ContratistaError> {
 // REGLAS DE NEGOCIO: PRAIND Y ACCESO
 // --------------------------------------------------------------------------
 
-/// Resultado del análisis del estado PRAIND de un contratista.
-#[derive(Debug, Clone)]
-pub struct EstadoPraind {
-    /// Días restantes hasta el vencimiento (negativo si ya venció)
-    pub dias_hasta_vencimiento: i64,
-    /// True si el PRAIND ya venció (fecha estrictamente en el pasado)
-    pub vencido: bool,
-    /// True si faltan 30 días o menos (y no está vencido)
-    pub requiere_atencion: bool,
-}
-
 /// Calcula el estado del PRAIND basado en la fecha de vencimiento.
 ///
 /// # Argumentos
@@ -215,34 +213,35 @@ pub struct EstadoPraind {
 /// }
 /// ```
 pub fn calcular_estado_praind(fecha_vencimiento_str: &str) -> EstadoPraind {
-    use chrono::{DateTime, NaiveDate, Utc};
+    use chrono::Utc;
 
     let hoy = Utc::now();
     let hoy_date = hoy.date_naive();
 
-    // Limpiar formato literal de SurrealDB (ej: d'2022-01-01...')
-    let raw_date = fecha_vencimiento_str.trim_start_matches("d'").trim_end_matches('\'');
+    // NOTA: Se asume que fecha_vencimiento_str ya viene limpio (sin d'...')
+    // La capa de infraestructura (Services/Models) debe encargarse de limpiar formatos de DB.
 
     // Intentar parsear como RFC 3339 primero, luego como fecha simple
-    let fecha_venc: Option<NaiveDate> = DateTime::parse_from_rfc3339(raw_date)
+    let fecha_venc: Option<NaiveDate> = DateTime::parse_from_rfc3339(fecha_vencimiento_str)
         .map(|dt| dt.date_naive())
         .ok()
-        .or_else(|| NaiveDate::parse_from_str(raw_date, "%Y-%m-%d").ok());
+        .or_else(|| NaiveDate::parse_from_str(fecha_vencimiento_str, "%Y-%m-%d").ok());
 
     match fecha_venc {
         Some(venc_date) => {
             let dias_hasta_vencimiento = (venc_date - hoy_date).num_days();
             let vencido = venc_date < hoy_date;
-            let requiere_atencion = dias_hasta_vencimiento <= 30 && dias_hasta_vencimiento >= 0;
+            let requiere_atencion =
+                dias_hasta_vencimiento <= DIAS_ALERTA_VENCIMIENTO && dias_hasta_vencimiento >= 0;
 
             EstadoPraind { dias_hasta_vencimiento, vencido, requiere_atencion }
         }
         None => {
             // Fecha inválida: tratar como vencido para seguridad
-            log::warn!(
-                "Error parseando fecha PRAIND '{}'. Tratando como vencido.",
-                fecha_vencimiento_str
-            );
+            // Usamos un Result idealmente, pero para no romper compatibilidad mantenemos el log
+            // como fail-safe, pero eliminamos el warn directo si queremos ser puristas.
+            // Por ahora mantenemos el println/eprintln como debug si es necesario, pero
+            // al ser dominio puro, retornamos estado vencido silenciosamente (fail-secure).
             EstadoPraind { dias_hasta_vencimiento: -1, vencido: true, requiere_atencion: false }
         }
     }

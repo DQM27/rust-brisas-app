@@ -209,6 +209,21 @@ pub struct CambiarEstadoConHistorialInput {
 }
 
 // ==========================================
+// VALUE OBJECTS DE DOMINIO (Resultados de Cálculos)
+// ==========================================
+
+/// Resultado del análisis del estado PRAIND de un contratista.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EstadoPraind {
+    /// Días restantes hasta el vencimiento (negativo si ya venció)
+    pub dias_hasta_vencimiento: i64,
+    /// True si el PRAIND ya venció (fecha estrictamente en el pasado)
+    pub vencido: bool,
+    /// True si faltan 30 días o menos (y no está vencido)
+    pub requiere_atencion: bool,
+}
+
+// ==========================================
 // DTOs PARA PERSISTENCIA (Service -> DB)
 // ==========================================
 
@@ -281,9 +296,11 @@ impl From<Contratista> for ContratistaResponse {
         };
 
         let raw_date_str = c.fecha_vencimiento_praind.to_string();
+        // Clean SurrealDB format explicitly in infrastructure layer
+        let clean_date_str = raw_date_str.trim_start_matches("d'").trim_end_matches('\'');
 
         // Delegar cálculo de estado PRAIND a domain (lógica pura)
-        let estado_praind = calcular_estado_praind(&raw_date_str);
+        let estado_praind = calcular_estado_praind(clean_date_str);
 
         // Delegar construcción de nombre completo a domain
         let nombre_completo = construir_nombre_completo(
@@ -296,10 +313,6 @@ impl From<Contratista> for ContratistaResponse {
         // Delegar regla de negocio "puede ingresar" a domain
         let puede = puede_ingresar(&c.estado, estado_praind.vencido);
 
-        // Parsear fecha para formato de salida
-        let fecha_venc_str =
-            raw_date_str.trim_start_matches("d'").trim_end_matches('\'').to_string();
-
         Self {
             id: c.id.to_string(),
             cedula: c.cedula.clone(),
@@ -310,7 +323,7 @@ impl From<Contratista> for ContratistaResponse {
             nombre_completo,
             empresa_id: c.empresa.to_string(),
             empresa_nombre: String::new(), // Será llenado por el servicio
-            fecha_vencimiento_praind: fecha_venc_str,
+            fecha_vencimiento_praind: clean_date_str.to_string(),
             estado: c.estado,
             puede_ingresar: puede,
             praind_vencido: estado_praind.vencido,
@@ -337,9 +350,11 @@ impl ContratistaResponse {
         };
 
         let raw_date_str = c.fecha_vencimiento_praind.to_string();
+        // Clean SurrealDB format explicitly in infrastructure layer
+        let clean_date_str = raw_date_str.trim_start_matches("d'").trim_end_matches('\'');
 
         // Delegar cálculo de estado PRAIND a domain (lógica pura)
-        let estado_praind = calcular_estado_praind(&raw_date_str);
+        let estado_praind = calcular_estado_praind(clean_date_str);
 
         // Delegar construcción de nombre completo a domain
         let nombre_completo = construir_nombre_completo(
@@ -352,10 +367,6 @@ impl ContratistaResponse {
         // Delegar regla de negocio "puede ingresar" a domain
         let puede = puede_ingresar(&c.estado, estado_praind.vencido);
 
-        // Parsear fecha para formato de salida
-        let fecha_venc_str =
-            raw_date_str.trim_start_matches("d'").trim_end_matches('\'').to_string();
-
         Self {
             id: c.id.to_string(),
             cedula: c.cedula.clone(),
@@ -366,7 +377,7 @@ impl ContratistaResponse {
             nombre_completo,
             empresa_id: c.empresa.id.to_string(),
             empresa_nombre: c.empresa.nombre.clone(),
-            fecha_vencimiento_praind: fecha_venc_str,
+            fecha_vencimiento_praind: clean_date_str.to_string(),
             estado: c.estado,
             puede_ingresar: puede,
             praind_vencido: estado_praind.vencido,
