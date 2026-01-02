@@ -9,6 +9,8 @@ pub mod models;
 pub mod repositories;
 pub mod search;
 pub mod services;
+#[cfg(test)]
+pub mod tests;
 
 use crate::config::manager as config_manager;
 use crate::config::seed;
