@@ -162,8 +162,10 @@ pub fn save_profile(profile: ExportProfile) -> Result<(), ExportError> {
     let mut profiles = get_all_profiles()?;
 
     if let Some(idx) = profiles.iter().position(|p| p.id == profile.id) {
+        warn!("Sobrescribiendo perfil existente: {} ({})", profile.name, profile.id);
         profiles[idx] = profile;
     } else {
+        info!("Creando nuevo perfil de exportación: {}", profile.name);
         profiles.push(profile);
     }
 
