@@ -1,0 +1,33 @@
+    Checking mega-brisas v1.0.0-alpha (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+error[E0609]: no field `cedula` on type `BlockCheckResponse`
+  --> src\services\ingreso_proveedor_service.rs:59:73
+   |
+59 |         warn!("Intento de ingreso bloqueado por Lista Negra: {}", check.cedula);
+   |                                                                         ^^^^^^ unknown field
+   |
+   = note: available fields are: `is_blocked`, `nivel_severidad`, `bloqueado_desde`
+
+error[E0599]: `surrealdb::RecordId` is not an iterator
+   --> src\services\ingreso_proveedor_service.rs:77:24
+    |
+ 77 |               ingreso.id.map(|i| i.to_string()).unwrap_or_default()
+    |                          ^^^ `surrealdb::RecordId` is not an iterator
+    |
+   ::: C:\Users\femprobrisas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\surrealdb-2.4.0\src\api\value\mod.rs:253:1
+    |
+253 | / transparent_wrapper!(
+254 | |     /// Struct representing a record id.
+255 | |     ///
+256 | |     /// Record id's consist of a table name and a key.
+...   |
+259 | |     pub struct RecordId(CoreThing)
+260 | | );
+    | |_- doesn't satisfy `surrealdb::RecordId: Iterator`
+    |
+    = note: the following trait bounds were not satisfied:
+            `surrealdb::RecordId: Iterator`
+            which is required by `&mut surrealdb::RecordId: Iterator`
+
+Some errors have detailed explanations: E0599, E0609.
+For more information about an error, try `rustc --explain E0599`.
+error: could not compile `mega-brisas` (lib) due to 2 previous errors
