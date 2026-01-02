@@ -507,4 +507,65 @@ mod tests {
         };
         assert!(validar_update_input(&input).is_err());
     }
+
+    /// Prueba la construcción correcta del nombre completo con diferentes combinaciones de campos opcionales.
+    #[test]
+    fn test_construir_nombre_completo() {
+        assert_eq!(
+            construir_nombre_completo("Juan", Some("Carlos"), "Pérez", Some("López")),
+            "Juan Carlos Pérez López"
+        );
+        assert_eq!(construir_nombre_completo("Ana", None, "García", None), "Ana García");
+        assert_eq!(
+            construir_nombre_completo("Luis", Some(""), "Díaz", None),
+            "Luis Díaz" // Debe ignorar string vacío
+        );
+    }
+
+    /// Verifica las reglas de acceso basadas en estado y vigencia de certificación.
+    #[test]
+    fn test_puede_ingresar() {
+        use crate::models::contratista::EstadoContratista;
+
+        // Caso feliz: Activo y PRAIND vigente
+        assert!(puede_ingresar(&EstadoContratista::Activo, false));
+
+        // Rechazo: Activo pero PRAIND vencido
+        assert!(!puede_ingresar(&EstadoContratista::Activo, true));
+
+        // Rechazo: Inactivo/Suspendido        // Caso inactivo/suspendido
+        assert!(!puede_ingresar(&EstadoContratista::Inactivo, false));
+        assert!(!puede_ingresar(&EstadoContratista::Bloqueado, false));
+    }
+
+    /// Valida el cálculo de días restantes y flags de vencimiento/atención para el PRAIND.
+    #[test]
+    fn test_calcular_estado_praind() {
+        use chrono::{Duration, Utc};
+
+        let hoy = Utc::now().date_naive();
+        let futuro = hoy + Duration::days(60);
+        let vencido = hoy - Duration::days(1);
+        let por_vencer = hoy + Duration::days(10);
+
+        // Caso: Certificación vigente (> 30 días)
+        let estado_futuro = calcular_estado_praind(&futuro.to_string());
+        assert!(!estado_futuro.vencido);
+        assert!(!estado_futuro.requiere_atencion);
+        assert!(estado_futuro.dias_hasta_vencimiento > 30);
+
+        // Caso: Certificación vencida
+        let estado_vencido = calcular_estado_praind(&vencido.to_string());
+        assert!(estado_vencido.vencido);
+        assert!(estado_vencido.dias_hasta_vencimiento < 0);
+
+        // Caso: Requiere atención (prox. a vencer)
+        let estado_por_vencer = calcular_estado_praind(&por_vencer.to_string());
+        assert!(!estado_por_vencer.vencido);
+        assert!(estado_por_vencer.requiere_atencion);
+
+        // Caso: Fallo en parsing (Fail-safe a vencido)
+        let estado_invalido = calcular_estado_praind("invalid-date");
+        assert!(estado_invalido.vencido);
+    }
 }

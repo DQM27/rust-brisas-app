@@ -577,6 +577,15 @@ pub async fn restore_contratista(
     Ok(())
 }
 
+/// Consulta el historial de contratistas archivados (soft-deleted).
+///
+/// Permite auditar qué contratistas han sido eliminados del sistema principal.
+///
+/// # Retorno
+/// Lista de perfiles que han sido marcados como borrados (`deleted_at` no nulo).
+///
+/// # Errores
+/// - `ContratistaError::Database`: Fallo de conexión o consulta.
 pub async fn get_archived_contratistas() -> Result<Vec<ContratistaResponse>, ContratistaError> {
     let raw_list = db::find_archived().await.map_err(map_db_error)?;
 
@@ -586,4 +595,33 @@ pub async fn get_archived_contratistas() -> Result<Vec<ContratistaResponse>, Con
     }
 
     Ok(contratistas)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_contratista_id_con_prefijo() {
+        let id = parse_contratista_id("contratista:123");
+        assert_eq!(id.to_string(), "contratista:123");
+    }
+
+    #[test]
+    fn test_parse_contratista_id_sin_prefijo() {
+        let id = parse_contratista_id("123");
+        assert_eq!(id.to_string(), "contratista:123");
+    }
+
+    #[test]
+    fn test_parse_empresa_id_con_prefijo() {
+        let id = parse_empresa_id("empresa:abc");
+        assert_eq!(id.to_string(), "empresa:abc");
+    }
+
+    #[test]
+    fn test_parse_empresa_id_sin_prefijo() {
+        let id = parse_empresa_id("abc");
+        assert_eq!(id.to_string(), "empresa:abc");
+    }
 }
