@@ -1,7 +1,7 @@
-/// Capa de Dominio: Reglas de Negocio para Vehículos.
-///
-/// Este módulo gestiona las validaciones de propiedad y características técnicas
-/// de los vehículos que ingresan a las instalaciones.
+//! # Dominio: Reglas de Negocio para Vehículos
+//!
+//! Este módulo centraliza las políticas de validación, normalización de placas
+//! y reglas de integridad para los activos móviles que transitan la planta.
 use crate::domain::common::{
     validar_placa_estandar, MAX_LEN_COLOR_VEHICULO, MAX_LEN_MARCA_VEHICULO, MAX_LEN_MODELO_VEHICULO,
 };

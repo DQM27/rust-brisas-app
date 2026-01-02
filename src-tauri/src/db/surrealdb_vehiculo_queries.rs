@@ -1,14 +1,17 @@
-// ==========================================
-// src/db/surrealdb_vehiculo_queries.rs
-// Enterprise Quality SurrealDB Implementation
-// ==========================================
+//! # Consultas: Vehículos (SurrealDB)
+//!
+//! Este módulo implementa la persistencia para la entidad `vehiculo`.
+//! Gestiona el almacenamiento de activos móviles y la hidratación
+//! de sus propietarios mediante la cláusula `FETCH`.
 
 use crate::models::vehiculo::{Vehiculo, VehiculoCreateDTO, VehiculoFetched, VehiculoUpdateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
+use log::{debug, warn};
 use surrealdb::RecordId;
 
 pub async fn insert(dto: VehiculoCreateDTO) -> Result<Vehiculo, SurrealDbError> {
     let db = get_db().await?;
+    debug!("💾 Insertando nuevo vehículo en DB: {}", dto.placa);
 
     let created: Option<Vehiculo> =
         db.query("CREATE vehiculo CONTENT $dto").bind(("dto", dto)).await?.take(0)?;
@@ -24,6 +27,7 @@ pub async fn find_by_id(id: &RecordId) -> Result<Option<Vehiculo>, SurrealDbErro
 
 pub async fn find_by_id_fetched(id: &RecordId) -> Result<Option<VehiculoFetched>, SurrealDbError> {
     let db = get_db().await?;
+    debug!("🔍 Obteniendo vehículo por ID (FETCH): {}", id);
     let mut result = db
         .query("SELECT * FROM $id FETCH propietario, propietario.empresa")
         .bind(("id", id.clone()))
@@ -33,6 +37,7 @@ pub async fn find_by_id_fetched(id: &RecordId) -> Result<Option<VehiculoFetched>
 
 pub async fn find_by_placa(placa: &str) -> Result<Option<VehiculoFetched>, SurrealDbError> {
     let db = get_db().await?;
+    debug!("🔍 Buscando vehículo activo por placa: {}", placa);
     let mut result = db
         .query("SELECT * FROM vehiculo WHERE placa = $placa AND is_active = true FETCH propietario, propietario.empresa")
         .bind(("placa", placa.to_string()))
@@ -63,6 +68,7 @@ pub async fn update(
     dto: VehiculoUpdateDTO,
 ) -> Result<VehiculoFetched, SurrealDbError> {
     let db = get_db().await?;
+    debug!("📝 Actualizando vehículo en DB: {}", id);
 
     let _: Option<Vehiculo> = db
         .query("UPDATE $id MERGE $dto")
@@ -77,9 +83,10 @@ pub async fn update(
         .await?;
 
     let fetched: Option<VehiculoFetched> = result.take(0)?;
-    fetched.ok_or(SurrealDbError::TransactionError(
-        "Vehículo no encontrado o error al actualizar".to_string(),
-    ))
+    fetched.ok_or_else(|| {
+        warn!("⚠️ Falló la recuperación del vehículo {} tras la actualización (FETCH)", id);
+        SurrealDbError::TransactionError("Vehículo no encontrado o error al actualizar".to_string())
+    })
 }
 
 pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
@@ -90,6 +97,7 @@ pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
 
 pub async fn count_by_placa(placa: &str) -> Result<i64, SurrealDbError> {
     let db = get_db().await?;
+    debug!("🔢 Contando vehículos activos con placa: {}", placa);
     let mut result = db
         .query("SELECT count() FROM vehiculo WHERE placa = $placa AND is_active = true GROUP ALL")
         .bind(("placa", placa.to_string()))

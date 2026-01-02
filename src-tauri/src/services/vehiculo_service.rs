@@ -1,9 +1,14 @@
-/// Gestión Estratégica de Activos Móviles (Vehículos).
-///
-/// Este servicio gestiona el parque vehicular que ingresa a las instalaciones.
-/// Un vehículo es una entidad transversal que puede pertenecer a un Contratista,
-/// Proveedor o Visitante. Su control es crítico para la seguridad logística y
-/// la gestión de estacionamientos.
+//! # Servicio: Gestión de Vehículos (Activos Móviles)
+//!
+//! Este servicio orquesta el parque vehicular de la plataforma, gestionando
+//! la vinculación de unidades móviles con sus propietarios (Personal,
+//! Proveedores o Visitantes) y asegurando la integridad de las placas.
+//!
+//! ## Responsabilidades
+//! - Registro y normalización de placas vehiculares.
+//! - Validación cross-table de propietarios en SurrealDB.
+//! - Gestión de estatus y estadísticas de flota.
+//! - Auditoría de cambios en activos móviles.
 use crate::db::surrealdb_contratista_queries as contratista_db;
 use crate::db::surrealdb_proveedor_queries as proveedor_db;
 use crate::db::surrealdb_vehiculo_queries as db;
@@ -16,12 +21,16 @@ use crate::models::vehiculo::{
 };
 use crate::services::surrealdb_service::SurrealDbError;
 use chrono::Utc;
-use log::error;
+use log::{debug, error, info, warn};
 use surrealdb::RecordId;
+
+// ==========================================
+// HELPERS DE IDENTIDAD Y PARSEO
+// ==========================================
 
 /// Mapeo de errores de infraestructura a dominio.
 fn map_db_error(e: SurrealDbError) -> VehiculoError {
-    error!("Fallo en base de datos al gestionar vehículos: {}", e);
+    error!("❌ Fallo técnico en persistencia de vehículos: {}", e);
     VehiculoError::Database(e.to_string())
 }
 
@@ -35,16 +44,20 @@ fn parse_vehiculo_id(id_str: &str) -> RecordId {
     }
 }
 
-/// Identifica al propietario del vehículo analizando el prefijo de la tabla en SurrealDB.
+/// Identifica al propietario del vehículo analizando el prefijo de la tabla.
 fn parse_propietario_id(id_str: &str) -> RecordId {
     if id_str.contains(':') {
         let parts: Vec<&str> = id_str.split(':').collect();
         RecordId::from_table_key(parts[0], parts[1])
     } else {
-        // Por defecto asume contratista si no hay contexto de tabla.
+        // Por defecto asume contratista si no hay contexto de tabla explícito.
         RecordId::from_table_key("contratista", id_str)
     }
 }
+
+// ==========================================
+// SERVICIOS DE ORQUESTACIÓN
+// ==========================================
 
 /// Registra un nuevo vehículo garantizando la unicidad de su placa.
 ///
@@ -60,8 +73,10 @@ pub async fn create_vehiculo(
     let tipo_vehiculo = domain::validar_tipo_vehiculo(&input.tipo_vehiculo)?;
 
     let propietario_id = parse_propietario_id(&input.propietario_id);
+    info!("🚗 Iniciando registro de unidad móvil para {}...", propietario_id);
 
     // Validación Cross-Table: Comprueba la existencia física del dueño en su respectiva tabla.
+    debug!("🔍 Verificando existencia del propietario en tabla {}", propietario_id.table());
     let exists = match propietario_id.table() {
         "contratista" => {
             contratista_db::find_by_id(&propietario_id).await.map_err(map_db_error)?.is_some()
@@ -73,13 +88,18 @@ pub async fn create_vehiculo(
             visitante_db::find_by_id(&propietario_id).await.map_err(map_db_error)?.is_some()
         }
         _ => {
+            warn!(
+                "⚠️ Intento de registro con tipo de propietario inválido: {}",
+                propietario_id.table()
+            );
             return Err(VehiculoError::Validation(
                 "Tipo de ente propietario no reconocido".to_string(),
-            ))
+            ));
         }
     };
 
     if !exists {
+        warn!("🚨 Protocolo de identidad fallido: El propietario {} no existe", propietario_id);
         return Err(VehiculoError::Validation(format!(
             "Protocolo de identidad fallido: El propietario no existe en la base de datos de {}",
             propietario_id.table()
@@ -88,13 +108,14 @@ pub async fn create_vehiculo(
 
     let count = db::count_by_placa(&placa_normalizada).await.map_err(map_db_error)?;
     if count > 0 {
+        warn!("⚠️ Intento de duplicar placa ya registrada: {}", placa_normalizada);
         return Err(VehiculoError::PlacaExists);
     }
 
     let dto = VehiculoCreateDTO {
-        propietario: propietario_id,
+        propietario: propietario_id.clone(),
         tipo_vehiculo,
-        placa: placa_normalizada,
+        placa: placa_normalizada.clone(),
         marca: input.marca.as_ref().map(|s| s.trim().to_string()),
         modelo: input.modelo.as_ref().map(|s| s.trim().to_string()),
         color: input.color.as_ref().map(|s| s.trim().to_string()),
@@ -102,6 +123,7 @@ pub async fn create_vehiculo(
     };
 
     let vehiculo_creado = db::insert(dto).await.map_err(map_db_error)?;
+    info!("✅ Vehículo [{}] registrado exitosamente para {}", placa_normalizada, propietario_id);
     Ok(VehiculoResponse::from(vehiculo_creado))
 }
 
@@ -197,12 +219,50 @@ pub async fn update_vehiculo(
     dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
     let updated = db::update(&id, dto).await.map_err(map_db_error)?;
+    info!("📝 Perfil de vehículo {} actualizado correctamente.", id_str);
     Ok(VehiculoResponse::from_fetched(updated))
 }
 
 pub async fn delete_vehiculo(id_str: String) -> Result<(), VehiculoError> {
     let id = parse_vehiculo_id(&id_str);
     db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(VehiculoError::NotFound)?;
+
+    info!("🗑️ Procesando baja del vehículo {}...", id_str);
     db::delete(&id).await.map_err(map_db_error)?;
+    info!("✅ Vehículo {} eliminado del sistema de control.", id_str);
     Ok(())
+}
+
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_vehiculo_id() {
+        let id = parse_vehiculo_id("vehiculo:v123");
+        assert_eq!(id.table(), "vehiculo");
+        assert_eq!(id.key().to_string(), "v123");
+
+        let id_clean = parse_vehiculo_id("v456");
+        assert_eq!(id_clean.table(), "vehiculo");
+        assert_eq!(id_clean.key().to_string(), "v456");
+    }
+
+    #[test]
+    fn test_parse_propietario_id() {
+        // Casos con tabla explícita
+        let prov = parse_propietario_id("proveedor:p1");
+        assert_eq!(prov.table(), "proveedor");
+
+        let visit = parse_propietario_id("visitante:v1");
+        assert_eq!(visit.table(), "visitante");
+
+        // Caso por defecto (contratista)
+        let cont = parse_propietario_id("c1");
+        assert_eq!(cont.table(), "contratista");
+    }
 }

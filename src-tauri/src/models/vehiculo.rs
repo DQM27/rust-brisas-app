@@ -1,6 +1,8 @@
-// ==========================================
-// src/models/vehiculo.rs
-// ==========================================
+//! # Modelos: Vehículos (Entidades y DTOs)
+//!
+//! Este módulo define las estructuras de datos para la gestión vehicular,
+//! incluyendo modelos de persistencia, versiones hidratadas (FETCH)
+//! y contratos para la comunicación con el frontend (Tauri).
 
 use crate::models::contratista::ContratistaFetched;
 use crate::models::proveedor::ProveedorFetched;
