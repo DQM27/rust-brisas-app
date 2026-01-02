@@ -1,9 +1,15 @@
-/// Gestión Estratégica de Proveedores Recurrentes.
-///
-/// Este servicio gestiona a los proveedores que ingresan con frecuencia a las instalaciones.
-/// A diferencia de los contratistas, los proveedores suelen tener un ciclo de rotación
-/// diferente, pero comparten la necesidad de validación de seguridad (Lista Negra)
-/// y trazabilidad vehicular.
+//! # Servicio: Gestión de Proveedores
+//!
+//! Este servicio orquesta la administración de proveedores recurrentes,
+//! integrando validaciones de seguridad (Lista Negra), gestión vehicular
+//! y sincronización con el motor de búsqueda Tantivy.
+//!
+//! ## Responsabilidades
+//! - Registro y actualización de perfiles de proveedores.
+//! - Validación de integridad mediante chequeo de cédula.
+//! - Gestión reactiva de vehículos asociados al proveedor.
+//! - Sincronización de datos para búsqueda rápida en garita.
+
 use crate::db::{
     surrealdb_empresa_queries as empresa_db, surrealdb_lista_negra_queries as lista_negra_db,
     surrealdb_proveedor_queries as db, surrealdb_vehiculo_queries as vehiculo_db,
@@ -18,9 +24,13 @@ use crate::models::proveedor::{
 use crate::models::vehiculo::{TipoVehiculo, VehiculoCreateDTO};
 use crate::services::search_service::SearchService;
 use chrono::Utc;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use std::sync::Arc;
 use surrealdb::RecordId;
+
+// ==========================================
+// HELPERS DE IDENTIDAD (ID Parsing)
+// ==========================================
 
 /// Helper para parsear ID de proveedor (acepta con o sin prefijo)
 fn parse_proveedor_id(id_str: &str) -> RecordId {
@@ -41,6 +51,10 @@ fn parse_empresa_id(id_str: &str) -> RecordId {
         RecordId::from_table_key("empresa", id_str)
     }
 }
+
+// ==========================================
+// SERVICIOS CORE
+// ==========================================
 
 /// Registra un nuevo proveedor en la plataforma.
 ///
@@ -99,6 +113,7 @@ pub async fn create_proveedor(
 
     // Registro automático del vehículo si se proporciona durante el alta.
     if let Some(true) = input.tiene_vehiculo {
+        debug!("🚗 Registrando vehículo vinculado al nuevo proveedor...");
         if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
             if !tipo.is_empty() && !placa.is_empty() {
                 let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
@@ -125,6 +140,7 @@ pub async fn create_proveedor(
     }
 
     // Sincronización con el motor de búsqueda Tantivy.
+    debug!("🔍 Sincronizando proveedor con motor de búsqueda...");
     if let Err(e) = search_service.add_proveedor_fetched(&proveedor, &empresa_nombre).await {
         warn!("Aviso: Falló la indexación del proveedor en el buscador: {}", e);
     }
@@ -134,7 +150,7 @@ pub async fn create_proveedor(
         e
     })?;
 
-    info!("Proveedor {} registrado correctamente.", resp.cedula);
+    info!("✅ Proveedor {} registrado correctamente.", resp.cedula);
     Ok(resp)
 }
 
@@ -172,22 +188,23 @@ pub async fn change_status(
 ) -> Result<ProveedorResponse, ProveedorError> {
     let id = parse_proveedor_id(id_str);
 
-    info!("Cambiando estado de proveedor {} a {}", id_str, new_status);
+    info!("🔄 Cambiando estado de proveedor {} a {}", id_str, new_status);
 
     let mut dto = ProveedorUpdateDTO::default();
     dto.estado = Some(new_status.parse::<EstadoProveedor>().map_err(ProveedorError::Validation)?);
     dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
     let proveedor = db::update(&id, dto).await.map_err(|e| {
-        error!("Error técnico al actualizar estado del proveedor {}: {}", id_str, e);
+        error!("❌ Error técnico al actualizar estado del proveedor {}: {}", id_str, e);
         ProveedorError::Database(e.to_string())
     })?;
 
     let empresa_nombre = proveedor.empresa.nombre.clone();
 
     // Es vital que el buscador refleje el nuevo estado para evitar ingresos de proveedores inactivos.
+    debug!("🔍 Sincronizando nuevo estado en el motor de búsqueda...");
     if let Err(e) = search_service.update_proveedor_fetched(&proveedor, &empresa_nombre).await {
-        warn!("Aviso: Falló la actualización del proveedor en el índice: {}", e);
+        warn!("⚠️ Aviso: Falló la actualización del proveedor en el índice: {}", e);
     }
 
     populate_response_fetched(proveedor).await
@@ -277,6 +294,7 @@ pub async fn update_proveedor(
         let vehiculo_existente = vehiculos.first();
 
         if tiene {
+            debug!("🚗 Procesando actualización de vehículo vinculado...");
             if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
                 if !tipo.is_empty() && !placa.is_empty() {
                     let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
@@ -285,6 +303,7 @@ pub async fn update_proveedor(
                         .to_string();
 
                     if let Some(v) = vehiculo_existente {
+                        debug!("📝 Actualizando vehículo existente: {}", v.placa);
                         let mut veh_dto = crate::models::vehiculo::VehiculoUpdateDTO::default();
                         veh_dto.tipo_vehiculo = Some(
                             tipo_norm
@@ -299,6 +318,7 @@ pub async fn update_proveedor(
 
                         let _ = vehiculo_db::update(&v.id, veh_dto).await;
                     } else {
+                        debug!("🆕 Creando nuevo vínculo vehicular...");
                         let dto_vehiculo = VehiculoCreateDTO {
                             propietario: id.clone(),
                             tipo_vehiculo: tipo_norm
@@ -318,14 +338,16 @@ pub async fn update_proveedor(
         } else {
             // Si el proveedor deja de traer vehículo, lo removemos de su perfil.
             if let Some(v) = vehiculo_existente {
+                debug!("🗑️ Removiendo vehículo del perfil (el proveedor ya no usa vehículo)");
                 let _ = vehiculo_db::delete(&v.id).await;
             }
         }
     }
 
     let empresa_nombre = proveedor.empresa.nombre.clone();
+    debug!("🔍 Sincronizando cambios en el motor de búsqueda...");
     if let Err(e) = search_service.update_proveedor_fetched(&proveedor, &empresa_nombre).await {
-        warn!("Aviso: Falló la sincronización con el motor de búsqueda: {}", e);
+        warn!("⚠️ Aviso: Falló la sincronización con el motor de búsqueda: {}", e);
     }
 
     get_proveedor_by_id(&id_str).await
@@ -382,4 +404,37 @@ pub async fn get_archived_proveedores() -> Result<Vec<ProveedorResponse>, Provee
         responses.push(populate_response_fetched(prov).await?);
     }
     Ok(responses)
+}
+
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_proveedor_id() {
+        // Formato con prefijo
+        let id = parse_proveedor_id("proveedor:abc123");
+        assert_eq!(id.table(), "proveedor");
+        assert_eq!(id.key().to_string(), "abc123");
+
+        // Formato sin prefijo (inferido)
+        let id_clean = parse_proveedor_id("xyz456");
+        assert_eq!(id_clean.table(), "proveedor");
+        assert_eq!(id_clean.key().to_string(), "xyz456");
+    }
+
+    #[test]
+    fn test_parse_empresa_id() {
+        let id = parse_empresa_id("empresa:google");
+        assert_eq!(id.table(), "empresa");
+        assert_eq!(id.key().to_string(), "google");
+
+        let id_clean = parse_empresa_id("microsoft");
+        assert_eq!(id_clean.table(), "empresa");
+        assert_eq!(id_clean.key().to_string(), "microsoft");
+    }
 }

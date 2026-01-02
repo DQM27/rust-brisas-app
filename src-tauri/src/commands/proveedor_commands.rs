@@ -1,17 +1,19 @@
-/// Puertos de Entrada: Gestión de Proveedores Comerciales (Supplier Bridge).
-///
-/// Este módulo orquesta la administración de los perfiles de empresas y personal
-/// de suministros, facilitando su registro, auditoría de estatus y trazabilidad
-/// de servicios contratados.
+//! # Comandos: Gestión de Proveedores (Tauri Bridge)
+//!
+//! Este módulo expone las funciones del sistema al frontend de Tauri,
+//! integrando el control de acceso basado en roles (RBAC) y la
+//! estandarización de errores de dominio.
+
 use crate::domain::errors::ProveedorError;
 use crate::models::proveedor::{CreateProveedorInput, ProveedorResponse, UpdateProveedorInput};
+use crate::require_perm;
 use crate::services::proveedor_service;
 use crate::services::search_service::SearchService;
 use crate::services::session::SessionState;
 use std::sync::Arc;
 use tauri::{command, State};
 
-/// Registra una nueva entidad o agente proveedor en el sistema.
+/// Registra un nuevo proveedor en el sistema (Protegido por RBAC).
 #[command]
 pub async fn create_proveedor(
     session: State<'_, SessionState>,
@@ -32,10 +34,14 @@ pub async fn search_proveedores_catalog(
     proveedor_service::search_proveedores(&query).await
 }
 
-/// Identificación Unívoca: Recupera un perfil de proveedor mediante su cédula o RUC.
+/// Motores de búsqueda: Recupera un perfil de proveedor mediante su cédula o RUC.
 #[command]
-pub async fn get_proveedor_by_cedula(cedula: String) -> Result<Option<ProveedorResponse>, String> {
-    proveedor_service::get_proveedor_by_cedula(&cedula).await.map_err(|e| e.to_string())
+pub async fn get_proveedor_by_cedula(
+    session: State<'_, SessionState>,
+    cedula: String,
+) -> Result<Option<ProveedorResponse>, ProveedorError> {
+    require_perm!(session, "proveedores:read")?;
+    proveedor_service::get_proveedor_by_cedula(&cedula).await
 }
 
 /// Gestión de Estatus: Permite habilitar o deshabilitar comercialmente a un proveedor.
@@ -93,14 +99,23 @@ pub async fn delete_proveedor(
 /// Restablecimiento: Recupera un proveedor anteriormente archivado.
 #[command]
 pub async fn restore_proveedor(
+    session: State<'_, SessionState>,
     search_service: State<'_, Arc<SearchService>>,
     id: String,
-) -> Result<ProveedorResponse, String> {
-    proveedor_service::restore_proveedor(&search_service, &id).await.map_err(|e| e.to_string())
+) -> Result<ProveedorResponse, ProveedorError> {
+    require_perm!(
+        session,
+        "proveedores:delete",
+        format!("Restaurando perfil de proveedor {}", id)
+    )?;
+    proveedor_service::restore_proveedor(&search_service, &id).await
 }
 
 /// Consulta histórica de proveedores que han sido dados de baja administrativa.
 #[command]
-pub async fn get_archived_proveedores() -> Result<Vec<ProveedorResponse>, String> {
-    proveedor_service::get_archived_proveedores().await.map_err(|e| e.to_string())
+pub async fn get_archived_proveedores(
+    session: State<'_, SessionState>,
+) -> Result<Vec<ProveedorResponse>, ProveedorError> {
+    require_perm!(session, "proveedores:read", "Consultando catálogo de proveedores archivados")?;
+    proveedor_service::get_archived_proveedores().await
 }

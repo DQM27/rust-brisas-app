@@ -194,14 +194,14 @@ mod tests {
         assert!(demo_conf.data_path.to_string_lossy().contains("surrealdb_demo"));
     }
 
-    #[test]
-    fn test_service_initial_state() {
+    #[tokio::test]
+    async fn test_service_initial_state() {
         let config = SurrealDbConfig {
             data_path: PathBuf::from("./test_db"),
             namespace: "test".into(),
             database: "test".into(),
         };
         let service = SurrealDbService::new(config);
-        assert!(!service.is_connected());
+        assert!(!service.is_connected().await);
     }
 }
