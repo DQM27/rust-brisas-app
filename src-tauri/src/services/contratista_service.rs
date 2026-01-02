@@ -26,7 +26,7 @@ use crate::models::vehiculo::{TipoVehiculo, VehiculoCreateDTO};
 use crate::services::search_service::SearchService;
 use crate::services::surrealdb_service::SurrealDbError;
 use chrono::{DateTime, TimeZone, Utc};
-use log::{error, info};
+use log::{debug, error, info, warn};
 use std::sync::Arc;
 use surrealdb::RecordId;
 
@@ -89,7 +89,10 @@ pub async fn create_contratista(
     search_service: &Arc<SearchService>,
     input: CreateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
+    debug!("Iniciando registro de contratista: {} {}", input.nombre, input.apellido);
+
     domain::validar_create_input(&input)?;
+    debug!("Validación de dominio exitosa para CI: {}", input.cedula);
 
     let cedula_normalizada = domain::normalizar_cedula(&input.cedula);
 
@@ -99,6 +102,10 @@ pub async fn create_contratista(
 
     if block_status.is_blocked {
         let nivel = block_status.nivel_severidad.unwrap_or_else(|| "BAJO".to_string());
+        warn!(
+            "INTENTO DE BLOQUEO: Contratista {} rechazado por lista negra (Nivel: {})",
+            cedula_normalizada, nivel
+        );
         return Err(ContratistaError::Validation(format!(
             "BLOQUEO DE SEGURIDAD: La cédula {} figura en la lista negra (Nivel: {}).",
             cedula_normalizada, nivel
@@ -107,12 +114,14 @@ pub async fn create_contratista(
 
     let existing = db::find_by_cedula(&cedula_normalizada).await.map_err(map_db_error)?;
     if existing.is_some() {
+        warn!("Intento de duplicado para CI: {}", cedula_normalizada);
         return Err(ContratistaError::CedulaExists);
     }
 
     let empresa_id = parse_empresa_id(&input.empresa_id);
     let empresa_opt = empresa_db::find_by_id(&empresa_id).await.map_err(map_db_error)?;
     if empresa_opt.is_none() {
+        error!("Error de integridad: Empresa {} no encontrada", input.empresa_id);
         return Err(ContratistaError::EmpresaNotFound);
     }
 
@@ -132,12 +141,14 @@ pub async fn create_contratista(
         estado: EstadoContratista::Activo,
     };
 
+    debug!("Persistiendo contratista en DB: {:?}", dto);
+
     let contratista = db::create(dto).await.map_err(|e| {
         error!("Fallo en DB al persistir contratista {}: {}", cedula_normalizada, e);
         map_db_error(e)
     })?;
 
-    info!("Contratista {} registrado exitosamente.", cedula_normalizada);
+    info!("Contratista {} registrado exitosamente (ID: {})", cedula_normalizada, contratista.id);
 
     // Gestión automática del vehículo si el usuario lo solicita durante el registro.
     if let Some(true) = input.tiene_vehiculo {
@@ -185,6 +196,10 @@ pub async fn create_contratista(
 // CONSULTAS DE CONTRATISTAS
 // --------------------------------------------------------------------------
 
+// ==========================================
+// CONSULTAS DE CONTRATISTAS
+// ==========================================
+
 /// Obtiene el perfil completo de un contratista por su ID.
 ///
 /// # Argumentos
@@ -198,6 +213,8 @@ pub async fn create_contratista(
 /// - `ContratistaError::Database`: Error de acceso a datos.
 pub async fn get_contratista_by_id(id_str: &str) -> Result<ContratistaResponse, ContratistaError> {
     let id = parse_contratista_id(id_str);
+    debug!("Consultando contratista por ID: {}", id);
+
     let contratista = db::find_by_id_fetched(&id)
         .await
         .map_err(map_db_error)?
@@ -219,6 +236,8 @@ pub async fn get_contratista_by_cedula(
     cedula: &str,
 ) -> Result<ContratistaResponse, ContratistaError> {
     let cedula_norm = domain::normalizar_cedula(cedula);
+    debug!("Buscando contratista por Cédula: {}", cedula_norm);
+
     let contratista = db::find_by_cedula(&cedula_norm)
         .await
         .map_err(map_db_error)?
@@ -234,6 +253,7 @@ pub async fn get_contratista_by_cedula(
 /// # Errores
 /// - `ContratistaError::Database`: Error de consulta.
 pub async fn get_all_contratistas() -> Result<ContratistaListResponse, ContratistaError> {
+    debug!("Iniciando censo completo de contratistas");
     let raw_list = db::find_all_fetched().await.map_err(map_db_error)?;
 
     let mut contratistas = Vec::new();
@@ -245,6 +265,11 @@ pub async fn get_all_contratistas() -> Result<ContratistaListResponse, Contratis
     let activos = contratistas.iter().filter(|c| c.estado == EstadoContratista::Activo).count();
     let con_praind_vencido = contratistas.iter().filter(|c| c.praind_vencido).count();
     let requieren_atencion = contratistas.iter().filter(|c| c.requiere_atencion).count();
+
+    info!(
+        "Censo finalizado. Total: {}, Activos: {}, PRAIND Vencido: {}",
+        total, activos, con_praind_vencido
+    );
 
     Ok(ContratistaListResponse {
         contratistas,
@@ -303,10 +328,14 @@ pub async fn update_contratista(
     use crate::models::contratista::ContratistaUpdateDTO;
 
     let id = parse_contratista_id(&id_str);
+    debug!("Solicitud de actualización para Contratista ID: {}", id);
+
     domain::validar_update_input(&input)?;
 
-    let existing =
-        db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
+    let existing = db::find_by_id(&id).await.map_err(map_db_error)?.ok_or({
+        warn!("Intento de actualizar contratista inexistente: {}", id);
+        ContratistaError::NotFound
+    })?;
 
     let mut dto = ContratistaUpdateDTO::default();
 
@@ -327,8 +356,13 @@ pub async fn update_contratista(
         let empresa_id = parse_empresa_id(empresa_id_str);
         if empresa_id != existing.empresa {
             if empresa_db::find_by_id(&empresa_id).await.map_err(map_db_error)?.is_none() {
+                warn!("Empresa especificada no existe: {}", empresa_id);
                 return Err(ContratistaError::EmpresaNotFound);
             }
+            info!(
+                "Cambiando empresa de contratista {}: {} -> {}",
+                id, existing.empresa, empresa_id
+            );
             dto.empresa = Some(empresa_id);
         }
     }
@@ -338,6 +372,7 @@ pub async fn update_contratista(
         let fecha: DateTime<Utc> =
             chrono::Utc.from_utc_datetime(&fecha_naive.and_hms_opt(0, 0, 0).unwrap());
         dto.fecha_vencimiento_praind = Some(surrealdb::Datetime::from(fecha));
+        info!("Actualizando fecha PRAIND para {}: {:?}", id, fecha);
     }
 
     let updated = db::update(&id, dto).await.map_err(|e| {
@@ -345,8 +380,11 @@ pub async fn update_contratista(
         map_db_error(e)
     })?;
 
+    info!("Contratista actualizado correctamente: {}", id);
+
     // Gestión del vehículo vinculada a la actualización del perfil.
     if let Some(true) = input.tiene_vehiculo {
+        debug!("Procesando actualización vehicular para {}", id);
         if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
             if !tipo.is_empty() && !placa.is_empty() {
                 let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
@@ -374,6 +412,7 @@ pub async fn update_contratista(
                     };
 
                     let _ = veh_db::update(&vehiculo.id, update_dto).await;
+                    debug!("Vehículo {} actualizado para contratista {}", placa_norm, id);
                 } else {
                     let dto_vehiculo = VehiculoCreateDTO {
                         propietario: updated.id.clone(),
@@ -388,6 +427,7 @@ pub async fn update_contratista(
                     };
 
                     let _ = veh_db::insert(dto_vehiculo).await;
+                    info!("Vehículo nuevo {} registrado para contratista {}", placa_norm, id);
                 }
             }
         }
@@ -413,11 +453,14 @@ pub async fn cambiar_estado_contratista(
     input: CambiarEstadoInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
     let id = parse_contratista_id(&id_str);
+    debug!("Solicitud cambio de estado manual para {}: {:?}", id, input.estado);
 
     db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
     // input.estado ya es EstadoContratista (Type-Driven Design)
-    let updated = db::update_status(&id, input.estado).await.map_err(map_db_error)?;
+    let updated = db::update_status(&id, input.estado.clone()).await.map_err(map_db_error)?;
+
+    info!("Estado actualizado para {}: {:?}", id, input.estado);
     build_response_fetched(updated).await
 }
 
@@ -431,6 +474,7 @@ pub async fn delete_contratista(
     id_str: String,
 ) -> Result<(), ContratistaError> {
     let id = parse_contratista_id(&id_str);
+    info!("Solicitud de archivado (Delete) para contratista {}", id);
 
     db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
 
@@ -439,6 +483,7 @@ pub async fn delete_contratista(
         map_db_error(e)
     })?;
 
+    info!("Contratista {} archivado correctamente.", id);
     Ok(())
 }
 
@@ -453,6 +498,7 @@ pub async fn actualizar_praind_con_historial(
     usuario_id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
     let id = parse_contratista_id(&input.contratista_id);
+    debug!("Actualización auditada de PRAIND para {}. Usuario: {}", id, usuario_id);
 
     let contratista =
         db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
@@ -484,8 +530,15 @@ pub async fn actualizar_praind_con_historial(
         input.motivo.as_deref(),
     )
     .await
-    .map_err(map_db_error)?;
+    .map_err(|e| {
+        error!("Fallo al registrar auditoría PRAIND para {}: {}", id, e);
+        map_db_error(e)
+    })?;
 
+    info!(
+        "PRAIND actualizado con auditoría para {}: {} -> {}",
+        id, fecha_anterior, input.nueva_fecha_praind
+    );
     build_response_fetched(updated).await
 }
 
@@ -500,6 +553,7 @@ pub async fn cambiar_estado_con_historial(
     usuario_id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
     let id = parse_contratista_id(&input.contratista_id);
+    debug!("Cambio de estado auditado para {}. Usuario: {}", id, usuario_id);
 
     let contratista =
         db::find_by_id(&id).await.map_err(map_db_error)?.ok_or(ContratistaError::NotFound)?;
@@ -519,8 +573,12 @@ pub async fn cambiar_estado_con_historial(
         &input.motivo,
     )
     .await
-    .map_err(map_db_error)?;
+    .map_err(|e| {
+        error!("Fallo al registrar auditoría de estado para {}: {}", id, e);
+        map_db_error(e)
+    })?;
 
+    info!("Estado cambiado con auditoría para {}: {} -> {:?}", id, estado_anterior, nuevo_estado);
     build_response_fetched(updated).await
 }
 
