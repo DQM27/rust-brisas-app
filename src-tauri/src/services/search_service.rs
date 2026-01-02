@@ -464,3 +464,65 @@ impl SearchService {
         Ok(())
     }
 }
+
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+    use surrealdb::RecordId;
+
+    /// Verifica que se pueda crear una instancia en memoria sin errores.
+    #[test]
+    fn test_initialization() {
+        let service = SearchService::test_instance();
+        assert_eq!(service.doc_count(), 0);
+        assert!(service.is_empty());
+    }
+
+    /// Verifica el flujo completo de indexación y búsqueda de un usuario.
+    #[tokio::test]
+    async fn test_index_and_search_user() {
+        let service = SearchService::test_instance();
+
+        let user = User {
+            id: RecordId::from_table_key("user", "test-1"),
+            cedula: "111222333".to_string(),
+            nombre: "Test".to_string(),
+            segundo_nombre: None,
+            apellido: "User".to_string(),
+            segundo_apellido: None,
+            email: "test@example.com".to_string(),
+            // Campos opcionales / defaults
+            role: RecordId::from_table_key("role", "admin"),
+            is_active: true,
+            must_change_password: false,
+            fecha_inicio_labores: None,
+            numero_gafete: None,
+            fecha_nacimiento: None,
+            telefono: None,
+            direccion: None,
+            contacto_emergencia_nombre: None,
+            contacto_emergencia_telefono: None,
+            deleted_at: None,
+            created_at: surrealdb::Datetime::from(Utc::now()),
+            updated_at: surrealdb::Datetime::from(Utc::now()),
+            avatar_path: None,
+        };
+
+        // 1. Indexar
+        service.add_user(&user).await.expect("Fallo al indexar usuario");
+
+        // 2. Verificar conteo
+        assert_eq!(service.doc_count(), 1);
+
+        // 3. Buscar
+        let results = service.search("111222333", 10).expect("Fallo en búsqueda");
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].id, "test-1");
+        assert_eq!(results[0].cedula.as_deref(), Some("111222333"));
+    }
+}

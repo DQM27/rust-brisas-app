@@ -1,7 +1,13 @@
-// ==========================================
-// src/search/searcher.rs
-// ==========================================
-// Funciones para buscar en el índice de Tantivy
+//! # Searcher: Motor de Búsqueda Tantivy
+//!
+//! Este módulo contiene las funciones para realizar consultas sobre el índice de Tantivy.
+//! Implementa la lógica de parsing de queries, fuzzy search y extracción de resultados.
+//!
+//! ## Responsabilidades
+//! - Mapeo de campos del schema para búsquedas optimizadas
+//! - Parsing y ejecución de queries full-text
+//! - Construcción de resultados (`SearchResultDto`)
+//! - Búsquedas especializadas por tipo de entidad
 
 use crate::search::errors::SearchError;
 use crate::search::schema::fields;

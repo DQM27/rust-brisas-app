@@ -1,7 +1,7 @@
-// ==========================================
-// src/search/errors.rs
-// ==========================================
-// Tipos de error específicos del módulo search
+//! # Errors: Errores del Módulo Search
+//!
+//! Define los tipos de errores específicos que pueden ocurrir durante la inicialización,
+//! indexación o búsqueda en el motor de Tantivy.
 
 use serde::Serialize;
 use thiserror::Error;

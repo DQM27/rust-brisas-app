@@ -16,6 +16,7 @@ use crate::models::proveedor::{Proveedor, ProveedorFetched};
 use crate::models::user::{User, UserFetched};
 use crate::search::errors::SearchError;
 use crate::search::schema::{build_search_schema, fields, FieldHandles};
+use log::{debug, info};
 use std::path::Path;
 use tantivy::schema::Schema;
 use tantivy::{Index, IndexWriter, TantivyDocument};
@@ -54,6 +55,7 @@ pub fn initialize_index(index_path: &Path) -> Result<Index, SearchError> {
         }
 
         // Crear nuevo índice
+        info!("📂 Creando nuevo índice en: {:?}", index_path);
         Index::create_in_dir(index_path, schema)
             .map_err(|e| SearchError::TantivyError(format!("Error al crear índice: {}", e)))
     }
@@ -66,6 +68,7 @@ pub fn create_field_handles(schema: &Schema) -> Result<FieldHandles, SearchError
 
 /// Obtiene un writer para el índice
 pub fn get_index_writer(index: &Index) -> Result<IndexWriter, SearchError> {
+    debug!("📝 Obteniendo IndexWriter (15MB budget)");
     // Budget ajustado a 15MB (Mínimo requerido por Tantivy)
     index
         .writer(15_000_000)
@@ -117,6 +120,7 @@ pub fn index_contratista(
     doc.add_text(handles.empresa_nombre, empresa_nombre);
     doc.add_text(handles.search_text, &search_text);
 
+    debug!("📥 Indexando contratista: {} ({})", contratista.nombre, contratista.id);
     // Agregar al índice
     writer
         .add_document(doc)
@@ -170,6 +174,7 @@ pub fn index_contratista_fetched(
     doc.add_text(handles.empresa_nombre, empresa_nombre);
     doc.add_text(handles.search_text, &search_text);
 
+    debug!("📥 Indexando contratista (fetched): {} ({})", contratista.nombre, contratista.id);
     // Agregar al índice
     writer
         .add_document(doc)
@@ -218,6 +223,7 @@ pub fn index_user(
 
     doc.add_text(handles.search_text, &search_text);
 
+    debug!("📥 Indexando usuario: {} ({})", user.nombre, user.id);
     // Agregar al índice
     writer
         .add_document(doc)
@@ -266,6 +272,7 @@ pub fn index_user_fetched(
 
     doc.add_text(handles.search_text, &search_text);
 
+    debug!("📥 Indexando usuario (fetched): {} ({})", user.nombre, user.id);
     // Agregar al índice
     writer
         .add_document(doc)

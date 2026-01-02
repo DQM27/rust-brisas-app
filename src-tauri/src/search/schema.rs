@@ -1,7 +1,13 @@
-// ==========================================
-// src/search/schema.rs
-// ==========================================
-// Definición del schema de Tantivy
+//! # Schema: Definición de Estructura del Índice
+//!
+//! Define la estructura de los documentos en Tantivy, especificando qué campos son
+//! indexados, almacenados (stored) o buscables.
+//!
+//! ## Estructura
+//! - `id`: Identificador único (String)
+//! - `tipo`: Tipo de entidad (contratista, usuario, etc.)
+//! - `search_text`: Campo unificado para búsquedas globales
+//! - Otros metadatos específicos (cedula, nombre, empresa, etc.)
 
 use crate::search::errors::SearchError;
 use tantivy::schema::*;
