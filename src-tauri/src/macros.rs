@@ -1,3 +1,19 @@
+/// Macro para asegurar que existe una sesión activa y obtener el usuario.
+///
+/// Uso:
+/// ```rust
+/// let user = require_session!(state);
+/// ```
+#[macro_export]
+macro_rules! require_session {
+    ($state:expr) => {{
+        match $state.require_session() {
+            Ok(user) => user,
+            Err(e) => return Err(e.into()),
+        }
+    }};
+}
+
 /// Macro para verificar permisos de manera declarativa
 ///
 /// Uso:
@@ -11,9 +27,6 @@ macro_rules! require_perm {
         use crate::services::surrealdb_authorization;
         use crate::models::role::{Module, Action};
 
-        // Obtener usuario de sesión (lanza error si no hay sesión)
-        let session = $state.require_session()?;
-
         // Parsear permiso
         let parts: Vec<&str> = $perm.split(':').collect();
         if parts.len() != 2 {
@@ -25,11 +38,11 @@ macro_rules! require_perm {
         let action: Action = parts[1].parse()
             .map_err(|e: String| surrealdb_authorization::AuthError::Database(e))?;
 
-        // Verificar permiso real (incluyendo súper usuarios y herencia)
-        surrealdb_authorization::check_permission(&session.id, &session.role_id, module, action)
-            .await?;
-
-        Ok::<crate::models::user::SessionUser, surrealdb_authorization::AuthError>(session)
+        // Verificar permiso real (incluyendo súper usuarios y herencia) - re-uso lógica de SessionState
+        match $state.require_permission(module, action).await {
+            Ok(user) => Ok::<crate::models::user::SessionUser, crate::services::surrealdb_authorization::AuthError>(user),
+            Err(e) => Err(e),
+        }
     }};
 
     // Variante con mensaje de auditoría

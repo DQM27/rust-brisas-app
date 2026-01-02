@@ -2,6 +2,9 @@ use crate::models::contratista::{
     Contratista, ContratistaCreateDTO, ContratistaFetched, ContratistaUpdateDTO, EstadoContratista,
 };
 use crate::models::empresa::Empresa;
+use crate::models::ingreso::{
+    IngresoContratista, IngresoContratistaCreateDTO, IngresoContratistaFetched,
+};
 use crate::models::vehiculo::Vehiculo;
 use crate::services::surrealdb_service::SurrealDbError;
 use async_trait::async_trait;
@@ -78,4 +81,35 @@ pub trait AuditRepository: Send + Sync {
         usuario_id: Option<&str>,
         motivo: &str,
     ) -> Result<(), SurrealDbError>;
+}
+
+#[async_trait]
+pub trait IngresoContratistaRepository: Send + Sync {
+    async fn insert(
+        &self,
+        dto: IngresoContratistaCreateDTO,
+    ) -> Result<IngresoContratistaFetched, SurrealDbError>;
+    async fn find_ingreso_abierto_by_contratista(
+        &self,
+        contratista_id: &RecordId,
+    ) -> Result<Option<IngresoContratistaFetched>, SurrealDbError>;
+    async fn update_salida(
+        &self,
+        ingreso_id: &RecordId,
+        usuario_salida_id: &RecordId,
+        observaciones: Option<String>,
+    ) -> Result<IngresoContratistaFetched, SurrealDbError>;
+    async fn find_by_id(&self, id: &RecordId)
+        -> Result<Option<IngresoContratista>, SurrealDbError>;
+    async fn find_by_id_fetched(
+        &self,
+        id: &RecordId,
+    ) -> Result<Option<IngresoContratistaFetched>, SurrealDbError>;
+}
+
+#[async_trait]
+pub trait GafeteRepository: Send + Sync {
+    async fn is_disponible(&self, numero: i32, tipo: &str) -> Result<bool, SurrealDbError>;
+    async fn marcar_en_uso(&self, numero: i32, tipo: &str) -> Result<(), SurrealDbError>;
+    async fn liberar(&self, numero: i32, tipo: &str) -> Result<(), SurrealDbError>;
 }

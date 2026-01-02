@@ -402,6 +402,12 @@ impl From<crate::domain::common::CommonError> for IngresoContratistaError {
     }
 }
 
+impl From<crate::services::surrealdb_authorization::AuthError> for IngresoContratistaError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        IngresoContratistaError::Validation(err.to_string())
+    }
+}
+
 // --------------------------------------------------------------------------
 // ERRORES DE INGRESOS GENERALES
 // --------------------------------------------------------------------------
