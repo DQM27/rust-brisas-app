@@ -1,11 +1,14 @@
-/// Gestión de Perfiles de Exportación.
+/// Servicio: Gestión de Perfiles de Exportación
 ///
-/// Este servicio permite a los usuarios definir y persistir configuraciones personalizadas
-/// para generar reportes (PDF, Excel, CSV). Los perfiles se guardan en un archivo JSON
-/// independiente para que sean fáciles de respaldar o editar manualmente si fuera necesario.
+/// Orquestador para la configuración y persistencia de perfiles de reportes.
+/// Responsabilidades:
+/// - Definición y persistencia de configuraciones de usuario (PDF, Excel, CSV).
+/// - Gestión del archivo JSON de perfiles (`export_profiles.json`).
+/// - Provisión de valores predeterminados seguros.
 use crate::config::manager::{get_database_path, load_config};
 use crate::export::errors::ExportError;
 use crate::models::export::{CsvOptions, ExportProfile, PdfColors, PdfDesign, PdfFonts};
+use log::{error, info, warn};
 use std::fs;
 use std::path::PathBuf;
 
@@ -108,20 +111,28 @@ fn get_default_profiles() -> Vec<ExportProfile> {
 
 /// Recupera la colección completa de perfiles.
 /// Si el archivo no existe, crea uno nuevo con los valores predeterminados.
+///
+/// # Retorno
+/// Lista de perfiles de exportación disponibles.
+///
+/// # Errores
+/// - `ExportError::IoError`: Fallo al leer el archivo.
+/// - `ExportError::ProfileSerializationError`: Archivo corrupto o inválido.
 pub fn get_all_profiles() -> Result<Vec<ExportProfile>, ExportError> {
     let path = get_profiles_path()?;
 
     if path.exists() {
-        let content = fs::read_to_string(path).map_err(|e| ExportError::IoError(e.to_string()))?;
+        let content = fs::read_to_string(path).map_err(|e| {
+            error!("Error de IO al leer perfiles: {}", e);
+            ExportError::IoError(e.to_string())
+        })?;
         let profiles: Vec<ExportProfile> = serde_json::from_str(&content).map_err(|e| {
-            ExportError::ProfileSerializationError(format!(
-                "Error de lectura en el archivo de perfiles: {}",
-                e
-            ))
+            error!("JSON de perfiles corrupto: {}", e);
+            ExportError::ProfileSerializationError(format!("Error de lectura: {}", e))
         })?;
         Ok(profiles)
     } else {
-        // Inicialización automática para asegurar que el sistema siempre sea funcional.
+        info!("Inicializando archivo de perfiles por defecto");
         let defaults = get_default_profiles();
         save_all_profiles(&defaults)?;
         Ok(defaults)
@@ -133,11 +144,20 @@ fn save_all_profiles(profiles: &[ExportProfile]) -> Result<(), ExportError> {
     let path = get_profiles_path()?;
     let json = serde_json::to_string_pretty(profiles)
         .map_err(|e| ExportError::ProfileSerializationError(e.to_string()))?;
-    fs::write(path, json).map_err(|e| ExportError::IoError(e.to_string()))?;
+    fs::write(path, json).map_err(|e| {
+        error!("Error al escribir perfiles en disco: {}", e);
+        ExportError::IoError(e.to_string())
+    })?;
     Ok(())
 }
 
 /// Agrega un nuevo perfil o actualiza uno existente mediante su ID (Upsert).
+///
+/// # Argumentos
+/// * `profile` - El perfil a guardar o actualizar.
+///
+/// # Errores
+/// - `ExportError`: Error de IO o serialización.
 pub fn save_profile(profile: ExportProfile) -> Result<(), ExportError> {
     let mut profiles = get_all_profiles()?;
 
@@ -152,8 +172,13 @@ pub fn save_profile(profile: ExportProfile) -> Result<(), ExportError> {
 }
 
 /// Elimina un perfil de la lista.
-/// Bloqueamos la eliminación si el perfil es el único marcado como predeterminado,
-/// garantizando que el sistema siempre tenga una opción válida de exportación por defecto.
+/// Bloqueamos la eliminación si el perfil es el único marcado como predeterminado.
+///
+/// # Argumentos
+/// * `id` - Identificador del perfil a eliminar.
+///
+/// # Errores
+/// - `ExportError::InvalidProfileOperation`: Si se intenta borrar el único default.
 pub fn delete_profile(id: String) -> Result<(), ExportError> {
     let mut profiles = get_all_profiles()?;
 
@@ -180,6 +205,12 @@ pub fn delete_profile(id: String) -> Result<(), ExportError> {
 }
 
 /// Cambia la preferencia global del usuario sobre qué perfil usar por defecto.
+///
+/// # Argumentos
+/// * `id` - Identificador del nuevo perfil default.
+///
+/// # Errores
+/// - `ExportError::ProfileNotFound`: Si el ID no existe.
 pub fn set_default_profile(id: String) -> Result<(), ExportError> {
     let mut profiles = get_all_profiles()?;
 
@@ -197,11 +228,20 @@ pub fn set_default_profile(id: String) -> Result<(), ExportError> {
 }
 
 /// Recupera el perfil que está configurado como predeterminado.
+///
+/// # Retorno
+/// El perfil marcado como default, si existe.
 pub fn get_default_profile() -> Option<ExportProfile> {
     get_all_profiles().ok()?.into_iter().find(|p| p.is_default)
 }
 
 /// Busca un perfil de exportación específico mediante su identificador.
+///
+/// # Argumentos
+/// * `id` - ID del perfil a buscar.
+///
+/// # Retorno
+/// El perfil encontrado o None.
 pub fn get_profile_by_id(id: &str) -> Option<ExportProfile> {
     get_all_profiles().ok()?.into_iter().find(|p| p.id == id)
 }
