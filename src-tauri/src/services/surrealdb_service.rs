@@ -1,8 +1,15 @@
-/// Gestión de la conexión a SurrealDB en modo incrustado (embedded).
-///
-/// Elegimos SurrealDB por su capacidad de manejar modelos relacionales y de grafos
-/// de forma nativa, y usamos el modo embebido (SurrealKv) para que la aplicación sea
-/// totalmente autónoma, sin depender de servidores externos instalados en la máquina del cliente.
+//! # Servicio: Infraestructura SurrealDB (Modo Embebido)
+//!
+//! Este servicio es el núcleo de persistencia de Brisas APP. Gestiona el ciclo
+//! de vida de la conexión a SurrealDB, la inicialización del esquema y provee
+//! acceso thread-safe al cliente mediante un patrón Singleton.
+//!
+//! ## Características
+//! - Persistencia local mediante `SurrealKv`.
+//! - Inicialización declarativa del esquema (`.surql`).
+//! - Acceso global optimizado con `Arc<RwLock>` y `OnceCell`.
+
+use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -84,8 +91,12 @@ impl SurrealDbService {
 
     /// Establece la conexión con el motor SurrealKv y selecciona el entorno de trabajo.
     pub async fn connect(&self) -> Result<(), SurrealDbError> {
+        info!("🔌 Conectando a SurrealDB (Modo: Embebido)...");
+        debug!("📂 Ruta de datos: {:?}", self.config.data_path);
+
         // Aseguramos que la carpeta de destino existe antes de que Surreal intente abrirla.
         if !self.config.data_path.exists() {
+            debug!("📁 Creando directorio de base de datos...");
             std::fs::create_dir_all(&self.config.data_path)
                 .map_err(|e| SurrealDbError::Init(e.to_string()))?;
         }
@@ -99,6 +110,10 @@ impl SurrealDbService {
         db.use_ns(&self.config.namespace).use_db(&self.config.database).await?;
 
         *self.client.write().await = Some(db);
+        info!(
+            "✅ Conexión establecida con éxito [Namespace: {} | DB: {}]",
+            self.config.namespace, self.config.database
+        );
         Ok(())
     }
 
@@ -107,8 +122,15 @@ impl SurrealDbService {
     /// Leemos un archivo .surql embebido en el binario. Esto permite que la aplicación
     /// defina su propio esquema de forma declarativa sin necesidad de migraciones externas manuales.
     pub async fn init_schema(&self) -> Result<(), SurrealDbError> {
+        debug!("📜 Inicializando esquema de la base de datos...");
         let client = self.get_client().await?;
-        client.query(include_str!("../db/surrealdb_schema.surql")).await?;
+
+        client.query(include_str!("../db/surrealdb_schema.surql")).await.map_err(|e| {
+            error!("❌ Error al aplicar el esquema: {}", e);
+            SurrealDbError::Query(e.to_string())
+        })?;
+
+        info!("✨ Esquema de base de datos aplicado correctamente");
         Ok(())
     }
 
@@ -123,6 +145,7 @@ impl SurrealDbService {
     }
 
     pub async fn disconnect(&self) {
+        info!("🔌 Cerrando conexión con SurrealDB...");
         *self.client.write().await = None;
     }
 }

@@ -1,2 +1,0 @@
-// testing
-pub fn test() {}
