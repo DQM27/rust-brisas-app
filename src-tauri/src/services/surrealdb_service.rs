@@ -18,6 +18,43 @@ use surrealdb::Surreal;
 use thiserror::Error;
 use tokio::sync::RwLock;
 
+// ==========================================
+// SINGLETON & HELPERS (Acceso Global)
+// ==========================================
+
+use once_cell::sync::OnceCell;
+static SURREAL_SERVICE: OnceCell<Arc<SurrealDbService>> = OnceCell::new();
+
+/// Inicializa una instancia global única del servicio de base de datos.
+pub fn init_surrealdb(config: SurrealDbConfig) -> Arc<SurrealDbService> {
+    SURREAL_SERVICE.get_or_init(|| Arc::new(SurrealDbService::new(config))).clone()
+}
+
+/// Recupera la instancia global, si existe.
+pub fn get_surrealdb() -> Option<Arc<SurrealDbService>> {
+    SURREAL_SERVICE.get().cloned()
+}
+
+/// Orquestador inicial: conecta a la DB e inmediatamente aplica el esquema.
+pub async fn setup_embedded_surrealdb(
+    config: SurrealDbConfig,
+) -> Result<Arc<SurrealDbService>, SurrealDbError> {
+    let service = init_surrealdb(config);
+    service.connect().await?;
+    service.init_schema().await?;
+    Ok(service)
+}
+
+/// Función auxiliar de alto nivel para obtener el cliente de DB de forma rápida.
+pub async fn get_db() -> Result<Surreal<Db>, SurrealDbError> {
+    let service = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
+    service.get_client().await
+}
+
+// ==========================================
+// MODELOS DE ERROR Y CONFIGURACIÓN
+// ==========================================
+
 #[derive(Debug, Error)]
 pub enum SurrealDbError {
     #[error("Error de conexión: {0}")]
@@ -53,8 +90,6 @@ pub struct SurrealDbConfig {
 
 impl Default for SurrealDbConfig {
     fn default() -> Self {
-        // Por defecto, almacenamos los datos en la carpeta local de la aplicación (AppData en Windows).
-        // Esto garantiza que los datos persistan entre reinicios y actualizaciones.
         let data_path = dirs::data_local_dir()
             .unwrap_or_else(|| PathBuf::from("."))
             .join("Brisas")
@@ -74,11 +109,11 @@ impl SurrealDbConfig {
     }
 }
 
+// ==========================================
+// SERVICIO PRINCIPAL
+// ==========================================
+
 /// Servicio principal para interactuar con SurrealDB.
-///
-/// Usamos un Arc<RwLock> para el cliente para permitir que múltiples hilos lean de la DB
-/// de forma segura y concurrente, mientras que las reconexiones o desconexiones
-/// obtienen acceso exclusivo de escritura.
 pub struct SurrealDbService {
     client: Arc<RwLock<Option<Surreal<Db>>>>,
     config: SurrealDbConfig,
@@ -94,19 +129,16 @@ impl SurrealDbService {
         info!("🔌 Conectando a SurrealDB (Modo: Embebido)...");
         debug!("📂 Ruta de datos: {:?}", self.config.data_path);
 
-        // Aseguramos que la carpeta de destino existe antes de que Surreal intente abrirla.
         if !self.config.data_path.exists() {
             debug!("📁 Creando directorio de base de datos...");
             std::fs::create_dir_all(&self.config.data_path)
                 .map_err(|e| SurrealDbError::Init(e.to_string()))?;
         }
 
-        // Iniciamos el motor usando el almacenamiento persistente definido en la ruta.
         let db = Surreal::new::<SurrealKv>(self.config.data_path.clone())
             .await
             .map_err(|e| SurrealDbError::Connection(e.to_string()))?;
 
-        // Configuramos el contexto lógigo. Es obligatorio antes de realizar cualquier consulta.
         db.use_ns(&self.config.namespace).use_db(&self.config.database).await?;
 
         *self.client.write().await = Some(db);
@@ -117,10 +149,6 @@ impl SurrealDbService {
         Ok(())
     }
 
-    /// Inicializa la estructura de tablas, índices y restricciones (schema).
-    ///
-    /// Leemos un archivo .surql embebido en el binario. Esto permite que la aplicación
-    /// defina su propio esquema de forma declarativa sin necesidad de migraciones externas manuales.
     pub async fn init_schema(&self) -> Result<(), SurrealDbError> {
         debug!("📜 Inicializando esquema de la base de datos...");
         let client = self.get_client().await?;
@@ -134,8 +162,6 @@ impl SurrealDbService {
         Ok(())
     }
 
-    /// Obtiene una instancia clonada del cliente.
-    /// Devuelve error si el servicio no ha sido conectado previamente.
     pub async fn get_client(&self) -> Result<Surreal<Db>, SurrealDbError> {
         self.client.read().await.clone().ok_or(SurrealDbError::NotConnected)
     }
@@ -150,34 +176,32 @@ impl SurrealDbService {
     }
 }
 
-// Patrón Singleton para acceso global simplificado.
-use once_cell::sync::OnceCell;
-static SURREAL_SERVICE: OnceCell<Arc<SurrealDbService>> = OnceCell::new();
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
 
-/// Inicializa una instancia global única del servicio de base de datos.
-pub fn init_surrealdb(config: SurrealDbConfig) -> Arc<SurrealDbService> {
-    SURREAL_SERVICE.get_or_init(|| Arc::new(SurrealDbService::new(config))).clone()
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-/// Recupera la instancia global, si existe.
-pub fn get_surrealdb() -> Option<Arc<SurrealDbService>> {
-    SURREAL_SERVICE.get().cloned()
-}
+    #[test]
+    fn test_config_paths() {
+        let default_conf = SurrealDbConfig::default();
+        assert!(default_conf.data_path.to_string_lossy().contains("Brisas"));
+        assert_eq!(default_conf.namespace, "brisas");
 
-/// Orquestador inicial: conecta a la DB e inmediatamente aplica el esquema.
-/// Es llamado durante el setup de Tauri.
-pub async fn setup_embedded_surrealdb(
-    config: SurrealDbConfig,
-) -> Result<Arc<SurrealDbService>, SurrealDbError> {
-    let service = init_surrealdb(config);
-    service.connect().await?;
-    service.init_schema().await?;
-    Ok(service)
-}
+        let demo_conf = SurrealDbConfig::demo();
+        assert!(demo_conf.data_path.to_string_lossy().contains("surrealdb_demo"));
+    }
 
-/// Función auxiliar de alto nivel para obtener el cliente de DB de forma rápida.
-/// Es la más utilizada en los controladores y servicios de la aplicación.
-pub async fn get_db() -> Result<Surreal<Db>, SurrealDbError> {
-    let service = get_surrealdb().ok_or(SurrealDbError::NotConnected)?;
-    service.get_client().await
+    #[test]
+    fn test_service_initial_state() {
+        let config = SurrealDbConfig {
+            data_path: PathBuf::from("./test_db"),
+            namespace: "test".into(),
+            database: "test".into(),
+        };
+        let service = SurrealDbService::new(config);
+        assert!(!service.is_connected());
+    }
 }
