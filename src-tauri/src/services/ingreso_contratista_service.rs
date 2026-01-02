@@ -13,10 +13,6 @@ use crate::domain::errors::IngresoContratistaError;
 use crate::repositories::traits::{
     ContratistaRepository, GafeteRepository, IngresoContratistaRepository, SecurityRepository,
 };
-use crate::repositories::{
-    contratista::SurrealContratistaRepository, gafete::SurrealGafeteRepository,
-    ingreso_contratista::SurrealIngresoContratistaRepository,
-};
 
 use crate::domain::motor_validacion as motor;
 use crate::models::ingreso::{
@@ -269,61 +265,6 @@ fn parse_ingreso_id(id_str: &str) -> Result<RecordId, IngresoContratistaError> {
     } else {
         Ok(RecordId::from_table_key("ingreso", id_str))
     }
-}
-
-// --------------------------------------------------------------------------
-// CONVENIENCE WRAPPERS (Backward Compatibility)
-// --------------------------------------------------------------------------
-
-fn default_service() -> IngresoContratistaService<
-    SurrealIngresoContratistaRepository,
-    SurrealGafeteRepository,
-    SurrealContratistaRepository,
-    crate::repositories::contratista::SurrealSecurityRepository,
-> {
-    IngresoContratistaService::new(
-        SurrealIngresoContratistaRepository,
-        SurrealGafeteRepository,
-        SurrealContratistaRepository,
-        crate::repositories::contratista::SurrealSecurityRepository,
-    )
-}
-
-pub async fn validar_ingreso_contratista(
-    contratista_id_str: String,
-) -> Result<ValidacionIngresoResponse, IngresoContratistaError> {
-    default_service().validar_ingreso_contratista(contratista_id_str).await
-}
-
-pub async fn crear_ingreso_contratista(
-    input: CreateIngresoContratistaInput,
-    usuario_id_str: String,
-) -> Result<IngresoResponse, IngresoContratistaError> {
-    default_service().crear_ingreso_contratista(input, usuario_id_str).await
-}
-
-pub async fn registrar_salida(
-    input: RegistrarSalidaInput,
-    usuario_id_str: String,
-) -> Result<IngresoResponse, IngresoContratistaError> {
-    default_service().registrar_salida(input, usuario_id_str).await
-}
-
-pub async fn validar_puede_salir(
-    ingreso_id: &str,
-    gafete: Option<&str>,
-) -> Result<ResultadoValidacionSalida, String> {
-    default_service().validar_puede_salir(ingreso_id, gafete).await
-}
-
-pub async fn get_ingresos_abiertos_con_alertas(
-) -> Result<Vec<IngresoConEstadoResponse>, IngresoContratistaError> {
-    default_service().get_ingresos_abiertos_con_alertas().await
-}
-
-pub async fn verificar_tiempos_excedidos(
-) -> Result<Vec<AlertaTiempoExcedido>, IngresoContratistaError> {
-    default_service().verificar_tiempos_excedidos().await
 }
 
 #[cfg(test)]

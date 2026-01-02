@@ -8,11 +8,39 @@ use crate::models::contratista::{
     ActualizarPraindInput, CambiarEstadoConHistorialInput, CambiarEstadoInput,
     ContratistaListResponse, ContratistaResponse, CreateContratistaInput, UpdateContratistaInput,
 };
-use crate::services::contratista_service;
+use crate::repositories::contratista::{
+    SurrealAuditRepository, SurrealContratistaRepository, SurrealEmpresaRepository,
+    SurrealSecurityRepository, SurrealVehiculoRepository,
+};
+use crate::services::contratista_service::ContratistaService;
 use crate::services::search_service::SearchService;
 use crate::services::session::SessionState;
 use std::sync::Arc;
 use tauri::{command, State};
+
+// --------------------------------------------------------------------------
+// HELPERS: Construcción del Servicio
+// --------------------------------------------------------------------------
+
+/// Crea una instancia del servicio con implementaciones concretas de SurrealDB.
+fn create_service(
+    search_service: Option<Arc<SearchService>>,
+) -> ContratistaService<
+    SurrealContratistaRepository,
+    SurrealSecurityRepository,
+    SurrealEmpresaRepository,
+    SurrealVehiculoRepository,
+    SurrealAuditRepository,
+> {
+    ContratistaService::new(
+        SurrealContratistaRepository,
+        SurrealSecurityRepository,
+        SurrealEmpresaRepository,
+        SurrealVehiculoRepository,
+        SurrealAuditRepository,
+        search_service,
+    )
+}
 
 // --------------------------------------------------------------------------
 // CONSULTAS DE CONTRATISTAS
@@ -32,7 +60,7 @@ pub async fn get_contratista_by_id(
     id: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
     require_perm!(session, "contratistas:read")?;
-    contratista_service::get_contratista_by_id(&id).await
+    create_service(None).get_contratista_by_id(&id).await
 }
 
 /// [Comando Tauri] Localiza un contratista por su documento de identidad.
@@ -46,7 +74,7 @@ pub async fn get_contratista_by_id(
 pub async fn get_contratista_by_cedula(
     cedula: String,
 ) -> Result<ContratistaResponse, ContratistaError> {
-    contratista_service::get_contratista_by_cedula(&cedula).await
+    create_service(None).get_contratista_by_cedula(&cedula).await
 }
 
 /// [Comando Tauri] Recupera el censo completo de contratistas.
@@ -61,7 +89,7 @@ pub async fn get_all_contratistas(
     session: State<'_, SessionState>,
 ) -> Result<ContratistaListResponse, ContratistaError> {
     require_perm!(session, "contratistas:read")?;
-    contratista_service::get_all_contratistas().await
+    create_service(None).get_all_contratistas().await
 }
 
 /// [Comando Tauri] Filtra contratistas con estado Activo.
@@ -70,7 +98,7 @@ pub async fn get_all_contratistas(
 /// Vector de contratistas habilitados para laborar.
 #[command]
 pub async fn get_contratistas_activos() -> Result<Vec<ContratistaResponse>, ContratistaError> {
-    contratista_service::get_contratistas_activos().await
+    create_service(None).get_contratistas_activos().await
 }
 
 /// [Comando Tauri] Consulta contratistas archivados (soft-deleted).
@@ -79,7 +107,7 @@ pub async fn get_contratistas_activos() -> Result<Vec<ContratistaResponse>, Cont
 /// Lista de contratistas en archivo histórico.
 #[command]
 pub async fn get_archived_contratistas() -> Result<Vec<ContratistaResponse>, ContratistaError> {
-    contratista_service::get_archived_contratistas().await
+    create_service(None).get_archived_contratistas().await
 }
 
 // --------------------------------------------------------------------------
@@ -104,7 +132,7 @@ pub async fn create_contratista(
     input: CreateContratistaInput,
 ) -> Result<ContratistaResponse, ContratistaError> {
     require_perm!(session, "contratistas:create", "Registrando nuevo perfil de contratista")?;
-    contratista_service::create_contratista(&search_service, input).await
+    create_service(Some(search_service.inner().clone())).create_contratista(input).await
 }
 
 /// [Comando Tauri] Actualiza datos de un contratista existente.
@@ -129,7 +157,7 @@ pub async fn update_contratista(
         "contratistas:update",
         format!("Actualizando información de contratista ID: {}", id)
     )?;
-    contratista_service::update_contratista(&search_service, id, input).await
+    create_service(Some(search_service.inner().clone())).update_contratista(id, input).await
 }
 
 /// [Comando Tauri] Cambia el estado operativo de un contratista.
@@ -154,7 +182,7 @@ pub async fn cambiar_estado_contratista(
         "contratistas:update",
         format!("Cambiando estatus administrativo para el contratista {}", id)
     )?;
-    contratista_service::cambiar_estado_contratista(&search_service, id, input).await
+    create_service(Some(search_service.inner().clone())).cambiar_estado_contratista(id, input).await
 }
 
 /// [Comando Tauri] Archiva un contratista (Soft Delete).
@@ -177,7 +205,7 @@ pub async fn delete_contratista(
         "contratistas:delete",
         format!("Archivando perfil de contratista {}", id)
     )?;
-    contratista_service::delete_contratista(&search_service, id).await
+    create_service(Some(search_service.inner().clone())).delete_contratista(id).await
 }
 
 /// [Comando Tauri] Restaura un contratista previamente archivado.
@@ -199,7 +227,7 @@ pub async fn restore_contratista(
         "contratistas:delete",
         format!("Restaurando perfil de contratista {}", id)
     )?;
-    contratista_service::restore_contratista(&search_service, id).await
+    create_service(Some(search_service.inner().clone())).restore_contratista(id).await
 }
 
 // --------------------------------------------------------------------------
@@ -223,7 +251,8 @@ pub async fn actualizar_praind_con_historial(
 ) -> Result<ContratistaResponse, ContratistaError> {
     let user =
         session.get_user().ok_or(ContratistaError::Unauthorized("Sesión no válida".to_string()))?;
-    contratista_service::actualizar_praind_con_historial(&search_service, input, user.id.clone())
+    create_service(Some(search_service.inner().clone()))
+        .actualizar_praind_con_historial(input, user.id.clone())
         .await
 }
 
@@ -244,5 +273,7 @@ pub async fn cambiar_estado_con_historial(
 ) -> Result<ContratistaResponse, ContratistaError> {
     let user =
         session.get_user().ok_or(ContratistaError::Unauthorized("Sesión no válida".to_string()))?;
-    contratista_service::cambiar_estado_con_historial(&search_service, input, user.id.clone()).await
+    create_service(Some(search_service.inner().clone()))
+        .cambiar_estado_con_historial(input, user.id.clone())
+        .await
 }

@@ -6,10 +6,6 @@ use crate::models::contratista::{
     EstadoContratista, UpdateContratistaInput,
 };
 use crate::models::vehiculo::{VehiculoCreateDTO, VehiculoUpdateDTO};
-use crate::repositories::contratista::{
-    SurrealAuditRepository, SurrealContratistaRepository, SurrealEmpresaRepository,
-    SurrealSecurityRepository, SurrealVehiculoRepository,
-};
 use crate::repositories::traits::{
     AuditRepository, ContratistaRepository, EmpresaRepository, SecurityRepository,
     VehiculoRepository,
@@ -455,27 +451,8 @@ where
 }
 
 // --------------------------------------------------------------------------
-// CONVENIENCE WRAPPERS (FACTORY METHODS / PUBLIC API for COMMANDS)
+// INTERNAL HELPERS
 // --------------------------------------------------------------------------
-
-fn default_service(
-    search_service: Option<Arc<SearchService>>,
-) -> ContratistaService<
-    SurrealContratistaRepository,
-    SurrealSecurityRepository,
-    SurrealEmpresaRepository,
-    SurrealVehiculoRepository,
-    SurrealAuditRepository,
-> {
-    ContratistaService::new(
-        SurrealContratistaRepository,
-        SurrealSecurityRepository,
-        SurrealEmpresaRepository,
-        SurrealVehiculoRepository,
-        SurrealAuditRepository,
-        search_service,
-    )
-}
 
 fn map_db_error(e: SurrealDbError) -> ContratistaError {
     ContratistaError::Database(e.to_string())
@@ -498,95 +475,3 @@ fn parse_empresa_id(id_str: &str) -> RecordId {
         RecordId::from_table_key("empresa", id_str)
     }
 }
-
-pub async fn create_contratista(
-    search_service: &Arc<SearchService>,
-    input: CreateContratistaInput,
-) -> Result<ContratistaResponse, ContratistaError> {
-    let service = default_service(Some(search_service.clone()));
-    service.create_contratista(input).await
-}
-
-pub async fn get_contratista_by_id(id_str: &str) -> Result<ContratistaResponse, ContratistaError> {
-    let service = default_service(None);
-    service.get_contratista_by_id(id_str).await
-}
-
-pub async fn get_contratista_by_cedula(
-    cedula: &str,
-) -> Result<ContratistaResponse, ContratistaError> {
-    let service = default_service(None);
-    service.get_contratista_by_cedula(cedula).await
-}
-
-pub async fn get_all_contratistas() -> Result<ContratistaListResponse, ContratistaError> {
-    let service = default_service(None);
-    service.get_all_contratistas().await
-}
-
-pub async fn get_contratistas_activos() -> Result<Vec<ContratistaResponse>, ContratistaError> {
-    let service = default_service(None);
-    service.get_contratistas_activos().await
-}
-
-pub async fn update_contratista(
-    search_service: &Arc<SearchService>,
-    id_str: String,
-    input: UpdateContratistaInput,
-) -> Result<ContratistaResponse, ContratistaError> {
-    let service = default_service(Some(search_service.clone()));
-    service.update_contratista(id_str, input).await
-}
-
-pub async fn cambiar_estado_contratista(
-    search_service: &Arc<SearchService>,
-    id_str: String,
-    input: CambiarEstadoInput,
-) -> Result<ContratistaResponse, ContratistaError> {
-    let service = default_service(Some(search_service.clone()));
-    service.cambiar_estado_contratista(id_str, input).await
-}
-
-pub async fn delete_contratista(
-    search_service: &Arc<SearchService>,
-    id_str: String,
-) -> Result<(), ContratistaError> {
-    let service = default_service(Some(search_service.clone()));
-    service.delete_contratista(id_str).await
-}
-
-pub async fn actualizar_praind_con_historial(
-    search_service: &Arc<SearchService>,
-    input: ActualizarPraindInput,
-    usuario_id: String,
-) -> Result<ContratistaResponse, ContratistaError> {
-    let service = default_service(Some(search_service.clone()));
-    service.actualizar_praind_con_historial(input, usuario_id).await
-}
-
-pub async fn cambiar_estado_con_historial(
-    search_service: &Arc<SearchService>,
-    input: CambiarEstadoConHistorialInput,
-    usuario_id: String,
-) -> Result<ContratistaResponse, ContratistaError> {
-    let service = default_service(Some(search_service.clone()));
-    service.cambiar_estado_con_historial(input, usuario_id).await
-}
-
-pub async fn restore_contratista(
-    search_service: &Arc<SearchService>,
-    id_str: String,
-) -> Result<(), ContratistaError> {
-    let service = default_service(Some(search_service.clone()));
-    service.restore_contratista(id_str).await
-}
-
-pub async fn get_archived_contratistas() -> Result<Vec<ContratistaResponse>, ContratistaError> {
-    let service = default_service(None);
-    service.get_archived_contratistas().await
-}
-
-// Remove the unit tests at the end of file because we are creating a dedicated test file
-// and the existing tests were for helpers that are now private functions which is fine to test
-// via public API or move them to the test file.
-// Actually, `parse_contratista_id` is private, but we can verify logic through integration tests.

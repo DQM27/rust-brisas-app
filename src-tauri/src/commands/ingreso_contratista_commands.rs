@@ -15,10 +15,34 @@ use crate::models::ingreso::{
     AlertaTiempoExcedido, CreateIngresoContratistaInput, IngresoConEstadoResponse, IngresoResponse,
     RegistrarSalidaInput, ResultadoValidacionSalida, ValidacionIngresoResponse,
 };
-use crate::services::ingreso_contratista_service as service;
+use crate::repositories::{
+    contratista::{SurrealContratistaRepository, SurrealSecurityRepository},
+    gafete::SurrealGafeteRepository,
+    ingreso_contratista::SurrealIngresoContratistaRepository,
+};
+use crate::services::ingreso_contratista_service::IngresoContratistaService;
 use crate::services::session::SessionState;
 use crate::{require_perm, require_session};
 use tauri::{command, State};
+
+// --------------------------------------------------------------------------
+// HELPERS: Construcción del Servicio
+// --------------------------------------------------------------------------
+
+/// Crea una instancia del servicio con las implementaciones concretas de SurrealDB.
+fn create_service() -> IngresoContratistaService<
+    SurrealIngresoContratistaRepository,
+    SurrealGafeteRepository,
+    SurrealContratistaRepository,
+    SurrealSecurityRepository,
+> {
+    IngresoContratistaService::new(
+        SurrealIngresoContratistaRepository,
+        SurrealGafeteRepository,
+        SurrealContratistaRepository,
+        SurrealSecurityRepository,
+    )
+}
 
 // --------------------------------------------------------------------------
 // PROTOCOLOS DE ENTRADA
@@ -32,7 +56,7 @@ pub async fn validate_ingreso_contratista(
 ) -> Result<ValidacionIngresoResponse, IngresoContratistaError> {
     require_session!(session);
     require_perm!(session, "IngresoContratista:Read")?;
-    service::validar_ingreso_contratista(contratista_id).await
+    create_service().validar_ingreso_contratista(contratista_id).await
 }
 
 /// [Comando Tauri] Registra la entrada física de un contratista.
@@ -44,8 +68,7 @@ pub async fn create_ingreso_contratista(
 ) -> Result<IngresoResponse, IngresoContratistaError> {
     let user = require_session!(session);
     require_perm!(session, "IngresoContratista:Create")?;
-
-    service::crear_ingreso_contratista(input, user.id.to_string()).await
+    create_service().crear_ingreso_contratista(input, user.id.to_string()).await
 }
 
 // --------------------------------------------------------------------------
@@ -62,7 +85,8 @@ pub async fn validate_exit_contratista(
     require_session!(session);
     require_perm!(session, "IngresoContratista:Read")?;
 
-    service::validar_puede_salir(&ingreso_id, gafete_devuelto.as_deref())
+    create_service()
+        .validar_puede_salir(&ingreso_id, gafete_devuelto.as_deref())
         .await
         .map_err(|e| IngresoContratistaError::Validation(e))
 }
@@ -76,8 +100,7 @@ pub async fn register_exit_contratista(
 ) -> Result<IngresoResponse, IngresoContratistaError> {
     let user = require_session!(session);
     require_perm!(session, "IngresoContratista:Update")?;
-
-    service::registrar_salida(input, user.id.to_string()).await
+    create_service().registrar_salida(input, user.id.to_string()).await
 }
 
 // --------------------------------------------------------------------------
@@ -91,7 +114,7 @@ pub async fn get_permanencia_status(
 ) -> Result<Vec<IngresoConEstadoResponse>, IngresoContratistaError> {
     require_session!(session);
     require_perm!(session, "IngresoContratista:Read")?;
-    service::get_ingresos_abiertos_con_alertas().await
+    create_service().get_ingresos_abiertos_con_alertas().await
 }
 
 /// [Comando Tauri] Consulta alertas por tiempos de permanencia excedidos.
@@ -101,5 +124,5 @@ pub async fn check_time_alerts(
 ) -> Result<Vec<AlertaTiempoExcedido>, IngresoContratistaError> {
     require_session!(session);
     require_perm!(session, "IngresoContratista:Read")?;
-    service::verificar_tiempos_excedidos().await
+    create_service().verificar_tiempos_excedidos().await
 }
