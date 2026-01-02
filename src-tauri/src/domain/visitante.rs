@@ -1,7 +1,13 @@
-/// Capa de Dominio: Reglas de Negocio para Visitantes.
-///
-/// Este módulo centraliza las validaciones de identidad para personas particulares
-/// que ingresan a las instalaciones (no son empleados ni contratistas fijos).
+//! # Dominio: Reglas de Negocio para Visitantes
+//!
+//! Contiene las reglas de negocio puras y validaciones para personas
+//! particulares que ingresan de forma puntual a las instalaciones.
+//!
+//! ## Responsabilidades
+//! - Validar formatos de identidad (cédulas, nombres).
+//! - Normalizar datos para consistencia en búsquedas.
+//! - Validar integridad de inputs de registro.
+
 use crate::domain::common::{
     normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
 };
@@ -9,20 +15,39 @@ use crate::domain::errors::VisitanteError;
 use crate::models::visitante::CreateVisitanteInput;
 
 // --------------------------------------------------------------------------
+// CONSTANTES DE DOMINIO
+// --------------------------------------------------------------------------
+
+/// Etiqueta para el campo de Empresa en mensajes de error.
+const CAMPO_EMPRESA: &str = "Empresa";
+
+// --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
 // --------------------------------------------------------------------------
 
 /// Valida el formato y longitud de la cédula del visitante.
+///
+/// # Argumentos
+/// * `cedula` - Cédula en formato string.
+///
+/// # Errores
+/// * `VisitanteError::Validation` - Si no cumple el estándar numérico/guiones.
 pub fn validar_cedula(cedula: &str) -> Result<(), VisitanteError> {
     validar_cedula_estandar(cedula).map_err(|e| VisitanteError::Validation(e.to_string()))
 }
 
 /// Valida el nombre del visitante.
+///
+/// # Errores
+/// * `VisitanteError::Validation` - Si contiene caracteres inválidos o longitud fuera de rango.
 pub fn validar_nombre(nombre: &str) -> Result<(), VisitanteError> {
     validar_nombre_estandar(nombre, "nombre").map_err(|e| VisitanteError::Validation(e.to_string()))
 }
 
 /// Valida el apellido del visitante.
+///
+/// # Errores
+/// * `VisitanteError::Validation` - Si contiene caracteres inválidos o longitud fuera de rango.
 pub fn validar_apellido(apellido: &str) -> Result<(), VisitanteError> {
     validar_nombre_estandar(apellido, "apellido")
         .map_err(|e| VisitanteError::Validation(e.to_string()))
@@ -65,6 +90,14 @@ pub fn validar_nombre_opcional(
 // --------------------------------------------------------------------------
 
 /// Valida el conjunto completo de datos para un nuevo visitante.
+///
+/// # Proceso
+/// 1. Valida identidad básica (Cédula, Nombre, Apellido).
+/// 2. Valida componentes opcionales del nombre si están presentes.
+/// 3. Verifica asociación obligatoria a una empresa.
+///
+/// # Errores
+/// * `VisitanteError::Validation` - Si algún campo falla las reglas de integridad.
 pub fn validar_create_input(input: &CreateVisitanteInput) -> Result<(), VisitanteError> {
     validar_cedula(&input.cedula)?;
     validar_nombre(&input.nombre)?;
@@ -73,9 +106,11 @@ pub fn validar_create_input(input: &CreateVisitanteInput) -> Result<(), Visitant
     validar_nombre_opcional(input.segundo_nombre.as_ref(), "Segundo nombre")?;
     validar_nombre_opcional(input.segundo_apellido.as_ref(), "Segundo apellido")?;
 
-    // Strict mode: Validar que empresa_id esté presente y tenga formato válido si es necesario
     if input.empresa_id.trim().is_empty() {
-        return Err(VisitanteError::Validation("Debe seleccionar una empresa válida".to_string()));
+        return Err(VisitanteError::Validation(format!(
+            "Debe seleccionar una {} válida",
+            CAMPO_EMPRESA
+        )));
     }
 
     Ok(())

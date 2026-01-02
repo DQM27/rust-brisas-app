@@ -1,6 +1,7 @@
-// ==========================================
-// src/models/visitante.rs
-// ==========================================
+//! # Modelos: Visitantes (Entidades y DTOs)
+//!
+//! Este módulo define las estructuras de datos para la gestión de visitantes
+//! ocasionales, incluyendo modelos de persistencia y contratos de comunicación.
 
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};

@@ -1,12 +1,14 @@
-/// Puertos de Entrada: Gestión de Visitantes Ocasionales y Técnicos (Visitor Bridge).
-///
-/// Este módulo gestiona los perfiles de personas que no tienen una relación
-/// contractual permanente con la empresa, pero requieren acceso para gestiones
-/// puntuales, visitas personales o servicios técnicos.
+//! # Comandos: Gestión de Visitantes (Tauri Bridge)
+//!
+//! Este módulo expone las capacidades de control de visitantes al frontend,
+//! regulando el acceso mediante permisos (RBAC) y garantizando la auditoría
+//! de registros de seguridad.
+
 use crate::domain::errors::VisitanteError;
 use crate::models::visitante::{CreateVisitanteInput, VisitanteResponse};
+use crate::require_perm;
 use crate::services::session::SessionState;
-use crate::services::visitante_service;
+use crate::services::visitante_service as service;
 use tauri::{command, State};
 
 /// Registra los datos básicos de un nuevo visitante en la base de datos de seguridad.
@@ -16,7 +18,7 @@ pub async fn create_visitante(
     input: CreateVisitanteInput,
 ) -> Result<VisitanteResponse, VisitanteError> {
     require_perm!(session, "visitantes:create", "Registrando nuevo perfil de visitante")?;
-    visitante_service::create_visitante(input).await
+    service::create_visitante(input).await
 }
 
 /// Motor de Búsqueda: Localiza visitantes recurrentes para agilizar su re-ingreso.
@@ -26,13 +28,17 @@ pub async fn search_visitantes_catalog(
     query: String,
 ) -> Result<Vec<VisitanteResponse>, VisitanteError> {
     require_perm!(session, "visitantes:read")?;
-    visitante_service::search_visitantes(&query).await
+    service::search_visitantes(&query).await
 }
 
 /// Identificación Unívoca: Recupera la ficha técnica del visitante mediante su documento.
 #[command]
-pub async fn get_visitante_by_cedula(cedula: String) -> Result<Option<VisitanteResponse>, String> {
-    visitante_service::get_visitante_by_cedula(&cedula).await.map_err(|e| e.to_string())
+pub async fn get_visitante_by_cedula(
+    session: State<'_, SessionState>,
+    cedula: String,
+) -> Result<Option<VisitanteResponse>, VisitanteError> {
+    require_perm!(session, "visitantes:read")?;
+    service::get_visitante_by_cedula(&cedula).await
 }
 
 /// Actualiza la información personal o motivos recurrentes de un visitante.
@@ -47,7 +53,7 @@ pub async fn update_visitante(
         "visitantes:update",
         format!("Actualizando información de visitante ID: {}", id)
     )?;
-    visitante_service::update_visitante(&id, input).await
+    service::update_visitante(&id, input).await
 }
 
 /// Baja Administrativa: Archiva el perfil del visitante del catálogo operativo.
@@ -57,19 +63,26 @@ pub async fn delete_visitante(
     id: String,
 ) -> Result<(), VisitanteError> {
     require_perm!(session, "visitantes:delete", format!("Archivando perfil de visitante {}", id))?;
-    visitante_service::delete_visitante(&id).await
+    service::delete_visitante(&id).await
 }
 
 /// Restablecimiento: Recupera un perfil de visitante anteriormente archivado.
 #[command]
-pub async fn restore_visitante(id: String) -> Result<VisitanteResponse, String> {
-    visitante_service::restore_visitante(&id).await.map_err(|e| e.to_string())
+pub async fn restore_visitante(
+    session: State<'_, SessionState>,
+    id: String,
+) -> Result<VisitanteResponse, VisitanteError> {
+    require_perm!(session, "visitantes:delete", format!("Restaurando perfil de visitante {}", id))?;
+    service::restore_visitante(&id).await
 }
 
 /// Consulta histórica de visitantes dados de baja administrativa.
 #[command]
-pub async fn get_archived_visitantes() -> Result<Vec<VisitanteResponse>, String> {
-    visitante_service::get_archived_visitantes().await.map_err(|e| e.to_string())
+pub async fn get_archived_visitantes(
+    session: State<'_, SessionState>,
+) -> Result<Vec<VisitanteResponse>, VisitanteError> {
+    require_perm!(session, "visitantes:read")?;
+    service::get_archived_visitantes().await
 }
 
 /// Reporte Operativo: Lista la totalidad de visitantes registrados en el sistema.
@@ -78,5 +91,5 @@ pub async fn list_visitantes(
     session: State<'_, SessionState>,
 ) -> Result<Vec<VisitanteResponse>, VisitanteError> {
     require_perm!(session, "visitantes:read")?;
-    visitante_service::get_all_visitantes().await
+    service::get_all_visitantes().await
 }

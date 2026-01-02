@@ -9,10 +9,26 @@ use crate::domain::errors::VehiculoError;
 use crate::models::vehiculo::{CreateVehiculoInput, TipoVehiculo, UpdateVehiculoInput};
 
 // --------------------------------------------------------------------------
+// CONSTANTES DE DOMINIO
+// --------------------------------------------------------------------------
+
+/// Etiqueta para el campo de Modelo en mensajes de error.
+const CAMPO_MODELO: &str = "Modelo";
+
+/// Etiqueta para el campo de Color en mensajes de error.
+const CAMPO_COLOR: &str = "Color";
+
+// --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
 // --------------------------------------------------------------------------
 
 /// Valida que se haya asignado un propietario (Persona o Empresa) al vehículo.
+///
+/// # Argumentos
+/// * `propietario_id` - Identificador del propietario (ej: "contratista:123")
+///
+/// # Errores
+/// * `VehiculoError::Validation` - Si el ID está vacío
 pub fn validar_propietario_id(propietario_id: &str) -> Result<(), VehiculoError> {
     let limpio = propietario_id.trim();
 
@@ -24,16 +40,33 @@ pub fn validar_propietario_id(propietario_id: &str) -> Result<(), VehiculoError>
 }
 
 /// Parsea y valida el tipo de vehículo contra el enumerado oficial.
+///
+/// # Proceso
+/// - Intenta convertir el string al enumerado `TipoVehiculo`.
+/// - Soporta "motocicleta" y "automovil/automóvil" (insensible a mayúsculas).
+///
+/// # Errores
+/// * `VehiculoError::InvalidType` - Si el tipo no es reconocido
 pub fn validar_tipo_vehiculo(tipo_str: &str) -> Result<TipoVehiculo, VehiculoError> {
     tipo_str.parse().map_err(|_| VehiculoError::InvalidType(tipo_str.to_string()))
 }
 
 /// Valida el formato de la placa (matrícula) del vehículo.
+///
+/// Usa el estándar general de `common.rs` para asegurar consistencia.
+///
+/// # Errores
+/// * `VehiculoError::Validation` - Si la placa no cumple con el formato alfanumérico estandarizado.
 pub fn validar_placa(placa: &str) -> Result<(), VehiculoError> {
     validar_placa_estandar(placa).map_err(|e| VehiculoError::Validation(e.to_string()))
 }
 
 /// Valida la marca del vehículo.
+///
+/// Asegura que no esté vacía y que no exceda los límites de longitud parametrizados.
+///
+/// # Errores
+/// * `VehiculoError::Validation` - Si está vacía o excede `MAX_LEN_MARCA_VEHICULO`.
 pub fn validar_marca(marca: &str) -> Result<(), VehiculoError> {
     let limpia = marca.trim();
 
@@ -86,11 +119,11 @@ pub fn validar_create_input(input: &CreateVehiculoInput) -> Result<(), VehiculoE
     }
 
     if let Some(ref modelo) = input.modelo {
-        validar_texto_opcional(modelo, "Modelo", MAX_LEN_MODELO_VEHICULO)?;
+        validar_texto_opcional(modelo, CAMPO_MODELO, MAX_LEN_MODELO_VEHICULO)?;
     }
 
     if let Some(ref color) = input.color {
-        validar_texto_opcional(color, "Color", MAX_LEN_COLOR_VEHICULO)?;
+        validar_texto_opcional(color, CAMPO_COLOR, MAX_LEN_COLOR_VEHICULO)?;
     }
 
     Ok(())
@@ -109,11 +142,11 @@ pub fn validar_update_input(input: &UpdateVehiculoInput) -> Result<(), VehiculoE
     }
 
     if let Some(ref modelo) = input.modelo {
-        validar_texto_opcional(modelo, "Modelo", MAX_LEN_MODELO_VEHICULO)?;
+        validar_texto_opcional(modelo, CAMPO_MODELO, MAX_LEN_MODELO_VEHICULO)?;
     }
 
     if let Some(ref color) = input.color {
-        validar_texto_opcional(color, "Color", MAX_LEN_COLOR_VEHICULO)?;
+        validar_texto_opcional(color, CAMPO_COLOR, MAX_LEN_COLOR_VEHICULO)?;
     }
 
     Ok(())

@@ -1,9 +1,9 @@
-/// Gestión de Visitantes Ocasionales.
-///
-/// Este servicio maneja el ciclo de vida de las personas que ingresan de forma puntual
-/// o esporádica a las instalaciones (ej. familiares, mensajería, visitas técnicas únicas).
-/// A diferencia de los contratistas, su registro es más ágil pero mantiene los
-/// mismos estándares de seguridad (Lista Negra y Control Vehicular).
+//! # Servicio: Gestión de Visitantes Ocasionales
+//!
+//! Este servicio orquesta el registro y seguimiento de personas externas.
+//! Implementa filtros de seguridad (Lista Negra) y vinculación opcional
+//! de activos móviles (Vehículos).
+
 use crate::db::surrealdb_lista_negra_queries as ln_db;
 use crate::db::surrealdb_vehiculo_queries as veh_db;
 use crate::db::surrealdb_visitante_queries as db;
@@ -16,7 +16,7 @@ use crate::models::visitante::{
 };
 use crate::services::surrealdb_service::SurrealDbError;
 use chrono::Utc;
-use log::{error, info};
+use log::{debug, error, info, warn};
 use surrealdb::RecordId;
 
 /// Mapeo de errores técnicos a errores de negocio.
@@ -48,12 +48,13 @@ fn parse_empresa_id(id_str: &str) -> RecordId {
 /// Registra un nuevo visitante.
 ///
 /// El flujo garantiza:
-/// 1. Validación y Normalización de Identidad (Cédula y Nombres).
+/// 1. Validación y Normalización de Identidad.
 /// 2. Filtro de Seguridad: Bloqueo si aparece en la lista negra.
-/// 3. Registro de Propiedad Vehicular: Si el visitante ingresa con vehículo propio.
+/// 3. Registro de Propiedad Vehicular: Si el visitante ingresa con vehículo.
 pub async fn create_visitante(
     mut input: CreateVisitanteInput,
 ) -> Result<VisitanteResponse, VisitanteError> {
+    debug!("Iniciando registro de nuevo visitante para cédula: {}", input.cedula);
     domain::validar_create_input(&input)?;
 
     // Normalización de datos para evitar duplicados por formato.
@@ -67,12 +68,17 @@ pub async fn create_visitante(
         input.segundo_apellido = Some(domain::normalizar_nombre(s));
     }
 
-    // Seguridad: Chequeo preventivo obligatorio.
+    // Seguridad: Chequeo preventivo obligatorio en Lista Negra.
+    debug!("Verificando Lista Negra para cédula: {}", input.cedula);
     let block_status =
         ln_db::check_if_blocked_by_cedula(&input.cedula).await.map_err(map_db_error)?;
 
     if block_status.is_blocked {
         let nivel = block_status.nivel_severidad.unwrap_or_else(|| "BAJO".to_string());
+        warn!(
+            "🚨 BLOQUEO DE SEGURIDAD: Visitante {} intentó ingresar con nivel de riesgo: {}",
+            input.cedula, nivel
+        );
         return Err(VisitanteError::Validation(format!(
             "BLOQUEO DE SEGURIDAD: Cédula {} en lista negra (Nivel: {}).",
             input.cedula, nivel
@@ -80,6 +86,7 @@ pub async fn create_visitante(
     }
 
     if db::get_visitante_by_cedula(&input.cedula).await.map_err(map_db_error)?.is_some() {
+        warn!("Intento de registro duplicado para cédula: {}", input.cedula);
         return Err(VisitanteError::CedulaExists);
     }
 
@@ -93,13 +100,14 @@ pub async fn create_visitante(
         has_vehicle: input.has_vehicle,
     };
 
-    info!("Registrando nuevo visitante: {} {}", dto.nombre, dto.apellido);
+    info!("✅ Registrando nuevo visitante: {} {} (ID: {})", dto.nombre, dto.apellido, dto.cedula);
     let visitante = db::create_visitante(dto).await.map_err(map_db_error)?;
 
     // Gestión del vehículo asociado al visitante para control de acceso.
     if input.has_vehicle {
         if let (Some(tipo), Some(placa)) = (&input.tipo_vehiculo, &input.placa) {
             if !tipo.is_empty() && !placa.is_empty() {
+                debug!("Registrando activo móvil vinculado: Placa {}", placa);
                 let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
                     .map_err(|e| VisitanteError::Validation(e.to_string()))?
                     .as_str()
@@ -119,7 +127,10 @@ pub async fn create_visitante(
                     is_active: true,
                 };
 
-                let _ = veh_db::insert(dto_vehiculo).await;
+                match veh_db::insert(dto_vehiculo).await {
+                    Ok(_) => info!("🚗 Vehículo Placa {} registrado y vinculado con éxito", placa),
+                    Err(e) => error!("Fallo al vincular vehículo en registro de visitante: {}", e),
+                }
             }
         }
     }
@@ -159,6 +170,7 @@ pub async fn update_visitante(
     mut input: CreateVisitanteInput,
 ) -> Result<VisitanteResponse, VisitanteError> {
     let id_thing = parse_visitante_id(id_str);
+    debug!("Actualizando perfil de visitante: {}", id_str);
 
     db::find_by_id(&id_thing).await.map_err(map_db_error)?.ok_or(VisitanteError::NotFound)?;
 
@@ -174,6 +186,7 @@ pub async fn update_visitante(
     dto.has_vehicle = Some(input.has_vehicle);
     dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 
+    info!("📝 Actualizando datos del visitante ID: {}", id_str);
     let visitante = db::update(&id_thing, dto).await.map_err(map_db_error)?;
 
     if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
@@ -186,11 +199,14 @@ pub async fn update_visitante(
 pub async fn delete_visitante(id_str: &str) -> Result<(), VisitanteError> {
     let id_thing = parse_visitante_id(id_str);
     db::find_by_id(&id_thing).await.map_err(map_db_error)?.ok_or(VisitanteError::NotFound)?;
+
+    info!("🗑️ Archivando visitante: {}", id_str);
     db::delete(&id_thing).await.map_err(map_db_error)
 }
 
 pub async fn restore_visitante(id_str: &str) -> Result<VisitanteResponse, VisitanteError> {
     let id_thing = parse_visitante_id(id_str);
+    info!("♻️ Restaurando visitante: {}", id_str);
     let visitante = db::restore(&id_thing).await.map_err(map_db_error)?;
 
     if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
@@ -201,11 +217,44 @@ pub async fn restore_visitante(id_str: &str) -> Result<VisitanteResponse, Visita
 }
 
 pub async fn get_archived_visitantes() -> Result<Vec<VisitanteResponse>, VisitanteError> {
+    debug!("Consultando catálogo de visitantes archivados");
     let visitantes = db::find_archived().await.map_err(map_db_error)?;
     Ok(visitantes.into_iter().map(VisitanteResponse::from_fetched).collect())
 }
 
 pub async fn get_all_visitantes() -> Result<Vec<VisitanteResponse>, VisitanteError> {
+    debug!("Consultando listado total de visitantes");
     let visitantes = db::find_all().await.map_err(map_db_error)?;
     Ok(visitantes.into_iter().map(VisitanteResponse::from_fetched).collect())
+}
+
+// --------------------------------------------------------------------------
+// PRUEBAS UNITARIAS
+// --------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_visitante_id() {
+        let id = parse_visitante_id("123");
+        assert_eq!(id.table(), "visitante");
+        assert_eq!(id.key().to_string(), "123");
+
+        let id_comp = parse_visitante_id("visitante:abc");
+        assert_eq!(id_comp.table(), "visitante");
+        assert_eq!(id_comp.key().to_string(), "abc");
+    }
+
+    #[test]
+    fn test_parse_empresa_id() {
+        let id = parse_empresa_id("brisa");
+        assert_eq!(id.table(), "empresa");
+        assert_eq!(id.key().to_string(), "brisa");
+
+        let id_comp = parse_empresa_id("empresa:x");
+        assert_eq!(id_comp.table(), "empresa");
+        assert_eq!(id_comp.key().to_string(), "x");
+    }
 }
