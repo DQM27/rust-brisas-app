@@ -22,26 +22,38 @@ pub const CEDULA_MIN_LEN: usize = 5;
 pub const CEDULA_MAX_LEN: usize = 20;
 
 // === Nombres y Apellidos ===
+/// Longitud mínima de nombre/apellido principal (requerido).
+pub const NOMBRE_MIN_LEN: usize = 1;
 /// Longitud máxima de nombre/apellido principal.
 pub const NOMBRE_MAX_LEN: usize = 100;
-/// Longitud máxima de segundo nombre/apellido.
+/// Longitud máxima de segundo nombre/apellido (opcional, min=0).
 pub const SEGUNDO_NOMBRE_MAX_LEN: usize = 50;
 
 // === Contacto ===
+/// Longitud mínima de teléfono (si se proporciona).
+pub const TELEFONO_MIN_LEN: usize = 7;
 /// Longitud máxima de teléfono.
 pub const TELEFONO_MAX_LEN: usize = 20;
+/// Longitud mínima de dirección (si se proporciona).
+pub const DIRECCION_MIN_LEN: usize = 5;
 /// Longitud máxima de dirección.
 pub const DIRECCION_MAX_LEN: usize = 200;
+/// Longitud mínima de email.
+pub const EMAIL_MIN_LEN: usize = 5;
 /// Longitud máxima de email.
 pub const EMAIL_MAX_LEN: usize = 100;
 
 // === Seguridad ===
 /// Longitud mínima de contraseña.
 pub const PASSWORD_MIN_LEN: usize = 6;
+/// Longitud máxima de contraseña.
+pub const PASSWORD_MAX_LEN: usize = 100;
 /// Longitud máxima de número de gafete.
 pub const GAFETE_MAX_LEN: usize = 20;
 
 // === Entidades ===
+/// Longitud mínima de nombre de entidad (empresa, institución).
+pub const ENTIDAD_NOMBRE_MIN_LEN: usize = 1;
 /// Longitud máxima de nombre de entidad (empresa, institución).
 pub const ENTIDAD_NOMBRE_MAX_LEN: usize = 100;
 
@@ -50,16 +62,28 @@ pub const ENTIDAD_NOMBRE_MAX_LEN: usize = 100;
 pub const PLACA_MIN_LEN: usize = 2;
 /// Longitud máxima de placa de vehículo.
 pub const PLACA_MAX_LEN: usize = 15;
+/// Longitud mínima de marca/modelo de vehículo (si se proporciona).
+pub const MARCA_MODELO_MIN_LEN: usize = 2;
 /// Longitud máxima de marca/modelo de vehículo.
 pub const MARCA_MODELO_MAX_LEN: usize = 50;
 /// Longitud máxima de color de vehículo.
 pub const COLOR_MAX_LEN: usize = 30;
 
 // === Lista Negra ===
+/// Longitud mínima de motivo de bloqueo (requerido).
+pub const MOTIVO_MIN_LEN: usize = 1;
 /// Longitud máxima de motivo de bloqueo.
 pub const MOTIVO_MAX_LEN: usize = 500;
-/// Longitud máxima de observaciones.
+/// Longitud máxima de observaciones (opcional, min=0).
 pub const OBSERVACIONES_MAX_LEN: usize = 1000;
+
+// === Roles ===
+/// Longitud mínima de nombre de rol.
+pub const ROLE_NAME_MIN_LEN: usize = 1;
+/// Longitud máxima de nombre de rol.
+pub const ROLE_NAME_MAX_LEN: usize = 50;
+/// Longitud máxima de descripción de rol.
+pub const ROLE_DESC_MAX_LEN: usize = 200;
 
 // --------------------------------------------------------------------------
 // GESTIÓN DE GAFETES: REGLAS DE NEGOCIO
