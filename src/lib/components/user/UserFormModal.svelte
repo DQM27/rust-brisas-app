@@ -135,11 +135,19 @@
     return match;
   });
 
+  // Nombre completo para mostrar en el header
+  const getFullName = (u: UserResponse | null | undefined) => {
+    if (!u) return "";
+    return [u.nombre, u.segundoNombre, u.apellido, u.segundoApellido]
+      .filter(Boolean)
+      .join(" ");
+  };
+
   const modalTitle = $derived(
     readonly
-      ? `Ver Detalle: ${user?.nombre || ""} ${user?.apellido || ""}`.trim()
+      ? `Ver Detalle: ${getFullName(user)}`
       : isEditMode
-        ? `Editar: ${user?.nombre} ${user?.apellido}`.trim()
+        ? `Editar: ${getFullName(user)}`
         : "Crear Nuevo Usuario",
   );
 
@@ -189,6 +197,31 @@
           payloadData.mustChangePassword = true;
         } else {
           tempPassword = payloadData.password as string;
+        }
+      } else {
+        // En modo edición: limpiar campos opcionales vacíos para evitar
+        // que el backend intente guardar strings vacíos que violan el schema.
+        const optionalFields = [
+          "password",
+          "segundoNombre",
+          "segundoApellido",
+          "telefono",
+          "direccion",
+          "fechaInicioLabores",
+          "numeroGafete",
+          "fechaNacimiento",
+          "contactoEmergenciaNombre",
+          "contactoEmergenciaTelefono",
+        ] as const;
+
+        for (const field of optionalFields) {
+          const value = (payloadData as any)[field];
+          if (
+            value === "" ||
+            (typeof value === "string" && value.trim() === "")
+          ) {
+            delete (payloadData as any)[field];
+          }
         }
       }
 
@@ -328,7 +361,7 @@
 
   function handleNameInput(event: Event, field: keyof CreateUserForm) {
     const input = event.target as HTMLInputElement;
-    const newValue = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "");
+    const newValue = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]/g, "");
     // @ts-ignore
     $form[field] = newValue;
     if (input.value !== newValue) input.value = newValue;
@@ -466,8 +499,7 @@
         </button>
       </div>
 
-      <!-- Form Content (Scrollable only if screen is very small, otherwise fits) -->
-      <div class="flex-1 overflow-y-auto p-6">
+      <div class="flex-1 p-6">
         {#if isChangingPassword && user}
           <div class="flex justify-center items-start py-4">
             <div class="w-full max-w-md">
@@ -482,8 +514,8 @@
           </div>
         {:else}
           <form id="user-form" use:enhance class="contents">
-            <!-- Form Scrollable Area -->
-            <div class="flex-1 overflow-y-auto p-6">
+            <!-- Form Area -->
+            <div class="flex-1 p-6">
               <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
                 <!-- COL 1: Identidad -->
                 <!-- COL 1: Identidad + Avatar -->
@@ -604,7 +636,7 @@
                     </div>
                     <div>
                       <label for="segundoNombre" class={labelClass}
-                        >2do Nombre</label
+                        >Segundo Nombre</label
                       >
                       <input
                         id="segundoNombre"
@@ -635,7 +667,7 @@
                     </div>
                     <div>
                       <label for="segundoApellido" class={labelClass}
-                        >2do Apellido</label
+                        >Segundo Apellido</label
                       >
                       <input
                         id="segundoApellido"

@@ -75,14 +75,12 @@ const apellidoSchema = z.string()
  * - numero_gafete: max 20
  */
 const segundoNombreSchema = z.string()
-    .trim()
     .max(50, 'Segundo nombre no puede exceder 50 caracteres')
     .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]*$/, 'Segundo nombre solo puede contener letras')
     .optional()
     .or(z.literal(''));
 
 const segundoApellidoSchema = z.string()
-    .trim()
     .max(50, 'Segundo apellido no puede exceder 50 caracteres')
     .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]*$/, 'Segundo apellido solo puede contener letras')
     .optional()

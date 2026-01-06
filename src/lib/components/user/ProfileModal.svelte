@@ -60,7 +60,11 @@
   });
 
   const fullName = $derived(
-    user ? `${user.nombre || ""} ${user.apellido || ""}`.trim() : "",
+    user
+      ? [user.nombre, user.segundoNombre, user.apellido, user.segundoApellido]
+          .filter(Boolean)
+          .join(" ")
+      : "",
   );
 </script>
 
