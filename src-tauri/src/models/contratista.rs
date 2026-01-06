@@ -1,9 +1,7 @@
 // ==========================================
 // src/models/contratista.rs
 // ==========================================
-use crate::domain::common::{
-    CEDULA_MAX_LEN, CEDULA_MIN_LEN, NOMBRE_MAX_LEN, SEGUNDO_NOMBRE_MAX_LEN,
-};
+
 use crate::models::empresa::Empresa;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
