@@ -15,7 +15,7 @@
   let { show, onClose }: Props = $props();
 
   // Versión dinámica
-  let appVersion = $state(APP_CONFIG.version);
+  let appVersion = $state<string>(APP_CONFIG.version);
 
   // Lista de colaboradores (hardcoded por ahora)
   const contributors = [
