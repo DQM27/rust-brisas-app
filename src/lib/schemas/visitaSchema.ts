@@ -1,29 +1,45 @@
 import { z } from 'zod';
+import {
+    CEDULA_MIN_LEN,
+    CEDULA_MAX_LEN,
+    NOMBRE_MAX_LEN,
+    SEGUNDO_NOMBRE_MAX_LEN,
+    PLACA_MAX_LEN,
+    ENTIDAD_NOMBRE_MAX_LEN
+} from './domainConstants';
 
 // ==========================================
-// VALIDACIONES BÁSICAS
+// VALIDACIONES BÁSICAS (Alineadas con backend domain/common.rs)
 // ==========================================
 
+/**
+ * Cédula para visitantes: más flexible para incluir pasaportes
+ * Backend: validar_cedula_estandar() - 5-20 chars
+ */
 const cedulaSchema = z.string()
     .trim()
-    .min(5, 'Cédula debe tener al menos 5 caracteres')
-    .max(20, 'Cédula no puede exceder 20 caracteres'); // Más flexible para pasaportes etc
+    .min(CEDULA_MIN_LEN, `Cédula debe tener al menos ${CEDULA_MIN_LEN} caracteres`)
+    .max(CEDULA_MAX_LEN, `Cédula no puede exceder ${CEDULA_MAX_LEN} caracteres`);
 
+/**
+ * Nombre/Apellido: Solo letras con acentos, espacios permitidos
+ * Backend: validar_nombre_estandar() - max NOMBRE_MAX_LEN chars
+ */
 const nombreSchema = z.string()
     .trim()
     .min(1, 'Nombre es requerido')
-    .max(50, 'Nombre no puede exceder 50 caracteres')
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'Solo puede contener letras');
+    .max(NOMBRE_MAX_LEN, `Nombre no puede exceder ${NOMBRE_MAX_LEN} caracteres`)
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, 'Solo puede contener letras');
 
 const apellidoSchema = z.string()
     .trim()
     .min(1, 'Apellido es requerido')
-    .max(50, 'Apellido no puede exceder 50 caracteres')
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'Solo puede contener letras');
+    .max(NOMBRE_MAX_LEN, `Apellido no puede exceder ${NOMBRE_MAX_LEN} caracteres`)
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, 'Solo puede contener letras');
 
 const opcionalTextoSchema = z.string()
     .trim()
-    .max(50, 'No puede exceder 50 caracteres')
+    .max(SEGUNDO_NOMBRE_MAX_LEN, `No puede exceder ${SEGUNDO_NOMBRE_MAX_LEN} caracteres`)
     .optional()
     .or(z.literal(''));
 
@@ -35,8 +51,8 @@ export const VisitaSchema = z.object({
     // Datos de Cita
     fecha: z.string().min(1, "Fecha es requerida"), // YYYY-MM-DD
     hora: z.string().min(1, "Hora es requerida"),   // HH:MM
-    anfitrion: z.string().min(1, "Anfitrión es requerido").max(100),
-    areaVisitada: z.string().min(1, "Área es requerida").max(100),
+    anfitrion: z.string().min(1, "Anfitrión es requerido").max(NOMBRE_MAX_LEN),
+    areaVisitada: z.string().min(1, "Área es requerida").max(NOMBRE_MAX_LEN),
     motivo: z.string().max(200).optional().or(z.literal('')),
 
     // Datos del Visitante
@@ -45,15 +61,12 @@ export const VisitaSchema = z.object({
     segundoNombre: opcionalTextoSchema,
     apellido: apellidoSchema,
     segundoApellido: opcionalTextoSchema,
-    empresa: z.string().max(100).optional().or(z.literal('')),
+    empresa: z.string().max(ENTIDAD_NOMBRE_MAX_LEN).optional().or(z.literal('')),
 
-    // Vehículo (Opcional por ahora en citas, pero preparado)
+    // Vehículo (Opcional)
     tieneVehiculo: z.boolean().default(false),
-    placa: z.string().max(10).optional().or(z.literal('')),
+    placa: z.string().max(PLACA_MAX_LEN).optional().or(z.literal('')),
 }).superRefine((data, ctx) => {
-    // Validaciones extra si fueran necesarias
-    // Por ejemplo validar que fecha no sea pasado (aunque permitimos agendar histórico a veces?)
-    // Validación de vehiculo si se activa
     if (data.tieneVehiculo && (!data.placa || data.placa.trim() === '')) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
