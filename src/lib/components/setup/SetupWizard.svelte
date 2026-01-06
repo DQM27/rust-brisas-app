@@ -56,10 +56,7 @@
   );
 
   let step2Valid = $derived(
-    argon2Params.secret.trim() !== "" &&
-      argon2Params.memory >= 1024 &&
-      argon2Params.iterations >= 1 &&
-      argon2Params.parallelism >= 1,
+    argon2Params.secret.trim() !== "" && argon2Params.secret.trim() !== "",
   );
 
   // Funciones
@@ -381,56 +378,10 @@
                 {/if}
               </div>
 
-              <div class="grid grid-cols-3 gap-4">
-                <div>
-                  <label
-                    for="argon2Memory"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Memoria (KB)
-                  </label>
-                  <input
-                    id="argon2Memory"
-                    type="number"
-                    bind:value={argon2Params.memory}
-                    min="1024"
-                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent"
-                  />
-                  <p class="mt-1 text-xs text-gray-500">~19MB recomendado</p>
-                </div>
-                <div>
-                  <label
-                    for="argon2Iterations"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Iteraciones
-                  </label>
-                  <input
-                    id="argon2Iterations"
-                    type="number"
-                    bind:value={argon2Params.iterations}
-                    min="1"
-                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent"
-                  />
-                  <p class="mt-1 text-xs text-gray-500">2-4 recomendado</p>
-                </div>
-                <div>
-                  <label
-                    for="argon2Parallelism"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Paralelismo
-                  </label>
-                  <input
-                    id="argon2Parallelism"
-                    type="number"
-                    bind:value={argon2Params.parallelism}
-                    min="1"
-                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent"
-                  />
-                  <p class="mt-1 text-xs text-gray-500">1-2 recomendado</p>
-                </div>
-              </div>
+              <!-- Parameters removed (Hardcoded in backend) -->
+              <input type="hidden" bind:value={argon2Params.memory} />
+              <input type="hidden" bind:value={argon2Params.iterations} />
+              <input type="hidden" bind:value={argon2Params.parallelism} />
             </div>
           </div>
         {/if}

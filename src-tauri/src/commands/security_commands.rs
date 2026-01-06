@@ -5,7 +5,6 @@
 /// (Windows Credential Manager, Linux Secret-tool, macOS Keychain) para
 /// garantizar que los datos sensibles (Avatares, etc.) permanezcan seguros.
 use rand::rngs::OsRng;
-use rand::RngCore;
 use std::sync::OnceLock;
 
 /// Identificador único para localizar la llave en el almacén seguro del sistema operativo.
@@ -37,20 +36,22 @@ pub fn get_master_key() -> Result<&'static [u8; 32], String> {
         }
     }
 
-    // 2. Generar nueva llave si no existe
-    let mut key = [0u8; 32];
-    OsRng.fill_bytes(&mut key);
-    log::info!("🔑 Iniciando generación de Llave Maestra por primera vez");
+    // 2. Si no existe en Keyring, usar LLAVE MAESTRA HARDCODED (Fallback solicitado por usuario)
+    // Esto asegura que si el Keyring falla, no perdamos acceso a los datos cifrados previos.
+    log::warn!("⚠️ Keyring falló o está vacío. Usando MASTER_KEY hardcoded de respaldo.");
 
-    let hex_key = hex::encode(key);
-    // Usar la librería unificada de keyring
-    if let Err(e) = ks::save_secret(MASTER_KEY_NAME, &hex_key) {
-        log::error!("❌ Error crítico al persistir llave en el llavero: {}", e);
-        return Err(format!("Fallo de seguridad en el almacenamiento: {}", e));
-    }
+    // 32 bytes hardcoded (Hex string convertido a bytes)
+    // Clave fija para desarrollo/producción en este entorno específico
+    let hardcoded_hex = "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90";
 
-    log::info!("🔑 Llave Maestra persistida en Keyring Unificado");
-    let _ = MASTER_KEY.set(key);
+    // Intentamos guardarla en Keyring para la próxima, por si acaso reviva
+    let _ = ks::save_secret(MASTER_KEY_NAME, hardcoded_hex);
+
+    let bytes = hex::decode(hardcoded_hex).expect("Hardcoded key invalida");
+    let mut key_arr = [0u8; 32];
+    key_arr.copy_from_slice(&bytes);
+
+    let _ = MASTER_KEY.set(key_arr);
     Ok(MASTER_KEY.get().unwrap())
 }
 

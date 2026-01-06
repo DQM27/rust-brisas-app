@@ -45,9 +45,14 @@ pub fn get_credential_status() -> CredentialStatus {
 /// Verifica si la aplicación tiene su configuración básica y secreta completa.
 #[command]
 pub fn is_app_configured(config: State<'_, AppConfigState>) -> bool {
+    // [DEBUG] Diagnóstico de arranque
     if let Ok(guard) = config.read() {
-        guard.setup.is_configured && ks::is_fully_configured()
+        let toml_ok = guard.setup.is_configured;
+        let keyring_ok = ks::is_fully_configured();
+        log::debug!("🔍 Estado Config: TOML={}, Keyring={}", toml_ok, keyring_ok);
+        toml_ok && keyring_ok
     } else {
+        log::error!("❌ Error leyendo AppConfigState en check de configuración");
         false
     }
 }
@@ -56,7 +61,20 @@ pub fn is_app_configured(config: State<'_, AppConfigState>) -> bool {
 #[command]
 pub fn needs_setup(config: State<'_, AppConfigState>) -> bool {
     if let Ok(guard) = config.read() {
-        !guard.setup.is_configured || !ks::is_fully_configured()
+        let toml_configured = guard.setup.is_configured;
+        let keyring_configured = ks::is_fully_configured();
+
+        log::info!(
+            "🏁 Chequeo de Setup: is_configured(TOML)={}, has_secret(Keyring)={}",
+            toml_configured,
+            keyring_configured
+        );
+
+        if toml_configured && !keyring_configured {
+            log::warn!("⚠️ Estado inconsistente: App configurada en TOML pero falta Secret en Keyring. Forzando setup.");
+        }
+
+        !toml_configured || !keyring_configured
     } else {
         true
     }
@@ -260,8 +278,17 @@ pub async fn reset_all_credentials(
     confirm: bool,
     config: State<'_, AppConfigState>,
 ) -> Result<(), KeyringError> {
-    require_perm!(session, "config:delete", "Reseteo total de credenciales")
-        .map_err(|e| KeyringError::Message(e.to_string()))?;
+    // Permitir reset sin sesión si estamos en modo setup (caso de emergencia/trap state)
+    let is_initial_setup = {
+        let guard = config.read().map_err(|e| KeyringError::Message(e.to_string()))?;
+        !guard.setup.is_configured || !ks::is_fully_configured()
+    };
+
+    if !is_initial_setup {
+        require_perm!(session, "config:delete", "Reseteo total de credenciales")
+            .map_err(|e| KeyringError::Message(e.to_string()))?;
+    }
+
     if !confirm {
         return Err(KeyringError::Message("Debes confirmar la operación".to_string()));
     }
