@@ -18,4 +18,5 @@ vite.config.ts.timestamp-*
 /dist/
 /src/.angular/
 
-
+# Tauri updater keys - NEVER commit private keys!
+.tauri/keys/
