@@ -457,56 +457,119 @@
             Configura los detalles y permisos del rol.
           </p>
         </div>
-
-        <div class="flex items-center gap-3">
-          <button
-            onclick={cancelEdit}
-            class="px-4 py-2 rounded-lg border border-gray-600 bg-white/5 hover:bg-white/10 text-gray-200 transition-colors font-medium text-sm"
-          >
-            Cancelar
-          </button>
-          <button
-            onclick={handleSave}
-            disabled={saving}
-            class="px-6 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-lg font-medium shadow-none disabled:opacity-50 transition-all flex items-center gap-2 text-sm"
-          >
-            {#if saving}
-              <RefreshCw size={18} class="animate-spin" /> Guardando...
-            {:else}
-              <Save size={18} /> Guardar Cambios
-            {/if}
-          </button>
-        </div>
       </div>
 
       <!-- Form Content -->
       <div class="flex-1 overflow-y-auto custom-scrollbar pr-2">
         <!-- Basic Info -->
-        <div class="space-y-4 mb-8 max-w-2xl">
-          <div class="space-y-2">
-            <label for="name" class="block text-sm font-medium text-gray-300"
-              >Nombre del Rol</label
-            >
-            <input
-              id="name"
-              type="text"
-              bind:value={formData.name}
-              placeholder="Ej: Auditor"
-              class="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-2 text-white focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
-            />
+        <!-- Basic Info Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 items-center">
+          <!-- Inputs Column -->
+          <div class="space-y-4 max-w-md">
+            <div class="space-y-2">
+              <label for="name" class="block text-sm font-medium text-gray-300"
+                >Nombre del Rol</label
+              >
+              <input
+                id="name"
+                type="text"
+                bind:value={formData.name}
+                placeholder="Ej: Auditor"
+                class="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-1.5 text-sm text-white focus:outline-none focus:border-gray-500 transition-all"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <label for="desc" class="block text-sm font-medium text-gray-300"
+                >Descripción</label
+              >
+              <textarea
+                id="desc"
+                bind:value={formData.description}
+                placeholder="Descripción breve..."
+                rows="2"
+                class="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-1.5 text-sm text-white focus:outline-none focus:border-gray-500 transition-all resize-none"
+              ></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-2">
+              <button
+                onclick={cancelEdit}
+                class="px-3 py-1.5 rounded-md border border-gray-600 bg-white/5 hover:bg-white/10 text-gray-200 transition-colors font-medium text-xs"
+              >
+                Cancelar
+              </button>
+              <button
+                onclick={handleSave}
+                disabled={saving}
+                class="px-4 py-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-md font-medium shadow-none disabled:opacity-50 transition-all flex items-center gap-2 text-xs"
+              >
+                {#if saving}
+                  <RefreshCw size={14} class="animate-spin" /> Guardando...
+                {:else}
+                  <Save size={14} /> Guardar Cambios
+                {/if}
+              </button>
+            </div>
           </div>
 
-          <div class="space-y-2">
-            <label for="desc" class="block text-sm font-medium text-gray-300"
-              >Descripción</label
+          <!-- Dynamic Permission Summary Column -->
+          <div
+            class="hidden lg:flex flex-col bg-surface-2 rounded-lg border border-white/5 h-full max-h-[220px] overflow-hidden"
+          >
+            <!-- Static Header -->
+            <div
+              class="px-4 py-3 border-b border-white/5 bg-[#161b22] flex items-center justify-between"
             >
-            <input
-              id="desc"
-              type="text"
-              bind:value={formData.description}
-              placeholder="Descripción breve..."
-              class="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-2 text-white focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
-            />
+              <div class="flex items-center gap-2">
+                <Shield size={16} class="text-primary-400" />
+                <h4 class="text-white font-medium text-sm">
+                  Resumen de Acceso
+                </h4>
+              </div>
+              <span class="text-xs text-gray-500 font-mono"
+                >{formData.permissions.length} sel.</span
+              >
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-4">
+              {#if formData.permissions.length === 0}
+                <div
+                  class="h-full flex items-center justify-center text-gray-500 text-xs italic"
+                >
+                  Selecciona permisos abajo para ver el resumen.
+                </div>
+              {:else}
+                <div class="grid grid-cols-2 gap-x-6 gap-y-6">
+                  {#each [...getGroupedPermissions()] as [moduleName, perms]}
+                    {@const activePerms = perms.filter((p) =>
+                      formData.permissions.includes(p.id),
+                    )}
+                    {#if activePerms.length > 0}
+                      <div
+                        class="flex flex-col gap-1.5 break-inside-avoid items-center text-center"
+                      >
+                        <span
+                          class="text-[11px] font-bold text-gray-400 uppercase tracking-wider"
+                        >
+                          {translateModule(moduleName)}
+                        </span>
+                        <div class="flex flex-wrap gap-1 justify-center">
+                          {#each activePerms as perm}
+                            <span
+                              class="px-1.5 py-0.5 rounded-[4px] bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[10px] font-medium"
+                            >
+                              {translateAction(perm.action)}
+                            </span>
+                          {/each}
+                        </div>
+                      </div>
+                    {/if}
+                  {/each}
+                </div>
+              {/if}
+            </div>
           </div>
         </div>
 
@@ -517,14 +580,11 @@
               class="text-lg font-semibold text-white flex items-center gap-2"
             >
               <Key class="text-yellow-400" size={20} /> Permisos
-              <span class="text-sm font-normal text-gray-500 ml-2"
-                >({formData.permissions.length} seleccionados)</span
-              >
             </h3>
           </div>
 
           <div
-            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pb-8"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-8"
           >
             {#each [...getGroupedPermissions()] as [moduleName, perms]}
               <div
