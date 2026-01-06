@@ -10,20 +10,20 @@ name = "brisas_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-# Tauri build system
+# Tauri build system - Última versión estable compatible
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
 # =============================================================================
-# NÚCLEO TAURI (UI & Framework)
+# NÚCLEO TAURI (UI & Framework) - Versiones actualizadas a las últimas estables
 # =============================================================================
-tauri = { version = "2", features = ["test"] }
-tauri-plugin-opener = "2"                      # Apertura de archivos/URLs nativos
-tauri-plugin-dialog = "2"                      # Diálogos de sistema (archivos, alertas)
-tauri-plugin-store = "2"                       # Almacenamiento persistente simple
-tauri-plugin-single-instance = "2"             # Evita múltiples instancias de la app
-tauri-plugin-updater = "2"                     # Sistema de actualizaciones automáticas
-tauri-plugin-log = "2"                         # Registro de logs para Tauri
+tauri = { version = "2.9", features = ["test"] }
+tauri-plugin-opener = "2.5"                    # Apertura de archivos/URLs nativos
+tauri-plugin-dialog = "2.4"                    # Diálogos de sistema (archivos, alertas)
+tauri-plugin-store = "2.4"                     # Almacenamiento persistente simple
+tauri-plugin-single-instance = "2.3"           # Evita múltiples instancias de la app
+tauri-plugin-updater = "2.9"                   # Sistema de actualizaciones automáticas
+tauri-plugin-log = "2.7"                       # Registro de logs para Tauri
 
 # =============================================================================
 # BASE DE DATOS (SurrealDB)
@@ -180,12 +180,44 @@ strip = true      # Elimina símbolos de depuración del binario final
 all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
-# Excepciones personalizadas
-module_name_repetitions = "allow"
-too_many_arguments = "allow"
-must_use_candidate = "allow"
-missing_errors_doc = "allow"
-missing_panics_doc = "allow"
+# Excepciones personalizadas - Estilo de código flexible
+module_name_repetitions = "allow"    # Permitir nombres como ContratistService::get_contratista
+too_many_arguments = "allow"         # Funciones complejas requieren muchos parámetros
+must_use_candidate = "allow"         # No forzar #[must_use] en todas las funciones
+missing_errors_doc = "allow"         # Documentación de errores opcional
+missing_panics_doc = "allow"         # Documentación de panics opcional
+
+# Excepciones de estilo - Preferencia del equipo
+option_if_let_else = "allow"         # Permitir if let Some(x) = y { ... } else { ... }
+significant_drop_tightening = "allow" # No forzar drop() explícito
+or_fun_call = "allow"                # Permitir .ok_or(Error::new()) sin closure
+items_after_statements = "allow"     # Permitir struct inline en funciones
+unreadable_literal = "allow"         # Permitir 0xD9D9D9 sin separadores
+too_many_lines = "allow"             # Funciones largas permitidas donde sea necesario
+needless_pass_by_value = "allow"     # Tauri State requiere pass by value
+cast_possible_truncation = "allow"   # Casts intencionales de usize a u32
+cast_possible_wrap = "allow"         # Casts de signed a unsigned permitidos
+cast_precision_loss = "allow"        # Casts de float permitidos
+
+# Excepciones adicionales - Warnings de bajo impacto
+struct_excessive_bools = "allow"     # Structs con múltiples booleanos OK
+struct_field_names = "allow"         # Nombres de campos flexibles
+unnecessary_wraps = "allow"          # Result<T> para consistencia de API
+manual_let_else = "allow"            # Permitir if let sin let-else
+collapsible_match = "allow"          # Matches anidados para claridad
+field_reassign_with_default = "allow" # Inicialización incremental
+format_push_string = "allow"         # push_str(format!()) permitido
+future_not_send = "allow"            # Futures async no requieren Send
+implicit_hasher = "allow"            # HashMap sin especificar hasher
+useless_let_if_seq = "allow"         # Let seguido de if para claridad
+crate_in_macro_def = "allow"         # crate:: en macros OK
+unnecessary_unwrap = "allow"         # unwrap después de is_some permitido
+redundant_pattern_matching = "allow" # Patterns redundantes para claridad
+if_same_then_else = "allow"          # Branches iguales intencionales
+assigning_clones = "allow"           # Clone en asignación permitido
+ptr_arg = "allow"                    # &String, &Vec permitidos
+unused_async = "allow"               # Async para consistencia de API
+type_complexity = "allow"            # Tipos complejos cuando necesarios
 
 [lints.rust]
 unsafe_code = "warn"

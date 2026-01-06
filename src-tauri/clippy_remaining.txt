@@ -1,0 +1,972 @@
+warning: `crate` references the macro call's crate
+  --> src\macros.rs:43:30
+   |
+43 |             Ok(user) => Ok::<crate::models::user::SessionUser, crate::services::surrealdb_authorization::AuthError>(user),
+   |                              ^^^^^ help: to reference the macro definition's crate, use: `$crate`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#crate_in_macro_def
+   = note: `-W clippy::crate-in-macro-def` implied by `-W clippy::all`
+   = help: to override `-W clippy::all` add `#[allow(clippy::crate_in_macro_def)]`
+
+warning: called `unwrap` on `custom_path` after checking its variant with `is_some`
+  --> src\commands\audio_commands.rs:27:24
+   |
+26 |         if use_custom && custom_path.is_some() {
+   |                          --------------------- the check is happening here
+27 |             let path = custom_path.unwrap();
+   |                        ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: try using `if let` or `match`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unnecessary_unwrap
+   = note: `-W clippy::unnecessary-unwrap` implied by `-W clippy::all`
+   = help: to override `-W clippy::all` add `#[allow(clippy::unnecessary_unwrap)]`
+
+warning: this function's return value is unnecessarily wrapped by `Result`
+   --> src\config\manager.rs:136:1
+    |
+136 | fn generate_hardware_id() -> Result<String, Box<dyn std::error::Error>> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unnecessary_wraps
+    = note: `-W clippy::unnecessary-wraps` implied by `-W clippy::pedantic`
+    = help: to override `-W clippy::pedantic` add `#[allow(clippy::unnecessary_wraps)]`
+help: remove `Result` from the return type...
+    |
+136 - fn generate_hardware_id() -> Result<String, Box<dyn std::error::Error>> {
+136 + fn generate_hardware_id() -> std::string::String {
+    |
+help: ...and then remove the surrounding `Ok()` from returning expressions
+    |
+141 ~             return format!("HW-{mac_str}");
+142 |         }
+...
+145 |     // Fallback: UUID aleatorio
+146 ~     format!("HW-{}", uuid::Uuid::new_v4().to_string().replace('-', ""))
+    |
+
+warning: this `if let` can be collapsed into the outer `if let`
+   --> src\config\manager.rs:139:9
+    |
+139 | /         if let Some(mac) = mac {
+140 | |             let mac_str = mac.to_string().replace(':', "");
+141 | |             return Ok(format!("HW-{mac_str}"));
+142 | |         }
+    | |_________^
+    |
+help: the outer pattern can be modified to include the inner pattern
+   --> src\config\manager.rs:138:15
+    |
+138 |     if let Ok(mac) = mac_address::get_mac_address() {
+    |               ^^^ replace this binding
+139 |         if let Some(mac) = mac {
+    |                ^^^^^^^^^ with this pattern
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#collapsible_match
+    = note: `-W clippy::collapsible-match` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::collapsible_match)]`
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+  --> src\db\surrealdb_ingreso_contratista_queries.rs:77:5
+   |
+77 |     dto.fecha_hora_salida = Some(surrealdb::Datetime::from(chrono::Utc::now()));
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: consider initializing the variable with `models::ingreso::IngresoUpdateDTO { fecha_hora_salida: Some(surrealdb::Datetime::from(chrono::Utc::now())), usuario_salida: Some(usuario_salida_id.clone()), observaciones: observaciones }` and removing relevant reassignments
+  --> src\db\surrealdb_ingreso_contratista_queries.rs:76:5
+   |
+76 |     let mut dto = IngresoContratistaUpdateDTO::default();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#field_reassign_with_default
+   = note: `-W clippy::field-reassign-with-default` implied by `-W clippy::all`
+   = help: to override `-W clippy::all` add `#[allow(clippy::field_reassign_with_default)]`
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+  --> src\db\surrealdb_ingreso_proveedor_queries.rs:63:5
+   |
+63 |     dto.fecha_hora_salida = Some(surrealdb::Datetime::from(chrono::Utc::now()));
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: consider initializing the variable with `models::ingreso::IngresoUpdateDTO { fecha_hora_salida: Some(surrealdb::Datetime::from(chrono::Utc::now())), usuario_salida: Some(usuario_salida_id.clone()), observaciones: observaciones }` and removing relevant reassignments
+  --> src\db\surrealdb_ingreso_proveedor_queries.rs:62:5
+   |
+62 |     let mut dto = IngresoUpdateDTO::default();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#field_reassign_with_default
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+  --> src\db\surrealdb_ingreso_visita_queries.rs:59:5
+   |
+59 |     dto.fecha_hora_salida = Some(surrealdb::Datetime::from(chrono::Utc::now()));
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: consider initializing the variable with `models::ingreso::IngresoUpdateDTO { fecha_hora_salida: Some(surrealdb::Datetime::from(chrono::Utc::now())), usuario_salida: Some(usuario_salida_id.clone()), observaciones: observaciones }` and removing relevant reassignments
+  --> src\db\surrealdb_ingreso_visita_queries.rs:58:5
+   |
+58 |     let mut dto = IngresoUpdateDTO::default();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#field_reassign_with_default
+
+warning: parameter of type `HashMap` should be generalized over different hashers
+   --> src\domain\export.rs:159:29
+    |
+159 | pub fn validar_rows(rows: &[HashMap<String, serde_json::Value>]) -> Result<(), String> {
+    |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#implicit_hasher
+    = note: `-W clippy::implicit-hasher` implied by `-W clippy::pedantic`
+    = help: to override `-W clippy::pedantic` add `#[allow(clippy::implicit_hasher)]`
+help: add a type parameter for `BuildHasher`
+    |
+159 | pub fn validar_rows<S: ::std::hash::BuildHasher>(rows: &[HashMap<String, serde_json::Value, S>]) -> Result<(), String> {
+    |                    +++++++++++++++++++++++++++++                                          +++
+
+warning: parameter of type `HashMap` should be generalized over different hashers
+   --> src\domain\export.rs:174:13
+    |
+174 |     rows: &[HashMap<String, serde_json::Value>],
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#implicit_hasher
+help: add a type parameter for `BuildHasher`
+    |
+172 ~ pub fn validar_consistencia_columnas<S: ::std::hash::BuildHasher>(
+173 |     _headers: &[String],
+174 ~     rows: &[HashMap<String, serde_json::Value, S>],
+    |
+
+warning: parameter of type `HashMap` should be generalized over different hashers
+   --> src\domain\export.rs:301:11
+    |
+301 |     row: &HashMap<String, serde_json::Value>,
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#implicit_hasher
+help: add a type parameter for `BuildHasher`
+    |
+300 ~ pub fn normalizar_row<S: ::std::hash::BuildHasher>(
+301 ~     row: &HashMap<String, serde_json::Value, S>,
+    |
+
+warning: parameter of type `HashMap` should be generalized over different hashers
+  --> src\export\csv\generator.rs:19:13
+   |
+19 |     rows: &[HashMap<String, ExportValue>],
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#implicit_hasher
+help: add a type parameter for `BuildHasher`
+   |
+17 ~ pub fn generate_csv<S: ::std::hash::BuildHasher>(
+18 |     headers: &[String],
+19 ~     rows: &[HashMap<String, ExportValue, S>],
+   |
+
+warning: this function's return value is unnecessarily wrapped by `Result`
+  --> src\export\csv\generator.rs:49:1
+   |
+49 | / fn build_csv_content(
+50 | |     headers: &[String],
+51 | |     rows: &[HashMap<String, ExportValue>],
+52 | |     config: &CsvConfig,
+53 | | ) -> ExportResult<String> {
+   | |_________________________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unnecessary_wraps
+help: remove `Result` from the return type...
+   |
+53 - ) -> ExportResult<String> {
+53 + ) -> std::string::String {
+   |
+help: ...and then remove the surrounding `Ok()` from returning expressions
+   |
+78 -     Ok(content)
+78 +     content
+   |
+
+warning: this function's return value is unnecessarily wrapped by `Result`
+   --> src\export\csv\generator.rs:112:1
+    |
+112 | fn get_output_path(filename: &str) -> ExportResult<PathBuf> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unnecessary_wraps
+help: remove `Result` from the return type...
+    |
+112 - fn get_output_path(filename: &str) -> ExportResult<PathBuf> {
+112 + fn get_output_path(filename: &str) -> std::path::PathBuf {
+    |
+help: ...and then remove the surrounding `Ok()` from returning expressions
+    |
+116 ~         return path;
+117 |     }
+...
+120 |     let temp_dir = std::env::temp_dir();
+121 ~     temp_dir.join(filename)
+    |
+
+warning: parameter of type `HashMap` should be generalized over different hashers
+  --> src\export\pdf\engine.rs:30:13
+   |
+30 |     rows: &[HashMap<String, ExportValue>],
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#implicit_hasher
+help: add a type parameter for `BuildHasher`
+   |
+28 ~ pub fn generate_pdf<S: ::std::hash::BuildHasher>(
+29 |     headers: &[String],
+30 ~     rows: &[HashMap<String, ExportValue, S>],
+   |
+
+warning: this function's return value is unnecessarily wrapped by `Result`
+  --> src\export\pdf\engine.rs:87:5
+   |
+87 |     fn new(markup: &str) -> ExportResult<Self> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unnecessary_wraps
+help: remove `Result` from the return type...
+   |
+87 -     fn new(markup: &str) -> ExportResult<Self> {
+87 +     fn new(markup: &str) -> export::pdf::engine::TypstWorld {
+   |
+help: ...and then remove the surrounding `Ok()` from returning expressions
+   |
+99 -         Ok(Self { library, book, fonts, source, main_id, packages_root })
+99 +         Self { library, book, fonts, source, main_id, packages_root }
+   |
+
+warning: this function's return value is unnecessarily wrapped by `Result`
+  --> src\export\pdf\templates.rs:46:1
+   |
+46 | fn generate_page_setup(config: &PdfConfig, design: &PdfDesign) -> ExportResult<String> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unnecessary_wraps
+help: remove `Result` from the return type...
+   |
+46 - fn generate_page_setup(config: &PdfConfig, design: &PdfDesign) -> ExportResult<String> {
+46 + fn generate_page_setup(config: &PdfConfig, design: &PdfDesign) -> std::string::String {
+   |
+help: ...and then remove the surrounding `Ok()` from returning expressions
+   |
+80 -     Ok(setup)
+80 +     setup
+   |
+
+warning: this function's return value is unnecessarily wrapped by `Result`
+   --> src\export\pdf\templates.rs:148:1
+    |
+148 | / fn generate_table(
+149 | |     headers: &[String],
+150 | |     rows: &[HashMap<String, ExportValue>],
+151 | |     config: &PdfConfig,
+152 | | ) -> ExportResult<String> {
+    | |_________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unnecessary_wraps
+help: remove `Result` from the return type...
+    |
+152 - ) -> ExportResult<String> {
+152 + ) -> std::string::String {
+    |
+help: ...and then remove the surrounding `Ok()` from returning expressions
+    |
+250 -     Ok(markup)
+250 +     markup
+    |
+
+warning: this `if` has identical blocks
+   --> src\export\pdf\templates.rs:166:13
+    |
+166 | /             {
+167 | |                 "1.3fr" // Texto largo principal - Reducido levemente
+168 | |             } else if lower.contains("guarda") // GuardaE, GuardaS
+    | |_____________^
+    |
+note: same as this
+   --> src\export\pdf\templates.rs:171:13
+    |
+171 | /             {
+172 | |                 "1.3fr" // Nombres de usuario (Daniel, etc.)
+173 | |             } else if lower.contains("modo") {
+    | |_____________^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#if_same_then_else
+    = note: `-W clippy::if-same-then-else` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::if_same_then_else)]`
+
+warning: this `if` has identical blocks
+   --> src\export\pdf\templates.rs:173:46
+    |
+173 |               } else if lower.contains("modo") {
+    |  ______________________________________________^
+174 | |                 "1.2fr" // "Caminando" ocupa espacio
+175 | |             } else if lower.contains("c├®dula")
+    | |_____________^
+    |
+note: same as this
+   --> src\export\pdf\templates.rs:179:13
+    |
+179 | /             {
+180 | |                 "1.2fr" // Identificadores medianos
+181 | |             } else if lower.contains("gafete")
+    | |_____________^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#if_same_then_else
+
+warning: this `if` has identical blocks
+   --> src\export\pdf\templates.rs:185:13
+    |
+185 | /             {
+186 | |                 "0.9fr" // Identificadores cortos
+187 | |             } else if lower.contains("fecha")
+    | |_____________^
+    |
+note: same as this
+   --> src\export\pdf\templates.rs:191:13
+    |
+191 | /             {
+192 | |                 "0.9fr" // Fechas/Horas
+193 | |             } else if lower == "id" || lower == "#" || lower == "no" {
+    | |_____________^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#if_same_then_else
+
+warning: `format!(..)` appended to existing `String`
+   --> src\export\pdf\templates.rs:217:9
+    |
+217 | /         markup.push_str(&format!(
+218 | |             "    [#set par(justify: false); *#text(fill: rgb(\"#1f2328\"), size: {header_size}, hyphenate: true)[{escaped_header}]*],\n"
+219 | |         ));
+    | |__________^
+    |
+    = help: consider using `write!` to avoid the extra allocation
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#format_push_string
+    = note: `-W clippy::format-push-string` implied by `-W clippy::pedantic`
+    = help: to override `-W clippy::pedantic` add `#[allow(clippy::format_push_string)]`
+
+warning: `format!(..)` appended to existing `String`
+   --> src\export\pdf\templates.rs:242:13
+    |
+242 | /             markup.push_str(&format!(
+243 | |                 "    [#set par(justify: false); #text(fill: rgb(\"#1f2328\"), size: {body_size}, hyphenate: true)[{escaped_value}]],\n"
+244 | |             ));
+    | |______________^
+    |
+    = help: consider using `write!` to avoid the extra allocation
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#format_push_string
+
+warning: parameter of type `HashMap` should be generalized over different hashers
+  --> src\export\excel\builder.rs:20:13
+   |
+20 |     rows: &[HashMap<String, ExportValue>],
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#implicit_hasher
+help: add a type parameter for `BuildHasher`
+   |
+18 ~ pub fn generate_excel<S: ::std::hash::BuildHasher>(
+19 |     headers: &[String],
+20 ~     rows: &[HashMap<String, ExportValue, S>],
+   |
+
+warning: this function's return value is unnecessarily wrapped by `Result`
+   --> src\export\excel\builder.rs:129:1
+    |
+129 | fn create_header_format() -> ExportResult<Format> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unnecessary_wraps
+help: remove `Result` from the return type...
+    |
+129 - fn create_header_format() -> ExportResult<Format> {
+129 + fn create_header_format() -> rust_xlsxwriter::Format {
+    |
+help: ...and then remove the surrounding `Ok()` from returning expressions
+    |
+138 -     Ok(format)
+138 +     format
+    |
+
+warning: this function's return value is unnecessarily wrapped by `Result`
+   --> src\export\excel\builder.rs:142:1
+    |
+142 | fn create_cell_format() -> ExportResult<Format> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unnecessary_wraps
+help: remove `Result` from the return type...
+    |
+142 - fn create_cell_format() -> ExportResult<Format> {
+142 + fn create_cell_format() -> rust_xlsxwriter::Format {
+    |
+help: ...and then remove the surrounding `Ok()` from returning expressions
+    |
+148 -     Ok(format)
+148 +     format
+    |
+
+warning: more than 3 bools in a struct
+   --> src\models\contratista.rs:284:1
+    |
+284 | / pub struct ContratistaResponse {
+285 | |     pub id: String,
+286 | |     pub cedula: String,
+287 | |     pub nombre: String,
+...   |
+308 | |     pub deleted_at: Option<String>,
+309 | | }
+    | |_^
+    |
+    = help: consider using a state machine or refactoring bools into two-variant enums
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#struct_excessive_bools
+    = note: `-W clippy::struct-excessive-bools` implied by `-W clippy::pedantic`
+    = help: to override `-W clippy::pedantic` add `#[allow(clippy::struct_excessive_bools)]`
+
+warning: more than 3 bools in a struct
+   --> src\models\role.rs:339:1
+    |
+339 | / pub struct VisibleModule {
+340 | |     pub module: String,
+341 | |     pub display_name: String,
+342 | |     pub can_create: bool,
+...   |
+346 | |     pub can_export: bool,
+347 | | }
+    | |_^
+    |
+    = help: consider using a state machine or refactoring bools into two-variant enums
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#struct_excessive_bools
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+  --> src\repositories\ingreso_contratista.rs:70:9
+   |
+70 |         dto.fecha_hora_salida = Some(surrealdb::Datetime::from(chrono::Utc::now()));
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: consider initializing the variable with `models::ingreso::IngresoUpdateDTO { fecha_hora_salida: Some(surrealdb::Datetime::from(chrono::Utc::now())), usuario_salida: Some(usuario_salida_id.clone()), observaciones: observaciones }` and removing relevant reassignments
+  --> src\repositories\ingreso_contratista.rs:69:9
+   |
+69 |         let mut dto = crate::models::ingreso::IngresoContratistaUpdateDTO::default();
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#field_reassign_with_default
+
+warning: unnecessary `Debug` formatting in `info!` args
+  --> src\search\indexer.rs:58:44
+   |
+58 |         info!("­ƒôé Creando nuevo ├¡ndice en: {index_path:?}");
+   |                                             ^^^^^^^^^^
+   |
+   = help: use `Display` formatting and change this to `index_path.display()`
+   = note: switching to `Display` formatting will change how the value is shown; escaped characters will no longer be escaped and surrounding quotes will be removed
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unnecessary_debug_formatting
+   = note: `-W clippy::unnecessary-debug-formatting` implied by `-W clippy::pedantic`
+   = help: to override `-W clippy::pedantic` add `#[allow(clippy::unnecessary_debug_formatting)]`
+
+warning: `if _ { .. } else { .. }` is an expression
+   --> src\search\searcher.rs:175:5
+    |
+175 | /     let mut nombre_completo = format!("{nombre} {apellido}");
+176 | |
+177 | |     if let Some(segundo_nombre) = get_val(doc, fields.segundo_nombre) {
+178 | |         nombre_completo = format!("{nombre} {segundo_nombre} {apellido}");
+179 | |     }
+    | |_____^
+    |
+    = note: you might not need `mut` at all
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#useless_let_if_seq
+    = note: `-W clippy::useless-let-if-seq` implied by `-W clippy::nursery`
+    = help: to override `-W clippy::nursery` add `#[allow(clippy::useless_let_if_seq)]`
+help: it is more idiomatic to write
+    |
+175 ~     let <mut> nombre_completo = if let Some(segundo_nombre) = get_val(doc, fields.segundo_nombre) { $crate::__export::must_use({
+176 +             $crate::fmt::format($crate::__export::format_args!($($arg)*))
+177 +         }) } else { $crate::__export::must_use({
+178 +             $crate::fmt::format($crate::__export::format_args!($($arg)*))
+179 +         }) };
+    |
+
+warning: assigning the result of `Clone::clone()` may be inefficient
+  --> src\services\contratista_service.rs:71:13
+   |
+71 |             response.vehiculo_marca = v.marca.clone();
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `clone_from()`: `response.vehiculo_marca.clone_from(&v.marca)`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#assigning_clones
+   = note: `-W clippy::assigning-clones` implied by `-W clippy::pedantic`
+   = help: to override `-W clippy::pedantic` add `#[allow(clippy::assigning_clones)]`
+
+warning: assigning the result of `Clone::clone()` may be inefficient
+  --> src\services\contratista_service.rs:72:13
+   |
+72 |             response.vehiculo_modelo = v.modelo.clone();
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `clone_from()`: `response.vehiculo_modelo.clone_from(&v.modelo)`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#assigning_clones
+
+warning: assigning the result of `Clone::clone()` may be inefficient
+  --> src\services\contratista_service.rs:73:13
+   |
+73 |             response.vehiculo_color = v.color.clone();
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `clone_from()`: `response.vehiculo_color.clone_from(&v.color)`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#assigning_clones
+
+warning: writing `&mut Vec` instead of `&mut [_]` involves a new object where a slice will do
+   --> src\services\export_profile_service.rs:196:15
+    |
+196 |     profiles: &mut Vec<ExportProfile>,
+    |               ^^^^^^^^^^^^^^^^^^^^^^^ help: change this to: `&mut [ExportProfile]`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#ptr_arg
+    = note: `-W clippy::ptr-arg` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::ptr_arg)]`
+
+warning: redundant pattern matching, consider using `is_ok()`
+   --> src\services\gafete_service.rs:174:16
+    |
+174 |         if let Ok(_) = db::create_gafete(dto).await {
+    |         -------^^^^^------------------------------- help: try: `if (db::create_gafete(dto).await).is_ok()`
+    |
+    = note: this will change drop order of the result, as well as all temporaries
+    = note: add `#[allow(clippy::redundant_pattern_matching)]` if this is important
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#redundant_pattern_matching
+    = note: `-W clippy::redundant-pattern-matching` implied by `-W clippy::all`
+    = help: to override `-W clippy::all` add `#[allow(clippy::redundant_pattern_matching)]`
+
+warning: all fields have the same postfix: `repo`
+  --> src\services\ingreso_contratista_service.rs:29:1
+   |
+29 | / pub struct IngresoContratistaService<
+30 | |     R: IngresoContratistaRepository,
+31 | |     G: GafeteRepository,
+32 | |     C: ContratistaRepository,
+...  |
+38 | |     security_repo: S,
+39 | | }
+   | |_^
+   |
+   = help: remove the postfixes
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#struct_field_names
+   = note: `-W clippy::struct-field-names` implied by `-W clippy::pedantic`
+   = help: to override `-W clippy::pedantic` add `#[allow(clippy::struct_field_names)]`
+
+warning: this could be rewritten as `let...else`
+   --> src\services\ingreso_general_service.rs:125:5
+    |
+125 | /     let ingreso = match db::find_by_id_fetched(&id)
+126 | |         .await
+127 | |         .map_err(|e| IngresoError::Database(e.to_string()))?
+...   |
+130 | |         None => return Ok(None),
+131 | |     };
+    | |______^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#manual_let_else
+    = note: `-W clippy::manual-let-else` implied by `-W clippy::pedantic`
+    = help: to override `-W clippy::pedantic` add `#[allow(clippy::manual_let_else)]`
+help: consider writing
+    |
+125 ~     let Some(ingreso) = db::find_by_id_fetched(&id)
+126 +         .await
+127 +         .map_err(|e| IngresoError::Database(e.to_string()))? else { return Ok(None) };
+    |
+
+warning: this could be rewritten as `let...else`
+   --> src\services\ingreso_general_service.rs:150:5
+    |
+150 | /     let ingreso = if let Some(i) = db::find_ingreso_by_gafete_fetched(gafete_numero).await.map_err(|e| {
+151 | |         error!("Error buscando ingreso por gafete {gafete_numero}: {e}");
+152 | |         IngresoError::Database(e.to_string())
+153 | |     })? { i } else {
+154 | |         info!("No se encontr├│ ingreso activo para el gafete {gafete_numero}");
+155 | |         return Ok(None);
+156 | |     };
+    | |______^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#manual_let_else
+help: consider writing
+    |
+150 ~     let Some(ingreso) = db::find_ingreso_by_gafete_fetched(gafete_numero).await.map_err(|e| {
+151 +         error!("Error buscando ingreso por gafete {gafete_numero}: {e}");
+152 +         IngresoError::Database(e.to_string())
+153 +     })? else {
+154 ~         info!("No se encontr├│ ingreso activo para el gafete {gafete_numero}");
+155 +         return Ok(None);
+156 +     };
+    |
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+   --> src\services\proveedor_service.rs:194:5
+    |
+194 |     dto.estado = Some(new_status.parse::<EstadoProveedor>().map_err(ProveedorError::Validation)?);
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `models::proveedor::ProveedorUpdateDTO { estado: Some(new_status.parse::<EstadoProveedor>().map_err(ProveedorError::Validation)?), updated_at: Some(surrealdb::Datetime::from(Utc::now())), ..Default::default() }` and removing relevant reassignments
+   --> src\services\proveedor_service.rs:193:5
+    |
+193 |     let mut dto = ProveedorUpdateDTO::default();
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#field_reassign_with_default
+
+warning: assigning the result of `Clone::clone()` may be inefficient
+   --> src\services\proveedor_service.rs:225:9
+    |
+225 |         response.vehiculo_marca = v.marca.clone();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `clone_from()`: `response.vehiculo_marca.clone_from(&v.marca)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#assigning_clones
+
+warning: assigning the result of `Clone::clone()` may be inefficient
+   --> src\services\proveedor_service.rs:226:9
+    |
+226 |         response.vehiculo_modelo = v.modelo.clone();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `clone_from()`: `response.vehiculo_modelo.clone_from(&v.modelo)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#assigning_clones
+
+warning: assigning the result of `Clone::clone()` may be inefficient
+   --> src\services\proveedor_service.rs:227:9
+    |
+227 |         response.vehiculo_color = v.color.clone();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `clone_from()`: `response.vehiculo_color.clone_from(&v.color)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#assigning_clones
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+   --> src\services\proveedor_service.rs:308:25
+    |
+308 | /                         veh_dto.tipo_vehiculo = Some(
+309 | |                             tipo_norm
+310 | |                                 .parse::<crate::models::vehiculo::TipoVehiculo>()
+311 | |                                 .map_err(ProveedorError::Validation)?,
+312 | |                         );
+    | |__________________________^
+    |
+note: consider initializing the variable with `models::vehiculo::VehiculoUpdateDTO { tipo_vehiculo: Some(
+                                  tipo_norm
+                                      .parse::<crate::models::vehiculo::TipoVehiculo>()
+                                      .map_err(ProveedorError::Validation)?,
+                              ), marca: input.marca.clone(), modelo: input.modelo.clone(), color: input.color.clone(), is_active: Some(true), updated_at: Some(surrealdb::Datetime::from(Utc::now())) }` and removing relevant reassignments
+   --> src\services\proveedor_service.rs:307:25
+    |
+307 |                         let mut veh_dto = crate::models::vehiculo::VehiculoUpdateDTO::default();
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#field_reassign_with_default
+
+warning: assigning the result of `Clone::clone()` may be inefficient
+   --> src\services\proveedor_service.rs:313:25
+    |
+313 |                         veh_dto.marca = input.marca.clone();
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `clone_from()`: `veh_dto.marca.clone_from(&input.marca)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#assigning_clones
+
+warning: assigning the result of `Clone::clone()` may be inefficient
+   --> src\services\proveedor_service.rs:314:25
+    |
+314 |                         veh_dto.modelo = input.modelo.clone();
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `clone_from()`: `veh_dto.modelo.clone_from(&input.modelo)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#assigning_clones
+
+warning: assigning the result of `Clone::clone()` may be inefficient
+   --> src\services\proveedor_service.rs:315:25
+    |
+315 |                         veh_dto.color = input.color.clone();
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `clone_from()`: `veh_dto.color.clone_from(&input.color)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#assigning_clones
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+   --> src\services\visitante_service.rs:237:5
+    |
+237 |     dto.nombre = Some(input.nombre);
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `models::visitante::VisitanteUpdateDTO { nombre: Some(input.nombre), apellido: Some(input.apellido), segundo_nombre: Some(input.segundo_nombre), segundo_apellido: Some(input.segundo_apellido), empresa: Some(parse_record_id(&input.empresa_id, "empresa")), has_vehicle: Some(input.has_vehicle), updated_at: Some(surrealdb::Datetime::from(Utc::now())) }` and removing relevant reassignments
+   --> src\services\visitante_service.rs:236:5
+    |
+236 |     let mut dto = VisitanteUpdateDTO::default();
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#field_reassign_with_default
+
+warning: unnecessary `Debug` formatting in `debug!` args
+   --> src\services\surrealdb_service.rs:130:41
+    |
+130 |         debug!("­ƒôé Ruta de datos: {:?}", self.config.data_path);
+    |                                          ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: use `Display` formatting and change this to `self.config.data_path.display()`
+    = note: switching to `Display` formatting will change how the value is shown; escaped characters will no longer be escaped and surrounding quotes will be removed
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unnecessary_debug_formatting
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> src\services\cache_service.rs:59:31
+   |
+59 | pub static CONTRATISTA_CACHE: Lazy<Arc<RwLock<HashMap<String, CacheEntry<ContratistaFetched>>>>> =
+   |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+   = note: `-W clippy::type-complexity` implied by `-W clippy::all`
+   = help: to override `-W clippy::all` add `#[allow(clippy::type_complexity)]`
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+  --> src\services\cache_service.rs:63:29
+   |
+63 | pub static PROVEEDOR_CACHE: Lazy<Arc<RwLock<HashMap<String, CacheEntry<ProveedorFetched>>>>> =
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+
+warning: parameter of type `HashMap` should be generalized over different hashers
+  --> src\services\cache_service.rs:79:20
+   |
+79 |     cache: &RwLock<HashMap<String, CacheEntry<T>>>,
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#implicit_hasher
+help: add a type parameter for `BuildHasher`
+   |
+78 ~ pub async fn get_cached<T: Clone, S: ::std::hash::BuildHasher>(
+79 ~     cache: &RwLock<HashMap<String, CacheEntry<T>, S>>,
+   |
+
+warning: future cannot be sent between threads safely
+  --> src\services\cache_service.rs:78:1
+   |
+78 | / pub async fn get_cached<T: Clone>(
+79 | |     cache: &RwLock<HashMap<String, CacheEntry<T>>>,
+80 | |     key: &str,
+81 | | ) -> Option<T> {
+   | |______________^
+   |
+   = note: `T` doesn't implement `std::marker::Send`
+   = note: `T` doesn't implement `std::marker::Sync`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#future_not_send
+   = note: `-W clippy::future-not-send` implied by `-W clippy::nursery`
+   = help: to override `-W clippy::nursery` add `#[allow(clippy::future_not_send)]`
+
+warning: parameter of type `HashMap` should be generalized over different hashers
+   --> src\services\cache_service.rs:102:20
+    |
+102 |     cache: &RwLock<HashMap<String, CacheEntry<T>>>,
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#implicit_hasher
+help: add a type parameter for `BuildHasher`
+    |
+101 ~ pub async fn set_cached<T: Clone, S: ::std::hash::BuildHasher>(
+102 ~     cache: &RwLock<HashMap<String, CacheEntry<T>, S>>,
+    |
+
+warning: future cannot be sent between threads safely
+   --> src\services\cache_service.rs:101:1
+    |
+101 | / pub async fn set_cached<T: Clone>(
+102 | |     cache: &RwLock<HashMap<String, CacheEntry<T>>>,
+103 | |     key: String,
+104 | |     data: T,
+105 | |     ttl_secs: u64,
+106 | | ) {
+    | |_^ future returned by `set_cached` is not `Send`
+    |
+note: future is not `Send` as this value is used across an await
+   --> src\services\cache_service.rs:107:35
+    |
+104 |     data: T,
+    |     ---- has type `T` which is not `Send`
+...
+107 |     let mut guard = cache.write().await;
+    |                                   ^^^^^ await occurs here, with `data` maybe used later
+    = note: `T` doesn't implement `std::marker::Send`
+    = note: `T` doesn't implement `std::marker::Sync`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#future_not_send
+
+warning: parameter of type `HashMap` should be generalized over different hashers
+   --> src\services\cache_service.rs:122:20
+    |
+122 |     cache: &RwLock<HashMap<String, CacheEntry<T>>>,
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#implicit_hasher
+help: add a type parameter for `BuildHasher`
+    |
+121 ~ pub async fn invalidate_cached<T: Clone, S: ::std::hash::BuildHasher>(
+122 ~     cache: &RwLock<HashMap<String, CacheEntry<T>, S>>,
+    |
+
+warning: future cannot be sent between threads safely
+   --> src\services\cache_service.rs:121:1
+    |
+121 | / pub async fn invalidate_cached<T: Clone>(
+122 | |     cache: &RwLock<HashMap<String, CacheEntry<T>>>,
+123 | |     key: &str,
+124 | | ) {
+    | |_^
+    |
+    = note: `T` doesn't implement `std::marker::Send`
+    = note: `T` doesn't implement `std::marker::Sync`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#future_not_send
+
+warning: parameter of type `HashMap` should be generalized over different hashers
+   --> src\services\cache_service.rs:136:51
+    |
+136 | pub async fn clear_cache<T: Clone>(cache: &RwLock<HashMap<String, CacheEntry<T>>>) {
+    |                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#implicit_hasher
+help: add a type parameter for `BuildHasher`
+    |
+136 | pub async fn clear_cache<T: Clone, S: ::std::hash::BuildHasher>(cache: &RwLock<HashMap<String, CacheEntry<T>, S>>) {
+    |                                  +++++++++++++++++++++++++++++                                              +++
+
+warning: future cannot be sent between threads safely
+   --> src\services\cache_service.rs:136:1
+    |
+136 | pub async fn clear_cache<T: Clone>(cache: &RwLock<HashMap<String, CacheEntry<T>>>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `T` doesn't implement `std::marker::Send`
+    = note: `T` doesn't implement `std::marker::Sync`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#future_not_send
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+  --> src\lib.rs:79:13
+   |
+79 |             db_config.data_path = config_manager::get_database_path(&app_config);
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: consider initializing the variable with `services::surrealdb_service::SurrealDbConfig { data_path: config_manager::get_database_path(&app_config), ..Default::default() }` and removing relevant reassignments
+  --> src\lib.rs:78:13
+   |
+78 |             let mut db_config = SurrealDbConfig::default();
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#field_reassign_with_default
+
+warning: unused `async` for function with no await statements
+   --> src\commands\audio_commands.rs:95:1
+    |
+ 95 | / pub async fn play_sound(
+ 96 | |     _sound: String,
+ 97 | |     _custom_path: Option<String>,
+ 98 | |     _use_custom: bool,
+ 99 | | ) -> Result<(), String> {
+100 | |     Ok(())
+101 | | }
+    | |_^
+    |
+    = help: consider removing the `async` from this function
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unused_async
+    = note: `-W clippy::unused-async` implied by `-W clippy::pedantic`
+    = help: to override `-W clippy::pedantic` add `#[allow(clippy::unused_async)]`
+
+warning: unused `async` for function with no await statements
+   --> src\services\export_service.rs:319:1
+    |
+319 | / async fn export_to_csv_internal(data: ExportData) -> ExportResult<ExportResponse> {
+320 | |     use crate::export::csv;
+321 | |
+322 | |     let config = data
+...   |
+335 | |     })
+336 | | }
+    | |_^
+    |
+    = help: consider removing the `async` from this function
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unused_async
+
+warning: unused `async` for function with no await statements
+   --> src\services\role_service.rs:257:1
+    |
+257 | / pub async fn get_all_permissions() -> Result<Vec<Permission>, RoleError> {
+258 | |     let mut perms = Vec::new();
+259 | |
+260 | |     for module in Module::all() {
+...   |
+273 | |     Ok(perms)
+274 | | }
+    | |_^
+    |
+    = help: consider removing the `async` from this function
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unused_async
+
+warning: unused `async` for function with no await statements
+   --> src\services\ingreso_contratista_service.rs:215:5
+    |
+215 | /     pub async fn validar_puede_salir(
+216 | |         &self,
+217 | |         _ingreso_id: &str,
+218 | |         _gafete: Option<&str>,
+219 | |     ) -> Result<ResultadoValidacionSalida, String> {
+220 | |         Ok(ResultadoValidacionSalida { puede_salir: true, errores: vec![], advertencias: vec![] })
+221 | |     }
+    | |_____^
+    |
+    = help: consider removing the `async` from this function
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unused_async
+
+warning: unused `async` for function with no await statements
+   --> src\services\ingreso_contratista_service.rs:223:5
+    |
+223 | /     pub async fn get_ingresos_abiertos_con_alertas(
+224 | |         &self,
+225 | |     ) -> Result<Vec<IngresoConEstadoResponse>, IngresoContratistaError> {
+226 | |         Ok(vec![])
+227 | |     }
+    | |_____^
+    |
+    = help: consider removing the `async` from this function
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unused_async
+
+warning: unused `async` for function with no await statements
+   --> src\services\ingreso_contratista_service.rs:229:5
+    |
+229 | /     pub async fn verificar_tiempos_excedidos(
+230 | |         &self,
+231 | |     ) -> Result<Vec<AlertaTiempoExcedido>, IngresoContratistaError> {
+232 | |         Ok(vec![])
+233 | |     }
+    | |_____^
+    |
+    = help: consider removing the `async` from this function
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unused_async
+
+warning: unused `async` for function with no await statements
+   --> src\services\ingreso_proveedor_service.rs:220:1
+    |
+220 | / pub async fn get_activos() -> Result<Vec<IngresoResponse>, IngresoProveedorError> {
+221 | |     // TODO: Implementar query real. Por ahora placeholder seguro.
+222 | |     Ok(vec![])
+223 | | }
+    | |_^
+    |
+    = help: consider removing the `async` from this function
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unused_async
+
+warning: unused `async` for function with no await statements
+   --> src\services\ingreso_visita_service.rs:205:1
+    |
+205 | / pub async fn get_activos(
+206 | | ) -> Result<Vec<crate::domain::ingreso_visita::IngresoVisitaPopulated>, IngresoVisitaError> {
+207 | |     // TODO: Implementar query real.
+208 | |     Ok(vec![])
+209 | | }
+    | |_^
+    |
+    = help: consider removing the `async` from this function
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unused_async
+
+warning: unused `async` for function with no await statements
+   --> src\services\lista_negra_service.rs:333:1
+    |
+333 | / pub async fn search_personas_for_block(
+334 | |     query: &str,
+335 | | ) -> Result<Vec<crate::models::lista_negra::PersonaSearchResult>, String> {
+...   |
+339 | |     Ok(vec![])
+340 | | }
+    | |_^
+    |
+    = help: consider removing the `async` from this function
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#unused_async
+
+warning: `mega-brisas` (lib) generated 68 warnings (run `cargo clippy --fix --lib -p mega-brisas` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.07s
