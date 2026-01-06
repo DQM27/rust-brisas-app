@@ -201,6 +201,9 @@
   function getGroupedPermissions(): Map<string, Permission[]> {
     const grouped = new Map<string, Permission[]>();
     for (const perm of permissions) {
+      // Exclude 'roles' module from assignable permissions for security
+      if (perm.module.toLowerCase() === "roles") continue;
+
       const list = grouped.get(perm.module) || [];
       list.push(perm);
       grouped.set(perm.module, list);
