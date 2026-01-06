@@ -3,7 +3,8 @@
 /// Este módulo define las políticas de identidad, seguridad y validaciones
 /// para los operadores y administradores de la plataforma.
 use crate::domain::common::{
-    validar_cedula_estandar, validar_email_estandar, validar_nombre_estandar,
+    validar_cedula_estandar, validar_email_estandar, validar_nombre_estandar, DIRECCION_MAX_LEN,
+    GAFETE_MAX_LEN, PASSWORD_MIN_LEN, SEGUNDO_NOMBRE_MAX_LEN, TELEFONO_MAX_LEN,
 };
 use crate::domain::errors::UserError;
 use crate::models::user::{CreateUserInput, UpdateUserInput};
@@ -33,13 +34,12 @@ pub fn validar_cedula(cedula: &str) -> Result<(), UserError> {
 }
 
 /// Valida los requisitos de robustez de la contraseña.
-///
-/// Mínimo 6 caracteres para asegurar un nivel base de seguridad.
 pub fn validar_password(password: &str) -> Result<(), UserError> {
-    if password.len() < 6 {
-        return Err(UserError::Validation(
-            "La contraseña debe tener al menos 6 caracteres".to_string(),
-        ));
+    if password.len() < PASSWORD_MIN_LEN {
+        return Err(UserError::Validation(format!(
+            "La contraseña debe tener al menos {} caracteres",
+            PASSWORD_MIN_LEN
+        )));
     }
     Ok(())
 }
@@ -76,11 +76,11 @@ pub fn validar_create_input(input: &CreateUserInput) -> Result<(), UserError> {
         validar_password(pwd)?;
     }
 
-    validar_opcional(input.segundo_nombre.as_ref(), 50, "Segundo nombre")?;
-    validar_opcional(input.segundo_apellido.as_ref(), 50, "Segundo apellido")?;
-    validar_opcional(input.telefono.as_ref(), 20, "Teléfono")?;
-    validar_opcional(input.direccion.as_ref(), 200, "Dirección")?;
-    validar_opcional(input.numero_gafete.as_ref(), 20, "Gafete")?;
+    validar_opcional(input.segundo_nombre.as_ref(), SEGUNDO_NOMBRE_MAX_LEN, "Segundo nombre")?;
+    validar_opcional(input.segundo_apellido.as_ref(), SEGUNDO_NOMBRE_MAX_LEN, "Segundo apellido")?;
+    validar_opcional(input.telefono.as_ref(), TELEFONO_MAX_LEN, "Teléfono")?;
+    validar_opcional(input.direccion.as_ref(), DIRECCION_MAX_LEN, "Dirección")?;
+    validar_opcional(input.numero_gafete.as_ref(), GAFETE_MAX_LEN, "Gafete")?;
 
     Ok(())
 }
@@ -107,11 +107,11 @@ pub fn validar_update_input(input: &UpdateUserInput) -> Result<(), UserError> {
         validar_password(pwd)?;
     }
 
-    validar_opcional(input.segundo_nombre.as_ref(), 50, "Segundo nombre")?;
-    validar_opcional(input.segundo_apellido.as_ref(), 50, "Segundo apellido")?;
-    validar_opcional(input.telefono.as_ref(), 20, "Teléfono")?;
-    validar_opcional(input.direccion.as_ref(), 200, "Dirección")?;
-    validar_opcional(input.numero_gafete.as_ref(), 20, "Gafete")?;
+    validar_opcional(input.segundo_nombre.as_ref(), SEGUNDO_NOMBRE_MAX_LEN, "Segundo nombre")?;
+    validar_opcional(input.segundo_apellido.as_ref(), SEGUNDO_NOMBRE_MAX_LEN, "Segundo apellido")?;
+    validar_opcional(input.telefono.as_ref(), TELEFONO_MAX_LEN, "Teléfono")?;
+    validar_opcional(input.direccion.as_ref(), DIRECCION_MAX_LEN, "Dirección")?;
+    validar_opcional(input.numero_gafete.as_ref(), GAFETE_MAX_LEN, "Gafete")?;
 
     Ok(())
 }

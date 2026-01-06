@@ -66,6 +66,9 @@ pub enum PropietarioFetched {
 pub enum TipoVehiculo {
     Motocicleta,
     Automovil,
+    Camioneta,
+    Camion,
+    Otro,
 }
 
 impl TipoVehiculo {
@@ -73,6 +76,9 @@ impl TipoVehiculo {
         match self {
             TipoVehiculo::Motocicleta => "motocicleta",
             TipoVehiculo::Automovil => "automovil",
+            TipoVehiculo::Camioneta => "camioneta",
+            TipoVehiculo::Camion => "camion",
+            TipoVehiculo::Otro => "otro",
         }
     }
 
@@ -80,6 +86,9 @@ impl TipoVehiculo {
         match self {
             TipoVehiculo::Motocicleta => "Motocicleta",
             TipoVehiculo::Automovil => "Automóvil",
+            TipoVehiculo::Camioneta => "Camioneta",
+            TipoVehiculo::Camion => "Camión",
+            TipoVehiculo::Otro => "Otro",
         }
     }
 }
@@ -91,6 +100,9 @@ impl std::str::FromStr for TipoVehiculo {
         match s.to_lowercase().as_str() {
             "motocicleta" => Ok(TipoVehiculo::Motocicleta),
             "automóvil" | "automovil" => Ok(TipoVehiculo::Automovil),
+            "camioneta" => Ok(TipoVehiculo::Camioneta),
+            "camión" | "camion" => Ok(TipoVehiculo::Camion),
+            "otro" => Ok(TipoVehiculo::Otro),
             _ => Err(format!("Tipo de vehículo desconocido: {}", s)),
         }
     }

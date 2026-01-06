@@ -1,37 +1,57 @@
 import { z } from 'zod';
+import {
+    CEDULA_MIN_LEN,
+    CEDULA_MAX_LEN,
+    NOMBRE_MAX_LEN,
+    PLACA_MIN_LEN,
+    PLACA_MAX_LEN
+} from './domainConstants';
 
 // ==========================================
-// VALIDACIONES BÁSICAS
+// VALIDACIONES BÁSICAS (Alineadas con backend domain/common.rs)
 // ==========================================
 
+/**
+ * Cédula: Solo números y guiones, sin letras.
+ * Backend: validar_cedula_estandar() - CEDULA_MIN_LEN-CEDULA_MAX_LEN chars
+ */
 const cedulaSchema = z.string()
     .trim()
-    .min(7, 'Cédula debe tener al menos 7 caracteres')
-    .max(15, 'Cédula no puede exceder 15 caracteres')
-    .regex(/^[0-9-]+$/, 'Cédula solo puede contener números y guiones');
+    .min(CEDULA_MIN_LEN, `Cédula debe tener al menos ${CEDULA_MIN_LEN} caracteres`)
+    .max(CEDULA_MAX_LEN, `Cédula no puede exceder ${CEDULA_MAX_LEN} caracteres`)
+    .regex(/^[0-9-]+$/, 'Cédula solo puede contener números y guiones (sin letras)')
+    .refine(val => /\d/.test(val), 'La cédula debe contener al menos un número');
 
+/**
+ * Nombre/Apellido: Solo letras (incluye acentos), espacios permitidos.
+ * Backend: validar_nombre_estandar() - max NOMBRE_MAX_LEN chars
+ */
 const nombreSchema = z.string()
     .trim()
     .min(1, 'Nombre es requerido')
-    .max(50, 'Nombre no puede exceder 50 caracteres')
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'Nombre solo puede contener letras');
+    .max(NOMBRE_MAX_LEN, `Nombre no puede exceder ${NOMBRE_MAX_LEN} caracteres`)
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, 'Nombre solo puede contener letras');
 
 const apellidoSchema = z.string()
     .trim()
     .min(1, 'Apellido es requerido')
-    .max(50, 'Apellido no puede exceder 50 caracteres')
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'Apellido solo puede contener letras');
+    .max(NOMBRE_MAX_LEN, `Apellido no puede exceder ${NOMBRE_MAX_LEN} caracteres`)
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, 'Apellido solo puede contener letras');
 
 const nombreOpcionalSchema = z.string()
     .trim()
-    .max(50, 'No puede exceder 50 caracteres')
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/, 'Solo puede contener letras')
+    .max(NOMBRE_MAX_LEN, `No puede exceder ${NOMBRE_MAX_LEN} caracteres`)
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]*$/, 'Solo puede contener letras')
     .optional()
     .or(z.literal(''));
 
+/**
+ * Placa: Alfanumérico y guiones.
+ * Backend: validar_placa_estandar() - PLACA_MIN_LEN-PLACA_MAX_LEN chars
+ */
 const placaSchema = z.string()
     .trim()
-    .max(10, 'Placa no puede exceder 10 caracteres')
+    .max(PLACA_MAX_LEN, `Placa no puede exceder ${PLACA_MAX_LEN} caracteres`)
     .regex(/^[A-Z0-9-]*$/i, 'Placa solo puede contener letras, números y guiones')
     .optional()
     .or(z.literal(''));

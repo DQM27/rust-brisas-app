@@ -15,26 +15,51 @@ pub use crate::models::ingreso::{CommonError, DecisionReporteGafete};
 // CONSTANTES DE VALIDACIÓN COMPARTIDAS (Fuente de Verdad Única)
 // --------------------------------------------------------------------------
 
+// === Identificación Personal ===
 /// Longitud mínima de cédula de identidad.
 pub const CEDULA_MIN_LEN: usize = 5;
-
 /// Longitud máxima de cédula de identidad.
 pub const CEDULA_MAX_LEN: usize = 20;
 
-/// Longitud máxima de nombre/apellido.
+// === Nombres y Apellidos ===
+/// Longitud máxima de nombre/apellido principal.
 pub const NOMBRE_MAX_LEN: usize = 100;
+/// Longitud máxima de segundo nombre/apellido.
+pub const SEGUNDO_NOMBRE_MAX_LEN: usize = 50;
 
-/// Longitud máxima de nombre de entidad (empresa, institución).
-pub const ENTIDAD_NOMBRE_MAX_LEN: usize = 100;
-
+// === Contacto ===
+/// Longitud máxima de teléfono.
+pub const TELEFONO_MAX_LEN: usize = 20;
+/// Longitud máxima de dirección.
+pub const DIRECCION_MAX_LEN: usize = 200;
 /// Longitud máxima de email.
 pub const EMAIL_MAX_LEN: usize = 100;
 
+// === Seguridad ===
+/// Longitud mínima de contraseña.
+pub const PASSWORD_MIN_LEN: usize = 6;
+/// Longitud máxima de número de gafete.
+pub const GAFETE_MAX_LEN: usize = 20;
+
+// === Entidades ===
+/// Longitud máxima de nombre de entidad (empresa, institución).
+pub const ENTIDAD_NOMBRE_MAX_LEN: usize = 100;
+
+// === Vehículos ===
 /// Longitud mínima de placa de vehículo.
 pub const PLACA_MIN_LEN: usize = 2;
-
 /// Longitud máxima de placa de vehículo.
 pub const PLACA_MAX_LEN: usize = 15;
+/// Longitud máxima de marca/modelo de vehículo.
+pub const MARCA_MODELO_MAX_LEN: usize = 50;
+/// Longitud máxima de color de vehículo.
+pub const COLOR_MAX_LEN: usize = 30;
+
+// === Lista Negra ===
+/// Longitud máxima de motivo de bloqueo.
+pub const MOTIVO_MAX_LEN: usize = 500;
+/// Longitud máxima de observaciones.
+pub const OBSERVACIONES_MAX_LEN: usize = 1000;
 
 // --------------------------------------------------------------------------
 // GESTIÓN DE GAFETES: REGLAS DE NEGOCIO
