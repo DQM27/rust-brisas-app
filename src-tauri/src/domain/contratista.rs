@@ -18,23 +18,15 @@
 //!
 //! Ver [`common`](crate::domain::common) para funciones centralizadas de validación.
 
-use crate::domain::common::{
-    parsear_fecha_simple, validar_cedula_estandar, validar_nombre_estandar,
-};
+use crate::domain::common::{validar_cedula_estandar, validar_nombre_estandar};
 use crate::domain::errors::ContratistaError;
 use crate::models::contratista::{
     CreateContratistaInput, EstadoContratista, EstadoPraind, UpdateContratistaInput,
 };
-<<<<<<< HEAD
 use chrono::{DateTime, NaiveDate};
 
 /// Días previos al vencimiento para considerar que requiere atención (alerta amarilla).
 pub const DIAS_ALERTA_VENCIMIENTO: i64 = 30;
-=======
-
-// Re-exportamos las constantes desde common para acceso conveniente
-pub use crate::domain::common::{CEDULA_MAX_LEN, CEDULA_MIN_LEN, NOMBRE_MAX_LEN};
->>>>>>> feature/domain-layer-refactor
 
 // --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
@@ -112,18 +104,6 @@ pub fn validar_empresa_id(empresa_id: &str) -> Result<(), ContratistaError> {
 }
 
 /// Parsea y valida una fecha en formato estándar (YYYY-MM-DD).
-<<<<<<< HEAD
-///
-/// Cumple con `docs/estandares-fechas.md` para entrada de fechas simples.
-///
-/// # Argumentos
-/// * `fecha_str` - Cadena de fecha en formato ISO 8601 (YYYY-MM-DD).
-///
-/// # Retorno
-/// `NaiveDate` parseada o error de validación.
-pub fn validar_fecha(fecha_str: &str) -> Result<NaiveDate, ContratistaError> {
-    parsear_fecha_simple(fecha_str).map_err(|e| ContratistaError::Validation(e.to_string()))
-=======
 /// Devuelve DateTime<Utc> para compatibilidad directa con surrealdb::Datetime.
 pub fn validar_fecha(fecha_str: &str) -> Result<chrono::DateTime<chrono::Utc>, ContratistaError> {
     use chrono::{NaiveDate, TimeZone, Utc};
@@ -133,7 +113,6 @@ pub fn validar_fecha(fecha_str: &str) -> Result<chrono::DateTime<chrono::Utc>, C
     })?;
 
     Ok(Utc.from_utc_datetime(&naive.and_hms_opt(0, 0, 0).unwrap()))
->>>>>>> feature/domain-layer-refactor
 }
 
 // --------------------------------------------------------------------------
@@ -249,8 +228,7 @@ pub fn calcular_estado_praind(fecha_vencimiento_str: &str) -> EstadoPraind {
         Some(venc_date) => {
             let dias_hasta_vencimiento = (venc_date - hoy_date).num_days();
             let vencido = venc_date < hoy_date;
-            let requiere_atencion =
-                (0..=DIAS_ALERTA_VENCIMIENTO).contains(&dias_hasta_vencimiento);
+            let requiere_atencion = (0..=DIAS_ALERTA_VENCIMIENTO).contains(&dias_hasta_vencimiento);
 
             EstadoPraind { dias_hasta_vencimiento, vencido, requiere_atencion }
         }

@@ -42,34 +42,11 @@ pub fn get_master_key() -> Result<&'static [u8; 32], String> {
     OsRng.fill_bytes(&mut key);
     log::info!("🔑 Iniciando generación de Llave Maestra por primera vez");
 
-<<<<<<< HEAD
-        if let Some(hex_key) = keyring_windows::retrieve_secret(MASTER_KEY_NAME) {
-            if let Ok(bytes) = hex::decode(&hex_key) {
-                if bytes.len() == 32 {
-                    let mut key_arr = [0u8; 32];
-                    key_arr.copy_from_slice(&bytes);
-                    let _ = MASTER_KEY.set(key_arr);
-                    log::info!("🔑 Llave Maestra cargada desde Windows Credential Manager");
-                    return Ok(MASTER_KEY.get().unwrap());
-                }
-            }
-        }
-
-        let mut key = [0u8; 32];
-        OsRng.fill_bytes(&mut key);
-        let hex_key = hex::encode(key);
-        keyring_windows::store_secret(MASTER_KEY_NAME, &hex_key)
-            .map_err(|e| format!("Error al blindar la llave maestra: {e}"))?;
-        log::info!("🔑 Llave Maestra generada y blindada en Windows");
-        let _ = MASTER_KEY.set(key);
-        Ok(MASTER_KEY.get().unwrap())
-=======
     let hex_key = hex::encode(key);
     // Usar la librería unificada de keyring
     if let Err(e) = ks::save_secret(MASTER_KEY_NAME, &hex_key) {
         log::error!("❌ Error crítico al persistir llave en el llavero: {}", e);
         return Err(format!("Fallo de seguridad en el almacenamiento: {}", e));
->>>>>>> feature/domain-layer-refactor
     }
 
     log::info!("🔑 Llave Maestra persistida en Keyring Unificado");

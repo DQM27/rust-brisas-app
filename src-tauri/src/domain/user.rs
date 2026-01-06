@@ -3,14 +3,9 @@
 /// Este módulo define las políticas de identidad, seguridad y validaciones
 /// para los operadores y administradores de la plataforma.
 use crate::domain::common::{
-<<<<<<< HEAD
     normalizar_nombre_propio, validar_cedula_estandar, validar_email_estandar,
     validar_nombre_estandar, MAX_LEN_DIRECCION, MAX_LEN_GAFETE, MAX_LEN_NOMBRE, MAX_LEN_TELEFONO,
     MIN_LEN_PASSWORD,
-=======
-    validar_cedula_estandar, validar_email_estandar, validar_nombre_estandar, DIRECCION_MAX_LEN,
-    GAFETE_MAX_LEN, PASSWORD_MIN_LEN, SEGUNDO_NOMBRE_MAX_LEN, TELEFONO_MAX_LEN,
->>>>>>> feature/domain-layer-refactor
 };
 use crate::domain::errors::UserError;
 use crate::models::user::{CreateUserInput, UpdateUserInput};
@@ -40,20 +35,12 @@ pub fn validar_cedula(cedula: &str) -> Result<(), UserError> {
 }
 
 /// Valida los requisitos de robustez de la contraseña.
-<<<<<<< HEAD
 ///
 /// Mínimo `MIN_LEN_PASSWORD` caracteres para asegurar un nivel base de seguridad.
 pub fn validar_password(password: &str) -> Result<(), UserError> {
     if password.len() < MIN_LEN_PASSWORD {
         return Err(UserError::Validation(format!(
             "La contraseña debe tener al menos {MIN_LEN_PASSWORD} caracteres"
-=======
-pub fn validar_password(password: &str) -> Result<(), UserError> {
-    if password.len() < PASSWORD_MIN_LEN {
-        return Err(UserError::Validation(format!(
-            "La contraseña debe tener al menos {} caracteres",
-            PASSWORD_MIN_LEN
->>>>>>> feature/domain-layer-refactor
         )));
     }
     Ok(())
@@ -95,19 +82,11 @@ pub fn validar_create_input(input: &CreateUserInput) -> Result<(), UserError> {
         validar_password(pwd)?;
     }
 
-<<<<<<< HEAD
     validar_opcional(input.segundo_nombre.as_ref(), MAX_LEN_NOMBRE, "Segundo nombre")?;
     validar_opcional(input.segundo_apellido.as_ref(), MAX_LEN_NOMBRE, "Segundo apellido")?;
     validar_opcional(input.telefono.as_ref(), MAX_LEN_TELEFONO, "Teléfono")?;
     validar_opcional(input.direccion.as_ref(), MAX_LEN_DIRECCION, "Dirección")?;
     validar_opcional(input.numero_gafete.as_ref(), MAX_LEN_GAFETE, "Gafete")?;
-=======
-    validar_opcional(input.segundo_nombre.as_ref(), SEGUNDO_NOMBRE_MAX_LEN, "Segundo nombre")?;
-    validar_opcional(input.segundo_apellido.as_ref(), SEGUNDO_NOMBRE_MAX_LEN, "Segundo apellido")?;
-    validar_opcional(input.telefono.as_ref(), TELEFONO_MAX_LEN, "Teléfono")?;
-    validar_opcional(input.direccion.as_ref(), DIRECCION_MAX_LEN, "Dirección")?;
-    validar_opcional(input.numero_gafete.as_ref(), GAFETE_MAX_LEN, "Gafete")?;
->>>>>>> feature/domain-layer-refactor
 
     Ok(())
 }
@@ -134,19 +113,11 @@ pub fn validar_update_input(input: &UpdateUserInput) -> Result<(), UserError> {
         validar_password(pwd)?;
     }
 
-<<<<<<< HEAD
     validar_opcional(input.segundo_nombre.as_ref(), MAX_LEN_NOMBRE, "Segundo nombre")?;
     validar_opcional(input.segundo_apellido.as_ref(), MAX_LEN_NOMBRE, "Segundo apellido")?;
     validar_opcional(input.telefono.as_ref(), MAX_LEN_TELEFONO, "Teléfono")?;
     validar_opcional(input.direccion.as_ref(), MAX_LEN_DIRECCION, "Dirección")?;
     validar_opcional(input.numero_gafete.as_ref(), MAX_LEN_GAFETE, "Gafete")?;
-=======
-    validar_opcional(input.segundo_nombre.as_ref(), SEGUNDO_NOMBRE_MAX_LEN, "Segundo nombre")?;
-    validar_opcional(input.segundo_apellido.as_ref(), SEGUNDO_NOMBRE_MAX_LEN, "Segundo apellido")?;
-    validar_opcional(input.telefono.as_ref(), TELEFONO_MAX_LEN, "Teléfono")?;
-    validar_opcional(input.direccion.as_ref(), DIRECCION_MAX_LEN, "Dirección")?;
-    validar_opcional(input.numero_gafete.as_ref(), GAFETE_MAX_LEN, "Gafete")?;
->>>>>>> feature/domain-layer-refactor
 
     Ok(())
 }
@@ -257,8 +228,10 @@ mod tests {
         assert!(validar_opcional(valor.as_ref(), MAX_LEN_NOMBRE, "Campo").is_ok());
     }
 
+    // Nota: Si MAX_LEN_DIRECCION no está definido localmente, se usa desde imports.
     #[test]
     fn test_opcional_excede_limite() {
+        use crate::domain::common::MAX_LEN_DIRECCION;
         let valor = Some("A".repeat(MAX_LEN_DIRECCION + 1));
         assert!(validar_opcional(valor.as_ref(), MAX_LEN_DIRECCION, "Dirección").is_err());
     }

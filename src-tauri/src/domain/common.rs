@@ -345,7 +345,6 @@ pub fn validar_nombre_estandar(texto: &str, campo: &str) -> Result<(), CommonErr
         return Err(CommonError::Validation(format!("El {campo} es obligatorio")));
     }
 
-<<<<<<< HEAD
     if limpio.len() < MIN_LEN_NOMBRE {
         return Err(CommonError::Validation(format!(
             "El {campo} debe tener al menos {MIN_LEN_NOMBRE} caracteres"
@@ -355,12 +354,6 @@ pub fn validar_nombre_estandar(texto: &str, campo: &str) -> Result<(), CommonErr
     if limpio.len() > MAX_LEN_NOMBRE {
         return Err(CommonError::Validation(format!(
             "El {campo} no puede exceder {MAX_LEN_NOMBRE} caracteres"
-=======
-    if limpio.len() > NOMBRE_MAX_LEN {
-        return Err(CommonError::Validation(format!(
-            "El {} no puede exceder {} caracteres",
-            campo, NOMBRE_MAX_LEN
->>>>>>> feature/domain-layer-refactor
         )));
     }
 
@@ -396,16 +389,9 @@ pub fn validar_cedula_estandar(cedula: &str) -> Result<(), CommonError> {
     // Contar solo los dígitos (ignorando guiones)
     let cantidad_digitos = limpio.chars().filter(char::is_ascii_digit).count();
 
-<<<<<<< HEAD
     if !(MIN_DIGITOS_CEDULA..=MAX_DIGITOS_CEDULA).contains(&cantidad_digitos) {
         return Err(CommonError::Validation(format!(
             "La cédula debe tener entre {MIN_DIGITOS_CEDULA} y {MAX_DIGITOS_CEDULA} dígitos (actualmente tiene {cantidad_digitos})"
-=======
-    if limpio.len() < CEDULA_MIN_LEN || limpio.len() > CEDULA_MAX_LEN {
-        return Err(CommonError::Validation(format!(
-            "Longitud de cédula inválida ({}-{} caracteres)",
-            CEDULA_MIN_LEN, CEDULA_MAX_LEN
->>>>>>> feature/domain-layer-refactor
         )));
     }
 
@@ -489,12 +475,8 @@ pub fn validar_nombre_entidad_estandar(nombre: &str, campo: &str) -> Result<(), 
 
     if limpio.len() > ENTIDAD_NOMBRE_MAX_LEN {
         return Err(CommonError::Validation(format!(
-<<<<<<< HEAD
-            "El {campo} no puede exceder 100 caracteres"
-=======
             "El {} no puede exceder {} caracteres",
             campo, ENTIDAD_NOMBRE_MAX_LEN
->>>>>>> feature/domain-layer-refactor
         )));
     }
 

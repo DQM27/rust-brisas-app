@@ -15,13 +15,7 @@ pub mod gafete_service;
 pub mod keyring_service;
 pub mod role_service;
 
-<<<<<<< HEAD
-// Windows-only keyring implementation
-#[cfg(target_os = "windows")]
-pub mod keyring_windows;
-=======
 // Módulos plataforma-específicos eliminados tras unificación de keyring.
->>>>>>> feature/domain-layer-refactor
 
 pub mod cita_service;
 pub mod ingreso_contratista_service;

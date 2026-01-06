@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 //! # Models: Contratista
 //!
 //! Estructuras de datos para el dominio de contratistas externos.
@@ -20,11 +19,6 @@
 //!
 //! ## Enums de Estado
 //! [`EstadoContratista`] usa `lowercase` para serialización y es compatible con `SurrealDB`.
-=======
-// ==========================================
-// src/models/contratista.rs
-// ==========================================
->>>>>>> feature/domain-layer-refactor
 
 use crate::models::empresa::Empresa;
 use serde::{Deserialize, Serialize};
@@ -438,20 +432,12 @@ mod tests {
     use chrono::{Duration, Utc};
     use surrealdb::RecordId;
 
-<<<<<<< HEAD
     /// Verifica que la conversión desde ContratistaFetched delegue correctamente
     /// los cálculos de estado (PRAIND, Ingreso) al dominio.
     #[test]
     fn test_contratista_response_from_fetched() {
         let created = Utc::now();
         let fecha_vencimiento = created + Duration::days(60); // Futuro
-=======
-pub mod validaciones {
-    use crate::domain::common::{
-        CEDULA_MAX_LEN, CEDULA_MIN_LEN, NOMBRE_MAX_LEN, SEGUNDO_NOMBRE_MAX_LEN,
-    };
-    use chrono::{DateTime, NaiveDate, TimeZone, Utc};
->>>>>>> feature/domain-layer-refactor
 
         let fetched = ContratistaFetched {
             id: RecordId::from(("contratista", "c1")),
@@ -484,107 +470,10 @@ pub mod validaciones {
         assert_eq!(response.empresa_nombre, "Empresa Test");
         assert_eq!(response.empresa_id, "empresa:e1");
 
-<<<<<<< HEAD
         // Validaciones de lógica delegada al dominio
         assert!(response.puede_ingresar); // Activo y PRAIND futuro
         assert!(!response.praind_vencido);
         assert!(!response.requiere_atencion);
         assert_eq!(response.estado, EstadoContratista::Activo);
-=======
-        if limpia.len() < CEDULA_MIN_LEN || limpia.len() > CEDULA_MAX_LEN {
-            return Err(format!(
-                "La cédula debe tener entre {} y {} caracteres",
-                CEDULA_MIN_LEN, CEDULA_MAX_LEN
-            ));
-        }
-
-        Ok(())
-    }
-
-    pub fn validar_nombre(nombre: &str) -> Result<(), String> {
-        let limpio = nombre.trim();
-
-        if limpio.is_empty() {
-            return Err("El nombre no puede estar vacío".to_string());
-        }
-
-        if limpio.len() > NOMBRE_MAX_LEN {
-            return Err(format!("El nombre no puede exceder {} caracteres", NOMBRE_MAX_LEN));
-        }
-
-        Ok(())
-    }
-
-    pub fn validar_segundo_nombre(segundo_nombre: Option<&String>) -> Result<(), String> {
-        if let Some(nombre) = segundo_nombre {
-            let limpio = nombre.trim();
-
-            if !limpio.is_empty() && limpio.len() > SEGUNDO_NOMBRE_MAX_LEN {
-                return Err(format!(
-                    "El segundo nombre no puede exceder {} caracteres",
-                    SEGUNDO_NOMBRE_MAX_LEN
-                ));
-            }
-        }
-
-        Ok(())
-    }
-
-    pub fn validar_apellido(apellido: &str) -> Result<(), String> {
-        let limpio = apellido.trim();
-
-        if limpio.is_empty() {
-            return Err("El apellido no puede estar vacío".to_string());
-        }
-
-        if limpio.len() > NOMBRE_MAX_LEN {
-            return Err(format!("El apellido no puede exceder {} caracteres", NOMBRE_MAX_LEN));
-        }
-
-        Ok(())
-    }
-
-    pub fn validar_segundo_apellido(segundo_apellido: Option<&String>) -> Result<(), String> {
-        if let Some(apellido) = segundo_apellido {
-            let limpio = apellido.trim();
-
-            if !limpio.is_empty() && limpio.len() > SEGUNDO_NOMBRE_MAX_LEN {
-                return Err(format!(
-                    "El segundo apellido no puede exceder {} caracteres",
-                    SEGUNDO_NOMBRE_MAX_LEN
-                ));
-            }
-        }
-
-        Ok(())
-    }
-
-    pub fn validar_empresa_id(empresa_id: &str) -> Result<(), String> {
-        let limpia = empresa_id.trim();
-
-        if limpia.is_empty() {
-            return Err("Debe seleccionar una empresa".to_string());
-        }
-
-        Ok(())
-    }
-
-    pub fn validar_fecha(fecha_str: &str) -> Result<DateTime<Utc>, String> {
-        let naive = NaiveDate::parse_from_str(fecha_str, "%Y-%m-%d")
-            .map_err(|_| "Formato de fecha inválido. Use YYYY-MM-DD".to_string())?;
-
-        Ok(Utc.from_utc_datetime(&naive.and_hms_opt(0, 0, 0).unwrap()))
-    }
-
-    pub fn validar_create_input(input: &super::CreateContratistaInput) -> Result<(), String> {
-        validar_cedula(&input.cedula)?;
-        validar_nombre(&input.nombre)?;
-        validar_segundo_nombre(input.segundo_nombre.as_ref())?;
-        validar_apellido(&input.apellido)?;
-        validar_segundo_apellido(input.segundo_apellido.as_ref())?;
-        validar_empresa_id(&input.empresa_id)?;
-        validar_fecha(&input.fecha_vencimiento_praind)?;
-        Ok(())
->>>>>>> feature/domain-layer-refactor
     }
 }

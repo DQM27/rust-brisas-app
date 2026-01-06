@@ -112,7 +112,8 @@ fn delete_value(key: &str) -> KeyringResult<()> {
 pub fn generate_random_secret() -> String {
     use rand::Rng;
     let random_bytes: Vec<u8> = (0..32).map(|_| rand::thread_rng().gen()).collect();
-    base64::encode(&random_bytes)
+    use base64::{engine::general_purpose, Engine as _};
+    general_purpose::STANDARD.encode(&random_bytes)
 }
 
 /// Guarda la configuración completa de Argon2.

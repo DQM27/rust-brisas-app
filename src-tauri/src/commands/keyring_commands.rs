@@ -69,27 +69,22 @@ pub fn needs_setup(config: State<'_, AppConfigState>) -> bool {
 /// Orquesta la configuración inicial: llavero, archivos TOML y siembra de DB.
 #[command]
 pub async fn setup_credentials(
-    _session: State<'_, SessionState>, // No se usa - setup es previo al login
+    session: State<'_, SessionState>,
     input: SetupCredentialsInput,
     config: State<'_, crate::config::settings::AppConfigState>,
 ) -> Result<SetupResult, KeyringError> {
-<<<<<<< HEAD
-    // Nota: No usamos require_perm! aquí porque el setup ocurre ANTES del login.
-    // La protección es que el wizard solo se muestra si needs_setup() retorna true.
-=======
     // Verificar si la app ya está configurada.
     // Si NO está configurada (Wizard inicial), permitimos acceso sin sesión.
     // Si SI está configurada, exigimos permisos de administrador.
     let is_initial_setup = {
         let guard = config.read().map_err(|e| KeyringError::Message(e.to_string()))?;
-        !guard.setup.is_configured
+        !guard.setup.is_configured || !ks::is_fully_configured()
     };
 
     if !is_initial_setup {
         require_perm!(session, "config:update", "Configuración de credenciales")
             .map_err(|e| KeyringError::Message(e.to_string()))?;
     }
->>>>>>> feature/domain-layer-refactor
 
     let mut final_argon2 = input.argon2.clone();
     if ks::has_argon2_secret() {
@@ -146,7 +141,8 @@ pub async fn setup_credentials(
 pub async fn get_argon2_config(
     session: State<'_, SessionState>,
 ) -> Result<Argon2ParamsSafe, KeyringError> {
-    require_perm!(session, "config:read").map_err(|e| KeyringError::Message(e.to_string()))?;
+    require_perm!(session, "config:read", "Lectura de config Argon2")
+        .map_err(|e| KeyringError::Message(e.to_string()))?;
 
     let params = ks::get_argon2_params();
     Ok(Argon2ParamsSafe {
@@ -192,7 +188,6 @@ pub fn generate_random_secret() -> String {
 }
 
 /// Ejecuta una batería de pruebas sobre el llavero del sistema para verificar permisos.
-/// Ejecuta una batería de pruebas sobre el llavero del sistema para verificar permisos.
 #[command]
 pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, KeyringError> {
     require_perm!(session, "config:read", "Diagnóstico de Keyring")
@@ -206,14 +201,8 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
     results.push(String::new());
 
     results.push("1. Guardando credencial de prueba...".to_string());
-<<<<<<< HEAD
-    #[cfg(any(target_os = "linux", target_os = "windows"))]
-    match keyring_impl::store_secret(test_key, test_value) {
-        Ok(()) => results.push("   ✓ Credencial guardada correctamente".to_string()),
-=======
     match ks::save_secret(test_key, test_value) {
         Ok(_) => results.push("   ✓ Credencial guardada correctamente".to_string()),
->>>>>>> feature/domain-layer-refactor
         Err(e) => {
             results.push(format!("   ✗ Error guardando credencial: {e}"));
             return Ok(results.join("\n"));
@@ -221,17 +210,6 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
     }
 
     results.push("2. Recuperando credencial...".to_string());
-<<<<<<< HEAD
-    #[cfg(any(target_os = "linux", target_os = "windows"))]
-    if let Some(password) = keyring_impl::retrieve_secret(test_key) {
-        results.push(format!("   ✓ Credencial recuperada: {password}"));
-        if password == test_value {
-            results.push("   ✓ La credencial coincide!".to_string());
-        } else {
-            results.push(format!(
-                "   ✗ La credencial NO coincide! Esperado: {test_value}, Obtenido: {password}"
-            ));
-=======
     match ks::get_secret(test_key) {
         Some(password) => {
             results
@@ -248,64 +226,28 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
         None => {
             results.push("   ✗ Error recuperando credencial".to_string());
             return Ok(results.join("\n"));
->>>>>>> feature/domain-layer-refactor
         }
-    } else {
-        results.push("   ✗ Error recuperando credencial".to_string());
-        return Ok(results.join("\n"));
     }
 
     results.push("3. Eliminando credencial...".to_string());
-<<<<<<< HEAD
-    #[cfg(any(target_os = "linux", target_os = "windows"))]
-    match keyring_impl::delete_secret(test_key) {
-        Ok(()) => results.push("   ✓ Credencial eliminada correctamente".to_string()),
-=======
     match ks::delete_secret(test_key) {
         Ok(_) => results.push("   ✓ Credencial eliminada correctamente".to_string()),
->>>>>>> feature/domain-layer-refactor
         Err(e) => {
             results.push(format!("   ✗ Error eliminando credencial: {e}"));
         }
     }
 
     results.push("4. Verificando eliminación...".to_string());
-<<<<<<< HEAD
-    #[cfg(any(target_os = "linux", target_os = "windows"))]
-    match keyring_impl::retrieve_secret(test_key) {
-        Some(password) => {
-            results.push(format!("   ✗ La credencial aún existe: {password}"));
-=======
     match ks::get_secret(test_key) {
         Some(_) => {
             results.push("   ✗ La credencial aún existe".to_string());
->>>>>>> feature/domain-layer-refactor
         }
         None => {
             results.push("   ✓ La credencial fue eliminada correctamente".to_string());
         }
     }
 
-<<<<<<< HEAD
-    #[cfg(target_os = "macos")]
-    {
-        use keyring::Entry;
-        let entry = Entry::new("test-brisas-diagnostic", test_key)
-            .map_err(|e| format!("Error creando entrada: {}", e))?;
-        match entry.get_password() {
-            Ok(password) => {
-                results.push(format!("   ✗ La credencial aún existe: {}", password));
-            }
-            Err(_) => {
-                results.push("   ✓ La credencial fue eliminada correctamente".to_string());
-            }
-        }
-    }
-
-    results.push(String::new());
-=======
     results.push("".to_string());
->>>>>>> feature/domain-layer-refactor
     results.push("✓ Test completado exitosamente".to_string());
     Ok(results.join("\n"))
 }

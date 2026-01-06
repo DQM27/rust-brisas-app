@@ -4,16 +4,13 @@
 /// incluyendo validaciones de identidad, integridad de datos y coherencia vehicular.
 use crate::domain::common::{
     normalizar_nombre_opcional_estandar, normalizar_nombre_propio, normalizar_opcional_estandar,
-<<<<<<< HEAD
     validar_cedula_estandar, validar_nombre_estandar, validar_opcional_estandar, MAX_LEN_NOMBRE,
-=======
-    validar_cedula_estandar, validar_nombre_estandar, validar_opcional_estandar, COLOR_MAX_LEN,
-    MARCA_MODELO_MAX_LEN, SEGUNDO_NOMBRE_MAX_LEN,
->>>>>>> feature/domain-layer-refactor
 };
 use crate::domain::errors::ProveedorError;
 use crate::domain::vehiculo as vehiculo_domain;
 use crate::models::proveedor::{CreateProveedorInput, UpdateProveedorInput};
+// Importar constantes de vehículo para la validación incrustada
+use crate::domain::common::{MAX_LEN_COLOR_VEHICULO, MAX_LEN_MODELO_VEHICULO};
 
 // --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
@@ -59,13 +56,8 @@ pub fn validar_create_input(input: &CreateProveedorInput) -> Result<(), Proveedo
     validar_empresa_id(&input.empresa_id)?;
 
     // Validaciones de nombres opcionales
-<<<<<<< HEAD
     validar_opcional(input.segundo_nombre.as_ref(), MAX_LEN_NOMBRE, "segundo nombre")?;
     validar_opcional(input.segundo_apellido.as_ref(), MAX_LEN_NOMBRE, "segundo apellido")?;
-=======
-    validar_opcional(input.segundo_nombre.as_ref(), SEGUNDO_NOMBRE_MAX_LEN, "segundo nombre")?;
-    validar_opcional(input.segundo_apellido.as_ref(), SEGUNDO_NOMBRE_MAX_LEN, "segundo apellido")?;
->>>>>>> feature/domain-layer-refactor
 
     // Validación vehicular si se declara
     if input.tiene_vehiculo == Some(true) {
@@ -81,13 +73,8 @@ pub fn validar_create_input(input: &CreateProveedorInput) -> Result<(), Proveedo
             vehiculo_domain::validar_marca(marca)
                 .map_err(|e| ProveedorError::Validation(e.to_string()))?;
         }
-<<<<<<< HEAD
-        validar_opcional(input.modelo.as_ref(), MAX_LEN_NOMBRE, "modelo de vehículo")?;
-        validar_opcional(input.color.as_ref(), 30, "color de vehículo")?;
-=======
-        validar_opcional(input.modelo.as_ref(), MARCA_MODELO_MAX_LEN, "modelo de vehículo")?;
-        validar_opcional(input.color.as_ref(), COLOR_MAX_LEN, "color de vehículo")?;
->>>>>>> feature/domain-layer-refactor
+        validar_opcional(input.modelo.as_ref(), MAX_LEN_MODELO_VEHICULO, "modelo de vehículo")?;
+        validar_opcional(input.color.as_ref(), MAX_LEN_COLOR_VEHICULO, "color de vehículo")?;
     }
 
     Ok(())
@@ -106,13 +93,8 @@ pub fn validar_update_input(input: &UpdateProveedorInput) -> Result<(), Proveedo
     }
 
     // Nombres opcionales
-<<<<<<< HEAD
     validar_opcional(input.segundo_nombre.as_ref(), MAX_LEN_NOMBRE, "segundo nombre")?;
     validar_opcional(input.segundo_apellido.as_ref(), MAX_LEN_NOMBRE, "segundo apellido")?;
-=======
-    validar_opcional(input.segundo_nombre.as_ref(), SEGUNDO_NOMBRE_MAX_LEN, "segundo nombre")?;
-    validar_opcional(input.segundo_apellido.as_ref(), SEGUNDO_NOMBRE_MAX_LEN, "segundo apellido")?;
->>>>>>> feature/domain-layer-refactor
 
     // Datos vehiculares reactivos
     if input.tiene_vehiculo == Some(true) {
@@ -128,13 +110,8 @@ pub fn validar_update_input(input: &UpdateProveedorInput) -> Result<(), Proveedo
             vehiculo_domain::validar_marca(marca)
                 .map_err(|e| ProveedorError::Validation(e.to_string()))?;
         }
-<<<<<<< HEAD
-        validar_opcional(input.modelo.as_ref(), MAX_LEN_NOMBRE, "modelo de vehículo")?;
-        validar_opcional(input.color.as_ref(), 30, "color de vehículo")?;
-=======
-        validar_opcional(input.modelo.as_ref(), MARCA_MODELO_MAX_LEN, "modelo de vehículo")?;
-        validar_opcional(input.color.as_ref(), COLOR_MAX_LEN, "color de vehículo")?;
->>>>>>> feature/domain-layer-refactor
+        validar_opcional(input.modelo.as_ref(), MAX_LEN_MODELO_VEHICULO, "modelo de vehículo")?;
+        validar_opcional(input.color.as_ref(), MAX_LEN_COLOR_VEHICULO, "color de vehículo")?;
     }
 
     Ok(())
