@@ -4,6 +4,7 @@
 /// denegado a las instalaciones por motivos de seguridad o administrativos.
 use crate::domain::common::{
     normalizar_nombre_propio, validar_cedula_estandar, validar_nombre_estandar,
+    ENTIDAD_NOMBRE_MAX_LEN, MOTIVO_MAX_LEN,
 };
 
 use crate::domain::errors::ListaNegraError;
@@ -34,10 +35,11 @@ pub fn validar_motivo(motivo: &str) -> Result<(), ListaNegraError> {
         ));
     }
 
-    if limpio.len() > 500 {
-        return Err(ListaNegraError::Validation(
-            "El motivo no puede exceder 500 caracteres".to_string(),
-        ));
+    if limpio.len() > MOTIVO_MAX_LEN {
+        return Err(ListaNegraError::Validation(format!(
+            "El motivo no puede exceder {} caracteres",
+            MOTIVO_MAX_LEN
+        )));
     }
 
     Ok(())
@@ -53,10 +55,11 @@ pub fn validar_bloqueado_por(bloqueado_por: &str) -> Result<(), ListaNegraError>
         ));
     }
 
-    if limpio.len() > 100 {
-        return Err(ListaNegraError::Validation(
-            "El ID de quien bloqueó no puede exceder 100 caracteres".to_string(),
-        ));
+    if limpio.len() > ENTIDAD_NOMBRE_MAX_LEN {
+        return Err(ListaNegraError::Validation(format!(
+            "El ID de quien bloqueó no puede exceder {} caracteres",
+            ENTIDAD_NOMBRE_MAX_LEN
+        )));
     }
 
     Ok(())

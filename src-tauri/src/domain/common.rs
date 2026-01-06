@@ -315,10 +315,11 @@ pub fn validar_email_estandar(email: &str) -> Result<(), CommonError> {
         return Err(CommonError::Validation("Formato de email inválido".to_string()));
     }
 
-    if limpio.len() > 100 {
-        return Err(CommonError::Validation(
-            "El email no puede exceder 100 caracteres".to_string(),
-        ));
+    if limpio.len() > EMAIL_MAX_LEN {
+        return Err(CommonError::Validation(format!(
+            "El email no puede exceder {} caracteres",
+            EMAIL_MAX_LEN
+        )));
     }
 
     Ok(())

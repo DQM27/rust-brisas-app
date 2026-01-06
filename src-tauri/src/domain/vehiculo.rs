@@ -2,7 +2,7 @@
 ///
 /// Este módulo gestiona las validaciones de propiedad y características técnicas
 /// de los vehículos que ingresan a las instalaciones.
-use crate::domain::common::validar_placa_estandar;
+use crate::domain::common::{validar_placa_estandar, COLOR_MAX_LEN, MARCA_MODELO_MAX_LEN};
 use crate::domain::errors::VehiculoError;
 use crate::models::vehiculo::{CreateVehiculoInput, TipoVehiculo, UpdateVehiculoInput};
 
@@ -39,10 +39,11 @@ pub fn validar_marca(marca: &str) -> Result<(), VehiculoError> {
         return Err(VehiculoError::Validation("La marca no puede estar vacía".to_string()));
     }
 
-    if limpia.len() > 50 {
-        return Err(VehiculoError::Validation(
-            "La marca no puede exceder 50 caracteres".to_string(),
-        ));
+    if limpia.len() > MARCA_MODELO_MAX_LEN {
+        return Err(VehiculoError::Validation(format!(
+            "La marca no puede exceder {} caracteres",
+            MARCA_MODELO_MAX_LEN
+        )));
     }
 
     Ok(())
@@ -83,11 +84,11 @@ pub fn validar_create_input(input: &CreateVehiculoInput) -> Result<(), VehiculoE
     }
 
     if let Some(ref modelo) = input.modelo {
-        validar_texto_opcional(modelo, "Modelo", 50)?;
+        validar_texto_opcional(modelo, "Modelo", MARCA_MODELO_MAX_LEN)?;
     }
 
     if let Some(ref color) = input.color {
-        validar_texto_opcional(color, "Color", 30)?;
+        validar_texto_opcional(color, "Color", COLOR_MAX_LEN)?;
     }
 
     Ok(())
@@ -106,11 +107,11 @@ pub fn validar_update_input(input: &UpdateVehiculoInput) -> Result<(), VehiculoE
     }
 
     if let Some(ref modelo) = input.modelo {
-        validar_texto_opcional(modelo, "Modelo", 50)?;
+        validar_texto_opcional(modelo, "Modelo", MARCA_MODELO_MAX_LEN)?;
     }
 
     if let Some(ref color) = input.color {
-        validar_texto_opcional(color, "Color", 30)?;
+        validar_texto_opcional(color, "Color", COLOR_MAX_LEN)?;
     }
 
     Ok(())

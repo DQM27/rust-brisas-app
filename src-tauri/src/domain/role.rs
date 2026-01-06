@@ -2,6 +2,7 @@
 ///
 /// Este módulo define la jerarquía de accesos, constantes de roles críticos
 /// y las reglas para la gestión de usuarios privilegiados ("God Mode").
+use crate::domain::common::{ROLE_DESC_MAX_LEN, ROLE_NAME_MAX_LEN};
 use crate::domain::errors::RoleError;
 use crate::models::role::{CreateRoleInput, UpdateRoleInput};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -98,10 +99,11 @@ pub fn validar_nombre(nombre: &str) -> Result<(), RoleError> {
         return Err(RoleError::Validation("El nombre del rol no puede estar vacío".to_string()));
     }
 
-    if limpio.len() > 50 {
-        return Err(RoleError::Validation(
-            "El nombre del rol no puede exceder 50 caracteres".to_string(),
-        ));
+    if limpio.len() > ROLE_NAME_MAX_LEN {
+        return Err(RoleError::Validation(format!(
+            "El nombre del rol no puede exceder {} caracteres",
+            ROLE_NAME_MAX_LEN
+        )));
     }
 
     Ok(())
@@ -111,10 +113,11 @@ pub fn validar_nombre(nombre: &str) -> Result<(), RoleError> {
 pub fn validar_descripcion(descripcion: Option<&String>) -> Result<(), RoleError> {
     if let Some(desc) = descripcion {
         let limpio = desc.trim();
-        if !limpio.is_empty() && limpio.len() > 200 {
-            return Err(RoleError::Validation(
-                "La descripción no puede exceder 200 caracteres".to_string(),
-            ));
+        if !limpio.is_empty() && limpio.len() > ROLE_DESC_MAX_LEN {
+            return Err(RoleError::Validation(format!(
+                "La descripción no puede exceder {} caracteres",
+                ROLE_DESC_MAX_LEN
+            )));
         }
     }
     Ok(())
