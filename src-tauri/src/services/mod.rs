@@ -14,11 +14,7 @@ pub mod gafete_service;
 pub mod keyring_service;
 pub mod role_service;
 
-#[cfg(target_os = "linux")]
-pub mod keyring_linux;
-
-#[cfg(target_os = "windows")]
-pub mod keyring_windows;
+// Módulos plataforma-específicos eliminados tras unificación de keyring.
 
 pub mod cita_service;
 pub mod ingreso_contratista_service;

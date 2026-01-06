@@ -15,101 +15,43 @@ const MASTER_KEY_NAME: &str = "encryption_master_key";
 /// tiempo de ejecución para optimizar las operaciones criptográficas reactivas.
 static MASTER_KEY: OnceLock<[u8; 32]> = OnceLock::new();
 
-/// Protocolo de Recuperación: Establece un bridge con el Keyring nativo. Si la llave no existe,
+/// Protocolo de Recuperación: Establece un bridge con el Keyring nativo unificado. Si la llave no existe,
 /// genera una nueva con entropía de grado militar y la guarda de forma persistente.
 pub fn get_master_key() -> Result<&'static [u8; 32], String> {
     if let Some(key) = MASTER_KEY.get() {
         return Ok(key);
     }
 
-    // Adaptador Multiplataforma para Almacenamiento Seguro
-    #[cfg(target_os = "linux")]
-    {
-        use crate::services::keyring_linux;
+    use crate::services::keyring_service as ks;
 
-        if let Some(hex_key) = keyring_linux::retrieve_secret(MASTER_KEY_NAME) {
-            if let Ok(bytes) = hex::decode(hex_key.trim()) {
-                if bytes.len() == 32 {
-                    let mut key_arr = [0u8; 32];
-                    key_arr.copy_from_slice(&bytes);
-                    let _ = MASTER_KEY.set(key_arr);
-                    log::info!("🔑 Llave Maestra cargada desde Llavero de Linux (secret-tool)");
-                    return Ok(MASTER_KEY.get().unwrap());
-                }
+    // 1. Intentar recuperar del Keyring Unificado
+    if let Some(hex_key) = ks::get_secret(MASTER_KEY_NAME) {
+        if let Ok(bytes) = hex::decode(hex_key.trim()) {
+            if bytes.len() == 32 {
+                let mut key_arr = [0u8; 32];
+                key_arr.copy_from_slice(&bytes);
+                let _ = MASTER_KEY.set(key_arr);
+                log::info!("🔑 Llave Maestra cargada desde Keyring Unificado");
+                return Ok(MASTER_KEY.get().unwrap());
             }
         }
-
-        let mut key = [0u8; 32];
-        OsRng.fill_bytes(&mut key);
-        log::info!("🔑 Iniciando generación de Llave Maestra por primera vez");
-
-        let hex_key = hex::encode(key);
-        if let Err(e) = keyring_linux::store_secret(MASTER_KEY_NAME, &hex_key) {
-            log::error!("❌ Error crítico al persistir llave en el llavero: {}", e);
-            return Err(format!("Fallo de seguridad en el almacenamiento: {}", e));
-        }
-        log::info!("🔑 Llave Maestra persistida en Llavero de Linux");
-
-        let _ = MASTER_KEY.set(key);
-        return Ok(MASTER_KEY.get().unwrap());
     }
 
-    #[cfg(target_os = "windows")]
-    {
-        use crate::services::keyring_windows;
+    // 2. Generar nueva llave si no existe
+    let mut key = [0u8; 32];
+    OsRng.fill_bytes(&mut key);
+    log::info!("🔑 Iniciando generación de Llave Maestra por primera vez");
 
-        if let Some(hex_key) = keyring_windows::retrieve_secret(MASTER_KEY_NAME) {
-            if let Ok(bytes) = hex::decode(&hex_key) {
-                if bytes.len() == 32 {
-                    let mut key_arr = [0u8; 32];
-                    key_arr.copy_from_slice(&bytes);
-                    let _ = MASTER_KEY.set(key_arr);
-                    log::info!("🔑 Llave Maestra cargada desde Windows Credential Manager");
-                    return Ok(MASTER_KEY.get().unwrap());
-                }
-            }
-        }
-
-        let mut key = [0u8; 32];
-        OsRng.fill_bytes(&mut key);
-        let hex_key = hex::encode(key);
-        keyring_windows::store_secret(MASTER_KEY_NAME, &hex_key)
-            .map_err(|e| format!("Error al blindar la llave maestra: {}", e))?;
-        log::info!("🔑 Llave Maestra generada y blindada en Windows");
-        let _ = MASTER_KEY.set(key);
-        return Ok(MASTER_KEY.get().unwrap());
+    let hex_key = hex::encode(key);
+    // Usar la librería unificada de keyring
+    if let Err(e) = ks::save_secret(MASTER_KEY_NAME, &hex_key) {
+        log::error!("❌ Error crítico al persistir llave en el llavero: {}", e);
+        return Err(format!("Fallo de seguridad en el almacenamiento: {}", e));
     }
 
-    #[cfg(target_os = "macos")]
-    {
-        use keyring::Entry;
-
-        let entry = Entry::new("BrisasApp", MASTER_KEY_NAME).map_err(|e| e.to_string())?;
-
-        if let Ok(hex_key) = entry.get_password() {
-            if let Ok(bytes) = hex::decode(&hex_key) {
-                if bytes.len() == 32 {
-                    let mut key_arr = [0u8; 32];
-                    key_arr.copy_from_slice(&bytes);
-                    let _ = MASTER_KEY.set(key_arr);
-                    return Ok(MASTER_KEY.get().unwrap());
-                }
-            }
-        }
-
-        let mut key = [0u8; 32];
-        OsRng.fill_bytes(&mut key);
-        let hex_key = hex::encode(key);
-        entry.set_password(&hex_key).map_err(|e| e.to_string())?;
-        let _ = MASTER_KEY.set(key);
-        return Ok(MASTER_KEY.get().unwrap());
-    }
-
-    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
-    {
-        Err("Entorno de ejecución no compatible con los estándares de seguridad requeridos"
-            .to_string())
-    }
+    log::info!("🔑 Llave Maestra persistida en Keyring Unificado");
+    let _ = MASTER_KEY.set(key);
+    Ok(MASTER_KEY.get().unwrap())
 }
 
 // Motores Criptográficos: Implementan algoritmos de alto desempeño

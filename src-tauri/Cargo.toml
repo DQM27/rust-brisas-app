@@ -115,21 +115,14 @@ ttf-parser = { version = "0.24", optional = true }
 # Excel Export
 rust_xlsxwriter = { version = "0.69", optional = true }
 
+keyring = "3"                                                    # Gestión de credenciales multiplataforma (Unified v3)
+
 # =============================================================================
 # DEPENDENCIAS ESPECÍFICAS DE PLATAFORMA (Optimización y Compatibilidad)
 # =============================================================================
 
-# -- LINUX
-[target.'cfg(target_os = "linux")'.dependencies]
-keyring = "3" # Gestión de credenciales mediante Secret Service
-
-# -- macOS
-[target.'cfg(target_os = "macos")'.dependencies]
-keyring = "3" # Gestión de credenciales mediante Keychain
-
 # -- WINDOWS
 [target.'cfg(target_os = "windows")'.dependencies]
-keyring = "2"                                                    # Gestión de credenciales mediante Credential Manager
 winapi = { version = "0.3", features = ["wincred", "winerror"] }
 
 [target.'cfg(windows)'.dependencies]

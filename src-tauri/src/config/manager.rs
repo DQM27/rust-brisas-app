@@ -98,9 +98,9 @@ fn create_default_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
     // Configurar ruta por defecto de la DB
     if let Some(data_dir) = dirs::data_local_dir() {
         config.database.default_path =
-            data_dir.join("Brisas").join("brisas.db").to_string_lossy().to_string();
+            data_dir.join("Brisas").join("surrealdb").to_string_lossy().to_string();
     } else {
-        config.database.default_path = "./data/brisas.db".to_string();
+        config.database.default_path = "./data/surrealdb".to_string();
     }
 
     // Guardar configuración
@@ -173,9 +173,9 @@ pub fn get_demo_database_path() -> PathBuf {
     if let Some(data_dir) = dirs::data_local_dir() {
         let dir = data_dir.join("Brisas");
         let _ = fs::create_dir_all(&dir);
-        dir.join("brisas_demo.db")
+        dir.join("surrealdb_demo")
     } else {
-        PathBuf::from("./data/brisas_demo.db")
+        PathBuf::from("./data/surrealdb_demo")
     }
 }
 

@@ -2,15 +2,12 @@
 // src/services/keyring_service.rs
 // ==========================================
 // Servicio para almacenar credenciales de forma segura
-// usando el keyring del sistema operativo
+// usando el keyring del sistema operativo via `keyring` crate v3.
 
-#[cfg(target_os = "macos")]
 use keyring::Entry;
-
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[cfg(target_os = "macos")]
 const SERVICE_NAME: &str = "brisas-app";
 
 // ==========================================
@@ -76,65 +73,45 @@ pub struct AllCredentials {
 }
 
 // ==========================================
-// IMPLEMENTACIÓN LINUX (secret-tool nativo)
+// IMPLEMENTACIÓN UNIFICADA (Windows & General)
 // ==========================================
-#[cfg(target_os = "linux")]
-fn store_value(key: &str, value: &str) -> KeyringResult<()> {
-    use crate::services::keyring_linux;
-    keyring_linux::store_secret(key, value).map_err(KeyringError::StorageError)
-}
 
-#[cfg(target_os = "linux")]
-fn retrieve_value(key: &str) -> Option<String> {
-    use crate::services::keyring_linux;
-    keyring_linux::retrieve_secret(key)
-}
-
-#[cfg(target_os = "linux")]
-#[allow(dead_code)]
-fn delete_value(key: &str) -> KeyringResult<()> {
-    use crate::services::keyring_linux;
-    keyring_linux::delete_secret(key).map_err(KeyringError::DeletionError)
-}
-
-// ==========================================
-// IMPLEMENTACIÓN WINDOWS (Credential Manager nativo)
-// ==========================================
-#[cfg(target_os = "windows")]
-fn store_value(key: &str, value: &str) -> KeyringResult<()> {
-    use crate::services::keyring_windows;
-    keyring_windows::store_secret(key, value).map_err(KeyringError::StorageError)
-}
-
-#[cfg(target_os = "windows")]
-fn retrieve_value(key: &str) -> Option<String> {
-    use crate::services::keyring_windows;
-    keyring_windows::retrieve_secret(key)
-}
-#[cfg(target_os = "windows")]
-fn delete_value(key: &str) -> KeyringResult<()> {
-    use crate::services::keyring_windows;
-    keyring_windows::delete_secret(key).map_err(KeyringError::DeletionError)
-}
-
-// ==========================================
-// IMPLEMENTACIÓN MACOS (librería keyring)
-// ==========================================
-#[cfg(target_os = "macos")]
+/// Obtiene una entrada segura del llavero para una clave dada.
 fn get_entry(key: &str) -> KeyringResult<Entry> {
     Entry::new(SERVICE_NAME, key)
-        .map_err(|e| KeyringError::AccessError(format!("Error creando entrada: {}", e)))
+        .map_err(|e| KeyringError::AccessError(format!("Error creando entrada de keyring: {}", e)))
 }
 
-#[cfg(target_os = "macos")]
+/// Almacena un valor secreto.
 fn store_value(key: &str, value: &str) -> KeyringResult<()> {
     let entry = get_entry(key)?;
-    entry.set_password(value).map_err(|e| KeyringError::StorageError(e.to_string()))
+    entry
+        .set_password(value)
+        .map_err(|e| KeyringError::StorageError(format!("Error guardando '{}': {}", key, e)))
 }
 
-#[cfg(target_os = "macos")]
+/// Recupera un valor secreto. Retorna None si no existe o falla.
 fn retrieve_value(key: &str) -> Option<String> {
-    get_entry(key).ok().and_then(|entry| entry.get_password().ok())
+    match get_entry(key) {
+        Ok(entry) => match entry.get_password() {
+            Ok(pwd) => Some(pwd),
+            Err(_) => None,
+        },
+        Err(e) => {
+            log::warn!("Error accediendo a keyring para '{}': {}", key, e);
+            None
+        }
+    }
+}
+
+/// Elimina un valor secreto.
+fn delete_value(key: &str) -> KeyringResult<()> {
+    let entry = get_entry(key)?;
+    match entry.delete_credential() {
+        Ok(_) => Ok(()),
+        Err(keyring::Error::NoEntry) => Ok(()),
+        Err(e) => Err(KeyringError::DeletionError(format!("Error borrando '{}': {}", key, e))),
+    }
 }
 
 // ==========================================
@@ -145,6 +122,9 @@ pub fn store_argon2_params(params: &Argon2Params) -> KeyringResult<()> {
     store_value(KEY_ARGON2_MEMORY, &params.memory.to_string())?;
     store_value(KEY_ARGON2_ITERATIONS, &params.iterations.to_string())?;
     store_value(KEY_ARGON2_PARALLELISM, &params.parallelism.to_string())?;
+
+    // El secreto solo se guarda si no está vacío, o se sobrescribe si ya existe.
+    // Para simplificar, guardamos siempre.
     store_value(KEY_PASSWORD_SECRET, &params.secret)?;
     Ok(())
 }
@@ -165,7 +145,6 @@ pub fn has_argon2_secret() -> bool {
 }
 
 pub fn delete_argon2_params() -> KeyringResult<()> {
-    // Intentar borrar cada una de las claves
     let _ = delete_value(KEY_ARGON2_MEMORY);
     let _ = delete_value(KEY_ARGON2_ITERATIONS);
     let _ = delete_value(KEY_ARGON2_PARALLELISM);
@@ -197,7 +176,6 @@ pub struct CredentialStatus {
 
 pub fn get_credential_status() -> CredentialStatus {
     let argon2_configured = has_argon2_secret();
-
     CredentialStatus { argon2_configured, fully_configured: argon2_configured }
 }
 

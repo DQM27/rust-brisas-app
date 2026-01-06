@@ -10,8 +10,8 @@
 -- Tabla ROLE
 -- =========================================================
 DEFINE TABLE role SCHEMAFULL;
-DEFINE FIELD name ON TABLE role TYPE string;
-DEFINE FIELD description ON TABLE role TYPE option<string>;
+DEFINE FIELD name ON TABLE role TYPE string ASSERT string::len($value) >= 1 AND string::len($value) <= 50;
+DEFINE FIELD description ON TABLE role TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 200;
 DEFINE FIELD is_system ON TABLE role TYPE bool DEFAULT false;
 DEFINE FIELD inherits_from ON TABLE role TYPE option<record<role>>;
 DEFINE FIELD permissions ON TABLE role TYPE option<array<string>>;
@@ -23,24 +23,24 @@ DEFINE INDEX idx_role_name ON role COLUMNS name UNIQUE;
 -- Tabla USUARIO (user)
 -- =========================================================
 DEFINE TABLE user SCHEMAFULL;
-DEFINE FIELD email ON TABLE user TYPE string ASSERT string::is::email($value);
+DEFINE FIELD email ON TABLE user TYPE string ASSERT string::len($value) >= 5 AND string::len($value) <= 100 AND string::is::email($value);
 DEFINE INDEX idx_user_email ON user COLUMNS email UNIQUE;
 DEFINE FIELD password_hash ON TABLE user TYPE string;
 DEFINE FIELD is_active ON TABLE user TYPE bool DEFAULT true;
 DEFINE FIELD role ON TABLE user TYPE record<role>; 
-DEFINE FIELD nombre ON TABLE user TYPE string;
-DEFINE FIELD apellido ON TABLE user TYPE string;
-DEFINE FIELD cedula ON TABLE user TYPE string;
+DEFINE FIELD nombre ON TABLE user TYPE string ASSERT string::len($value) >= 1 AND string::len($value) <= 100;
+DEFINE FIELD apellido ON TABLE user TYPE string ASSERT string::len($value) >= 1 AND string::len($value) <= 100;
+DEFINE FIELD cedula ON TABLE user TYPE string ASSERT string::len($value) >= 5 AND string::len($value) <= 20;
 DEFINE INDEX idx_user_cedula ON user COLUMNS cedula UNIQUE;
-DEFINE FIELD segundo_nombre ON TABLE user TYPE option<string>;
-DEFINE FIELD segundo_apellido ON TABLE user TYPE option<string>;
+DEFINE FIELD segundo_nombre ON TABLE user TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 50;
+DEFINE FIELD segundo_apellido ON TABLE user TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 50;
 DEFINE FIELD fecha_inicio_labores ON TABLE user TYPE option<string>;
 DEFINE FIELD fecha_nacimiento ON TABLE user TYPE option<string>;
-DEFINE FIELD numero_gafete ON TABLE user TYPE option<string>;
-DEFINE FIELD telefono ON TABLE user TYPE option<string>;
-DEFINE FIELD direccion ON TABLE user TYPE option<string>;
-DEFINE FIELD contacto_emergencia_nombre ON TABLE user TYPE option<string>;
-DEFINE FIELD contacto_emergencia_telefono ON TABLE user TYPE option<string>;
+DEFINE FIELD numero_gafete ON TABLE user TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 20;
+DEFINE FIELD telefono ON TABLE user TYPE option<string> ASSERT $value == NONE OR (string::len($value) >= 7 AND string::len($value) <= 20);
+DEFINE FIELD direccion ON TABLE user TYPE option<string> ASSERT $value == NONE OR (string::len($value) >= 5 AND string::len($value) <= 200);
+DEFINE FIELD contacto_emergencia_nombre ON TABLE user TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 100;
+DEFINE FIELD contacto_emergencia_telefono ON TABLE user TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 20;
 DEFINE FIELD avatar_path ON TABLE user TYPE option<string>;
 DEFINE FIELD must_change_password ON TABLE user TYPE bool DEFAULT false;
 DEFINE FIELD created_at ON TABLE user TYPE datetime DEFAULT time::now();
@@ -57,8 +57,8 @@ DEFINE FIELD nombre_completo ON TABLE user VALUE
 -- Tabla EMPRESA
 -- =========================================================
 DEFINE TABLE empresa SCHEMAFULL;
-DEFINE FIELD nombre ON TABLE empresa TYPE string;
-DEFINE FIELD direccion ON TABLE empresa TYPE option<string>;
+DEFINE FIELD nombre ON TABLE empresa TYPE string ASSERT string::len($value) >= 1 AND string::len($value) <= 100;
+DEFINE FIELD direccion ON TABLE empresa TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 200;
 DEFINE FIELD is_active ON TABLE empresa TYPE bool DEFAULT true;
 DEFINE FIELD created_at ON TABLE empresa TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE empresa TYPE datetime VALUE time::now();
@@ -72,11 +72,11 @@ DEFINE INDEX idx_empresa_nombre ON empresa COLUMNS nombre UNIQUE;
 -- Tabla CONTRATISTA
 -- =========================================================
 DEFINE TABLE contratista SCHEMAFULL;
-DEFINE FIELD cedula ON TABLE contratista TYPE string;
-DEFINE FIELD nombre ON TABLE contratista TYPE string;
-DEFINE FIELD segundo_nombre ON TABLE contratista TYPE option<string>;
-DEFINE FIELD apellido ON TABLE contratista TYPE string;
-DEFINE FIELD segundo_apellido ON TABLE contratista TYPE option<string>;
+DEFINE FIELD cedula ON TABLE contratista TYPE string ASSERT string::len($value) >= 5 AND string::len($value) <= 20;
+DEFINE FIELD nombre ON TABLE contratista TYPE string ASSERT string::len($value) >= 1 AND string::len($value) <= 100;
+DEFINE FIELD segundo_nombre ON TABLE contratista TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 50;
+DEFINE FIELD apellido ON TABLE contratista TYPE string ASSERT string::len($value) >= 1 AND string::len($value) <= 100;
+DEFINE FIELD segundo_apellido ON TABLE contratista TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 50;
 DEFINE FIELD nombre_completo ON TABLE contratista VALUE 
     string::trim(nombre + ' ' + (segundo_nombre OR '') + ' ' + apellido + ' ' + (segundo_apellido OR ''));
 DEFINE FIELD empresa ON TABLE contratista TYPE record<empresa>;
@@ -91,11 +91,11 @@ DEFINE INDEX idx_contratista_cedula ON contratista COLUMNS cedula UNIQUE;
 -- Tabla PROVEEDOR
 -- =========================================================
 DEFINE TABLE proveedor SCHEMAFULL;
-DEFINE FIELD cedula ON TABLE proveedor TYPE string;
-DEFINE FIELD nombre ON TABLE proveedor TYPE string;
-DEFINE FIELD segundo_nombre ON TABLE proveedor TYPE option<string>;
-DEFINE FIELD apellido ON TABLE proveedor TYPE string;
-DEFINE FIELD segundo_apellido ON TABLE proveedor TYPE option<string>;
+DEFINE FIELD cedula ON TABLE proveedor TYPE string ASSERT string::len($value) >= 5 AND string::len($value) <= 20;
+DEFINE FIELD nombre ON TABLE proveedor TYPE string ASSERT string::len($value) >= 1 AND string::len($value) <= 100;
+DEFINE FIELD segundo_nombre ON TABLE proveedor TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 50;
+DEFINE FIELD apellido ON TABLE proveedor TYPE string ASSERT string::len($value) >= 1 AND string::len($value) <= 100;
+DEFINE FIELD segundo_apellido ON TABLE proveedor TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 50;
 DEFINE FIELD nombre_completo ON TABLE proveedor VALUE 
     string::trim(nombre + ' ' + (segundo_nombre OR '') + ' ' + apellido + ' ' + (segundo_apellido OR ''));
 DEFINE FIELD empresa ON TABLE proveedor TYPE record<empresa>;
@@ -109,11 +109,11 @@ DEFINE INDEX idx_proveedor_cedula ON proveedor COLUMNS cedula UNIQUE;
 -- Tabla VISITANTE
 -- =========================================================
 DEFINE TABLE visitante SCHEMAFULL;
-DEFINE FIELD cedula ON TABLE visitante TYPE string;
-DEFINE FIELD nombre ON TABLE visitante TYPE string;
-DEFINE FIELD segundo_nombre ON TABLE visitante TYPE option<string>;
-DEFINE FIELD apellido ON TABLE visitante TYPE string;
-DEFINE FIELD segundo_apellido ON TABLE visitante TYPE option<string>;
+DEFINE FIELD cedula ON TABLE visitante TYPE string ASSERT string::len($value) >= 5 AND string::len($value) <= 20;
+DEFINE FIELD nombre ON TABLE visitante TYPE string ASSERT string::len($value) >= 1 AND string::len($value) <= 100;
+DEFINE FIELD segundo_nombre ON TABLE visitante TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 50;
+DEFINE FIELD apellido ON TABLE visitante TYPE string ASSERT string::len($value) >= 1 AND string::len($value) <= 100;
+DEFINE FIELD segundo_apellido ON TABLE visitante TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 50;
 DEFINE FIELD nombre_completo ON TABLE visitante VALUE 
     string::trim(nombre + ' ' + (segundo_nombre OR '') + ' ' + apellido + ' ' + (segundo_apellido OR ''));
 DEFINE FIELD empresa ON TABLE visitante TYPE option<record<empresa>>;
@@ -131,18 +131,18 @@ DEFINE INDEX idx_visitante_cedula ON visitante COLUMNS cedula UNIQUE;
 -- =========================================================
 DEFINE TABLE ingreso_contratista SCHEMAFULL;
 DEFINE FIELD contratista ON TABLE ingreso_contratista TYPE record<contratista>;
-DEFINE FIELD nombre ON TABLE ingreso_contratista TYPE string;
-DEFINE FIELD apellido ON TABLE ingreso_contratista TYPE string;
-DEFINE FIELD cedula ON TABLE ingreso_contratista TYPE string;
+DEFINE FIELD nombre ON TABLE ingreso_contratista TYPE string ASSERT string::len($value) <= 100;
+DEFINE FIELD apellido ON TABLE ingreso_contratista TYPE string ASSERT string::len($value) <= 100;
+DEFINE FIELD cedula ON TABLE ingreso_contratista TYPE string ASSERT string::len($value) <= 20;
 DEFINE FIELD tipo_autorizacion ON TABLE ingreso_contratista TYPE string ASSERT $value INSIDE ['praind', 'correo'];
 DEFINE FIELD modo_ingreso ON TABLE ingreso_contratista TYPE string ASSERT $value INSIDE ['caminando', 'vehiculo'];
-DEFINE FIELD placa_vehiculo ON TABLE ingreso_contratista TYPE option<string>;
+DEFINE FIELD placa_vehiculo ON TABLE ingreso_contratista TYPE option<string> ASSERT $value == NONE OR (string::len($value) >= 2 AND string::len($value) <= 15);
 DEFINE FIELD gafete_numero ON TABLE ingreso_contratista TYPE option<int>;
 DEFINE FIELD fecha_hora_ingreso ON TABLE ingreso_contratista TYPE datetime DEFAULT time::now();
 DEFINE FIELD usuario_ingreso ON TABLE ingreso_contratista TYPE record<user>;
 DEFINE FIELD fecha_hora_salida ON TABLE ingreso_contratista TYPE option<datetime>;
 DEFINE FIELD usuario_salida ON TABLE ingreso_contratista TYPE option<record<user>>;
-DEFINE FIELD observaciones ON TABLE ingreso_contratista TYPE option<string>;
+DEFINE FIELD observaciones ON TABLE ingreso_contratista TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 1000;
 DEFINE FIELD created_at ON TABLE ingreso_contratista TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE ingreso_contratista TYPE datetime VALUE time::now();
 
@@ -151,19 +151,19 @@ DEFINE FIELD updated_at ON TABLE ingreso_contratista TYPE datetime VALUE time::n
 -- =========================================================
 DEFINE TABLE ingreso_proveedor SCHEMAFULL;
 DEFINE FIELD proveedor ON TABLE ingreso_proveedor TYPE record<proveedor>;
-DEFINE FIELD nombre ON TABLE ingreso_proveedor TYPE string;
-DEFINE FIELD apellido ON TABLE ingreso_proveedor TYPE string;
-DEFINE FIELD cedula ON TABLE ingreso_proveedor TYPE string;
-DEFINE FIELD area_visitada ON TABLE ingreso_proveedor TYPE string;
-DEFINE FIELD motivo ON TABLE ingreso_proveedor TYPE string;
+DEFINE FIELD nombre ON TABLE ingreso_proveedor TYPE string ASSERT string::len($value) <= 100;
+DEFINE FIELD apellido ON TABLE ingreso_proveedor TYPE string ASSERT string::len($value) <= 100;
+DEFINE FIELD cedula ON TABLE ingreso_proveedor TYPE string ASSERT string::len($value) <= 20;
+DEFINE FIELD area_visitada ON TABLE ingreso_proveedor TYPE string ASSERT string::len($value) <= 200;
+DEFINE FIELD motivo ON TABLE ingreso_proveedor TYPE string ASSERT string::len($value) <= 500;
 DEFINE FIELD modo_ingreso ON TABLE ingreso_proveedor TYPE string ASSERT $value INSIDE ['caminando', 'vehiculo'];
-DEFINE FIELD placa_vehiculo ON TABLE ingreso_proveedor TYPE option<string>;
+DEFINE FIELD placa_vehiculo ON TABLE ingreso_proveedor TYPE option<string> ASSERT $value == NONE OR (string::len($value) >= 2 AND string::len($value) <= 15);
 DEFINE FIELD gafete_numero ON TABLE ingreso_proveedor TYPE option<int>;
 DEFINE FIELD fecha_hora_ingreso ON TABLE ingreso_proveedor TYPE datetime DEFAULT time::now();
 DEFINE FIELD usuario_ingreso ON TABLE ingreso_proveedor TYPE record<user>;
 DEFINE FIELD fecha_hora_salida ON TABLE ingreso_proveedor TYPE option<datetime>;
 DEFINE FIELD usuario_salida ON TABLE ingreso_proveedor TYPE option<record<user>>;
-DEFINE FIELD observaciones ON TABLE ingreso_proveedor TYPE option<string>;
+DEFINE FIELD observaciones ON TABLE ingreso_proveedor TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 1000;
 DEFINE FIELD created_at ON TABLE ingreso_proveedor TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE ingreso_proveedor TYPE datetime VALUE time::now();
 
@@ -171,20 +171,20 @@ DEFINE FIELD updated_at ON TABLE ingreso_proveedor TYPE datetime VALUE time::now
 -- Tabla INGRESO_VISITA
 -- =========================================================
 DEFINE TABLE ingreso_visita SCHEMAFULL;
-DEFINE FIELD nombre ON TABLE ingreso_visita TYPE string;
-DEFINE FIELD apellido ON TABLE ingreso_visita TYPE string;
-DEFINE FIELD cedula ON TABLE ingreso_visita TYPE string;
-DEFINE FIELD anfitrion ON TABLE ingreso_visita TYPE string;
-DEFINE FIELD area_visitada ON TABLE ingreso_visita TYPE string;
-DEFINE FIELD motivo ON TABLE ingreso_visita TYPE string;
+DEFINE FIELD nombre ON TABLE ingreso_visita TYPE string ASSERT string::len($value) <= 100;
+DEFINE FIELD apellido ON TABLE ingreso_visita TYPE string ASSERT string::len($value) <= 100;
+DEFINE FIELD cedula ON TABLE ingreso_visita TYPE string ASSERT string::len($value) <= 20;
+DEFINE FIELD anfitrion ON TABLE ingreso_visita TYPE string ASSERT string::len($value) <= 100;
+DEFINE FIELD area_visitada ON TABLE ingreso_visita TYPE string ASSERT string::len($value) <= 200;
+DEFINE FIELD motivo ON TABLE ingreso_visita TYPE string ASSERT string::len($value) <= 500;
 DEFINE FIELD modo_ingreso ON TABLE ingreso_visita TYPE string ASSERT $value INSIDE ['caminando', 'vehiculo'];
-DEFINE FIELD placa_vehiculo ON TABLE ingreso_visita TYPE option<string>;
+DEFINE FIELD placa_vehiculo ON TABLE ingreso_visita TYPE option<string> ASSERT $value == NONE OR (string::len($value) >= 2 AND string::len($value) <= 15);
 DEFINE FIELD gafete_numero ON TABLE ingreso_visita TYPE option<int>;
 DEFINE FIELD fecha_hora_ingreso ON TABLE ingreso_visita TYPE datetime DEFAULT time::now();
 DEFINE FIELD usuario_ingreso ON TABLE ingreso_visita TYPE record<user>;
 DEFINE FIELD fecha_hora_salida ON TABLE ingreso_visita TYPE option<datetime>;
 DEFINE FIELD usuario_salida ON TABLE ingreso_visita TYPE option<record<user>>;
-DEFINE FIELD observaciones ON TABLE ingreso_visita TYPE option<string>;
+DEFINE FIELD observaciones ON TABLE ingreso_visita TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 1000;
 DEFINE FIELD created_at ON TABLE ingreso_visita TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE ingreso_visita TYPE datetime VALUE time::now();
 
@@ -194,13 +194,13 @@ DEFINE FIELD updated_at ON TABLE ingreso_visita TYPE datetime VALUE time::now();
 DEFINE TABLE cita SCHEMAFULL;
 DEFINE FIELD visitante_id ON TABLE cita TYPE option<record<visitante>>;
 DEFINE FIELD usuario_id ON TABLE cita TYPE record<user>;
-DEFINE FIELD motivo ON TABLE cita TYPE string;
+DEFINE FIELD motivo ON TABLE cita TYPE string ASSERT string::len($value) <= 500;
 DEFINE FIELD fecha_inicio ON TABLE cita TYPE datetime;
 DEFINE FIELD fecha_fin ON TABLE cita TYPE datetime;
 DEFINE FIELD estado ON TABLE cita TYPE string ASSERT $value INSIDE ['pendiente', 'completada', 'cancelada'] DEFAULT 'pendiente';
 DEFINE FIELD activa ON TABLE cita TYPE bool DEFAULT true;
-DEFINE FIELD visitante_nombre ON TABLE cita TYPE option<string>;
-DEFINE FIELD visitante_cedula ON TABLE cita TYPE option<string>;
+DEFINE FIELD visitante_nombre ON TABLE cita TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 100;
+DEFINE FIELD visitante_cedula ON TABLE cita TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 20;
 DEFINE FIELD created_at ON TABLE cita TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE cita TYPE datetime VALUE time::now();
 
@@ -226,10 +226,10 @@ DEFINE INDEX idx_gafete_numero_tipo ON gafete COLUMNS numero, tipo UNIQUE;
 DEFINE TABLE vehiculo SCHEMAFULL;
 DEFINE FIELD propietario ON TABLE vehiculo TYPE record<contratista | proveedor | visitante>;
 DEFINE FIELD tipo_vehiculo ON TABLE vehiculo TYPE string ASSERT $value INSIDE ['automovil', 'motocicleta', 'camion', 'otro'];
-DEFINE FIELD placa ON TABLE vehiculo TYPE string;
-DEFINE FIELD marca ON TABLE vehiculo TYPE option<string>;
-DEFINE FIELD modelo ON TABLE vehiculo TYPE option<string>;
-DEFINE FIELD color ON TABLE vehiculo TYPE option<string>;
+DEFINE FIELD placa ON TABLE vehiculo TYPE string ASSERT string::len($value) >= 2 AND string::len($value) <= 15;
+DEFINE FIELD marca ON TABLE vehiculo TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 50;
+DEFINE FIELD modelo ON TABLE vehiculo TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 50;
+DEFINE FIELD color ON TABLE vehiculo TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 30;
 DEFINE FIELD is_active ON TABLE vehiculo TYPE bool DEFAULT true;
 DEFINE FIELD created_at ON TABLE vehiculo TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE vehiculo TYPE datetime VALUE time::now();
@@ -243,12 +243,12 @@ DEFINE INDEX idx_vehiculo_placa ON vehiculo COLUMNS placa UNIQUE;
 -- Tabla LISTA_NEGRA
 -- =========================================================
 DEFINE TABLE lista_negra SCHEMAFULL;
-DEFINE FIELD cedula ON TABLE lista_negra TYPE string;
-DEFINE FIELD nombre ON TABLE lista_negra TYPE string;
-DEFINE FIELD apellido ON TABLE lista_negra TYPE string;
+DEFINE FIELD cedula ON TABLE lista_negra TYPE string ASSERT string::len($value) >= 5 AND string::len($value) <= 20;
+DEFINE FIELD nombre ON TABLE lista_negra TYPE string ASSERT string::len($value) <= 100;
+DEFINE FIELD apellido ON TABLE lista_negra TYPE string ASSERT string::len($value) <= 100;
 DEFINE FIELD nivel_severidad ON TABLE lista_negra TYPE string ASSERT $value INSIDE ['BAJO', 'MEDIO', 'ALTO'];
-DEFINE FIELD motivo_bloqueo ON TABLE lista_negra TYPE string;
-DEFINE FIELD bloqueado_por ON TABLE lista_negra TYPE option<string>;
+DEFINE FIELD motivo_bloqueo ON TABLE lista_negra TYPE string ASSERT string::len($value) <= 500;
+DEFINE FIELD bloqueado_por ON TABLE lista_negra TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 100;
 DEFINE FIELD is_active ON TABLE lista_negra TYPE bool DEFAULT true;
 DEFINE FIELD created_at ON TABLE lista_negra TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE lista_negra TYPE datetime VALUE time::now();
