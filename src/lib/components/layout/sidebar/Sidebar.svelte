@@ -3,6 +3,7 @@
   import { activeView } from "$lib/stores/ui";
   import { isAuthenticated, logout, currentUser } from "$lib/stores/auth";
   import { resetTabs, openTab } from "$lib/stores/tabs";
+  import { modulesStore } from "$lib/stores/modules"; // Import modulesStore
   import { onMount } from "svelte";
 
   // Importar iconos directamente
@@ -19,6 +20,7 @@
     LogIn,
     Ban,
     Users,
+    Zap, // Importar icono de rayo
   } from "lucide-svelte";
 
   // Componentes
@@ -226,7 +228,46 @@
     sidebarItems.find((item) => item.id === currentActivePanel),
   );
 
+  // Mapa de IDs de sidebar a Keys de Módulos (Backend)
+  const MODULE_KEY_MAP: Record<string, string> = {
+    users: "users",
+    contractors: "contractors",
+    proveedores: "providers",
+    visitantes: "visits",
+    blacklist: "access_control",
+    citas: "visits",
+    gafetes: "access_control",
+    ingresos: "access_control",
+    logs: "reports",
+  };
+
   function handleItemSelect(item: SidebarItem) {
+    // 1. Verificar Estado del Módulo (Backend-Driven)
+    const moduleKey = MODULE_KEY_MAP[item.id] || item.id;
+    const status = modulesStore.getStatus(moduleKey, $modulesStore);
+
+    // Si está hidden, teóricamente no debería ni aparecer (podemos filtrar arriba, pero doble check aquí)
+    if (status === "hidden") return;
+
+    // 2. Verificar Bloqueo (Dev/Maintenance) -> Solo GOD pasa
+    if (
+      (status === "development" || status === "maintenance") &&
+      !$currentUser?.isSuperuser
+    ) {
+      openTab({
+        componentKey: "under-construction",
+        title: item.label,
+        id: `locked-${item.id}`,
+        data: {
+          type: status,
+          moduleName: item.label,
+        },
+        focusOnOpen: true,
+      });
+      return;
+    }
+
+    // 3. Flujo normal
     activeView.set(item.id);
 
     if (item.action) {
@@ -375,6 +416,24 @@
         />
       {/each}
     </div>
+
+    <!-- GOD MODE INTRINSIC ICON -->
+    {#if $currentUser?.isSuperuser}
+      <div class="mt-auto mb-2 flex justify-center">
+        <button
+          class="sidebar-icon-btn group text-yellow-500 hover:text-yellow-400"
+          title="Modo Ingeniería (GOD)"
+          onclick={() => openView("dev-settings", "Modo Ingeniería")}
+        >
+          <Zap
+            size={24}
+            strokeWidth={2.5}
+            class="transition-all duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]"
+          />
+          <span class="sidebar-icon-tooltip">Ingeniería</span>
+        </button>
+      </div>
+    {/if}
 
     <div class="sidebar-bottom-actions">
       <!-- User Profile & Menu -->
@@ -596,6 +655,20 @@
             >
               Buscar Actualizaciones...
             </button>
+
+            <!-- GOD MODE EXCLUSIVE -->
+            {#if $currentUser?.isSuperuser}
+              <div class="settings-menu-separator"></div>
+              <button
+                class="settings-menu-item text-yellow-400 hover:text-yellow-300"
+                onclick={() =>
+                  handleSettingsAction(() =>
+                    openView("dev-settings", "Modo Ingeniería"),
+                  )}
+              >
+                ⚡ Gestión de Módulos
+              </button>
+            {/if}
 
             <button
               class="settings-menu-item"

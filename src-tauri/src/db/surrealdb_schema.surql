@@ -320,3 +320,20 @@ DEFINE EVENT log_user_delete ON TABLE user WHEN $event = "DELETE" THEN {
             timestamp = time::now()
     END
 };
+
+-- =========================================================
+-- 7. GESTIÓN DE MÓDULOS (Feature Flags / Dev Mode)
+-- =========================================================
+DEFINE TABLE module SCHEMAFULL;
+DEFINE FIELD key ON TABLE module TYPE string;
+DEFINE FIELD name ON TABLE module TYPE string;
+-- Status: 
+--   active: Visible y funcional
+--   hidden: Invisible (Admin puede togglear)
+--   development: Visible pero bloqueado con "En Construcción"
+--   maintenance: Visible pero bloqueado con "En Mantenimiento"
+DEFINE FIELD status ON TABLE module TYPE string ASSERT $value INSIDE ['active', 'hidden', 'development', 'maintenance'] DEFAULT 'active';
+DEFINE FIELD min_role ON TABLE module TYPE option<record<role>>;
+DEFINE FIELD created_at ON TABLE module TYPE datetime DEFAULT time::now();
+DEFINE FIELD updated_at ON TABLE module TYPE datetime VALUE time::now();
+DEFINE INDEX idx_module_key ON module COLUMNS key UNIQUE;

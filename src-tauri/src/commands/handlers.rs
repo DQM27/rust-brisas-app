@@ -196,6 +196,11 @@ macro_rules! register_handlers {
             // ==========================================
             commands::system_commands::get_system_idle_time,
             // ==========================================
+            // COMANDOS DE GESTIÓN DE MÓDULOS
+            // ==========================================
+            commands::module_commands::get_modules_status,
+            commands::module_commands::update_module_status,
+            // ==========================================
             // COMANDOS DE ROLES
             // ==========================================
             commands::role_commands::get_all_roles,

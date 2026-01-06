@@ -24,7 +24,63 @@ pub async fn seed_db() -> Result<(), Box<dyn std::error::Error>> {
     seed_roles().await?;
     seed_god_user().await?;
     seed_admin_user().await?;
+    seed_modules().await?;
     info!("✨ Proceso de seeding completado satisfactoriamente");
+    Ok(())
+}
+
+/// Inicializa el catálogo de módulos del sistema.
+/// Solo crea los registros si no existen, para no sobrescribir estados personalizados (ej. 'maintenance').
+async fn seed_modules() -> Result<(), SurrealDbError> {
+    let db = get_db().await?;
+
+    // Lista de módulos canónicos del sistema
+    let modules = [
+        ("users", "Gestión de Usuarios"),
+        ("contractors", "Gestión de Contratistas"),
+        ("access_control", "Control de Acceso"),
+        ("providers", "Gestión de Proveedores"),
+        ("visits", "Gestión de Visitas"),
+        ("vehicles", "Gestión de Vehículos"),
+        ("reports", "Reportes y Estadísticas"),
+        ("settings", "Configuración del Sistema"),
+    ];
+
+    for (key, name) in modules {
+        // Usamos UPDATE ... SET ... WHERE ... para asegurar existencia sin sobrescribir 'status' si ya existe
+        // Pero si no existe, necesitamos CREARLO.
+        // La estrategia robusta en SurrealDB para "Insert if not exists":
+        // CREATE module CONTENT { ... } -- fallará si el ID ya existe.
+        // O mejor:
+        // define id based on key logic if possible, or query existence.
+
+        let existing: Option<RecordId> = db
+            .query("SELECT VALUE id FROM module WHERE key = $key")
+            .bind(("key", key))
+            .await?
+            .take(0)?;
+
+        if existing.is_none() {
+            db.query(
+                r#"
+                CREATE module CONTENT {
+                    key: $key,
+                    name: $name,
+                    status: 'active',
+                    created_at: time::now(),
+                    updated_at: time::now()
+                }
+                "#,
+            )
+            .bind(("key", key))
+            .bind(("name", name))
+            .await?
+            .check()?;
+            info!("📦 Módulo inicial registrado: {} ({})", name, key);
+        }
+    }
+
+    info!("✅ Catálogo de módulos sincronizado");
     Ok(())
 }
 
@@ -139,9 +195,11 @@ async fn seed_god_user() -> Result<(), SurrealDbError> {
     if !existing.is_empty() {
         // En cada arranque, solo aseguramos que el usuario tenga el rol de Admin (Auto-healing de permisos)
         // PERO respetamos la contraseña y nombre que el usuario haya definido.
-        db.query("UPDATE type::thing('user', $id) SET role = type::thing('role', $role_id), updated_at = time::now()")
+        // ACTUALIZACIÓN: Forzamos el email correcto para el usuario GOD.
+        db.query("UPDATE type::thing('user', $id) SET role = type::thing('role', $role_id), email = $email, updated_at = time::now()")
             .bind(("id", GOD_ID))
             .bind(("role_id", ROLE_ADMIN_ID))
+            .bind(("email", GOD_EMAIL))
             .await?
             .check()?;
 

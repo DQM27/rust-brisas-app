@@ -23,6 +23,7 @@
     attemptExitScreensaver,
   } from "$lib/stores/sessionStore";
   import ScreensaverPasswordModal from "$lib/components/ScreensaverPasswordModal.svelte";
+  import { modulesStore } from "$lib/stores/modules"; // Import modulesStore
 
   // Estado de autenticación reactivo
   let authenticated = $derived($isAuthenticated);
@@ -50,6 +51,7 @@
     // Verificar si necesita configuración inicial
     (async () => {
       try {
+        await modulesStore.load(); // Cargar configuración de módulos
         $setupWizardVisible = await needsSetup();
         if ($setupWizardVisible) {
           await setWindowDecorations(false);

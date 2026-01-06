@@ -20,7 +20,7 @@ pub const ROLE_ADMIN_ID: &str = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
 pub const ROLE_GUARDIA_ID: &str = "27221d6e-9818-430c-99c3-5694a971216b";
 
 /// Correo electrónico reservado para el usuario raíz (God Mode).
-pub const GOD_EMAIL: &str = "admin@brisas.local";
+pub const GOD_EMAIL: &str = "god@brisas.local";
 
 // --------------------------------------------------------------------------
 // MECANISMO DE "GOD MODE" (SISTEMA INTERNO)

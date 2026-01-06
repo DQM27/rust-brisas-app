@@ -2,6 +2,7 @@
 // src/models/user.rs
 // ==========================================
 
+use crate::domain::role::GOD_ID;
 use crate::models::role::Role;
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};
@@ -218,6 +219,7 @@ pub struct UserResponse {
     pub nombre_completo: String,
     pub role_id: String,
     pub role_name: String,
+    pub is_superuser: bool,
     pub is_active: bool,
     pub created_at: String,
     pub updated_at: String,
@@ -259,6 +261,7 @@ impl UserResponse {
             nombre_completo,
             role_id: u.role.to_string(),
             role_name,
+            is_superuser: u.id.to_string() == format!("user:{}", GOD_ID),
             permissions, // Now included
             is_active: u.is_active,
             created_at: u.created_at.to_string(),
@@ -304,6 +307,7 @@ impl UserResponse {
             nombre_completo,
             role_id,
             role_name,
+            is_superuser: u.id.to_string() == format!("user:{}", GOD_ID),
             permissions,
             is_active: u.is_active,
             created_at: u.created_at.to_string(),

@@ -29,4 +29,6 @@ export type ComponentKey =
   | 'roles-settings'
   | 'reportes-list'
   | 'shortcut-settings'
-  | 'about';
+  | 'about'
+  | 'under-construction'
+  | 'dev-settings';

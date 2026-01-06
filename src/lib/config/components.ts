@@ -31,6 +31,8 @@ import GafeteListView from '$lib/components/gafete/GafeteListView.svelte';
 import IngresoModule from '$lib/components/ingreso/IngresoModule.svelte';
 import VisitaListView from '$lib/components/visita/VisitaListView.svelte';
 import VisitanteListView from '$lib/components/visitante/VisitanteListView.svelte';
+import UnderConstruction from '$lib/components/common/UnderConstruction.svelte';
+import DevSettingsPanel from '$lib/components/settings/DevSettingsPanel.svelte';
 
 /**
  * Registry central de componentes
@@ -70,6 +72,8 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'gafete-list': GafeteListView,
   'ingreso-list': IngresoModule, // Point legacy/main link to new Module
   'ingreso-module': IngresoModule,
+  'under-construction': UnderConstruction,
+  'dev-settings': DevSettingsPanel,
 };
 
 /**
