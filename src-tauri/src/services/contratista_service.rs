@@ -93,9 +93,7 @@ pub async fn create_contratista(
     }
 
     // PRAIND es una certificación de seguridad necesaria para ciertos accesos.
-    let fecha_vencimiento =
-        crate::models::contratista::validaciones::validar_fecha(&input.fecha_vencimiento_praind)
-            .map_err(ContratistaError::Validation)?;
+    let fecha_vencimiento = domain::validar_fecha(&input.fecha_vencimiento_praind)?;
 
     let dto = ContratistaCreateDTO {
         cedula: cedula_normalizada.clone(),
@@ -276,8 +274,7 @@ pub async fn update_contratista(
     }
 
     if let Some(v) = input.fecha_vencimiento_praind {
-        let fecha = crate::models::contratista::validaciones::validar_fecha(&v)
-            .map_err(ContratistaError::Validation)?;
+        let fecha = domain::validar_fecha(&v)?;
         dto.fecha_vencimiento_praind = Some(fecha.into());
     }
 
@@ -412,9 +409,7 @@ pub async fn actualizar_praind_con_historial(
         .unwrap_or_else(|_| chrono::Utc::now());
     let fecha_anterior = dt.format("%d-%m-%Y").to_string();
 
-    let nueva_fecha =
-        crate::models::contratista::validaciones::validar_fecha(&input.nueva_fecha_praind)
-            .map_err(ContratistaError::Validation)?;
+    let nueva_fecha = domain::validar_fecha(&input.nueva_fecha_praind)?;
 
     use crate::models::contratista::ContratistaUpdateDTO;
     let dto = ContratistaUpdateDTO {

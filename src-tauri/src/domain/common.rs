@@ -12,6 +12,31 @@ use chrono::DateTime;
 pub use crate::models::ingreso::{CommonError, DecisionReporteGafete};
 
 // --------------------------------------------------------------------------
+// CONSTANTES DE VALIDACIÓN COMPARTIDAS (Fuente de Verdad Única)
+// --------------------------------------------------------------------------
+
+/// Longitud mínima de cédula de identidad.
+pub const CEDULA_MIN_LEN: usize = 5;
+
+/// Longitud máxima de cédula de identidad.
+pub const CEDULA_MAX_LEN: usize = 20;
+
+/// Longitud máxima de nombre/apellido.
+pub const NOMBRE_MAX_LEN: usize = 100;
+
+/// Longitud máxima de nombre de entidad (empresa, institución).
+pub const ENTIDAD_NOMBRE_MAX_LEN: usize = 100;
+
+/// Longitud máxima de email.
+pub const EMAIL_MAX_LEN: usize = 100;
+
+/// Longitud mínima de placa de vehículo.
+pub const PLACA_MIN_LEN: usize = 2;
+
+/// Longitud máxima de placa de vehículo.
+pub const PLACA_MAX_LEN: usize = 15;
+
+// --------------------------------------------------------------------------
 // GESTIÓN DE GAFETES: REGLAS DE NEGOCIO
 // --------------------------------------------------------------------------
 
@@ -158,10 +183,10 @@ pub fn validar_nombre_estandar(texto: &str, campo: &str) -> Result<(), CommonErr
         return Err(CommonError::Validation(format!("El {} es obligatorio", campo)));
     }
 
-    if limpio.len() > 100 {
+    if limpio.len() > NOMBRE_MAX_LEN {
         return Err(CommonError::Validation(format!(
-            "El {} no puede exceder 100 caracteres",
-            campo
+            "El {} no puede exceder {} caracteres",
+            campo, NOMBRE_MAX_LEN
         )));
     }
 
@@ -200,10 +225,11 @@ pub fn validar_cedula_estandar(cedula: &str) -> Result<(), CommonError> {
         return Err(CommonError::Validation("La cédula debe contener números".to_string()));
     }
 
-    if limpio.len() < 5 || limpio.len() > 20 {
-        return Err(CommonError::Validation(
-            "Longitud de cédula inválida (5-20 caracteres)".to_string(),
-        ));
+    if limpio.len() < CEDULA_MIN_LEN || limpio.len() > CEDULA_MAX_LEN {
+        return Err(CommonError::Validation(format!(
+            "Longitud de cédula inválida ({}-{} caracteres)",
+            CEDULA_MIN_LEN, CEDULA_MAX_LEN
+        )));
     }
 
     Ok(())
@@ -265,10 +291,11 @@ pub fn validar_placa_estandar(placa: &str) -> Result<(), CommonError> {
         ));
     }
 
-    if limpia.len() < 2 || limpia.len() > 15 {
-        return Err(CommonError::Validation(
-            "La placa debe tener entre 2 y 15 caracteres".to_string(),
-        ));
+    if limpia.len() < PLACA_MIN_LEN || limpia.len() > PLACA_MAX_LEN {
+        return Err(CommonError::Validation(format!(
+            "La placa debe tener entre {} y {} caracteres",
+            PLACA_MIN_LEN, PLACA_MAX_LEN
+        )));
     }
 
     Ok(())
@@ -283,10 +310,10 @@ pub fn validar_nombre_entidad_estandar(nombre: &str, campo: &str) -> Result<(), 
         return Err(CommonError::Validation(format!("El {} es obligatorio", campo)));
     }
 
-    if limpio.len() > 100 {
+    if limpio.len() > ENTIDAD_NOMBRE_MAX_LEN {
         return Err(CommonError::Validation(format!(
-            "El {} no puede exceder 100 caracteres",
-            campo
+            "El {} no puede exceder {} caracteres",
+            campo, ENTIDAD_NOMBRE_MAX_LEN
         )));
     }
 

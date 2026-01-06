@@ -10,20 +10,9 @@ use crate::domain::errors::ContratistaError;
 use crate::models::contratista::{
     CreateContratistaInput, EstadoContratista, UpdateContratistaInput,
 };
-use chrono::NaiveDate;
 
-// --------------------------------------------------------------------------
-// CONSTANTES DE VALIDACIÓN
-// --------------------------------------------------------------------------
-
-/// Longitud mínima de cédula de identidad.
-pub const CEDULA_MIN_LEN: usize = 7;
-
-/// Longitud máxima de cédula de identidad.
-pub const CEDULA_MAX_LEN: usize = 20;
-
-/// Longitud máxima de nombre/apellido.
-pub const NOMBRE_MAX_LEN: usize = 50;
+// Re-exportamos las constantes desde common para acceso conveniente
+pub use crate::domain::common::{CEDULA_MAX_LEN, CEDULA_MIN_LEN, NOMBRE_MAX_LEN};
 
 // --------------------------------------------------------------------------
 // VALIDACIONES DE CAMPOS INDIVIDUALES
@@ -60,10 +49,15 @@ pub fn validar_empresa_id(empresa_id: &str) -> Result<(), ContratistaError> {
 }
 
 /// Parsea y valida una fecha en formato estándar (YYYY-MM-DD).
-pub fn validar_fecha(fecha_str: &str) -> Result<NaiveDate, ContratistaError> {
-    NaiveDate::parse_from_str(fecha_str, "%Y-%m-%d").map_err(|_| {
+/// Devuelve DateTime<Utc> para compatibilidad directa con surrealdb::Datetime.
+pub fn validar_fecha(fecha_str: &str) -> Result<chrono::DateTime<chrono::Utc>, ContratistaError> {
+    use chrono::{NaiveDate, TimeZone, Utc};
+
+    let naive = NaiveDate::parse_from_str(fecha_str, "%Y-%m-%d").map_err(|_| {
         ContratistaError::Validation("Formato de fecha inválido. Use YYYY-MM-DD".to_string())
-    })
+    })?;
+
+    Ok(Utc.from_utc_datetime(&naive.and_hms_opt(0, 0, 0).unwrap()))
 }
 
 // --------------------------------------------------------------------------
