@@ -135,7 +135,25 @@ pub async fn validar_ingreso_contratista(
         });
     }
 
-    // (Fecha PRAIND eliminada por no ser utilizada en el contexto actual del motor)
+    // Evaluación dinámica del vencimiento de PRAIND
+    // Aunque el estado en base de datos sea 'Activo', si la fecha venció, el motor debe rechazarlo.
+    let hoy = chrono::Utc::now().date_naive();
+    let raw_date_str = contratista.fecha_vencimiento_praind.to_string();
+    let raw_date = raw_date_str.trim_start_matches("d'").trim_end_matches('\'');
+
+    // Parseo seguro de fecha (mismo mecanismo que en Modelos)
+    let fecha_venc = chrono::NaiveDate::parse_from_str(raw_date, "%Y-%m-%d").unwrap_or_else(|_| {
+        log::warn!("Error parseando fecha PRAIND para {}: {}", contratista.cedula, raw_date);
+        hoy // Fail-safe: Si falla, asumimos hoy (no vencido, o vence hoy)
+    });
+
+    let praind_vencido = fecha_venc < hoy;
+
+    let estado_autorizacion_calculado = if praind_vencido {
+        motor::EstadoAutorizacion::Vencido
+    } else {
+        motor::EstadoAutorizacion::from_str_lossy(contratista.estado.as_str())
+    };
 
     // Invocación del Motor de Reglas de Negocio.
     // Aquí se decide si un contratista entra como "Autorizado" o "Bloqueado".
@@ -145,14 +163,14 @@ pub async fn validar_ingreso_contratista(
         tipo_acceso: motor::TipoAcceso::Contratista,
         lista_negra: if b.is_blocked {
             Some(motor::InfoListaNegra {
-                motivo: "Bloqueo detectado".to_string(), // Placeholder mejorado
-                severidad: motor::NivelSeveridad::Alto,  // Mapeo simple por ahora
+                motivo: "Bloqueo detectado".to_string(),
+                severidad: motor::NivelSeveridad::Alto,
             })
         } else {
             None
         },
-        ingreso_activo: None, // TODO: Verificar ingreso activo
-        estado_autorizacion: motor::EstadoAutorizacion::from_str_lossy(contratista.estado.as_str()),
+        ingreso_activo: None,
+        estado_autorizacion: estado_autorizacion_calculado,
         alerta_gafete: None, // TODO: Verificar gafetes pendientes
     };
 

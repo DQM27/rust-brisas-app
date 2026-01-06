@@ -1,6 +1,9 @@
 // ==========================================
 // src/models/contratista.rs
 // ==========================================
+use crate::domain::common::{
+    CEDULA_MAX_LEN, CEDULA_MIN_LEN, NOMBRE_MAX_LEN, SEGUNDO_NOMBRE_MAX_LEN,
+};
 use crate::models::empresa::Empresa;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -367,8 +370,11 @@ pub mod validaciones {
             return Err("La cédula solo puede contener números y guiones".to_string());
         }
 
-        if limpia.len() < 7 || limpia.len() > 20 {
-            return Err("La cédula debe tener entre 7 y 20 caracteres".to_string());
+        if limpia.len() < CEDULA_MIN_LEN || limpia.len() > CEDULA_MAX_LEN {
+            return Err(format!(
+                "La cédula debe tener entre {} y {} caracteres",
+                CEDULA_MIN_LEN, CEDULA_MAX_LEN
+            ));
         }
 
         Ok(())
@@ -381,8 +387,8 @@ pub mod validaciones {
             return Err("El nombre no puede estar vacío".to_string());
         }
 
-        if limpio.len() > 50 {
-            return Err("El nombre no puede exceder 50 caracteres".to_string());
+        if limpio.len() > NOMBRE_MAX_LEN {
+            return Err(format!("El nombre no puede exceder {} caracteres", NOMBRE_MAX_LEN));
         }
 
         Ok(())
@@ -392,8 +398,11 @@ pub mod validaciones {
         if let Some(nombre) = segundo_nombre {
             let limpio = nombre.trim();
 
-            if !limpio.is_empty() && limpio.len() > 50 {
-                return Err("El segundo nombre no puede exceder 50 caracteres".to_string());
+            if !limpio.is_empty() && limpio.len() > SEGUNDO_NOMBRE_MAX_LEN {
+                return Err(format!(
+                    "El segundo nombre no puede exceder {} caracteres",
+                    SEGUNDO_NOMBRE_MAX_LEN
+                ));
             }
         }
 
@@ -407,8 +416,8 @@ pub mod validaciones {
             return Err("El apellido no puede estar vacío".to_string());
         }
 
-        if limpio.len() > 50 {
-            return Err("El apellido no puede exceder 50 caracteres".to_string());
+        if limpio.len() > NOMBRE_MAX_LEN {
+            return Err(format!("El apellido no puede exceder {} caracteres", NOMBRE_MAX_LEN));
         }
 
         Ok(())
@@ -418,8 +427,11 @@ pub mod validaciones {
         if let Some(apellido) = segundo_apellido {
             let limpio = apellido.trim();
 
-            if !limpio.is_empty() && limpio.len() > 50 {
-                return Err("El segundo apellido no puede exceder 50 caracteres".to_string());
+            if !limpio.is_empty() && limpio.len() > SEGUNDO_NOMBRE_MAX_LEN {
+                return Err(format!(
+                    "El segundo apellido no puede exceder {} caracteres",
+                    SEGUNDO_NOMBRE_MAX_LEN
+                ));
             }
         }
 
