@@ -14,9 +14,7 @@ pub mod gafete_service;
 pub mod keyring_service;
 pub mod role_service;
 
-#[cfg(target_os = "linux")]
-pub mod keyring_linux;
-
+// Windows-only keyring implementation
 #[cfg(target_os = "windows")]
 pub mod keyring_windows;
 

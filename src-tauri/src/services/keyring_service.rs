@@ -115,28 +115,6 @@ pub struct AllCredentials {
 }
 
 // ==========================================
-// IMPLEMENTACIÓN LINUX (secret-tool nativo)
-// ==========================================
-#[cfg(target_os = "linux")]
-fn store_value(key: &str, value: &str) -> KeyringResult<()> {
-    use crate::services::keyring_linux;
-    keyring_linux::store_secret(key, value)
-}
-
-#[cfg(target_os = "linux")]
-fn retrieve_value(key: &str) -> Option<String> {
-    use crate::services::keyring_linux;
-    keyring_linux::retrieve_secret(key)
-}
-
-#[cfg(target_os = "linux")]
-#[allow(dead_code)]
-fn delete_value(key: &str) -> KeyringResult<()> {
-    use crate::services::keyring_linux;
-    keyring_linux::delete_secret(key)
-}
-
-// ==========================================
 // IMPLEMENTACIÓN WINDOWS (Credential Manager nativo)
 // ==========================================
 #[cfg(target_os = "windows")]
@@ -150,6 +128,7 @@ fn retrieve_value(key: &str) -> Option<String> {
     use crate::services::keyring_windows;
     keyring_windows::retrieve_secret(key)
 }
+
 #[cfg(target_os = "windows")]
 fn delete_value(key: &str) -> KeyringResult<()> {
     use crate::services::keyring_windows;
@@ -159,17 +138,17 @@ fn delete_value(key: &str) -> KeyringResult<()> {
 // ==========================================
 // PLATAFORMAS NO SOPORTADAS (Fallback)
 // ==========================================
-#[cfg(not(any(target_os = "linux", target_os = "windows")))]
+#[cfg(not(target_os = "windows"))]
 fn store_value(_key: &str, _value: &str) -> KeyringResult<()> {
     Err(KeyringError::UnsupportedPlatform)
 }
 
-#[cfg(not(any(target_os = "linux", target_os = "windows")))]
+#[cfg(not(target_os = "windows"))]
 fn retrieve_value(_key: &str) -> Option<String> {
     None
 }
 
-#[cfg(not(any(target_os = "linux", target_os = "windows")))]
+#[cfg(not(target_os = "windows"))]
 fn delete_value(_key: &str) -> KeyringResult<()> {
     Err(KeyringError::UnsupportedPlatform)
 }

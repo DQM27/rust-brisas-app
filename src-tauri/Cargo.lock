@@ -3941,16 +3941,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "keyring"
-version = "3.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eebcc3aff044e5944a8fbaf69eb277d11986064cba30c468730e8b9909fb551c"
-dependencies = [
- "log",
- "zeroize",
-]
-
-[[package]]
 name = "krilla"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4395,21 +4385,17 @@ dependencies = [
  "chrono",
  "criterion",
  "dirs 5.0.1",
- "futures",
  "hex",
  "image",
- "keyring 2.3.3",
- "keyring 3.6.3",
+ "keyring",
  "log",
  "mac_address",
  "mimalloc",
  "once_cell",
  "rand 0.8.5",
- "regex",
  "rust_xlsxwriter",
  "serde",
  "serde_json",
- "serde_with",
  "shellexpand",
  "surrealdb",
  "tantivy",
@@ -8533,7 +8519,6 @@ dependencies = [
  "bytes",
  "libc",
  "mio",
- "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2 0.6.1",
