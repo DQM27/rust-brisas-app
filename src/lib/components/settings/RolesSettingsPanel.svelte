@@ -10,8 +10,13 @@
     Edit2,
     Trash2,
     Lock,
+    Key,
+    UserCircle,
+    Save,
+    X,
+    CheckCircle2,
   } from "lucide-svelte";
-  import { scale } from "svelte/transition";
+  import { scale, fade, slide } from "svelte/transition";
   import { onMount } from "svelte";
   import * as roleService from "$lib/logic/role/roleService";
   import type { RoleResponse, Permission } from "$lib/types/role";
@@ -39,6 +44,9 @@
     permissions: [] as string[],
   });
   let saving = $state(false);
+
+  // Search state
+  let searchTerm = $state("");
 
   onMount(async () => {
     await loadData();
@@ -99,7 +107,7 @@
       description: role.description || "",
       permissions: [...role.permissions],
     };
-    showCreateForm = false;
+    showCreateForm = true; // Use same flag to show form overlay
   }
 
   function startCreate() {
@@ -143,7 +151,7 @@
           permissions: formData.permissions,
         });
         if (result.ok) {
-          showSuccess("Rol actualizado");
+          showSuccess("Rol actualizado correctamente");
           cancelEdit();
           await loadData();
         } else {
@@ -156,7 +164,7 @@
           permissions: formData.permissions,
         });
         if (result.ok) {
-          showSuccess("Rol creado");
+          showSuccess("Rol creado correctamente");
           cancelEdit();
           await loadData();
         } else {
@@ -171,7 +179,10 @@
   }
 
   async function handleDelete(roleId: string) {
-    if (!confirm("¿Eliminar este rol?")) return;
+    if (
+      !confirm("¿Estás seguro de que deseas eliminar este rol permanentemente?")
+    )
+      return;
 
     try {
       const result = await roleService.deleteRole(roleId);
@@ -186,7 +197,7 @@
     }
   }
 
-  // Agrupar permisos por módulo
+  // Helpers
   function getGroupedPermissions(): Map<string, Permission[]> {
     const grouped = new Map<string, Permission[]>();
     for (const perm of permissions) {
@@ -197,7 +208,6 @@
     return grouped;
   }
 
-  // Traducción y Helpers
   const actionTranslations: Record<string, string> = {
     view: "Ver",
     read: "Leer",
@@ -211,15 +221,39 @@
     return actionTranslations[action.toLowerCase()] || action;
   }
 
+  const moduleTranslations: Record<string, string> = {
+    users: "Usuarios",
+    roles: "Roles",
+    contratistas: "Contratistas",
+    empresas: "Empresas",
+    proveedores: "Proveedores",
+    visitantes: "Visitantes",
+    ingresos: "Ingresos",
+    citas: "Citas",
+    settings_general: "Configuración General",
+    settings_visual: "Apariencia",
+    settings_security: "Seguridad",
+    settings_sessions: "Sesiones",
+    backup: "Copias de Seguridad",
+    export: "Exportación",
+    import: "Importación",
+    config: "Configuración",
+    trash: "Papelera",
+  };
+
+  function translateModule(module: string): string {
+    return (
+      moduleTranslations[module.toLowerCase()] || module.replace(/_/g, " ")
+    );
+  }
+
   function toggleModulePermissions(perms: Permission[]) {
     const allSelected = perms.every((p) => formData.permissions.includes(p.id));
     if (allSelected) {
-      // Deselect all
       formData.permissions = formData.permissions.filter(
         (id) => !perms.find((p) => p.id === id),
       );
     } else {
-      // Select all
       const newIds = perms
         .map((p) => p.id)
         .filter((id) => !formData.permissions.includes(id));
@@ -230,255 +264,337 @@
   function isModuleSelected(perms: Permission[]): boolean {
     return perms.every((p) => formData.permissions.includes(p.id));
   }
+
+  // Filter roles
+  let filteredRoles = $derived(
+    roles.filter(
+      (r) =>
+        r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (r.description &&
+          r.description.toLowerCase().includes(searchTerm.toLowerCase())),
+    ),
+  );
 </script>
 
 <div
-  class="flex h-full flex-col bg-surface-1 p-6 overflow-y-auto"
-  in:scale={{ duration: 300, start: 0.95 }}
+  class="h-full flex flex-col bg-surface-1 p-6 relative overflow-hidden"
+  in:fade
 >
-  <div class="max-w-4xl space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          Roles y Permisos
-        </h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Gestiona los roles del sistema y sus permisos asociados.
-        </p>
-      </div>
-      <button
-        onclick={startCreate}
-        disabled={!canCreate()}
-        class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-[#2da44e] hover:bg-[#2c974b] text-white disabled:opacity-50 disabled:cursor-not-allowed"
-        title={!canCreate() ? "No tienes permiso para crear roles" : ""}
+  <!-- Main Grid View -->
+  {#if !showCreateForm}
+    <div class="flex flex-col h-full" in:fade={{ duration: 200 }}>
+      <!-- Header -->
+      <div
+        class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
-        <Plus class="w-4 h-4" />
-        Nuevo Rol
-      </button>
+        <div>
+          <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+            <Shield class="text-primary-400" />
+            Roles y Permisos
+          </h2>
+          <p class="text-gray-400 mt-1">
+            Configura el acceso y control del sistema.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <input
+              type="text"
+              bind:value={searchTerm}
+              placeholder="Buscar rol..."
+              class="bg-surface-2 border border-white/10 rounded-lg pl-3 pr-8 py-2 text-sm text-white focus:outline-none focus:border-primary-500 transition-all w-64"
+            />
+          </div>
+
+          <button
+            onclick={startCreate}
+            disabled={!canCreate()}
+            class="px-4 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus size={18} />
+            Nuevo Rol
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading/Error/Success -->
+      {#if loading}
+        <div class="flex-1 flex items-center justify-center">
+          <div class="flex flex-col items-center gap-4">
+            <div class="relative w-12 h-12">
+              <div
+                class="absolute inset-0 border-4 border-primary-500/30 rounded-full"
+              ></div>
+              <div
+                class="absolute inset-0 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"
+              ></div>
+            </div>
+            <p class="text-gray-400 font-medium">Cargando roles...</p>
+          </div>
+        </div>
+      {:else}
+        {#if error}
+          <div
+            class="p-4 mb-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-3"
+          >
+            <AlertCircle />
+            {error}
+          </div>
+        {/if}
+        {#if successMessage}
+          <div
+            class="p-4 mb-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 flex items-center gap-3"
+            in:slide
+          >
+            <CheckCircle2 />
+            {successMessage}
+          </div>
+        {/if}
+
+        <div
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pb-4 custom-scrollbar"
+        >
+          {#each filteredRoles as role (role.id)}
+            <div
+              class="bg-surface-2 border border-white/5 rounded-xl p-5 hover:border-white/10 transition-colors group relative flex flex-col h-full"
+            >
+              <!-- Top Bar -->
+              <div class="flex justify-between items-start mb-4">
+                <div
+                  class="p-3 rounded-lg {role.isSystem
+                    ? 'bg-purple-500/10 text-purple-400'
+                    : 'bg-blue-500/10 text-blue-400'}"
+                >
+                  {#if role.isSystem}
+                    <Lock size={24} />
+                  {:else}
+                    <Users size={24} />
+                  {/if}
+                </div>
+                {#if role.isSystem}
+                  <span
+                    class="px-2 py-1 rounded bg-purple-500/20 text-purple-300 text-xs font-bold uppercase tracking-wider border border-purple-500/10"
+                  >
+                    Sistema
+                  </span>
+                {/if}
+              </div>
+
+              <!-- Info -->
+              <div class="mb-6 flex-1">
+                <h3
+                  class="text-lg font-bold text-white mb-1 group-hover:text-primary-400 transition-colors"
+                >
+                  {role.name}
+                </h3>
+                <p class="text-sm text-gray-400 line-clamp-2">
+                  {role.description || "Sin descripción"}
+                </p>
+              </div>
+
+              <!-- Stats -->
+              <div class="flex items-center gap-2 mb-6">
+                <div
+                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface-3 border border-white/5"
+                >
+                  <Key size={14} class="text-gray-400" />
+                  <span class="text-sm font-mono text-gray-300"
+                    >{role.permissions.length}</span
+                  >
+                  <span class="text-xs text-gray-500">permisos</span>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div
+                class="flex items-center gap-2 mt-auto pt-4 border-t border-white/5"
+              >
+                {#if canUpdate()}
+                  <button
+                    onclick={() => startEdit(role)}
+                    class="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium text-gray-300 transition-colors"
+                  >
+                    <Edit2 size={16} /> Editar
+                  </button>
+                {/if}
+
+                {#if !role.isSystem && canDelete()}
+                  <button
+                    onclick={() => handleDelete(role.id)}
+                    class="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors"
+                    title="Eliminar Rol"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                {/if}
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
     </div>
 
-    {#if loading}
-      <div class="flex items-center justify-center py-12">
-        <RefreshCw class="w-6 h-6 animate-spin text-gray-400" />
-      </div>
-    {:else}
-      {#if error}
-        <div
-          class="p-3 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 flex items-start gap-2"
-        >
-          <AlertCircle
-            class="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
-          />
-          <span class="text-sm text-red-700 dark:text-red-300">{error}</span>
-        </div>
-      {/if}
-
-      {#if successMessage}
-        <div
-          class="p-3 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 flex items-start gap-2"
-        >
-          <Check
-            class="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5"
-          />
-          <span class="text-sm text-green-700 dark:text-green-300"
-            >{successMessage}</span
-          >
-        </div>
-      {/if}
-
-      <!-- Create/Edit Form -->
-      {#if showCreateForm || editingRoleId}
-        <div
-          class="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0d1117] overflow-hidden"
-        >
-          <div
-            class="bg-gray-50 dark:bg-[#161b22] px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2"
-          >
-            <Shield class="w-4 h-4 text-gray-500" />
-            <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100">
-              {editingRoleId ? "Editar Rol" : "Nuevo Rol"}
-            </h3>
-          </div>
-          <div class="p-4 space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label
-                  for="roleName"
-                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >Nombre</label
-                >
-                <input
-                  id="roleName"
-                  type="text"
-                  bind:value={formData.name}
-                  placeholder="Ej: Auditor"
-                  class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100"
-                />
-              </div>
-              <div>
-                <label
-                  for="roleDesc"
-                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >Descripción</label
-                >
-                <input
-                  id="roleDesc"
-                  type="text"
-                  bind:value={formData.description}
-                  placeholder="Descripción opcional"
-                  class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100"
-                />
-              </div>
-            </div>
-
-            <!-- Permissions Grid -->
-            <div>
-              <span
-                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                >Permisos ({formData.permissions.length} seleccionados)</span
-              >
-              <div
-                class="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-3"
-              >
-                {#each [...getGroupedPermissions()] as [moduleName, perms]}
-                  <div class="mb-3">
-                    <div class="flex items-center gap-2 mb-2">
-                      <button
-                        type="button"
-                        class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 p-1 rounded-md transition-colors"
-                        title={isModuleSelected(perms)
-                          ? "Desmarcar todo"
-                          : "Marcar todo"}
-                        onclick={() => toggleModulePermissions(perms)}
-                      >
-                        {#if isModuleSelected(perms)}
-                          <Check class="w-3 h-3 text-[#2da44e]" />
-                        {:else}
-                          <div
-                            class="w-3 h-3 rounded-sm border border-gray-400"
-                          ></div>
-                        {/if}
-                      </button>
-                      <div
-                        class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase"
-                      >
-                        {moduleName}
-                      </div>
-                    </div>
-                    <div class="flex flex-wrap gap-2 ml-6">
-                      {#each perms as perm}
-                        <button
-                          type="button"
-                          onclick={() => togglePermission(perm.id)}
-                          class="px-2 py-1 text-xs rounded-md border transition-colors {formData.permissions.includes(
-                            perm.id,
-                          )
-                            ? 'bg-[#2da44e] text-white border-[#2da44e]'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'}"
-                        >
-                          {translateAction(perm.action)}
-                        </button>
-                      {/each}
-                    </div>
-                  </div>
-                {/each}
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2 pt-2">
-              <button
-                onclick={handleSave}
-                disabled={saving}
-                class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md bg-[#2da44e] hover:bg-[#2c974b] text-white disabled:opacity-50"
-              >
-                {#if saving}<RefreshCw
-                    class="w-4 h-4 animate-spin"
-                  />{:else}<Check class="w-4 h-4" />{/if}
-                <span>Guardar</span>
-              </button>
-              <button
-                onclick={cancelEdit}
-                class="px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#30363d]"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      {/if}
-
-      <!-- Roles List -->
+    <!-- Create/Edit Form Overlay -->
+  {:else}
+    <div
+      class="absolute inset-0 bg-surface-1 z-20 flex flex-col p-6 overflow-hidden"
+      in:slide={{ axis: "x", duration: 300 }}
+    >
+      <!-- Form Header -->
       <div
-        class="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0d1117] overflow-hidden"
+        class="flex items-center justify-between mb-8 pb-4 border-b border-white/5"
       >
-        {#if !$currentUser || !can($currentUser, "VIEW_ROLE_LIST")}
-          <div class="p-8 text-center text-gray-500 dark:text-gray-400">
-            <Shield class="w-12 h-12 mx-auto mb-3 opacity-20" />
-            <p>No tienes permiso para ver la lista de roles.</p>
-          </div>
-        {:else}
-          <div
-            class="bg-gray-50 dark:bg-[#161b22] px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2"
+        <div>
+          <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+            {#if editingRoleId}
+              <Edit2 class="text-primary-400" /> Editar Rol
+            {:else}
+              <Plus class="text-green-400" /> Nuevo Rol
+            {/if}
+          </h2>
+          <p class="text-gray-400 mt-1">
+            Configura los detalles y permisos del rol.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button
+            onclick={cancelEdit}
+            class="px-4 py-2 rounded-lg border border-gray-600 bg-white/5 hover:bg-white/10 text-gray-200 transition-colors font-medium text-sm"
           >
-            <Users class="w-4 h-4 text-gray-500" />
-            <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100">
-              Roles del Sistema ({roles.length})
+            Cancelar
+          </button>
+          <button
+            onclick={handleSave}
+            disabled={saving}
+            class="px-6 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-lg font-medium shadow-none disabled:opacity-50 transition-all flex items-center gap-2 text-sm"
+          >
+            {#if saving}
+              <RefreshCw size={18} class="animate-spin" /> Guardando...
+            {:else}
+              <Save size={18} /> Guardar Cambios
+            {/if}
+          </button>
+        </div>
+      </div>
+
+      <!-- Form Content -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar pr-2">
+        <!-- Basic Info -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div class="space-y-2">
+            <label for="name" class="block text-sm font-medium text-gray-300"
+              >Nombre del Rol</label
+            >
+            <div class="relative">
+              <UserCircle
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                size={18}
+              />
+              <input
+                id="name"
+                type="text"
+                bind:value={formData.name}
+                placeholder="Ej: Auditor"
+                class="w-full bg-surface-2 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-primary-500 transition-all"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="desc" class="block text-sm font-medium text-gray-300"
+              >Descripción</label
+            >
+            <input
+              id="desc"
+              type="text"
+              bind:value={formData.description}
+              placeholder="Descripción breve..."
+              class="w-full bg-surface-2 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary-500 transition-all"
+            />
+          </div>
+        </div>
+
+        <!-- Permissions -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h3
+              class="text-lg font-semibold text-white flex items-center gap-2"
+            >
+              <Key class="text-yellow-400" size={20} /> Permisos
+              <span class="text-sm font-normal text-gray-500 ml-2"
+                >({formData.permissions.length} seleccionados)</span
+              >
             </h3>
           </div>
-          <div class="divide-y divide-gray-200 dark:divide-gray-700">
-            {#each roles as role}
+
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-8">
+            {#each [...getGroupedPermissions()] as [moduleName, perms]}
               <div
-                class="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#161b22] transition-colors"
+                class="bg-surface-2 border border-white/5 rounded-xl overflow-hidden flex flex-col"
               >
-                <div class="flex-1">
-                  <div class="flex items-center gap-2">
-                    <span class="font-medium text-gray-900 dark:text-gray-100"
-                      >{role.name}</span
-                    >
-                    {#if role.isSystem}
-                      <span
-                        class="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
-                      >
-                        <Lock class="w-3 h-3" />
-                        Sistema
-                      </span>
-                    {/if}
-                  </div>
-                  {#if role.description}
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                      {role.description}
-                    </p>
-                  {/if}
-                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    {role.permissions.length} permisos
-                  </p>
+                <!-- Module Header -->
+                <div
+                  class="px-4 py-3 bg-surface-3 flex items-center justify-between border-b border-white/5"
+                >
+                  <span
+                    class="font-medium text-gray-200 uppercase tracking-wide text-sm"
+                    >{translateModule(moduleName)}</span
+                  >
+                  <button
+                    onclick={() => toggleModulePermissions(perms)}
+                    class="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors {isModuleSelected(
+                      perms,
+                    )
+                      ? 'text-primary-400'
+                      : 'text-gray-500'}"
+                  >
+                    {isModuleSelected(perms)
+                      ? "Desmarcar Todos"
+                      : "Marcar Todos"}
+                  </button>
                 </div>
-                <div class="flex items-center gap-2">
-                  {#if canUpdate()}
+
+                <!-- Perms Grid -->
+                <div class="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {#each perms as perm}
                     <button
-                      onclick={() => startEdit(role)}
-                      class="p-1.5 rounded-md text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                      title="Editar"
+                      onclick={() => togglePermission(perm.id)}
+                      class="relative flex items-center justify-center py-2 px-3 rounded-lg border transition-all duration-200 text-sm {formData.permissions.includes(
+                        perm.id,
+                      )
+                        ? 'bg-[#2563eb] border-transparent text-white shadow-md hover:bg-[#1d4ed8] ring-1 ring-white/20 font-semibold'
+                        : 'bg-transparent border-[#30363d] text-gray-500 hover:text-gray-300 hover:bg-[#21262d] opacity-60 hover:opacity-100'}"
                     >
-                      <Edit2 class="w-4 h-4" />
+                      <span class="relative z-10"
+                        >{translateAction(perm.action)}</span
+                      >
                     </button>
-                  {/if}
-                  {#if !role.isSystem && canDelete()}
-                    <button
-                      onclick={() => handleDelete(role.id)}
-                      class="p-1.5 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                      title="Eliminar"
-                    >
-                      <Trash2 class="w-4 h-4" />
-                    </button>
-                  {/if}
+                  {/each}
                 </div>
               </div>
             {/each}
           </div>
-        {/if}
+        </div>
       </div>
-    {/if}
-  </div>
+    </div>
+  {/if}
 </div>
+
+<style>
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+  }
+</style>
