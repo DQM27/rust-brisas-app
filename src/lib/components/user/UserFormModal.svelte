@@ -41,6 +41,7 @@
     ) => Promise<boolean | void>;
     onClose: () => void;
     readonly?: boolean;
+    isSelfEdit?: boolean; // True cuando el usuario edita su propio perfil
   }
 
   let {
@@ -50,6 +51,7 @@
     onSave,
     onClose,
     readonly = false,
+    isSelfEdit = false,
   }: Props = $props();
 
   // Roles state
@@ -114,26 +116,9 @@
 
   // Modo derivado
   const isEditMode = $derived(!!user);
-  // Verificar si el usuario editado es el usuario logueado
-  const isSelf = $derived.by(() => {
-    if (!user || !$currentUser) {
-      console.log("isSelf: false (no user or currentUser)");
-      return false;
-    }
-    // Extraer solo el UUID (quitar prefijo "user:" y caracteres especiales)
-    const extractUUID = (id: string) => {
-      // Manejar formato "user:⟨uuid⟩" o "user:uuid" o solo "uuid"
-      return id
-        .replace(/^user:/, "")
-        .replace(/[⟨⟩<>]/g, "")
-        .trim();
-    };
-    const userId = extractUUID(user.id);
-    const currentId = extractUUID($currentUser.id);
-    const match = userId === currentId;
-    console.log("isSelf check:", { userId, currentId, match });
-    return match;
-  });
+
+  // El usuario está editando su propio perfil (usando prop explícita o comparación de IDs)
+  const isSelf = $derived(isSelfEdit);
 
   // Nombre completo para mostrar en el header
   const getFullName = (u: UserResponse | null | undefined) => {
@@ -222,6 +207,12 @@
           ) {
             delete (payloadData as any)[field];
           }
+        }
+
+        // SEGURIDAD: El usuario NO puede cambiar su propio rol
+        // Solo un administrador/God puede cambiar roles de otros usuarios
+        if (isSelf) {
+          delete (payloadData as any).roleId;
         }
       }
 

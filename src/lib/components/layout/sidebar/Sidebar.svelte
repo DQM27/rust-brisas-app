@@ -702,6 +702,7 @@
       loading={profileLoading}
       onSave={handleSaveProfile}
       onClose={() => (showProfileModal = false)}
+      isSelfEdit={true}
     />
   {/if}
 
