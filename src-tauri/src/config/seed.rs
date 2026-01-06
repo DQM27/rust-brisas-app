@@ -137,23 +137,15 @@ async fn seed_god_user() -> Result<(), SurrealDbError> {
         hash_password("desing27").map_err(|e| SurrealDbError::Query(e.to_string()))?;
 
     if !existing.is_empty() {
-        // En cada arranque, refrescamos los datos críticos del God User (Auto-healing)
-        db.query(
-            r#"
-            UPDATE type::thing('user', $id) SET
-                nombre = "DQM27",
-                apellido = "SYSTEM",
-                must_change_password = true,
-                password_hash = $password_hash,
-                updated_at = time::now()
-            "#,
-        )
-        .bind(("id", GOD_ID))
-        .bind(("password_hash", password_hash))
-        .await?
-        .check()?;
+        // En cada arranque, solo aseguramos que el usuario tenga el rol de Admin (Auto-healing de permisos)
+        // PERO respetamos la contraseña y nombre que el usuario haya definido.
+        db.query("UPDATE type::thing('user', $id) SET role = type::thing('role', $role_id), updated_at = time::now()")
+            .bind(("id", GOD_ID))
+            .bind(("role_id", ROLE_ADMIN_ID))
+            .await?
+            .check()?;
 
-        info!("🔐 Usuario raíz actualizado (id={GOD_ID})");
+        info!("🔐 Usuario raíz verificado (id={GOD_ID}) - Permisos sincronizados");
         return Ok(());
     }
 
