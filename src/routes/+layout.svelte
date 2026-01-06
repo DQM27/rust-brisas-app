@@ -83,16 +83,22 @@
         try {
           if (showSetupWizard) {
             // Modo Launcher Setup (Grande)
+            const { getCurrentWindow } = await import("@tauri-apps/api/window");
+            const appWindow = getCurrentWindow();
+            if (await appWindow.isMaximized()) await appWindow.unmaximize();
+
             await setWindowDecorations(false);
             await setWindowSize(700, 550);
-            const { getCurrentWindow } = await import("@tauri-apps/api/window");
-            await getCurrentWindow().center();
+            await appWindow.center();
           } else if (!authenticated) {
             // Modo Launcher Login (Compacto)
+            const { getCurrentWindow } = await import("@tauri-apps/api/window");
+            const appWindow = getCurrentWindow();
+            if (await appWindow.isMaximized()) await appWindow.unmaximize();
+
             await setWindowDecorations(false);
             await setWindowSize(450, 500);
-            const { getCurrentWindow } = await import("@tauri-apps/api/window");
-            await getCurrentWindow().center();
+            await appWindow.center();
           } else {
             // Modo App Completa
             await setWindowDecorations(true);

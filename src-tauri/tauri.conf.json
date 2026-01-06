@@ -16,7 +16,7 @@
         "title": "Mega Brisas",
         "width": 800,
         "height": 600,
-        "visible": true
+        "visible": false
       }
     ],
     "security": {

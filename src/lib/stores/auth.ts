@@ -26,23 +26,6 @@ export async function logout(): Promise<void> {
 
   // Close all tabs
   resetTabs();
-
-  // Resize window to default login size
-  try {
-    const { getCurrentWindow, LogicalSize } = await import('@tauri-apps/api/window');
-    const appWindow = getCurrentWindow();
-
-    // Unmaximize if necessary (important to be able to resize)
-    if (await appWindow.isMaximized()) {
-      await appWindow.unmaximize();
-    }
-
-    // Set size and center (800x600 is the default login size)
-    await appWindow.setSize(new LogicalSize(800, 600));
-    await appWindow.center();
-  } catch (e) {
-    console.error("Error resizing window on logout:", e);
-  }
 }
 
 /**
