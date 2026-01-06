@@ -56,6 +56,80 @@ pub const MAX_LEN_MODELO_VEHICULO: usize = 50;
 pub const MAX_LEN_COLOR_VEHICULO: usize = 30;
 
 // --------------------------------------------------------------------------
+// CONSTANTES DE VALIDACIÓN COMPARTIDAS (Fuente de Verdad Única)
+// --------------------------------------------------------------------------
+
+// === Identificación Personal ===
+/// Longitud mínima de cédula de identidad.
+pub const CEDULA_MIN_LEN: usize = 5;
+/// Longitud máxima de cédula de identidad.
+pub const CEDULA_MAX_LEN: usize = 20;
+
+// === Nombres y Apellidos ===
+/// Longitud mínima de nombre/apellido principal (requerido).
+pub const NOMBRE_MIN_LEN: usize = 1;
+/// Longitud máxima de nombre/apellido principal.
+pub const NOMBRE_MAX_LEN: usize = 100;
+/// Longitud máxima de segundo nombre/apellido (opcional, min=0).
+pub const SEGUNDO_NOMBRE_MAX_LEN: usize = 50;
+
+// === Contacto ===
+/// Longitud mínima de teléfono (si se proporciona).
+pub const TELEFONO_MIN_LEN: usize = 7;
+/// Longitud máxima de teléfono.
+pub const TELEFONO_MAX_LEN: usize = 20;
+/// Longitud mínima de dirección (si se proporciona).
+pub const DIRECCION_MIN_LEN: usize = 5;
+/// Longitud máxima de dirección.
+pub const DIRECCION_MAX_LEN: usize = 200;
+/// Longitud mínima de email.
+pub const EMAIL_MIN_LEN: usize = 5;
+/// Longitud máxima de email.
+pub const EMAIL_MAX_LEN: usize = 100;
+
+// === Seguridad ===
+/// Longitud mínima de contraseña.
+pub const PASSWORD_MIN_LEN: usize = 6;
+/// Longitud máxima de contraseña.
+pub const PASSWORD_MAX_LEN: usize = 100;
+/// Longitud máxima de número de gafete.
+pub const GAFETE_MAX_LEN: usize = 20;
+
+// === Entidades ===
+/// Longitud mínima de nombre de entidad (empresa, institución).
+pub const ENTIDAD_NOMBRE_MIN_LEN: usize = 1;
+/// Longitud máxima de nombre de entidad (empresa, institución).
+pub const ENTIDAD_NOMBRE_MAX_LEN: usize = 100;
+
+// === Vehículos ===
+/// Longitud mínima de placa de vehículo.
+pub const PLACA_MIN_LEN: usize = 2;
+/// Longitud máxima de placa de vehículo.
+pub const PLACA_MAX_LEN: usize = 15;
+/// Longitud mínima de marca/modelo de vehículo (si se proporciona).
+pub const MARCA_MODELO_MIN_LEN: usize = 2;
+/// Longitud máxima de marca/modelo de vehículo.
+pub const MARCA_MODELO_MAX_LEN: usize = 50;
+/// Longitud máxima de color de vehículo.
+pub const COLOR_MAX_LEN: usize = 30;
+
+// === Lista Negra ===
+/// Longitud mínima de motivo de bloqueo (requerido).
+pub const MOTIVO_MIN_LEN: usize = 1;
+/// Longitud máxima de motivo de bloqueo.
+pub const MOTIVO_MAX_LEN: usize = 500;
+/// Longitud máxima de observaciones (opcional, min=0).
+pub const OBSERVACIONES_MAX_LEN: usize = 1000;
+
+// === Roles ===
+/// Longitud mínima de nombre de rol.
+pub const ROLE_NAME_MIN_LEN: usize = 1;
+/// Longitud máxima de nombre de rol.
+pub const ROLE_NAME_MAX_LEN: usize = 50;
+/// Longitud máxima de descripción de rol.
+pub const ROLE_DESC_MAX_LEN: usize = 200;
+
+// --------------------------------------------------------------------------
 // GESTIÓN DE GAFETES: REGLAS DE NEGOCIO
 // --------------------------------------------------------------------------
 
@@ -271,6 +345,7 @@ pub fn validar_nombre_estandar(texto: &str, campo: &str) -> Result<(), CommonErr
         return Err(CommonError::Validation(format!("El {campo} es obligatorio")));
     }
 
+<<<<<<< HEAD
     if limpio.len() < MIN_LEN_NOMBRE {
         return Err(CommonError::Validation(format!(
             "El {campo} debe tener al menos {MIN_LEN_NOMBRE} caracteres"
@@ -280,6 +355,12 @@ pub fn validar_nombre_estandar(texto: &str, campo: &str) -> Result<(), CommonErr
     if limpio.len() > MAX_LEN_NOMBRE {
         return Err(CommonError::Validation(format!(
             "El {campo} no puede exceder {MAX_LEN_NOMBRE} caracteres"
+=======
+    if limpio.len() > NOMBRE_MAX_LEN {
+        return Err(CommonError::Validation(format!(
+            "El {} no puede exceder {} caracteres",
+            campo, NOMBRE_MAX_LEN
+>>>>>>> feature/domain-layer-refactor
         )));
     }
 
@@ -315,9 +396,16 @@ pub fn validar_cedula_estandar(cedula: &str) -> Result<(), CommonError> {
     // Contar solo los dígitos (ignorando guiones)
     let cantidad_digitos = limpio.chars().filter(char::is_ascii_digit).count();
 
+<<<<<<< HEAD
     if !(MIN_DIGITOS_CEDULA..=MAX_DIGITOS_CEDULA).contains(&cantidad_digitos) {
         return Err(CommonError::Validation(format!(
             "La cédula debe tener entre {MIN_DIGITOS_CEDULA} y {MAX_DIGITOS_CEDULA} dígitos (actualmente tiene {cantidad_digitos})"
+=======
+    if limpio.len() < CEDULA_MIN_LEN || limpio.len() > CEDULA_MAX_LEN {
+        return Err(CommonError::Validation(format!(
+            "Longitud de cédula inválida ({}-{} caracteres)",
+            CEDULA_MIN_LEN, CEDULA_MAX_LEN
+>>>>>>> feature/domain-layer-refactor
         )));
     }
 
@@ -354,10 +442,11 @@ pub fn validar_email_estandar(email: &str) -> Result<(), CommonError> {
         return Err(CommonError::Validation("Formato de email inválido".to_string()));
     }
 
-    if limpio.len() > 100 {
-        return Err(CommonError::Validation(
-            "El email no puede exceder 100 caracteres".to_string(),
-        ));
+    if limpio.len() > EMAIL_MAX_LEN {
+        return Err(CommonError::Validation(format!(
+            "El email no puede exceder {} caracteres",
+            EMAIL_MAX_LEN
+        )));
     }
 
     Ok(())
@@ -379,10 +468,11 @@ pub fn validar_placa_estandar(placa: &str) -> Result<(), CommonError> {
         ));
     }
 
-    if limpia.len() < 2 || limpia.len() > 15 {
-        return Err(CommonError::Validation(
-            "La placa debe tener entre 2 y 15 caracteres".to_string(),
-        ));
+    if limpia.len() < PLACA_MIN_LEN || limpia.len() > PLACA_MAX_LEN {
+        return Err(CommonError::Validation(format!(
+            "La placa debe tener entre {} y {} caracteres",
+            PLACA_MIN_LEN, PLACA_MAX_LEN
+        )));
     }
 
     Ok(())
@@ -397,9 +487,14 @@ pub fn validar_nombre_entidad_estandar(nombre: &str, campo: &str) -> Result<(), 
         return Err(CommonError::Validation(format!("El {campo} es obligatorio")));
     }
 
-    if limpio.len() > 100 {
+    if limpio.len() > ENTIDAD_NOMBRE_MAX_LEN {
         return Err(CommonError::Validation(format!(
+<<<<<<< HEAD
             "El {campo} no puede exceder 100 caracteres"
+=======
+            "El {} no puede exceder {} caracteres",
+            campo, ENTIDAD_NOMBRE_MAX_LEN
+>>>>>>> feature/domain-layer-refactor
         )));
     }
 

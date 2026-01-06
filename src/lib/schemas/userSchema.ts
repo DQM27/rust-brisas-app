@@ -1,7 +1,13 @@
 import { z } from 'zod';
+import {
+    CEDULA_MIN_LEN,
+    CEDULA_MAX_LEN,
+    NOMBRE_MAX_LEN,
+    EMAIL_MAX_LEN
+} from './domainConstants';
 
 // ==========================================
-// VALIDACIONES BÁSICAS
+// VALIDACIONES BÁSICAS (Alineadas con backend domain/user.rs y common.rs)
 // ==========================================
 
 const stringRequerido = (max: number, nombre: string) =>
@@ -17,65 +23,101 @@ const stringOpcional = (max: number, nombre: string) =>
         .optional()
         .or(z.literal('')); // Permitir string vacío como opcional
 
+/**
+ * Email: Contiene @, max EMAIL_MAX_LEN chars
+ * Backend: validar_email_estandar()
+ */
 const emailSchema = z.string()
     .trim()
     .email('Email inválido')
-    .max(100, 'Email no puede exceder 100 caracteres');
+    .max(EMAIL_MAX_LEN, `Email no puede exceder ${EMAIL_MAX_LEN} caracteres`);
 
+/**
+ * Password: min 6 chars
+ * Backend: validar_password() - min 6 chars
+ */
 const passwordSchema = z.string()
     .min(6, 'La contraseña debe tener al menos 6 caracteres')
     .max(100, 'La contraseña no puede exceder 100 caracteres');
+
+/**
+ * Cédula: Solo números y guiones, sin letras
+ * Backend: validar_cedula_estandar() - CEDULA_MIN_LEN-CEDULA_MAX_LEN chars
+ */
+const cedulaSchema = z.string()
+    .trim()
+    .min(CEDULA_MIN_LEN, `Cédula debe tener al menos ${CEDULA_MIN_LEN} caracteres`)
+    .max(CEDULA_MAX_LEN, `Cédula no puede exceder ${CEDULA_MAX_LEN} caracteres`)
+    .regex(/^[0-9-]+$/, 'Cédula solo puede contener números y guiones')
+    .refine(val => /\d/.test(val), 'La cédula debe contener al menos un número');
+
+/**
+ * Nombre/Apellido: Solo letras con acentos, espacios permitidos
+ * Backend: validar_nombre_estandar() - max NOMBRE_MAX_LEN chars
+ */
+const nombreSchema = z.string()
+    .trim()
+    .min(1, 'Nombre es requerido')
+    .max(NOMBRE_MAX_LEN, `Nombre no puede exceder ${NOMBRE_MAX_LEN} caracteres`)
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, 'Nombre solo puede contener letras');
+
+const apellidoSchema = z.string()
+    .trim()
+    .min(1, 'Apellido es requerido')
+    .max(NOMBRE_MAX_LEN, `Apellido no puede exceder ${NOMBRE_MAX_LEN} caracteres`)
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, 'Apellido solo puede contener letras');
+
+/**
+ * Campos opcionales según domain/user.rs:
+ * - segundo_nombre/apellido: max 50
+ * - telefono: max 20
+ * - direccion: max 200
+ * - numero_gafete: max 20
+ */
+const segundoNombreSchema = z.string()
+    .trim()
+    .max(50, 'Segundo nombre no puede exceder 50 caracteres')
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]*$/, 'Segundo nombre solo puede contener letras')
+    .optional()
+    .or(z.literal(''));
+
+const segundoApellidoSchema = z.string()
+    .trim()
+    .max(50, 'Segundo apellido no puede exceder 50 caracteres')
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]*$/, 'Segundo apellido solo puede contener letras')
+    .optional()
+    .or(z.literal(''));
+
+/**
+ * Número de Gafete: max 20 chars (según backend domain/user.rs línea 83)
+ * El formato K-#### es convención UI, backend solo valida longitud
+ */
+const numeroGafeteSchema = z.string()
+    .max(20, 'Número de gafete no puede exceder 20 caracteres')
+    .regex(/^(K-\d+)?$/, 'El número de gafete debe tener el formato K-1234 o estar vacío')
+    .optional()
+    .or(z.literal(''));
 
 // ==========================================
 // SCHEMAS PRINCIPALES
 // ==========================================
 
 export const CreateUserSchema = z.object({
-    cedula: z.string()
-        .trim()
-        .min(7, 'Cédula debe tener al menos 7 caracteres')
-        .max(15, 'Cédula no puede exceder 15 caracteres')
-        .regex(/^[0-9-]+$/, 'Cédula solo puede contener números y guiones'),
+    cedula: cedulaSchema,
     email: emailSchema,
     // Password es opcional en la creación, permitimos string vacío o undefined
     password: z.union([passwordSchema, z.literal(''), z.undefined()]).optional(),
-
-    nombre: z.string()
-        .trim()
-        .min(1, 'Nombre es requerido')
-        .max(50, 'Nombre no puede exceder 50 caracteres')
-        .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'Nombre solo puede contener letras'),
-
-    apellido: z.string()
-        .trim()
-        .min(1, 'Apellido es requerido')
-        .max(50, 'Apellido no puede exceder 50 caracteres')
-        .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'Apellido solo puede contener letras'),
-
-    segundoNombre: z.string()
-        .trim()
-        .max(50, 'Segundo nombre no puede exceder 50 caracteres')
-        .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/, 'Segundo nombre solo puede contener letras')
-        .optional()
-        .or(z.literal('')),
-
-    segundoApellido: z.string()
-        .trim()
-        .max(50, 'Segundo apellido no puede exceder 50 caracteres')
-        .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/, 'Segundo apellido solo puede contener letras')
-        .optional()
-        .or(z.literal('')),
+    nombre: nombreSchema,
+    apellido: apellidoSchema,
+    segundoNombre: segundoNombreSchema,
+    segundoApellido: segundoApellidoSchema,
     roleId: z.string().optional(),  // FK a roles (default: guardia)
 
     // Campos adicionales opcionales
     telefono: stringOpcional(20, 'Teléfono'),
     direccion: stringOpcional(200, 'Dirección'),
     fechaInicioLabores: z.string().optional(),
-    numeroGafete: z.string()
-        .max(50, 'Número de gafete no puede exceder 50 caracteres')
-        .regex(/^K-\d+$/, 'El número de gafete debe tener el formato K-1234')
-        .optional()
-        .or(z.literal('')),
+    numeroGafete: numeroGafeteSchema,
     fechaNacimiento: z.string().optional(),
     contactoEmergenciaNombre: stringOpcional(100, 'Nombre contacto emergencia'),
     contactoEmergenciaTelefono: stringOpcional(20, 'Teléfono contacto emergencia'),

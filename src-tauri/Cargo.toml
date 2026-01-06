@@ -113,14 +113,14 @@ ttf-parser = { version = "0.24", optional = true }
 # Excel Export
 rust_xlsxwriter = { version = "0.69", optional = true }
 
+keyring = "3"                                                    # Gestión de credenciales multiplataforma (Unified v3)
+
 # =============================================================================
 # DEPENDENCIAS ESPECÍFICAS DE PLATAFORMA (Windows Only)
 # =============================================================================
 
 # -- WINDOWS
-[target.'cfg(target_os = "windows")'.dependencies]
-keyring = "2"                                                    # Gestión de credenciales mediante Credential Manager
-winapi = { version = "0.3", features = ["wincred", "winerror"] }
+
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.58", features = [

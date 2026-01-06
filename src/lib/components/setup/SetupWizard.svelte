@@ -111,7 +111,20 @@
       });
       onComplete?.();
     } catch (e) {
-      error = `Error guardando configuracion: ${e}`;
+      console.error("Error detallado:", e);
+      let errorDetail = "";
+      if (typeof e === "string") {
+        errorDetail = e;
+      } else if (e instanceof Error) {
+        errorDetail = e.message;
+      } else {
+        try {
+          errorDetail = JSON.stringify(e);
+        } catch {
+          errorDetail = String(e);
+        }
+      }
+      error = `Error guardando config: ${errorDetail}`;
     } finally {
       isSubmitting = false;
     }

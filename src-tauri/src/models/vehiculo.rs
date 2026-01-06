@@ -75,20 +75,39 @@ pub enum PropietarioFetched {
 pub enum TipoVehiculo {
     Motocicleta,
     Automovil,
+    Camioneta,
+    Camion,
+    Otro,
 }
 
 impl TipoVehiculo {
     pub const fn as_str(&self) -> &str {
         match self {
+<<<<<<< HEAD
             Self::Motocicleta => "motocicleta",
             Self::Automovil => "automovil",
+=======
+            TipoVehiculo::Motocicleta => "motocicleta",
+            TipoVehiculo::Automovil => "automovil",
+            TipoVehiculo::Camioneta => "camioneta",
+            TipoVehiculo::Camion => "camion",
+            TipoVehiculo::Otro => "otro",
+>>>>>>> feature/domain-layer-refactor
         }
     }
 
     pub const fn display(&self) -> &str {
         match self {
+<<<<<<< HEAD
             Self::Motocicleta => "Motocicleta",
             Self::Automovil => "Automóvil",
+=======
+            TipoVehiculo::Motocicleta => "Motocicleta",
+            TipoVehiculo::Automovil => "Automóvil",
+            TipoVehiculo::Camioneta => "Camioneta",
+            TipoVehiculo::Camion => "Camión",
+            TipoVehiculo::Otro => "Otro",
+>>>>>>> feature/domain-layer-refactor
         }
     }
 }
@@ -98,9 +117,18 @@ impl std::str::FromStr for TipoVehiculo {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
+<<<<<<< HEAD
             "motocicleta" => Ok(Self::Motocicleta),
             "automóvil" | "automovil" => Ok(Self::Automovil),
             _ => Err(format!("Tipo de vehículo desconocido: {s}")),
+=======
+            "motocicleta" => Ok(TipoVehiculo::Motocicleta),
+            "automóvil" | "automovil" => Ok(TipoVehiculo::Automovil),
+            "camioneta" => Ok(TipoVehiculo::Camioneta),
+            "camión" | "camion" => Ok(TipoVehiculo::Camion),
+            "otro" => Ok(TipoVehiculo::Otro),
+            _ => Err(format!("Tipo de vehículo desconocido: {}", s)),
+>>>>>>> feature/domain-layer-refactor
         }
     }
 }

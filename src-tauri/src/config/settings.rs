@@ -93,8 +93,8 @@ impl Default for AppConfig {
             },
             database: DatabaseConfig {
                 paths: vec![
-                    "./data/brisas.db".to_string(),
-                    "C:/ProgramData/Brisas/brisas.db".to_string(),
+                    "./data/surrealdb".to_string(),
+                    "C:/ProgramData/Brisas/surrealdb".to_string(),
                 ],
                 default_path: String::new(), // Se calculará en runtime
             },

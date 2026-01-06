@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 //! # Dominio: Reglas de Negocio para Vehículos
 //!
 //! Este módulo centraliza las políticas de validación, normalización de placas
@@ -5,6 +6,13 @@
 use crate::domain::common::{
     validar_placa_estandar, MAX_LEN_COLOR_VEHICULO, MAX_LEN_MARCA_VEHICULO, MAX_LEN_MODELO_VEHICULO,
 };
+=======
+/// Capa de Dominio: Reglas de Negocio para Vehículos.
+///
+/// Este módulo gestiona las validaciones de propiedad y características técnicas
+/// de los vehículos que ingresan a las instalaciones.
+use crate::domain::common::{validar_placa_estandar, COLOR_MAX_LEN, MARCA_MODELO_MAX_LEN};
+>>>>>>> feature/domain-layer-refactor
 use crate::domain::errors::VehiculoError;
 use crate::models::vehiculo::{CreateVehiculoInput, TipoVehiculo, UpdateVehiculoInput};
 
@@ -74,9 +82,16 @@ pub fn validar_marca(marca: &str) -> Result<(), VehiculoError> {
         return Err(VehiculoError::Validation("La marca no puede estar vacía".to_string()));
     }
 
+<<<<<<< HEAD
     if limpia.len() > MAX_LEN_MARCA_VEHICULO {
         return Err(VehiculoError::Validation(format!(
             "La marca no puede exceder {MAX_LEN_MARCA_VEHICULO} caracteres"
+=======
+    if limpia.len() > MARCA_MODELO_MAX_LEN {
+        return Err(VehiculoError::Validation(format!(
+            "La marca no puede exceder {} caracteres",
+            MARCA_MODELO_MAX_LEN
+>>>>>>> feature/domain-layer-refactor
         )));
     }
 
@@ -117,11 +132,19 @@ pub fn validar_create_input(input: &CreateVehiculoInput) -> Result<(), VehiculoE
     }
 
     if let Some(ref modelo) = input.modelo {
+<<<<<<< HEAD
         validar_texto_opcional(modelo, CAMPO_MODELO, MAX_LEN_MODELO_VEHICULO)?;
     }
 
     if let Some(ref color) = input.color {
         validar_texto_opcional(color, CAMPO_COLOR, MAX_LEN_COLOR_VEHICULO)?;
+=======
+        validar_texto_opcional(modelo, "Modelo", MARCA_MODELO_MAX_LEN)?;
+    }
+
+    if let Some(ref color) = input.color {
+        validar_texto_opcional(color, "Color", COLOR_MAX_LEN)?;
+>>>>>>> feature/domain-layer-refactor
     }
 
     Ok(())
@@ -140,11 +163,19 @@ pub fn validar_update_input(input: &UpdateVehiculoInput) -> Result<(), VehiculoE
     }
 
     if let Some(ref modelo) = input.modelo {
+<<<<<<< HEAD
         validar_texto_opcional(modelo, CAMPO_MODELO, MAX_LEN_MODELO_VEHICULO)?;
     }
 
     if let Some(ref color) = input.color {
         validar_texto_opcional(color, CAMPO_COLOR, MAX_LEN_COLOR_VEHICULO)?;
+=======
+        validar_texto_opcional(modelo, "Modelo", MARCA_MODELO_MAX_LEN)?;
+    }
+
+    if let Some(ref color) = input.color {
+        validar_texto_opcional(color, "Color", COLOR_MAX_LEN)?;
+>>>>>>> feature/domain-layer-refactor
     }
 
     Ok(())

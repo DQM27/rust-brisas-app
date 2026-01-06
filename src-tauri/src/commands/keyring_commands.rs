@@ -73,8 +73,23 @@ pub async fn setup_credentials(
     input: SetupCredentialsInput,
     config: State<'_, crate::config::settings::AppConfigState>,
 ) -> Result<SetupResult, KeyringError> {
+<<<<<<< HEAD
     // Nota: No usamos require_perm! aquí porque el setup ocurre ANTES del login.
     // La protección es que el wizard solo se muestra si needs_setup() retorna true.
+=======
+    // Verificar si la app ya está configurada.
+    // Si NO está configurada (Wizard inicial), permitimos acceso sin sesión.
+    // Si SI está configurada, exigimos permisos de administrador.
+    let is_initial_setup = {
+        let guard = config.read().map_err(|e| KeyringError::Message(e.to_string()))?;
+        !guard.setup.is_configured
+    };
+
+    if !is_initial_setup {
+        require_perm!(session, "config:update", "Configuración de credenciales")
+            .map_err(|e| KeyringError::Message(e.to_string()))?;
+    }
+>>>>>>> feature/domain-layer-refactor
 
     let mut final_argon2 = input.argon2.clone();
     if ks::has_argon2_secret() {
@@ -177,19 +192,11 @@ pub fn generate_random_secret() -> String {
 }
 
 /// Ejecuta una batería de pruebas sobre el llavero del sistema para verificar permisos.
+/// Ejecuta una batería de pruebas sobre el llavero del sistema para verificar permisos.
 #[command]
 pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, KeyringError> {
     require_perm!(session, "config:read", "Diagnóstico de Keyring")
         .map_err(|e| KeyringError::Message(e.to_string()))?;
-
-    #[cfg(target_os = "linux")]
-    use crate::services::keyring_linux as keyring_impl;
-
-    #[cfg(target_os = "windows")]
-    use crate::services::keyring_windows as keyring_impl;
-
-    #[cfg(target_os = "macos")]
-    use crate::services::keyring_service as keyring_impl;
 
     let test_key = "test-brisas-diagnostic";
     let test_value = "test-password-123";
@@ -199,30 +206,22 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
     results.push(String::new());
 
     results.push("1. Guardando credencial de prueba...".to_string());
+<<<<<<< HEAD
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     match keyring_impl::store_secret(test_key, test_value) {
         Ok(()) => results.push("   ✓ Credencial guardada correctamente".to_string()),
+=======
+    match ks::save_secret(test_key, test_value) {
+        Ok(_) => results.push("   ✓ Credencial guardada correctamente".to_string()),
+>>>>>>> feature/domain-layer-refactor
         Err(e) => {
             results.push(format!("   ✗ Error guardando credencial: {e}"));
             return Ok(results.join("\n"));
         }
     }
 
-    #[cfg(target_os = "macos")]
-    {
-        use keyring::Entry;
-        let entry = Entry::new("test-brisas-diagnostic", test_key)
-            .map_err(|e| format!("Error creando entrada: {}", e))?;
-        match entry.set_password(test_value) {
-            Ok(_) => results.push("   ✓ Credencial guardada correctamente".to_string()),
-            Err(e) => {
-                results.push(format!("   ✗ Error guardando credencial: {}", e));
-                return Ok(results.join("\n"));
-            }
-        }
-    }
-
     results.push("2. Recuperando credencial...".to_string());
+<<<<<<< HEAD
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     if let Some(password) = keyring_impl::retrieve_secret(test_key) {
         results.push(format!("   ✓ Credencial recuperada: {password}"));
@@ -232,69 +231,62 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
             results.push(format!(
                 "   ✗ La credencial NO coincide! Esperado: {test_value}, Obtenido: {password}"
             ));
+=======
+    match ks::get_secret(test_key) {
+        Some(password) => {
+            results
+                .push(format!("   ✓ Credencial recuperada: [OCULTO, longitud={}]", password.len()));
+            if password == test_value {
+                results.push("   ✓ La credencial coincide!".to_string());
+            } else {
+                results.push(format!(
+                    "   ✗ La credencial NO coincide! Esperado: {}, Obtenido: {}",
+                    test_value, password
+                ));
+            }
+        }
+        None => {
+            results.push("   ✗ Error recuperando credencial".to_string());
+            return Ok(results.join("\n"));
+>>>>>>> feature/domain-layer-refactor
         }
     } else {
         results.push("   ✗ Error recuperando credencial".to_string());
         return Ok(results.join("\n"));
     }
 
-    #[cfg(target_os = "macos")]
-    {
-        use keyring::Entry;
-        let entry = Entry::new("test-brisas-diagnostic", test_key)
-            .map_err(|e| format!("Error creando entrada: {}", e))?;
-        match entry.get_password() {
-            Ok(password) => {
-                results.push(format!("   ✓ Credencial recuperada: {}", password));
-                if password == test_value {
-                    results.push("   ✓ La credencial coincide!".to_string());
-                } else {
-                    results.push(format!(
-                        "   ✗ La credencial NO coincide! Esperado: {}, Obtenido: {}",
-                        test_value, password
-                    ));
-                }
-            }
-            Err(e) => {
-                results.push(format!("   ✗ Error recuperando credencial: {}", e));
-                return Ok(results.join("\n"));
-            }
-        }
-    }
-
     results.push("3. Eliminando credencial...".to_string());
+<<<<<<< HEAD
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     match keyring_impl::delete_secret(test_key) {
         Ok(()) => results.push("   ✓ Credencial eliminada correctamente".to_string()),
+=======
+    match ks::delete_secret(test_key) {
+        Ok(_) => results.push("   ✓ Credencial eliminada correctamente".to_string()),
+>>>>>>> feature/domain-layer-refactor
         Err(e) => {
             results.push(format!("   ✗ Error eliminando credencial: {e}"));
         }
     }
 
-    #[cfg(target_os = "macos")]
-    {
-        use keyring::Entry;
-        let entry = Entry::new("test-brisas-diagnostic", test_key)
-            .map_err(|e| format!("Error creando entrada: {}", e))?;
-        match entry.delete_credential() {
-            Ok(_) => results.push("   ✓ Credencial eliminada correctamente".to_string()),
-            Err(e) => {
-                results.push(format!("   ✗ Error eliminando credencial: {}", e));
-            }
-        }
-    }
-
     results.push("4. Verificando eliminación...".to_string());
+<<<<<<< HEAD
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     match keyring_impl::retrieve_secret(test_key) {
         Some(password) => {
             results.push(format!("   ✗ La credencial aún existe: {password}"));
+=======
+    match ks::get_secret(test_key) {
+        Some(_) => {
+            results.push("   ✗ La credencial aún existe".to_string());
+>>>>>>> feature/domain-layer-refactor
         }
         None => {
             results.push("   ✓ La credencial fue eliminada correctamente".to_string());
         }
     }
 
+<<<<<<< HEAD
     #[cfg(target_os = "macos")]
     {
         use keyring::Entry;
@@ -311,6 +303,9 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
     }
 
     results.push(String::new());
+=======
+    results.push("".to_string());
+>>>>>>> feature/domain-layer-refactor
     results.push("✓ Test completado exitosamente".to_string());
     Ok(results.join("\n"))
 }

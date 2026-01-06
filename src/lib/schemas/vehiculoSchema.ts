@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PLACA_MIN_LEN, PLACA_MAX_LEN } from "./domainConstants";
 
 // ==========================================
 // BASE SCHEMA (Para defaults de Superforms)
@@ -13,16 +14,22 @@ export const vehiculoSchemaBase = z.object({
 });
 
 // ==========================================
-// SCHEMA CON VALIDACIONES
+// SCHEMA CON VALIDACIONES (Alineado con backend models/vehiculo.rs)
 // ==========================================
 
+/**
+ * TipoVehiculo enum - Sincronizado con backend:
+ * Backend: TipoVehiculo { Motocicleta, Automovil, Camioneta, Camion, Otro }
+ */
+export const TIPO_VEHICULO_OPTIONS = ["motocicleta", "automovil", "camioneta", "camion", "otro"] as const;
+
 export const vehiculoSchema = z.object({
-    tipoVehiculo: z.enum(["motocicleta", "automovil", "camioneta", "camion", "otro"]),
+    tipoVehiculo: z.enum(TIPO_VEHICULO_OPTIONS),
     placa: z
         .string()
-        .min(3, "Mínimo 3 caracteres")
-        .max(15, "Máximo 15 caracteres")
-        .regex(/^[A-Za-z0-9\s-]+$/, "Solo letras, números y guiones")
+        .min(PLACA_MIN_LEN, `Mínimo ${PLACA_MIN_LEN} caracteres`)
+        .max(PLACA_MAX_LEN, `Máximo ${PLACA_MAX_LEN} caracteres`)
+        .regex(/^[A-Za-z0-9\s-]+$/, "Solo letras, números, guiones y espacios")
         .transform((val) => val.toUpperCase().trim()),
     marca: z.string().max(50, "Máximo 50 caracteres").optional().or(z.literal('')),
     modelo: z.string().max(50, "Máximo 50 caracteres").optional().or(z.literal('')),
@@ -35,3 +42,5 @@ export const vehiculoSchema = z.object({
 
 export type VehiculoFormData = z.infer<typeof vehiculoSchemaBase>;
 export type VehiculoSchema = typeof vehiculoSchema;
+export type TipoVehiculo = typeof TIPO_VEHICULO_OPTIONS[number];
+
