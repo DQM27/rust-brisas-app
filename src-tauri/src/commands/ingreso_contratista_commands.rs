@@ -55,7 +55,7 @@ pub async fn validate_ingreso_contratista(
     contratista_id: String,
 ) -> Result<ValidacionIngresoResponse, IngresoContratistaError> {
     require_session!(session);
-    require_perm!(session, "IngresoContratista:Read")?;
+    require_perm!(session, "ingresos:read")?;
     create_service().validar_ingreso_contratista(contratista_id).await
 }
 
@@ -67,7 +67,7 @@ pub async fn create_ingreso_contratista(
     input: CreateIngresoContratistaInput,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
     let user = require_session!(session);
-    require_perm!(session, "IngresoContratista:Create")?;
+    require_perm!(session, "ingresos:create")?;
     create_service().crear_ingreso_contratista(input, user.id.clone()).await
 }
 
@@ -83,7 +83,7 @@ pub async fn validate_exit_contratista(
     gafete_devuelto: Option<String>,
 ) -> Result<ResultadoValidacionSalida, IngresoContratistaError> {
     require_session!(session);
-    require_perm!(session, "IngresoContratista:Read")?;
+    require_perm!(session, "ingresos:read")?;
 
     create_service()
         .validar_puede_salir(&ingreso_id, gafete_devuelto.as_deref())
@@ -99,7 +99,7 @@ pub async fn register_exit_contratista(
     input: RegistrarSalidaInput,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
     let user = require_session!(session);
-    require_perm!(session, "IngresoContratista:Update")?;
+    require_perm!(session, "ingresos:update")?;
     create_service().registrar_salida(input, user.id.clone()).await
 }
 
@@ -113,7 +113,7 @@ pub async fn get_permanencia_status(
     session: State<'_, SessionState>,
 ) -> Result<Vec<IngresoConEstadoResponse>, IngresoContratistaError> {
     require_session!(session);
-    require_perm!(session, "IngresoContratista:Read")?;
+    require_perm!(session, "ingresos:read")?;
     create_service().get_ingresos_abiertos_con_alertas().await
 }
 
@@ -123,6 +123,6 @@ pub async fn check_time_alerts(
     session: State<'_, SessionState>,
 ) -> Result<Vec<AlertaTiempoExcedido>, IngresoContratistaError> {
     require_session!(session);
-    require_perm!(session, "IngresoContratista:Read")?;
+    require_perm!(session, "ingresos:read")?;
     create_service().verificar_tiempos_excedidos().await
 }

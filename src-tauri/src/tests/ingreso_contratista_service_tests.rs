@@ -287,7 +287,7 @@ async fn test_crear_ingreso_success() {
         tipo_autorizacion: "NORMAL".to_string(),
         modo_ingreso: "PEATONAL".to_string(),
         placa_vehiculo: None,
-        gafete_numero: Some(101),
+        gafete_numero: Some("101".to_string()),
         observaciones: None,
     };
 

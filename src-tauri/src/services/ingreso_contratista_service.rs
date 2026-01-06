@@ -163,16 +163,30 @@ where
         let contratista_id = parse_contratista_id(&input.contratista_id)?;
         let usuario_id = parse_user_id(&usuario_id_str)?;
 
-        if let Some(ref g) = input.gafete_numero {
-            if *g != 0 {
+        // Convertir gafete de String a i32 (0 = sin gafete, "S/G" = sin gafete)
+        let gafete_int: Option<i32> = if let Some(ref g_str) = input.gafete_numero {
+            if g_str.trim().is_empty() || g_str.eq_ignore_ascii_case("S/G") {
+                Some(0) // Sin gafete
+            } else {
+                Some(
+                    crate::domain::common::normalizar_gafete_a_int(g_str)
+                        .map_err(IngresoContratistaError::Validation)?,
+                )
+            }
+        } else {
+            Some(0) // Sin gafete por defecto
+        };
+
+        if let Some(g) = gafete_int {
+            if g != 0 {
                 let disp = self
                     .gafete_repo
-                    .is_disponible(*g, "contratista")
+                    .is_disponible(g, "contratista")
                     .await
                     .map_err(|e| IngresoContratistaError::Gafete(e.to_string()))?;
 
                 if !disp {
-                    warn!("Gafete {} no disponible para ingreso", *g);
+                    warn!("Gafete {} no disponible para ingreso", g);
                     return Err(IngresoContratistaError::GafeteNotAvailable);
                 }
             }
@@ -195,7 +209,7 @@ where
             tipo_autorizacion: input.tipo_autorizacion,
             modo_ingreso: input.modo_ingreso,
             placa_vehiculo: input.placa_vehiculo,
-            gafete_numero: input.gafete_numero,
+            gafete_numero: gafete_int,
             usuario_ingreso: usuario_id,
             observaciones: input.observaciones,
         };

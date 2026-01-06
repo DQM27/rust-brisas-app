@@ -77,7 +77,9 @@ pub struct CreateIngresoContratistaInput {
     pub tipo_autorizacion: String,
     pub modo_ingreso: String,
     pub placa_vehiculo: Option<String>,
-    pub gafete_numero: Option<i32>,
+    /// Número de gafete como string - se convierte a i32 en el servicio
+    /// Valores: número (ej: "1", "2") o vacío/null para sin gafete (0)
+    pub gafete_numero: Option<String>,
     pub observaciones: Option<String>,
 }
 
@@ -85,7 +87,10 @@ pub struct CreateIngresoContratistaInput {
 // DTOs PARA PERSISTENCIA
 // --------------------------------------------------------------------------
 
+/// DTO para crear un registro de ingreso de contratista en SurrealDB.
+/// Los campos se serializan en camelCase para coincidir con el modelo de lectura.
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct IngresoContratistaCreateDTO {
     pub contratista: RecordId,
     pub nombre: String,

@@ -210,10 +210,14 @@ export async function crearIngreso(
                 if (v) placaVehiculo = v.placa;
             }
 
+            // El backend espera gafete como string y lo convierte internamente
+            // Valores válidos: "1", "2", "S/G", "", null (todos se convierten a i32)
+            const gafeteNumero = formData.gafete || null;
+
             const payload = {
                 input: {
                     contratistaId: candidateId,
-                    gafeteNumero: formData.gafete,
+                    gafeteNumero: gafeteNumero,
                     placaVehiculo: placaVehiculo,
                     tipoAutorizacion: formData.tipoAutorizacion || 'praind',
                     modoIngreso: formData.modoIngreso || 'caminando',
