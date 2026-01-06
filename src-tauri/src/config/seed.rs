@@ -209,7 +209,7 @@ async fn seed_admin_user() -> Result<(), SurrealDbError> {
         return Ok(());
     }
 
-    let id = uuid::Uuid::new_v4().to_string();
+    let id = uuid::Uuid::now_v7().to_string();
     let password_hash =
         hash_password("desing27").map_err(|e| SurrealDbError::Query(e.to_string()))?;
 

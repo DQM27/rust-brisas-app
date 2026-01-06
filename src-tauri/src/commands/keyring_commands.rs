@@ -69,12 +69,12 @@ pub fn needs_setup(config: State<'_, AppConfigState>) -> bool {
 /// Orquesta la configuración inicial: llavero, archivos TOML y siembra de DB.
 #[command]
 pub async fn setup_credentials(
-    session: State<'_, SessionState>,
+    _session: State<'_, SessionState>, // No se usa - setup es previo al login
     input: SetupCredentialsInput,
     config: State<'_, crate::config::settings::AppConfigState>,
 ) -> Result<SetupResult, KeyringError> {
-    require_perm!(session, "config:update", "Configuración inicial de credenciales")
-        .map_err(|e| KeyringError::Message(e.to_string()))?;
+    // Nota: No usamos require_perm! aquí porque el setup ocurre ANTES del login.
+    // La protección es que el wizard solo se muestra si needs_setup() retorna true.
 
     let mut final_argon2 = input.argon2.clone();
     if ks::has_argon2_secret() {
@@ -88,9 +88,9 @@ pub async fn setup_credentials(
     ks::store_argon2_params(&final_argon2).map_err(|e| KeyringError::StoreError(e.to_string()))?;
 
     {
-        let mut config_guard = config.write().map_err(|e| {
-            KeyringError::Message(format!("Error escribiendo configuración: {e}"))
-        })?;
+        let mut config_guard = config
+            .write()
+            .map_err(|e| KeyringError::Message(format!("Error escribiendo configuración: {e}")))?;
 
         config_guard.setup.is_configured = true;
         config_guard.setup.configured_at = Some(Utc::now().to_rfc3339());

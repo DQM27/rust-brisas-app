@@ -143,7 +143,7 @@ fn generate_hardware_id() -> Result<String, Box<dyn std::error::Error>> {
     }
 
     // Fallback: UUID aleatorio
-    Ok(format!("HW-{}", uuid::Uuid::new_v4().to_string().replace('-', "")))
+    Ok(format!("HW-{}", uuid::Uuid::now_v7().to_string().replace('-', "")))
 }
 
 /// Obtiene la ruta de la base de datos según la configuración

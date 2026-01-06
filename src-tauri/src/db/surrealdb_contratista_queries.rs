@@ -146,8 +146,8 @@ pub async fn find_all() -> Result<Vec<Contratista>, SurrealDbError> {
 /// ```sql
 /// SELECT * FROM contratista
 /// WHERE deleted_at IS NONE
-/// FETCH empresa
 /// LIMIT 1000
+/// FETCH empresa
 /// ```
 ///
 /// ## Uso de FETCH
@@ -162,7 +162,7 @@ pub async fn find_all() -> Result<Vec<Contratista>, SurrealDbError> {
 pub async fn find_all_fetched() -> Result<Vec<ContratistaFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM contratista WHERE deleted_at IS NONE FETCH empresa LIMIT 1000")
+        .query("SELECT * FROM contratista WHERE deleted_at IS NONE LIMIT 1000 FETCH empresa")
         .await?;
     Ok(result.take(0)?)
 }
@@ -329,6 +329,7 @@ pub async fn restore(id: &RecordId) -> Result<(), SurrealDbError> {
 /// SELECT * FROM contratista
 /// WHERE deleted_at IS NOT NONE
 /// ORDER BY deleted_at DESC
+/// LIMIT 500
 /// FETCH empresa
 /// ```
 ///
@@ -340,7 +341,7 @@ pub async fn restore(id: &RecordId) -> Result<(), SurrealDbError> {
 pub async fn find_archived() -> Result<Vec<ContratistaFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM contratista WHERE deleted_at IS NOT NONE ORDER BY deleted_at DESC FETCH empresa LIMIT 500")
+        .query("SELECT * FROM contratista WHERE deleted_at IS NOT NONE ORDER BY deleted_at DESC LIMIT 500 FETCH empresa")
         .await?;
     Ok(result.take(0)?)
 }

@@ -101,7 +101,7 @@ pub async fn upload_avatar(user_id: &str, file_path: &str) -> Result<String, Use
         .map_err(|e| UserError::Internal(format!("Error de encriptación: {e}")))?;
 
     // 3. Generar UUID para el archivo (nombre ofuscado)
-    let file_uuid = uuid::Uuid::new_v4().to_string();
+    let file_uuid = uuid::Uuid::now_v7().to_string();
 
     // 4. Guardar archivo encriptado
     let base_path = get_avatar_base_path()?;

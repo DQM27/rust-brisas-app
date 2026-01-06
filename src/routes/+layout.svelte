@@ -237,8 +237,8 @@
 </script>
 
 {#if checkingSetup}
-  <div class="h-screen w-screen bg-surface-1 flex items-center justify-center">
-    <!-- Un div limpio mientras carga el estado -->
+  <div class="h-screen w-screen bg-blue-600 flex items-center justify-center">
+    <span class="text-white text-xl">Verificando configuración...</span>
   </div>
 {:else if showSetupWizard}
   <SetupWizard onComplete={handleSetupComplete} />
