@@ -142,20 +142,6 @@ export-pdf = ["typst", "typst-pdf", "ttf-parser"]
 export-excel = ["rust_xlsxwriter"]
 
 # =============================================================================
-# DEPENDENCIAS DE DESARROLLO (Test y Benchmarks)
-# =============================================================================
-[dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
-
-[[bench]]
-name = "auth_bench"
-harness = false
-
-[[bench]]
-name = "search_bench"
-harness = false
-
-# =============================================================================
 # PERFILES DE CONSTRUCCIÓN (Optimizaciones)
 # =============================================================================
 [profile.release]
