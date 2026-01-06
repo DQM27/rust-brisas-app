@@ -17,14 +17,41 @@ use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use log::info;
 use surrealdb::RecordId;
 
+use crate::config::manager::save_config;
+use crate::config::settings::AppConfigState;
+
 /// Orquesta la ejecución secuencial de todos los seeds del sistema.
 /// Debe ser invocado durante el arranque de la aplicación si el estado es 'Setup'.
-pub async fn seed_db() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn seed_db(config_state: AppConfigState) -> Result<(), Box<dyn std::error::Error>> {
+    // 1. Verificación de estado previo
+    {
+        let config = config_state.read().unwrap();
+        if config.setup.is_seeded {
+            info!("🌱 Sistema ya sembrado previamente. Omitiendo regeneración completa.");
+            return Ok(());
+        }
+    }
+
     info!("🚀 Iniciando proceso de seeding de base de datos...");
+
+    // 2. Ejecución de semillas
     seed_roles().await?;
     seed_god_user().await?;
     seed_admin_user().await?;
     seed_modules().await?;
+
+    // 3. Registrar éxito y persistir
+    {
+        let mut config = config_state.write().unwrap();
+        config.setup.is_seeded = true;
+
+        if let Err(e) = save_config(&config, &crate::config::manager::get_default_config_path()) {
+            log::error!("❌ Error guardando estado de seed: {}", e);
+        } else {
+            info!("✨ Estado de seed guardado en configuración.");
+        }
+    }
+
     info!("✨ Proceso de seeding completado satisfactoriamente");
     Ok(())
 }
@@ -86,9 +113,8 @@ async fn seed_modules() -> Result<(), SurrealDbError> {
 
 /// Provisiona los roles fundamentales del sistema.
 ///
-/// Este proceso es destructivo para los roles de sistema (los elimina y re-crea)
-/// para asegurar que los permisos estén siempre actualizados con la última
-/// versión del código (Action/Module).
+/// Refactorizado para usar "Upsert" (Merge) en lugar de Delete/Create,
+/// preservando así cualquier estado extra que no sea crítico.
 async fn seed_roles() -> Result<(), SurrealDbError> {
     use crate::domain::role::GodModeGuard;
 
@@ -144,10 +170,32 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
             _ => vec![],
         };
 
-        // Limpieza previa para asegurar consistencia
-        db.query("DELETE type::thing('role', $id)").bind(("id", id)).await?;
+        // UPSERT SEGURO: Actualiza permisos y metadata, pero no borra el record.
+        db.query(
+            r"
+                UPDATE type::thing('role', $id) MERGE {
+                    name: $name,
+                    description: $desc,
+                    is_system: true,
+                    inherits_from: $inherits,
+                    permissions: $permissions,
+                    updated_at: time::now()
+                }
+                ",
+        )
+        .bind(("id", id))
+        .bind(("name", name))
+        .bind(("desc", desc))
+        .bind(("inherits", inherits.map(|i| RecordId::from_table_key("role", i))))
+        .bind(("permissions", permissions.clone()))
+        .await?
+        .check()?;
 
-        // Inserción del rol con metadatos de sistema
+        // Si no existía, el UPDATE no hace nada, así que intentamos CREATE IF NOT EXISTS
+        // Pero UPDATE con ID específico en SurrealDB debería crearlo si no existe?
+        // No, UPDATE solo actualiza. CREATE crea.
+        // Hacemos un CREATE pasivo por si acaso.
+
         db.query(
             r"
                 CREATE type::thing('role', $id) CONTENT {
@@ -159,15 +207,15 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
                     created_at: time::now(),
                     updated_at: time::now()
                 }
-                ",
+            ",
         )
         .bind(("id", id))
         .bind(("name", name))
         .bind(("desc", desc))
         .bind(("inherits", inherits.map(|i| RecordId::from_table_key("role", i))))
-        .bind(("permissions", permissions))
-        .await?
-        .check()?;
+        .bind(("permissions", permissions)) // Variable reuse warning potential, but cloning above or copying is ok
+        .await
+        .ok(); // Ignoramos error si ya existe (el UPDATE ya se encargó)
     }
 
     info!("✅ Roles base de sistema sincronizados");

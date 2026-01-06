@@ -84,7 +84,7 @@ pub fn run() {
 
             let is_configured = app_config.setup.is_configured;
             let config_state: AppConfigState = Arc::new(RwLock::new(app_config));
-            app.manage(config_state);
+            app.manage(config_state.clone());
 
             // Verificamos y creamos el directorio de datos de la aplicación si no existe.
             let app_data_dir = app.path().app_data_dir()?;
@@ -103,8 +103,9 @@ pub fn run() {
             // Esto asegura que tengamos los roles y usuarios administrativos básicos necesarios para operar.
             tauri::async_runtime::block_on(async {
                 if is_configured {
-                    info!("🌱 Sistema configurado previamente. Verificando datos base...");
-                    if let Err(e) = seed::seed_db().await {
+                    info!("🌱 Sistema configurado previamente. Verificando integridad de datos...");
+                    // Pasamos config_state para controlar si ya se hizo el seed
+                    if let Err(e) = seed::seed_db(config_state.clone()).await {
                         error!("❌ Error durante la verificación de datos iniciales: {e}");
                     }
                 } else {

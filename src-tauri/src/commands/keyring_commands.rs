@@ -138,7 +138,7 @@ pub async fn setup_credentials(
     }
 
     log::info!("🌱 Configuración completada. Ejecutando seed de base de datos...");
-    if let Err(e) = crate::config::seed::seed_db().await {
+    if let Err(e) = crate::config::seed::seed_db(config.inner().clone()).await {
         log::error!("❌ Error al sembrar base de datos tras setup: {e}");
         return Err(KeyringError::Message(format!("Error en seed: {e}")));
     }

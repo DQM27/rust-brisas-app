@@ -50,6 +50,9 @@ pub struct SetupState {
     /// Versión en la que se configuró
     #[serde(default)]
     pub configured_version: Option<String>,
+    /// Indica si los datos base (roles, usuarios, módulos) ya fueron sembrados
+    #[serde(default)]
+    pub is_seeded: bool,
 }
 
 /// Configuración de la terminal

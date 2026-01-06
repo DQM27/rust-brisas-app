@@ -25,7 +25,7 @@ fn get_config_search_paths() -> Vec<PathBuf> {
 }
 
 /// Obtiene la ruta donde se guardará la configuración por defecto
-fn get_default_config_path() -> PathBuf {
+pub fn get_default_config_path() -> PathBuf {
     if let Some(data_dir) = dirs::data_local_dir() {
         data_dir.join("Brisas").join("brisas.toml")
     } else {
