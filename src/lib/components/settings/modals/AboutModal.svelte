@@ -5,12 +5,17 @@
   import { onMount, onDestroy } from "svelte";
   import { APP_CONFIG } from "$lib/config/app";
 
+  import { getVersion } from "@tauri-apps/api/app";
+
   interface Props {
     show: boolean;
     onClose: () => void;
   }
 
   let { show, onClose }: Props = $props();
+
+  // Versión dinámica
+  let appVersion = $state(APP_CONFIG.version);
 
   // Lista de colaboradores (hardcoded por ahora)
   const contributors = [
@@ -31,6 +36,13 @@
 
   $effect(() => {
     if (show) {
+      // Fetch real version when modal opens
+      getVersion()
+        .then((v) => {
+          if (v) appVersion = v;
+        })
+        .catch((err) => console.error("Error fetching version:", err));
+
       currentIndex = 0;
       intervalId = setInterval(() => {
         currentIndex = (currentIndex + 1) % contributors.length;
@@ -117,8 +129,7 @@
             >
             <span
               class="font-mono text-xs font-medium text-gray-900 dark:text-gray-200"
-              >{APP_CONFIG.version}</span
-            >
+              >{appVersion}</span
             >
           </div>
 
