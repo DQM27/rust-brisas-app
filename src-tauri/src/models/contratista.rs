@@ -357,6 +357,9 @@ pub struct ContratistaListResponse {
 // ==========================================
 
 pub mod validaciones {
+    use crate::domain::common::{
+        CEDULA_MAX_LEN, CEDULA_MIN_LEN, NOMBRE_MAX_LEN, SEGUNDO_NOMBRE_MAX_LEN,
+    };
     use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 
     pub fn validar_cedula(cedula: &str) -> Result<(), String> {
