@@ -482,24 +482,18 @@
       <!-- Form Content -->
       <div class="flex-1 overflow-y-auto custom-scrollbar pr-2">
         <!-- Basic Info -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="space-y-4 mb-8 max-w-2xl">
           <div class="space-y-2">
             <label for="name" class="block text-sm font-medium text-gray-300"
               >Nombre del Rol</label
             >
-            <div class="relative">
-              <UserCircle
-                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-                size={18}
-              />
-              <input
-                id="name"
-                type="text"
-                bind:value={formData.name}
-                placeholder="Ej: Auditor"
-                class="w-full bg-surface-2 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-primary-500 transition-all"
-              />
-            </div>
+            <input
+              id="name"
+              type="text"
+              bind:value={formData.name}
+              placeholder="Ej: Auditor"
+              class="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-2 text-white focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
+            />
           </div>
 
           <div class="space-y-2">
@@ -511,7 +505,7 @@
               type="text"
               bind:value={formData.description}
               placeholder="Descripción breve..."
-              class="w-full bg-surface-2 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary-500 transition-all"
+              class="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-2 text-white focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb] transition-all"
             />
           </div>
         </div>
@@ -529,17 +523,19 @@
             </h3>
           </div>
 
-          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-8">
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pb-8"
+          >
             {#each [...getGroupedPermissions()] as [moduleName, perms]}
               <div
                 class="bg-surface-2 border border-white/5 rounded-xl overflow-hidden flex flex-col"
               >
                 <!-- Module Header -->
                 <div
-                  class="px-4 py-3 bg-surface-3 flex items-center justify-between border-b border-white/5"
+                  class="px-3 py-2 bg-surface-3 flex items-center justify-between border-b border-white/5"
                 >
                   <span
-                    class="font-medium text-gray-200 uppercase tracking-wide text-sm"
+                    class="font-medium text-gray-200 uppercase tracking-wide text-xs"
                     >{translateModule(moduleName)}</span
                   >
                   <button
@@ -557,11 +553,11 @@
                 </div>
 
                 <!-- Perms Grid -->
-                <div class="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div class="p-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {#each perms as perm}
                     <button
                       onclick={() => togglePermission(perm.id)}
-                      class="relative flex items-center justify-center py-2 px-3 rounded-lg border transition-all duration-200 text-sm {formData.permissions.includes(
+                      class="relative flex items-center justify-center py-1.5 px-2 rounded-lg border transition-all duration-200 text-xs {formData.permissions.includes(
                         perm.id,
                       )
                         ? 'bg-[#2563eb] border-transparent text-white shadow-md hover:bg-[#1d4ed8] ring-1 ring-white/20 font-semibold'
