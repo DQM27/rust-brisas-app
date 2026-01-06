@@ -261,7 +261,8 @@ impl UserResponse {
             nombre_completo,
             role_id: u.role.to_string(),
             role_name,
-            is_superuser: u.id.to_string() == format!("user:{}", GOD_ID),
+            is_superuser: u.id.to_string() == format!("user:{}", GOD_ID)
+                || u.id.to_string() == format!("user:⟨{}⟩", GOD_ID), // Fallback robusto
             permissions, // Now included
             is_active: u.is_active,
             created_at: u.created_at.to_string(),
@@ -307,7 +308,8 @@ impl UserResponse {
             nombre_completo,
             role_id,
             role_name,
-            is_superuser: u.id.to_string() == format!("user:{}", GOD_ID),
+            is_superuser: u.id.to_string() == format!("user:{}", GOD_ID)
+                || u.id.to_string() == format!("user:⟨{}⟩", GOD_ID),
             permissions,
             is_active: u.is_active,
             created_at: u.created_at.to_string(),

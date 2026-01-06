@@ -11,13 +11,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 // --------------------------------------------------------------------------
 
 /// Identificador único del usuario raíz (God).
-pub const GOD_ID: &str = "e0d6da3e-07a8-48c6-9304-436154b7c845";
+pub const GOD_ID: &str = "019b93d8-278b-7d16-b959-5c49de34d848";
 
 /// Identificador único para el rol de Administrador.
-pub const ROLE_ADMIN_ID: &str = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
+pub const ROLE_ADMIN_ID: &str = "019b93da-9d13-71ad-903f-ee0dae187f6b";
 
 /// Identificador único para el rol de Guardia de Seguridad.
-pub const ROLE_GUARDIA_ID: &str = "27221d6e-9818-430c-99c3-5694a971216b";
+pub const ROLE_GUARDIA_ID: &str = "019b93da-9d17-751b-8e6a-0a09529a6982";
 
 /// Correo electrónico reservado para el usuario raíz (God Mode).
 pub const GOD_EMAIL: &str = "god@brisas.local";

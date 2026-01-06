@@ -45,7 +45,10 @@ impl ModuleService {
         }
 
         // 2. Verificar permisos estrictos
-        let is_god = user_id == GOD_ID;
+        // Normalizamos la comparación para soportar IDs crudos, con prefijo 'user:', o con brackets 'user:⟨...⟩'
+        let is_god = user_id == GOD_ID
+            || user_id == format!("user:{}", GOD_ID)
+            || user_id == format!("user:⟨{}⟩", GOD_ID);
 
         let requires_god = matches!(new_status, "development" | "maintenance");
 

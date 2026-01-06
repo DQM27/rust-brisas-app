@@ -246,9 +246,6 @@
     const moduleKey = MODULE_KEY_MAP[item.id] || item.id;
     const status = modulesStore.getStatus(moduleKey, $modulesStore);
 
-    // Si está hidden, teóricamente no debería ni aparecer (podemos filtrar arriba, pero doble check aquí)
-    if (status === "hidden") return;
-
     // 2. Verificar Bloqueo (Dev/Maintenance) -> Solo GOD pasa
     if (
       (status === "development" || status === "maintenance") &&
@@ -476,7 +473,7 @@
                   <div
                     class="mt-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-500/30 text-purple-300 uppercase tracking-wide"
                   >
-                    ⚡ SUPERUSER
+                    ⚡ GOD MODE
                   </div>
                 {:else}
                   <div
@@ -486,6 +483,10 @@
                   </div>
                 {/if}
               {/if}
+              <!-- DEBUG HELP -->
+              <div class="hidden">
+                DEBUG ROLE: {$currentUser?.roleName} | SUPERUSER: {$currentUser?.isSuperuser}
+              </div>
             </div>
 
             <button

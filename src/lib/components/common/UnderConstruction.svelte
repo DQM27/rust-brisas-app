@@ -6,15 +6,18 @@
     type?: "development" | "maintenance";
     moduleName?: string;
   } = {};
-  export let onBack: () => void = () => window.history.back();
 
-  $: type = data.type || "development";
-  $: moduleName = data.moduleName || "Módulo";
+  // Support direct props as fallback
+  export let type: "development" | "maintenance" = "development";
+  export let moduleName: string = "Módulo";
 
-  const config = {
+  $: effectiveType = data?.type || type || "development";
+  $: effectiveModuleName = data?.moduleName || moduleName || "Módulo";
+
+  $: config = {
     development: {
       title: "En Construcción",
-      message: `El módulo <strong>${moduleName}</strong> está siendo desarrollado actualmente.`,
+      message: `El módulo <strong class="text-white">${effectiveModuleName}</strong> está siendo desarrollado actualmente.`,
       subMessage:
         "Estamos trabajando duro para traerte esta funcionalidad pronto.",
       icon: "🚧",
@@ -24,7 +27,7 @@
     },
     maintenance: {
       title: "En Mantenimiento",
-      message: `El módulo <strong>${moduleName}</strong> está temporalmente deshabilitado.`,
+      message: `El módulo <strong class="text-white">${effectiveModuleName}</strong> está temporalmente deshabilitado.`,
       subMessage:
         "Estamos realizando mejoras de seguridad y rendimiento. Vuelve a intentarlo más tarde.",
       icon: "🔧",
@@ -34,7 +37,7 @@
     },
   };
 
-  $: current = config[type];
+  $: current = config[effectiveType] || config.development;
 </script>
 
 <div
@@ -77,23 +80,6 @@
       {current.subMessage}
     </p>
 
-    <!-- Botón de acción -->
-    <button
-      on:click={onBack}
-      class="px-8 py-3 rounded-xl bg-surface-2 hover:bg-surface-3 border border-white/10 text-white font-medium transition-all hover:scale-105 active:scale-95 shadow-lg flex items-center gap-2 mx-auto"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg
-      >
-      Volver al Inicio
-    </button>
+    <!-- Botón eliminado por solicitud del usuario -->
   </div>
 </div>

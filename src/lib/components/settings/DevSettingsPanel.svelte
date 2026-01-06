@@ -83,15 +83,16 @@
         Gestión de Módulos
       </h2>
       <p class="text-gray-400 mt-1 max-w-2xl">
-        Controla la visibilidad y disponibilidad de los módulos del sistema.
+        Controla la disponibilidad del sistema.
         {#if $currentUser?.isSuperuser}
           <span class="text-purple-400 font-medium"
-            >Tienes permisos de Super Usuario para modos de ingeniería.</span
+            >Modo Dios activo: Puedes poner módulos en Mantenimiento o
+            Construcción.</span
           >
         {:else}
           <span class="text-gray-500"
-            >Puedes ocultar o mostrar módulos. Contacta a un Super Usuario para
-            mantenimiento.</span
+            >Solo lectura. El estado de los módulos es gestionado por
+            Ingeniería.</span
           >
         {/if}
       </p>
@@ -152,10 +153,9 @@
               class="w-full bg-surface-3 border border-white/10 text-white rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer hover:border-white/20 focus:border-primary-500 focus:outline-none transition-colors"
               disabled={loading}
             >
-              <option value="active">🟢 Activo (Visible)</option>
-              <option value="hidden">👁️ Oculto (Invisible)</option>
+              <option value="active">🟢 Operación Normal</option>
 
-              <!-- Opciones restringidas -->
+              <!-- Modos de Ingeniería (GOD) -->
               <option
                 value="development"
                 disabled={!$currentUser?.isSuperuser}
