@@ -89,6 +89,20 @@
   }
 
   // ==========================================
+  // HELPERS
+  // ==========================================
+  function parseDate(value: any): Date | null {
+    if (!value) return null;
+    let dateStr = String(value);
+    // Remove SurrealDB format wrappers if present (defensive programming)
+    if (dateStr.startsWith("d'") && dateStr.endsWith("'")) {
+      dateStr = dateStr.slice(2, -1);
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // ==========================================
   // COLUMNS
   // ==========================================
   let columnDefs = $derived.by((): ColDef<any>[] => {
@@ -145,8 +159,9 @@
         width: 140,
         sortable: true,
         valueFormatter: (params) => {
-          if (!params.value) return "";
-          return new Date(params.value).toLocaleDateString("es-ES", {
+          const date = parseDate(params.value);
+          if (!date) return "";
+          return date.toLocaleDateString("es-ES", {
             day: "2-digit",
             month: "2-digit",
             year: "numeric",
@@ -159,8 +174,9 @@
         width: 120,
         sortable: true,
         valueFormatter: (params) => {
-          if (!params.value) return "";
-          return new Date(params.value).toLocaleTimeString("es-ES", {
+          const date = parseDate(params.value);
+          if (!date) return "";
+          return date.toLocaleTimeString("es-ES", {
             hour: "2-digit",
             minute: "2-digit",
           });
@@ -179,8 +195,9 @@
         width: 140,
         sortable: true,
         valueFormatter: (params) => {
-          if (!params.value) return "-";
-          return new Date(params.value).toLocaleDateString("es-ES", {
+          const date = parseDate(params.value);
+          if (!date) return "-";
+          return date.toLocaleDateString("es-ES", {
             day: "2-digit",
             month: "2-digit",
             year: "numeric",
@@ -193,8 +210,9 @@
         width: 120,
         sortable: true,
         valueFormatter: (params) => {
-          if (!params.value) return "-";
-          return new Date(params.value).toLocaleTimeString("es-ES", {
+          const date = parseDate(params.value);
+          if (!date) return "-";
+          return date.toLocaleTimeString("es-ES", {
             hour: "2-digit",
             minute: "2-digit",
           });
@@ -221,7 +239,9 @@
             return params.data.tiempoPermanenciaTexto || "-";
           }
           // Calcular tiempo transcurrido si aún está adentro
-          const entrada = new Date(params.data.fechaHoraIngreso);
+          const entrada = parseDate(params.data.fechaHoraIngreso);
+          if (!entrada) return "-";
+
           const ahora = new Date();
           const diffMs = ahora.getTime() - entrada.getTime();
           const diffHours = Math.floor(diffMs / (1000 * 60 * 60));

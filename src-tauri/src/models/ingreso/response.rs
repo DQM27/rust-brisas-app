@@ -15,6 +15,17 @@ use crate::models::ingreso::{
     ModoIngreso, TipoAutorizacion, TipoIngreso,
 };
 use serde::Serialize;
+use surrealdb::Datetime;
+
+/// Convierte un surrealdb::Datetime a formato ISO8601 compatible con JavaScript
+fn datetime_to_iso(dt: &Datetime) -> String {
+    // La representación string de surrealdb::Datetime es "d'YYYY-MM-DD...'"
+    // Limpiamos los decoradores para obtener solo la fecha ISO
+    let raw = dt.to_string();
+    let clean = raw.trim_start_matches("d'").trim_end_matches('\'').to_string();
+    log::info!("Date conversion: raw='{}' -> clean='{}'", raw, clean);
+    clean
+}
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -99,8 +110,8 @@ impl IngresoResponse {
             vehiculo_placa: i.placa_vehiculo.clone(),
             placa_temporal: None,
             gafete_numero: i.gafete_numero,
-            fecha_hora_ingreso: i.fecha_hora_ingreso.to_string(),
-            fecha_hora_salida: i.fecha_hora_salida.map(|d| d.to_string()),
+            fecha_hora_ingreso: datetime_to_iso(&i.fecha_hora_ingreso),
+            fecha_hora_salida: i.fecha_hora_salida.as_ref().map(datetime_to_iso),
             tiempo_permanencia_minutos: None,
             tiempo_permanencia_texto: None,
             usuario_ingreso_id: i.usuario_ingreso.to_string(),
@@ -112,8 +123,8 @@ impl IngresoResponse {
             observaciones: i.observaciones,
             esta_adentro,
             tiene_gafete_asignado,
-            created_at: i.created_at.to_string(),
-            updated_at: i.updated_at.to_string(),
+            created_at: datetime_to_iso(&i.created_at),
+            updated_at: datetime_to_iso(&i.updated_at),
         }
     }
 
@@ -223,8 +234,8 @@ impl IngresoResponse {
             vehiculo_placa: i.placa_vehiculo.clone(),
             placa_temporal: None,
             gafete_numero: i.gafete_numero,
-            fecha_hora_ingreso: i.fecha_hora_ingreso.to_string(),
-            fecha_hora_salida: i.fecha_hora_salida.map(|d| d.to_string()),
+            fecha_hora_ingreso: datetime_to_iso(&i.fecha_hora_ingreso),
+            fecha_hora_salida: i.fecha_hora_salida.map(|d| datetime_to_iso(&d)),
             tiempo_permanencia_minutos: None,
             tiempo_permanencia_texto: None,
             usuario_ingreso_id: i.usuario_ingreso.id.to_string(),
@@ -242,8 +253,8 @@ impl IngresoResponse {
             observaciones: i.observaciones,
             esta_adentro,
             tiene_gafete_asignado,
-            created_at: i.created_at.to_string(),
-            updated_at: i.updated_at.to_string(),
+            created_at: datetime_to_iso(&i.created_at),
+            updated_at: datetime_to_iso(&i.updated_at),
         }
     }
 
@@ -288,8 +299,8 @@ impl IngresoResponse {
             vehiculo_placa: i.placa_vehiculo.clone(),
             placa_temporal: None,
             gafete_numero: i.gafete_numero,
-            fecha_hora_ingreso: i.fecha_hora_ingreso.to_string(),
-            fecha_hora_salida: i.fecha_hora_salida.map(|d| d.to_string()),
+            fecha_hora_ingreso: datetime_to_iso(&i.fecha_hora_ingreso),
+            fecha_hora_salida: i.fecha_hora_salida.map(|d| datetime_to_iso(&d)),
             tiempo_permanencia_minutos: None,
             tiempo_permanencia_texto: None,
             usuario_ingreso_id: i.usuario_ingreso.id.to_string(),
@@ -307,8 +318,29 @@ impl IngresoResponse {
             observaciones: i.observaciones,
             esta_adentro,
             tiene_gafete_asignado,
-            created_at: i.created_at.to_string(),
-            updated_at: i.updated_at.to_string(),
+            created_at: datetime_to_iso(&i.created_at),
+            updated_at: datetime_to_iso(&i.updated_at),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+
+    #[test]
+    fn test_datetime_format_debug() {
+        let now = Utc::now();
+        let dt = surrealdb::Datetime::from(now);
+        let raw = dt.to_string();
+        let clean = datetime_to_iso(&dt);
+        println!("DEBUG_TEST: Raw: '{}'", raw);
+        println!("DEBUG_TEST: Clean: '{}'", clean);
+
+        // Assert basic ISO format (starts with 20 and has T)
+        assert!(clean.starts_with("20"));
+        assert!(clean.contains('T'));
+        assert!(!clean.contains("d'"));
     }
 }
