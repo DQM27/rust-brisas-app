@@ -677,24 +677,6 @@
           <p class="mt-4 text-sm text-secondary">Cargando ingresos...</p>
         </div>
       </div>
-    {:else if ingresos.length === 0 && viewMode === "actives"}
-      <div class="flex h-full items-center justify-center">
-        <div class="text-center">
-          <AlertCircle size={48} class="mx-auto text-secondary" />
-          <p class="mt-4 text-lg font-medium text-primary">
-            No hay ingresos activos
-          </p>
-          <p class="mt-2 text-sm text-secondary">
-            Registra un nuevo ingreso para comenzar
-          </p>
-          <button
-            onclick={handleNuevoIngreso}
-            class="mt-4 px-4 py-2 bg-accent text-white rounded-md hover:opacity-90 transition-opacity"
-          >
-            Nuevo Ingreso
-          </button>
-        </div>
-      </div>
     {:else}
       <AGGridWrapper
         gridId="ingreso-list"

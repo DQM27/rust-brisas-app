@@ -62,20 +62,7 @@
       },
       permission: "VIEW_USER_DETAIL", // Changed from VIEW_USER_LIST so 'View' toggle controls sidebar
     },
-    {
-      id: "contractors",
-      icon: HardHat,
-      label: "Contratistas",
-      action: () => {
-        openTab({
-          componentKey: "contratista-list",
-          title: "Lista de Contratistas",
-          id: "contratista-list",
-          focusOnOpen: true,
-        });
-      },
-      permission: "VIEW_CONTRACTOR_DETAIL", // Changed from VIEW_CONTRACTOR_LIST
-    },
+
     {
       id: "proveedores",
       icon: Package,
