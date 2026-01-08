@@ -19,6 +19,8 @@
     Trees,
     Building2,
     Umbrella,
+    Type,
+    Layout,
   } from "lucide-svelte";
   import { LANDSCAPE_TYPES } from "$lib/components/visual/systems/landscapeData";
   import { can } from "$lib/logic/permissions";
@@ -103,6 +105,46 @@
   </div>
 
   <div class="grid gap-4 max-w-3xl pb-8">
+    <!-- ================================================================== -->
+    <!-- UI ELEMENTS CARD -->
+    <!-- ================================================================== -->
+    <div class="card-base p-5">
+      <div class="flex items-center gap-4 mb-4">
+        <div
+          class="p-3 rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400"
+        >
+          <Layout size={22} />
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold text-primary">Interfaz</h3>
+          <p class="text-sm text-secondary">
+            Configura los elementos de la interfaz.
+          </p>
+        </div>
+      </div>
+
+      <div class="divide-y divide-emphasis">
+        {@render settingRow(
+          Type,
+          "bg-cyan-50 dark:bg-cyan-900/20",
+          "text-cyan-500",
+          "Texto de Bienvenida",
+          $generalSettings.showWelcomeText,
+          () => generalSettings.toggleWelcomeText(),
+          !canUpdate,
+        )}
+
+        {@render settingRow(
+          Layout,
+          "bg-violet-50 dark:bg-violet-900/20",
+          "text-violet-500",
+          "Tarjetas de Módulos",
+          $generalSettings.showWelcomeCards,
+          () => generalSettings.toggleCards(),
+          !canUpdate,
+        )}
+      </div>
+    </div>
     <!-- ================================================================== -->
     <!-- VISUAL ELEMENTS CARD -->
     <!-- ================================================================== -->
