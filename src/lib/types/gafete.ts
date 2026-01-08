@@ -12,10 +12,13 @@ export type TipoGafete = z.infer<typeof TipoGafeteEnum>;
 // ==========================================
 
 export const CreateGafeteSchema = z.object({
-    numero: z.string()
-        .min(1, "El número de gafete es requerido")
-        .max(50, "El número no puede exceder 50 caracteres")
-        .transform(val => val.trim()),  // Bonus: eliminar espacios
+    numero: z.union([
+        z.number().int().positive("El número debe ser positivo"),
+        z.string()
+            .min(1, "El número de gafete es requerido")
+            .max(50, "El número no puede exceder 50 caracteres")
+            .transform(val => parseInt(val.trim(), 10))
+    ]).pipe(z.number().int().positive("El número de gafete debe ser un entero positivo")),
     tipo: TipoGafeteEnum
 });
 
@@ -47,7 +50,8 @@ export interface UpdateGafeteStatusInput {
 // ==========================================
 
 export interface GafeteResponse {
-    numero: string;
+    id: string;
+    numero: number;
     tipo: TipoGafete;
     tipoDisplay: string;
     estadoFisico: string; // "activo" | "danado" | "extraviado"

@@ -213,8 +213,8 @@ DEFINE FIELD updated_at ON TABLE cita TYPE datetime VALUE time::now();
 -- =========================================================
 DEFINE TABLE gafete SCHEMAFULL;
 DEFINE FIELD numero ON TABLE gafete TYPE int;
-DEFINE FIELD tipo ON TABLE gafete TYPE string ASSERT $value INSIDE ['contratista', 'proveedor', 'visita'];
-DEFINE FIELD estado ON TABLE gafete TYPE string ASSERT $value INSIDE ['activo', 'inactivo', 'perdido'] DEFAULT 'activo';
+DEFINE FIELD tipo ON TABLE gafete TYPE string ASSERT $value INSIDE ['contratista', 'proveedor', 'visita', 'otro'];
+DEFINE FIELD estado ON TABLE gafete TYPE string ASSERT $value INSIDE ['activo', 'danado', 'extraviado'] DEFAULT 'activo';
 DEFINE FIELD en_uso ON TABLE gafete TYPE bool DEFAULT false;
 DEFINE FIELD created_at ON TABLE gafete TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE gafete TYPE datetime VALUE time::now();
@@ -253,6 +253,28 @@ DEFINE FIELD is_active ON TABLE lista_negra TYPE bool DEFAULT true;
 DEFINE FIELD created_at ON TABLE lista_negra TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE lista_negra TYPE datetime VALUE time::now();
 DEFINE INDEX idx_lista_negra_cedula ON lista_negra COLUMNS cedula UNIQUE;
+
+-- =========================================================
+-- Tabla ALERTA_GAFETE
+-- =========================================================
+DEFINE TABLE alerta_gafete SCHEMAFULL;
+DEFINE FIELD persona ON TABLE alerta_gafete TYPE option<record<contratista | proveedor | visitante>>;
+DEFINE FIELD cedula ON TABLE alerta_gafete TYPE string ASSERT string::len($value) >= 5 AND string::len($value) <= 20;
+DEFINE FIELD nombreCompleto ON TABLE alerta_gafete TYPE string ASSERT string::len($value) <= 200;
+DEFINE FIELD gafeteNumero ON TABLE alerta_gafete TYPE int;
+DEFINE FIELD ingresoContratista ON TABLE alerta_gafete TYPE option<record<ingreso_contratista>>;
+DEFINE FIELD ingresoProveedor ON TABLE alerta_gafete TYPE option<record<ingreso_proveedor>>;
+DEFINE FIELD ingresoVisita ON TABLE alerta_gafete TYPE option<record<ingreso_visita>>;
+DEFINE FIELD fechaReporte ON TABLE alerta_gafete TYPE string;
+DEFINE FIELD resuelto ON TABLE alerta_gafete TYPE bool DEFAULT false;
+DEFINE FIELD fechaResolucion ON TABLE alerta_gafete TYPE option<datetime>;
+DEFINE FIELD resueltoPor ON TABLE alerta_gafete TYPE option<record<user>>;
+DEFINE FIELD notas ON TABLE alerta_gafete TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 1000;
+DEFINE FIELD reportadoPor ON TABLE alerta_gafete TYPE record<user>;
+DEFINE FIELD createdAt ON TABLE alerta_gafete TYPE datetime DEFAULT time::now();
+DEFINE FIELD updatedAt ON TABLE alerta_gafete TYPE datetime VALUE time::now();
+DEFINE INDEX idx_alerta_gafete_cedula ON alerta_gafete COLUMNS cedula;
+DEFINE INDEX idx_alerta_gafete_resuelto ON alerta_gafete COLUMNS resuelto;
 
 -- =========================================================
 -- Tabla AUDIT_LOG

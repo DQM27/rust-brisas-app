@@ -40,12 +40,12 @@ export const gafete = {
         return await invoke('create_gafete_range', { input });
     },
 
-    updateStatus: (numero: string, tipo: string, estado: string, usuarioId?: string) =>
+    updateStatus: (id: string, estado: string, usuarioId?: string, motivo?: string) =>
         invoke<GafeteResponse>("update_gafete_status", {
-            numero,
-            tipo,
+            id,
             input: { estado },
             usuarioId,
+            motivo,
         }),
 
     delete: async (numero: string, tipo: string, usuarioId?: string): Promise<void> => {

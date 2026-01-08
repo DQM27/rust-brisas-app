@@ -112,8 +112,7 @@
       loading = true;
       const userId = $currentUser?.id;
       const result = await gafeteService.updateStatus(
-        data.numero,
-        data.tipo,
+        data.id,
         newStatus,
         userId,
       );
@@ -165,7 +164,7 @@
 
     const userId = $currentUser?.id;
     const result = await gafeteService.remove(
-      gafete.numero,
+      gafete.numero.toString(),
       gafete.tipo,
       userId,
     );
@@ -183,7 +182,7 @@
 
     if (selectedGafete) {
       result = await gafeteService.update(
-        selectedGafete.numero,
+        selectedGafete.numero.toString(),
         selectedGafete.tipo,
         data,
       );
@@ -288,7 +287,7 @@
 {#if showResolveModal && selectedAlertGafete}
   <ResolveAlertModal
     show={showResolveModal}
-    gafeteNumero={selectedAlertGafete.numero}
+    gafeteNumero={selectedAlertGafete.numero.toString()}
     nombrePersona={selectedAlertGafete.quienPerdio || "Desconocido"}
     fechaReporte={selectedAlertGafete.fechaPerdido || new Date().toISOString()}
     loading={formLoading}

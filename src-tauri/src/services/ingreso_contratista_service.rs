@@ -255,13 +255,46 @@ where
 
         let ingreso_actualizado = self
             .ingreso_repo
-            .update_salida(&ingreso_id, &usuario_id, input.observaciones_salida)
+            .update_salida(&ingreso_id, &usuario_id, input.observaciones_salida.clone())
             .await
             .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
 
         if input.devolvio_gafete {
+            // Gafete devuelto: liberarlo para nuevo uso
             if let Some(ref g) = ingreso_actualizado.gafete_numero {
                 let _ = self.gafete_repo.liberar(*g, "contratista").await;
+            }
+        } else {
+            // Gafete NO devuelto: crear alerta de gafete perdido
+            if let Some(ref g) = ingreso_actualizado.gafete_numero {
+                if *g != 0 {
+                    warn!("Gafete {} no devuelto por contratista, generando alerta", g);
+
+                    // Crear alerta de gafete no devuelto
+                    let alerta_input = crate::models::ingreso::CreateAlertaInput {
+                        id: uuid::Uuid::new_v4().to_string(),
+                        persona_id: Some(ingreso_actualizado.contratista.id.to_string()),
+                        cedula: ingreso_actualizado.cedula.clone(),
+                        nombre_completo: format!(
+                            "{} {}",
+                            ingreso_actualizado.nombre, ingreso_actualizado.apellido
+                        ),
+                        gafete_numero: *g,
+                        ingreso_contratista_id: Some(ingreso_actualizado.id.to_string()),
+                        ingreso_proveedor_id: None,
+                        ingreso_visita_id: None,
+                        fecha_reporte: chrono::Utc::now().to_rfc3339(),
+                        notas: input.observaciones_salida.clone(),
+                        reportado_por: usuario_id.to_string(),
+                    };
+
+                    if let Err(e) = crate::services::alerta_service::insert(alerta_input).await {
+                        error!("Error al crear alerta de gafete no devuelto: {}", e);
+                        // No fallamos la salida por esto, solo logueamos el error
+                    } else {
+                        info!("Alerta de gafete no devuelto creada para gafete {}", g);
+                    }
+                }
             }
         }
 
