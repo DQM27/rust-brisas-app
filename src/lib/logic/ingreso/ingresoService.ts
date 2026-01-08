@@ -364,6 +364,13 @@ export const ingresoService = {
 
 
 function mapContratistaResponse(res: any): ValidacionIngresoResult {
+    // Calcular si PRAIND está vigente basándose en la fecha de vencimiento
+    let praindVigente = false;
+    if (res.contratista?.fechaVencimientoPraind) {
+        const fechaVencimiento = new Date(res.contratista.fechaVencimientoPraind);
+        praindVigente = fechaVencimiento > new Date();
+    }
+
     return {
         puedeIngresar: res.puedeIngresar,
         motivoRechazo: res.motivoRechazo,
@@ -380,7 +387,8 @@ function mapContratistaResponse(res: any): ValidacionIngresoResult {
             empresa: res.contratista.empresa_nombre,
             empresaId: res.contratista.empresa_id || undefined,
             estado: res.contratista.estado,
-            vehiculos: res.contratista.vehiculos || []
+            vehiculos: res.contratista.vehiculos || [],
+            praindVigente: praindVigente
         } : undefined
     };
 }

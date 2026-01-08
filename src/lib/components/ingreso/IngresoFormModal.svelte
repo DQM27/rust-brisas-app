@@ -1,13 +1,12 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { fade, scale } from "svelte/transition";
+  import { fade, scale, slide } from "svelte/transition";
   import { toast } from "svelte-5-french-toast";
-  import { X } from "lucide-svelte";
+  import { X, ChevronDown, ChevronUp, Car, FileText } from "lucide-svelte";
 
   // Components
   import PersonaFinder from "./shared/persona/PersonaFinder.svelte";
   import GafeteInput from "./shared/gafete/GafeteInput.svelte";
-  import VehiculoFormSection from "./shared/vehiculo/VehiculoFormSection.svelte";
 
   // Logic
   import { ingresoService } from "$lib/logic/ingreso/ingresoService";
@@ -27,10 +26,33 @@
   let selectedPerson = $state<any>(null);
   let validationResult = $state<ValidacionIngresoResult | null>(null);
   let gafete = $state("");
-  let tieneVehiculo = $state(false);
-  let vehiculoId = $state<string | undefined>(undefined);
+  let vehiculoId = $state<string | null>(null);
+  let tipoAutorizacion = $state<"praind" | "correo">("praind");
+  let observaciones = $state("");
+  let showObservaciones = $state(false);
 
   const dispatch = createEventDispatcher();
+
+  // Computed: tiene PRAIND vigente?
+  let tienePraind = $derived(
+    validationResult?.persona?.praindVigente === true ||
+      validationResult?.contratista?.praind_vigente === true ||
+      validationResult?.contratista?.praindVigente === true,
+  );
+
+  // Computed: vehículos disponibles
+  let vehiculosDisponibles = $derived(selectedPerson?.vehiculos || []);
+  let tieneVehiculos = $derived(vehiculosDisponibles.length > 0);
+
+  // Auto-seleccionar vehículo único
+  $effect(() => {
+    if (vehiculosDisponibles.length === 1 && !vehiculoId) {
+      vehiculoId = vehiculosDisponibles[0].id;
+    }
+  });
+
+  // Modo de ingreso derivado
+  let modoIngreso = $derived(vehiculoId ? "vehiculo" : "caminando");
 
   // ==========================================
   // HANDLERS
@@ -50,6 +72,20 @@
     try {
       loading = true;
       validationResult = await ingresoService.validarIngreso("contratista", id);
+
+      // DEBUG: Ver estructura de datos para PRAIND
+      console.log(
+        "[IngresoFormModal] validationResult:",
+        JSON.stringify(validationResult, null, 2),
+      );
+      console.log(
+        "[IngresoFormModal] contratista praind_vigente:",
+        validationResult?.contratista?.praind_vigente,
+      );
+      console.log(
+        "[IngresoFormModal] persona praindVigente:",
+        validationResult?.persona?.praindVigente,
+      );
 
       if (validationResult.persona) {
         selectedPerson = { ...selectedPerson, ...validationResult.persona };
@@ -102,11 +138,11 @@
         contratistaIdStr,
         {
           gafete: finalGafete,
-          vehiculoId: tieneVehiculo ? vehiculoId : null,
-          observaciones: "",
-          esExcepcional: false,
-          tipoAutorizacion: "praind",
-          modoIngreso: tieneVehiculo ? "vehiculo" : "caminando",
+          vehiculoId: vehiculoId,
+          observaciones: observaciones.trim() || "",
+          esExcepcional: !tienePraind,
+          tipoAutorizacion: tienePraind ? "praind" : tipoAutorizacion,
+          modoIngreso: modoIngreso,
         },
         selectedPerson,
         usuarioIdStr,
@@ -116,7 +152,35 @@
       dispatch("complete");
       handleClose();
     } catch (e: any) {
-      toast.error("Error al registrar ingreso: " + e.message);
+      console.error("[IngresoFormModal] Error completo:", e);
+      // Parsear mensaje de error del backend (formato thiserror)
+      let errorMsg = "Error al registrar ingreso";
+
+      if (typeof e === "string") {
+        errorMsg = e;
+      } else if (e?.type) {
+        // Mapear tipos de error a mensajes amigables
+        const errorMessages: Record<string, string> = {
+          GafeteNotAvailable: "El gafete especificado no está disponible",
+          AlreadyInside: "El contratista ya tiene un ingreso activo",
+          ContratistaNotFound: "Contratista no encontrado",
+          Blacklisted: e.message
+            ? `En lista negra: ${e.message}`
+            : "Persona en lista negra",
+          PraindExpired: e.message
+            ? `PRAIND vencido: ${e.message}`
+            : "PRAIND vencido",
+          ContratistaInactive: "El contratista no está activo",
+          Validation: e.message || "Error de validación",
+          Database: "Error de base de datos",
+          Gafete: e.message || "Error con el gafete",
+        };
+        errorMsg = errorMessages[e.type] || e.message || e.type;
+      } else if (e?.message) {
+        errorMsg = e.message;
+      }
+
+      toast.error(errorMsg);
     } finally {
       loading = false;
     }
@@ -132,8 +196,10 @@
     selectedPerson = null;
     validationResult = null;
     gafete = "";
-    tieneVehiculo = false;
-    vehiculoId = undefined;
+    vehiculoId = null;
+    tipoAutorizacion = "praind";
+    observaciones = "";
+    showObservaciones = false;
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -260,16 +326,109 @@
 
             <!-- Form (solo si está autorizado) -->
             {#if validationResult.puedeIngresar}
-              <div class="mt-4 space-y-4">
+              <div class="mt-4 space-y-3">
                 <!-- Gafete -->
                 <GafeteInput bind:value={gafete} autofocus disabled={loading} />
 
-                <!-- Vehículo -->
-                <VehiculoFormSection
-                  bind:tieneVehiculo
-                  bind:vehiculoId
-                  vehiculosRegistrados={selectedPerson.vehiculos || []}
-                />
+                <!-- Vehículo - Solo si tiene vehículos registrados -->
+                {#if tieneVehiculos}
+                  <div class="space-y-1.5" transition:slide>
+                    <label
+                      class="flex items-center gap-2 text-sm font-medium text-secondary"
+                    >
+                      <Car size={16} />
+                      Vehículo
+                      <span class="text-xs text-tertiary">(opcional)</span>
+                    </label>
+                    <select
+                      class="w-full bg-surface-1 border border-surface rounded-md px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent"
+                      bind:value={vehiculoId}
+                      disabled={loading}
+                    >
+                      <option value={null}>Sin vehículo (caminando)</option>
+                      {#each vehiculosDisponibles as v}
+                        <option value={v.id}>
+                          {v.placa} - {v.marca || ""}
+                          {v.modelo || ""}
+                        </option>
+                      {/each}
+                    </select>
+                  </div>
+                {/if}
+
+                <!-- Tipo de Autorización - Solo si NO tiene PRAIND -->
+                {#if !tienePraind}
+                  <div
+                    class="space-y-1.5 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-md"
+                    transition:slide
+                  >
+                    <label
+                      class="flex items-center gap-2 text-sm font-medium text-yellow-300"
+                    >
+                      <FileText size={16} />
+                      Tipo de Autorización
+                    </label>
+                    <p class="text-xs text-yellow-400/80 mb-2">
+                      El contratista no tiene PRAIND vigente. Seleccione el tipo
+                      de autorización.
+                    </p>
+                    <div class="flex gap-3">
+                      <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="tipoAutorizacion"
+                          value="praind"
+                          bind:group={tipoAutorizacion}
+                          class="radio radio-sm radio-warning"
+                          disabled={loading}
+                        />
+                        <span class="text-sm text-primary">PRAIND</span>
+                      </label>
+                      <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="tipoAutorizacion"
+                          value="correo"
+                          bind:group={tipoAutorizacion}
+                          class="radio radio-sm radio-warning"
+                          disabled={loading}
+                        />
+                        <span class="text-sm text-primary">Correo</span>
+                      </label>
+                    </div>
+                  </div>
+                {/if}
+
+                <!-- Observaciones - Toggle colapsable -->
+                <div class="border-t border-surface pt-2">
+                  <button
+                    type="button"
+                    onclick={() => (showObservaciones = !showObservaciones)}
+                    class="flex items-center gap-2 text-sm text-secondary hover:text-primary transition-colors w-full"
+                  >
+                    {#if showObservaciones}
+                      <ChevronUp size={16} />
+                    {:else}
+                      <ChevronDown size={16} />
+                    {/if}
+                    <span>Observaciones</span>
+                    {#if observaciones.trim()}
+                      <span class="text-xs text-accent">(tiene contenido)</span>
+                    {/if}
+                  </button>
+
+                  {#if showObservaciones}
+                    <div class="mt-2" transition:slide>
+                      <textarea
+                        class="w-full bg-surface-1 border border-surface rounded-md px-3 py-2 text-sm text-primary resize-none focus:outline-none focus:ring-2 focus:ring-accent"
+                        rows="2"
+                        placeholder="Notas adicionales..."
+                        bind:value={observaciones}
+                        disabled={loading}
+                      ></textarea>
+                    </div>
+                  {/if}
+                </div>
 
                 <!-- Botón Registrar -->
                 <button

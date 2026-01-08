@@ -38,6 +38,7 @@ export interface ValidacionIngresoResult {
         empresaId?: string;
         estado?: string;
         vehiculos?: any[];
+        praindVigente?: boolean;
     };
 
     // Atajos específicos para evitar errores de tipo en controladores
