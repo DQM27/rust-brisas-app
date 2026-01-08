@@ -1,0 +1,22 @@
+
+> mega-brisas@1.0.0-alpha check
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json
+
+Loading svelte-check in workspace: c:\Users\Daniel Quintana\Documents\GitHub\rust-brisas-app
+Getting Svelte diagnostics...
+
+c:\Users\Daniel Quintana\Documents\GitHub\rust-brisas-app\[32msrc\lib\components\visual\Landscape.svelte[39m:148:3
+[33mWarn[39m: Do not use empty rulesets (css)
+[36m
+  [35m.animate-wave-fast[36m {
+    /* Only if we want sand to move, maybe not */[39m
+
+c:\Users\Daniel Quintana\Documents\GitHub\rust-brisas-app\[32msrc\lib\components\gafete\GafeteFormModal.svelte[39m:44:7
+[31mError[39m: Type 'number' is not assignable to type 'string'. (ts)
+[36m    if (show && gafete) {
+      [35mnumero[36m = gafete.numero;
+      tipo = gafete.tipo;[39m
+
+====================================
+[31msvelte-check found 1 error and 1 warning in 2 files
+[39m

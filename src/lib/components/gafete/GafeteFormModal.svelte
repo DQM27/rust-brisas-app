@@ -41,7 +41,7 @@
   // Cargar datos iniciales
   $effect(() => {
     if (show && gafete) {
-      numero = gafete.numero;
+      numero = String(gafete.numero);
       tipo = gafete.tipo;
       errors = {};
     } else if (show) {

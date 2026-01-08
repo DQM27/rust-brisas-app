@@ -104,7 +104,7 @@ pub fn validar_empresa_id(empresa_id: &str) -> Result<(), ContratistaError> {
 }
 
 /// Parsea y valida una fecha en formato estándar (YYYY-MM-DD).
-/// Devuelve DateTime<Utc> para compatibilidad directa con surrealdb::Datetime.
+/// Devuelve `DateTime`<Utc> para compatibilidad directa con `surrealdb::Datetime`.
 pub fn validar_fecha(fecha_str: &str) -> Result<chrono::DateTime<chrono::Utc>, ContratistaError> {
     use chrono::{NaiveDate, TimeZone, Utc};
 

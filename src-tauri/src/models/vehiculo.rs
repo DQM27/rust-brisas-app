@@ -83,21 +83,21 @@ pub enum TipoVehiculo {
 impl TipoVehiculo {
     pub const fn as_str(&self) -> &str {
         match self {
-            TipoVehiculo::Motocicleta => "motocicleta",
-            TipoVehiculo::Automovil => "automovil",
-            TipoVehiculo::Camioneta => "camioneta",
-            TipoVehiculo::Camion => "camion",
-            TipoVehiculo::Otro => "otro",
+            Self::Motocicleta => "motocicleta",
+            Self::Automovil => "automovil",
+            Self::Camioneta => "camioneta",
+            Self::Camion => "camion",
+            Self::Otro => "otro",
         }
     }
 
     pub const fn display(&self) -> &str {
         match self {
-            TipoVehiculo::Motocicleta => "Motocicleta",
-            TipoVehiculo::Automovil => "Automóvil",
-            TipoVehiculo::Camioneta => "Camioneta",
-            TipoVehiculo::Camion => "Camión",
-            TipoVehiculo::Otro => "Otro",
+            Self::Motocicleta => "Motocicleta",
+            Self::Automovil => "Automóvil",
+            Self::Camioneta => "Camioneta",
+            Self::Camion => "Camión",
+            Self::Otro => "Otro",
         }
     }
 }
@@ -107,12 +107,12 @@ impl std::str::FromStr for TipoVehiculo {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "motocicleta" => Ok(TipoVehiculo::Motocicleta),
-            "automóvil" | "automovil" => Ok(TipoVehiculo::Automovil),
-            "camioneta" => Ok(TipoVehiculo::Camioneta),
-            "camión" | "camion" => Ok(TipoVehiculo::Camion),
-            "otro" => Ok(TipoVehiculo::Otro),
-            _ => Err(format!("Tipo de vehículo desconocido: {}", s)),
+            "motocicleta" => Ok(Self::Motocicleta),
+            "automóvil" | "automovil" => Ok(Self::Automovil),
+            "camioneta" => Ok(Self::Camioneta),
+            "camión" | "camion" => Ok(Self::Camion),
+            "otro" => Ok(Self::Otro),
+            _ => Err(format!("Tipo de vehículo desconocido: {s}")),
         }
     }
 }

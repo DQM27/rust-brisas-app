@@ -37,8 +37,7 @@ pub fn validar_motivo(motivo: &str) -> Result<(), ListaNegraError> {
 
     if limpio.len() > MOTIVO_MAX_LEN {
         return Err(ListaNegraError::Validation(format!(
-            "El motivo no puede exceder {} caracteres",
-            MOTIVO_MAX_LEN
+            "El motivo no puede exceder {MOTIVO_MAX_LEN} caracteres"
         )));
     }
 
@@ -57,8 +56,7 @@ pub fn validar_bloqueado_por(bloqueado_por: &str) -> Result<(), ListaNegraError>
 
     if limpio.len() > ENTIDAD_NOMBRE_MAX_LEN {
         return Err(ListaNegraError::Validation(format!(
-            "El ID de quien bloqueó no puede exceder {} caracteres",
-            ENTIDAD_NOMBRE_MAX_LEN
+            "El ID de quien bloqueó no puede exceder {ENTIDAD_NOMBRE_MAX_LEN} caracteres"
         )));
     }
 

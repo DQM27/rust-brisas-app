@@ -127,7 +127,7 @@ impl SurrealDbService {
     /// Establece la conexión con el motor `SurrealKv` y selecciona el entorno de trabajo.
     pub async fn connect(&self) -> Result<(), SurrealDbError> {
         info!("🔌 Conectando a SurrealDB (Modo: Embebido)...");
-        debug!("📂 Ruta de datos: {:?}", self.config.data_path);
+        debug!("📂 Ruta de datos: {}", self.config.data_path.display());
 
         if !self.config.data_path.exists() {
             debug!("📁 Creando directorio de base de datos...");

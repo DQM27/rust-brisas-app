@@ -68,21 +68,21 @@ pub struct CredentialStatus {
 /// Obtiene una entrada segura del llavero para una clave dada.
 fn get_entry(key: &str) -> KeyringResult<Entry> {
     Entry::new(SERVICE_NAME, key)
-        .map_err(|e| KeyringError::AccessError(format!("Error creando entrada de keyring: {}", e)))
+        .map_err(|e| KeyringError::AccessError(format!("Error creando entrada de keyring: {e}")))
 }
 
 /// Almacena un valor secreto.
 fn store_value(key: &str, value: &str) -> KeyringResult<()> {
-    log::info!("🔐 Guardando en Keyring: key='{}'", key);
+    log::info!("🔐 Guardando en Keyring: key='{key}'");
     let entry = get_entry(key)?;
     match entry.set_password(value) {
-        Ok(_) => {
-            log::info!("✅ Guardado exitoso en Keyring: {}", key);
+        Ok(()) => {
+            log::info!("✅ Guardado exitoso en Keyring: {key}");
             Ok(())
         }
         Err(e) => {
-            log::error!("❌ Fallo al guardar en Keyring '{}': {}", key, e);
-            Err(KeyringError::StorageError(format!("Error guardando '{}': {}", key, e)))
+            log::error!("❌ Fallo al guardar en Keyring '{key}': {e}");
+            Err(KeyringError::StorageError(format!("Error guardando '{key}': {e}")))
         }
     }
 }
@@ -92,20 +92,20 @@ fn retrieve_value(key: &str) -> Option<String> {
     match get_entry(key) {
         Ok(entry) => match entry.get_password() {
             Ok(pwd) => {
-                log::info!("🔓 Recuperado de Keyring: {}", key);
+                log::info!("🔓 Recuperado de Keyring: {key}");
                 Some(pwd)
             }
             Err(keyring::Error::NoEntry) => {
-                log::warn!("ℹ️ Keyring entry not found: {}", key);
+                log::warn!("ℹ️ Keyring entry not found: {key}");
                 None
             }
             Err(e) => {
-                log::error!("⚠️ Error leyendo Keyring '{}': {}", key, e);
+                log::error!("⚠️ Error leyendo Keyring '{key}': {e}");
                 None
             }
         },
         Err(e) => {
-            log::error!("❌ Error accediendo a keyring para '{}': {}", key, e);
+            log::error!("❌ Error accediendo a keyring para '{key}': {e}");
             None
         }
     }
@@ -113,18 +113,18 @@ fn retrieve_value(key: &str) -> Option<String> {
 
 /// Elimina un valor secreto.
 fn delete_value(key: &str) -> KeyringResult<()> {
-    log::info!("🗑️ Intentando borrar de Keyring: {}", key);
+    log::info!("🗑️ Intentando borrar de Keyring: {key}");
     let entry = get_entry(key)?;
     match entry.delete_credential() {
-        Ok(_) => {
-            log::info!("✅ Borrado exitoso: {}", key);
+        Ok(()) => {
+            log::info!("✅ Borrado exitoso: {key}");
             Ok(())
         }
         Err(keyring::Error::NoEntry) => {
-            log::info!("ℹ️ No había nada que borrar para: {}", key);
+            log::info!("ℹ️ No había nada que borrar para: {key}");
             Ok(())
         }
-        Err(e) => Err(KeyringError::DeletionError(format!("Error borrando '{}': {}", key, e))),
+        Err(e) => Err(KeyringError::DeletionError(format!("Error borrando '{key}': {e}"))),
     }
 }
 
@@ -174,10 +174,10 @@ pub fn store_argon2_params(params: &Argon2Params) -> KeyringResult<()> {
         // Guardamos el secret directamente (en un escenario real debería ir cifrado,
         // pero aquí la prioridad es que funcione ante fallo de Keyring)
         match std::fs::write(&path, &params.secret) {
-            Ok(_) => log::info!("✅ Secreto guardado en archivo de respaldo: {:?}", path),
+            Ok(()) => log::info!("✅ Secreto guardado en archivo de respaldo: {}", path.display()),
             Err(e) => {
-                log::error!("❌ Fallo total: Ni Keyring ni Archivo funcionaron. {}", e);
-                return Err(KeyringError::StorageError(format!("Fallo persistencia total: {}", e)));
+                log::error!("❌ Fallo total: Ni Keyring ni Archivo funcionaron. {e}");
+                return Err(KeyringError::StorageError(format!("Fallo persistencia total: {e}")));
             }
         }
     }

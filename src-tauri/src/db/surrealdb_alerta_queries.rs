@@ -18,7 +18,7 @@ pub async fn insert(
         .as_ref()
         .map(|s| surrealdb::RecordId::from_str(s))
         .transpose()
-        .map_err(|e| SurrealDbError::Query(format!("Error parsing persona_id: {}", e)))?;
+        .map_err(|e| SurrealDbError::Query(format!("Error parsing persona_id: {e}")))?;
 
     let ingreso_contratista_rid = input
         .ingreso_contratista_id
@@ -26,7 +26,7 @@ pub async fn insert(
         .map(|s| surrealdb::RecordId::from_str(s))
         .transpose()
         .map_err(|e| {
-            SurrealDbError::Query(format!("Error parsing ingreso_contratista_id: {}", e))
+            SurrealDbError::Query(format!("Error parsing ingreso_contratista_id: {e}"))
         })?;
 
     let ingreso_proveedor_rid = input
@@ -34,17 +34,17 @@ pub async fn insert(
         .as_ref()
         .map(|s| surrealdb::RecordId::from_str(s))
         .transpose()
-        .map_err(|e| SurrealDbError::Query(format!("Error parsing ingreso_proveedor_id: {}", e)))?;
+        .map_err(|e| SurrealDbError::Query(format!("Error parsing ingreso_proveedor_id: {e}")))?;
 
     let ingreso_visita_rid = input
         .ingreso_visita_id
         .as_ref()
         .map(|s| surrealdb::RecordId::from_str(s))
         .transpose()
-        .map_err(|e| SurrealDbError::Query(format!("Error parsing ingreso_visita_id: {}", e)))?;
+        .map_err(|e| SurrealDbError::Query(format!("Error parsing ingreso_visita_id: {e}")))?;
 
     let reportado_por_rid = surrealdb::RecordId::from_str(&input.reportado_por)
-        .map_err(|e| SurrealDbError::Query(format!("Error parsing reportado_por: {}", e)))?;
+        .map_err(|e| SurrealDbError::Query(format!("Error parsing reportado_por: {e}")))?;
 
     let mut result = db
         .query(
@@ -131,7 +131,7 @@ pub async fn resolver(
         .as_ref()
         .map(|s| surrealdb::RecordId::from_str(s))
         .transpose()
-        .map_err(|e| SurrealDbError::Query(format!("Error parsing usuario_id: {}", e)))?;
+        .map_err(|e| SurrealDbError::Query(format!("Error parsing usuario_id: {e}")))?;
 
     let mut result = db
         .query(

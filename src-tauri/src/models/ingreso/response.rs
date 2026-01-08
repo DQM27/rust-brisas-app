@@ -17,13 +17,13 @@ use crate::models::ingreso::{
 use serde::Serialize;
 use surrealdb::Datetime;
 
-/// Convierte un surrealdb::Datetime a formato ISO8601 compatible con JavaScript
+/// Convierte un `surrealdb::Datetime` a formato ISO8601 compatible con JavaScript
 fn datetime_to_iso(dt: &Datetime) -> String {
     // La representación string de surrealdb::Datetime es "d'YYYY-MM-DD...'"
     // Limpiamos los decoradores para obtener solo la fecha ISO
     let raw = dt.to_string();
     let clean = raw.trim_start_matches("d'").trim_end_matches('\'').to_string();
-    log::info!("Date conversion: raw='{}' -> clean='{}'", raw, clean);
+    log::info!("Date conversion: raw='{raw}' -> clean='{clean}'");
     clean
 }
 
@@ -67,7 +67,7 @@ fn calculate_duration(start: &Datetime, end: Option<&Datetime>) -> (Option<i64>,
     let hours = total_minutes / 60;
     let minutes = total_minutes % 60;
 
-    let text = format!("{}h {}m", hours, minutes);
+    let text = format!("{hours}h {minutes}m");
 
     (Some(total_minutes), Some(text))
 }
@@ -215,7 +215,7 @@ impl IngresoResponse {
             placa_temporal: None,
             gafete_numero: i.gafete_numero,
             fecha_hora_ingreso: i.fecha_hora_ingreso.to_string(),
-            fecha_hora_salida: i.fecha_hora_salida.as_ref().map(|d| d.to_string()),
+            fecha_hora_salida: i.fecha_hora_salida.as_ref().map(std::string::ToString::to_string),
             tiempo_permanencia_minutos: calculate_duration(
                 &i.fecha_hora_ingreso,
                 i.fecha_hora_salida.as_ref(),
@@ -288,7 +288,7 @@ impl IngresoResponse {
             placa_temporal: None,
             gafete_numero: i.gafete_numero,
             fecha_hora_ingreso: datetime_to_iso(&i.fecha_hora_ingreso),
-            fecha_hora_salida: i.fecha_hora_salida.as_ref().map(|d| datetime_to_iso(d)),
+            fecha_hora_salida: i.fecha_hora_salida.as_ref().map(datetime_to_iso),
             tiempo_permanencia_minutos: calculate_duration(
                 &i.fecha_hora_ingreso,
                 i.fecha_hora_salida.as_ref(),
@@ -361,7 +361,7 @@ impl IngresoResponse {
             placa_temporal: None,
             gafete_numero: i.gafete_numero,
             fecha_hora_ingreso: datetime_to_iso(&i.fecha_hora_ingreso),
-            fecha_hora_salida: i.fecha_hora_salida.as_ref().map(|d| datetime_to_iso(d)),
+            fecha_hora_salida: i.fecha_hora_salida.as_ref().map(datetime_to_iso),
             tiempo_permanencia_minutos: calculate_duration(
                 &i.fecha_hora_ingreso,
                 i.fecha_hora_salida.as_ref(),

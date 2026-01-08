@@ -46,7 +46,7 @@ pub async fn seed_db(config_state: AppConfigState) -> Result<(), Box<dyn std::er
         config.setup.is_seeded = true;
 
         if let Err(e) = save_config(&config, &crate::config::manager::get_default_config_path()) {
-            log::error!("❌ Error guardando estado de seed: {}", e);
+            log::error!("❌ Error guardando estado de seed: {e}");
         } else {
             info!("✨ Estado de seed guardado en configuración.");
         }
@@ -89,7 +89,7 @@ async fn seed_modules() -> Result<(), SurrealDbError> {
 
         if existing.is_none() {
             db.query(
-                r#"
+                r"
                 CREATE module CONTENT {
                     key: $key,
                     name: $name,
@@ -97,13 +97,13 @@ async fn seed_modules() -> Result<(), SurrealDbError> {
                     created_at: time::now(),
                     updated_at: time::now()
                 }
-                "#,
+                ",
             )
             .bind(("key", key))
             .bind(("name", name))
             .await?
             .check()?;
-            info!("📦 Módulo inicial registrado: {} ({})", name, key);
+            info!("📦 Módulo inicial registrado: {name} ({key})");
         }
     }
 

@@ -55,7 +55,7 @@ pub fn initialize_index(index_path: &Path) -> Result<Index, SearchError> {
         }
 
         // Crear nuevo índice
-        info!("📂 Creando nuevo índice en: {index_path:?}");
+        info!("📂 Creando nuevo índice en: {}", index_path.display());
         Index::create_in_dir(index_path, schema)
             .map_err(|e| SearchError::TantivyError(format!("Error al crear índice: {e}")))
     }

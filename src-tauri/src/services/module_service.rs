@@ -39,23 +39,21 @@ impl ModuleService {
         let valid_statuses = ["active", "hidden", "development", "maintenance"];
         if !valid_statuses.contains(&new_status) {
             return Err(SurrealDbError::Query(format!(
-                "Estado inválido: {}. Permitidos: {:?}",
-                new_status, valid_statuses
+                "Estado inválido: {new_status}. Permitidos: {valid_statuses:?}"
             )));
         }
 
         // 2. Verificar permisos estrictos
         // Normalizamos la comparación para soportar IDs crudos, con prefijo 'user:', o con brackets 'user:⟨...⟩'
         let is_god = user_id == GOD_ID
-            || user_id == format!("user:{}", GOD_ID)
-            || user_id == format!("user:⟨{}⟩", GOD_ID);
+            || user_id == format!("user:{GOD_ID}")
+            || user_id == format!("user:⟨{GOD_ID}⟩");
 
         let requires_god = matches!(new_status, "development" | "maintenance");
 
         if requires_god && !is_god {
             warn!(
-                "⛔ Intento no autorizado de cambiar módulo '{}' a '{}' por usuario '{}'",
-                key, new_status, user_id
+                "⛔ Intento no autorizado de cambiar módulo '{key}' a '{new_status}' por usuario '{user_id}'"
             );
             return Err(SurrealDbError::Auth(
                 "Solo el Super Usuario (GOD) puede poner módulos en Desarrollo o Mantenimiento."
@@ -85,10 +83,10 @@ impl ModuleService {
             .take(0)?;
 
         if result.is_some() {
-            info!("✅ Módulo '{}' actualizado a '{}' por '{}'", key, new_status, user_id);
+            info!("✅ Módulo '{key}' actualizado a '{new_status}' por '{user_id}'");
             Ok(())
         } else {
-            Err(SurrealDbError::Query(format!("Módulo no encontrado: {}", key)))
+            Err(SurrealDbError::Query(format!("Módulo no encontrado: {key}")))
         }
     }
 }

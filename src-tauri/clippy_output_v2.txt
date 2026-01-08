@@ -1,0 +1,34 @@
+   Compiling mega-brisas v1.0.0-alpha (C:\Users\Daniel Quintana\Documents\GitHub\rust-brisas-app\src-tauri)
+error: unnecessary `Debug` formatting in `info!` args
+  --> src\search\indexer.rs:58:44
+   |
+58 |         info!("📂 Creando nuevo índice en: {index_path:?}");
+   |                                             ^^^^^^^^^^
+   |
+   = help: use `Display` formatting and change this to `index_path.display()`
+   = note: switching to `Display` formatting will change how the value is shown; escaped characters will no longer be escaped and surrounding quotes will be removed
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#unnecessary_debug_formatting
+   = note: `-D clippy::unnecessary-debug-formatting` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::unnecessary_debug_formatting)]`
+
+error: unnecessary `Debug` formatting in `info!` args
+   --> src\services\keyring_service.rs:177:79
+    |
+177 |             Ok(()) => log::info!("✅ Secreto guardado en archivo de respaldo: {path:?}"),
+    |                                                                                ^^^^
+    |
+    = help: use `Display` formatting and change this to `path.display()`
+    = note: switching to `Display` formatting will change how the value is shown; escaped characters will no longer be escaped and surrounding quotes will be removed
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#unnecessary_debug_formatting
+
+error: unnecessary `Debug` formatting in `debug!` args
+   --> src\services\surrealdb_service.rs:130:41
+    |
+130 |         debug!("📂 Ruta de datos: {:?}", self.config.data_path);
+    |                                          ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: use `Display` formatting and change this to `self.config.data_path.display()`
+    = note: switching to `Display` formatting will change how the value is shown; escaped characters will no longer be escaped and surrounding quotes will be removed
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#unnecessary_debug_formatting
+
+error: could not compile `mega-brisas` (lib) due to 3 previous errors

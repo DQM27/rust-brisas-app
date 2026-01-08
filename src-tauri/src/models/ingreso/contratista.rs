@@ -87,8 +87,8 @@ pub struct CreateIngresoContratistaInput {
 // DTOs PARA PERSISTENCIA
 // --------------------------------------------------------------------------
 
-/// DTO para crear un registro de ingreso de contratista en SurrealDB.
-/// Los campos se serializan en snake_case para coincidir con el esquema de la BD.
+/// DTO para crear un registro de ingreso de contratista en `SurrealDB`.
+/// Los campos se serializan en `snake_case` para coincidir con el esquema de la BD.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub struct IngresoContratistaCreateDTO {

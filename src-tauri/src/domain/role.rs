@@ -101,8 +101,7 @@ pub fn validar_nombre(nombre: &str) -> Result<(), RoleError> {
 
     if limpio.len() > ROLE_NAME_MAX_LEN {
         return Err(RoleError::Validation(format!(
-            "El nombre del rol no puede exceder {} caracteres",
-            ROLE_NAME_MAX_LEN
+            "El nombre del rol no puede exceder {ROLE_NAME_MAX_LEN} caracteres"
         )));
     }
 
@@ -115,8 +114,7 @@ pub fn validar_descripcion(descripcion: Option<&String>) -> Result<(), RoleError
         let limpio = desc.trim();
         if !limpio.is_empty() && limpio.len() > ROLE_DESC_MAX_LEN {
             return Err(RoleError::Validation(format!(
-                "La descripción no puede exceder {} caracteres",
-                ROLE_DESC_MAX_LEN
+                "La descripción no puede exceder {ROLE_DESC_MAX_LEN} caracteres"
             )));
         }
     }

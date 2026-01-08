@@ -201,7 +201,7 @@ where
                     .map_err(|e| IngresoContratistaError::Gafete(e.to_string()))?;
 
                 if !disp {
-                    warn!("Gafete {} no disponible para ingreso", g);
+                    warn!("Gafete {g} no disponible para ingreso");
                     return Err(IngresoContratistaError::GafeteNotAvailable);
                 }
             }
@@ -268,7 +268,7 @@ where
             // Gafete NO devuelto: crear alerta de gafete perdido
             if let Some(ref g) = ingreso_actualizado.gafete_numero {
                 if *g != 0 {
-                    warn!("Gafete {} no devuelto por contratista, generando alerta", g);
+                    warn!("Gafete {g} no devuelto por contratista, generando alerta");
 
                     // Crear alerta de gafete no devuelto
                     let alerta_input = crate::models::ingreso::CreateAlertaInput {
@@ -289,10 +289,10 @@ where
                     };
 
                     if let Err(e) = crate::services::alerta_service::insert(alerta_input).await {
-                        error!("Error al crear alerta de gafete no devuelto: {}", e);
+                        error!("Error al crear alerta de gafete no devuelto: {e}");
                         // No fallamos la salida por esto, solo logueamos el error
                     } else {
-                        info!("Alerta de gafete no devuelto creada para gafete {}", g);
+                        info!("Alerta de gafete no devuelto creada para gafete {g}");
                     }
                 }
             }

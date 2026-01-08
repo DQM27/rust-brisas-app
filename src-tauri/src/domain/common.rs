@@ -430,8 +430,7 @@ pub fn validar_email_estandar(email: &str) -> Result<(), CommonError> {
 
     if limpio.len() > EMAIL_MAX_LEN {
         return Err(CommonError::Validation(format!(
-            "El email no puede exceder {} caracteres",
-            EMAIL_MAX_LEN
+            "El email no puede exceder {EMAIL_MAX_LEN} caracteres"
         )));
     }
 
@@ -456,8 +455,7 @@ pub fn validar_placa_estandar(placa: &str) -> Result<(), CommonError> {
 
     if limpia.len() < PLACA_MIN_LEN || limpia.len() > PLACA_MAX_LEN {
         return Err(CommonError::Validation(format!(
-            "La placa debe tener entre {} y {} caracteres",
-            PLACA_MIN_LEN, PLACA_MAX_LEN
+            "La placa debe tener entre {PLACA_MIN_LEN} y {PLACA_MAX_LEN} caracteres"
         )));
     }
 
@@ -475,8 +473,7 @@ pub fn validar_nombre_entidad_estandar(nombre: &str, campo: &str) -> Result<(), 
 
     if limpio.len() > ENTIDAD_NOMBRE_MAX_LEN {
         return Err(CommonError::Validation(format!(
-            "El {} no puede exceder {} caracteres",
-            campo, ENTIDAD_NOMBRE_MAX_LEN
+            "El {campo} no puede exceder {ENTIDAD_NOMBRE_MAX_LEN} caracteres"
         )));
     }
 

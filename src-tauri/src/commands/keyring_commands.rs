@@ -49,7 +49,7 @@ pub fn is_app_configured(config: State<'_, AppConfigState>) -> bool {
     if let Ok(guard) = config.read() {
         let toml_ok = guard.setup.is_configured;
         let keyring_ok = ks::is_fully_configured();
-        log::debug!("🔍 Estado Config: TOML={}, Keyring={}", toml_ok, keyring_ok);
+        log::debug!("🔍 Estado Config: TOML={toml_ok}, Keyring={keyring_ok}");
         toml_ok && keyring_ok
     } else {
         log::error!("❌ Error leyendo AppConfigState en check de configuración");
@@ -65,9 +65,7 @@ pub fn needs_setup(config: State<'_, AppConfigState>) -> bool {
         let keyring_configured = ks::is_fully_configured();
 
         log::info!(
-            "🏁 Chequeo de Setup: is_configured(TOML)={}, has_secret(Keyring)={}",
-            toml_configured,
-            keyring_configured
+            "🏁 Chequeo de Setup: is_configured(TOML)={toml_configured}, has_secret(Keyring)={keyring_configured}"
         );
 
         if toml_configured && !keyring_configured {
@@ -220,7 +218,7 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
 
     results.push("1. Guardando credencial de prueba...".to_string());
     match ks::save_secret(test_key, test_value) {
-        Ok(_) => results.push("   ✓ Credencial guardada correctamente".to_string()),
+        Ok(()) => results.push("   ✓ Credencial guardada correctamente".to_string()),
         Err(e) => {
             results.push(format!("   ✗ Error guardando credencial: {e}"));
             return Ok(results.join("\n"));
@@ -228,28 +226,24 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
     }
 
     results.push("2. Recuperando credencial...".to_string());
-    match ks::get_secret(test_key) {
-        Some(password) => {
-            results
-                .push(format!("   ✓ Credencial recuperada: [OCULTO, longitud={}]", password.len()));
-            if password == test_value {
-                results.push("   ✓ La credencial coincide!".to_string());
-            } else {
-                results.push(format!(
-                    "   ✗ La credencial NO coincide! Esperado: {}, Obtenido: {}",
-                    test_value, password
-                ));
-            }
+    if let Some(password) = ks::get_secret(test_key) {
+        results
+            .push(format!("   ✓ Credencial recuperada: [OCULTO, longitud={}]", password.len()));
+        if password == test_value {
+            results.push("   ✓ La credencial coincide!".to_string());
+        } else {
+            results.push(format!(
+                "   ✗ La credencial NO coincide! Esperado: {test_value}, Obtenido: {password}"
+            ));
         }
-        None => {
-            results.push("   ✗ Error recuperando credencial".to_string());
-            return Ok(results.join("\n"));
-        }
+    } else {
+        results.push("   ✗ Error recuperando credencial".to_string());
+        return Ok(results.join("\n"));
     }
 
     results.push("3. Eliminando credencial...".to_string());
     match ks::delete_secret(test_key) {
-        Ok(_) => results.push("   ✓ Credencial eliminada correctamente".to_string()),
+        Ok(()) => results.push("   ✓ Credencial eliminada correctamente".to_string()),
         Err(e) => {
             results.push(format!("   ✗ Error eliminando credencial: {e}"));
         }
@@ -265,7 +259,7 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
         }
     }
 
-    results.push("".to_string());
+    results.push(String::new());
     results.push("✓ Test completado exitosamente".to_string());
     Ok(results.join("\n"))
 }

@@ -174,7 +174,7 @@ pub async fn get_salidas_en_rango(
     fecha_inicio: &str,
     fecha_fin: &str,
 ) -> Result<Vec<IngresoResponse>, IngresoError> {
-    info!("Solicitando historial salidas: Desde {} Hasta {}", fecha_inicio, fecha_fin);
+    info!("Solicitando historial salidas: Desde {fecha_inicio} Hasta {fecha_fin}");
     let results =
         db::find_salidas_in_range_fetched(fecha_inicio, fecha_fin).await.map_err(|e| {
             error!("Error reporte salidas {fecha_inicio} - {fecha_fin}: {e}");
