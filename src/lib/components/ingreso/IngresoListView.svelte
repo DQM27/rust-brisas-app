@@ -565,17 +565,6 @@
         </div>
 
         <div class="flex items-center gap-4">
-          <!-- Date Filter (History Mode Only) -->
-          {#if viewMode === "history"}
-            <div transition:fade={{ duration: 150 }}>
-              <DateRangePicker
-                startDate={dateRange.start}
-                endDate={dateRange.end}
-                on:change={handleDateRangeChange}
-              />
-            </div>
-          {/if}
-
           <!-- View Toggle (Segmented Control) -->
           <div
             class="relative flex items-center bg-surface-3 p-1 rounded-lg isolate"
@@ -638,6 +627,18 @@
   <div
     class="flex-1 overflow-hidden relative bg-surface-1 border-t border-surface"
   >
+    {#snippet toolbarControls()}
+      {#if viewMode === "history"}
+        <div class="flex items-center" transition:fade={{ duration: 150 }}>
+          <DateRangePicker
+            startDate={dateRange.start}
+            endDate={dateRange.end}
+            on:change={handleDateRangeChange}
+          />
+        </div>
+      {/if}
+    {/snippet}
+
     {#if error}
       <div class="p-6">
         <div
@@ -676,28 +677,22 @@
           <p class="mt-4 text-sm text-secondary">Cargando ingresos...</p>
         </div>
       </div>
-    {:else if ingresos.length === 0}
+    {:else if ingresos.length === 0 && viewMode === "actives"}
       <div class="flex h-full items-center justify-center">
         <div class="text-center">
           <AlertCircle size={48} class="mx-auto text-secondary" />
           <p class="mt-4 text-lg font-medium text-primary">
-            {viewMode === "actives"
-              ? "No hay ingresos activos"
-              : "No hay registros en este período"}
+            No hay ingresos activos
           </p>
           <p class="mt-2 text-sm text-secondary">
-            {viewMode === "actives"
-              ? "Registra un nuevo ingreso para comenzar"
-              : "Intenta seleccionando otro rango de fechas"}
+            Registra un nuevo ingreso para comenzar
           </p>
-          {#if viewMode === "actives"}
-            <button
-              onclick={handleNuevoIngreso}
-              class="mt-4 px-4 py-2 bg-accent text-white rounded-md hover:opacity-90 transition-opacity"
-            >
-              Nuevo Ingreso
-            </button>
-          {/if}
+          <button
+            onclick={handleNuevoIngreso}
+            class="mt-4 px-4 py-2 bg-accent text-white rounded-md hover:opacity-90 transition-opacity"
+          >
+            Nuevo Ingreso
+          </button>
         </div>
       </div>
     {:else}
@@ -710,6 +705,7 @@
         persistenceKey="ingresos-activos-columns"
         onSelectionChanged={(rows) => (selectedRows = rows)}
         onGridReady={(api) => (gridApi = api)}
+        customToolbarSlot={toolbarControls}
       />
     {/if}
   </div>
