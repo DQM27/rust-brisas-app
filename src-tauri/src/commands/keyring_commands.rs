@@ -227,8 +227,7 @@ pub async fn test_keyring(session: State<'_, SessionState>) -> Result<String, Ke
 
     results.push("2. Recuperando credencial...".to_string());
     if let Some(password) = ks::get_secret(test_key) {
-        results
-            .push(format!("   ✓ Credencial recuperada: [OCULTO, longitud={}]", password.len()));
+        results.push(format!("   ✓ Credencial recuperada: [OCULTO, longitud={}]", password.len()));
         if password == test_value {
             results.push("   ✓ La credencial coincide!".to_string());
         } else {

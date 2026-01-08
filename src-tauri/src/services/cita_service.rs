@@ -59,7 +59,9 @@ pub async fn agendar_cita(params: AgendarCitaParams) -> Result<CitaResponse, Cit
             .await
             .map_err(|e| CitaError::Database(e.to_string()))?;
 
-        if let Some(v) = existente { Some(parse_record_id(&v.id, "visitante")?) } else {
+        if let Some(v) = existente {
+            Some(parse_record_id(&v.id, "visitante")?)
+        } else {
             let nuevo = visitante_service::create_visitante(v_input)
                 .await
                 .map_err(|e| CitaError::Database(e.to_string()))?;

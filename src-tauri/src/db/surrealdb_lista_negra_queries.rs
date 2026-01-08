@@ -90,11 +90,7 @@ pub async fn check_if_blocked_by_cedula(
         })
     } else {
         debug!("✅ Cédula {cedula} no bloqueada");
-        Ok(BlockCheckResponse {
-            is_blocked: false,
-            nivel_severidad: None,
-            bloqueado_desde: None,
-        })
+        Ok(BlockCheckResponse { is_blocked: false, nivel_severidad: None, bloqueado_desde: None })
     }
 }
 
@@ -199,9 +195,7 @@ pub async fn find_by_cedula(cedula: &str) -> Result<Option<ListaNegra>, SurrealD
         .bind(("cedula", cedula.to_string()))
         .await
         .map_err(|e| {
-            SurrealDbError::Query(format!(
-                "Error al buscar lista negra por cédula '{cedula}': {e}"
-            ))
+            SurrealDbError::Query(format!("Error al buscar lista negra por cédula '{cedula}': {e}"))
         })?;
 
     let registro: Option<ListaNegra> = result.take(0)?;
@@ -399,9 +393,7 @@ pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
         .query("UPDATE $id SET is_active = false, updated_at = time::now() WHERE is_active = true")
         .bind(("id", id.clone()))
         .await
-        .map_err(|e| {
-            SurrealDbError::Query(format!("Error al eliminar lista negra '{id}': {e}"))
-        })?;
+        .map_err(|e| SurrealDbError::Query(format!("Error al eliminar lista negra '{id}': {e}")))?;
 
     let updated: Option<ListaNegra> = result.take(0)?;
 

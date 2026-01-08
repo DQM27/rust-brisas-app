@@ -179,9 +179,7 @@ pub async fn registrar_salida(
         if let Some(ref g) = actualizado.gafete_numero {
             if *g != 0 {
                 if let Err(e) = gafete_service::liberar_gafete(*g, "visita").await {
-                    error!(
-                        "Error no fatal: No se pudo liberar gafete {g} en salida visita: {e:?}"
-                    );
+                    error!("Error no fatal: No se pudo liberar gafete {g} en salida visita: {e:?}");
                 } else {
                     info!("Gafete {g} (visita) liberado correctamente.");
                 }

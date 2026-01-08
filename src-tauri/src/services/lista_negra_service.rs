@@ -108,7 +108,8 @@ pub async fn get_all() -> Result<ListaNegraListResponse, ListaNegraError> {
     let bajo = registros.iter().filter(|r| r.nivel_severidad.to_uppercase() == "BAJO").count();
 
     // Convertir a responses
-    let bloqueados: Vec<ListaNegraResponse> = registros.into_iter().map(std::convert::Into::into).collect();
+    let bloqueados: Vec<ListaNegraResponse> =
+        registros.into_iter().map(std::convert::Into::into).collect();
 
     debug!(
         "📊 Lista negra: {total} total, {activos} activos, {alto} alto, {medio} medio, {bajo} bajo"

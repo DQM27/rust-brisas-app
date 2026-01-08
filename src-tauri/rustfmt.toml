@@ -22,12 +22,8 @@ newline_style = "Unix"
 # Edition (match Cargo.toml)
 edition = "2021"
 
-# Group imports from the same crate together
-imports_granularity = "Crate"
-
-# Apply max_width to comments too
-wrap_comments = true
-comment_width = 100
-
-# Format long strings by splitting with backslash
-format_strings = true
+# These features are unstable and require nightly Rust
+# imports_granularity = "Crate"
+# wrap_comments = true
+# comment_width = 100
+# format_strings = true

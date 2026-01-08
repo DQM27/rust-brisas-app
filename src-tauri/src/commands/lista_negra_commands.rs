@@ -242,7 +242,5 @@ pub async fn restore_lista_negra(
 pub async fn search_personas_for_block(
     query: String,
 ) -> Result<Vec<crate::models::lista_negra::PersonaSearchResult>, ListaNegraError> {
-    lista_negra_service::search_personas_for_block(&query)
-        .await
-        .map_err(ListaNegraError::Database)
+    lista_negra_service::search_personas_for_block(&query).await.map_err(ListaNegraError::Database)
 }

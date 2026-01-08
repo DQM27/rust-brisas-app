@@ -99,8 +99,14 @@ impl From<AlertaGafete> for AlertaGafeteResponse {
             cedula: a.cedula,
             nombre_completo: a.nombre_completo,
             gafete_numero: a.gafete_numero,
-            ingreso_contratista_id: a.ingreso_contratista.as_ref().map(std::string::ToString::to_string),
-            ingreso_proveedor_id: a.ingreso_proveedor.as_ref().map(std::string::ToString::to_string),
+            ingreso_contratista_id: a
+                .ingreso_contratista
+                .as_ref()
+                .map(std::string::ToString::to_string),
+            ingreso_proveedor_id: a
+                .ingreso_proveedor
+                .as_ref()
+                .map(std::string::ToString::to_string),
             ingreso_visita_id: a.ingreso_visita.as_ref().map(std::string::ToString::to_string),
             fecha_reporte: a.fecha_reporte.to_string(),
             resuelto: a.resuelto,

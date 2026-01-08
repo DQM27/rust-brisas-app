@@ -25,9 +25,7 @@ pub async fn insert(
         .as_ref()
         .map(|s| surrealdb::RecordId::from_str(s))
         .transpose()
-        .map_err(|e| {
-            SurrealDbError::Query(format!("Error parsing ingreso_contratista_id: {e}"))
-        })?;
+        .map_err(|e| SurrealDbError::Query(format!("Error parsing ingreso_contratista_id: {e}")))?;
 
     let ingreso_proveedor_rid = input
         .ingreso_proveedor_id

@@ -95,9 +95,11 @@ impl From<Empresa> for EmpresaResponse {
             is_active: e.is_active,
             total_contratistas: 0, // Se llena en capa de servicio si es necesario
             created_at: e
-                .created_at.map_or_else(|| chrono::Utc::now().to_rfc3339(), |d| d.to_string()),
+                .created_at
+                .map_or_else(|| chrono::Utc::now().to_rfc3339(), |d| d.to_string()),
             updated_at: e
-                .updated_at.map_or_else(|| chrono::Utc::now().to_rfc3339(), |d| d.to_string()),
+                .updated_at
+                .map_or_else(|| chrono::Utc::now().to_rfc3339(), |d| d.to_string()),
         }
     }
 }

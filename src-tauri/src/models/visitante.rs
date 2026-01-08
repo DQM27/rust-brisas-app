@@ -167,7 +167,8 @@ impl VisitanteResponse {
             segundo_apellido: v.segundo_apellido,
             empresa: v
                 .empresa
-                .as_ref().map_or_else(|| "Sin Empresa".to_string(), |e| e.nombre.clone()),
+                .as_ref()
+                .map_or_else(|| "Sin Empresa".to_string(), |e| e.nombre.clone()),
             empresa_id: v.empresa.as_ref().map(|e| e.id.to_string()),
             has_vehicle: v.has_vehicle,
             created_at: v.created_at.to_string(),

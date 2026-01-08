@@ -222,7 +222,8 @@ fn generate_table(
     // Rows con word-break ON
     for row in rows {
         for header in headers {
-            let value = row.get(header).map_or_else(|| "-".to_string(), std::string::ToString::to_string);
+            let value =
+                row.get(header).map_or_else(|| "-".to_string(), std::string::ToString::to_string);
             let lower_header = header.to_lowercase();
 
             // Para identificadores largos sin espacios, forzamos quiebre

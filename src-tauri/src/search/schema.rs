@@ -10,7 +10,7 @@
 //! - Otros metadatos específicos (cedula, nombre, empresa, etc.)
 
 use crate::search::errors::SearchError;
-use tantivy::schema::{Schema, STRING, STORED, TEXT, Field};
+use tantivy::schema::{Field, Schema, STORED, STRING, TEXT};
 
 /// Crea el schema para el índice de búsqueda
 pub fn build_search_schema() -> Schema {

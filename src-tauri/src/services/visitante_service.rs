@@ -137,8 +137,7 @@ pub async fn create_visitante(
                 {
                     Ok(()) => info!("🚗 Vehículo Placa {placa} registrado y vinculado con éxito"),
                     Err(e) => {
-                        let msg =
-                            format!("Visitante creado pero falló registro de vehículo: {e}");
+                        let msg = format!("Visitante creado pero falló registro de vehículo: {e}");
                         warn!("⚠️ {msg}");
                         vehicle_warning = Some(msg);
                     }

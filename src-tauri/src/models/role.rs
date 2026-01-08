@@ -151,14 +151,7 @@ pub enum Action {
 
 impl Action {
     pub fn all() -> Vec<Self> {
-        vec![
-            Self::View,
-            Self::Create,
-            Self::Read,
-            Self::Update,
-            Self::Delete,
-            Self::Export,
-        ]
+        vec![Self::View, Self::Create, Self::Read, Self::Update, Self::Delete, Self::Export]
     }
 
     pub const fn as_str(&self) -> &'static str {

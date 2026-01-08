@@ -104,7 +104,8 @@ pub async fn count_by_placa(placa: &str) -> Result<i64, SurrealDbError> {
         .await?;
 
     let count_obj: Option<serde_json::Value> = result.take(0)?;
-    let count = count_obj.and_then(|v| v.get("count").and_then(serde_json::Value::as_i64)).unwrap_or(0);
+    let count =
+        count_obj.and_then(|v| v.get("count").and_then(serde_json::Value::as_i64)).unwrap_or(0);
     Ok(count)
 }
 
