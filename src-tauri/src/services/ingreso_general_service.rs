@@ -130,9 +130,8 @@ pub async fn get_ingreso_by_id(id_str: &str) -> Result<Option<IngresoResponse>, 
         None => return Ok(None),
     };
 
-    let response = IngresoResponse::from_contratista_fetched(ingreso).map_err(|e| {
-        IngresoError::Validation(format!("Error procesando datos de ingreso: {e}"))
-    })?;
+    let response = IngresoResponse::from_contratista_fetched(ingreso)
+        .map_err(|e| IngresoError::Validation(format!("Error procesando datos de ingreso: {e}")))?;
 
     Ok(Some(response))
 }
@@ -147,10 +146,13 @@ pub async fn get_ingreso_by_id(id_str: &str) -> Result<Option<IngresoResponse>, 
 pub async fn get_ingreso_by_gafete(
     gafete_numero: &str,
 ) -> Result<Option<IngresoResponse>, IngresoError> {
-    let ingreso = if let Some(i) = db::find_ingreso_by_gafete_fetched(gafete_numero).await.map_err(|e| {
-        error!("Error buscando ingreso por gafete {gafete_numero}: {e}");
-        IngresoError::Database(e.to_string())
-    })? { i } else {
+    let ingreso = if let Some(i) =
+        db::find_ingreso_by_gafete_fetched(gafete_numero).await.map_err(|e| {
+            error!("Error buscando ingreso por gafete {gafete_numero}: {e}");
+            IngresoError::Database(e.to_string())
+        })? {
+        i
+    } else {
         info!("No se encontró ingreso activo para el gafete {gafete_numero}");
         return Ok(None);
     };
@@ -172,6 +174,7 @@ pub async fn get_salidas_en_rango(
     fecha_inicio: &str,
     fecha_fin: &str,
 ) -> Result<Vec<IngresoResponse>, IngresoError> {
+    info!("Solicitando historial salidas: Desde {} Hasta {}", fecha_inicio, fecha_fin);
     let results =
         db::find_salidas_in_range_fetched(fecha_inicio, fecha_fin).await.map_err(|e| {
             error!("Error reporte salidas {fecha_inicio} - {fecha_fin}: {e}");

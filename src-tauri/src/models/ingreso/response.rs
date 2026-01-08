@@ -27,6 +27,51 @@ fn datetime_to_iso(dt: &Datetime) -> String {
     clean
 }
 
+/// Calcula la duración entre dos fechas y devuelve (minutos, texto formateado)
+fn calculate_duration(start: &Datetime, end: Option<&Datetime>) -> (Option<i64>, Option<String>) {
+    let end_dt = match end {
+        Some(dt) => dt,
+        None => return (None, None),
+    };
+
+    // Convertir a i64 (unix millis) para cálculo, asumiendo que Datetime de Surreal
+    // maneja internamente nano/milisegundos o se puede convertir.
+    // Surrealdb::Datetime usa chrono::DateTime<Utc> internamente o algo similar.
+    // La forma más segura sin depender de métodos internos es conversión a string y re-parsing
+    // O usar métodos públicos si existen. SurrealDB Datetime is a wrapper struct.
+    // Viendo la doc, `Datetime` implementa `Into<chrono::DateTime<Utc>>` o similar usualmente.
+    // Pero si no tenemos acceso fácil, parseamos las strings ISO.
+
+    // Método robusto: Usar chrono::DateTime
+    let start_iso = datetime_to_iso(start);
+    let end_iso = datetime_to_iso(end_dt);
+
+    let start_parsed = match chrono::DateTime::parse_from_rfc3339(&start_iso) {
+        Ok(dt) => dt,
+        Err(_) => {
+            match chrono::NaiveDateTime::parse_from_str(&start_iso, "%Y-%m-%dT%H:%M:%S.%fZ") {
+                Ok(dt) => dt.and_local_timezone(chrono::Utc).unwrap().into(),
+                Err(_) => return (None, None), // Fallback
+            }
+        }
+    };
+
+    let end_parsed = match chrono::DateTime::parse_from_rfc3339(&end_iso) {
+        Ok(dt) => dt,
+        Err(_) => return (None, None),
+    };
+
+    let duration = end_parsed.signed_duration_since(start_parsed);
+    let total_minutes = duration.num_minutes();
+
+    let hours = total_minutes / 60;
+    let minutes = total_minutes % 60;
+
+    let text = format!("{}h {}m", hours, minutes);
+
+    (Some(total_minutes), Some(text))
+}
+
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct IngresoResponse {
@@ -170,9 +215,17 @@ impl IngresoResponse {
             placa_temporal: None,
             gafete_numero: i.gafete_numero,
             fecha_hora_ingreso: i.fecha_hora_ingreso.to_string(),
-            fecha_hora_salida: i.fecha_hora_salida.map(|d| d.to_string()),
-            tiempo_permanencia_minutos: None,
-            tiempo_permanencia_texto: None,
+            fecha_hora_salida: i.fecha_hora_salida.as_ref().map(|d| d.to_string()),
+            tiempo_permanencia_minutos: calculate_duration(
+                &i.fecha_hora_ingreso,
+                i.fecha_hora_salida.as_ref(),
+            )
+            .0,
+            tiempo_permanencia_texto: calculate_duration(
+                &i.fecha_hora_ingreso,
+                i.fecha_hora_salida.as_ref(),
+            )
+            .1,
             usuario_ingreso_id: i.usuario_ingreso.id.to_string(),
             usuario_ingreso_nombre: format!(
                 "{} {}",
@@ -235,9 +288,17 @@ impl IngresoResponse {
             placa_temporal: None,
             gafete_numero: i.gafete_numero,
             fecha_hora_ingreso: datetime_to_iso(&i.fecha_hora_ingreso),
-            fecha_hora_salida: i.fecha_hora_salida.map(|d| datetime_to_iso(&d)),
-            tiempo_permanencia_minutos: None,
-            tiempo_permanencia_texto: None,
+            fecha_hora_salida: i.fecha_hora_salida.as_ref().map(|d| datetime_to_iso(d)),
+            tiempo_permanencia_minutos: calculate_duration(
+                &i.fecha_hora_ingreso,
+                i.fecha_hora_salida.as_ref(),
+            )
+            .0,
+            tiempo_permanencia_texto: calculate_duration(
+                &i.fecha_hora_ingreso,
+                i.fecha_hora_salida.as_ref(),
+            )
+            .1,
             usuario_ingreso_id: i.usuario_ingreso.id.to_string(),
             usuario_ingreso_nombre: format!(
                 "{} {}",
@@ -300,9 +361,17 @@ impl IngresoResponse {
             placa_temporal: None,
             gafete_numero: i.gafete_numero,
             fecha_hora_ingreso: datetime_to_iso(&i.fecha_hora_ingreso),
-            fecha_hora_salida: i.fecha_hora_salida.map(|d| datetime_to_iso(&d)),
-            tiempo_permanencia_minutos: None,
-            tiempo_permanencia_texto: None,
+            fecha_hora_salida: i.fecha_hora_salida.as_ref().map(|d| datetime_to_iso(d)),
+            tiempo_permanencia_minutos: calculate_duration(
+                &i.fecha_hora_ingreso,
+                i.fecha_hora_salida.as_ref(),
+            )
+            .0,
+            tiempo_permanencia_texto: calculate_duration(
+                &i.fecha_hora_ingreso,
+                i.fecha_hora_salida.as_ref(),
+            )
+            .1,
             usuario_ingreso_id: i.usuario_ingreso.id.to_string(),
             usuario_ingreso_nombre: format!(
                 "{} {}",

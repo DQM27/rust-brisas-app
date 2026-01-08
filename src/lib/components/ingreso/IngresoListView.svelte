@@ -24,6 +24,10 @@
     clearCommand,
   } from "$lib/stores/keyboardCommands";
 
+  // Shared Components
+  import DateRangePicker from "$lib/components/shared/DateRangePicker.svelte";
+  import { History, Users } from "lucide-svelte";
+
   // Types
   import type { CustomToolbarButton } from "$lib/types/agGrid";
 
@@ -54,6 +58,19 @@
   let exportColumns = $state<{ id: string; name: string; selected: boolean }[]>(
     [],
   );
+
+  // ==========================================
+  // HISTORIAL / VIEW MODE STATE
+  // ==========================================
+  type ViewMode = "actives" | "history";
+  let viewMode = $state<ViewMode>("actives");
+
+  // Rango de fechas por defecto: Hoy
+  const today = new Date().toISOString().split("T")[0];
+  let dateRange = $state({
+    start: today,
+    end: today,
+  });
 
   // Suscripción a comandos de teclado centralizados
   let unsubscribeKeyboard: (() => void) | null = null;
@@ -106,7 +123,7 @@
   // COLUMNS
   // ==========================================
   let columnDefs = $derived.by((): ColDef<any>[] => {
-    return [
+    const baseCols: ColDef<any>[] = [
       {
         field: "gafeteNumero",
         headerName: "Gafete",
@@ -268,6 +285,12 @@
         },
       },
     ];
+
+    // Filter out columns not needed in history mode
+    if (viewMode === "history") {
+      return baseCols.filter((c) => c.field !== "actions");
+    }
+    return baseCols;
   });
 
   // ==========================================
@@ -301,14 +324,45 @@
     loading = true;
     error = "";
     try {
-      const data = await invoke("get_ingresos_abiertos");
+      let data;
+      if (viewMode === "actives") {
+        data = await invoke("get_ingresos_abiertos");
+      } else {
+        // Modo Historial: Cargar por rango de fechas
+        // Nota: Aseguramos que las fechas estén en formato ISO completo si el backend lo requiere,
+        // pero get_salidas_en_rango el servicio suele aceptar "YYYY-MM-DD".
+        // Sin embargo, el comando espera strings.
+        // Vamos a mandar YYYY-MM-DDT00:00:00Z y YYYY-MM-DDT23:59:59Z para cubrir todo el día
+        const start = `${dateRange.start}T00:00:00Z`;
+        const end = `${dateRange.end}T23:59:59Z`;
+
+        data = await invoke("get_salidas_en_rango", {
+          fechaInicio: start,
+          fechaFin: end,
+        });
+      }
       ingresos = data as any[];
     } catch (err: any) {
-      error = err.message || "Error al cargar ingresos";
+      error = err.message || "Error al cargar datos";
       toast.error(error);
+      ingresos = [];
     } finally {
       loading = false;
     }
+  }
+
+  function handleDateRangeChange(
+    event: CustomEvent<{ startDate: string; endDate: string }>,
+  ) {
+    dateRange.start = event.detail.startDate;
+    dateRange.end = event.detail.endDate;
+    loadIngresos();
+  }
+
+  function toggleViewMode(mode: ViewMode) {
+    if (viewMode === mode) return;
+    viewMode = mode;
+    loadIngresos();
   }
 
   function handleNuevoIngreso() {
@@ -444,15 +498,62 @@
 <div class="flex h-full flex-col relative bg-surface-1">
   <!-- Header -->
   <div class="border-b border-surface px-6 py-4 bg-surface-2">
-    <div class="flex items-center justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-semibold text-primary">Ingresos Activos</h2>
-        <p class="mt-1 text-sm text-secondary">
-          Personas actualmente en planta
-        </p>
+    <div class="flex flex-col gap-4">
+      <!-- Top Row: Title & Toggle -->
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-semibold text-primary">
+            {viewMode === "actives"
+              ? "Ingresos Activos"
+              : "Historial de Salidas"}
+          </h2>
+          <p class="mt-1 text-sm text-secondary">
+            {viewMode === "actives"
+              ? "Personas actualmente en planta"
+              : "Registro histórico de visitas finalizadas"}
+          </p>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="flex bg-surface-3 p-1 rounded-lg">
+          <button
+            class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
+            {viewMode === 'actives'
+              ? 'bg-primary text-white shadow-sm'
+              : 'text-secondary hover:text-primary'}"
+            onclick={() => toggleViewMode("actives")}
+          >
+            <Users size={16} />
+            Activos
+          </button>
+          <button
+            class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
+            {viewMode === 'history'
+              ? 'bg-primary text-white shadow-sm'
+              : 'text-secondary hover:text-primary'}"
+            onclick={() => toggleViewMode("history")}
+          >
+            <History size={16} />
+            Historial
+          </button>
+        </div>
       </div>
-      <div class="flex-1 max-w-md">
-        <SearchBar placeholder="Buscar por nombre, gafete..." limit={10} />
+
+      <!-- Bottom Row: Controls -->
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex-1 max-w-md">
+          <SearchBar placeholder="Buscar por nombre, gafete..." limit={10} />
+        </div>
+
+        {#if viewMode === "history"}
+          <div transition:fade={{ duration: 150 }}>
+            <DateRangePicker
+              startDate={dateRange.start}
+              endDate={dateRange.end}
+              on:change={handleDateRangeChange}
+            />
+          </div>
+        {/if}
       </div>
     </div>
   </div>
@@ -502,17 +603,23 @@
         <div class="text-center">
           <AlertCircle size={48} class="mx-auto text-secondary" />
           <p class="mt-4 text-lg font-medium text-primary">
-            No hay ingresos activos
+            {viewMode === "actives"
+              ? "No hay ingresos activos"
+              : "No hay registros en este período"}
           </p>
           <p class="mt-2 text-sm text-secondary">
-            Registra un nuevo ingreso para comenzar
+            {viewMode === "actives"
+              ? "Registra un nuevo ingreso para comenzar"
+              : "Intenta seleccionando otro rango de fechas"}
           </p>
-          <button
-            onclick={handleNuevoIngreso}
-            class="mt-4 px-4 py-2 bg-accent text-white rounded-md hover:opacity-90 transition-opacity"
-          >
-            Nuevo Ingreso
-          </button>
+          {#if viewMode === "actives"}
+            <button
+              onclick={handleNuevoIngreso}
+              class="mt-4 px-4 py-2 bg-accent text-white rounded-md hover:opacity-90 transition-opacity"
+            >
+              Nuevo Ingreso
+            </button>
+          {/if}
         </div>
       </div>
     {:else}

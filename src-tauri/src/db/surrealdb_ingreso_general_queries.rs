@@ -68,7 +68,7 @@ pub async fn find_salidas_in_range_fetched(
 ) -> Result<Vec<IngresoContratistaFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM ingreso_contratista WHERE fecha_hora_salida >= $start AND fecha_hora_salida <= $end ORDER BY fecha_hora_salida DESC FETCH usuario_ingreso, usuario_salida, contratista, contratista.empresa")
+        .query("SELECT * FROM ingreso_contratista WHERE fecha_hora_salida >= type::datetime($start) AND fecha_hora_salida <= type::datetime($end) ORDER BY fecha_hora_salida DESC FETCH usuario_ingreso, usuario_salida, contratista, contratista.empresa")
         .bind(("start", start.to_string()))
         .bind(("end", end.to_string()))
         .await?;
