@@ -1,7 +1,7 @@
 <!-- src/lib/components/user/UserListView.svelte -->
 <!-- Vista unificada: Lista de usuarios + Modal para CRUD -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
   import { toast } from "svelte-5-french-toast";
   import { AlertCircle, Filter, RotateCw } from "lucide-svelte";
@@ -32,6 +32,11 @@
   import { activeTabId } from "$lib/stores/tabs";
   import { can } from "$lib/logic/permissions";
   import { Eye } from "lucide-svelte";
+  import {
+    keyboardCommand,
+    setActiveContext,
+    clearCommand,
+  } from "$lib/stores/keyboardCommands";
 
   interface Props {
     tabId: string;
@@ -73,15 +78,52 @@
     currentStatus: boolean;
   } | null>(null);
 
-  // Keyboard shortcut handler for Ctrl+N
-  function handleKeydown(e: KeyboardEvent) {
-    if ($activeTabId !== tabId) return;
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") {
-      const target = e.target as HTMLElement;
-      if (target.tagName === "TEXTAREA" || target.isContentEditable) return;
-      e.preventDefault();
-      openModal(null);
-    }
+  // Suscripción a comandos de teclado centralizados
+  let unsubscribeKeyboard: (() => void) | null = null;
+
+  function setupKeyboardSubscription() {
+    unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
+      if (!event) return;
+      if ($activeTabId !== tabId) return;
+
+      const canCreate = $currentUser && can($currentUser, "CREATE_USER");
+      const canDelete = $currentUser && can($currentUser, "DELETE_USER");
+
+      switch (event.command) {
+        case "create-new":
+          if (canCreate && !showModal) {
+            openModal(null);
+            clearCommand();
+          }
+          break;
+        case "edit":
+          if (selectedRows.length === 1 && !showModal) {
+            openModal(selectedRows[0]);
+            clearCommand();
+          }
+          break;
+        case "delete":
+          if (canDelete && selectedRows.length > 0 && !showModal) {
+            if (selectedRows.length === 1) {
+              handleDeleteUser(selectedRows[0]);
+            } else {
+              handleDeleteMultiple(selectedRows);
+            }
+            clearCommand();
+          }
+          break;
+        case "escape":
+          if (showModal) {
+            closeModal();
+            clearCommand();
+          }
+          break;
+        case "refresh":
+          loadUsers();
+          clearCommand();
+          break;
+      }
+    });
   }
 
   // ==========================================
@@ -466,10 +508,24 @@
 
   onMount(() => {
     loadUsers();
+    setupKeyboardSubscription();
+  });
+
+  onDestroy(() => {
+    if (unsubscribeKeyboard) {
+      unsubscribeKeyboard();
+    }
+  });
+
+  // Registrar contexto activo cuando esta pestaña está activa
+  $effect(() => {
+    if ($activeTabId === tabId) {
+      setActiveContext("users-list");
+    }
   });
 </script>
 
-<svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
+<svelte:window onclick={handleClickOutside} />
 
 <div class="flex h-full flex-col relative bg-[#1e1e1e]">
   <!-- Header -->

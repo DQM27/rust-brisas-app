@@ -12,6 +12,7 @@
   import { themeStore } from "$lib/stores/themeStore"; // Inicializar tema
   import { generalSettings } from "$lib/stores/settingsStore";
   import SetupWizard from "$lib/components/setup/SetupWizard.svelte";
+  import KeyboardShortcuts from "$lib/components/layout/KeyboardShortcuts.svelte";
   import {
     needsSetup,
     setWindowDecorations,
@@ -272,6 +273,11 @@
     <!-- StatusBar (Solo si autenticado y no Setup) -->
     {#if authenticated && !$generalSettings.isKioskMode && !showSetupWizard}
       <StatusBar />
+    {/if}
+
+    <!-- Keyboard Shortcuts (Solo si autenticado) -->
+    {#if authenticated}
+      <KeyboardShortcuts />
     {/if}
 
     <!-- Screensaver Password Modal -->

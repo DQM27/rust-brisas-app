@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount, onDestroy } from "svelte";
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
   import VisitaFormModal from "$lib/components/visita/VisitaFormModal.svelte";
   import { visitaService } from "$lib/logic/visita/visitaService";
@@ -13,6 +14,11 @@
   import { currentUser } from "$lib/stores/auth";
   import { createCustomButton } from "$lib/config/agGridConfigs";
   import { activeTabId } from "$lib/stores/tabs";
+  import {
+    keyboardCommand,
+    setActiveContext,
+    clearCommand,
+  } from "$lib/stores/keyboardCommands";
 
   interface Props {
     tabId?: string;
@@ -33,15 +39,33 @@
   // Selección
   let selectedRows = $state<CitaPopulated[]>([]);
 
-  // Keyboard shortcut handler for Ctrl+N
-  function handleKeydown(e: KeyboardEvent) {
-    if ($activeTabId !== tabId) return;
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") {
-      const target = e.target as HTMLElement;
-      if (target.tagName === "TEXTAREA" || target.isContentEditable) return;
-      e.preventDefault();
-      showModal = true;
-    }
+  // Suscripción a comandos de teclado centralizados
+  let unsubscribeKeyboard: (() => void) | null = null;
+
+  function setupKeyboardSubscription() {
+    unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
+      if (!event) return;
+      if ($activeTabId !== tabId) return;
+
+      switch (event.command) {
+        case "create-new":
+          if (!showModal) {
+            showModal = true;
+            clearCommand();
+          }
+          break;
+        case "escape":
+          if (showModal) {
+            showModal = false;
+            clearCommand();
+          }
+          break;
+        case "refresh":
+          loadData();
+          clearCommand();
+          break;
+      }
+    });
   }
 
   // Carga de datos
@@ -83,12 +107,6 @@
 
   // Acción: Registrar Ingreso (Desde Grilla)
   async function handleRegistrarIngreso(visita: CitaPopulated) {
-    // TODO: Esto idealmente abriría un modal de confirmación con input para Gafete
-    // Por ahora simularemos un prompt simple o un modal pequeño dedicado
-    // O podríamos reusar un modal de confirmación genérico si existiera.
-    // Dado que el usuario pidió refactorizar "como proveedor", proveedor es CRUD simple.
-    // Pero Visita tiene acción de ingreso.
-
     const gafete = prompt(
       `Ingrese número de gafete para ${visita.visitante_nombre_completo}:`,
     );
@@ -117,11 +135,9 @@
       headerName: "Acciones",
       width: 120,
       cellRenderer: (params: any) => {
-        // Esto es solo visual si usamos Vanilla JS en cellRenderer, pero AG Grid Svelte es limitado.
-        // Mejor usamos botones de toolbar para acciones sobre seleccionados.
         return "";
       },
-      hide: true, // Oculto por ahora, usaremos toolbar
+      hide: true,
     },
   ] as ColDef<CitaPopulated>[]);
 
@@ -138,7 +154,6 @@
           onClick: loadData,
           tooltip: "Recargar lista",
         },
-        // Filtro Hoy / Pendientes
         {
           id: "filter-date",
           label: activeFilter === "hoy" ? "Ver Pendientes" : "Ver Hoy",
@@ -156,7 +171,7 @@
           label: "Registrar Ingreso",
           category: "action",
           onClick: () => selected && handleRegistrarIngreso(selected),
-          disabled: false, // Podríamos validar si ya ingresó, pero GetCitas trae pendientes usualmente
+          disabled: false,
         },
         {
           id: "cancel",
@@ -185,12 +200,24 @@
     };
   });
 
-  $effect(() => {
+  onMount(() => {
     loadData();
+    setupKeyboardSubscription();
+  });
+
+  onDestroy(() => {
+    if (unsubscribeKeyboard) {
+      unsubscribeKeyboard();
+    }
+  });
+
+  // Registrar contexto activo cuando esta pestaña está activa
+  $effect(() => {
+    if ($activeTabId === tabId) {
+      setActiveContext("visita-list");
+    }
   });
 </script>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <div class="h-full flex flex-col space-y-4 p-4 animate-fade-in bg-[#1e1e1e]">
   {#if loading && visitas.length === 0}

@@ -126,7 +126,18 @@
     "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
   const errorClass = "text-xs text-red-500 mt-1 block";
   const inputErrorClass = "border-red-500 focus:ring-red-500/20";
+
+  // Handler para Ctrl+S
+  function handleCtrlS(e: KeyboardEvent) {
+    if (!show || loading) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      handleSubmit();
+    }
+  }
 </script>
+
+<svelte:window onkeydown={handleCtrlS} />
 
 {#if show}
   <div

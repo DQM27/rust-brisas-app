@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
   import { toast } from "svelte-5-french-toast";
   import { AlertCircle, RotateCw } from "lucide-svelte";
@@ -18,6 +18,11 @@
   import { currentUser } from "$lib/stores/auth";
   import { activeTabId } from "$lib/stores/tabs";
   import { exportData, getAvailableFormats } from "$lib/logic/export";
+  import {
+    keyboardCommand,
+    setActiveContext,
+    clearCommand,
+  } from "$lib/stores/keyboardCommands";
 
   // Types
   import type { CustomToolbarButton } from "$lib/types/agGrid";
@@ -50,20 +55,37 @@
     [],
   );
 
-  // Keyboard shortcut handler for Ctrl+N
-  function handleKeydown(e: KeyboardEvent) {
-    // Only handle if this tab is active
-    if ($activeTabId !== tabId) return;
+  // Suscripción a comandos de teclado centralizados
+  let unsubscribeKeyboard: (() => void) | null = null;
 
-    // Ctrl+N or Cmd+N to open new modal
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") {
-      // Don't trigger if focused on input/textarea
-      const target = e.target as HTMLElement;
-      if (target.tagName === "TEXTAREA" || target.isContentEditable) return;
+  function setupKeyboardSubscription() {
+    unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
+      if (!event) return;
+      if ($activeTabId !== tabId) return;
 
-      e.preventDefault();
-      showModal = true;
-    }
+      switch (event.command) {
+        case "create-new":
+          if (!showModal && !showSalidaModal) {
+            showModal = true;
+            clearCommand();
+          }
+          break;
+        case "escape":
+          if (showModal) {
+            showModal = false;
+            clearCommand();
+          } else if (showSalidaModal) {
+            showSalidaModal = false;
+            selectedIngreso = null;
+            clearCommand();
+          }
+          break;
+        case "refresh":
+          loadIngresos();
+          clearCommand();
+          break;
+      }
+    });
   }
 
   // ==========================================
@@ -341,7 +363,6 @@
       salidaLoading = true;
 
       if (selectedIngreso.tipoIngreso === "contratista") {
-        // El comando de contratista espera un objeto 'input'
         await invoke("register_exit_contratista", {
           input: {
             ingresoId: selectedIngreso.id,
@@ -383,6 +404,20 @@
   // ==========================================
   onMount(() => {
     loadIngresos();
+    setupKeyboardSubscription();
+  });
+
+  onDestroy(() => {
+    if (unsubscribeKeyboard) {
+      unsubscribeKeyboard();
+    }
+  });
+
+  // Registrar contexto activo cuando esta pestaña está activa
+  $effect(() => {
+    if ($activeTabId === tabId) {
+      setActiveContext("ingreso-list");
+    }
   });
 </script>
 
@@ -474,9 +509,6 @@
     {/if}
   </div>
 </div>
-
-<!-- Keyboard shortcut listener -->
-<svelte:window onkeydown={handleKeydown} />
 
 <!-- Modal -->
 <IngresoFormModal bind:show={showModal} on:complete={handleModalComplete} />

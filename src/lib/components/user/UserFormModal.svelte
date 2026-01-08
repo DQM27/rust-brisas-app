@@ -455,7 +455,22 @@
   const errorClass = "text-xs text-red-500 mt-1";
   const sectionClass =
     "text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-[#30363d] pb-2 mb-3";
+
+  // Handler para Ctrl+S
+  function handleKeydown(e: KeyboardEvent) {
+    if (!show || readonly || loading) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      // Disparar submit del formulario
+      const form = document.getElementById("user-form") as HTMLFormElement;
+      if (form) {
+        form.requestSubmit();
+      }
+    }
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 {#if show}
   <div

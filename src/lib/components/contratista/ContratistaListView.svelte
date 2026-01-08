@@ -7,6 +7,12 @@
   import { Trash2, RotateCcw, Eye, Car } from "lucide-svelte"; // Add RotateCcw for restore icon
   import { can } from "$lib/logic/permissions";
   import { currentUser } from "$lib/stores/auth";
+  import { activeTabId } from "$lib/stores/tabs";
+  import {
+    keyboardCommand,
+    setActiveContext,
+    clearCommand,
+  } from "$lib/stores/keyboardCommands";
 
   import { AlertCircle } from "lucide-svelte";
   import { selectedSearchStore } from "$lib/stores/searchStore";
@@ -37,6 +43,61 @@
   let showModal = $state(false);
   let editingContratista = $state<ContratistaResponse | null>(null);
   let modalLoading = $state(false);
+
+  interface Props {
+    tabId?: string;
+  }
+  let { tabId = "contratista-list" }: Props = $props();
+
+  // Suscripción a comandos de teclado centralizados
+  let unsubscribeKeyboard: (() => void) | null = null;
+
+  function setupKeyboardSubscription() {
+    unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
+      if (!event) return;
+      if ($activeTabId !== tabId) return;
+
+      const canCreate = $currentUser && can($currentUser, "CREATE_CONTRACTOR");
+      const canDelete = $currentUser && can($currentUser, "DELETE_CONTRACTOR");
+
+      switch (event.command) {
+        case "create-new":
+          if (canCreate && !showModal && !showVehiculoModal) {
+            openModal();
+            clearCommand();
+          }
+          break;
+        case "edit":
+          if (selectedRows.length === 1 && !showModal) {
+            openModal(selectedRows[0]);
+            clearCommand();
+          }
+          break;
+        case "delete":
+          if (canDelete && selectedRows.length === 1 && !showModal) {
+            handleDelete(selectedRows[0]);
+            clearCommand();
+          }
+          break;
+        case "escape":
+          if (showModal) {
+            closeModal();
+            clearCommand();
+          } else if (showVehiculoModal) {
+            closeVehiculoModal();
+            clearCommand();
+          } else {
+            showEstadoDropdown = false;
+            showPraindDropdown = false;
+          }
+          break;
+        case "refresh":
+          loadContratistas();
+          clearCommand();
+          break;
+      }
+    });
+  }
 
   // Vehiculo Modal State
   let showVehiculoModal = $state(false);
@@ -351,14 +412,6 @@
     }
   }
 
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === "Escape") {
-      showEstadoDropdown = false;
-      showPraindDropdown = false;
-      // closeModal() handled by modal component usually
-    }
-  }
-
   async function handleDelete(contratista: ContratistaResponse) {
     if (
       !confirm(
@@ -396,14 +449,24 @@
   // ==========================================
   onMount(async () => {
     loadContratistas();
+    setupKeyboardSubscription();
   });
 
   onDestroy(() => {
-    // Cleanup
+    if (unsubscribeKeyboard) {
+      unsubscribeKeyboard();
+    }
+  });
+
+  // Registrar contexto activo cuando esta pestaña está activa
+  $effect(() => {
+    if ($activeTabId === tabId) {
+      setActiveContext("contratista-list");
+    }
   });
 </script>
 
-<svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
+<svelte:window onclick={handleClickOutside} />
 
 <div class="flex h-full flex-col relative bg-[#1e1e1e]">
   <!-- Header -->

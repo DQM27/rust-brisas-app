@@ -1,7 +1,7 @@
 <!-- src/lib/components/listaNegra/ListaNegraListView.svelte -->
 <!-- Vista unificada: Lista Negra + Modal para CRUD (Patrón Users) -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
   import { toast } from "svelte-5-french-toast";
   import { AlertCircle, RotateCw } from "lucide-svelte";
@@ -30,6 +30,11 @@
   import { selectedSearchStore } from "$lib/stores/searchStore";
   import { currentUser } from "$lib/stores/auth";
   import { activeTabId } from "$lib/stores/tabs";
+  import {
+    keyboardCommand,
+    setActiveContext,
+    clearCommand,
+  } from "$lib/stores/keyboardCommands";
 
   interface Props {
     tabId: string;
@@ -59,15 +64,42 @@
   // Selección en grid
   let selectedRows = $state<ListaNegraResponse[]>([]);
 
-  // Keyboard shortcut handler for Ctrl+N
-  function handleKeydown(e: KeyboardEvent) {
-    if ($activeTabId !== tabId) return;
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") {
-      const target = e.target as HTMLElement;
-      if (target.tagName === "TEXTAREA" || target.isContentEditable) return;
-      e.preventDefault();
-      openFormModal(null);
-    }
+  // Suscripción a comandos de teclado centralizados
+  let unsubscribeKeyboard: (() => void) | null = null;
+
+  function setupKeyboardSubscription() {
+    unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
+      if (!event) return;
+      if ($activeTabId !== tabId) return;
+
+      switch (event.command) {
+        case "create-new":
+          if (canManage && !showFormModal && !showConfirmModal) {
+            openFormModal(null);
+            clearCommand();
+          }
+          break;
+        case "edit":
+          if (canManage && selectedRows.length === 1 && !showFormModal) {
+            openFormModal(selectedRows[0]);
+            clearCommand();
+          }
+          break;
+        case "escape":
+          if (showFormModal) {
+            closeFormModal();
+            clearCommand();
+          } else if (showConfirmModal) {
+            closeConfirmModal();
+            clearCommand();
+          }
+          break;
+        case "refresh":
+          loadListaNegra();
+          clearCommand();
+          break;
+      }
+    });
   }
 
   // ==========================================
@@ -370,10 +402,24 @@
   // Lifecycle
   onMount(() => {
     loadListaNegra();
+    setupKeyboardSubscription();
+  });
+
+  onDestroy(() => {
+    if (unsubscribeKeyboard) {
+      unsubscribeKeyboard();
+    }
+  });
+
+  // Registrar contexto activo cuando esta pestaña está activa
+  $effect(() => {
+    if ($activeTabId === tabId) {
+      setActiveContext("lista-negra");
+    }
   });
 </script>
 
-<svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
+<svelte:window onclick={handleClickOutside} />
 
 <div class="flex h-full flex-col relative bg-[#1e1e1e]">
   <!-- Header -->

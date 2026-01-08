@@ -138,7 +138,21 @@
       color: "",
     };
   });
+
+  // Handler para Ctrl+S
+  function handleKeydown(e: KeyboardEvent) {
+    if (!show || readonly || loading) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      const form = document.querySelector("form") as HTMLFormElement;
+      if (form) {
+        form.requestSubmit();
+      }
+    }
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 {#if show}
   <div

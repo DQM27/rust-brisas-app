@@ -140,6 +140,18 @@
     if (e.key === "Escape") {
       handleClose();
     }
+    // Ctrl+S para guardar
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      if (
+        show &&
+        !loading &&
+        selectedPerson &&
+        validationResult?.puedeIngresar
+      ) {
+        handleSubmit();
+      }
+    }
   }
 </script>
 

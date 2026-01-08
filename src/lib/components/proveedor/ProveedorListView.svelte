@@ -1,5 +1,6 @@
 <!-- src/lib/components/proveedor/ProveedorListView.svelte -->
 <script lang="ts">
+  import { onMount, onDestroy } from "svelte";
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
   import ProveedorFormModal from "$lib/components/proveedor/ProveedorFormModal.svelte";
   import {
@@ -30,6 +31,11 @@
   import { Eye } from "lucide-svelte";
   import SearchBar from "$lib/components/shared/SearchBar.svelte";
   import { selectedSearchStore } from "$lib/stores/searchStore";
+  import {
+    keyboardCommand,
+    setActiveContext,
+    clearCommand,
+  } from "$lib/stores/keyboardCommands";
 
   interface Props {
     tabId?: string;
@@ -50,15 +56,45 @@
   // Selección
   let selectedRows = $state<ProveedorResponse[]>([]);
 
-  // Keyboard shortcut handler for Ctrl+N
-  function handleKeydown(e: KeyboardEvent) {
-    if ($activeTabId !== tabId) return;
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") {
-      const target = e.target as HTMLElement;
-      if (target.tagName === "TEXTAREA" || target.isContentEditable) return;
-      e.preventDefault();
-      openFormModal(null);
-    }
+  // Suscripción a comandos de teclado centralizados
+  let unsubscribeKeyboard: (() => void) | null = null;
+
+  function setupKeyboardSubscription() {
+    unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
+      if (!event) return;
+      if ($activeTabId !== tabId) return;
+
+      switch (event.command) {
+        case "create-new":
+          if (!showModal) {
+            openFormModal(null);
+            clearCommand();
+          }
+          break;
+        case "edit":
+          if (selectedRows.length === 1 && !showModal) {
+            openFormModal(selectedRows[0]);
+            clearCommand();
+          }
+          break;
+        case "delete":
+          if (selectedRows.length === 1 && !showModal) {
+            confirmDelete(selectedRows[0]);
+            clearCommand();
+          }
+          break;
+        case "escape":
+          if (showModal) {
+            showModal = false;
+            clearCommand();
+          }
+          break;
+        case "refresh":
+          loadData();
+          clearCommand();
+          break;
+      }
+    });
   }
 
   // Carga inicial
@@ -67,7 +103,6 @@
     error = null;
 
     let res;
-    // Default to fetchAll based on previous logic, but can be adjusted
     res = await fetchAllProveedores();
 
     if (res.ok) {
@@ -113,7 +148,7 @@
       toast.success(
         selectedProveedor ? "Proveedor actualizado" : "Proveedor creado",
       );
-      loadData(); // Recargar grid
+      loadData();
       showModal = false;
       return true;
     } else {
@@ -135,7 +170,6 @@
 
       if (res.ok) {
         toast.success("Estado actualizado", { id: toastId });
-        // Optimistic update local
         proveedores = proveedores.map((p) =>
           p.id === id
             ? {
@@ -176,9 +210,7 @@
   const customButtons = $derived.by(() => {
     const selected = selectedRows[0];
     let defaultBtns = [];
-    // if (canCreate) {
     defaultBtns.push(createCustomButton.nuevo(() => openFormModal(null)));
-    // }
 
     defaultBtns.push({
       id: "refresh",
@@ -190,34 +222,17 @@
 
     let singleSelectBtns = [];
 
-    // if (canUpdate) {
     singleSelectBtns.push(
       createCustomButton.editar(() => {
         if (selected) openFormModal(selected);
       }),
     );
-    // } else {
-    //   if (canViewDetail) {
-    //     singleSelectBtns.push({
-    //       id: "view-detail",
-    //       label: "Ver Detalle",
-    //       icon: Eye,
-    //       onClick: () => {
-    //         if (selected) openFormModal(selected, true);
-    //       },
-    //       variant: "default" as const,
-    //       tooltip: "Ver detalles del proveedor",
-    //     });
-    //   }
-    // }
 
-    // if (canDelete) {
     singleSelectBtns.push(
       createCustomButton.eliminar(() => {
         if (selected) confirmDelete(selected);
       }),
     );
-    // }
 
     return {
       default: defaultBtns,
@@ -234,22 +249,30 @@
     let filtered = proveedores;
     const _search = $selectedSearchStore;
     if (_search.result && _search.result.tipo === "proveedor") {
-      // Si el resultado es una coincidencia exacta de ID
       return filtered.filter((p) => p.id === _search.result!.id);
     }
-    // Si quisieramos filtrar por texto libre se podría hacer aqui,
-    // pero SearchBar generalmente maneja la búsqueda global.
-    // Por consistencia con Contratista, solo filtramos si hay un resultado seleccionado en el store.
     return filtered;
   });
 
-  // Effect para cargar datos al montar
-  $effect(() => {
+  // Lifecycle
+  onMount(() => {
     loadData();
+    setupKeyboardSubscription();
+  });
+
+  onDestroy(() => {
+    if (unsubscribeKeyboard) {
+      unsubscribeKeyboard();
+    }
+  });
+
+  // Registrar contexto activo cuando esta pestaña está activa
+  $effect(() => {
+    if ($activeTabId === tabId) {
+      setActiveContext("proveedor-list");
+    }
   });
 </script>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <div class="flex h-full flex-col relative bg-[#1e1e1e]">
   <!-- Header -->

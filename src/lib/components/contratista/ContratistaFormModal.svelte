@@ -224,7 +224,23 @@
     "w-full rounded-md border border-gray-300 dark:border-[#30363d] bg-white dark:bg-[#0d1117] px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] focus:outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-[#161b22]";
   const errorInputClass =
     "border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500";
+
+  // Handler para Ctrl+S
+  function handleKeydown(e: KeyboardEvent) {
+    if (!show || readonly || loading) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      const form = document.querySelector(
+        'form[method="POST"]',
+      ) as HTMLFormElement;
+      if (form) {
+        form.requestSubmit();
+      }
+    }
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 {#if show}
   <!-- Backdrop -->
