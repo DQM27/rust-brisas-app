@@ -25,9 +25,7 @@
     $currentUser && can($currentUser, "UPDATE_SETTINGS_GENERAL"),
   );
 
-  // Estado del modo demo (se carga desde el backend)
-  let showDemoMode = $state(false);
-  let loadingDemo = $state(false);
+
 
   // Estado de audio
   let alertSound = $state("Hand");
@@ -39,7 +37,6 @@
   onMount(async () => {
     try {
       const config = await invoke<any>("get_app_config");
-      showDemoMode = config?.setup?.show_demo_mode ?? false;
       alertSound = config?.audio?.alert_sound ?? "Hand";
       useCustomSound = config?.audio?.use_custom ?? false;
       customSoundPath = config?.audio?.custom_sound_path ?? null;
@@ -48,22 +45,7 @@
     }
   });
 
-  async function toggleDemoMode() {
-    loadingDemo = true;
-    try {
-      const newValue = !showDemoMode;
-      await invoke("toggle_demo_mode", { enabled: newValue });
-      showDemoMode = newValue;
-      toast.success(
-        newValue ? "Modo demo habilitado" : "Modo demo deshabilitado",
-        { icon: newValue ? "🧪" : "🔒" },
-      );
-    } catch (e: any) {
-      console.error("Error toggling demo mode:", e);
-      toast.error("Error al cambiar modo demo");
-    }
-    loadingDemo = false;
-  }
+
 
   async function saveAudioConfig() {
     try {
@@ -265,30 +247,10 @@
           !canUpdate,
         )}
 
-        <!-- Modo Demo Toggle -->
-        {@render settingRow(
-          FlaskConical,
-          "bg-amber-50 dark:bg-amber-900/20",
-          "text-amber-500",
-          "Mostrar Modo Demo en Login",
-          showDemoMode,
-          toggleDemoMode,
-          loadingDemo || !canUpdate,
-        )}
+
       </div>
 
-      <!-- Nota de seguridad para modo demo -->
-      {#if showDemoMode}
-        <div
-          class="mt-3 flex items-start gap-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/20"
-        >
-          <span class="text-amber-500 text-lg">⚠️</span>
-          <p class="text-xs text-amber-600 dark:text-amber-400">
-            El modo demo está habilitado. Se mostrará el enlace "¿Modo Demo?" en
-            la pantalla de login. Desactívalo antes de desplegar a producción.
-          </p>
-        </div>
-      {/if}
+
     </div>
 
     <!-- ================================================================== -->

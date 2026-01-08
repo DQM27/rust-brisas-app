@@ -13,7 +13,7 @@ use crate::domain::errors::VehiculoError;
 use crate::models::vehiculo::{
     CreateVehiculoInput, UpdateVehiculoInput, VehiculoListResponse, VehiculoResponse,
 };
-use crate::require_perm;
+
 use crate::services::session::SessionState;
 use crate::services::vehiculo_service as service;
 use tauri::State;

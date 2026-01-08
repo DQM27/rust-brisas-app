@@ -167,28 +167,6 @@ pub fn get_database_path(config: &AppConfig) -> PathBuf {
     default_path
 }
 
-/// Obtiene la ruta de la base de datos demo
-pub fn get_demo_database_path() -> PathBuf {
-    if let Some(data_dir) = dirs::data_local_dir() {
-        let dir = data_dir.join("Brisas");
-        let _ = fs::create_dir_all(&dir);
-        dir.join("surrealdb_demo")
-    } else {
-        PathBuf::from("./data/surrealdb_demo")
-    }
-}
-
-/// Obtiene el directorio de búsqueda para el modo demo
-pub fn get_demo_search_path() -> PathBuf {
-    if let Some(data_dir) = dirs::data_local_dir() {
-        let dir = data_dir.join("Brisas").join("search_index_demo");
-        let _ = fs::create_dir_all(&dir);
-        dir
-    } else {
-        PathBuf::from("./data/search_index_demo")
-    }
-}
-
 /// Obtiene el directorio de búsqueda para producción
 pub fn get_search_index_path() -> PathBuf {
     if let Some(data_dir) = dirs::data_local_dir() {

@@ -6,7 +6,7 @@
 
 use crate::domain::errors::VisitanteError;
 use crate::models::visitante::{CreateVisitanteInput, VisitanteResponse};
-use crate::require_perm;
+
 use crate::services::session::SessionState;
 use crate::services::visitante_service as service;
 use tauri::{command, State};

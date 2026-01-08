@@ -22,7 +22,7 @@ use crate::repositories::{
 };
 use crate::services::ingreso_contratista_service::IngresoContratistaService;
 use crate::services::session::SessionState;
-use crate::{require_perm, require_session};
+
 use tauri::{command, State};
 
 // --------------------------------------------------------------------------
