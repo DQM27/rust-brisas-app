@@ -16,7 +16,7 @@ use surrealdb::{Datetime, RecordId};
 /// Captura una "instantánea" de los datos del contratista y del evento de acceso,
 /// permitiendo auditoría histórica incluso si los datos base cambian.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct IngresoContratista {
     pub id: RecordId,
     pub contratista: RecordId,
@@ -42,7 +42,7 @@ pub struct IngresoContratista {
 
 /// Versión "poblada" del ingreso con datos relacionales completos (FETCH).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct IngresoContratistaFetched {
     pub id: RecordId,
     pub contratista: ContratistaFetched,
@@ -88,9 +88,9 @@ pub struct CreateIngresoContratistaInput {
 // --------------------------------------------------------------------------
 
 /// DTO para crear un registro de ingreso de contratista en SurrealDB.
-/// Los campos se serializan en camelCase para coincidir con el modelo de lectura.
+/// Los campos se serializan en snake_case para coincidir con el esquema de la BD.
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct IngresoContratistaCreateDTO {
     pub contratista: RecordId,
     pub nombre: String,

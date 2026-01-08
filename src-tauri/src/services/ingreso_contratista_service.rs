@@ -163,6 +163,21 @@ where
         let contratista_id = parse_contratista_id(&input.contratista_id)?;
         let usuario_id = parse_user_id(&usuario_id_str)?;
 
+        // ⚠️ REGLA DE NEGOCIO: Verificar si ya tiene un ingreso activo
+        let ingreso_existente = self
+            .ingreso_repo
+            .find_ingreso_abierto_by_contratista(&contratista_id)
+            .await
+            .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
+
+        if ingreso_existente.is_some() {
+            warn!("Intento de ingreso duplicado para contratista: {}", input.contratista_id);
+            return Err(IngresoContratistaError::Validation(
+                "El contratista ya tiene un ingreso activo. Debe registrar la salida primero."
+                    .to_string(),
+            ));
+        }
+
         // Convertir gafete de String a i32 (0 = sin gafete, "S/G" = sin gafete)
         let gafete_int: Option<i32> = if let Some(ref g_str) = input.gafete_numero {
             if g_str.trim().is_empty() || g_str.eq_ignore_ascii_case("S/G") {
