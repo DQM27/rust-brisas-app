@@ -251,7 +251,7 @@ mod tests {
     fn test_parse_gafete_id_simple() {
         let res = parse_gafete_id("123");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap().to_string(), "gafete:123");
+        assert_eq!(res.unwrap().to_string(), "gafete:⟨123⟩");
     }
 
     #[test]

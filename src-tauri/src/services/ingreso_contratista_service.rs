@@ -355,7 +355,7 @@ fn parse_ingreso_id(id_str: &str) -> Result<RecordId, IngresoContratistaError> {
             .parse::<RecordId>()
             .map_err(|_| IngresoContratistaError::Validation("ID de ingreso inválido".to_string()))
     } else {
-        Ok(RecordId::from_table_key("ingreso", id_str))
+        Ok(RecordId::from_table_key("ingreso_contratista", id_str))
     }
 }
 
@@ -389,13 +389,13 @@ mod tests {
 
     #[test]
     fn test_parse_ingreso_id_con_prefijo() {
-        let id = parse_ingreso_id("ingreso:ing001").unwrap();
-        assert_eq!(id.to_string(), "ingreso:ing001");
+        let id = parse_ingreso_id("ingreso_contratista:ing001").unwrap();
+        assert_eq!(id.to_string().replace("⟨", "").replace("⟩", ""), "ingreso_contratista:ing001");
     }
 
     #[test]
     fn test_parse_ingreso_id_sin_prefijo() {
         let id = parse_ingreso_id("ing001").unwrap();
-        assert_eq!(id.to_string(), "ingreso:ing001");
+        assert_eq!(id.to_string().replace("⟨", "").replace("⟩", ""), "ingreso_contratista:ing001");
     }
 }

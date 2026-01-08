@@ -416,7 +416,8 @@ mod tests {
 
     #[test]
     fn test_validar_estado_suspendido() {
-        assert!(validar_estado("suspendido").is_ok());
+        // En el esquema de contratista, 'suspendido' no es válido (solo activo, inactivo, bloqueado)
+        assert!(validar_estado("suspendido").is_err());
     }
 
     #[test]

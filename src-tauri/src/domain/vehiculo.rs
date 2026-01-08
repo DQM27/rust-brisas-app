@@ -201,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_tipo_vehiculo_invalido() {
-        assert!(validar_tipo_vehiculo("camion").is_err());
+        assert!(validar_tipo_vehiculo("tanque").is_err());
         assert!(validar_tipo_vehiculo("").is_err());
     }
 

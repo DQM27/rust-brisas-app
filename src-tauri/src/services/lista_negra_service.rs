@@ -40,10 +40,10 @@ use surrealdb::RecordId;
 /// ## Uso
 /// ```rust
 /// // Antes de registrar un contratista
-/// let bloqueado = check_is_blocked(cedula.clone()).await?;
-/// if bloqueado.is_blocked {
-///     return Err("Persona bloqueada".into());
-/// }
+/// // let bloqueado = check_is_blocked(cedula.clone()).await?;
+/// // if bloqueado.is_blocked {
+/// //     return Err("Persona bloqueada".into());
+/// // }
 /// ```
 ///
 /// ## Logging

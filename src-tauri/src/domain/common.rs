@@ -357,9 +357,9 @@ pub fn validar_nombre_estandar(texto: &str, campo: &str) -> Result<(), CommonErr
         )));
     }
 
-    // Permitimos alfabéticos (incluye áéí...) y espacios.
+    // Permitimos alfabéticos (incluye áéí...), espacios y puntos (para Ing., Dr., etc.).
     // Rechazamos todo lo demás (números, símbolos).
-    if !limpio.chars().all(|c| c.is_alphabetic() || c.is_whitespace()) {
+    if !limpio.chars().all(|c| c.is_alphabetic() || c.is_whitespace() || c == '.') {
         return Err(CommonError::Validation(format!(
             "El {campo} solo puede contener letras (sin números ni símbolos)"
         )));
@@ -521,8 +521,9 @@ pub fn validar_opcional_estandar(
 ///
 /// # Ejemplo
 /// ```rust
+/// # use brisas_app_lib::domain::common::parse_record_id;
 /// let id = parse_record_id("visitante:abc123", "visitante"); // tabla: visitante, key: abc123
-/// let id = parse_record_id("abc123", "visitante");           // tabla: visitante, key: abc123
+/// let id = parse_record_id("abc123", "visitante"); // tabla: visitante, key: abc123
 /// ```
 pub fn parse_record_id(id_str: &str, default_table: &str) -> surrealdb::RecordId {
     if id_str.contains(':') {

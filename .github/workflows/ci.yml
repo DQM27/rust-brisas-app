@@ -18,39 +18,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
         with:
-          node-version: 20
-          cache: 'npm'
+          workspaces: "src-tauri -> target"
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
+      - name: Check frontend
+        run: npm run check
 
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            src-tauri/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
-      - name: Install frontend dependencies
-        run: npm install
-
-      - name: Lint Frontend & Backend
+      - name: Rust clippy
         run: |
-          npm run check
           cd src-tauri
-          cargo clippy --all-features -- -D warnings
+          cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Rust fmt
+        run: |
+          cd src-tauri
           cargo fmt -- --check
 
-      - name: Run Tests
+      - name: Run tests
         run: |
           cd src-tauri
           cargo test --all-features

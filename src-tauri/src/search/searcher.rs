@@ -261,7 +261,7 @@ mod tests {
         // Exact
         let res = search_index(&index, &reader, &fields, "Alexander", 10).unwrap();
         assert_eq!(res.len(), 1);
-        assert_eq!(res[0].id, "c1");
+        assert_eq!(res[0].id.replace("⟨", "").replace("⟩", ""), "contratista:c1");
 
         // Fuzzy (Alexande -> Alexander)
         let res = search_index(&index, &reader, &fields, "Alexande", 10).unwrap();

@@ -126,6 +126,6 @@ mod tests {
     fn test_invalid_hash_format() {
         let result = verify_password("some_password", "not_a_valid_argon2_hash");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Hash inválido"));
+        assert!(result.unwrap_err().to_string().contains("formato del hash es inválido"));
     }
 }

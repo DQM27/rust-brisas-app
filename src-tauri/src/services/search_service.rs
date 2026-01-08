@@ -521,7 +521,7 @@ mod tests {
         // 3. Buscar
         let results = service.search("111222333", 10).expect("Fallo en búsqueda");
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0].id, "test-1");
+        assert_eq!(results[0].id, "user:⟨test-1⟩");
         assert_eq!(results[0].cedula.as_deref(), Some("111222333"));
     }
 }

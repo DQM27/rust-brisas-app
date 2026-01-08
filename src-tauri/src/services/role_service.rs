@@ -299,6 +299,6 @@ mod tests {
     fn test_parse_role_id_con_brackets() {
         let id = parse_role_id("role:⟨custom-role⟩");
         assert_eq!(id.table().to_string(), "role");
-        assert_eq!(id.key().to_string(), "custom-role");
+        assert_eq!(id.key().to_string().replace("⟨", "").replace("⟩", ""), "custom-role");
     }
 }

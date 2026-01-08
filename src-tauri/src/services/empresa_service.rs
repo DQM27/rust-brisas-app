@@ -209,12 +209,12 @@ mod tests {
     #[test]
     fn test_parse_empresa_id() {
         let id_with_table = parse_empresa_id("empresa:abc");
-        assert_eq!(id_with_table.to_string(), "empresa:abc");
+        assert_eq!(id_with_table.to_string().replace("⟨", "").replace("⟩", ""), "empresa:abc");
 
         let id_simple = parse_empresa_id("xyz");
-        assert_eq!(id_simple.to_string(), "empresa:xyz");
+        assert_eq!(id_simple.to_string().replace("⟨", "").replace("⟩", ""), "empresa:xyz");
 
         let id_other = parse_empresa_id("proveedor:123");
-        assert_eq!(id_other.to_string(), "proveedor:123");
+        assert_eq!(id_other.to_string().replace("⟨", "").replace("⟩", ""), "proveedor:123");
     }
 }

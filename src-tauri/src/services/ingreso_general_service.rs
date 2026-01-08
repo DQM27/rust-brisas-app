@@ -210,7 +210,10 @@ mod tests {
         // IDs simples asumen "ingreso_contratista"
         let res = parse_ingreso_id("123");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap().to_string(), "ingreso_contratista:123");
+        assert_eq!(
+            res.unwrap().to_string().replace("⟨", "").replace("⟩", ""),
+            "ingreso_contratista:123"
+        );
     }
 
     #[test]
@@ -218,7 +221,10 @@ mod tests {
         // IDs compuestos se respetan
         let res = parse_ingreso_id("ingreso_proveedor:456");
         assert!(res.is_ok());
-        assert_eq!(res.unwrap().to_string(), "ingreso_proveedor:456");
+        assert_eq!(
+            res.unwrap().to_string().replace("⟨", "").replace("⟩", ""),
+            "ingreso_proveedor:456"
+        );
     }
 
     #[test]

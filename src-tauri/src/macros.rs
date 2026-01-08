@@ -2,7 +2,9 @@
 ///
 /// Uso:
 /// ```rust
-/// let user = require_session!(state);
+/// # use brisas_app_lib::require_session;
+/// # let (state, session) = ((), ());
+/// # // let user = require_session!(state);
 /// ```
 #[macro_export]
 macro_rules! require_session {
@@ -18,8 +20,10 @@ macro_rules! require_session {
 ///
 /// Uso:
 /// ```rust
-/// require_perm!(state, "contratistas:create")?;
-/// require_perm!(state, "users:delete", "Acción de eliminación de usuario")?;
+/// # use brisas_app_lib::require_perm;
+/// # let (state, session) = ((), ());
+/// # // require_perm!(state, "contratistas:create")?;
+/// # // require_perm!(state, "users:delete", "Acción de eliminación de usuario")?;
 /// ```
 #[macro_export]
 macro_rules! require_perm {

@@ -93,7 +93,7 @@ pub fn normalizar_nombre(nombre: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::common::{MAX_LEN_DIRECCION, MAX_LEN_EMPRESA};
+    use crate::domain::common::{ENTIDAD_NOMBRE_MAX_LEN, MAX_LEN_DIRECCION};
 
     #[test]
     fn test_validar_nombre_valido() {
@@ -109,13 +109,13 @@ mod tests {
 
     #[test]
     fn test_validar_nombre_muy_largo() {
-        let nombre_largo = "A".repeat(MAX_LEN_EMPRESA + 1);
+        let nombre_largo = "A".repeat(ENTIDAD_NOMBRE_MAX_LEN + 1);
         assert!(validar_nombre(&nombre_largo).is_err());
     }
 
     #[test]
     fn test_validar_nombre_limite() {
-        let nombre_100_chars = "A".repeat(MAX_LEN_EMPRESA);
+        let nombre_100_chars = "A".repeat(ENTIDAD_NOMBRE_MAX_LEN);
         assert!(validar_nombre(&nombre_100_chars).is_ok());
     }
 

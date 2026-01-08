@@ -67,7 +67,7 @@ impl EstadoAutorizacion {
     /// Esto actúa como un "anti-corruption layer" para normalizar los estados.
     pub fn from_str_lossy(s: &str) -> Self {
         match s.trim().to_lowercase().as_str() {
-            "activo" | "authorized" | "ok" => Self::Activo,
+            "activo" | "active" | "authorized" | "ok" => Self::Activo,
             "vencido" | "expired" => Self::Vencido,
             "inactivo" | "inactive" => Self::Inactivo,
             "suspendido" | "suspended" => Self::Suspendido,
