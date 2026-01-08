@@ -27,7 +27,7 @@
   // Shared Components
   import DateRangePicker from "$lib/components/shared/DateRangePicker.svelte";
   // import ModuleTabs from "$lib/components/shared/ModuleTabs.svelte"; // Removed as per revert
-  import { History, Users, Database } from "lucide-svelte";
+  import { History, Users, FileText } from "lucide-svelte";
   import { openTab } from "$lib/stores/tabs";
   import ContratistaFormModal from "$lib/components/contratista/ContratistaFormModal.svelte";
   import * as contratistaService from "$lib/logic/contratista/contratistaService";
@@ -311,20 +311,22 @@
       createCustomButton.exportar(() => handleExportClick()),
     ];
 
-    // Botón Base de Datos siempre visible (Action secondary)
+    // Botón List Contratista siempre visible (Action secondary)
     defaultButtons.unshift({
-      id: "database-view",
-      label: "Base de Datos",
-      icon: Database, // Icono de base de datos
-      onClick: () =>
+      id: "list-contratista-view",
+      label: "List Contratista",
+      icon: FileText, // Icono de lista/archivo
+      onClick: () => {
+        console.log("Abriendo pestaña de contratistas..."); // Debug log
         openTab({
           componentKey: "contratista-list",
-          title: "Base de Datos",
+          title: "List. Contratistas",
           id: "contratista-list",
           focusOnOpen: true,
-        }),
+        });
+      },
       variant: "default",
-      tooltip: "Ir a gestión completa de contratistas",
+      tooltip: "Ir a listado completo de contratistas",
     });
 
     if (viewMode === "actives") {
