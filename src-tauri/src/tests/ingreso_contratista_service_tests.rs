@@ -176,7 +176,7 @@ struct MockContratistaRepo {
 #[async_trait]
 impl ContratistaRepository for MockContratistaRepo {
     async fn find_by_cedula(&self, _: &str) -> Result<Option<Contratista>, SurrealDbError> {
-        Ok(self.contratista.clone().map(|f| f.into()))
+        Ok(self.contratista.clone().map(std::convert::Into::into))
     }
     async fn find_by_cedula_fetched(
         &self,
@@ -191,7 +191,7 @@ impl ContratistaRepository for MockContratistaRepo {
         Err(SurrealDbError::Query("Not implemented".into()))
     }
     async fn find_by_id(&self, _: &RecordId) -> Result<Option<Contratista>, SurrealDbError> {
-        Ok(self.contratista.clone().map(|f| f.into()))
+        Ok(self.contratista.clone().map(std::convert::Into::into))
     }
     async fn find_by_id_fetched(
         &self,

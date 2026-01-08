@@ -404,8 +404,8 @@ mod tests {
         let dt = surrealdb::Datetime::from(now);
         let raw = dt.to_string();
         let clean = datetime_to_iso(&dt);
-        println!("DEBUG_TEST: Raw: '{}'", raw);
-        println!("DEBUG_TEST: Clean: '{}'", clean);
+        println!("DEBUG_TEST: Raw: '{raw}'");
+        println!("DEBUG_TEST: Clean: '{clean}'");
 
         // Assert basic ISO format (starts with 20 and has T)
         assert!(clean.starts_with("20"));

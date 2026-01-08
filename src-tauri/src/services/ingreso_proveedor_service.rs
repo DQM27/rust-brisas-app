@@ -276,7 +276,7 @@ mod tests {
     #[test]
     fn test_parse_id_valido_sin_prefijo() {
         let id_str = "abcde";
-        println!("Probando ID sin prefijo: {}", id_str);
+        println!("Probando ID sin prefijo: {id_str}");
         // RecordId::from_table_key genera table:key
         let res = parse_id(id_str, "proveedor");
         assert!(res.is_ok());

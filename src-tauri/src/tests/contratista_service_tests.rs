@@ -29,7 +29,7 @@ impl ContratistaRepository for MockContratistaRepository {
     async fn find_by_cedula(&self, cedula: &str) -> Result<Option<Contratista>, SurrealDbError> {
         let list = self.contratistas.lock().unwrap();
         let found = list.iter().find(|c| c.cedula == cedula).cloned();
-        Ok(found.map(|c| c.into()))
+        Ok(found.map(std::convert::Into::into))
     }
 
     async fn find_by_cedula_fetched(
@@ -76,7 +76,7 @@ impl ContratistaRepository for MockContratistaRepository {
         if id.key().to_string() == "mock_id" || !list.is_empty() {
             // Return first for simplicity in update test unless specific
             let found = list.first().cloned();
-            Ok(found.map(|c| c.into()))
+            Ok(found.map(std::convert::Into::into))
         } else {
             Ok(None)
         }

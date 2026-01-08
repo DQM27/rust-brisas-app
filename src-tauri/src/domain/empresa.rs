@@ -162,7 +162,7 @@ mod tests {
 
     #[test]
     fn test_validar_create_input_invalido() {
-        let input = CreateEmpresaInput { nombre: "".to_string(), direccion: None };
+        let input = CreateEmpresaInput { nombre: String::new(), direccion: None };
         assert!(validar_create_input(&input).is_err());
     }
 
@@ -185,7 +185,7 @@ mod tests {
     #[test]
     fn test_validar_update_input_invalido() {
         let input =
-            UpdateEmpresaInput { nombre: Some("".to_string()), direccion: None, is_active: None };
+            UpdateEmpresaInput { nombre: Some(String::new()), direccion: None, is_active: None };
         assert!(validar_update_input(&input).is_err());
     }
 }

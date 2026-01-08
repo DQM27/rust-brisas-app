@@ -377,8 +377,8 @@ mod tests {
 
     #[test]
     fn test_is_export_available() {
-        let available = is_export_available();
-        assert!(available || !available);
+        // Just verify it returns a valid bool (compile-time check)
+        let _available: bool = is_export_available();
     }
 
     #[test]
@@ -391,6 +391,6 @@ mod tests {
         assert_eq!(config.title, "Reporte");
         assert!(matches!(config.orientation, PageOrientation::Landscape));
         assert_eq!(config.font_size, 10);
-        assert_eq!(config.margin_top, 2.0);
+        assert!((config.margin_top - 2.0_f32).abs() < f32::EPSILON);
     }
 }

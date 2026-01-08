@@ -148,7 +148,7 @@ mod tests {
     fn test_get_restore_path_logic() {
         let db_path = Path::new("/data/brisas.db");
         let restore_path = get_restore_path(db_path);
-        let path_str = restore_path.to_string_lossy().replace("\\", "/");
+        let path_str = restore_path.to_string_lossy().replace('\\', "/");
         assert!(path_str.ends_with("/data/brisas.db.restore"));
     }
 

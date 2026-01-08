@@ -105,6 +105,17 @@ pub async fn resolver(
     Ok(())
 }
 
+/// Elimina físicamente una alerta del sistema.
+///
+/// **Atención**: Esta operación es destructiva e irreversible. Solo para mantenimiento.
+///
+/// # Arguments
+///
+/// * `id` - Identificador único de la alerta a eliminar.
+pub async fn delete(id: &str) -> Result<(), AlertaError> {
+    db::delete(id).await.map_err(|e| AlertaError::Database(e.to_string()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -126,7 +137,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore] // Requires running DB environment or file write permissions.
+    #[ignore = "Requires running DB environment or file write permissions"]
     async fn test_create_and_resolve_flow() {
         setup_test_db().await;
 
@@ -171,15 +182,4 @@ mod tests {
         assert!(found_again.resuelto);
         assert_eq!(found_again.resuelto_por.unwrap().to_string(), "admin_res");
     }
-}
-
-/// Elimina físicamente una alerta del sistema.
-///
-/// **Atención**: Esta operación es destructiva e irreversible. Solo para mantenimiento.
-///
-/// # Arguments
-///
-/// * `id` - Identificador único de la alerta a eliminar.
-pub async fn delete(id: &str) -> Result<(), AlertaError> {
-    db::delete(id).await.map_err(|e| AlertaError::Database(e.to_string()))
 }

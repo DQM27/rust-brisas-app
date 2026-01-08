@@ -201,7 +201,7 @@ mod tests {
         row2.insert("Name".to_string(), ExportValue::Text("Jane".to_string()));
         row2.insert("Age".to_string(), ExportValue::Text("25".to_string()));
 
-        let rows = vec![row1, row2];
+        let data_rows = vec![row1, row2];
 
         let config = CsvConfig {
             filename: "test.csv".to_string(),
@@ -210,7 +210,7 @@ mod tests {
             include_bom: false,
         };
 
-        let content = build_csv_content(&headers, &rows, &config).unwrap();
+        let content = build_csv_content(&headers, &data_rows, &config).unwrap();
         let expected = "Name,Age\nJohn,30\nJane,25\n";
         assert_eq!(content, expected);
     }

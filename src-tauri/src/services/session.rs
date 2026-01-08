@@ -122,7 +122,7 @@ mod tests {
         assert!(!state.is_authenticated());
 
         let user = mock_user();
-        state.set_user(user.clone());
+        state.set_user(user);
 
         assert!(state.is_authenticated());
         assert_eq!(state.get_user().unwrap().id, "user:123");

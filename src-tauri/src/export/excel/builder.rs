@@ -293,9 +293,9 @@ mod tests {
         let mut row2 = HashMap::new();
         row2.insert("Name".to_string(), ExportValue::Text("Alexander".to_string()));
 
-        let rows = vec![row1, row2];
+        let data_rows = vec![row1, row2];
 
-        let width = calculate_column_width(header, &rows);
+        let width = calculate_column_width(header, &data_rows);
         // "Alexander" = 9 chars * 1.2 = 10.8
         assert!(width > 10.0);
     }

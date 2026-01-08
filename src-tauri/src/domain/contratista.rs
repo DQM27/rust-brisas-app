@@ -449,7 +449,7 @@ mod tests {
     #[test]
     fn test_validar_create_input_cedula_invalida() {
         let input = CreateContratistaInput {
-            cedula: "".to_string(),
+            cedula: String::new(),
             nombre: "Juan".to_string(),
             segundo_nombre: None,
             apellido: "Pérez".to_string(),

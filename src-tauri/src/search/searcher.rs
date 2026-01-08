@@ -265,7 +265,7 @@ mod tests {
 
         // Fuzzy (Alexande -> Alexander)
         let res = search_index(&index, &reader, &fields, "Alexande", 10).unwrap();
-        assert!(res.len() >= 1);
+        assert!(!res.is_empty());
     }
 
     #[test]

@@ -432,7 +432,7 @@ mod tests {
     use chrono::{Duration, Utc};
     use surrealdb::RecordId;
 
-    /// Verifica que la conversión desde ContratistaFetched delegue correctamente
+    /// Verifica que la conversión desde `ContratistaFetched` delegue correctamente
     /// los cálculos de estado (PRAIND, Ingreso) al dominio.
     #[test]
     fn test_contratista_response_from_fetched() {
