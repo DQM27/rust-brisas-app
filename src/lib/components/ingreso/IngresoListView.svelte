@@ -299,19 +299,18 @@
   const customButtons = $derived.by(() => {
     const selected = selectedRows[0];
 
-    return {
-      default: [
+    const defaultButtons: any[] = [
+      createCustomButton.exportar(() => handleExportClick()),
+    ];
+
+    if (viewMode === "actives") {
+      defaultButtons.unshift(
         createCustomButton.nuevo(() => handleNuevoIngreso()),
-        createCustomButton.exportar(() => handleExportClick()),
-        {
-          id: "reload-data",
-          label: "Actualizar",
-          icon: RotateCw,
-          onClick: loadIngresos,
-          variant: "default" as const,
-          tooltip: "Recargar lista",
-        },
-      ],
+      );
+    }
+
+    return {
+      default: defaultButtons,
       singleSelect: [createCustomButton.exportar(() => handleExportClick())],
       multiSelect: [createCustomButton.exportar(() => handleExportClick())],
     };
@@ -329,12 +328,22 @@
         data = await invoke("get_ingresos_abiertos");
       } else {
         // Modo Historial: Cargar por rango de fechas
-        // Nota: Aseguramos que las fechas estén en formato ISO completo si el backend lo requiere,
-        // pero get_salidas_en_rango el servicio suele aceptar "YYYY-MM-DD".
-        // Sin embargo, el comando espera strings.
-        // Vamos a mandar YYYY-MM-DDT00:00:00Z y YYYY-MM-DDT23:59:59Z para cubrir todo el día
-        const start = `${dateRange.start}T00:00:00Z`;
-        const end = `${dateRange.end}T23:59:59Z`;
+        // PROBLEMA: Al concatenar 'T00:00:00Z', se interpreta como UTC.
+        // Si el usuario está en UTC-6 (CDMX), el día "7" (00:00 UTC) es en realidad el día 6 por la tarde.
+        // SOLUCIÓN: Usar la zona horaria local o mandar ISO pero sabiendo que el backend compara directo.
+        // Mejor enfoque: Mandar el rango completo del día LOCAL convertido a UTC para la DB.
+
+        // Pero espera, SurrealDB guarda en UTC.
+        // Si quiero ver los registros del día 7 (Local), necesito desde 7T00:00 Local hasta 7T23:59 Local.
+        // 7T00:00 Local -> 7T06:00 UTC (si es UTC-6)
+        // 7T23:59 Local -> 8T05:59 UTC
+
+        // Vamos a construir fechas locales y sacarle el ISO string real.
+        const startLocal = new Date(dateRange.start + "T00:00:00");
+        const endLocal = new Date(dateRange.end + "T23:59:59.999");
+
+        const start = startLocal.toISOString();
+        const end = endLocal.toISOString();
 
         data = await invoke("get_salidas_en_rango", {
           fechaInicio: start,
@@ -514,28 +523,64 @@
           </p>
         </div>
 
-        <!-- View Toggle -->
-        <div class="flex bg-surface-3 p-1 rounded-lg">
-          <button
-            class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
-            {viewMode === 'actives'
-              ? 'bg-primary text-white shadow-sm'
-              : 'text-secondary hover:text-primary'}"
-            onclick={() => toggleViewMode("actives")}
+        <div class="flex items-center gap-4">
+          <!-- Date Filter (History Mode Only) -->
+          {#if viewMode === "history"}
+            <div transition:fade={{ duration: 150 }}>
+              <DateRangePicker
+                startDate={dateRange.start}
+                endDate={dateRange.end}
+                on:change={handleDateRangeChange}
+              />
+            </div>
+          {/if}
+
+          <!-- View Toggle (Segmented Control) -->
+          <div
+            class="relative flex items-center bg-surface-3 p-1 rounded-lg isolate"
           >
-            <Users size={16} />
-            Activos
-          </button>
-          <button
-            class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
-            {viewMode === 'history'
-              ? 'bg-primary text-white shadow-sm'
-              : 'text-secondary hover:text-primary'}"
-            onclick={() => toggleViewMode("history")}
-          >
-            <History size={16} />
-            Historial
-          </button>
+            <!-- Fondo deslizante animado (Pill) -->
+            <div
+              class="absolute top-1 bottom-1 rounded-md bg-white dark:bg-zinc-700 shadow-sm transition-all duration-300 ease-in-out z-[-1]"
+              style="
+                  left: {viewMode === 'actives' ? '4px' : '50%'};
+                  right: {viewMode === 'actives' ? '50%' : '4px'};
+                  width: calc(50% - 6px);
+                "
+            ></div>
+
+            <button
+              class="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors z-10
+                {viewMode === 'actives'
+                ? 'text-primary dark:text-white'
+                : 'text-secondary hover:text-primary dark:hover:text-zinc-300'}"
+              onclick={() => toggleViewMode("actives")}
+            >
+              <Users
+                size={16}
+                class={viewMode === "actives"
+                  ? "scale-110 transition-transform"
+                  : ""}
+              />
+              Activos
+            </button>
+
+            <button
+              class="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors z-10
+                {viewMode === 'history'
+                ? 'text-primary dark:text-white'
+                : 'text-secondary hover:text-primary dark:hover:text-zinc-300'}"
+              onclick={() => toggleViewMode("history")}
+            >
+              <History
+                size={16}
+                class={viewMode === "history"
+                  ? "scale-110 transition-transform"
+                  : ""}
+              />
+              Historial
+            </button>
+          </div>
         </div>
       </div>
 
@@ -544,22 +589,14 @@
         <div class="flex-1 max-w-md">
           <SearchBar placeholder="Buscar por nombre, gafete..." limit={10} />
         </div>
-
-        {#if viewMode === "history"}
-          <div transition:fade={{ duration: 150 }}>
-            <DateRangePicker
-              startDate={dateRange.start}
-              endDate={dateRange.end}
-              on:change={handleDateRangeChange}
-            />
-          </div>
-        {/if}
       </div>
     </div>
   </div>
 
   <!-- Content -->
-  <div class="flex-1 overflow-hidden relative bg-surface-1">
+  <div
+    class="flex-1 overflow-hidden relative bg-surface-1 border-t border-surface"
+  >
     {#if error}
       <div class="p-6">
         <div
