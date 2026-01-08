@@ -210,9 +210,9 @@ export const COMMON_MULTI_SELECT_BUTTONS: ToolbarButtonDefinition[] = [
 // ============================================
 
 export const createCustomButton = {
-  nuevo: (onClick: () => void, disabled = false) => ({
+  nuevo: (onClick: () => void, disabled = false, label = 'Nuevo') => ({
     id: 'new-record',
-    label: 'Nuevo',
+    label,
     icon: Plus,
     onClick,
     disabled,
@@ -580,7 +580,7 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     gridId: 'ingreso-list',
     availableButtons: {
       default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all', 'toggle-filters'].includes(b.id))
+        ...COMMON_DEFAULT_BUTTONS.filter(b => ['autosize-all', 'toggle-filters'].includes(b.id))
       ],
       singleSelect: [],
       multiSelect: []

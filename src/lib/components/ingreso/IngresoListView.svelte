@@ -26,7 +26,11 @@
 
   // Shared Components
   import DateRangePicker from "$lib/components/shared/DateRangePicker.svelte";
-  import { History, Users } from "lucide-svelte";
+  // import ModuleTabs from "$lib/components/shared/ModuleTabs.svelte"; // Removed as per revert
+  import { History, Users, Database } from "lucide-svelte";
+  import { openTab } from "$lib/stores/tabs";
+  import ContratistaFormModal from "$lib/components/contratista/ContratistaFormModal.svelte";
+  import * as contratistaService from "$lib/logic/contratista/contratistaService";
 
   // Types
   import type { CustomToolbarButton } from "$lib/types/agGrid";
@@ -45,6 +49,7 @@
   let error = $state("");
   let selectedRows = $state<any[]>([]);
   let showModal = $state(false);
+  let showContratistaModal = $state(false);
 
   // Estado para el modal de salida
   let showSalidaModal = $state(false);
@@ -296,6 +301,9 @@
   // ==========================================
   // TOOLBAR BUTTONS
   // ==========================================
+  // ==========================================
+  // TOOLBAR BUTTONS
+  // ==========================================
   const customButtons = $derived.by(() => {
     const selected = selectedRows[0];
 
@@ -303,9 +311,40 @@
       createCustomButton.exportar(() => handleExportClick()),
     ];
 
+    // Botón Base de Datos siempre visible (Action secondary)
+    defaultButtons.unshift({
+      id: "database-view",
+      label: "Base de Datos",
+      icon: Database, // Icono de base de datos
+      onClick: () =>
+        openTab({
+          componentKey: "contratista-list",
+          title: "Base de Datos",
+          id: "contratista-list",
+          focusOnOpen: true,
+        }),
+      variant: "default",
+      tooltip: "Ir a gestión completa de contratistas",
+    });
+
     if (viewMode === "actives") {
+      // Botón "Nuevo Contratista" (Lanza modal creación rápida)
+      defaultButtons.unshift({
+        id: "new-contractor",
+        label: "Nuevo Contratista",
+        icon: Users, // Icono de usuario +
+        onClick: () => (showContratistaModal = true),
+        variant: "default",
+        tooltip: "Registrar nuevo contratista en base de datos",
+      });
+
+      // Botón "Nuevo Ingreso" (Lanza modal de ingreso/entrada)
       defaultButtons.unshift(
-        createCustomButton.nuevo(() => handleNuevoIngreso()),
+        createCustomButton.nuevo(
+          () => handleNuevoIngreso(),
+          false,
+          "Nuevo Ingreso",
+        ),
       );
     }
 
@@ -676,6 +715,33 @@
 
 <!-- Modal -->
 <IngresoFormModal bind:show={showModal} on:complete={handleModalComplete} />
+
+<!-- Modal Creación Contratista -->
+<ContratistaFormModal
+  show={showContratistaModal}
+  onClose={() => (showContratistaModal = false)}
+  onSave={async (data) => {
+    // Aquí implementamos la lógica de guardado rápido o delegamos al servicio
+    // Como ContratistaFormModal ya maneja onSave internamente si le pasamos la logica...
+    // Espera, ContratistaListView maneja la logica de guardado en `handleSaveContratista`.
+    // Debemos replicar esa lógica mínima aquí o importar el servicio.
+    // El componente `ContratistaFormModal` del código anterior emite `onSave` con la data.
+    // Necesitamos llamar a `contratistaService.createContratista`.
+    try {
+      const res = await contratistaService.createContratista(data as any);
+      if (res.ok) {
+        toast.success("Contratista creado exitosamente");
+        showContratistaModal = false;
+        // Opcional: Podríamos abrir el modal de ingreso pre-seleccionando este contratista si se desea.
+      } else {
+        toast.error(res.error);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Error al crear contratista");
+    }
+  }}
+/>
 
 <!-- Modal de Salida -->
 <SalidaModal
