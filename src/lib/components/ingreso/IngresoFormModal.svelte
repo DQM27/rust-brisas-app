@@ -252,7 +252,7 @@
   >
     <!-- Modal -->
     <div
-      class="bg-surface-2 rounded-lg shadow-surface-xl border border-surface max-w-xl w-full max-h-[90vh] overflow-visible flex flex-col"
+      class="bg-surface-2 rounded-lg shadow-surface-xl border border-surface max-w-md w-full max-h-[90vh] overflow-visible flex flex-col"
       transition:scale={{ duration: 200, start: 0.95 }}
     >
       <!-- Header -->
@@ -317,7 +317,7 @@
               <div
                 class="flex items-center gap-2 text-sm text-success bg-success bg-opacity-10 px-3 py-2 rounded-md"
               >
-                <span class="font-medium">✓ Autorizado para ingresar</span>
+                <span class="font-medium">✓ Acceso Autorizado</span>
               </div>
 
               <!-- Alertas/Warnings (amarillo) -->

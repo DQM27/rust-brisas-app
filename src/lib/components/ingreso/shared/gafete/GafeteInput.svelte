@@ -6,6 +6,8 @@
   export let disabled: boolean = false;
   export let autofocus: boolean = false;
 
+  let inputRef: HTMLInputElement;
+
   const dispatch = createEventDispatcher();
 
   function handleKeydown(e: KeyboardEvent) {
@@ -28,28 +30,25 @@
   $: value = value.toUpperCase().trim();
 </script>
 
-<div class="form-control w-full">
-  <label class="label" for="gafete-input">
-    <span class="label-text font-medium">Número de Gafete</span>
+<div class="form-control max-w-[100px] flex flex-col items-center">
+  <label class="label pb-1" for="gafete-input">
+    <span class="label-text font-medium text-secondary">Gafete</span>
   </label>
-  <div class="relative">
+  <div class="relative w-full text-center">
     <input
       id="gafete-input"
       type="text"
+      bind:this={inputRef}
       bind:value
       {disabled}
-      class="input input-bordered w-full font-mono text-lg tracking-wider {error
-        ? 'input-error'
-        : ''}"
-      placeholder="Escanear o escribir..."
+      class="w-full h-10 px-3 font-mono text-xl tracking-widest text-center rounded-2xl border-2 transition-all bg-transparent focus:outline-none focus:ring-0 focus:shadow-none
+        {error
+        ? 'border-error bg-error/5 text-error'
+        : 'border-blue-500/30 bg-blue-500/5 text-primary placeholder:text-gray-500/50 focus:border-blue-500'}"
+      placeholder="00"
       on:keydown={handleKeydown}
       use:focus={autofocus}
     />
-    {#if value}
-      <div class="absolute right-3 top-3">
-        <span class="badge badge-neutral">Gafete</span>
-      </div>
-    {/if}
   </div>
   {#if error}
     <div class="label">
