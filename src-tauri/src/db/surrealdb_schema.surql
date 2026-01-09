@@ -247,7 +247,7 @@ DEFINE FIELD cedula ON TABLE lista_negra TYPE string ASSERT string::len($value) 
 DEFINE FIELD nombre ON TABLE lista_negra TYPE string ASSERT string::len($value) <= 100;
 DEFINE FIELD apellido ON TABLE lista_negra TYPE string ASSERT string::len($value) <= 100;
 DEFINE FIELD nivel_severidad ON TABLE lista_negra TYPE string ASSERT $value INSIDE ['BAJO', 'MEDIO', 'ALTO'];
-DEFINE FIELD motivo_bloqueo ON TABLE lista_negra TYPE string ASSERT string::len($value) <= 500;
+DEFINE FIELD motivo_bloqueo ON TABLE lista_negra TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 500;
 DEFINE FIELD bloqueado_por ON TABLE lista_negra TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 100;
 DEFINE FIELD is_active ON TABLE lista_negra TYPE bool DEFAULT true;
 DEFINE FIELD created_at ON TABLE lista_negra TYPE datetime DEFAULT time::now();
