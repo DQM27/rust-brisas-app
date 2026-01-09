@@ -46,6 +46,10 @@
         ? 'border-error bg-error/5 text-error'
         : 'border-blue-500/30 bg-blue-500/5 text-primary placeholder:text-gray-500/50 focus:border-blue-500'}"
       placeholder="00"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
       on:keydown={handleKeydown}
       use:focus={autofocus}
     />

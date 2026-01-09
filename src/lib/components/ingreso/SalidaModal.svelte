@@ -19,6 +19,7 @@
   // State
   let devolvioGafete = $state<boolean | null>(null);
   let observaciones = $state("");
+  let confirmButtonRef = $state<HTMLButtonElement>();
 
   const dispatch = createEventDispatcher();
 
@@ -51,17 +52,26 @@
     if (e.key === "Escape") {
       handleClose();
     }
+    // Ctrl+S o Cmd+S para confirmar
+    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+      e.preventDefault();
+      handleConfirm();
+    }
   }
 
   // Reset cuando cambia el ingreso y auto-seleccionar devolvioGafete si no tiene gafete
   $effect(() => {
-    if (ingreso) {
+    if (ingreso && show) {
       reset();
       // Si no tiene gafete, auto-seleccionar true
       const tieneGafete =
         ingreso.gafeteNumero && ingreso.gafeteNumero !== "S/G";
       if (!tieneGafete) {
         devolvioGafete = true;
+        // Enfocar el botón de confirmar tras un pequeño delay para que el DOM esté listo
+        setTimeout(() => {
+          if (confirmButtonRef) confirmButtonRef.focus();
+        }, 100);
       }
     }
   });
@@ -226,9 +236,11 @@
           Cancelar
         </button>
         <button
+          bind:this={confirmButtonRef}
           onclick={handleConfirm}
           disabled={loading || devolvioGafete === null}
           class="px-4 py-2 bg-error text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+          title="Atajo: Ctrl + S"
         >
           {#if loading}
             <span class="inline-block animate-spin">⏳</span>
