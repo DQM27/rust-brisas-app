@@ -1,21 +1,25 @@
 <!-- src/lib/components/listaNegra/ListaNegraFormModal.svelte -->
-<!-- Modal para agregar/editar personas en lista negra (Validación Zod) -->
+<!-- Modal para agregar/editar personas en lista negra (Validación Zod + Superforms) -->
 <script lang="ts">
   import { fade, fly } from "svelte/transition";
-  import { X, Search, AlertTriangle, User, Building2 } from "lucide-svelte";
+  import { X, AlertTriangle, User, Building2 } from "lucide-svelte";
   import { toast } from "svelte-5-french-toast";
+  import { get } from "svelte/store"; // Import required for fix
   import * as listaNegraService from "$lib/logic/listaNegra/listaNegraService";
   import { currentUser } from "$lib/stores/auth";
+  import PersonaFinder from "$lib/components/ingreso/shared/persona/PersonaFinder.svelte";
   import type {
     ListaNegraResponse,
     AddToListaNegraInput,
-    PersonaSearchResult,
-    NivelSeveridad,
   } from "$lib/types/listaNegra";
   import {
     AddToListaNegraSchema,
     type AddToListaNegraForm,
   } from "$lib/schemas/listaNegraSchema";
+
+  // Superforms & ZodAdapter
+  import { superForm } from "sveltekit-superforms";
+  import { zod4 } from "sveltekit-superforms/adapters";
 
   interface Props {
     show: boolean;
@@ -41,8 +45,8 @@
       : "Agregar a Lista Negra",
   );
 
-  // Estado del formulario
-  let formData = $state<AddToListaNegraForm>({
+  // --- SUPERFORMS SETUP ---
+  const initialValues: AddToListaNegraForm = {
     cedula: "",
     nombre: "",
     segundoNombre: "",
@@ -52,156 +56,199 @@
     empresaNombre: "",
     nivelSeveridad: "MEDIO",
     motivoBloqueo: "",
-  });
+  };
 
-  // Estado de búsqueda
-  let searchQuery = $state("");
-  let searchResults = $state<PersonaSearchResult[]>([]);
-  let isSearching = $state(false);
-  let showResults = $state(false);
-  let selectedPersona = $state<PersonaSearchResult | null>(null);
+  const { form, errors, constraints, enhance, reset, validateForm } =
+    superForm<AddToListaNegraForm>(initialValues, {
+      SPA: true,
+      validators: zod4(AddToListaNegraSchema),
+      resetForm: false, // Control manual
+      onUpdate: async ({ form: f }) => {
+        if (!f.valid) return;
 
-  // Errores
-  let errors = $state<Record<string, string>>({});
+        const usuario = get(currentUser); // Use get() to ensure we have the value
+        const bloqueadoPor = usuario
+          ? `${usuario.nombre} ${usuario.apellido}`
+          : "Sistema";
 
-  // Cargar datos en modo edición
+        const input: AddToListaNegraInput = {
+          ...f.data,
+          bloqueadoPor,
+          // Asegurar campos opcionales
+          segundoNombre: f.data.segundoNombre || undefined,
+          segundoApellido: f.data.segundoApellido || undefined,
+          empresaId: f.data.empresaId || undefined,
+          empresaNombre: f.data.empresaNombre || undefined,
+          motivoBloqueo: f.data.motivoBloqueo || undefined,
+        };
+
+        const success = await onSave(input);
+        if (success) {
+          onClose();
+        }
+      },
+    });
+
+  // Estado de selección
+  let selectedPersona = $state<any>(null); // Usamos any para flexibilidad con PersonaFinder
+
+  // Cargar datos en modo edición o resetear
   $effect(() => {
-    if (show && bloqueado) {
-      formData = {
-        cedula: bloqueado.cedula || "",
-        nombre: bloqueado.nombre || "",
-        segundoNombre: bloqueado.segundoNombre || "",
-        apellido: bloqueado.apellido || "",
-        segundoApellido: bloqueado.segundoApellido || "",
-        empresaId: bloqueado.empresaId || "",
-        empresaNombre: bloqueado.empresaNombre || "",
-        nivelSeveridad: bloqueado.nivelSeveridad || "MEDIO",
-        motivoBloqueo: bloqueado.motivoBloqueo || "",
-      };
-      errors = {};
-      selectedPersona = null;
-    } else if (show && !bloqueado) {
-      // Reset para creación
-      formData = {
-        cedula: "",
-        nombre: "",
-        segundoNombre: "",
-        apellido: "",
-        segundoApellido: "",
-        empresaId: "",
-        empresaNombre: "",
-        nivelSeveridad: "MEDIO",
-        motivoBloqueo: "",
-      };
-      errors = {};
-      searchQuery = "";
-      searchResults = [];
-      selectedPersona = null;
+    if (show) {
+      if (bloqueado) {
+        // Modo Edición
+        reset({
+          data: {
+            cedula: bloqueado.cedula || "",
+            nombre: bloqueado.nombre || "",
+            segundoNombre: bloqueado.segundoNombre || "",
+            apellido: bloqueado.apellido || "",
+            segundoApellido: bloqueado.segundoApellido || "",
+            empresaId: bloqueado.empresaId || "",
+            empresaNombre: bloqueado.empresaNombre || "",
+            nivelSeveridad: (bloqueado.nivelSeveridad as any) || "MEDIO",
+            motivoBloqueo: bloqueado.motivoBloqueo || "",
+          },
+        });
+        selectedPersona = null;
+      } else {
+        // Modo Creación (Reset)
+        reset();
+        selectedPersona = null;
+      }
     }
   });
 
-  // Nota: Validación se realiza solo al submit, no en tiempo real
-  // para evitar mostrar errores antes de que el usuario interactúe
+  import * as contratistaService from "$lib/logic/contratista/contratistaService";
+  import * as userService from "$lib/logic/user/userService";
+  import * as proveedorService from "$lib/logic/proveedor/proveedorService";
+  import { fetchEmpresaPorId } from "$lib/api/empresa";
 
-  // Búsqueda de personas
-  async function handleSearch() {
-    if (searchQuery.trim().length < 2) {
-      searchResults = [];
-      return;
-    }
+  // ... imports existing ...
 
-    isSearching = true;
-    const result = await listaNegraService.searchPersonas(searchQuery);
-    isSearching = false;
+  // Handler para selección desde PersonaFinder
+  async function handlePersonaSelect(event: CustomEvent) {
+    const { id, type, data } = event.detail;
 
-    if (result.ok) {
-      searchResults = result.data;
-      showResults = true;
-    } else {
-      toast.error(result.error);
+    selectedPersona = data;
+
+    // 1. Poblado inicial rápido (Fallback)
+    $form.cedula = data.cedula || "";
+    $form.empresaNombre = data.empresaNombre || data.empresa_nombre || "";
+
+    // 2. Fetch de datos completos para precisión (segundos nombres, etc.)
+    try {
+      loading = true;
+      let fullData: any = null;
+
+      if (type === "contratista") {
+        const res = await contratistaService.fetchContratistaById(id);
+        if (res.ok) fullData = res.data;
+      } else if (type === "user" || type === "usuario") {
+        // Handle both just in case
+        const res = await userService.fetchUserById(id);
+        if (res.ok) fullData = res.data;
+      } else if (type === "proveedor") {
+        const res = await proveedorService.fetchProveedorById(id);
+        if (res.ok) fullData = res.data;
+      }
+
+      if (fullData) {
+        // Mapeo preciso desde entidad completa
+        $form.nombre = fullData.nombre || "";
+        $form.segundoNombre =
+          fullData.segundoNombre || fullData.segundo_nombre || "";
+        $form.apellido = fullData.apellido || "";
+        $form.segundoApellido =
+          fullData.segundoApellido || fullData.segundo_apellido || "";
+
+        // Empresa: Manejar objeto o string o campos planos (DTOs nuevos)
+        let empIdString = "";
+
+        if (fullData.empresa) {
+          if (typeof fullData.empresa === "object") {
+            // Caso objeto (puede ser {id:..., nombre:...} o {tb:..., id:...})
+            if (fullData.empresa.id) {
+              empIdString = fullData.empresa.id.toString();
+            }
+            if (fullData.empresa.nombre && !$form.empresaNombre) {
+              $form.empresaNombre = fullData.empresa.nombre;
+            }
+          } else {
+            // Caso string directo
+            empIdString = fullData.empresa;
+          }
+        } else if (fullData.empresaId) {
+          // Caso respuesta plana (ContratistaResponse / ProveedorResponse)
+          empIdString = fullData.empresaId;
+        }
+
+        if (empIdString) {
+          // Normalizar si es necesario (agregar prefijo si falta) pero generalmente viene con prefijo
+          // La normalización real ocurre en el backend o en Zod si es estricto
+          $form.empresaId = empIdString;
+
+          // Si tenemos ID y el nombre no se ha seteado (o queremos asegurarlo)
+          if (!$form.empresaNombre && fullData.empresaNombre) {
+            $form.empresaNombre = fullData.empresaNombre;
+          }
+
+          // Fallback fetch si aun no tenemos nombre
+          if (!$form.empresaNombre) {
+            // ... fetch logic existing
+            try {
+              const emp = await fetchEmpresaPorId(empIdString);
+              if (emp) {
+                $form.empresaNombre = emp.nombre;
+              }
+            } catch (e) {
+              console.error("Error fetching empresa details:", e);
+            }
+          }
+        }
+      } else {
+        // Fallback: Intentar parsear nombre completo si no se pudo hacer fetch
+        fillFromSearchResult(data);
+      }
+    } catch (e) {
+      console.error("Error fetching full details:", e);
+      fillFromSearchResult(data);
+    } finally {
+      loading = false;
     }
   }
 
-  function selectPersona(persona: PersonaSearchResult) {
-    if (persona.yaBloqueado) {
-      toast.error("Esta persona ya está bloqueada");
-      return;
+  function fillFromSearchResult(data: any) {
+    // Intento heurístico de separar nombres
+    const fullName = data.nombre_completo || data.nombreCompleto;
+    if (fullName) {
+      const parts = fullName.split(" ");
+      $form.nombre = parts[0] || "";
+      // Asumir que el resto son apellidos es arriesgado pero mejor que nada en fallback
+      if (parts.length > 2) {
+        $form.apellido = parts[1];
+        $form.segundoApellido = parts.slice(2).join(" ");
+      } else {
+        $form.apellido = parts.slice(1).join(" ") || "";
+      }
     }
-
-    selectedPersona = persona;
-    formData = {
-      ...formData,
-      cedula: persona.cedula,
-      nombre: persona.nombre,
-      segundoNombre: persona.segundoNombre || "",
-      apellido: persona.apellido,
-      segundoApellido: persona.segundoApellido || "",
-      empresaId: persona.empresaId || "",
-      empresaNombre: persona.empresaNombre || "",
-    };
-    showResults = false;
-    searchQuery = "";
   }
 
   function clearSelection() {
     selectedPersona = null;
-    formData = {
-      cedula: "",
-      nombre: "",
-      segundoNombre: "",
-      apellido: "",
-      segundoApellido: "",
-      empresaId: "",
-      empresaNombre: "",
-      nivelSeveridad: formData.nivelSeveridad,
-      motivoBloqueo: formData.motivoBloqueo,
-    };
+    // Limpiar campos de identidad pero mantener severidad/motivo si ya se escribieron
+    $form.cedula = "";
+    $form.nombre = "";
+    $form.segundoNombre = "";
+    $form.apellido = "";
+    $form.segundoApellido = "";
+    $form.empresaId = "";
+    $form.empresaNombre = "";
   }
-
-  async function handleSubmit(event: Event) {
-    event.preventDefault();
-
-    // Validación final con Zod
-    const result = AddToListaNegraSchema.safeParse(formData);
-
-    if (!result.success) {
-      const newErrors: Record<string, string> = {};
-      result.error.issues.forEach((issue) => {
-        if (issue.path[0]) {
-          newErrors[String(issue.path[0])] = issue.message;
-        }
-      });
-      errors = newErrors;
-      return;
-    }
-
-    const usuario = $currentUser;
-    const bloqueadoPor = usuario
-      ? `${usuario.nombre} ${usuario.apellido}`
-      : "Sistema";
-
-    const input: AddToListaNegraInput = {
-      ...result.data,
-      bloqueadoPor,
-    };
-
-    const success = await onSave(input);
-    if (success) {
-      onClose();
-    }
-  }
-
-  // Iconos por tipo de persona
-
-  const tipoPersonaIcons = {
-    contratista: "👷",
-    proveedor: "📦",
-    visita: "👤",
-  };
 
   // Styles
   const inputClass =
-    "w-full rounded-md border border-gray-600 bg-[#0d1117] px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60";
+    "w-full rounded-md border border-gray-600 bg-[#0d1117] px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed";
   const labelClass = "block text-sm font-medium text-gray-300 mb-1";
   const errorClass = "text-xs text-red-400 mt-1";
 
@@ -256,11 +303,11 @@
         </button>
       </div>
 
-      <form onsubmit={handleSubmit} class="p-6 space-y-5">
+      <form method="POST" use:enhance class="p-6 space-y-5">
         <!-- Búsqueda de persona (solo en creación) -->
         {#if !isEditMode}
           <div class="space-y-2">
-            <label for="search" class={labelClass}>Buscar persona</label>
+            <span class="{labelClass} mb-2">Buscar persona</span>
 
             {#if selectedPersona}
               <!-- Persona seleccionada -->
@@ -270,14 +317,16 @@
                 <User size={20} class="text-blue-400" />
                 <div class="flex-1">
                   <div class="font-medium text-white">
-                    {selectedPersona.nombreCompleto}
+                    {selectedPersona.nombre_completo ||
+                      selectedPersona.nombreCompleto ||
+                      "Desconocido"}
                   </div>
                   <div class="text-sm text-gray-400">
-                    {selectedPersona.cedula} •
-                    {tipoPersonaIcons[selectedPersona.tipoPersona]}
-                    {selectedPersona.tipoPersona}
-                    {#if selectedPersona.empresaNombre}
-                      • {selectedPersona.empresaNombre}
+                    {selectedPersona.cedula || "S/C"} •
+                    {selectedPersona.tipo || "Persona"}
+                    {#if selectedPersona.empresa_nombre || selectedPersona.empresaNombre}
+                      • {selectedPersona.empresa_nombre ||
+                        selectedPersona.empresaNombre}
                     {/if}
                   </div>
                 </div>
@@ -290,67 +339,11 @@
                 </button>
               </div>
             {:else}
-              <!-- Campo de búsqueda -->
-              <div class="relative">
-                <input
-                  id="search"
-                  type="text"
-                  bind:value={searchQuery}
-                  oninput={() => handleSearch()}
-                  placeholder="Buscar por cédula o nombre..."
-                  class={inputClass}
-                />
-                <div class="absolute right-3 top-1/2 -translate-y-1/2">
-                  {#if isSearching}
-                    <div
-                      class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"
-                    ></div>
-                  {:else}
-                    <Search size={16} class="text-gray-500" />
-                  {/if}
-                </div>
-              </div>
+              <!-- Componente PersonaFinder -->
+              <PersonaFinder on:select={handlePersonaSelect} autoFocus={true} />
 
-              <!-- Resultados de búsqueda (Resto igual) -->
-              {#if showResults && searchResults.length > 0}
-                <div
-                  class="absolute z-30 w-full max-h-60 overflow-auto rounded-lg bg-[#161b22] border border-gray-700 shadow-xl"
-                >
-                  {#each searchResults as persona}
-                    <button
-                      type="button"
-                      onclick={() => selectPersona(persona)}
-                      disabled={persona.yaBloqueado}
-                      class="w-full px-4 py-3 text-left hover:bg-gray-700/50 transition-colors border-b border-gray-700/50 last:border-0 disabled:opacity-50"
-                    >
-                      <div class="flex items-center gap-3">
-                        <span class="text-lg"
-                          >{tipoPersonaIcons[persona.tipoPersona]}</span
-                        >
-                        <div class="flex-1">
-                          <div class="font-medium text-white">
-                            {persona.nombreCompleto}
-                            {#if persona.yaBloqueado}
-                              <span class="ml-2 text-xs text-red-400"
-                                >(Ya bloqueado)</span
-                              >
-                            {/if}
-                          </div>
-                          <div class="text-sm text-gray-400">
-                            {persona.cedula}
-                            {#if persona.empresaNombre}
-                              • {persona.empresaNombre}
-                            {/if}
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  {/each}
-                </div>
-              {/if}
-
-              <!-- Entrada manual -->
-              <p class="text-xs text-gray-500">
+              <!-- Entrada manual hint -->
+              <p class="text-xs text-gray-500 mt-2">
                 O ingresa los datos manualmente si la persona no está registrada
               </p>
             {/if}
@@ -363,13 +356,15 @@
             <label for="cedula" class={labelClass}>Cédula *</label>
             <input
               id="cedula"
+              name="cedula"
               type="text"
-              bind:value={formData.cedula}
-              disabled={loading || isEditMode}
+              bind:value={$form.cedula}
+              disabled={loading || isEditMode || !!selectedPersona}
               class={inputClass}
-              placeholder="1-1234-5678"
+              placeholder={!!selectedPersona ? "" : "1-1234-5678"}
+              {...$constraints.cedula}
             />
-            {#if errors.cedula}<p class={errorClass}>{errors.cedula}</p>{/if}
+            {#if $errors.cedula}<p class={errorClass}>{$errors.cedula}</p>{/if}
           </div>
 
           <div>
@@ -381,15 +376,17 @@
               />
               <input
                 id="empresaNombre"
+                name="empresaNombre"
                 type="text"
-                bind:value={formData.empresaNombre}
-                disabled={loading}
+                bind:value={$form.empresaNombre}
+                disabled={loading || !!selectedPersona}
                 class="{inputClass} pl-9"
-                placeholder="Nombre de empresa"
+                placeholder={!!selectedPersona ? "" : "Nombre de empresa"}
+                {...$constraints.empresaNombre}
               />
             </div>
-            {#if errors.empresaNombre}<p class={errorClass}>
-                {errors.empresaNombre}
+            {#if $errors.empresaNombre}<p class={errorClass}>
+                {$errors.empresaNombre}
               </p>{/if}
           </div>
 
@@ -397,27 +394,31 @@
             <label for="nombre" class={labelClass}>Nombre *</label>
             <input
               id="nombre"
+              name="nombre"
               type="text"
-              bind:value={formData.nombre}
-              disabled={loading}
+              bind:value={$form.nombre}
+              disabled={loading || !!selectedPersona}
               class={inputClass}
-              placeholder="Juan"
+              placeholder={!!selectedPersona ? "" : "Juan"}
+              {...$constraints.nombre}
             />
-            {#if errors.nombre}<p class={errorClass}>{errors.nombre}</p>{/if}
+            {#if $errors.nombre}<p class={errorClass}>{$errors.nombre}</p>{/if}
           </div>
 
           <div>
             <label for="segundoNombre" class={labelClass}>Segundo Nombre</label>
             <input
               id="segundoNombre"
+              name="segundoNombre"
               type="text"
-              bind:value={formData.segundoNombre}
-              disabled={loading}
+              bind:value={$form.segundoNombre}
+              disabled={loading || !!selectedPersona}
               class={inputClass}
-              placeholder="Carlos"
+              placeholder={!!selectedPersona ? "" : "Carlos"}
+              {...$constraints.segundoNombre}
             />
-            {#if errors.segundoNombre}<p class={errorClass}>
-                {errors.segundoNombre}
+            {#if $errors.segundoNombre}<p class={errorClass}>
+                {$errors.segundoNombre}
               </p>{/if}
           </div>
 
@@ -425,14 +426,16 @@
             <label for="apellido" class={labelClass}>Apellido *</label>
             <input
               id="apellido"
+              name="apellido"
               type="text"
-              bind:value={formData.apellido}
-              disabled={loading}
+              bind:value={$form.apellido}
+              disabled={loading || !!selectedPersona}
               class={inputClass}
-              placeholder="Pérez"
+              placeholder={!!selectedPersona ? "" : "Pérez"}
+              {...$constraints.apellido}
             />
-            {#if errors.apellido}<p class={errorClass}>
-                {errors.apellido}
+            {#if $errors.apellido}<p class={errorClass}>
+                {$errors.apellido}
               </p>{/if}
           </div>
 
@@ -442,14 +445,16 @@
             >
             <input
               id="segundoApellido"
+              name="segundoApellido"
               type="text"
-              bind:value={formData.segundoApellido}
-              disabled={loading}
+              bind:value={$form.segundoApellido}
+              disabled={loading || !!selectedPersona}
               class={inputClass}
-              placeholder="González"
+              placeholder={!!selectedPersona ? "" : "González"}
+              {...$constraints.segundoApellido}
             />
-            {#if errors.segundoApellido}<p class={errorClass}>
-                {errors.segundoApellido}
+            {#if $errors.segundoApellido}<p class={errorClass}>
+                {$errors.segundoApellido}
               </p>{/if}
           </div>
         </div>
@@ -461,20 +466,22 @@
           >
           <select
             id="nivelSeveridad"
-            bind:value={formData.nivelSeveridad}
+            name="nivelSeveridad"
+            bind:value={$form.nivelSeveridad}
             disabled={loading}
-            class="{inputClass} {formData.nivelSeveridad === 'ALTO'
+            class="{inputClass} {$form.nivelSeveridad === 'ALTO'
               ? 'border-red-500/50 text-red-400'
-              : formData.nivelSeveridad === 'MEDIO'
+              : $form.nivelSeveridad === 'MEDIO'
                 ? 'border-yellow-500/50 text-yellow-400'
                 : 'border-gray-500/50 text-gray-400'}"
+            {...$constraints.nivelSeveridad}
           >
             <option value="ALTO">🔴 ALTO - Crítico</option>
             <option value="MEDIO">🟡 MEDIO - Moderado</option>
             <option value="BAJO">⚪ BAJO - Bajo riesgo</option>
           </select>
-          {#if errors.nivelSeveridad}<p class={errorClass}>
-              {errors.nivelSeveridad}
+          {#if $errors.nivelSeveridad}<p class={errorClass}>
+              {$errors.nivelSeveridad}
             </p>{/if}
         </div>
 
@@ -485,14 +492,16 @@
           >
           <textarea
             id="motivoBloqueo"
-            bind:value={formData.motivoBloqueo}
+            name="motivoBloqueo"
+            bind:value={$form.motivoBloqueo}
             disabled={loading}
             class={inputClass}
             rows="2"
             placeholder="Describa el motivo del bloqueo (opcional)"
+            {...$constraints.motivoBloqueo}
           ></textarea>
-          {#if errors.motivoBloqueo}<p class={errorClass}>
-              {errors.motivoBloqueo}
+          {#if $errors.motivoBloqueo}<p class={errorClass}>
+              {$errors.motivoBloqueo}
             </p>{/if}
         </div>
 

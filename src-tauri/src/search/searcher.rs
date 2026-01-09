@@ -118,9 +118,10 @@ pub fn search_index(
     // Usamos el ID numérico directo:
     query_parser.set_field_fuzzy(fields.search_text, true, 1, true);
 
-    // Parsear query
+    // Parsear query (normalizado a minúsculas para asegurar coincidencia con tokenizer default)
+    let query_normalized = query_str.to_lowercase();
     let query = query_parser
-        .parse_query(query_str)
+        .parse_query(&query_normalized)
         .map_err(|e| SearchError::QueryError(format!("Query inválido: {e}")))?;
 
     // Ejecutar búsqueda

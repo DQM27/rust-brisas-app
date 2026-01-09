@@ -26,34 +26,19 @@ export const listaNegra = {
   },
 
   /**
-   * Eliminar registro permanentemente
+   * Desbloquear (desactivar) - soft delete, isActive: true → false
+   * Usa delete_from_lista_negra que hace soft delete
    */
-  delete: async (id: string): Promise<void> => {
-    return await invoke('delete_lista_negra', { id });
-  },
-
-  /**
-   * Desbloquear (desactivar) - isActive: true → false
-   */
-  remove: async (id: string): Promise<ListaNegraResponse> => {
-    return await invoke('remove_from_lista_negra', { id });
+  remove: async (id: string): Promise<void> => {
+    return await invoke('delete_from_lista_negra', { id });
   },
 
   /**
    * Re-bloquear (reactivar) - isActive: false → true
+   * Usa restore_lista_negra para restaurar un registro desactivado
    */
-  reactivate: async (
-    id: string,
-    nivelSeveridad: NivelSeveridad,
-    motivoBloqueo: string,
-    bloqueadoPor: string
-  ): Promise<ListaNegraResponse> => {
-    return await invoke('reactivate_lista_negra', {
-      id,
-      nivelSeveridad,
-      motivoBloqueo,
-      bloqueadoPor
-    });
+  reactivate: async (id: string): Promise<ListaNegraResponse> => {
+    return await invoke('restore_lista_negra', { id });
   },
 
   /**
@@ -71,24 +56,10 @@ export const listaNegra = {
   },
 
   /**
-   * Obtener solo activos (bloqueados actualmente)
-   */
-  getActivos: async (): Promise<ListaNegraResponse[]> => {
-    return await invoke('get_lista_negra_activos');
-  },
-
-  /**
    * Verificar si cédula está bloqueada (para guardias - sin motivo)
    */
   checkIsBlocked: async (cedula: string): Promise<BlockCheckResponse> => {
     return await invoke('check_is_blocked', { cedula });
-  },
-
-  /**
-   * Obtener bloqueo por cédula (para admins - con motivo)
-   */
-  getByCedula: async (cedula: string): Promise<ListaNegraResponse | null> => {
-    return await invoke('get_blocked_by_cedula', { cedula });
   },
 
   /**

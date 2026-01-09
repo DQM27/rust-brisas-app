@@ -63,7 +63,7 @@ pub struct ListaNegra {
     #[serde(alias = "segundo_apellido")]
     pub segundo_apellido: Option<String>,
     #[serde(alias = "empresa_id")]
-    pub empresa_id: Option<RecordId>,
+    pub empresa_id: Option<String>,
     #[serde(alias = "empresa_nombre")]
     pub empresa_nombre: Option<String>,
     /// Nivel de riesgo asociado al individuo bloqueado.
@@ -74,6 +74,8 @@ pub struct ListaNegra {
     /// Usuario administrativo que realizó el bloqueo.
     #[serde(alias = "bloqueado_por")]
     pub bloqueado_por: String,
+    #[serde(alias = "bloqueado_por_nombre")]
+    pub bloqueado_por_nombre: Option<String>,
     #[serde(alias = "is_active")]
     pub is_active: bool,
     #[serde(alias = "created_at")]
@@ -108,6 +110,8 @@ pub struct AddToListaNegraInput {
 pub struct UpdateListaNegraInput {
     pub nivel_severidad: Option<String>,
     pub motivo_bloqueo: Option<String>,
+    pub empresa_id: Option<String>,
+    pub empresa_nombre: Option<String>,
 }
 
 // --------------------------------------------------------------------------
@@ -150,10 +154,14 @@ impl From<ListaNegra> for ListaNegraResponse {
         .collect::<Vec<&str>>()
         .join(" ");
 
-        let created: chrono::DateTime<chrono::Utc> =
-            ln.created_at.to_string().parse().unwrap_or_default();
-        let updated: chrono::DateTime<chrono::Utc> =
-            ln.updated_at.to_string().parse().unwrap_or_default();
+        // Helper simple para limpiar formato SurrealDB (d'...') si está presente
+        let parse_surreal_date = |s: String| -> chrono::DateTime<chrono::Utc> {
+            let clean = s.trim_start_matches("d'").trim_end_matches("'");
+            clean.parse().unwrap_or_else(|_| chrono::Utc::now())
+        };
+
+        let created = parse_surreal_date(ln.created_at.to_string());
+        let updated = parse_surreal_date(ln.updated_at.to_string());
 
         let dias_bloqueado = (chrono::Utc::now() - created).num_days();
 
@@ -165,12 +173,12 @@ impl From<ListaNegra> for ListaNegraResponse {
             apellido: ln.apellido,
             segundo_apellido: ln.segundo_apellido,
             nombre_completo,
-            empresa_id: ln.empresa_id.map(|id| id.to_string()),
+            empresa_id: ln.empresa_id,
             empresa_nombre: ln.empresa_nombre,
             nivel_severidad: ln.nivel_severidad,
             motivo_bloqueo: ln.motivo_bloqueo,
             bloqueado_por: ln.bloqueado_por,
-            bloqueado_por_nombre: None,
+            bloqueado_por_nombre: ln.bloqueado_por_nombre,
             is_active: ln.is_active,
             dias_bloqueado,
             created_at: created.to_rfc3339(),

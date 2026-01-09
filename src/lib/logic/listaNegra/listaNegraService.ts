@@ -155,12 +155,13 @@ export async function fetchAll(): Promise<ServiceResult<ListaNegraListResponse>>
 }
 
 /**
- * Obtener bloqueados activos
+ * Obtener bloqueados activos (filtrar de todos)
  */
 export async function fetchActivos(): Promise<ServiceResult<ListaNegraResponse[]>> {
     try {
-        const data = await listaNegra.getActivos();
-        return { ok: true, data };
+        const result = await listaNegra.getAll();
+        const activos = result.bloqueados.filter(b => b.isActive);
+        return { ok: true, data: activos };
     } catch (err: any) {
         console.error('Error al cargar bloqueados activos:', err);
         return { ok: false, error: parseError(err) };
@@ -221,15 +222,16 @@ export async function update(
 
 /**
  * Desbloquear (desactivar isActive)
+ * Nota: La operación no retorna el registro actualizado, solo confirma el éxito
  */
-export async function unblock(id: string): Promise<ServiceResult<ListaNegraResponse>> {
+export async function unblock(id: string): Promise<ServiceResult<void>> {
     if (!id) {
         return { ok: false, error: 'El ID del registro es inválido.' };
     }
 
     try {
-        const data = await listaNegra.remove(id);
-        return { ok: true, data };
+        await listaNegra.remove(id);
+        return { ok: true, data: undefined };
     } catch (err: any) {
         console.error('Error al desbloquear:', err);
         return { ok: false, error: parseError(err) };
@@ -238,25 +240,21 @@ export async function unblock(id: string): Promise<ServiceResult<ListaNegraRespo
 
 /**
  * Re-bloquear persona (reactivar)
+ * Nota: Los parámetros adicionales ya no son necesarios,
+ * el registro se restaura con sus valores originales
  */
 export async function reblock(
     id: string,
-    nivelSeveridad: NivelSeveridad,
-    motivoBloqueo: string,
-    bloqueadoPor: string
+    _nivelSeveridad?: NivelSeveridad,
+    _motivoBloqueo?: string,
+    _bloqueadoPor?: string
 ): Promise<ServiceResult<ListaNegraResponse>> {
     if (!id) {
         return { ok: false, error: 'El ID del registro es inválido.' };
     }
-    if (!NIVELES_VALIDOS.includes(nivelSeveridad)) {
-        return { ok: false, error: 'Nivel de severidad inválido.' };
-    }
-    if (!motivoBloqueo || motivoBloqueo.trim().length === 0) {
-        return { ok: false, error: 'El motivo de bloqueo es obligatorio.' };
-    }
 
     try {
-        const data = await listaNegra.reactivate(id, nivelSeveridad, motivoBloqueo, bloqueadoPor);
+        const data = await listaNegra.reactivate(id);
         return { ok: true, data };
     } catch (err: any) {
         console.error('Error al re-bloquear:', err);

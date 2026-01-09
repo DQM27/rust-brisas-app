@@ -171,24 +171,69 @@ pub async fn add_to_lista_negra(
     // 1. Validar input
     domain::validar_add_input(&input)?;
 
-    // 2. Verificar que no esté ya bloqueado
-    let existente = db::find_by_cedula(&input.cedula)
+    // 2. Verificar si ya existe (activo o inactivo)
+    let existente = db::find_by_cedula_any_status(&input.cedula)
         .await
         .map_err(|e| ListaNegraError::Database(e.to_string()))?;
 
-    if existente.is_some() {
-        warn!("⚠️ Intento de bloquear persona ya bloqueada: cédula={}", input.cedula);
-        return Err(ListaNegraError::AlreadyExists);
+    if let Some(registro) = existente {
+        if registro.is_active {
+            warn!("⚠️ Persona ya bloqueada (activa): cédula={}", input.cedula);
+            return Err(ListaNegraError::AlreadyExists);
+        } else {
+            // Caso: Existe pero está inactiva (Soft Deleted) -> Reactivar y Actualizar
+            info!(
+                "♻️ Persona previamente bloqueada encontrada (inactiva). Reactivando: id={}",
+                registro.id
+            );
+
+            // 1. Restaurar (activar)
+            db::restore(&registro.id)
+                .await
+                .map_err(|e| ListaNegraError::Database(e.to_string()))?;
+
+            // 2. Actualizar con los nuevos datos
+            let update_input = UpdateListaNegraInput {
+                nivel_severidad: Some(input.nivel_severidad.to_uppercase()),
+                motivo_bloqueo: input.motivo_bloqueo.clone(),
+                empresa_id: input.empresa_id.map(|id| {
+                    if id.contains(":") {
+                        id
+                    } else {
+                        format!("empresa:{}", id)
+                    }
+                }),
+                empresa_nombre: input.empresa_nombre,
+            };
+
+            // Nota: db::update solo actualiza campos específicos.
+            // Si queremos actualizar nombre/apellido, necesitaríamos una query de update completa
+            // o asumir que la identidad (cédula/nombre) no cambia.
+            // Por ahora, actualizamos lo crítico (motivo, nivel, empresa).
+
+            let updated = db::update(&registro.id, &update_input)
+                .await
+                .map_err(|e| ListaNegraError::Database(e.to_string()))?;
+
+            info!("🚫 Persona re-bloqueada exitosamente: id={}", updated.id);
+            return Ok(updated.into());
+        }
     }
 
-    // 3. Normalizar datos
+    // 3. Normalizar datos (si es nuevo registro)
     let input_normalizado = AddToListaNegraInput {
         cedula: input.cedula.trim().to_string(),
         nombre: domain::normalizar_nombre_titulo(&input.nombre),
         segundo_nombre: input.segundo_nombre.map(|n| domain::normalizar_nombre_titulo(&n)),
         apellido: domain::normalizar_nombre_titulo(&input.apellido),
         segundo_apellido: input.segundo_apellido.map(|n| domain::normalizar_nombre_titulo(&n)),
-        empresa_id: input.empresa_id,
+        empresa_id: input.empresa_id.map(|id| {
+            if id.contains(":") {
+                id
+            } else {
+                format!("empresa:{}", id)
+            }
+        }),
         empresa_nombre: input.empresa_nombre,
         nivel_severidad: input.nivel_severidad.to_uppercase(),
         motivo_bloqueo: input.motivo_bloqueo.map(|m| domain::normalizar_texto(&m)),
@@ -231,12 +276,20 @@ pub async fn update(
     // Validar input
     domain::validar_update_input(&input)?;
 
+    // Normalizar ID empresa si existe
+    let mut input_normalizado = input.clone();
+    if let Some(emp_id) = &input_normalizado.empresa_id {
+        if !emp_id.contains(":") {
+            input_normalizado.empresa_id = Some(format!("empresa:{}", emp_id));
+        }
+    }
+
     // Parsear ID
     let record_id: RecordId =
         id.parse().map_err(|_| ListaNegraError::Validation(format!("ID inválido: {id}")))?;
 
     // Actualizar
-    let updated = db::update(&record_id, &input).await.map_err(|e| {
+    let updated = db::update(&record_id, &input_normalizado).await.map_err(|e| {
         let msg = e.to_string();
         if msg.contains("no encontrado") || msg.contains("not found") {
             ListaNegraError::NotFound

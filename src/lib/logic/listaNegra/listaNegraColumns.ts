@@ -4,6 +4,22 @@ import type { ColDef, ICellRendererParams } from "@ag-grid-community/core";
 
 export class ListaNegraColumns {
     // Column configuration
+    // Helper para parsear fechas de SurrealDB
+    private static parseDate(value: any): Date | null {
+        if (!value) return null;
+        if (value instanceof Date) return value;
+
+        let dateStr = String(value);
+        // Remove SurrealDB format wrappers if present
+        if (dateStr.startsWith("d'") && dateStr.endsWith("'")) {
+            dateStr = dateStr.slice(2, -1);
+        }
+
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
+    // Column configuration
     static getColumns(): ColDef<ListaNegraResponse>[] {
         return [
             {
@@ -19,21 +35,39 @@ export class ListaNegraColumns {
                 flex: 1,
                 minWidth: 200,
                 cellStyle: { fontWeight: 500 },
+                valueGetter: (params) => {
+                    const data = params.data as any;
+                    if (!data) return "";
+                    return data.nombreCompleto || data.nombre_completo ||
+                        `${data.nombre} ${data.apellido}`;
+                }
             },
             {
-                field: "empresaNombre",
+                colId: "empresa",
                 headerName: "Empresa",
+                field: "empresaNombre", // Added for export/filter compatibility
                 flex: 1,
-                minWidth: 180,
-                cellRenderer: (params: ICellRendererParams) => {
-                    const empresa = params.value || "Sin empresa";
-                    return `<span class="text-sm text-gray-400">${empresa}</span>`;
-                },
+                minWidth: 150,
+                valueGetter: (params) => {
+                    const data = params.data as any;
+                    // Debug Empresa
+                    console.log("Debug Empresa:", {
+                        nombre: data?.empresaNombre,
+                        snake: data?.empresa_nombre,
+                        full: data?.empresa
+                    });
+                    if (!data) return "";
+                    return data.empresaNombre || data.empresa_nombre || "Sin empresa";
+                }
             },
             {
                 field: "nivelSeveridad",
                 headerName: "Nivel",
                 width: 100,
+                valueGetter: (params) => {
+                    const data = params.data as any;
+                    return data?.nivelSeveridad || data?.nivel_severidad;
+                },
                 cellRenderer: (params: ICellRendererParams) => {
                     return ListaNegraColumns.formatNivelBadge(params.value);
                 },
@@ -42,6 +76,13 @@ export class ListaNegraColumns {
                 field: "isActive",
                 headerName: "Estado",
                 width: 130,
+                valueGetter: (params) => {
+                    const data = params.data as any;
+                    if (!data) return false;
+                    // is_active puede ser boolean o string "true"/"false" desde DB a veces
+                    const val = data.isActive !== undefined ? data.isActive : data.is_active;
+                    return val;
+                },
                 cellRenderer: (params: ICellRendererParams) => {
                     return ListaNegraColumns.formatEstadoBadge(params.value);
                 },
@@ -51,53 +92,61 @@ export class ListaNegraColumns {
                 headerName: "Motivo",
                 flex: 1,
                 minWidth: 200,
+                valueGetter: (params) => {
+                    const data = params.data as any;
+                    return data?.motivoBloqueo || data?.motivo_bloqueo || "Sin motivo especificado";
+                },
                 cellRenderer: (params: ICellRendererParams) => {
-                    const motivo = params.value || "Sin motivo especificado";
-                    return `<span class="text-xs text-gray-300 line-clamp-2">${motivo}</span>`;
+                    return `<span class="text-sm text-gray-300 truncate">${params.value}</span>`;
                 },
             },
             {
                 field: "bloqueadoPor",
                 headerName: "Bloqueado Por",
                 width: 160,
+                valueGetter: (params) => {
+                    const data = params.data as any;
+                    return data?.bloqueadoPorNombre || data?.bloqueado_por_nombre || data?.bloqueadoPor || "Sistema";
+                },
                 cellRenderer: (params: ICellRendererParams) => {
-                    const usuario = params.value || "Sistema";
-                    return `<span class="text-sm text-gray-400">${usuario}</span>`;
+                    return `<span class="text-sm text-gray-400">${params.value}</span>`;
                 },
             },
             {
-                field: "bloqueadoDesde",
-                headerName: "Fecha Bloqueo",
-                width: 150,
-                valueFormatter: (params) => {
-                    if (!params.value) return "N/A";
-                    const fecha = new Date(params.value);
-                    return fecha.toLocaleString("es-CR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit"
-                    });
+                colId: "fecha",
+                headerName: "Fecha",
+                width: 120,
+                valueGetter: (params) => {
+                    const data = params.data as any;
+                    if (!data) return null;
+                    return data.createdAt || data.created_at;
                 },
-                cellRenderer: (params: ICellRendererParams) => {
-                    if (!params.value) return `<span class="text-xs text-gray-500">N/A</span>`;
-                    const fecha = new Date(params.value);
-                    const fechaStr = fecha.toLocaleDateString("es-CR", {
+                valueFormatter: (params) => {
+                    const date = ListaNegraColumns.parseDate(params.value);
+                    if (!date) return "N/A";
+                    return date.toLocaleDateString("es-CR", {
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric"
                     });
-                    const horaStr = fecha.toLocaleTimeString("es-CR", {
+                },
+            },
+            {
+                colId: "hora",
+                headerName: "Hora",
+                width: 100,
+                valueGetter: (params) => {
+                    const data = params.data as any;
+                    if (!data) return null;
+                    return data.createdAt || data.created_at;
+                },
+                valueFormatter: (params) => {
+                    const date = ListaNegraColumns.parseDate(params.value);
+                    if (!date) return "";
+                    return date.toLocaleTimeString("es-CR", {
                         hour: "2-digit",
                         minute: "2-digit"
                     });
-                    return `
-            <div class="text-xs">
-              <div class="text-gray-300">${fechaStr}</div>
-              <div class="text-gray-500">${horaStr}</div>
-            </div>
-          `;
                 },
             },
         ];

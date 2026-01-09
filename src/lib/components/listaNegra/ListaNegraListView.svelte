@@ -4,7 +4,7 @@
   import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
   import { toast } from "svelte-5-french-toast";
-  import { AlertCircle, RotateCw } from "lucide-svelte";
+  import { AlertCircle, RotateCw, Lock, LockOpen } from "lucide-svelte";
   import type { ColDef } from "@ag-grid-community/core";
 
   // Components
@@ -64,6 +64,19 @@
   // Selección en grid
   let selectedRows = $state<ListaNegraResponse[]>([]);
 
+  // ==========================================
+  // ESTADO DE MODALES
+  // ==========================================
+  // 1. Modal Agregar/Editar
+  let showFormModal = $state(false);
+  let editingBloqueado = $state<ListaNegraResponse | null>(null);
+  let formLoading = $state(false);
+
+  // 2. Modal Desbloquear/Re-bloquear
+  let showConfirmModal = $state(false);
+  let confirmMotivo = $state("");
+  let confirmActionType = $state<"unblock" | "reblock">("unblock");
+
   // Suscripción a comandos de teclado centralizados
   let unsubscribeKeyboard: (() => void) | null = null;
 
@@ -101,19 +114,6 @@
       }
     });
   }
-
-  // ==========================================
-  // ESTADO DE MODALES
-  // ==========================================
-  // 1. Modal Agregar/Editar
-  let showFormModal = $state(false);
-  let editingBloqueado = $state<ListaNegraResponse | null>(null);
-  let formLoading = $state(false);
-
-  // 2. Modal Desbloquear/Re-bloquear
-  let showConfirmModal = $state(false);
-  let confirmMotivo = $state("");
-  let confirmActionType = $state<"unblock" | "reblock">("unblock");
 
   // ==========================================
   // DERIVADOS
@@ -162,26 +162,24 @@
   let columnDefs = $derived.by((): ColDef<ListaNegraResponse>[] => {
     return ListaNegraColumns.getColumns();
   });
-
-  // Botones personalizados (Toolbar)
   const customButtons = $derived.by(() => {
     const selected = selectedRows[0];
     const isSingleSelect = selectedRows.length === 1;
 
-    // Solo si tiene permisos
-    if (!canManage) {
-      return {
-        default: [
-          {
-            id: "refresh",
-            label: "Actualizar",
-            icon: RotateCw,
-            onClick: loadListaNegra,
-            variant: "default" as const,
-          },
-        ],
-      };
-    }
+    // Solo si tiene permisos (DESHABILITADO TEMPORALMENTE PARA DEBUG)
+    // if (!canManage) {
+    //   return {
+    //     default: [
+    //       {
+    //         id: "refresh",
+    //         label: "Actualizar",
+    //         icon: RotateCw,
+    //         onClick: loadListaNegra,
+    //         variant: "default" as const,
+    //       },
+    //     ],
+    //   };
+    // }
 
     return {
       default: [
@@ -205,14 +203,14 @@
           ? {
               id: "unblock",
               label: "Desbloquear",
-              // icon: LockOpen, // Importar si se quiere icono
+              icon: LockOpen,
               variant: "destructive" as const,
               onClick: () => openConfirmModal(selected, "unblock"),
             }
           : {
               id: "reblock",
               label: "Re-bloquear",
-              // icon: Lock, // Importar si se quiere icono
+              icon: Lock,
               variant: "warning" as const,
               onClick: () => openConfirmModal(selected, "reblock"),
             },
@@ -258,6 +256,8 @@
         const updateInput = {
           nivelSeveridad: input.nivelSeveridad,
           motivoBloqueo: input.motivoBloqueo,
+          empresaId: input.empresaId,
+          empresaNombre: input.empresaNombre,
         };
         const result = await listaNegraService.update(
           editingBloqueado.id,

@@ -123,7 +123,9 @@ pub async fn find_all() -> Result<Vec<ListaNegra>, SurrealDbError> {
 
     let mut result = db
         .query(
-            "SELECT * FROM lista_negra 
+            "SELECT *, 
+                bloqueado_por.nombre as bloqueado_por_nombre
+             FROM lista_negra 
              WHERE is_active = true 
              ORDER BY created_at DESC 
              LIMIT $limit",
@@ -157,7 +159,11 @@ pub async fn find_by_id(id: &RecordId) -> Result<Option<ListaNegra>, SurrealDbEr
     let db = get_db().await?;
 
     let mut result = db
-        .query("SELECT * FROM $id WHERE is_active = true")
+        .query(
+            "SELECT *, 
+            bloqueado_por.nombre as bloqueado_por_nombre
+         FROM $id WHERE is_active = true",
+        )
         .bind(("id", id.clone()))
         .await
         .map_err(|e| {
@@ -197,6 +203,36 @@ pub async fn find_by_cedula(cedula: &str) -> Result<Option<ListaNegra>, SurrealD
         .await
         .map_err(|e| {
             SurrealDbError::Query(format!("Error al buscar lista negra por cédula '{cedula}': {e}"))
+        })?;
+
+    let registro: Option<ListaNegra> = result.take(0)?;
+    Ok(registro)
+}
+
+/// Busca un registro de lista negra por cédula, ignorando el estado `is_active`.
+///
+/// ## Query Ejecutado
+/// ```sql
+/// SELECT * FROM lista_negra
+/// WHERE cedula = $cedula
+/// ```
+///
+/// ## Uso
+/// Permite detectar si una persona ya fue bloqueada anteriormente (incluso si está desactivada/soft-deleted)
+/// para reactivarla en lugar de intentar crear un duplicado que violaría el índice único.
+pub async fn find_by_cedula_any_status(cedula: &str) -> Result<Option<ListaNegra>, SurrealDbError> {
+    debug!("🔍 Buscando lista negra por cédula (cualquier estado): {cedula}");
+
+    let db = get_db().await?;
+
+    let mut result = db
+        .query("SELECT * FROM lista_negra WHERE cedula = $cedula")
+        .bind(("cedula", cedula.to_string()))
+        .await
+        .map_err(|e| {
+            SurrealDbError::Query(format!(
+                "Error al buscar lista negra (cualquier estado) por cédula '{cedula}': {e}"
+            ))
         })?;
 
     let registro: Option<ListaNegra> = result.take(0)?;
@@ -331,14 +367,22 @@ pub async fn update(
     if input.motivo_bloqueo.is_some() {
         set_clauses.push("motivo_bloqueo = $motivo_bloqueo".to_string());
     }
+    if input.empresa_id.is_some() {
+        set_clauses.push("empresa_id = $empresa_id".to_string());
+    }
+    if input.empresa_nombre.is_some() {
+        set_clauses.push("empresa_nombre = $empresa_nombre".to_string());
+    }
 
-    let query = format!("UPDATE $id SET {} WHERE is_active = true", set_clauses.join(", "));
+    let id_str = id.to_string();
+    let query = format!("UPDATE {} SET {}", id_str, set_clauses.join(", "));
 
     let mut result = db
         .query(&query)
-        .bind(("id", id.clone()))
         .bind(("nivel_severidad", input.nivel_severidad.clone()))
         .bind(("motivo_bloqueo", input.motivo_bloqueo.clone()))
+        .bind(("empresa_id", input.empresa_id.clone()))
+        .bind(("empresa_nombre", input.empresa_nombre.clone()))
         .await
         .map_err(|e| {
             SurrealDbError::Query(format!("Error al actualizar lista negra '{id}': {e}"))
@@ -481,13 +525,15 @@ pub async fn search(query: &str) -> Result<Vec<ListaNegra>, SurrealDbError> {
 
     let mut result = db
         .query(
-            "SELECT * FROM lista_negra 
+            "SELECT *, 
+                bloqueado_por.nombre as bloqueado_por_nombre
+             FROM lista_negra 
              WHERE is_active = true AND (
                  cedula CONTAINS $query OR
                  nombre CONTAINS $query OR
                  apellido CONTAINS $query
              )
-             ORDER BY created_at DESC
+             ORDER BY created_at DESC 
              LIMIT 50",
         )
         .bind(("query", query_trimmed.to_string()))
@@ -531,13 +577,14 @@ pub async fn search_candidates(query: &str) -> Result<Vec<PersonaSearchResult>, 
         // Empresa puede ser un objeto o string dependiendo de la tabla, simplificamos:
         // En este caso asumimos que no traemos la empresa en esta query simple para no complicar el JOIN
         // o traemos el ID de empresa si es un campo simple.
+        empresa_nombre: Option<String>,
     }
 
     let mut resultados: Vec<PersonaSearchResult> = Vec::new();
 
     // 1. Buscar CONTRATISTAS
     let sql_contratista = "
-        SELECT id, cedula, nombre, segundo_nombre, apellido, segundo_apellido, empresa as empresa_id
+        SELECT id, cedula, nombre, segundo_nombre, apellido, segundo_apellido, empresa as empresa_id, empresa.nombre as empresa_nombre
         FROM contratista
         WHERE (cedula CONTAINS $q OR nombre CONTAINS $q OR apellido CONTAINS $q)
         LIMIT 10;
@@ -572,14 +619,14 @@ pub async fn search_candidates(query: &str) -> Result<Vec<PersonaSearchResult>, 
             segundo_apellido: c.segundo_apellido.clone(),
             nombre_completo: format!("{} {}", c.nombre, c.apellido), // Simplificado
             empresa_id: None,                                        // Simplificado por performance
-            empresa_nombre: None,
+            empresa_nombre: c.empresa_nombre,
             ya_bloqueado,
         });
     }
 
     // 2. Buscar PROVEEDORES
     let sql_proveedor = "
-        SELECT id, cedula, nombre, segundo_nombre, apellido, segundo_apellido
+        SELECT id, cedula, nombre, segundo_nombre, apellido, segundo_apellido, empresa as empresa_id, empresa.nombre as empresa_nombre
         FROM proveedor
         WHERE (cedula CONTAINS $q OR nombre CONTAINS $q OR apellido CONTAINS $q)
         LIMIT 10;
@@ -619,7 +666,7 @@ pub async fn search_candidates(query: &str) -> Result<Vec<PersonaSearchResult>, 
             segundo_apellido: p.segundo_apellido.clone(),
             nombre_completo: format!("{} {}", p.nombre, p.apellido),
             empresa_id: None,
-            empresa_nombre: None,
+            empresa_nombre: p.empresa_nombre,
             ya_bloqueado,
         });
     }
