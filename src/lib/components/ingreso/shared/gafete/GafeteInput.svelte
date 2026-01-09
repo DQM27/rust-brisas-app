@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
+  import { fade } from "svelte/transition";
 
   export let value: string = "";
   export let error: string | undefined = undefined;
@@ -30,21 +31,22 @@
   $: value = value.toUpperCase().trim();
 </script>
 
-<div class="form-control max-w-[100px] flex flex-col items-center">
-  <label class="label pb-1" for="gafete-input">
-    <span class="label-text font-medium text-secondary">Gafete</span>
+<div class="form-control max-w-[80px] flex flex-col items-start">
+  <label class="label pb-1 transition-all px-0" for="gafete-input">
+    <span class="text-[12px] font-bold uppercase tracking-wider text-gray-500"
+      >Gafete</span
+    >
   </label>
-  <div class="relative w-full text-center">
+  <div
+    class="search-container relative w-full flex items-center bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all outline-none"
+  >
     <input
       id="gafete-input"
       type="text"
       bind:this={inputRef}
       bind:value
       {disabled}
-      class="w-full h-10 px-3 font-mono text-xl tracking-widest text-center rounded-2xl border-2 transition-all bg-transparent focus:outline-none focus:ring-0 focus:shadow-none
-        {error
-        ? 'border-error bg-error/5 text-error'
-        : 'border-blue-500/30 bg-blue-500/5 text-primary placeholder:text-gray-500/50 focus:border-blue-500'}"
+      class="w-full h-10 px-3 font-mono text-xl tracking-widest text-center bg-transparent text-white focus:outline-none outline-none border-none placeholder:text-gray-600 appearance-none ring-0"
       placeholder="00"
       autocomplete="off"
       autocorrect="off"
@@ -55,8 +57,25 @@
     />
   </div>
   {#if error}
-    <div class="label">
-      <span class="label-text-alt text-error">{error}</span>
+    <div class="label mt-1" transition:fade>
+      <span class="text-[10px] font-medium text-error flex items-center gap-1">
+        {error}
+      </span>
     </div>
   {/if}
 </div>
+
+<style>
+  /* Asegurar que nada tenga outline cuadrado del navegador */
+  .search-container,
+  .search-container *:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Re-aplicar el ring redondeado solo vía focus-within */
+  .search-container:focus-within {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+  }
+</style>

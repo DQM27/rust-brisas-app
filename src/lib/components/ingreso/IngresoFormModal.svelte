@@ -2,7 +2,14 @@
   import { createEventDispatcher } from "svelte";
   import { fade, scale, slide } from "svelte/transition";
   import { toast } from "svelte-5-french-toast";
-  import { X, ChevronDown, ChevronUp, Car, FileText } from "lucide-svelte";
+  import {
+    X,
+    ChevronDown,
+    ChevronUp,
+    Car,
+    FileText,
+    AlertTriangle,
+  } from "lucide-svelte";
 
   // Components
   import PersonaFinder from "./shared/persona/PersonaFinder.svelte";
@@ -340,22 +347,31 @@
           >
             <!-- Datos de la persona -->
             <div class="space-y-2 mb-4">
-              <div class="flex items-center text-sm">
-                <span class="text-secondary w-20 shrink-0">Nombre:</span>
-                <span class="text-primary font-semibold">
+              <div class="flex items-center">
+                <span
+                  class="text-[12px] font-bold uppercase tracking-wider text-gray-500 w-20 shrink-0"
+                  >Nombre</span
+                >
+                <span class="text-primary font-semibold text-sm">
                   {selectedPerson.nombreCompleto ||
                     `${selectedPerson.nombre} ${selectedPerson.apellido}`}
                 </span>
               </div>
-              <div class="flex items-center text-sm">
-                <span class="text-secondary w-20 shrink-0">Cédula:</span>
-                <span class="text-primary font-mono"
+              <div class="flex items-center">
+                <span
+                  class="text-[12px] font-bold uppercase tracking-wider text-gray-500 w-20 shrink-0"
+                  >Cédula</span
+                >
+                <span class="text-primary font-mono text-sm"
                   >{selectedPerson.cedula || "N/A"}</span
                 >
               </div>
-              <div class="flex items-center text-sm">
-                <span class="text-secondary w-20 shrink-0">Empresa:</span>
-                <span class="text-primary">
+              <div class="flex items-center">
+                <span
+                  class="text-[12px] font-bold uppercase tracking-wider text-gray-500 w-20 shrink-0"
+                  >Empresa</span
+                >
+                <span class="text-primary text-sm">
                   {selectedPerson.empresaNombre ||
                     selectedPerson.empresa ||
                     "Sin empresa"}
@@ -363,27 +379,37 @@
               </div>
             </div>
 
-            <!-- Status Badge -->
-            {#if validationResult.puedeIngresar}
+            <!-- Recordatorio PRAIND (Amarillo) - Solo si requiere atención o está vencido -->
+            {#if validationResult.contratista?.requiereAtencion || (validationResult.contratista?.diasHastaVencimiento !== undefined && validationResult.contratista.diasHastaVencimiento < 0)}
+              {@const days = validationResult.contratista.diasHastaVencimiento}
               <div
-                class="flex items-center gap-2 text-sm text-success bg-success bg-opacity-10 px-3 py-2 rounded-md"
+                class="mb-4 flex items-center gap-2 text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 p-2.5 rounded-lg text-xs"
+                transition:slide
+              >
+                <AlertTriangle size={16} />
+                <span class="font-medium">
+                  {#if days < 0}
+                    El PRAIND venció hace {Math.abs(days)} días
+                  {:else if days === 0}
+                    El PRAIND vence hoy
+                  {:else}
+                    El PRAIND vence en <strong class="font-bold">{days}</strong>
+                    días
+                  {/if}
+                </span>
+              </div>
+            {:else if validationResult.puedeIngresar}
+              <!-- Badge Verde solo si NO hay alerta de PRAIND -->
+              <div
+                class="flex items-center gap-2 text-sm text-success bg-success bg-opacity-10 px-3 py-2 rounded-md mb-4"
+                transition:fade
               >
                 <span class="font-medium">✓ Acceso Autorizado</span>
               </div>
+            {/if}
 
-              <!-- Alertas/Warnings (amarillo) -->
-              {#if validationResult.alertas && validationResult.alertas.length > 0}
-                <div class="mt-2 space-y-1">
-                  {#each validationResult.alertas as alerta}
-                    <div
-                      class="flex items-center gap-2 text-sm text-yellow-900 bg-yellow-100 px-3 py-2 rounded-md border border-yellow-300"
-                    >
-                      <span class="font-medium">{alerta}</span>
-                    </div>
-                  {/each}
-                </div>
-              {/if}
-            {:else}
+            <!-- Alertas/Warnings (amarillo) - Oculto el badge verde por redundancia -->
+            {#if !validationResult.puedeIngresar}
               <div
                 class={getSeverityClasses(validationResult.severidadListaNegra)}
               >
@@ -498,21 +524,36 @@
                     </div>
                   {/if}
                 </div>
-
-                <!-- Botón Registrar -->
-                <button
-                  onclick={handleSubmit}
-                  disabled={loading}
-                  class="w-full btn-primary btn-base py-3 font-semibold disabled:opacity-50"
-                >
-                  {#if loading}
-                    <span class="inline-block animate-spin mr-2">⏳</span>
-                  {/if}
-                  Registrar Ingreso
-                </button>
               </div>
             {/if}
           </div>
+        {/if}
+      </div>
+
+      <!-- Footer con Botones Reactivos (Alta Contraste) -->
+      <div
+        class="flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1"
+      >
+        <button
+          type="button"
+          onclick={handleClose}
+          disabled={loading}
+          class="px-4 py-2 text-white bg-transparent border border-white/20 hover:border-white/80 rounded-md transition-all hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-1 focus:ring-white/20"
+        >
+          Cancelar
+        </button>
+        {#if validationResult?.puedeIngresar}
+          <button
+            type="button"
+            onclick={handleSubmit}
+            disabled={loading}
+            class="px-6 py-2 bg-transparent text-white border border-white/20 rounded-md hover:text-primary hover:border-primary transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 flex items-center gap-2 focus:outline-none focus:ring-1 focus:ring-primary/20 font-semibold"
+          >
+            {#if loading}
+              <span class="inline-block animate-spin mr-1">⏳</span>
+            {/if}
+            Registrar Ingreso
+          </button>
         {/if}
       </div>
     </div>

@@ -15,6 +15,7 @@ use crate::repositories::traits::{
 };
 
 use crate::domain::motor_validacion as motor;
+use crate::models::contratista::ContratistaResponse;
 use crate::models::ingreso::{
     AlertaTiempoExcedido, CreateIngresoContratistaInput, IngresoConEstadoResponse, IngresoResponse,
     RegistrarSalidaInput, ResultadoValidacionSalida, ValidacionIngresoResponse,
@@ -63,7 +64,7 @@ where
 
         let contratista = self
             .contratista_repo
-            .find_by_id(&contratista_id)
+            .find_by_id_fetched(&contratista_id)
             .await
             .map_err(|e| {
                 error!("Error DB al buscar contratista para validación: {e}");
@@ -76,23 +77,10 @@ where
 
         // Evaluación dinámica del vencimiento de PRAIND from Refactor branch
         // Although DB state says 'Activo', if date expired, engine must reject.
-        let hoy = chrono::Utc::now().date_naive();
         let raw_date_str = contratista.fecha_vencimiento_praind.to_string();
-        let raw_date = raw_date_str.trim_start_matches("d'").trim_end_matches('\'');
-
-        // Safe date parsing - handle ISO format (2030-12-12T00:00:00Z)
-        let date_only = raw_date.split('T').next().unwrap_or(raw_date);
-        let fecha_venc =
-            chrono::NaiveDate::parse_from_str(date_only, "%Y-%m-%d").unwrap_or_else(|_| {
-                log::warn!(
-                    "Error parseando fecha PRAIND para {}: {}",
-                    contratista.cedula,
-                    raw_date
-                );
-                hoy // Fail-safe: If fails, assume today (not expired, or expires today)
-            });
-
-        let praind_vencido = fecha_venc < hoy;
+        let clean_date = raw_date_str.trim_start_matches("d'").trim_end_matches('\'');
+        let estado_praind = crate::domain::contratista::calcular_estado_praind(clean_date);
+        let praind_vencido = estado_praind.vencido;
 
         let estado_autorizacion_calculado = if praind_vencido {
             EstadoAutorizacion::Vencido
@@ -156,7 +144,9 @@ where
             },
             severidad_lista_negra: if b.is_blocked { b.nivel_severidad.clone() } else { None },
             alertas: vec![],
-            contratista: Some(serde_json::json!(contratista)),
+            contratista: Some(
+                serde_json::to_value(ContratistaResponse::from_fetched(contratista)).unwrap(),
+            ),
             tiene_ingreso_abierto: false,
             ingreso_abierto: None,
         })

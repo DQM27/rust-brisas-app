@@ -1,7 +1,14 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { fade, scale } from "svelte/transition";
-  import { X, LogOut, CheckCircle, XCircle } from "lucide-svelte";
+  import { fade, scale, slide } from "svelte/transition";
+  import {
+    X,
+    LogOut,
+    CheckCircle,
+    XCircle,
+    ChevronDown,
+    ChevronRight,
+  } from "lucide-svelte";
 
   // Props
   interface Props {
@@ -19,6 +26,7 @@
   // State
   let devolvioGafete = $state<boolean | null>(null);
   let observaciones = $state("");
+  let showObservaciones = $state(false);
   let confirmButtonRef = $state<HTMLButtonElement>();
 
   const dispatch = createEventDispatcher();
@@ -129,28 +137,40 @@
         <!-- Info de la persona -->
         <div class="p-4 bg-surface-1 rounded-lg border border-surface">
           <div class="space-y-2">
-            <div class="flex items-center text-sm">
-              <span class="text-secondary w-20 shrink-0">Nombre:</span>
-              <span class="text-primary font-semibold">
+            <div class="flex items-center">
+              <span
+                class="text-[12px] font-bold uppercase tracking-wider text-gray-500 w-20 shrink-0"
+                >Nombre</span
+              >
+              <span class="text-primary font-semibold text-sm">
                 {ingreso.nombreCompleto || "Sin nombre"}
               </span>
             </div>
-            <div class="flex items-center text-sm">
-              <span class="text-secondary w-20 shrink-0">Cédula:</span>
-              <span class="text-primary font-mono">
+            <div class="flex items-center">
+              <span
+                class="text-[12px] font-bold uppercase tracking-wider text-gray-500 w-20 shrink-0"
+                >Cédula</span
+              >
+              <span class="text-primary font-mono text-sm">
                 {ingreso.cedula || "N/A"}
               </span>
             </div>
-            <div class="flex items-center text-sm">
-              <span class="text-secondary w-20 shrink-0">Empresa:</span>
-              <span class="text-primary">
+            <div class="flex items-center">
+              <span
+                class="text-[12px] font-bold uppercase tracking-wider text-gray-500 w-20 shrink-0"
+                >Empresa</span
+              >
+              <span class="text-primary text-sm">
                 {ingreso.empresaNombre || "Sin empresa"}
               </span>
             </div>
             {#if ingreso.gafeteNumero && ingreso.gafeteNumero !== "S/G"}
-              <div class="flex items-center text-sm">
-                <span class="text-secondary w-20 shrink-0">Gafete:</span>
-                <span class="text-accent font-mono">
+              <div class="flex items-center">
+                <span
+                  class="text-[12px] font-bold uppercase tracking-wider text-gray-500 w-20 shrink-0"
+                  >Gafete</span
+                >
+                <span class="text-accent font-mono text-sm">
                   {ingreso.gafeteNumero}
                 </span>
               </div>
@@ -206,21 +226,35 @@
           </div>
         {/if}
 
-        <!-- Observaciones (opcional) -->
+        <!-- Observaciones Collapsible -->
         <div class="space-y-2">
-          <label
-            for="observaciones"
-            class="block text-sm font-medium text-primary"
+          <button
+            type="button"
+            onclick={() => (showObservaciones = !showObservaciones)}
+            class="flex items-center gap-1.5 text-secondary hover:text-primary transition-colors text-sm"
           >
-            Observaciones (opcional)
-          </label>
-          <textarea
-            id="observaciones"
-            bind:value={observaciones}
-            rows={2}
-            class="w-full px-3 py-2 bg-surface-1 border border-surface rounded-lg text-primary placeholder:text-secondary resize-none focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
-            placeholder="Notas adicionales sobre la salida..."
-          ></textarea>
+            {#if showObservaciones}
+              <ChevronDown size={14} />
+            {:else}
+              <ChevronRight size={14} />
+            {/if}
+            <span>Observaciones</span>
+            {#if !showObservaciones && observaciones.trim()}
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+            {/if}
+          </button>
+
+          {#if showObservaciones}
+            <div transition:slide={{ duration: 250 }}>
+              <textarea
+                id="observaciones"
+                bind:value={observaciones}
+                rows={2}
+                class="w-full px-3 py-2 bg-surface-1 border border-surface rounded-lg text-primary placeholder:text-secondary/50 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                placeholder="Notas adicionales sobre la salida..."
+              ></textarea>
+            </div>
+          {/if}
         </div>
       </div>
 
@@ -231,7 +265,7 @@
         <button
           onclick={handleClose}
           disabled={loading}
-          class="px-4 py-2 text-secondary hover:text-primary hover:bg-surface-hover rounded-md transition-colors"
+          class="px-4 py-2 text-white bg-transparent border border-white/20 hover:border-white/80 rounded-md transition-all hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-1 focus:ring-white/20"
         >
           Cancelar
         </button>
@@ -239,7 +273,7 @@
           bind:this={confirmButtonRef}
           onclick={handleConfirm}
           disabled={loading || devolvioGafete === null}
-          class="px-4 py-2 bg-error text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+          class="px-4 py-2 bg-transparent text-white border border-white/20 rounded-md hover:text-error hover:border-error transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 flex items-center gap-2 focus:outline-none focus:ring-1 focus:ring-error/20"
           title="Atajo: Ctrl + S"
         >
           {#if loading}
