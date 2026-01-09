@@ -287,29 +287,28 @@
             class="p-4 bg-surface-1 rounded-lg border border-surface"
             transition:fade
           >
-            <div class="flex items-center gap-3 mb-4">
-              <div
-                class="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white font-bold"
-              >
-                {selectedPerson.nombre?.charAt(0) || "?"}
+            <!-- Datos de la persona -->
+            <div class="space-y-2 mb-4">
+              <div class="flex items-center text-sm">
+                <span class="text-secondary w-20 shrink-0">Nombre:</span>
+                <span class="text-primary font-semibold">
+                  {selectedPerson.nombreCompleto ||
+                    `${selectedPerson.nombre} ${selectedPerson.apellido}`}
+                </span>
               </div>
-              <div class="flex-1">
-                <div class="flex items-center justify-between">
-                  <div class="font-semibold text-primary">
-                    {selectedPerson.nombreCompleto ||
-                      `${selectedPerson.nombre} ${selectedPerson.apellido}`}
-                  </div>
-                  <div
-                    class="text-xs font-mono text-secondary px-2 py-1 bg-surface-2 rounded border border-surface"
-                  >
-                    {selectedPerson.cedula || "N/A"}
-                  </div>
-                </div>
-                <div class="text-sm text-secondary">
+              <div class="flex items-center text-sm">
+                <span class="text-secondary w-20 shrink-0">Cédula:</span>
+                <span class="text-primary font-mono"
+                  >{selectedPerson.cedula || "N/A"}</span
+                >
+              </div>
+              <div class="flex items-center text-sm">
+                <span class="text-secondary w-20 shrink-0">Empresa:</span>
+                <span class="text-primary">
                   {selectedPerson.empresaNombre ||
                     selectedPerson.empresa ||
                     "Sin empresa"}
-                </div>
+                </span>
               </div>
             </div>
 
