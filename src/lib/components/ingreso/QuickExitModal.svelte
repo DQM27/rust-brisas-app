@@ -103,8 +103,8 @@
 
       <!-- Results Section -->
       <div class="max-h-[60vh] overflow-y-auto p-2">
-        {#if !query}
-          <!-- Empty by design until user types -->
+        {#if query.length < 2}
+          <!-- Empty by design until user types at least 2 chars -->
         {:else if filteredEntries.length === 0}
           <div class="p-8 text-center text-gray-500">
             <XCircle size={40} class="mx-auto mb-3 opacity-20 text-error" />

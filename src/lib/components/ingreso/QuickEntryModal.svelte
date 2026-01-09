@@ -129,7 +129,7 @@
 
       <!-- Results Section -->
       <div class="max-h-[60vh] overflow-y-auto p-2">
-        {#if !query}
+        {#if query.length < 2}
           <!-- Empty by design -->
         {:else if results.length === 0 && !loading}
           <div class="p-8 text-center text-gray-500">
