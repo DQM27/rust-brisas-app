@@ -79,15 +79,14 @@
     tabindex="-1"
     onkeydown={handleKeyDown}
   >
-    <!-- Modal (Command Palette Style) -->
     <div
-      class="bg-[#1e1e1e] border border-white/10 w-full max-w-md rounded-lg shadow-2xl overflow-hidden flex flex-col"
+      class="bg-[#1e1e1e] border border-white/10 w-full max-w-md rounded-lg shadow-2xl overflow-hidden flex flex-col outline-none shadow-blue-500/5"
       transition:scale={{ duration: 200, start: 0.95 }}
     >
       <!-- Search Input Section -->
       <div class="px-4 py-3 border-b border-white/5">
         <div
-          class="relative flex items-center bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 transition-colors outline-none ring-0 appearance-none"
+          class="search-container relative flex items-center bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all outline-none"
         >
           <Search class="absolute left-3 text-gray-500" size={18} />
           <input
@@ -95,7 +94,7 @@
             bind:value={query}
             type="text"
             placeholder="Buscar por Gafete, Cédula o Nombre..."
-            class="w-full bg-transparent pl-10 pr-4 py-2.5 text-[15px] text-white focus:outline-none placeholder:text-gray-600"
+            class="w-full bg-transparent pl-10 pr-4 py-2.5 text-[15px] text-white focus:outline-none outline-none border-none placeholder:text-gray-600 appearance-none ring-0"
             autocomplete="off"
             onkeydown={handleKeyDown}
           />
@@ -105,12 +104,7 @@
       <!-- Results Section -->
       <div class="max-h-[60vh] overflow-y-auto p-2">
         {#if !query}
-          <div class="p-8 text-center text-gray-500">
-            <Hash size={40} class="mx-auto mb-3 opacity-20" />
-            <p>
-              Escriba un número de gafete o nombre para buscar salida activa
-            </p>
-          </div>
+          <!-- Empty by design until user types -->
         {:else if filteredEntries.length === 0}
           <div class="p-8 text-center text-gray-500">
             <XCircle size={40} class="mx-auto mb-3 opacity-20 text-error" />
@@ -210,5 +204,18 @@
   /* Prevenir scroll del body cuando el modal está abierto */
   :global(body:has(.z-\[100\])) {
     overflow: hidden;
+  }
+
+  /* Asegurar que nada tenga outline cuadrado del navegador */
+  .search-container,
+  .search-container *:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Re-aplicar el ring redondeado solo vía focus-within */
+  .search-container:focus-within {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
   }
 </style>
