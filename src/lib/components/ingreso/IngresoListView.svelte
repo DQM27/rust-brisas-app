@@ -10,6 +10,7 @@
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
   import IngresoFormModal from "./IngresoFormModal.svelte";
   import SalidaModal from "./SalidaModal.svelte";
+  import QuickExitModal from "./QuickExitModal.svelte";
   import ExportDialog from "$lib/components/export/ExportDialog.svelte";
 
   // Logic
@@ -53,6 +54,7 @@
 
   // Estado para el modal de salida
   let showSalidaModal = $state(false);
+  let showQuickExit = $state(false);
   let selectedIngreso = $state<any>(null);
   let salidaLoading = $state(false);
 
@@ -105,6 +107,12 @@
         case "refresh":
           loadIngresos();
           clearCommand();
+          break;
+        case "save": // Ctrl+S
+          if (viewMode === "actives" && !showModal && !showSalidaModal) {
+            showQuickExit = true;
+            clearCommand();
+          }
           break;
       }
     });
@@ -429,6 +437,14 @@
     showSalidaModal = true;
   }
 
+  function handleQuickExitSelect(ingreso: any) {
+    showQuickExit = false;
+    // Dar un pequeño tiempo para que cierre un modal y abra el otro suavemente
+    setTimeout(() => {
+      handleSalida(ingreso);
+    }, 100);
+  }
+
   // ==========================================
   // EXPORT
   // ==========================================
@@ -733,6 +749,14 @@
     showSalidaModal = false;
     selectedIngreso = null;
   }}
+/>
+
+<!-- Modal de Salida Rápida (Buscador) -->
+<QuickExitModal
+  bind:show={showQuickExit}
+  activeEntries={ingresos}
+  onSelect={handleQuickExitSelect}
+  onClose={() => (showQuickExit = false)}
 />
 
 {#if showExportModal}
