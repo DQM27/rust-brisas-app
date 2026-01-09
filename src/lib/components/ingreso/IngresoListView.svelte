@@ -11,6 +11,7 @@
   import IngresoFormModal from "./IngresoFormModal.svelte";
   import SalidaModal from "./SalidaModal.svelte";
   import QuickExitModal from "./QuickExitModal.svelte";
+  import QuickEntryModal from "./QuickEntryModal.svelte";
   import ExportDialog from "$lib/components/export/ExportDialog.svelte";
 
   // Logic
@@ -55,6 +56,8 @@
   // Estado para el modal de salida
   let showSalidaModal = $state(false);
   let showQuickExit = $state(false);
+  let showQuickEntry = $state(false);
+  let personForIngreso = $state<any>(null);
   let selectedIngreso = $state<any>(null);
   let salidaLoading = $state(false);
 
@@ -89,8 +92,8 @@
 
       switch (event.command) {
         case "create-new":
-          if (!showModal && !showSalidaModal) {
-            showModal = true;
+          if (!showModal && !showSalidaModal && !showQuickEntry) {
+            showQuickEntry = true;
             clearCommand();
           }
           break;
@@ -101,6 +104,9 @@
           } else if (showSalidaModal) {
             showSalidaModal = false;
             selectedIngreso = null;
+            clearCommand();
+          } else if (showQuickEntry) {
+            showQuickEntry = false;
             clearCommand();
           }
           break;
@@ -424,11 +430,21 @@
   }
 
   function handleNuevoIngreso() {
-    showModal = true;
+    showQuickEntry = true;
+  }
+
+  function handleQuickEntrySelect(person: any) {
+    showQuickEntry = false;
+    personForIngreso = person;
+    // Dar un pequeño tiempo para que cierre un modal y abra el otro suavemente
+    setTimeout(() => {
+      showModal = true;
+    }, 100);
   }
 
   function handleModalComplete() {
     showModal = false;
+    personForIngreso = null;
     loadIngresos();
   }
 
@@ -710,7 +726,11 @@
 </div>
 
 <!-- Modal -->
-<IngresoFormModal bind:show={showModal} on:complete={handleModalComplete} />
+<IngresoFormModal
+  bind:show={showModal}
+  initialPerson={personForIngreso}
+  on:complete={handleModalComplete}
+/>
 
 <!-- Modal Creación Contratista -->
 <ContratistaFormModal
@@ -757,6 +777,13 @@
   activeEntries={ingresos}
   onSelect={handleQuickExitSelect}
   onClose={() => (showQuickExit = false)}
+/>
+
+<!-- Modal de Entrada Rápida (Buscador Global) -->
+<QuickEntryModal
+  bind:show={showQuickEntry}
+  onSelect={handleQuickEntrySelect}
+  onClose={() => (showQuickEntry = false)}
 />
 
 {#if showExportModal}

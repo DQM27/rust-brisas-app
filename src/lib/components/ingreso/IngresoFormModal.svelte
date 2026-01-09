@@ -34,9 +34,10 @@
   // Props
   interface Props {
     show: boolean;
+    initialPerson?: any;
   }
 
-  let { show = $bindable(false) }: Props = $props();
+  let { show = $bindable(false), initialPerson = null }: Props = $props();
 
   // State
   let loading = $state(false);
@@ -75,9 +76,20 @@
   // Resetear al abrir para asegurar estado limpio
   $effect(() => {
     if (show) {
-      setTimeout(() => {
-        if (personaFinderRef) personaFinderRef.focus();
-      }, 100);
+      if (initialPerson) {
+        // Ejecutar validación para la persona pre-seleccionada
+        handlePersonSelect({
+          detail: {
+            id: initialPerson.id,
+            type: initialPerson.tipo?.toLowerCase() || "contratista",
+            data: initialPerson,
+          },
+        } as any);
+      } else {
+        setTimeout(() => {
+          if (personaFinderRef) personaFinderRef.focus();
+        }, 100);
+      }
     }
   });
 
@@ -310,13 +322,15 @@
 
       <!-- Content -->
       <div class="p-6 space-y-6">
-        <!-- Buscador -->
-        <div>
-          <PersonaFinder
-            bind:this={personaFinderRef}
-            on:select={handlePersonSelect}
-          />
-        </div>
+        <!-- Buscador (Solo si NO hay persona inicial) -->
+        {#if !initialPerson}
+          <div>
+            <PersonaFinder
+              bind:this={personaFinderRef}
+              on:select={handlePersonSelect}
+            />
+          </div>
+        {/if}
 
         <!-- Persona seleccionada -->
         {#if selectedPerson && validationResult}
