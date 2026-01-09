@@ -15,7 +15,8 @@
 //! Queries de lectura filtran por `is_active = true` por defecto.
 
 use crate::models::lista_negra::{
-    AddToListaNegraInput, BlockCheckResponse, ListaNegra, UpdateListaNegraInput,
+    AddToListaNegraInput, BlockCheckResponse, ListaNegra, PersonaSearchResult,
+    UpdateListaNegraInput,
 };
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use log::{debug, info, warn};
@@ -497,4 +498,131 @@ pub async fn search(query: &str) -> Result<Vec<ListaNegra>, SurrealDbError> {
 
     debug!("🔍 Búsqueda '{}' encontró {} resultados", query_trimmed, registros.len());
     Ok(registros)
+}
+
+/// Busca personas (contratistas, proveedores) que coincidan con el query para ser bloqueados.
+///
+/// ## Tablas Consultadas
+/// - `contratista`
+/// - `proveedor`
+///
+/// ## Lógica
+/// 1. Busca coincidencias por nombre o cédula.
+/// 2. Verifica si ya tienen bloqueo activo en `lista_negra`.
+/// 3. Retorna lista unificada de candidatos.
+pub async fn search_candidates(query: &str) -> Result<Vec<PersonaSearchResult>, SurrealDbError> {
+    let query_trimmed = query.trim();
+    if query_trimmed.len() < 2 {
+        return Ok(vec![]);
+    }
+
+    debug!("🔍 Buscando candidatos para bloqueo: '{query_trimmed}'");
+    let db = get_db().await?;
+
+    // Estructura temporal para deserialización
+    #[derive(Deserialize, Debug)]
+    struct CandidateRaw {
+        id: RecordId,
+        cedula: String,
+        nombre: String,
+        segundo_nombre: Option<String>,
+        apellido: String,
+        segundo_apellido: Option<String>,
+        // Empresa puede ser un objeto o string dependiendo de la tabla, simplificamos:
+        // En este caso asumimos que no traemos la empresa en esta query simple para no complicar el JOIN
+        // o traemos el ID de empresa si es un campo simple.
+    }
+
+    let mut resultados: Vec<PersonaSearchResult> = Vec::new();
+
+    // 1. Buscar CONTRATISTAS
+    let sql_contratista = "
+        SELECT id, cedula, nombre, segundo_nombre, apellido, segundo_apellido, empresa as empresa_id
+        FROM contratista
+        WHERE (cedula CONTAINS $q OR nombre CONTAINS $q OR apellido CONTAINS $q)
+        LIMIT 10;
+    ";
+
+    let mut res_contratista = db
+        .query(sql_contratista)
+        .bind(("q", query_trimmed.to_string()))
+        .await
+        .map_err(|e| SurrealDbError::Query(format!("Error buscando contratistas: {e}")))?;
+
+    let contratistas: Vec<CandidateRaw> = res_contratista.take(0)?;
+
+    for c in contratistas {
+        // Verificar si ya está bloqueado
+        let mut check = db
+            .query("SELECT id FROM lista_negra WHERE cedula = $cedula AND is_active = true")
+            .bind(("cedula", c.cedula.clone()))
+            .await
+            .map_err(|e| SurrealDbError::Query(format!("Error verificando bloqueo: {e}")))?;
+
+        let blocked: Option<RecordId> = check.take(0)?;
+        let ya_bloqueado = blocked.is_some();
+
+        resultados.push(PersonaSearchResult {
+            tipo_persona: "contratista".to_string(),
+            entity_id: c.id.to_string(),
+            cedula: c.cedula,
+            nombre: c.nombre.clone(),
+            segundo_nombre: c.segundo_nombre.clone(),
+            apellido: c.apellido.clone(),
+            segundo_apellido: c.segundo_apellido.clone(),
+            nombre_completo: format!("{} {}", c.nombre, c.apellido), // Simplificado
+            empresa_id: None,                                        // Simplificado por performance
+            empresa_nombre: None,
+            ya_bloqueado,
+        });
+    }
+
+    // 2. Buscar PROVEEDORES
+    let sql_proveedor = "
+        SELECT id, cedula, nombre, segundo_nombre, apellido, segundo_apellido
+        FROM proveedor
+        WHERE (cedula CONTAINS $q OR nombre CONTAINS $q OR apellido CONTAINS $q)
+        LIMIT 10;
+    ";
+
+    let mut res_proveedor = db
+        .query(sql_proveedor)
+        .bind(("q", query_trimmed.to_string()))
+        .await
+        .map_err(|e| SurrealDbError::Query(format!("Error buscando proveedores: {e}")))?;
+
+    let proveedores: Vec<CandidateRaw> = res_proveedor.take(0)?;
+
+    for p in proveedores {
+        // Evitar duplicados si la misma persona está en ambas tablas (raro pero posible por cédula)
+        if resultados.iter().any(|r| r.cedula == p.cedula) {
+            continue;
+        }
+
+        // Verificar bloqueo
+        let mut check = db
+            .query("SELECT id FROM lista_negra WHERE cedula = $cedula AND is_active = true")
+            .bind(("cedula", p.cedula.clone()))
+            .await
+            .map_err(|e| SurrealDbError::Query(format!("Error verificando bloqueo: {e}")))?;
+
+        let blocked: Option<RecordId> = check.take(0)?;
+        let ya_bloqueado = blocked.is_some();
+
+        resultados.push(PersonaSearchResult {
+            tipo_persona: "proveedor".to_string(),
+            entity_id: p.id.to_string(),
+            cedula: p.cedula,
+            nombre: p.nombre.clone(),
+            segundo_nombre: p.segundo_nombre.clone(),
+            apellido: p.apellido.clone(),
+            segundo_apellido: p.segundo_apellido.clone(),
+            nombre_completo: format!("{} {}", p.nombre, p.apellido),
+            empresa_id: None,
+            empresa_nombre: None,
+            ya_bloqueado,
+        });
+    }
+
+    Ok(resultados)
 }

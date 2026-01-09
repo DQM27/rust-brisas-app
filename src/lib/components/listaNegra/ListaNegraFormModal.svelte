@@ -100,24 +100,8 @@
     }
   });
 
-  // Validación reactiva
-  $effect(() => {
-    if (Object.values(formData).some((v) => v !== "")) {
-      // Solo validamos si hay datos
-      const result = AddToListaNegraSchema.safeParse(formData);
-      if (!result.success) {
-        const newErrors: Record<string, string> = {};
-        result.error.issues.forEach((issue) => {
-          if (issue.path[0]) {
-            newErrors[String(issue.path[0])] = issue.message;
-          }
-        });
-        errors = newErrors;
-      } else {
-        errors = {};
-      }
-    }
-  });
+  // Nota: Validación se realiza solo al submit, no en tiempo real
+  // para evitar mostrar errores antes de que el usuario interactúe
 
   // Búsqueda de personas
   async function handleSearch() {

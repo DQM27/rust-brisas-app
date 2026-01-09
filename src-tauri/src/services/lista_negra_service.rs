@@ -332,8 +332,5 @@ pub async fn get_all_lista_negra() -> Result<Vec<ListaNegraResponse>, String> {
 pub async fn search_personas_for_block(
     query: &str,
 ) -> Result<Vec<crate::models::lista_negra::PersonaSearchResult>, String> {
-    // TODO: Implementar búsqueda cross-module (contratistas, proveedores, visitantes)
-    // Por ahora retorna vacío
-    debug!("🔍 search_personas_for_block: '{query}' (pendiente implementación cross-module)");
-    Ok(vec![])
+    db::search_candidates(query).await.map_err(|e| e.to_string())
 }
