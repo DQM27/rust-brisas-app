@@ -146,6 +146,7 @@
   }
 
   .animate-wave-fast {
-    /* Only if we want sand to move, maybe not */
+    animation: wave 5s ease-in-out infinite;
+    animation-delay: 0.5s;
   }
 </style>
