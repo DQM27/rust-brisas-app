@@ -1,6 +1,6 @@
 [package]
 name = "mega-brisas"
-version = "1.0.0-alpha"
+version = "1.0.0"        
 description = "Mega Brisas - Sistema ERP de Control de Acceso"
 authors = ["Daniel Quintana"]
 edition = "2021"
