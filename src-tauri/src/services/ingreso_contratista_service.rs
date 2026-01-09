@@ -80,9 +80,10 @@ where
         let raw_date_str = contratista.fecha_vencimiento_praind.to_string();
         let raw_date = raw_date_str.trim_start_matches("d'").trim_end_matches('\'');
 
-        // Safe date parsing
+        // Safe date parsing - handle ISO format (2030-12-12T00:00:00Z)
+        let date_only = raw_date.split('T').next().unwrap_or(raw_date);
         let fecha_venc =
-            chrono::NaiveDate::parse_from_str(raw_date, "%Y-%m-%d").unwrap_or_else(|_| {
+            chrono::NaiveDate::parse_from_str(date_only, "%Y-%m-%d").unwrap_or_else(|_| {
                 log::warn!(
                     "Error parseando fecha PRAIND para {}: {}",
                     contratista.cedula,
@@ -129,7 +130,11 @@ where
             lista_negra: if b.is_blocked {
                 Some(InfoListaNegra {
                     motivo: "Bloqueo detectado".to_string(),
-                    severidad: NivelSeveridad::Alto,
+                    severidad: b
+                        .nivel_severidad
+                        .as_ref()
+                        .map(|s| NivelSeveridad::from_str_lossy(s))
+                        .unwrap_or(NivelSeveridad::Alto),
                 })
             } else {
                 None

@@ -12,6 +12,18 @@ pub enum NivelSeveridad {
     Bajo,
 }
 
+impl NivelSeveridad {
+    /// Convierte un string arbitrario a un nivel de severidad.
+    pub fn from_str_lossy(s: &str) -> Self {
+        match s.trim().to_uppercase().as_str() {
+            "ALTO" | "HIGH" => Self::Alto,
+            "MEDIO" | "MEDIUM" => Self::Medio,
+            "BAJO" | "LOW" => Self::Bajo,
+            _ => Self::Alto, // Default to Alto for safety
+        }
+    }
+}
+
 /// Estados de validación del motor.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
