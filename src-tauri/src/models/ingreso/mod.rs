@@ -180,6 +180,7 @@ pub struct IngresoListResponse {
 pub struct ValidacionIngresoResponse {
     pub puede_ingresar: bool,
     pub motivo_rechazo: Option<String>,
+    pub severidad_lista_negra: Option<String>,
     pub alertas: Vec<String>,
     pub contratista: Option<serde_json::Value>,
     pub tiene_ingreso_abierto: bool,

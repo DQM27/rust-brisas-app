@@ -219,6 +219,25 @@
       }
     }
   }
+
+  function getSeverityClasses(severity?: string) {
+    const base =
+      "flex items-center gap-2 text-sm px-3 py-2 rounded-md border transition-colors";
+    const upperSeverity = severity?.toUpperCase();
+
+    if (upperSeverity === "ALTO") {
+      return `${base} text-red-700 bg-red-50 border-red-200 dark:bg-red-900/10 dark:text-red-400 dark:border-red-900/20`;
+    }
+    if (upperSeverity === "MEDIO") {
+      return `${base} text-yellow-700 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/10 dark:text-yellow-400 dark:border-yellow-900/20`;
+    }
+    if (upperSeverity === "BAJO") {
+      return `${base} text-gray-700 bg-gray-50 border-gray-200 dark:bg-gray-900/10 dark:text-gray-400 dark:border-gray-900/20`;
+    }
+
+    // Default error style
+    return `${base} text-error bg-error bg-opacity-10 border-transparent`;
+  }
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -316,7 +335,7 @@
               {/if}
             {:else}
               <div
-                class="flex items-center gap-2 text-sm text-error bg-error bg-opacity-10 px-3 py-2 rounded-md"
+                class={getSeverityClasses(validationResult.severidadListaNegra)}
               >
                 <span class="font-medium">
                   ✗ {validationResult.motivoRechazo || "No autorizado"}

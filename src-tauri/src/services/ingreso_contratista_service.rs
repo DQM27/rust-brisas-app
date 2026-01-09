@@ -116,6 +116,7 @@ where
             return Ok(ValidacionIngresoResponse {
                 puede_ingresar: false,
                 motivo_rechazo: Some("Ya tiene un ingreso activo en planta".to_string()),
+                severidad_lista_negra: None,
                 alertas: vec![],
                 contratista: None,
                 tiene_ingreso_abierto: true,
@@ -153,6 +154,7 @@ where
             } else {
                 Some(motor_res.message)
             },
+            severidad_lista_negra: if b.is_blocked { b.nivel_severidad.clone() } else { None },
             alertas: vec![],
             contratista: Some(serde_json::json!(contratista)),
             tiene_ingreso_abierto: false,

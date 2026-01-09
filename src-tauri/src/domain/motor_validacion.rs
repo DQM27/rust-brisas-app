@@ -18,10 +18,7 @@ pub fn ejecutar_validacion_motor(ctx: &MotorContexto) -> ValidationResult {
         return ValidationResult {
             status: ValidationStatus::Denied,
             reason: ValidationReason::Blacklisted,
-            message: format!(
-                "Persona en LISTA NEGRA. Severidad: {:?}. Motivo: {}",
-                ln.severidad, ln.motivo
-            ),
+            message: format!("Persona en LISTA NEGRA. Severidad: {:?}.", ln.severidad),
         };
     }
 

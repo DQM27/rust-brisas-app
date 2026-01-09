@@ -374,6 +374,7 @@ function mapContratistaResponse(res: any): ValidacionIngresoResult {
     return {
         puedeIngresar: res.puedeIngresar,
         motivoRechazo: res.motivoRechazo,
+        severidadListaNegra: res.severidadListaNegra,
         alertas: res.alertas || [],
         tieneIngresoAbierto: res.tieneIngresoAbierto,
         ingresoAbierto: res.ingresoAbierto,

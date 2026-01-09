@@ -139,6 +139,7 @@ export interface IngresoListResponse {
 export interface ValidacionIngresoResponse {
     puedeIngresar: boolean;
     motivoRechazo?: string;
+    severidadListaNegra?: string;
     alertas: string[];
     contratista?: any;
     tieneIngresoAbierto: boolean;

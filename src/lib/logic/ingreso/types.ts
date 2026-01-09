@@ -25,6 +25,7 @@ export interface ResultadoValidacion {
 export interface ValidacionIngresoResult {
     puedeIngresar: boolean;
     motivoRechazo?: string;
+    severidadListaNegra?: string;
     alertas: string[];
 
     // Datos de la persona encontrada (unificado)
