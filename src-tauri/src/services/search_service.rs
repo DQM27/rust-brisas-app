@@ -155,7 +155,7 @@ impl SearchService {
 
         // 🚀 Movemos toda la indexación a un hilo de bloqueo para no congelar la UI
         let index = self.index.clone();
-        let handles = self.handles.clone();
+        let handles = self.handles;
 
         let indexed_count = spawn_blocking(move || -> Result<usize, SearchError> {
             let mut writer = get_index_writer(&index)?;
