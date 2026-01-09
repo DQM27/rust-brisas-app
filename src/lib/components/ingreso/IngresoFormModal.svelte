@@ -226,17 +226,17 @@
     const upperSeverity = severity?.toUpperCase();
 
     if (upperSeverity === "ALTO") {
-      return `${base} text-red-700 bg-red-50 border-red-200 dark:bg-red-900/10 dark:text-red-400 dark:border-red-900/20`;
+      return `${base} bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800`;
     }
     if (upperSeverity === "MEDIO") {
-      return `${base} text-yellow-700 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/10 dark:text-yellow-400 dark:border-yellow-900/20`;
+      return `${base} bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800`;
     }
     if (upperSeverity === "BAJO") {
-      return `${base} text-gray-700 bg-gray-50 border-gray-200 dark:bg-gray-900/10 dark:text-gray-400 dark:border-gray-900/20`;
+      return `${base} bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/30 dark:text-gray-300 dark:border-gray-800`;
     }
 
     // Default error style
-    return `${base} text-error bg-error bg-opacity-10 border-transparent`;
+    return `${base} text-red-700 bg-red-50 border-red-200 dark:text-red-300 dark:bg-red-900/30 dark:border-red-800`;
   }
 </script>
 
