@@ -41,6 +41,7 @@ use log::{debug, error, info};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tantivy::{Index, IndexReader};
+use tauri::async_runtime::spawn_blocking;
 use tokio::sync::Mutex;
 use tokio::sync::RwLock;
 
@@ -152,8 +153,12 @@ impl SearchService {
         // interfieran con el vaciado y reconstrucción total del índice.
         let _lock = self.writer_mutex.lock().await;
 
-        {
-            let mut writer = get_index_writer(&self.index)?;
+        // 🚀 Movemos toda la indexación a un hilo de bloqueo para no congelar la UI
+        let index = self.index.clone();
+        let handles = self.handles.clone();
+
+        let indexed_count = spawn_blocking(move || -> Result<usize, SearchError> {
+            let mut writer = get_index_writer(&index)?;
 
             // Vaciamos el índice para asegurar una reconstrucción limpia y sin duplicados.
             writer.delete_all_documents().map_err(|e| {
@@ -163,21 +168,25 @@ impl SearchService {
 
             // Procesamos e indexamos cada tipo de entidad secuencialmente.
             for c in &contratistas {
-                index_contratista_fetched(&mut writer, &self.handles, c, &c.empresa.nombre)?;
+                index_contratista_fetched(&mut writer, &handles, c, &c.empresa.nombre)?;
             }
             for user in &users {
-                index_user_fetched(&mut writer, &self.handles, user)?;
+                index_user_fetched(&mut writer, &handles, user)?;
             }
             for ln in &lista_negra {
-                index_lista_negra(&mut writer, &self.handles, ln)?;
+                index_lista_negra(&mut writer, &handles, ln)?;
             }
             for p in &proveedores {
-                index_proveedor_fetched(&mut writer, &self.handles, p, &p.empresa.nombre)?;
+                index_proveedor_fetched(&mut writer, &handles, p, &p.empresa.nombre)?;
             }
 
             // El commit persiste los cambios en disco.
             commit_index(&mut writer)?;
-        }
+
+            Ok(contratistas.len() + users.len() + lista_negra.len() + proveedores.len())
+        })
+        .await
+        .map_err(|e| SearchError::TantivyError(format!("Error de hilo: {e}")))??;
 
         // Obligamos al lector a recargarse para que las búsquedas reflejen los nuevos datos de inmediato.
         self.reader.reload().map_err(|e| {
@@ -185,8 +194,7 @@ impl SearchService {
             SearchError::TantivyError(format!("Error al recargar el lector de búsqueda: {e}"))
         })?;
 
-        let total = contratistas.len() + users.len() + lista_negra.len() + proveedores.len();
-        info!("✅ Reindexación completa: {total} documentos indexados");
+        info!("✅ Reindexación completa: {indexed_count} documentos indexados");
 
         Ok(())
     }

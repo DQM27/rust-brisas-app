@@ -33,6 +33,7 @@ use rand::distributions::Alphanumeric;
 use rand::Rng;
 use std::sync::Arc;
 use surrealdb::RecordId;
+use tauri::async_runtime::spawn_blocking;
 
 // --------------------------------------------------------------------------
 // HELPERS INTERNOS
@@ -147,8 +148,12 @@ pub async fn create_user(
     };
 
     info!("Registrando usuario '{email_normalizado}' con rol: '{role_record}'");
-    // Nunca almacenamos la contraseña en texto plano. Usamos Argon2 para generar un hash seguro y resistente.
-    let password_hash = auth::hash_password(&password_str)?;
+
+    // 🚀 Hashing en hilo separado para no bloquear el runtime async (~100-500ms)
+    let password_to_hash = password_str.clone();
+    let password_hash = spawn_blocking(move || auth::hash_password(&password_to_hash))
+        .await
+        .map_err(|e| UserError::Internal(format!("Error de hilo (Join): {e}")))??;
 
     // Construcción del DTO (Data Transfer Object) para la capa de persistencia.
     let dto = UserCreateDTO {
@@ -307,7 +312,12 @@ pub async fn update_user(
     }
     if let Some(pwd) = input.password {
         if !pwd.trim().is_empty() {
-            dto.password_hash = Some(auth::hash_password(&pwd)?);
+            // 🚀 Hashing en hilo separado
+            let pwd_clone = pwd.clone();
+            let hash = spawn_blocking(move || auth::hash_password(&pwd_clone))
+                .await
+                .map_err(|e| UserError::Internal(format!("Error de hilo: {e}")))??;
+            dto.password_hash = Some(hash);
         }
     }
     if let Some(is_active) = input.is_active {
@@ -421,7 +431,12 @@ pub async fn change_password(id_str: String, input: ChangePasswordInput) -> Resu
     let (_, current_hash) = found.ok_or(UserError::NotFound)?;
 
     if let Some(current) = input.current_password {
-        let is_valid = auth::verify_password(&current, &current_hash)?;
+        // 🚀 Verificación en hilo separado
+        let current_clone = current.clone();
+        let hash_clone = current_hash.clone();
+        let is_valid = spawn_blocking(move || auth::verify_password(&current_clone, &hash_clone))
+            .await
+            .map_err(|e| UserError::Internal(format!("Error de hilo: {e}")))??;
         if !is_valid {
             error!("Fallo en cambio de contraseña para {id_str}: contraseña actual incorrecta.");
             return Err(UserError::InvalidCurrentPassword);
@@ -429,7 +444,12 @@ pub async fn change_password(id_str: String, input: ChangePasswordInput) -> Resu
     }
 
     domain::validar_password(&input.new_password)?;
-    let new_hash = auth::hash_password(&input.new_password)?;
+
+    // 🚀 Hashing en hilo separado
+    let new_pwd = input.new_password.clone();
+    let new_hash = spawn_blocking(move || auth::hash_password(&new_pwd))
+        .await
+        .map_err(|e| UserError::Internal(format!("Error de hilo: {e}")))??;
 
     db::update_password(&parse_user_id(&id_str), &new_hash).await.map_err(|e| {
         error!("Error al actualizar contraseña para el usuario {id_str}: {e}");
@@ -450,7 +470,13 @@ pub async fn login(email: String, password: String) -> Result<UserResponse, User
 
     let (user, password_hash) = found.ok_or(UserError::InvalidCredentials)?;
 
-    let is_valid = auth::verify_password(&password, &password_hash)?;
+    // 🚀 Verificación Argon2 en hilo separado (operación CPU-intensiva)
+    let pwd_clone = password.clone();
+    let hash_clone = password_hash.clone();
+    let is_valid = spawn_blocking(move || auth::verify_password(&pwd_clone, &hash_clone))
+        .await
+        .map_err(|e| UserError::Internal(format!("Error de hilo: {e}")))??;
+
     if !is_valid {
         warn!("Intento fallido de inicio de sesión para: {email_normalizado}");
         return Err(UserError::InvalidCredentials);

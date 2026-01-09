@@ -145,11 +145,11 @@ export-excel = ["rust_xlsxwriter"]
 # PERFILES DE CONSTRUCCIÓN (Optimizaciones)
 # =============================================================================
 [profile.release]
-opt-level = 3     # Priorizar velocidad máxima de ejecución
-lto = true        # Link Time Optimization para reducir binario y ganar velocidad
-codegen-units = 1 # Generación unitaria para máxima optimización
-panic = "abort"   # Elimina el stack unwinding para ahorrar espacio
-strip = true      # Elimina símbolos de depuración del binario final
+opt-level = 3       # Priorizar velocidad máxima de ejecución
+lto = true          # Link Time Optimization para reducir binario y ganar velocidad
+codegen-units = 1   # Generación unitaria para máxima optimización
+panic = "abort"     # Elimina el stack unwinding para ahorrar espacio
+strip = true        # Elimina símbolos de depuración del binario final
 
 # =============================================================================
 # LINTS (Calidad de Código)

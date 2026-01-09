@@ -1,0 +1,14 @@
+# Configuración de compilación optimizada para CPUs modernas (Haswell+, ~2013+)
+# Habilita instrucciones AVX2, FMA, BMI2 para máximo rendimiento
+#
+# x86-64-v3 incluye:
+# - AVX2 (256-bit SIMD)
+# - AVX (legacy 256-bit)
+# - SSE4.2 (string/text processing)
+# - FMA (fused multiply-add)
+# - BMI2 (bit manipulation)
+# - F16C (half-precision float)
+# - MOVBE, LZCNT
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-cpu=x86-64-v3"]
