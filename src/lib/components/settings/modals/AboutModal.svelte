@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { fade, fly } from "svelte/transition";
-  import { X, Info, Code2, Globe, Users } from "lucide-svelte";
+  import { fade } from "svelte/transition";
+  import { X, Code2 } from "lucide-svelte";
   import { scale } from "svelte/transition";
-  import { onMount, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
   import { APP_CONFIG } from "$lib/config/app";
-
   import { getVersion } from "@tauri-apps/api/app";
 
   interface Props {
@@ -14,8 +13,15 @@
 
   let { show, onClose }: Props = $props();
 
-  // Versión dinámica
+  // Versión dinámica - fetch al inicio (Svelte 5 idiom)
   let appVersion = $state<string>(APP_CONFIG.version);
+
+  // Fetch version immediately on component mount
+  getVersion()
+    .then((v) => {
+      if (v) appVersion = v;
+    })
+    .catch((err) => console.error("Error fetching version:", err));
 
   // Lista de colaboradores (hardcoded por ahora)
   const contributors = [
@@ -36,13 +42,6 @@
 
   $effect(() => {
     if (show) {
-      // Fetch real version when modal opens
-      getVersion()
-        .then((v) => {
-          if (v) appVersion = v;
-        })
-        .catch((err) => console.error("Error fetching version:", err));
-
       currentIndex = 0;
       intervalId = setInterval(() => {
         currentIndex = (currentIndex + 1) % contributors.length;
