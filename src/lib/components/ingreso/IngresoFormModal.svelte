@@ -14,6 +14,23 @@
   import { currentUser } from "$lib/stores/auth";
   import { invoke } from "@tauri-apps/api/core";
 
+  // Helper para normalizar IDs de SurrealDB (maneja strings, objetos y notación ⟨...⟩)
+  function stringifyRecordId(id: any): string {
+    if (!id) return "";
+    if (typeof id === "string") return id.replace(/[⟨⟩]/g, "");
+
+    if (typeof id === "object") {
+      // Caso 1: Estructura { tb: 'user', id: 'abc' } o { tb: 'user', id: { String: 'abc' } }
+      const tb = id.tb;
+      const innerId = id.id?.String || id.id;
+      if (tb && innerId) {
+        return `${tb}:${innerId}`.replace(/[⟨⟩]/g, "");
+      }
+    }
+
+    return String(id).replace(/[⟨⟩]/g, "");
+  }
+
   // Props
   interface Props {
     show: boolean;
@@ -30,6 +47,7 @@
   let tipoAutorizacion = $state<"praind" | "correo">("praind");
   let observaciones = $state("");
   let showObservaciones = $state(false);
+  let personaFinderRef = $state<any>();
 
   const dispatch = createEventDispatcher();
 
@@ -53,6 +71,15 @@
 
   // Modo de ingreso derivado
   let modoIngreso = $derived(vehiculoId ? "vehiculo" : "caminando");
+
+  // Resetear al abrir para asegurar estado limpio
+  $effect(() => {
+    if (show) {
+      setTimeout(() => {
+        if (personaFinderRef) personaFinderRef.focus();
+      }, 100);
+    }
+  });
 
   // ==========================================
   // HANDLERS
@@ -122,16 +149,22 @@
 
       const finalGafete = gafete.trim() || "S/G";
 
-      // Convert RecordId object to string if necessary
-      const contratistaIdStr =
-        typeof selectedPerson.id === "object"
-          ? `${(selectedPerson.id as any).tb}:${(selectedPerson.id as any).id?.String || (selectedPerson.id as any).id}`
-          : String(selectedPerson.id);
+      const contratistaIdStr = stringifyRecordId(selectedPerson.id);
+      const usuarioIdStr = stringifyRecordId($currentUser?.id);
 
-      const usuarioIdStr =
-        typeof $currentUser?.id === "object"
-          ? `${($currentUser.id as any).tb}:${($currentUser.id as any).id?.String || ($currentUser.id as any).id}`
-          : String($currentUser?.id || "");
+      console.log("[IngresoFormModal] Prep Submit:", {
+        contratistaIdStr,
+        usuarioIdStr,
+        currentUser: $currentUser,
+      });
+
+      if (!usuarioIdStr) {
+        toast.error(
+          "No se pudo identificar su sesión de usuario. Por favor reintente o refresque la página.",
+        );
+        loading = false;
+        return;
+      }
 
       await ingresoService.crearIngreso(
         "contratista",
@@ -150,6 +183,7 @@
 
       toast.success("¡Ingreso registrado exitosamente!");
       dispatch("complete");
+      reset(); // Limpiar inmediatamente tras éxito
       handleClose();
     } catch (e: any) {
       console.error("[IngresoFormModal] Error completo:", e);
@@ -278,7 +312,10 @@
       <div class="p-6 space-y-6">
         <!-- Buscador -->
         <div>
-          <PersonaFinder on:select={handlePersonSelect} />
+          <PersonaFinder
+            bind:this={personaFinderRef}
+            on:select={handlePersonSelect}
+          />
         </div>
 
         <!-- Persona seleccionada -->

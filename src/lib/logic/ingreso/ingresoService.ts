@@ -197,6 +197,7 @@ export async function crearIngreso(
 ): Promise<any> {
     // Validar que se proporcione un usuario válido
     if (!usuarioId) {
+        console.error('[IngresoService] ERROR: No usuarioId provided to crearIngreso', { tipo, candidateId, usuarioId });
         throw new Error('Se requiere un usuario autenticado para registrar el ingreso');
     }
     console.log(`[IngresoService] Creando ingreso ${tipo}`, { candidateId, formData, extraData, usuarioId });

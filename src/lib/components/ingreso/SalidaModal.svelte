@@ -101,7 +101,7 @@
           <div>
             <h2 class="text-lg font-semibold text-primary">Registrar Salida</h2>
             <p class="text-sm text-secondary">
-              Confirme la salida del visitante
+              Confirme la salida del contratista
             </p>
           </div>
         </div>
@@ -118,25 +118,33 @@
       <div class="p-6 space-y-5">
         <!-- Info de la persona -->
         <div class="p-4 bg-surface-1 rounded-lg border border-surface">
-          <div class="flex items-center gap-3">
-            <div
-              class="w-12 h-12 rounded-full bg-accent flex items-center justify-center text-white font-bold text-lg"
-            >
-              {ingreso.nombreCompleto?.charAt(0) || "?"}
-            </div>
-            <div class="flex-1">
-              <div class="font-semibold text-primary">
+          <div class="space-y-2">
+            <div class="flex items-center text-sm">
+              <span class="text-secondary w-20 shrink-0">Nombre:</span>
+              <span class="text-primary font-semibold">
                 {ingreso.nombreCompleto || "Sin nombre"}
-              </div>
-              <div class="text-sm text-secondary">
-                {ingreso.empresaNombre || "Sin empresa"}
-              </div>
-              {#if ingreso.gafeteNumero && ingreso.gafeteNumero !== "S/G"}
-                <div class="text-xs font-mono text-accent mt-1">
-                  Gafete: {ingreso.gafeteNumero}
-                </div>
-              {/if}
+              </span>
             </div>
+            <div class="flex items-center text-sm">
+              <span class="text-secondary w-20 shrink-0">Cédula:</span>
+              <span class="text-primary font-mono">
+                {ingreso.cedula || "N/A"}
+              </span>
+            </div>
+            <div class="flex items-center text-sm">
+              <span class="text-secondary w-20 shrink-0">Empresa:</span>
+              <span class="text-primary">
+                {ingreso.empresaNombre || "Sin empresa"}
+              </span>
+            </div>
+            {#if ingreso.gafeteNumero && ingreso.gafeteNumero !== "S/G"}
+              <div class="flex items-center text-sm">
+                <span class="text-secondary w-20 shrink-0">Gafete:</span>
+                <span class="text-accent font-mono">
+                  {ingreso.gafeteNumero}
+                </span>
+              </div>
+            {/if}
           </div>
         </div>
 
@@ -144,7 +152,7 @@
         {#if ingreso.gafeteNumero && ingreso.gafeteNumero !== "S/G"}
           <div class="space-y-3">
             <span class="block text-sm font-medium text-primary">
-              ¿El visitante devolvió el gafete?
+              ¿El contratista devolvió el gafete?
             </span>
             <div class="grid grid-cols-2 gap-3">
               <button
@@ -184,7 +192,7 @@
           <div
             class="p-3 bg-surface-1 rounded-lg border border-surface text-sm text-secondary"
           >
-            Este visitante no tiene gafete asignado
+            Este contratista no tiene gafete asignado
           </div>
         {/if}
 

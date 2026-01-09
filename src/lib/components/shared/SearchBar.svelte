@@ -138,6 +138,10 @@
     }
   }
 
+  export function focus() {
+    if (inputRef) inputRef.focus();
+  }
+
   onMount(() => {
     if (autofocus && inputRef) inputRef.focus();
     document.addEventListener("click", handleClickOutside);

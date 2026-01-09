@@ -33,6 +33,12 @@
     }
   }
 
+  let searchBarRef = $state<any>();
+
+  export function focus() {
+    if (searchBarRef) searchBarRef.focus();
+  }
+
   function handleSelect(event: CustomEvent<SearchResult>) {
     const item = event.detail;
     dispatch("select", {
@@ -45,6 +51,7 @@
 
 <div class="w-full">
   <SearchBar
+    bind:this={searchBarRef}
     placeholder="Buscar por nombre, cédula o empresa..."
     autofocus={autoFocus}
     searchFunction={handleSearch}
