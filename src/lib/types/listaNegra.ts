@@ -20,9 +20,8 @@ export interface ListaNegra {
   empresaId?: string;
   empresaNombre?: string;
   nivelSeveridad: NivelSeveridad;
-  motivoBloqueo: string;
+  motivoBloqueo?: string;
   bloqueadoPor: string;
-  observaciones?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -41,15 +40,13 @@ export interface AddToListaNegraInput {
   empresaId?: string;
   empresaNombre?: string;
   nivelSeveridad: NivelSeveridad;
-  motivoBloqueo: string;
+  motivoBloqueo?: string;
   bloqueadoPor: string;
-  observaciones?: string;
 }
 
 export interface UpdateListaNegraInput {
   nivelSeveridad?: NivelSeveridad;
   motivoBloqueo?: string;
-  observaciones?: string;
 }
 
 // ==========================================
@@ -67,9 +64,8 @@ export interface ListaNegraResponse {
   empresaId?: string;
   empresaNombre?: string;
   nivelSeveridad: NivelSeveridad;
-  motivoBloqueo: string;
+  motivoBloqueo?: string;
   bloqueadoPor: string;
-  observaciones?: string;
   isActive: boolean;
   bloqueadoDesde: string;
   createdAt: string;

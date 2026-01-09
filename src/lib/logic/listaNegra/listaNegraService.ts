@@ -69,13 +69,12 @@ function validateAddInput(input: AddToListaNegraInput): ValidationResult {
         return { ok: false, message: 'Debe seleccionar un nivel de severidad válido.' };
     }
 
-    // Validar motivo
-    const m = motivoBloqueo.trim();
-    if (!m) {
-        return { ok: false, message: 'Debe especificar un motivo de bloqueo.' };
-    }
-    if (m.length > 500) {
-        return { ok: false, message: 'El motivo no puede exceder 500 caracteres.' };
+    // Validar motivo (opcional, solo validar longitud si se proporciona)
+    if (motivoBloqueo) {
+        const m = motivoBloqueo.trim();
+        if (m.length > 500) {
+            return { ok: false, message: 'El motivo no puede exceder 500 caracteres.' };
+        }
     }
 
     // Validar bloqueadoPor

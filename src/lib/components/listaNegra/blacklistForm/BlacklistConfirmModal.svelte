@@ -6,22 +6,18 @@
     show: boolean;
     contratistaName: string;
     motivo: string;
-    observaciones: string;
     onConfirm: () => void;
     onCancel: () => void;
     onMotivoChange: (value: string) => void;
-    onObservacionesChange: (value: string) => void;
   }
 
   let {
     show,
     contratistaName,
     motivo,
-    observaciones,
     onConfirm,
     onCancel,
     onMotivoChange,
-    onObservacionesChange,
   }: Props = $props();
 </script>
 
@@ -40,37 +36,20 @@
       <p class="text-sm text-secondary mb-6">
         Está a punto de desactivar el bloqueo para <strong
           >{contratistaName}</strong
-        >. El motivo y las observaciones para esta acción serán registradas en
-        el historial de la persona.
+        >. El motivo será registrado en el historial.
       </p>
 
       <div class="space-y-4">
         <div class="space-y-1.5">
           <label for="unblockMotivo" class="text-sm font-medium text-primary">
-            Motivo del Desbloqueo <span class="text-error">*</span>
+            Motivo del Desbloqueo
           </label>
           <textarea
             id="unblockMotivo"
             value={motivo}
             oninput={(e) => onMotivoChange(e.currentTarget.value)}
             rows="2"
-            placeholder="Motivo de la desactivación del bloqueo (ej: Cumplió sanción, revisión de caso, etc.)"
-            class="input-base w-full resize-y"
-          ></textarea>
-        </div>
-        <div class="space-y-1.5">
-          <label
-            for="unblockObservaciones"
-            class="text-sm font-medium text-primary"
-          >
-            Observaciones (Opcional)
-          </label>
-          <textarea
-            id="unblockObservaciones"
-            value={observaciones}
-            oninput={(e) => onObservacionesChange(e.currentTarget.value)}
-            rows="2"
-            placeholder="Notas internas."
+            placeholder="Motivo de la desactivación del bloqueo (opcional)"
             class="input-base w-full resize-y"
           ></textarea>
         </div>
@@ -83,8 +62,7 @@
         <button
           type="button"
           onclick={onConfirm}
-          disabled={!motivo.trim()}
-          class="btn-base bg-success text-white hover:bg-success-hover disabled:opacity-50"
+          class="btn-base bg-success text-white hover:bg-success-hover"
         >
           Confirmar Desbloqueo
         </button>

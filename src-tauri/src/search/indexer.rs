@@ -357,7 +357,7 @@ pub fn index_lista_negra(
         lista_negra.cedula.clone(),
         lista_negra.nombre.clone(),
         lista_negra.apellido.clone(),
-        lista_negra.motivo_bloqueo.clone(),
+        lista_negra.motivo_bloqueo.clone().unwrap_or_default(),
     ];
 
     if let Some(ref segundo_nombre) = lista_negra.segundo_nombre {

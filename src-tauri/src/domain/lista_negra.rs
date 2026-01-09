@@ -81,7 +81,10 @@ pub fn validar_add_input(input: &AddToListaNegraInput) -> Result<(), ListaNegraE
     validar_cedula(&input.cedula)?;
     validar_nombre(&input.nombre)?;
     validar_nombre(&input.apellido)?;
-    validar_motivo(&input.motivo_bloqueo)?;
+    // motivo_bloqueo is now optional, only validate if present
+    if let Some(ref motivo) = input.motivo_bloqueo {
+        validar_motivo(motivo)?;
+    }
     validar_bloqueado_por(&input.bloqueado_por)?;
     validar_nivel_severidad(&input.nivel_severidad)?;
 

@@ -191,9 +191,8 @@ pub async fn add_to_lista_negra(
         empresa_id: input.empresa_id,
         empresa_nombre: input.empresa_nombre,
         nivel_severidad: input.nivel_severidad.to_uppercase(),
-        motivo_bloqueo: domain::normalizar_texto(&input.motivo_bloqueo),
+        motivo_bloqueo: input.motivo_bloqueo.map(|m| domain::normalizar_texto(&m)),
         bloqueado_por: input.bloqueado_por.trim().to_string(),
-        observaciones: input.observaciones.map(|o| domain::normalizar_texto(&o)),
     };
 
     // 4. Crear en DB
@@ -219,8 +218,7 @@ pub async fn add_to_lista_negra(
 ///
 /// ## Campos Actualizables
 /// - `nivel_severidad`: Puede cambiar la gravedad
-/// - `motivo_bloqueo`: Agregar más información
-/// - `observaciones`: Notas adicionales
+/// - `motivo_bloqueo`: Agregar más información (opcional)
 ///
 /// ## Logging
 /// - `INFO`: Registro actualizado

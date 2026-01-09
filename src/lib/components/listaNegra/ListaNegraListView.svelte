@@ -113,7 +113,6 @@
   // 2. Modal Desbloquear/Re-bloquear
   let showConfirmModal = $state(false);
   let confirmMotivo = $state("");
-  let confirmObservaciones = $state("");
   let confirmActionType = $state<"unblock" | "reblock">("unblock");
 
   // ==========================================
@@ -259,7 +258,6 @@
         const updateInput = {
           nivelSeveridad: input.nivelSeveridad,
           motivoBloqueo: input.motivoBloqueo,
-          observaciones: input.observaciones,
         };
         const result = await listaNegraService.update(
           editingBloqueado.id,
@@ -304,7 +302,6 @@
     editingBloqueado = bloqueado; // Usamos la misma variable temporal
     confirmActionType = type;
     confirmMotivo = "";
-    confirmObservaciones = "";
     showConfirmModal = true;
   }
 
@@ -529,9 +526,7 @@
   show={showConfirmModal}
   contratistaName={editingBloqueado?.nombreCompleto || ""}
   motivo={confirmMotivo}
-  observaciones={confirmObservaciones}
   onConfirm={handleConfirmAction}
   onCancel={closeConfirmModal}
   onMotivoChange={(v) => (confirmMotivo = v)}
-  onObservacionesChange={(v) => (confirmObservaciones = v)}
 />

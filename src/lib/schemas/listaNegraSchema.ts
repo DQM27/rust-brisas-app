@@ -6,8 +6,7 @@ import {
     NOMBRE_MAX_LEN,
     SEGUNDO_NOMBRE_MAX_LEN,
     ENTIDAD_NOMBRE_MAX_LEN,
-    MOTIVO_MAX_LEN,
-    OBSERVACIONES_MAX_LEN
+    MOTIVO_MAX_LEN
 } from './domainConstants';
 
 // ==========================================
@@ -48,21 +47,12 @@ const nombreOpcionalSchema = z.string()
     .or(z.literal(''));
 
 /**
- * Motivo de bloqueo
+ * Motivo de bloqueo (OPCIONAL)
  * Backend: MOTIVO_MAX_LEN = 500
  */
 const motivoSchema = z.string()
     .trim()
-    .min(1, 'El motivo es requerido')
-    .max(MOTIVO_MAX_LEN, `El motivo no puede exceder ${MOTIVO_MAX_LEN} caracteres`);
-
-/**
- * Observaciones
- * Backend: OBSERVACIONES_MAX_LEN = 1000
- */
-const observacionesSchema = z.string()
-    .trim()
-    .max(OBSERVACIONES_MAX_LEN, `Las observaciones no pueden exceder ${OBSERVACIONES_MAX_LEN} caracteres`)
+    .max(MOTIVO_MAX_LEN, `El motivo no puede exceder ${MOTIVO_MAX_LEN} caracteres`)
     .optional()
     .or(z.literal(''));
 
@@ -84,16 +74,11 @@ export const AddToListaNegraSchema = z.object({
         .or(z.literal('')),
     nivelSeveridad: z.enum(NIVELES_SEVERIDAD),
     motivoBloqueo: motivoSchema,
-    observaciones: observacionesSchema,
 });
 
 export const UpdateListaNegraSchema = z.object({
     nivelSeveridad: z.enum(NIVELES_SEVERIDAD).optional(),
-    motivoBloqueo: z.string()
-        .trim()
-        .max(MOTIVO_MAX_LEN, `El motivo no puede exceder ${MOTIVO_MAX_LEN} caracteres`)
-        .optional(),
-    observaciones: observacionesSchema,
+    motivoBloqueo: motivoSchema,
 });
 
 export const ReactivateListaNegraSchema = z.object({

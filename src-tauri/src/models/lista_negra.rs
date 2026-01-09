@@ -68,13 +68,12 @@ pub struct ListaNegra {
     pub empresa_nombre: Option<String>,
     /// Nivel de riesgo asociado al individuo bloqueado.
     #[serde(alias = "nivel_severidad")]
-    pub nivel_severidad: String, // TODO: Considerar usar NivelSeveridad enum si la DB lo soporta directamente o via string format
+    pub nivel_severidad: String,
     #[serde(alias = "motivo_bloqueo")]
-    pub motivo_bloqueo: String,
+    pub motivo_bloqueo: Option<String>,
     /// Usuario administrativo que realizó el bloqueo.
     #[serde(alias = "bloqueado_por")]
     pub bloqueado_por: String,
-    pub observaciones: Option<String>,
     #[serde(alias = "is_active")]
     pub is_active: bool,
     #[serde(alias = "created_at")]
@@ -99,9 +98,8 @@ pub struct AddToListaNegraInput {
     pub empresa_id: Option<String>,
     pub empresa_nombre: Option<String>,
     pub nivel_severidad: String,
-    pub motivo_bloqueo: String,
+    pub motivo_bloqueo: Option<String>,
     pub bloqueado_por: String,
-    pub observaciones: Option<String>,
 }
 
 /// Datos para actualizar un registro de bloqueo existente.
@@ -110,7 +108,6 @@ pub struct AddToListaNegraInput {
 pub struct UpdateListaNegraInput {
     pub nivel_severidad: Option<String>,
     pub motivo_bloqueo: Option<String>,
-    pub observaciones: Option<String>,
 }
 
 // --------------------------------------------------------------------------
@@ -131,10 +128,9 @@ pub struct ListaNegraResponse {
     pub empresa_id: Option<String>,
     pub empresa_nombre: Option<String>,
     pub nivel_severidad: String,
-    pub motivo_bloqueo: String,
+    pub motivo_bloqueo: Option<String>,
     pub bloqueado_por: String,
     pub bloqueado_por_nombre: Option<String>,
-    pub observaciones: Option<String>,
     pub is_active: bool,
     pub dias_bloqueado: i64,
     pub created_at: String,
@@ -175,7 +171,6 @@ impl From<ListaNegra> for ListaNegraResponse {
             motivo_bloqueo: ln.motivo_bloqueo,
             bloqueado_por: ln.bloqueado_por,
             bloqueado_por_nombre: None,
-            observaciones: ln.observaciones,
             is_active: ln.is_active,
             dias_bloqueado,
             created_at: created.to_rfc3339(),

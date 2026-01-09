@@ -52,7 +52,6 @@
     empresaNombre: "",
     nivelSeveridad: "MEDIO",
     motivoBloqueo: "",
-    observaciones: "",
   });
 
   // Estado de búsqueda
@@ -78,7 +77,6 @@
         empresaNombre: bloqueado.empresaNombre || "",
         nivelSeveridad: bloqueado.nivelSeveridad || "MEDIO",
         motivoBloqueo: bloqueado.motivoBloqueo || "",
-        observaciones: bloqueado.observaciones || "",
       };
       errors = {};
       selectedPersona = null;
@@ -94,7 +92,6 @@
         empresaNombre: "",
         nivelSeveridad: "MEDIO",
         motivoBloqueo: "",
-        observaciones: "",
       };
       errors = {};
       searchQuery = "";
@@ -174,7 +171,6 @@
       empresaNombre: "",
       nivelSeveridad: formData.nivelSeveridad,
       motivoBloqueo: formData.motivoBloqueo,
-      observaciones: formData.observaciones,
     };
   }
 
@@ -211,12 +207,7 @@
     }
   }
 
-  // Colores de nivel
-  const nivelColors = {
-    ALTO: "bg-red-500/20 text-red-400 border-red-500/50",
-    MEDIO: "bg-yellow-500/20 text-yellow-400 border-yellow-500/50",
-    BAJO: "bg-gray-500/20 text-gray-400 border-gray-500/50",
-  };
+  // Iconos por tipo de persona
 
   const tipoPersonaIcons = {
     contratista: "👷",
@@ -479,66 +470,45 @@
           </div>
         </div>
 
-        <!-- Nivel de Severidad -->
+        <!-- Nivel de Severidad (Dropdown compacto) -->
         <div>
-          <span class={labelClass}>Nivel de Severidad *</span>
-          <div class="grid grid-cols-3 gap-3">
-            {#each ["ALTO", "MEDIO", "BAJO"] as const as nivel}
-              <button
-                type="button"
-                onclick={() => (formData.nivelSeveridad = nivel)}
-                class="p-3 rounded-lg border-2 transition-all {formData.nivelSeveridad ===
-                nivel
-                  ? nivelColors[nivel]
-                  : 'border-gray-700 text-gray-400 hover:border-gray-600'}"
-              >
-                <div class="font-medium">{nivel}</div>
-                <div class="text-xs opacity-70">
-                  {nivel === "ALTO"
-                    ? "Crítico"
-                    : nivel === "MEDIO"
-                      ? "Moderado"
-                      : "Bajo riesgo"}
-                </div>
-              </button>
-            {/each}
-          </div>
+          <label for="nivelSeveridad" class={labelClass}
+            >Nivel de Severidad *</label
+          >
+          <select
+            id="nivelSeveridad"
+            bind:value={formData.nivelSeveridad}
+            disabled={loading}
+            class="{inputClass} {formData.nivelSeveridad === 'ALTO'
+              ? 'border-red-500/50 text-red-400'
+              : formData.nivelSeveridad === 'MEDIO'
+                ? 'border-yellow-500/50 text-yellow-400'
+                : 'border-gray-500/50 text-gray-400'}"
+          >
+            <option value="ALTO">🔴 ALTO - Crítico</option>
+            <option value="MEDIO">🟡 MEDIO - Moderado</option>
+            <option value="BAJO">⚪ BAJO - Bajo riesgo</option>
+          </select>
           {#if errors.nivelSeveridad}<p class={errorClass}>
               {errors.nivelSeveridad}
             </p>{/if}
         </div>
 
-        <!-- Motivo -->
+        <!-- Motivo (Opcional) -->
         <div>
           <label for="motivoBloqueo" class={labelClass}
-            >Motivo del Bloqueo *</label
+            >Motivo del Bloqueo</label
           >
           <textarea
             id="motivoBloqueo"
             bind:value={formData.motivoBloqueo}
             disabled={loading}
             class={inputClass}
-            rows="3"
-            placeholder="Describa el motivo del bloqueo..."
+            rows="2"
+            placeholder="Describa el motivo del bloqueo (opcional)"
           ></textarea>
           {#if errors.motivoBloqueo}<p class={errorClass}>
               {errors.motivoBloqueo}
-            </p>{/if}
-        </div>
-
-        <!-- Observaciones -->
-        <div>
-          <label for="observaciones" class={labelClass}>Observaciones</label>
-          <textarea
-            id="observaciones"
-            bind:value={formData.observaciones}
-            disabled={loading}
-            class={inputClass}
-            rows="2"
-            placeholder="Notas adicionales (opcional)"
-          ></textarea>
-          {#if errors.observaciones}<p class={errorClass}>
-              {errors.observaciones}
             </p>{/if}
         </div>
 

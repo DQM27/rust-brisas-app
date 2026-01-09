@@ -251,7 +251,6 @@ pub async fn create(input: &AddToListaNegraInput) -> Result<ListaNegra, SurrealD
                 nivel_severidad: $nivel_severidad,
                 motivo_bloqueo: $motivo_bloqueo,
                 bloqueado_por: $bloqueado_por,
-                observaciones: $observaciones,
                 is_active: true,
                 created_at: time::now(),
                 updated_at: time::now()
@@ -267,7 +266,6 @@ pub async fn create(input: &AddToListaNegraInput) -> Result<ListaNegra, SurrealD
         .bind(("nivel_severidad", input.nivel_severidad.clone()))
         .bind(("motivo_bloqueo", input.motivo_bloqueo.clone()))
         .bind(("bloqueado_por", input.bloqueado_por.clone()))
-        .bind(("observaciones", input.observaciones.clone()))
         .await
         .map_err(|e| {
             SurrealDbError::Query(format!(
@@ -303,7 +301,7 @@ pub async fn create(input: &AddToListaNegraInput) -> Result<ListaNegra, SurrealD
 /// ```
 ///
 /// ## Campos Actualizables
-/// Solo se pueden modificar: `nivel_severidad`, `motivo_bloqueo`, observaciones.
+/// Solo se pueden modificar: `nivel_severidad`, `motivo_bloqueo`.
 /// Campos como cedula, nombre, etc. son inmutables.
 ///
 /// ## Parámetros
@@ -332,9 +330,6 @@ pub async fn update(
     if input.motivo_bloqueo.is_some() {
         set_clauses.push("motivo_bloqueo = $motivo_bloqueo".to_string());
     }
-    if input.observaciones.is_some() {
-        set_clauses.push("observaciones = $observaciones".to_string());
-    }
 
     let query = format!("UPDATE $id SET {} WHERE is_active = true", set_clauses.join(", "));
 
@@ -343,7 +338,6 @@ pub async fn update(
         .bind(("id", id.clone()))
         .bind(("nivel_severidad", input.nivel_severidad.clone()))
         .bind(("motivo_bloqueo", input.motivo_bloqueo.clone()))
-        .bind(("observaciones", input.observaciones.clone()))
         .await
         .map_err(|e| {
             SurrealDbError::Query(format!("Error al actualizar lista negra '{id}': {e}"))
