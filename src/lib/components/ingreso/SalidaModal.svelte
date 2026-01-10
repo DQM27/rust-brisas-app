@@ -246,13 +246,17 @@
 
           {#if showObservaciones}
             <div transition:slide={{ duration: 250 }}>
-              <textarea
-                id="observaciones"
-                bind:value={observaciones}
-                rows={2}
-                class="w-full px-3 py-2 bg-surface-1 border border-surface rounded-lg text-primary placeholder:text-secondary/50 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
-                placeholder="Notas adicionales sobre la salida..."
-              ></textarea>
+              <div
+                class="obs-container w-full bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all outline-none"
+              >
+                <textarea
+                  id="observaciones"
+                  bind:value={observaciones}
+                  rows={2}
+                  class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none outline-none border-none appearance-none ring-0"
+                  placeholder="Notas adicionales sobre la salida..."
+                ></textarea>
+              </div>
             </div>
           {/if}
         </div>
@@ -265,7 +269,7 @@
         <button
           onclick={handleClose}
           disabled={loading}
-          class="px-4 py-2 text-white bg-transparent border border-white/20 hover:border-white/80 rounded-md transition-all hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-1 focus:ring-white/20"
+          class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all duration-200 border-surface text-secondary hover:border-white/60 hover:text-white/80 focus:outline-none disabled:opacity-50"
         >
           Cancelar
         </button>
@@ -273,7 +277,7 @@
           bind:this={confirmButtonRef}
           onclick={handleConfirm}
           disabled={loading || devolvioGafete === null}
-          class="px-4 py-2 bg-transparent text-white border border-white/20 rounded-md hover:text-error hover:border-error transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 flex items-center gap-2 focus:outline-none focus:ring-1 focus:ring-error/20"
+          class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all duration-200 border-surface text-secondary hover:border-success hover:text-success focus:outline-none disabled:opacity-50"
           title="Atajo: Ctrl + S"
         >
           {#if loading}
@@ -286,3 +290,17 @@
     </div>
   </div>
 {/if}
+
+<style>
+  /* Observaciones container - mismo estilo que GafeteInput */
+  .obs-container,
+  .obs-container *:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .obs-container:focus-within {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+  }
+</style>

@@ -514,13 +514,17 @@
 
                   {#if showObservaciones}
                     <div class="mt-2" transition:slide>
-                      <textarea
-                        class="w-full bg-surface-1 border border-surface rounded-md px-3 py-2 text-sm text-primary resize-none focus:outline-none focus:ring-2 focus:ring-accent"
-                        rows="2"
-                        placeholder="Notas adicionales..."
-                        bind:value={observaciones}
-                        disabled={loading}
-                      ></textarea>
+                      <div
+                        class="obs-container w-full bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all outline-none"
+                      >
+                        <textarea
+                          class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none outline-none border-none appearance-none ring-0"
+                          rows="2"
+                          placeholder="Notas adicionales..."
+                          bind:value={observaciones}
+                          disabled={loading}
+                        ></textarea>
+                      </div>
                     </div>
                   {/if}
                 </div>
@@ -538,7 +542,7 @@
           type="button"
           onclick={handleClose}
           disabled={loading}
-          class="px-4 py-2 text-white bg-transparent border border-white/20 hover:border-white/80 rounded-md transition-all hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-1 focus:ring-white/20"
+          class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all duration-200 border-surface text-secondary hover:border-white/60 hover:text-white/80 focus:outline-none disabled:opacity-50"
         >
           Cancelar
         </button>
@@ -547,7 +551,7 @@
             type="button"
             onclick={handleSubmit}
             disabled={loading}
-            class="px-6 py-2 bg-transparent text-white border border-white/20 rounded-md hover:text-primary hover:border-primary transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 flex items-center gap-2 focus:outline-none focus:ring-1 focus:ring-primary/20 font-semibold"
+            class="flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg border-2 transition-all duration-200 border-surface text-secondary hover:border-success hover:text-success focus:outline-none disabled:opacity-50 font-semibold"
           >
             {#if loading}
               <span class="inline-block animate-spin mr-1">⏳</span>
@@ -564,5 +568,17 @@
   /* Asegurar que el modal esté por encima de todo */
   :global(body:has(.fixed.z-50)) {
     overflow: hidden;
+  }
+
+  /* Observaciones container - mismo estilo que GafeteInput */
+  .obs-container,
+  .obs-container *:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .obs-container:focus-within {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
   }
 </style>
