@@ -15,7 +15,7 @@ use surrealdb::{Datetime, RecordId};
 ///
 /// Captura una "instantánea" de la identidad del proveedor al momento del acceso.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct IngresoProveedor {
     pub id: RecordId,
     pub proveedor: RecordId,
@@ -44,7 +44,7 @@ pub struct IngresoProveedor {
 
 /// Versión "poblada" del ingreso con datos completos (FETCH).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct IngresoProveedorFetched {
     pub id: RecordId,
     pub proveedor: ProveedorFetched,
@@ -95,7 +95,7 @@ pub struct CreateIngresoProveedorInput {
 // --------------------------------------------------------------------------
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct IngresoProveedorCreateDTO {
     pub proveedor: RecordId,
     pub nombre: String,

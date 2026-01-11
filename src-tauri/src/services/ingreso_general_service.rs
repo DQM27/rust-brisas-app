@@ -60,7 +60,7 @@ pub async fn get_all_ingresos_with_stats() -> Result<IngresoListResponse, Ingres
     let mut errores_conversion = 0;
 
     for ingreso in results {
-        match IngresoResponse::from_contratista_fetched(ingreso) {
+        match ingreso.to_response() {
             Ok(response) => responses.push(response),
             Err(e) => {
                 errores_conversion += 1;
@@ -99,7 +99,7 @@ pub async fn get_ingresos_abiertos() -> Result<Vec<IngresoResponse>, IngresoErro
 
     let mut responses = Vec::with_capacity(results.len());
     for ingreso in results {
-        if let Ok(response) = IngresoResponse::from_contratista_fetched(ingreso) {
+        if let Ok(response) = ingreso.to_response() {
             responses.push(response);
         }
     }
@@ -130,7 +130,8 @@ pub async fn get_ingreso_by_id(id_str: &str) -> Result<Option<IngresoResponse>, 
         None => return Ok(None),
     };
 
-    let response = IngresoResponse::from_contratista_fetched(ingreso)
+    let response = ingreso
+        .to_response()
         .map_err(|e| IngresoError::Validation(format!("Error procesando datos de ingreso: {e}")))?;
 
     Ok(Some(response))
@@ -157,7 +158,7 @@ pub async fn get_ingreso_by_gafete(
         return Ok(None);
     };
 
-    let response = IngresoResponse::from_contratista_fetched(ingreso).map_err(|e| {
+    let response = ingreso.to_response().map_err(|e| {
         IngresoError::Validation(format!("Error procesando ingreso encontrado: {e}"))
     })?;
 
@@ -183,7 +184,7 @@ pub async fn get_salidas_en_rango(
 
     let mut responses = Vec::with_capacity(results.len());
     for ingreso in results {
-        if let Ok(response) = IngresoResponse::from_contratista_fetched(ingreso) {
+        if let Ok(response) = ingreso.to_response() {
             responses.push(response);
         }
     }

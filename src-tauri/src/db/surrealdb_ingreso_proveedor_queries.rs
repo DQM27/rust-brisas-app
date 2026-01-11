@@ -83,3 +83,13 @@ pub async fn update_salida(
         "Error al registrar salida de proveedor".to_string(),
     ))
 }
+
+pub async fn find_activos_fetched() -> Result<Vec<IngresoProveedorFetched>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut result = db
+        .query(format!(
+            "SELECT * FROM {TABLE} WHERE fecha_hora_salida IS NONE ORDER BY created_at DESC FETCH usuario_ingreso, usuario_salida, proveedor, proveedor.empresa"
+        ))
+        .await?;
+    Ok(result.take(0)?)
+}

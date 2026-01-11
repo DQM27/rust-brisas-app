@@ -14,7 +14,7 @@ use surrealdb::{Datetime, RecordId};
 ///
 /// Captura una "instantánea" de la identidad y motivo de la visita.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct IngresoVisita {
     pub id: RecordId,
     pub nombre: String,
@@ -43,7 +43,7 @@ pub struct IngresoVisita {
 
 /// Versión "poblada" del ingreso de visita (FETCH).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct IngresoVisitaFetched {
     pub id: RecordId,
     pub nombre: String,

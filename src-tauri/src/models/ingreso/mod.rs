@@ -135,6 +135,24 @@ impl std::str::FromStr for ModoIngreso {
 // DTOs COMPARTIDOS
 // ==========================================
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum UniversalIngresoFetched {
+    Contratista(IngresoContratistaFetched),
+    Proveedor(IngresoProveedorFetched),
+    Visita(IngresoVisitaFetched),
+}
+
+impl UniversalIngresoFetched {
+    pub fn to_response(self) -> Result<IngresoResponse, String> {
+        match self {
+            Self::Contratista(i) => IngresoResponse::from_contratista_fetched(i),
+            Self::Proveedor(i) => Ok(IngresoResponse::from_proveedor_fetched(i)),
+            Self::Visita(i) => Ok(IngresoResponse::from_visita_fetched(i)),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(tag = "tipo", rename_all = "lowercase")]
 pub enum CreateIngresoInput {
@@ -153,7 +171,7 @@ pub struct RegistrarSalidaInput {
 }
 
 #[derive(Debug, Serialize, Default, Clone)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct IngresoUpdateDTO {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fecha_hora_salida: Option<surrealdb::Datetime>,

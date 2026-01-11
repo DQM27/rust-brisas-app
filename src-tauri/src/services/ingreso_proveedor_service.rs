@@ -219,8 +219,11 @@ pub async fn registrar_salida(
 /// # Retorno
 /// Lista de ingresos abiertos.
 pub async fn get_activos() -> Result<Vec<IngresoResponse>, IngresoProveedorError> {
-    // TODO: Implementar query real. Por ahora placeholder seguro.
-    Ok(vec![])
+    let activos = db::find_activos_fetched()
+        .await
+        .map_err(|e| IngresoProveedorError::Database(e.to_string()))?;
+
+    Ok(activos.into_iter().map(IngresoResponse::from_proveedor_fetched).collect())
 }
 
 /// Valida si un proveedor es apto para ingresar antes de abrir el formulario de admisión.
