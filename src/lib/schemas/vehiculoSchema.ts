@@ -24,13 +24,18 @@ export const vehiculoSchemaBase = z.object({
 export const TIPO_VEHICULO_OPTIONS = ["motocicleta", "automovil", "camioneta", "camion", "otro"] as const;
 
 export const vehiculoSchema = z.object({
-    tipoVehiculo: z.enum(TIPO_VEHICULO_OPTIONS),
+    tipoVehiculo: z.enum(TIPO_VEHICULO_OPTIONS, { message: "Tipo de vehículo requerido" }),
     placa: z
         .string()
-        .min(PLACA_MIN_LEN, `Mínimo ${PLACA_MIN_LEN} caracteres`)
-        .max(PLACA_MAX_LEN, `Máximo ${PLACA_MAX_LEN} caracteres`)
-        .regex(/^[A-Za-z0-9\s-]+$/, "Solo letras, números, guiones y espacios")
-        .transform((val) => val.toUpperCase().trim()),
+        .trim()
+        .min(1, "Placa requerida")
+        .pipe(
+            z.string()
+                .min(PLACA_MIN_LEN, `Mínimo ${PLACA_MIN_LEN} caracteres`)
+                .max(PLACA_MAX_LEN, `Máximo ${PLACA_MAX_LEN} caracteres`)
+                .regex(/^[A-Za-z0-9\s-]+$/, "Solo letras, números, guiones y espacios")
+                .transform((val) => val.toUpperCase().trim())
+        ),
     marca: z.string().max(50, "Máximo 50 caracteres").optional().or(z.literal('')),
     modelo: z.string().max(50, "Máximo 50 caracteres").optional().or(z.literal('')),
     color: z.string().max(30, "Máximo 30 caracteres").optional().or(z.literal('')),

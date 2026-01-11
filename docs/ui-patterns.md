@@ -58,391 +58,258 @@ Botones de selección mutuamente excluyentes que cambian de color al hacer hover
 </button>
 ```
 
-### Estructura HTML
-
-```svelte
-<div class="grid grid-cols-2 gap-3">
-  <!-- Botón Positivo -->
-  <!-- Botón Negativo -->
-</div>
-```
-
 ---
 
----
-
-## 🔘 Botones de Acción (Footer de Modales)
-
-Referencia: `SalidaModal.svelte` (líneas 265-285)
-
-### Descripción
-Botones de acción para confirmar o cancelar operaciones en modales. Siguen convenciones UX estándar donde la acción primaria es prominente y la secundaria es sutil.
-
-### Convención de Colores UX
-
-| Tipo de Acción | Color Hover | Razón |
-|----------------|-------------|-------|
-| **Primaria (Confirmar)** | Verde (`success`) | Acción positiva, completa la tarea |
-| **Secundaria (Cancelar)** | Gris sutil (`white/60`) | Menos prominente, no distrae |
-| **Destructiva (Eliminar)** | Rojo (`error`) | Indica peligro o eliminación |
-
-### Características
-- **Sin efecto de escala**: Evitar `hover:scale` y `active:scale` para prevenir glitches visuales
-- **Transición suave**: `transition-all duration-200`
-- **Borde grueso**: `border-2`
-- **Bordes redondeados**: `rounded-lg`
-
-### Estados
-
-| Botón | Estado Normal | Hover |
-|-------|---------------|-------|
-| **Cancelar** | `border-surface` + `text-secondary` | `border-white/60` + `text-white/80` |
-| **Confirmar** | `border-surface` + `text-secondary` | `border-success` + `text-success` |
-
-### Código de Referencia
-
-```svelte
-<!-- Botón Cancelar (Secundario) -->
-<button
-  onclick={handleClose}
-  disabled={loading}
-  class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 
-    transition-all duration-200 border-surface text-secondary 
-    hover:border-white/60 hover:text-white/80 
-    focus:outline-none disabled:opacity-50"
->
-  Cancelar
-</button>
-
-<!-- Botón Confirmar (Primario) -->
-<button
-  onclick={handleConfirm}
-  disabled={loading}
-  class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 
-    transition-all duration-200 border-surface text-secondary 
-    hover:border-success hover:text-success 
-    focus:outline-none disabled:opacity-50"
->
-  <LogOut size={18} />
-  Confirmar Salida
-</button>
-```
-
----
-
-## 📝 Inputs y Textareas Minimalistas
-
-Referencia: `GafeteInput.svelte`, `IngresoFormModal.svelte`, `SalidaModal.svelte`
-
-### Descripción
-Campos de entrada con estilo oscuro y minimalista. Usan un **DIV contenedor** que maneja el borde/focus, y el elemento interno (input/textarea) no tiene ningún estilo de borde.
-
-### Estructura Clave
-```
-DIV contenedor (maneja borde + focus)
-  └── INPUT/TEXTAREA interno (transparente, sin borde)
-```
-
-### Clases del Contenedor
-```
-.container {
-  bg-black/20
-  border border-white/10
-  rounded-lg
-  focus-within:border-blue-500/50
-  focus-within:ring-1 focus-within:ring-blue-500/20
-  transition-all
-  outline-none
-}
-```
-
-### Clases del Elemento Interno
-```
-input/textarea {
-  w-full
-  bg-transparent
-  px-3 py-2
-  text-sm text-white
-  placeholder:text-gray-500
-  resize-none (solo textarea)
-  focus:outline-none outline-none
-  border-none
-  appearance-none
-  ring-0
-}
-```
-
-### CSS Requerido (¡IMPORTANTE!)
-```css
-/* Quitar outline del navegador */
-.container,
-.container *:focus {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Re-aplicar ring redondeado via focus-within */
-.container:focus-within {
-  border-color: rgba(59, 130, 246, 0.5) !important;
-  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
-}
-```
-
-### Código de Referencia Completo
-
-```svelte
-<!-- Contenedor -->
-<div class="obs-container w-full bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all outline-none">
-  <!-- Input/Textarea interno -->
-  <textarea
-    class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none outline-none border-none appearance-none ring-0"
-    rows="2"
-    placeholder="Notas adicionales..."
-  ></textarea>
-</div>
-
-<style>
-  .obs-container,
-  .obs-container *:focus {
-    outline: none !important;
-    box-shadow: none !important;
-  }
-
-  .obs-container:focus-within {
-    border-color: rgba(59, 130, 246, 0.5) !important;
-    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
-  }
-</style>
-```
-
----
-
-## 🪟 Estructura del Modal Estándar
-
-Referencia: `IngresoFormModal.svelte`, `SalidaModal.svelte`
-
-### Descripción
-Estructura base para todos los modales de la aplicación. Diseño oscuro, minimalista y con bordes sutiles.
-
-### Dimensiones y Colores
-
-| Propiedad | Valor |
-|-----------|-------|
-| **Ancho máximo** | `max-w-md` (448px) |
-| **Altura máxima** | `max-h-[90vh]` |
-| **Fondo** | `bg-surface-2` (oscuro) |
-| **Borde** | `border border-surface` |
-| **Esquinas** | `rounded-lg` |
-| **Sombra** | `shadow-surface-xl` |
-
-### Overlay (Fondo)
-
-```svelte
-<div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-```
-
-### Estructura del Modal
-
-```svelte
-<div class="bg-surface-2 rounded-lg shadow-surface-xl border border-surface max-w-md w-full">
-  <!-- Header -->
-  <div class="flex items-center justify-between px-6 py-4 border-b border-surface">
-    <div>
-      <h2 class="text-xl font-semibold text-primary">Título</h2>
-      <p class="text-sm text-secondary mt-1">Subtítulo descriptivo</p>
-    </div>
-    <button class="p-2 hover:bg-surface-hover rounded-md transition-colors">
-      <X size={20} class="text-secondary" />
-    </button>
-  </div>
-
-  <!-- Content -->
-  <div class="p-6 space-y-6">
-    <!-- Contenido del formulario -->
-  </div>
-
-  <!-- Footer -->
-  <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1">
-    <!-- Botones de acción -->
-  </div>
-</div>
-```
-
-### Animaciones del Modal
-
-| Elemento | Transición |
-|----------|------------|
-| **Overlay** | `transition:fade={{ duration: 150 }}` |
-| **Modal** | `transition:scale={{ duration: 200, start: 0.95 }}` |
-
-### Secciones
-
-1. **Header** (`px-6 py-4 border-b border-surface`)
-   - Título: `text-xl font-semibold text-primary`
-   - Subtítulo: `text-sm text-secondary`
-   - Botón cerrar: `p-2 hover:bg-surface-hover rounded-md`
-
-2. **Content** (`p-6 space-y-6`)
-   - Cards informativos: `p-4 bg-surface-1 rounded-lg border border-surface`
-   - Labels: `text-[12px] font-bold uppercase tracking-wider text-gray-500`
-
-3. **Footer** (`px-6 py-4 border-t border-surface bg-surface-1`)
-   - Gap entre botones: `gap-3`
-   - Alineación: `justify-end`
-
----
-
-## 📋 Estándar de Formularios CRUD
+## 🌟 Estándar de Modal CRUD (UserFormModal)
 
 Referencia: `UserFormModal.svelte`
+Este es el **Molde Maestro** para todos los formularios complejos de la aplicación.
 
-### Descripción
-Estándar para formularios de Crear/Leer/Actualizar/Eliminar entidades. Diseñado para ser compacto, legible y eficiente en modales grandes con múltiples campos.
+### 1. Estructura General y Dimensiones
 
-### Tamaños de Input Estándar
+El modal debe ocupar el máximo espacio disponible pero mantener márgenes y bordes redondeados.
 
-| Tamaño | Altura | Clase de Padding | Uso Recomendado |
-|--------|--------|------------------|-----------------|
-| Compacto | ~32px | `py-1.5 px-2` | Filtros, tablas inline, grids densos |
-| **Estándar** | ~36px | `py-2 px-3` | **Formularios CRUD** ✅ |
-| Grande | ~44px | `py-2.5 px-3` | Login, búsqueda principal, landing pages |
+| Propiedad | Valor | HTML |
+|-----------|-------|------|
+| **Contenedor** | Surface-2 + Sombra XL | `bg-surface-2 shadow-2xl border border-surface rounded-xl` |
+| **Ancho** | Dinámico (Max 700px) | `w-full max-w-[700px]` |
+| **Alto** | Max 95% viewport | `max-h-[95vh] overflow-hidden` |
+| **Layout** | Flex Column | `flex flex-col` |
+| **Backdrop** | Blur + Oscuro | `bg-black/60 backdrop-blur-sm` |
 
-### Clases Base
+### 2. Header Estándar
 
-```javascript
-// Inputs y Textareas
-const inputClass = "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none disabled:opacity-50 transition-all";
-
-// Selects (con espacio para flecha)
-const selectClass = "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none disabled:opacity-50 transition-all cursor-pointer appearance-none bg-no-repeat bg-right pr-8";
-
-// Labels (compactos)
-const labelClass = "block text-xs font-medium text-secondary mb-1";
-
-// Errores
-const errorClass = "text-xs text-red-500 mt-0.5";
-
-// Títulos de sección
-const sectionClass = "text-xs font-semibold text-primary/80 uppercase tracking-wide border-b border-surface pb-1.5 mb-2";
-```
-
-### Select con Flecha Personalizada
-
-El select usa `appearance-none` y una flecha SVG via CSS:
+Cabecera limpia con título a la izquierda y botón de cierre a la derecha.
 
 ```svelte
-<select class="{selectClass} select-arrow">
-  <option>Opción 1</option>
-  <option>Opción 2</option>
-</select>
-
-<style>
-  .select-arrow {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 0.5rem center;
-    background-size: 1.25em 1.25em;
-  }
-</style>
+<div class="flex-none flex items-center justify-between px-3 py-3 bg-surface-2 border-b border-surface">
+  <h2 class="text-xl font-semibold text-primary">
+    {modalTitle}
+  </h2>
+  <button
+    onclick={onClose}
+    class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
+  >
+    <X size={20} />
+  </button>
+</div>
 ```
 
-### Focus Styling (CSS Requerido)
+### 3. Grid de Formulario
+
+El contenido principal va dentro de un contenedor scrollable, pero los inputs se agrupan en un "card" visual distintivo.
+
+- **Contenedor Principal**: `flex-1 p-6 space-y-4 overflow-y-auto`
+- **Card de Inputs**: `bg-surface-1 rounded-lg border border-surface p-7`
+- **Grid System**: `grid grid-cols-1 lg:grid-cols-2 gap-6`
+
+### 4. Inputs y Selects (Definiciones CSS)
+
+Usar estas constantes JS para mantener consistencia absoluta.
+
+```typescript
+// Input de texto estándar (34px altura)
+const inputClass =
+  "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all";
+
+// Botón trigger para Selects Custom
+const selectClass =
+  "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white focus:outline-none disabled:opacity-50 transition-all cursor-pointer appearance-none bg-no-repeat bg-right pr-8";
+
+// Labels
+const labelClass = "block text-xs font-medium text-secondary mb-1";
+
+// Mensajes de Error
+const errorClass = "text-xs text-red-500 mt-0.5";
+```
+
+### 5. Comportamiento y Estados de Validación
+
+Los campos deben proporcionar feedback visual inmediato sobre su estado.
+
+| Estado | Indicador Visual | Clases CSS |
+|--------|------------------|------------|
+| **Normal / Vacío** | Borde sutil, fondo semitransparente | `border-white/10` |
+| **Foco (Focus)** | Borde azul, sombra azul suave | `focus:border-blue-500/50 focus:ring-blue-500/20` |
+| **Error / Inválido** | Borde rojo, anillo rojo suave | `!border-red-500/50 !ring-red-500/20` |
+| **Requerido** | Asterisco rojo junto al label | `<span class="text-red-500">*</span>` |
+
+**Helper de Validación (`getFieldStateClass`)**
+Se utiliza una función helper para aplicar condicionalmente las clases de error si el validor (Superforms/Zod) reporta un fallo.
+
+```typescript
+function getFieldStateClass(field, value) {
+  // Si hay error en el objeto $errors o un error custom (ej. duplicados)
+  if ($errors[field] || customErrors[field]) {
+    return "!border-red-500/50 !ring-1 !ring-red-500/20";
+  }
+  return ""; // Retorna string vacío si es válido
+}
+```
+
+### 6. Input de Fecha (Texto con Autoformato)
+
+Para mantener uniformidad visual y evitar los controles nativos del navegador (calendar pickers) que rompen el estilo, usamos `input[type="text"]` con formato `DD/MM/YYYY`.
+
+**Características:**
+- Auto-agrega barras `/` mientras el usuario escribe.
+- Validación de solo números.
+- Conversión transparente a formato backend (`YYYY-MM-DD`).
+
+```typescript
+// Helpers JS
+function formatDateForDisplay(isoDate: string): string {
+    if (!isoDate) return "";
+    const [year, month, day] = isoDate.split("T")[0].split("-");
+    return `${day}/${month}/${year}`;
+}
+
+function formatDateForBackend(displayDate: string): string {
+    if (!displayDate || displayDate.length !== 10) return "";
+    const [day, month, year] = displayDate.split("/");
+    return `${year}-${month}-${day}`;
+}
+```
+
+```svelte
+<!-- Implementación en Template -->
+<input
+  type="text"
+  placeholder="DD/MM/YYYY"
+  maxlength="10"
+  class={inputClass}
+  oninput={(e) => {
+    const input = e.target as HTMLInputElement;
+    let value = input.value.replace(/[^\d/]/g, ""); // Solo números
+    if (value.length >= 3 && value[2] !== "/") { // Auto / al día
+        value = value.slice(0, 2) + "/" + value.slice(2);
+    }
+    if (value.length >= 6 && value[5] !== "/") { // Auto / al mes
+        value = value.slice(0, 5) + "/" + value.slice(5);
+    }
+    value = value.slice(0, 10); // Max length
+    $form.fecha = value;
+    input.value = value;
+  }}
+/>
+```
+
+```
+
+### 7. Textareas "Container Pattern"
+
+Para textareas (dirección, observaciones), usamos un contenedor div que gestiona el borde para permitir que el textarea interno no tenga bordes y se vea premium.
+
+```svelte
+<div>
+  <label class={labelClass}>Dirección</label>
+  <div class="obs-container w-full bg-black/20 border border-white/10 rounded-lg transition-all outline-none focus-within:!border-blue-500/50 focus-within:!ring-1 focus-within:!ring-blue-500/20">
+    <textarea
+      class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none outline-none border-none appearance-none ring-0 h-[93px]"
+      rows="4"
+    ></textarea>
+  </div>
+</div>
+```
+
+```
+
+### 8. Controles de Seguridad Integrados
+
+Los controles especiales (como "Forzar cambio de clave") se integran directamente en el grid, ocupando ambas columnas si es necesario, sin secciones colapsables.
+
+```svelte
+<!-- Columna expandida (col-span-2) o alineada al final -->
+<div class="flex items-center gap-3">
+  <!-- Toggle Switch Estilo iOS -->
+  <label class="relative inline-flex items-center cursor-pointer">
+    <input type="checkbox" class="sr-only peer" />
+    <div class="w-9 h-5 bg-surface-3 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+  </label>
+  <span class="text-xs font-medium text-gray-300">Forzar cambio de clave</span>
+</div>
+```
+
+```
+
+### 9. Footer de Acciones
+
+El footer está siempre visible en la parte inferior (`flex-none`).
+
+- **Fondo**: `bg-surface-1` (ligeramente más claro que el header para contraste visual sutil).
+- **Borde Superior**: `border-t border-surface`.
+- **Botones "Reactivos"**: Todos usan `border-2`. El color solo aparece en Hover.
+
+| Botón | Estilo Base | Hover |
+|-------|-------------|-------|
+| **Cancelar** | `border-surface text-secondary` | `hover:border-white/60 hover:text-white/80` (Gris) |
+| **Acción Secundaria** | `border-surface text-secondary` | `hover:border-accent hover:text-accent` (Azul/Cyan) |
+| **Guardar (Primario)** | `border-surface text-secondary` | `hover:border-success hover:text-success` (Verde) |
+
+```svelte
+<div class="flex-none flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1">
+  <!-- Cancelar -->
+  <button class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm">
+    Cancelar
+  </button>
+  
+  <!-- Guardar -->
+  <button class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm">
+    Guardar Cambios
+  </button>
+</div>
+```
+
+```
+
+### 10. CSS Globales Requeridos
+
+Agregar estos hacks CSS en el bloque `<style>` del componente para garantizar la estética.
 
 ```css
-/* Aplicar a todos los inputs del formulario */
-input:focus,
-select:focus,
-textarea:focus {
+/* Autofill Fix (Evita fondo blanco de Chrome) */
+input:-webkit-autofill,
+textarea:-webkit-autofill {
+  -webkit-text-fill-color: white !important;
+  -webkit-box-shadow: 0 0 0px 1000px #1c2128 inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* YA NO SE USA: Date Picker style (usamos text input) */
+/*
+input[type="date"] {
+  color-scheme: dark;
+}
+*/
+
+/* Focus Override Global */
+input:focus, textarea:focus {
   border-color: rgba(59, 130, 246, 0.5) !important;
   box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
   outline: none !important;
 }
 ```
 
-### Estructura del Modal CRUD
+---
 
+## 🛡️ Modales de Conformidad y Seguridad
+
+Referencia: `AdminConfirmModal.svelte`, `ConfirmPasswordModal.svelte`
+
+### Tema "High Security"
+Usado para acciones destructivas o verificaciones de administrador.
+
+- **Fondo**: `bg-[#0d1117]` (Casi negro, "GitHub Dark")
+- **Borde**: `border border-white/10`
+- **Sombra**: `shadow-2xl` con efecto Glow
+- **Iconografía**: Escudos (`Shield`, `ShieldAlert`) con efectos de anillo y sombra.
+
+### Alertas dentro del Modal
 ```svelte
-<!-- Modal Container -->
-<div class="relative z-10 w-full max-w-5xl max-h-[95vh] overflow-hidden rounded-xl bg-surface-1 shadow-2xl border border-surface flex flex-col">
-  
-  <!-- Header -->
-  <div class="flex-none flex items-center justify-between px-6 py-4 bg-surface-2 border-b border-surface">
-    <h2 class="text-xl font-semibold text-primary">Título del Modal</h2>
-    <button class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors">
-      <X size={20} />
-    </button>
-  </div>
-
-  <!-- Content (Scrollable) -->
-  <div class="flex-1 overflow-y-auto p-6">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Columnas de campos -->
-    </div>
-  </div>
-
-  <!-- Footer -->
-  <div class="flex-none flex gap-3 px-6 py-4 border-t border-surface bg-surface-2">
-    <!-- Botones de acción -->
-  </div>
-</div>
-```
-
-### Botones del Footer CRUD
-
-| Botón | Clase | Hover |
-|-------|-------|-------|
-| Cancelar | `border-surface text-secondary` | `hover:border-white/60 hover:text-white/80` |
-| Acción Secundaria | `border-surface text-secondary` | `hover:border-accent hover:text-accent` |
-| Acción de Advertencia | `border-surface text-secondary` | `hover:border-warning hover:text-warning` |
-| Guardar/Crear | `border-surface text-secondary` | `hover:border-success hover:text-success` |
-
-```svelte
-<!-- Cancelar -->
-<button class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm">
-  Cancelar
-</button>
-
-<!-- Guardar (Primario) -->
-<button class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm disabled:opacity-50">
-  Guardar Cambios
-</button>
-```
-
-### Layout de Campos
-
-```svelte
-<!-- Campo individual -->
-<div>
-  <label for="campo" class={labelClass}>Nombre del Campo *</label>
-  <input id="campo" type="text" class={inputClass} />
-  {#if error}<p class={errorClass}>{error}</p>{/if}
-</div>
-
-<!-- Campos en grid (2 columnas) -->
-<div class="grid grid-cols-2 gap-2">
-  <div>
-    <label class={labelClass}>Campo A</label>
-    <input class={inputClass} />
-  </div>
-  <div>
-    <label class={labelClass}>Campo B</label>
-    <input class={inputClass} />
-  </div>
-</div>
-
-<!-- Sección con título -->
-<h3 class={sectionClass}>Información Personal</h3>
-```
-
-### Mensaje Informativo (Sin Input)
-
-```svelte
-<div class="p-2.5 bg-black/20 rounded-lg border border-white/10 text-xs text-secondary text-center">
-  Este campo es gestionado por el sistema.
+<div class="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-4 flex gap-3">
+  <TriangleAlert class="text-yellow-500" />
+  <p class="text-yellow-200/80">Mensaje de advertencia...</p>
 </div>
 ```
 
 ---
-
-## 📝 Notas Adicionales
-
-*Este documento se irá actualizando con más patrones de UI a medida que se estandaricen.*

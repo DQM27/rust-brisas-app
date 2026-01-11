@@ -22,10 +22,14 @@ import {
  */
 const cedulaSchema = z.string()
     .trim()
-    .min(CEDULA_MIN_LEN, `La cédula debe tener al menos ${CEDULA_MIN_LEN} caracteres`)
-    .max(CEDULA_MAX_LEN, `La cédula no puede exceder ${CEDULA_MAX_LEN} caracteres`)
-    .regex(/^[0-9-]+$/, "La cédula solo puede contener números y guiones (sin letras)")
-    .refine(val => /\d/.test(val), "La cédula debe contener al menos un número");
+    .min(1, "Cédula requerida")
+    .pipe(
+        z.string()
+            .min(CEDULA_MIN_LEN, `Mínimo ${CEDULA_MIN_LEN} caracteres`)
+            .max(CEDULA_MAX_LEN, `Máximo ${CEDULA_MAX_LEN} caracteres`)
+            .regex(/^[0-9-]+$/, "Solo números y guiones")
+            .refine(val => /\d/.test(val), "Debe contener números")
+    );
 
 /**
  * Nombre/Apellido: Solo letras (incluye acentos), espacios permitidos.
@@ -33,15 +37,21 @@ const cedulaSchema = z.string()
  */
 const nombreSchema = z.string()
     .trim()
-    .min(1, "El nombre es obligatorio")
-    .max(NOMBRE_MAX_LEN, `El nombre no puede exceder ${NOMBRE_MAX_LEN} caracteres`)
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, "El nombre solo puede contener letras (sin números ni símbolos)");
+    .min(1, "Nombre requerido")
+    .pipe(
+        z.string()
+            .max(NOMBRE_MAX_LEN, `Máximo ${NOMBRE_MAX_LEN} caracteres`)
+            .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, "Solo letras")
+    );
 
 const apellidoSchema = z.string()
     .trim()
-    .min(1, "El apellido es obligatorio")
-    .max(NOMBRE_MAX_LEN, `El apellido no puede exceder ${NOMBRE_MAX_LEN} caracteres`)
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, "El apellido solo puede contener letras (sin números ni símbolos)");
+    .min(1, "Apellido requerido")
+    .pipe(
+        z.string()
+            .max(NOMBRE_MAX_LEN, `Máximo ${NOMBRE_MAX_LEN} caracteres`)
+            .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, "Solo letras")
+    );
 
 const nombreOpcionalSchema = z.string()
     .trim()
@@ -55,15 +65,20 @@ const nombreOpcionalSchema = z.string()
  * NOTA: El formulario transforma a YYYY-MM-DD antes de enviar al backend
  */
 const fechaPraindSchema = z.string()
-    .min(10, "Fecha requerida (DD/MM/YYYY)")
-    .refine((val) => {
-        const regex = /^\d{2}\/\d{2}\/\d{4}$/;
-        if (!regex.test(val)) return false;
+    .trim()
+    .min(1, "Fecha requerida")
+    .pipe(
+        z.string()
+            .min(10, "Formato incompleto")
+            .refine((val) => {
+                const regex = /^\d{2}\/\d{2}\/\d{4}$/;
+                if (!regex.test(val)) return false;
 
-        const [day, month, year] = val.split('/').map(Number);
-        const date = new Date(year, month - 1, day);
-        return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year;
-    }, "Fecha inválida (DD/MM/YYYY)");
+                const [day, month, year] = val.split('/').map(Number);
+                const date = new Date(year, month - 1, day);
+                return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year;
+            }, "Fecha inválida")
+    );
 
 // ==========================================
 // BASE SCHEMA (Para defaults de Superforms)
@@ -89,7 +104,7 @@ export const contratistaSchema = z.object({
     segundoNombre: nombreOpcionalSchema,
     apellido: apellidoSchema,
     segundoApellido: nombreOpcionalSchema,
-    empresaId: z.string().min(1, "Debe seleccionar una empresa"),
+    empresaId: z.string().min(1, "Empresa requerida"),
     fechaVencimientoPraind: fechaPraindSchema,
 });
 

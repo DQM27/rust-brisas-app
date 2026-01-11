@@ -141,6 +141,19 @@
           : "Crear Nuevo Usuario",
   );
 
+  // Date Helpers
+  function formatDateForDisplay(isoDate: string): string {
+    if (!isoDate) return "";
+    const [year, month, day] = isoDate.split("T")[0].split("-");
+    return `${day}/${month}/${year}`;
+  }
+
+  function formatDateForBackend(displayDate: string): string {
+    if (!displayDate || displayDate.length !== 10) return "";
+    const [day, month, year] = displayDate.split("/");
+    return `${year}-${month}-${day}`;
+  }
+
   // --- SUPERFORMS SETUP ---
   // State for Role Dropdown
   let showRoleDropdown = $state(false);
@@ -181,7 +194,24 @@
     onUpdate: async ({ form: f }) => {
       if (!f.valid) return;
 
-      let payloadData = f.data as CreateUserForm;
+      if (!f.valid) return;
+
+      let payloadData = { ...f.data } as CreateUserForm;
+
+      // Convert dates to backend format
+      if (payloadData.fechaInicioLabores)
+        payloadData.fechaInicioLabores = formatDateForBackend(
+          payloadData.fechaInicioLabores,
+        );
+      if (payloadData.fechaNacimiento)
+        payloadData.fechaNacimiento = formatDateForBackend(
+          payloadData.fechaNacimiento,
+        );
+      if (payloadData.vencimientoPortacion)
+        payloadData.vencimientoPortacion = formatDateForBackend(
+          payloadData.vencimientoPortacion,
+        );
+
       let tempPassword: string | null = null;
 
       // Solo para creación: generar password si está vacía
@@ -320,12 +350,14 @@
         roleId: user.roleId || ROLE_GUARDIA_ID,
         telefono: user.telefono || "",
         direccion: user.direccion || "",
-        fechaInicioLabores: user.fechaInicioLabores || "",
+        fechaInicioLabores: formatDateForDisplay(user.fechaInicioLabores || ""),
         numeroGafete: user.numeroGafete || "",
-        fechaNacimiento: user.fechaNacimiento || "",
+        fechaNacimiento: formatDateForDisplay(user.fechaNacimiento || ""),
         contactoEmergenciaNombre: user.contactoEmergenciaNombre || "",
         contactoEmergenciaTelefono: user.contactoEmergenciaTelefono || "",
-        vencimientoPortacion: user.vencimientoPortacion || "",
+        vencimientoPortacion: formatDateForDisplay(
+          user.vencimientoPortacion || "",
+        ),
         mustChangePassword: user.mustChangePassword || false,
       };
     } else if (show && !user) {
@@ -1000,13 +1032,28 @@
                       </label>
                       <input
                         id="vencimientoPortacion"
-                        type="date"
+                        type="text"
                         bind:value={$form.vencimientoPortacion}
                         disabled={loading || readonly}
+                        placeholder="DD/MM/YYYY"
+                        maxlength="10"
                         class="{inputClass} {getFieldStateClass(
                           'vencimientoPortacion',
                           $form.vencimientoPortacion,
                         )}"
+                        oninput={(e) => {
+                          const input = e.target as HTMLInputElement;
+                          let value = input.value.replace(/[^\d/]/g, "");
+                          if (value.length >= 3 && value[2] !== "/") {
+                            value = value.slice(0, 2) + "/" + value.slice(2);
+                          }
+                          if (value.length >= 6 && value[5] !== "/") {
+                            value = value.slice(0, 5) + "/" + value.slice(5);
+                          }
+                          value = value.slice(0, 10);
+                          $form.vencimientoPortacion = value;
+                          input.value = value;
+                        }}
                         onkeydown={(e) =>
                           handleDateTab(e, "fechaInicioLabores")}
                       />
@@ -1022,13 +1069,28 @@
                       >
                       <input
                         id="fechaInicioLabores"
-                        type="date"
+                        type="text"
                         bind:value={$form.fechaInicioLabores}
                         disabled={loading || readonly}
+                        placeholder="DD/MM/YYYY"
+                        maxlength="10"
                         class="{inputClass} {getFieldStateClass(
                           'fechaInicioLabores',
                           $form.fechaInicioLabores,
                         )}"
+                        oninput={(e) => {
+                          const input = e.target as HTMLInputElement;
+                          let value = input.value.replace(/[^\d/]/g, "");
+                          if (value.length >= 3 && value[2] !== "/") {
+                            value = value.slice(0, 2) + "/" + value.slice(2);
+                          }
+                          if (value.length >= 6 && value[5] !== "/") {
+                            value = value.slice(0, 5) + "/" + value.slice(5);
+                          }
+                          value = value.slice(0, 10);
+                          $form.fechaInicioLabores = value;
+                          input.value = value;
+                        }}
                         onkeydown={(e) => handleDateTab(e, "fechaNacimiento")}
                       />
                     </div>
@@ -1042,13 +1104,28 @@
                       >
                       <input
                         id="fechaNacimiento"
-                        type="date"
+                        type="text"
                         bind:value={$form.fechaNacimiento}
                         disabled={loading || readonly}
+                        placeholder="DD/MM/YYYY"
+                        maxlength="10"
                         class="{inputClass} {getFieldStateClass(
                           'fechaNacimiento',
                           $form.fechaNacimiento,
                         )}"
+                        oninput={(e) => {
+                          const input = e.target as HTMLInputElement;
+                          let value = input.value.replace(/[^\d/]/g, "");
+                          if (value.length >= 3 && value[2] !== "/") {
+                            value = value.slice(0, 2) + "/" + value.slice(2);
+                          }
+                          if (value.length >= 6 && value[5] !== "/") {
+                            value = value.slice(0, 5) + "/" + value.slice(5);
+                          }
+                          value = value.slice(0, 10);
+                          $form.fechaNacimiento = value;
+                          input.value = value;
+                        }}
                         onkeydown={(e) => handleDateTab(e, "telefono")}
                       />
                     </div>
@@ -1340,11 +1417,6 @@
     -webkit-text-fill-color: white !important;
     -webkit-box-shadow: 0 0 0px 1000px #1c2128 inset !important;
     transition: background-color 5000s ease-in-out 0s;
-  }
-
-  /* Force dark calendar picker */
-  input[type="date"] {
-    color-scheme: dark;
   }
 
   /* Select arrow styling */

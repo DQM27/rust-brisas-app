@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { Lock, AlertTriangle, ShieldAlert, Eye, EyeOff } from "lucide-svelte";
-  import { preventDefault } from "svelte/legacy";
-  import { fade, fly } from "svelte/transition";
+  import { Lock, TriangleAlert, Shield, Eye, EyeOff } from "lucide-svelte";
+  import { fade, scale } from "svelte/transition";
   import { currentUser } from "$lib/stores/auth";
   import { auth as authApi } from "$lib/api/auth";
   import type { UserResponse } from "$lib/types/user";
@@ -94,20 +93,27 @@
   // Color variants
   const colors = {
     warning: {
-      iconBg: "bg-amber-500/20",
-      iconColor: "text-amber-400",
-      border: "border-amber-500/30",
-      bg: "bg-amber-500/10",
-      button: "bg-amber-600 hover:bg-amber-700",
-      glow: "shadow-amber-500/20",
+      shield: "text-orange-400",
+      shieldBg:
+        "from-orange-500/20 to-orange-600/5 ring-orange-500/20 shadow-orange-900/20",
+      alertBg: "bg-yellow-900/20 border-yellow-700/30",
+      alertIcon: "text-yellow-500",
+      alertText: "text-yellow-200/80",
+      highlight: "text-yellow-400",
+      button:
+        "bg-orange-700 hover:bg-orange-600 shadow-orange-900/20 text-white",
+      glow: "bg-orange-500/10",
     },
     danger: {
-      iconBg: "bg-red-500/20",
-      iconColor: "text-red-400",
-      border: "border-red-500/30",
-      bg: "bg-red-500/10",
-      button: "bg-red-600 hover:bg-red-700",
-      glow: "shadow-red-500/20",
+      shield: "text-red-400",
+      shieldBg:
+        "from-red-500/20 to-red-600/5 ring-red-500/20 shadow-red-900/20",
+      alertBg: "bg-red-900/20 border-red-700/30",
+      alertIcon: "text-red-500",
+      alertText: "text-red-200/80",
+      highlight: "text-red-400",
+      button: "bg-red-700 hover:bg-red-600 shadow-red-900/20 text-white",
+      glow: "bg-red-500/10",
     },
   };
 
@@ -117,187 +123,188 @@
 {#if show}
   <!-- Backdrop with blur -->
   <div
-    class="fixed inset-0 z-[9999] flex items-center justify-center"
+    class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
     role="dialog"
     aria-modal="true"
     transition:fade={{ duration: 200 }}
   >
-    <!-- Background overlay -->
-    <button
-      class="absolute inset-0 bg-black/70 backdrop-blur-md cursor-default border-0"
-      onclick={handleCancel}
-      tabindex="-1"
-      aria-label="Cerrar modal"
-    ></button>
-
     <!-- Modal Container -->
     <div
-      class="relative w-full max-w-md mx-4 rounded-xl bg-gradient-to-b from-[#1a1a1a] to-[#0d0d0d] shadow-2xl border border-white/10 overflow-hidden"
-      transition:fly={{ y: 30, duration: 250 }}
+      class="w-full max-w-[480px] bg-[#0d1117] rounded-xl shadow-2xl border border-white/10 overflow-hidden relative"
+      transition:scale={{ duration: 200, start: 0.95 }}
     >
-      <!-- Decorative top glow -->
+      <!-- Background Glow Effect -->
       <div
-        class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
+        class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 {c.glow} blur-[60px] rounded-full pointer-events-none"
       ></div>
 
-      <!-- Header with icon -->
-      <div class="relative px-6 pt-6 pb-4">
-        <div class="flex items-start gap-4">
+      <div class="p-8 relative z-10">
+        <!-- Header -->
+        <div class="flex items-start gap-4 mb-6">
           <div
-            class="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl {c.iconBg} {c.glow} shadow-lg"
+            class="flex-none p-3 rounded-2xl bg-gradient-to-br ring-1 shadow-lg {c.shieldBg}"
           >
-            <ShieldAlert class={c.iconColor} size={24} />
+            <Shield class="w-8 h-8 {c.shield}" strokeWidth={1.5} />
           </div>
-          <div class="flex-1 min-w-0">
-            <h2 class="text-lg font-bold text-white leading-tight">{title}</h2>
-            <p class="text-sm text-gray-400 mt-0.5">
+          <div>
+            <h2 class="text-xl font-bold text-white leading-tight">{title}</h2>
+            <p class="text-gray-400 text-sm mt-1">
               Acción que requiere verificación
             </p>
           </div>
         </div>
-      </div>
 
-      <!-- Warning Message Box -->
-      <div class="px-6 pb-4">
-        <div class="p-4 rounded-lg {c.bg} border {c.border}">
-          <div class="flex gap-3">
-            <AlertTriangle
-              class="{c.iconColor} flex-shrink-0 mt-0.5"
-              size={18}
-            />
-            <p class="text-sm text-gray-200 leading-relaxed">
-              {warningMessage}
-            </p>
-          </div>
+        <!-- Warning Message Box -->
+        <div
+          class="{c.alertBg} border rounded-lg p-4 mb-6 flex items-start gap-3"
+        >
+          <TriangleAlert
+            class="w-5 h-5 {c.alertIcon} flex-none relative top-0.5"
+          />
+          <p class="text-sm {c.alertText} leading-relaxed">
+            {@html warningMessage.replace(
+              "ADVERTENCIA:",
+              `<span class="font-semibold ${c.highlight}">ADVERTENCIA:</span>`,
+            )}
+          </p>
         </div>
-      </div>
 
-      <!-- User Info Card -->
-      <div class="px-6 pb-3">
-        <div class="p-2.5 rounded-md bg-white/5 border border-white/10">
-          <div class="flex items-center gap-2.5">
+        <!-- User Info Card -->
+        {#if activeUser}
+          <div
+            class="bg-white/5 border border-white/5 rounded-lg p-4 mb-6 flex items-center gap-4"
+          >
             <div
-              class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs"
+              class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg"
             >
-              {activeUser?.nombre?.charAt(0)?.toUpperCase() || "U"}
+              {activeUser.nombre?.charAt(0)?.toUpperCase()}
             </div>
             <div class="flex-1 min-w-0">
-              <div class="text-sm font-medium text-white truncate">
-                {activeUser?.nombre || "Usuario"}
-              </div>
-              <div class="text-xs text-gray-500 truncate">
-                {activeUser?.email || ""}
-              </div>
+              <p class="text-sm font-medium text-white truncate">
+                {activeUser.nombre}
+                {activeUser.apellido || ""}
+              </p>
+              <p class="text-xs text-gray-500 truncate">
+                {activeUser.email}
+              </p>
             </div>
           </div>
-        </div>
-      </div>
+        {/if}
 
-      <!-- Password Form -->
-      <form onsubmit={preventDefault(handleSubmit)} class="px-6 pb-6">
-        <!-- Password Input -->
-        <div class="mb-4">
-          <label
-            for="confirm-password"
-            class="block text-sm font-medium text-gray-300 mb-2"
-          >
-            Ingresa tu contraseña para confirmar
-          </label>
-          <div class="relative group">
-            <div
-              class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+        <!-- Password Form -->
+        <form
+          onsubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+          class="space-y-6"
+        >
+          <!-- Password Input -->
+          <div class="space-y-2">
+            <label
+              for="confirm-password"
+              class="block text-sm font-medium text-gray-300"
             >
-              <Lock
-                class="text-gray-500 group-focus-within:text-blue-400 transition-colors"
-                size={18}
+              Ingresa tu contraseña para confirmar
+            </label>
+            <div class="relative group">
+              <div
+                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+              >
+                <Lock
+                  class="h-5 w-5 text-gray-500 group-focus-within:text-blue-500 transition-colors"
+                />
+              </div>
+              <input
+                id="confirm-password"
+                bind:this={inputRef}
+                type={showPassword ? "text" : "password"}
+                bind:value={password}
+                placeholder="••••••••"
+                disabled={loading}
+                autocomplete="current-password"
+                class="block w-full pl-10 pr-10 py-3 bg-black/40 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all text-sm tracking-wide sm:text-base outline-none {error
+                  ? '!border-red-500/50 !ring-red-500/20'
+                  : ''}"
               />
+              <button
+                type="button"
+                onclick={() => (showPassword = !showPassword)}
+                class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-gray-500 hover:text-gray-300 transition-colors"
+                tabindex="-1"
+              >
+                {#if showPassword}
+                  <EyeOff class="h-5 w-5" />
+                {:else}
+                  <Eye class="h-5 w-5" />
+                {/if}
+              </button>
             </div>
-            <input
-              id="confirm-password"
-              bind:this={inputRef}
-              type={showPassword ? "text" : "password"}
-              bind:value={password}
-              placeholder="••••••••"
-              disabled={loading}
-              autocomplete="current-password"
-              class="w-full pl-10 pr-12 py-3 rounded-lg border bg-[#0a0a0a] text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 transition-all text-base {error
-                ? 'border-red-500/50 focus:ring-red-500/20 focus:border-red-500'
-                : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/20'}"
-            />
+            {#if error}
+              <p
+                class="mt-2 text-sm text-red-400 flex items-center gap-1.5"
+                transition:fade={{ duration: 150 }}
+              >
+                <TriangleAlert size={14} />
+                {error}
+              </p>
+            {/if}
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onclick={() => (showPassword = !showPassword)}
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors p-1"
-              tabindex="-1"
+              onclick={handleCancel}
+              disabled={loading}
+              class="px-4 py-2.5 rounded-lg border border-white/10 text-gray-300 font-medium hover:bg-white/5 hover:text-white transition-all text-sm disabled:opacity-50"
             >
-              {#if showPassword}
-                <EyeOff size={18} />
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !password.trim()}
+              class="px-4 py-2.5 rounded-lg {c.button} font-medium transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {#if loading}
+                <span class="flex items-center justify-center gap-2">
+                  <svg
+                    class="h-4 w-4 animate-spin"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                    ></circle>
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Verificando...
+                </span>
               {:else}
-                <Eye size={18} />
+                {confirmButtonText}
               {/if}
             </button>
           </div>
-          {#if error}
-            <p
-              class="mt-2 text-sm text-red-400 flex items-center gap-1.5"
-              transition:fade={{ duration: 150 }}
-            >
-              <AlertTriangle size={14} />
-              {error}
-            </p>
-          {/if}
-        </div>
 
-        <!-- Action Buttons -->
-        <div class="flex gap-2">
-          <button
-            type="button"
-            onclick={handleCancel}
-            disabled={loading}
-            class="flex-1 py-2 px-3 rounded-md border border-white/10 text-gray-300 font-medium hover:bg-white/5 hover:border-white/20 transition-all text-sm disabled:opacity-50"
+          <!-- Security Note -->
+          <div
+            class="flex items-center justify-center gap-2 text-xs text-gray-600 mt-2"
           >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={loading || !password.trim()}
-            class="flex-1 rounded-md {c.button} px-3 py-2 font-medium text-white text-sm transition-all hover:shadow-lg {c.glow} disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
-          >
-            {#if loading}
-              <span class="flex items-center justify-center gap-2">
-                <svg
-                  class="h-4 w-4 animate-spin text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                  ></circle>
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Verificando...
-              </span>
-            {:else}
-              {confirmButtonText}
-            {/if}
-          </button>
-        </div>
-
-        <!-- Security Note -->
-        <p class="mt-4 text-center text-xs text-gray-600">
-          🔒 Tu contraseña se verifica localmente y no se almacena
-        </p>
-      </form>
+            <Lock class="w-3 h-3" />
+            Tu contraseña se verifica localmente y no se almacena
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 {/if}
