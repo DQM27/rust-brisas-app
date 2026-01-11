@@ -122,8 +122,7 @@ where
                     severidad: b
                         .nivel_severidad
                         .as_ref()
-                        .map(|s| NivelSeveridad::from_str_lossy(s))
-                        .unwrap_or(NivelSeveridad::Alto),
+                        .map_or(NivelSeveridad::Alto, |s| NivelSeveridad::from_str_lossy(s)),
                 })
             } else {
                 None

@@ -180,44 +180,42 @@ pub async fn add_to_lista_negra(
         if registro.is_active {
             warn!("⚠️ Persona ya bloqueada (activa): cédula={}", input.cedula);
             return Err(ListaNegraError::AlreadyExists);
-        } else {
-            // Caso: Existe pero está inactiva (Soft Deleted) -> Reactivar y Actualizar
-            info!(
-                "♻️ Persona previamente bloqueada encontrada (inactiva). Reactivando: id={}",
-                registro.id
-            );
-
-            // 1. Restaurar (activar)
-            db::restore(&registro.id)
-                .await
-                .map_err(|e| ListaNegraError::Database(e.to_string()))?;
-
-            // 2. Actualizar con los nuevos datos
-            let update_input = UpdateListaNegraInput {
-                nivel_severidad: Some(input.nivel_severidad.to_uppercase()),
-                motivo_bloqueo: input.motivo_bloqueo.clone(),
-                empresa_id: input.empresa_id.map(|id| {
-                    if id.contains(":") {
-                        id
-                    } else {
-                        format!("empresa:{}", id)
-                    }
-                }),
-                empresa_nombre: input.empresa_nombre,
-            };
-
-            // Nota: db::update solo actualiza campos específicos.
-            // Si queremos actualizar nombre/apellido, necesitaríamos una query de update completa
-            // o asumir que la identidad (cédula/nombre) no cambia.
-            // Por ahora, actualizamos lo crítico (motivo, nivel, empresa).
-
-            let updated = db::update(&registro.id, &update_input)
-                .await
-                .map_err(|e| ListaNegraError::Database(e.to_string()))?;
-
-            info!("🚫 Persona re-bloqueada exitosamente: id={}", updated.id);
-            return Ok(updated.into());
         }
+
+        // Caso: Existe pero está inactiva (Soft Deleted) -> Reactivar y Actualizar
+        info!(
+            "♻️ Persona previamente bloqueada encontrada (inactiva). Reactivando: id={}",
+            registro.id
+        );
+
+        // 1. Restaurar (activar)
+        db::restore(&registro.id).await.map_err(|e| ListaNegraError::Database(e.to_string()))?;
+
+        // 2. Actualizar con los nuevos datos
+        let update_input = UpdateListaNegraInput {
+            nivel_severidad: Some(input.nivel_severidad.to_uppercase()),
+            motivo_bloqueo: input.motivo_bloqueo.clone(),
+            empresa_id: input.empresa_id.map(|id| {
+                if id.contains(':') {
+                    id
+                } else {
+                    format!("empresa:{id}")
+                }
+            }),
+            empresa_nombre: input.empresa_nombre,
+        };
+
+        // Nota: db::update solo actualiza campos específicos.
+        // Si queremos actualizar nombre/apellido, necesitaríamos una query de update completa
+        // o asumir que la identidad (cédula/nombre) no cambia.
+        // Por ahora, actualizamos lo crítico (motivo, nivel, empresa).
+
+        let updated = db::update(&registro.id, &update_input)
+            .await
+            .map_err(|e| ListaNegraError::Database(e.to_string()))?;
+
+        info!("🚫 Persona re-bloqueada exitosamente: id={}", updated.id);
+        return Ok(updated.into());
     }
 
     // 3. Normalizar datos (si es nuevo registro)
@@ -228,10 +226,10 @@ pub async fn add_to_lista_negra(
         apellido: domain::normalizar_nombre_titulo(&input.apellido),
         segundo_apellido: input.segundo_apellido.map(|n| domain::normalizar_nombre_titulo(&n)),
         empresa_id: input.empresa_id.map(|id| {
-            if id.contains(":") {
+            if id.contains(':') {
                 id
             } else {
-                format!("empresa:{}", id)
+                format!("empresa:{id}")
             }
         }),
         empresa_nombre: input.empresa_nombre,
@@ -279,8 +277,8 @@ pub async fn update(
     // Normalizar ID empresa si existe
     let mut input_normalizado = input.clone();
     if let Some(emp_id) = &input_normalizado.empresa_id {
-        if !emp_id.contains(":") {
-            input_normalizado.empresa_id = Some(format!("empresa:{}", emp_id));
+        if !emp_id.contains(':') {
+            input_normalizado.empresa_id = Some(format!("empresa:{emp_id}"));
         }
     }
 

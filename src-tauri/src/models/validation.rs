@@ -16,10 +16,9 @@ impl NivelSeveridad {
     /// Convierte un string arbitrario a un nivel de severidad.
     pub fn from_str_lossy(s: &str) -> Self {
         match s.trim().to_uppercase().as_str() {
-            "ALTO" | "HIGH" => Self::Alto,
             "MEDIO" | "MEDIUM" => Self::Medio,
             "BAJO" | "LOW" => Self::Bajo,
-            _ => Self::Alto, // Default to Alto for safety
+            _ => Self::Alto, // Handle ALTO/HIGH/Others as default
         }
     }
 }

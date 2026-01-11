@@ -156,7 +156,7 @@ impl From<ListaNegra> for ListaNegraResponse {
 
         // Helper simple para limpiar formato SurrealDB (d'...') si está presente
         let parse_surreal_date = |s: String| -> chrono::DateTime<chrono::Utc> {
-            let clean = s.trim_start_matches("d'").trim_end_matches("'");
+            let clean = s.trim_start_matches("d'").trim_end_matches('\'');
             clean.parse().unwrap_or_else(|_| chrono::Utc::now())
         };
 
