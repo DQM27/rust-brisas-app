@@ -132,17 +132,21 @@
       <label for="email" class="text-sm font-medium text-secondary">
         Correo Electrónico
       </label>
-      <input
-        id="email"
-        bind:this={emailInput}
-        type="email"
-        bind:value={email}
-        placeholder="ejemplo@correo.com"
-        disabled={loading}
-        class="w-full rounded border bg-surface-1 px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-accent transition-all {errors.email
-          ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-          : 'border-emphasis focus:border-accent'}"
-      />
+      <div
+        class="input-container bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all {errors.email
+          ? 'border-red-500'
+          : ''}"
+      >
+        <input
+          id="email"
+          bind:this={emailInput}
+          type="email"
+          bind:value={email}
+          placeholder="ejemplo@correo.com"
+          disabled={loading}
+          class="w-full bg-transparent px-3 py-2.5 text-white placeholder:text-gray-500 focus:outline-none outline-none border-none appearance-none ring-0"
+        />
+      </div>
       {#if errors.email}
         <span class="text-xs text-red-500 animate-fade-in">{errors.email}</span>
       {/if}
@@ -155,17 +159,21 @@
           Contraseña
         </label>
       </div>
-      <input
-        id="password"
-        bind:this={passwordInput}
-        type="password"
-        bind:value={password}
-        placeholder="••••••••"
-        disabled={loading}
-        class="w-full rounded border bg-surface-1 px-3 py-2 text-primary focus:outline-none focus:ring-2 focus:ring-accent transition-all {errors.password
-          ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-          : 'border-emphasis focus:border-accent'}"
-      />
+      <div
+        class="input-container bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all {errors.password
+          ? 'border-red-500'
+          : ''}"
+      >
+        <input
+          id="password"
+          bind:this={passwordInput}
+          type="password"
+          bind:value={password}
+          placeholder="••••••••"
+          disabled={loading}
+          class="w-full bg-transparent px-3 py-2.5 text-white placeholder:text-gray-500 focus:outline-none outline-none border-none appearance-none ring-0"
+        />
+      </div>
       {#if errors.password}
         <span class="text-xs text-red-500 animate-fade-in"
           >{errors.password}</span
@@ -208,19 +216,19 @@
       <button
         type="button"
         onclick={exitApp}
-        class="flex-1 py-2.5 px-4 rounded-lg border border-surface-tertiary text-secondary font-medium hover:bg-surface-3 transition-colors text-sm"
+        class="flex-1 flex items-center justify-center py-2.5 px-4 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 disabled:opacity-50"
       >
         Cancelar
       </button>
       <button
         type="submit"
         disabled={loading}
-        class="flex-1 rounded-lg bg-accent px-4 py-2.5 font-medium text-white transition-all hover:bg-accent-hover hover:shadow-lg hover:shadow-accent/20 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+        class="flex-1 flex items-center justify-center py-2.5 px-4 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success disabled:opacity-50"
       >
         {#if loading}
           <span class="flex items-center justify-center gap-2">
             <svg
-              class="h-4 w-4 animate-spin text-white"
+              class="h-4 w-4 animate-spin text-current"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -248,3 +256,17 @@
     </div>
   </form>
 </div>
+
+<style>
+  /* Input container - mismo estilo que GafeteInput */
+  .input-container,
+  .input-container *:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .input-container:focus-within {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+  }
+</style>

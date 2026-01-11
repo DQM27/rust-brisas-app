@@ -84,17 +84,13 @@
     loading = false;
   }
 
-  const inputClass =
-    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#2da44e] disabled:opacity-60 transition-all";
   const errorClass = "text-xs text-red-500 mt-1";
 </script>
 
-<div class="w-full flex flex-col justify-center p-4">
-  <div class="mb-4 text-center">
-    <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
-      Cambiar Contraseña
-    </h2>
-    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+<div class="w-full flex flex-col justify-center p-5">
+  <div class="mb-3 text-center">
+    <h2 class="text-lg font-bold text-primary">Cambiar Contraseña</h2>
+    <p class="text-xs text-secondary mt-1">
       Ingresa tu contraseña actual y la nueva contraseña.
     </p>
   </div>
@@ -104,16 +100,20 @@
     <div class={currentPassword ? "hidden" : "block"}>
       <label
         for="current_password"
-        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        class="block text-sm font-medium text-secondary mb-1"
         >Contraseña Actual</label
       >
-      <input
-        id="current_password"
-        type="password"
-        bind:value={formData.currentPassword}
-        disabled={loading || !!currentPassword}
-        class={inputClass}
-      />
+      <div
+        class="input-container bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all"
+      >
+        <input
+          id="current_password"
+          type="password"
+          bind:value={formData.currentPassword}
+          disabled={loading || !!currentPassword}
+          class="w-full bg-transparent px-3 py-2.5 text-white placeholder:text-gray-500 focus:outline-none outline-none border-none appearance-none ring-0"
+        />
+      </div>
       {#if errors.currentPassword}<p class={errorClass}>
           {errors.currentPassword}
         </p>{/if}
@@ -123,18 +123,22 @@
     <div>
       <label
         for="new_password"
-        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        class="block text-sm font-medium text-secondary mb-1"
         >Nueva Contraseña</label
       >
-      <input
-        id="new_password"
-        bind:this={newPasswordInput}
-        type="password"
-        bind:value={formData.newPassword}
-        placeholder="Mínimo 6 caracteres"
-        disabled={loading}
-        class={inputClass}
-      />
+      <div
+        class="input-container bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all"
+      >
+        <input
+          id="new_password"
+          bind:this={newPasswordInput}
+          type="password"
+          bind:value={formData.newPassword}
+          placeholder="Mínimo 6 caracteres"
+          disabled={loading}
+          class="w-full bg-transparent px-3 py-2.5 text-white placeholder:text-gray-500 focus:outline-none outline-none border-none appearance-none ring-0"
+        />
+      </div>
       {#if errors.newPassword}<p class={errorClass}>
           {errors.newPassword}
         </p>{/if}
@@ -144,40 +148,57 @@
     <div>
       <label
         for="confirm_password"
-        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        class="block text-sm font-medium text-secondary mb-1"
         >Confirmar Contraseña</label
       >
-      <input
-        id="confirm_password"
-        type="password"
-        bind:value={formData.confirmPassword}
-        placeholder="Repite la nueva contraseña"
-        disabled={loading}
-        class={inputClass}
-      />
+      <div
+        class="input-container bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all"
+      >
+        <input
+          id="confirm_password"
+          type="password"
+          bind:value={formData.confirmPassword}
+          placeholder="Repite la nueva contraseña"
+          disabled={loading}
+          class="w-full bg-transparent px-3 py-2.5 text-white placeholder:text-gray-500 focus:outline-none outline-none border-none appearance-none ring-0"
+        />
+      </div>
       {#if errors.confirmPassword}<p class={errorClass}>
           {errors.confirmPassword}
         </p>{/if}
     </div>
 
     <!-- Botones -->
-    <div class="pt-3 flex flex-col gap-2">
-      <button
-        type="submit"
-        disabled={loading}
-        class="w-full rounded-md bg-[#2da44e] px-4 py-2 text-sm font-medium text-white transition-all hover:bg-[#2c974b] disabled:cursor-not-allowed disabled:opacity-60 shadow-sm"
-      >
-        {loading ? "Actualizando..." : "Confirmar Cambio"}
-      </button>
-
+    <div class="pt-3 flex gap-3">
       <button
         type="button"
         onclick={onCancel}
         disabled={loading}
-        class="w-full text-center text-xs text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors py-1"
+        class="flex-1 flex items-center justify-center py-2.5 px-4 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 disabled:opacity-50"
       >
         Cancelar
+      </button>
+      <button
+        type="submit"
+        disabled={loading}
+        class="flex-1 flex items-center justify-center py-2.5 px-4 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success disabled:opacity-50"
+      >
+        {loading ? "Actualizando..." : "Confirmar Cambio"}
       </button>
     </div>
   </form>
 </div>
+
+<style>
+  /* Input container - mismo estilo que GafeteInput */
+  .input-container,
+  .input-container *:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .input-container:focus-within {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+  }
+</style>

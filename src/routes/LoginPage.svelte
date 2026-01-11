@@ -76,7 +76,7 @@
       </div>
     {:else if view === "change_password" && tempUser}
       <div
-        class="w-full max-w-sm bg-white dark:bg-[#0d1117] rounded-xl shadow-2xl overflow-hidden"
+        class="w-full max-w-xs bg-[#1e1e1e] rounded-xl shadow-2xl overflow-hidden"
       >
         <ChangePasswordPanel
           userId={tempUser.id}
@@ -88,7 +88,9 @@
     {/if}
   </div>
 
-  <div class="text-xs text-gray-500 font-medium opacity-60">
-    &copy; 2025 Mega Brisas. Todos los derechos reservados.
-  </div>
+  {#if view === "login"}
+    <div class="text-xs text-gray-500 font-medium opacity-60">
+      &copy; 2025 Mega Brisas. Todos los derechos reservados.
+    </div>
+  {/if}
 </div>

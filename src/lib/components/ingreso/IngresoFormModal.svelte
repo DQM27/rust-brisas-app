@@ -5,7 +5,7 @@
   import {
     X,
     ChevronDown,
-    ChevronUp,
+    ChevronRight,
     Car,
     FileText,
     AlertTriangle,
@@ -499,16 +499,16 @@
                   <button
                     type="button"
                     onclick={() => (showObservaciones = !showObservaciones)}
-                    class="flex items-center gap-2 text-sm text-secondary hover:text-primary transition-colors w-full"
+                    class="flex items-center gap-1.5 text-secondary hover:text-primary transition-colors text-sm"
                   >
                     {#if showObservaciones}
-                      <ChevronUp size={16} />
+                      <ChevronDown size={14} />
                     {:else}
-                      <ChevronDown size={16} />
+                      <ChevronRight size={14} />
                     {/if}
                     <span>Observaciones</span>
-                    {#if observaciones.trim()}
-                      <span class="text-xs text-accent">(tiene contenido)</span>
+                    {#if !showObservaciones && observaciones.trim()}
+                      <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                     {/if}
                   </button>
 

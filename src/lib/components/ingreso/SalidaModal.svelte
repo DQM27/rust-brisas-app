@@ -181,7 +181,7 @@
         <!-- Pregunta del gafete -->
         {#if ingreso.gafeteNumero && ingreso.gafeteNumero !== "S/G"}
           <div class="space-y-3">
-            <span class="block text-sm font-medium text-primary">
+            <span class="block text-sm font-medium text-primary text-center">
               ¿El contratista devolvió el gafete?
             </span>
             <div class="grid grid-cols-2 gap-3">
