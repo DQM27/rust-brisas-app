@@ -43,6 +43,7 @@
   let tipoAutorizacion = $state<"correo">("correo"); // Proveedores usualmente solo correo o pase
   let observaciones = $state("");
   let showObservaciones = $state(false);
+  let submitted = $state(false);
 
   const dispatch = createEventDispatcher();
 
@@ -101,15 +102,13 @@
     if (!selectedPerson || !validationResult?.puedeIngresar) return;
 
     // Validar campos requeridos
-    if (!areaVisitada.trim()) {
-      toast.error("El área visitada es requerida");
-      return;
-    }
-    if (!motivo.trim()) {
-      toast.error("El motivo de visita es requerido");
+    if (!areaVisitada.trim() || !motivo.trim()) {
+      submitted = true;
+      toast.error("Por favor complete los campos requeridos");
       return;
     }
 
+    submitted = true;
     loading = true;
     try {
       const finalGafete = gafete.trim() || undefined; // Opcional? Normalmente requerido si está entrando
@@ -171,6 +170,7 @@
     motivo = "";
     observaciones = "";
     showObservaciones = false;
+    submitted = false;
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -189,8 +189,22 @@
 
   // --- UI PATTERNS ---
   const inputClass =
-    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all";
+    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 transition-all outline-none disabled:opacity-50";
   const labelClass = "block text-xs font-medium text-secondary mb-1";
+
+  function getFieldStateClass(value: any, isRequired = false) {
+    const hasValue = value && String(value).trim() !== "";
+
+    if (isRequired && !hasValue && submitted) {
+      return "!border-red-500/50 !ring-1 !ring-red-500/20";
+    }
+
+    if (isRequired && hasValue) {
+      return "!border-green-500/50 !ring-1 !ring-green-500/20";
+    }
+
+    return "border-white/10";
+  }
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -319,7 +333,10 @@
                         id="areaVisitada"
                         type="text"
                         bind:value={areaVisitada}
-                        class={inputClass}
+                        class="{inputClass} {getFieldStateClass(
+                          areaVisitada,
+                          true,
+                        )}"
                         placeholder="Ej. Almacén, Mantenimiento"
                       />
                     </div>
@@ -331,7 +348,7 @@
                         id="motivoVisita"
                         type="text"
                         bind:value={motivo}
-                        class={inputClass}
+                        class="{inputClass} {getFieldStateClass(motivo, true)}"
                         placeholder="Ej. Entrega de material"
                       />
                     </div>
@@ -379,7 +396,7 @@
                       <div class="mt-2" transition:slide>
                         <textarea
                           bind:value={observaciones}
-                          class="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white resize-none"
+                          class="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white resize-none focus:outline-none"
                           rows="2"
                           placeholder="Notas adicionales..."
                         ></textarea>
@@ -424,3 +441,21 @@
     </div>
   </div>
 {/if}
+
+<style>
+  /* Standardized input focus style */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+    outline: none !important;
+  }
+
+  /* Autofill Fix for Dark Theme */
+  input:-webkit-autofill {
+    -webkit-text-fill-color: white !important;
+    -webkit-box-shadow: 0 0 0px 1000px #1c2128 inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+</style>

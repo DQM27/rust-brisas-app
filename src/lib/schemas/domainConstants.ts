@@ -10,8 +10,8 @@
 // ==========================================
 // Identificación Personal
 // ==========================================
-export const CEDULA_MIN_LEN = 5;
-export const CEDULA_MAX_LEN = 20;
+export const CEDULA_MIN_LEN = 6;
+export const CEDULA_MAX_LEN = 16;
 
 // ==========================================
 // Nombres y Apellidos

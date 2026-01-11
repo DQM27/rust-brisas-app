@@ -95,6 +95,7 @@
       SPA: true,
       validators: zod4(contratistaSchema),
       resetForm: false, // We control reset manually when modal opens/closes
+      validationMethod: "oninput",
       onUpdate: async ({ form: f }) => {
         if (f.valid) {
           if (cedulaDuplicateError) return; // Block submit if duplicate
@@ -176,6 +177,9 @@
 
     if (checkTimeout) clearTimeout(checkTimeout);
 
+    // Forzar validación de Superforms para feedback instantáneo (regex, etc)
+    validate("cedula");
+
     if (value.length < 4) {
       cedulaDuplicateError = null;
       return;
@@ -232,7 +236,7 @@
     if (field === "cedula" && cedulaDuplicateError)
       return "!border-red-500/50 !ring-1 !ring-red-500/20";
 
-    // Success state
+    // Success state: Solo si hay valor Y NO HAY errores
     if (value && String(value).trim() !== "") {
       return "!border-green-500/50 !ring-1 !ring-green-500/20";
     }
@@ -338,6 +342,7 @@
                   bind:value={$form.nombre}
                   placeholder="Juan"
                   disabled={loading || readonly}
+                  oninput={() => validate("nombre")}
                   class="{inputClass} {getFieldStateClass(
                     'nombre',
                     $form.nombre,
@@ -359,6 +364,7 @@
                   name="segundoNombre"
                   type="text"
                   bind:value={$form.segundoNombre}
+                  oninput={() => validate("segundoNombre")}
                   disabled={loading || readonly}
                   class={inputClass}
                   {...$constraints.segundoNombre}
@@ -377,6 +383,7 @@
                   bind:value={$form.apellido}
                   placeholder="Pérez"
                   disabled={loading || readonly}
+                  oninput={() => validate("apellido")}
                   class="{inputClass} {getFieldStateClass(
                     'apellido',
                     $form.apellido,
@@ -398,6 +405,7 @@
                   name="segundoApellido"
                   type="text"
                   bind:value={$form.segundoApellido}
+                  oninput={() => validate("segundoApellido")}
                   disabled={loading || readonly}
                   class={inputClass}
                   {...$constraints.segundoApellido}

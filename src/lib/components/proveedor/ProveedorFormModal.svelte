@@ -1,6 +1,8 @@
 <script lang="ts">
   import { fade, fly, scale } from "svelte/transition";
-  import { X } from "lucide-svelte";
+  import { X, Car } from "lucide-svelte";
+  import { empresaStore } from "$lib/stores/empresaStore.svelte";
+  import VehiculoManagerModal from "$lib/components/vehiculo/VehiculoManagerModal.svelte";
   import type {
     ProveedorResponse,
     CreateProveedorInput,
@@ -8,10 +10,15 @@
   } from "$lib/types/proveedor";
   import { submitCreateEmpresa } from "$lib/logic/empresa/empresaService";
   import { toast } from "svelte-5-french-toast";
-  import ProveedorForm from "./ProveedorForm.svelte";
-  import { empresaStore } from "$lib/stores/empresaStore.svelte";
-  import VehiculoManagerModal from "$lib/components/vehiculo/VehiculoManagerModal.svelte";
-  import { Car } from "lucide-svelte";
+  import { superForm } from "sveltekit-superforms";
+  import { zod4 } from "sveltekit-superforms/adapters";
+  import {
+    CreateProveedorSchema,
+    UpdateProveedorSchema,
+    type CreateProveedorForm,
+    type UpdateProveedorForm,
+  } from "$lib/schemas/proveedorSchema";
+  import PersonaFields from "$lib/components/shared/form/PersonaFields.svelte";
 
   interface Props {
     show: boolean;
@@ -52,10 +59,53 @@
   let empresaError = $state("");
   let showVehiculoModal = $state(false);
 
-  // Cargar empresas
+  // Combinar tipos para el formulario
+  type CombinedForm = CreateProveedorForm & UpdateProveedorForm;
+
+  const emptyFormData: CombinedForm = {
+    cedula: "",
+    nombre: "",
+    segundoNombre: "",
+    apellido: "",
+    segundoApellido: "",
+    empresaId: "",
+    estado: "ACTIVO",
+  };
+
+  // Superforms setup
+  const { form, errors, constraints, enhance, reset, validate, tainted } =
+    superForm<CombinedForm>(emptyFormData, {
+      SPA: true,
+      validators: zod4(
+        isEditMode ? UpdateProveedorSchema : CreateProveedorSchema,
+      ),
+      dataType: "json",
+      validationMethod: "oninput",
+      resetForm: false,
+      async onUpdate({ form: f }) {
+        if (f.valid) {
+          const success = await onSave(f.data as any);
+          if (success !== false) {
+            onClose();
+          }
+        }
+      },
+    });
+
+  // Sincronizar datos cuando cambia el proveedor
   $effect(() => {
     if (show) {
       empresaStore.init();
+      const newData: CombinedForm = {
+        cedula: proveedor?.cedula ?? "",
+        nombre: proveedor?.nombre ?? "",
+        segundoNombre: proveedor?.segundoNombre ?? "",
+        apellido: proveedor?.apellido ?? "",
+        segundoApellido: proveedor?.segundoApellido ?? "",
+        empresaId: proveedor?.empresaId ?? "",
+        estado: (proveedor?.estado as any) || "ACTIVO",
+      };
+      reset({ data: newData });
     }
   });
 
@@ -103,42 +153,15 @@
   // Estilos
   const labelClass = "text-xs font-medium text-secondary mb-1";
   const inputClass =
-    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all";
-
-  // Prepara los datos iniciales para el formulario
-  const initialData = $derived.by(() => {
-    if (proveedor) {
-      return {
-        cedula: proveedor.cedula,
-        nombre: proveedor.nombre,
-        apellido: proveedor.apellido,
-        segundoNombre: proveedor.segundoNombre || "",
-        segundoApellido: proveedor.segundoApellido || "",
-        empresaId: proveedor.empresaId,
-        estado: (proveedor.estado as any) || "ACTIVO",
-      };
-    }
-    return {
-      // Valores por defecto para creación
-      cedula: "",
-      nombre: "",
-      apellido: "",
-      segundoNombre: "",
-      segundoApellido: "",
-      empresaId: "",
-      estado: "ACTIVO",
-    };
-  });
+    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 transition-all outline-none disabled:opacity-50";
 
   // Handler para Ctrl+S
   function handleKeydown(e: KeyboardEvent) {
     if (!show || readonly || loading) return;
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
       e.preventDefault();
-      const form = document.querySelector("form") as HTMLFormElement;
-      if (form) {
-        form.requestSubmit();
-      }
+      const f = document.getElementById("proveedorForm") as HTMLFormElement;
+      if (f) f.requestSubmit();
     }
   }
 </script>
@@ -181,20 +204,23 @@
 
       <form
         id="proveedorForm"
-        onsubmit={(e) => e.preventDefault()}
-        class="flex-1 overflow-y-auto"
+        method="POST"
+        use:enhance
+        class="flex-1 overflow-y-auto flex flex-col"
       >
-        <div class="p-6">
+        <div class="p-6 flex-1">
           <div class="bg-surface-1 rounded-lg border border-surface p-5">
-            <ProveedorForm
-              data={initialData}
-              {isEditMode}
-              {loading}
+            <PersonaFields
+              {form}
+              {errors}
+              {constraints}
+              {validate}
               empresas={empresaStore.empresas}
-              {onSave}
-              {onClose}
-              currentId={proveedor?.id || ""}
+              {loading}
+              {isEditMode}
               onCreateEmpresa={handleCreateEmpresa}
+              tableName="proveedor"
+              currentId={proveedor?.id || ""}
             />
           </div>
 
@@ -220,34 +246,35 @@
             </div>
           {/if}
         </div>
-      </form>
 
-      <!-- Sticky Footer -->
-      <div
-        class="flex-none flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1 sticky bottom-0 z-20"
-      >
-        <button
-          type="button"
-          onclick={onClose}
-          disabled={loading}
-          class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm"
+        <!-- Sticky Footer -->
+        <div
+          class="flex-none flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1 sticky bottom-0 z-20 mt-auto"
         >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          form="proveedorForm"
-          disabled={loading}
-          class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm disabled:opacity-50 flex items-center gap-2"
-        >
-          {#if loading}
-            <span
-              class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"
-            ></span>
+          <button
+            type="button"
+            onclick={onClose}
+            disabled={loading}
+            class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm"
+          >
+            Cancelar
+          </button>
+          {#if !readonly}
+            <button
+              type="submit"
+              disabled={loading}
+              class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm disabled:opacity-50 flex items-center gap-2"
+            >
+              {#if loading}
+                <span
+                  class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"
+                ></span>
+              {/if}
+              {isEditMode ? "Guardar Cambios" : "Crear Proveedor"}
+            </button>
           {/if}
-          {isEditMode ? "Guardar Cambios" : "Crear Proveedor"}
-        </button>
-      </div>
+        </div>
+      </form>
     </div>
   </div>
 {/if}
@@ -326,3 +353,18 @@
     onClose={() => (showVehiculoModal = false)}
   />
 {/if}
+
+<style>
+  input:focus {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+    outline: none !important;
+  }
+
+  /* Autofill Fix for Dark Theme */
+  input:-webkit-autofill {
+    -webkit-text-fill-color: white !important;
+    -webkit-box-shadow: 0 0 0px 1000px #1c2128 inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+</style>

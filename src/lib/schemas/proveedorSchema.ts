@@ -17,10 +17,14 @@ import {
  */
 const cedulaSchema = z.string()
     .trim()
-    .min(CEDULA_MIN_LEN, `Cédula debe tener al menos ${CEDULA_MIN_LEN} caracteres`)
-    .max(CEDULA_MAX_LEN, `Cédula no puede exceder ${CEDULA_MAX_LEN} caracteres`)
-    .regex(/^[0-9-]+$/, 'Cédula solo puede contener números y guiones (sin letras)')
-    .refine(val => /\d/.test(val), 'La cédula debe contener al menos un número');
+    .min(1, "Cédula requerida")
+    .pipe(
+        z.string()
+            .min(CEDULA_MIN_LEN, `Mínimo ${CEDULA_MIN_LEN} caracteres`)
+            .max(CEDULA_MAX_LEN, `Máximo ${CEDULA_MAX_LEN} caracteres`)
+            .regex(/^[0-9-]+$/, "Solo números y guiones")
+            .refine(val => /\d/.test(val), "Debe contener números")
+    );
 
 /**
  * Nombre/Apellido: Solo letras (incluye acentos), espacios permitidos.
@@ -28,15 +32,21 @@ const cedulaSchema = z.string()
  */
 const nombreSchema = z.string()
     .trim()
-    .min(1, 'Nombre es requerido')
-    .max(NOMBRE_MAX_LEN, `Nombre no puede exceder ${NOMBRE_MAX_LEN} caracteres`)
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, 'Nombre solo puede contener letras');
+    .min(1, "Nombre requerido")
+    .pipe(
+        z.string()
+            .max(NOMBRE_MAX_LEN, `Máximo ${NOMBRE_MAX_LEN} caracteres`)
+            .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, "Solo letras")
+    );
 
 const apellidoSchema = z.string()
     .trim()
-    .min(1, 'Apellido es requerido')
-    .max(NOMBRE_MAX_LEN, `Apellido no puede exceder ${NOMBRE_MAX_LEN} caracteres`)
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, 'Apellido solo puede contener letras');
+    .min(1, "Apellido requerido")
+    .pipe(
+        z.string()
+            .max(NOMBRE_MAX_LEN, `Máximo ${NOMBRE_MAX_LEN} caracteres`)
+            .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, "Solo letras")
+    );
 
 const nombreOpcionalSchema = z.string()
     .trim()
@@ -92,8 +102,23 @@ export const UpdateProveedorSchemaBase = z.object({
 // 2. Schemas Refinados (Lógica condicional)
 // Estos son los que se usan para la validación final
 
-export const CreateProveedorSchema = CreateProveedorSchemaBase;
-export const UpdateProveedorSchema = UpdateProveedorSchemaBase;
+export const CreateProveedorSchema = z.object({
+    cedula: cedulaSchema,
+    nombre: nombreSchema,
+    segundoNombre: nombreOpcionalSchema,
+    apellido: apellidoSchema,
+    segundoApellido: nombreOpcionalSchema,
+    empresaId: z.string().min(1, "Empresa requerida"),
+});
+
+export const UpdateProveedorSchema = z.object({
+    nombre: nombreSchema,
+    segundoNombre: nombreOpcionalSchema,
+    apellido: apellidoSchema,
+    segundoApellido: nombreOpcionalSchema,
+    empresaId: z.string().min(1, "Empresa requerida"),
+    estado: z.enum(['ACTIVO', 'INACTIVO', 'SUSPENDIDO']).default('ACTIVO'),
+});
 
 // ==========================================
 // TIPOS INFERIDOS

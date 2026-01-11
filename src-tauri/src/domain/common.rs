@@ -41,10 +41,10 @@ pub const MIN_LEN_PASSWORD: usize = 6;
 pub const MAX_LEN_EMAIL: usize = 50;
 
 /// Longitud mínima de dígitos para cédula (sin contar guiones).
-pub const MIN_DIGITOS_CEDULA: usize = 8;
+pub const MIN_DIGITOS_CEDULA: usize = 6;
 
 /// Longitud máxima de dígitos para cédula (sin contar guiones).
-pub const MAX_DIGITOS_CEDULA: usize = 14;
+pub const MAX_DIGITOS_CEDULA: usize = 16;
 
 /// Longitud máxima para marca de vehículo.
 pub const MAX_LEN_MARCA_VEHICULO: usize = 50;
@@ -61,9 +61,9 @@ pub const MAX_LEN_COLOR_VEHICULO: usize = 30;
 
 // === Identificación Personal ===
 /// Longitud mínima de cédula de identidad.
-pub const CEDULA_MIN_LEN: usize = 5;
+pub const CEDULA_MIN_LEN: usize = 6;
 /// Longitud máxima de cédula de identidad.
-pub const CEDULA_MAX_LEN: usize = 20;
+pub const CEDULA_MAX_LEN: usize = 16;
 
 // === Nombres y Apellidos ===
 /// Longitud mínima de nombre/apellido principal (requerido).

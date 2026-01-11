@@ -10,6 +10,7 @@
     form: any;
     errors: any;
     constraints: any;
+    validate: (path: any, opts?: any) => Promise<any>;
     loading?: boolean;
     isEditMode?: boolean;
     readonly?: boolean;
@@ -24,6 +25,7 @@
     form,
     errors,
     constraints,
+    validate,
     loading = false,
     isEditMode = false,
     readonly = false,
@@ -42,6 +44,9 @@
   function handleCedulaInput(event: Event) {
     const input = event.target as HTMLInputElement;
     const value = input.value;
+
+    // Trigger Superforms validation immediately for real-time feedback (regex, length)
+    validate("cedula");
 
     // Normalizar entrada (formato regex básico visual)
     // Dejar que Zod maneje el formato estricto, aquí solo unicidad
@@ -91,22 +96,27 @@
   const baseInputClass =
     "w-full rounded-md border px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 disabled:opacity-60 transition-colors";
 
-  function getInputClass(hasError: boolean, isReadonly: boolean, value?: any) {
+  function getInputClass(
+    hasError: boolean,
+    isReadonly: boolean,
+    value: any,
+    isRequired: boolean = false,
+  ) {
     const base =
       "w-full bg-black/20 border rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 transition-all outline-none disabled:opacity-50";
 
     if (hasError) return `${base} !border-red-500/50 !ring-1 !ring-red-500/20`;
 
-    // Success state (green border if not empty and not readonly)
-    if (value && String(value).trim() !== "" && !isReadonly) {
+    // Success state: ONLY for required fields that are not empty and not readonly
+    if (isRequired && value && String(value).trim() !== "" && !isReadonly) {
       return `${base} !border-green-500/50 !ring-1 !ring-green-500/20`;
     }
 
-    const standard =
-      "border-white/10 focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20";
-    const readonlyState = isReadonly ? "opacity-70 bg-gray-800/50" : "";
+    const standard = isReadonly
+      ? "border-white/5 opacity-70 bg-gray-800/10"
+      : "border-white/10";
 
-    return `${base} ${standard} ${readonlyState}`;
+    return `${base} ${standard}`;
   }
 
   const labelClass = "block text-xs font-medium text-secondary mb-1";
@@ -137,6 +147,7 @@
           !!($errors.cedula || cedulaDuplicateError),
           isEditMode || readonly,
           $form.cedula,
+          true, // isRequired
         )}
         placeholder="Ej: 001-010203-0001A"
         {...$constraints.cedula}
@@ -158,8 +169,9 @@
         name="nombre"
         type="text"
         bind:value={$form.nombre}
+        oninput={() => validate("nombre")}
         disabled={loading || readonly}
-        class={getInputClass(!!$errors.nombre, readonly, $form.nombre)}
+        class={getInputClass(!!$errors.nombre, readonly, $form.nombre, true)}
         placeholder="Juan"
         {...$constraints.nombre}
       />
@@ -173,11 +185,13 @@
         name="segundoNombre"
         type="text"
         bind:value={$form.segundoNombre}
+        oninput={() => validate("segundoNombre")}
         disabled={loading || readonly}
         class={getInputClass(
           !!$errors.segundoNombre,
           readonly,
           $form.segundoNombre,
+          false, // isRequired
         )}
         placeholder="Carlos"
         {...$constraints.segundoNombre}
@@ -199,8 +213,14 @@
         name="apellido"
         type="text"
         bind:value={$form.apellido}
+        oninput={() => validate("apellido")}
         disabled={loading || readonly}
-        class={getInputClass(!!$errors.apellido, readonly, $form.apellido)}
+        class={getInputClass(
+          !!$errors.apellido,
+          readonly,
+          $form.apellido,
+          true,
+        )}
         placeholder="Pérez"
         {...$constraints.apellido}
       />
@@ -214,11 +234,13 @@
         name="segundoApellido"
         type="text"
         bind:value={$form.segundoApellido}
+        oninput={() => validate("segundoApellido")}
         disabled={loading || readonly}
         class={getInputClass(
           !!$errors.segundoApellido,
           readonly,
           $form.segundoApellido,
+          false, // isRequired
         )}
         placeholder="González"
         {...$constraints.segundoApellido}
@@ -246,6 +268,7 @@
               !!$errors.empresaId,
               readonly,
               $form.empresaId,
+              true, // isRequired
             )} flex items-center justify-between cursor-pointer w-full text-left {showEmpresaDropdown
               ? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
               : ''}"
@@ -313,11 +336,10 @@
             type="button"
             onclick={onCreateEmpresa}
             disabled={loading}
-            class="px-3 h-[34px] rounded-lg border-2 border-surface text-secondary hover:border-accent hover:text-accent transition-all flex items-center gap-1 text-xs disabled:opacity-50"
+            class="px-2 h-[34px] rounded-lg border-2 border-surface text-secondary hover:border-accent hover:text-accent transition-all flex items-center justify-center text-xs disabled:opacity-50"
             title="Crear nueva empresa"
           >
             <Plus size={16} />
-            <span class="hidden sm:inline">Nueva</span>
           </button>
         {/if}
       </div>
@@ -325,3 +347,20 @@
     </div>
   {/if}
 </div>
+
+<style>
+  /* Standardized input focus style */
+  input:focus,
+  button#empresaId:focus {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+    outline: none !important;
+  }
+
+  /* Autofill Fix for Dark Theme */
+  input:-webkit-autofill {
+    -webkit-text-fill-color: white !important;
+    -webkit-box-shadow: 0 0 0px 1000px #1c2128 inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+</style>
