@@ -2,7 +2,7 @@
 <!-- Modal reutilizable para crear y editar usuarios -->
 <script lang="ts">
   import { fade, fly } from "svelte/transition";
-  import { X, Camera } from "lucide-svelte";
+  import { X, Camera, ChevronDown } from "lucide-svelte";
   import { open } from "@tauri-apps/plugin-dialog";
   import { invoke } from "@tauri-apps/api/core";
   import type {
@@ -137,6 +137,9 @@
   );
 
   // --- SUPERFORMS SETUP ---
+  // State for Role Dropdown
+  let showRoleDropdown = $state(false);
+
   const initialValues: CreateUserForm = {
     cedula: "",
     nombre: "",
@@ -449,9 +452,9 @@
 
   // Standardized UI Pattern - CRUD Form Standard
   const inputClass =
-    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none disabled:opacity-50 transition-all";
+    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-9 text-sm text-white placeholder:text-gray-500 focus:outline-none disabled:opacity-50 transition-all";
   const selectClass =
-    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none disabled:opacity-50 transition-all cursor-pointer appearance-none bg-no-repeat bg-right pr-8";
+    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-9 text-sm text-white focus:outline-none disabled:opacity-50 transition-all cursor-pointer appearance-none bg-no-repeat bg-right pr-8";
   const labelClass = "block text-xs font-medium text-secondary mb-1";
   const errorClass = "text-xs text-red-500 mt-0.5";
   const sectionClass =
@@ -767,33 +770,111 @@
                     </div>
 
                     <!-- Rol -->
+                    <!-- Rol (Custom Select) -->
                     {#if !isSelf}
-                      <div>
+                      <div class="relative">
                         <label for="roleId" class={labelClass}>Rol *</label>
-                        <select
-                          id="roleId"
-                          bind:value={$form.roleId}
+                        <button
+                          type="button"
                           disabled={loading || rolesLoading || readonly}
-                          class="{selectClass} select-arrow"
+                          onclick={() => (showRoleDropdown = !showRoleDropdown)}
+                          class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {showRoleDropdown
+                            ? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
+                            : ''}"
                         >
-                          {#if rolesLoading}
-                            <option disabled selected>Cargando roles...</option>
-                          {:else}
-                            <optgroup label="Roles del Sistema">
-                              {#each availableRoles.filter((r) => r.isSystem) as role}
-                                <option value={role.id}>{role.name}</option>
-                              {/each}
-                            </optgroup>
+                          <span class="truncate">
+                            {#if rolesLoading}
+                              Cargando...
+                            {:else}
+                              {availableRoles.find((r) => r.id === $form.roleId)
+                                ?.name || "Seleccionar rol"}
+                            {/if}
+                          </span>
+                          <ChevronDown size={16} class="text-secondary" />
+                        </button>
+
+                        {#if showRoleDropdown && !rolesLoading && !readonly}
+                          <!-- Backdrop to close on outside click -->
+                          <div
+                            class="fixed inset-0 z-40"
+                            onclick={() => (showRoleDropdown = false)}
+                            role="presentation"
+                            aria-hidden="true"
+                          ></div>
+
+                          <!-- Dropdown Menu -->
+                          <div
+                            class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top"
+                            transition:fly={{ y: -10, duration: 300 }}
+                          >
+                            <div
+                              class="px-2 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider"
+                            >
+                              Roles del Sistema
+                            </div>
+                            {#each availableRoles.filter((r) => r.isSystem) as role}
+                              <button
+                                type="button"
+                                onclick={() => {
+                                  $form.roleId = role.id;
+                                  showRoleDropdown = false;
+                                }}
+                                class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+                              >
+                                <span>{role.name}</span>
+                                {#if $form.roleId === role.id}
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-4 w-4 text-white"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                  >
+                                    <path
+                                      fill-rule="evenodd"
+                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                      clip-rule="evenodd"
+                                    />
+                                  </svg>
+                                {/if}
+                              </button>
+                            {/each}
 
                             {#if availableRoles.some((r) => !r.isSystem)}
-                              <optgroup label="Roles Personalizados">
-                                {#each availableRoles.filter((r) => !r.isSystem) as role}
-                                  <option value={role.id}>{role.name}</option>
-                                {/each}
-                              </optgroup>
+                              <div class="border-t border-white/5 my-1"></div>
+                              <div
+                                class="px-2 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider"
+                              >
+                                Roles Personalizados
+                              </div>
+                              {#each availableRoles.filter((r) => !r.isSystem) as role}
+                                <button
+                                  type="button"
+                                  onclick={() => {
+                                    $form.roleId = role.id;
+                                    showRoleDropdown = false;
+                                  }}
+                                  class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+                                >
+                                  <span>{role.name}</span>
+                                  {#if $form.roleId === role.id}
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      class="h-4 w-4 text-white"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fill-rule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd"
+                                      />
+                                    </svg>
+                                  {/if}
+                                </button>
+                              {/each}
                             {/if}
-                          {/if}
-                        </select>
+                          </div>
+                        {/if}
                       </div>
                     {:else}
                       <div
