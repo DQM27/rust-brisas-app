@@ -129,6 +129,9 @@
       .join(" ");
   };
 
+  // Estado para "Cambiar Contraseña" (Self)
+  let isChangingPassword = $state(false);
+
   const modalTitle = $derived(
     isChangingPassword
       ? "Actualización de Contraseña"
@@ -269,9 +272,6 @@
   let showAdminConfirm = $state(false);
   let showSuccessModal = $state(false);
   let generatedPassword = $state<string | null>(null);
-
-  // Estado para "Cambiar Contraseña" (Self)
-  let isChangingPassword = $state(false);
 
   // Validación de duplicados en tiempo real
   let checkTimeout: any;
@@ -535,9 +535,9 @@
 
     <!-- Modal Content -->
     <div
-      class="relative z-10 w-full {isChangingPassword
-        ? 'max-w-sm'
-        : 'max-w-2xl'} max-h-[95vh] overflow-hidden rounded-xl bg-surface-2 shadow-2xl border border-surface flex flex-col"
+      class="relative z-10 {isChangingPassword
+        ? 'w-[380px] h-[400px]'
+        : 'w-full max-w-[700px]'} max-h-[95vh] overflow-hidden rounded-xl bg-surface-2 shadow-2xl border border-surface flex flex-col"
       transition:fly={{ y: 20, duration: 200 }}
     >
       <!-- Header -->

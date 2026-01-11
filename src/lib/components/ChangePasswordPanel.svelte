@@ -100,7 +100,7 @@
   const errorClass = "text-xs text-red-500 mt-1";
 </script>
 
-<div class="w-full flex flex-col justify-center p-4 px-8">
+<div class="w-full flex flex-col p-4 px-6">
   {#if !hideHeader}
     <div class="mb-4 text-center">
       <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
@@ -112,7 +112,7 @@
     </div>
   {/if}
 
-  <form onsubmit={handleSubmit} class="space-y-3">
+  <form onsubmit={handleSubmit} class="space-y-4">
     <!-- Contraseña Actual (Oculta si ya se proveyó) -->
     <div class={currentPassword ? "hidden" : "block"}>
       <label
