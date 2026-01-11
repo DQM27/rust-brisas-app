@@ -18,7 +18,6 @@ export interface ProveedorFormData {
     empresaId: string;
     areaVisitada: string;
     motivo: string;
-    tipoAutorizacion: 'praind' | 'correo';
     modoIngreso: 'caminando' | 'vehiculo';
     vehiculoTipo?: string;
     vehiculoPlaca?: string;
@@ -125,25 +124,26 @@ export async function crearIngresoProveedor(
     const datosNormalizados = normalizarDatosProveedor(data);
 
     // 3. Preparar input para el backend
+    const gafeteNum = data.gafeteNumero ? parseInt(data.gafeteNumero) : undefined;
+    const finalGafete = (gafeteNum !== undefined && !isNaN(gafeteNum)) ? gafeteNum : undefined;
+
     const input: CreateIngresoProveedorInput = {
         cedula: datosNormalizados.cedula,
         nombre: datosNormalizados.nombre,
         apellido: datosNormalizados.apellido,
-        empresaId: datosNormalizados.empresaId,
+        proveedorId: datosNormalizados.empresaId, // Aquí empresaId en el formulario es el ID del proveedor
         areaVisitada: datosNormalizados.areaVisitada,
         motivo: datosNormalizados.motivo,
-        tipoAutorizacion: datosNormalizados.tipoAutorizacion,
         modoIngreso: datosNormalizados.modoIngreso,
         placaVehiculo: datosNormalizados.vehiculoPlaca || undefined,
-        gafete: datosNormalizados.gafeteNumero || undefined,
+        gafeteNumero: finalGafete,
         observaciones: datosNormalizados.observaciones || undefined,
-        usuarioIngresoId: usuarioId,
     };
 
     // 4. Invocar API
     const { ingresoProveedorService } = await import('$lib/services/ingresoProveedorService');
 
-    const result = await ingresoProveedorService.createIngreso(input);
+    const result = await ingresoProveedorService.createIngreso(input, usuarioId);
     return result as any;
 }
 
@@ -158,12 +158,6 @@ export function requierePlaca(modoIngreso: 'caminando' | 'vehiculo'): boolean {
     return modoIngreso === 'vehiculo';
 }
 
-/**
- * Obtiene el label apropiado para el tipo de autorización
- */
-export function getLabelTipoAutorizacion(tipo: 'praind' | 'correo'): string {
-    return tipo === 'praind' ? 'PRAIND' : 'Correo electrónico';
-}
 
 // ==========================================
 // VALIDACIÓN Y AUTO-SELECCIÓN (Mimic Contratista)
@@ -187,30 +181,13 @@ export async function validarProveedor(proveedorId: string): Promise<PrepararPro
     const validacion = await ingresoProveedorService.validarIngreso(proveedorId);
 
     // 2. Calcular autoselección
-    // El proveedor viene como JSON en validacion.proveedor
-    const vehiculos = validacion.proveedor?.vehiculos || [];
-
-    let autoSeleccion: AutoSelectionResult;
-
-    if (vehiculos.length === 0) {
-        autoSeleccion = {
-            suggestedMode: 'caminando',
-            suggestedVehicleId: null,
-            reason: 'no_vehicles'
-        };
-    } else if (vehiculos.length === 1) {
-        autoSeleccion = {
-            suggestedMode: 'vehiculo',
-            suggestedVehicleId: vehiculos[0].id, // Asegurar que el backend mande 'id' en el vehículo
-            reason: 'single_vehicle'
-        };
-    } else {
-        autoSeleccion = {
-            suggestedMode: 'caminando',
-            suggestedVehicleId: null,
-            reason: 'multiple_vehicles'
-        };
-    }
+    // NOTA: El backend ya no devuelve vehículos en la validación por seguridad.
+    // Se asume que el llamador ya tiene los datos del proveedor.
+    const autoSeleccion: AutoSelectionResult = {
+        suggestedMode: 'caminando',
+        suggestedVehicleId: null,
+        reason: 'multiple_vehicles'
+    };
 
     return {
         validacion,

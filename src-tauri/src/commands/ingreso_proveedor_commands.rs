@@ -50,10 +50,5 @@ pub async fn search_proveedores_by_cedula(
 pub async fn validar_ingreso_proveedor(
     proveedor_id: String,
 ) -> Result<ValidacionIngresoProveedorResponse, IngresoProveedorError> {
-    let res = service::validar_ingreso(proveedor_id).await?;
-    serde_json::from_value(res).map_err(|_| {
-        IngresoProveedorError::Validation(
-            "Fallo crítico en el procesamiento de validación".to_string(),
-        )
-    })
+    service::validar_ingreso(proveedor_id).await
 }

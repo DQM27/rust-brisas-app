@@ -40,7 +40,6 @@
   let vehiculoId = $state<string | null>(null);
   let areaVisitada = $state("");
   let motivo = $state("");
-  let tipoAutorizacion = $state<"correo">("correo"); // Proveedores usualmente solo correo o pase
   let observaciones = $state("");
   let showObservaciones = $state(false);
   let submitted = $state(false);
@@ -84,11 +83,6 @@
         toast.error(
           validationResult.motivoRechazo || "Proveedor no autorizado",
         );
-      } else {
-        // Si el backend devuelve data actualizada del proveedor, usarla
-        if (validationResult.proveedor) {
-          selectedPerson = { ...selectedPerson, ...validationResult.proveedor };
-        }
       }
     } catch (e: any) {
       toast.error("Error al validar proveedor: " + e.message);
@@ -111,39 +105,30 @@
     submitted = true;
     loading = true;
     try {
-      const finalGafete = gafete.trim() || undefined; // Opcional? Normalmente requerido si está entrando
-      // Backend service types says gafete? is optional.
+      const gafeteNum = parseInt(gafete.trim());
+      const finalGafete = isNaN(gafeteNum) ? undefined : gafeteNum;
 
-      await ingresoProveedorService.createIngreso({
-        cedula: selectedPerson.cedula,
-        nombre: selectedPerson.nombre,
-        apellido: selectedPerson.apellido,
-        empresaId: selectedPerson.empresaId || selectedPerson.empresa, // Ensure ID
-        areaVisitada: areaVisitada,
-        motivo: motivo,
-        gafete: finalGafete,
-        tipoAutorizacion: tipoAutorizacion,
-        modoIngreso: modoIngreso,
-        tipoVehiculo: vehiculoId ? "vehiculo" : "peatonal", // Check backend expectations for vehicle logic
-        // Si hay vehículo, pasamos datos. Si es por ID, el backend debería buscarlos,
-        // pero el input pide 'placaVehiculo', 'marcaVehiculo', etc.
-        // Asi que los extraemos del vehiculo seleccionado.
-        placaVehiculo: vehiculoId
-          ? vehiculosDisponibles.find((v: any) => v.id === vehiculoId)?.placa
-          : undefined,
-        marcaVehiculo: vehiculoId
-          ? vehiculosDisponibles.find((v: any) => v.id === vehiculoId)?.marca
-          : undefined,
-        modeloVehiculo: vehiculoId
-          ? vehiculosDisponibles.find((v: any) => v.id === vehiculoId)?.modelo
-          : undefined,
-        colorVehiculo: vehiculoId
-          ? vehiculosDisponibles.find((v: any) => v.id === vehiculoId)?.color
-          : undefined,
-
-        observaciones: observaciones,
-        usuarioIngresoId: $currentUser?.id || "",
-      });
+      await ingresoProveedorService.createIngreso(
+        {
+          cedula: validationResult.cedula || selectedPerson.cedula,
+          nombre: validationResult.nombre || selectedPerson.nombre,
+          apellido: validationResult.apellido || selectedPerson.apellido,
+          segundoNombre:
+            validationResult.segundoNombre || selectedPerson.segundoNombre,
+          segundoApellido:
+            validationResult.segundoApellido || selectedPerson.segundoApellido,
+          proveedorId: selectedPerson.id,
+          areaVisitada: areaVisitada,
+          motivo: motivo,
+          gafeteNumero: finalGafete,
+          modoIngreso: modoIngreso,
+          placaVehiculo: vehiculoId
+            ? vehiculosDisponibles.find((v: any) => v.id === vehiculoId)?.placa
+            : undefined,
+          observaciones: observaciones,
+        },
+        $currentUser?.id || "",
+      );
 
       toast.success("Ingreso de proveedor registrado");
       dispatch("complete");
@@ -262,7 +247,9 @@
                     >Nombre</span
                   >
                   <span class="text-primary font-semibold text-sm"
-                    >{selectedPerson.nombre} {selectedPerson.apellido}</span
+                    >{validationResult?.nombre || selectedPerson.nombre}
+                    {validationResult?.apellido ||
+                      selectedPerson.apellido}</span
                   >
                 </div>
                 <div class="flex items-center">
@@ -280,37 +267,51 @@
                     >Empresa</span
                   >
                   <span class="text-primary text-sm"
-                    >{selectedPerson.empresaNombre || "Sin empresa"}</span
+                    >{validationResult?.empresaNombre ||
+                      selectedPerson.empresaNombre ||
+                      "Sin empresa"}</span
                   >
                 </div>
               </div>
 
               <!-- Validation Status -->
               {#if validationResult}
-                {#if validationResult.puedeIngresar}
-                  <div
-                    class="flex items-center gap-2 text-sm text-success bg-success bg-opacity-10 px-3 py-2 rounded-md mb-4"
-                  >
-                    <span class="font-medium">✓ Acceso Autorizado</span>
-                  </div>
-                  {#if validationResult.tieneIngresoAbierto}
+                <div class="space-y-3 mb-4">
+                  {#if validationResult.puedeIngresar}
                     <div
-                      class="flex items-center gap-2 text-sm text-warning bg-warning bg-opacity-10 px-3 py-2 rounded-md mb-4"
+                      class="flex items-center gap-2 text-sm text-success bg-success/10 px-3 py-2 rounded-md border border-success/20"
                     >
+                      <span class="font-medium">✓ Acceso Autorizado</span>
+                    </div>
+                  {:else}
+                    <div class={getSeverityClasses()}>
                       <AlertTriangle size={16} />
                       <span class="font-medium"
-                        >Ya tiene un ingreso abierto</span
+                        >{validationResult.motivoRechazo ||
+                          "No autorizado"}</span
                       >
                     </div>
                   {/if}
-                {:else}
-                  <div class={getSeverityClasses()}>
-                    <span class="font-medium"
-                      >✗ {validationResult.motivoRechazo ||
-                        "No autorizado"}</span
-                    >
-                  </div>
-                {/if}
+
+                  <!-- Alertas de Gafete -->
+                  {#if validationResult.tieneGafetesPendientes}
+                    {#each validationResult.alertasGafete as alerta}
+                      <div
+                        class="flex items-start gap-2 text-sm text-amber-600 bg-amber-50 dark:text-amber-300 dark:bg-amber-900/30 px-3 py-2 rounded-md border border-amber-200 dark:border-amber-800"
+                      >
+                        <AlertTriangle size={16} class="mt-0.5 shrink-0" />
+                        <div>
+                          <p
+                            class="font-semibold text-xs font-mono uppercase tracking-tight"
+                          >
+                            Alerta de Seguridad
+                          </p>
+                          <p class="text-xs">{alerta}</p>
+                        </div>
+                      </div>
+                    {/each}
+                  {/if}
+                </div>
               {/if}
 
               <!-- Form Fields -->

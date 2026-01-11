@@ -30,7 +30,6 @@ const initialFormData: ProveedorFormState = {
     empresaId: '',
     areaVisitada: '',
     motivo: '',
-    tipoAutorizacion: 'correo',
     modoIngreso: 'caminando',
     vehiculoPlaca: undefined,
     vehiculoMarca: undefined,

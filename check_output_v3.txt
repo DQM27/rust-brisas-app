@@ -22,23 +22,12 @@ https://svelte.dev/e/state_referenced_locally (svelte)
         [35misEditMode[36m ? UpdateProveedorSchema : CreateProveedorSchema,
       ),[39m
 
-c:\Users\Daniel Quintana\Documents\GitHub\rust-brisas-app\[32msrc\lib\logic\ingreso\proveedorService.ts[39m:132:9
-[31mError[39m: Object literal may only specify known properties, and 'empresaId' does not exist in type 'CreateIngresoProveedorInput'. 
-[36m        apellido: datosNormalizados.apellido,
-        [35mempresaId[36m: datosNormalizados.empresaId,
-        areaVisitada: datosNormalizados.areaVisitada,[39m
-
-c:\Users\Daniel Quintana\Documents\GitHub\rust-brisas-app\[32msrc\lib\logic\ingreso\proveedorService.ts[39m:146:50
-[31mError[39m: Expected 2 arguments, but got 1. 
-[36m
-    const result = await ingresoProveedorService.[35mcreateIngreso[36m(input);
-    return result as any;[39m
-
-c:\Users\Daniel Quintana\Documents\GitHub\rust-brisas-app\[32msrc\lib\logic\ingreso\proveedorService.ts[39m:191:34
-[31mError[39m: Property 'proveedor' does not exist on type 'ValidacionIngresoProveedorResponse'. 
-[36m    // El proveedor viene como JSON en validacion.proveedor
-    const vehiculos = validacion.[35mproveedor[36m?.vehiculos || [];[39m
+c:\Users\Daniel Quintana\Documents\GitHub\rust-brisas-app\[32msrc\lib\stores\proveedorFormStore.ts[39m:33:5
+[31mError[39m: Object literal may only specify known properties, and 'tipoAutorizacion' does not exist in type 'ProveedorFormState'. 
+[36m    motivo: '',
+    [35mtipoAutorizacion[36m: 'correo',
+    modoIngreso: 'caminando',[39m
 
 ====================================
-[31msvelte-check found 3 errors and 3 warnings in 3 files
+[31msvelte-check found 1 error and 3 warnings in 3 files
 [39m

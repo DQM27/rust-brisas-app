@@ -153,6 +153,7 @@ pub struct RegistrarSalidaInput {
 }
 
 #[derive(Debug, Serialize, Default, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct IngresoUpdateDTO {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fecha_hora_salida: Option<surrealdb::Datetime>,

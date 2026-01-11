@@ -2,8 +2,8 @@ import { invoke } from "@tauri-apps/api/core";
 import type { IngresoProveedor, CreateIngresoProveedorInput } from "$lib/types/ingreso-nuevos";
 
 export const ingresoProveedorService = {
-    async createIngreso(input: CreateIngresoProveedorInput): Promise<IngresoProveedor> {
-        return await invoke<IngresoProveedor>("crear_ingreso_proveedor_v2", { input });
+    async createIngreso(input: CreateIngresoProveedorInput, usuarioId: string): Promise<IngresoProveedor> {
+        return await invoke<IngresoProveedor>("crear_ingreso_proveedor_v2", { input, usuarioId });
     },
 
     async getActivos(): Promise<IngresoProveedor[]> {

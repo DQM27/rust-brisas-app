@@ -29,7 +29,6 @@ export interface IngresoProveedor {
     areaVisitada: string;
     motivo: string;
     gafete?: string;
-    tipoAutorizacion?: string;
     modoIngreso?: string;
     placaVehiculo?: string;
     fechaIngreso: string;
@@ -48,21 +47,18 @@ export interface CreateIngresoProveedorInput {
     cedula: string;
     nombre: string;
     apellido: string;
-    empresaId: string;
+    segundoNombre?: string;
+    segundoApellido?: string;
+    proveedorId: string;
     areaVisitada: string;
     motivo: string;
-    gafete?: string;
-    tipoAutorizacion: string;
     modoIngreso: string;
     // Vehicle fields
-    tipoVehiculo?: string;
     placaVehiculo?: string;
-    marcaVehiculo?: string;
-    modeloVehiculo?: string;
-    colorVehiculo?: string;
+    // Gafete
+    gafeteNumero?: number;
     // Audit
     observaciones?: string;
-    usuarioIngresoId: string;
 }
 
 export interface ProveedorCatalogItem {
@@ -82,9 +78,14 @@ export interface ProveedorCatalogItem {
 
 export interface ValidacionIngresoProveedorResponse {
     puedeIngresar: boolean;
+    cedula: string;
+    nombre: string;
+    apellido: string;
+    segundoNombre?: string;
+    segundoApellido?: string;
+    empresaNombre: string;
     motivoRechazo?: string;
-    alertas: any[]; // AlertaGafeteResponse[]
-    proveedor?: any; // JSON Value from backend
+    alertasGafete: string[];
+    tieneGafetesPendientes: boolean;
     tieneIngresoAbierto: boolean;
-    ingresoAbierto?: IngresoProveedor;
 }

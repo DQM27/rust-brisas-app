@@ -11,6 +11,7 @@ use crate::db::surrealdb_proveedor_queries as proveedor_queries;
 use crate::domain::errors::IngresoProveedorError;
 use crate::models::ingreso::{
     CreateIngresoProveedorInput, IngresoProveedorCreateDTO, IngresoResponse,
+    ValidacionIngresoProveedorResponse,
 };
 use crate::services::{gafete_service, lista_negra_service, proveedor_service};
 use log::{error, info, warn};
@@ -225,16 +226,16 @@ pub async fn get_activos() -> Result<Vec<IngresoResponse>, IngresoProveedorError
 /// Valida si un proveedor es apto para ingresar antes de abrir el formulario de admisión.
 ///
 /// Permite al frontend "pre-validar" una cédula o ID para mostrar alertas tempranas
-/// (ej. si ya está dentro o si está en lista negra) antes de llenar todo el formulario.
+/// (ej. si ya está dentro o si tiene alertas de seguridad) antes de llenar todo el formulario.
 ///
 /// # Argumentos
 /// * `proveedor_id_str`: ID del proveedor a consultar.
 ///
 /// # Retorno
-/// JSON con flag `puedeIngresar` y datos del proveedor.
+/// DTO con flag `puedeIngresar`, datos del proveedor y alertas.
 pub async fn validar_ingreso(
     proveedor_id_str: String,
-) -> Result<serde_json::Value, IngresoProveedorError> {
+) -> Result<ValidacionIngresoProveedorResponse, IngresoProveedorError> {
     let p_id = parse_id(&proveedor_id_str, "proveedor")?;
 
     // 1. Validar que exista
@@ -243,18 +244,40 @@ pub async fn validar_ingreso(
         .map_err(|e| IngresoProveedorError::Validation(e.to_string()))?;
 
     // 2. Validar que no tenga ingreso abierto
-    // Nota: No es un error bloqueante aquí (retornamos JSON), pero informamos.
     let abierto = db::find_ingreso_abierto_by_proveedor(&p_id)
         .await
         .map_err(|e| IngresoProveedorError::Database(e.to_string()))?;
 
+    // 3. Consultar alertas de gafetes pendientes
+    let alertas = crate::services::alerta_service::find_pendientes_by_cedula(&p.cedula)
+        .await
+        .unwrap_or_default();
+
+    let tiene_gafetes_pendientes = !alertas.is_empty();
+    let alertas_gafete: Vec<String> = alertas
+        .into_iter()
+        .map(|a| a.notas.unwrap_or_else(|| "Gafete no devuelto".to_string()))
+        .collect();
+
     let puede_ingresar = abierto.is_none();
 
-    Ok(serde_json::json!({
-        "puedeIngresar": puede_ingresar,
-        "proveedor": p,
-        "mensajeBloqueo": if puede_ingresar { "" } else { "Ya tiene un ingreso activo" }
-    }))
+    Ok(ValidacionIngresoProveedorResponse {
+        puede_ingresar,
+        cedula: p.cedula.clone(),
+        nombre: p.nombre.clone(),
+        apellido: p.apellido.clone(),
+        segundo_nombre: p.segundo_nombre.clone(),
+        segundo_apellido: p.segundo_apellido.clone(),
+        empresa_nombre: p.empresa_nombre.clone(),
+        motivo_rechazo: if puede_ingresar {
+            None
+        } else {
+            Some("Ya tiene un ingreso activo".to_string())
+        },
+        alertas_gafete,
+        tiene_gafetes_pendientes,
+        tiene_ingreso_abierto: !puede_ingresar,
+    })
 }
 
 // --------------------------------------------------------------------------

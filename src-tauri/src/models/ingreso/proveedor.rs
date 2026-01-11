@@ -86,8 +86,8 @@ pub struct CreateIngresoProveedorInput {
     pub placa_vehiculo: Option<String>,
     pub gafete_numero: Option<i32>,
     pub observaciones: Option<String>,
-    // Nota: El frontend puede enviar segundo_nombre/apellido si los tiene,
-    // pero idealmente se toman del registro maestro.
+    pub segundo_nombre: Option<String>,
+    pub segundo_apellido: Option<String>,
 }
 
 // --------------------------------------------------------------------------
@@ -95,6 +95,7 @@ pub struct CreateIngresoProveedorInput {
 // --------------------------------------------------------------------------
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct IngresoProveedorCreateDTO {
     pub proveedor: RecordId,
     pub nombre: String,
@@ -129,7 +130,9 @@ pub struct ValidacionIngresoProveedorResponse {
     pub segundo_nombre: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub segundo_apellido: Option<String>,
+    pub empresa_nombre: String,
     pub motivo_rechazo: Option<String>,
     pub alertas_gafete: Vec<String>,
     pub tiene_gafetes_pendientes: bool,
+    pub tiene_ingreso_abierto: bool,
 }
