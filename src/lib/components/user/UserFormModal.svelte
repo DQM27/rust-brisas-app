@@ -130,11 +130,13 @@
   };
 
   const modalTitle = $derived(
-    readonly
-      ? `Ver Detalle: ${getFullName(user)}`
-      : isEditMode
-        ? `Editar: ${getFullName(user)}`
-        : "Crear Nuevo Usuario",
+    isChangingPassword
+      ? "Actualización de Contraseña"
+      : readonly
+        ? `Ver Detalle: ${getFullName(user)}`
+        : isEditMode
+          ? `Editar: ${getFullName(user)}`
+          : "Crear Nuevo Usuario",
   );
 
   // --- SUPERFORMS SETUP ---
@@ -533,7 +535,9 @@
 
     <!-- Modal Content -->
     <div
-      class="relative z-10 w-full max-w-2xl max-h-[95vh] overflow-hidden rounded-xl bg-surface-2 shadow-2xl border border-surface flex flex-col"
+      class="relative z-10 w-full {isChangingPassword
+        ? 'max-w-sm'
+        : 'max-w-2xl'} max-h-[95vh] overflow-hidden rounded-xl bg-surface-2 shadow-2xl border border-surface flex flex-col"
       transition:fly={{ y: 20, duration: 200 }}
     >
       <!-- Header -->
@@ -558,6 +562,7 @@
             <div class="w-full max-w-md">
               <ChangePasswordPanel
                 userId={user.id}
+                hideHeader={true}
                 onSuccess={() => {
                   isChangingPassword = false;
                 }}

@@ -14,9 +14,16 @@
     currentPassword?: string; // Para pre-llenar si viene del login
     onSuccess: () => void;
     onCancel: () => void;
+    hideHeader?: boolean;
   }
 
-  let { userId, currentPassword = "", onSuccess, onCancel }: Props = $props();
+  let {
+    userId,
+    currentPassword = "",
+    onSuccess,
+    onCancel,
+    hideHeader = false,
+  }: Props = $props();
 
   let loading = $state(false);
 
@@ -41,11 +48,17 @@
     formData = getInitialFormData(currentPassword);
   });
 
+  let currentPasswordInput = $state<HTMLInputElement>();
   let newPasswordInput = $state<HTMLInputElement>();
 
   onMount(() => {
     setTimeout(() => {
-      newPasswordInput?.focus();
+      // Priorizar el foco en el campo de contraseña actual
+      if (currentPasswordInput && !currentPassword) {
+        currentPasswordInput.focus();
+      } else {
+        newPasswordInput?.focus();
+      }
     }, 100);
   });
 
@@ -87,15 +100,17 @@
   const errorClass = "text-xs text-red-500 mt-1";
 </script>
 
-<div class="w-full flex flex-col justify-center p-4">
-  <div class="mb-4 text-center">
-    <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
-      Cambiar Contraseña
-    </h2>
-    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-      Ingresa tu contraseña actual y la nueva contraseña.
-    </p>
-  </div>
+<div class="w-full flex flex-col justify-center p-4 px-8">
+  {#if !hideHeader}
+    <div class="mb-4 text-center">
+      <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+        Cambiar Contraseña
+      </h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        Ingresa tu contraseña actual y la nueva contraseña.
+      </p>
+    </div>
+  {/if}
 
   <form onsubmit={handleSubmit} class="space-y-3">
     <!-- Contraseña Actual (Oculta si ya se proveyó) -->
@@ -106,14 +121,15 @@
         >Contraseña Actual</label
       >
       <div
-        class="input-container bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all"
+        class="input-container h-9 flex items-center bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all"
       >
         <input
           id="current_password"
+          bind:this={currentPasswordInput}
           type="password"
           bind:value={formData.currentPassword}
           disabled={loading || !!currentPassword}
-          class="w-full bg-transparent px-3 py-2.5 text-white placeholder:text-gray-500 focus:outline-none outline-none border-none appearance-none ring-0"
+          class="w-full bg-transparent px-3 text-white placeholder:text-gray-500 focus:outline-none outline-none border-none appearance-none ring-0 h-full"
         />
       </div>
       {#if errors.currentPassword}<p class={errorClass}>
@@ -129,7 +145,7 @@
         >Nueva Contraseña</label
       >
       <div
-        class="input-container bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all"
+        class="input-container h-9 flex items-center bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all"
       >
         <input
           id="new_password"
@@ -138,7 +154,7 @@
           bind:value={formData.newPassword}
           placeholder="Mínimo 6 caracteres"
           disabled={loading}
-          class="w-full bg-transparent px-3 py-2.5 text-white placeholder:text-gray-500 focus:outline-none outline-none border-none appearance-none ring-0"
+          class="w-full bg-transparent px-3 text-white placeholder:text-gray-500 focus:outline-none outline-none border-none appearance-none ring-0 h-full"
         />
       </div>
       {#if errors.newPassword}<p class={errorClass}>
@@ -154,7 +170,7 @@
         >Confirmar Contraseña</label
       >
       <div
-        class="input-container bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all"
+        class="input-container h-9 flex items-center bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all"
       >
         <input
           id="confirm_password"
@@ -162,7 +178,7 @@
           bind:value={formData.confirmPassword}
           placeholder="Repite la nueva contraseña"
           disabled={loading}
-          class="w-full bg-transparent px-3 py-2.5 text-white placeholder:text-gray-500 focus:outline-none outline-none border-none appearance-none ring-0"
+          class="w-full bg-transparent px-3 text-white placeholder:text-gray-500 focus:outline-none outline-none border-none appearance-none ring-0 h-full"
         />
       </div>
       {#if errors.confirmPassword}<p class={errorClass}>
@@ -176,16 +192,16 @@
         type="button"
         onclick={onCancel}
         disabled={loading}
-        class="flex-1 flex items-center justify-center py-2.5 px-4 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 disabled:opacity-50"
+        class="flex-1 h-9 flex items-center justify-center px-4 rounded-lg border border-surface text-secondary text-xs font-semibold transition-all duration-200 hover:border-white/40 hover:text-white disabled:opacity-50 whitespace-nowrap uppercase tracking-wider"
       >
         Cancelar
       </button>
       <button
         type="submit"
         disabled={loading}
-        class="flex-1 flex items-center justify-center py-2.5 px-4 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success disabled:opacity-50"
+        class="flex-1 h-9 flex items-center justify-center px-4 rounded-lg border border-surface text-secondary text-xs font-semibold transition-all duration-200 hover:border-success/50 hover:text-success disabled:opacity-50 whitespace-nowrap uppercase tracking-wider"
       >
-        {loading ? "Actualizando..." : "Confirmar Cambio"}
+        {loading ? "..." : "Guardar"}
       </button>
     </div>
   </form>
