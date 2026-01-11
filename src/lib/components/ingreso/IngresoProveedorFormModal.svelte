@@ -182,11 +182,15 @@
   }
 
   function getSeverityClasses(severity?: string) {
-    // Reusing same logic logic as IngresoFormModal
     const base =
       "flex items-center gap-2 text-sm px-3 py-2 rounded-md border transition-colors";
     return `${base} text-red-700 bg-red-50 border-red-200 dark:text-red-300 dark:bg-red-900/30 dark:border-red-800`;
   }
+
+  // --- UI PATTERNS ---
+  const inputClass =
+    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all";
+  const labelClass = "block text-xs font-medium text-secondary mb-1";
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -199,14 +203,15 @@
     aria-modal="true"
     tabindex="-1"
     onclick={(e) => e.target === e.currentTarget && handleClose()}
+    onkeydown={(e) => e.key === "Escape" && handleClose()}
   >
     <div
-      class="bg-surface-2 rounded-lg shadow-surface-xl border border-surface max-w-md w-full max-h-[90vh] overflow-y-auto flex flex-col"
+      class="bg-surface-2 rounded-lg shadow-surface-xl border border-surface max-w-md w-full max-h-[95vh] flex flex-col overflow-hidden"
       transition:scale={{ start: 0.95 }}
     >
-      <!-- Header -->
+      <!-- Header (Static) -->
       <div
-        class="flex items-center justify-between px-6 py-4 border-b border-surface"
+        class="flex-none flex items-center justify-between px-6 py-4 border-b border-surface bg-surface-2"
       >
         <div>
           <h2 class="text-xl font-semibold text-primary">Ingreso Proveedor</h2>
@@ -216,182 +221,203 @@
         </div>
         <button
           onclick={handleClose}
+          type="button"
           class="p-2 hover:bg-surface-hover rounded-md transition-colors"
         >
           <X size={20} class="text-secondary" />
         </button>
       </div>
 
-      <!-- Content -->
-      <div class="p-6 space-y-6">
-        <!-- Persona Info -->
-        {#if selectedPerson}
-          <div class="p-4 bg-surface-1 rounded-lg border border-surface">
-            <div class="space-y-2 mb-4">
-              <div class="flex items-center">
-                <span
-                  class="text-[12px] font-bold uppercase tracking-wider text-gray-500 w-20 shrink-0"
-                  >Nombre</span
-                >
-                <span class="text-primary font-semibold text-sm"
-                  >{selectedPerson.nombre} {selectedPerson.apellido}</span
-                >
-              </div>
-              <div class="flex items-center">
-                <span
-                  class="text-[12px] font-bold uppercase tracking-wider text-gray-500 w-20 shrink-0"
-                  >Cédula</span
-                >
-                <span class="text-primary font-mono text-sm"
-                  >{selectedPerson.cedula}</span
-                >
-              </div>
-              <div class="flex items-center">
-                <span
-                  class="text-[12px] font-bold uppercase tracking-wider text-gray-500 w-20 shrink-0"
-                  >Empresa</span
-                >
-                <span class="text-primary text-sm"
-                  >{selectedPerson.empresaNombre || "Sin empresa"}</span
-                >
-              </div>
-            </div>
-
-            <!-- Validation Status -->
-            {#if validationResult}
-              {#if validationResult.puedeIngresar}
-                <div
-                  class="flex items-center gap-2 text-sm text-success bg-success bg-opacity-10 px-3 py-2 rounded-md mb-4"
-                >
-                  <span class="font-medium">✓ Acceso Autorizado</span>
+      <!-- Form (Scrollable) -->
+      <form
+        id="ingresoProveedorForm"
+        onsubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
+        class="flex-1 overflow-y-auto"
+      >
+        <div class="p-6 space-y-6">
+          <!-- Persona Info -->
+          {#if selectedPerson}
+            <div class="p-4 bg-surface-1 rounded-lg border border-surface">
+              <div class="space-y-2 mb-4">
+                <div class="flex items-center">
+                  <span
+                    class="text-[12px] font-bold uppercase tracking-wider text-gray-500 w-20 shrink-0"
+                    >Nombre</span
+                  >
+                  <span class="text-primary font-semibold text-sm"
+                    >{selectedPerson.nombre} {selectedPerson.apellido}</span
+                  >
                 </div>
-                {#if validationResult.tieneIngresoAbierto}
+                <div class="flex items-center">
+                  <span
+                    class="text-[12px] font-bold uppercase tracking-wider text-gray-500 w-20 shrink-0"
+                    >Cédula</span
+                  >
+                  <span class="text-primary font-mono text-sm"
+                    >{selectedPerson.cedula}</span
+                  >
+                </div>
+                <div class="flex items-center">
+                  <span
+                    class="text-[12px] font-bold uppercase tracking-wider text-gray-500 w-20 shrink-0"
+                    >Empresa</span
+                  >
+                  <span class="text-primary text-sm"
+                    >{selectedPerson.empresaNombre || "Sin empresa"}</span
+                  >
+                </div>
+              </div>
+
+              <!-- Validation Status -->
+              {#if validationResult}
+                {#if validationResult.puedeIngresar}
                   <div
-                    class="flex items-center gap-2 text-sm text-warning bg-warning bg-opacity-10 px-3 py-2 rounded-md mb-4"
+                    class="flex items-center gap-2 text-sm text-success bg-success bg-opacity-10 px-3 py-2 rounded-md mb-4"
                   >
-                    <AlertTriangle size={16} />
-                    <span class="font-medium">Ya tiene un ingreso abierto</span>
+                    <span class="font-medium">✓ Acceso Autorizado</span>
                   </div>
-                {/if}
-              {:else}
-                <div class={getSeverityClasses()}>
-                  <span class="font-medium"
-                    >✗ {validationResult.motivoRechazo || "No autorizado"}</span
-                  >
-                </div>
-              {/if}
-            {/if}
-
-            <!-- Form Fields -->
-            {#if validationResult?.puedeIngresar}
-              <div class="mt-4 space-y-4">
-                <GafeteInput bind:value={gafete} autofocus disabled={loading} />
-
-                <!-- Área y Motivo -->
-                <div class="grid grid-cols-1 gap-4">
-                  <div class="space-y-1.5">
-                    <label
-                      for="areaVisitada"
-                      class="text-sm font-medium text-secondary"
-                      >Área Visitada</label
+                  {#if validationResult.tieneIngresoAbierto}
+                    <div
+                      class="flex items-center gap-2 text-sm text-warning bg-warning bg-opacity-10 px-3 py-2 rounded-md mb-4"
                     >
-                    <input
-                      id="areaVisitada"
-                      type="text"
-                      bind:value={areaVisitada}
-                      class="w-full bg-surface-1 border border-surface rounded-md px-3 py-2 text-sm text-primary"
-                      placeholder="Ej. Almacén, Mantenimiento"
-                    />
-                  </div>
-                  <div class="space-y-1.5">
-                    <label
-                      for="motivoVisita"
-                      class="text-sm font-medium text-secondary"
-                      >Motivo Visita</label
-                    >
-                    <input
-                      id="motivoVisita"
-                      type="text"
-                      bind:value={motivo}
-                      class="w-full bg-surface-1 border border-surface rounded-md px-3 py-2 text-sm text-primary"
-                      placeholder="Ej. Entrega de material"
-                    />
-                  </div>
-                </div>
-
-                <!-- Vehiculo -->
-                {#if tieneVehiculos}
-                  <div class="space-y-1.5">
-                    <label
-                      class="flex items-center gap-2 text-sm font-medium text-secondary"
-                    >
-                      <Car size={16} /> Vehículo
-                      <span class="text-xs text-tertiary">(opcional)</span>
-                    </label>
-                    <select
-                      class="w-full bg-surface-1 border border-surface rounded-md px-3 py-2 text-sm text-primary"
-                      bind:value={vehiculoId}
-                    >
-                      <option value={null}>Sin vehículo (caminando)</option>
-                      {#each vehiculosDisponibles as v}
-                        <option value={v.id}
-                          >{v.placa} - {v.marca} {v.modelo}</option
-                        >
-                      {/each}
-                    </select>
-                  </div>
-                {/if}
-
-                <!-- Observaciones -->
-                <div class="border-t border-surface pt-2">
-                  <button
-                    type="button"
-                    onclick={() => (showObservaciones = !showObservaciones)}
-                    class="flex items-center gap-1.5 text-secondary hover:text-primary transition-colors text-sm"
-                  >
-                    {#if showObservaciones}
-                      <ChevronDown size={14} />
-                    {:else}
-                      <ChevronRight size={14} />
-                    {/if}
-                    <span>Observaciones</span>
-                  </button>
-                  {#if showObservaciones}
-                    <div class="mt-2" transition:slide>
-                      <textarea
-                        bind:value={observaciones}
-                        class="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white resize-none"
-                        rows="2"
-                        placeholder="Notas adicionales..."
-                      ></textarea>
+                      <AlertTriangle size={16} />
+                      <span class="font-medium"
+                        >Ya tiene un ingreso abierto</span
+                      >
                     </div>
                   {/if}
-                </div>
-              </div>
-            {/if}
-          </div>
-        {/if}
-      </div>
+                {:else}
+                  <div class={getSeverityClasses()}>
+                    <span class="font-medium"
+                      >✗ {validationResult.motivoRechazo ||
+                        "No autorizado"}</span
+                    >
+                  </div>
+                {/if}
+              {/if}
 
-      <!-- Footer -->
+              <!-- Form Fields -->
+              {#if validationResult?.puedeIngresar}
+                <div class="mt-4 space-y-4">
+                  <GafeteInput
+                    bind:value={gafete}
+                    autofocus
+                    disabled={loading}
+                  />
+
+                  <!-- Área y Motivo -->
+                  <div class="grid grid-cols-1 gap-4">
+                    <div>
+                      <label for="areaVisitada" class={labelClass}
+                        >Área Visitada <span class="text-red-500">*</span
+                        ></label
+                      >
+                      <input
+                        id="areaVisitada"
+                        type="text"
+                        bind:value={areaVisitada}
+                        class={inputClass}
+                        placeholder="Ej. Almacén, Mantenimiento"
+                      />
+                    </div>
+                    <div>
+                      <label for="motivoVisita" class={labelClass}
+                        >Motivo <span class="text-red-500">*</span></label
+                      >
+                      <input
+                        id="motivoVisita"
+                        type="text"
+                        bind:value={motivo}
+                        class={inputClass}
+                        placeholder="Ej. Entrega de material"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Vehiculo -->
+                  {#if tieneVehiculos}
+                    <div>
+                      <label for="vehiculoSelect" class={labelClass}>
+                        Vehículo <span class="text-xs text-tertiary ml-1"
+                          >(opcional)</span
+                        >
+                      </label>
+                      <select
+                        id="vehiculoSelect"
+                        class="{inputClass} cursor-pointer appearance-none bg-no-repeat bg-right pr-8"
+                        style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239CA3AF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-size: 10px; background-position: calc(100% - 12px) 50%;"
+                        bind:value={vehiculoId}
+                      >
+                        <option value={null}>Sin vehículo (caminando)</option>
+                        {#each vehiculosDisponibles as v}
+                          <option value={v.id}
+                            >{v.placa} - {v.marca} {v.modelo}</option
+                          >
+                        {/each}
+                      </select>
+                    </div>
+                  {/if}
+
+                  <!-- Observaciones -->
+                  <div class="border-t border-surface pt-2">
+                    <button
+                      type="button"
+                      onclick={() => (showObservaciones = !showObservaciones)}
+                      class="flex items-center gap-1.5 text-secondary hover:text-primary transition-colors text-sm"
+                    >
+                      {#if showObservaciones}
+                        <ChevronDown size={14} />
+                      {:else}
+                        <ChevronRight size={14} />
+                      {/if}
+                      <span>Observaciones</span>
+                    </button>
+                    {#if showObservaciones}
+                      <div class="mt-2" transition:slide>
+                        <textarea
+                          bind:value={observaciones}
+                          class="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white resize-none"
+                          rows="2"
+                          placeholder="Notas adicionales..."
+                        ></textarea>
+                      </div>
+                    {/if}
+                  </div>
+                </div>
+              {/if}
+            </div>
+          {/if}
+        </div>
+      </form>
+
+      <!-- Sticky Footer (Static) -->
       <div
-        class="flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1"
+        class="flex-none flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1 sticky bottom-0 z-10"
       >
         <button
           onclick={handleClose}
+          type="button"
           disabled={loading}
-          class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary hover:text-white transition-colors"
-          >Cancelar</button
+          class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm"
         >
+          Cancelar
+        </button>
         {#if validationResult?.puedeIngresar}
           <button
-            onclick={handleSubmit}
+            type="submit"
+            form="ingresoProveedorForm"
             disabled={loading}
-            class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary hover:border-success hover:text-success transition-colors font-semibold"
+            class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm disabled:opacity-50 flex items-center gap-2"
           >
             {#if loading}
-              ⏳
-            {/if} Registrar Ingreso
+              <span
+                class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"
+              ></span>
+            {/if}
+            Registrar Ingreso
           </button>
         {/if}
       </div>

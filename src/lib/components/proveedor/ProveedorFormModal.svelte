@@ -10,6 +10,8 @@
   import { toast } from "svelte-5-french-toast";
   import ProveedorForm from "./ProveedorForm.svelte";
   import { empresaStore } from "$lib/stores/empresaStore.svelte";
+  import VehiculoManagerModal from "$lib/components/vehiculo/VehiculoManagerModal.svelte";
+  import { Car } from "lucide-svelte";
 
   interface Props {
     show: boolean;
@@ -48,6 +50,7 @@
   let creatingEmpresa = $state(false);
   let nuevaEmpresaNombre = $state("");
   let empresaError = $state("");
+  let showVehiculoModal = $state(false);
 
   // Cargar empresas
   $effect(() => {
@@ -113,13 +116,6 @@
         segundoApellido: proveedor.segundoApellido || "",
         empresaId: proveedor.empresaId,
         estado: (proveedor.estado as any) || "ACTIVO",
-
-        tieneVehiculo: !!proveedor.vehiculoPlaca,
-        tipoVehiculo: proveedor.vehiculoTipo || "",
-        placa: proveedor.vehiculoPlaca || "",
-        marca: proveedor.vehiculoMarca || "",
-        modelo: proveedor.vehiculoModelo || "",
-        color: proveedor.vehiculoColor || "",
       };
     }
     return {
@@ -131,12 +127,6 @@
       segundoApellido: "",
       empresaId: "",
       estado: "ACTIVO",
-      tieneVehiculo: false,
-      tipoVehiculo: "",
-      placa: "",
-      marca: "",
-      modelo: "",
-      color: "",
     };
   });
 
@@ -169,7 +159,7 @@
 
     <!-- Modal Content -->
     <div
-      class="relative z-10 w-full max-w-[700px] max-h-[95vh] overflow-hidden rounded-xl bg-surface-2 shadow-2xl border border-surface flex flex-col"
+      class="relative z-10 w-full max-w-[400px] max-h-[95vh] overflow-hidden rounded-xl bg-surface-2 shadow-2xl border border-surface flex flex-col"
       transition:fly={{ y: 20, duration: 200 }}
       role="dialog"
       aria-modal="true"
@@ -189,9 +179,13 @@
         </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto">
+      <form
+        id="proveedorForm"
+        onsubmit={(e) => e.preventDefault()}
+        class="flex-1 overflow-y-auto"
+      >
         <div class="p-6">
-          <div class="bg-surface-1 rounded-lg border border-surface p-7">
+          <div class="bg-surface-1 rounded-lg border border-surface p-5">
             <ProveedorForm
               data={initialData}
               {isEditMode}
@@ -203,7 +197,56 @@
               onCreateEmpresa={handleCreateEmpresa}
             />
           </div>
+
+          <!-- Gestión de Vehículos (Solo en edición) -->
+          {#if isEditMode && proveedor?.id}
+            <div class="mt-6 border-t border-surface pt-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-sm font-semibold text-primary">Vehículos</h3>
+                  <p class="text-xs text-secondary mt-1">
+                    Gestione la flotilla asociada a este proveedor
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onclick={() => (showVehiculoModal = true)}
+                  class="flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg border border-surface bg-surface-3 text-secondary hover:text-primary hover:border-white/20 transition-all"
+                >
+                  <Car size={14} />
+                  Gestionar Flotilla
+                </button>
+              </div>
+            </div>
+          {/if}
         </div>
+      </form>
+
+      <!-- Sticky Footer -->
+      <div
+        class="flex-none flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1 sticky bottom-0 z-20"
+      >
+        <button
+          type="button"
+          onclick={onClose}
+          disabled={loading}
+          class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          form="proveedorForm"
+          disabled={loading}
+          class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm disabled:opacity-50 flex items-center gap-2"
+        >
+          {#if loading}
+            <span
+              class="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"
+            ></span>
+          {/if}
+          {isEditMode ? "Guardar Cambios" : "Crear Proveedor"}
+        </button>
       </div>
     </div>
   </div>
@@ -251,13 +294,13 @@
         </div>
       </div>
       <div
-        class="flex justify-end gap-3 px-5 py-3 bg-surface-1 border-t border-surface"
+        class="flex justify-end gap-2 px-5 py-3 border-t border-surface bg-surface-1"
       >
         <button
           type="button"
           disabled={creatingEmpresa}
           onclick={() => (showEmpresaModal = false)}
-          class="px-4 py-2 rounded-lg border-2 border-surface text-secondary font-medium hover:border-white/60 hover:text-white/80 transition-colors text-sm"
+          class="px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary transition-all duration-200 hover:border-white/60 hover:text-white/80"
         >
           Cancelar
         </button>
@@ -265,11 +308,21 @@
           type="button"
           disabled={creatingEmpresa || !nuevaEmpresaNombre.trim()}
           onclick={handleSaveEmpresa}
-          class="px-4 py-2 rounded-lg border-2 border-surface text-secondary font-medium hover:border-success hover:text-success transition-colors text-sm"
+          class="px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary transition-all duration-200 hover:border-success hover:text-success disabled:opacity-50"
         >
           {creatingEmpresa ? "Guardando..." : "Guardar"}
         </button>
       </div>
     </div>
   </div>
+{/if}
+
+<!-- Vehiculo Modal -->
+{#if showVehiculoModal && proveedor}
+  <VehiculoManagerModal
+    show={showVehiculoModal}
+    propietarioId={proveedor.id}
+    propietarioNombre={proveedor.nombre + " " + proveedor.apellido}
+    onClose={() => (showVehiculoModal = false)}
+  />
 {/if}

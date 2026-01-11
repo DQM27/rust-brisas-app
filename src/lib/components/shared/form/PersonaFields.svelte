@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { SuperForm } from "sveltekit-superforms";
   import { invoke } from "@tauri-apps/api/core";
-  import { Plus } from "lucide-svelte";
+  import { Plus, ChevronDown } from "lucide-svelte";
 
   interface Props {
     // Aceptamos el objeto 'form' (store), 'errors' (store), y 'constraints' (store)
@@ -36,6 +36,7 @@
 
   let checkTimeout: any;
   let cedulaDuplicateError = $state<string | null>(null); // Estado independiente para persistencia
+  let showEmpresaDropdown = $state(false);
 
   // Validación en tiempo real (debounced)
   function handleCedulaInput(event: Event) {
@@ -90,51 +91,38 @@
   const baseInputClass =
     "w-full rounded-md border px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 disabled:opacity-60 transition-colors";
 
-  function getInputClass(hasError: boolean, isReadonly: boolean) {
+  function getInputClass(hasError: boolean, isReadonly: boolean, value?: any) {
     const base =
       "w-full bg-black/20 border rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 transition-all outline-none disabled:opacity-50";
 
-    const state = hasError
-      ? "!border-red-500/50 !ring-1 !ring-red-500/20"
-      : "border-white/10 focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20";
+    if (hasError) return `${base} !border-red-500/50 !ring-1 !ring-red-500/20`;
 
+    // Success state (green border if not empty and not readonly)
+    if (value && String(value).trim() !== "" && !isReadonly) {
+      return `${base} !border-green-500/50 !ring-1 !ring-green-500/20`;
+    }
+
+    const standard =
+      "border-white/10 focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20";
     const readonlyState = isReadonly ? "opacity-70 bg-gray-800/50" : "";
 
-    return `${base} ${state} ${readonlyState}`;
+    return `${base} ${standard} ${readonlyState}`;
   }
 
   const labelClass = "block text-xs font-medium text-secondary mb-1";
-  const errorClass = "text-xs text-red-500 mt-1";
-  const sectionClass =
-    "text-base font-semibold text-primary border-b border-surface pb-2 mb-4 flex items-center gap-2";
+  const errorClass = "text-xs text-red-500 mt-0.5";
+  const sectionClass = "hidden"; // Hide section title as per Contratista pattern
 </script>
 
 <div>
-  <h3 class={sectionClass}>
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      ><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle
-        cx="9"
-        cy="7"
-        r="4"
-      /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path
-        d="M16 3.13a4 4 0 0 1 0 7.75"
-      /></svg
-    >
-    Datos Personales
-  </h3>
+  <!-- Datos Personales header removed for consistency with Contratista simple grid -->
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-    <div class="md:col-span-2">
-      <label for="cedula" class={labelClass}>Cédula de Identidad *</label>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+    <!-- Cédula (Full Width) -->
+    <div class="col-span-1 lg:col-span-2">
+      <label for="cedula" class={labelClass}
+        >Cédula <span class="text-red-500 ml-0.5">*</span></label
+      >
       <input
         id="cedula"
         name="cedula"
@@ -148,6 +136,7 @@
         class={getInputClass(
           !!($errors.cedula || cedulaDuplicateError),
           isEditMode || readonly,
+          $form.cedula,
         )}
         placeholder="Ej: 001-010203-0001A"
         {...$constraints.cedula}
@@ -159,16 +148,18 @@
   </div>
 
   <!-- Fila 2: Nombres (Nombre + Segundo Nombre) -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
     <div>
-      <label for="nombre" class={labelClass}>Primer Nombre *</label>
+      <label for="nombre" class={labelClass}
+        >Nombre <span class="text-red-500 ml-0.5">*</span></label
+      >
       <input
         id="nombre"
         name="nombre"
         type="text"
         bind:value={$form.nombre}
         disabled={loading || readonly}
-        class={getInputClass(!!$errors.nombre, readonly)}
+        class={getInputClass(!!$errors.nombre, readonly, $form.nombre)}
         placeholder="Juan"
         {...$constraints.nombre}
       />
@@ -183,7 +174,11 @@
         type="text"
         bind:value={$form.segundoNombre}
         disabled={loading || readonly}
-        class={getInputClass(!!$errors.segundoNombre, readonly)}
+        class={getInputClass(
+          !!$errors.segundoNombre,
+          readonly,
+          $form.segundoNombre,
+        )}
         placeholder="Carlos"
         {...$constraints.segundoNombre}
       />
@@ -194,16 +189,18 @@
   </div>
 
   <!-- Fila 3: Apellidos (Apellido + Segundo Apellido) -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
     <div>
-      <label for="apellido" class={labelClass}>Primer Apellido *</label>
+      <label for="apellido" class={labelClass}
+        >Apellido <span class="text-red-500 ml-0.5">*</span></label
+      >
       <input
         id="apellido"
         name="apellido"
         type="text"
         bind:value={$form.apellido}
         disabled={loading || readonly}
-        class={getInputClass(!!$errors.apellido, readonly)}
+        class={getInputClass(!!$errors.apellido, readonly, $form.apellido)}
         placeholder="Pérez"
         {...$constraints.apellido}
       />
@@ -218,7 +215,11 @@
         type="text"
         bind:value={$form.segundoApellido}
         disabled={loading || readonly}
-        class={getInputClass(!!$errors.segundoApellido, readonly)}
+        class={getInputClass(
+          !!$errors.segundoApellido,
+          readonly,
+          $form.segundoApellido,
+        )}
         placeholder="González"
         {...$constraints.segundoApellido}
       />
@@ -230,45 +231,83 @@
 
   <!-- Fila 4: Empresa (siempre visible si showEmpresa) -->
   {#if showEmpresa}
-    <div>
+    <div class="mb-4">
       <label for="empresaId" class={labelClass}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="inline mr-1"
-          ><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" /><path
-            d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"
-          /><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" /><path
-            d="M10 6h4"
-          /><path d="M10 10h4" /><path d="M10 14h4" /><path d="M10 18h4" /></svg
-        >
-        Empresa Proveedora *
+        Empresa <span class="text-red-500 ml-0.5">*</span>
       </label>
-      <div class="flex gap-2">
-        <select
-          id="empresaId"
-          name="empresaId"
-          bind:value={$form.empresaId}
-          disabled={loading || readonly || empresas.length === 0}
-          class={`${getInputClass(!!$errors.empresaId, readonly)} flex-1`}
-          {...$constraints.empresaId}
-        >
-          {#if empresas.length === 0}
-            <option value="">Cargando empresas...</option>
-          {:else}
-            <option value="">Seleccione una empresa</option>
-            {#each empresas as emp}
-              <option value={emp.id}>{emp.nombre}</option>
-            {/each}
+      <div class="flex gap-2 relative">
+        <div class="relative flex-1">
+          <button
+            type="button"
+            id="empresaId"
+            disabled={loading || readonly || empresas.length === 0}
+            onclick={() => (showEmpresaDropdown = !showEmpresaDropdown)}
+            class="{getInputClass(
+              !!$errors.empresaId,
+              readonly,
+              $form.empresaId,
+            )} flex items-center justify-between cursor-pointer w-full text-left {showEmpresaDropdown
+              ? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
+              : ''}"
+          >
+            <span class="truncate">
+              {empresas.find((e) => e.id === $form.empresaId)?.nombre ||
+                "Seleccione una empresa"}
+            </span>
+            <ChevronDown size={16} class="text-secondary" />
+          </button>
+
+          <!-- Dropdown Options -->
+          {#if showEmpresaDropdown && !readonly}
+            <!-- Backdrop -->
+            <div
+              class="fixed inset-0 z-[60]"
+              onclick={() => (showEmpresaDropdown = false)}
+              role="presentation"
+              aria-hidden="true"
+            ></div>
+
+            <div
+              class="absolute z-[70] w-full mt-1 bg-surface-2 border border-surface rounded-lg shadow-xl overflow-hidden p-1 origin-top max-h-60 overflow-y-auto"
+            >
+              {#if empresas.length === 0}
+                <div class="px-3 py-2 text-sm text-gray-500">
+                  No hay empresas
+                </div>
+              {:else}
+                {#each empresas as emp}
+                  <button
+                    type="button"
+                    onclick={() => {
+                      $form.empresaId = emp.id;
+                      showEmpresaDropdown = false;
+                    }}
+                    class="w-full text-left px-3 py-1.5 text-sm rounded-md transition-colors flex items-center justify-between group {$form.empresaId ===
+                    emp.id
+                      ? 'bg-white/5 text-white font-medium'
+                      : 'text-secondary hover:bg-white/10'}"
+                  >
+                    <span>{emp.nombre}</span>
+                    {#if $form.empresaId === emp.id}
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-4 w-4 text-white"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fill-rule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clip-rule="evenodd"
+                        />
+                      </svg>
+                    {/if}
+                  </button>
+                {/each}
+              {/if}
+            </div>
           {/if}
-        </select>
+        </div>
         {#if onCreateEmpresa && !readonly}
           <button
             type="button"

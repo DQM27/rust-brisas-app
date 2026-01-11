@@ -78,14 +78,6 @@ export const CreateProveedorSchemaBase = z.object({
     apellido: z.string().default(''),
     segundoApellido: z.string().default(''),
     empresaId: z.string().default(''),
-
-    // Vehículo (opcional)
-    tieneVehiculo: z.boolean().default(false),
-    tipoVehiculo: z.string().default(''),
-    placa: z.string().default(''),
-    marca: z.string().default(''),
-    modelo: z.string().default(''),
-    color: z.string().default(''),
 });
 
 export const UpdateProveedorSchemaBase = z.object({
@@ -95,50 +87,13 @@ export const UpdateProveedorSchemaBase = z.object({
     segundoApellido: z.string().default(''),
     empresaId: z.string().default(''),
     estado: z.enum(['ACTIVO', 'INACTIVO', 'SUSPENDIDO']).default('ACTIVO'),
-
-    // Vehículo update
-    tieneVehiculo: z.boolean().default(false),
-    tipoVehiculo: z.string().default(''),
-    placa: z.string().default(''),
-    marca: z.string().default(''),
-    modelo: z.string().default(''),
-    color: z.string().default(''),
 });
 
 // 2. Schemas Refinados (Lógica condicional)
 // Estos son los que se usan para la validación final
 
-export const CreateProveedorSchema = CreateProveedorSchemaBase.superRefine((data, ctx) => {
-    if (data.tieneVehiculo) {
-        if (!data.placa || data.placa.trim() === '') {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'La placa es requerida si tiene vehículo',
-                path: ['placa'],
-            });
-        }
-        if (!data.tipoVehiculo || data.tipoVehiculo.trim() === '') {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'El tipo de vehículo es requerido',
-                path: ['tipoVehiculo'],
-            });
-        }
-    }
-});
-
-export const UpdateProveedorSchema = UpdateProveedorSchemaBase.superRefine((data, ctx) => {
-    // Si se activa tieneVehiculo explícitamente, validar
-    if (data.tieneVehiculo === true) {
-        if (!data.placa || data.placa.trim() === '') {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'La placa es requerida',
-                path: ['placa'],
-            });
-        }
-    }
-});
+export const CreateProveedorSchema = CreateProveedorSchemaBase;
+export const UpdateProveedorSchema = UpdateProveedorSchemaBase;
 
 // ==========================================
 // TIPOS INFERIDOS

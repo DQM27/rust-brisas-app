@@ -622,8 +622,8 @@
 {#if selectedContratistaForVehicles}
   <VehiculoManagerModal
     show={showVehiculoModal}
-    contratistaId={selectedContratistaForVehicles.id}
-    contratistaNombre={selectedContratistaForVehicles.nombreCompleto ||
+    propietarioId={selectedContratistaForVehicles.id}
+    propietarioNombre={selectedContratistaForVehicles.nombreCompleto ||
       selectedContratistaForVehicles.nombre +
         " " +
         selectedContratistaForVehicles.apellido}

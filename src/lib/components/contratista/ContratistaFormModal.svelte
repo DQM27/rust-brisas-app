@@ -666,8 +666,8 @@
 {#if showVehiculoModal && contratista}
   <VehiculoManagerModal
     show={showVehiculoModal}
-    contratistaId={contratista.id}
-    contratistaNombre={contratista?.nombre + " " + contratista?.apellido}
+    propietarioId={contratista.id}
+    propietarioNombre={contratista?.nombre + " " + contratista?.apellido}
     onClose={() => (showVehiculoModal = false)}
   />
 {/if}

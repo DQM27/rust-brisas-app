@@ -30,12 +30,12 @@
 
   interface Props {
     show: boolean;
-    contratistaId: string;
-    contratistaNombre: string;
+    propietarioId: string;
+    propietarioNombre: string;
     onClose: () => void;
   }
 
-  let { show, contratistaId, contratistaNombre, onClose }: Props = $props();
+  let { show, propietarioId, propietarioNombre, onClose }: Props = $props();
 
   let vehiculosList = $state<VehiculoResponse[]>([]);
   let loading = $state(false);
@@ -73,11 +73,11 @@
   let submitting = $state(false);
 
   async function loadVehiculos() {
-    if (!contratistaId) return;
+    if (!propietarioId) return;
     loading = true;
     globalError = null;
     try {
-      vehiculosList = await vehiculosApi.getByPropietario(contratistaId);
+      vehiculosList = await vehiculosApi.getByPropietario(propietarioId);
     } catch (e) {
       console.error("Error loading vehicles:", e);
       globalError = "Error al cargar los vehículos.";
@@ -87,7 +87,7 @@
   }
 
   $effect(() => {
-    if (show && contratistaId) {
+    if (show && propietarioId) {
       loadVehiculos();
       cancelForm();
     }
@@ -141,7 +141,7 @@
 
     try {
       const input: CreateVehiculoInput = {
-        propietarioId: contratistaId,
+        propietarioId: propietarioId,
         tipoVehiculo: data.tipoVehiculo,
         placa: data.placa,
         marca: data.marca || undefined,
@@ -269,7 +269,7 @@
         <div>
           <h2 class="text-xl font-semibold text-primary">Vehículos</h2>
           <p class="text-xs text-secondary mt-0.5">
-            Gestión de vehículos para {contratistaNombre}
+            Gestión de vehículos para {propietarioNombre}
           </p>
         </div>
         <button
