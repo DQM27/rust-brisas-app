@@ -1,8 +1,8 @@
 <!-- src/lib/components/user/UserFormModal.svelte -->
 <!-- Modal reutilizable para crear y editar usuarios -->
 <script lang="ts">
-  import { fade, fly, slide } from "svelte/transition";
-  import { X, Camera, ChevronDown, Lock } from "lucide-svelte";
+  import { fade, fly } from "svelte/transition";
+  import { X, Camera, ChevronDown } from "lucide-svelte";
   import { open } from "@tauri-apps/plugin-dialog";
   import { invoke } from "@tauri-apps/api/core";
   import type {
@@ -127,7 +127,6 @@
 
   // Estado para "Cambiar Contraseña" (Self)
   let isChangingPassword = $state(false);
-  let isSecurityOpen = $state(false); // New state for collapsible security section
 
   const modalTitle = $derived(
     isChangingPassword
@@ -1118,37 +1117,11 @@
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <!-- Security Section for Admins -->
-            {#if isEditMode && !isSelf && !readonly}
-              <!-- Collapsible "Dongle" Style -->
-              <div
-                class="bg-surface-1 rounded-lg border border-surface mt-4 overflow-hidden transition-all duration-300"
-              >
-                <button
-                  type="button"
-                  class="w-full flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-white/10 transition-colors"
-                  onclick={() => (isSecurityOpen = !isSecurityOpen)}
-                >
-                  <div class="flex items-center gap-2">
-                    <Lock class="w-4 h-4 text-secondary" />
-                    <span class="text-sm font-medium text-gray-200"
-                      >Seguridad y Acceso</span
-                    >
-                  </div>
-                  <ChevronDown
-                    class="w-4 h-4 text-secondary transition-transform duration-300 {isSecurityOpen
-                      ? 'rotate-180'
-                      : ''}"
-                  />
-                </button>
-
-                {#if isSecurityOpen}
+                <!-- Security Controls (Integrated) -->
+                {#if isEditMode && !isSelf && !readonly}
                   <div
-                    class="p-3 border-t border-white/5 bg-black/20 flex items-center justify-between gap-4"
-                    transition:slide
+                    class="col-span-1 md:col-span-2 flex items-center justify-between gap-4"
                   >
                     <!-- Toggle: Forzar Cambio -->
                     <div class="flex items-center gap-3">
@@ -1183,7 +1156,7 @@
                   </div>
                 {/if}
               </div>
-            {/if}
+            </div>
             <!-- Footer Actions -->
             <div
               class="flex-none flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1"
