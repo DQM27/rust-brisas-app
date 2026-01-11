@@ -21,6 +21,7 @@
     Ban,
     Users,
     Zap, // Importar icono de rayo
+    Truck,
   } from "lucide-svelte";
 
   // Componentes
@@ -146,6 +147,20 @@
         });
       },
       permission: "VIEW_ENTRY_LIST",
+    },
+    {
+      id: "ingreso-proveedores",
+      icon: Truck,
+      label: "Ingreso Prov.",
+      action: () => {
+        openTab({
+          componentKey: "proveedor-ingreso-list",
+          title: "Ingreso Proveedores",
+          id: "proveedor-ingreso-list",
+          focusOnOpen: true,
+        });
+      },
+      permission: "VIEW_ENTRY_LIST", // Reusing permission
     },
     {
       id: "logs",

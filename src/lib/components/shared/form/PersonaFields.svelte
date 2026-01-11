@@ -91,22 +91,22 @@
     "w-full rounded-md border px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 disabled:opacity-60 transition-colors";
 
   function getInputClass(hasError: boolean, isReadonly: boolean) {
-    const errorState = hasError
-      ? "border-red-500 focus:border-red-500 focus:ring-red-500 text-red-900 placeholder:text-red-300 dark:text-red-200 dark:placeholder:text-red-400/50"
-      : "border-gray-300 dark:border-gray-600 focus:ring-blue-500 text-gray-900 dark:text-gray-100 bg-white dark:bg-[#0d1117]";
+    const base =
+      "w-full bg-black/20 border rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 transition-all outline-none disabled:opacity-50";
 
-    const readonlyState = isReadonly
-      ? "opacity-70 bg-gray-50 dark:bg-gray-800"
-      : "";
+    const state = hasError
+      ? "!border-red-500/50 !ring-1 !ring-red-500/20"
+      : "border-white/10 focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20";
 
-    return `${baseInputClass} ${errorState} ${readonlyState}`;
+    const readonlyState = isReadonly ? "opacity-70 bg-gray-800/50" : "";
+
+    return `${base} ${state} ${readonlyState}`;
   }
 
-  const labelClass =
-    "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
+  const labelClass = "block text-xs font-medium text-secondary mb-1";
   const errorClass = "text-xs text-red-500 mt-1";
   const sectionClass =
-    "text-base font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2 mb-3 flex items-center gap-2";
+    "text-base font-semibold text-primary border-b border-surface pb-2 mb-4 flex items-center gap-2";
 </script>
 
 <div>
@@ -132,27 +132,30 @@
     Datos Personales
   </h3>
 
-  <!-- Fila 1: Cédula sola (campo principal de identificación) -->
-  <div class="mb-4">
-    <label for="cedula" class={labelClass}>Cédula de Identidad *</label>
-    <input
-      id="cedula"
-      name="cedula"
-      type="text"
-      bind:value={$form.cedula}
-      oninput={handleCedulaInput}
-      aria-invalid={$errors.cedula || cedulaDuplicateError ? "true" : undefined}
-      disabled={loading || isEditMode || readonly}
-      class={getInputClass(
-        !!($errors.cedula || cedulaDuplicateError),
-        isEditMode || readonly,
-      )}
-      placeholder="Ej: 001-010203-0001A"
-      {...$constraints.cedula}
-    />
-    {#if $errors.cedula || cedulaDuplicateError}
-      <p class={errorClass}>{$errors.cedula || cedulaDuplicateError}</p>
-    {/if}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div class="md:col-span-2">
+      <label for="cedula" class={labelClass}>Cédula de Identidad *</label>
+      <input
+        id="cedula"
+        name="cedula"
+        type="text"
+        bind:value={$form.cedula}
+        oninput={handleCedulaInput}
+        aria-invalid={$errors.cedula || cedulaDuplicateError
+          ? "true"
+          : undefined}
+        disabled={loading || isEditMode || readonly}
+        class={getInputClass(
+          !!($errors.cedula || cedulaDuplicateError),
+          isEditMode || readonly,
+        )}
+        placeholder="Ej: 001-010203-0001A"
+        {...$constraints.cedula}
+      />
+      {#if $errors.cedula || cedulaDuplicateError}
+        <p class={errorClass}>{$errors.cedula || cedulaDuplicateError}</p>
+      {/if}
+    </div>
   </div>
 
   <!-- Fila 2: Nombres (Nombre + Segundo Nombre) -->
@@ -271,7 +274,7 @@
             type="button"
             onclick={onCreateEmpresa}
             disabled={loading}
-            class="px-3 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-1 text-sm disabled:opacity-50"
+            class="px-3 h-[34px] rounded-lg border-2 border-surface text-secondary hover:border-accent hover:text-accent transition-all flex items-center gap-1 text-xs disabled:opacity-50"
             title="Crear nueva empresa"
           >
             <Plus size={16} />

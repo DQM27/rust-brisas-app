@@ -24,10 +24,9 @@
   }: Props = $props();
 
   const inputClass =
-    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60";
-  const labelClass =
-    "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
-  const errorClass = "text-xs text-red-500 mt-1";
+    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all appearance-none";
+  const labelClass = "block text-xs font-medium text-secondary mb-1";
+  const errorClass = "text-xs text-red-500 mt-1 pb-1";
 
   let checkTimeout: any;
 
@@ -94,31 +93,29 @@
   // La lógica de limpieza suele estar mejor en el componente padre o en un efecto global sobre el store.
 </script>
 
-<div
-  class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
->
-  <div class="flex items-center justify-between mb-4">
+<div class="bg-surface-1 p-5 rounded-lg border border-surface">
+  <div class="flex items-center justify-between mb-5">
     <h3
-      class="text-base font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 m-0 border-0 p-0"
+      class="text-base font-semibold text-primary flex items-center gap-2 m-0 border-0 p-0"
     >
       <Truck size={18} />
-      Datos del Vehículo
+      Coche / Vehículo
     </h3>
 
-    <label class="relative inline-flex items-center cursor-pointer">
-      <input
-        type="checkbox"
-        bind:checked={$form.tieneVehiculo}
-        class="sr-only peer"
-        disabled={loading || readonly}
-      />
-      <div
-        class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
-      ></div>
-      <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300"
-        >Tiene Vehículo</span
-      >
-    </label>
+    <div class="flex items-center gap-3">
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input
+          type="checkbox"
+          bind:checked={$form.tieneVehiculo}
+          class="sr-only peer"
+          disabled={loading || readonly}
+        />
+        <div
+          class="w-9 h-5 bg-surface-3 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"
+        ></div>
+      </label>
+      <span class="text-xs font-medium text-gray-300">Tiene Vehículo</span>
+    </div>
   </div>
 
   {#if $form.tieneVehiculo}

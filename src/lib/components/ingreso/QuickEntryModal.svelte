@@ -16,9 +16,15 @@
     show: boolean;
     onSelect: (person: any) => void;
     onClose: () => void;
+    allowedTypes?: string[]; // New prop
   }
 
-  let { show = $bindable(false), onSelect, onClose }: Props = $props();
+  let {
+    show = $bindable(false),
+    onSelect,
+    onClose,
+    allowedTypes = ["contratista"],
+  }: Props = $props();
 
   let query = $state("");
   let inputRef = $state<HTMLInputElement>();
@@ -40,9 +46,9 @@
         query: q,
         limit: 8,
       });
-      // Filtrar solo contratistas para este flujo
-      results = rawResults.filter(
-        (r) => r.tipo.toLowerCase() === "contratista",
+      // Filtrar según tipos permitidos
+      results = rawResults.filter((r) =>
+        allowedTypes.includes(r.tipo.toLowerCase()),
       );
       highlightedIndex = 0;
     } catch (e) {

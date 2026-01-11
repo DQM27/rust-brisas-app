@@ -29,6 +29,7 @@ import AboutPanel from '$lib/components/settings/AboutPanel.svelte';
 
 import GafeteListView from '$lib/components/gafete/GafeteListView.svelte';
 import IngresoModule from '$lib/components/ingreso/IngresoModule.svelte';
+import IngresoProveedorModule from '$lib/components/ingreso/IngresoProveedorModule.svelte';
 import VisitaListView from '$lib/components/visita/VisitaListView.svelte';
 import VisitanteListView from '$lib/components/visitante/VisitanteListView.svelte';
 import UnderConstruction from '$lib/components/common/UnderConstruction.svelte';
@@ -72,6 +73,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
   'gafete-list': GafeteListView,
   'ingreso-list': IngresoModule, // Point legacy/main link to new Module
   'ingreso-module': IngresoModule,
+  'proveedor-ingreso-list': IngresoProveedorModule,
   'under-construction': UnderConstruction,
   'dev-settings': DevSettingsPanel,
 };

@@ -97,9 +97,10 @@
   }
 
   // Estilos (mismos que Contratista para consistencia)
-  const labelClass = "text-xs font-medium text-gray-700 dark:text-gray-300";
+  // Estilos
+  const labelClass = "text-xs font-medium text-secondary mb-1";
   const inputClass =
-    "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50";
+    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all";
 
   // Prepara los datos iniciales para el formulario
   const initialData = $derived.by(() => {
@@ -160,43 +161,50 @@
     transition:fade={{ duration: 150 }}
   >
     <!-- Backdrop -->
-    <button
-      class="absolute inset-0 bg-black/60 backdrop-blur-sm border-0 cursor-default"
+    <div
+      class="absolute inset-0 bg-black/60 backdrop-blur-sm"
       onclick={onClose}
-      aria-label="Cerrar"
-    ></button>
+      role="presentation"
+    ></div>
 
     <!-- Modal Content -->
     <div
-      class="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-auto rounded-lg bg-white dark:bg-[#0d1117] shadow-2xl border border-gray-200 dark:border-gray-700"
+      class="relative z-10 w-full max-w-[700px] max-h-[95vh] overflow-hidden rounded-xl bg-surface-2 shadow-2xl border border-surface flex flex-col"
       transition:fly={{ y: 20, duration: 200 }}
+      role="dialog"
+      aria-modal="true"
     >
       <!-- Header -->
       <div
-        class="sticky top-0 z-20 flex items-center justify-between px-6 py-4 bg-white dark:bg-[#0d1117] border-b border-gray-200 dark:border-gray-700"
+        class="flex-none flex items-center justify-between px-3 py-3 bg-surface-2 border-b border-surface"
       >
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+        <h2 class="text-xl font-semibold text-primary">
           {modalTitle}
         </h2>
         <button
           onclick={onClose}
-          class="p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+          class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
         >
           <X size={20} />
         </button>
       </div>
 
-      <!-- Form Component with Superforms -->
-      <ProveedorForm
-        data={initialData}
-        {isEditMode}
-        {loading}
-        empresas={empresaStore.empresas}
-        {onSave}
-        {onClose}
-        currentId={proveedor?.id || ""}
-        onCreateEmpresa={handleCreateEmpresa}
-      />
+      <div class="flex-1 overflow-y-auto">
+        <div class="p-6">
+          <div class="bg-surface-1 rounded-lg border border-surface p-7">
+            <ProveedorForm
+              data={initialData}
+              {isEditMode}
+              {loading}
+              empresas={empresaStore.empresas}
+              {onSave}
+              {onClose}
+              currentId={proveedor?.id || ""}
+              onCreateEmpresa={handleCreateEmpresa}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 {/if}
@@ -214,20 +222,16 @@
       onclick={() => !creatingEmpresa && (showEmpresaModal = false)}
     ></div>
     <div
-      class="relative w-full max-w-md rounded-lg bg-white dark:bg-[#0d1117] shadow-2xl border border-gray-200 dark:border-gray-700"
+      class="relative w-full max-w-md rounded-xl bg-surface-2 shadow-2xl border border-surface"
       transition:scale={{ start: 0.95, duration: 200 }}
     >
-      <div
-        class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#161b22]"
-      >
-        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-          Nueva Empresa
-        </h3>
+      <div class="px-5 py-3 border-b border-surface bg-surface-2">
+        <h3 class="text-base font-semibold text-primary">Nueva Empresa</h3>
       </div>
       <div class="p-5 space-y-3">
         {#if empresaError}
           <div
-            class="rounded bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-2 text-xs text-red-700 dark:text-red-300"
+            class="rounded bg-red-900/20 border border-red-800 p-2 text-xs text-red-300"
           >
             {empresaError}
           </div>
@@ -247,13 +251,13 @@
         </div>
       </div>
       <div
-        class="flex justify-end gap-2 px-5 py-3 bg-gray-50 dark:bg-[#161b22] border-t border-gray-200 dark:border-gray-700"
+        class="flex justify-end gap-3 px-5 py-3 bg-surface-1 border-t border-surface"
       >
         <button
           type="button"
           disabled={creatingEmpresa}
           onclick={() => (showEmpresaModal = false)}
-          class="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#21262d]"
+          class="px-4 py-2 rounded-lg border-2 border-surface text-secondary font-medium hover:border-white/60 hover:text-white/80 transition-colors text-sm"
         >
           Cancelar
         </button>
@@ -261,7 +265,7 @@
           type="button"
           disabled={creatingEmpresa || !nuevaEmpresaNombre.trim()}
           onclick={handleSaveEmpresa}
-          class="px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          class="px-4 py-2 rounded-lg border-2 border-surface text-secondary font-medium hover:border-success hover:text-success transition-colors text-sm"
         >
           {creatingEmpresa ? "Guardando..." : "Guardar"}
         </button>
