@@ -169,6 +169,7 @@
     constraints,
     enhance,
     validateForm,
+    tainted,
     reset: resetForm,
   } = superForm<CreateUserForm>(initialValues, {
     SPA: true,
@@ -458,13 +459,32 @@
 
   // Standardized UI Pattern - CRUD Form Standard
   const inputClass =
-    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none disabled:opacity-50 transition-all";
+    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all";
   const selectClass =
     "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white focus:outline-none disabled:opacity-50 transition-all cursor-pointer appearance-none bg-no-repeat bg-right pr-8";
   const labelClass = "block text-xs font-medium text-secondary mb-1";
   const errorClass = "text-xs text-red-500 mt-0.5";
   const sectionClass =
     "text-xs font-semibold text-primary/80 uppercase tracking-wide border-b border-surface pb-1.5 mb-2";
+
+  // Helper to determine field border color based on state
+  function getFieldStateClass(field: string, value: any) {
+    if (($errors as any)[field])
+      return "!border-red-500/50 !ring-1 !ring-red-500/20";
+
+    // Solo mostrar éxito si el campo ha sido "tocado" / cambiado
+    const isTainted = $tainted && ($tainted as any)[field];
+    if (
+      isTainted &&
+      value &&
+      String(value).trim() !== "" &&
+      value !== "Selec CDI" &&
+      value !== "Selec Rol"
+    ) {
+      return "!border-green-500/50 !ring-1 !ring-green-500/20";
+    }
+    return "";
+  }
 
   // Handler for custom Tab navigation in date inputs
   function handleDateTab(e: KeyboardEvent, nextId: string) {
@@ -596,36 +616,15 @@
                           </button>
                         {/if}
                       </div>
-                      <div
-                        class="mt-3 flex items-center gap-1.5 px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-[10px] font-medium border border-green-100 dark:border-green-900/30"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          ><rect
-                            width="18"
-                            height="11"
-                            x="3"
-                            y="11"
-                            rx="2"
-                            ry="2"
-                          /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg
-                        >
-                        Bóveda Encriptada
-                      </div>
                     </div>
                   {/if}
 
                   <div class="grid grid-cols-2 gap-2">
                     <div>
-                      <label for="cedula" class={labelClass}>Cédula *</label>
+                      <label for="cedula" class={labelClass}
+                        >Cédula <span class="text-red-500 ml-0.5">*</span
+                        ></label
+                      >
                       <input
                         id="cedula"
                         type="text"
@@ -633,9 +632,11 @@
                         oninput={handleCedulaInput}
                         placeholder="Ej: 1-1122-0333"
                         disabled={loading || readonly}
-                        class="{inputClass} {$errors.cedula ||
-                        cedulaDuplicateError
-                          ? 'border-red-500 ring-red-500 focus:ring-red-500'
+                        class="{inputClass} {getFieldStateClass(
+                          'cedula',
+                          $form.cedula,
+                        )} {cedulaDuplicateError
+                          ? '!border-red-500/50 !ring-1 !ring-red-500/20'
                           : ''}"
                       />
                       {#if $errors.cedula || cedulaDuplicateError}
@@ -654,14 +655,20 @@
                         oninput={handleGafeteInput}
                         placeholder="K-123456"
                         disabled={loading || readonly}
-                        class={inputClass}
+                        class="{inputClass} {getFieldStateClass(
+                          'numeroGafete',
+                          $form.numeroGafete,
+                        )}"
                       />
                     </div>
                   </div>
 
                   <div class="grid grid-cols-2 gap-2">
                     <div>
-                      <label for="nombre" class={labelClass}>Nombre *</label>
+                      <label for="nombre" class={labelClass}
+                        >Nombre <span class="text-red-500 ml-0.5">*</span
+                        ></label
+                      >
                       <input
                         id="nombre"
                         type="text"
@@ -669,7 +676,10 @@
                         oninput={(e) => handleNameInput(e, "nombre")}
                         placeholder="Ej: Juan"
                         disabled={loading || readonly}
-                        class={inputClass}
+                        class="{inputClass} {getFieldStateClass(
+                          'nombre',
+                          $form.nombre,
+                        )}"
                       />
                       {#if $errors.nombre}<p class={errorClass}>
                           {$errors.nombre}
@@ -686,14 +696,19 @@
                         oninput={(e) => handleNameInput(e, "segundoNombre")}
                         placeholder="Ej: Carlos"
                         disabled={loading || readonly}
-                        class={inputClass}
+                        class="{inputClass} {getFieldStateClass(
+                          'segundoNombre',
+                          $form.segundoNombre,
+                        )}"
                       />
                     </div>
                   </div>
 
                   <div class="grid grid-cols-2 gap-2">
                     <div>
-                      <label for="apellido" class={labelClass}>Apellido *</label
+                      <label for="apellido" class={labelClass}
+                        >Apellido <span class="text-red-500 ml-0.5">*</span
+                        ></label
                       >
                       <input
                         id="apellido"
@@ -702,7 +717,10 @@
                         oninput={(e) => handleNameInput(e, "apellido")}
                         placeholder="Ej: Pérez"
                         disabled={loading || readonly}
-                        class={inputClass}
+                        class="{inputClass} {getFieldStateClass(
+                          'apellido',
+                          $form.apellido,
+                        )}"
                       />
                       {#if $errors.apellido}<p class={errorClass}>
                           {$errors.apellido}
@@ -719,7 +737,10 @@
                         oninput={(e) => handleNameInput(e, "segundoApellido")}
                         placeholder="Ej: González"
                         disabled={loading || readonly}
-                        class={inputClass}
+                        class="{inputClass} {getFieldStateClass(
+                          'segundoApellido',
+                          $form.segundoApellido,
+                        )}"
                       />
                     </div>
                   </div>
@@ -728,7 +749,9 @@
                     <!-- Operación / CDI (Moved from Col 2) -->
                     <div class="relative">
                       <label for="operacion" class={labelClass}
-                        >Operación / CDI *</label
+                        >Operación / CDI <span class="text-red-500 ml-0.5"
+                          >*</span
+                        ></label
                       >
                       <button
                         type="button"
@@ -737,7 +760,7 @@
                           (showOperacionDropdown = !showOperacionDropdown)}
                         class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {showOperacionDropdown
                           ? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
-                          : ''}"
+                          : getFieldStateClass('operacion', $form.operacion)}"
                       >
                         <span class="truncate">
                           {$form.operacion || "Selec CDI"}
@@ -797,14 +820,16 @@
                     <!-- Rol (Custom Select) -->
                     {#if !isSelf}
                       <div class="relative">
-                        <label for="roleId" class={labelClass}>Rol *</label>
+                        <label for="roleId" class={labelClass}
+                          >Rol <span class="text-red-500 ml-0.5">*</span></label
+                        >
                         <button
                           type="button"
                           disabled={loading || rolesLoading || readonly}
                           onclick={() => (showRoleDropdown = !showRoleDropdown)}
                           class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {showRoleDropdown
                             ? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
-                            : ''}"
+                            : getFieldStateClass('roleId', $form.roleId)}"
                         >
                           <span class="truncate">
                             {#if rolesLoading}
@@ -904,7 +929,9 @@
 
                   <div>
                     <label for="email" class={labelClass}
-                      >Correo Electrónico *</label
+                      >Correo Electrónico <span class="text-red-500 ml-0.5"
+                        >*</span
+                      ></label
                     >
                     <input
                       id="email"
@@ -913,8 +940,11 @@
                       oninput={handleEmailInput}
                       placeholder="Ej: usuario@empresa.com"
                       disabled={loading || readonly}
-                      class="{inputClass} {$errors.email || emailDuplicateError
-                        ? 'border-red-500 ring-red-500 focus:ring-red-500'
+                      class="{inputClass} {getFieldStateClass(
+                        'email',
+                        $form.email,
+                      )} {emailDuplicateError
+                        ? '!border-red-500/50 !ring-1 !ring-red-500/20'
                         : ''}"
                     />
                     {#if $errors.email || emailDuplicateError}
@@ -933,14 +963,19 @@
                         for="vencimientoPortacion"
                         class="{labelClass} whitespace-nowrap"
                       >
-                        Venc. Portación *
+                        Venc. Portación <span class="text-red-500 ml-0.5"
+                          >*</span
+                        >
                       </label>
                       <input
                         id="vencimientoPortacion"
                         type="date"
                         bind:value={$form.vencimientoPortacion}
                         disabled={loading || readonly}
-                        class={inputClass}
+                        class="{inputClass} {getFieldStateClass(
+                          'vencimientoPortacion',
+                          $form.vencimientoPortacion,
+                        )}"
                         onkeydown={(e) =>
                           handleDateTab(e, "fechaInicioLabores")}
                       />
@@ -959,7 +994,10 @@
                         type="date"
                         bind:value={$form.fechaInicioLabores}
                         disabled={loading || readonly}
-                        class={inputClass}
+                        class="{inputClass} {getFieldStateClass(
+                          'fechaInicioLabores',
+                          $form.fechaInicioLabores,
+                        )}"
                         onkeydown={(e) => handleDateTab(e, "fechaNacimiento")}
                       />
                     </div>
@@ -976,7 +1014,10 @@
                         type="date"
                         bind:value={$form.fechaNacimiento}
                         disabled={loading || readonly}
-                        class={inputClass}
+                        class="{inputClass} {getFieldStateClass(
+                          'fechaNacimiento',
+                          $form.fechaNacimiento,
+                        )}"
                         onkeydown={(e) => handleDateTab(e, "telefono")}
                       />
                     </div>
@@ -992,7 +1033,10 @@
                         onkeydown={handlePhoneKeydown}
                         placeholder="+506 8888-8888"
                         disabled={loading || readonly}
-                        class={inputClass}
+                        class="{inputClass} {getFieldStateClass(
+                          'telefono',
+                          $form.telefono,
+                        )}"
                       />
                     </div>
                   </div>
@@ -1009,7 +1053,10 @@
                         oninput={(e) =>
                           handleNameInput(e, "contactoEmergenciaNombre")}
                         disabled={loading || readonly}
-                        class={inputClass}
+                        class="{inputClass} {getFieldStateClass(
+                          'contactoEmergenciaNombre',
+                          $form.contactoEmergenciaNombre,
+                        )}"
                         placeholder="Ej: María"
                       />
                     </div>
@@ -1029,7 +1076,10 @@
                         onkeydown={handlePhoneKeydown}
                         placeholder="+506 8888-8888"
                         disabled={loading || readonly}
-                        class={inputClass}
+                        class="{inputClass} {getFieldStateClass(
+                          'contactoEmergenciaTelefono',
+                          $form.contactoEmergenciaTelefono,
+                        )}"
                       />
                     </div>
                   </div>
@@ -1038,7 +1088,10 @@
                   <div>
                     <label for="direccion" class={labelClass}>Dirección</label>
                     <div
-                      class="obs-container w-full bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all outline-none"
+                      class="obs-container w-full bg-black/20 border border-white/10 rounded-lg transition-all outline-none {getFieldStateClass(
+                        'direccion',
+                        $form.direccion,
+                      )} focus-within:!border-blue-500/50 focus-within:!ring-1 focus-within:!ring-blue-500/20"
                     >
                       <textarea
                         id="direccion"
@@ -1218,6 +1271,18 @@
     border-color: rgba(59, 130, 246, 0.5) !important;
     box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
     outline: none !important;
+  }
+
+  /* Fix browser autofill white background */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus {
+    -webkit-text-fill-color: white !important;
+    -webkit-box-shadow: 0 0 0px 1000px #1c2128 inset !important;
+    transition: background-color 5000s ease-in-out 0s;
   }
 
   /* Force dark calendar picker */
