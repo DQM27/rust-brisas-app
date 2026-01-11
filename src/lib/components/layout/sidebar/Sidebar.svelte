@@ -36,7 +36,7 @@
   import { activePanel, openView } from "$lib/stores/sidebar";
   import type { SidebarItem } from "../../../types/Sidebar";
   import { can } from "$lib/logic/permissions";
-  import { ROLE_ADMIN_ID, ROLE_SUPERVISOR_ID } from "$lib/types/role";
+  import { ROLE_ADMIN_ID } from "$lib/types/role";
   import UserFormModal from "$lib/components/user/UserFormModal.svelte";
   import UpdateModal from "$lib/components/settings/modals/UpdateModal.svelte";
   import BackupModal from "$lib/components/settings/modals/BackupModal.svelte";
@@ -151,7 +151,7 @@
       id: "logs",
       icon: FileText,
       label: "Logs",
-      roleId: [ROLE_ADMIN_ID, ROLE_SUPERVISOR_ID],
+      roleId: [ROLE_ADMIN_ID],
     },
   ];
 
@@ -311,13 +311,8 @@
         id: $currentUser.id,
         roleId: $currentUser.roleId,
         roleName: $currentUser.roleName,
-        adminId: ROLE_ADMIN_ID,
-        supervisorId: ROLE_SUPERVISOR_ID,
-        check:
-          [
-            ROLE_ADMIN_ID.toLowerCase(),
-            ROLE_SUPERVISOR_ID.toLowerCase(),
-          ].includes($currentUser.roleId.toLowerCase()) ||
+        isAdmin:
+          $currentUser.roleId.toLowerCase() === ROLE_ADMIN_ID.toLowerCase() ||
           ["admin", "administrador", "supervisor"].includes(
             ($currentUser.roleName || "").toLowerCase(),
           ),
@@ -620,7 +615,7 @@
               </button>
             {/if}
 
-            {#if $currentUser && ([ROLE_ADMIN_ID.toLowerCase(), ROLE_SUPERVISOR_ID.toLowerCase()].includes($currentUser.roleId.toLowerCase()) || ["admin", "administrador", "supervisor"].includes($currentUser.roleName.toLowerCase()))}
+            {#if $currentUser && ([ROLE_ADMIN_ID.toLowerCase()].includes($currentUser.roleId.toLowerCase()) || ["admin", "administrador"].includes($currentUser.roleName.toLowerCase()))}
               <div class="settings-menu-separator"></div>
               <button
                 class="settings-menu-item text-red-400 hover:text-red-300"

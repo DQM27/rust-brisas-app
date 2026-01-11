@@ -102,6 +102,7 @@ pub async fn insert(dto: UserCreateDTO) -> Result<User, SurrealDbError> {
                 direccion: $direccion,
                 contacto_emergencia_nombre: $contacto_emergencia_nombre,
                 contacto_emergencia_telefono: $contacto_emergencia_telefono,
+                vencimiento_portacion: $vencimiento_portacion,
                 must_change_password: $must_change_password,
                 avatar_path: $avatar_path,
                 is_active: true,

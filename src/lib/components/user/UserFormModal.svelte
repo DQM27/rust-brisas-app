@@ -18,11 +18,7 @@
   } from "$lib/schemas/userSchema";
   import { superForm } from "sveltekit-superforms";
   import { zod4 } from "sveltekit-superforms/adapters";
-  import {
-    ROLE_ADMIN_ID,
-    ROLE_SUPERVISOR_ID,
-    ROLE_GUARDIA_ID,
-  } from "$lib/types/role";
+  import { ROLE_ADMIN_ID, ROLE_GUARDIA_ID } from "$lib/types/role";
   import AdminConfirmModal from "$lib/components/AdminConfirmModal.svelte";
   import { auth } from "$lib/api/auth";
   import { currentUser } from "$lib/stores/auth";
@@ -568,6 +564,7 @@
                 }}
                 onCancel={() => (isChangingPassword = false)}
               />
+              <!-- Security Section for Admins -->
             </div>
           </div>
         {:else}
@@ -1123,6 +1120,64 @@
               </div>
             </div>
 
+            <!-- Security Section for Admins -->
+            {#if isEditMode && !isSelf && !readonly}
+              <div
+                class="p-4 bg-surface-1 rounded-lg border border-surface mt-4"
+              >
+                <h3 class={sectionClass}>Seguridad</h3>
+
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="flex flex-col">
+                      <span class="text-sm font-medium text-white"
+                        >Forzar cambio de contraseña</span
+                      >
+                      <span class="text-xs text-secondary"
+                        >El usuario deberá cambiar su contraseña al iniciar
+                        sesión</span
+                      >
+                    </div>
+                  </div>
+
+                  <label
+                    class="relative inline-flex items-center cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      id="mustChangePassword"
+                      bind:checked={$form.mustChangePassword}
+                      class="sr-only peer"
+                      disabled={loading || readonly}
+                    />
+                    <div
+                      class="w-11 h-6 bg-surface-3 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
+                    ></div>
+                  </label>
+                </div>
+
+                <div
+                  class="mt-4 pt-4 border-t border-white/5 flex items-center justify-between"
+                >
+                  <div class="flex flex-col">
+                    <span class="text-sm font-medium text-white"
+                      >Contraseña Temporal</span
+                    >
+                    <span class="text-xs text-secondary"
+                      >Generar una nueva contraseña aleatoria para el usuario</span
+                    >
+                  </div>
+                  <button
+                    type="button"
+                    onclick={handleResetPasswordClick}
+                    disabled={loading}
+                    class="px-4 py-2 rounded-lg bg-surface-2 border border-surface text-secondary hover:text-white hover:border-white/20 transition-all text-xs font-semibold uppercase tracking-wider"
+                  >
+                    Generar Nueva
+                  </button>
+                </div>
+              </div>
+            {/if}
             <!-- Footer Actions -->
             <div
               class="flex-none flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1"
@@ -1162,17 +1217,6 @@
                     /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg
                   >
                   Cambiar Contraseña
-                </button>
-              {/if}
-
-              {#if isEditMode && !isSelf && $currentUser?.roleId === ROLE_ADMIN_ID && !isChangingPassword && !readonly}
-                <button
-                  type="button"
-                  onclick={handleResetPasswordClick}
-                  disabled={loading}
-                  class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-warning hover:text-warning text-sm disabled:opacity-50"
-                >
-                  Reset Password
                 </button>
               {/if}
 

@@ -325,6 +325,9 @@ pub async fn update_user(
     if let Some(is_active) = input.is_active {
         dto.is_active = Some(is_active);
     }
+    if let Some(op) = input.operacion {
+        dto.operacion = Some(op);
+    }
     if let Some(cedula) = input.cedula {
         dto.cedula = Some(cedula);
     }
@@ -356,6 +359,9 @@ pub async fn update_user(
     }
     if let Some(v) = input.contacto_emergencia_telefono {
         dto.contacto_emergencia_telefono = Some(v);
+    }
+    if let Some(v) = input.vencimiento_portacion {
+        dto.vencimiento_portacion = Some(v);
     }
     if let Some(v) = input.must_change_password {
         dto.must_change_password = Some(v);

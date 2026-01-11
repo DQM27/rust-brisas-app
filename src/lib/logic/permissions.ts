@@ -1,6 +1,6 @@
 
 import type { UserResponse } from '$lib/types/user';
-import { ROLE_ADMIN_ID, ROLE_SUPERVISOR_ID } from '$lib/types/role';
+import { ROLE_ADMIN_ID } from '$lib/types/role';
 
 // ==========================================
 // CAPABILITIES (ACTIONS)
@@ -94,12 +94,9 @@ function isAdmin(user: UserResponse): boolean {
     return user.roleId === ROLE_ADMIN_ID;
 }
 
-function isSupervisor(user: UserResponse): boolean {
-    return user.roleId === ROLE_SUPERVISOR_ID;
-}
 
 function isAdminOrSupervisor(user: UserResponse): boolean {
-    return isAdmin(user) || isSupervisor(user);
+    return isAdmin(user);
 }
 
 // ==========================================

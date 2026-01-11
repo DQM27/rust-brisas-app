@@ -20,11 +20,7 @@
   import { onMount } from "svelte";
   import * as roleService from "$lib/logic/role/roleService";
   import type { RoleResponse, Permission } from "$lib/types/role";
-  import {
-    ROLE_ADMIN_ID,
-    ROLE_SUPERVISOR_ID,
-    ROLE_GUARDIA_ID,
-  } from "$lib/types/role";
+  import { ROLE_ADMIN_ID, ROLE_GUARDIA_ID } from "$lib/types/role";
   import { can } from "$lib/logic/permissions";
   import { currentUser } from "$lib/stores/auth";
 
@@ -83,9 +79,7 @@
   }
 
   function isSystemRole(roleId: string): boolean {
-    return [ROLE_ADMIN_ID, ROLE_SUPERVISOR_ID, ROLE_GUARDIA_ID].includes(
-      roleId,
-    );
+    return [ROLE_ADMIN_ID, ROLE_GUARDIA_ID].includes(roleId);
   }
 
   function canCreate() {
