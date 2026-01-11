@@ -87,10 +87,12 @@
   const errorClass = "text-xs text-red-500 mt-1";
 </script>
 
-<div class="w-full flex flex-col justify-center p-5">
-  <div class="mb-3 text-center">
-    <h2 class="text-lg font-bold text-primary">Cambiar Contraseña</h2>
-    <p class="text-xs text-secondary mt-1">
+<div class="w-full flex flex-col justify-center p-4">
+  <div class="mb-4 text-center">
+    <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+      Cambiar Contraseña
+    </h2>
+    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
       Ingresa tu contraseña actual y la nueva contraseña.
     </p>
   </div>

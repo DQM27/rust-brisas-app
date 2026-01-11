@@ -447,14 +447,13 @@
     }
   }
 
-  // GitHub-style styles with blue accent
+  // Standardized UI Pattern - Dark minimalist style
   const inputClass =
-    "w-full rounded-md border border-gray-300 dark:border-[#30363d] bg-white dark:bg-[#0d1117] px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-[#161b22] transition-all";
-  const labelClass =
-    "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1.5";
+    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-gray-500 focus:outline-none disabled:opacity-50 transition-all";
+  const labelClass = "block text-sm font-medium text-secondary mb-1.5";
   const errorClass = "text-xs text-red-500 mt-1";
   const sectionClass =
-    "text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-[#30363d] pb-2 mb-3";
+    "text-sm font-semibold text-primary border-b border-surface pb-2 mb-3";
 
   // Handler para Ctrl+S
   function handleKeydown(e: KeyboardEvent) {
@@ -486,19 +485,19 @@
 
     <!-- Modal Content -->
     <div
-      class="relative z-10 w-full max-w-5xl max-h-[95vh] overflow-hidden rounded-lg bg-white dark:bg-[#0d1117] shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col"
+      class="relative z-10 w-full max-w-5xl max-h-[95vh] overflow-hidden rounded-xl bg-surface-1 shadow-2xl border border-surface flex flex-col"
       transition:fly={{ y: 20, duration: 200 }}
     >
       <!-- Header -->
       <div
-        class="flex-none flex items-center justify-between px-6 py-4 bg-gray-50 dark:bg-[#161b22] border-b border-gray-200 dark:border-[#30363d]"
+        class="flex-none flex items-center justify-between px-6 py-4 bg-surface-2 border-b border-surface"
       >
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+        <h2 class="text-xl font-semibold text-primary">
           {modalTitle}
         </h2>
         <button
           onclick={onClose}
-          class="p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
           aria-label="Cerrar"
         >
           <X size={20} />
@@ -861,12 +860,12 @@
 
             <!-- Footer Actions -->
             <div
-              class="flex-none flex gap-2 px-6 py-4 border-t border-gray-200 dark:border-[#30363d] bg-gray-50 dark:bg-[#161b22]"
+              class="flex-none flex gap-3 px-6 py-4 border-t border-surface bg-surface-2"
             >
               <button
                 type="button"
                 onclick={onClose}
-                class="px-4 py-2.5 rounded-md border border-gray-300 dark:border-[#30363d] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#21262d] transition-colors text-sm font-medium"
+                class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm"
               >
                 Cancelar
               </button>
@@ -878,7 +877,7 @@
                   type="button"
                   onclick={() => (isChangingPassword = true)}
                   disabled={loading}
-                  class="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 transition-colors flex items-center gap-2 text-sm font-medium"
+                  class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-accent hover:text-accent flex items-center gap-2 text-sm disabled:opacity-50"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -908,7 +907,7 @@
                   type="button"
                   onclick={handleResetPasswordClick}
                   disabled={loading}
-                  class="px-4 py-2 rounded-md border border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors text-sm font-medium"
+                  class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-warning hover:text-warning text-sm disabled:opacity-50"
                 >
                   Reset Password
                 </button>
@@ -920,7 +919,7 @@
                   disabled={loading ||
                     !!cedulaDuplicateError ||
                     !!emailDuplicateError}
-                  class="px-6 py-2.5 rounded-md bg-[#2563eb] text-white font-medium hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                  class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm disabled:opacity-50"
                 >
                   {loading
                     ? "Guardando..."
@@ -1017,3 +1016,14 @@
     </div>
   </div>
 {/if}
+
+<style>
+  /* Standardized input focus style */
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+    outline: none !important;
+  }
+</style>
