@@ -115,7 +115,10 @@
   const isEditMode = $derived(!!user);
 
   // El usuario está editando su propio perfil (usando prop explícita o comparación de IDs)
-  const isSelf = $derived(isSelfEdit);
+  // El usuario está editando su propio perfil (usando prop explícita o comparación de IDs)
+  const isSelf = $derived(
+    isSelfEdit || (!!user && !!$currentUser && user.id === $currentUser.id),
+  );
 
   // Nombre completo para mostrar en el header
   const getFullName = (u: UserResponse | null | undefined) => {
@@ -607,7 +610,7 @@
                         </div>
                       {/if}
                     </div>
-                    {#if !readonly}
+                    {#if !readonly && isSelf}
                       <button
                         type="button"
                         onclick={handleAvatarUpload}
@@ -755,74 +758,89 @@
 
                   <div class="grid grid-cols-2 gap-2">
                     <!-- Operación / CDI (Moved from Col 2) -->
-                    <div class="relative">
-                      <label for="operacion" class={labelClass}
-                        >Operación / CDI <span class="text-red-500 ml-0.5"
-                          >*</span
-                        ></label
-                      >
-                      <button
-                        type="button"
-                        disabled={loading || readonly}
-                        onclick={() =>
-                          (showOperacionDropdown = !showOperacionDropdown)}
-                        class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {showOperacionDropdown
-                          ? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
-                          : getFieldStateClass('operacion', $form.operacion)}"
-                      >
-                        <span class="truncate">
-                          {$form.operacion || "Selec CDI"}
-                        </span>
-                        <ChevronDown size={16} class="text-secondary" />
-                      </button>
-
-                      {#if $errors.operacion}
-                        <p class={errorClass}>{$errors.operacion}</p>
-                      {/if}
-
-                      {#if showOperacionDropdown && !readonly}
-                        <!-- Backdrop -->
-                        <div
-                          class="fixed inset-0 z-40"
-                          onclick={() => (showOperacionDropdown = false)}
-                          role="presentation"
-                          aria-hidden="true"
-                        ></div>
-
-                        <!-- Dropdown Menu -->
-                        <div
-                          class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top"
-                          transition:fly={{ y: -10, duration: 300 }}
+                    <!-- Operación / CDI (Moved from Col 2) -->
+                    {#if !isSelf}
+                      <div class="relative">
+                        <label for="operacion" class={labelClass}
+                          >Operación / CDI <span class="text-red-500 ml-0.5"
+                            >*</span
+                          ></label
                         >
-                          {#each Object.values(Operacion) as op}
-                            <button
-                              type="button"
-                              onclick={() => {
-                                $form.operacion = op;
-                                showOperacionDropdown = false;
-                              }}
-                              class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
-                            >
-                              <span>{op}</span>
-                              {#if $form.operacion === op}
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  class="h-4 w-4 text-white"
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                >
-                                  <path
-                                    fill-rule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clip-rule="evenodd"
-                                  />
-                                </svg>
-                              {/if}
-                            </button>
-                          {/each}
+                        <button
+                          type="button"
+                          disabled={loading || readonly}
+                          onclick={() =>
+                            (showOperacionDropdown = !showOperacionDropdown)}
+                          class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {showOperacionDropdown
+                            ? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
+                            : getFieldStateClass('operacion', $form.operacion)}"
+                        >
+                          <span class="truncate">
+                            {$form.operacion || "Selec CDI"}
+                          </span>
+                          <ChevronDown size={16} class="text-secondary" />
+                        </button>
+
+                        {#if $errors.operacion}
+                          <p class={errorClass}>{$errors.operacion}</p>
+                        {/if}
+
+                        {#if showOperacionDropdown && !readonly}
+                          <!-- Backdrop -->
+                          <div
+                            class="fixed inset-0 z-40"
+                            onclick={() => (showOperacionDropdown = false)}
+                            role="presentation"
+                            aria-hidden="true"
+                          ></div>
+
+                          <!-- Dropdown Menu -->
+                          <div
+                            class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top"
+                            transition:fly={{ y: -10, duration: 300 }}
+                          >
+                            {#each Object.values(Operacion) as op}
+                              <button
+                                type="button"
+                                onclick={() => {
+                                  $form.operacion = op;
+                                  showOperacionDropdown = false;
+                                }}
+                                class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+                              >
+                                <span>{op}</span>
+                                {#if $form.operacion === op}
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-4 w-4 text-white"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                  >
+                                    <path
+                                      fill-rule="evenodd"
+                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                      clip-rule="evenodd"
+                                    />
+                                  </svg>
+                                {/if}
+                              </button>
+                            {/each}
+                          </div>
+                        {/if}
+                      </div>
+                    {:else}
+                      <div>
+                        <label for="operacion-readonly" class={labelClass}
+                          >Operación / CDI</label
+                        >
+                        <div
+                          id="operacion-readonly"
+                          class="flex items-center justify-center px-3 h-[34px] bg-black/20 rounded-lg border border-white/10 text-sm text-secondary text-center select-none"
+                        >
+                          {$form.operacion}
                         </div>
-                      {/if}
-                    </div>
+                      </div>
+                    {/if}
 
                     <!-- Rol -->
                     <!-- Rol (Custom Select) -->
