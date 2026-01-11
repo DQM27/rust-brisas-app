@@ -149,7 +149,7 @@
     segundoNombre: "",
     segundoApellido: "",
     email: "",
-    operacion: Operacion.CalleBlancos, // Default value
+    operacion: "" as Operacion, // Empty to show placeholder
     password: "",
     roleId: ROLE_GUARDIA_ID,
     telefono: "",
@@ -466,6 +466,15 @@
   const sectionClass =
     "text-xs font-semibold text-primary/80 uppercase tracking-wide border-b border-surface pb-1.5 mb-2";
 
+  // Handler for custom Tab navigation in date inputs
+  function handleDateTab(e: KeyboardEvent, nextId: string) {
+    if (e.key === "Tab" && !e.shiftKey) {
+      e.preventDefault();
+      const next = document.getElementById(nextId);
+      next?.focus();
+    }
+  }
+
   // Handler para Ctrl+S
   function handleKeydown(e: KeyboardEvent) {
     if (!show || readonly || loading) return;
@@ -643,7 +652,7 @@
                         type="text"
                         value={$form.numeroGafete}
                         oninput={handleGafeteInput}
-                        placeholder="K-XXXXXX"
+                        placeholder="K-123456"
                         disabled={loading || readonly}
                         class={inputClass}
                       />
@@ -731,7 +740,7 @@
                           : ''}"
                       >
                         <span class="truncate">
-                          {$form.operacion || "Seleccionar operación"}
+                          {$form.operacion || "Selec CDI"}
                         </span>
                         <ChevronDown size={16} class="text-secondary" />
                       </button>
@@ -798,7 +807,7 @@
                               Cargando...
                             {:else}
                               {availableRoles.find((r) => r.id === $form.roleId)
-                                ?.name || "Seleccionar rol"}
+                                ?.name || "Selec Rol"}
                             {/if}
                           </span>
                           <ChevronDown size={16} class="text-secondary" />
@@ -886,7 +895,9 @@
                   </div>
 
                   <div>
-                    <label for="email" class={labelClass}>Email *</label>
+                    <label for="email" class={labelClass}
+                      >Correo Electrónico *</label
+                    >
                     <input
                       id="email"
                       type="email"
@@ -914,7 +925,7 @@
                         for="vencimientoPortacion"
                         class="{labelClass} whitespace-nowrap"
                       >
-                        Vencimiento Portación *
+                        Venc. Portación *
                       </label>
                       <input
                         id="vencimientoPortacion"
@@ -922,6 +933,8 @@
                         bind:value={$form.vencimientoPortacion}
                         disabled={loading || readonly}
                         class={inputClass}
+                        onkeydown={(e) =>
+                          handleDateTab(e, "fechaInicioLabores")}
                       />
                       {#if $errors.vencimientoPortacion}
                         <p class="text-red-500 text-xs mt-1">
@@ -939,6 +952,7 @@
                         bind:value={$form.fechaInicioLabores}
                         disabled={loading || readonly}
                         class={inputClass}
+                        onkeydown={(e) => handleDateTab(e, "fechaNacimiento")}
                       />
                     </div>
                   </div>
@@ -955,17 +969,20 @@
                         bind:value={$form.fechaNacimiento}
                         disabled={loading || readonly}
                         class={inputClass}
+                        onkeydown={(e) => handleDateTab(e, "telefono")}
                       />
                     </div>
                     <div>
-                      <label for="telefono" class={labelClass}>Teléfono</label>
+                      <label for="telefono" class={labelClass}
+                        >Tel. Personal</label
+                      >
                       <input
                         id="telefono"
                         type="tel"
                         value={$form.telefono}
                         oninput={(e) => handleGenericPhoneInput(e, "telefono")}
                         onkeydown={handlePhoneKeydown}
-                        placeholder="+505 8888-8888"
+                        placeholder="+506 8888-8888"
                         disabled={loading || readonly}
                         class={inputClass}
                       />
@@ -975,7 +992,7 @@
                   <div class="grid grid-cols-2 gap-2">
                     <div>
                       <label for="contactoEmergenciaNombre" class={labelClass}
-                        >Emergencia</label
+                        >Contact. Emergencia</label
                       >
                       <input
                         id="contactoEmergenciaNombre"
@@ -1002,7 +1019,7 @@
                             "contactoEmergenciaTelefono",
                           )}
                         onkeydown={handlePhoneKeydown}
-                        placeholder="+506 7000-0000"
+                        placeholder="+506 8888-8888"
                         disabled={loading || readonly}
                         class={inputClass}
                       />
@@ -1021,7 +1038,7 @@
                         disabled={loading || readonly}
                         class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none outline-none border-none appearance-none ring-0 h-[93px]"
                         rows="4"
-                        placeholder="Ej: Dirección completa..."
+                        placeholder="Ej: San José, Calle 5, Av 3, Casa #123"
                       ></textarea>
                     </div>
                   </div>
