@@ -504,7 +504,9 @@ mod tests {
             segundo_apellido: None,
             email: "test@example.com".to_string(),
             // Campos opcionales / defaults
-            role: RecordId::from_table_key("role", "admin"),
+            role: RecordId::from(("role", "unknown")),
+            operacion: None,
+            vencimiento_portacion: None,
             is_active: true,
             must_change_password: false,
             fecha_inicio_labores: None,

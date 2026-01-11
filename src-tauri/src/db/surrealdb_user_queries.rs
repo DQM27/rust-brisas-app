@@ -10,7 +10,7 @@
 //!
 //! ## Tabla: `user`
 
-use crate::models::user::{User, UserCreateDTO, UserFetched, UserUpdateDTO};
+use crate::models::user::{Operacion, User, UserCreateDTO, UserFetched, UserUpdateDTO};
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use log::{debug, error, info, warn};
 use serde::Deserialize;
@@ -25,6 +25,7 @@ struct UserWithPassword {
     pub nombre: String,
     pub apellido: String,
     pub role: RecordId,
+    pub operacion: Option<Operacion>,
     pub is_active: bool,
     pub created_at: Datetime,
     pub updated_at: Datetime,
@@ -38,6 +39,7 @@ struct UserWithPassword {
     pub direccion: Option<String>,
     pub contacto_emergencia_nombre: Option<String>,
     pub contacto_emergencia_telefono: Option<String>,
+    pub vencimiento_portacion: Option<String>,
     pub must_change_password: bool,
     pub deleted_at: Option<Datetime>,
     pub avatar_path: Option<String>,
@@ -52,6 +54,7 @@ impl UserWithPassword {
             nombre: self.nombre,
             apellido: self.apellido,
             role: self.role,
+            operacion: self.operacion,
             is_active: self.is_active,
             created_at: self.created_at,
             updated_at: self.updated_at,
@@ -65,6 +68,7 @@ impl UserWithPassword {
             direccion: self.direccion,
             contacto_emergencia_nombre: self.contacto_emergencia_nombre,
             contacto_emergencia_telefono: self.contacto_emergencia_telefono,
+            vencimiento_portacion: self.vencimiento_portacion,
             must_change_password: self.must_change_password,
             deleted_at: self.deleted_at,
             avatar_path: self.avatar_path,
@@ -87,6 +91,7 @@ pub async fn insert(dto: UserCreateDTO) -> Result<User, SurrealDbError> {
                 nombre: $nombre,
                 apellido: $apellido,
                 role: $role,
+                operacion: $operacion,
                 cedula: $cedula,
                 segundo_nombre: $segundo_nombre,
                 segundo_apellido: $segundo_apellido,

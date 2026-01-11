@@ -162,6 +162,7 @@ pub async fn create_user(
         nombre: nombre_normalizado,
         apellido: apellido_normalizado,
         role: role_record,
+        operacion: Some(input.operacion),
         cedula: input.cedula,
         segundo_nombre: input.segundo_nombre,
         segundo_apellido: input.segundo_apellido,
@@ -172,6 +173,7 @@ pub async fn create_user(
         direccion: input.direccion,
         contacto_emergencia_nombre: input.contacto_emergencia_nombre,
         contacto_emergencia_telefono: input.contacto_emergencia_telefono,
+        vencimiento_portacion: input.vencimiento_portacion,
         must_change_password,
         avatar_path: input.avatar_path,
     };

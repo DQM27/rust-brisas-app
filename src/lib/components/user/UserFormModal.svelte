@@ -10,6 +10,7 @@
     CreateUserInput,
     UpdateUserInput,
   } from "$lib/types/user";
+  import { Operacion } from "$lib/types/user";
   import {
     CreateUserSchema,
     UpdateUserSchema,
@@ -139,6 +140,7 @@
   // --- SUPERFORMS SETUP ---
   // State for Role Dropdown
   let showRoleDropdown = $state(false);
+  let showOperacionDropdown = $state(false); // New state for Operacion dropdown
 
   const initialValues: CreateUserForm = {
     cedula: "",
@@ -147,6 +149,7 @@
     segundoNombre: "",
     segundoApellido: "",
     email: "",
+    operacion: Operacion.CalleBlancos, // Default value
     password: "",
     roleId: ROLE_GUARDIA_ID,
     telefono: "",
@@ -156,6 +159,7 @@
     fechaNacimiento: "",
     contactoEmergenciaNombre: "",
     contactoEmergenciaTelefono: "",
+    vencimientoPortacion: "",
     mustChangePassword: false,
   };
 
@@ -301,6 +305,7 @@
         segundoNombre: user.segundoNombre || "",
         segundoApellido: user.segundoApellido || "",
         email: user.email || "",
+        operacion: user.operacion || Operacion.CalleBlancos,
         password: "",
         roleId: user.roleId || ROLE_GUARDIA_ID,
         telefono: user.telefono || "",
@@ -310,6 +315,7 @@
         fechaNacimiento: user.fechaNacimiento || "",
         contactoEmergenciaNombre: user.contactoEmergenciaNombre || "",
         contactoEmergenciaTelefono: user.contactoEmergenciaTelefono || "",
+        vencimientoPortacion: user.vencimientoPortacion || "",
         mustChangePassword: user.mustChangePassword || false,
       };
     } else if (show && !user) {
@@ -527,7 +533,7 @@
             <!-- Form Area -->
             <div class="flex-1 p-6">
               <div
-                class="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full p-3 bg-surface-1 rounded-lg border border-surface"
+                class="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full p-7 bg-surface-1 rounded-lg border border-surface"
               >
                 <!-- COL 1: Identidad -->
                 <!-- COL 1: Identidad + Avatar -->
@@ -709,69 +715,69 @@
                     </div>
                   </div>
 
-                  <div>
-                    <label for="email" class={labelClass}>Email *</label>
-                    <input
-                      id="email"
-                      type="email"
-                      value={$form.email}
-                      oninput={handleEmailInput}
-                      placeholder="Ej: usuario@empresa.com"
-                      disabled={loading || readonly}
-                      class="{inputClass} {$errors.email || emailDuplicateError
-                        ? 'border-red-500 ring-red-500 focus:ring-red-500'
-                        : ''}"
-                    />
-                    {#if $errors.email || emailDuplicateError}
-                      <p class={errorClass}>
-                        {$errors.email || emailDuplicateError}
-                      </p>
-                    {/if}
-                  </div>
-                </div>
-
-                <!-- COL 2: Institucional -->
-                <div class="space-y-3">
                   <div class="grid grid-cols-2 gap-2">
-                    <div>
-                      <label for="fechaNacimiento" class={labelClass}
-                        >Fecha Nacimiento</label
+                    <!-- Operación / CDI (Moved from Col 2) -->
+                    <div class="relative">
+                      <label for="operacion" class={labelClass}
+                        >Operación / CDI *</label
                       >
-                      <input
-                        id="fechaNacimiento"
-                        type="date"
-                        bind:value={$form.fechaNacimiento}
+                      <button
+                        type="button"
                         disabled={loading || readonly}
-                        class={inputClass}
-                      />
-                    </div>
-                    <div>
-                      <label for="fechaInicioLabores" class={labelClass}
-                        >Inicio Labores</label
+                        onclick={() =>
+                          (showOperacionDropdown = !showOperacionDropdown)}
+                        class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {showOperacionDropdown
+                          ? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
+                          : ''}"
                       >
-                      <input
-                        id="fechaInicioLabores"
-                        type="date"
-                        bind:value={$form.fechaInicioLabores}
-                        disabled={loading || readonly}
-                        class={inputClass}
-                      />
-                    </div>
-                  </div>
+                        <span class="truncate">
+                          {$form.operacion || "Seleccionar operación"}
+                        </span>
+                        <ChevronDown size={16} class="text-secondary" />
+                      </button>
 
-                  <div class="grid grid-cols-2 gap-2">
-                    <div>
-                      <label for="telefono" class={labelClass}>Teléfono</label>
-                      <input
-                        id="telefono"
-                        type="tel"
-                        value={$form.telefono}
-                        oninput={(e) => handleGenericPhoneInput(e, "telefono")}
-                        onkeydown={handlePhoneKeydown}
-                        placeholder="+505 8888-8888"
-                        disabled={loading || readonly}
-                        class={inputClass}
-                      />
+                      {#if showOperacionDropdown && !readonly}
+                        <!-- Backdrop -->
+                        <div
+                          class="fixed inset-0 z-40"
+                          onclick={() => (showOperacionDropdown = false)}
+                          role="presentation"
+                          aria-hidden="true"
+                        ></div>
+
+                        <!-- Dropdown Menu -->
+                        <div
+                          class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top"
+                          transition:fly={{ y: -10, duration: 300 }}
+                        >
+                          {#each Object.values(Operacion) as op}
+                            <button
+                              type="button"
+                              onclick={() => {
+                                $form.operacion = op;
+                                showOperacionDropdown = false;
+                              }}
+                              class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+                            >
+                              <span>{op}</span>
+                              {#if $form.operacion === op}
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-4 w-4 text-white"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                >
+                                  <path
+                                    fill-rule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clip-rule="evenodd"
+                                  />
+                                </svg>
+                              {/if}
+                            </button>
+                          {/each}
+                        </div>
+                      {/if}
                     </div>
 
                     <!-- Rol -->
@@ -879,6 +885,93 @@
                     {/if}
                   </div>
 
+                  <div>
+                    <label for="email" class={labelClass}>Email *</label>
+                    <input
+                      id="email"
+                      type="email"
+                      value={$form.email}
+                      oninput={handleEmailInput}
+                      placeholder="Ej: usuario@empresa.com"
+                      disabled={loading || readonly}
+                      class="{inputClass} {$errors.email || emailDuplicateError
+                        ? 'border-red-500 ring-red-500 focus:ring-red-500'
+                        : ''}"
+                    />
+                    {#if $errors.email || emailDuplicateError}
+                      <p class={errorClass}>
+                        {$errors.email || emailDuplicateError}
+                      </p>
+                    {/if}
+                  </div>
+                </div>
+
+                <!-- COL 2: Institucional -->
+                <div class="space-y-3">
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label
+                        for="vencimientoPortacion"
+                        class="{labelClass} whitespace-nowrap"
+                      >
+                        Vencimiento Portación *
+                      </label>
+                      <input
+                        id="vencimientoPortacion"
+                        type="date"
+                        bind:value={$form.vencimientoPortacion}
+                        disabled={loading || readonly}
+                        class={inputClass}
+                      />
+                      {#if $errors.vencimientoPortacion}
+                        <p class="text-red-500 text-xs mt-1">
+                          {$errors.vencimientoPortacion}
+                        </p>
+                      {/if}
+                    </div>
+                    <div>
+                      <label for="fechaInicioLabores" class={labelClass}
+                        >Inicio Labores</label
+                      >
+                      <input
+                        id="fechaInicioLabores"
+                        type="date"
+                        bind:value={$form.fechaInicioLabores}
+                        disabled={loading || readonly}
+                        class={inputClass}
+                      />
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2">
+                    <!-- Vencimiento Portación (Mandatory) -->
+                    <div>
+                      <label for="fechaNacimiento" class={labelClass}
+                        >Fecha Nacimiento</label
+                      >
+                      <input
+                        id="fechaNacimiento"
+                        type="date"
+                        bind:value={$form.fechaNacimiento}
+                        disabled={loading || readonly}
+                        class={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label for="telefono" class={labelClass}>Teléfono</label>
+                      <input
+                        id="telefono"
+                        type="tel"
+                        value={$form.telefono}
+                        oninput={(e) => handleGenericPhoneInput(e, "telefono")}
+                        onkeydown={handlePhoneKeydown}
+                        placeholder="+505 8888-8888"
+                        disabled={loading || readonly}
+                        class={inputClass}
+                      />
+                    </div>
+                  </div>
+
                   <div class="grid grid-cols-2 gap-2">
                     <div>
                       <label for="contactoEmergenciaNombre" class={labelClass}
@@ -926,8 +1019,8 @@
                         id="direccion"
                         bind:value={$form.direccion}
                         disabled={loading || readonly}
-                        class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none outline-none border-none appearance-none ring-0"
-                        rows="2"
+                        class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none outline-none border-none appearance-none ring-0 h-[93px]"
+                        rows="4"
                         placeholder="Ej: Dirección completa..."
                       ></textarea>
                     </div>

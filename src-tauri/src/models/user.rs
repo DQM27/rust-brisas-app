@@ -8,8 +8,22 @@ use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId};
 
 // --------------------------------------------------------------------------
-// MODELO DE DOMINIO
+// ENUMS
 // --------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Operacion {
+    #[serde(rename = "Calle Blancos")]
+    CalleBlancos,
+    #[serde(rename = "Cartago")]
+    Cartago,
+    #[serde(rename = "Coronado")]
+    Coronado,
+    #[serde(rename = "Mega Brisas")]
+    MegaBrisas,
+    #[serde(rename = "Belen")]
+    Belen,
+}
 
 /// Representa a un operador del sistema (Usuario).
 ///
@@ -23,6 +37,7 @@ pub struct User {
     pub apellido: String,
     /// Referencia al rol asignado (record<role>).
     pub role: RecordId,
+    pub operacion: Option<Operacion>,
     pub is_active: bool,
     pub created_at: Datetime,
     pub updated_at: Datetime,
@@ -36,6 +51,8 @@ pub struct User {
     pub direccion: Option<String>,
     pub contacto_emergencia_nombre: Option<String>,
     pub contacto_emergencia_telefono: Option<String>,
+    /// Vencimiento de portación de armas (DD/MM/AAAA)
+    pub vencimiento_portacion: Option<String>,
     /// Indica si el usuario debe cambiar su contraseña en el próximo inicio de sesión.
     pub must_change_password: bool,
     pub deleted_at: Option<Datetime>,
@@ -50,6 +67,7 @@ pub struct UserFetched {
     pub nombre: String,
     pub apellido: String,
     pub role: Option<Role>, // Opcional para manejar inconsistencias de integridad
+    pub operacion: Option<Operacion>,
     pub is_active: bool,
     pub created_at: Datetime,
     pub updated_at: Datetime,
@@ -63,6 +81,7 @@ pub struct UserFetched {
     pub direccion: Option<String>,
     pub contacto_emergencia_nombre: Option<String>,
     pub contacto_emergencia_telefono: Option<String>,
+    pub vencimiento_portacion: Option<String>,
     pub must_change_password: bool,
     pub deleted_at: Option<Datetime>,
     pub avatar_path: Option<String>,
@@ -81,6 +100,7 @@ pub struct CreateUserInput {
     pub nombre: String,
     pub apellido: String,
     pub role_id: Option<String>,
+    pub operacion: Operacion,
     pub cedula: String,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
@@ -91,6 +111,7 @@ pub struct CreateUserInput {
     pub direccion: Option<String>,
     pub contacto_emergencia_nombre: Option<String>,
     pub contacto_emergencia_telefono: Option<String>,
+    pub vencimiento_portacion: String,
     pub must_change_password: Option<bool>,
     pub avatar_path: Option<String>,
 }
@@ -104,6 +125,7 @@ pub struct UpdateUserInput {
     pub nombre: Option<String>,
     pub apellido: Option<String>,
     pub role_id: Option<String>,
+    pub operacion: Option<Operacion>,
     pub is_active: Option<bool>,
     pub cedula: Option<String>,
     pub segundo_nombre: Option<String>,
@@ -115,6 +137,7 @@ pub struct UpdateUserInput {
     pub direccion: Option<String>,
     pub contacto_emergencia_nombre: Option<String>,
     pub contacto_emergencia_telefono: Option<String>,
+    pub vencimiento_portacion: Option<String>,
     pub must_change_password: Option<bool>,
     pub avatar_path: Option<String>,
 }
@@ -138,6 +161,7 @@ pub struct UserCreateDTO {
     pub nombre: String,
     pub apellido: String,
     pub role: RecordId,
+    pub operacion: Option<Operacion>,
     pub cedula: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub segundo_nombre: Option<String>,
@@ -157,6 +181,7 @@ pub struct UserCreateDTO {
     pub contacto_emergencia_nombre: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contacto_emergencia_telefono: Option<String>,
+    pub vencimiento_portacion: String,
     pub must_change_password: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_path: Option<String>,
@@ -172,6 +197,8 @@ pub struct UserUpdateDTO {
     pub apellido: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub role: Option<RecordId>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operacion: Option<Operacion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password_hash: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -197,6 +224,8 @@ pub struct UserUpdateDTO {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contacto_emergencia_telefono: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub vencimiento_portacion: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub must_change_password: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_path: Option<String>,
@@ -219,6 +248,7 @@ pub struct UserResponse {
     pub nombre_completo: String,
     pub role_id: String,
     pub role_name: String,
+    pub operacion: Option<Operacion>,
     pub is_superuser: bool,
     pub is_active: bool,
     pub created_at: String,
@@ -234,6 +264,7 @@ pub struct UserResponse {
     pub direccion: Option<String>,
     pub contacto_emergencia_nombre: Option<String>,
     pub contacto_emergencia_telefono: Option<String>,
+    pub vencimiento_portacion: Option<String>,
     pub must_change_password: bool,
     pub temporary_password: Option<String>,
 }
@@ -261,6 +292,7 @@ impl UserResponse {
             nombre_completo,
             role_id: u.role.to_string(),
             role_name,
+            operacion: u.operacion,
             is_superuser: u.id.to_string() == format!("user:{GOD_ID}")
                 || u.id.to_string() == format!("user:⟨{GOD_ID}⟩"), // Fallback robusto
             permissions, // Now included
@@ -277,6 +309,7 @@ impl UserResponse {
             direccion: u.direccion,
             contacto_emergencia_nombre: u.contacto_emergencia_nombre,
             contacto_emergencia_telefono: u.contacto_emergencia_telefono,
+            vencimiento_portacion: u.vencimiento_portacion,
             must_change_password: u.must_change_password,
             temporary_password: None,
         }
@@ -308,6 +341,7 @@ impl UserResponse {
             nombre_completo,
             role_id,
             role_name,
+            operacion: u.operacion,
             is_superuser: u.id.to_string() == format!("user:{GOD_ID}")
                 || u.id.to_string() == format!("user:⟨{GOD_ID}⟩"),
             permissions,
@@ -324,6 +358,7 @@ impl UserResponse {
             direccion: u.direccion,
             contacto_emergencia_nombre: u.contacto_emergencia_nombre,
             contacto_emergencia_telefono: u.contacto_emergencia_telefono,
+            vencimiento_portacion: u.vencimiento_portacion,
             must_change_password: u.must_change_password,
             temporary_password: None,
         }

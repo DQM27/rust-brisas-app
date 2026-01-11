@@ -594,6 +594,8 @@ mod tests {
             segundo_apellido: None,
             email: "jane@example.com".to_string(),
             role: RecordId::from_table_key("role", "role-1"),
+            operacion: None,
+            vencimiento_portacion: None,
             is_active: true,
             must_change_password: false,
             fecha_inicio_labores: None,

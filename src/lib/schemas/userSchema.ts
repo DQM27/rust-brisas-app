@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Operacion } from '$lib/types/user'; // Import Enum
 import {
     CEDULA_MIN_LEN,
     CEDULA_MAX_LEN,
@@ -110,6 +111,7 @@ export const CreateUserSchema = z.object({
     segundoNombre: segundoNombreSchema,
     segundoApellido: segundoApellidoSchema,
     roleId: z.string().optional(),  // FK a roles (default: guardia)
+    operacion: z.nativeEnum(Operacion, { message: "Operación es requerida" }),
 
     // Campos adicionales opcionales
     telefono: stringOpcional(20, 'Teléfono'),
@@ -119,6 +121,7 @@ export const CreateUserSchema = z.object({
     fechaNacimiento: z.string().optional(),
     contactoEmergenciaNombre: stringOpcional(100, 'Nombre contacto emergencia'),
     contactoEmergenciaTelefono: stringOpcional(20, 'Teléfono contacto emergencia'),
+    vencimientoPortacion: z.string().min(1, "La fecha de vencimiento es obligatoria"),
     mustChangePassword: z.boolean().optional(),
 });
 

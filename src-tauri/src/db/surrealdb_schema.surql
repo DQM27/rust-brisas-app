@@ -27,6 +27,7 @@ DEFINE FIELD email ON TABLE user TYPE string ASSERT string::len($value) >= 5 AND
 DEFINE INDEX idx_user_email ON user COLUMNS email UNIQUE;
 DEFINE FIELD password_hash ON TABLE user TYPE string;
 DEFINE FIELD is_active ON TABLE user TYPE bool DEFAULT true;
+DEFINE FIELD operacion ON TABLE user TYPE option<string> ASSERT $value == NONE OR $value INSIDE ['Calle Blancos', 'Cartago', 'Coronado', 'Mega Brisas', 'Belen'];
 DEFINE FIELD role ON TABLE user TYPE record<role>; 
 DEFINE FIELD nombre ON TABLE user TYPE string ASSERT string::len($value) >= 1 AND string::len($value) <= 100;
 DEFINE FIELD apellido ON TABLE user TYPE string ASSERT string::len($value) >= 1 AND string::len($value) <= 100;
@@ -43,6 +44,7 @@ DEFINE FIELD contacto_emergencia_nombre ON TABLE user TYPE option<string> ASSERT
 DEFINE FIELD contacto_emergencia_telefono ON TABLE user TYPE option<string> ASSERT $value == NONE OR $value == '' OR string::len($value) <= 20;
 DEFINE FIELD avatar_path ON TABLE user TYPE option<string>;
 DEFINE FIELD must_change_password ON TABLE user TYPE bool DEFAULT false;
+DEFINE FIELD vencimiento_portacion ON TABLE user TYPE option<string>;
 DEFINE FIELD created_at ON TABLE user TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE user TYPE datetime VALUE time::now();
 DEFINE FIELD deleted_at ON TABLE user TYPE option<datetime>;

@@ -3,6 +3,14 @@
 // ==========================================
 
 // Response de usuario del backend
+export enum Operacion {
+  CalleBlancos = "Calle Blancos",
+  Cartago = "Cartago",
+  Coronado = "Coronado",
+  MegaBrisas = "Mega Brisas",
+  Belen = "Belen",
+}
+
 export interface UserResponse {
   id: string;
   email: string;
@@ -11,6 +19,7 @@ export interface UserResponse {
   nombreCompleto: string;
   roleId: string;
   roleName: string;  // Nombre del rol para display
+  operacion?: Operacion;
   isActive: boolean;
   isSuperuser?: boolean;  // Flag para super usuario
   createdAt: string;
@@ -28,6 +37,7 @@ export interface UserResponse {
   direccion?: string | null;
   contactoEmergenciaNombre?: string | null;
   contactoEmergenciaTelefono?: string | null;
+  vencimientoPortacion?: string | null;
   temporaryPassword?: string | null;
   mustChangePassword: boolean;
 }
@@ -44,6 +54,7 @@ export interface CreateUserInput {
   nombre: string;
   apellido: string;
   roleId?: string;  // FK a roles
+  operacion: Operacion;
 
   // Campos adicionales
   cedula: string;
@@ -65,6 +76,7 @@ export interface UpdateUserInput {
   nombre?: string;
   apellido?: string;
   roleId?: string;  // FK a roles
+  operacion?: Operacion;
   isActive?: boolean;
 
   // Campos adicionales
