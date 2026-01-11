@@ -240,6 +240,14 @@
     taintedMessage: null,
   });
 
+  // Derived state to find the name of the current role
+  const currentRoleName = $derived(
+    $form.roleId
+      ? (availableRoles.find((r) => r.id === $form.roleId)?.name ??
+          "Cargando...")
+      : "Sin Rol",
+  );
+
   // Cargar roles
   async function loadRoles() {
     try {
@@ -560,65 +568,63 @@
         {:else}
           <form id="user-form" use:enhance class="contents">
             <!-- Form Area -->
-            <div class="flex-1 p-6">
+            <div class="flex-1 p-6 space-y-4">
+              {#if isEditMode}
+                <div class="flex flex-col items-center justify-center mb-4">
+                  <div class="relative group">
+                    <div
+                      class="w-24 h-24 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 border-4 border-white dark:border-gray-700 shadow-lg flex items-center justify-center relative"
+                    >
+                      {#if avatarLoading}
+                        <div
+                          class="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-sm z-10"
+                        >
+                          <div
+                            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+                          ></div>
+                        </div>
+                      {/if}
+
+                      {#if activeAvatar}
+                        <img
+                          src={activeAvatar}
+                          alt="Avatar"
+                          class="w-full h-full object-cover"
+                        />
+                      {:else}
+                        <div
+                          class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-600"
+                        >
+                          <span class="text-3xl font-bold">
+                            {$form.nombre
+                              ? $form.nombre[0].toUpperCase()
+                              : "?"}{$form.apellido
+                              ? $form.apellido[0].toUpperCase()
+                              : ""}
+                          </span>
+                        </div>
+                      {/if}
+                    </div>
+                    {#if !readonly}
+                      <button
+                        type="button"
+                        onclick={handleAvatarUpload}
+                        disabled={avatarLoading}
+                        class="absolute bottom-1 right-1 p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all hover:scale-110 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 z-20"
+                        title="Subir foto segura"
+                      >
+                        <Camera size={16} />
+                      </button>
+                    {/if}
+                  </div>
+                </div>
+              {/if}
+
               <div
-                class="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full p-7 bg-surface-1 rounded-lg border border-surface"
+                class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full p-7 bg-surface-1 rounded-lg border border-surface"
               >
                 <!-- COL 1: Identidad -->
-                <!-- COL 1: Identidad + Avatar -->
                 <div class="space-y-3">
-                  <!-- Secure Avatar Component (Only in Edit Mode) -->
-                  {#if isEditMode}
-                    <div class="flex flex-col items-center justify-center mb-6">
-                      <div class="relative group">
-                        <div
-                          class="w-28 h-28 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 border-4 border-white dark:border-gray-700 shadow-lg flex items-center justify-center relative"
-                        >
-                          {#if avatarLoading}
-                            <div
-                              class="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-sm z-10"
-                            >
-                              <div
-                                class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
-                              ></div>
-                            </div>
-                          {/if}
-
-                          {#if activeAvatar}
-                            <img
-                              src={activeAvatar}
-                              alt="Avatar"
-                              class="w-full h-full object-cover"
-                            />
-                          {:else}
-                            <div
-                              class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-600"
-                            >
-                              <span class="text-3xl font-bold">
-                                {$form.nombre
-                                  ? $form.nombre[0].toUpperCase()
-                                  : "?"}{$form.apellido
-                                  ? $form.apellido[0].toUpperCase()
-                                  : ""}
-                              </span>
-                            </div>
-                          {/if}
-                        </div>
-                        {#if !readonly}
-                          <button
-                            type="button"
-                            onclick={handleAvatarUpload}
-                            disabled={avatarLoading}
-                            class="absolute bottom-1 right-1 p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all hover:scale-110 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 z-20"
-                            title="Subir foto segura"
-                          >
-                            <Camera size={16} />
-                          </button>
-                        {/if}
-                      </div>
-                    </div>
-                  {/if}
-
                   <div class="grid grid-cols-2 gap-2">
                     <div>
                       <label for="cedula" class={labelClass}
@@ -919,10 +925,15 @@
                         {/if}
                       </div>
                     {:else}
-                      <div
-                        class="flex items-center p-2.5 bg-black/20 rounded-lg border border-white/10 text-xs text-secondary text-center"
-                      >
-                        Rol gestionado por admin
+                      <div>
+                        <label for="role-readonly" class={labelClass}>Rol</label
+                        >
+                        <div
+                          id="role-readonly"
+                          class="flex items-center justify-center px-3 h-[34px] bg-black/20 rounded-lg border border-white/10 text-sm text-secondary text-center select-none"
+                        >
+                          {currentRoleName}
+                        </div>
                       </div>
                     {/if}
                   </div>
