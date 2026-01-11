@@ -292,6 +292,157 @@ Estructura base para todos los modales de la aplicación. Diseño oscuro, minima
 
 ---
 
+## 📋 Estándar de Formularios CRUD
+
+Referencia: `UserFormModal.svelte`
+
+### Descripción
+Estándar para formularios de Crear/Leer/Actualizar/Eliminar entidades. Diseñado para ser compacto, legible y eficiente en modales grandes con múltiples campos.
+
+### Tamaños de Input Estándar
+
+| Tamaño | Altura | Clase de Padding | Uso Recomendado |
+|--------|--------|------------------|-----------------|
+| Compacto | ~32px | `py-1.5 px-2` | Filtros, tablas inline, grids densos |
+| **Estándar** | ~36px | `py-2 px-3` | **Formularios CRUD** ✅ |
+| Grande | ~44px | `py-2.5 px-3` | Login, búsqueda principal, landing pages |
+
+### Clases Base
+
+```javascript
+// Inputs y Textareas
+const inputClass = "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none disabled:opacity-50 transition-all";
+
+// Selects (con espacio para flecha)
+const selectClass = "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none disabled:opacity-50 transition-all cursor-pointer appearance-none bg-no-repeat bg-right pr-8";
+
+// Labels (compactos)
+const labelClass = "block text-xs font-medium text-secondary mb-1";
+
+// Errores
+const errorClass = "text-xs text-red-500 mt-0.5";
+
+// Títulos de sección
+const sectionClass = "text-xs font-semibold text-primary/80 uppercase tracking-wide border-b border-surface pb-1.5 mb-2";
+```
+
+### Select con Flecha Personalizada
+
+El select usa `appearance-none` y una flecha SVG via CSS:
+
+```svelte
+<select class="{selectClass} select-arrow">
+  <option>Opción 1</option>
+  <option>Opción 2</option>
+</select>
+
+<style>
+  .select-arrow {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-size: 1.25em 1.25em;
+  }
+</style>
+```
+
+### Focus Styling (CSS Requerido)
+
+```css
+/* Aplicar a todos los inputs del formulario */
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+  outline: none !important;
+}
+```
+
+### Estructura del Modal CRUD
+
+```svelte
+<!-- Modal Container -->
+<div class="relative z-10 w-full max-w-5xl max-h-[95vh] overflow-hidden rounded-xl bg-surface-1 shadow-2xl border border-surface flex flex-col">
+  
+  <!-- Header -->
+  <div class="flex-none flex items-center justify-between px-6 py-4 bg-surface-2 border-b border-surface">
+    <h2 class="text-xl font-semibold text-primary">Título del Modal</h2>
+    <button class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors">
+      <X size={20} />
+    </button>
+  </div>
+
+  <!-- Content (Scrollable) -->
+  <div class="flex-1 overflow-y-auto p-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Columnas de campos -->
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="flex-none flex gap-3 px-6 py-4 border-t border-surface bg-surface-2">
+    <!-- Botones de acción -->
+  </div>
+</div>
+```
+
+### Botones del Footer CRUD
+
+| Botón | Clase | Hover |
+|-------|-------|-------|
+| Cancelar | `border-surface text-secondary` | `hover:border-white/60 hover:text-white/80` |
+| Acción Secundaria | `border-surface text-secondary` | `hover:border-accent hover:text-accent` |
+| Acción de Advertencia | `border-surface text-secondary` | `hover:border-warning hover:text-warning` |
+| Guardar/Crear | `border-surface text-secondary` | `hover:border-success hover:text-success` |
+
+```svelte
+<!-- Cancelar -->
+<button class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm">
+  Cancelar
+</button>
+
+<!-- Guardar (Primario) -->
+<button class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm disabled:opacity-50">
+  Guardar Cambios
+</button>
+```
+
+### Layout de Campos
+
+```svelte
+<!-- Campo individual -->
+<div>
+  <label for="campo" class={labelClass}>Nombre del Campo *</label>
+  <input id="campo" type="text" class={inputClass} />
+  {#if error}<p class={errorClass}>{error}</p>{/if}
+</div>
+
+<!-- Campos en grid (2 columnas) -->
+<div class="grid grid-cols-2 gap-2">
+  <div>
+    <label class={labelClass}>Campo A</label>
+    <input class={inputClass} />
+  </div>
+  <div>
+    <label class={labelClass}>Campo B</label>
+    <input class={inputClass} />
+  </div>
+</div>
+
+<!-- Sección con título -->
+<h3 class={sectionClass}>Información Personal</h3>
+```
+
+### Mensaje Informativo (Sin Input)
+
+```svelte
+<div class="p-2.5 bg-black/20 rounded-lg border border-white/10 text-xs text-secondary text-center">
+  Este campo es gestionado por el sistema.
+</div>
+```
+
+---
+
 ## 📝 Notas Adicionales
 
 *Este documento se irá actualizando con más patrones de UI a medida que se estandaricen.*

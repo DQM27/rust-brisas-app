@@ -447,13 +447,15 @@
     }
   }
 
-  // Standardized UI Pattern - Dark minimalist style
+  // Standardized UI Pattern - CRUD Form Standard
   const inputClass =
-    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-gray-500 focus:outline-none disabled:opacity-50 transition-all";
-  const labelClass = "block text-sm font-medium text-secondary mb-1.5";
-  const errorClass = "text-xs text-red-500 mt-1";
+    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none disabled:opacity-50 transition-all";
+  const selectClass =
+    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none disabled:opacity-50 transition-all cursor-pointer appearance-none bg-no-repeat bg-right pr-8";
+  const labelClass = "block text-xs font-medium text-secondary mb-1";
+  const errorClass = "text-xs text-red-500 mt-0.5";
   const sectionClass =
-    "text-sm font-semibold text-primary border-b border-surface pb-2 mb-3";
+    "text-xs font-semibold text-primary/80 uppercase tracking-wide border-b border-surface pb-1.5 mb-2";
 
   // Handler para Ctrl+S
   function handleKeydown(e: KeyboardEvent) {
@@ -603,25 +605,40 @@
 
                   <h3 class={sectionClass}>Identidad</h3>
 
-                  <div>
-                    <label for="cedula" class={labelClass}>Cédula *</label>
-                    <input
-                      id="cedula"
-                      type="text"
-                      value={$form.cedula}
-                      oninput={handleCedulaInput}
-                      placeholder="Ej: 1-1122-0333"
-                      disabled={loading || readonly}
-                      class="{inputClass} {$errors.cedula ||
-                      cedulaDuplicateError
-                        ? 'border-red-500 ring-red-500 focus:ring-red-500'
-                        : ''}"
-                    />
-                    {#if $errors.cedula || cedulaDuplicateError}
-                      <p class={errorClass}>
-                        {$errors.cedula || cedulaDuplicateError}
-                      </p>
-                    {/if}
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label for="cedula" class={labelClass}>Cédula *</label>
+                      <input
+                        id="cedula"
+                        type="text"
+                        value={$form.cedula}
+                        oninput={handleCedulaInput}
+                        placeholder="Ej: 1-1122-0333"
+                        disabled={loading || readonly}
+                        class="{inputClass} {$errors.cedula ||
+                        cedulaDuplicateError
+                          ? 'border-red-500 ring-red-500 focus:ring-red-500'
+                          : ''}"
+                      />
+                      {#if $errors.cedula || cedulaDuplicateError}
+                        <p class={errorClass}>
+                          {$errors.cedula || cedulaDuplicateError}
+                        </p>
+                      {/if}
+                    </div>
+                    <div>
+                      <label for="numeroGafete" class={labelClass}>Gafete</label
+                      >
+                      <input
+                        id="numeroGafete"
+                        type="text"
+                        value={$form.numeroGafete}
+                        oninput={handleGafeteInput}
+                        placeholder="K-XXXXXX"
+                        disabled={loading || readonly}
+                        class={inputClass}
+                      />
+                    </div>
                   </div>
 
                   <div class="grid grid-cols-2 gap-2">
@@ -686,52 +703,6 @@
                   </div>
 
                   <div>
-                    <label for="fechaNacimiento" class={labelClass}
-                      >Fecha Nacimiento</label
-                    >
-                    <input
-                      id="fechaNacimiento"
-                      type="date"
-                      bind:value={$form.fechaNacimiento}
-                      disabled={loading || readonly}
-                      class={inputClass}
-                    />
-                  </div>
-                </div>
-
-                <!-- COL 2: Institucional -->
-                <div class="space-y-3">
-                  <h3 class={sectionClass}>Institucional & Cuenta</h3>
-
-                  <div class="grid grid-cols-2 gap-2">
-                    <div>
-                      <label for="numeroGafete" class={labelClass}>Gafete</label
-                      >
-                      <input
-                        id="numeroGafete"
-                        type="text"
-                        value={$form.numeroGafete}
-                        oninput={handleGafeteInput}
-                        placeholder="K-XXXXXX"
-                        disabled={loading || readonly}
-                        class={inputClass}
-                      />
-                    </div>
-                    <div>
-                      <label for="fechaInicioLabores" class={labelClass}
-                        >Fecha Inicio Labores</label
-                      >
-                      <input
-                        id="fechaInicioLabores"
-                        type="date"
-                        bind:value={$form.fechaInicioLabores}
-                        disabled={loading || readonly}
-                        class={inputClass}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
                     <label for="email" class={labelClass}>Email *</label>
                     <input
                       id="email"
@@ -749,57 +720,91 @@
                       </p>
                     {/if}
                   </div>
+                </div>
 
-                  <div>
-                    <label for="telefono" class={labelClass}>Teléfono</label>
-                    <input
-                      id="telefono"
-                      type="tel"
-                      value={$form.telefono}
-                      oninput={(e) => handleGenericPhoneInput(e, "telefono")}
-                      onkeydown={handlePhoneKeydown}
-                      placeholder="+505 8888-8888"
-                      disabled={loading || readonly}
-                      class={inputClass}
-                    />
+                <!-- COL 2: Institucional -->
+                <div class="space-y-3">
+                  <h3 class={sectionClass}>Institucional & Cuenta</h3>
+
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label for="fechaNacimiento" class={labelClass}
+                        >Fecha Nacimiento</label
+                      >
+                      <input
+                        id="fechaNacimiento"
+                        type="date"
+                        bind:value={$form.fechaNacimiento}
+                        disabled={loading || readonly}
+                        class={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label for="fechaInicioLabores" class={labelClass}
+                        >Inicio Labores</label
+                      >
+                      <input
+                        id="fechaInicioLabores"
+                        type="date"
+                        bind:value={$form.fechaInicioLabores}
+                        disabled={loading || readonly}
+                        class={inputClass}
+                      />
+                    </div>
                   </div>
 
-                  <!-- Roles -->
-                  {#if !isSelf}
+                  <div class="grid grid-cols-2 gap-2">
                     <div>
-                      <label for="roleId" class={labelClass}>Rol *</label>
-                      <select
-                        id="roleId"
-                        bind:value={$form.roleId}
-                        disabled={loading || rolesLoading || readonly}
+                      <label for="telefono" class={labelClass}>Teléfono</label>
+                      <input
+                        id="telefono"
+                        type="tel"
+                        value={$form.telefono}
+                        oninput={(e) => handleGenericPhoneInput(e, "telefono")}
+                        onkeydown={handlePhoneKeydown}
+                        placeholder="+505 8888-8888"
+                        disabled={loading || readonly}
                         class={inputClass}
-                      >
-                        {#if rolesLoading}
-                          <option disabled selected>Cargando roles...</option>
-                        {:else}
-                          <optgroup label="Roles del Sistema">
-                            {#each availableRoles.filter((r) => r.isSystem) as role}
-                              <option value={role.id}>{role.name}</option>
-                            {/each}
-                          </optgroup>
+                      />
+                    </div>
 
-                          {#if availableRoles.some((r) => !r.isSystem)}
-                            <optgroup label="Roles Personalizados">
-                              {#each availableRoles.filter((r) => !r.isSystem) as role}
+                    <!-- Rol -->
+                    {#if !isSelf}
+                      <div>
+                        <label for="roleId" class={labelClass}>Rol *</label>
+                        <select
+                          id="roleId"
+                          bind:value={$form.roleId}
+                          disabled={loading || rolesLoading || readonly}
+                          class="{selectClass} select-arrow"
+                        >
+                          {#if rolesLoading}
+                            <option disabled selected>Cargando roles...</option>
+                          {:else}
+                            <optgroup label="Roles del Sistema">
+                              {#each availableRoles.filter((r) => r.isSystem) as role}
                                 <option value={role.id}>{role.name}</option>
                               {/each}
                             </optgroup>
+
+                            {#if availableRoles.some((r) => !r.isSystem)}
+                              <optgroup label="Roles Personalizados">
+                                {#each availableRoles.filter((r) => !r.isSystem) as role}
+                                  <option value={role.id}>{role.name}</option>
+                                {/each}
+                              </optgroup>
+                            {/if}
                           {/if}
-                        {/if}
-                      </select>
-                    </div>
-                  {:else}
-                    <div
-                      class="p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 text-xs text-gray-500 text-center"
-                    >
-                      Tu rol y permisos son gestionados por un administrador.
-                    </div>
-                  {/if}
+                        </select>
+                      </div>
+                    {:else}
+                      <div
+                        class="flex items-center p-2.5 bg-black/20 rounded-lg border border-white/10 text-xs text-secondary text-center"
+                      >
+                        Rol gestionado por admin
+                      </div>
+                    {/if}
+                  </div>
                 </div>
 
                 <!-- COL 3: Contacto -->
@@ -1025,5 +1030,12 @@
     border-color: rgba(59, 130, 246, 0.5) !important;
     box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
     outline: none !important;
+  }
+
+  /* Select arrow styling */
+  .select-arrow {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-size: 1.25em 1.25em;
   }
 </style>
