@@ -42,7 +42,9 @@
   >([]);
 
   $effect(() => {
-    columnSelection = columns.map((c) => ({ ...c, selected: c.selected }));
+    columnSelection = columns
+      .filter((c) => c.id !== "ag-Grid-ControlsColumn")
+      .map((c) => ({ ...c, selected: c.selected }));
   });
 
   let showColumnSelector = $state(false);

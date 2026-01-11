@@ -19,7 +19,13 @@
   import { createCustomButton } from "$lib/config/agGridConfigs";
   import { currentUser } from "$lib/stores/auth";
   import { activeTabId } from "$lib/stores/tabs";
-  import { exportData, getAvailableFormats } from "$lib/logic/export";
+  import {
+    exportData,
+    getAvailableFormats,
+    extractGridData,
+    extractSelectedRows,
+  } from "$lib/logic/export";
+
   import {
     keyboardCommand,
     setActiveContext,
@@ -68,6 +74,7 @@
   let exportColumns = $state<{ id: string; name: string; selected: boolean }[]>(
     [],
   );
+  let exportRows = $state<Record<string, any>[]>([]);
 
   // ==========================================
   // HISTORIAL / VIEW MODE STATE
@@ -480,6 +487,21 @@
       }))
       .filter((col: any) => col.id !== "actions" && col.id !== "selection");
 
+    // Extract rows for preview (using all columns to support enabling hidden ones)
+    const isSelection = selectedRows.length > 0;
+    const allColIds = exportColumns.map((c) => c.id);
+
+    try {
+      const extracted = isSelection
+        ? extractSelectedRows(gridApi, allColIds)
+        : extractGridData(gridApi, allColIds);
+      exportRows = extracted.rows;
+    } catch (e) {
+      console.error("Error extracting preview data:", e);
+      exportRows = [];
+      toast.error("Error al generar vista previa: " + (e as any).message);
+    }
+
     showExportModal = true;
   }
 
@@ -792,5 +814,6 @@
     onClose={() => (showExportModal = false)}
     {availableFormats}
     columns={exportColumns}
+    rows={exportRows}
   />
 {/if}
