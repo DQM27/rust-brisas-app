@@ -1,8 +1,8 @@
 <!-- src/lib/components/user/UserFormModal.svelte -->
 <!-- Modal reutilizable para crear y editar usuarios -->
 <script lang="ts">
-  import { fade, fly } from "svelte/transition";
-  import { X, Camera } from "lucide-svelte";
+  import { fade, fly, slide } from "svelte/transition";
+  import { X, Camera, ChevronDown, ChevronRight } from "lucide-svelte";
   import { open } from "@tauri-apps/plugin-dialog";
   import { invoke } from "@tauri-apps/api/core";
   import type {
@@ -155,6 +155,8 @@
     contactoEmergenciaTelefono: "",
     mustChangePassword: false,
   };
+
+  let showDireccion = $state(false);
 
   const {
     form,
@@ -487,12 +489,12 @@
 
     <!-- Modal Content -->
     <div
-      class="relative z-10 w-full max-w-5xl max-h-[95vh] overflow-hidden rounded-xl bg-surface-1 shadow-2xl border border-surface flex flex-col"
+      class="relative z-10 w-full max-w-3xl max-h-[95vh] overflow-hidden rounded-xl bg-surface-1 shadow-2xl border border-surface flex flex-col"
       transition:fly={{ y: 20, duration: 200 }}
     >
       <!-- Header -->
       <div
-        class="flex-none flex items-center justify-between px-6 py-4 bg-surface-2 border-b border-surface"
+        class="flex-none flex items-center justify-between px-4 py-4 bg-surface-2 border-b border-surface"
       >
         <h2 class="text-xl font-semibold text-primary">
           {modalTitle}
@@ -522,8 +524,8 @@
         {:else}
           <form id="user-form" use:enhance class="contents">
             <!-- Form Area -->
-            <div class="flex-1 p-6">
-              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+            <div class="flex-1 px-4 py-6">
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
                 <!-- COL 1: Identidad -->
                 <!-- COL 1: Identidad + Avatar -->
                 <div class="space-y-4">
@@ -805,11 +807,6 @@
                       </div>
                     {/if}
                   </div>
-                </div>
-
-                <!-- COL 3: Contacto -->
-                <div class="space-y-3">
-                  <h3 class={sectionClass}>Contacto</h3>
 
                   <div class="grid grid-cols-2 gap-2">
                     <div>
@@ -848,16 +845,41 @@
                     </div>
                   </div>
 
-                  <div>
-                    <label for="direccion" class={labelClass}>Dirección</label>
-                    <textarea
-                      id="direccion"
-                      bind:value={$form.direccion}
-                      disabled={loading || readonly}
-                      class={inputClass}
-                      rows="3"
-                      placeholder="Dirección completa..."
-                    ></textarea>
+                  <!-- Dirección - Toggle colapsable -->
+                  <div class="border-t border-surface pt-2">
+                    <button
+                      type="button"
+                      onclick={() => (showDireccion = !showDireccion)}
+                      class="flex items-center gap-1.5 text-secondary hover:text-primary transition-colors text-xs font-medium"
+                    >
+                      {#if showDireccion}
+                        <ChevronDown size={14} />
+                      {:else}
+                        <ChevronRight size={14} />
+                      {/if}
+                      <span>Dirección</span>
+                      {#if !showDireccion && $form.direccion?.trim()}
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-500"
+                        ></span>
+                      {/if}
+                    </button>
+
+                    {#if showDireccion}
+                      <div class="mt-2" transition:slide>
+                        <div
+                          class="obs-container w-full bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all outline-none"
+                        >
+                          <textarea
+                            id="direccion"
+                            bind:value={$form.direccion}
+                            disabled={loading || readonly}
+                            class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none outline-none border-none appearance-none ring-0"
+                            rows="2"
+                            placeholder="Dirección completa..."
+                          ></textarea>
+                        </div>
+                      </div>
+                    {/if}
                   </div>
                 </div>
               </div>
@@ -865,7 +887,7 @@
 
             <!-- Footer Actions -->
             <div
-              class="flex-none flex gap-3 px-6 py-4 border-t border-surface bg-surface-2"
+              class="flex-none flex items-center justify-between gap-3 -mx-4 px-4 py-4 border-t border-surface bg-surface-2"
             >
               <button
                 type="button"
@@ -1037,5 +1059,17 @@
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.5rem center;
     background-size: 1.25em 1.25em;
+  }
+
+  /* Address/Observations toggle container */
+  .obs-container,
+  .obs-container *:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .obs-container:focus-within {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
   }
 </style>
