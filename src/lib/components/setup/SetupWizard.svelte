@@ -71,7 +71,7 @@
   async function checkSystemKey() {
     try {
       const status = await getCredentialStatus();
-      keyFoundInSystem = status.argon2_configured;
+      keyFoundInSystem = status.has_argon2_secret;
       if (keyFoundInSystem && argon2Params.secret === "") {
         argon2Params.secret = "********"; // Placeholder visual
       }

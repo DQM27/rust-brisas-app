@@ -173,7 +173,7 @@
           <div class="p-4">
             <div class="grid grid-cols-3 gap-4">
               <div class="flex items-center gap-2">
-                {#if status.argon2_configured}
+                {#if status.has_argon2_secret}
                   <Check class="w-4 h-4 text-green-500" />
                 {:else}
                   <AlertCircle class="w-4 h-4 text-yellow-500" />
