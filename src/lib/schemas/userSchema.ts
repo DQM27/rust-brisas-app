@@ -14,8 +14,8 @@ import {
 const stringRequerido = (max: number, nombre: string) =>
     z.string()
         .trim()
-        .min(1, `${nombre} es requerido`)
-        .max(max, `${nombre} no puede exceder ${max} caracteres`);
+        .min(1, `${nombre} requerido`)
+        .max(max, 'Muy largo');
 
 const stringOpcional = (max: number, nombre: string) =>
     z.string()
@@ -30,8 +30,12 @@ const stringOpcional = (max: number, nombre: string) =>
  */
 const emailSchema = z.string()
     .trim()
-    .email('Email inválido')
-    .max(EMAIL_MAX_LEN, `Email no puede exceder ${EMAIL_MAX_LEN} caracteres`);
+    .min(1, 'Correo requerido')
+    .pipe(
+        z.string()
+            .email('Correo inválido')
+            .max(EMAIL_MAX_LEN, 'Muy largo')
+    );
 
 /**
  * Password: min 6 chars
@@ -47,10 +51,14 @@ const passwordSchema = z.string()
  */
 const cedulaSchema = z.string()
     .trim()
-    .min(CEDULA_MIN_LEN, `Cédula debe tener al menos ${CEDULA_MIN_LEN} caracteres`)
-    .max(CEDULA_MAX_LEN, `Cédula no puede exceder ${CEDULA_MAX_LEN} caracteres`)
-    .regex(/^[0-9-]+$/, 'Cédula solo puede contener números y guiones')
-    .refine(val => /\d/.test(val), 'La cédula debe contener al menos un número');
+    .min(1, 'Cédula requerida')
+    .pipe(
+        z.string()
+            .min(CEDULA_MIN_LEN, 'Muy corta')
+            .max(CEDULA_MAX_LEN, 'Muy larga')
+            .regex(/^[0-9-]+$/, 'Formato inválido')
+            .refine(val => /\d/.test(val), 'Formato inválido')
+    );
 
 /**
  * Nombre/Apellido: Solo letras con acentos, espacios permitidos
@@ -58,15 +66,21 @@ const cedulaSchema = z.string()
  */
 const nombreSchema = z.string()
     .trim()
-    .min(1, 'Nombre es requerido')
-    .max(NOMBRE_MAX_LEN, `Nombre no puede exceder ${NOMBRE_MAX_LEN} caracteres`)
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, 'Nombre solo puede contener letras');
+    .min(1, 'Nombre requerido')
+    .pipe(
+        z.string()
+            .max(NOMBRE_MAX_LEN, 'Muy largo')
+            .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, 'Solo letras')
+    );
 
 const apellidoSchema = z.string()
     .trim()
-    .min(1, 'Apellido es requerido')
-    .max(NOMBRE_MAX_LEN, `Apellido no puede exceder ${NOMBRE_MAX_LEN} caracteres`)
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, 'Apellido solo puede contener letras');
+    .min(1, 'Apellido requerido')
+    .pipe(
+        z.string()
+            .max(NOMBRE_MAX_LEN, 'Muy largo')
+            .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, 'Solo letras')
+    );
 
 /**
  * Campos opcionales según domain/user.rs:
@@ -110,8 +124,8 @@ export const CreateUserSchema = z.object({
     apellido: apellidoSchema,
     segundoNombre: segundoNombreSchema,
     segundoApellido: segundoApellidoSchema,
-    roleId: z.string().optional(),  // FK a roles (default: guardia)
-    operacion: z.nativeEnum(Operacion, { message: "Operación es requerida" }),
+    roleId: z.string().min(1, 'Rol requerido'),
+    operacion: z.nativeEnum(Operacion, { message: "CDI requerido" }),
 
     // Campos adicionales opcionales
     telefono: stringOpcional(20, 'Teléfono'),
@@ -121,7 +135,7 @@ export const CreateUserSchema = z.object({
     fechaNacimiento: z.string().optional(),
     contactoEmergenciaNombre: stringOpcional(100, 'Nombre contacto emergencia'),
     contactoEmergenciaTelefono: stringOpcional(20, 'Teléfono contacto emergencia'),
-    vencimientoPortacion: z.string().min(1, "La fecha de vencimiento es obligatoria"),
+    vencimientoPortacion: z.string().min(1, "Vencimiento requerido"),
     mustChangePassword: z.boolean().optional(),
 });
 

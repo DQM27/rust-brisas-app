@@ -151,7 +151,7 @@
     email: "",
     operacion: "" as Operacion, // Empty to show placeholder
     password: "",
-    roleId: ROLE_GUARDIA_ID,
+    roleId: "", // Empy to show placeholder and required validation
     telefono: "",
     direccion: "",
     fechaInicioLabores: "",
@@ -745,6 +745,10 @@
                         <ChevronDown size={16} class="text-secondary" />
                       </button>
 
+                      {#if $errors.operacion}
+                        <p class={errorClass}>{$errors.operacion}</p>
+                      {/if}
+
                       {#if showOperacionDropdown && !readonly}
                         <!-- Backdrop -->
                         <div
@@ -812,6 +816,10 @@
                           </span>
                           <ChevronDown size={16} class="text-secondary" />
                         </button>
+
+                        {#if $errors.roleId}
+                          <p class={errorClass}>{$errors.roleId}</p>
+                        {/if}
 
                         {#if showRoleDropdown && !rolesLoading && !readonly}
                           <!-- Backdrop to close on outside click -->
