@@ -452,9 +452,9 @@
 
   // Standardized UI Pattern - CRUD Form Standard
   const inputClass =
-    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-9 text-sm text-white placeholder:text-gray-500 focus:outline-none disabled:opacity-50 transition-all";
+    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none disabled:opacity-50 transition-all";
   const selectClass =
-    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-9 text-sm text-white focus:outline-none disabled:opacity-50 transition-all cursor-pointer appearance-none bg-no-repeat bg-right pr-8";
+    "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white focus:outline-none disabled:opacity-50 transition-all cursor-pointer appearance-none bg-no-repeat bg-right pr-8";
   const labelClass = "block text-xs font-medium text-secondary mb-1";
   const errorClass = "text-xs text-red-500 mt-0.5";
   const sectionClass =
@@ -652,6 +652,7 @@
                         type="text"
                         value={$form.nombre}
                         oninput={(e) => handleNameInput(e, "nombre")}
+                        placeholder="Ej: Juan"
                         disabled={loading || readonly}
                         class={inputClass}
                       />
@@ -668,6 +669,7 @@
                         type="text"
                         value={$form.segundoNombre}
                         oninput={(e) => handleNameInput(e, "segundoNombre")}
+                        placeholder="Ej: Carlos"
                         disabled={loading || readonly}
                         class={inputClass}
                       />
@@ -683,6 +685,7 @@
                         type="text"
                         value={$form.apellido}
                         oninput={(e) => handleNameInput(e, "apellido")}
+                        placeholder="Ej: Pérez"
                         disabled={loading || readonly}
                         class={inputClass}
                       />
@@ -699,6 +702,7 @@
                         type="text"
                         value={$form.segundoApellido}
                         oninput={(e) => handleNameInput(e, "segundoApellido")}
+                        placeholder="Ej: González"
                         disabled={loading || readonly}
                         class={inputClass}
                       />
@@ -712,6 +716,7 @@
                       type="email"
                       value={$form.email}
                       oninput={handleEmailInput}
+                      placeholder="Ej: usuario@empresa.com"
                       disabled={loading || readonly}
                       class="{inputClass} {$errors.email || emailDuplicateError
                         ? 'border-red-500 ring-red-500 focus:ring-red-500'
@@ -807,11 +812,6 @@
                             class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top"
                             transition:fly={{ y: -10, duration: 300 }}
                           >
-                            <div
-                              class="px-2 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider"
-                            >
-                              Roles del Sistema
-                            </div>
                             {#each availableRoles.filter((r) => r.isSystem) as role}
                               <button
                                 type="button"
@@ -840,12 +840,6 @@
                             {/each}
 
                             {#if availableRoles.some((r) => !r.isSystem)}
-                              <div class="border-t border-white/5 my-1"></div>
-                              <div
-                                class="px-2 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider"
-                              >
-                                Roles Personalizados
-                              </div>
                               {#each availableRoles.filter((r) => !r.isSystem) as role}
                                 <button
                                   type="button"
@@ -898,7 +892,7 @@
                           handleNameInput(e, "contactoEmergenciaNombre")}
                         disabled={loading || readonly}
                         class={inputClass}
-                        placeholder="Nombre"
+                        placeholder="Ej: María"
                       />
                     </div>
                     <div>
@@ -915,7 +909,7 @@
                             "contactoEmergenciaTelefono",
                           )}
                         onkeydown={handlePhoneKeydown}
-                        placeholder="Teléfono"
+                        placeholder="+506 7000-0000"
                         disabled={loading || readonly}
                         class={inputClass}
                       />
@@ -934,7 +928,7 @@
                         disabled={loading || readonly}
                         class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none outline-none border-none appearance-none ring-0"
                         rows="2"
-                        placeholder="Dirección completa..."
+                        placeholder="Ej: Dirección completa..."
                       ></textarea>
                     </div>
                   </div>
@@ -1102,11 +1096,15 @@
 <style>
   /* Standardized input focus style */
   input:focus,
-  select:focus,
   textarea:focus {
     border-color: rgba(59, 130, 246, 0.5) !important;
     box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
     outline: none !important;
+  }
+
+  /* Force dark calendar picker */
+  input[type="date"] {
+    color-scheme: dark;
   }
 
   /* Select arrow styling */
