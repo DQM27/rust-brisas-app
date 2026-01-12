@@ -133,3 +133,15 @@ export async function getSecret(key: string): Promise<string | null> {
 export async function deleteSecret(key: string): Promise<void> {
   return invoke('delete_secret', { key });
 }
+
+// ==========================================
+// RECUPERACIÓN (SHAMIR)
+// ==========================================
+
+export async function generateRecoveryFragments(): Promise<string[]> {
+  return invoke<string[]>('generate_recovery_fragments');
+}
+
+export async function recoverFromFragments(fragments: string[]): Promise<void> {
+  return invoke('recover_from_fragments', { fragments });
+}

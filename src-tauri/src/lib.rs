@@ -47,6 +47,7 @@ pub fn run() {
     #[cfg(desktop)]
     {
         builder = builder.plugin(tauri_plugin_dialog::init());
+        builder = builder.plugin(tauri_plugin_fs::init());
         builder = builder.plugin(tauri_plugin_opener::init());
         builder = builder.plugin(tauri_plugin_store::Builder::new().build());
         builder = builder.plugin(tauri_plugin_updater::Builder::new().build());

@@ -110,73 +110,14 @@ pub fn generate_random_secret() -> String {
     hex::encode(&random_bytes)
 }
 
-/// Helper para obtener ruta de archivo de respaldo
-fn get_fallback_path() -> std::path::PathBuf {
-    let mut path = dirs::data_local_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
-    path.push("Brisas");
-    std::fs::create_dir_all(&path).ok();
-    path.push(".credentials");
-    path
-}
-
-/// Guarda SOLO el secreto de Argon2.
-/// Estrategia: Keyring (Prioridad) -> Archivo Local (Fallback)
+/// Guarda SOLO el secreto de Argon2 en el Keyring del sistema.
 pub fn store_argon2_params(params: &Argon2Params) -> KeyringResult<()> {
-    // 1. Intentar Keyring
-    let keyring_attempt = store_value(KEY_PASSWORD_SECRET, &params.secret);
-
-    // 2. Verificar Keyring
-    let mut keyring_verified = false;
-    if keyring_attempt.is_ok() {
-        // Pequeña pausa para dar tiempo al OS
-        std::thread::sleep(std::time::Duration::from_millis(100));
-        if retrieve_value(KEY_PASSWORD_SECRET).is_some() {
-            keyring_verified = true;
-            log::info!("✅ Keyring verificado correctamente.");
-        } else {
-            log::warn!("⚠️ Keyring reportó éxito pero falló verificación de lectura.");
-        }
-    }
-
-    // 3. Si Keyring falló, usar Archivo
-    if !keyring_verified {
-        log::warn!("⚠️ Usando almacenamiento en archivo (.credentials) como fallback.");
-        let path = get_fallback_path();
-        // Guardamos el secret directamente (en un escenario real debería ir cifrado,
-        // pero aquí la prioridad es que funcione ante fallo de Keyring)
-        match std::fs::write(&path, &params.secret) {
-            Ok(()) => log::info!("✅ Secreto guardado en archivo de respaldo: {}", path.display()),
-            Err(e) => {
-                log::error!("❌ Fallo total: Ni Keyring ni Archivo funcionaron. {e}");
-                return Err(KeyringError::StoreError(format!("Fallo persistencia total: {e}")));
-            }
-        }
-    }
-
-    Ok(())
+    store_value(KEY_PASSWORD_SECRET, &params.secret)
 }
 
-/// Recupera los parámetros de Argon2.
-/// Estrategia: Keyring -> Archivo -> Default
+/// Recupera los parámetros de Argon2 desde el Keyring.
 pub fn get_argon2_params() -> Argon2Params {
-    // 1. Intentar Keyring
-    let secret = if let Some(s) = retrieve_value(KEY_PASSWORD_SECRET) {
-        s
-    } else {
-        // 2. Intentar Archivo Fallback
-        let path = get_fallback_path();
-        if path.exists() {
-            match std::fs::read_to_string(&path) {
-                Ok(s) => {
-                    log::info!("🔓 Secreto recuperado desde archivo de respaldo");
-                    s.trim().to_string()
-                }
-                Err(_) => String::new(),
-            }
-        } else {
-            String::new()
-        }
-    };
+    let secret = retrieve_value(KEY_PASSWORD_SECRET).unwrap_or_default();
 
     // VALORES POR DEFECTO FIJOS
     Argon2Params { memory: 19456, iterations: 2, parallelism: 1, secret }
@@ -225,11 +166,13 @@ use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
     Argon2,
 };
+use base64::Engine;
 use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit},
     ChaCha20Poly1305, Key, Nonce,
 };
 use sha2::{Digest, Sha256};
+use sharks::{Share, Sharks};
 use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -355,4 +298,57 @@ pub fn import_master_key(file_path: PathBuf, password: &str) -> KeyringResult<()
     store_argon2_params(&params)?;
     log::info!("✅ Master Key importada y configurada exitosamente.");
     Ok(())
+}
+
+// ==========================================
+// SHAMIR: Fragmentación de Secretos
+// ==========================================
+
+/// Divide el pepper en 5 fragmentos, se necesitan 3 para recuperar.
+pub fn generate_recovery_fragments() -> KeyringResult<Vec<String>> {
+    let params = get_argon2_params();
+    if params.secret.is_empty() {
+        return Err(KeyringError::Message(
+            "No hay secreto configurado para fragmentar".to_string(),
+        ));
+    }
+
+    let sharks = Sharks(3); // Threshold de 3
+    let dealer = sharks.dealer(params.secret.as_bytes());
+
+    let shares: Vec<String> = dealer
+        .take(5)
+        .map(|share| {
+            let share_bytes = Vec::from(&share);
+            base64::engine::general_purpose::STANDARD.encode(share_bytes)
+        })
+        .collect();
+
+    Ok(shares)
+}
+
+/// Reconstruye el secreto a partir de al menos 3 fragmentos.
+pub fn reconstruct_from_fragments(fragments: Vec<String>) -> KeyringResult<String> {
+    if fragments.len() < 3 {
+        return Err(KeyringError::Message("Se requieren al menos 3 fragmentos".to_string()));
+    }
+
+    let mut shares = Vec::new();
+    for frag in fragments {
+        let data = base64::engine::general_purpose::STANDARD
+            .decode(&frag)
+            .map_err(|e| KeyringError::Message(format!("Fragmento inválido (base64): {e}")))?;
+        let share_obj = Share::try_from(data.as_slice()).map_err(|e| {
+            KeyringError::Message(format!("Error interpretando fragmento de Shamir: {e}"))
+        })?;
+        shares.push(share_obj);
+    }
+
+    let sharks = Sharks(3);
+    let secret_bytes = sharks
+        .recover(&shares)
+        .map_err(|e| KeyringError::Message(format!("No se pudo reconstruir el secreto: {e}")))?;
+
+    String::from_utf8(secret_bytes)
+        .map_err(|e| KeyringError::Message(format!("Secreto reconstruido no es UTF-8: {e}")))
 }

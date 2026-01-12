@@ -196,6 +196,8 @@ macro_rules! register_handlers {
             commands::keyring_commands::save_secret,
             commands::keyring_commands::get_secret,
             commands::keyring_commands::delete_secret,
+            commands::keyring_commands::generate_recovery_fragments,
+            commands::keyring_commands::recover_from_fragments,
             // ==========================================
             // COMANDOS DE SISTEMA
             // ==========================================

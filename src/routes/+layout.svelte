@@ -56,7 +56,7 @@
         $setupWizardVisible = await needsSetup();
         if ($setupWizardVisible) {
           await setWindowDecorations(false);
-          await setWindowSize(420, 650);
+          await setWindowSize(500, 520);
           const { getCurrentWindow } = await import("@tauri-apps/api/window");
           await getCurrentWindow().center();
         } else {
@@ -91,7 +91,7 @@
             if (await appWindow.isMaximized()) await appWindow.unmaximize();
 
             await setWindowDecorations(false);
-            await setWindowSize(420, 650);
+            await setWindowSize(500, 520);
             await appWindow.center();
           } else if (!authenticated) {
             // Modo Launcher Login (Compacto)

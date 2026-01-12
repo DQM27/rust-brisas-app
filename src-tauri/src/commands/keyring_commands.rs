@@ -251,6 +251,40 @@ pub async fn import_master_key_cmd(
 }
 
 // ==========================================
+// COMANDOS DE RECUPERACIÓN (SHAMIR)
+// ==========================================
+
+/// Genera los 5 fragmentos de recuperación para el secreto actual.
+#[command]
+pub async fn generate_recovery_fragments(
+    session: State<'_, SessionState>,
+    config: State<'_, crate::config::settings::AppConfigState>,
+) -> Result<Vec<String>, KeyringError> {
+    // Permitir sin sesión si estamos en modo setup
+    let is_initial_setup = {
+        let guard = config.read().map_err(|e| KeyringError::Message(e.to_string()))?;
+        !guard.setup.is_configured || !ks::is_fully_configured()
+    };
+
+    if !is_initial_setup {
+        require_perm!(session, "config:read", "Generación de fragmentos de recuperación")
+            .map_err(|e| KeyringError::Message(e.to_string()))?;
+    }
+
+    ks::generate_recovery_fragments()
+}
+
+/// Intenta reconstruir el secreto e importarlo usando fragmentos de recuperación.
+#[command]
+pub async fn recover_from_fragments(fragments: Vec<String>) -> Result<(), KeyringError> {
+    let secret = ks::reconstruct_from_fragments(fragments)?;
+
+    let params = Argon2Params { memory: 19456, iterations: 2, parallelism: 1, secret };
+
+    ks::store_argon2_params(&params)
+}
+
+// ==========================================
 // COMANDOS DE UTILIDAD Y DIAGNÓSTICO
 // ==========================================
 

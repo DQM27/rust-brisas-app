@@ -24,6 +24,7 @@ tauri-plugin-store = "2.4"                     # Almacenamiento persistente simp
 tauri-plugin-single-instance = "2.3"           # Evita múltiples instancias de la app
 tauri-plugin-updater = "2.9"                   # Sistema de actualizaciones automáticas
 tauri-plugin-log = "2.7"                       # Registro de logs para Tauri
+tauri-plugin-fs = "2"                        # Acceso a archivos
 
 # =============================================================================
 # BASE DE DATOS (SurrealDB)
@@ -37,6 +38,7 @@ surrealdb = { version = "2.0", features = [
 # MOTOR DE BÚSQUEDA (Tantivy)
 # =============================================================================
 tantivy = "0.22" # Indexación y búsqueda de texto completo rápida
+sharks = "0.5" # Shamir's Secret Sharing
 
 # =============================================================================
 # ASÍNCRONO (Tokio Runtime)

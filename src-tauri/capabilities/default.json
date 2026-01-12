@@ -25,6 +25,8 @@
     "core:window:allow-set-always-on-top",
     "core:window:allow-set-focus",
     "dialog:allow-ask",
-    "store:default"
+    "store:default",
+    "fs:allow-write-text-file",
+    "fs:default"
   ]
 }
