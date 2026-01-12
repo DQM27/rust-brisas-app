@@ -107,6 +107,18 @@ export async function setWindowSize(width: number, height: number): Promise<void
 }
 
 // ==========================================
+// MASTER KEY (Export/Import)
+// ==========================================
+
+export async function exportMasterKey(filePath: string, password: string): Promise<void> {
+  return invoke('export_master_key_cmd', { filePath, password });
+}
+
+export async function importMasterKey(filePath: string, password: string): Promise<void> {
+  return invoke('import_master_key_cmd', { filePath, password });
+}
+
+// ==========================================
 // SECRET STORE (Keyring)
 // ==========================================
 

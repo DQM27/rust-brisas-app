@@ -4,43 +4,11 @@
 // Servicio para almacenar credenciales de forma segura
 // usando el keyring del sistema operativo via `keyring` crate v3.
 
+use crate::domain::errors::KeyringError;
 use keyring::Entry;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 const SERVICE_NAME: &str = "brisas-app";
-
-// ==========================================
-// ERROR TYPES
-// ==========================================
-
-#[derive(Debug, Error)]
-pub enum KeyringError {
-    #[error("Error de acceso al llavero: {0}")]
-    AccessError(String),
-
-    #[error("Error de almacenamiento: {0}")]
-    StorageError(String),
-
-    #[error("Error de recuperación: {0}")]
-    RetrievalError(String),
-
-    #[error("Error de eliminación: {0}")]
-    DeletionError(String),
-
-    #[error("Plataforma no soportada")]
-    UnsupportedPlatform,
-}
-
-pub type KeyringResult<T> = Result<T, KeyringError>;
-
-// ==========================================
-// CONSTANTES PARA CLAVES
-// ==========================================
-
-// Argon2
-// Argon2
-// CAMBIO IMPORTANTE: Cambiamos el nombre de la clave para evitar conflictos con versiones previas
 const KEY_PASSWORD_SECRET: &str = "brisas_argon2_secret_v1";
 
 // ==========================================
@@ -62,6 +30,8 @@ pub struct CredentialStatus {
     pub fully_configured: bool,
 }
 
+pub type KeyringResult<T> = Result<T, KeyringError>;
+
 // ==========================================
 // IMPLEMENTACIÓN UNIFICADA (Windows & General)
 // ==========================================
@@ -69,7 +39,7 @@ pub struct CredentialStatus {
 /// Obtiene una entrada segura del llavero para una clave dada.
 fn get_entry(key: &str) -> KeyringResult<Entry> {
     Entry::new(SERVICE_NAME, key)
-        .map_err(|e| KeyringError::AccessError(format!("Error creando entrada de keyring: {e}")))
+        .map_err(|e| KeyringError::Message(format!("Error creando entrada de keyring: {e}")))
 }
 
 /// Almacena un valor secreto.
@@ -83,7 +53,7 @@ fn store_value(key: &str, value: &str) -> KeyringResult<()> {
         }
         Err(e) => {
             log::error!("❌ Fallo al guardar en Keyring '{key}': {e}");
-            Err(KeyringError::StorageError(format!("Error guardando '{key}': {e}")))
+            Err(KeyringError::StoreError(format!("Error guardando '{key}': {e}")))
         }
     }
 }
@@ -125,7 +95,7 @@ fn delete_value(key: &str) -> KeyringResult<()> {
             log::info!("ℹ️ No había nada que borrar para: {key}");
             Ok(())
         }
-        Err(e) => Err(KeyringError::DeletionError(format!("Error borrando '{key}': {e}"))),
+        Err(e) => Err(KeyringError::DeleteError(format!("Error borrando '{key}': {e}"))),
     }
 }
 
@@ -178,7 +148,7 @@ pub fn store_argon2_params(params: &Argon2Params) -> KeyringResult<()> {
             Ok(()) => log::info!("✅ Secreto guardado en archivo de respaldo: {}", path.display()),
             Err(e) => {
                 log::error!("❌ Fallo total: Ni Keyring ni Archivo funcionaron. {e}");
-                return Err(KeyringError::StorageError(format!("Fallo persistencia total: {e}")));
+                return Err(KeyringError::StoreError(format!("Fallo persistencia total: {e}")));
             }
         }
     }
@@ -208,8 +178,7 @@ pub fn get_argon2_params() -> Argon2Params {
         }
     };
 
-    // VALORES POR DEFECTO FIJOS (Simplificación solicitada)
-    // Memory: 19MB | Iterations: 2 | Parallelism: 1
+    // VALORES POR DEFECTO FIJOS
     Argon2Params { memory: 19456, iterations: 2, parallelism: 1, secret }
 }
 
@@ -246,4 +215,144 @@ pub fn get_secret(key: &str) -> Option<String> {
 
 pub fn delete_secret(key: &str) -> KeyringResult<()> {
     delete_value(key)
+}
+
+// ==========================================
+// SEGURIDAD: Master Key Export/Import
+// ==========================================
+
+use argon2::{
+    password_hash::{rand_core::OsRng, SaltString},
+    Argon2,
+};
+use chacha20poly1305::{
+    aead::{Aead, AeadCore, KeyInit},
+    ChaCha20Poly1305, Key, Nonce,
+};
+use sha2::{Digest, Sha256};
+use std::path::PathBuf;
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MasterKeyFile {
+    pub version: u32,
+    pub created_at: String,
+    pub salt: String,       // Para derivación Argon2 de la contraseña
+    pub nonce: String,      // Para ChaCha20
+    pub ciphertext: String, // Pepper cifrado (Hex)
+    pub checksum: String,   // SHA256 del pepper original (Hex)
+}
+
+/// Deriva una llave de cifrado de 32 bytes a partir de una contraseña humana.
+fn derive_key_from_password(password: &str, salt_str: &str) -> Result<Key, KeyringError> {
+    let salt = SaltString::from_b64(salt_str)
+        .map_err(|e| KeyringError::Message(format!("Salt inválido: {e}")))?;
+
+    let mut key_buffer = [0u8; 32];
+    Argon2::default()
+        .hash_password_into(password.as_bytes(), salt.as_str().as_bytes(), &mut key_buffer)
+        .map_err(|e| KeyringError::Message(format!("Error derivando llave: {e}")))?;
+
+    Ok(*Key::from_slice(&key_buffer))
+}
+
+/// Exporta el Master Key (Pepper) actual a un archivo cifrado con contraseña.
+pub fn export_master_key(file_path: PathBuf, password: &str) -> KeyringResult<()> {
+    if password.len() < 8 {
+        return Err(KeyringError::Message(
+            "La contraseña debe tener al menos 8 caracteres".to_string(),
+        ));
+    }
+
+    // 1. Obtener el Pepper actual
+    let params = get_argon2_params();
+    if params.secret.is_empty() {
+        return Err(KeyringError::RetrieveError(
+            "No hay un secreto maestro configurado para exportar".to_string(),
+        ));
+    }
+    let pepper_bytes = params.secret.as_bytes();
+
+    // 2. Generar Salt y Nonce
+    let salt = SaltString::generate(&mut OsRng);
+    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+
+    // 3. Derivar llave de cifrado
+    let key = derive_key_from_password(password, salt.as_str())?;
+    let cipher = ChaCha20Poly1305::new(&key);
+
+    // 4. Cifrar el Pepper
+    let ciphertext = cipher
+        .encrypt(&nonce, pepper_bytes)
+        .map_err(|e| KeyringError::StoreError(format!("Error cifrando: {e}")))?;
+
+    // 5. Calcular Checksum (SHA256 del pepper original)
+    let mut hasher = Sha256::new();
+    hasher.update(pepper_bytes);
+    let checksum = hex::encode(hasher.finalize());
+
+    // 6. Crear estructura y guardar JSON
+    let master_key_file = MasterKeyFile {
+        version: 1,
+        created_at: chrono::Utc::now().to_rfc3339(),
+        salt: salt.as_str().to_string(),
+        nonce: hex::encode(nonce),
+        ciphertext: hex::encode(ciphertext),
+        checksum,
+    };
+
+    let json = serde_json::to_string_pretty(&master_key_file)
+        .map_err(|e| KeyringError::StoreError(format!("Error serializando JSON: {e}")))?;
+
+    std::fs::write(&file_path, json)
+        .map_err(|e| KeyringError::StoreError(format!("Error escribiendo archivo: {e}")))?;
+
+    log::info!("✅ Master Key exportada exitosamente a: {:?}", file_path);
+    Ok(())
+}
+
+/// Importa un Master Key desde un archivo cifrado.
+pub fn import_master_key(file_path: PathBuf, password: &str) -> KeyringResult<()> {
+    // 1. Leer archivo
+    let json = std::fs::read_to_string(&file_path)
+        .map_err(|e| KeyringError::RetrieveError(format!("No se puede leer el archivo: {e}")))?;
+
+    let master_file: MasterKeyFile = serde_json::from_str(&json)
+        .map_err(|e| KeyringError::Message(format!("Formato de archivo inválido: {e}")))?;
+
+    // 2. Derivar llave de descifrado
+    let key = derive_key_from_password(password, &master_file.salt)?;
+    let cipher = ChaCha20Poly1305::new(&key);
+
+    // 3. Decodificar componentes
+    let nonce_bytes = hex::decode(&master_file.nonce)
+        .map_err(|e| KeyringError::Message(format!("Nonce inválido: {e}")))?;
+    let ciphertext_bytes = hex::decode(&master_file.ciphertext)
+        .map_err(|e| KeyringError::Message(format!("Ciphertext inválido: {e}")))?;
+    let nonce = Nonce::from_slice(&nonce_bytes);
+
+    // 4. Descifrar Pepper
+    let decrypted_bytes = cipher.decrypt(nonce, ciphertext_bytes.as_ref()).map_err(|_| {
+        KeyringError::Message("Contraseña incorrecta o archivo corrupto".to_string())
+    })?;
+
+    let pepper = String::from_utf8(decrypted_bytes)
+        .map_err(|e| KeyringError::Message(format!("Pepper no es UTF-8 válido: {e}")))?;
+
+    // 5. Validar Checksum
+    let mut hasher = Sha256::new();
+    hasher.update(pepper.as_bytes());
+    let calculated_checksum = hex::encode(hasher.finalize());
+
+    if calculated_checksum != master_file.checksum {
+        return Err(KeyringError::Message(
+            "Integridad fallida: El checksum no coincide".to_string(),
+        ));
+    }
+
+    // 6. Guardar en el sistema actual
+    let params = Argon2Params { memory: 19456, iterations: 2, parallelism: 1, secret: pepper };
+
+    store_argon2_params(&params)?;
+    log::info!("✅ Master Key importada y configurada exitosamente.");
+    Ok(())
 }

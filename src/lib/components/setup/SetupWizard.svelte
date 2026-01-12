@@ -13,13 +13,16 @@
     X,
   } from "lucide-svelte";
   import { fade, fly } from "svelte/transition";
-  import { ask } from "@tauri-apps/plugin-dialog";
+  import { ask, save, open, message } from "@tauri-apps/plugin-dialog";
   import {
     setupCredentials,
     generateRandomSecret,
     exitApp,
     resetAllCredentials,
     getCredentialStatus,
+    exportMasterKey,
+    importMasterKey,
+    updateArgon2Params,
     type Argon2Params,
   } from "$lib/services/keyringService";
 
@@ -36,6 +39,12 @@
   let isConfirming = $state(false); // Evitar doble click en reset
   let error = $state("");
   let keyFoundInSystem = $state(false);
+
+  // New Security States
+  let securityMode = $state<"new" | "join">("new");
+  let isProcessing = $state(false);
+  let generatedPassword = $state("");
+  let importPassword = $state("");
 
   // Visibility toggles
   let showArgon2Secret = $state(false);
@@ -77,6 +86,106 @@
       }
     } catch (e) {
       console.error("Error verificando llaves:", e);
+    }
+  }
+
+  function setSecurityMode(mode: "new" | "join") {
+    securityMode = mode;
+    error = "";
+  }
+
+  function generateInstallPassword() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let pass = "";
+    const bytes = new Uint8Array(12);
+    window.crypto.getRandomValues(bytes);
+
+    for (let i = 0; i < bytes.length; i++) {
+      pass += chars[bytes[i] % chars.length];
+      if ((i + 1) % 4 === 0 && i < bytes.length - 1) pass += "-";
+    }
+    return pass;
+  }
+
+  async function handleGenerateAndExport() {
+    isProcessing = true;
+    error = "";
+    try {
+      // 1. Generar Secret
+      const secret = await generateRandomSecret();
+      argon2Params.secret = secret;
+
+      // 2. Guardar en Keyring Local
+      await updateArgon2Params(argon2Params);
+
+      // 3. Generar Password de Instalación
+      const installPass = generateInstallPassword();
+
+      // 4. Solicitar dónde guardar
+      const filePath = await save({
+        title: "Guardar Llave Maestra de Seguridad",
+        defaultPath: "megabrisas_master.key",
+        filters: [{ name: "Key Files", extensions: ["key"] }],
+      });
+
+      if (!filePath) {
+        isProcessing = false;
+        return; // Cancelado por usuario
+      }
+
+      // 5. Exportar
+      await exportMasterKey(filePath, installPass);
+
+      // 6. Éxito
+      generatedPassword = installPass;
+      keyFoundInSystem = true;
+    } catch (e: any) {
+      error = String(e);
+      console.error(e);
+      await message(`Error generando llave: ${e}`, {
+        title: "Error de Seguridad",
+        kind: "error",
+      });
+    } finally {
+      isProcessing = false;
+    }
+  }
+
+  async function handleImportKey() {
+    isProcessing = true;
+    error = "";
+    try {
+      // 1. Seleccionar archivo
+      const filePath = await open({
+        title: "Seleccionar Llave Maestra (.megabrisas_master)",
+        filters: [{ name: "Key Files", extensions: ["key"] }],
+        multiple: false,
+      });
+
+      if (!filePath) {
+        isProcessing = false;
+        return;
+      }
+
+      // 2. Importar
+      await importMasterKey(filePath as string, importPassword);
+
+      // 3. Éxito
+      keyFoundInSystem = true;
+      // Cargar params actualizados para el estado local si fuera necesario
+      const status = await getCredentialStatus();
+      if (status.has_argon2_secret) {
+        argon2Params.secret = "********"; // Ya configurado
+      }
+    } catch (e: any) {
+      error = String(e);
+      console.error(e);
+      await message(`Error importando llave: ${e}`, {
+        title: "Error de Importación",
+        kind: "error",
+      });
+    } finally {
+      isProcessing = false;
     }
   }
 
@@ -311,78 +420,178 @@
           </div>
         {/if}
 
-        <!-- Step 2: Argon2 (Final) -->
+        <!-- Step 2: Security Mode Selection -->
         {#if currentStep === 2}
-          <div transition:fade={{ duration: 200 }}>
+          <div transition:fade={{ duration: 200 }} class="space-y-6">
             <div class="flex items-center gap-2 mb-4">
-              <Key class="w-5 h-5 text-[#2da44e]" />
+              <Shield class="w-5 h-5 text-[#2da44e]" />
               <h3 class="font-semibold text-gray-900 dark:text-gray-100">
-                Parametros de Seguridad
+                Seguridad de la Red
               </h3>
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              Configura los parametros de Argon2 para el hasheo seguro de
-              contrasenas.
-            </p>
 
-            <div class="space-y-4">
-              <div>
-                <label
-                  for="argon2Secret"
-                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            {#if keyFoundInSystem}
+              <div
+                class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4 rounded-lg flex flex-col gap-3"
+              >
+                <div
+                  class="flex items-center gap-2 text-green-700 dark:text-green-300"
                 >
-                  Secret (Pepper)
-                </label>
-                {#if keyFoundInSystem}
+                  <Check class="w-5 h-5" />
+                  <span class="font-medium">Llave Maestra Configurada</span>
+                </div>
+                <p class="text-sm text-green-600 dark:text-green-400">
+                  Este equipo ya tiene una llave de seguridad válida. Puedes
+                  continuar para finalizar la configuración.
+                </p>
+                <!-- Botón opcional para re-importar si fuera necesario, o simplemente mostrar éxito -->
+              </div>
+            {:else}
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- OPCIÓN A: NUEVA INSTALACIÓN -->
+                <button
+                  class="flex flex-col items-start p-4 rounded-lg border-2 transition-all text-left
+                    {securityMode === 'new'
+                    ? 'border-[#2da44e] bg-[#2da44e]/5 dark:bg-[#2da44e]/10'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-[#2da44e]/50 hover:bg-gray-50 dark:hover:bg-[#161b22]'}"
+                  onclick={() => setSecurityMode("new")}
+                >
                   <div
-                    class="mb-4 flex items-center gap-2 p-2 rounded-md bg-blue-50 dark:bg-blue-900/20 text-xs text-blue-700 dark:text-blue-300"
+                    class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg mb-3"
                   >
-                    <Check class="w-4 h-4" />
-                    <span class="font-medium">Llave detectada en Windows.</span>
-                    <span class="opacity-80">Se usará la existente.</span>
+                    <RefreshCw
+                      class="w-5 h-5 text-blue-600 dark:text-blue-400"
+                    />
                   </div>
-                {:else}
-                  <div class="flex gap-2">
-                    <div class="relative flex-1">
-                      <input
-                        id="argon2Secret"
-                        type={showArgon2Secret ? "text" : "password"}
-                        bind:value={argon2Params.secret}
-                        placeholder="Secret para hasheo de contraseñas"
-                        class="w-full px-3 py-2 pr-10 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent font-mono"
-                      />
-                      <button
-                        type="button"
-                        onclick={() => (showArgon2Secret = !showArgon2Secret)}
-                        class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+                  <h4 class="font-medium text-gray-900 dark:text-gray-100 mb-1">
+                    Nueva Instalación
+                  </h4>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Generar una nueva Llave Maestra. Elige esto si es la
+                    **primera computadora** del sistema.
+                  </p>
+                </button>
+
+                <!-- OPCIÓN B: UNIRSE A FLOTA -->
+                <button
+                  class="flex flex-col items-start p-4 rounded-lg border-2 transition-all text-left
+                    {securityMode === 'join'
+                    ? 'border-[#2da44e] bg-[#2da44e]/5 dark:bg-[#2da44e]/10'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-[#2da44e]/50 hover:bg-gray-50 dark:hover:bg-[#161b22]'}"
+                  onclick={() => setSecurityMode("join")}
+                >
+                  <div
+                    class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg mb-3"
+                  >
+                    <Key class="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <h4 class="font-medium text-gray-900 dark:text-gray-100 mb-1">
+                    Unirse a Flota
+                  </h4>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Importar una Llave Maestra existente. Elige esto para
+                    **computadoras adicionales**.
+                  </p>
+                </button>
+              </div>
+
+              <!-- DETALLES DE LA ACCIÓN -->
+              <div
+                class="mt-6 p-4 bg-gray-50 dark:bg-[#161b22] rounded-lg border border-gray-200 dark:border-gray-700"
+              >
+                {#if securityMode === "new"}
+                  <h4 class="text-sm font-medium mb-3">
+                    Generación de Llave Maestra
+                  </h4>
+
+                  {#if generatedPassword}
+                    <div
+                      class="mb-4 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded border border-yellow-200 dark:border-yellow-800"
+                    >
+                      <p
+                        class="text-xs font-bold text-yellow-800 dark:text-yellow-200 mb-1"
                       >
-                        {#if showArgon2Secret}
-                          <EyeOff class="w-4 h-4" />
+                        ⚠️ IMPORTANTE
+                      </p>
+                      <p class="text-xs text-yellow-700 dark:text-yellow-300">
+                        Guarda este archivo (.megabrisas_master) y la contraseña
+                        en un lugar seguro.
+                        <br />Los necesitarás para conectar otras computadoras.
+                      </p>
+                    </div>
+                    <div class="mb-4">
+                      <label
+                        class="block text-xs font-medium text-gray-500 mb-1"
+                        >Contraseña de Instalación (IMPORTANTE)</label
+                      >
+                      <div class="flex gap-2">
+                        <code
+                          class="flex-1 p-2 bg-white dark:bg-black rounded border border-gray-300 dark:border-gray-600 font-mono text-lg text-center select-all"
+                        >
+                          {generatedPassword}
+                        </code>
+                      </div>
+                    </div>
+                    <div
+                      class="text-xs text-green-600 dark:text-green-400 flex items-center gap-2"
+                    >
+                      <Check class="w-4 h-4" />
+                      <span>Llave generada y exportada correctamente.</span>
+                    </div>
+                  {:else}
+                    <div class="flex flex-col gap-3">
+                      <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Se generará una contraseña aleatoria y se te pedirá
+                        guardar el archivo de respaldo.
+                      </p>
+                      <button
+                        onclick={handleGenerateAndExport}
+                        disabled={isProcessing}
+                        class="self-start px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {#if isProcessing}
+                          <RefreshCw class="w-4 h-4 animate-spin" />
+                          Generando...
                         {:else}
-                          <Eye class="w-4 h-4" />
+                          <RefreshCw class="w-4 h-4" />
+                          Generar y Exportar Llave
                         {/if}
                       </button>
                     </div>
+                  {/if}
+                {:else if securityMode === "join"}
+                  <h4 class="text-sm font-medium mb-3">Importación de Llave</h4>
+                  <div class="space-y-3">
+                    <div>
+                      <label
+                        class="block text-xs font-medium text-gray-500 mb-1"
+                        for="import-password">Contraseña de Instalación</label
+                      >
+                      <input
+                        id="import-password"
+                        type="password"
+                        bind:value={importPassword}
+                        placeholder="Ingresa la contraseña del archivo..."
+                        class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                      />
+                    </div>
                     <button
-                      type="button"
-                      onclick={generateSecret}
-                      class="px-3 py-2 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#21262d] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#30363d]"
+                      onclick={handleImportKey}
+                      disabled={!importPassword || isProcessing}
+                      class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium disabled:opacity-50 flex items-center gap-2"
                     >
-                      Generar
+                      {#if isProcessing}
+                        <RefreshCw class="w-4 h-4 animate-spin" />
+                        Importando...
+                      {:else}
+                        <Key class="w-4 h-4" />
+                        Seleccionar Archivo .megabrisas_master
+                      {/if}
                     </button>
                   </div>
-                  <p class="mt-1 text-xs text-gray-500">
-                    Este secret se usa como "pepper" adicional al salt. Guardalo
-                    de forma segura.
-                  </p>
                 {/if}
               </div>
-
-              <!-- Parameters removed (Hardcoded in backend) -->
-              <input type="hidden" bind:value={argon2Params.memory} />
-              <input type="hidden" bind:value={argon2Params.iterations} />
-              <input type="hidden" bind:value={argon2Params.parallelism} />
-            </div>
+            {/if}
           </div>
         {/if}
       </div>
@@ -427,8 +636,8 @@
           <button
             type="button"
             onclick={handleSubmit}
-            disabled={isSubmitting}
-            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-[#2da44e] hover:bg-[#2c974b] text-white disabled:opacity-50"
+            disabled={isSubmitting || !step2Valid}
+            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-[#2da44e] hover:bg-[#2c974b] text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {#if isSubmitting}
               <RefreshCw class="w-4 h-4 animate-spin" />

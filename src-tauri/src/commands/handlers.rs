@@ -189,6 +189,8 @@ macro_rules! register_handlers {
             commands::keyring_commands::update_argon2_params,
             commands::keyring_commands::generate_argon2_secret,
             commands::keyring_commands::generate_random_secret,
+            commands::keyring_commands::export_master_key_cmd,
+            commands::keyring_commands::import_master_key_cmd,
             commands::keyring_commands::test_keyring,
             commands::keyring_commands::reset_all_credentials,
             commands::keyring_commands::save_secret,

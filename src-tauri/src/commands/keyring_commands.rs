@@ -103,12 +103,29 @@ pub async fn setup_credentials(
     }
 
     let mut final_argon2 = input.argon2.clone();
+
+    // [DEBUG] Logging de diagnóstico
+    log::info!(
+        "🔧 Setup Credentials solicitado. Secret Length input: {}",
+        final_argon2.secret.len()
+    );
+
     if ks::has_argon2_secret() {
         let existing = ks::get_argon2_params();
         if !existing.secret.is_empty() {
-            log::info!("🔐 Detectado secreto existente en Keyring. Reutilizando para mantener compatibilidad.");
+            log::info!(
+                "🔐 Detectado secreto existente en Keyring (len={}). Reutilizando.",
+                existing.secret.len()
+            );
             final_argon2.secret = existing.secret;
         }
+    }
+
+    if final_argon2.secret.trim().is_empty() {
+        log::error!("❌ Intento de setup con secreto vacío y sin respaldo existente.");
+        return Err(KeyringError::Message(
+            "No se puede configurar el sistema con un secreto vacío.".to_string(),
+        ));
     }
 
     ks::store_argon2_params(&final_argon2).map_err(|e| KeyringError::StoreError(e.to_string()))?;
@@ -194,14 +211,38 @@ pub fn generate_argon2_secret() -> String {
     ks::generate_random_secret()
 }
 
+/// Genera un secreto aleatorio (alias para compatibilidad).
+#[command]
+pub fn generate_random_secret() -> String {
+    log::info!("🎲 Generando secreto aleatorio solicitado desde frontend...");
+    ks::generate_random_secret()
+}
+
+// ==========================================
+// COMANDOS DE EXPORTACIÓN / IMPORTACIÓN (MASTER KEY)
+// ==========================================
+
+/// Exporta el archivo maestro de seguridad (.megabrisas_master) cifrado con contraseña.
+#[command]
+pub async fn export_master_key_cmd(
+    file_path: String,
+    password: String,
+) -> Result<(), KeyringError> {
+    ks::export_master_key(std::path::PathBuf::from(file_path), &password)
+}
+
+/// Importa un archivo maestro de seguridad (.megabrisas_master) para sincronizar esta PC.
+#[command]
+pub async fn import_master_key_cmd(
+    file_path: String,
+    password: String,
+) -> Result<(), KeyringError> {
+    ks::import_master_key(std::path::PathBuf::from(file_path), &password)
+}
+
 // ==========================================
 // COMANDOS DE UTILIDAD Y DIAGNÓSTICO
 // ==========================================
-
-#[command]
-pub fn generate_random_secret() -> String {
-    ks::generate_random_secret()
-}
 
 /// Ejecuta una batería de pruebas sobre el llavero del sistema para verificar permisos.
 #[command]
