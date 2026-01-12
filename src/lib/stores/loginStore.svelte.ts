@@ -107,22 +107,27 @@ class LoginStore {
 
         try {
             const { getSetting } = await import('$lib/services/storeService');
-            const stored = await getSetting<string>(STORAGE_KEY, '');
+            let stored = await getSetting<string>(STORAGE_KEY, '');
             const passChecked = await getSetting<boolean>(PASSWORD_CHECKED_KEY, false);
+
+            // 1. Fallback: Si TauriStore está vacío pero tenemos email en memoria (LocalStorage), lo usamos
+            if (!stored && this._rememberedEmail) {
+                stored = this._rememberedEmail;
+            }
 
             if (stored) {
                 this._rememberedEmail = stored;
                 this._rememberPasswordChecked = passChecked;
                 // Sync localStorage with Tauri Store value
-                localStorage.setItem(STORAGE_KEY, stored);
+                if (browser) localStorage.setItem(STORAGE_KEY, stored);
 
                 // Try to load password for this email if checked
                 if (passChecked) {
                     await this.loadPasswordFromKeyring(stored);
                 }
             }
-        } catch {
-            // Tauri Store not available
+        } catch (e) {
+            console.error("Error initializing login store:", e);
         }
     }
 

@@ -21,7 +21,9 @@ use crate::services::surrealdb_service::{setup_embedded_surrealdb, SurrealDbConf
 use log::{error, info};
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, RwLock};
-use tauri::Manager;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{MouseButton, TrayIconBuilder, TrayIconEvent};
+use tauri::{Manager, WindowEvent};
 
 /// Estado global de la aplicación.
 pub struct AppState {
@@ -154,7 +156,57 @@ pub fn run() {
                 }
             }
 
+            // =========================================================================
+            // SYSTEM TRAY SETUP
+            // =========================================================================
+            #[cfg(desktop)]
+            {
+                let show_i = MenuItem::with_id(app, "show", "Abrir Mega Brisas", true, None::<&str>)?;
+                let quit_i = MenuItem::with_id(app, "quit", "Salir Totalmente", true, None::<&str>)?;
+                let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
+
+                let _tray = TrayIconBuilder::with_id("tray")
+                    .tooltip("Mega Brisas ERP")
+                    .icon(app.default_window_icon().unwrap().clone())
+                    .menu(&menu)
+                    .on_menu_event(|app, event| {
+                        match event.id.as_ref() {
+                            "show" => {
+                                if let Some(window) = app.get_webview_window("main") {
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                }
+                            }
+                            "quit" => {
+                                app.exit(0);
+                            }
+                            _ => {}
+                        }
+                    })
+                    .on_tray_icon_event(|tray, event| {
+                        if let TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            ..
+                        } = event
+                        {
+                            let app = tray.app_handle();
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                    })
+                    .build(app)?;
+            }
+
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                // En vez de cerrar, ocultamos la ventana
+                window.hide().unwrap();
+                api.prevent_close();
+            }
         })
         .invoke_handler(register_handlers!())
         .run(tauri::generate_context!())

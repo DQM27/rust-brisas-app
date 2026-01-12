@@ -23,42 +23,48 @@
   let mounted = $state(false);
 
   onMount(() => {
+    // Restaurar hidratación explícita para asegurar carga inicial
     if (loginStore.hasRememberedEmail) {
       email = loginStore.rememberedEmail;
       rememberMe = true;
 
+      // Si hay contraseña recordada, cargarla también
       if (loginStore.hasRememberedPassword) {
         password = loginStore.rememberedPassword;
         rememberPassword = true;
-        // Auto-submit logic could go here if desired, but user asked for "inicio de sesion con solo ingresar" which implies manual click or just pre-filled
       }
 
-      // Focus password if email is remembered
       setTimeout(() => passwordInput?.focus(), 100);
     } else {
-      // Focus email otherwise
       setTimeout(() => emailInput?.focus(), 100);
     }
-    mounted = true;
+
+    // Pequeño delay para marcar como montado y evitar que el effect limpie todo al inicio
+    setTimeout(() => {
+      mounted = true;
+    }, 200);
   });
 
+  // Limpieza: Solo si el usuario explícitamente desmarca rememberMe DESPUÉS de montar
   $effect(() => {
-    if (mounted && !rememberMe) {
+    if (mounted && !rememberMe && email) {
+      // Solo limpiamos si había algo escrito, para evitar loops raros
       loginStore.clearRememberedEmail();
-      rememberPassword = false;
-      email = "";
-      password = "";
-      setTimeout(() => emailInput?.focus(), 50);
     }
   });
 
-  // Sync Store -> UI: When store finishes loading, update UI state
+  // Sincronización Reactiva: Si el store cambia (ej. carga asíncrona tardía), actualizamos UI
   $effect(() => {
-    if (loginStore.rememberPasswordChecked) {
+    // 1. Sync Email (si llega tarde)
+    if (loginStore.rememberedEmail && !email) {
+      email = loginStore.rememberedEmail;
+      rememberMe = true;
+    }
+
+    // 2. Sync Password (si llega tarde)
+    if (loginStore.rememberedPassword && !password) {
+      password = loginStore.rememberedPassword;
       rememberPassword = true;
-      if (loginStore.rememberedPassword && !password) {
-        password = loginStore.rememberedPassword;
-      }
     }
   });
 
@@ -69,7 +75,7 @@
     }
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const result = validateLoginForm(email, password);
 
     if (!result.valid) {
@@ -80,14 +86,14 @@
     errors = {};
 
     if (rememberMe) {
-      loginStore.setRememberedEmail(email);
+      await loginStore.setRememberedEmail(email);
       if (rememberPassword) {
-        loginStore.setRememberedPassword(password);
+        await loginStore.setRememberedPassword(password);
       } else {
-        loginStore.clearRememberedPassword();
+        await loginStore.clearRememberedPassword();
       }
     } else {
-      loginStore.clearRememberedEmail();
+      await loginStore.clearRememberedEmail();
     }
 
     onSubmit({ email, password });

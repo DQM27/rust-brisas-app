@@ -17,7 +17,7 @@ tauri-build = { version = "2", features = [] }
 # =============================================================================
 # NÚCLEO TAURI (UI & Framework) - Versiones actualizadas a las últimas estables
 # =============================================================================
-tauri = { version = "2.9", features = ["test"] }
+tauri = { version = "2.9", features = ["test", "tray-icon", "image-ico", "image-png"] }
 tauri-plugin-opener = "2.5"                    # Apertura de archivos/URLs nativos
 tauri-plugin-dialog = "2.4"                    # Diálogos de sistema (archivos, alertas)
 tauri-plugin-store = "2.4"                     # Almacenamiento persistente simple

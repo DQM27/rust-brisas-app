@@ -57,8 +57,9 @@ pub struct Argon2Params {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CredentialStatus {
-    pub has_argon2_config: bool,
+    #[serde(rename = "argon2_configured")]
     pub has_argon2_secret: bool,
+    pub fully_configured: bool,
 }
 
 // ==========================================
@@ -220,15 +221,13 @@ pub fn delete_argon2_params() -> KeyringResult<()> {
 
 /// Verifica si existe un secreto de Argon2 configurado.
 pub fn has_argon2_secret() -> bool {
-    retrieve_value(KEY_PASSWORD_SECRET).is_some()
+    !get_argon2_params().secret.is_empty()
 }
 
 /// Obtiene el estado actual de las credenciales.
 pub fn get_credential_status() -> CredentialStatus {
-    CredentialStatus {
-        has_argon2_config: true, // Siempre true por defaults
-        has_argon2_secret: has_argon2_secret(),
-    }
+    let has_secret = has_argon2_secret();
+    CredentialStatus { has_argon2_secret: has_secret, fully_configured: has_secret }
 }
 
 /// Verifica si la configuración de seguridad está completa.
