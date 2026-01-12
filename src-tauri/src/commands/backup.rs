@@ -14,20 +14,46 @@ use tauri::{command, State};
 
 /// [Comando Tauri] Realiza una copia de seguridad manual de la base de datos activa.
 ///
-/// **Nota**: Actualmente devuelve error ya que `SurrealDB` requiere
-/// un proceso de exportación específico para hot-backups.
+/// Ejecuta el comando `EXPORT FILE` de SurrealDB para generar un script SQL
+/// con la estructura y los datos actuales.
 ///
 /// # Argumentos
-/// * `_destination_path` - Ruta de destino para el backup.
+/// * `destination_path` - Ruta absoluta donde se guardará el archivo .surql.
 ///
 /// # Retorno
-/// Retorna error en esta versión (Pendiente de implementación).
+/// Retorna `Ok(())` si la exportación es exitosa.
 #[command]
-pub async fn backup_database(_destination_path: String) -> Result<(), BackupError> {
-    info!("Backup manual solicitado (Pendiente de implementación para SurrealDB)");
-    Err(BackupError::IO(
-        "Funcionalidad de exportación manual no habilitada en esta versión".to_string(),
-    ))
+pub async fn backup_database(destination_path: String) -> Result<(), BackupError> {
+    info!("📦 Iniciando respaldo manual de base de datos a: {}", destination_path);
+
+    // 1. Obtener cliente de BD
+    let db = crate::services::surrealdb_service::get_db().await.map_err(|e| {
+        error!("No se pudo obtener conexión a DB para respaldo: {}", e);
+        BackupError::IO(format!("Error de conexión al motor de base de datos: {}", e))
+    })?;
+
+    // 2. Sanitizar ruta (Windows backslashes pueden causar problemas en cadenas SQL)
+    // Convertimos backslashes a forward slashes que funcionan bien en rutas mixtas
+    let clean_path = destination_path.replace('\\', "/");
+
+    // 3. Ejecutar exportación
+    // EXPORT FILE guarda todo (SCHEMA + DATA) en el archivo indicado
+    let query = format!("EXPORT FILE '{}';", clean_path);
+
+    info!("⚙️ Ejecutando query de exportación...");
+    match db.query(query).await {
+        Ok(_) => {
+            info!("✅ Respaldo completado exitosamente en: {}", destination_path);
+            Ok(())
+        }
+        Err(e) => {
+            error!("❌ Falla crítica al exportar base de datos: {}", e);
+            Err(BackupError::IO(format!(
+                "Fallo al ejecutar exportación interna: {}. Verifique permisos de escritura.",
+                e
+            )))
+        }
+    }
 }
 
 /// [Comando Tauri] Prepara el sistema para una restauración de base de datos.
@@ -76,4 +102,59 @@ pub async fn restore_database(
 
     info!("✅ Protocolo listo. El sistema se restaurará en el próximo reinicio.");
     Ok(())
+}
+
+// --------------------------------------------------------------------------
+// PRUEBAS DE INTEGRACIÓN
+// --------------------------------------------------------------------------
+#[cfg(test)]
+mod integration_tests {
+    // use super::*;
+    // use crate::services::surrealdb_service::{init_surrealdb, SurrealDbConfig};
+    // use std::fs;
+
+    // TODO: Habilitar test cuando se resuelva el error de runtime:
+    // `STATUS_ENTRYPOINT_NOT_FOUND` (0xc0000139) en Windows al ejecutar tests de SurrealDB.
+    // Parece ser un conflicto de DLLs en el entorno de pruebas vs ejecución normal.
+    //
+    // #[tokio::test]
+    // async fn test_backup_database_demo() {
+    //     // 1. Setup - Usar DB Demo (aislada)
+    //     // Nota: Init es global (OnceCell), así que esto solo funciona si es el primer test
+    //     // o si la configuración coincide. Para `cargo test` suele ser suficiente.
+    //     let config = SurrealDbConfig::demo();
+    //     let service = init_surrealdb(config.clone());
+
+    //     // Conectar (ignorar error si ya estaba conectado)
+    //     let _ = service.connect().await;
+
+    //     // 2. Preparar ruta de prueba
+    //     let mut backup_path = std::env::temp_dir();
+    //     backup_path.push(format!("test_backup_{}.surql", chrono::Utc::now().timestamp()));
+    //     let backup_path_str = backup_path.to_string_lossy().to_string();
+
+    //     // Limpiar previo por si acaso
+    //     if backup_path.exists() {
+    //         let _ = fs::remove_file(&backup_path);
+    //     }
+
+    //     // 3. Ejecutar comando (debe crear el archivo)
+    //     let result = backup_database(backup_path_str.clone()).await;
+
+    //     // 4. Validaciones
+    //     match result {
+    //         Ok(_) => {
+    //             assert!(backup_path.exists(), "El archivo de backup debería haberse creado");
+
+    //             let metadata = fs::metadata(&backup_path).unwrap();
+    //             assert!(metadata.len() > 0, "El archivo de backup no debería estar vacío");
+
+    //             // Cleanup solo si fue exitoso (para dejar evidencia si falla)
+    //             let _ = fs::remove_file(backup_path);
+    //         }
+    //         Err(e) => {
+    //             panic!("El comando backup_database falló: {:?}", e);
+    //         }
+    //     }
+    // }
 }

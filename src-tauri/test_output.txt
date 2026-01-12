@@ -1,0 +1,8 @@
+   Compiling mega-brisas v1.0.0 (C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 39.98s
+     Running unittests src\lib.rs (target\debug\deps\brisas_app_lib-96de2b151efa03ab.exe)
+error: test failed, to rerun pass `-p mega-brisas --lib`
+
+Caused by:
+  process didn't exit successfully: `C:\Users\femprobrisas\proyecto-brisas\Rust\brisas-app\src-tauri\target\debug\deps\brisas_app_lib-96de2b151efa03ab.exe commands::backup::integration_tests::test_backup_database_demo` (exit code: 0xc0000139, STATUS_ENTRYPOINT_NOT_FOUND)
+note: test exited abnormally; to see the full output pass --no-capture to the harness.
