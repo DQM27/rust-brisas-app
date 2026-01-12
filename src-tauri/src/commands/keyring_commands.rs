@@ -198,10 +198,20 @@ pub struct Argon2ParamsSafe {
 #[command]
 pub async fn update_argon2_params(
     session: State<'_, SessionState>,
+    config: State<'_, crate::config::settings::AppConfigState>,
     params: Argon2Params,
 ) -> Result<(), KeyringError> {
-    require_perm!(session, "config:update", "Actualizando parámetros Argon2")
-        .map_err(|e| KeyringError::Message(e.to_string()))?;
+    // Permitir actualización sin sesión si estamos en modo setup
+    let is_initial_setup = {
+        let guard = config.read().map_err(|e| KeyringError::Message(e.to_string()))?;
+        !guard.setup.is_configured || !ks::is_fully_configured()
+    };
+
+    if !is_initial_setup {
+        require_perm!(session, "config:update", "Actualizando parámetros Argon2")
+            .map_err(|e| KeyringError::Message(e.to_string()))?;
+    }
+
     ks::store_argon2_params(&params).map_err(|e| KeyringError::StoreError(e.to_string()))
 }
 

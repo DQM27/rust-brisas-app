@@ -10,8 +10,8 @@ import { invoke } from '@tauri-apps/api/core';
 // ==========================================
 
 export interface CredentialStatus {
-  has_argon2_config: boolean;
-  has_argon2_secret: boolean;
+  argon2_configured: boolean;
+  fully_configured: boolean;
 }
 
 export interface Argon2Params {
