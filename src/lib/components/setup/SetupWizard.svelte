@@ -369,10 +369,21 @@
       >
         {#if error}
           <div
-            class="mb-4 p-3 rounded-lg bg-error/10 border border-error/20 flex items-start gap-3"
+            class="mb-4 px-3 py-2 rounded-lg bg-error/10 border border-error/20 flex items-center justify-between gap-2 flex-none transition-all"
           >
-            <AlertCircle class="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
-            <span class="text-sm text-error/90 font-medium">{error}</span>
+            <div class="flex items-center gap-2">
+              <AlertCircle size={14} class="text-error" />
+              <span
+                class="text-[11px] font-bold text-white uppercase tracking-tight"
+                >Error de Sistema</span
+              >
+            </div>
+            <span
+              class="text-[9px] text-error/70 font-medium uppercase border-l border-error/20 pl-2 truncate max-w-[200px]"
+              title={error}
+            >
+              {error}
+            </span>
           </div>
         {/if}
 
@@ -412,35 +423,37 @@
           <div class="flex flex-col min-h-0">
             {#if keyImported}
               <div
-                class="bg-green-500/10 border border-green-500/20 p-3 rounded-lg flex gap-3 items-center mb-4 flex-none"
+                class="bg-green-500/10 border border-green-500/20 px-3 py-2 rounded-lg flex items-center justify-between gap-2 mb-4 flex-none"
               >
-                <div class="p-1.5 bg-green-500/20 rounded-full">
-                  <Check class="w-4 h-4 text-green-500" />
+                <div class="flex items-center gap-2">
+                  <Check size={14} class="text-green-500" />
+                  <span
+                    class="text-[11px] font-bold text-white uppercase tracking-tight"
+                    >Llave Importada Exitosamente</span
+                  >
                 </div>
-                <div>
-                  <p class="text-sm font-bold text-white">
-                    Llave Importada Correctamente
-                  </p>
-                  <p class="text-[11px] text-gray-300">
-                    El archivo de llave maestra se ha verificado y cargado.
-                  </p>
-                </div>
+                <span
+                  class="text-[9px] text-green-500/70 font-medium uppercase border-l border-green-500/20 pl-2"
+                >
+                  Sistema Listo
+                </span>
               </div>
             {:else if keyFoundInSystem && !generatedPassword}
               <div
-                class="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg flex gap-3 items-center mb-4 flex-none"
+                class="bg-blue-500/10 border border-blue-500/20 px-3 py-2 rounded-lg flex items-center justify-between gap-2 mb-4 flex-none transition-all"
               >
-                <div class="p-1.5 bg-blue-500/20 rounded-full">
-                  <Info class="w-4 h-4 text-blue-500" />
+                <div class="flex items-center gap-2">
+                  <Info size={14} class="text-blue-500" />
+                  <span
+                    class="text-[11px] font-bold text-white uppercase tracking-tight"
+                    >Llave Maestra Detectada</span
+                  >
                 </div>
-                <div>
-                  <p class="text-sm font-bold text-white">
-                    Llave Maestra Detectada
-                  </p>
-                  <p class="text-[11px] text-gray-300">
-                    Se detectó una configuración previa segura.
-                  </p>
-                </div>
+                <span
+                  class="text-[9px] text-blue-500/70 font-medium uppercase border-l border-blue-500/20 pl-2"
+                >
+                  Configuración Previa
+                </span>
               </div>
             {/if}
 
