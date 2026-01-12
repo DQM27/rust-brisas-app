@@ -244,7 +244,7 @@ async fn seed_god_user() -> Result<(), SurrealDbError> {
         // En cada arranque, solo aseguramos que el usuario tenga el rol de Admin (Auto-healing de permisos)
         // PERO respetamos la contraseña y nombre que el usuario haya definido.
         // ACTUALIZACIÓN: Forzamos el email correcto para el usuario GOD.
-        db.query("UPDATE type::thing('user', $id) SET role = type::thing('role', $role_id), email = $email, updated_at = time::now()")
+        db.query("UPDATE type::thing('user', $id) SET role = type::thing('role', $role_id), email = $email, operacion = 'Mega Brisas', vencimiento_portacion = '10/12/2030', updated_at = time::now()")
             .bind(("id", GOD_ID))
             .bind(("role_id", ROLE_ADMIN_ID))
             .bind(("email", GOD_EMAIL))
@@ -267,6 +267,8 @@ async fn seed_god_user() -> Result<(), SurrealDbError> {
                 role: type::thing('role', $role_id),
                 is_active: true,
                 cedula: "0000000000",
+                operacion: "Mega Brisas",
+                vencimiento_portacion: "10/12/2030",
                 must_change_password: true,
                 created_at: time::now(),
                 updated_at: time::now()
@@ -299,8 +301,8 @@ async fn seed_admin_user() -> Result<(), SurrealDbError> {
         .take(0)?;
 
     if !existing.is_empty() {
-        // Auto-heal: Aseguramos que Daniel tenga siempre el rol de administrador.
-        db.query("UPDATE user SET role = type::thing('role', $role_id) WHERE email = $email")
+        // Auto-heal: Aseguramos que Daniel tenga siempre el rol de administrador y campos obligatorios.
+        db.query("UPDATE user SET role = type::thing('role', $role_id), operacion = 'Mega Brisas', vencimiento_portacion = '10/12/2030' WHERE email = $email")
             .bind(("role_id", ROLE_ADMIN_ID))
             .bind(("email", dev_email))
             .await?;
@@ -322,6 +324,8 @@ async fn seed_admin_user() -> Result<(), SurrealDbError> {
                 role: type::thing('role', $role_id),
                 is_active: true,
                 cedula: "155824395105",
+                operacion: "Mega Brisas",
+                vencimiento_portacion: "10/12/2030",
                 must_change_password: true,
                 created_at: time::now(),
                 updated_at: time::now()

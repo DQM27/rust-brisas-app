@@ -572,16 +572,14 @@
 
 <style>
   /* Autofill Fix (Evita fondo blanco de Chrome) */
-  input:-webkit-autofill,
-  textarea:-webkit-autofill {
+  input:-webkit-autofill {
     -webkit-text-fill-color: white !important;
     -webkit-box-shadow: 0 0 0px 1000px #1c2128 inset !important;
     transition: background-color 5000s ease-in-out 0s;
   }
 
   /* Focus Override Global */
-  input:focus,
-  textarea:focus {
+  input:focus {
     border-color: rgba(59, 130, 246, 0.5) !important;
     box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
     outline: none !important;
