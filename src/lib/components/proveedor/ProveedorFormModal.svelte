@@ -73,11 +73,12 @@
   };
 
   // Superforms setup
+  // svelte-ignore state_referenced_locally
   const { form, errors, constraints, enhance, reset, validate, tainted } =
     superForm<CombinedForm>(emptyFormData, {
       SPA: true,
       validators: zod4(
-        isEditMode ? UpdateProveedorSchema : CreateProveedorSchema,
+        proveedor ? UpdateProveedorSchema : CreateProveedorSchema,
       ),
       dataType: "json",
       validationMethod: "oninput",

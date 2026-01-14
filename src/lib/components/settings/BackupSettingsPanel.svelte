@@ -323,76 +323,16 @@
 <div class="flex h-full flex-col relative bg-[#1e1e1e]">
   <!-- Header -->
   <div class="border-b border-white/10 px-6 py-4 bg-[#252526]">
-    <div class="flex items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
       <div>
         <h2 class="text-xl font-semibold text-gray-100 flex items-center gap-2">
           <Database class="w-5 h-5 text-purple-500" />
           Copias de Seguridad
         </h2>
         <p class="mt-1 text-sm text-gray-400">
-          Gestión de backups automáticos y manuales
+          Gestión de backups automáticos y manuales • Usa el botón
+          "Configuración" en la toolbar para ajustar auto-backup
         </p>
-      </div>
-
-      <!-- Config Panel -->
-      <div
-        class="flex items-center gap-4 bg-[#1e1e1e] px-4 py-2 rounded-lg border border-white/10"
-      >
-        <div class="flex items-center gap-2">
-          <Settings class="w-4 h-4 text-gray-400" />
-          <span class="text-xs text-gray-400">Auto-backup:</span>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              bind:checked={configEnabled}
-              class="sr-only peer"
-              disabled={!canUpdate}
-            />
-            <div
-              class="w-9 h-5 bg-gray-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"
-            ></div>
-          </label>
-        </div>
-
-        <div class="flex items-center gap-1">
-          <Clock class="w-3 h-3 text-gray-400" />
-          <input
-            type="time"
-            bind:value={configHora}
-            disabled={!canUpdate}
-            class="px-2 py-1 text-xs rounded bg-[#0d0d0d] border border-white/10 text-white w-20 disabled:opacity-50"
-          />
-        </div>
-
-        <div class="flex items-center gap-1">
-          <span class="text-xs text-gray-400">Retención:</span>
-          <input
-            type="number"
-            min="1"
-            max="365"
-            bind:value={configDiasRetencion}
-            disabled={!canUpdate}
-            class="px-2 py-1 text-xs rounded bg-[#0d0d0d] border border-white/10 text-white w-14 disabled:opacity-50"
-          />
-          <span class="text-xs text-gray-400">días</span>
-        </div>
-
-        <button
-          class="px-3 py-1 text-xs font-medium rounded bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 transition-colors"
-          onclick={handleSaveConfig}
-          disabled={isSavingConfig || !canUpdate}
-        >
-          {isSavingConfig ? "..." : "Guardar"}
-        </button>
-
-        <button
-          class="px-2 py-1 text-xs font-medium rounded border border-amber-600/30 text-amber-500 hover:bg-amber-600/10 transition-colors flex items-center gap-1"
-          onclick={handleCleanup}
-          disabled={!canUpdate}
-        >
-          <Trash2 class="w-3 h-3" />
-          Limpiar
-        </button>
       </div>
     </div>
   </div>

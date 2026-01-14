@@ -653,6 +653,17 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     showColumnSelector: true,
     showThemeSelector: false,
     enableGrouping: false
+  },
+  'backup-list': {
+    gridId: 'backup-list',
+    availableButtons: {
+      default: [],
+      singleSelect: [],
+      multiSelect: []
+    },
+    showColumnSelector: false,
+    showThemeSelector: false,
+    enableGrouping: false
   }
 };
 

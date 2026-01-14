@@ -58,6 +58,9 @@ fn get_backup_directory(config: &AppConfigState) -> Result<PathBuf, BackupError>
 /// Retorna `Ok(())` si la exportación es exitosa.
 #[command]
 pub async fn backup_database(destination_path: String) -> Result<(), BackupError> {
+    use futures::TryStreamExt;
+    use tokio::io::AsyncWriteExt;
+
     info!("📦 Iniciando respaldo manual de base de datos a: {}", destination_path);
 
     // 1. Obtener cliente de BD
@@ -66,28 +69,45 @@ pub async fn backup_database(destination_path: String) -> Result<(), BackupError
         BackupError::IO(format!("Error de conexión al motor de base de datos: {}", e))
     })?;
 
-    // 2. Sanitizar ruta (Windows backslashes pueden causar problemas en cadenas SQL)
-    // Convertimos backslashes a forward slashes que funcionan bien en rutas mixtas
-    let clean_path = destination_path.replace('\\', "/");
-
-    // 3. Ejecutar exportación
-    // EXPORT FILE guarda todo (SCHEMA + DATA) en el archivo indicado
-    let query = format!("EXPORT FILE '{}';", clean_path);
-
-    info!("⚙️ Ejecutando query de exportación...");
-    match db.query(query).await {
-        Ok(_) => {
-            info!("✅ Respaldo completado exitosamente en: {}", destination_path);
-            Ok(())
-        }
-        Err(e) => {
-            error!("❌ Falla crítica al exportar base de datos: {}", e);
-            Err(BackupError::IO(format!(
-                "Fallo al ejecutar exportación interna: {}. Verifique permisos de escritura.",
-                e
-            )))
+    // 2. Crear directorio padre si no existe
+    let path = std::path::Path::new(&destination_path);
+    if let Some(parent) = path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent).map_err(|e| {
+                BackupError::IO(format!("Error al crear directorio: {}", e))
+            })?;
         }
     }
+
+    // 3. Usar el método export() del SDK para obtener un stream de bytes
+    info!("⚙️ Ejecutando exportación via SDK...");
+    
+    // Exportar sin argumento retorna un stream
+    let mut stream = db.export(()).await.map_err(|e| {
+        error!("Error al iniciar exportación: {}", e);
+        BackupError::IO(format!("Error al exportar base de datos: {}", e))
+    })?;
+
+    // 4. Escribir el stream a un archivo
+    let mut file = tokio::fs::File::create(&destination_path).await.map_err(|e| {
+        error!("Error al crear archivo de backup: {}", e);
+        BackupError::IO(format!("Error al crear archivo: {}", e))
+    })?;
+
+    while let Some(chunk) = stream.try_next().await.map_err(|e| {
+        BackupError::IO(format!("Error leyendo datos de exportación: {}", e))
+    })? {
+        file.write_all(&chunk).await.map_err(|e| {
+            BackupError::IO(format!("Error escribiendo archivo: {}", e))
+        })?;
+    }
+
+    file.flush().await.map_err(|e| {
+        BackupError::IO(format!("Error al finalizar escritura: {}", e))
+    })?;
+
+    info!("✅ Respaldo completado exitosamente en: {}", destination_path);
+    Ok(())
 }
 
 /// [Comando Tauri] Realiza un backup automático al directorio configurado.

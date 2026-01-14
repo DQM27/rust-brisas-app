@@ -117,6 +117,7 @@ ttf-parser = { version = "0.24", optional = true }
 rust_xlsxwriter = { version = "0.69", optional = true }
 
 keyring = { version = "3", features = ["windows-native"] }           # Gestión de credenciales multiplataforma (Unified v3)
+futures = "0.3.31"
 
 # =============================================================================
 # DEPENDENCIAS ESPECÍFICAS DE PLATAFORMA (Windows Only)

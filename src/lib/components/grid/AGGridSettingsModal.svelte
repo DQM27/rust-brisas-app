@@ -11,7 +11,15 @@
   import AGGridSettingsToolbar from "./settings/AGGridSettingsToolbar.svelte";
   import AGGridSettingsData from "./settings/AGGridSettingsData.svelte";
   import AGGridSettingsAdvanced from "./settings/AGGridSettingsAdvanced.svelte";
-  import { Palette, Columns, Wrench, Database, Settings } from "lucide-svelte";
+  import AGGridSettingsBackup from "./settings/AGGridSettingsBackup.svelte";
+  import {
+    Palette,
+    Columns,
+    Wrench,
+    Database,
+    Settings,
+    HardDrive,
+  } from "lucide-svelte";
 
   interface Props {
     gridId: GridId;
@@ -26,17 +34,31 @@
 
   let { gridId, gridApi, customButtons, onClose }: Props = $props();
 
-  let activeTab = $state<SettingsTab>("appearance");
+  // For backup-list grid, start on backup tab
+  // svelte-ignore state_referenced_locally
+  const isBackupGrid = gridId === "backup-list";
+  let activeTab = $state<SettingsTab>(isBackupGrid ? "data" : "appearance");
   let isClosing = $state(false);
   let showResetConfirm = $state(false);
 
-  const tabs: { id: SettingsTab; label: string; icon: any }[] = [
+  // Dynamic tabs based on gridId
+  const baseTabs: { id: SettingsTab; label: string; icon: any }[] = [
     { id: "appearance", label: "Apariencia", icon: Palette },
     { id: "columns", label: "Columnas", icon: Columns },
     { id: "toolbar", label: "Toolbar", icon: Wrench },
     { id: "data", label: "Datos", icon: Database },
     { id: "advanced", label: "Avanzado", icon: Settings },
   ];
+
+  // For backup grid, replace "data" with "backup" tab
+  const tabs = $derived(
+    isBackupGrid
+      ? [
+          { id: "data" as SettingsTab, label: "Backup", icon: HardDrive },
+          ...baseTabs.filter((t) => t.id !== "data"),
+        ]
+      : baseTabs,
+  );
 
   function handleClose() {
     isClosing = true;
@@ -152,7 +174,11 @@
         {:else if activeTab === "toolbar"}
           <AGGridSettingsToolbar {gridId} {gridApi} {customButtons} />
         {:else if activeTab === "data"}
-          <AGGridSettingsData {gridId} {gridApi} />
+          {#if isBackupGrid}
+            <AGGridSettingsBackup />
+          {:else}
+            <AGGridSettingsData {gridId} {gridApi} />
+          {/if}
         {:else if activeTab === "advanced"}
           <AGGridSettingsAdvanced {gridId} {gridApi} />
         {/if}

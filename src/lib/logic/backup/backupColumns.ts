@@ -99,9 +99,10 @@ export class BackupColumns {
                 headerName: "Acciones",
                 width: 180,
                 pinned: "right",
+                cellStyle: { display: "flex", justifyContent: "center", alignItems: "center" },
                 cellRenderer: () => {
                     return `
-                        <div class="flex items-center gap-2 h-full">
+                        <div class="flex items-center justify-center gap-2 h-full">
                             <button class="restore-btn px-2.5 py-1 text-xs font-medium rounded-md 
                                 bg-purple-100 text-purple-700 hover:bg-purple-200 
                                 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50
