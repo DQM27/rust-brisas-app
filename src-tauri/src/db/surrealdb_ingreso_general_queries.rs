@@ -32,7 +32,7 @@ pub async fn find_ingresos_abiertos_fetched() -> Result<Vec<UniversalIngresoFetc
     let db = get_db().await?;
     let mut result = db
         .query(format!(
-            "SELECT *, type::table(id) AS tipo_ingreso FROM {TABLES} WHERE fecha_hora_salida IS NONE ORDER BY created_at DESC {FETCH_ALL}"
+            "SELECT *, type::table(id) AS tipo_ingreso, type::int(gafete_numero) AS gafete_numero FROM {TABLES} WHERE fecha_hora_salida IS NONE ORDER BY created_at DESC {FETCH_ALL}"
         ))
         .await?;
 
@@ -69,14 +69,14 @@ pub async fn find_by_id_fetched(
 }
 
 pub async fn find_ingreso_by_gafete_fetched(
-    gafete: &str,
+    gafete: i32,
 ) -> Result<Option<UniversalIngresoFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
         .query(format!(
             "SELECT *, type::table(id) AS tipo_ingreso FROM {TABLES} WHERE gafete_numero = $gafete AND fecha_hora_salida IS NONE LIMIT 1 {FETCH_ALL}"
         ))
-        .bind(("gafete", gafete.to_string()))
+        .bind(("gafete", gafete))
         .await?;
     Ok(result.take(0)?)
 }

@@ -36,9 +36,10 @@ pub async fn get_all_ingresos() -> Result<IngresoListResponse, IngresoError> {
 /// [Comando Tauri]
 #[command]
 pub async fn get_ingreso_by_gafete(gafete_numero: String) -> Result<IngresoResponse, IngresoError> {
-    ingreso_general_service::get_ingreso_by_gafete(&gafete_numero)
-        .await?
-        .ok_or(IngresoError::NotFound)
+    let gafete: i32 = gafete_numero.parse().map_err(|_| {
+        IngresoError::Validation(format!("Número de gafete inválido: {gafete_numero}"))
+    })?;
+    ingreso_general_service::get_ingreso_by_gafete(gafete).await?.ok_or(IngresoError::NotFound)
 }
 
 /// Realiza consultas históricas de flujo de personal en rangos de tiempo específicos.

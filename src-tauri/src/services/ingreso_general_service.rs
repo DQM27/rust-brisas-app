@@ -139,7 +139,7 @@ pub async fn get_ingreso_by_id(id_str: &str) -> Result<Option<IngresoResponse>, 
 /// # Retorno
 /// `Option<IngresoResponse>` con los datos de la persona que tiene el gafete.
 pub async fn get_ingreso_by_gafete(
-    gafete_numero: &str,
+    gafete_numero: i32,
 ) -> Result<Option<IngresoResponse>, IngresoError> {
     let ingreso = if let Some(i) =
         db::find_ingreso_by_gafete_fetched(gafete_numero).await.map_err(|e| {

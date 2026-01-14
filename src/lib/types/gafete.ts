@@ -66,6 +66,8 @@ export interface GafeteResponse {
     resueltoPorNombre?: string;
     fechaResolucion?: string;
     notas?: string;
+    // Who has the gafete when "en_uso"
+    asignadoA?: string;
     createdAt: string;
     updatedAt: string;
 }

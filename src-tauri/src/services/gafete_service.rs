@@ -189,11 +189,152 @@ pub async fn get_gafete_by_id(id_str: &str) -> Result<Option<GafeteResponse>, Ga
         .map_err(|e| GafeteError::Database(e.to_string()))
 }
 
-/// Lista todos los gafetes registrados.
+/// Formatea un SurrealDB Datetime a ISO8601 estándar para frontend.
+/// SurrealDB Datetime.to_string() puede incluir prefijo o formato no parseable por JS.
+fn format_datetime_iso(dt: &surrealdb::Datetime) -> String {
+    let raw = dt.to_string();
+
+    // Clean string: remove "d" prefix and any surrounding quotes (single or double)
+    // Example: d'2026-01-14T...' -> 2026-01-14T...
+    let mut cleaned = raw.as_str();
+    if cleaned.starts_with('d') {
+        cleaned = &cleaned[1..];
+    }
+    cleaned = cleaned.trim_matches(|c| c == '\'' || c == '"');
+
+    // Parse, convert to UTC to ensure 'Z' validity, and format as strict ISO8601
+    chrono::DateTime::parse_from_rfc3339(cleaned)
+        .map(|dt| dt.with_timezone(&chrono::Utc).to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
+        .unwrap_or_else(|_| cleaned.to_string())
+}
+
+/// Lista todos los gafetes registrados, enriquecidos con datos de alertas pendientes.
 pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
+    use crate::db::surrealdb_alerta_queries as alerta_db;
+    use crate::db::surrealdb_ingreso_general_queries as ingreso_db;
+    use crate::db::surrealdb_user_queries as user_db;
+    use crate::models::ingreso::UniversalIngresoFetched;
+    use std::collections::{HashMap, HashSet};
+
     let gafetes = db::get_all_gafetes().await.map_err(|e| GafeteError::Database(e.to_string()))?;
 
-    Ok(gafetes.into_iter().map(GafeteResponse::from).collect())
+    // Fetch all pending alerts to enrich gafetes
+    let alertas = alerta_db::find_all(Some(false)).await.unwrap_or_else(|e| {
+        error!("Error fetching pending alerts: {}", e);
+        vec![]
+    });
+
+    // Collect all unique user IDs that we need to fetch (reportado_por, resuelto_por)
+    let mut user_ids_to_fetch: HashSet<RecordId> = HashSet::new();
+    for alerta in &alertas {
+        user_ids_to_fetch.insert(alerta.reportado_por.clone());
+        if let Some(ref resuelto_por) = alerta.resuelto_por {
+            user_ids_to_fetch.insert(resuelto_por.clone());
+        }
+    }
+
+    // Batch fetch users and create lookup map (user_id_string -> full name)
+    let mut user_names: HashMap<String, String> = HashMap::new();
+    for user_id in user_ids_to_fetch {
+        if let Ok(Some(user)) = user_db::find_by_id(&user_id).await {
+            let full_name = format!("{} {}", user.nombre, user.apellido);
+            user_names.insert(user_id.to_string(), full_name);
+        }
+    }
+
+    // Batch fetch ALL active ingresos to determine real usage status
+    // This optimization replaces N+1 queries and ensures status is correct even if 'en_uso' flag is stale
+    let active_ingresos = ingreso_db::find_ingresos_abiertos_fetched().await.unwrap_or_else(|e| {
+        error!("Error fetching active ingresos: {}", e);
+        vec![]
+    });
+
+    // Create lookup map: gafete_numero -> Ingreso
+    let mut active_gafete_map: HashMap<i32, UniversalIngresoFetched> = HashMap::new();
+    for ingreso in active_ingresos {
+        let gafete_num = match &ingreso {
+            UniversalIngresoFetched::Contratista(i) => i.gafete_numero,
+            UniversalIngresoFetched::Proveedor(i) => i.gafete_numero,
+            UniversalIngresoFetched::Visita(i) => i.gafete_numero,
+        };
+
+        if let Some(num) = gafete_num {
+            active_gafete_map.insert(num, ingreso);
+        }
+    }
+
+    // Create lookup map by gafete_numero
+    let alertas_map: HashMap<i32, _> = alertas.into_iter().map(|a| (a.gafete_numero, a)).collect();
+
+    // Enrich each gafete with alert and ingreso data
+    let mut enriched: Vec<GafeteResponse> = Vec::with_capacity(gafetes.len());
+
+    for g in gafetes {
+        let mut resp = GafeteResponse::from(g.clone());
+
+        // Check if there's a pending alert for this gafete number
+        if let Some(alerta) = alertas_map.get(&g.numero) {
+            resp.alerta_id = Some(alerta.id.to_string());
+            // Format date properly as ISO8601 for JavaScript
+            resp.fecha_perdido = Some(format_datetime_iso(&alerta.fecha_reporte));
+            resp.quien_perdio = Some(alerta.nombre_completo.clone());
+            resp.alerta_resuelta = Some(alerta.resuelto);
+            resp.notas = alerta.notas.clone();
+
+            // Get actual user name from lookup map
+            let reportado_key = alerta.reportado_por.to_string();
+            resp.reportado_por_nombre = Some(
+                user_names
+                    .get(&reportado_key)
+                    .cloned()
+                    .unwrap_or_else(|| "Usuario desconocido".to_string()),
+            );
+
+            // Fecha de resolución if available
+            if let Some(ref fecha) = alerta.fecha_resolucion {
+                resp.fecha_resolucion = Some(format_datetime_iso(fecha));
+            }
+            if let Some(ref resuelto_por) = alerta.resuelto_por {
+                let resuelto_key = resuelto_por.to_string();
+                resp.resuelto_por_nombre = Some(
+                    user_names
+                        .get(&resuelto_key)
+                        .cloned()
+                        .unwrap_or_else(|| "Usuario desconocido".to_string()),
+                );
+            }
+
+            // Mark status as "perdido" if there's an active alert
+            if !alerta.resuelto {
+                resp.status = "perdido".to_string();
+            }
+        }
+
+        // If there is an ACTIVE INGRESO for this gafete, force status to "en_uso"
+        // This relies on the ingress record as the Source of Truth
+        if let Some(ingreso) = active_gafete_map.get(&g.numero) {
+            resp.status = "en_uso".to_string();
+            resp.esta_disponible = false;
+
+            // We still populate this field even if hidden in frontend, as it's useful data
+            let nombre = match ingreso {
+                UniversalIngresoFetched::Contratista(i) => {
+                    format!("{} {}", i.nombre, i.apellido)
+                }
+                UniversalIngresoFetched::Proveedor(i) => {
+                    format!("{} {}", i.nombre, i.apellido)
+                }
+                UniversalIngresoFetched::Visita(i) => {
+                    format!("{} {}", i.nombre, i.apellido)
+                }
+            };
+            resp.asignado_a = Some(nombre);
+        }
+
+        enriched.push(resp);
+    }
+
+    Ok(enriched)
 }
 
 /// Lista los gafetes disponibles para un tipo específico.

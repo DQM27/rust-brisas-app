@@ -172,7 +172,6 @@ pub struct GafeteCreateDTO {
 // --------------------------------------------------------------------------
 // DTOs DE RESPUESTA
 // --------------------------------------------------------------------------
-
 /// Respuesta estándar con la información pública del gafete.
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -182,13 +181,35 @@ pub struct GafeteResponse {
     pub tipo: TipoGafete,
     pub tipo_display: String,
     pub estado_fisico: GafeteEstado,
+    pub esta_disponible: bool,
     pub status: String,
+    // Información de alerta (si hay una pendiente)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alerta_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fecha_perdido: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub quien_perdio: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alerta_resuelta: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reportado_por_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resuelto_por_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fecha_resolucion: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub notas: Option<String>,
+    // Info about who has the gafete when "en_uso"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub asignado_a: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
 
 impl From<Gafete> for GafeteResponse {
     fn from(g: Gafete) -> Self {
+        let esta_disponible = g.estado == GafeteEstado::Activo && !g.en_uso;
         let status = if g.estado == GafeteEstado::Activo {
             if g.en_uso {
                 "en_uso".to_string()
@@ -205,7 +226,18 @@ impl From<Gafete> for GafeteResponse {
             tipo: g.tipo.clone(),
             tipo_display: g.tipo.display().to_string(),
             estado_fisico: g.estado.clone(),
+            esta_disponible,
             status,
+            // Alert fields - set to None by default, enriched by service
+            alerta_id: None,
+            fecha_perdido: None,
+            quien_perdio: None,
+            alerta_resuelta: None,
+            reportado_por_nombre: None,
+            resuelto_por_nombre: None,
+            fecha_resolucion: None,
+            notas: None,
+            asignado_a: None,
             created_at: g.created_at.to_string(),
             updated_at: g.updated_at.to_string(),
         }

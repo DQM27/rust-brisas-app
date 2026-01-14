@@ -106,16 +106,34 @@ export class GafeteColumns {
                     return `<span class="${baseClass} ${classes}">${icon} ${label}</span>`;
                 },
             },
+            // Column removed as per user request
+            /*
+            {
+                colId: "asignadoA",
+                field: "asignadoA",
+                headerName: "Asignado A",
+                sortable: true,
+                filter: true,
+                width: 180,
+                valueFormatter: (params: any) => params.value || "-",
+            },
+            */
             {
                 colId: "fechaPerdido",
                 field: "fechaPerdido",
                 headerName: "Fecha Reporte",
                 sortable: true,
                 filter: true,
-                width: 130,
+                width: 160,
                 valueFormatter: (params: any) => {
                     if (!params.value) return "-";
-                    return new Date(params.value).toLocaleDateString();
+                    const date = new Date(params.value);
+                    if (isNaN(date.getTime())) return "-";
+                    // DD/MM/YYYY format
+                    const day = date.getDate().toString().padStart(2, '0');
+                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                    const year = date.getFullYear();
+                    return `${day}/${month}/${year}`;
                 },
             },
             {
