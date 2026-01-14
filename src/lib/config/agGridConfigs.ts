@@ -326,18 +326,8 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
   'trash-proveedor': { gridId: 'trash-proveedor', ...INGRESO_GRID_CONFIG },
   'trash-visitante': { gridId: 'trash-visitante', ...INGRESO_GRID_CONFIG },
 
-  // Grid de backup - sin botones de toolbar
-  'backup-list': {
-    gridId: 'backup-list',
-    availableButtons: {
-      default: [],
-      singleSelect: [],
-      multiSelect: []
-    },
-    showColumnSelector: false,
-    showThemeSelector: false,
-    enableGrouping: false
-  }
+  // Grid de backup - configuración estándar
+  'backup-list': { gridId: 'backup-list', ...STANDARD_GRID_CONFIG }
 };
 
 /**

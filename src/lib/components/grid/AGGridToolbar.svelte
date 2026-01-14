@@ -27,6 +27,7 @@
       multiSelect?: CustomToolbarButton[];
     };
     customToolbarSlot?: import("svelte").Snippet;
+    onRefresh?: () => void | Promise<void>;
   }
 
   let {
@@ -37,6 +38,7 @@
     onOpenSettings,
     customButtons = {},
     customToolbarSlot,
+    onRefresh,
   }: Props = $props();
 
   // Obtener configuración de la grid
@@ -214,7 +216,11 @@
         alert("El panel lateral requiere AG Grid Enterprise");
         break;
       case "refresh":
-        gridApi.refreshCells();
+        if (onRefresh) {
+          onRefresh();
+        } else {
+          gridApi.refreshCells();
+        }
         break;
       case "clear-filters":
         gridApi.setFilterModel(null);

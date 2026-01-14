@@ -27,6 +27,7 @@
 
   interface Props extends AGGridWrapperProps<T> {
     customToolbarSlot?: import("svelte").Snippet;
+    onRefresh?: () => void | Promise<void>;
   }
 
   let {
@@ -42,6 +43,7 @@
     enableGrouping = false,
     getRowId,
     persistenceKey,
+    onRefresh,
   }: Props = $props();
 
   // Estado
@@ -470,6 +472,7 @@
       {gridApi}
       {customButtons}
       {customToolbarSlot}
+      {onRefresh}
       onOpenSettings={() => (showSettings = true)}
     />
   {/if}

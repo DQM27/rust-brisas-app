@@ -105,14 +105,6 @@
         variant: "default",
         tooltip: "Restaurar desde archivo externo",
       },
-      {
-        id: "refresh",
-        label: "Actualizar",
-        icon: RotateCw,
-        onClick: loadBackups,
-        variant: "default",
-        tooltip: "Recargar lista de backups",
-      },
     ];
 
     const singleSelectBtns: CustomToolbarButton[] = [
@@ -404,6 +396,7 @@
         getRowId={(params) => params.data.ruta}
         persistenceKey="backup-list-columns"
         onSelectionChanged={(rows) => (selectedRows = rows)}
+        onRefresh={loadBackups}
       />
     {/if}
   </div>

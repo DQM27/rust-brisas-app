@@ -396,21 +396,29 @@
     }
   }
 
-  async function handleReindexDB() {
-    if (
-      !confirm(
-        "¿Estás seguro de reindexar la base de datos de búsqueda? Esto puede tomar unos momentos.",
-      )
-    )
-      return;
+  import ConfirmModal from "$lib/components/shared/ConfirmModal.svelte";
 
+  // Reindex Logic with Modal
+  let showReindexConfirm = $state(false);
+  let reindexLoading = $state(false);
+
+  async function requestReindex() {
+    showReindexConfirm = true;
+  }
+
+  async function confirmReindex() {
+    reindexLoading = true;
     const toastId = toast.loading("Reindexando base de datos...");
+
     try {
       await reindexGlobalSearch();
       toast.success("Reindexado completado correctamente", { id: toastId });
+      showReindexConfirm = false;
     } catch (e: any) {
       console.error(e);
       toast.error(e.message || "Error al reindexar", { id: toastId });
+    } finally {
+      reindexLoading = false;
     }
   }
 </script>
@@ -667,7 +675,7 @@
             {#if $currentUser?.isSuperuser || ["admin", "administrador"].includes(($currentUser?.roleName || "").toLowerCase())}
               <button
                 class="settings-menu-item text-orange-400 hover:text-orange-300"
-                onclick={() => handleSettingsAction(handleReindexDB)}
+                onclick={() => handleSettingsAction(requestReindex)}
               >
                 Reindexar Búsqueda
               </button>
@@ -732,6 +740,17 @@
       isSelfEdit={true}
     />
   {/if}
+
+  <ConfirmModal
+    show={showReindexConfirm}
+    title="Reindexar Búsqueda"
+    message="Esta acción reconstruirá completamente el índice de búsqueda. Puede tomar varios segundos dependiendo de la cantidad de datos. ¿Deseas continuar?"
+    confirmText="Sí, Reindexar"
+    type="warning"
+    loading={reindexLoading}
+    on:confirm={confirmReindex}
+    on:close={() => (showReindexConfirm = false)}
+  />
 
   <UpdateModal
     show={showUpdateModal}
