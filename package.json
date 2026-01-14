@@ -1,6 +1,6 @@
 {
   "name": "mega-brisas",
-  "version": "1.0.0-alpha",
+  "version": "1.0.0-beta.1",
   "description": "Sistema de control de acceso para contratistas",
   "type": "module",
   "scripts": {

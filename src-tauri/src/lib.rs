@@ -52,10 +52,10 @@ pub fn run() {
         builder = builder.plugin(tauri_plugin_store::Builder::new().build());
         builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            let _ = app
-                .get_webview_window("main")
-                .expect("Ventana principal no encontrada")
-                .set_focus();
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show(); // Restaurar si estaba oculta
+                let _ = window.set_focus();
+            }
         }));
     }
 
@@ -202,9 +202,9 @@ pub fn run() {
 
             Ok(())
         })
+
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
-                // En vez de cerrar, ocultamos la ventana
                 window.hide().unwrap();
                 api.prevent_close();
             }
