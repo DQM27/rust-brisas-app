@@ -1,69 +1,81 @@
 <script lang="ts">
   import { fade, scale } from "svelte/transition";
   import { AlertTriangle, X } from "lucide-svelte";
-  import { createEventDispatcher } from "svelte";
 
-  export let show = false;
-  export let title = "Confirmar Acción";
-  export let message = "¿Estás seguro de realizar esta acción?";
-  export let confirmText = "Confirmar";
-  export let cancelText = "Cancelar";
-  export let type: "danger" | "warning" | "info" = "warning";
-  export let loading = false;
-
-  const dispatch = createEventDispatcher();
-
-  function handleConfirm() {
-    dispatch("confirm");
+  interface Props {
+    show?: boolean;
+    title?: string;
+    message?: string;
+    confirmText?: string;
+    cancelText?: string;
+    type?: "danger" | "warning" | "info";
+    loading?: boolean;
+    onConfirm: () => void;
+    onClose: () => void;
   }
 
-  function handleClose() {
-    if (!loading) {
-      dispatch("close");
-    }
-  }
+  let {
+    show = false,
+    title = "Confirmar Acción",
+    message = "¿Estás seguro de realizar esta acción?",
+    confirmText = "Confirmar",
+    cancelText = "Cancelar",
+    type = "warning",
+    loading = false,
+    onConfirm,
+    onClose,
+  }: Props = $props();
 
-  // Colores según tipo
-  $: headerColor =
+  // Colores según tipo (Svelte 5 derived)
+  const headerColor = $derived(
     type === "danger"
       ? "text-red-400"
       : type === "warning"
         ? "text-orange-400"
-        : "text-blue-400";
-  $: iconColor =
+        : "text-blue-400",
+  );
+
+  const iconColor = $derived(
     type === "danger"
       ? "text-red-500"
       : type === "warning"
         ? "text-orange-500"
-        : "text-blue-500";
-  $: btnColor =
+        : "text-blue-500",
+  );
+
+  const btnColor = $derived(
     type === "danger"
       ? "bg-red-600 hover:bg-red-700"
       : type === "warning"
         ? "bg-orange-600 hover:bg-orange-700"
-        : "bg-blue-600 hover:bg-blue-700";
+        : "bg-blue-600 hover:bg-blue-700",
+  );
+
+  function handleClose() {
+    if (!loading) {
+      onClose();
+    }
+  }
 </script>
 
 {#if show}
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
-  <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div
     class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
     transition:fade={{ duration: 200 }}
-    on:click={handleClose}
+    onclick={handleClose}
     role="button"
     tabindex="0"
-    on:keydown={(e) => e.key === "Escape" && handleClose()}
+    onkeydown={(e) => e.key === "Escape" && handleClose()}
+    aria-label="Cerrar modal"
   >
     <div
       class="w-full max-w-md overflow-hidden rounded-xl border border-white/10 bg-[#1e1e1e] shadow-2xl text-left cursor-auto"
       transition:scale={{ duration: 200, start: 0.95 }}
-      on:click|stopPropagation
+      onclick={(e) => e.stopPropagation()}
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="modal-title"
       aria-describedby="modal-desc"
-      tabindex="-1"
     >
       <!-- Header -->
       <div
@@ -77,7 +89,7 @@
           {title}
         </h3>
         <button
-          on:click={handleClose}
+          onclick={handleClose}
           type="button"
           class="text-gray-400 hover:text-white transition-colors"
           disabled={loading}
@@ -99,14 +111,16 @@
         class="flex justify-end gap-3 border-t border-white/5 bg-[#252526] px-6 py-4"
       >
         <button
-          on:click={handleClose}
+          onclick={handleClose}
+          type="button"
           class="rounded-md border border-white/10 bg-transparent px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-white/5 hover:text-white"
           disabled={loading}
         >
           {cancelText}
         </button>
         <button
-          on:click={handleConfirm}
+          onclick={onConfirm}
+          type="button"
           class="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white shadow-lg transition-all hover:scale-105 active:scale-95 {btnColor} disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading}
         >
