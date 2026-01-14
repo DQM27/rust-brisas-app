@@ -403,10 +403,15 @@
 
   function handleNameInput(event: Event, field: keyof CreateUserForm) {
     const input = event.target as HTMLInputElement;
-    const newValue = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]/g, "");
-    // @ts-ignore
-    $form[field] = newValue;
-    if (input.value !== newValue) input.value = newValue;
+    // Permitir letras y espacios (\s)
+    const newValue = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, "");
+
+    // Solo actualizar si hay caracteres inválidos que remover
+    if (input.value !== newValue) {
+      // @ts-ignore
+      $form[field] = newValue;
+      input.value = newValue;
+    }
   }
 
   function handlePhoneKeydown(event: KeyboardEvent) {
@@ -715,7 +720,7 @@
                       <input
                         id="nombre"
                         type="text"
-                        value={$form.nombre}
+                        bind:value={$form.nombre}
                         oninput={(e) => handleNameInput(e, "nombre")}
                         placeholder="Ej: Juan"
                         disabled={loading || readonly}
@@ -735,7 +740,7 @@
                       <input
                         id="segundoNombre"
                         type="text"
-                        value={$form.segundoNombre}
+                        bind:value={$form.segundoNombre}
                         oninput={(e) => handleNameInput(e, "segundoNombre")}
                         placeholder="Ej: Carlos"
                         disabled={loading || readonly}
@@ -756,7 +761,7 @@
                       <input
                         id="apellido"
                         type="text"
-                        value={$form.apellido}
+                        bind:value={$form.apellido}
                         oninput={(e) => handleNameInput(e, "apellido")}
                         placeholder="Ej: Pérez"
                         disabled={loading || readonly}
@@ -776,7 +781,7 @@
                       <input
                         id="segundoApellido"
                         type="text"
-                        value={$form.segundoApellido}
+                        bind:value={$form.segundoApellido}
                         oninput={(e) => handleNameInput(e, "segundoApellido")}
                         placeholder="Ej: González"
                         disabled={loading || readonly}
@@ -1157,7 +1162,7 @@
                       <input
                         id="contactoEmergenciaNombre"
                         type="text"
-                        value={$form.contactoEmergenciaNombre}
+                        bind:value={$form.contactoEmergenciaNombre}
                         oninput={(e) =>
                           handleNameInput(e, "contactoEmergenciaNombre")}
                         disabled={loading || readonly}

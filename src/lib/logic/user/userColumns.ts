@@ -10,6 +10,7 @@ export class UserColumns {
         return [
             // ... (resto de columnas igual)
             {
+                colId: "cedula",
                 field: "cedula",
                 headerName: "Cédula",
                 width: 130,
@@ -17,10 +18,11 @@ export class UserColumns {
                 cellStyle: { fontFamily: "monospace", fontSize: "13px" },
             },
             {
+                colId: "nombre",
                 field: "nombre",
                 headerName: "Nombre Completo",
-                flex: 1,
-                minWidth: 200,
+                width: 250,
+                minWidth: 100,
                 cellStyle: { fontWeight: 500 },
                 valueFormatter: (params: any) => {
                     const user = params.data as UserResponse;
@@ -35,12 +37,14 @@ export class UserColumns {
                 }
             },
             {
+                colId: "email",
                 field: "email",
                 headerName: "Email",
-                flex: 1,
-                minWidth: 200,
+                width: 250,
+                minWidth: 100,
             },
             {
+                colId: "roleName",
                 field: "roleName",
                 headerName: "Rol",
                 width: 130,
@@ -49,6 +53,7 @@ export class UserColumns {
                 },
             },
             {
+                colId: "isActive",
                 field: "isActive",
                 headerName: "Estado",
                 width: 130,
@@ -66,12 +71,14 @@ export class UserColumns {
                 }
             },
             {
+                colId: "telefono",
                 field: "telefono",
                 headerName: "Teléfono",
                 width: 140,
                 valueFormatter: (params: any) => params.value || "-",
             },
             {
+                colId: "numeroGafete",
                 field: "numeroGafete",
                 headerName: "Gafete",
                 width: 110,
@@ -79,6 +86,7 @@ export class UserColumns {
                 cellStyle: { fontFamily: "monospace" },
             },
             {
+                colId: "fechaInicioLabores",
                 field: "fechaInicioLabores",
                 headerName: "Fecha Inicio",
                 width: 130,
@@ -87,12 +95,14 @@ export class UserColumns {
                 },
             },
             {
+                colId: "operacion",
                 field: "operacion",
                 headerName: "Operación",
                 width: 120,
                 hide: true,
             },
             {
+                colId: "vencimientoPortacion",
                 field: "vencimientoPortacion",
                 headerName: "Venc. Portación",
                 width: 130,
@@ -102,6 +112,7 @@ export class UserColumns {
                 }
             },
             {
+                colId: "fechaNacimiento",
                 field: "fechaNacimiento",
                 headerName: "Fecha Nacimiento",
                 width: 130,
@@ -111,6 +122,7 @@ export class UserColumns {
                 }
             },
             {
+                colId: "direccion",
                 field: "direccion",
                 headerName: "Dirección",
                 width: 200,
@@ -119,12 +131,14 @@ export class UserColumns {
                 autoHeight: true,
             },
             {
+                colId: "contactoEmergenciaNombre",
                 field: "contactoEmergenciaNombre",
                 headerName: "Contacto Emergencia",
                 width: 160,
                 hide: true,
             },
             {
+                colId: "contactoEmergenciaTelefono",
                 field: "contactoEmergenciaTelefono",
                 headerName: "Tel. Emergencia",
                 width: 140,
@@ -132,13 +146,20 @@ export class UserColumns {
                 valueFormatter: (params: any) => params.value || "-",
             },
             {
+                colId: "createdAt",
                 field: "createdAt",
                 headerName: "Creado",
                 width: 150,
                 hide: true,
                 valueFormatter: (params: any) => {
                     if (!params.value) return "-";
-                    return new Date(params.value).toLocaleString("es-PA");
+                    const date = new Date(params.value);
+                    const day = date.getDate().toString().padStart(2, '0');
+                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                    const year = date.getFullYear();
+                    const hours = date.getHours().toString().padStart(2, '0');
+                    const minutes = date.getMinutes().toString().padStart(2, '0');
+                    return `${day}/${month}/${year} - ${hours}:${minutes}`;
                 }
             },
         ];
@@ -150,13 +171,12 @@ export class UserColumns {
         const val = String(value);
         // Manejo básico de fecha ISO o YYYY-MM-DD
         const [year, month, day] = val.split('T')[0].split('-').map(Number);
-        if (!year || !month || !day) return val; // Retornar original si falla parseo
-        const date = new Date(year, month - 1, day);
-        return date.toLocaleDateString("es-PA", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-        });
+        if (!year || !month || !day) return val;
+
+        // Retornar formato estricto DD/MM/YYYY con ceros a la izquierda
+        const dd = day.toString().padStart(2, '0');
+        const mm = month.toString().padStart(2, '0');
+        return `${dd}/${mm}/${year}`;
     }
 
     static formatRoleBadge(role: string): string {

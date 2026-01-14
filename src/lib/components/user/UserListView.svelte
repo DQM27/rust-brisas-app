@@ -16,7 +16,10 @@
   // Logic & Config
   import * as userService from "$lib/logic/user/userService";
   import { UserColumns } from "$lib/logic/user/userColumns";
-  import { createCustomButton } from "$lib/config/agGridConfigs";
+  import {
+    COMMON_DEFAULT_BUTTONS,
+    createCustomButton,
+  } from "$lib/config/agGridConfigs";
 
   // Types
   import type {
@@ -170,10 +173,13 @@
     roleFilter !== "todos" || estadoFilter !== "todos",
   );
 
-  // Columnas de AG Grid (usando helper estático existente)
-  let columnDefs = $derived.by((): ColDef<UserResponse>[] => {
-    return UserColumns.getColumns(handleStatusChange);
-  });
+  // Columnas de AG Grid (estáticas para evitar re-render innecesarios)
+  // NOTA: Se crea una vez y se guarda en $state para que la referencia no cambie
+  const columnDefs: ColDef<UserResponse>[] = UserColumns.getColumns(
+    (id, currentStatus) => {
+      handleStatusChange(id, currentStatus);
+    },
+  );
 
   // Botones personalizados por contexto
   const customButtons = $derived.by(() => {
@@ -186,6 +192,22 @@
     if (canCreate) {
       defaultBtns.push(createCustomButton.nuevo(() => openModal(null)));
     }
+
+    // Add common buttons (autosize, reset, select-all, size-to-fit)
+    defaultBtns.push(
+      ...COMMON_DEFAULT_BUTTONS.filter((b) =>
+        ["autosize-all", "size-to-fit", "reset-columns", "select-all"].includes(
+          b.id,
+        ),
+      ).map((b) => ({
+        id: b.id,
+        label: b.label,
+        icon: b.icon,
+        tooltip: b.tooltip,
+        onClick: undefined,
+        useCommonHandler: true,
+      })),
+    );
 
     defaultBtns.push({
       id: "refresh",

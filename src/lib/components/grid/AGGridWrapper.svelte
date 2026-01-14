@@ -160,14 +160,35 @@
   });
 
   $effect(() => {
-    if (gridApi) {
-      const currentDefaultColDef = gridApi.getGridOption("defaultColDef");
-      gridApi.setGridOption("defaultColDef", {
-        ...currentDefaultColDef,
-        floatingFilter: showFloatingFilters,
+    if (!gridApi) return;
+
+    // Save current column state BEFORE changing defaultColDef
+    const savedState = gridApi.getColumnState();
+
+    // Suppress animation during restore
+    gridApi.setGridOption("suppressColumnMoveAnimation", true);
+
+    const currentDefaultColDef = gridApi.getGridOption("defaultColDef");
+    gridApi.setGridOption("defaultColDef", {
+      ...currentDefaultColDef,
+      floatingFilter: showFloatingFilters,
+    });
+    gridApi.refreshHeader();
+
+    // Restore column state immediately (synchronously) to prevent reset
+    if (savedState && savedState.length > 0) {
+      gridApi.applyColumnState({
+        state: savedState,
+        applyOrder: true,
       });
-      gridApi.refreshHeader();
     }
+
+    // Re-enable animation after a short delay
+    setTimeout(() => {
+      if (gridApi) {
+        gridApi.setGridOption("suppressColumnMoveAnimation", false);
+      }
+    }, 100);
   });
 
   $effect(() => {
@@ -229,14 +250,36 @@
     }
   });
 
-  // Reactivity for columnDefs
+  // Reactivity for columnDefs - Preserve column state when columnDefs change
+  // Only runs AFTER initial restore is complete (when gridState.isReady is true)
   $effect(() => {
-    if (gridApi && columnDefs) {
-      gridApi.setGridOption("columnDefs", columnDefs);
-      // Ensure state is restored if columns change (prevent reset to defaults)
-      if (persistenceKey) {
-        gridState.restoreColumnState(gridApi, persistenceKey);
-      }
+    if (!gridApi || !columnDefs) return;
+
+    // Skip if grid is not ready yet (initial restore hasn't completed)
+    if (persistenceKey && !gridState.isReady(persistenceKey)) {
+      console.log(
+        "[AGGridWrapper] Skipping columnDefs update - grid not ready yet",
+      );
+      return;
+    }
+
+    console.log("[AGGridWrapper] columnDefs updated - preserving state");
+
+    // Save current column state BEFORE applying new columnDefs
+    const savedState = gridApi.getColumnState();
+
+    // Apply new column definitions
+    gridApi.setGridOption("columnDefs", columnDefs);
+
+    // Restore column state AFTER applying columnDefs
+    if (savedState && savedState.length > 0) {
+      setTimeout(() => {
+        if (!gridApi) return;
+        gridApi.applyColumnState({
+          state: savedState,
+          applyOrder: true,
+        });
+      }, 50);
     }
   });
 
@@ -257,6 +300,9 @@
     columnDefs: columnDefs,
     localeText: AG_GRID_LOCALE_ES,
     loadThemeGoogleFonts: false,
+
+    // Preserve column order when columnDefs are updated
+    maintainColumnOrder: true,
 
     // Default Column Definition
     defaultColDef: {
@@ -326,6 +372,11 @@
       gridApi = params.api;
       onGridReady?.(params.api);
 
+      // IMMEDIATELY block effects while we restore state
+      if (persistenceKey) {
+        gridState.prepareForRestore(persistenceKey);
+      }
+
       setTimeout(async () => {
         if (params.api.isDestroyed()) return;
 
@@ -355,7 +406,15 @@
     onColumnMoved: (params) => debouncedSaveColumnState(params.api),
     onColumnPinned: (params) => debouncedSaveColumnState(params.api),
     onColumnResized: (params) => {
-      if (params.finished) debouncedSaveColumnState(params.api);
+      if (!persistenceKey) return;
+      if (
+        params.source === "autosizeColumns" ||
+        params.source === "sizeColumnsToFit"
+      ) {
+        gridState.saveColumnState(params.api, persistenceKey);
+      } else {
+        debouncedSaveColumnState(params.api);
+      }
     },
     onColumnVisible: (params) => debouncedSaveColumnState(params.api),
     onSortChanged: (params) => debouncedSaveColumnState(params.api),

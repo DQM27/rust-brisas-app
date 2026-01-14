@@ -150,6 +150,9 @@
           gridApi.autoSizeColumns(selectedCols);
         }
         break;
+      case "size-to-fit":
+        gridApi.sizeColumnsToFit();
+        break;
       case "reset-columns":
         gridApi.resetColumnState();
         break;

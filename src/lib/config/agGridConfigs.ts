@@ -56,6 +56,13 @@ export const COMMON_DEFAULT_BUTTONS: ToolbarButtonDefinition[] = [
     category: 'columns'
   },
   {
+    id: 'size-to-fit',
+    label: 'Ajustar al Ancho',
+    icon: Minimize2,
+    tooltip: 'Ajustar columnas al ancho de la ventana',
+    category: 'columns'
+  },
+  {
     id: 'reset-columns',
     label: 'Restaurar Columnas',
     icon: RotateCw,
