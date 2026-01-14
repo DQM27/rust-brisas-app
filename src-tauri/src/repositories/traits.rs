@@ -105,6 +105,9 @@ pub trait IngresoContratistaRepository: Send + Sync {
         &self,
         id: &RecordId,
     ) -> Result<Option<IngresoContratistaFetched>, SurrealDbError>;
+    async fn find_all_abiertos_fetched(
+        &self,
+    ) -> Result<Vec<IngresoContratistaFetched>, SurrealDbError>;
 }
 
 #[async_trait]

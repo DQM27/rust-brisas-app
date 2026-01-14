@@ -32,8 +32,7 @@ pub async fn validar_ingreso_visita(
 }
 
 #[command]
-pub async fn get_ingresos_visita_activos(
-) -> Result<Vec<crate::domain::ingreso_visita::IngresoVisitaPopulated>, IngresoVisitaError> {
+pub async fn get_ingresos_visita_activos() -> Result<Vec<IngresoResponse>, IngresoVisitaError> {
     service::get_activos().await
 }
 

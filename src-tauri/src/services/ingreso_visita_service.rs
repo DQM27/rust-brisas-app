@@ -200,10 +200,12 @@ pub async fn registrar_salida(
 ///
 /// # Retorno
 /// Lista de ingresos de visita sin fecha de salida.
-pub async fn get_activos(
-) -> Result<Vec<crate::domain::ingreso_visita::IngresoVisitaPopulated>, IngresoVisitaError> {
-    // TODO: Implementar query real.
-    Ok(vec![])
+pub async fn get_activos() -> Result<Vec<IngresoResponse>, IngresoVisitaError> {
+    let activos = db::find_activos_fetched()
+        .await
+        .map_err(|e| IngresoVisitaError::Database(e.to_string()))?;
+
+    Ok(activos.into_iter().map(IngresoResponse::from_visita_fetched).collect())
 }
 
 /// Valida si un visitante es apto para entrar antes de proceder al registro manual.

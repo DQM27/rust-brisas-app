@@ -175,10 +175,20 @@ export async function registrarEntrada(input: any): Promise<ServiceResult<any>> 
     }
 }
 
+export async function fetchContratistasAbiertos(): Promise<ServiceResult<any[]>> {
+    try {
+        const data = await invoke('get_ingresos_contratistas_activos');
+        return { ok: true, data: data as any[] };
+    } catch (e: any) {
+        return { ok: false, error: e.message || 'Error cargando contratistas activos' };
+    }
+}
+
 export async function fetchAbiertos(): Promise<ServiceResult<any[]>> {
     try {
-        const data = await invoke('get_ingresos_abiertos');
-        return { ok: true, data: data as any[] };
+        // Por compatibilidad y claridad, ahora este llama explícitamente a contratistas
+        // ya que el usuario indicó que "ingresos abiertos" debe ser solo para contratistas.
+        return await fetchContratistasAbiertos();
     } catch (e: any) {
         return { ok: false, error: e.message || 'Error cargando ingresos activos' };
     }

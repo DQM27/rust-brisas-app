@@ -387,7 +387,7 @@
     try {
       let data;
       if (viewMode === "actives") {
-        data = await invoke("get_ingresos_abiertos");
+        data = await invoke("get_ingresos_contratistas_activos");
       } else {
         // Modo Historial: Cargar por rango de fechas
         // PROBLEMA: Al concatenar 'T00:00:00Z', se interpreta como UTC.

@@ -76,3 +76,13 @@ pub async fn update_salida(
     fetched
         .ok_or(SurrealDbError::TransactionError("Error al registrar salida de visita".to_string()))
 }
+
+pub async fn find_activos_fetched() -> Result<Vec<IngresoVisitaFetched>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut result = db
+        .query(format!(
+            "SELECT * FROM {TABLE} WHERE fecha_hora_salida IS NONE ORDER BY created_at DESC FETCH usuario_ingreso, usuario_salida"
+        ))
+        .await?;
+    Ok(result.take(0)?)
+}

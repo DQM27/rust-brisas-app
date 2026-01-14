@@ -12,8 +12,8 @@
 
 use crate::domain::errors::IngresoContratistaError;
 use crate::models::ingreso::{
-    AlertaTiempoExcedido, CreateIngresoContratistaInput, IngresoConEstadoResponse, IngresoResponse,
-    RegistrarSalidaInput, ResultadoValidacionSalida, ValidacionIngresoResponse,
+    AlertaTiempoExcedido, CreateIngresoContratistaInput, IngresoResponse, RegistrarSalidaInput,
+    ResultadoValidacionSalida, ValidacionIngresoResponse,
 };
 use crate::repositories::{
     contratista::{SurrealContratistaRepository, SurrealSecurityRepository},
@@ -107,14 +107,14 @@ pub async fn register_exit_contratista(
 // MONITOREO DE PLANTA
 // --------------------------------------------------------------------------
 
-/// [Comando Tauri] Estado de ocupación actual de la planta.
+/// [Comando Tauri] Obtiene los ingresos de contratistas que están actualmente activos.
 #[command]
-pub async fn get_permanencia_status(
+pub async fn get_ingresos_contratistas_activos(
     session: State<'_, SessionState>,
-) -> Result<Vec<IngresoConEstadoResponse>, IngresoContratistaError> {
+) -> Result<Vec<IngresoResponse>, IngresoContratistaError> {
     require_session!(session);
     require_perm!(session, "ingresos:read")?;
-    create_service().get_ingresos_abiertos_con_alertas().await
+    create_service().get_activos().await
 }
 
 /// [Comando Tauri] Consulta alertas por tiempos de permanencia excedidos.

@@ -82,16 +82,10 @@ pub async fn get_all_ingresos_with_stats() -> Result<IngresoListResponse, Ingres
     Ok(IngresoListResponse { ingresos: responses, total, adentro, salieron })
 }
 
-/// Filtra personas que permanecen actualmente en las instalaciones.
+/// Filtra todas las personas (Contratistas, Proveedores, Visitas) que permanecen actualmente en las instalaciones.
 ///
-/// Crítico para listas de evacuación y control de seguridad en tiempo real.
-///
-/// # Retorno
-/// Lista de `IngresoResponse` de personas activas.
-///
-/// # Errores
-/// * `IngresoError::Database` - Fallo de consulta.
-pub async fn get_ingresos_abiertos() -> Result<Vec<IngresoResponse>, IngresoError> {
+/// Crítico para listas de ocupación global, reportes de evacuación y control de seguridad en tiempo real.
+pub async fn get_personal_en_planta_unificado() -> Result<Vec<IngresoResponse>, IngresoError> {
     let results = db::find_ingresos_abiertos_fetched().await.map_err(|e| {
         error!("Error buscando ingresos abiertos: {e}");
         IngresoError::Database(e.to_string())

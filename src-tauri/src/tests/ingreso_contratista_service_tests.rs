@@ -146,6 +146,13 @@ impl IngresoContratistaRepository for MockIngresoRepo {
     ) -> Result<Option<IngresoContratistaFetched>, SurrealDbError> {
         Ok(None)
     }
+
+    async fn find_all_abiertos_fetched(
+        &self,
+    ) -> Result<Vec<IngresoContratistaFetched>, SurrealDbError> {
+        let list = self.ingresos.lock().unwrap();
+        Ok(list.iter().filter(|i| i.fecha_hora_salida.is_none()).cloned().collect())
+    }
 }
 
 struct MockGafeteRepo {

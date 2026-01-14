@@ -119,7 +119,7 @@ macro_rules! register_handlers {
             commands::ingreso_contratista_commands::validate_exit_contratista,
             commands::ingreso_contratista_commands::register_exit_contratista,
             // Monitoreo
-            commands::ingreso_contratista_commands::get_permanencia_status,
+            commands::ingreso_contratista_commands::get_ingresos_contratistas_activos,
             commands::ingreso_contratista_commands::check_time_alerts,
             // ==========================================
             // COMANDOS GENERALES DE CONSULTA DE INGRESOS
@@ -127,7 +127,7 @@ macro_rules! register_handlers {
             // "Legacy" queries genéricas
             commands::ingreso_commands::get_ingreso_by_id,
             commands::ingreso_commands::get_all_ingresos,
-            commands::ingreso_commands::get_ingresos_abiertos,
+            // commands::ingreso_commands::get_ingresos_abiertos, // Eliminado por modularización
             commands::ingreso_commands::get_ingreso_by_gafete,
             commands::ingreso_commands::get_salidas_en_rango,
             commands::ingreso_commands::get_salidas_del_dia,

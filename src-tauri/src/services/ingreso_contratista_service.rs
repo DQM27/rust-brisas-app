@@ -311,7 +311,42 @@ where
     pub async fn get_ingresos_abiertos_con_alertas(
         &self,
     ) -> Result<Vec<IngresoConEstadoResponse>, IngresoContratistaError> {
-        Ok(vec![])
+        let activos = self
+            .ingreso_repo
+            .find_all_abiertos_fetched()
+            .await
+            .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
+
+        let mut responses = Vec::with_capacity(activos.len());
+        for ing in activos {
+            let resp = IngresoResponse::from_contratista_fetched(ing)
+                .map_err(IngresoContratistaError::Validation)?;
+
+            responses.push(IngresoConEstadoResponse {
+                ingreso: resp,
+                minutos_transcurridos: 0, // TODO: Calcular tiempo real si es necesario
+                estado: "Normal".to_string(),
+            });
+        }
+
+        Ok(responses)
+    }
+
+    pub async fn get_activos(&self) -> Result<Vec<IngresoResponse>, IngresoContratistaError> {
+        let activos = self
+            .ingreso_repo
+            .find_all_abiertos_fetched()
+            .await
+            .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
+
+        let mut responses = Vec::with_capacity(activos.len());
+        for ing in activos {
+            let resp = IngresoResponse::from_contratista_fetched(ing)
+                .map_err(IngresoContratistaError::Validation)?;
+            responses.push(resp);
+        }
+
+        Ok(responses)
     }
 
     pub async fn verificar_tiempos_excedidos(

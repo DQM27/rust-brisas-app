@@ -30,12 +30,7 @@ pub async fn get_all_ingresos() -> Result<IngresoListResponse, IngresoError> {
     ingreso_general_service::get_all_ingresos_with_stats().await
 }
 
-/// Filtra exclusivamente las personas que se encuentran dentro de las instalaciones en tiempo real.
-/// [Comando Tauri]
-#[command]
-pub async fn get_ingresos_abiertos() -> Result<Vec<IngresoResponse>, IngresoError> {
-    ingreso_general_service::get_ingresos_abiertos().await
-}
+// Eliminado: get_ingresos_abiertos se movió a ingreso_contratista_commands como get_ingresos_contratista_activos
 
 /// Localiza un ingreso activo mediante el escaneo físico del gafete.
 /// [Comando Tauri]

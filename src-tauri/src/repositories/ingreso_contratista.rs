@@ -113,4 +113,16 @@ impl IngresoContratistaRepository for SurrealIngresoContratistaRepository {
             .await?;
         Ok(result.take(0)?)
     }
+
+    async fn find_all_abiertos_fetched(
+        &self,
+    ) -> Result<Vec<IngresoContratistaFetched>, SurrealDbError> {
+        let db = get_db().await?;
+        let mut result = db
+            .query(format!(
+                "SELECT * FROM {TABLE} WHERE fecha_hora_salida IS NONE ORDER BY created_at DESC FETCH usuario_ingreso, usuario_salida, contratista, contratista.empresa"
+            ))
+            .await?;
+        Ok(result.take(0)?)
+    }
 }
