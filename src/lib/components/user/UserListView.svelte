@@ -190,19 +190,9 @@
       defaultBtns.push(createCustomButton.nuevo(() => openModal(null)));
     }
 
-    // Botón de refresh con handler custom
-    defaultBtns.push({
-      id: "refresh",
-      label: "Actualizar",
-      icon: RotateCw,
-      onClick: loadUsers,
-      variant: "default" as const,
-      tooltip: "Recargar lista de usuarios",
-    });
+    // Botones custom para singleSelect - requieren handlers específicos de User
+    let singleSelectBtns: any[] = [];
 
-    let singleSelectBtns = [];
-    // Chequear permiso de actualización para EL usuario seleccionado
-    // Si no tiene permiso de editar, mostrar "Ver Detalle"
     const canUpdateSelected =
       selected &&
       $currentUser &&
@@ -214,22 +204,21 @@
           if (selected) openModal(selected);
         }),
       );
-    } else {
-      if (canViewDetail) {
-        singleSelectBtns.push({
-          id: "view-detail",
-          label: "Ver Detalle",
-          icon: Eye,
-          onClick: () => {
-            if (selected) openModal(selected, true);
-          },
-          variant: "default" as const,
-          tooltip: "Ver detalles del usuario",
-        });
-      }
+    } else if (canViewDetail && selected) {
+      // Si no puede editar, mostrar Ver Detalle (readonly)
+      singleSelectBtns.push({
+        id: "view-detail",
+        label: "Ver Detalle",
+        icon: Eye,
+        onClick: () => {
+          if (selected) openModal(selected, true);
+        },
+        variant: "default" as const,
+        tooltip: "Ver detalles del usuario (solo lectura)",
+      });
     }
 
-    if (canDelete) {
+    if (canDelete && selected) {
       singleSelectBtns.push(
         createCustomButton.eliminar(() => {
           if (selected) handleDeleteUser(selected);
@@ -237,11 +226,12 @@
       );
     }
 
-    let multiSelectBtns = [];
-    if (canDelete) {
+    // Botones custom para multiSelect
+    let multiSelectBtns: any[] = [];
+    if (canDelete && selectedRows.length > 0) {
       multiSelectBtns.push(
         createCustomButton.eliminar(() => {
-          if (selectedRows.length > 0) handleDeleteMultiple(selectedRows);
+          handleDeleteMultiple(selectedRows);
         }),
       );
     }

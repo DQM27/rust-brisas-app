@@ -104,18 +104,29 @@
   const visibleButtons = $derived.by(() => {
     const { order, hidden } = buttonsConfig;
 
-    // Si no hay orden configurado, usar todos los disponibles
+    // CustomButtons siempre se muestran (no están sujetos a order/hidden)
+    const customBtns = allButtons.filter((btn) => btn.custom);
+
+    // Botones comunes filtrados según configuración
+    let commonBtns: UnifiedButton[];
+
     if (order.length === 0) {
-      return allButtons.filter((btn) => !hidden.includes(btn.id));
+      // Si no hay orden, mostrar todos los comunes excepto hidden
+      commonBtns = allButtons.filter(
+        (btn) => !btn.custom && !hidden.includes(btn.id),
+      );
+    } else {
+      // Ordenar según configuración y filtrar ocultos
+      commonBtns = order
+        .map((id) => allButtons.find((btn) => btn.id === id && !btn.custom))
+        .filter(
+          (btn): btn is UnifiedButton =>
+            btn !== undefined && !hidden.includes(btn.id),
+        );
     }
 
-    // Ordenar según configuración y filtrar ocultos
-    return order
-      .map((id) => allButtons.find((btn) => btn.id === id))
-      .filter(
-        (btn): btn is UnifiedButton =>
-          btn !== undefined && !hidden.includes(btn.id),
-      );
+    // CustomButtons primero, luego los comunes
+    return [...customBtns, ...commonBtns];
   });
 
   // Agrupar botones por categoría

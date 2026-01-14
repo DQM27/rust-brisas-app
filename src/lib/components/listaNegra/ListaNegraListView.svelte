@@ -182,16 +182,7 @@
     // }
 
     return {
-      default: [
-        createCustomButton.nuevo(() => openFormModal(null)),
-        {
-          id: "refresh",
-          label: "Actualizar",
-          icon: RotateCw,
-          onClick: loadListaNegra,
-          variant: "default" as const,
-        },
-      ],
+      default: [createCustomButton.nuevo(() => openFormModal(null))],
       singleSelect: [
         // EDITAR (Solo campos permitidos como nivel/motivo)
         createCustomButton.editar(() => {

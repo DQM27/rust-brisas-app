@@ -212,14 +212,6 @@
     let defaultBtns = [];
     defaultBtns.push(createCustomButton.nuevo(() => openFormModal(null)));
 
-    defaultBtns.push({
-      id: "refresh",
-      label: "Actualizar",
-      category: "data",
-      onClick: loadData,
-      tooltip: "Recargar lista",
-    });
-
     let singleSelectBtns = [];
 
     singleSelectBtns.push(

@@ -45,9 +45,14 @@ const DEFAULT_CONFIG: Omit<GridConfiguration, 'gridId'> = {
   // Columnas
   columns: [],
 
-  // Botones
+  // Botones - configuración por defecto
+  // Visibles: autosize-all, size-to-fit, reset-columns, toggle-filters, select-all
+  // Ocultos: autosize-selected, export-csv, export-json, deselect-all, refresh, clear-filters, clear-sort
   buttons: {
-    default: { order: [], hidden: [] },
+    default: {
+      order: ['autosize-all', 'size-to-fit', 'reset-columns', 'toggle-filters', 'select-all'],
+      hidden: ['autosize-selected', 'export-csv', 'export-json', 'deselect-all', 'refresh', 'clear-filters', 'clear-sort']
+    },
     singleSelect: { order: [], hidden: [] },
     multiSelect: { order: [], hidden: [] }
   },
@@ -259,7 +264,14 @@ class AGGridSettingsStore {
   getButtonsConfig(gridId: GridId, context: ToolbarContext): ToolbarButtonsConfig {
     this.version;
     const config = this.getConfiguration(gridId);
-    return config?.buttons[context] ?? { order: [], hidden: [] };
+    const buttonConfig = config?.buttons[context];
+
+    // Si no hay config o si order está vacío, usar los defaults de DEFAULT_CONFIG
+    if (!buttonConfig || buttonConfig.order.length === 0) {
+      return DEFAULT_CONFIG.buttons[context];
+    }
+
+    return buttonConfig;
   }
 
   setButtonOrder(gridId: GridId, context: ToolbarContext, order: string[]): void {

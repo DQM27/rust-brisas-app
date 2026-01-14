@@ -545,29 +545,8 @@
           <p class="mt-4 text-sm text-gray-400">Cargando contratistas...</p>
         </div>
       </div>
-    {:else if contratistas.length === 0}
-      <div class="flex h-full items-center justify-center">
-        <div class="text-center">
-          <AlertCircle size={48} class="mx-auto text-gray-400" />
-          <p class="mt-4 text-lg font-medium text-gray-300">
-            No hay contratistas activos
-          </p>
-          <p class="mt-2 text-sm text-gray-400">
-            Crea el primer contratista para comenzar
-          </p>
-          <div class="flex gap-3 justify-center mt-6">
-            {#if $currentUser && can($currentUser, "CREATE_CONTRACTOR")}
-              <button
-                onclick={() => openModal()}
-                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-              >
-                Nuevo Contratista
-              </button>
-            {/if}
-          </div>
-        </div>
-      </div>
     {:else}
+      <!-- Siempre mostrar la grid, AG Grid muestra "No hay filas para mostrar" cuando está vacío -->
       <AGGridWrapper
         gridId="contratista-list"
         {columnDefs}

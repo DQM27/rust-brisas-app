@@ -111,13 +111,6 @@
           onClick: () => openFormModal(null),
           tooltip: "Registrar nuevo visitante",
         },
-        {
-          id: "refresh",
-          label: "Actualizar",
-          category: "data",
-          onClick: loadData,
-          tooltip: "Recargar lista",
-        },
       ],
       singleSelect: [
         {

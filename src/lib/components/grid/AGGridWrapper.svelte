@@ -301,6 +301,19 @@
     localeText: AG_GRID_LOCALE_ES,
     loadThemeGoogleFonts: false,
 
+    // Overlay personalizado cuando no hay datos
+    overlayNoRowsTemplate: `
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; color: #9ca3af;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5; margin-bottom: 16px;">
+          <path d="M21 15V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V15"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <span style="font-size: 16px; font-weight: 500; color: #d1d5db;">No hay registros para mostrar</span>
+        <span style="font-size: 13px; margin-top: 8px; opacity: 0.8;">Usa el botón "Nuevo" para agregar un registro</span>
+      </div>
+    `,
+
     // Preserve column order when columnDefs are updated
     maintainColumnOrder: true,
 

@@ -7,18 +7,13 @@ import type {
 } from '$lib/types/agGrid';
 import {
   Download,
-  FileSpreadsheet,
   FileJson,
   Maximize2,
   Minimize2,
   RotateCw,
   CheckSquare,
   X,
-  Copy,
   Filter,
-  SlidersHorizontal,
-  ChevronDown,
-  ChevronRight,
   Eraser,
   ArrowUpDown,
   Plus,
@@ -136,16 +131,11 @@ export const COMMON_DEFAULT_BUTTONS: ToolbarButtonDefinition[] = [
 ];
 
 /**
- * Botones comunes para contexto SINGLE SELECT
+ * Botones comunes para contexto SINGLE SELECT (1 fila seleccionada)
+ * NOTA: Los botones de acción (edit, delete, view-info) deben ser customButtons
+ * porque requieren handlers específicos de cada entidad
  */
 export const COMMON_SINGLE_SELECT_BUTTONS: ToolbarButtonDefinition[] = [
-  {
-    id: 'copy-selected',
-    label: 'Copiar',
-    icon: Copy,
-    tooltip: 'Copiar fila seleccionada',
-    category: 'selection'
-  },
   {
     id: 'deselect',
     label: 'Cancelar',
@@ -156,29 +146,16 @@ export const COMMON_SINGLE_SELECT_BUTTONS: ToolbarButtonDefinition[] = [
 ];
 
 /**
- * Botones comunes para contexto MULTI SELECT
+ * Botones comunes para contexto MULTI SELECT (2+ filas seleccionadas)
+ * NOTA: Los botones de acción deben ser customButtons por cada vista
  */
 export const COMMON_MULTI_SELECT_BUTTONS: ToolbarButtonDefinition[] = [
-  {
-    id: 'copy-selected',
-    label: 'Copiar',
-    icon: Copy,
-    tooltip: 'Copiar filas seleccionadas',
-    category: 'selection'
-  },
   {
     id: 'deselect-all',
     label: 'Cancelar',
     icon: X,
     tooltip: 'Cancelar todas las selecciones',
     category: 'selection'
-  },
-  {
-    id: 'export-selection',
-    label: 'Exportar Selección',
-    icon: Download,
-    tooltip: 'Exportar solo las filas seleccionadas',
-    category: 'export'
   }
 ];
 
@@ -287,23 +264,14 @@ export const createCustomButton = {
 // ============================================
 
 /**
- * Configuración de botones para CONTRATISTA LIST
+ * Configuración estándar para todas las grids principales
+ * Todas las grids heredan TODOS los botones disponibles
  */
-const CONTRATISTA_LIST_CONFIG: Omit<AGGridToolbarConfig, 'customButtons'> = {
-  gridId: 'contratista-list',
+const STANDARD_GRID_CONFIG = {
   availableButtons: {
-    default: [
-      ...COMMON_DEFAULT_BUTTONS.filter(b =>
-        ['autosize-all', 'size-to-fit', 'reset-columns', 'toggle-filters'].includes(b.id)
-      )
-    ], // Los botones comunes se mueven a customButtons en el componente para controlar el orden (Nuevo primero)
-    singleSelect: [
-      ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
-      // Los custom buttons se agregan desde el componente
-    ],
-    multiSelect: [
-      ...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))
-    ]
+    default: COMMON_DEFAULT_BUTTONS,
+    singleSelect: COMMON_SINGLE_SELECT_BUTTONS,
+    multiSelect: COMMON_MULTI_SELECT_BUTTONS
   },
   showColumnSelector: true,
   showThemeSelector: true,
@@ -311,340 +279,54 @@ const CONTRATISTA_LIST_CONFIG: Omit<AGGridToolbarConfig, 'customButtons'> = {
 };
 
 /**
- * Configuración de botones para LISTA NEGRA
+ * Configuración para grids de ingreso (menos botones)
  */
-const LISTA_NEGRA_CONFIG: Omit<AGGridToolbarConfig, 'customButtons'> = {
-  gridId: 'lista-negra-list',
+const INGRESO_GRID_CONFIG = {
   availableButtons: {
-    default: [
-      ...COMMON_DEFAULT_BUTTONS.filter(b =>
-        ['autosize-all', 'size-to-fit', 'reset-columns', 'toggle-filters'].includes(b.id)
-      )
-    ],
-    singleSelect: [
-      ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
-    ],
-    multiSelect: [
-      ...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))
-    ]
+    default: COMMON_DEFAULT_BUTTONS,
+    singleSelect: [],
+    multiSelect: []
   },
   showColumnSelector: true,
-  showThemeSelector: true,
+  showThemeSelector: false,
   enableGrouping: false
 };
 
 /**
  * Registry de configuraciones por grid
+ * Todas las grids principales heredan TODOS los botones disponibles
  */
 export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButtons'>> = {
-  'contratista-list': CONTRATISTA_LIST_CONFIG,
-  'proveedor-list': {
-    gridId: 'proveedor-list',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b =>
-          ['autosize-all', 'size-to-fit', 'reset-columns', 'toggle-filters'].includes(b.id)
-        )
-      ],
-      singleSelect: [
-        ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
-      ],
-      multiSelect: [
-        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))
-      ]
-    },
-    showColumnSelector: true,
-    showThemeSelector: true,
-    enableGrouping: false
-  },
-  'lista-negra-list': LISTA_NEGRA_CONFIG,
-  'lista-negra': LISTA_NEGRA_CONFIG,
+  // Grids principales - heredan todos los botones
+  'contratista-list': { gridId: 'contratista-list', ...STANDARD_GRID_CONFIG },
+  'proveedor-list': { gridId: 'proveedor-list', ...STANDARD_GRID_CONFIG },
+  'lista-negra-list': { gridId: 'lista-negra-list', ...STANDARD_GRID_CONFIG },
+  'lista-negra': { gridId: 'lista-negra', ...STANDARD_GRID_CONFIG },
+  'vehicles-list': { gridId: 'vehicles-list', ...STANDARD_GRID_CONFIG },
+  'badges-list': { gridId: 'badges-list', ...STANDARD_GRID_CONFIG },
+  'entries-list': { gridId: 'entries-list', ...STANDARD_GRID_CONFIG },
+  'companies-list': { gridId: 'companies-list', ...STANDARD_GRID_CONFIG },
+  'users-list': { gridId: 'users-list', ...STANDARD_GRID_CONFIG },
+  'visitas-list': { gridId: 'visitas-list', ...STANDARD_GRID_CONFIG },
+  'visitas-activas-grid': { gridId: 'visitas-activas-grid', ...STANDARD_GRID_CONFIG },
+  'proveedores-activos-grid': { gridId: 'proveedores-activos-grid', ...STANDARD_GRID_CONFIG },
+  'proveedores-grid': { gridId: 'proveedores-grid', ...STANDARD_GRID_CONFIG },
+  'visitante-list': { gridId: 'visitante-list', ...STANDARD_GRID_CONFIG },
 
-  // Placeholders para las demás grids
-  'vehicles-list': {
-    gridId: 'vehicles-list',
-    availableButtons: {
-      default: COMMON_DEFAULT_BUTTONS,
-      singleSelect: COMMON_SINGLE_SELECT_BUTTONS,
-      multiSelect: COMMON_MULTI_SELECT_BUTTONS
-    },
-    showColumnSelector: true,
-    showThemeSelector: true
-  },
-  'badges-list': {
-    gridId: 'badges-list',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b =>
-          ['autosize-all', 'autosize-selected', 'reset-columns', 'toggle-filters'].includes(b.id)
-        )
-      ],
-      singleSelect: [
-        ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
-      ],
-      multiSelect: [
-        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))
-      ]
-    },
-    showColumnSelector: true,
-    showThemeSelector: true
-  },
-  'entries-list': {
-    gridId: 'entries-list',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b =>
-          ['autosize-all', 'reset-columns', 'refresh', 'toggle-filters'].includes(b.id)
-        )
-      ],
-      singleSelect: [
-        ...COMMON_SINGLE_SELECT_BUTTONS
-      ],
-      multiSelect: [
-        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => b.id !== 'export-selection')
-      ]
-    },
-    showColumnSelector: true,
-    showThemeSelector: true,
-    enableGrouping: false
-  },
-  'companies-list': {
-    gridId: 'companies-list',
-    availableButtons: {
-      default: COMMON_DEFAULT_BUTTONS,
-      singleSelect: COMMON_SINGLE_SELECT_BUTTONS,
-      multiSelect: COMMON_MULTI_SELECT_BUTTONS
-    },
-    showColumnSelector: true,
-    showThemeSelector: true
-  },
-  'users-list': {
-    gridId: 'users-list',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b =>
-          ['autosize-all', 'size-to-fit', 'reset-columns', 'toggle-filters'].includes(b.id)
-        )
-      ],
-      singleSelect: [
-        ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
-      ],
-      multiSelect: [
-        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))
-      ]
-    },
-    showColumnSelector: true,
-    showThemeSelector: true,
-    enableGrouping: false
-  },
-  'visitas-list': {
-    gridId: 'visitas-list',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b =>
-          ['autosize-all', 'size-to-fit', 'reset-columns', 'toggle-filters'].includes(b.id)
-        )
-      ],
-      singleSelect: [
-        ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
-      ],
-      multiSelect: [
-        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))
-      ]
-    },
-    showColumnSelector: true,
-    showThemeSelector: true,
-    enableGrouping: false
-  },
-  'visitas-activas-grid': {
-    gridId: 'visitas-activas-grid',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b =>
-          ['autosize-all', 'reset-columns', 'refresh', 'toggle-filters'].includes(b.id)
-        )
-      ],
-      singleSelect: [
-        ...COMMON_SINGLE_SELECT_BUTTONS
-      ],
-      multiSelect: [
-        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => b.id !== 'export-selection')
-      ]
-    },
-    showColumnSelector: true,
-    showThemeSelector: true,
-    enableGrouping: false
-  },
-  'proveedores-activos-grid': {
-    gridId: 'proveedores-activos-grid',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b =>
-          ['autosize-all', 'reset-columns', 'refresh', 'toggle-filters'].includes(b.id)
-        )
-      ],
-      singleSelect: [
-        ...COMMON_SINGLE_SELECT_BUTTONS
-      ],
-      multiSelect: [
-        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => b.id !== 'export-selection')
-      ]
-    },
-    showColumnSelector: true,
-    showThemeSelector: true,
-    enableGrouping: false
-  },
-  'proveedores-grid': {
-    gridId: 'proveedores-grid',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b =>
-          ['autosize-all', 'reset-columns', 'refresh', 'toggle-filters'].includes(b.id)
-        )
-      ],
-      singleSelect: [
-        ...COMMON_SINGLE_SELECT_BUTTONS
-      ],
-      multiSelect: [
-        ...COMMON_MULTI_SELECT_BUTTONS.filter(b => b.id !== 'export-selection')
-      ]
-    },
-    showColumnSelector: true,
-    showThemeSelector: true,
-    enableGrouping: false
-  },
-  'visitante-list': {
-    gridId: 'visitante-list',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b =>
-          ['autosize-all', 'size-to-fit', 'reset-columns', 'toggle-filters'].includes(b.id)
-        )
-      ],
-      singleSelect: [...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')],
-      multiSelect: [...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))]
-    },
-    showColumnSelector: true,
-    showThemeSelector: true,
-    enableGrouping: false
-  },
-  'contratista-ingreso-list': {
-    gridId: 'contratista-ingreso-list',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
-      ],
-      singleSelect: [],
-      multiSelect: []
-    },
-    showColumnSelector: true,
-    showThemeSelector: false,
-    enableGrouping: false
-  },
-  'visita-ingreso-list': {
-    gridId: 'visita-ingreso-list',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
-      ],
-      singleSelect: [],
-      multiSelect: []
-    },
-    showColumnSelector: true,
-    showThemeSelector: false,
-    enableGrouping: false
-  },
-  'proveedor-ingreso-list': {
-    gridId: 'proveedor-ingreso-list',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
-      ],
-      singleSelect: [],
-      multiSelect: []
-    },
-    showColumnSelector: true,
-    showThemeSelector: false,
-    enableGrouping: false
-  },
-  'ingreso-list': {
-    gridId: 'ingreso-list',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b => ['autosize-all', 'toggle-filters'].includes(b.id))
-      ],
-      singleSelect: [],
-      multiSelect: []
-    },
-    showColumnSelector: true,
-    showThemeSelector: false,
-    enableGrouping: false
-  },
-  'contratista-trash': {
-    gridId: 'contratista-trash',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
-      ],
-      singleSelect: [],
-      multiSelect: []
-    },
-    showColumnSelector: true,
-    showThemeSelector: false,
-    enableGrouping: false
-  },
-  'universal-trash': {
-    gridId: 'universal-trash',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
-      ],
-      singleSelect: [],
-      multiSelect: []
-    },
-    showColumnSelector: true,
-    showThemeSelector: false,
-    enableGrouping: false
-  },
-  'trash-contratista': {
-    gridId: 'trash-contratista',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
-      ],
-      singleSelect: [],
-      multiSelect: []
-    },
-    showColumnSelector: true,
-    showThemeSelector: false,
-    enableGrouping: false
-  },
-  'trash-proveedor': {
-    gridId: 'trash-proveedor',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
-      ],
-      singleSelect: [],
-      multiSelect: []
-    },
-    showColumnSelector: true,
-    showThemeSelector: false,
-    enableGrouping: false
-  },
-  'trash-visitante': {
-    gridId: 'trash-visitante',
-    availableButtons: {
-      default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b => ['refresh', 'autosize-all'].includes(b.id))
-      ],
-      singleSelect: [],
-      multiSelect: []
-    },
-    showColumnSelector: true,
-    showThemeSelector: false,
-    enableGrouping: false
-  },
+  // Grids de ingreso - todos los botones disponibles
+  'contratista-ingreso-list': { gridId: 'contratista-ingreso-list', ...INGRESO_GRID_CONFIG },
+  'visita-ingreso-list': { gridId: 'visita-ingreso-list', ...INGRESO_GRID_CONFIG },
+  'proveedor-ingreso-list': { gridId: 'proveedor-ingreso-list', ...INGRESO_GRID_CONFIG },
+  'ingreso-list': { gridId: 'ingreso-list', ...INGRESO_GRID_CONFIG },
+
+  // Grids de papelera - todos los botones disponibles
+  'contratista-trash': { gridId: 'contratista-trash', ...INGRESO_GRID_CONFIG },
+  'universal-trash': { gridId: 'universal-trash', ...INGRESO_GRID_CONFIG },
+  'trash-contratista': { gridId: 'trash-contratista', ...INGRESO_GRID_CONFIG },
+  'trash-proveedor': { gridId: 'trash-proveedor', ...INGRESO_GRID_CONFIG },
+  'trash-visitante': { gridId: 'trash-visitante', ...INGRESO_GRID_CONFIG },
+
+  // Grid de backup - sin botones de toolbar
   'backup-list': {
     gridId: 'backup-list',
     availableButtons: {

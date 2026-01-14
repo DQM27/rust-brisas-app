@@ -148,13 +148,6 @@
       default: [
         createCustomButton.nuevo(() => (showModal = true)),
         {
-          id: "refresh",
-          label: "Actualizar",
-          category: "data",
-          onClick: loadData,
-          tooltip: "Recargar lista",
-        },
-        {
           id: "filter-date",
           label: activeFilter === "hoy" ? "Ver Pendientes" : "Ver Hoy",
           category: "ui",
