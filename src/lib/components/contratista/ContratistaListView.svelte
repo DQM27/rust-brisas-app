@@ -283,6 +283,20 @@
     loading = false;
   }
 
+  function handleRowDoubleClick(contratista: ContratistaResponse) {
+    if (!$currentUser) return;
+
+    const canUpdate = can($currentUser, "UPDATE_CONTRACTOR");
+    if (canUpdate) {
+      openModal(contratista);
+    } else {
+      const canView = can($currentUser, "VIEW_CONTRACTOR_DETAIL");
+      if (canView) {
+        openModal(contratista, true);
+      }
+    }
+  }
+
   // ... (modal handlers remain same)
 
   // ==========================================
@@ -562,6 +576,7 @@
         getRowId={(params) => params.data.id}
         persistenceKey="contratistas-list-columns"
         onSelectionChanged={(rows) => (selectedRows = rows)}
+        onRowDoubleClicked={handleRowDoubleClick}
       />
     {/if}
 

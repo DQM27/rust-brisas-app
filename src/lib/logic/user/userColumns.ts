@@ -6,8 +6,9 @@ export class UserColumns {
     // Column configuration
     static getColumns(
         onStatusToggle?: (id: string, currentStatus: boolean) => void
-    ): ColDef<UserResponse>[] {
+    ): (ColDef<UserResponse> | any)[] {
         return [
+            // ... (resto de columnas igual)
             {
                 field: "cedula",
                 headerName: "Cédula",
@@ -21,7 +22,7 @@ export class UserColumns {
                 flex: 1,
                 minWidth: 200,
                 cellStyle: { fontWeight: 500 },
-                valueFormatter: (params) => {
+                valueFormatter: (params: any) => {
                     const user = params.data as UserResponse;
                     if (!user) return "";
                     const fullName = [
@@ -54,16 +55,11 @@ export class UserColumns {
                 cellRenderer: (params: any) => {
                     return UserColumns.formatEstadoBadge(params.value);
                 },
-                onCellClicked: (params) => {
+                onCellClicked: (params: any) => {
                     if (onStatusToggle && params.data && params.event) {
                         const target = params.event.target as HTMLElement;
-                        // Prevenir toggle si se hace click en el header o algo raro
-                        // Verificamos si es el botón para evitar disparos accidentales
                         if (target && target.tagName !== "BUTTON") return;
-
-                        // Prevenir propagación para evitar disparos dobles
                         params.event.stopPropagation();
-
                         const row = params.data as UserResponse;
                         onStatusToggle(row.id, row.isActive);
                     }
@@ -73,36 +69,96 @@ export class UserColumns {
                 field: "telefono",
                 headerName: "Teléfono",
                 width: 140,
-                valueFormatter: (params) => params.value || "-",
+                valueFormatter: (params: any) => params.value || "-",
             },
             {
                 field: "numeroGafete",
                 headerName: "Gafete",
                 width: 110,
-                valueFormatter: (params) => params.value || "-",
+                valueFormatter: (params: any) => params.value || "-",
                 cellStyle: { fontFamily: "monospace" },
             },
             {
                 field: "fechaInicioLabores",
                 headerName: "Fecha Inicio",
                 width: 130,
-                valueFormatter: (params) => {
-                    if (!params.value) return "-";
-                    const val = String(params.value);
-                    const [year, month, day] = val.split('T')[0].split('-').map(Number);
-                    if (!year || !month || !day) return val;
-                    const date = new Date(year, month - 1, day);
-                    return date.toLocaleDateString("es-PA", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                    });
+                valueFormatter: (params: any) => {
+                    return UserColumns.formatDate(params.value);
                 },
+            },
+            {
+                field: "operacion",
+                headerName: "Operación",
+                width: 120,
+                hide: true,
+            },
+            {
+                field: "vencimientoPortacion",
+                headerName: "Venc. Portación",
+                width: 130,
+                hide: true,
+                valueFormatter: (params: any) => {
+                    return UserColumns.formatDate(params.value);
+                }
+            },
+            {
+                field: "fechaNacimiento",
+                headerName: "Fecha Nacimiento",
+                width: 130,
+                hide: true,
+                valueFormatter: (params: any) => {
+                    return UserColumns.formatDate(params.value);
+                }
+            },
+            {
+                field: "direccion",
+                headerName: "Dirección",
+                width: 200,
+                hide: true,
+                wrapText: true,
+                autoHeight: true,
+            },
+            {
+                field: "contactoEmergenciaNombre",
+                headerName: "Contacto Emergencia",
+                width: 160,
+                hide: true,
+            },
+            {
+                field: "contactoEmergenciaTelefono",
+                headerName: "Tel. Emergencia",
+                width: 140,
+                hide: true,
+                valueFormatter: (params: any) => params.value || "-",
+            },
+            {
+                field: "createdAt",
+                headerName: "Creado",
+                width: 150,
+                hide: true,
+                valueFormatter: (params: any) => {
+                    if (!params.value) return "-";
+                    return new Date(params.value).toLocaleString("es-PA");
+                }
             },
         ];
     }
 
-    // Helper methods (ahora puramente estáticos)
+    // Helper methods
+    static formatDate(value: string | null | undefined): string {
+        if (!value) return "-";
+        const val = String(value);
+        // Manejo básico de fecha ISO o YYYY-MM-DD
+        const [year, month, day] = val.split('T')[0].split('-').map(Number);
+        if (!year || !month || !day) return val; // Retornar original si falla parseo
+        const date = new Date(year, month - 1, day);
+        return date.toLocaleDateString("es-PA", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+        });
+    }
+
     static formatRoleBadge(role: string): string {
         const baseClass = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border";
 

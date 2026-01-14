@@ -233,8 +233,10 @@
   $effect(() => {
     if (gridApi && columnDefs) {
       gridApi.setGridOption("columnDefs", columnDefs);
-      // Optional: autosize columns after change to ensure fit
-      // gridApi.autoSizeAllColumns();
+      // Ensure state is restored if columns change (prevent reset to defaults)
+      if (persistenceKey) {
+        gridState.restoreColumnState(gridApi, persistenceKey);
+      }
     }
   });
 

@@ -454,6 +454,20 @@
     loadUsers();
   }
 
+  function handleRowDoubleClick(user: UserResponse) {
+    if (!$currentUser) return;
+
+    const canUpdate = can($currentUser, "UPDATE_USER_PROFILE", user);
+    if (canUpdate) {
+      openModal(user);
+    } else {
+      const canView = can($currentUser, "VIEW_USER_DETAIL");
+      if (canView) {
+        openModal(user, true);
+      }
+    }
+  }
+
   // ==========================================
   // HANDLERS - FILTROS
   // ==========================================
@@ -613,6 +627,7 @@
         getRowId={(params) => params.data.id}
         persistenceKey="users-list-columns"
         onSelectionChanged={(rows) => (selectedRows = rows)}
+        onRowDoubleClicked={handleRowDoubleClick}
       />
     {/if}
   </div>
