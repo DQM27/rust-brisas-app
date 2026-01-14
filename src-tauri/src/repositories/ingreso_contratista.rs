@@ -125,4 +125,24 @@ impl IngresoContratistaRepository for SurrealIngresoContratistaRepository {
             .await?;
         Ok(result.take(0)?)
     }
+
+    async fn find_salidas_en_rango_fetched(
+        &self,
+        start: &str,
+        end: &str,
+    ) -> Result<Vec<IngresoContratistaFetched>, SurrealDbError> {
+        let db = get_db().await?;
+        log::debug!("Repo: Querying salidas from {} to {}", start, end);
+        let mut result = db
+            .query(format!(
+                "SELECT * FROM {TABLE} WHERE fecha_hora_salida >= type::datetime($start) AND fecha_hora_salida <= type::datetime($end) ORDER BY fecha_hora_salida DESC FETCH usuario_ingreso, usuario_salida, contratista, contratista.empresa"
+            ))
+            .bind(("start", start.to_string()))
+            .bind(("end", end.to_string()))
+            .await?;
+
+        let fetched: Vec<IngresoContratistaFetched> = result.take(0)?;
+        log::debug!("Repo: Fetched {} raw records from DB", fetched.len());
+        Ok(fetched)
+    }
 }

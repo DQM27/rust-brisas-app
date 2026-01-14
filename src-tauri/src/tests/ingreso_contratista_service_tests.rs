@@ -153,6 +153,16 @@ impl IngresoContratistaRepository for MockIngresoRepo {
         let list = self.ingresos.lock().unwrap();
         Ok(list.iter().filter(|i| i.fecha_hora_salida.is_none()).cloned().collect())
     }
+
+    async fn find_salidas_en_rango_fetched(
+        &self,
+        _start: &str,
+        _end: &str,
+    ) -> Result<Vec<IngresoContratistaFetched>, SurrealDbError> {
+        let list = self.ingresos.lock().unwrap();
+        // Mock implementation doesn't need to filter dates strictly for basic tests
+        Ok(list.iter().filter(|i| i.fecha_hora_salida.is_some()).cloned().collect())
+    }
 }
 
 struct MockGafeteRepo {

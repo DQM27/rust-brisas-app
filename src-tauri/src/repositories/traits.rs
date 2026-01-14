@@ -108,6 +108,11 @@ pub trait IngresoContratistaRepository: Send + Sync {
     async fn find_all_abiertos_fetched(
         &self,
     ) -> Result<Vec<IngresoContratistaFetched>, SurrealDbError>;
+    async fn find_salidas_en_rango_fetched(
+        &self,
+        start: &str,
+        end: &str,
+    ) -> Result<Vec<IngresoContratistaFetched>, SurrealDbError>;
 }
 
 #[async_trait]

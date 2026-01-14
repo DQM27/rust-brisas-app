@@ -349,6 +349,30 @@ where
         Ok(responses)
     }
 
+    pub async fn get_salidas_en_rango(
+        &self,
+        start: &str,
+        end: &str,
+    ) -> Result<Vec<IngresoResponse>, IngresoContratistaError> {
+        log::info!("Service: Fetching contractor history from {} to {}", start, end);
+        let results = self
+            .ingreso_repo
+            .find_salidas_en_rango_fetched(start, end)
+            .await
+            .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
+
+        log::info!("Service: Found {} historical records", results.len());
+
+        let mut responses = Vec::with_capacity(results.len());
+        for ing in results {
+            let resp = IngresoResponse::from_contratista_fetched(ing)
+                .map_err(IngresoContratistaError::Validation)?;
+            responses.push(resp);
+        }
+
+        Ok(responses)
+    }
+
     pub async fn verificar_tiempos_excedidos(
         &self,
     ) -> Result<Vec<AlertaTiempoExcedido>, IngresoContratistaError> {

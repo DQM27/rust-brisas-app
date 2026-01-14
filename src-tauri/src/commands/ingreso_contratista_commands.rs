@@ -117,6 +117,18 @@ pub async fn get_ingresos_contratistas_activos(
     create_service().get_activos().await
 }
 
+/// [Comando Tauri] Obtiene el historial de salidas de contratistas en un rango de fechas.
+#[command]
+pub async fn get_ingresos_contratistas_historial(
+    session: State<'_, SessionState>,
+    fecha_inicio: String,
+    fecha_fin: String,
+) -> Result<Vec<IngresoResponse>, IngresoContratistaError> {
+    require_session!(session);
+    require_perm!(session, "ingresos:read")?;
+    create_service().get_salidas_en_rango(&fecha_inicio, &fecha_fin).await
+}
+
 /// [Comando Tauri] Consulta alertas por tiempos de permanencia excedidos.
 #[command]
 pub async fn check_time_alerts(

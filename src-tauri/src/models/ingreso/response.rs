@@ -214,8 +214,8 @@ impl IngresoResponse {
             vehiculo_placa: i.placa_vehiculo.clone(),
             placa_temporal: None,
             gafete_numero: i.gafete_numero,
-            fecha_hora_ingreso: i.fecha_hora_ingreso.to_string(),
-            fecha_hora_salida: i.fecha_hora_salida.as_ref().map(std::string::ToString::to_string),
+            fecha_hora_ingreso: datetime_to_iso(&i.fecha_hora_ingreso),
+            fecha_hora_salida: i.fecha_hora_salida.as_ref().map(datetime_to_iso),
             tiempo_permanencia_minutos: calculate_duration(
                 &i.fecha_hora_ingreso,
                 i.fecha_hora_salida.as_ref(),
@@ -241,8 +241,8 @@ impl IngresoResponse {
             observaciones: i.observaciones,
             esta_adentro,
             tiene_gafete_asignado,
-            created_at: i.created_at.to_string(),
-            updated_at: i.updated_at.to_string(),
+            created_at: datetime_to_iso(&i.created_at),
+            updated_at: datetime_to_iso(&i.updated_at),
         })
     }
 

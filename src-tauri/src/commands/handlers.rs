@@ -120,6 +120,7 @@ macro_rules! register_handlers {
             commands::ingreso_contratista_commands::register_exit_contratista,
             // Monitoreo
             commands::ingreso_contratista_commands::get_ingresos_contratistas_activos,
+            commands::ingreso_contratista_commands::get_ingresos_contratistas_historial,
             commands::ingreso_contratista_commands::check_time_alerts,
             // ==========================================
             // COMANDOS GENERALES DE CONSULTA DE INGRESOS

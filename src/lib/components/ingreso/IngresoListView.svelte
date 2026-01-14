@@ -407,7 +407,7 @@
         const start = startLocal.toISOString();
         const end = endLocal.toISOString();
 
-        data = await invoke("get_salidas_en_rango", {
+        data = await invoke("get_ingresos_contratistas_historial", {
           fechaInicio: start,
           fechaFin: end,
         });
