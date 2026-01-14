@@ -57,6 +57,7 @@ export class ProveedorColumns {
     static getColumns(onStatusToggle?: (id: string, currentStatus: any) => void): ColDef<ProveedorResponse>[] {
         return [
             {
+                colId: "nombre",
                 field: "nombre",
                 headerName: "Nombre Completo",
                 flex: 1,
@@ -72,6 +73,7 @@ export class ProveedorColumns {
                 filter: "agTextColumnFilter",
             },
             {
+                colId: "cedula",
                 field: "cedula",
                 headerName: "Cédula",
                 width: 130,
@@ -80,6 +82,7 @@ export class ProveedorColumns {
                 filter: "agTextColumnFilter",
             },
             {
+                colId: "empresaNombre",
                 field: "empresaNombre",
                 headerName: "Empresa",
                 flex: 1,
@@ -87,12 +90,14 @@ export class ProveedorColumns {
                 filter: "agTextColumnFilter",
             },
             {
+                colId: "vehiculoTipo",
                 field: "vehiculoTipo",
                 headerName: "Vehículo",
                 width: 120,
                 valueFormatter: (params) => params.value || "-",
             },
             {
+                colId: "vehiculoPlaca",
                 field: "vehiculoPlaca",
                 headerName: "Placa",
                 width: 100,
@@ -100,6 +105,7 @@ export class ProveedorColumns {
                 cellStyle: { fontFamily: "monospace" },
             },
             {
+                colId: "estado",
                 field: "estado",
                 headerName: "Estado",
                 width: 130,
@@ -119,6 +125,7 @@ export class ProveedorColumns {
                 }
             },
             {
+                colId: "puedeIngresar",
                 field: "puedeIngresar",
                 headerName: "Acceso",
                 width: 130,

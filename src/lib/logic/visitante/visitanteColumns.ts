@@ -10,6 +10,7 @@ export class VisitanteColumns {
     static getColumns(): ColDef<VisitanteResponse>[] {
         return [
             {
+                colId: "cedula",
                 field: "cedula",
                 headerName: "Cédula",
                 filter: "agTextColumnFilter",
@@ -17,6 +18,7 @@ export class VisitanteColumns {
                 pinned: "left",
             },
             {
+                colId: "nombre",
                 field: "nombre",
                 headerName: "Nombre",
                 filter: "agTextColumnFilter",
@@ -24,12 +26,14 @@ export class VisitanteColumns {
                 valueGetter: (params) => params.data ? `${params.data.nombre}` : '',
             },
             {
+                colId: "apellido",
                 field: "apellido",
                 headerName: "Apellido",
                 filter: "agTextColumnFilter",
                 width: 150,
             },
             {
+                colId: "empresaNombre",
                 field: "empresaNombre",
                 headerName: "Empresa",
                 filter: "agTextColumnFilter",
@@ -37,6 +41,7 @@ export class VisitanteColumns {
                 valueGetter: (params) => params.data?.empresaNombre || 'N/A',
             },
             {
+                colId: "hasVehicle",
                 field: "hasVehicle",
                 headerName: "Vehículo",
                 width: 100,
@@ -45,6 +50,7 @@ export class VisitanteColumns {
                 },
             },
             {
+                colId: "createdAt",
                 field: "createdAt",
                 headerName: "Fecha Registro",
                 filter: "agDateColumnFilter",

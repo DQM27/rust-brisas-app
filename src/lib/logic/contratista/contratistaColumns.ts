@@ -8,6 +8,7 @@ export class ContratistaColumns {
   ): ColDef<ContratistaResponse>[] {
     return [
       {
+        colId: "cedula",
         field: "cedula",
         headerName: "Cédula",
         width: 130,
@@ -15,6 +16,7 @@ export class ContratistaColumns {
         cellStyle: { fontFamily: "monospace", fontSize: "13px" },
       },
       {
+        colId: "nombreCompleto",
         field: "nombreCompleto",
         headerName: "Nombre Completo",
         flex: 1,
@@ -22,18 +24,21 @@ export class ContratistaColumns {
         cellStyle: { fontWeight: 500 },
       },
       {
+        colId: "empresaNombre",
         field: "empresaNombre",
         headerName: "Empresa",
         flex: 1,
         minWidth: 180,
       },
       {
+        colId: "vehiculoTipo",
         field: "vehiculoTipo",
         headerName: "Vehículo",
         width: 120,
         valueFormatter: (params) => params.value || "-",
       },
       {
+        colId: "vehiculoPlaca",
         field: "vehiculoPlaca",
         headerName: "Placa",
         width: 100,
@@ -41,6 +46,7 @@ export class ContratistaColumns {
         cellStyle: { fontFamily: "monospace" },
       },
       {
+        colId: "estado",
         field: "estado",
         headerName: "Estado",
         width: 130,
@@ -63,6 +69,7 @@ export class ContratistaColumns {
         }
       },
       {
+        colId: "praindVencido",
         field: "praindVencido",
         headerName: "PRAIND",
         width: 130,
@@ -72,6 +79,7 @@ export class ContratistaColumns {
         },
       },
       {
+        colId: "fechaVencimientoPraind",
         field: "fechaVencimientoPraind",
         headerName: "Vencimiento",
         width: 130,
@@ -85,6 +93,7 @@ export class ContratistaColumns {
         },
       },
       {
+        colId: "puedeIngresar",
         field: "puedeIngresar",
         headerName: "Acceso",
         width: 130,

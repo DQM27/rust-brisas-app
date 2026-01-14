@@ -23,6 +23,7 @@ export class ListaNegraColumns {
     static getColumns(): ColDef<ListaNegraResponse>[] {
         return [
             {
+                colId: "cedula",
                 field: "cedula",
                 headerName: "Cédula",
                 width: 130,
@@ -30,6 +31,7 @@ export class ListaNegraColumns {
                 cellStyle: { fontFamily: "monospace", fontSize: "13px" },
             },
             {
+                colId: "nombreCompleto",
                 field: "nombreCompleto",
                 headerName: "Nombre Completo",
                 flex: 1,
@@ -61,6 +63,7 @@ export class ListaNegraColumns {
                 }
             },
             {
+                colId: "nivelSeveridad",
                 field: "nivelSeveridad",
                 headerName: "Nivel",
                 width: 100,
@@ -73,6 +76,7 @@ export class ListaNegraColumns {
                 },
             },
             {
+                colId: "isActive",
                 field: "isActive",
                 headerName: "Estado",
                 width: 130,
@@ -88,6 +92,7 @@ export class ListaNegraColumns {
                 },
             },
             {
+                colId: "motivoBloqueo",
                 field: "motivoBloqueo",
                 headerName: "Motivo",
                 flex: 1,
@@ -101,6 +106,7 @@ export class ListaNegraColumns {
                 },
             },
             {
+                colId: "bloqueadoPor",
                 field: "bloqueadoPor",
                 headerName: "Bloqueado Por",
                 width: 160,

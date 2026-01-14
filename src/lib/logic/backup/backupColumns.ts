@@ -39,6 +39,7 @@ export class BackupColumns {
     }): ColDef<BackupEntry>[] {
         return [
             {
+                colId: "nombre",
                 field: "nombre",
                 headerName: "Archivo",
                 sortable: true,
@@ -56,6 +57,7 @@ export class BackupColumns {
                 },
             },
             {
+                colId: "tamano",
                 field: "tamano",
                 headerName: "Tamaño",
                 sortable: true,
@@ -65,6 +67,7 @@ export class BackupColumns {
                 cellStyle: { textAlign: "right" },
             },
             {
+                colId: "fechaCreacion",
                 field: "fechaCreacion",
                 headerName: "Fecha",
                 sortable: true,
@@ -73,6 +76,7 @@ export class BackupColumns {
                 valueFormatter: (params: any) => formatDate(params.value || ""),
             },
             {
+                colId: "diasAntiguedad",
                 field: "diasAntiguedad",
                 headerName: "Antigüedad",
                 sortable: true,
@@ -98,6 +102,7 @@ export class BackupColumns {
                 },
             },
             {
+                colId: "acciones",
                 headerName: "Acciones",
                 width: 180,
                 pinned: "right",

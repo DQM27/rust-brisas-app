@@ -12,6 +12,7 @@ export class GafeteColumns {
     }): ColDef<GafeteResponse>[] {
         return [
             {
+                colId: "numero",
                 field: "numero",
                 headerName: "Número",
                 sortable: true,
@@ -20,6 +21,7 @@ export class GafeteColumns {
                 width: 120,
             },
             {
+                colId: "tipoDisplay",
                 field: "tipoDisplay",
                 headerName: "Tipo",
                 sortable: true,
@@ -53,6 +55,7 @@ export class GafeteColumns {
                 },
             },
             {
+                colId: "status",
                 field: "status",
                 headerName: "Estado",
                 sortable: true,
@@ -104,6 +107,7 @@ export class GafeteColumns {
                 },
             },
             {
+                colId: "fechaPerdido",
                 field: "fechaPerdido",
                 headerName: "Fecha Reporte",
                 sortable: true,
@@ -115,6 +119,7 @@ export class GafeteColumns {
                 },
             },
             {
+                colId: "quienPerdio",
                 field: "quienPerdio",
                 headerName: "Persona que Perdió",
                 sortable: true,
@@ -123,6 +128,7 @@ export class GafeteColumns {
                 valueFormatter: (params: any) => params.value || "-",
             },
             {
+                colId: "reportadoPorNombre",
                 field: "reportadoPorNombre",
                 headerName: "Reportado Por",
                 sortable: true,
@@ -131,6 +137,7 @@ export class GafeteColumns {
                 valueFormatter: (params: any) => params.value || "-",
             },
             {
+                colId: "resueltoPorNombre",
                 field: "resueltoPorNombre",
                 headerName: "Resuelto Por",
                 sortable: true,
@@ -139,6 +146,7 @@ export class GafeteColumns {
                 valueFormatter: (params: any) => params.value || "-",
             },
             {
+                colId: "fechaResolucion",
                 field: "fechaResolucion",
                 headerName: "Fecha Resolución",
                 sortable: true,
@@ -150,6 +158,7 @@ export class GafeteColumns {
                 },
             },
             {
+                colId: "notas",
                 field: "notas",
                 headerName: "Notas",
                 sortable: true,
@@ -158,6 +167,7 @@ export class GafeteColumns {
                 valueFormatter: (params: any) => params.value || "-",
             },
             {
+                colId: "acciones",
                 headerName: "Acciones",
                 width: 220,
                 pinned: "right",

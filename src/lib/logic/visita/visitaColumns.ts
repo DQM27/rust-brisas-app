@@ -16,6 +16,7 @@ const dateFormatter = (params: ValueFormatterParams) => {
 
 export const VISITA_COLUMNS: ColDef<CitaPopulated>[] = [
     {
+        colId: 'fecha_cita',
         field: 'fecha_cita',
         headerName: 'Fecha y Hora',
         valueFormatter: dateFormatter,
@@ -24,6 +25,7 @@ export const VISITA_COLUMNS: ColDef<CitaPopulated>[] = [
         filter: 'agDateColumnFilter'
     },
     {
+        colId: 'visitante_nombre_completo',
         field: 'visitante_nombre_completo',
         headerName: 'Visitante',
         flex: 1,
@@ -31,6 +33,7 @@ export const VISITA_COLUMNS: ColDef<CitaPopulated>[] = [
         filter: 'agTextColumnFilter',
     },
     {
+        colId: 'visitante_empresa',
         field: 'visitante_empresa',
         headerName: 'Empresa / Procedencia',
         minWidth: 150,
@@ -38,18 +41,21 @@ export const VISITA_COLUMNS: ColDef<CitaPopulated>[] = [
         filter: 'agTextColumnFilter'
     },
     {
+        colId: 'anfitrion',
         field: 'anfitrion',
         headerName: 'Anfitrión',
         minWidth: 150,
         filter: 'agTextColumnFilter'
     },
     {
+        colId: 'area_visitada',
         field: 'area_visitada',
         headerName: 'Área',
         minWidth: 120,
         hide: true // Oculto por defecto para limpiar vista
     },
     {
+        colId: 'motivo',
         field: 'motivo',
         headerName: 'Motivo',
         minWidth: 150,

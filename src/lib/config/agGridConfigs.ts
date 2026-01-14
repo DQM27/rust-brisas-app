@@ -40,7 +40,7 @@ import {
  * Botones comunes para contexto DEFAULT
  */
 export const COMMON_DEFAULT_BUTTONS: ToolbarButtonDefinition[] = [
-  // Columnas
+  // Columnas (Community)
   {
     id: 'autosize-all',
     label: 'Ajustar Columnas',
@@ -70,19 +70,12 @@ export const COMMON_DEFAULT_BUTTONS: ToolbarButtonDefinition[] = [
     category: 'columns'
   },
 
-  // Export
+  // Export (Community)
   {
     id: 'export-csv',
     label: 'Exportar CSV',
     icon: Download,
     tooltip: 'Exportar datos a CSV',
-    category: 'export'
-  },
-  {
-    id: 'export-excel',
-    label: 'Exportar Excel',
-    icon: FileSpreadsheet,
-    tooltip: 'Exportar datos a Excel',
     category: 'export'
   },
   {
@@ -93,7 +86,7 @@ export const COMMON_DEFAULT_BUTTONS: ToolbarButtonDefinition[] = [
     category: 'export'
   },
 
-  // Selección
+  // Selección (Community)
   {
     id: 'select-all',
     label: 'Seleccionar Todo',
@@ -109,7 +102,7 @@ export const COMMON_DEFAULT_BUTTONS: ToolbarButtonDefinition[] = [
     category: 'selection'
   },
 
-  // UI
+  // UI (Community)
   {
     id: 'toggle-filters',
     label: 'Filtros',
@@ -117,15 +110,8 @@ export const COMMON_DEFAULT_BUTTONS: ToolbarButtonDefinition[] = [
     tooltip: 'Mostrar/Ocultar filtros',
     category: 'ui'
   },
-  {
-    id: 'toggle-sidebar',
-    label: 'Panel Lateral',
-    icon: SlidersHorizontal,
-    tooltip: 'Mostrar/Ocultar panel lateral',
-    category: 'ui'
-  },
 
-  // Data
+  // Data (Community)
   {
     id: 'refresh',
     label: 'Refrescar',
@@ -146,22 +132,6 @@ export const COMMON_DEFAULT_BUTTONS: ToolbarButtonDefinition[] = [
     icon: ArrowUpDown,
     tooltip: 'Eliminar ordenamiento',
     category: 'data'
-  },
-
-  // Grouping
-  {
-    id: 'expand-groups',
-    label: 'Expandir Grupos',
-    icon: ChevronDown,
-    tooltip: 'Expandir todos los grupos',
-    category: 'ui'
-  },
-  {
-    id: 'collapse-groups',
-    label: 'Contraer Grupos',
-    icon: ChevronRight,
-    tooltip: 'Contraer todos los grupos',
-    category: 'ui'
   }
 ];
 
@@ -323,7 +293,9 @@ const CONTRATISTA_LIST_CONFIG: Omit<AGGridToolbarConfig, 'customButtons'> = {
   gridId: 'contratista-list',
   availableButtons: {
     default: [
-      ...COMMON_DEFAULT_BUTTONS.filter(b => b.id === 'toggle-filters')
+      ...COMMON_DEFAULT_BUTTONS.filter(b =>
+        ['autosize-all', 'size-to-fit', 'reset-columns', 'toggle-filters'].includes(b.id)
+      )
     ], // Los botones comunes se mueven a customButtons en el componente para controlar el orden (Nuevo primero)
     singleSelect: [
       ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
@@ -345,7 +317,9 @@ const LISTA_NEGRA_CONFIG: Omit<AGGridToolbarConfig, 'customButtons'> = {
   gridId: 'lista-negra-list',
   availableButtons: {
     default: [
-      ...COMMON_DEFAULT_BUTTONS.filter(b => b.id === 'toggle-filters')
+      ...COMMON_DEFAULT_BUTTONS.filter(b =>
+        ['autosize-all', 'size-to-fit', 'reset-columns', 'toggle-filters'].includes(b.id)
+      )
     ],
     singleSelect: [
       ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
@@ -368,7 +342,9 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     gridId: 'proveedor-list',
     availableButtons: {
       default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b => b.id === 'toggle-filters')
+        ...COMMON_DEFAULT_BUTTONS.filter(b =>
+          ['autosize-all', 'size-to-fit', 'reset-columns', 'toggle-filters'].includes(b.id)
+        )
       ],
       singleSelect: [
         ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
@@ -446,7 +422,9 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     gridId: 'users-list',
     availableButtons: {
       default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b => b.id === 'toggle-filters')
+        ...COMMON_DEFAULT_BUTTONS.filter(b =>
+          ['autosize-all', 'size-to-fit', 'reset-columns', 'toggle-filters'].includes(b.id)
+        )
       ],
       singleSelect: [
         ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
@@ -463,7 +441,9 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
     gridId: 'visitas-list',
     availableButtons: {
       default: [
-        ...COMMON_DEFAULT_BUTTONS.filter(b => b.id === 'toggle-filters')
+        ...COMMON_DEFAULT_BUTTONS.filter(b =>
+          ['autosize-all', 'size-to-fit', 'reset-columns', 'toggle-filters'].includes(b.id)
+        )
       ],
       singleSelect: [
         ...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')
@@ -536,7 +516,11 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
   'visitante-list': {
     gridId: 'visitante-list',
     availableButtons: {
-      default: [...COMMON_DEFAULT_BUTTONS.filter(b => b.id === 'toggle-filters')],
+      default: [
+        ...COMMON_DEFAULT_BUTTONS.filter(b =>
+          ['autosize-all', 'size-to-fit', 'reset-columns', 'toggle-filters'].includes(b.id)
+        )
+      ],
       singleSelect: [...COMMON_SINGLE_SELECT_BUTTONS.filter(b => b.id !== 'copy-selected')],
       multiSelect: [...COMMON_MULTI_SELECT_BUTTONS.filter(b => !['copy-selected', 'export-selection'].includes(b.id))]
     },

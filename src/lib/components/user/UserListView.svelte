@@ -16,10 +16,7 @@
   // Logic & Config
   import * as userService from "$lib/logic/user/userService";
   import { UserColumns } from "$lib/logic/user/userColumns";
-  import {
-    COMMON_DEFAULT_BUTTONS,
-    createCustomButton,
-  } from "$lib/config/agGridConfigs";
+  import { createCustomButton } from "$lib/config/agGridConfigs";
 
   // Types
   import type {
@@ -193,22 +190,7 @@
       defaultBtns.push(createCustomButton.nuevo(() => openModal(null)));
     }
 
-    // Add common buttons (autosize, reset, select-all, size-to-fit)
-    defaultBtns.push(
-      ...COMMON_DEFAULT_BUTTONS.filter((b) =>
-        ["autosize-all", "size-to-fit", "reset-columns", "select-all"].includes(
-          b.id,
-        ),
-      ).map((b) => ({
-        id: b.id,
-        label: b.label,
-        icon: b.icon,
-        tooltip: b.tooltip,
-        onClick: undefined,
-        useCommonHandler: true,
-      })),
-    );
-
+    // Botón de refresh con handler custom
     defaultBtns.push({
       id: "refresh",
       label: "Actualizar",
