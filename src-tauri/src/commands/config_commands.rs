@@ -75,3 +75,50 @@ pub async fn update_audio_config(
 
     Ok(())
 }
+
+/// Obtiene la configuración de backup actual.
+#[command]
+pub async fn get_backup_config(
+    config: State<'_, AppConfigState>,
+) -> Result<crate::config::settings::BackupConfig, ConfigError> {
+    let config_guard = config
+        .read()
+        .map_err(|e| ConfigError::Message(format!("Error al leer configuración: {e}")))?;
+
+    Ok(config_guard.backup.clone())
+}
+
+/// Actualiza la configuración de backup automático.
+#[command]
+pub async fn update_backup_config(
+    config: State<'_, AppConfigState>,
+    enabled: bool,
+    hora: String,
+    dias_retencion: u32,
+) -> Result<crate::config::settings::BackupConfig, ConfigError> {
+    info!(
+        "Actualizando configuración de backup: enabled={}, hora={}, dias={}",
+        enabled, hora, dias_retencion
+    );
+
+    let mut config_guard = config
+        .write()
+        .map_err(|e| ConfigError::Message(format!("Error al escribir configuración: {e}")))?;
+
+    config_guard.backup.enabled = enabled;
+    config_guard.backup.hora = hora;
+    config_guard.backup.dias_retencion = dias_retencion;
+
+    let config_path = if let Some(data_dir) = dirs::data_local_dir() {
+        data_dir.join("Brisas").join("brisas.toml")
+    } else {
+        std::path::PathBuf::from("./config/brisas.toml")
+    };
+
+    save_config(&config_guard, &config_path)
+        .map_err(|e| ConfigError::Message(format!("Error al guardar configuración: {e}")))?;
+
+    info!("Configuración de backup guardada");
+
+    Ok(config_guard.backup.clone())
+}

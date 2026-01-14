@@ -624,9 +624,11 @@
               <button
                 class="settings-menu-item"
                 onclick={() =>
-                  handleSettingsAction(() => (showBackupModal = true))}
+                  handleSettingsAction(() =>
+                    openView("backup-settings", "Copias de Seguridad"),
+                  )}
               >
-                Generar Respaldo
+                Copias de Seguridad
               </button>
             {/if}
 

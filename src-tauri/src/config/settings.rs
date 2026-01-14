@@ -12,6 +12,48 @@ pub struct AppConfig {
     pub audio: AudioConfig,
     #[serde(default)]
     pub setup: SetupState,
+    #[serde(default)]
+    pub backup: BackupConfig,
+}
+
+/// Configuración de backup automático
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackupConfig {
+    /// Backup automático habilitado
+    #[serde(default)]
+    pub enabled: bool,
+    /// Hora del backup en formato "HH:MM" (24h)
+    #[serde(default = "default_backup_hora")]
+    pub hora: String,
+    /// Días de retención antes de eliminar backups antiguos
+    #[serde(default = "default_dias_retencion")]
+    pub dias_retencion: u32,
+    /// Directorio donde se almacenan los backups automáticos
+    #[serde(default)]
+    pub directorio: Option<String>,
+    /// Timestamp ISO del último backup exitoso
+    #[serde(default)]
+    pub ultimo_backup: Option<String>,
+}
+
+fn default_backup_hora() -> String {
+    "02:00".to_string()
+}
+
+fn default_dias_retencion() -> u32 {
+    30
+}
+
+impl Default for BackupConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            hora: default_backup_hora(),
+            dias_retencion: default_dias_retencion(),
+            directorio: None,
+            ultimo_backup: None,
+        }
+    }
 }
 
 /// Configuración de audio y alertas
@@ -104,6 +146,7 @@ impl Default for AppConfig {
             app: AppInfo { version: env!("CARGO_PKG_VERSION").to_string() },
             audio: AudioConfig::default(),
             setup: SetupState::default(),
+            backup: BackupConfig::default(),
         }
     }
 }

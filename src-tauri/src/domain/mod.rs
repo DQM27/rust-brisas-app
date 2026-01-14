@@ -10,6 +10,7 @@ pub mod user;
 pub mod vehiculo;
 pub mod visitante;
 
+pub mod backup_entry;
 pub mod contratista;
 pub mod empresa;
 pub mod export;

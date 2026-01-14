@@ -2,11 +2,45 @@
 ///
 /// Este módulo expone comandos para la gestión de copias de seguridad
 /// y la preparación de restauraciones atómicas.
-use crate::config::AppConfig;
+use crate::config::manager::save_config;
+use crate::config::settings::AppConfigState;
+use crate::domain::backup_entry::BackupEntryResponse;
 use crate::domain::errors::BackupError;
 use crate::services::backup;
-use log::{error, info};
+use chrono::Local;
+use log::{error, info, warn};
+use std::fs;
+use std::path::PathBuf;
 use tauri::{command, State};
+
+// --------------------------------------------------------------------------
+// UTILIDADES
+// --------------------------------------------------------------------------
+
+/// Obtiene el directorio de backups automáticos.
+/// Por defecto usa %LOCALAPPDATA%/Brisas/backups/
+fn get_backup_directory(config: &AppConfigState) -> Result<PathBuf, BackupError> {
+    let config_guard =
+        config.read().map_err(|e| BackupError::IO(format!("Error al leer configuración: {e}")))?;
+
+    if let Some(ref dir) = config_guard.backup.directorio {
+        return Ok(PathBuf::from(dir));
+    }
+
+    // Directorio por defecto
+    let backup_dir = dirs::data_local_dir()
+        .ok_or_else(|| BackupError::IO("No se pudo obtener directorio local".to_string()))?
+        .join("Brisas")
+        .join("backups");
+
+    // Crear directorio si no existe
+    if !backup_dir.exists() {
+        fs::create_dir_all(&backup_dir)
+            .map_err(|e| BackupError::IO(format!("Error al crear directorio de backups: {e}")))?;
+    }
+
+    Ok(backup_dir)
+}
 
 // --------------------------------------------------------------------------
 // COMANDOS DE MANTENIMIENTO
@@ -56,6 +90,262 @@ pub async fn backup_database(destination_path: String) -> Result<(), BackupError
     }
 }
 
+/// [Comando Tauri] Realiza un backup automático al directorio configurado.
+#[command]
+pub async fn backup_database_auto(
+    config: State<'_, AppConfigState>,
+) -> Result<String, BackupError> {
+    let backup_dir = get_backup_directory(&config)?;
+
+    // Generar nombre de archivo con timestamp
+    let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
+    let filename = format!("brisas_backup_{}.surql", timestamp);
+    let destination = backup_dir.join(&filename);
+    let destination_str = destination.to_string_lossy().to_string();
+
+    info!("📦 Iniciando respaldo automático a: {}", destination_str);
+
+    // Ejecutar backup
+    backup_database(destination_str.clone()).await?;
+
+    // Actualizar último backup en configuración
+    {
+        let mut config_guard = config
+            .write()
+            .map_err(|e| BackupError::IO(format!("Error al escribir configuración: {e}")))?;
+
+        config_guard.backup.ultimo_backup = Some(Local::now().to_rfc3339());
+
+        // Guardar configuración
+        let config_path = dirs::data_local_dir()
+            .unwrap_or_else(|| PathBuf::from("./config"))
+            .join("Brisas")
+            .join("brisas.toml");
+
+        save_config(&config_guard, &config_path).map_err(|e| {
+            BackupError::IO(format!("Error al guardar config de último backup: {e}"))
+        })?;
+    }
+
+    info!("✅ Backup automático completado: {}", filename);
+    Ok(filename)
+}
+
+/// [Comando Tauri] Lista todos los backups disponibles en el directorio de backups.
+#[command]
+pub async fn list_backups(
+    config: State<'_, AppConfigState>,
+) -> Result<Vec<BackupEntryResponse>, BackupError> {
+    let backup_dir = get_backup_directory(&config)?;
+
+    if !backup_dir.exists() {
+        return Ok(vec![]);
+    }
+
+    let mut backups = Vec::new();
+    let today = Local::now().date_naive();
+
+    for entry in fs::read_dir(&backup_dir)
+        .map_err(|e| BackupError::IO(format!("Error al leer directorio de backups: {e}")))?
+    {
+        let entry = entry.map_err(|e| BackupError::IO(format!("Error leyendo entrada: {e}")))?;
+        let path = entry.path();
+
+        // Solo archivos .surql, .db, .sqlite, .bak
+        if let Some(ext) = path.extension() {
+            let ext_str = ext.to_string_lossy().to_lowercase();
+            if !["surql", "db", "sqlite", "bak"].contains(&ext_str.as_str()) {
+                continue;
+            }
+        } else {
+            continue;
+        }
+
+        let metadata = entry
+            .metadata()
+            .map_err(|e| BackupError::IO(format!("Error obteniendo metadata: {e}")))?;
+
+        if !metadata.is_file() {
+            continue;
+        }
+
+        let nombre = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+
+        let fecha_creacion = metadata
+            .created()
+            .or_else(|_| metadata.modified())
+            .map(|t| chrono::DateTime::<Local>::from(t).to_rfc3339())
+            .unwrap_or_else(|_| "Desconocida".to_string());
+
+        // Calcular días de antigüedad
+        let dias_antiguedad = if let Ok(created) = metadata.created() {
+            let created_date = chrono::DateTime::<Local>::from(created).date_naive();
+            (today - created_date).num_days().max(0) as u32
+        } else {
+            0
+        };
+
+        backups.push(BackupEntryResponse {
+            nombre,
+            ruta: path.to_string_lossy().to_string(),
+            tamano: metadata.len(),
+            fecha_creacion,
+            dias_antiguedad,
+        });
+    }
+
+    // Ordenar por fecha (más reciente primero)
+    backups.sort_by(|a, b| b.fecha_creacion.cmp(&a.fecha_creacion));
+
+    info!("📋 Listados {} backups", backups.len());
+    Ok(backups)
+}
+
+/// [Comando Tauri] Elimina un backup específico.
+#[command]
+pub async fn delete_backup(
+    config: State<'_, AppConfigState>,
+    filename: String,
+) -> Result<(), BackupError> {
+    let backup_dir = get_backup_directory(&config)?;
+    let file_path = backup_dir.join(&filename);
+
+    if !file_path.exists() {
+        return Err(BackupError::NotFound(filename));
+    }
+
+    // Verificar que el archivo está dentro del directorio de backups (seguridad)
+    if !file_path.starts_with(&backup_dir) {
+        return Err(BackupError::IO("Ruta de archivo inválida".to_string()));
+    }
+
+    fs::remove_file(&file_path)
+        .map_err(|e| BackupError::IO(format!("Error al eliminar backup: {e}")))?;
+
+    info!("🗑️ Backup eliminado: {}", filename);
+    Ok(())
+}
+
+/// [Comando Tauri] Restaura desde un backup automático.
+#[command]
+pub async fn restore_from_auto_backup(
+    config: State<'_, AppConfigState>,
+    filename: String,
+) -> Result<(), BackupError> {
+    let backup_dir = get_backup_directory(&config)?;
+    let source_path = backup_dir.join(&filename);
+
+    if !source_path.exists() {
+        return Err(BackupError::NotFound(filename));
+    }
+
+    // Usar la lógica de restore existente
+    let db_path = {
+        let config_guard = config
+            .read()
+            .map_err(|e| BackupError::IO(format!("Error al leer configuración: {e}")))?;
+
+        crate::config::manager::get_database_path_static(&config_guard)
+    };
+
+    let restore_path = backup::get_restore_path(&db_path);
+
+    info!("📦 Copiando backup a área de preparación: {}", restore_path.display());
+
+    // Asegurar que el destino esté limpio
+    if restore_path.exists() {
+        if restore_path.is_dir() {
+            let _ = fs::remove_dir_all(&restore_path);
+        } else {
+            let _ = fs::remove_file(&restore_path);
+        }
+    }
+
+    backup::copy_recursive(&source_path, &restore_path).map_err(|e| {
+        error!("Error al preparar staging de restauración: {e}");
+        BackupError::IO(format!("Fallo al copiar datos a staging: {e}"))
+    })?;
+
+    info!("✅ Protocolo listo. El sistema se restaurará en el próximo reinicio.");
+    Ok(())
+}
+
+/// [Comando Tauri] Limpia backups antiguos según la política de retención.
+#[command]
+pub async fn cleanup_old_backups(config: State<'_, AppConfigState>) -> Result<u32, BackupError> {
+    let backup_dir = get_backup_directory(&config)?;
+
+    let dias_retencion = {
+        let config_guard = config
+            .read()
+            .map_err(|e| BackupError::IO(format!("Error al leer configuración: {e}")))?;
+        config_guard.backup.dias_retencion
+    };
+
+    if !backup_dir.exists() {
+        return Ok(0);
+    }
+
+    let today = Local::now().date_naive();
+    let mut deleted_count = 0;
+
+    for entry in fs::read_dir(&backup_dir)
+        .map_err(|e| BackupError::IO(format!("Error al leer directorio: {e}")))?
+    {
+        let entry = match entry {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+
+        let path = entry.path();
+
+        // Solo procesar archivos de backup
+        if let Some(ext) = path.extension() {
+            let ext_str = ext.to_string_lossy().to_lowercase();
+            if !["surql", "db", "sqlite", "bak"].contains(&ext_str.as_str()) {
+                continue;
+            }
+        } else {
+            continue;
+        }
+
+        let metadata = match entry.metadata() {
+            Ok(m) => m,
+            Err(_) => continue,
+        };
+
+        if !metadata.is_file() {
+            continue;
+        }
+
+        // Calcular antigüedad
+        let dias_antiguedad = if let Ok(created) = metadata.created() {
+            let created_date = chrono::DateTime::<Local>::from(created).date_naive();
+            (today - created_date).num_days().max(0) as u32
+        } else {
+            continue;
+        };
+
+        // Eliminar si excede retención
+        if dias_antiguedad > dias_retencion {
+            if fs::remove_file(&path).is_ok() {
+                deleted_count += 1;
+                warn!(
+                    "🗑️ Backup antiguo eliminado: {} ({} días)",
+                    path.file_name().unwrap_or_default().to_string_lossy(),
+                    dias_antiguedad
+                );
+            }
+        }
+    }
+
+    if deleted_count > 0 {
+        info!("🧹 Limpieza completada: {} backups antiguos eliminados", deleted_count);
+    }
+
+    Ok(deleted_count)
+}
+
 /// [Comando Tauri] Prepara el sistema para una restauración de base de datos.
 ///
 /// La restauración efectiva NO ocurre inmediatamente. Este comando coloca los datos
@@ -70,12 +360,19 @@ pub async fn backup_database(destination_path: String) -> Result<(), BackupError
 /// si el origen no existe o `BackupError::IO` si falla la copia.
 #[command]
 pub async fn restore_database(
-    config: State<'_, AppConfig>,
+    config: State<'_, AppConfigState>,
     source_path: String,
 ) -> Result<(), BackupError> {
     info!("🔄 Preparando protocolo de restauración desde: {source_path}");
 
-    let db_path = crate::config::manager::get_database_path(&config);
+    let db_path = {
+        let config_guard = config
+            .read()
+            .map_err(|e| BackupError::IO(format!("Error al leer configuración: {e}")))?;
+
+        crate::config::manager::get_database_path_static(&config_guard)
+    };
+
     let restore_path = backup::get_restore_path(&db_path);
 
     let source = std::path::Path::new(&source_path);

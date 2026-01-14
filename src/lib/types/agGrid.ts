@@ -43,7 +43,8 @@ export type GridId =
   | 'universal-trash'
   | 'trash-contratista'
   | 'trash-proveedor'
-  | 'trash-visitante';
+  | 'trash-visitante'
+  | 'backup-list';
 
 
 // ============================================

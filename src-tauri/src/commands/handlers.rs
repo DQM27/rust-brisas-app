@@ -164,13 +164,20 @@ macro_rules! register_handlers {
             // COMANDOS DE BACKUP/RESTORE
             // ==========================================
             commands::backup::backup_database,
+            commands::backup::backup_database_auto,
+            commands::backup::list_backups,
+            commands::backup::delete_backup,
             commands::backup::restore_database,
+            commands::backup::restore_from_auto_backup,
+            commands::backup::cleanup_old_backups,
             // ==========================================
             // COMANDOS DE CONFIGURACIÓN
             // ==========================================
             commands::config_commands::get_app_config,
             commands::config_commands::update_terminal_config,
             commands::config_commands::update_audio_config,
+            commands::config_commands::get_backup_config,
+            commands::config_commands::update_backup_config,
             // ==========================================
             // COMANDOS DE VENTANA
             // ==========================================
