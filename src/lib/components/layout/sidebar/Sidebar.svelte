@@ -584,17 +584,7 @@
                 Ajustes Gráficos
               </button>
             {/if}
-            {#if $currentUser && can($currentUser, "VIEW_SETTINGS_SECURITY")}
-              <button
-                class="settings-menu-item"
-                onclick={() =>
-                  handleSettingsAction(() =>
-                    openView("security-settings", "Seguridad y Credenciales"),
-                  )}
-              >
-                Seguridad y Credenciales
-              </button>
-            {/if}
+
             {#if $currentUser && can($currentUser, "VIEW_SETTINGS_SESSIONS")}
               <button
                 class="settings-menu-item"
@@ -618,22 +608,6 @@
                 Roles y Permisos
               </button>
             {/if}
-
-            <div class="settings-menu-separator"></div>
-
-            <!-- Grupo 2: Herramientas -->
-            <button
-              class="settings-menu-item"
-              onclick={() =>
-                handleSettingsAction(() =>
-                  openView("shortcut-settings", "Atajos de Teclado"),
-                )}
-            >
-              Atajos de Teclado
-            </button>
-            <!-- Logs removed from settings menu as it is main sidebar item -->
-
-            <div class="settings-menu-separator"></div>
 
             <!-- Grupo 3: Datos -->
             {#if $currentUser && can($currentUser, "VIEW_SETTINGS_BACKUP")}
@@ -771,7 +745,7 @@
     left: 52px; /* 52px sidebar + 0px gap (flush) */
     z-index: 2000;
     min-width: 220px;
-    padding: 0px 0;
+    padding: 4px 0; /* Add vertical padding */
     background: #1e1e1e; /* VS Code menu bg */
     border: 1px solid #454545;
     border-radius: 4px;
@@ -784,19 +758,22 @@
 
   .settings-menu-item {
     display: block;
-    width: 100%;
-    padding: 6px 12px; /* VS Code style padding */
+    width: calc(100% - 8px); /* Add spacing for rounded corners */
+    margin: 2px 4px; /* Floating pill effect */
+    padding: 6px 12px;
     text-align: left;
     font-size: 13px;
     color: #cccccc;
     background: transparent;
     border: none;
+    border-radius: 6px; /* rounded-md */
     cursor: pointer;
     font-family: "Segoe UI", system-ui, sans-serif;
+    transition: all 0.15s ease; /* Smooth transition */
   }
 
   .settings-menu-item:hover {
-    background-color: #094771; /* VS Code hover blue */
+    background-color: rgba(255, 255, 255, 0.1); /* hover:bg-white/10 */
     color: white;
   }
 

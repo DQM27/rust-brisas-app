@@ -23,13 +23,11 @@ export type ComponentKey =
   | 'update-settings'
   | 'backup-settings'
   | 'device-settings'
-  | 'security-settings'
   | 'session-settings'
   | 'export-settings'
   | 'trash-settings'
   | 'roles-settings'
   | 'reportes-list'
-  | 'shortcut-settings'
   | 'about'
   | 'under-construction'
   | 'dev-settings';

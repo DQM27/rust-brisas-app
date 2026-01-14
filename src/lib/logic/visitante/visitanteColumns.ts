@@ -72,14 +72,14 @@ export class VisitanteColumns {
                 pinned: "left",
             },
             {
-                field: "nombre",
+                colId: "nombreCompleto",
                 headerName: "Nombre",
-                width: 150,
-            },
-            {
-                field: "apellido",
-                headerName: "Apellido",
-                width: 150,
+                flex: 1,
+                minWidth: 200,
+                valueGetter: (params) => {
+                    if (!params.data) return "";
+                    return [params.data.nombre, params.data.apellido].filter(Boolean).join(" ");
+                },
             },
             {
                 field: "empresaNombre",
@@ -87,10 +87,17 @@ export class VisitanteColumns {
                 width: 200,
             },
             {
-                field: "deletedAt" as any,
-                headerName: "Eliminado",
+                colId: "deletedAt",
+                field: "deletedAt",
+                headerName: "Fecha Eliminación",
                 width: 150,
-                valueFormatter: (params) => params.value ? new Date(params.value).toLocaleDateString() : 'Recientemente'
+                valueFormatter: (params) => {
+                    if (!params.value) return "-";
+                    return new Date(params.value).toLocaleDateString("es-PA", {
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                },
             }
         ];
     }

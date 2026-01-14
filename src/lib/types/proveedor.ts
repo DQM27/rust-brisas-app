@@ -27,6 +27,7 @@ export interface ProveedorResponse {
     // Timestamps
     createdAt: string;
     updatedAt: string;
+    deletedAt?: string;
 }
 
 // Input for creating a new proveedor

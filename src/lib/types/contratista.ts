@@ -42,6 +42,7 @@ export interface ContratistaResponse {
     vehiculoPlaca?: string;
     createdAt: string;
     updatedAt: string;
+    deletedAt?: string;
 }
 
 export interface CreateContratistaInput {

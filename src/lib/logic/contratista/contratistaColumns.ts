@@ -116,7 +116,7 @@ export class ContratistaColumns {
       },
       {
         field: "nombreCompleto",
-        headerName: "Nombre Completo",
+        headerName: "Nombre",
         flex: 1,
         minWidth: 200,
         cellStyle: { fontWeight: 500 },
@@ -127,14 +127,20 @@ export class ContratistaColumns {
         flex: 1,
         minWidth: 180,
       },
+
       {
-        field: "vehiculoPlaca",
-        headerName: "Placa",
-        width: 100,
-        valueFormatter: (params) => params.value || "-",
-        cellStyle: { fontFamily: "monospace" },
+        colId: "deletedAt",
+        field: "deletedAt",
+        headerName: "Fecha Eliminación",
+        width: 150,
+        valueFormatter: (params) => {
+          if (!params.value) return "-";
+          return new Date(params.value).toLocaleDateString("es-PA", {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit'
+          });
+        },
       },
-      // Columns specific to trash can be added here if needed (e.g. deletedAt)
     ];
   }
 

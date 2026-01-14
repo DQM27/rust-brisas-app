@@ -148,7 +148,7 @@ export class ProveedorColumns {
             },
             {
                 field: "nombre",
-                headerName: "Nombre Completo",
+                headerName: "Nombre",
                 flex: 1,
                 minWidth: 200,
                 cellStyle: { fontWeight: 500 },
@@ -167,10 +167,17 @@ export class ProveedorColumns {
                 minWidth: 180,
             },
             {
-                field: "deletedAt" as any,
-                headerName: "Eliminado",
+                colId: "deletedAt",
+                field: "deletedAt",
+                headerName: "Fecha Eliminación",
                 width: 150,
-                valueFormatter: (params) => params.value ? new Date(params.value).toLocaleDateString() : 'Recientemente'
+                valueFormatter: (params) => {
+                    if (!params.value) return "-";
+                    return new Date(params.value).toLocaleDateString("es-PA", {
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                },
             }
         ];
     }

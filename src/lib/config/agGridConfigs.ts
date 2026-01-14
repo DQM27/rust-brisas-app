@@ -320,11 +320,12 @@ export const GRID_CONFIGS: Record<GridId, Omit<AGGridToolbarConfig, 'customButto
   'ingreso-list': { gridId: 'ingreso-list', ...INGRESO_GRID_CONFIG },
 
   // Grids de papelera - todos los botones disponibles
-  'contratista-trash': { gridId: 'contratista-trash', ...INGRESO_GRID_CONFIG },
-  'universal-trash': { gridId: 'universal-trash', ...INGRESO_GRID_CONFIG },
-  'trash-contratista': { gridId: 'trash-contratista', ...INGRESO_GRID_CONFIG },
-  'trash-proveedor': { gridId: 'trash-proveedor', ...INGRESO_GRID_CONFIG },
-  'trash-visitante': { gridId: 'trash-visitante', ...INGRESO_GRID_CONFIG },
+  // Grids de papelera - configuración estándar
+  'contratista-trash': { gridId: 'contratista-trash', ...STANDARD_GRID_CONFIG },
+  'universal-trash': { gridId: 'universal-trash', ...STANDARD_GRID_CONFIG },
+  'trash-contratista': { gridId: 'trash-contratista', ...STANDARD_GRID_CONFIG },
+  'trash-proveedor': { gridId: 'trash-proveedor', ...STANDARD_GRID_CONFIG },
+  'trash-visitante': { gridId: 'trash-visitante', ...STANDARD_GRID_CONFIG },
 
   // Grid de backup - configuración estándar
   'backup-list': { gridId: 'backup-list', ...STANDARD_GRID_CONFIG }

@@ -47,15 +47,7 @@
   const customButtons = $derived.by(() => {
     const selected = selectedRows[0];
     return {
-      default: [
-        {
-          id: "back-to-active",
-          label: "Volver",
-          icon: ArrowLeft,
-          onClick: onBack,
-          variant: "default" as const,
-        },
-      ],
+      default: [],
       singleSelect: [
         {
           id: "restore",
@@ -140,32 +132,6 @@
           </div>
         </div>
       </div>
-    {:else if loading && items.length === 0}
-      <!-- Loading state only when no items initially to avoid flickering on reloads if not desired, or just keep generic-->
-      <div class="flex h-full items-center justify-center">
-        <div class="text-center">
-          <div
-            class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"
-          ></div>
-          <p class="text-gray-400">Cargando eliminados...</p>
-        </div>
-      </div>
-    {:else if items.length === 0 && !loading}
-      <div class="flex h-full items-center justify-center">
-        <div class="text-center">
-          <p class="mt-4 text-lg font-medium text-gray-300">Papelera vacía</p>
-          <p class="mt-2 text-sm text-gray-400">
-            No hay {entityName.toLowerCase()}s eliminados recientemente
-          </p>
-          <button
-            onclick={onBack}
-            class="mt-6 px-4 py-2 bg-[#2d2d2d] border border-white/10 text-gray-300 rounded-md hover:bg-[#353535] transition-colors flex items-center gap-2 mx-auto"
-          >
-            <ArrowLeft size={16} />
-            Volver
-          </button>
-        </div>
-      </div>
     {:else}
       <AGGridWrapper
         {gridId}
@@ -175,6 +141,7 @@
         getRowId={(params) => params.data[rowIdField]}
         persistenceKey={`${gridId}-columns`}
         onSelectionChanged={(rows) => (selectedRows = rows)}
+        onRefresh={loadArchived}
       />
     {/if}
   </div>

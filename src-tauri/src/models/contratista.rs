@@ -114,7 +114,7 @@ impl From<ContratistaFetched> for Contratista {
             segundo_apellido: fetched.segundo_apellido,
             empresa: fetched.empresa.id, // Extract ID from the fetched entity
             fecha_vencimiento_praind: fetched.fecha_vencimiento_praind,
-            estado: fetched.estado,
+            estado: fetched.estado.clone(),
             created_at: fetched.created_at,
             updated_at: fetched.updated_at,
             deleted_at: fetched.deleted_at,
@@ -129,6 +129,7 @@ impl From<ContratistaFetched> for Contratista {
 /// Estados posibles de un contratista en el sistema.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")] // "activo", "inactivo", "bloqueado"
+#[serde(try_from = "String")]
 pub enum EstadoContratista {
     Activo,
     Inactivo,
@@ -155,6 +156,14 @@ impl std::str::FromStr for EstadoContratista {
             "bloqueado" => Ok(Self::Bloqueado),
             _ => Err(format!("Estado desconocido: {s}")),
         }
+    }
+}
+
+impl TryFrom<String> for EstadoContratista {
+    type Error = String;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        s.parse()
     }
 }
 
@@ -397,7 +406,7 @@ impl ContratistaResponse {
             empresa_id: c.empresa.id.to_string(),
             empresa_nombre: c.empresa.nombre.clone(),
             fecha_vencimiento_praind: clean_date_str.to_string(),
-            estado: c.estado,
+            estado: c.estado.clone(), // Enum expected here
             puede_ingresar: puede,
             praind_vencido: estado_praind.vencido,
             esta_bloqueado: false,
@@ -455,7 +464,7 @@ mod tests {
                 updated_at: Some(created.into()),
             },
             fecha_vencimiento_praind: fecha_vencimiento.into(),
-            estado: EstadoContratista::Activo,
+            estado: EstadoContratista::Activo, // Reverted to Enum
             created_at: created.into(),
             updated_at: created.into(),
             deleted_at: None,

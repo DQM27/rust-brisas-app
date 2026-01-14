@@ -64,6 +64,7 @@ pub struct ProveedorFetched {
 /// Estado operativo del proveedor en la plataforma.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(try_from = "String")]
 pub enum EstadoProveedor {
     Activo,
     Inactivo,
@@ -272,7 +273,7 @@ impl ProveedorResponse {
             nombre_completo,
             empresa_id: p.empresa.id.to_string(),
             empresa_nombre: p.empresa.nombre.clone(),
-            estado: p.estado,
+            estado: p.estado.clone(),
             puede_ingresar,
             vehiculo_tipo: None,
             vehiculo_placa: None,

@@ -12,6 +12,7 @@ use surrealdb::{Datetime, RecordId};
 // --------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(try_from = "String")]
 pub enum Operacion {
     #[serde(rename = "Calle Blancos")]
     CalleBlancos,
@@ -23,6 +24,29 @@ pub enum Operacion {
     MegaBrisas,
     #[serde(rename = "Belen")]
     Belen,
+}
+
+impl std::str::FromStr for Operacion {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Calle Blancos" => Ok(Self::CalleBlancos),
+            "Cartago" => Ok(Self::Cartago),
+            "Coronado" => Ok(Self::Coronado),
+            "Mega Brisas" => Ok(Self::MegaBrisas),
+            "Belen" => Ok(Self::Belen),
+            _ => Err(format!("Operacion desconocida: {}", s)),
+        }
+    }
+}
+
+impl TryFrom<String> for Operacion {
+    type Error = String;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        s.parse()
+    }
 }
 
 /// Representa a un operador del sistema (Usuario).

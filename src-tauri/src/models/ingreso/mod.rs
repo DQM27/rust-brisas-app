@@ -31,6 +31,7 @@ use surrealdb::RecordId;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[serde(try_from = "String")]
 pub enum TipoIngreso {
     Contratista,
     Visita,
@@ -68,8 +69,17 @@ impl std::str::FromStr for TipoIngreso {
     }
 }
 
+impl TryFrom<String> for TipoIngreso {
+    type Error = String;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        s.parse()
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[serde(try_from = "String")]
 pub enum TipoAutorizacion {
     Praind,
     Correo,
@@ -96,8 +106,17 @@ impl std::str::FromStr for TipoAutorizacion {
     }
 }
 
+impl TryFrom<String> for TipoAutorizacion {
+    type Error = String;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        s.parse()
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[serde(try_from = "String")]
 pub enum ModoIngreso {
     Caminando,
     Vehiculo,
@@ -131,15 +150,26 @@ impl std::str::FromStr for ModoIngreso {
     }
 }
 
+impl TryFrom<String> for ModoIngreso {
+    type Error = String;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        s.parse()
+    }
+}
+
 // ==========================================
 // DTOs COMPARTIDOS
 // ==========================================
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
+#[serde(tag = "tipo_ingreso")]
 pub enum UniversalIngresoFetched {
+    #[serde(rename = "ingreso_contratista")]
     Contratista(IngresoContratistaFetched),
+    #[serde(rename = "ingreso_proveedor")]
     Proveedor(IngresoProveedorFetched),
+    #[serde(rename = "ingreso_visita")]
     Visita(IngresoVisitaFetched),
 }
 
