@@ -185,28 +185,6 @@
       defaultBtns.push(createCustomButton.nuevo(() => openModal()));
     }
 
-    defaultBtns.push(
-      ...COMMON_DEFAULT_BUTTONS.filter((b) =>
-        ["autosize-all", "reset-columns", "select-all"].includes(b.id),
-      ).map((b) => ({
-        id: b.id,
-        label: b.label,
-        icon: b.icon,
-        tooltip: b.tooltip,
-        onClick: undefined,
-        useCommonHandler: true,
-      })),
-    );
-
-    defaultBtns.push({
-      id: "reindex",
-      label: "Reindexar",
-      icon: AlertCircle,
-      onClick: () => handleReindex(),
-      variant: "default" as const,
-      tooltip: "Reparar índice de búsqueda",
-    });
-
     // Single select buttons
     let singleSelectBtns = [];
 
@@ -354,21 +332,6 @@
   // ==========================================
   // HANDLERS - ACTIONS
   // ==========================================
-
-  async function handleReindex() {
-    const toastId = toast.loading("Reindexando...");
-    try {
-      // Assuming service has reindex method or similar
-      // Using a placeholder or generic call if exact method unknown, but usually exposed via service or command
-      // For now, logging as not implemented fully or using a specialized service call if exist.
-      // Given errors, I'll check contratistaService for reindex methods or assume standard pattern.
-      // If verify fails, I will fix.
-      await contratistaService.reindexContratistas();
-      toast.success("Índice actualizado", { id: toastId });
-    } catch (e) {
-      toast.error("Error al reindexar", { id: toastId });
-    }
-  }
 
   async function handleStatusChange(id: string, status: string) {
     if (isUpdatingStatus) return;

@@ -63,7 +63,5 @@ export const contratistas = {
     }
   },
 
-  reindex: async (): Promise<void> => {
-    return await invoke<void>("reindex_all_contratistas");
-  },
+
 };

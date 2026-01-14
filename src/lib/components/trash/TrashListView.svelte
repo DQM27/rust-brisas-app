@@ -55,16 +55,6 @@
           onClick: onBack,
           variant: "default" as const,
         },
-        ...COMMON_DEFAULT_BUTTONS.filter((b) =>
-          ["autosize-all", "reset-columns"].includes(b.id),
-        ).map((b) => ({
-          id: b.id,
-          label: b.label,
-          icon: b.icon,
-          tooltip: b.tooltip,
-          onClick: undefined, // Handled by AGGridWrapper common handlers
-          useCommonHandler: true,
-        })),
       ],
       singleSelect: [
         {

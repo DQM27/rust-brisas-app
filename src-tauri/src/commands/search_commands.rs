@@ -10,29 +10,28 @@ use crate::services::session::SessionState;
 use std::sync::Arc;
 use tauri::State;
 
-/// Búsqueda Especializada: Realiza consultas predictivas sobre el censo de contratistas.
+/// Búsqueda Inteligente: Realiza consultas sobre el índice global (Usuarios, Contratistas, etc.).
 #[tauri::command]
-pub async fn search_contratistas(
+pub async fn search_omnibox(
     session: State<'_, SessionState>,
     search_service: State<'_, Arc<SearchService>>,
     query: String,
     limit: Option<usize>,
 ) -> Result<Vec<SearchResultDto>, SearchError> {
+    // Permiso básico para buscar. Se asume que si puede ver contratistas o usuarios, puede buscar.
+    // dealmente debería ser un permiso 'search:read', pero por compatibilidad usamos 'contratistas:read' OR 'users:read'.
+    // Por ahora mantenemos 'contratistas:read' como base para el feature principal.
     require_perm!(session, "contratistas:read")?;
     search_service.search(&query, limit.unwrap_or(20)).map_err(SearchError::Engine)
 }
 
-/// Sincronización Manual: Forza la reconstrucción del índice de búsqueda desde `SurrealDB`.
+/// Sincronización Manual: Forza la reconstrucción del índice de búsqueda global desde `SurrealDB`.
 #[tauri::command]
-pub async fn reindex_all_contratistas(
+pub async fn reindex_global_search(
     session: State<'_, SessionState>,
     search_service: State<'_, Arc<SearchService>>,
 ) -> Result<(), SearchError> {
-    require_perm!(
-        session,
-        "config:update",
-        "Sincronizando índices de búsqueda con la base de datos"
-    )?;
+    require_perm!(session, "config:update", "Sincronizando índices de búsqueda global")?;
     search_service.reindex_all().await.map_err(SearchError::Engine)
 }
 

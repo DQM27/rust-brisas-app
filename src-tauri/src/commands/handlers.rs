@@ -138,9 +138,9 @@ macro_rules! register_handlers {
             commands::ingreso_commands::get_all_alertas_gafetes,
             commands::ingreso_commands::resolver_alerta_gafete,
             // Comandos de búsqueda
-            commands::search_commands::search_contratistas,
+            commands::search_commands::search_omnibox,
             commands::search_commands::search_global,
-            commands::search_commands::reindex_all_contratistas,
+            commands::search_commands::reindex_global_search,
             // ==========================================
             // COMANDOS DE EXPORTACIÓN
             // ==========================================

@@ -46,6 +46,7 @@
   import * as userService from "$lib/logic/user/userService";
   import type { CreateUserInput, UpdateUserInput } from "$lib/types/user";
   import { toast } from "svelte-5-french-toast";
+  import { reindexGlobalSearch } from "$lib/api/searchService";
 
   // Items configurables - Definición base
   const allSidebarItems: SidebarItem[] = [
@@ -394,6 +395,24 @@
       profileLoading = false;
     }
   }
+
+  async function handleReindexDB() {
+    if (
+      !confirm(
+        "¿Estás seguro de reindexar la base de datos de búsqueda? Esto puede tomar unos momentos.",
+      )
+    )
+      return;
+
+    const toastId = toast.loading("Reindexando base de datos...");
+    try {
+      await reindexGlobalSearch();
+      toast.success("Reindexado completado correctamente", { id: toastId });
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || "Error al reindexar", { id: toastId });
+    }
+  }
 </script>
 
 <svelte:window onclick={handleWindowClick} />
@@ -642,6 +661,15 @@
                   )}
               >
                 Papelera
+              </button>
+            {/if}
+
+            {#if $currentUser?.isSuperuser || ["admin", "administrador"].includes(($currentUser?.roleName || "").toLowerCase())}
+              <button
+                class="settings-menu-item text-orange-400 hover:text-orange-300"
+                onclick={() => handleSettingsAction(handleReindexDB)}
+              >
+                Reindexar Búsqueda
               </button>
             {/if}
 

@@ -1,7 +1,7 @@
 // src/lib/logic/search/performSearch.ts
 
 import { searchStore } from '$lib/stores/searchStore';
-import { searchContratistas } from '$lib/api/searchService';
+import { searchGlobal } from '$lib/api/searchService';
 
 // ============================================
 // Tipos internos
@@ -78,7 +78,7 @@ export async function performSearch(
   searchStore.setLoading(true);
 
   try {
-    const results = await searchContratistas(trimmedQuery, opts.limit);
+    const results = await searchGlobal(trimmedQuery, opts.limit);
 
     // Solo actualizar si esta búsqueda sigue siendo la actual
     // (evita race conditions con búsquedas más recientes)
