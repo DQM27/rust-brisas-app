@@ -226,6 +226,7 @@
     >
       {#each filteredColumns as column, index (column.id)}
         <div
+          role="listitem"
           draggable="true"
           ondragstart={(e) => handleDragStart(e, index)}
           ondragover={(e) => handleDragOver(e, index)}

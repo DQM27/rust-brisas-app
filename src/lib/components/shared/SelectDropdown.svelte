@@ -43,14 +43,16 @@
   const selectedLabel = $derived(
     options.find((o) => o.value === value)?.label ?? placeholder,
   );
+  const labelId = `dropdown-label-${Math.random().toString(36).slice(2, 9)}`;
 </script>
 
 <div class="relative {className}">
   {#if label}
-    <label class={labelStyle}>{label}</label>
+    <label class={labelStyle} for={labelId}>{label}</label>
   {/if}
 
   <button
+    id={labelId}
     type="button"
     {disabled}
     onclick={() => (isOpen = !isOpen)}

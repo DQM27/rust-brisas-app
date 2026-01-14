@@ -133,10 +133,15 @@
     <div class="space-y-4">
       <!-- Paginación -->
       <div>
-        <label class={labelClass}>Registros por página</label>
-        <div class="grid grid-cols-3 gap-2">
+        <span class={labelClass}>Registros por página</span>
+        <div
+          class="grid grid-cols-3 gap-2"
+          role="group"
+          aria-label="Registros por página"
+        >
           {#each paginationOptions as size}
             <button
+              type="button"
               onclick={() => handlePaginationChange(size)}
               class="py-1.5 px-2 text-xs font-medium rounded-md transition-all border
                 {paginationSize === size

@@ -300,10 +300,15 @@
         </h3>
         <div class={groupClass}>
           <div class="space-y-2">
-            <label class={labelClass}>Buffer de Filas</label>
-            <div class="grid grid-cols-4 gap-1">
+            <span class={labelClass}>Buffer de Filas</span>
+            <div
+              class="grid grid-cols-4 gap-1"
+              role="group"
+              aria-label="Buffer de filas"
+            >
               {#each rowBufferOptions as option}
                 <button
+                  type="button"
                   onclick={() => setRowBuffer(option)}
                   class="py-1 text-[10px] font-medium rounded transition-all border
                             {rowBuffer === option

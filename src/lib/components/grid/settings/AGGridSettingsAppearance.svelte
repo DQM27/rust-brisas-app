@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import type { GridApi } from "@ag-grid-community/core";
   import { agGridSettings } from "$lib/stores/agGridSettings.svelte";
   import type {
@@ -16,19 +17,39 @@
   }
 
   let { gridId, gridApi }: Props = $props();
+  const appearanceId = $derived(`appearance-${gridId}`);
 
-  // Load initial settings
-  let theme = $state<AGGridTheme>(agGridSettings.getTheme(gridId));
-  let font = $state<AGGridFont>(agGridSettings.getFont(gridId));
-  let rowHeight = $state<RowHeight>(agGridSettings.getRowHeight(gridId));
-  let headerHeight = $state<number>(agGridSettings.getHeaderHeight(gridId));
+  // Load initial settings - untrack to avoid state_referenced_locally warnings
+  let theme = $state<AGGridTheme>(
+    untrack(() => agGridSettings.getTheme(gridId)),
+  );
+  let font = $state<AGGridFont>(untrack(() => agGridSettings.getFont(gridId)));
+  let rowHeight = $state<RowHeight>(
+    untrack(() => agGridSettings.getRowHeight(gridId)),
+  );
+  let headerHeight = $state<number>(
+    untrack(() => agGridSettings.getHeaderHeight(gridId)),
+  );
   let toolbarPosition = $state<ToolbarPosition>(
-    agGridSettings.getToolbarPosition(gridId),
+    untrack(() => agGridSettings.getToolbarPosition(gridId)),
   );
-  let animateRows = $state<boolean>(agGridSettings.getAnimateRows(gridId));
+  let animateRows = $state<boolean>(
+    untrack(() => agGridSettings.getAnimateRows(gridId)),
+  );
   let cellTextSelection = $state<boolean>(
-    agGridSettings.getCellTextSelection(gridId),
+    untrack(() => agGridSettings.getCellTextSelection(gridId)),
   );
+
+  // Sync state if gridId changes
+  $effect(() => {
+    theme = agGridSettings.getTheme(gridId);
+    font = agGridSettings.getFont(gridId);
+    rowHeight = agGridSettings.getRowHeight(gridId);
+    headerHeight = agGridSettings.getHeaderHeight(gridId);
+    toolbarPosition = agGridSettings.getToolbarPosition(gridId);
+    animateRows = agGridSettings.getAnimateRows(gridId);
+    cellTextSelection = agGridSettings.getCellTextSelection(gridId);
+  });
 
   // Handlers
   function handleThemeChange(newTheme: AGGridTheme) {
@@ -132,12 +153,15 @@
 
     <!-- Row Density (Segmented Control) -->
     <div>
-      <label class={labelClass}>Densidad de Filas</label>
+      <span class={labelClass}>Densidad de Filas</span>
       <div
         class="flex bg-black/20 p-1 rounded-lg border border-white/10 h-[34px]"
+        role="group"
+        aria-label="Densidad de filas"
       >
         {#each densities as d}
           <button
+            type="button"
             class="flex-1 text-xs font-medium rounded-md transition-all flex items-center justify-center {rowHeight ===
             d.value
               ? 'bg-blue-600/20 text-blue-400 ring-1 ring-blue-500/50'
@@ -154,7 +178,9 @@
   <!-- Header Height Slider -->
   <div class="pt-2">
     <div class="flex justify-between items-center mb-2">
-      <label class={labelClass}>Altura de Cabecera</label>
+      <label class={labelClass} for="{appearanceId}-header-height"
+        >Altura de Cabecera</label
+      >
       <span
         class="text-xs font-mono text-blue-400 bg-blue-900/20 px-1.5 py-0.5 rounded border border-blue-500/20"
       >
@@ -163,6 +189,7 @@
     </div>
     <div class="px-1">
       <input
+        id="{appearanceId}-header-height"
         type="range"
         min="30"
         max="60"
