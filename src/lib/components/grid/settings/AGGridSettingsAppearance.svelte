@@ -1,14 +1,14 @@
 <script lang="ts">
-  // @ts-nocheck
+  import type { GridApi } from "@ag-grid-community/core";
+  import { agGridSettings } from "$lib/stores/agGridSettings.svelte";
   import type {
     GridId,
     AGGridTheme,
     AGGridFont,
     RowHeight,
+    ToolbarPosition,
   } from "$lib/types/agGrid";
-  import type { GridApi } from "@ag-grid-community/core";
-  import { agGridSettings } from "$lib/stores/agGridSettings.svelte";
-  import { Check } from "lucide-svelte";
+  import SelectDropdown from "$lib/components/shared/SelectDropdown.svelte";
 
   interface Props {
     gridId: GridId;
@@ -17,266 +17,195 @@
 
   let { gridId, gridApi }: Props = $props();
 
-  // Estado local sincronizado con store
-  let theme = $derived(agGridSettings.getTheme(gridId));
-  let font = $derived(agGridSettings.getFont(gridId));
-  let rowHeight = $derived(agGridSettings.getRowHeight(gridId));
-  let toolbarPosition = $derived(agGridSettings.getToolbarPosition(gridId));
-  let animateRows = $derived(agGridSettings.getAnimateRows(gridId));
-  let cellTextSelection = $derived(agGridSettings.getCellTextSelection(gridId));
-
-  // Opciones
-  const themes: { value: AGGridTheme; label: string; dark: boolean }[] = [
-    { value: "ag-theme-quartz-dark", label: "Quartz Dark", dark: true },
-    { value: "ag-theme-quartz", label: "Quartz Light", dark: false },
-    { value: "ag-theme-alpine-dark", label: "Alpine Dark", dark: true },
-    { value: "ag-theme-alpine", label: "Alpine Light", dark: false },
-    { value: "ag-theme-balham", label: "Balham", dark: false },
-  ];
-
-  const fonts: { value: AGGridFont; label: string; preview: string }[] = [
-    { value: "system", label: "Sistema", preview: "Aa" },
-    { value: "inter", label: "Inter", preview: "Aa" },
-    { value: "roboto", label: "Roboto", preview: "Aa" },
-    { value: "source-sans", label: "Source Sans", preview: "Aa" },
-  ];
-
-  const densities: { value: RowHeight; label: string; px: number }[] = [
-    { value: "compact", label: "Compacto", px: 32 },
-    { value: "normal", label: "Normal", px: 40 },
-    { value: "comfortable", label: "Cómodo", px: 48 },
-  ];
+  // Load initial settings
+  let theme = $state<AGGridTheme>(agGridSettings.getTheme(gridId));
+  let font = $state<AGGridFont>(agGridSettings.getFont(gridId));
+  let rowHeight = $state<RowHeight>(agGridSettings.getRowHeight(gridId));
+  let headerHeight = $state<number>(agGridSettings.getHeaderHeight(gridId));
+  let toolbarPosition = $state<ToolbarPosition>(
+    agGridSettings.getToolbarPosition(gridId),
+  );
+  let animateRows = $state<boolean>(agGridSettings.getAnimateRows(gridId));
+  let cellTextSelection = $state<boolean>(
+    agGridSettings.getCellTextSelection(gridId),
+  );
 
   // Handlers
-  function handleThemeChange(value: AGGridTheme) {
-    theme = value;
-    agGridSettings.setTheme(gridId, value);
+  function handleThemeChange(newTheme: AGGridTheme) {
+    theme = newTheme;
+    agGridSettings.setTheme(gridId, newTheme);
   }
 
-  function handleFontChange(value: AGGridFont) {
-    font = value;
-    agGridSettings.setFont(gridId, value);
+  function handleFontChange(newFont: AGGridFont) {
+    font = newFont;
+    agGridSettings.setFont(gridId, newFont);
   }
 
-  function handleDensityChange(value: RowHeight) {
-    rowHeight = value;
-    agGridSettings.setRowHeight(gridId, value);
-
-    if (gridApi) {
-      const px = densities.find((d) => d.value === value)?.px || 40;
-      gridApi.setGridOption("rowHeight", px);
-      gridApi.resetRowHeights();
-    }
+  function handleRowHeightChange(newHeight: RowHeight) {
+    rowHeight = newHeight;
+    agGridSettings.setRowHeight(gridId, newHeight);
+    gridApi?.resetRowHeights();
   }
 
-  function handleAnimateChange() {
-    animateRows = !animateRows;
-    agGridSettings.setAnimateRows(gridId, animateRows);
-    if (gridApi) {
-      gridApi.setGridOption("animateRows", animateRows);
-    }
+  function handleHeaderHeightChange(newHeight: number) {
+    headerHeight = newHeight;
+    agGridSettings.setHeaderHeight(gridId, newHeight);
+    gridApi?.setGridOption("headerHeight", newHeight);
   }
 
-  function handleTextSelectionChange() {
-    cellTextSelection = !cellTextSelection;
-    agGridSettings.setCellTextSelection(gridId, cellTextSelection);
-    if (gridApi) {
-      gridApi.setGridOption("enableCellTextSelection", cellTextSelection);
-    }
+  function handleToolbarPosChange(newPos: ToolbarPosition) {
+    toolbarPosition = newPos;
+    agGridSettings.setToolbarPosition(gridId, newPos);
   }
 
-  function handleToolbarPositionChange(value: "top" | "bottom") {
-    agGridSettings.setToolbarPosition(gridId, value);
+  function handleAnimateChange(checked: boolean) {
+    animateRows = checked;
+    agGridSettings.setAnimateRows(gridId, checked);
+    gridApi?.setGridOption("animateRows", checked);
   }
+
+  function handleTextSelectionChange(checked: boolean) {
+    cellTextSelection = checked;
+    agGridSettings.setCellTextSelection(gridId, checked);
+    gridApi?.setGridOption("enableCellTextSelection", checked);
+  }
+
+  // Options
+  const themes: { value: AGGridTheme; label: string }[] = [
+    { value: "ag-theme-quartz-dark", label: "Quartz Dark" },
+    { value: "ag-theme-quartz", label: "Quartz Light" },
+    { value: "ag-theme-alpine-dark", label: "Alpine Dark" },
+    { value: "ag-theme-alpine", label: "Alpine Light" },
+    { value: "ag-theme-balham", label: "Balham" },
+  ];
+
+  const fonts: { value: AGGridFont; label: string }[] = [
+    { value: "system", label: "Sistema" },
+    { value: "inter", label: "Inter" },
+    { value: "roboto", label: "Roboto" },
+    { value: "source-sans", label: "Source Sans" },
+  ];
+
+  const densities: { value: RowHeight; label: string }[] = [
+    { value: "compact", label: "Compacto" },
+    { value: "normal", label: "Normal" },
+    { value: "comfortable", label: "Cómodo" },
+  ];
+
+  const toolbarPositions: { value: ToolbarPosition; label: string }[] = [
+    { value: "top", label: "Superior" },
+    { value: "bottom", label: "Inferior" },
+  ];
+
+  const labelClass = "block text-xs font-medium text-zinc-400 mb-1.5 ml-0.5";
+  const sectionClass = "space-y-4 p-1";
 </script>
 
-<div class="space-y-6">
-  <!-- Tema -->
-  <section>
-    <h3
-      class="text-xs font-semibold uppercase tracking-wider text-[#8b949e] mb-3"
-    >
-      Tema
-    </h3>
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-      {#each themes as t}
-        <button
-          onclick={() => handleThemeChange(t.value)}
-          class="relative flex flex-col items-center gap-2 p-3 rounded-md border transition-all
-            {theme === t.value
-            ? 'border-[#238636] bg-[#238636]/10'
-            : 'border-[#30363d] hover:border-[#8b949e] bg-[#161b22]'}"
-        >
-          <div
-            class="w-full h-8 rounded flex items-center justify-center text-xs font-mono
-              {t.dark
-              ? 'bg-[#0d1117] text-[#8b949e] border border-[#30363d]'
-              : 'bg-[#f6f8fa] text-[#24292f] border border-[#d0d7de]'}"
-          >
-            Abc
-          </div>
-          <span class="text-xs text-[#e6edf3]">{t.label}</span>
+<div class={sectionClass}>
+  <!-- Grid Layout for Compactness -->
+  <div class="grid grid-cols-2 gap-4">
+    <!-- Theme -->
+    <SelectDropdown
+      label="Tema Visual"
+      value={theme}
+      options={themes}
+      onSelect={handleThemeChange}
+    />
 
-          {#if theme === t.value}
-            <div class="absolute top-1.5 right-1.5">
-              <Check size={14} class="text-[#238636]" />
-            </div>
-          {/if}
-        </button>
-      {/each}
-    </div>
-  </section>
+    <!-- Font -->
+    <SelectDropdown
+      label="Tipografía"
+      value={font}
+      options={fonts}
+      onSelect={handleFontChange}
+    />
+  </div>
 
-  <!-- Fuente -->
-  <section>
-    <h3
-      class="text-xs font-semibold uppercase tracking-wider text-[#8b949e] mb-3"
-    >
-      Fuente
-    </h3>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-      {#each fonts as f}
-        <button
-          onclick={() => handleFontChange(f.value)}
-          class="relative flex flex-col items-center gap-1.5 p-3 rounded-md border transition-all
-            {font === f.value
-            ? 'border-[#238636] bg-[#238636]/10'
-            : 'border-[#30363d] hover:border-[#8b949e] bg-[#161b22]'}"
-        >
-          <span
-            class="text-lg text-[#e6edf3]
-              {f.value === 'inter' ? 'font-inter' : ''}
-              {f.value === 'roboto' ? 'font-roboto' : ''}
-              {f.value === 'source-sans' ? 'font-source-sans' : ''}"
-          >
-            {f.preview}
-          </span>
-          <span class="text-xs text-[#8b949e]">{f.label}</span>
+  <div class="grid grid-cols-2 gap-4">
+    <!-- Toolbar Position -->
+    <SelectDropdown
+      label="Barra de Herramientas"
+      value={toolbarPosition}
+      options={toolbarPositions}
+      onSelect={handleToolbarPosChange}
+    />
 
-          {#if font === f.value}
-            <div class="absolute top-1 right-1">
-              <Check size={12} class="text-[#238636]" />
-            </div>
-          {/if}
-        </button>
-      {/each}
-    </div>
-  </section>
-
-  <!-- Densidad -->
-  <section>
-    <h3
-      class="text-xs font-semibold uppercase tracking-wider text-[#8b949e] mb-3"
-    >
-      Densidad de filas
-    </h3>
-    <div class="flex gap-2">
-      {#each densities as d}
-        <button
-          onclick={() => handleDensityChange(d.value)}
-          class="flex-1 flex flex-col items-center gap-1 p-3 rounded-md border transition-all
-            {rowHeight === d.value
-            ? 'border-[#238636] bg-[#238636]/10'
-            : 'border-[#30363d] hover:border-[#8b949e] bg-[#161b22]'}"
-        >
-          <div class="w-full flex flex-col gap-0.5">
-            {#each [1, 2, 3] as _}
-              <div
-                class="w-full rounded-sm {rowHeight === d.value
-                  ? 'bg-[#238636]'
-                  : 'bg-[#30363d]'}"
-                style="height: {d.px / 6}px"
-              ></div>
-            {/each}
-          </div>
-          <span class="text-xs text-[#e6edf3] mt-1">{d.label}</span>
-          <span class="text-[10px] text-[#8b949e]">{d.px}px</span>
-        </button>
-      {/each}
-    </div>
-  </section>
-
-  <!-- Ubicación de Toolbar -->
-  <section>
-    <h3
-      class="text-xs font-semibold uppercase tracking-wider text-[#8b949e] mb-3"
-    >
-      Ubicación de Toolbar
-    </h3>
-    <div class="flex gap-2">
-      {#each [["top", "Superior"], ["bottom", "Inferior"]] as [value, label]}
-        <button
-          onclick={() => handleToolbarPositionChange(value as "top" | "bottom")}
-          class="relative flex-1 flex flex-col items-center gap-2 p-3 rounded-md border transition-all
-            {toolbarPosition === value
-            ? 'border-[#238636] bg-[#238636]/10'
-            : 'border-[#30363d] hover:border-[#8b949e] bg-[#161b22]'}"
-        >
-          <div class="w-full flex flex-col gap-1">
-            {#if value === "top"}
-              <div class="w-full h-2 bg-[#f78166] rounded-sm"></div>
-              <div
-                class="w-full h-8 bg-[#21262d] rounded-sm border border-[#30363d]"
-              ></div>
-            {:else}
-              <div
-                class="w-full h-8 bg-[#21262d] rounded-sm border border-[#30363d]"
-              ></div>
-              <div class="w-full h-2 bg-[#f78166] rounded-sm"></div>
-            {/if}
-          </div>
-          <span class="text-xs text-[#e6edf3]">{label}</span>
-          {#if toolbarPosition === value}
-            <div class="absolute top-1 right-1">
-              <Check size={12} class="text-[#238636]" />
-            </div>
-          {/if}
-        </button>
-      {/each}
-    </div>
-  </section>
-
-  <!-- Opciones adicionales -->
-  <section>
-    <h3
-      class="text-xs font-semibold uppercase tracking-wider text-[#8b949e] mb-3"
-    >
-      Opciones
-    </h3>
-    <div class="space-y-2">
-      <label
-        class="flex items-center justify-between p-3 rounded-md bg-[#161b22] border border-[#30363d]
-          hover:border-[#8b949e] cursor-pointer transition-colors"
+    <!-- Row Density (Segmented Control) -->
+    <div>
+      <label class={labelClass}>Densidad de Filas</label>
+      <div
+        class="flex bg-black/20 p-1 rounded-lg border border-white/10 h-[34px]"
       >
-        <div>
-          <p class="text-sm text-[#e6edf3]">Animar filas</p>
-          <p class="text-xs text-[#8b949e]">Animaciones al ordenar y filtrar</p>
-        </div>
-        <input
-          type="checkbox"
-          checked={animateRows}
-          onchange={handleAnimateChange}
-          class="w-4 h-4 rounded bg-[#0d1117] border-[#30363d] text-[#238636] focus:ring-[#238636]"
-        />
-      </label>
-
-      <label
-        class="flex items-center justify-between p-3 rounded-md bg-[#161b22] border border-[#30363d]
-          hover:border-[#8b949e] cursor-pointer transition-colors"
-      >
-        <div>
-          <p class="text-sm text-[#e6edf3]">Seleccionar texto</p>
-          <p class="text-xs text-[#8b949e]">
-            Permitir copiar texto de las celdas
-          </p>
-        </div>
-        <input
-          type="checkbox"
-          checked={cellTextSelection}
-          onchange={handleTextSelectionChange}
-          class="w-4 h-4 rounded bg-[#0d1117] border-[#30363d] text-[#238636] focus:ring-[#238636]"
-        />
-      </label>
+        {#each densities as d}
+          <button
+            class="flex-1 text-xs font-medium rounded-md transition-all flex items-center justify-center {rowHeight ===
+            d.value
+              ? 'bg-blue-600/20 text-blue-400 ring-1 ring-blue-500/50'
+              : 'text-zinc-500 hover:text-zinc-300'}"
+            onclick={() => handleRowHeightChange(d.value)}
+          >
+            {d.label}
+          </button>
+        {/each}
+      </div>
     </div>
-  </section>
+  </div>
+
+  <!-- Header Height Slider -->
+  <div class="pt-2">
+    <div class="flex justify-between items-center mb-2">
+      <label class={labelClass}>Altura de Cabecera</label>
+      <span
+        class="text-xs font-mono text-blue-400 bg-blue-900/20 px-1.5 py-0.5 rounded border border-blue-500/20"
+      >
+        {headerHeight}px
+      </span>
+    </div>
+    <div class="px-1">
+      <input
+        type="range"
+        min="30"
+        max="60"
+        step="2"
+        value={headerHeight}
+        oninput={(e) => handleHeaderHeightChange(Number(e.currentTarget.value))}
+        class="w-full h-1.5 bg-zinc-700/50 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600/50 accent-blue-600"
+      />
+      <div
+        class="flex justify-between text-[10px] text-zinc-600 mt-1.5 font-medium px-0.5"
+      >
+        <span>Compacta (30px)</span>
+        <span>Amplia (60px)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="h-px bg-white/5 my-2"></div>
+
+  <!-- Additional Options -->
+  <div class="grid grid-cols-2 gap-4">
+    <label class="flex items-center gap-3 cursor-pointer group">
+      <input
+        type="checkbox"
+        checked={animateRows}
+        onchange={(e) => handleAnimateChange(e.currentTarget.checked)}
+        class="w-4 h-4 rounded bg-black/20 border-zinc-600 text-blue-600 focus:ring-blue-600 focus:ring-offset-0 transition-all checked:bg-blue-600 checked:border-blue-600"
+      />
+      <span class="text-sm text-zinc-400 group-hover:text-zinc-200"
+        >Animar filas</span
+      >
+    </label>
+
+    <label class="flex items-center gap-3 cursor-pointer group">
+      <input
+        type="checkbox"
+        checked={cellTextSelection}
+        onchange={(e) => handleTextSelectionChange(e.currentTarget.checked)}
+        class="w-4 h-4 rounded bg-black/20 border-zinc-600 text-blue-600 focus:ring-blue-600 focus:ring-offset-0 transition-all checked:bg-blue-600 checked:border-blue-600"
+      />
+      <span class="text-sm text-zinc-400 group-hover:text-zinc-200"
+        >Selección de texto</span
+      >
+    </label>
+  </div>
 </div>

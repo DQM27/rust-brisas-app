@@ -1,9 +1,9 @@
 <script lang="ts">
-  // @ts-nocheck - Svelte 5 runes are not recognized by TS
   import type { GridId } from "$lib/types/agGrid";
   import type { GridApi } from "@ag-grid-community/core";
   import { agGridSettings } from "$lib/stores/agGridSettings.svelte";
-  import { Filter, Search, Hash, Trash2 } from "lucide-svelte";
+  import { Filter, Search, Trash2 } from "lucide-svelte";
+  import SelectDropdown from "$lib/components/shared/SelectDropdown.svelte";
 
   interface Props {
     gridId: GridId;
@@ -18,40 +18,78 @@
     agGridSettings.getShowFloatingFilters(gridId),
   );
   let enableQuickFilter = $derived(agGridSettings.getEnableQuickFilter(gridId));
+  let rowSelectionMode = $derived(agGridSettings.getRowSelectionMode(gridId));
+  let suppressRowClickSelection = $derived(
+    agGridSettings.getSuppressRowClickSelection(gridId),
+  );
+  let enterNavigation = $derived(agGridSettings.getEnterNavigation(gridId));
+  let tabNavigation = $derived(agGridSettings.getTabNavigation(gridId));
+  let autoSizeOnLoad = $derived(
+    agGridSettings.getAutoSizeColumnsOnLoad(gridId),
+  );
+
   let quickFilterText = $state("");
 
   // Opciones de paginación
   const paginationOptions = [10, 20, 50, 100, 200, 500];
 
+  // Typed options for SelectDropdown
+  const selectionOptions: {
+    value: "single" | "multiple" | "none";
+    label: string;
+  }[] = [
+    { value: "multiple", label: "Múltiple (Checkbox)" },
+    { value: "single", label: "Simple (Una fila)" },
+    { value: "none", label: "Desactivado" },
+  ];
+
+  const enterOptions: { value: "down" | "next" | "none"; label: string }[] = [
+    { value: "down", label: "Mover abajo" },
+    { value: "next", label: "Mover siguiente celda" },
+    { value: "none", label: "Nada" },
+  ];
+
   // Handlers
   function handlePaginationChange(size: number) {
-    paginationSize = size;
     agGridSettings.setPaginationSize(gridId, size);
-
-    if (gridApi) {
-      gridApi.setGridOption("paginationPageSize", size);
-    }
+    if (gridApi) gridApi.setGridOption("paginationPageSize", size);
   }
 
-  function handleFloatingFiltersChange() {
-    showFloatingFilters = !showFloatingFilters;
-    agGridSettings.setShowFloatingFilters(gridId, showFloatingFilters);
+  function handleSelectionModeChange(value: "single" | "multiple" | "none") {
+    agGridSettings.setRowSelectionMode(gridId, value);
+  }
 
+  function handleSuppressRowClickChange(checked: boolean) {
+    agGridSettings.setSuppressRowClickSelection(gridId, checked);
+  }
+
+  function handleEnterNavChange(value: "down" | "next" | "none") {
+    agGridSettings.setEnterNavigation(gridId, value);
+  }
+
+  function handleTabNavChange(checked: boolean) {
+    agGridSettings.setTabNavigation(gridId, checked);
+  }
+
+  function handleAutoSizeChange(checked: boolean) {
+    agGridSettings.setAutoSizeColumnsOnLoad(gridId, checked);
+  }
+
+  function handleFloatingFiltersChange(checked: boolean) {
+    agGridSettings.setShowFloatingFilters(gridId, checked);
     if (gridApi) {
       const currentDefaultColDef = gridApi.getGridOption("defaultColDef");
       gridApi.setGridOption("defaultColDef", {
         ...currentDefaultColDef,
-        floatingFilter: showFloatingFilters,
+        floatingFilter: checked,
       });
       gridApi.refreshHeader();
     }
   }
 
-  function handleQuickFilterToggle() {
-    enableQuickFilter = !enableQuickFilter;
-    agGridSettings.setEnableQuickFilter(gridId, enableQuickFilter);
-
-    if (!enableQuickFilter && gridApi) {
+  function handleQuickFilterToggle(checked: boolean) {
+    agGridSettings.setEnableQuickFilter(gridId, checked);
+    if (!checked && gridApi) {
       gridApi.setGridOption("quickFilterText", "");
       quickFilterText = "";
     }
@@ -77,163 +115,214 @@
     }
   }
 
-  // Info de filtros activos
   const activeFiltersCount = $derived.by(() => {
     if (!gridApi) return 0;
     const filterModel = gridApi.getFilterModel();
     return filterModel ? Object.keys(filterModel).length : 0;
   });
+
+  const sectionClass = "space-y-4 p-1";
+  const labelClass = "block text-xs font-medium text-zinc-400 mb-1.5 ml-0.5";
+  const checkboxClass =
+    "w-4 h-4 rounded bg-black/20 border-zinc-600 text-blue-600 focus:ring-blue-600 focus:ring-offset-0 transition-all checked:bg-blue-600 checked:border-blue-600 cursor-pointer";
 </script>
 
-<div class="space-y-6">
-  <!-- Paginación -->
-  <section>
-    <div class="flex items-center gap-2 mb-3">
-      <Hash size={16} class="text-[#58a6ff]" />
-      <h3 class="text-sm font-medium text-[#e6edf3]">Paginación</h3>
-    </div>
-
-    <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
-      {#each paginationOptions as size}
-        <button
-          onclick={() => handlePaginationChange(size)}
-          class="py-2 px-3 text-sm rounded-md border transition-all
-            {paginationSize === size
-            ? 'border-[#58a6ff] bg-[#58a6ff]/10 text-[#58a6ff] font-medium'
-            : 'border-[#30363d] bg-[#161b22] text-[#8b949e] hover:border-[#8b949e]'}"
-        >
-          {size}
-        </button>
-      {/each}
-    </div>
-
-    <p class="text-xs text-[#8b949e] mt-2">Registros por página en la tabla</p>
-  </section>
-
-  <!-- Quick Filter -->
-  <section>
-    <div class="flex items-center justify-between mb-3">
-      <div class="flex items-center gap-2">
-        <Search size={16} class="text-[#238636]" />
-        <h3 class="text-sm font-medium text-[#e6edf3]">Búsqueda rápida</h3>
-      </div>
-      <label class="flex items-center gap-2 cursor-pointer">
-        <span class="text-xs text-[#8b949e]">
-          {enableQuickFilter ? "Activo" : "Inactivo"}
-        </span>
-        <input
-          type="checkbox"
-          checked={enableQuickFilter}
-          onchange={handleQuickFilterToggle}
-          class="w-4 h-4 rounded bg-[#0d1117] border-[#30363d] text-[#238636] focus:ring-[#238636]"
-        />
-      </label>
-    </div>
-
-    {#if enableQuickFilter}
-      <div class="relative">
-        <Search
-          size={14}
-          class="absolute left-3 top-1/2 -translate-y-1/2 text-[#8b949e]"
-        />
-        <input
-          type="text"
-          bind:value={quickFilterText}
-          oninput={handleQuickFilterChange}
-          placeholder="Escribir para filtrar en todas las columnas..."
-          class="w-full pl-9 pr-3 py-2.5 text-sm bg-[#0d1117] border border-[#30363d] rounded-md
-            text-[#e6edf3] placeholder:text-[#8b949e] focus:outline-none focus:border-[#238636]/50"
-        />
-        {#if quickFilterText}
-          <button
-            onclick={() => {
-              quickFilterText = "";
-              handleQuickFilterChange();
-            }}
-            class="absolute right-3 top-1/2 -translate-y-1/2 text-[#8b949e] hover:text-[#e6edf3]"
-          >
-            ×
-          </button>
-        {/if}
-      </div>
-      <p class="text-xs text-[#8b949e] mt-2">
-        Filtra instantáneamente en todas las columnas visibles
-      </p>
-    {:else}
-      <div
-        class="p-4 rounded-md bg-[#161b22] border border-[#30363d] text-center"
-      >
-        <p class="text-sm text-[#8b949e]">
-          Activa la búsqueda rápida para filtrar en todas las columnas
-        </p>
-      </div>
-    {/if}
-  </section>
-
-  <!-- Filtros flotantes -->
-  <section>
-    <div class="flex items-center gap-2 mb-3">
-      <Filter size={16} class="text-[#a371f7]" />
-      <h3 class="text-sm font-medium text-[#e6edf3]">Filtros de columna</h3>
-    </div>
-
-    <label
-      class="flex items-center justify-between p-3 rounded-md bg-[#161b22] border border-[#30363d]
-        hover:border-[#8b949e] cursor-pointer transition-colors"
-    >
+<div class={sectionClass}>
+  <!-- Grid Layout -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="space-y-4">
+      <!-- Paginación -->
       <div>
-        <p class="text-sm text-[#e6edf3]">Filtros flotantes</p>
-        <p class="text-xs text-[#8b949e]">
-          Muestra campo de filtro debajo de cada encabezado
-        </p>
+        <label class={labelClass}>Registros por página</label>
+        <div class="grid grid-cols-3 gap-2">
+          {#each paginationOptions as size}
+            <button
+              onclick={() => handlePaginationChange(size)}
+              class="py-1.5 px-2 text-xs font-medium rounded-md transition-all border
+                {paginationSize === size
+                ? 'bg-blue-600/20 text-blue-400 border-blue-500/50 ring-1 ring-blue-500/20'
+                : 'bg-black/20 text-zinc-400 border-white/10 hover:border-white/20 hover:text-white'}"
+            >
+              {size}
+            </button>
+          {/each}
+        </div>
       </div>
-      <input
-        type="checkbox"
-        checked={showFloatingFilters}
-        onchange={handleFloatingFiltersChange}
-        class="w-4 h-4 rounded bg-[#0d1117] border-[#30363d] text-[#a371f7] focus:ring-[#a371f7]"
+
+      <!-- Selección -->
+      <SelectDropdown
+        label="Modo de Selección"
+        value={rowSelectionMode}
+        options={selectionOptions}
+        onSelect={handleSelectionModeChange}
       />
-    </label>
-  </section>
 
-  <!-- Acciones de filtros -->
-  <section>
-    <div class="flex items-center gap-2 mb-3">
-      <Trash2 size={16} class="text-[#f85149]" />
-      <h3 class="text-sm font-medium text-[#e6edf3]">Limpiar</h3>
+      <!-- Enter Navigation -->
+      <SelectDropdown
+        label="Tecla Enter"
+        value={enterNavigation}
+        options={enterOptions}
+        onSelect={handleEnterNavChange}
+      />
     </div>
 
-    <div class="flex gap-2">
-      <button
-        onclick={clearAllFilters}
-        class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md
-          bg-[#f85149]/10 border border-[#f85149]/20 text-sm text-[#f85149]
-          hover:bg-[#f85149]/20 transition-colors"
-      >
-        <Filter size={14} />
-        Limpiar filtros
-        {#if activeFiltersCount > 0}
-          <span class="px-1.5 py-0.5 text-xs bg-[#f85149]/30 rounded">
-            {activeFiltersCount}
-          </span>
+    <div class="space-y-5 pt-0.5">
+      <!-- Toggles Grid -->
+      <div class="space-y-3 p-3 rounded-lg bg-black/10 border border-white/5">
+        {#if rowSelectionMode !== "none"}
+          <label class="flex items-center gap-3 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={suppressRowClickSelection}
+              onchange={(e) =>
+                handleSuppressRowClickChange(e.currentTarget.checked)}
+              class={checkboxClass}
+            />
+            <div class="flex flex-col">
+              <span class="text-xs text-zinc-200 group-hover:text-white"
+                >Solo Checkbox</span
+              >
+              <span class="text-[10px] text-zinc-500"
+                >Evitar selección al hacer clic en la fila</span
+              >
+            </div>
+          </label>
         {/if}
-      </button>
-      <button
-        onclick={clearSort}
-        class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md
-          bg-[#21262d] border border-[#30363d] text-sm text-[#8b949e]
-          hover:border-[#8b949e] transition-colors"
-      >
-        Limpiar orden
-      </button>
-    </div>
-  </section>
 
-  <!-- Info -->
-  <div class="p-3 rounded-md bg-[#161b22] border border-[#30363d]">
-    <p class="text-xs text-[#8b949e]">
-      <strong class="text-[#e6edf3]">Tip:</strong> Usa Shift+Click en los encabezados
-      para ordenar por múltiples columnas. Los filtros se combinan con AND.
-    </p>
+        <label class="flex items-center gap-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={tabNavigation}
+            onchange={(e) => handleTabNavChange(e.currentTarget.checked)}
+            class={checkboxClass}
+          />
+          <span class="text-xs text-zinc-200 group-hover:text-white"
+            >Navegación con Tab</span
+          >
+        </label>
+
+        <label class="flex items-center gap-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={autoSizeOnLoad}
+            onchange={(e) => handleAutoSizeChange(e.currentTarget.checked)}
+            class={checkboxClass}
+          />
+          <div class="flex flex-col">
+            <span class="text-xs text-zinc-200 group-hover:text-white"
+              >Auto-ajustar Columnas</span
+            >
+            <span class="text-[10px] text-zinc-500"
+              >Ajustar ancho al cargar datos</span
+            >
+          </div>
+        </label>
+
+        <label class="flex items-center gap-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={showFloatingFilters}
+            onchange={(e) =>
+              handleFloatingFiltersChange(e.currentTarget.checked)}
+            class={checkboxClass}
+          />
+          <div class="flex flex-col">
+            <span class="text-xs text-zinc-200 group-hover:text-white"
+              >Filtros Flotantes</span
+            >
+            <span class="text-[10px] text-zinc-500"
+              >Input de filtro bajo cada columna</span
+            >
+          </div>
+        </label>
+      </div>
+
+      <!-- Quick Filter -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label class={labelClass} for="quickFilter">Búsqueda Rápida</label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <span class="text-[10px] text-zinc-500">
+              {enableQuickFilter ? "Activo" : "Inactivo"}
+            </span>
+            <div
+              class="relative inline-flex h-4 w-7 items-center rounded-full transition-colors {enableQuickFilter
+                ? 'bg-blue-600'
+                : 'bg-zinc-700'}"
+            >
+              <input
+                type="checkbox"
+                checked={enableQuickFilter}
+                onchange={(e) =>
+                  handleQuickFilterToggle(e.currentTarget.checked)}
+                class="sr-only"
+              />
+              <span
+                class="inline-block h-3 w-3 transform rounded-full bg-white transition-transform {enableQuickFilter
+                  ? 'translate-x-3.5'
+                  : 'translate-x-0.5'}"
+              ></span>
+            </div>
+          </label>
+        </div>
+
+        {#if enableQuickFilter}
+          <div class="relative">
+            <Search
+              size={14}
+              class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
+            />
+            <input
+              id="quickFilter"
+              type="text"
+              bind:value={quickFilterText}
+              oninput={handleQuickFilterChange}
+              placeholder="Filtrar en todo..."
+              class="w-full bg-black/20 border border-white/10 rounded-lg pl-9 pr-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+            />
+            {#if quickFilterText}
+              <button
+                onclick={() => {
+                  quickFilterText = "";
+                  handleQuickFilterChange();
+                }}
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+              >
+                ×
+              </button>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    </div>
+  </div>
+
+  <div class="h-px bg-white/5 my-4"></div>
+
+  <!-- Actions -->
+  <div class="grid grid-cols-2 gap-3">
+    <button
+      onclick={clearAllFilters}
+      class="flex items-center justify-center gap-2 py-2 rounded-md
+        bg-red-500/10 border border-red-500/20 text-xs text-red-500 font-medium
+        hover:bg-red-500/20 transition-colors h-[34px]"
+    >
+      <Filter size={14} />
+      Limpiar filtros
+      {#if activeFiltersCount > 0}
+        <span class="px-1.5 py-0.5 text-[10px] bg-red-500/30 rounded-full">
+          {activeFiltersCount}
+        </span>
+      {/if}
+    </button>
+    <button
+      onclick={clearSort}
+      class="flex items-center justify-center gap-2 py-2 rounded-md
+        bg-black/20 border border-white/10 text-xs text-zinc-400 font-medium
+        hover:bg-white/5 hover:text-white transition-colors h-[34px]"
+    >
+      <Trash2 size={14} />
+      Resetaer orden
+    </button>
   </div>
 </div>

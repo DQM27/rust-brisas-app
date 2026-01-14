@@ -1,6 +1,13 @@
 @import "tailwindcss";
 @import "./styles/theme.css";
 
+@theme {
+  --font-inter: "Inter", sans-serif;
+  --font-roboto: "Roboto", sans-serif;
+  --font-source-sans: "Source Sans 3", sans-serif;
+  --font-system: system-ui, sans-serif;
+}
+
 :root {
     --ag-row-height: 42px;
     --ag-header-height: 48px;

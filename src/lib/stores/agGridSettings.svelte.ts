@@ -72,7 +72,20 @@ const DEFAULT_CONFIG: Omit<GridConfiguration, 'gridId'> = {
     deleteRecords: true,
     bulkOperations: true,
     dontAskAgain: false
-  }
+  },
+
+  // Selection & Navigation
+  rowSelectionMode: 'multiple',
+  suppressRowClickSelection: false,
+  enterNavigation: 'down',
+  tabNavigation: true,
+
+  // Copy & Context
+  copyWithHeaders: false,
+  suppressContextMenu: false,
+
+  // Columns
+  autoSizeColumnsOnLoad: false
 };
 
 // ============================================
@@ -354,6 +367,81 @@ class AGGridSettingsStore {
 
   setConfirmations(gridId: GridId, confirmations: ConfirmationsConfig): void {
     this.updateConfig(gridId, { confirmations });
+  }
+
+  // ============================================
+  // Selection & Navigation
+  // ============================================
+
+  getRowSelectionMode(gridId: GridId): 'single' | 'multiple' | 'none' {
+    this.version;
+    return this.getConfiguration(gridId)?.rowSelectionMode ?? 'multiple';
+  }
+
+  setRowSelectionMode(gridId: GridId, mode: 'single' | 'multiple' | 'none'): void {
+    this.updateConfig(gridId, { rowSelectionMode: mode });
+  }
+
+  getSuppressRowClickSelection(gridId: GridId): boolean {
+    this.version;
+    return this.getConfiguration(gridId)?.suppressRowClickSelection ?? false;
+  }
+
+  setSuppressRowClickSelection(gridId: GridId, suppress: boolean): void {
+    this.updateConfig(gridId, { suppressRowClickSelection: suppress });
+  }
+
+  getEnterNavigation(gridId: GridId): 'down' | 'next' | 'none' {
+    this.version;
+    return this.getConfiguration(gridId)?.enterNavigation ?? 'down';
+  }
+
+  setEnterNavigation(gridId: GridId, navigation: 'down' | 'next' | 'none'): void {
+    this.updateConfig(gridId, { enterNavigation: navigation });
+  }
+
+  getTabNavigation(gridId: GridId): boolean {
+    this.version;
+    return this.getConfiguration(gridId)?.tabNavigation ?? true;
+  }
+
+  setTabNavigation(gridId: GridId, enable: boolean): void {
+    this.updateConfig(gridId, { tabNavigation: enable });
+  }
+
+  // ============================================
+  // Copy & Context
+  // ============================================
+
+  getCopyWithHeaders(gridId: GridId): boolean {
+    this.version;
+    return this.getConfiguration(gridId)?.copyWithHeaders ?? false;
+  }
+
+  setCopyWithHeaders(gridId: GridId, enable: boolean): void {
+    this.updateConfig(gridId, { copyWithHeaders: enable });
+  }
+
+  getSuppressContextMenu(gridId: GridId): boolean {
+    this.version;
+    return this.getConfiguration(gridId)?.suppressContextMenu ?? false;
+  }
+
+  setSuppressContextMenu(gridId: GridId, suppress: boolean): void {
+    this.updateConfig(gridId, { suppressContextMenu: suppress });
+  }
+
+  // ============================================
+  // Auto Size Columns
+  // ============================================
+
+  getAutoSizeColumnsOnLoad(gridId: GridId): boolean {
+    this.version;
+    return this.getConfiguration(gridId)?.autoSizeColumnsOnLoad ?? false;
+  }
+
+  setAutoSizeColumnsOnLoad(gridId: GridId, enable: boolean): void {
+    this.updateConfig(gridId, { autoSizeColumnsOnLoad: enable });
   }
 
   // ============================================

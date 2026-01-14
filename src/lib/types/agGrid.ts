@@ -215,6 +215,19 @@ export interface GridConfiguration {
 
   // Confirmaciones
   confirmations: ConfirmationsConfig;
+
+  // Selection & Navigation (NEW)
+  rowSelectionMode: 'single' | 'multiple' | 'none';
+  suppressRowClickSelection: boolean;
+  enterNavigation: 'down' | 'next' | 'none';
+  tabNavigation: boolean;
+
+  // Copy & Context (NEW)
+  copyWithHeaders: boolean;
+  suppressContextMenu: boolean;
+
+  // Columns (NEW)
+  autoSizeColumnsOnLoad: boolean;
 }
 
 // ============================================

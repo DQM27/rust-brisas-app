@@ -75,7 +75,22 @@
   const enableQuickFilter = $derived(
     agGridSettings.getEnableQuickFilter(gridId),
   );
+
   const toolbarPosition = $derived(agGridSettings.getToolbarPosition(gridId));
+  const headerHeight = $derived(agGridSettings.getHeaderHeight(gridId));
+  const rowSelectionMode = $derived(agGridSettings.getRowSelectionMode(gridId));
+  const suppressRowClickSelection = $derived(
+    agGridSettings.getSuppressRowClickSelection(gridId),
+  );
+  const enterNavigation = $derived(agGridSettings.getEnterNavigation(gridId));
+  const tabNavigation = $derived(agGridSettings.getTabNavigation(gridId));
+  const copyWithHeaders = $derived(agGridSettings.getCopyWithHeaders(gridId));
+  const suppressContextMenu = $derived(
+    agGridSettings.getSuppressContextMenu(gridId),
+  );
+  const autoSizeOnLoad = $derived(
+    agGridSettings.getAutoSizeColumnsOnLoad(gridId),
+  );
 
   // Tema personalizado reactivo
   const myTheme = $derived.by(() => {
@@ -83,6 +98,15 @@
     const baseTheme = themeQuartz.withPart(
       isDark ? colorSchemeDark : colorSchemeLight,
     );
+
+    const fontFamilies: Record<string, string> = {
+      system: "system-ui, sans-serif",
+      inter: "'Inter', sans-serif",
+      roboto: "'Roboto', sans-serif",
+      "source-sans": "'Source Sans 3', sans-serif",
+    };
+
+    const currentFont = agGridSettings.getFont(gridId);
 
     return baseTheme.withParams({
       backgroundColor: isDark ? "rgb(26 26 27)" : "rgb(255 255 255)",
@@ -104,6 +128,7 @@
       headerFontSize: 12,
       spacing: 4,
       cellHorizontalPadding: 12,
+      fontFamily: fontFamilies[currentFont] || "system-ui, sans-serif",
     });
   });
 
@@ -142,6 +167,53 @@
         floatingFilter: showFloatingFilters,
       });
       gridApi.refreshHeader();
+    }
+  });
+
+  $effect(() => {
+    if (gridApi) {
+      gridApi.setGridOption("headerHeight", headerHeight);
+    }
+  });
+
+  $effect(() => {
+    if (gridApi) {
+      if (rowSelectionMode === "none") {
+        gridApi.setGridOption("rowSelection", undefined);
+      } else {
+        gridApi.setGridOption("rowSelection", {
+          mode: rowSelectionMode === "single" ? "singleRow" : "multiRow",
+          enableClickSelection: !suppressRowClickSelection,
+          checkboxes: true,
+          headerCheckbox: rowSelectionMode === "multiple",
+          copySelectedRows: true,
+        });
+      }
+    }
+  });
+
+  $effect(() => {
+    if (gridApi) {
+      gridApi.setGridOption(
+        "enterNavigatesVertically",
+        enterNavigation === "down",
+      );
+      gridApi.setGridOption(
+        "enterNavigatesVerticallyAfterEdit",
+        enterNavigation === "down",
+      );
+    }
+  });
+
+  $effect(() => {
+    if (gridApi) {
+      gridApi.setGridOption("suppressContextMenu", suppressContextMenu);
+    }
+  });
+
+  $effect(() => {
+    if (gridApi) {
+      gridApi.setGridOption("copyHeadersToClipboard", copyWithHeaders);
     }
   });
 
@@ -193,14 +265,31 @@
       floatingFilter: showFloatingFilters,
     },
 
+    // Header
+    headerHeight: headerHeight,
+
     // Selection
-    rowSelection: {
-      mode: "multiRow",
-      enableClickSelection: false,
-      checkboxes: true,
-      headerCheckbox: true,
-      copySelectedRows: true, // Replaces suppressCopyRowsToClipboard: false
-    },
+    rowSelection:
+      rowSelectionMode === "none"
+        ? undefined
+        : {
+            mode: rowSelectionMode === "single" ? "singleRow" : "multiRow",
+            enableClickSelection: !suppressRowClickSelection,
+            checkboxes: true,
+            headerCheckbox: rowSelectionMode === "multiple",
+            copySelectedRows: true,
+          },
+
+    // Navigation
+    enterNavigatesVertically: enterNavigation === "down",
+    enterNavigatesVerticallyAfterEdit: enterNavigation === "down",
+    tabToNextCell: tabNavigation ? undefined : () => null, // null disables tab nav
+
+    // Clipboard
+    copyHeadersToClipboard: copyWithHeaders,
+
+    // UI
+    suppressContextMenu: suppressContextMenu,
 
     // Pagination
     pagination: true,
@@ -247,7 +336,11 @@
         }
 
         if (!restored) {
-          params.api.autoSizeAllColumns();
+          if (autoSizeOnLoad) {
+            params.api.autoSizeAllColumns();
+          } else {
+            params.api.sizeColumnsToFit();
+          }
         }
 
         setTimeout(() => {
