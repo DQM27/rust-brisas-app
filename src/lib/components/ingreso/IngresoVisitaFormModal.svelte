@@ -1,28 +1,21 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import { fade, scale, fly } from 'svelte/transition';
+	import { onDestroy } from 'svelte';
+	import { fade, fly, slide } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
 	import {
 		X,
 		ChevronDown,
 		Plus,
+		CheckCircle,
 		ShieldCheck,
 		SearchX,
-		Building2,
-		UserCircle,
-		MapPin,
-		MessageSquare,
-		IdCard
+		ChevronRight
 	} from 'lucide-svelte';
 
 	// Superforms & Zod v4
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4 } from 'sveltekit-superforms/adapters';
-	import {
-		ingresoVisitaSchema,
-		ingresoVisitaSchemaBase,
-		type IngresoVisitaFormData
-	} from '$lib/schemas/visitaSchema';
+	import { ingresoVisitaSchema, type IngresoVisitaFormData } from '$lib/schemas/visitaSchema';
 
 	// Logic
 	import { ingresoVisitaService } from '$lib/services/ingresoVisitaService';
@@ -51,9 +44,8 @@
 	let showEmpresaModal = $state(false);
 	let nuevaEmpresaNombre = $state('');
 	let creatingEmpresa = $state(false);
-	let empresaError = $state('');
+	let showObservaciones = $state(false);
 	let checkTimeout: ReturnType<typeof setTimeout>;
-	let cedulaDuplicateError = $state<string | null>(null);
 
 	const defaultValues: IngresoVisitaFormData = {
 		cedula: '',
@@ -127,8 +119,15 @@
 			} else {
 				reset();
 				validationResult = null;
-				cedulaDuplicateError = null;
+				showObservaciones = false;
 			}
+		}
+	});
+
+	// Auto-show observaciones if value exists
+	$effect(() => {
+		if ($form.observaciones && $form.observaciones.trim().length > 0) {
+			showObservaciones = true;
 		}
 	});
 
@@ -222,16 +221,19 @@
 
 	async function handleCrearEmpresa() {
 		if (!nuevaEmpresaNombre.trim()) return;
+
 		creatingEmpresa = true;
-		empresaError = '';
-		const result = await submitCreateEmpresa(nuevaEmpresaNombre);
-		if (result.ok) {
-			empresaStore.add(result.empresa);
-			$form.empresaId = result.empresa.id;
-			nuevaEmpresaNombre = '';
+		const res = await submitCreateEmpresa(nuevaEmpresaNombre);
+
+		if (res.ok && res.empresa) {
+			await empresaStore.refresh(); // Recargar lista
+			// Seleccionar la nueva empresa
+			$form.empresaId = res.empresa.id;
 			showEmpresaModal = false;
-		} else {
-			empresaError = result.error;
+			nuevaEmpresaNombre = ''; // Reset
+		} else if (!res.ok) {
+			console.error('Error creando empresa:', res.error);
+			toast.error('Error creando empresa');
 		}
 		creatingEmpresa = false;
 	}
@@ -255,11 +257,11 @@
 
 	// UI Helpers
 	const inputClass =
-		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[38px] text-sm text-white placeholder:text-gray-600 transition-all outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50';
-	const labelClass = 'block text-[11px] font-medium text-secondary mb-1 uppercase tracking-wider';
-	const errorClass = 'text-[11px] text-red-500 mt-0.5';
+		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-gray-500 transition-all outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed';
+	const labelClass = 'block text-[11px] font-bold uppercase tracking-wider text-secondary mb-1.5';
+	const errorClass = 'text-[10px] text-red-400 mt-1 ml-0.5';
 
-	function getFieldStateClass(field: keyof IngresoVisitaFormData, value: any) {
+	function getFieldStateClass(field: keyof IngresoVisitaFormData, value?: any) {
 		if ($errors[field]) return '!border-red-500/50 !ring-1 !ring-red-500/20';
 		if (value && String(value).trim() !== '')
 			return '!border-green-500/50 !ring-1 !ring-green-500/20';
@@ -267,7 +269,6 @@
 	}
 </script>
 
-```svelte
 <svelte:window onkeydown={handleKeydown} />
 
 {#if show}
@@ -282,34 +283,66 @@
 		tabindex="-1"
 	>
 		<div
-			class="relative z-10 w-full max-w-4xl max-h-[95vh] overflow-hidden rounded-xl bg-surface-2 shadow-2xl border border-surface flex flex-col"
+			class="relative z-10 w-full max-w-[480px] max-h-[95vh] overflow-hidden rounded-xl bg-surface-2 shadow-2xl border border-surface flex flex-col"
 			transition:fly={{ y: 20, duration: 200 }}
 		>
 			<!-- Header -->
 			<div
 				class="flex-none flex items-center justify-between px-5 py-4 bg-surface-2 border-b border-surface"
 			>
-				<h2 class="text-xl font-semibold text-primary">Ingreso de Visita</h2>
+				<h2 class="text-lg font-semibold text-primary ml-1">Ingreso de Visita</h2>
 				<button
 					onclick={handleClose}
-					class="text-gray-400 hover:text-white transition-colors"
+					class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
 					aria-label="Cerrar"
 				>
-					<X size={20} />
+					<X size={18} />
 				</button>
 			</div>
 
 			<!-- Body -->
-			<div class="flex-1 overflow-y-auto custom-scrollbar">
-				<form method="POST" use:enhance class="p-5 space-y-5">
-					<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-						<!-- Columna 1: Datos Personales -->
-						<div
-							class="bg-surface-1 rounded-lg border border-surface p-5 grid grid-cols-1 md:grid-cols-2 gap-4"
-						>
-							<div class="md:col-span-2">
+			<div class="flex-1 overflow-hidden">
+				<form method="POST" use:enhance class="flex flex-col h-full">
+					<!-- Scrollable Content -->
+					<div class="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-5">
+						<!-- Validación Status -->
+						{#if validationResult}
+							<div
+								class="p-4 rounded-xl border flex items-start gap-3 transition-all {!validationResult.puedeIngresar
+									? 'bg-red-500/10 border-red-500/20'
+									: 'bg-green-500/10 border-green-500/20'}"
+								transition:fade
+							>
+								{#if validationResult.puedeIngresar}
+									<div class="p-1.5 bg-green-500/20 rounded-lg text-green-400 mt-0.5">
+										<ShieldCheck size={18} />
+									</div>
+									<div>
+										<h4 class="text-sm font-bold text-green-400 italic">ACREDITACIÓN VÁLIDA</h4>
+										<p class="text-xs text-green-500/80 mt-1">
+											El visitante no presenta restricciones.
+										</p>
+									</div>
+								{:else}
+									<div class="p-1.5 bg-red-500/20 rounded-lg text-red-400 mt-0.5">
+										<SearchX size={18} />
+									</div>
+									<div class="flex-1">
+										<h4 class="text-sm font-bold text-red-400 italic">ACCESO RESTRINGIDO</h4>
+										<p class="text-xs text-red-500/80 mt-1 leading-relaxed">
+											{validationResult.motivoRechazo ||
+												'Existen registros de seguridad que impiden el ingreso.'}
+										</p>
+									</div>
+								{/if}
+							</div>
+						{/if}
+
+						<div class="bg-surface-1 rounded-lg border border-surface p-5 grid grid-cols-2 gap-4">
+							<!-- Cédula (Full) -->
+							<div class="col-span-2">
 								<label for="cedula" class={labelClass}>
-									Cédula <span class="text-red-500 ml-0.5">*</span>
+									Cédula <span class="text-red-500">*</span>
 								</label>
 								<div class="relative">
 									<input
@@ -323,9 +356,9 @@
 										{...$constraints.cedula}
 									/>
 									{#if searchingPerson}
-										<div class="absolute right-3 top-3">
+										<div class="absolute right-3 top-2.5">
 											<div
-												class="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"
+												class="w-3.5 h-3.5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"
 											></div>
 										</div>
 									{/if}
@@ -333,9 +366,10 @@
 								{#if $errors.cedula}<p class={errorClass}>{$errors.cedula}</p>{/if}
 							</div>
 
+							<!-- Nombre -->
 							<div>
 								<label for="nombre" class={labelClass}
-									>Nombre <span class="text-red-500 ml-0.5">*</span></label
+									>Nombre <span class="text-red-500">*</span></label
 								>
 								<input
 									id="nombre"
@@ -344,11 +378,12 @@
 									bind:value={$form.nombre}
 									oninput={() => validate('nombre')}
 									placeholder="Juan"
-									disabled={loading}
+									disabled={loading || searchingPerson}
 								/>
 								{#if $errors.nombre}<p class={errorClass}>{$errors.nombre}</p>{/if}
 							</div>
 
+							<!-- Segundo Nombre -->
 							<div>
 								<label for="segundoNombre" class={labelClass}>Segundo Nombre</label>
 								<input
@@ -357,13 +392,14 @@
 									class={inputClass}
 									bind:value={$form.segundoNombre}
 									placeholder=""
-									disabled={loading}
+									disabled={loading || searchingPerson}
 								/>
 							</div>
 
+							<!-- Apellido -->
 							<div>
 								<label for="apellido" class={labelClass}
-									>Apellido <span class="text-red-500 ml-0.5">*</span></label
+									>Apellido <span class="text-red-500">*</span></label
 								>
 								<input
 									id="apellido"
@@ -372,11 +408,12 @@
 									bind:value={$form.apellido}
 									oninput={() => validate('apellido')}
 									placeholder="Pérez"
-									disabled={loading}
+									disabled={loading || searchingPerson}
 								/>
 								{#if $errors.apellido}<p class={errorClass}>{$errors.apellido}</p>{/if}
 							</div>
 
+							<!-- Segundo Apellido -->
 							<div>
 								<label for="segundoApellido" class={labelClass}>Segundo Apellido</label>
 								<input
@@ -385,20 +422,22 @@
 									class={inputClass}
 									bind:value={$form.segundoApellido}
 									placeholder=""
-									disabled={loading}
+									disabled={loading || searchingPerson}
 								/>
 							</div>
 
-							<div class="md:col-span-2 relative">
+							<!-- Empresa (Full) -->
+							<div class="col-span-2 relative">
 								<label for="empresaId" class={labelClass}
-									>Empresa <span class="text-red-500 ml-0.5">*</span></label
+									>Empresa <span class="text-red-500">*</span></label
 								>
 								<div class="flex gap-2 relative">
+									<!-- Custom Dropdown Trigger -->
 									<div class="relative flex-1">
 										<button
 											type="button"
-											disabled={loading || empresaStore.loading}
 											onclick={() => (showEmpresaDropdown = !showEmpresaDropdown)}
+											disabled={loading || searchingPerson || empresaStore.loading}
 											class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {showEmpresaDropdown
 												? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
 												: getFieldStateClass('empresaId', $form.empresaId)}"
@@ -414,17 +453,21 @@
 											<ChevronDown size={16} class="text-secondary" />
 										</button>
 
+										<!-- Dropdown Options -->
 										{#if showEmpresaDropdown}
+											<!-- Backdrop -->
+											<!-- svelte-ignore a11y_click_events_have_key_events -->
+											<!-- svelte-ignore a11y_no_static_element_interactions -->
 											<div
 												class="fixed inset-0 z-40"
 												onclick={() => (showEmpresaDropdown = false)}
-												role="presentation"
 											></div>
+
 											<div
 												class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top max-h-60 overflow-y-auto"
-												transition:fly={{ y: -10, duration: 200 }}
+												transition:fly={{ y: -5, duration: 200 }}
 											>
-												{#if empresaStore.empresas.length === 0}
+												{#if !empresaStore.empresas || empresaStore.empresas.length === 0}
 													<div class="px-3 py-2 text-sm text-gray-500">No hay empresas</div>
 												{:else}
 													{#each empresaStore.empresas as empresa}
@@ -439,7 +482,7 @@
 														>
 															<span>{empresa.nombre}</span>
 															{#if $form.empresaId === empresa.id}
-																<ShieldCheck size={14} class="text-blue-400" />
+																<CheckCircle size={14} class="text-white" />
 															{/if}
 														</button>
 													{/each}
@@ -447,175 +490,148 @@
 											</div>
 										{/if}
 									</div>
+
+									<!-- Add Button -->
 									<button
 										type="button"
 										onclick={() => (showEmpresaModal = true)}
-										disabled={loading}
-										class="px-2.5 rounded-lg border border-white/10 bg-black/20 text-secondary hover:text-white hover:bg-white/5 transition-colors"
+										disabled={loading || searchingPerson}
+										class="px-3 py-1.5 rounded-lg border border-white/10 bg-black/20 text-secondary hover:text-white hover:bg-white/5 transition-colors"
 										title="Añadir nueva empresa"
 									>
-										<Plus size={18} />
+										<Plus size={16} />
 									</button>
 								</div>
 								{#if $errors.empresaId}<p class={errorClass}>{$errors.empresaId}</p>{/if}
 							</div>
-						</div>
 
-						<!-- Columna 2: Datos del Ingreso y Validación -->
-						<div class="space-y-5">
-							<!-- Validación Status -->
-							{#if validationResult}
-								<div
-									class="p-4 rounded-xl border flex items-start gap-4 transition-all {!validationResult.puedeIngresar
-										? 'bg-red-500/10 border-red-500/20'
-										: 'bg-green-500/10 border-green-500/20'}"
-									transition:fade
+							<!-- Seccion de Ingreso Mixed In but visually grouped -->
+
+							<!-- Anfitrión & Motivo -->
+							<div>
+								<label for="anfitrion" class={labelClass}
+									>Anfitrión <span class="text-red-500">*</span></label
 								>
-									{#if validationResult.puedeIngresar}
-										<div class="p-2 bg-green-500/20 rounded-lg text-green-400">
-											<ShieldCheck size={20} />
-										</div>
-										<div>
-											<h4 class="text-sm font-bold text-green-400 italic">ACREDITACIÓN VÁLIDA</h4>
-											<p class="text-xs text-green-500/80 mt-1">
-												El visitante no presenta restricciones.
-											</p>
-										</div>
+								<input
+									id="anfitrion"
+									name="anfitrion"
+									class="{inputClass} {getFieldStateClass('anfitrion', $form.anfitrion)}"
+									bind:value={$form.anfitrion}
+									oninput={() => validate('anfitrion')}
+									placeholder="¿A quién visita?"
+									disabled={loading}
+								/>
+								{#if $errors.anfitrion}<p class={errorClass}>{$errors.anfitrion}</p>{/if}
+							</div>
+
+							<div>
+								<label for="motivo" class={labelClass}
+									>Motivo <span class="text-red-500">*</span></label
+								>
+								<input
+									id="motivo"
+									name="motivo"
+									class="{inputClass} {getFieldStateClass('motivo', $form.motivo)}"
+									bind:value={$form.motivo}
+									oninput={() => validate('motivo')}
+									placeholder="Ej. Entrevista..."
+									disabled={loading}
+								/>
+								{#if $errors.motivo}<p class={errorClass}>{$errors.motivo}</p>{/if}
+							</div>
+
+							<!-- Área & Gafete -->
+							<div>
+								<label for="area" class={labelClass}>Área <span class="text-red-500">*</span></label
+								>
+								<input
+									id="area"
+									name="areaVisitada"
+									class="{inputClass} {getFieldStateClass('areaVisitada', $form.areaVisitada)}"
+									bind:value={$form.areaVisitada}
+									oninput={() => validate('areaVisitada')}
+									placeholder="Piso, etc."
+									disabled={loading}
+								/>
+								{#if $errors.areaVisitada}<p class={errorClass}>{$errors.areaVisitada}</p>{/if}
+							</div>
+
+							<div>
+								<label
+									class="block text-[11px] font-bold uppercase tracking-wider text-secondary mb-1.5"
+									for="gafete"
+								>
+									Gafete
+								</label>
+								<div class="relative w-full group">
+									<input
+										id="gafete"
+										name="gafete"
+										type="text"
+										bind:value={$form.gafete}
+										placeholder="00"
+										class="{inputClass} text-center font-mono tracking-widest"
+										autocomplete="off"
+										disabled={loading}
+									/>
+								</div>
+							</div>
+
+							<!-- Observaciones - Toggle colapsable -->
+							<div class="col-span-2 border-t border-surface pt-2">
+								<button
+									type="button"
+									onclick={() => (showObservaciones = !showObservaciones)}
+									class="flex items-center gap-1.5 text-secondary hover:text-primary transition-colors text-sm"
+								>
+									{#if showObservaciones}
+										<ChevronDown size={14} />
 									{:else}
-										<div class="p-2 bg-red-500/20 rounded-lg text-red-400">
-											<SearchX size={20} />
-										</div>
-										<div class="flex-1">
-											<h4 class="text-sm font-bold text-red-400 italic">ACCESO RESTRINGIDO</h4>
-											<p class="text-xs text-red-500/80 mt-1 leading-relaxed">
-												{validationResult.motivoRechazo ||
-													'Existen registros de seguridad que impiden el ingreso.'}
-											</p>
-										</div>
+										<ChevronRight size={14} />
 									{/if}
-								</div>
-							{/if}
+									<span>Observaciones</span>
+									{#if !showObservaciones && $form.observaciones?.trim()}
+										<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+									{/if}
+								</button>
 
-							<!-- Seccion 2: Datos del Ingreso -->
-							<div class="bg-surface-1 rounded-lg border border-surface p-5 space-y-4">
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-									<div class="md:col-span-2">
-										<label for="motivo" class={labelClass}
-											>Motivo <span class="text-red-500 ml-0.5">*</span></label
+								{#if showObservaciones}
+									<div class="mt-2" transition:slide>
+										<div
+											class="obs-container w-full bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all outline-none"
 										>
-										<div class="relative">
-											<MessageSquare size={14} class="absolute left-3 top-3 text-gray-500" />
-											<input
-												id="motivo"
-												name="motivo"
-												class="{inputClass} pl-9 {getFieldStateClass('motivo', $form.motivo)}"
-												bind:value={$form.motivo}
-												oninput={() => validate('motivo')}
-												placeholder="Ej. Entrevista, mantenimiento, reunión..."
-											/>
-										</div>
-										{#if $errors.motivo}<p class={errorClass}>{$errors.motivo}</p>{/if}
-									</div>
-
-									<div>
-										<label for="anfitrion" class={labelClass}
-											>Anfitrión <span class="text-red-500 ml-0.5">*</span></label
-										>
-										<div class="relative">
-											<UserCircle size={14} class="absolute left-3 top-3 text-gray-500" />
-											<input
-												id="anfitrion"
-												name="anfitrion"
-												class="{inputClass} pl-9 {getFieldStateClass('anfitrion', $form.anfitrion)}"
-												bind:value={$form.anfitrion}
-												oninput={() => validate('anfitrion')}
-												placeholder="¿A quién visita?"
-											/>
-										</div>
-										{#if $errors.anfitrion}<p class={errorClass}>{$errors.anfitrion}</p>{/if}
-									</div>
-
-									<div>
-										<label for="area" class={labelClass}
-											>Área <span class="text-red-500 ml-0.5">*</span></label
-										>
-										<div class="relative">
-											<MapPin size={14} class="absolute left-3 top-3 text-gray-500" />
-											<input
-												id="area"
-												name="areaVisitada"
-												class="{inputClass} pl-9 {getFieldStateClass(
-													'areaVisitada',
-													$form.areaVisitada
-												)}"
-												bind:value={$form.areaVisitada}
-												oninput={() => validate('areaVisitada')}
-												placeholder="Piso, etc."
-											/>
-										</div>
-										{#if $errors.areaVisitada}<p class={errorClass}>{$errors.areaVisitada}</p>{/if}
-									</div>
-
-									<div class="md:col-span-2">
-										<label
-											class="block text-[11px] font-bold uppercase tracking-wider text-secondary mb-2"
-											for="gafete"
-										>
-											Gafete
-										</label>
-										<div class="flex items-center">
-											<div class="relative w-[80px] group">
-												<div
-													class="absolute inset-0 bg-blue-500/5 rounded-lg opacity-0 group-focus-within:opacity-100 transition-opacity"
-												></div>
-												<input
-													id="gafete"
-													name="gafete"
-													type="text"
-													bind:value={$form.gafete}
-													placeholder="00"
-													class="w-full h-12 bg-black/20 border border-white/10 rounded-lg text-center font-mono text-2xl tracking-widest text-white focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all placeholder:text-gray-700"
-													autocomplete="off"
-												/>
-											</div>
+											<textarea
+												class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none outline-none border-none appearance-none ring-0"
+												rows="2"
+												placeholder="Notas adicionales..."
+												bind:value={$form.observaciones}
+												disabled={loading}
+											></textarea>
 										</div>
 									</div>
-								</div>
-
-								<textarea
-									name="observaciones"
-									bind:value={$form.observaciones}
-									class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white resize-none outline-none focus:border-blue-500/50"
-									rows="2"
-									placeholder="Observaciones..."
-								></textarea>
+								{/if}
 							</div>
 						</div>
 					</div>
 
-					<!-- Footer Actions (Inside Form) -->
+					<!-- Footer Actions -->
 					<div
-						class="flex-none flex items-center justify-center gap-4 px-6 py-4 border-t border-surface bg-surface-1 sticky bottom-0 z-20"
+						class="flex-none flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1"
 					>
 						<button
 							type="button"
 							onclick={handleClose}
 							disabled={loading}
-							class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white text-sm"
+							class="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-xs"
 						>
 							Cancelar
 						</button>
 						<button
 							type="submit"
 							disabled={loading}
-							class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm flex items-center justify-center gap-2"
+							class="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-xs disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							{#if loading}
-								<div
-									class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"
-								></div>
-							{/if}
-							Crear Ingreso
+							{loading ? 'Guardando...' : 'Crear Ingreso'}
 						</button>
 					</div>
 				</form>
@@ -624,51 +640,42 @@
 	</div>
 {/if}
 
-<!-- Modal para nueva empresa (Anidado) -->
+<!-- Modal Inline para Crear Empresa -->
 {#if showEmpresaModal}
 	<div
-		class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+		class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
 		transition:fade={{ duration: 150 }}
 	>
-		<div
-			class="absolute inset-0"
-			onclick={() => !creatingEmpresa && (showEmpresaModal = false)}
-			role="presentation"
-		></div>
+		<!-- Backdrop click -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="absolute inset-0" onclick={() => (showEmpresaModal = false)}></div>
 
 		<div
-			class="relative w-full max-w-sm rounded-xl bg-surface-2 shadow-2xl border border-surface overflow-hidden"
-			transition:scale={{ start: 0.95 }}
+			class="relative w-full max-w-[320px] bg-surface-2 rounded-xl shadow-2xl border border-surface overflow-hidden"
+			transition:fly={{ y: 10, duration: 200 }}
 		>
-			<div class="px-5 py-4 border-b border-surface bg-surface-1">
-				<h3 class="text-base font-semibold text-primary">Nueva Empresa</h3>
-			</div>
-
-			<div class="p-5 space-y-4">
-				{#if empresaError}
-					<div class="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-300">
-						{empresaError}
-					</div>
-				{/if}
+			<div class="px-5 py-4">
+				<h3 class="text-sm font-semibold text-white mb-4">Nueva Empresa</h3>
 				<div class="space-y-1">
 					<label for="newEmpresa" class={labelClass}>Nombre Comercial</label>
 					<input
 						id="newEmpresa"
 						type="text"
 						bind:value={nuevaEmpresaNombre}
-						placeholder="Ej: Brisas S.A."
+						placeholder="Ej: Servicios Generales S.A."
 						disabled={creatingEmpresa}
 						class={inputClass}
 						onkeydown={(e) => e.key === 'Enter' && handleCrearEmpresa()}
 					/>
 				</div>
 			</div>
-
-			<div class="flex justify-end gap-2 px-5 py-4 border-t border-surface bg-surface-1">
+			<div class="flex justify-end gap-2 px-5 py-3 border-t border-surface bg-surface-1">
 				<button
 					type="button"
+					disabled={creatingEmpresa}
 					onclick={() => (showEmpresaModal = false)}
-					class="px-4 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary hover:border-white/60 hover:text-white"
+					class="px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary transition-all duration-200 hover:border-white/60 hover:text-white/80"
 				>
 					Cancelar
 				</button>
@@ -676,7 +683,7 @@
 					type="button"
 					disabled={creatingEmpresa || !nuevaEmpresaNombre.trim()}
 					onclick={handleCrearEmpresa}
-					class="px-5 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary hover:border-success hover:text-success"
+					class="px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary transition-all duration-200 hover:border-blue-500 hover:text-blue-500 disabled:opacity-50"
 				>
 					{creatingEmpresa ? 'Guardando...' : 'Guardar'}
 				</button>
@@ -698,5 +705,17 @@
 	}
 	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
 		background: rgba(255, 255, 255, 0.2);
+	}
+
+	/* Observaciones container - match IngresoFormModal */
+	.obs-container,
+	.obs-container *:focus {
+		outline: none !important;
+		box-shadow: none !important;
+	}
+
+	.obs-container:focus-within {
+		border-color: rgba(59, 130, 246, 0.5) !important;
+		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
 	}
 </style>
