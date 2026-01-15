@@ -170,7 +170,7 @@ pub async fn delete_empresa(id_str: &str) -> Result<(), EmpresaError> {
     // Verificación de integridad referencial
     let count = db::count_contratistas_by_empresa(&id).await.map_err(map_db_error)?;
     if count > 0 {
-        return Err(EmpresaError::HasContratistas(count as i64));
+        return Err(EmpresaError::HasContratistas(count.try_into().unwrap_or(i64::MAX)));
     }
 
     db::delete(&id).await.map_err(map_db_error)?;

@@ -164,7 +164,7 @@ pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
 # Excepciones personalizadas - Estilo de código flexible
 module_name_repetitions = "allow"    # Permitir nombres como ContratistService::get_contratista
-too_many_arguments = "allow"         # Funciones complejas requieren muchos parámetros
+too_many_arguments = "warn"         # Detectar funciones con demasiados parámetros
 must_use_candidate = "allow"         # No forzar #[must_use] en todas las funciones
 missing_errors_doc = "allow"         # Documentación de errores opcional
 missing_panics_doc = "allow"         # Documentación de panics opcional
@@ -175,11 +175,11 @@ significant_drop_tightening = "allow" # No forzar drop() explícito
 or_fun_call = "allow"                # Permitir .ok_or(Error::new()) sin closure
 items_after_statements = "allow"     # Permitir struct inline en funciones
 unreadable_literal = "allow"         # Permitir 0xD9D9D9 sin separadores
-too_many_lines = "allow"             # Funciones largas permitidas donde sea necesario
+too_many_lines = "warn"              # Detectar funciones excesivamente largas
 needless_pass_by_value = "allow"     # Tauri State requiere pass by value
-cast_possible_truncation = "allow"   # Casts intencionales de usize a u32
-cast_possible_wrap = "allow"         # Casts de signed a unsigned permitidos
-cast_precision_loss = "allow"        # Casts de float permitidos
+cast_possible_truncation = "warn"    # Detectar posibles mermas de datos
+cast_possible_wrap = "warn"          # Detectar desbordamientos de signo
+cast_precision_loss = "warn"         # Detectar pérdida de precisión en floats
 
 # Excepciones adicionales - Warnings de bajo impacto
 struct_excessive_bools = "allow"     # Structs con múltiples booleanos OK
@@ -199,7 +199,7 @@ if_same_then_else = "allow"          # Branches iguales intencionales
 assigning_clones = "allow"           # Clone en asignación permitido
 ptr_arg = "allow"                    # &String, &Vec permitidos
 unused_async = "allow"               # Async para consistencia de API
-type_complexity = "allow"            # Tipos complejos cuando necesarios
+type_complexity = "warn"            # Detectar tipos excesivamente complejos
 
 [lints.rust]
 unsafe_code = "warn"

@@ -23,8 +23,10 @@ pub fn get_system_idle_time() -> Result<u32, SystemError> {
     #[cfg(target_os = "windows")]
     {
         unsafe {
-            let mut last_input_info =
-                LASTINPUTINFO { cbSize: std::mem::size_of::<LASTINPUTINFO>() as u32, dwTime: 0 };
+            let mut last_input_info = LASTINPUTINFO {
+                cbSize: u32::try_from(std::mem::size_of::<LASTINPUTINFO>()).unwrap_or(0),
+                dwTime: 0,
+            };
 
             if GetLastInputInfo(&raw mut last_input_info).as_bool() {
                 let current_tick = GetTickCount();

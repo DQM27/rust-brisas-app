@@ -63,7 +63,12 @@ fn write_excel_content(
     // 2. Escribir headers (fila 0)
     for (col_idx, header) in headers.iter().enumerate() {
         worksheet
-            .write_string_with_format(0, col_idx as u16, header, &header_format)
+            .write_string_with_format(
+                0,
+                u16::try_from(col_idx).unwrap_or(u16::MAX),
+                header,
+                &header_format,
+            )
             .map_err(|e| ExportError::XlsxWriteError(format!("Error escribiendo header: {e}")))?;
     }
 
@@ -72,31 +77,20 @@ fn write_excel_content(
         for (col_idx, header) in headers.iter().enumerate() {
             let value_opt = row.get(header);
 
+            let row_u32 = u32::try_from(row_idx + 1).unwrap_or(u32::MAX);
+            let col_u16 = u16::try_from(col_idx).unwrap_or(u16::MAX);
+
             let result = match value_opt {
-                Some(ExportValue::Text(s)) => worksheet.write_string_with_format(
-                    (row_idx + 1) as u32,
-                    col_idx as u16,
-                    s,
-                    &cell_format,
-                ),
-                Some(ExportValue::Number(n)) => worksheet.write_number_with_format(
-                    (row_idx + 1) as u32,
-                    col_idx as u16,
-                    *n,
-                    &cell_format,
-                ),
-                Some(ExportValue::Bool(b)) => worksheet.write_boolean_with_format(
-                    (row_idx + 1) as u32,
-                    col_idx as u16,
-                    *b,
-                    &cell_format,
-                ),
-                None => worksheet.write_string_with_format(
-                    (row_idx + 1) as u32,
-                    col_idx as u16,
-                    "",
-                    &cell_format,
-                ),
+                Some(ExportValue::Text(s)) => {
+                    worksheet.write_string_with_format(row_u32, col_u16, s, &cell_format)
+                }
+                Some(ExportValue::Number(n)) => {
+                    worksheet.write_number_with_format(row_u32, col_u16, *n, &cell_format)
+                }
+                Some(ExportValue::Bool(b)) => {
+                    worksheet.write_boolean_with_format(row_u32, col_u16, *b, &cell_format)
+                }
+                None => worksheet.write_string_with_format(row_u32, col_u16, "", &cell_format),
             };
 
             result.map_err(|e| {
@@ -167,15 +161,16 @@ fn autofit_columns(
         // Aplicar ancho (con límites razonables)
         let width = max_width.clamp(10.0, 50.0);
 
-        worksheet.set_column_width(col_idx as u16, width).map_err(|e| {
-            ExportError::XlsxFormatError(format!("Error ajustando columna {col_idx}: {e}"))
-        })?;
+        worksheet.set_column_width(u16::try_from(col_idx).unwrap_or(u16::MAX), width).map_err(
+            |e| ExportError::XlsxFormatError(format!("Error ajustando columna {col_idx}: {e}")),
+        )?;
     }
 
     Ok(())
 }
 
 /// Calcula el ancho apropiado para una columna
+#[allow(clippy::cast_precision_loss)]
 fn calculate_column_width(header: &str, rows: &[HashMap<String, ExportValue>]) -> f64 {
     // Ancho del header
     let mut max_len = header.len();

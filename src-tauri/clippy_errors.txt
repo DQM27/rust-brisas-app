@@ -1,0 +1,208 @@
+    Checking mega-brisas v1.0.0 (C:\Users\Daniel Quintana\Documents\GitHub\rust-brisas-app\src-tauri)
+error: casting `usize` to `u32` may truncate the value on targets with 64-bit wide pointers
+  --> src\commands\system_commands.rs:27:41
+   |
+27 |                 LASTINPUTINFO { cbSize: std::mem::size_of::<LASTINPUTINFO>() as u32, dwTime: 0 };
+   |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: if this is intentional allow the lint with `#[allow(clippy::cast_possible_truncation)]` ...
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_possible_truncation
+   = note: `-D clippy::cast-possible-truncation` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::cast_possible_truncation)]`
+help: ... or use `try_from` and handle the error accordingly
+   |
+27 -                 LASTINPUTINFO { cbSize: std::mem::size_of::<LASTINPUTINFO>() as u32, dwTime: 0 };
+27 +                 LASTINPUTINFO { cbSize: u32::try_from(std::mem::size_of::<LASTINPUTINFO>()), dwTime: 0 };
+   |
+
+error: casting `u32` to `u8` may truncate the value
+   --> src\export\pdf\engine.rs:300:40
+    |
+300 |         Datetime::from_ymd(now.year(), now.month() as u8, now.day() as u8)
+    |                                        ^^^^^^^^^^^^^^^^^
+    |
+    = help: if this is intentional allow the lint with `#[allow(clippy::cast_possible_truncation)]` ...
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_possible_truncation
+help: ... or use `try_from` and handle the error accordingly
+    |
+300 -         Datetime::from_ymd(now.year(), now.month() as u8, now.day() as u8)
+300 +         Datetime::from_ymd(now.year(), u8::try_from(now.month()), now.day() as u8)
+    |
+
+error: casting `u32` to `u8` may truncate the value
+   --> src\export\pdf\engine.rs:300:59
+    |
+300 |         Datetime::from_ymd(now.year(), now.month() as u8, now.day() as u8)
+    |                                                           ^^^^^^^^^^^^^^^
+    |
+    = help: if this is intentional allow the lint with `#[allow(clippy::cast_possible_truncation)]` ...
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_possible_truncation
+help: ... or use `try_from` and handle the error accordingly
+    |
+300 -         Datetime::from_ymd(now.year(), now.month() as u8, now.day() as u8)
+300 +         Datetime::from_ymd(now.year(), now.month() as u8, u8::try_from(now.day()))
+    |
+
+error: casting `usize` to `u16` may truncate the value
+  --> src\export\excel\builder.rs:66:42
+   |
+66 |             .write_string_with_format(0, col_idx as u16, header, &header_format)
+   |                                          ^^^^^^^^^^^^^^
+   |
+   = help: if this is intentional allow the lint with `#[allow(clippy::cast_possible_truncation)]` ...
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_possible_truncation
+help: ... or use `try_from` and handle the error accordingly
+   |
+66 -             .write_string_with_format(0, col_idx as u16, header, &header_format)
+66 +             .write_string_with_format(0, u16::try_from(col_idx), header, &header_format)
+   |
+
+error: casting `usize` to `u32` may truncate the value on targets with 64-bit wide pointers
+  --> src\export\excel\builder.rs:77:21
+   |
+77 |                     (row_idx + 1) as u32,
+   |                     ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: if this is intentional allow the lint with `#[allow(clippy::cast_possible_truncation)]` ...
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_possible_truncation
+help: ... or use `try_from` and handle the error accordingly
+   |
+77 -                     (row_idx + 1) as u32,
+77 +                     u32::try_from(row_idx + 1),
+   |
+
+error: casting `usize` to `u16` may truncate the value
+  --> src\export\excel\builder.rs:78:21
+   |
+78 |                     col_idx as u16,
+   |                     ^^^^^^^^^^^^^^
+   |
+   = help: if this is intentional allow the lint with `#[allow(clippy::cast_possible_truncation)]` ...
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_possible_truncation
+help: ... or use `try_from` and handle the error accordingly
+   |
+78 -                     col_idx as u16,
+78 +                     u16::try_from(col_idx),
+   |
+
+error: casting `usize` to `u32` may truncate the value on targets with 64-bit wide pointers
+  --> src\export\excel\builder.rs:83:21
+   |
+83 |                     (row_idx + 1) as u32,
+   |                     ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: if this is intentional allow the lint with `#[allow(clippy::cast_possible_truncation)]` ...
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_possible_truncation
+help: ... or use `try_from` and handle the error accordingly
+   |
+83 -                     (row_idx + 1) as u32,
+83 +                     u32::try_from(row_idx + 1),
+   |
+
+error: casting `usize` to `u16` may truncate the value
+  --> src\export\excel\builder.rs:84:21
+   |
+84 |                     col_idx as u16,
+   |                     ^^^^^^^^^^^^^^
+   |
+   = help: if this is intentional allow the lint with `#[allow(clippy::cast_possible_truncation)]` ...
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_possible_truncation
+help: ... or use `try_from` and handle the error accordingly
+   |
+84 -                     col_idx as u16,
+84 +                     u16::try_from(col_idx),
+   |
+
+error: casting `usize` to `u32` may truncate the value on targets with 64-bit wide pointers
+  --> src\export\excel\builder.rs:89:21
+   |
+89 |                     (row_idx + 1) as u32,
+   |                     ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: if this is intentional allow the lint with `#[allow(clippy::cast_possible_truncation)]` ...
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_possible_truncation
+help: ... or use `try_from` and handle the error accordingly
+   |
+89 -                     (row_idx + 1) as u32,
+89 +                     u32::try_from(row_idx + 1),
+   |
+
+error: casting `usize` to `u16` may truncate the value
+  --> src\export\excel\builder.rs:90:21
+   |
+90 |                     col_idx as u16,
+   |                     ^^^^^^^^^^^^^^
+   |
+   = help: if this is intentional allow the lint with `#[allow(clippy::cast_possible_truncation)]` ...
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_possible_truncation
+help: ... or use `try_from` and handle the error accordingly
+   |
+90 -                     col_idx as u16,
+90 +                     u16::try_from(col_idx),
+   |
+
+error: casting `usize` to `u32` may truncate the value on targets with 64-bit wide pointers
+  --> src\export\excel\builder.rs:95:21
+   |
+95 |                     (row_idx + 1) as u32,
+   |                     ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: if this is intentional allow the lint with `#[allow(clippy::cast_possible_truncation)]` ...
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_possible_truncation
+help: ... or use `try_from` and handle the error accordingly
+   |
+95 -                     (row_idx + 1) as u32,
+95 +                     u32::try_from(row_idx + 1),
+   |
+
+error: casting `usize` to `u16` may truncate the value
+  --> src\export\excel\builder.rs:96:21
+   |
+96 |                     col_idx as u16,
+   |                     ^^^^^^^^^^^^^^
+   |
+   = help: if this is intentional allow the lint with `#[allow(clippy::cast_possible_truncation)]` ...
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_possible_truncation
+help: ... or use `try_from` and handle the error accordingly
+   |
+96 -                     col_idx as u16,
+96 +                     u16::try_from(col_idx),
+   |
+
+error: casting `usize` to `u16` may truncate the value
+   --> src\export\excel\builder.rs:170:36
+    |
+170 |         worksheet.set_column_width(col_idx as u16, width).map_err(|e| {
+    |                                    ^^^^^^^^^^^^^^
+    |
+    = help: if this is intentional allow the lint with `#[allow(clippy::cast_possible_truncation)]` ...
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_possible_truncation
+help: ... or use `try_from` and handle the error accordingly
+    |
+170 -         worksheet.set_column_width(col_idx as u16, width).map_err(|e| {
+170 +         worksheet.set_column_width(u16::try_from(col_idx), width).map_err(|e| {
+    |
+
+error: casting `usize` to `f64` causes a loss of precision on targets with 64-bit wide pointers (`usize` is 64 bits wide, but `f64`'s mantissa is only 52 bits wide)
+   --> src\export\excel\builder.rs:196:5
+    |
+196 |     (max_len as f64) * 1.2
+    |     ^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_precision_loss
+    = note: `-D clippy::cast-precision-loss` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::cast_precision_loss)]`
+
+error: casting `usize` to `i64` may wrap around the value on targets with 64-bit wide pointers
+   --> src\services\empresa_service.rs:173:50
+    |
+173 |         return Err(EmpresaError::HasContratistas(count as i64));
+    |                                                  ^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#cast_possible_wrap
+    = note: `-D clippy::cast-possible-wrap` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::cast_possible_wrap)]`
+
+error: could not compile `mega-brisas` (lib) due to 15 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `mega-brisas` (lib test) due to 15 previous errors

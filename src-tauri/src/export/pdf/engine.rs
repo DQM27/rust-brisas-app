@@ -297,7 +297,11 @@ impl World for TypstWorld {
 
     fn today(&self, _offset: Option<i64>) -> Option<Datetime> {
         let now = chrono::Local::now();
-        Datetime::from_ymd(now.year(), now.month() as u8, now.day() as u8)
+        Datetime::from_ymd(
+            now.year(),
+            now.month().try_into().unwrap_or(1),
+            now.day().try_into().unwrap_or(1),
+        )
     }
 }
 
