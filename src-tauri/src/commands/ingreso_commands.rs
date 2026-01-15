@@ -10,7 +10,7 @@ use crate::models::ingreso::{
 use crate::services::alerta_service;
 use crate::services::ingreso_general_service;
 use crate::services::session::SessionState;
-use tauri::{command, State};
+use tauri::{command, AppHandle, Emitter, State};
 
 // ==========================================
 // MONITORIZACIÓN GLOBAL DE INGRESOS
@@ -86,6 +86,7 @@ pub async fn get_all_alertas_gafetes() -> Result<Vec<AlertaGafeteResponse>, Aler
 /// Protocolo de Resolución: Permite a un supervisor cerrar una alerta tras una inspección manual.
 #[tauri::command]
 pub async fn resolver_alerta_gafete(
+    app: AppHandle,
     session: State<'_, SessionState>,
     input: ResolverAlertaInput,
 ) -> Result<(), AlertaError> {
@@ -96,6 +97,9 @@ pub async fn resolver_alerta_gafete(
     let mut payload = input;
     payload.usuario_id = Some(user.id.clone());
     alerta_service::resolver(payload).await?;
+
+    // Emit event to refresh gafete grid
+    let _ = app.emit("gafetes:refresh", ());
 
     Ok(())
 }

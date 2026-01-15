@@ -4,13 +4,14 @@ import type { AlertaGafeteResponse } from "$lib/types/ingreso";
 export const alertaGafete = {
     /**
      * Resolver una alerta de gafete (marcar como devuelto/pagado)
+     * Returns void on success (backend returns ())
      */
     resolver: async (
         alertaId: string,
         notas?: string,
         usuarioId?: string
-    ): Promise<AlertaGafeteResponse> => {
-        return await invoke("resolver_alerta_gafete", {
+    ): Promise<void> => {
+        await invoke("resolver_alerta_gafete", {
             input: {
                 alertaId,
                 notas,

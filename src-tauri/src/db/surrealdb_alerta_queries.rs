@@ -84,7 +84,8 @@ pub async fn insert(
 
 pub async fn find_by_id(id: &str) -> Result<Option<AlertaGafete>, SurrealDbError> {
     let db = get_db().await?;
-    let id_only = id.strip_prefix("alerta_gafete:").unwrap_or(id).to_string();
+    // Strip table prefix and Unicode brackets that SurrealDB uses internally
+    let id_only = id.strip_prefix("alerta_gafete:").unwrap_or(id).replace(['⟨', '⟩'], "");
 
     let mut result =
         db.query("SELECT * FROM type::thing('alerta_gafete', $id)").bind(("id", id_only)).await?;
@@ -121,8 +122,12 @@ pub async fn resolver(
     input: crate::models::ingreso::ResolverAlertaInput,
 ) -> Result<Option<AlertaGafete>, SurrealDbError> {
     let db = get_db().await?;
-    let id_only =
-        input.alerta_id.strip_prefix("alerta_gafete:").unwrap_or(&input.alerta_id).to_string();
+    // Strip table prefix and Unicode brackets
+    let id_only = input
+        .alerta_id
+        .strip_prefix("alerta_gafete:")
+        .unwrap_or(&input.alerta_id)
+        .replace(['⟨', '⟩'], "");
 
     let usuario_rid = input
         .usuario_id

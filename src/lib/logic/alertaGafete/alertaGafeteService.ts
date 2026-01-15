@@ -17,14 +17,17 @@ export async function resolverAlerta(
     alertaId: string,
     notas?: string,
     usuarioId?: string
-): Promise<ServiceResult<AlertaGafeteResponse>> {
+): Promise<ServiceResult<void>> {
     try {
-        const data = await alertaGafete.resolver(alertaId, notas, usuarioId);
-        return { ok: true, data };
+        await alertaGafete.resolver(alertaId, notas, usuarioId);
+        return { ok: true, data: undefined };
     } catch (error) {
+        const errorMsg = error instanceof Error
+            ? error.message
+            : (typeof error === 'object' ? JSON.stringify(error) : String(error));
         return {
             ok: false,
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMsg,
         };
     }
 }

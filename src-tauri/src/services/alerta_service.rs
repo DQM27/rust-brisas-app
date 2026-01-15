@@ -96,6 +96,7 @@ pub async fn resolver(
     input: crate::models::ingreso::ResolverAlertaInput,
 ) -> Result<(), AlertaError> {
     let id = input.alerta_id.clone();
+    info!("Intentando resolver alerta con ID: '{}'", id);
 
     // 1. Obtener la alerta antes de resolverla para conocer el gafete
     let alerta = find_by_id(&id).await?;
