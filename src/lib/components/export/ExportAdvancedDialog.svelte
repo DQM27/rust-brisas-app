@@ -1,7 +1,18 @@
 <!-- src/lib/components/export/ExportAdvancedDialog.svelte -->
 <script lang="ts">
 	// @ts-nocheck - Svelte 5 runes not recognized by TS
-	import { X, FileText, Download, RefreshCw, Link2, Unlink, Lock, Unlock } from 'lucide-svelte';
+	import {
+		X,
+		FileText,
+		Download,
+		RefreshCw,
+		Link2,
+		Unlink,
+		Lock,
+		Unlock,
+		ChevronDown,
+		Check
+	} from 'lucide-svelte';
 	import type { ExportOptions } from '$lib/types/export';
 	import {
 		MARGIN_UNITS,
@@ -27,7 +38,7 @@
 
 	let { onExport, onClose, onBack, columns, initialOptions = {}, rows }: Props = $props();
 
-	// Extraer valores iniciales inmediatamente (evita advertencia state_referenced_locally)
+	// Extraer valores iniciales inmediatamente
 	// svelte-ignore state_referenced_locally
 	const {
 		title: initTitle = 'Reporte',
@@ -48,52 +59,65 @@
 	let orientation = $state<'portrait' | 'landscape'>(initOrientation);
 	let fontSize = $state(initFontSize);
 	let fontFamily = $state(initFontFamily);
-	let marginTop = $state(20); // En mm
+	let marginTop = $state(20);
 	let marginBottom = $state(20);
 	let marginLeft = $state(15);
 	let marginRight = $state(15);
-	let marginUnit = $state<MarginUnit>('mm'); // Unidad de medida
+	let marginUnit = $state<MarginUnit>('mm');
 	let paperSize = $state<'us-letter' | 'a4' | 'legal'>('us-letter');
-	let bannerColor = $state('#059669'); // Color del banner
+	let bannerColor = $state('#059669');
+
+	// --- LOGIC FOR FIXED DROPDOWNS ---
+	let activeDropdown = $state<string | null>(null);
+	let dropdownPos = $state({ top: 0, left: 0, width: 0 });
+
+	function toggleDropdown(e: MouseEvent, type: string) {
+		e.stopPropagation();
+
+		if (activeDropdown === type) {
+			activeDropdown = null;
+			return;
+		}
+
+		const button = e.currentTarget as HTMLElement;
+		const rect = button.getBoundingClientRect();
+
+		dropdownPos = {
+			top: rect.bottom + 4, // 4px gap
+			left: rect.left,
+			width: rect.width
+		};
+		activeDropdown = type;
+	}
+
+	function closeDropdowns() {
+		activeDropdown = null;
+	}
 
 	// Estado de vinculación de márgenes
-	let linkVertical = $state(false); // Top <-> Bottom
-	let linkHorizontal = $state(false); // Left <-> Right
-	let linkAll = $state(false); // All 4
+	let linkVertical = $state(false);
+	let linkHorizontal = $state(false);
+	let linkAll = $state(false);
 
-	// Actualizar márgenes con lógica de vinculación
 	function updateMargin(type: 'top' | 'bottom' | 'left' | 'right', value: number) {
-		// 1. Si "Link All" está activo, actualizar todos
 		if (linkAll) {
-			marginTop = value;
-			marginBottom = value;
-			marginLeft = value;
-			marginRight = value;
+			marginTop = marginBottom = marginLeft = marginRight = value;
 			return;
 		}
-
-		// 2. Si es vertical y está vinculado
 		if (linkVertical && (type === 'top' || type === 'bottom')) {
-			marginTop = value;
-			marginBottom = value;
+			marginTop = marginBottom = value;
 			return;
 		}
-
-		// 3. Si es horizontal y está vinculado
 		if (linkHorizontal && (type === 'left' || type === 'right')) {
-			marginLeft = value;
-			marginRight = value;
+			marginLeft = marginRight = value;
 			return;
 		}
-
-		// 4. Individual
 		if (type === 'top') marginTop = value;
 		if (type === 'bottom') marginBottom = value;
 		if (type === 'left') marginLeft = value;
 		if (type === 'right') marginRight = value;
 	}
 
-	// Step y max según unidad
 	const marginStep = $derived(marginUnit === 'mm' ? 1 : marginUnit === 'pt' ? 5 : 0.1);
 	const marginMax = $derived(
 		marginUnit === 'mm' ? 50 : marginUnit === 'pt' ? 150 : marginUnit === 'in' ? 2 : 5
@@ -103,8 +127,6 @@
 	let isGeneratingPreview = $state(false);
 	let previewData = $state<Uint8Array | null>(null);
 	let previewError = $state<string | null>(null);
-
-	// Generar preview (debounced)
 	let previewTimeout: ReturnType<typeof setTimeout>;
 
 	async function generatePreview() {
@@ -116,23 +138,10 @@
 
 			try {
 				const selectedHeaders = columnSelection.filter((c) => c.selected).map((c) => c.name);
+				if (!rows || rows.length === 0) throw new Error('No hay datos disponibles');
+				if (selectedHeaders.length === 0) throw new Error('Selecciona al menos una columna');
 
-				// Validar que haya datos
-				if (!rows || rows.length === 0) {
-					previewError = 'No hay filas de datos disponibles';
-					isGeneratingPreview = false;
-					return;
-				}
-
-				if (!selectedHeaders || selectedHeaders.length === 0) {
-					previewError = 'Selecciona al menos una columna';
-					isGeneratingPreview = false;
-					return;
-				}
-
-				// Preparar datos para preview (máximo 10 filas)
 				const previewRows = rows.slice(0, 10);
-
 				const result = await exportPreview({
 					format: 'pdf',
 					headers: selectedHeaders,
@@ -151,21 +160,18 @@
 				});
 
 				if (result.bytes && result.bytes.length > 0) {
-					// Guardar bytes directamente para pdf.js
 					previewData = new Uint8Array(result.bytes);
 				} else {
 					previewError = result.message || 'Error generando PDF';
 				}
 			} catch (e: any) {
-				previewError = e.message || 'Error generando preview';
-				console.error('Error en preview:', e);
+				previewError = e.message;
 			} finally {
 				isGeneratingPreview = false;
 			}
 		}, 500);
 	}
 
-	// Regenerar preview cuando cambian opciones
 	$effect(() => {
 		(title,
 			orientation,
@@ -183,9 +189,8 @@
 
 	async function handleExport() {
 		isExporting = true;
-
 		try {
-			const options: ExportOptions = {
+			await onExport({
 				title: title.trim() || 'Reporte',
 				orientation,
 				fontSize,
@@ -198,157 +203,166 @@
 				marginRight: marginToCm(marginRight, marginUnit),
 				bannerColor,
 				generatedBy: $currentUser?.nombreCompleto || ''
-			};
-
-			await onExport(options);
+			});
 			onClose();
 		} catch (error) {
-			console.error('Error exportando:', error);
 			alert('Error al exportar: ' + (error as Error).message);
 		} finally {
 			isExporting = false;
 		}
 	}
+
+	const inputClass =
+		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all';
+	const inputSmClass =
+		'bg-black/20 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50';
+	const labelClass = 'block text-xs font-medium text-secondary mb-1';
 </script>
 
+<svelte:window onresize={closeDropdowns} onclick={closeDropdowns} />
+
 <div
-	class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+	class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
 	transition:fade={{ duration: 150 }}
 	role="presentation"
 	tabindex="-1"
 >
+	<!-- Modal Container -->
 	<div
-		class="bg-[#161b22] rounded-lg border border-[#30363d] shadow-2xl flex flex-row w-[1100px] max-w-[98vw] h-[750px] max-h-[95vh] overflow-hidden"
+		class="bg-surface-2 rounded-xl border border-surface shadow-2xl flex flex-row w-[1100px] max-w-[98vw] h-[750px] max-h-[95vh] relative"
 		transition:fly={{ y: 20, duration: 200 }}
 		onclick={(e) => e.stopPropagation()}
-		onkeydown={() => {}}
 		role="dialog"
 		aria-modal="true"
-		tabindex="-1"
 	>
 		<!-- Panel Izquierdo: Configuración -->
-		<div class="w-[320px] flex flex-col border-r border-[#30363d] bg-[#161b22] z-10 relative">
+		<div class="w-[340px] flex flex-col border-r border-surface bg-surface-2">
 			<!-- Header -->
-			<div class="px-4 py-3 border-b border-[#30363d] flex items-center justify-between">
+			<div class="px-5 py-4 border-b border-surface flex items-center justify-between">
 				<div class="flex items-center gap-2">
 					<button
 						onclick={onBack}
 						disabled={isExporting}
-						class="p-1.5 rounded-md text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] transition-colors"
-						aria-label="Volver"
+						class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
 					>
 						←
 					</button>
-					<h2 class="text-sm font-semibold text-[#e6edf3]">Configuración Avanzada</h2>
+					<h2 class="text-base font-semibold text-primary">Configuración Avanzada</h2>
 				</div>
 				<button
 					onclick={onClose}
 					disabled={isExporting}
-					class="p-1.5 rounded-md text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] transition-colors"
-					aria-label="Cerrar"
+					class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
 				>
-					<X size={16} />
+					<X size={18} />
 				</button>
 			</div>
 
 			<!-- Contenido scrolleable -->
-			<div class="flex-1 overflow-y-auto p-4 space-y-4">
+			<div class="flex-1 overflow-y-auto p-5 space-y-5">
 				<!-- Título -->
 				<div>
-					<label for="adv-title" class="block text-xs font-medium text-[#8b949e] mb-1">
-						Título
-					</label>
+					<label for="adv-title" class={labelClass}> Título </label>
 					<input
 						id="adv-title"
 						type="text"
 						bind:value={title}
 						disabled={isExporting}
-						class="w-full px-3 py-1.5 text-sm rounded-md border border-[#30363d] bg-[#0d1117] text-[#e6edf3] focus:ring-1 focus:ring-[#2563eb] focus:border-[#2563eb]"
+						class={inputClass}
 					/>
 				</div>
 
-				<!-- Papel + Orientación -->
-				<div class="grid grid-cols-2 gap-3">
-					<div>
-						<label for="adv-paper" class="block text-xs font-medium text-[#8b949e] mb-1">
-							Papel
-						</label>
-						<select
-							id="adv-paper"
-							bind:value={paperSize}
+				<!-- Paper & Orientation -->
+				<div class="grid grid-cols-2 gap-4">
+					<div class="relative">
+						<label for="adv-paper" class={labelClass}> Papel </label>
+						<button
+							type="button"
+							onclick={(e) => toggleDropdown(e, 'paper')}
 							disabled={isExporting}
-							class="w-full px-2 py-1.5 text-sm rounded-md border border-[#30363d] bg-[#0d1117] text-[#e6edf3]"
+							class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left"
+							class:!border-blue-500={activeDropdown === 'paper'}
 						>
-							{#each PAPER_SIZES as size}
-								<option value={size.id}>{size.label}</option>
-							{/each}
-						</select>
+							<span class="truncate"
+								>{PAPER_SIZES.find((p) => p.id === paperSize)?.label || paperSize}</span
+							>
+							<ChevronDown size={14} class="text-secondary" />
+						</button>
 					</div>
-					<div>
-						<label for="adv-orientation" class="block text-xs font-medium text-[#8b949e] mb-1">
-							Orientación
-						</label>
-						<select
-							id="adv-orientation"
-							bind:value={orientation}
+
+					<div class="relative">
+						<label for="adv-orientation" class={labelClass}> Orientación </label>
+						<button
+							type="button"
+							onclick={(e) => toggleDropdown(e, 'orientation')}
 							disabled={isExporting}
-							class="w-full px-2 py-1.5 text-sm rounded-md border border-[#30363d] bg-[#0d1117] text-[#e6edf3]"
+							class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left"
+							class:!border-blue-500={activeDropdown === 'orientation'}
 						>
-							<option value="landscape">Horizontal</option>
-							<option value="portrait">Vertical</option>
-						</select>
+							<span>{orientation === 'landscape' ? 'Horizontal' : 'Vertical'}</span>
+							<ChevronDown size={14} class="text-secondary" />
+						</button>
 					</div>
 				</div>
 
 				<!-- Fuente -->
-				<div>
-					<label for="adv-font" class="block text-xs font-medium text-[#8b949e] mb-1">
-						Fuente
-					</label>
-					<select
-						id="adv-font"
-						bind:value={fontFamily}
+				<div class="relative">
+					<label for="adv-font" class={labelClass}> Fuente </label>
+					<button
+						type="button"
+						onclick={(e) => toggleDropdown(e, 'font')}
 						disabled={isExporting}
-						class="w-full px-2 py-1.5 text-sm rounded-md border border-[#30363d] bg-[#0d1117] text-[#e6edf3]"
+						class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left"
+						class:!border-blue-500={activeDropdown === 'font'}
 					>
-						{#each Object.entries(FONT_VARIANTS) as [family, variants]}
-							<optgroup label={family}>
-								{#each variants as variant}
-									<option value={variant}>{variant}</option>
-								{/each}
-							</optgroup>
-						{/each}
-					</select>
+						<span>{fontFamily}</span>
+						<ChevronDown size={14} class="text-secondary" />
+					</button>
 				</div>
 
 				<!-- Color del Banner -->
 				<div>
-					<label for="adv-banner-color" class="block text-xs font-medium text-[#8b949e] mb-1">
-						Color del banner
-					</label>
-					<div class="flex items-center gap-2">
-						<input
-							type="color"
-							id="adv-banner-color"
-							bind:value={bannerColor}
-							disabled={isExporting}
-							class="w-8 h-8 rounded border border-[#30363d] cursor-pointer"
-						/>
-						<select
-							bind:value={bannerColor}
-							disabled={isExporting}
-							class="flex-1 px-2 py-1.5 text-sm rounded-md border border-[#30363d] bg-[#0d1117] text-[#e6edf3]"
-						>
-							{#each BANNER_COLORS as color}
-								<option value={color.id}>{color.label}</option>
-							{/each}
-						</select>
+					<label for="adv-banner-color" class={labelClass}> Color del banner </label>
+					<div class="flex items-center gap-3">
+						<div class="relative w-[34px] h-[34px]">
+							<div
+								class="w-full h-full rounded-lg border border-surface"
+								style="background-color: {bannerColor}"
+							></div>
+							<input
+								type="color"
+								bind:value={bannerColor}
+								disabled={isExporting}
+								class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+							/>
+						</div>
+
+						<div class="relative flex-1">
+							<button
+								type="button"
+								onclick={(e) => toggleDropdown(e, 'banner')}
+								disabled={isExporting}
+								class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left"
+								class:!border-blue-500={activeDropdown === 'banner'}
+							>
+								<div class="flex items-center gap-2">
+									<div
+										class="w-3 h-3 rounded-full border border-white/20"
+										style="background-color: {bannerColor}"
+									></div>
+									<span class="truncate">
+										{BANNER_COLORS.find((c) => c.id === bannerColor)?.label || 'Personalizado'}
+									</span>
+								</div>
+								<ChevronDown size={14} class="text-secondary" />
+							</button>
+						</div>
 					</div>
 				</div>
 
 				<!-- Tamaño de texto -->
 				<div>
-					<label for="adv-fontsize" class="block text-xs font-medium text-[#8b949e] mb-1">
+					<label for="adv-fontsize" class={labelClass}>
 						Tamaño de texto ({fontSize}pt)
 					</label>
 					<input
@@ -358,34 +372,32 @@
 						max="20"
 						bind:value={fontSize}
 						disabled={isExporting}
-						class="w-full h-2 bg-[#30363d] rounded-lg appearance-none cursor-pointer accent-[#2563eb]"
+						class="w-full h-2 bg-surface-3 rounded-lg appearance-none cursor-pointer accent-blue-600"
 					/>
 				</div>
 
 				<!-- Márgenes -->
-				<!-- Márgenes -->
 				<div>
 					<div class="flex items-center justify-between mb-2">
-						<span class="text-xs font-medium text-[#8b949e]"> Márgenes </span>
-						<div class="flex items-center gap-2">
-							<span class="text-xs text-[#8b949e]">Unidad:</span>
-							<select
-								bind:value={marginUnit}
-								class="px-2 py-0.5 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3]"
+						<span class={labelClass}> Márgenes </span>
+						<div class="relative flex items-center gap-2">
+							<span class="text-xs text-secondary">Unidad:</span>
+							<button
+								type="button"
+								onclick={(e) => toggleDropdown(e, 'marginUnit')}
+								class="px-2 py-0.5 text-xs rounded border border-surface bg-black/20 text-white focus:outline-none flex items-center gap-1 min-w-[50px] justify-between"
 							>
-								{#each MARGIN_UNITS as unit}
-									<option value={unit.id}>{unit.id}</option>
-								{/each}
-							</select>
+								<span>{marginUnit}</span>
+								<ChevronDown size={10} class="text-secondary" />
+							</button>
 						</div>
 					</div>
 
 					<div class="flex flex-col gap-2">
-						<!-- Row 1: Vertical (Top - Link - Bottom) -->
+						<!-- Row 1: Vertical -->
 						<div class="flex items-center justify-between gap-2">
-							<!-- Top -->
 							<div class="flex items-center gap-1 flex-1">
-								<span class="text-xs text-[#8b949e] w-8">Arr:</span>
+								<span class="text-xs text-secondary w-8">Arr:</span>
 								<input
 									type="number"
 									step={marginStep}
@@ -393,18 +405,15 @@
 									max={marginMax}
 									bind:value={marginTop}
 									oninput={(e) => updateMargin('top', +e.currentTarget.value)}
-									class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] min-w-0"
+									class={inputSmClass}
 								/>
 							</div>
-
-							<!-- Link Vertical Btn -->
 							<button
-								class="p-1 rounded text-[#8b949e] hover:bg-[#21262d] transition-colors"
-								class:text-[#2563eb]={linkVertical && !linkAll}
+								class="p-1 rounded text-secondary hover:bg-surface-3 transition-colors"
+								class:text-accent={linkVertical && !linkAll}
 								class:opacity-30={linkAll}
 								disabled={linkAll}
 								onclick={() => (linkVertical = !linkVertical)}
-								title="Vincular Vertical"
 							>
 								{#if linkVertical && !linkAll}
 									<Link2 size={14} />
@@ -412,10 +421,8 @@
 									<Unlink size={14} />
 								{/if}
 							</button>
-
-							<!-- Bottom -->
 							<div class="flex items-center gap-1 flex-1">
-								<span class="text-xs text-[#8b949e] w-8">Aba:</span>
+								<span class="text-xs text-secondary w-8">Aba:</span>
 								<input
 									type="number"
 									step={marginStep}
@@ -423,25 +430,21 @@
 									max={marginMax}
 									bind:value={marginBottom}
 									oninput={(e) => updateMargin('bottom', +e.currentTarget.value)}
-									class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] min-w-0"
+									class={inputSmClass}
 								/>
 							</div>
 						</div>
 
-						<!-- Row 2: Link All (Center) -->
+						<!-- Row 2: Link All -->
 						<div class="flex justify-center -my-1 relative z-10">
 							<button
-								class="p-1 rounded-full bg-[#161b22] border border-[#30363d] text-[#8b949e] hover:text-[#e6edf3] hover:border-[#8b949e] transition-colors"
-								class:text-[#2563eb]={linkAll}
-								class:border-[#2563eb]={linkAll}
+								class="p-1 rounded-full bg-surface-2 border border-surface text-secondary hover:text-white hover:border-white/50 transition-colors"
+								class:text-accent={linkAll}
+								class:border-accent={linkAll}
 								onclick={() => {
 									linkAll = !linkAll;
-									if (linkAll) {
-										// Sync all to Top
-										updateMargin('top', marginTop);
-									}
+									if (linkAll) updateMargin('top', marginTop);
 								}}
-								title="Vincular Todos"
 							>
 								{#if linkAll}
 									<Lock size={12} />
@@ -451,11 +454,10 @@
 							</button>
 						</div>
 
-						<!-- Row 3: Horizontal (Left - Link - Right) -->
+						<!-- Row 3: Horizontal -->
 						<div class="flex items-center justify-between gap-2">
-							<!-- Left -->
 							<div class="flex items-center gap-1 flex-1">
-								<span class="text-xs text-[#8b949e] w-8">Izq:</span>
+								<span class="text-xs text-secondary w-8">Izq:</span>
 								<input
 									type="number"
 									step={marginStep}
@@ -463,18 +465,15 @@
 									max={marginMax}
 									bind:value={marginLeft}
 									oninput={(e) => updateMargin('left', +e.currentTarget.value)}
-									class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] min-w-0"
+									class={inputSmClass}
 								/>
 							</div>
-
-							<!-- Link Horizontal Btn -->
 							<button
-								class="p-1 rounded text-[#8b949e] hover:bg-[#21262d] transition-colors"
-								class:text-[#2563eb]={linkHorizontal && !linkAll}
+								class="p-1 rounded text-secondary hover:bg-surface-3 transition-colors"
+								class:text-accent={linkHorizontal && !linkAll}
 								class:opacity-30={linkAll}
 								disabled={linkAll}
 								onclick={() => (linkHorizontal = !linkHorizontal)}
-								title="Vincular Horizontal"
 							>
 								{#if linkHorizontal && !linkAll}
 									<Link2 size={14} />
@@ -482,10 +481,8 @@
 									<Unlink size={14} />
 								{/if}
 							</button>
-
-							<!-- Right -->
 							<div class="flex items-center gap-1 flex-1">
-								<span class="text-xs text-[#8b949e] w-8">Der:</span>
+								<span class="text-xs text-secondary w-8">Der:</span>
 								<input
 									type="number"
 									step={marginStep}
@@ -493,29 +490,31 @@
 									max={marginMax}
 									bind:value={marginRight}
 									oninput={(e) => updateMargin('right', +e.currentTarget.value)}
-									class="flex-1 px-2 py-1 text-xs rounded border border-[#30363d] bg-[#0d1117] text-[#e6edf3] min-w-0"
+									class={inputSmClass}
 								/>
 							</div>
 						</div>
 					</div>
 				</div>
 
-				<!-- Columnas (compacto) -->
+				<!-- Columnas -->
 				<div>
-					<span class="block text-xs font-medium text-[#8b949e] mb-2">
+					<span class="block text-xs font-medium text-secondary mb-2">
 						Columnas ({columnSelection.filter((c) => c.selected).length}/{columnSelection.length})
 					</span>
 					<div
-						class="max-h-32 overflow-y-auto bg-[#0d1117] border border-[#30363d] rounded-md p-2 space-y-1"
+						class="max-h-32 overflow-y-auto bg-black/20 border border-surface rounded-lg p-2 space-y-1"
 					>
 						{#each columnSelection as col}
-							<label class="flex items-center gap-2 text-xs cursor-pointer">
+							<label
+								class="flex items-center gap-2 text-xs cursor-pointer hover:bg-white/5 p-1 rounded"
+							>
 								<input
 									type="checkbox"
 									bind:checked={col.selected}
-									class="w-3 h-3 rounded border-[#30363d] bg-[#0d1117] text-[#2563eb]"
+									class="w-3.5 h-3.5 rounded border-white/20 bg-transparent text-accent focus:ring-accent"
 								/>
-								<span class="text-[#e6edf3] truncate">{col.name}</span>
+								<span class="text-white truncate">{col.name}</span>
 							</label>
 						{/each}
 					</div>
@@ -523,88 +522,202 @@
 			</div>
 
 			<!-- Footer -->
-			<div class="px-4 py-3 border-t border-[#30363d] flex gap-2">
+			<div class="px-5 py-4 border-t border-surface flex gap-3 bg-surface-1">
 				<button
 					onclick={onBack}
 					disabled={isExporting}
-					class="flex-1 px-3 py-2 text-sm font-medium rounded-md border border-[#30363d] bg-[#21262d] text-[#e6edf3] hover:bg-[#30363d] transition-colors"
+					class="flex-1 px-3 py-2.5 text-sm font-medium rounded-lg border-2 border-surface text-secondary hover:border-white/60 hover:text-white/80 transition-all"
 				>
 					Cancelar
 				</button>
 				<button
 					onclick={handleExport}
 					disabled={isExporting || columnSelection.filter((c) => c.selected).length === 0}
-					class="flex-1 px-3 py-2 text-sm font-medium rounded-md bg-[#2563eb] hover:bg-[#1d4ed8] text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+					class="flex-1 px-3 py-2.5 text-sm font-medium rounded-lg border-2 border-surface text-secondary hover:border-accent hover:text-accent transition-all flex items-center justify-center gap-2 disabled:opacity-50"
 				>
 					{#if isExporting}
 						<div
-							class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+							class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"
 						></div>
 					{:else}
-						<Download size={14} />
+						<Download size={16} />
 					{/if}
 					Exportar
 				</button>
 			</div>
 		</div>
 
-		<!-- Panel Derecho: Vista Previa con pdf.js -->
-		<div class="flex-1 min-w-0 flex flex-col bg-[#0d1117] overflow-hidden isolate">
+		<!-- Panel Derecho: Vista Previa -->
+		<div class="flex-1 min-w-0 flex flex-col bg-black/30 overflow-hidden isolate">
 			<!-- Header Preview -->
-			<div class="px-4 py-2 border-b border-[#30363d] flex items-center justify-between">
-				<span class="text-sm font-medium text-[#8b949e]">Vista Previa</span>
+			<div class="px-5 py-3 border-b border-surface flex items-center justify-between bg-surface-2">
+				<div class="flex items-center gap-2">
+					<span class="text-sm font-medium text-primary">Vista Previa</span>
+					<span class="text-xs px-2 py-0.5 rounded-full bg-surface-3 text-secondary"
+						>10 registros max</span
+					>
+				</div>
 				<button
 					onclick={generatePreview}
 					disabled={isGeneratingPreview}
-					class="p-1.5 rounded-md text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#21262d] transition-colors"
-					aria-label="Regenerar preview"
+					class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
 				>
-					<RefreshCw size={14} class={isGeneratingPreview ? 'animate-spin' : ''} />
+					<RefreshCw size={16} class={isGeneratingPreview ? 'animate-spin' : ''} />
 				</button>
 			</div>
 
-			<!-- PdfViewer o estados alternativos -->
-			<div class="flex-1 relative overflow-hidden">
+			<!-- PdfViewer -->
+			<div class="flex-1 relative overflow-hidden bg-[#2e3136]">
 				{#if previewData}
 					<PdfViewer pdfData={previewData} onError={(err) => (previewError = err)} />
 				{:else if isGeneratingPreview}
 					<div class="absolute inset-0 flex items-center justify-center">
 						<div class="text-center">
 							<div
-								class="w-8 h-8 border-2 border-[#30363d] border-t-[#2563eb] rounded-full animate-spin mx-auto mb-2"
+								class="w-8 h-8 border-2 border-surface border-t-accent rounded-full animate-spin mx-auto mb-2"
 							></div>
-							<p class="text-xs text-[#8b949e]">Generando preview...</p>
+							<p class="text-xs text-secondary">Generando preview...</p>
 						</div>
 					</div>
 				{:else if previewError}
 					<div class="absolute inset-0 flex items-center justify-center">
 						<div class="text-center">
-							<p class="text-sm text-[#f85149]">{previewError}</p>
-							<button onclick={generatePreview} class="mt-2 text-xs text-[#58a6ff] hover:underline">
+							<p class="text-sm text-red-500 font-medium">{previewError}</p>
+							<button onclick={generatePreview} class="mt-2 text-xs text-accent hover:underline">
 								Reintentar
 							</button>
 						</div>
 					</div>
 				{:else}
-					<div class="absolute inset-0 flex items-center justify-center text-center text-[#8b949e]">
+					<div class="absolute inset-0 flex items-center justify-center text-center text-secondary">
 						<div>
 							<FileText size={48} class="mx-auto mb-2 opacity-30" />
-							<p class="text-sm">Vista previa del documento</p>
-							<p class="text-xs mt-1 opacity-60">Scroll: zoom · Espacio+drag: mover</p>
+							<p class="text-sm font-medium">Vista previa del documento</p>
 						</div>
-					</div>
-				{/if}
-
-				<!-- Overlay de actualización -->
-				{#if isGeneratingPreview && previewData}
-					<div
-						class="absolute top-2 right-2 px-2 py-1 bg-[#161b22] rounded text-xs text-[#8b949e] border border-[#30363d]"
-					>
-						<RefreshCw size={12} class="inline animate-spin mr-1" />
-						Actualizando...
 					</div>
 				{/if}
 			</div>
 		</div>
 	</div>
+
+	<!-- DROPDOWNS: FIXED POSITIONING LAYER -->
+	{#if activeDropdown}
+		<div
+			class="fixed z-[100] bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-y-auto flex flex-col"
+			style="top: {dropdownPos.top}px; left: {dropdownPos.left}px; width: {dropdownPos.width}px; max-height: 300px;"
+			transition:fly={{ y: -5, duration: 200 }}
+			onclick={(e) => e.stopPropagation()}
+		>
+			{#if activeDropdown === 'paper'}
+				<div class="p-1">
+					{#each PAPER_SIZES as size}
+						<button
+							class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+							onclick={() => {
+								paperSize = size.id;
+								closeDropdowns();
+							}}
+						>
+							<span>{size.label}</span>
+							{#if paperSize === size.id}
+								<Check size={14} class="text-white" />
+							{/if}
+						</button>
+					{/each}
+				</div>
+			{:else if activeDropdown === 'orientation'}
+				<div class="p-1">
+					{#each [{ value: 'landscape', label: 'Horizontal' }, { value: 'portrait', label: 'Vertical' }] as opt}
+						<button
+							class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+							onclick={() => {
+								orientation = opt.value as any;
+								closeDropdowns();
+							}}
+						>
+							<span>{opt.label}</span>
+							{#if orientation === opt.value}
+								<Check size={14} class="text-white" />
+							{/if}
+						</button>
+					{/each}
+				</div>
+			{:else if activeDropdown === 'font'}
+				<div class="p-1">
+					{#each Object.entries(FONT_VARIANTS) as [family, variants]}
+						<div
+							class="px-3 py-1.5 text-xs text-white/50 bg-black/20 font-semibold uppercase tracking-wider rounded-md mb-0.5 mt-1 first:mt-0"
+						>
+							{family}
+						</div>
+						{#each variants as variant}
+							<button
+								class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group pl-4"
+								onclick={() => {
+									fontFamily = variant;
+									closeDropdowns();
+								}}
+							>
+								<span>{variant}</span>
+								{#if fontFamily === variant}
+									<Check size={14} class="text-white" />
+								{/if}
+							</button>
+						{/each}
+					{/each}
+				</div>
+			{:else if activeDropdown === 'banner'}
+				<div class="p-1">
+					{#each BANNER_COLORS as color}
+						<button
+							class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+							onclick={() => {
+								bannerColor = color.id;
+								closeDropdowns();
+							}}
+						>
+							<div class="flex items-center gap-2">
+								<div
+									class="w-3 h-3 rounded-full border border-white/20"
+									style="background-color: {color.id}"
+								></div>
+								<span>{color.label}</span>
+							</div>
+							{#if bannerColor === color.id}
+								<Check size={14} class="text-white" />
+							{/if}
+						</button>
+					{/each}
+					<div class="h-px bg-white/10 my-1"></div>
+					<div class="px-3 py-1 text-xs text-white/50 text-center">
+						Usa el selector de color para personalizar
+					</div>
+				</div>
+			{:else if activeDropdown === 'marginUnit'}
+				<div class="p-1">
+					{#each MARGIN_UNITS as unit}
+						<button
+							class="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-white/10 rounded-md transition-colors"
+							onclick={() => {
+								marginUnit = unit.id;
+								closeDropdowns();
+							}}
+						>
+							{unit.id}
+						</button>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	{/if}
 </div>
+
+<style>
+	/* Focus Override Global */
+	select:focus,
+	input:focus {
+		border-color: rgba(59, 130, 246, 0.5) !important;
+		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+		outline: none !important;
+	}
+</style>
