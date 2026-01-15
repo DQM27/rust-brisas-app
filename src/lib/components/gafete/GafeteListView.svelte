@@ -111,8 +111,11 @@
   }
 
   async function changeStatus(data: GafeteResponse, newStatus: string) {
+    // Guard against multiple simultaneous calls
+    if (loading) return;
+    if (!data) return;
+
     try {
-      if (!data) return;
       loading = true;
       const userId = $currentUser?.id;
       const result = await gafeteService.updateStatus(
@@ -122,6 +125,8 @@
       );
       if (result.ok) {
         toast.success(`Estado actualizado a ${newStatus}`);
+        // Small delay to avoid transaction conflicts with SurrealDB
+        await new Promise((resolve) => setTimeout(resolve, 100));
         await loadGafetes();
       } else {
         toast.error(result.error);

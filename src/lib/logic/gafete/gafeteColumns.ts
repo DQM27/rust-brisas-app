@@ -250,18 +250,32 @@ export class GafeteColumns {
                     const data = params.data;
                     const target = event.target as HTMLElement;
 
+                    // Prevent event bubbling that could cause double-firing
+                    event.stopPropagation();
+
                     if (target.classList.contains("resolve-btn")) {
                         handlers.onResolve(data);
-                    } else if (target.classList.contains("edit-btn")) {
+                        return;
+                    }
+                    if (target.classList.contains("edit-btn")) {
                         handlers.onEdit(data);
-                    } else if (target.classList.contains("recover-btn")) {
+                        return;
+                    }
+                    if (target.classList.contains("recover-btn")) {
                         handlers.onRecover(data);
-                    } else if (target.classList.contains("lost-btn")) {
+                        return;
+                    }
+                    if (target.classList.contains("lost-btn")) {
                         handlers.onLost(data);
-                    } else if (target.classList.contains("damage-btn")) {
+                        return;
+                    }
+                    if (target.classList.contains("damage-btn")) {
                         handlers.onDamage(data);
-                    } else if (target.classList.contains("delete-btn")) {
+                        return;
+                    }
+                    if (target.classList.contains("delete-btn")) {
                         handlers.onDelete(data);
+                        return;
                     }
                 },
             },
