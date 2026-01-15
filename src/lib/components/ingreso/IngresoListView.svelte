@@ -32,7 +32,7 @@
 	// Shared Components
 	import DateRangePicker from '$lib/components/shared/DateRangePicker.svelte';
 	// import ModuleTabs from "$lib/components/shared/ModuleTabs.svelte"; // Removed as per revert
-	import { History, Users, FileText } from 'lucide-svelte';
+	import { History, Users, FileText, X } from 'lucide-svelte';
 	import { openTab } from '$lib/stores/tabs';
 	import ContratistaFormModal from '$lib/components/contratista/ContratistaFormModal.svelte';
 	import * as contratistaService from '$lib/logic/contratista/contratistaService';
@@ -80,6 +80,13 @@
 		start: today,
 		end: today
 	});
+
+	// Filtro local: Solo finalizados
+	let hideActive = $state(false);
+
+	let filteredIngresos = $derived(
+		viewMode === 'history' && hideActive ? ingresos.filter((i) => i.fechaHoraSalida) : ingresos
+	);
 
 	// Suscripción a comandos de teclado centralizados
 	let unsubscribeKeyboard: (() => void) | null = null;
@@ -323,22 +330,24 @@
 	const customButtons = $derived.by(() => {
 		const defaultButtons: any[] = [createCustomButton.exportar(() => handleExportClick())];
 
-		// Botón List Contratista siempre visible (Action secondary)
-		defaultButtons.unshift({
-			id: 'list-contratista-view',
-			label: 'List Contratista',
-			icon: FileText, // Icono de lista/archivo
-			onClick: () => {
-				openTab({
-					componentKey: 'contratista-list',
-					title: 'List. Contratistas',
-					id: 'contratista-list',
-					focusOnOpen: true
-				});
-			},
-			variant: 'default',
-			tooltip: 'Ir a listado completo de contratistas'
-		});
+		// Botón List Contratista siempre visible (Action secondary) - SOLO EN MODE ACTIVES
+		if (viewMode === 'actives') {
+			defaultButtons.unshift({
+				id: 'list-contratista-view',
+				label: 'List Contratista',
+				icon: FileText, // Icono de lista/archivo
+				onClick: () => {
+					openTab({
+						componentKey: 'contratista-list',
+						title: 'List. Contratistas',
+						id: 'contratista-list',
+						focusOnOpen: true
+					});
+				},
+				variant: 'default',
+				tooltip: 'Ir a listado completo de contratistas'
+			});
+		}
 
 		if (viewMode === 'actives') {
 			// Botón "Nuevo Contratista" (Lanza modal creación rápida)
@@ -359,8 +368,28 @@
 
 		return {
 			default: defaultButtons,
-			singleSelect: [createCustomButton.exportar(() => handleExportClick())],
-			multiSelect: [createCustomButton.exportar(() => handleExportClick())]
+			singleSelect: [
+				createCustomButton.exportar(() => handleExportClick()),
+				{
+					id: 'cancel-selection',
+					label: 'Cancelar',
+					icon: X,
+					onClick: () => gridApi?.deselectAll(),
+					variant: 'ghost' as any,
+					tooltip: 'Cancelar selección'
+				}
+			],
+			multiSelect: [
+				createCustomButton.exportar(() => handleExportClick()),
+				{
+					id: 'cancel-selection',
+					label: 'Cancelar',
+					icon: X,
+					onClick: () => gridApi?.deselectAll(),
+					variant: 'ghost' as any,
+					tooltip: 'Cancelar selección'
+				}
+			]
 		};
 	});
 
@@ -665,6 +694,22 @@
 			{/if}
 		{/snippet}
 
+		{#snippet postToolbarControls()}
+			{#if viewMode === 'history'}
+				<div class="flex items-center" transition:fade={{ duration: 150 }}>
+					<input
+						type="checkbox"
+						id="hideActive"
+						bind:checked={hideActive}
+						class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+					/>
+					<label for="hideActive" class="ml-2 text-sm text-secondary select-none cursor-pointer">
+						Solo Finalizados
+					</label>
+				</div>
+			{/if}
+		{/snippet}
+
 		{#if error}
 			<div class="p-6">
 				<div
@@ -703,13 +748,14 @@
 			<AGGridWrapper
 				gridId="ingreso-list"
 				{columnDefs}
-				rowData={ingresos}
+				rowData={filteredIngresos}
 				{customButtons}
 				getRowId={(params) => params.data.id}
 				persistenceKey="ingresos-activos-columns"
 				onSelectionChanged={(rows) => (selectedRows = rows)}
 				onGridReady={(api) => (gridApi = api)}
 				customToolbarSlot={toolbarControls}
+				customPostToolbarSlot={postToolbarControls}
 			/>
 		{/if}
 	</div>

@@ -13,6 +13,7 @@
 
 	interface Props extends AGGridWrapperProps<T> {
 		customToolbarSlot?: import('svelte').Snippet;
+		customPostToolbarSlot?: import('svelte').Snippet;
 		onRefresh?: () => void | Promise<void>;
 	}
 
@@ -22,6 +23,7 @@
 		rowData,
 		customButtons = {},
 		customToolbarSlot,
+		customPostToolbarSlot,
 		onGridReady,
 		onSelectionChanged,
 		onRowClicked,
@@ -417,6 +419,7 @@
 			{gridApi}
 			{customButtons}
 			{customToolbarSlot}
+			{customPostToolbarSlot}
 			{onRefresh}
 			onOpenSettings={() => (showSettings = true)}
 		/>

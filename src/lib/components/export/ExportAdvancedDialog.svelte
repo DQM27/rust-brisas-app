@@ -130,8 +130,8 @@
 					return;
 				}
 
-				// Preparar datos para preview (máximo 5 filas)
-				const previewRows = rows.slice(0, 5);
+				// Preparar datos para preview (máximo 10 filas)
+				const previewRows = rows.slice(0, 10);
 
 				const result = await exportPreview({
 					format: 'pdf',

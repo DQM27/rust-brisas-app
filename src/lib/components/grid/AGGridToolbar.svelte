@@ -11,7 +11,8 @@
 	import type { GridApi } from '@ag-grid-community/core';
 	import { agGridSettings } from '$lib/stores/agGridSettings.svelte';
 	import { getGridConfig } from '$lib/config/agGridConfigs';
-	import { Settings } from 'lucide-svelte';
+	import { Settings, X } from 'lucide-svelte';
+	import { fade } from 'svelte/transition';
 	import AGGridToolbarButton from './AGGridToolbarButton.svelte';
 
 	interface Props {
@@ -26,6 +27,7 @@
 			multiSelect?: CustomToolbarButton[];
 		};
 		customToolbarSlot?: import('svelte').Snippet;
+		customPostToolbarSlot?: import('svelte').Snippet;
 		onRefresh?: () => void | Promise<void>;
 	}
 
@@ -37,6 +39,7 @@
 		onOpenSettings,
 		customButtons = {},
 		customToolbarSlot,
+		customPostToolbarSlot,
 		onRefresh
 	}: Props = $props();
 
@@ -306,12 +309,20 @@
 			<Settings size={16} />
 			Configuración
 		</button>
+
+		<!-- Slot post-configuración (ej: Checkbox "Solo Finalizados") -->
+		{#if customPostToolbarSlot}
+			<div class="flex items-center ml-2 border-l border-white/10 pl-2">
+				{@render customPostToolbarSlot()}
+			</div>
+		{/if}
 	</div>
 
 	<!-- Sección derecha: Info de selección -->
 	{#if selectedRows.length > 0}
 		<div
 			class="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-md px-3 py-2"
+			transition:fade={{ duration: 150 }}
 		>
 			<span class="text-blue-400 text-xs font-medium">
 				{selectedRows.length} seleccionada(s)

@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
-	import { AlertCircle, FileText, Users, History } from 'lucide-svelte';
+	import { AlertCircle, FileText, Users, History, X } from 'lucide-svelte';
 	import type { ColDef, GridApi, ICellRendererParams } from '@ag-grid-community/core';
 
 	// Components
@@ -83,6 +83,13 @@
 		start: today,
 		end: today
 	});
+
+	// Filtro local: Solo finalizados
+	let hideActive = $state(false);
+
+	let filteredIngresos = $derived(
+		viewMode === 'history' && hideActive ? ingresos.filter((i) => i.fechaSalida) : ingresos
+	);
 
 	// Suscripción a comandos de teclado
 	let unsubscribeKeyboard: (() => void) | null = null;
@@ -359,8 +366,28 @@
 
 		return {
 			default: defaultButtons,
-			singleSelect: [createCustomButton.exportar(() => handleExportClick())],
-			multiSelect: [createCustomButton.exportar(() => handleExportClick())]
+			singleSelect: [
+				createCustomButton.exportar(() => handleExportClick()),
+				{
+					id: 'cancel-selection',
+					label: 'Cancelar',
+					icon: X,
+					onClick: () => gridApi?.deselectAll(),
+					variant: 'ghost' as any,
+					tooltip: 'Cancelar selección'
+				}
+			],
+			multiSelect: [
+				createCustomButton.exportar(() => handleExportClick()),
+				{
+					id: 'cancel-selection',
+					label: 'Cancelar',
+					icon: X,
+					onClick: () => gridApi?.deselectAll(),
+					variant: 'ghost' as any,
+					tooltip: 'Cancelar selección'
+				}
+			]
 		};
 	});
 
@@ -594,6 +621,25 @@
 			{/if}
 		{/snippet}
 
+		{#snippet postToolbarControls()}
+			{#if viewMode === 'history'}
+				<div class="flex items-center" transition:fade={{ duration: 150 }}>
+					<input
+						type="checkbox"
+						id="hideActiveProv"
+						bind:checked={hideActive}
+						class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+					/>
+					<label
+						for="hideActiveProv"
+						class="ml-2 text-sm text-secondary select-none cursor-pointer"
+					>
+						Solo Finalizados
+					</label>
+				</div>
+			{/if}
+		{/snippet}
+
 		{#if error}
 			<div class="p-6">
 				<div
@@ -614,13 +660,14 @@
 			<AGGridWrapper
 				gridId="proveedor-ingreso-list"
 				{columnDefs}
-				rowData={ingresos}
+				rowData={filteredIngresos}
 				{customButtons}
 				getRowId={(params) => params.data.id}
 				persistenceKey="ingresos-proveedores-columns"
 				onSelectionChanged={(rows) => (selectedRows = rows)}
 				onGridReady={(api) => (gridApi = api)}
 				customToolbarSlot={toolbarControls}
+				customPostToolbarSlot={postToolbarControls}
 			/>
 		{/if}
 	</div>
