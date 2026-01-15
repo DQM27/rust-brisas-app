@@ -8,7 +8,6 @@ pub mod app_commands;
 pub mod backup;
 
 pub mod audio_commands;
-pub mod cita_commands;
 pub mod config_commands;
 pub mod contratista_commands;
 pub mod module_commands;

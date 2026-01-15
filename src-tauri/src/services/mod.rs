@@ -17,7 +17,6 @@ pub mod role_service;
 
 // Módulos plataforma-específicos eliminados tras unificación de keyring.
 
-pub mod cita_service;
 pub mod ingreso_contratista_service;
 pub mod ingreso_general_service;
 pub mod ingreso_proveedor_service;

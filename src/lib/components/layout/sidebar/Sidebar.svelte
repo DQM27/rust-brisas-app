@@ -8,16 +8,14 @@
 
 	// Icons
 	import {
-		User,
-		FileText,
-		Package,
-		Calendar,
-		BadgeCheck,
-		LogIn,
-		Ban,
-		Users,
-		Zap,
-		Truck
+		UserCircle2,
+		Contact,
+		ShieldX,
+		IdCard,
+		DoorOpen,
+		PackageCheck,
+		ScrollText,
+		Zap
 	} from 'lucide-svelte';
 
 	// Components
@@ -49,7 +47,7 @@
 	const allSidebarItems: SidebarItem[] = [
 		{
 			id: 'users',
-			icon: User,
+			icon: UserCircle2,
 			label: 'Usuarios',
 			action: () => {
 				openTab({
@@ -62,36 +60,8 @@
 			permission: 'VIEW_USER_DETAIL'
 		},
 		{
-			id: 'proveedores',
-			icon: Package,
-			label: 'Proveedores',
-			action: () => {
-				openTab({
-					componentKey: 'proveedor-list',
-					title: 'Lista de Proveedores',
-					id: 'proveedores-list',
-					focusOnOpen: true
-				});
-			},
-			permission: 'VIEW_PROVIDER_DETAIL'
-		},
-		{
-			id: 'visitantes',
-			icon: Users,
-			label: 'Visitantes',
-			action: () => {
-				openTab({
-					componentKey: 'visitante-list',
-					title: 'Lista de Visitantes',
-					id: 'visitante-list',
-					focusOnOpen: true
-				});
-			},
-			permission: 'VIEW_VISITOR_LIST'
-		},
-		{
 			id: 'blacklist',
-			icon: Ban,
+			icon: ShieldX,
 			label: 'Lista Negra',
 			action: () => {
 				openTab({
@@ -104,22 +74,22 @@
 			permission: 'VIEW_BLACKLIST'
 		},
 		{
-			id: 'citas',
-			icon: Calendar,
+			id: 'ingreso-visitas',
+			icon: Contact,
 			label: 'Visitas',
 			action: () => {
 				openTab({
-					componentKey: 'citas-view',
-					title: 'Pre-registro Visitas',
-					id: 'citas-view',
+					componentKey: 'visitas-list',
+					title: 'Ingreso Visitas',
+					id: 'visitas-list',
 					focusOnOpen: true
 				});
 			},
-			permission: 'VIEW_APPOINTMENT_LIST'
+			permission: 'VIEW_VISITOR_LIST'
 		},
 		{
 			id: 'gafetes',
-			icon: BadgeCheck,
+			icon: IdCard,
 			label: 'Gafetes',
 			action: () => {
 				openTab({
@@ -133,7 +103,7 @@
 		},
 		{
 			id: 'ingresos',
-			icon: LogIn,
+			icon: DoorOpen,
 			label: 'Ingresos',
 			action: () => {
 				openTab({
@@ -147,8 +117,8 @@
 		},
 		{
 			id: 'ingreso-proveedores',
-			icon: Truck,
-			label: 'Ingreso Prov.',
+			icon: PackageCheck,
+			label: 'Proveedores',
 			action: () => {
 				openTab({
 					componentKey: 'proveedor-ingreso-list',
@@ -161,7 +131,7 @@
 		},
 		{
 			id: 'logs',
-			icon: FileText,
+			icon: ScrollText,
 			label: 'Logs',
 			roleId: [ROLE_ADMIN_ID]
 		}
@@ -194,13 +164,11 @@
 	// Module status mapping
 	const MODULE_KEY_MAP: Record<string, string> = {
 		users: 'users',
-		contractors: 'contractors',
-		proveedores: 'providers',
-		visitantes: 'visits',
 		blacklist: 'access_control',
-		citas: 'visits',
+		'ingreso-visitas': 'visits',
 		gafetes: 'access_control',
 		ingresos: 'access_control',
+		'ingreso-proveedores': 'providers',
 		logs: 'reports'
 	};
 

@@ -436,41 +436,6 @@ pub enum IngresoError {
 }
 
 // --------------------------------------------------------------------------
-// ERRORES DE CITAS
-// --------------------------------------------------------------------------
-
-#[derive(Error, Debug, Serialize)]
-#[serde(tag = "type", content = "message")]
-pub enum CitaError {
-    #[error("Cita no encontrada")]
-    NotFound,
-    #[error("La cita ya fue procesada")]
-    AlreadyProcessed,
-    #[error("La cita fue cancelada")]
-    Cancelled,
-    #[error("Visitante no encontrado")]
-    VisitanteNotFound,
-    #[error("Fecha de cita inválida")]
-    InvalidDate,
-    #[error("Error de base de datos: {0}")]
-    Database(String),
-    #[error("Error de visitante: {0}")]
-    Visitante(#[from] VisitanteError),
-    #[error("Error de ingreso de visita: {0}")]
-    IngresoVisita(#[from] IngresoVisitaError),
-    #[error("Error de validación: {0}")]
-    Validation(String),
-    #[error("No autorizado: {0}")]
-    Unauthorized(String),
-}
-
-impl From<crate::services::surrealdb_authorization::AuthError> for CitaError {
-    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
-        Self::Unauthorized(err.to_string())
-    }
-}
-
-// --------------------------------------------------------------------------
 // ERRORES DE BÚSQUEDA Y EXPORTACIÓN
 // --------------------------------------------------------------------------
 

@@ -6,7 +6,6 @@ pub mod surrealdb_utils;
 // Módulos de queries SurrealDB
 pub mod surrealdb_alerta_queries;
 pub mod surrealdb_audit_queries;
-pub mod surrealdb_cita_queries;
 pub mod surrealdb_contratista_queries;
 pub mod surrealdb_empresa_queries;
 pub mod surrealdb_gafete_queries;

@@ -133,6 +133,60 @@ export async function cleanupOldBackups(): Promise<number> {
 	return await invoke<number>('cleanup_old_backups');
 }
 
+/**
+ * Crea un backup PORTABLE encriptado con contraseña.
+ * Puede ser restaurado en cualquier máquina que tenga la contraseña.
+ * @param password Contraseña de mínimo 8 caracteres
+ * @returns Nombre del archivo generado
+ */
+export async function backupDatabasePortable(password: string): Promise<string> {
+	return await invoke<string>('backup_database_portable', { password });
+}
+
+/**
+ * Restaura desde un backup portable (requiere contraseña).
+ * @param filename Nombre del archivo a restaurar
+ * @param password Contraseña para desencriptar
+ */
+export async function restorePortableBackup(filename: string, password: string): Promise<void> {
+	const confirmed = await confirm(
+		`⚠️ ¡ADVERTENCIA!\n\nAl restaurar "${filename}", se perderán todos los datos actuales.\n\nLa aplicación se reiniciará automáticamente para aplicar los cambios.\n\n¿Estás seguro de continuar?`,
+		{ title: 'Confirmar Restauración', kind: 'warning' }
+	);
+
+	if (!confirmed) return;
+
+	await invoke('restore_portable_backup', { filename, password });
+
+	await message('El backup ha sido preparado correctamente. La aplicación se reiniciará ahora.', {
+		title: 'Reinicio Requerido',
+		kind: 'info'
+	});
+
+	await relaunch();
+}
+
+/**
+ * Determina si un backup requiere contraseña para restaurar.
+ */
+export function requiresPassword(entry: BackupEntry): boolean {
+	return entry.encryptionType === 'portable';
+}
+
+/**
+ * Obtiene un label legible para el tipo de encriptación.
+ */
+export function getEncryptionLabel(type: string): string {
+	switch (type) {
+		case 'local':
+			return '🔐 Encriptado';
+		case 'portable':
+			return '🔑 Portable';
+		default:
+			return '📄 Sin encriptar';
+	}
+}
+
 // ============================================================================
 // CONFIGURACIÓN DE BACKUP
 // ============================================================================

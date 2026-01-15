@@ -36,6 +36,11 @@ pub async fn get_ingresos_visita_activos() -> Result<Vec<IngresoResponse>, Ingre
     service::get_activos().await
 }
 
+#[command]
+pub async fn get_ingresos_visita_historial() -> Result<Vec<IngresoResponse>, IngresoVisitaError> {
+    service::get_historial().await
+}
+
 /// Cierre de Registro: Registra la salida física del visitante.
 #[command]
 pub async fn registrar_salida_visita(

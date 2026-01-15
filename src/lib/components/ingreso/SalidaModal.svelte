@@ -3,9 +3,9 @@
 	import { fade, scale, slide } from 'svelte/transition';
 	import { X, LogOut, CheckCircle, XCircle, ChevronDown, ChevronRight } from 'lucide-svelte';
 	import type { IngresoResponse } from '$lib/types/ingreso';
-	import type { IngresoProveedor } from '$lib/types/ingreso-nuevos';
+	import type { IngresoProveedor, IngresoVisita } from '$lib/types/ingreso-nuevos';
 
-	type IngresoType = IngresoResponse | IngresoProveedor;
+	type IngresoType = IngresoResponse | IngresoProveedor | IngresoVisita;
 
 	// Props
 	interface Props {
@@ -28,7 +28,10 @@
 		if ('nombreCompleto' in ingreso) {
 			return (ingreso as IngresoResponse).nombreCompleto || 'Sin nombre';
 		}
-		return `${ingreso.nombre} ${ingreso.apellido}`;
+		if ('visitanteNombre' in ingreso) {
+			return `${(ingreso as IngresoVisita).visitanteNombre} ${(ingreso as IngresoVisita).visitanteApellido}`;
+		}
+		return `${(ingreso as IngresoProveedor).nombre} ${(ingreso as IngresoProveedor).apellido}`;
 	});
 
 	const dispatch = createEventDispatcher();
@@ -128,7 +131,7 @@
 					</div>
 					<div>
 						<h2 class="text-lg font-semibold text-primary">Registrar Salida</h2>
-						<p class="text-sm text-secondary">Confirme la salida del contratista</p>
+						<p class="text-sm text-secondary">Confirme la salida de la persona</p>
 					</div>
 				</div>
 				<button
@@ -160,7 +163,7 @@
 								>Cédula</span
 							>
 							<span class="text-primary font-mono text-sm">
-								{ingreso.cedula || 'N/A'}
+								{(ingreso as any).cedula || (ingreso as any).visitanteCedula || 'N/A'}
 							</span>
 						</div>
 						<div class="flex items-center">
@@ -169,7 +172,9 @@
 								>Empresa</span
 							>
 							<span class="text-primary text-sm">
-								{ingreso.empresaNombre || 'Sin empresa'}
+								{(ingreso as any).empresaNombre ||
+									(ingreso as any).visitanteEmpresa ||
+									'Sin empresa'}
 							</span>
 						</div>
 						{#if ((ingreso as any).gafeteNumero || (ingreso as any).gafete) && (ingreso as any).gafeteNumero !== 'S/G' && (ingreso as any).gafete !== 'S/G'}
@@ -190,7 +195,7 @@
 				{#if ((ingreso as any).gafeteNumero || (ingreso as any).gafete) && (ingreso as any).gafeteNumero !== 'S/G' && (ingreso as any).gafete !== 'S/G'}
 					<div class="space-y-3">
 						<span class="block text-sm font-medium text-primary text-center">
-							¿El contratista devolvió el gafete?
+							¿Se devolvió el gafete?
 						</span>
 						<div class="grid grid-cols-2 gap-3">
 							<button
@@ -228,7 +233,7 @@
 				{:else}
 					<!-- Si no tiene gafete, ya se auto-seleccionó true en el $effect -->
 					<div class="p-3 bg-surface-1 rounded-lg border border-surface text-sm text-secondary">
-						Este contratista no tiene gafete asignado
+						No tiene gafete asignado
 					</div>
 				{/if}
 

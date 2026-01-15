@@ -153,8 +153,6 @@ async fn seed_roles() -> Result<(), SurrealDbError> {
         "ingresos:view",
         "ingresos:create",
         "ingresos:read",
-        "citas:view",
-        "citas:read",
         "lista_negra:view",
         "lista_negra:read",
         "proveedores:view",

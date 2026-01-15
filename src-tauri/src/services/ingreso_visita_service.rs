@@ -208,6 +208,15 @@ pub async fn get_activos() -> Result<Vec<IngresoResponse>, IngresoVisitaError> {
     Ok(activos.into_iter().map(IngresoResponse::from_visita_fetched).collect())
 }
 
+/// Consulta el historial de visitas finalizadas.
+pub async fn get_historial() -> Result<Vec<IngresoResponse>, IngresoVisitaError> {
+    let historial = db::find_historial_fetched()
+        .await
+        .map_err(|e| IngresoVisitaError::Database(e.to_string()))?;
+
+    Ok(historial.into_iter().map(IngresoResponse::from_visita_fetched).collect())
+}
+
 /// Valida si un visitante es apto para entrar antes de proceder al registro manual.
 ///
 /// Verifica lista negra y existencia de ingresos previos abiertos.
@@ -223,6 +232,17 @@ pub async fn validar_ingreso(
     // 2. Check Ingreso Activo
     let abierto = db::find_ingreso_abierto_by_cedula(cedula).await.ok().flatten();
 
+    // 3. Consultar alertas de gafetes pendientes
+    let alertas = crate::services::alerta_service::find_pendientes_by_cedula(cedula)
+        .await
+        .unwrap_or_default();
+
+    let tiene_gafetes_pendientes = !alertas.is_empty();
+    let alertas_gafete: Vec<String> = alertas
+        .into_iter()
+        .map(|a| a.notas.unwrap_or_else(|| "Gafete no devuelto".to_string()))
+        .collect();
+
     let puede_ingresar = !check.is_blocked && abierto.is_none();
     let motivo = if check.is_blocked {
         Some("Visitante en Lista Negra".to_string())
@@ -235,17 +255,16 @@ pub async fn validar_ingreso(
     Ok(crate::domain::ingreso_visita::ValidacionIngresoVisitaResponse {
         puede_ingresar,
         cedula: cedula.to_string(),
-        nombre: String::new(), // En visita a veces no tenemos el nombre previo si es nuevo
+        nombre: String::new(),
         apellido: String::new(),
         segundo_nombre: None,
         segundo_apellido: None,
         motivo_rechazo: motivo,
-        alertas_gafete: vec![],
-        tiene_gafetes_pendientes: false,
+        alertas_gafete,
+        tiene_gafetes_pendientes,
     })
 }
 
 // --------------------------------------------------------------------------
 // TESTS UNITARIOS (Helpers)
 // --------------------------------------------------------------------------
-

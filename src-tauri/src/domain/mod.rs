@@ -1,4 +1,3 @@
-pub mod cita;
 pub mod common;
 pub mod ingreso_contratista;
 pub mod ingreso_proveedor;

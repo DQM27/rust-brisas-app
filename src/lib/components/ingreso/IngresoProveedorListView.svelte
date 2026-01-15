@@ -146,17 +146,20 @@
 	let columnDefs = $derived.by((): ColDef<IngresoProveedor>[] => {
 		const baseCols: ColDef<IngresoProveedor>[] = [
 			{
-				field: 'gafete', // Mapped from 'gafete' in IngresoProveedor
+				field: 'gafete',
 				headerName: 'Gafete',
-				width: 100,
+				width: 90,
+				minWidth: 80,
 				sortable: true,
 				filter: true,
-				valueFormatter: (params) => params.value || 'S/G'
+				valueFormatter: (params) => params.value || 'S/G',
+				cellClass: 'font-mono text-accent'
 			},
 			{
 				field: 'nombre',
 				headerName: 'Nombre',
-				width: 150,
+				flex: 1,
+				minWidth: 150,
 				sortable: true,
 				filter: true,
 				valueGetter: (params) => {
@@ -167,36 +170,34 @@
 			{
 				field: 'cedula',
 				headerName: 'Cédula',
-				width: 130,
+				width: 120,
+				minWidth: 100,
 				sortable: true,
-				filter: true
+				filter: true,
+				cellClass: 'font-mono'
 			},
 			{
-				field: 'empresaNombre', // backend populates this
+				field: 'empresaNombre',
 				headerName: 'Empresa',
-				width: 180,
+				flex: 1,
+				minWidth: 150,
 				sortable: true,
 				filter: true
 			},
-			// Provider doesn't have tipoAutorizacion in type definition currently
-			// {
-			// 	field: 'tipoAutorizacion',
-			// 	headerName: 'Autorización',
-			// 	width: 130,
-			// 	sortable: true,
-			// 	filter: true
-			// },
 			{
 				field: 'modoIngreso',
 				headerName: 'Modo',
-				width: 110,
+				width: 100,
+				minWidth: 90,
 				sortable: true,
-				filter: true
+				filter: true,
+				cellClass: 'capitalize'
 			},
 			{
 				field: 'fechaIngreso',
-				headerName: 'Fecha Entrada',
-				width: 140,
+				headerName: 'Entrada',
+				width: 130,
+				minWidth: 120,
 				sortable: true,
 				valueFormatter: (params) => {
 					const date = parseDate(params.value);
@@ -210,8 +211,9 @@
 			},
 			{
 				field: 'fechaIngreso',
-				headerName: 'Hora Entrada',
-				width: 120,
+				headerName: 'Hora',
+				width: 100,
+				minWidth: 90,
 				sortable: true,
 				valueFormatter: (params) => {
 					const date = parseDate(params.value);
@@ -226,15 +228,18 @@
 				field: 'usuarioIngresoNombre',
 				headerName: 'Registrado Por',
 				width: 150,
+				minWidth: 120,
 				sortable: true,
 				filter: true,
-				hide: true // Hid by default to save space, but available
+				hide: true
 			},
 			{
 				field: 'fechaSalida',
-				headerName: 'Fecha Salida',
-				width: 140,
+				headerName: 'Salida',
+				width: 130,
+				minWidth: 120,
 				sortable: true,
+				hide: viewMode === 'actives',
 				valueFormatter: (params) => {
 					const date = parseDate(params.value);
 					if (!date) return '-';
@@ -248,8 +253,10 @@
 			{
 				field: 'fechaSalida',
 				headerName: 'Hora Salida',
-				width: 120,
+				width: 110,
+				minWidth: 90,
 				sortable: true,
+				hide: viewMode === 'actives',
 				valueFormatter: (params) => {
 					const date = parseDate(params.value);
 					if (!date) return '-';
@@ -260,38 +267,21 @@
 				}
 			},
 			{
-				field: 'usuarioSalidaNombre',
-				headerName: 'Salida Por',
-				width: 150,
-				sortable: true,
-				filter: true,
-				valueFormatter: (params) => params.value || '-',
-				hide: true
-			},
-			{
-				colId: 'tiempoPermanencia', // Calculated locally or returned? We'll calc locally if needed
-				headerName: 'Tiempo Dentro',
-				width: 140,
+				colId: 'tiempoPermanencia',
+				headerName: 'Permanencia',
+				width: 130,
+				minWidth: 110,
 				sortable: false,
 				valueGetter: (params) => {
-					if (params.data && params.data.fechaSalida) {
-						// If we have permanence info from backend, use it. Usually backend might send string.
-						// If not, calc diff.
-						const start = parseDate(params.data.fechaIngreso);
-						const end = parseDate(params.data.fechaSalida);
-						if (!start || !end) return '-';
-						const diffMs = end.getTime() - start.getTime();
-						const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-						const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-						return `${diffHours}h ${diffMins}m`;
-					}
-					// Calcular tiempo transcurrido si aún está adentro
 					if (!params.data) return '-';
-					const entrada = parseDate(params.data.fechaIngreso);
-					if (!entrada) return '-';
+					const start = parseDate(params.data.fechaIngreso);
+					const endParsed = params.data.fechaSalida
+						? parseDate(params.data.fechaSalida)
+						: new Date();
+					const end = endParsed || new Date();
 
-					const ahora = new Date();
-					const diffMs = ahora.getTime() - entrada.getTime();
+					if (!start) return '-';
+					const diffMs = end.getTime() - start.getTime();
 					const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 					const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 					return `${diffHours}h ${diffMins}m`;
@@ -300,27 +290,33 @@
 			{
 				colId: 'actions',
 				headerName: 'Acciones',
-				width: 120,
+				width: 110,
+				minWidth: 100,
 				sortable: false,
 				filter: false,
 				pinned: 'right',
+				hide: viewMode === 'history',
 				cellRenderer: (params: ICellRendererParams<IngresoProveedor>) => {
-					if (viewMode === 'history') return null; // No exit button in history
+					const container = document.createElement('div');
+					container.className = 'flex items-center justify-center h-full w-full';
+
 					const button = document.createElement('button');
 					button.className =
-						'px-3 py-1 bg-error text-white rounded-md text-sm hover:opacity-90 transition-opacity';
-					button.textContent = 'Salida';
-					button.onclick = () => {
+						'p-1.5 rounded-md text-error hover:bg-error/10 transition-colors tooltip-target';
+					button.setAttribute('title', 'Registrar Salida');
+					button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`;
+
+					button.onclick = (e) => {
+						e.stopPropagation();
 						if (params.data) handleSalida(params.data);
 					};
-					return button;
+
+					container.appendChild(button);
+					return container;
 				}
 			}
 		];
 
-		if (viewMode === 'history') {
-			return baseCols.filter((c) => c.colId !== 'actions');
-		}
 		return baseCols;
 	});
 
@@ -551,57 +547,53 @@
 <div class="flex h-full flex-col relative bg-surface-1">
 	<!-- Header -->
 	<div class="border-b border-surface px-6 py-4 bg-surface-2">
-		<div class="flex flex-col gap-4">
-			<div class="flex items-center justify-between">
-				<div>
-					<h2 class="text-xl font-semibold text-primary">
-						{viewMode === 'actives' ? 'Proveedores en Planta' : 'Historial de Proveedores'}
-					</h2>
-					<p class="mt-1 text-sm text-secondary">
-						{viewMode === 'actives'
-							? 'Proveedores ingresados actualmente'
-							: 'Registro histórico de accesos de proveedores'}
-					</p>
-				</div>
-
-				<div class="flex items-center gap-4">
-					<div class="relative flex items-center bg-surface-3 p-1 rounded-lg isolate">
-						<div
-							class="absolute top-1 bottom-1 rounded-md bg-white dark:bg-zinc-700 shadow-sm transition-all duration-300 ease-in-out z-[-1]"
-							style="
-                  left: {viewMode === 'actives' ? '4px' : '50%'};
-                  right: {viewMode === 'actives' ? '50%' : '4px'};
-                  width: calc(50% - 6px);
-                "
-						></div>
-						<button
-							class="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors z-10
-                {viewMode === 'actives'
-								? 'text-primary dark:text-white'
-								: 'text-secondary hover:text-primary dark:hover:text-zinc-300'}"
-							onclick={() => toggleViewMode('actives')}
-						>
-							<Users size={16} class={viewMode === 'actives' ? 'scale-110' : ''} />
-							Activos
-						</button>
-						<button
-							class="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors z-10
-                {viewMode === 'history'
-								? 'text-primary dark:text-white'
-								: 'text-secondary hover:text-primary dark:hover:text-zinc-300'}"
-							onclick={() => toggleViewMode('history')}
-						>
-							<History size={16} class={viewMode === 'history' ? 'scale-110' : ''} />
-							Historial
-						</button>
-					</div>
-				</div>
+		<div class="flex items-center justify-between gap-6">
+			<div>
+				<h2 class="text-xl font-semibold text-primary">
+					{viewMode === 'actives' ? 'Proveedores en Planta' : 'Historial de Proveedores'}
+				</h2>
+				<p class="mt-1 text-xs text-secondary">
+					{viewMode === 'actives'
+						? 'Proveedores ingresados actualmente'
+						: 'Registro histórico de accesos'}
+				</p>
 			</div>
 
-			<!-- Bottom Row: Controls -->
-			<div class="flex items-center justify-between gap-4">
-				<div class="flex-1 max-w-md">
-					<SearchBar placeholder="Buscar proveedor, gafete..." limit={10} />
+			<!-- Center: SearchBar -->
+			<div class="flex-1 max-w-md">
+				<SearchBar placeholder="Buscar proveedor, gafete..." limit={10} />
+			</div>
+
+			<div class="flex items-center gap-4">
+				<div class="relative flex items-center bg-surface-3 p-1 rounded-lg isolate">
+					<div
+						class="absolute top-1 bottom-1 rounded-md bg-white dark:bg-zinc-700 shadow-sm transition-all duration-300 ease-in-out z-[-1]"
+						style="
+								left: {viewMode === 'actives' ? '4px' : '50%'};
+								right: {viewMode === 'actives' ? '50%' : '4px'};
+								width: calc(50% - 6px);
+							"
+					></div>
+					<button
+						class="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors z-10
+							{viewMode === 'actives'
+							? 'text-primary dark:text-white'
+							: 'text-secondary hover:text-primary dark:hover:text-zinc-300'}"
+						onclick={() => toggleViewMode('actives')}
+					>
+						<Users size={16} class={viewMode === 'actives' ? 'scale-110' : ''} />
+						Activos
+					</button>
+					<button
+						class="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors z-10
+							{viewMode === 'history'
+							? 'text-primary dark:text-white'
+							: 'text-secondary hover:text-primary dark:hover:text-zinc-300'}"
+						onclick={() => toggleViewMode('history')}
+					>
+						<History size={16} class={viewMode === 'history' ? 'scale-110' : ''} />
+						Historial
+					</button>
 				</div>
 			</div>
 		</div>

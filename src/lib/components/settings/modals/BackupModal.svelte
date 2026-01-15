@@ -12,7 +12,8 @@
 		Clock,
 		Calendar,
 		Settings,
-		Trash2
+		Trash2,
+		Key
 	} from 'lucide-svelte';
 	import {
 		backupDatabase,
@@ -20,10 +21,12 @@
 		listBackups,
 		deleteBackup,
 		restoreFromAutoBackup,
+		restorePortableBackup,
 		cleanupOldBackups,
 		getBackupConfig,
 		updateBackupConfig,
-		backupDatabaseAuto
+		backupDatabaseAuto,
+		backupDatabasePortable
 	} from '$lib/services/backupService';
 	import { message, confirm } from '@tauri-apps/plugin-dialog';
 	import type { BackupEntry, BackupConfig } from '$lib/types/backup';
@@ -48,6 +51,7 @@
 	let isLoading = $state(false);
 	let isSavingConfig = $state(false);
 	let isCleaningUp = $state(false);
+	let isCreatingPortable = $state(false);
 
 	// Datos
 	let backups = $state<BackupEntry[]>([]);
@@ -56,6 +60,12 @@
 	// Config form
 	let configEnabled = $state(false);
 	let configHora = $state('02:00');
+
+	// Portable backup
+	let showPasswordModal = $state(false);
+	let passwordInput = $state('');
+	let passwordMode = $state<'create' | 'restore'>('create');
+	let pendingRestoreEntry = $state<BackupEntry | null>(null);
 	let configDiasRetencion = $state(30);
 
 	// AG Grid
@@ -158,6 +168,15 @@
 	}
 
 	async function handleRestoreFromGrid(entry: BackupEntry) {
+		// Si es portable, pedir contraseña primero
+		if (entry.encryptionType === 'portable') {
+			pendingRestoreEntry = entry;
+			passwordMode = 'restore';
+			passwordInput = '';
+			showPasswordModal = true;
+			return;
+		}
+
 		try {
 			await restoreFromAutoBackup(entry.nombre);
 		} catch (error) {
@@ -167,6 +186,58 @@
 				kind: 'error'
 			});
 		}
+	}
+
+	async function handlePortableBackup() {
+		passwordMode = 'create';
+		passwordInput = '';
+		showPasswordModal = true;
+	}
+
+	async function handlePasswordSubmit() {
+		if (passwordInput.length < 8) {
+			await message('La contraseña debe tener al menos 8 caracteres.', {
+				title: 'Contraseña muy corta',
+				kind: 'warning'
+			});
+			return;
+		}
+
+		showPasswordModal = false;
+
+		if (passwordMode === 'create') {
+			isCreatingPortable = true;
+			try {
+				const filename = await backupDatabasePortable(passwordInput);
+				await message(
+					`Backup portable creado: ${filename}\n\n⚠️ Guarda la contraseña en un lugar seguro. Sin ella no podrás restaurar este backup.`,
+					{
+						title: 'Backup Portable Creado',
+						kind: 'info'
+					}
+				);
+				await loadData();
+			} catch (error) {
+				console.error('Error creating portable backup:', error);
+				await message(`Error: ${error}`, { title: 'Error', kind: 'error' });
+			} finally {
+				isCreatingPortable = false;
+			}
+		} else if (passwordMode === 'restore' && pendingRestoreEntry) {
+			try {
+				await restorePortableBackup(pendingRestoreEntry.nombre, passwordInput);
+			} catch (error) {
+				console.error('Error restoring portable backup:', error);
+				await message(`Error al restaurar: ${error}`, {
+					title: 'Error',
+					kind: 'error'
+				});
+			} finally {
+				pendingRestoreEntry = null;
+			}
+		}
+
+		passwordInput = '';
 	}
 
 	async function handleDeleteFromGrid(entry: BackupEntry) {
@@ -333,6 +404,19 @@
 						</button>
 
 						<button
+							class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
+							onclick={handlePortableBackup}
+							disabled={isCreatingPortable}
+							title="Backup encriptado con contraseña, portable a otra máquina"
+						>
+							{#if isCreatingPortable}
+								<RefreshCw class="w-3 h-3 animate-spin" />
+							{:else}
+								<Key class="w-3 h-3" />
+							{/if}
+							Portable
+						</button>
+						<button
 							class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-gray-200 disabled:opacity-50"
 							onclick={handleCleanup}
 							disabled={isCleaningUp}
@@ -414,6 +498,72 @@
 						</button>
 					</div>
 				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if showPasswordModal}
+	<div
+		class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+		transition:fade={{ duration: 100 }}
+	>
+		<button
+			class="absolute inset-0 bg-black/70 backdrop-blur-sm border-0 cursor-default"
+			onclick={() => {
+				showPasswordModal = false;
+				passwordInput = '';
+			}}
+			aria-label="Cerrar"
+		></button>
+
+		<div
+			class="relative z-10 w-full max-w-sm p-6 rounded-lg bg-[#161b22] border border-gray-600 shadow-2xl"
+			transition:fly={{ y: 10, duration: 150 }}
+		>
+			<div class="flex items-center gap-2 mb-4">
+				<Key class="w-5 h-5 text-purple-500" />
+				<h3 class="text-base font-semibold text-white">
+					{passwordMode === 'create' ? 'Crear Backup Portable' : 'Restaurar Backup'}
+				</h3>
+			</div>
+
+			<p class="text-xs text-gray-400 mb-4">
+				{#if passwordMode === 'create'}
+					Ingresa una contraseña de al menos 8 caracteres para proteger el backup.
+					<span class="text-amber-400">⚠️ No podrás recuperar el backup sin esta contraseña.</span>
+				{:else}
+					Ingresa la contraseña para desencriptar el backup.
+				{/if}
+			</p>
+
+			<input
+				type="password"
+				bind:value={passwordInput}
+				placeholder="Contraseña (mín. 8 caracteres)"
+				class="w-full px-3 py-2 text-sm rounded-md bg-[#0d1117] border border-gray-600 text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none mb-4"
+				onkeydown={(e) => {
+					if (e.key === 'Enter') handlePasswordSubmit();
+				}}
+			/>
+
+			<div class="flex gap-2 justify-end">
+				<button
+					class="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-gray-200"
+					onclick={() => {
+						showPasswordModal = false;
+						passwordInput = '';
+					}}
+				>
+					Cancelar
+				</button>
+				<button
+					class="px-3 py-1.5 text-xs font-medium rounded-md bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
+					onclick={handlePasswordSubmit}
+					disabled={passwordInput.length < 8}
+				>
+					{passwordMode === 'create' ? 'Crear Backup' : 'Restaurar'}
+				</button>
 			</div>
 		</div>
 	</div>

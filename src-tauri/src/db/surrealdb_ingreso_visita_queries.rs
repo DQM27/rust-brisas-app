@@ -86,3 +86,13 @@ pub async fn find_activos_fetched() -> Result<Vec<IngresoVisitaFetched>, Surreal
         .await?;
     Ok(result.take(0)?)
 }
+
+pub async fn find_historial_fetched() -> Result<Vec<IngresoVisitaFetched>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut result = db
+        .query(format!(
+            "SELECT * FROM {TABLE} WHERE fecha_hora_salida IS NOT NONE ORDER BY fecha_hora_salida DESC FETCH usuario_ingreso, usuario_salida"
+        ))
+        .await?;
+    Ok(result.take(0)?)
+}

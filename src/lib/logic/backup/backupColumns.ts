@@ -102,6 +102,37 @@ export class BackupColumns {
 				}
 			},
 			{
+				colId: 'encryptionType',
+				field: 'encryptionType',
+				headerName: 'Seguridad',
+				sortable: true,
+				filter: true,
+				width: 140,
+				cellStyle: { display: 'flex', alignItems: 'center' },
+				cellRenderer: (params: ICellRendererParams<BackupEntry>) => {
+					const type = params.value || 'none';
+					let icon = '📄';
+					let label = 'Sin encriptar';
+					let colorClass = 'text-gray-400 bg-gray-500/10';
+
+					if (type === 'local') {
+						icon = '🔐';
+						label = 'Encriptado';
+						colorClass = 'text-emerald-600 bg-emerald-500/10';
+					} else if (type === 'portable') {
+						icon = '🔑';
+						label = 'Portable';
+						colorClass = 'text-purple-600 bg-purple-500/10';
+					}
+
+					return `
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}">
+                            ${icon} ${label}
+                        </span>
+                    `;
+				}
+			},
+			{
 				colId: 'acciones',
 				headerName: 'Acciones',
 				width: 180,

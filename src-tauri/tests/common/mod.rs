@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use brisas_app_lib::models::contratista::{Contratista, EstadoContratista};
 use std::str::FromStr;
 use surrealdb::{

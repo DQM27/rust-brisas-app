@@ -125,7 +125,7 @@ DEFINE FIELD deleted_at ON TABLE visitante TYPE option<datetime>;
 DEFINE INDEX idx_visitante_cedula ON visitante COLUMNS cedula UNIQUE;
 
 -- =========================================================
--- 4. OPERACIONES (INGRESOS Y CITAS)
+-- 4. OPERACIONES (INGRESOS)
 -- =========================================================
 
 -- =========================================================
@@ -190,21 +190,6 @@ DEFINE FIELD observaciones ON TABLE ingreso_visita TYPE option<string> ASSERT $v
 DEFINE FIELD created_at ON TABLE ingreso_visita TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE ingreso_visita TYPE datetime VALUE time::now();
 
--- =========================================================
--- Tabla CITA
--- =========================================================
-DEFINE TABLE cita SCHEMAFULL;
-DEFINE FIELD visitante_id ON TABLE cita TYPE option<record<visitante>>;
-DEFINE FIELD usuario_id ON TABLE cita TYPE record<user>;
-DEFINE FIELD motivo ON TABLE cita TYPE string ASSERT string::len($value) <= 500;
-DEFINE FIELD fecha_inicio ON TABLE cita TYPE datetime;
-DEFINE FIELD fecha_fin ON TABLE cita TYPE datetime;
-DEFINE FIELD estado ON TABLE cita TYPE string ASSERT $value INSIDE ['pendiente', 'completada', 'cancelada'] DEFAULT 'pendiente';
-DEFINE FIELD activa ON TABLE cita TYPE bool DEFAULT true;
-DEFINE FIELD visitante_nombre ON TABLE cita TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 100;
-DEFINE FIELD visitante_cedula ON TABLE cita TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 20;
-DEFINE FIELD created_at ON TABLE cita TYPE datetime DEFAULT time::now();
-DEFINE FIELD updated_at ON TABLE cita TYPE datetime VALUE time::now();
 
 -- =========================================================
 -- 5. RECURSOS (Vehículos, Gafetes)

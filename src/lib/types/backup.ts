@@ -3,6 +3,11 @@
  */
 
 /**
+ * Tipo de encriptación del backup
+ */
+export type EncryptionType = 'none' | 'local' | 'portable';
+
+/**
  * Entrada de backup en el directorio de backups automáticos
  */
 export interface BackupEntry {
@@ -16,6 +21,8 @@ export interface BackupEntry {
 	fechaCreacion: string;
 	/** Días desde la creación */
 	diasAntiguedad: number;
+	/** Tipo de encriptación: "none" (legacy), "local" (Master Key), "portable" (contraseña) */
+	encryptionType: EncryptionType;
 }
 
 /**

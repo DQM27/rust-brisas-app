@@ -42,7 +42,6 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
 	'user-list': UserListView,
 	'user-editor': WelcomePanel,
 	dashboard: WelcomePanel,
-	'citas-view': VisitaListView,
 	'visitas-list': VisitaListView,
 	'visitante-list': VisitanteListView,
 

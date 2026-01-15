@@ -1,23 +1,18 @@
 export interface IngresoVisita {
 	id: string;
-	visitanteId: string;
-	citaId?: string;
+	visitanteCedula: string;
+	visitanteNombre: string;
+	visitanteApellido: string;
+	visitanteEmpresa?: string;
 	anfitrion: string;
 	areaVisitada: string;
 	motivo: string;
 	gafete?: string;
 	fechaIngreso: string;
 	fechaSalida?: string;
-	estado: 'ADENTRO' | 'SALIO';
 	usuarioIngresoId: string;
 	usuarioSalidaId?: string;
 	observaciones?: string;
-
-	// Populated fields
-	visitanteNombre: string;
-	visitanteApellido: string;
-	visitanteCedula: string;
-	visitanteEmpresa?: string;
 }
 
 export interface IngresoProveedor {

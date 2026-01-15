@@ -64,15 +64,6 @@ macro_rules! register_handlers {
             commands::gafete_commands::update_gafete_status,
             commands::gafete_commands::delete_gafete,
             // ==========================================
-            // COMANDOS DE CITAS (Pre-registro)
-            // ==========================================
-            commands::cita_commands::create_cita,
-            commands::cita_commands::get_citas_hoy,
-            commands::cita_commands::get_citas_pendientes,
-            commands::cita_commands::get_cita_by_id,
-            commands::cita_commands::procesar_ingreso_cita,
-            commands::cita_commands::cancelar_cita,
-            // ==========================================
             // COMANDOS DE VISITANTE
             // ==========================================
             commands::visitante_commands::create_visitante,
@@ -88,6 +79,7 @@ macro_rules! register_handlers {
             // COMANDOS DE INGRESO VISITAS
             // ==========================================
             commands::ingreso_visita_commands::get_ingresos_visita_activos,
+            commands::ingreso_visita_commands::get_ingresos_visita_historial,
             commands::ingreso_visita_commands::crear_ingreso_visita,
             commands::ingreso_visita_commands::validar_ingreso_visita,
             commands::ingreso_visita_commands::registrar_salida_visita,
@@ -166,10 +158,12 @@ macro_rules! register_handlers {
             // ==========================================
             commands::backup::backup_database,
             commands::backup::backup_database_auto,
+            commands::backup::backup_database_portable,
             commands::backup::list_backups,
             commands::backup::delete_backup,
             commands::backup::restore_database,
             commands::backup::restore_from_auto_backup,
+            commands::backup::restore_portable_backup,
             commands::backup::cleanup_old_backups,
             // ==========================================
             // COMANDOS DE CONFIGURACIÓN

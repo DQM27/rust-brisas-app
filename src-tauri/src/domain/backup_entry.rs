@@ -17,4 +17,6 @@ pub struct BackupEntryResponse {
     pub fecha_creacion: String,
     /// Días desde la creación
     pub dias_antiguedad: u32,
+    /// Tipo de encriptación: "none" (legacy), "local" (Master Key), "portable" (contraseña)
+    pub encryption_type: String,
 }

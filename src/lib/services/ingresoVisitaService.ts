@@ -22,27 +22,29 @@ export interface CreateIngresoVisitaFullInput {
 
 export const ingresoVisitaService = {
 	async createIngreso(input: CreateIngresoVisitaFullInput): Promise<IngresoVisita> {
-		return await invoke<IngresoVisita>('crear_ingreso_visita_v2', { input });
+		return await invoke<IngresoVisita>('crear_ingreso_visita', { input });
+	},
+
+	async validarIngreso(visitanteId: string): Promise<any> {
+		return await invoke('validar_ingreso_visita', { visitanteId });
 	},
 
 	async getActivos(): Promise<IngresoVisita[]> {
-		return await invoke<IngresoVisita[]>('get_ingresos_visitas_activos');
+		return await invoke<IngresoVisita[]>('get_ingresos_visita_activos');
 	},
 
 	/** Obtiene historial de visitas completadas */
 	async getHistorial(): Promise<IngresoVisita[]> {
-		return await invoke<IngresoVisita[]>('get_ingresos_visitas_historial');
+		return await invoke<IngresoVisita[]>('get_ingresos_visita_historial');
 	},
 
 	async registrarSalida(
-		id: string,
-		usuarioId: string,
+		ingresoId: string,
 		devolvioGafete: boolean,
 		observaciones?: string
 	): Promise<void> {
 		return await invoke('registrar_salida_visita', {
-			id,
-			usuarioId,
+			ingresoId,
 			devolvioGafete,
 			observaciones
 		});
