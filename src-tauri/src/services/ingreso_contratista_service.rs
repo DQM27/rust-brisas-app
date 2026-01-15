@@ -118,7 +118,7 @@ where
                 .await
                 .unwrap_or_default();
 
-        let tiene_deuda_gafete = !alertas_pendientes.is_empty();
+        let _tiene_deuda_gafete = !alertas_pendientes.is_empty();
         let alerta_gafete_msg =
             alertas_pendientes.first().map(|a| format!("Debe gafete #{}", a.gafete_numero));
 

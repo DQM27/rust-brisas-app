@@ -5,7 +5,7 @@
 
 use crate::models::ingreso::UniversalIngresoFetched;
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use log::{error, info};
+use log::info;
 use surrealdb::RecordId;
 
 // NOTE: Now unifies [ingreso_contratista, ingreso_proveedor, ingreso_visita]

@@ -238,9 +238,9 @@ pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
 
     let gafetes = db::get_all_gafetes().await.map_err(|e| GafeteError::Database(e.to_string()))?;
 
-    // Fetch all pending alerts to enrich gafetes
-    let alertas = alerta_db::find_all(Some(false)).await.unwrap_or_else(|e| {
-        error!("Error fetching pending alerts: {}", e);
+    // Fetch ALL alerts (both pending and resolved) to show complete history
+    let alertas = alerta_db::find_all(None).await.unwrap_or_else(|e| {
+        error!("Error fetching alerts: {}", e);
         vec![]
     });
 
