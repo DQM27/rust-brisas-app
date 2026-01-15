@@ -2,7 +2,7 @@
 <!-- Modal para agregar/editar personas en lista negra (Validación Zod + Superforms) -->
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
-	import { X, AlertTriangle, User, Building2 } from 'lucide-svelte';
+	import { X, User, CheckCircle, XCircle, ChevronDown, MonitorStop } from 'lucide-svelte';
 	import { get } from 'svelte/store';
 	import { currentUser } from '$lib/stores/auth';
 	import PersonaFinder from '$lib/components/ingreso/shared/persona/PersonaFinder.svelte';
@@ -29,6 +29,9 @@
 		isEditMode ? `Editar: ${bloqueado?.nombreCompleto}` : 'Agregar a Lista Negra'
 	);
 
+	let showSeveridadDropdown = $state(false);
+	let searchResetKey = $state(0);
+
 	// --- SUPERFORMS SETUP ---
 	const initialValues: AddToListaNegraForm = {
 		cedula: '',
@@ -42,16 +45,15 @@
 		motivoBloqueo: ''
 	};
 
-	const { form, errors, constraints, enhance, reset } = superForm<AddToListaNegraForm>(
-		initialValues,
-		{
+	const { form, errors, constraints, enhance, reset, formId, tainted, message } =
+		superForm<AddToListaNegraForm>(initialValues, {
 			SPA: true,
 			validators: zod4(AddToListaNegraSchema),
 			resetForm: false, // Control manual
 			onUpdate: async ({ form: f }) => {
 				if (!f.valid) return;
 
-				const usuario = get(currentUser); // Use get() to ensure we have the value
+				const usuario = get(currentUser);
 				const bloqueadoPor = usuario ? `${usuario.nombre} ${usuario.apellido}` : 'Sistema';
 
 				const input: AddToListaNegraInput = {
@@ -70,8 +72,7 @@
 					onClose();
 				}
 			}
-		}
-	);
+		});
 
 	// Estado de selección
 	let selectedPersona = $state<any>(null); // Usamos any para flexibilidad con PersonaFinder
@@ -108,13 +109,12 @@
 	import * as proveedorService from '$lib/logic/proveedor/proveedorService';
 	import { fetchEmpresaPorId } from '$lib/api/empresa';
 
-	// ... imports existing ...
-
 	// Handler para selección desde PersonaFinder
 	async function handlePersonaSelect(event: CustomEvent) {
 		const { id, type, data } = event.detail;
 
 		selectedPersona = data;
+		searchResetKey++; // Reset search input visual state
 
 		// 1. Poblado inicial rápido (Fallback)
 		$form.cedula = data.cedula || '';
@@ -166,8 +166,6 @@
 				}
 
 				if (empIdString) {
-					// Normalizar si es necesario (agregar prefijo si falta) pero generalmente viene con prefijo
-					// La normalización real ocurre en el backend o en Zod si es estricto
 					$form.empresaId = empIdString;
 
 					// Si tenemos ID y el nombre no se ha seteado (o queremos asegurarlo)
@@ -177,7 +175,6 @@
 
 					// Fallback fetch si aun no tenemos nombre
 					if (!$form.empresaNombre) {
-						// ... fetch logic existing
 						try {
 							const emp = await fetchEmpresaPorId(empIdString);
 							if (emp) {
@@ -228,11 +225,26 @@
 		$form.empresaNombre = '';
 	}
 
-	// Styles
+	// --- STANDARD STYLES (ui-patterns.md) ---
 	const inputClass =
-		'w-full rounded-md border border-gray-600 bg-[#0d1117] px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed';
-	const labelClass = 'block text-sm font-medium text-gray-300 mb-1';
-	const errorClass = 'text-xs text-red-400 mt-1';
+		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all';
+	const labelClass = 'block text-xs font-medium text-secondary mb-1';
+	const errorClass = 'text-xs text-red-500 mt-0.5';
+
+	// Helper de Validación
+	function getFieldStateClass(field: keyof AddToListaNegraForm) {
+		if ($errors[field]) {
+			return '!border-red-500/50 !ring-1 !ring-red-500/20';
+		}
+		return '';
+	}
+
+	// Severidad Options
+	const severidadOptions = [
+		{ value: 'ALTO', label: '🔴 ALTO - Crítico' },
+		{ value: 'MEDIO', label: '🟡 MEDIO - Moderado' },
+		{ value: 'BAJO', label: '⚪ BAJO - Bajo riesgo' }
+	];
 
 	// Handler para Ctrl+S
 	function handleKeydown(e: KeyboardEvent) {
@@ -251,250 +263,292 @@
 
 {#if show}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center p-4"
+		class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
 		transition:fade={{ duration: 150 }}
 	>
-		<!-- Backdrop -->
-		<button
-			class="absolute inset-0 bg-black/60 backdrop-blur-sm border-0 cursor-default"
-			onclick={onClose}
-			aria-label="Cerrar modal"
-		></button>
+		<!-- Backdrop click handler -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="absolute inset-0" onclick={onClose}></div>
 
-		<!-- Modal Content -->
+		<!-- Modal Content: Compact CRUD Modal Style -->
 		<div
-			class="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-auto rounded-lg bg-[#0d1117] shadow-2xl border border-gray-700"
+			class="relative z-10 w-full max-w-[420px] max-h-[95vh] flex flex-col overflow-hidden rounded-xl bg-surface-2 shadow-2xl border border-surface"
 			transition:fly={{ y: 20, duration: 200 }}
 		>
-			<!-- Header -->
+			<!-- Header Estándar -->
 			<div
-				class="sticky top-0 z-20 flex items-center justify-between px-6 py-4 bg-[#0d1117] border-b border-gray-700"
+				class="flex-none flex items-center justify-between px-3 py-3 bg-surface-2 border-b border-surface"
 			>
-				<div class="flex items-center gap-3">
-					<div class="p-2 rounded-lg bg-red-500/10">
-						<AlertTriangle size={20} class="text-red-400" />
-					</div>
-					<h2 class="text-xl font-semibold text-white">{modalTitle}</h2>
-				</div>
+				<h2 class="text-lg font-semibold text-primary ml-1">
+					{modalTitle}
+				</h2>
 				<button
 					onclick={onClose}
-					class="p-1 rounded-full text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors"
-					aria-label="Cerrar"
+					class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
 				>
-					<X size={20} />
+					<X size={18} />
 				</button>
 			</div>
 
-			<form method="POST" use:enhance class="p-6 space-y-5">
-				<!-- Búsqueda de persona (solo en creación) -->
-				{#if !isEditMode}
-					<div class="space-y-2">
-						<span class="{labelClass} mb-2">Buscar persona</span>
+			<!-- Form Content Container -->
+			<form method="POST" use:enhance class="flex flex-col flex-1 overflow-hidden">
+				<!-- Scrollable Area -->
+				<div class="flex-1 overflow-y-auto">
+					<div class="p-5 space-y-4">
+						<!-- Búsqueda de persona (solo en creación/limpio) -->
+						{#if !isEditMode}
+							<div class="mb-4">
+								<!-- Componente PersonaFinder (Siempre visible) -->
+								{#key searchResetKey}
+									<PersonaFinder on:select={handlePersonaSelect} autoFocus={true} />
+								{/key}
 
-						{#if selectedPersona}
-							<!-- Persona seleccionada -->
-							<div
-								class="flex items-center gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30"
-							>
-								<User size={20} class="text-blue-400" />
-								<div class="flex-1">
-									<div class="font-medium text-white">
-										{selectedPersona.nombre_completo ||
-											selectedPersona.nombreCompleto ||
-											'Desconocido'}
+								<!-- Botón para limpiar selección manual si ya se eligió alguien -->
+								{#if selectedPersona}
+									<div class="flex justify-end mt-1">
+										<button
+											type="button"
+											onclick={clearSelection}
+											class="text-[10px] text-red-400 hover:text-red-300 transition-colors flex items-center gap-1"
+										>
+											<X size={12} /> Limpiar formulario
+										</button>
 									</div>
-									<div class="text-sm text-gray-400">
-										{selectedPersona.cedula || 'S/C'} •
-										{selectedPersona.tipo || 'Persona'}
-										{#if selectedPersona.empresa_nombre || selectedPersona.empresaNombre}
-											• {selectedPersona.empresa_nombre || selectedPersona.empresaNombre}
-										{/if}
-									</div>
+								{/if}
+							</div>
+						{/if}
+
+						<!-- Input Card Container -->
+						<div class="bg-surface-1 rounded-lg border border-surface p-5 space-y-4">
+							<!-- Cédula (Full Width) -->
+							<div>
+								<label for="cedula" class={labelClass}
+									>Cédula <span class="text-red-500">*</span></label
+								>
+								<input
+									id="cedula"
+									name="cedula"
+									type="text"
+									bind:value={$form.cedula}
+									disabled={loading || isEditMode || !!selectedPersona}
+									class="{inputClass} {getFieldStateClass('cedula')}"
+									placeholder={selectedPersona ? '' : '1-1234-5678'}
+									{...$constraints.cedula}
+								/>
+								{#if $errors.cedula}<p class={errorClass}>{$errors.cedula}</p>{/if}
+							</div>
+
+							<!-- Row: Nombre + Segundo Nombre -->
+							<div class="grid grid-cols-2 gap-3">
+								<div>
+									<label for="nombre" class={labelClass}
+										>Nombre <span class="text-red-500">*</span></label
+									>
+									<input
+										id="nombre"
+										name="nombre"
+										type="text"
+										bind:value={$form.nombre}
+										disabled={loading || !!selectedPersona}
+										class="{inputClass} {getFieldStateClass('nombre')}"
+										placeholder={selectedPersona ? '' : 'Juan'}
+										{...$constraints.nombre}
+									/>
+									{#if $errors.nombre}<p class={errorClass}>{$errors.nombre}</p>{/if}
 								</div>
+								<div>
+									<label for="segundoNombre" class={labelClass}>Segundo Nombre</label>
+									<input
+										id="segundoNombre"
+										name="segundoNombre"
+										type="text"
+										bind:value={$form.segundoNombre}
+										disabled={loading || !!selectedPersona}
+										class="{inputClass} {getFieldStateClass('segundoNombre')}"
+										placeholder="Opcional"
+										{...$constraints.segundoNombre}
+									/>
+								</div>
+							</div>
+
+							<!-- Row: Apellido + Segundo Apellido -->
+							<div class="grid grid-cols-2 gap-3">
+								<div>
+									<label for="apellido" class={labelClass}
+										>Apellido <span class="text-red-500">*</span></label
+									>
+									<input
+										id="apellido"
+										name="apellido"
+										type="text"
+										bind:value={$form.apellido}
+										disabled={loading || !!selectedPersona}
+										class="{inputClass} {getFieldStateClass('apellido')}"
+										placeholder={selectedPersona ? '' : 'Pérez'}
+										{...$constraints.apellido}
+									/>
+									{#if $errors.apellido}<p class={errorClass}>{$errors.apellido}</p>{/if}
+								</div>
+								<div>
+									<label for="segundoApellido" class={labelClass}>Segundo Apellido</label>
+									<input
+										id="segundoApellido"
+										name="segundoApellido"
+										type="text"
+										bind:value={$form.segundoApellido}
+										disabled={loading || !!selectedPersona}
+										class="{inputClass} {getFieldStateClass('segundoApellido')}"
+										placeholder="Opcional"
+										{...$constraints.segundoApellido}
+									/>
+								</div>
+							</div>
+
+							<!-- Empresa (Full Width) -->
+							<div>
+								<label for="empresaNombre" class={labelClass}>Empresa</label>
+								<input
+									id="empresaNombre"
+									name="empresaNombre"
+									type="text"
+									bind:value={$form.empresaNombre}
+									disabled={loading || !!selectedPersona}
+									class="{inputClass} {getFieldStateClass('empresaNombre')}"
+									placeholder={selectedPersona ? '' : 'Nombre de empresa'}
+									{...$constraints.empresaNombre}
+								/>
+								{#if $errors.empresaNombre}<p class={errorClass}>{$errors.empresaNombre}</p>{/if}
+							</div>
+
+							<!-- Nivel de Severidad CUSTOM DROPDOWN (Full Width) -->
+							<div class="relative">
+								<label for="nivelSeveridad" class={labelClass}
+									>Nivel de Severidad <span class="text-red-500">*</span></label
+								>
 								<button
 									type="button"
-									onclick={clearSelection}
-									class="p-1 text-gray-400 hover:text-white"
+									onclick={() => (showSeveridadDropdown = !showSeveridadDropdown)}
+									class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {getFieldStateClass(
+										'nivelSeveridad'
+									)} 
+                                    {$form.nivelSeveridad === 'ALTO'
+										? 'text-red-400 border-red-500/30'
+										: $form.nivelSeveridad === 'MEDIO'
+											? 'text-yellow-400 border-yellow-500/30'
+											: 'text-green-400 border-green-500/30'}"
 								>
-									<X size={16} />
+									<span class="truncate">
+										{severidadOptions.find((o) => o.value === $form.nivelSeveridad)?.label ||
+											'Seleccionar...'}
+									</span>
+									<ChevronDown size={16} class="text-secondary" />
 								</button>
+
+								<select
+									name="nivelSeveridad"
+									class="hidden"
+									bind:value={$form.nivelSeveridad}
+									{...$constraints.nivelSeveridad}
+								>
+									{#each severidadOptions as opt}
+										<option value={opt.value}>{opt.label}</option>
+									{/each}
+								</select>
+
+								{#if showSeveridadDropdown}
+									<!-- Backdrop -->
+									<!-- svelte-ignore a11y_click_events_have_key_events -->
+									<!-- svelte-ignore a11y_no_static_element_interactions -->
+									<div
+										class="fixed inset-0 z-40"
+										onclick={() => (showSeveridadDropdown = false)}
+									></div>
+
+									<div
+										class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top"
+										transition:fly={{ y: -5, duration: 200 }}
+									>
+										{#each severidadOptions as option}
+											<button
+												type="button"
+												onclick={() => {
+													$form.nivelSeveridad = option.value as any;
+													showSeveridadDropdown = false;
+												}}
+												class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+											>
+												<span>{option.label}</span>
+												{#if $form.nivelSeveridad === option.value}
+													<CheckCircle size={14} class="text-white" />
+												{/if}
+											</button>
+										{/each}
+									</div>
+								{/if}
+								{#if $errors.nivelSeveridad}<p class={errorClass}>{$errors.nivelSeveridad}</p>{/if}
 							</div>
-						{:else}
-							<!-- Componente PersonaFinder -->
-							<PersonaFinder on:select={handlePersonaSelect} autoFocus={true} />
 
-							<!-- Entrada manual hint -->
-							<p class="text-xs text-gray-500 mt-2">
-								O ingresa los datos manualmente si la persona no está registrada
-							</p>
-						{/if}
-					</div>
-				{/if}
-
-				<!-- Datos de la persona -->
-				<div class="grid grid-cols-2 gap-4">
-					<div>
-						<label for="cedula" class={labelClass}>Cédula *</label>
-						<input
-							id="cedula"
-							name="cedula"
-							type="text"
-							bind:value={$form.cedula}
-							disabled={loading || isEditMode || !!selectedPersona}
-							class={inputClass}
-							placeholder={selectedPersona ? '' : '1-1234-5678'}
-							{...$constraints.cedula}
-						/>
-						{#if $errors.cedula}<p class={errorClass}>{$errors.cedula}</p>{/if}
-					</div>
-
-					<div>
-						<label for="empresaNombre" class={labelClass}>Empresa</label>
-						<div class="relative">
-							<Building2 size={16} class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-							<input
-								id="empresaNombre"
-								name="empresaNombre"
-								type="text"
-								bind:value={$form.empresaNombre}
-								disabled={loading || !!selectedPersona}
-								class="{inputClass} pl-9"
-								placeholder={selectedPersona ? '' : 'Nombre de empresa'}
-								{...$constraints.empresaNombre}
-							/>
+							<!-- Motivo - Container Pattern -->
+							<div>
+								<label for="motivoBloqueo" class={labelClass}>Motivo del Bloqueo</label>
+								<div
+									class="w-full bg-black/20 border border-white/10 rounded-lg transition-all outline-none focus-within:!border-blue-500/50 focus-within:!ring-1 focus-within:!ring-blue-500/20 {getFieldStateClass(
+										'motivoBloqueo'
+									)
+										? '!border-red-500/50'
+										: ''}"
+								>
+									<textarea
+										id="motivoBloqueo"
+										name="motivoBloqueo"
+										bind:value={$form.motivoBloqueo}
+										disabled={loading}
+										class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none !outline-none !border-none !ring-0 !shadow-none appearance-none h-[80px]"
+										rows="3"
+										placeholder="Describa el motivo del bloqueo..."
+										{...$constraints.motivoBloqueo}
+									></textarea>
+								</div>
+								{#if $errors.motivoBloqueo}<p class={errorClass}>{$errors.motivoBloqueo}</p>{/if}
+							</div>
 						</div>
-						{#if $errors.empresaNombre}<p class={errorClass}>
-								{$errors.empresaNombre}
-							</p>{/if}
-					</div>
-
-					<div>
-						<label for="nombre" class={labelClass}>Nombre *</label>
-						<input
-							id="nombre"
-							name="nombre"
-							type="text"
-							bind:value={$form.nombre}
-							disabled={loading || !!selectedPersona}
-							class={inputClass}
-							placeholder={selectedPersona ? '' : 'Juan'}
-							{...$constraints.nombre}
-						/>
-						{#if $errors.nombre}<p class={errorClass}>{$errors.nombre}</p>{/if}
-					</div>
-
-					<div>
-						<label for="segundoNombre" class={labelClass}>Segundo Nombre</label>
-						<input
-							id="segundoNombre"
-							name="segundoNombre"
-							type="text"
-							bind:value={$form.segundoNombre}
-							disabled={loading || !!selectedPersona}
-							class={inputClass}
-							placeholder={selectedPersona ? '' : 'Carlos'}
-							{...$constraints.segundoNombre}
-						/>
-						{#if $errors.segundoNombre}<p class={errorClass}>
-								{$errors.segundoNombre}
-							</p>{/if}
-					</div>
-
-					<div>
-						<label for="apellido" class={labelClass}>Apellido *</label>
-						<input
-							id="apellido"
-							name="apellido"
-							type="text"
-							bind:value={$form.apellido}
-							disabled={loading || !!selectedPersona}
-							class={inputClass}
-							placeholder={selectedPersona ? '' : 'Pérez'}
-							{...$constraints.apellido}
-						/>
-						{#if $errors.apellido}<p class={errorClass}>
-								{$errors.apellido}
-							</p>{/if}
-					</div>
-
-					<div>
-						<label for="segundoApellido" class={labelClass}>Segundo Apellido</label>
-						<input
-							id="segundoApellido"
-							name="segundoApellido"
-							type="text"
-							bind:value={$form.segundoApellido}
-							disabled={loading || !!selectedPersona}
-							class={inputClass}
-							placeholder={selectedPersona ? '' : 'González'}
-							{...$constraints.segundoApellido}
-						/>
-						{#if $errors.segundoApellido}<p class={errorClass}>
-								{$errors.segundoApellido}
-							</p>{/if}
 					</div>
 				</div>
 
-				<!-- Nivel de Severidad (Dropdown compacto) -->
-				<div>
-					<label for="nivelSeveridad" class={labelClass}>Nivel de Severidad *</label>
-					<select
-						id="nivelSeveridad"
-						name="nivelSeveridad"
-						bind:value={$form.nivelSeveridad}
-						disabled={loading}
-						class="{inputClass} {$form.nivelSeveridad === 'ALTO'
-							? 'border-red-500/50 text-red-400'
-							: $form.nivelSeveridad === 'MEDIO'
-								? 'border-yellow-500/50 text-yellow-400'
-								: 'border-gray-500/50 text-gray-400'}"
-						{...$constraints.nivelSeveridad}
-					>
-						<option value="ALTO">🔴 ALTO - Crítico</option>
-						<option value="MEDIO">🟡 MEDIO - Moderado</option>
-						<option value="BAJO">⚪ BAJO - Bajo riesgo</option>
-					</select>
-					{#if $errors.nivelSeveridad}<p class={errorClass}>
-							{$errors.nivelSeveridad}
-						</p>{/if}
-				</div>
-
-				<!-- Motivo (Opcional) -->
-				<div>
-					<label for="motivoBloqueo" class={labelClass}>Motivo del Bloqueo</label>
-					<textarea
-						id="motivoBloqueo"
-						name="motivoBloqueo"
-						bind:value={$form.motivoBloqueo}
-						disabled={loading}
-						class={inputClass}
-						rows="2"
-						placeholder="Describa el motivo del bloqueo (opcional)"
-						{...$constraints.motivoBloqueo}
-					></textarea>
-					{#if $errors.motivoBloqueo}<p class={errorClass}>
-							{$errors.motivoBloqueo}
-						</p>{/if}
-				</div>
-
-				<!-- Buttons -->
-				<div class="flex gap-3 pt-4 border-t border-gray-700">
+				<!-- Footer de Acciones -->
+				<div
+					class="flex-none flex items-center justify-end gap-3 px-5 py-4 border-t border-surface bg-surface-1"
+				>
+					<!-- Cancelar -->
 					<button
 						type="button"
 						onclick={onClose}
-						class="flex-1 py-2.5 px-4 rounded-md border border-gray-600 text-gray-300 hover:bg-gray-800 transition-colors"
+						class="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-xs"
 					>
 						Cancelar
 					</button>
+
+					<!-- Guardar -->
 					<button
 						type="submit"
 						disabled={loading}
-						class="flex-1 py-2.5 px-4 rounded-md bg-red-600 text-white font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
+						class="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-red-500 hover:text-red-500 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{loading ? 'Guardando...' : isEditMode ? 'Guardar Cambios' : 'Agregar a Lista Negra'}
+						{loading ? 'Guardando...' : 'Bloquear'}
 					</button>
 				</div>
 			</form>
 		</div>
 	</div>
 {/if}
+
+<style>
+	/* Autofill Dark fix */
+	input:-webkit-autofill,
+	textarea:-webkit-autofill {
+		-webkit-text-fill-color: white !important;
+		-webkit-box-shadow: 0 0 0px 1000px #00000000 inset !important;
+		transition: background-color 5000s ease-in-out 0s;
+	}
+</style>
