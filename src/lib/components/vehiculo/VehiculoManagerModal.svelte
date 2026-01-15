@@ -2,7 +2,7 @@
 <script lang="ts">
 	import { fade, fly, slide } from 'svelte/transition';
 	import { X, Plus, Trash2, Edit2, Car, Bike, ChevronDown, Check } from 'lucide-svelte';
-	import type { VehiculoResponse, CreateVehiculoInput } from '$lib/types/vehiculo';
+	import type { VehiculoResponse, CreateVehiculoInput, TipoVehiculo } from '$lib/types/vehiculo';
 	import { vehiculos as vehiculosApi } from '$lib/api/vehiculos';
 	import { invoke } from '@tauri-apps/api/core';
 
@@ -124,7 +124,12 @@
 		try {
 			const input: CreateVehiculoInput = {
 				propietarioId: propietarioId,
-				tipoVehiculo: data.tipoVehiculo,
+				tipoVehiculo: data.tipoVehiculo as
+					| 'motocicleta'
+					| 'automovil'
+					| 'camioneta'
+					| 'camion'
+					| 'otro',
 				placa: data.placa,
 				marca: data.marca || undefined,
 				modelo: data.modelo || undefined,

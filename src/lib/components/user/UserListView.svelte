@@ -31,7 +31,6 @@
 
 	interface Props {
 		tabId: string;
-		tabId: string;
 	}
 
 	let { tabId }: Props = $props();

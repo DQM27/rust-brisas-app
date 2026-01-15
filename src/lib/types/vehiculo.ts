@@ -1,6 +1,6 @@
 // src/lib/types/vehiculo.ts
 
-export type TipoVehiculo = 'motocicleta' | 'automovil';
+export type TipoVehiculo = 'motocicleta' | 'automovil' | 'camioneta' | 'camion' | 'otro';
 
 export interface Vehiculo {
 	id: string;
