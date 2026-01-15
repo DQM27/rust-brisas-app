@@ -2,7 +2,7 @@
 
 **Versión**: 3.0  
 **Idioma**: Español  
-**Aplicación**: Brisas APP  
+**Aplicación**: Brisas APP
 
 ---
 
@@ -36,20 +36,23 @@ Elevar la calidad de los módulos de queries de SurrealDB garantizando documenta
 ## ❌ VIOLACIONES DE RESPONSABILIDAD
 
 ### Lógica de Negocio (mover a domain/ o services/)
+
 - [ ] Línea XX: Validación de formato → Mover a `domain::`
 - [ ] Línea YY: Cálculo de negocio → Mover a `domain::`
 - [ ] Línea ZZ: Decisión de bloqueo → Mover a `services::`
 
 ### Acceso a Otros Módulos (refactorizar)
+
 - [ ] Línea XX: Llama a otro módulo de queries → Evaluar si es correcto
 - [ ] Línea YY: Acceso a capa de servicios → ❌ CRÍTICO, invertir dependencia
 
 ### Queries Sin Optimizar
-| Función | Query | Problema | Acción |
-|---------|-------|----------|--------|
-| `find_all()` | `SELECT *` sin límite | N registros sin paginación | Agregar `LIMIT` |
-| `find_by_empresa()` | Sin índice | Scan completo de tabla | Crear índice en `empresa` |
-| `get_related()` | Sin `FETCH` | Query adicional por relacionado | Usar `FETCH` |
+
+| Función             | Query                 | Problema                        | Acción                    |
+| ------------------- | --------------------- | ------------------------------- | ------------------------- |
+| `find_all()`        | `SELECT *` sin límite | N registros sin paginación      | Agregar `LIMIT`           |
+| `find_by_empresa()` | Sin índice            | Scan completo de tabla          | Crear índice en `empresa` |
+| `get_related()`     | Sin `FETCH`           | Query adicional por relacionado | Usar `FETCH`              |
 ```
 
 ### [ ] 0.2 Auditoría de Documentación
@@ -57,12 +60,12 @@ Elevar la calidad de los módulos de queries de SurrealDB garantizando documenta
 ```markdown
 ## DOCUMENTACIÓN
 
-| Función | Tiene `///`? | Explica query? | Explica `FETCH`? | Idioma |
-|---------|--------------|----------------|------------------|--------|
-| `create()` | ❌ | N/A | N/A | - |
-| `find_by_id()` | ✅ | ❌ | ✅ | Español |
-| `find_by_cedula()` | ❌ | N/A | N/A | - |
-| `update()` | ✅ | ✅ | ❌ | Inglés |
+| Función            | Tiene `///`? | Explica query? | Explica `FETCH`? | Idioma  |
+| ------------------ | ------------ | -------------- | ---------------- | ------- |
+| `create()`         | ❌           | N/A            | N/A              | -       |
+| `find_by_id()`     | ✅           | ❌             | ✅               | Español |
+| `find_by_cedula()` | ❌           | N/A            | N/A              | -       |
+| `update()`         | ✅           | ✅             | ❌               | Inglés  |
 
 **Cobertura**: X/Y funciones documentadas (Z%)
 ```
@@ -73,13 +76,16 @@ Elevar la calidad de los módulos de queries de SurrealDB garantizando documenta
 ## MANEJO DE ERRORES
 
 ### Propagación Genérica (mejorar contexto)
+
 - [ ] Línea XX: `map_err(|e| SurrealDbError::Query("Error genérico".into()))`
   - **Acción**: Agregar contexto específico del query
 
 ### Uso de `.unwrap()` (eliminar)
+
 - [ ] Línea YY: `.unwrap()` en producción → Usar propagación `?`
 
 ### Errores Sin Contexto
+
 - [ ] Línea ZZ: Error sin indicar qué query falló → Agregar información
 
 **Sugerencia**: Crear enum de errores específico del módulo
@@ -91,20 +97,23 @@ Elevar la calidad de los módulos de queries de SurrealDB garantizando documenta
 ## PATRONES DE QUERY
 
 ### Queries que retornan entidad "fetched"
-| Función | Usa `FETCH`? | Campos relacionados | Optimizado? |
-|---------|--------------|---------------------|-------------|
-| `find_by_id_fetched()` | ✅ | `empresa` | ✅ |
-| `find_all_fetched()` | ✅ | `empresa` | ⚠️ Sin `LIMIT` |
-| `create()` | ❌ | `empresa` | ❌ Requiere 2 queries |
+
+| Función                | Usa `FETCH`? | Campos relacionados | Optimizado?           |
+| ---------------------- | ------------ | ------------------- | --------------------- |
+| `find_by_id_fetched()` | ✅           | `empresa`           | ✅                    |
+| `find_all_fetched()`   | ✅           | `empresa`           | ⚠️ Sin `LIMIT`        |
+| `create()`             | ❌           | `empresa`           | ❌ Requiere 2 queries |
 
 ### Queries con filtros
-| Función | Usa índices? | Tiene `LIMIT`? | Maneja paginación? |
-|---------|--------------|----------------|--------------------|
-| `find_by_cedula()` | ✅ | N/A | N/A |
-| `find_by_empresa()` | ⚠️ No verificado | ❌ | ❌ |
-| `find_archived()` | ✅ | ❌ | ❌ |
+
+| Función             | Usa índices?     | Tiene `LIMIT`? | Maneja paginación? |
+| ------------------- | ---------------- | -------------- | ------------------ |
+| `find_by_cedula()`  | ✅               | N/A            | N/A                |
+| `find_by_empresa()` | ⚠️ No verificado | ❌             | ❌                 |
+| `find_archived()`   | ✅               | ❌             | ❌                 |
 
 ### Soft Delete
+
 - [ ] ¿Usa `deleted_at IS NONE` en queries de lectura? ✅/❌
 - [ ] ¿`delete()` marca como borrado lógico? ✅/❌
 - [ ] ¿`restore()` limpia `deleted_at`? ✅/❌
@@ -116,10 +125,12 @@ Elevar la calidad de los módulos de queries de SurrealDB garantizando documenta
 ## TRANSACCIONES
 
 ### Funciones que deberían usar transacciones
+
 - [ ] `{funcion}()`: Modifica múltiples tablas → Necesita transacción
 - [ ] `{funcion}()`: Operación atómica requerida → Necesita transacción
 
 ### Funciones existentes con transacciones
+
 - [ ] `{funcion}()`: ✅ Usa transacción correctamente
 ```
 
@@ -129,10 +140,12 @@ Elevar la calidad de los módulos de queries de SurrealDB garantizando documenta
 ## TESTING
 
 ### Cobertura de Tests
+
 - [ ] Tests de integración presentes: Sí/No
 - [ ] Funciones críticas con tests: X/Y (Z%)
 
 ### Funciones sin tests (críticas)
+
 1. `create()` - CRÍTICO: Crea datos en BD
 2. `update()` - ALTO: Modifica datos
 3. `delete()` - ALTO: Elimina (soft delete)
@@ -146,23 +159,27 @@ Elevar la calidad de los módulos de queries de SurrealDB garantizando documenta
 ```markdown
 # Reporte de Análisis FASE 0 - Queries
 
-**Archivo**: src/db/surrealdb_{modulo}_queries.rs
+**Archivo**: src/db/surrealdb\_{modulo}\_queries.rs
 **LOC**: {número}
 **Funciones**: {N}
 
 ## PROBLEMAS CRÍTICOS
+
 1. [CRÍTICO] N funciones con lógica de negocio → Mover a domain/
 2. [CRÍTICO] M queries sin optimizar (sin LIMIT, sin FETCH)
 
 ## PROBLEMAS MAYORES
+
 3. [ALTO] K funciones sin documentar (X%)
 4. [ALTO] P queries con errores genéricos → Agregar contexto
 
 ## MEJORAS RECOMENDADAS
+
 5. [MEDIO] Q funciones sin tests de integración
 6. [BAJO] R queries duplicados → Refactorizar
 
 ## ESTIMACIÓN
+
 - Documentación: X horas
 - Optimización de queries: Y horas
 - Manejo de errores: Z horas
@@ -170,6 +187,7 @@ Elevar la calidad de los módulos de queries de SurrealDB garantizando documenta
 - **TOTAL**: T horas
 
 ## ¿Proceder?
+
 Esperar aprobación del usuario.
 ```
 
@@ -183,14 +201,14 @@ Esperar aprobación del usuario.
 
 **Acción**:
 
-```rust
+````rust
 // ❌ ANTES - Lógica de negocio en queries
 pub async fn find_by_cedula(cedula: &str) -> Result<Option<Contratista>, SurrealDbError> {
     // ❌ Validación de formato en queries
     if cedula.is_empty() || cedula.len() != 11 {
         return Err(SurrealDbError::Query("Cédula inválida".into()));
     }
-    
+
     let db = get_db().await?;
     // ... query
 }
@@ -204,8 +222,8 @@ pub async fn find_by_cedula(cedula: &str) -> Result<Option<Contratista>, Surreal
 ///
 /// ## Query Ejecutado
 /// ```sql
-/// SELECT * FROM contratista 
-/// WHERE cedula = $cedula AND deleted_at IS NONE 
+/// SELECT * FROM contratista
+/// WHERE cedula = $cedula AND deleted_at IS NONE
 /// FETCH empresa
 /// ```
 ///
@@ -221,7 +239,7 @@ pub async fn find_by_cedula(cedula: &str) -> Result<Option<Contratista>, Surreal
 /// * `SurrealDbError::Query` - Error en ejecución del query
 pub async fn find_by_cedula(cedula: &str) -> Result<Option<ContratistaFetched>, SurrealDbError> {
     let db = get_db().await?;
-    
+
     let mut result = db
         .query(
             "SELECT * FROM contratista WHERE cedula = $cedula AND deleted_at IS NONE FETCH empresa"
@@ -232,17 +250,17 @@ pub async fn find_by_cedula(cedula: &str) -> Result<Option<ContratistaFetched>, 
             "Error al buscar contratista por cédula '{}': {}",
             cedula, e
         )))?;
-    
+
     let contratista: Option<ContratistaFetched> = result.take(0).map_err(|e| {
         SurrealDbError::Deserialization(format!(
             "Error al deserializar contratista: {}",
             e
         ))
     })?;
-    
+
     Ok(contratista)
 }
-```
+````
 
 ---
 
@@ -252,7 +270,7 @@ pub async fn find_by_cedula(cedula: &str) -> Result<Option<ContratistaFetched>, 
 
 **Plantilla de documentación**:
 
-```rust
+````rust
 /// {Descripción breve de la operación}.
 ///
 /// ## Precondiciones
@@ -296,7 +314,7 @@ pub async fn find_by_cedula(cedula: &str) -> Result<Option<ContratistaFetched>, 
 pub async fn funcion(...) -> Result<...> {
     // implementación
 }
-```
+````
 
 ---
 
@@ -306,17 +324,17 @@ pub async fn funcion(...) -> Result<...> {
 
 #### 3.1 Usar FETCH para Relaciones
 
-```rust
+````rust
 // ❌ ANTES - N+1 Problem
 pub async fn find_all() -> Result<Vec<ContratistaFetched>, SurrealDbError> {
     let db = get_db().await?;
-    
+
     // Query 1: Obtener todos los contratistas
     let contratistas: Vec<Contratista> = db
         .query("SELECT * FROM contratista WHERE deleted_at IS NONE")
         .await?
         .take(0)?;
-    
+
     // Query 2, 3, 4, ... N: Una query por cada contratista para obtener empresa
     // ❌ Si hay 100 contratistas, son 101 queries!
     let mut resultado = Vec::new();
@@ -324,7 +342,7 @@ pub async fn find_all() -> Result<Vec<ContratistaFetched>, SurrealDbError> {
         let empresa = db.select(&c.empresa).await?;  // ❌ N queries adicionales
         // ... construir fetched
     }
-    
+
     Ok(resultado)
 }
 
@@ -333,8 +351,8 @@ pub async fn find_all() -> Result<Vec<ContratistaFetched>, SurrealDbError> {
 ///
 /// ## Query Ejecutado
 /// ```sql
-/// SELECT * FROM contratista 
-/// WHERE deleted_at IS NONE 
+/// SELECT * FROM contratista
+/// WHERE deleted_at IS NONE
 /// FETCH empresa
 /// LIMIT 1000
 /// ```
@@ -348,19 +366,19 @@ pub async fn find_all() -> Result<Vec<ContratistaFetched>, SurrealDbError> {
 /// usar paginación con `find_paginated()`.
 pub async fn find_all_fetched() -> Result<Vec<ContratistaFetched>, SurrealDbError> {
     let db = get_db().await?;
-    
+
     let mut result = db
         .query("SELECT * FROM contratista WHERE deleted_at IS NONE FETCH empresa LIMIT 1000")
         .await?;
-    
+
     let contratistas: Vec<ContratistaFetched> = result.take(0)?;
     Ok(contratistas)
 }
-```
+````
 
 #### 3.2 Agregar LIMIT a Queries de Listado
 
-```rust
+````rust
 // ❌ ANTES - Sin límite (peligroso)
 pub async fn find_all() -> Result<Vec<Contratista>, SurrealDbError> {
     let db = get_db().await?;
@@ -381,13 +399,13 @@ pub async fn find_all() -> Result<Vec<Contratista>, SurrealDbError> {
 ///
 /// ## Query
 /// ```sql
-/// SELECT * FROM contratista 
-/// WHERE deleted_at IS NONE 
+/// SELECT * FROM contratista
+/// WHERE deleted_at IS NONE
 /// LIMIT 100
 /// ```
 pub async fn find_all() -> Result<Vec<Contratista>, SurrealDbError> {
     const MAX_RESULTS: usize = 100;
-    
+
     let db = get_db().await?;
     let result: Vec<Contratista> = db
         .query("SELECT * FROM contratista WHERE deleted_at IS NONE LIMIT $limit")
@@ -405,8 +423,8 @@ pub async fn find_all() -> Result<Vec<Contratista>, SurrealDbError> {
 ///
 /// ## Query
 /// ```sql
-/// SELECT * FROM contratista 
-/// WHERE deleted_at IS NONE 
+/// SELECT * FROM contratista
+/// WHERE deleted_at IS NONE
 /// ORDER BY created_at DESC
 /// LIMIT $limit START $offset
 /// ```
@@ -417,12 +435,12 @@ pub async fn find_paginated(
     const MAX_PAGE_SIZE: usize = 100;
     let page_size = page_size.min(MAX_PAGE_SIZE);
     let offset = (page.saturating_sub(1)) * page_size;
-    
+
     let db = get_db().await?;
     let result: Vec<Contratista> = db
         .query(
-            "SELECT * FROM contratista 
-             WHERE deleted_at IS NONE 
+            "SELECT * FROM contratista
+             WHERE deleted_at IS NONE
              ORDER BY created_at DESC
              LIMIT $limit START $offset"
         )
@@ -430,14 +448,14 @@ pub async fn find_paginated(
         .bind(("offset", offset))
         .await?
         .take(0)?;
-    
+
     Ok(result)
 }
-```
+````
 
 #### 3.3 Índices (Documentar en Comentario)
 
-```rust
+````rust
 /// Busca contratistas por ID de empresa.
 ///
 /// ## Índice Requerido
@@ -451,7 +469,7 @@ pub async fn find_paginated(
 ///
 /// ## Query
 /// ```sql
-/// SELECT * FROM contratista 
+/// SELECT * FROM contratista
 /// WHERE empresa = $empresa_id AND deleted_at IS NONE
 /// FETCH empresa
 /// LIMIT 500
@@ -461,7 +479,7 @@ pub async fn find_by_empresa(
 ) -> Result<Vec<Contratista>, SurrealDbError> {
     // implementación
 }
-```
+````
 
 ---
 
@@ -471,7 +489,7 @@ pub async fn find_by_empresa(
 
 **Acción**:
 
-```rust
+````rust
 // ❌ ANTES - Errores genéricos
 pub async fn create(dto: ContratistaCreateDTO) -> Result<Contratista, SurrealDbError> {
     let db = get_db().await?;
@@ -480,7 +498,7 @@ pub async fn create(dto: ContratistaCreateDTO) -> Result<Contratista, SurrealDbE
         .bind(("dto", dto))
         .await?
         .take(0)?;
-    
+
     created.ok_or(SurrealDbError::Query("No se pudo crear".to_string()))
     // ❌ Mensaje inútil: "No se pudo crear" - ¿Por qué? ¿Qué falló?
 }
@@ -516,7 +534,7 @@ pub async fn create(dto: ContratistaCreateDTO) -> Result<Contratista, SurrealDbE
             e
         ))
     })?;
-    
+
     let created: Option<Contratista> = db
         .query("CREATE contratista CONTENT $dto")
         .bind(("dto", &dto))
@@ -530,13 +548,13 @@ pub async fn create(dto: ContratistaCreateDTO) -> Result<Contratista, SurrealDbE
             "Error al deserializar contratista creado: {}",
             e
         )))?;
-    
+
     created.ok_or_else(|| SurrealDbError::NotFound(format!(
         "CREATE contratista no retornó registro para cédula '{}'",
         dto.cedula
     )))
 }
-```
+````
 
 **Enum de Errores Mejorado**:
 
@@ -547,23 +565,23 @@ pub enum SurrealDbError {
     /// Error al conectar a la base de datos.
     #[error("Error de conexión a SurrealDB: {0}")]
     Connection(String),
-    
+
     /// Error al ejecutar un query.
     #[error("Error en query de SurrealDB: {0}")]
     Query(String),
-    
+
     /// Error al deserializar resultado de query.
     #[error("Error de deserialización: {0}")]
     Deserialization(String),
-    
+
     /// Registro no encontrado (cuando se esperaba uno).
     #[error("Registro no encontrado: {0}")]
     NotFound(String),
-    
+
     /// Error de transacción.
     #[error("Error en transacción: {0}")]
     Transaction(String),
-    
+
     /// Error genérico de SurrealDB.
     #[error("Error de SurrealDB: {0}")]
     Database(#[from] surrealdb::Error),
@@ -580,7 +598,7 @@ pub enum SurrealDbError {
 
 **Solución**: Query en 2 pasos con comentarios explicativos.
 
-```rust
+````rust
 /// Crea un contratista y retorna la entidad con empresa populated.
 ///
 /// ## Limitación de SurrealDB
@@ -610,7 +628,7 @@ pub enum SurrealDbError {
 /// * `SurrealDbError::NotFound` - Si no se puede recuperar el registro creado
 pub async fn create(dto: ContratistaCreateDTO) -> Result<ContratistaFetched, SurrealDbError> {
     let db = get_db().await?;
-    
+
     // Paso 1: Crear el registro
     let created: Option<Contratista> = db
         .query("CREATE contratista CONTENT $dto")
@@ -621,11 +639,11 @@ pub async fn create(dto: ContratistaCreateDTO) -> Result<ContratistaFetched, Sur
             e
         )))?
         .take(0)?;
-    
+
     let contratista = created.ok_or_else(|| {
         SurrealDbError::NotFound("CREATE no retornó registro".to_string())
     })?;
-    
+
     // Paso 2: Fetch con empresa populated
     let mut result = db
         .query("SELECT * FROM $id FETCH empresa")
@@ -635,7 +653,7 @@ pub async fn create(dto: ContratistaCreateDTO) -> Result<ContratistaFetched, Sur
             "Error al fetch contratista creado: {}",
             e
         )))?;
-    
+
     let fetched: Option<ContratistaFetched> = result.take(0)?;
     fetched.ok_or_else(|| {
         SurrealDbError::NotFound(format!(
@@ -644,7 +662,7 @@ pub async fn create(dto: ContratistaCreateDTO) -> Result<ContratistaFetched, Sur
         ))
     })
 }
-```
+````
 
 ---
 
@@ -654,7 +672,7 @@ pub async fn create(dto: ContratistaCreateDTO) -> Result<ContratistaFetched, Sur
 
 **Acción**:
 
-```rust
+````rust
 /// Marca un contratista como eliminado (soft delete).
 ///
 /// ## Soft Delete
@@ -683,7 +701,7 @@ pub async fn create(dto: ContratistaCreateDTO) -> Result<ContratistaFetched, Sur
 /// Para restaurar un registro eliminado, usar `restore()`.
 pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    
+
     let result: Option<Contratista> = db
         .query("UPDATE $id SET deleted_at = time::now()")
         .bind(("id", id))
@@ -693,14 +711,14 @@ pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
             id, e
         )))?
         .take(0)?;
-    
+
     if result.is_none() {
         return Err(SurrealDbError::NotFound(format!(
             "Contratista no encontrado: {}",
             id
         )));
     }
-    
+
     Ok(())
 }
 
@@ -726,7 +744,7 @@ pub async fn delete(id: &RecordId) -> Result<(), SurrealDbError> {
 /// * `SurrealDbError::NotFound` - Si el ID no existe
 pub async fn restore(id: &RecordId) -> Result<(), SurrealDbError> {
     let db = get_db().await?;
-    
+
     let result: Option<Contratista> = db
         .query("UPDATE $id SET deleted_at = NONE")
         .bind(("id", id))
@@ -736,14 +754,14 @@ pub async fn restore(id: &RecordId) -> Result<(), SurrealDbError> {
             id, e
         )))?
         .take(0)?;
-    
+
     if result.is_none() {
         return Err(SurrealDbError::NotFound(format!(
             "Contratista no encontrado: {}",
             id
         )));
     }
-    
+
     Ok(())
 }
 
@@ -751,9 +769,9 @@ pub async fn restore(id: &RecordId) -> Result<(), SurrealDbError> {
 ///
 /// ## Query
 /// ```sql
-/// SELECT * FROM contratista 
-/// WHERE deleted_at IS NOT NONE 
-/// ORDER BY deleted_at DESC 
+/// SELECT * FROM contratista
+/// WHERE deleted_at IS NOT NONE
+/// ORDER BY deleted_at DESC
 /// FETCH empresa
 /// ```
 ///
@@ -761,19 +779,19 @@ pub async fn restore(id: &RecordId) -> Result<(), SurrealDbError> {
 /// Ordena por `deleted_at DESC` para mostrar los eliminados más recientemente primero.
 pub async fn find_archived() -> Result<Vec<ContratistaFetched>, SurrealDbError> {
     let db = get_db().await?;
-    
+
     let mut result = db
         .query(
-            "SELECT * FROM contratista 
-             WHERE deleted_at IS NOT NONE 
-             ORDER BY deleted_at DESC 
+            "SELECT * FROM contratista
+             WHERE deleted_at IS NOT NONE
+             ORDER BY deleted_at DESC
              FETCH empresa"
         )
         .await?;
-    
+
     Ok(result.take(0)?)
 }
-```
+````
 
 **Recordatorio en queries de lectura**:
 
@@ -806,121 +824,121 @@ pub async fn find_all() -> Result<Vec<Contratista>, SurrealDbError> {
 mod tests {
     use super::*;
     use crate::services::surrealdb_service::init_db;
-    
+
     async fn setup_test_db() {
         // Inicializar BD de test (en memoria o archivo temporal)
         init_db(":memory:").await.expect("Failed to init test DB");
     }
-    
+
     async fn cleanup_test_db() {
         // Limpiar datos de test si es necesario
     }
-    
+
     // --------------------------------------------------------------------------
     // TESTS DE CREATE
     // --------------------------------------------------------------------------
-    
+
     mod create_tests {
         use super::*;
-        
+
         #[tokio::test]
         async fn crea_contratista_exitosamente() {
             setup_test_db().await;
-            
+
             let dto = ContratistaCreateDTO {
                 cedula: "1-2345-6789".to_string(),
                 nombre: "Juan".to_string(),
                 // ... resto de campos
             };
-            
+
             let resultado = create(dto).await;
-            
+
             assert!(resultado.is_ok());
             let contratista = resultado.unwrap();
             assert_eq!(contratista.cedula, "1-2345-6789");
             assert_eq!(contratista.nombre, "Juan");
         }
-        
+
         #[tokio::test]
         async fn create_retorna_con_empresa_populated() {
             setup_test_db().await;
-            
+
             // ... crear empresa primero
             // ... crear contratista
-            
+
             let contratista = create(dto).await.unwrap();
-            
+
             // Verificar que empresa está populated
             assert_eq!(contratista.empresa.nombre, "Empresa Test");
         }
     }
-    
+
     // --------------------------------------------------------------------------
     // TESTS DE READ
     // --------------------------------------------------------------------------
-    
+
     mod read_tests {
         use super::*;
-        
+
         #[tokio::test]
         async fn find_by_cedula_encuentra_existente() {
             setup_test_db().await;
-            
+
             // ... crear contratista
-            
+
             let resultado = find_by_cedula("1-2345-6789").await;
-            
+
             assert!(resultado.is_ok());
             let contratista = resultado.unwrap();
             assert!(contratista.is_some());
         }
-        
+
         #[tokio::test]
         async fn find_by_cedula_retorna_none_si_no_existe() {
             setup_test_db().await;
-            
+
             let resultado = find_by_cedula("9-9999-9999").await;
-            
+
             assert!(resultado.is_ok());
             assert!(resultado.unwrap().is_none());
         }
     }
-    
+
     // --------------------------------------------------------------------------
     // TESTS DE SOFT DELETE
     // --------------------------------------------------------------------------
-    
+
     mod soft_delete_tests {
         use super::*;
-        
+
         #[tokio::test]
         async fn delete_marca_como_eliminado() {
             setup_test_db().await;
-            
+
             let contratista = create(dto).await.unwrap();
-            
+
             let resultado = delete(&contratista.id).await;
             assert!(resultado.is_ok());
-            
+
             // Verificar que ya no aparece en find_all
             let todos = find_all().await.unwrap();
             assert!(!todos.iter().any(|c| c.id == contratista.id));
-            
+
             // Verificar que SÍ aparece en find_archived
             let archivados = find_archived().await.unwrap();
             assert!(archivados.iter().any(|c| c.id == contratista.id));
         }
-        
+
         #[tokio::test]
         async fn restore_recupera_eliminado() {
             setup_test_db().await;
-            
+
             let contratista = create(dto).await.unwrap();
             delete(&contratista.id).await.unwrap();
-            
+
             let resultado = restore(&contratista.id).await;
             assert!(resultado.is_ok());
-            
+
             // Verificar que vuelve a aparecer en find_all
             let todos = find_all().await.unwrap();
             assert!(todos.iter().any(|c| c.id == contratista.id));

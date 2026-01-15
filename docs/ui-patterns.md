@@ -9,9 +9,11 @@ Este documento contiene los patrones de diseño estándar utilizados en la aplic
 Referencia: `SalidaModal.svelte` (líneas 188-209)
 
 ### Descripción
+
 Botones de selección mutuamente excluyentes que cambian de color al hacer hover y al ser seleccionados. Ideales para preguntas de tipo Sí/No con significado semántico (éxito/error).
 
 ### Características
+
 - **Transición suave**: `transition-all`
 - **Borde grueso**: `border-2`
 - **Bordes redondeados**: `rounded-lg`
@@ -20,41 +22,41 @@ Botones de selección mutuamente excluyentes que cambian de color al hacer hover
 
 ### Estados
 
-| Estado | Borde | Texto | Fondo |
-|--------|-------|-------|-------|
-| **Normal** | `border-surface` | `text-secondary` | Transparente |
-| **Hover Positivo** | `border-success/50` | `text-success` | Transparente |
-| **Hover Negativo** | `border-error/50` | `text-error` | Transparente |
-| **Seleccionado Positivo** | `border-success` | `text-success` | `bg-success bg-opacity-10` |
-| **Seleccionado Negativo** | `border-error` | `text-error` | `bg-error bg-opacity-10` |
+| Estado                    | Borde               | Texto            | Fondo                      |
+| ------------------------- | ------------------- | ---------------- | -------------------------- |
+| **Normal**                | `border-surface`    | `text-secondary` | Transparente               |
+| **Hover Positivo**        | `border-success/50` | `text-success`   | Transparente               |
+| **Hover Negativo**        | `border-error/50`   | `text-error`     | Transparente               |
+| **Seleccionado Positivo** | `border-success`    | `text-success`   | `bg-success bg-opacity-10` |
+| **Seleccionado Negativo** | `border-error`      | `text-error`     | `bg-error bg-opacity-10`   |
 
 ### Código de Referencia
 
 ```svelte
 <!-- Botón Positivo (Sí, lo devolvió) -->
 <button
-  type="button"
-  onclick={() => (devolvioGafete = true)}
-  class="flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all 
+	type="button"
+	onclick={() => (devolvioGafete = true)}
+	class="flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all
     {devolvioGafete === true
-      ? 'border-success bg-success bg-opacity-10 text-success'
-      : 'border-surface hover:border-success/50 text-secondary hover:text-success'}"
+		? 'border-success bg-success bg-opacity-10 text-success'
+		: 'border-surface hover:border-success/50 text-secondary hover:text-success'}"
 >
-  <CheckCircle size={20} />
-  <span class="font-medium">Sí, lo devolvió</span>
+	<CheckCircle size={20} />
+	<span class="font-medium">Sí, lo devolvió</span>
 </button>
 
 <!-- Botón Negativo (No lo devolvió) -->
 <button
-  type="button"
-  onclick={() => (devolvioGafete = false)}
-  class="flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all 
+	type="button"
+	onclick={() => (devolvioGafete = false)}
+	class="flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all
     {devolvioGafete === false
-      ? 'border-error bg-error bg-opacity-10 text-error'
-      : 'border-surface hover:border-error/50 text-secondary hover:text-error'}"
+		? 'border-error bg-error bg-opacity-10 text-error'
+		: 'border-surface hover:border-error/50 text-secondary hover:text-error'}"
 >
-  <XCircle size={20} />
-  <span class="font-medium">No lo devolvió</span>
+	<XCircle size={20} />
+	<span class="font-medium">No lo devolvió</span>
 </button>
 ```
 
@@ -69,29 +71,31 @@ Este es el **Molde Maestro** para todos los formularios complejos de la aplicaci
 
 El modal debe ocupar el máximo espacio disponible pero mantener márgenes y bordes redondeados.
 
-| Propiedad | Valor | HTML |
-|-----------|-------|------|
+| Propiedad      | Valor                 | HTML                                                       |
+| -------------- | --------------------- | ---------------------------------------------------------- |
 | **Contenedor** | Surface-2 + Sombra XL | `bg-surface-2 shadow-2xl border border-surface rounded-xl` |
-| **Ancho** | Dinámico (Max 700px) | `w-full max-w-[700px]` |
-| **Alto** | Max 95% viewport | `max-h-[95vh] overflow-hidden` |
-| **Layout** | Flex Column | `flex flex-col` |
-| **Backdrop** | Blur + Oscuro | `bg-black/60 backdrop-blur-sm` |
+| **Ancho**      | Dinámico (Max 700px)  | `w-full max-w-[700px]`                                     |
+| **Alto**       | Max 95% viewport      | `max-h-[95vh] overflow-hidden`                             |
+| **Layout**     | Flex Column           | `flex flex-col`                                            |
+| **Backdrop**   | Blur + Oscuro         | `bg-black/60 backdrop-blur-sm`                             |
 
 ### 2. Header Estándar
 
 Cabecera limpia con título a la izquierda y botón de cierre a la derecha.
 
 ```svelte
-<div class="flex-none flex items-center justify-between px-3 py-3 bg-surface-2 border-b border-surface">
-  <h2 class="text-xl font-semibold text-primary">
-    {modalTitle}
-  </h2>
-  <button
-    onclick={onClose}
-    class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
-  >
-    <X size={20} />
-  </button>
+<div
+	class="flex-none flex items-center justify-between px-3 py-3 bg-surface-2 border-b border-surface"
+>
+	<h2 class="text-xl font-semibold text-primary">
+		{modalTitle}
+	</h2>
+	<button
+		onclick={onClose}
+		class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
+	>
+		<X size={20} />
+	</button>
 </div>
 ```
 
@@ -110,40 +114,40 @@ Usar estas constantes JS para mantener consistencia absoluta.
 ```typescript
 // Input de texto estándar (34px altura)
 const inputClass =
-  "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all";
+	'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all';
 
 // Botón trigger para Selects Custom
 const selectClass =
-  "w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white focus:outline-none disabled:opacity-50 transition-all cursor-pointer appearance-none bg-no-repeat bg-right pr-8";
+	'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white focus:outline-none disabled:opacity-50 transition-all cursor-pointer appearance-none bg-no-repeat bg-right pr-8';
 
 // Labels
-const labelClass = "block text-xs font-medium text-secondary mb-1";
+const labelClass = 'block text-xs font-medium text-secondary mb-1';
 
 // Mensajes de Error
-const errorClass = "text-xs text-red-500 mt-0.5";
+const errorClass = 'text-xs text-red-500 mt-0.5';
 ```
 
 ### 5. Comportamiento y Estados de Validación
 
 Los campos deben proporcionar feedback visual inmediato sobre su estado.
 
-| Estado | Indicador Visual | Clases CSS |
-|--------|------------------|------------|
-| **Normal / Vacío** | Borde sutil, fondo semitransparente | `border-white/10` |
-| **Foco (Focus)** | Borde azul, sombra azul suave | `focus:border-blue-500/50 focus:ring-blue-500/20` |
-| **Error / Inválido** | Borde rojo, anillo rojo suave | `!border-red-500/50 !ring-red-500/20` |
-| **Requerido** | Asterisco rojo junto al label | `<span class="text-red-500">*</span>` |
+| Estado               | Indicador Visual                    | Clases CSS                                        |
+| -------------------- | ----------------------------------- | ------------------------------------------------- |
+| **Normal / Vacío**   | Borde sutil, fondo semitransparente | `border-white/10`                                 |
+| **Foco (Focus)**     | Borde azul, sombra azul suave       | `focus:border-blue-500/50 focus:ring-blue-500/20` |
+| **Error / Inválido** | Borde rojo, anillo rojo suave       | `!border-red-500/50 !ring-red-500/20`             |
+| **Requerido**        | Asterisco rojo junto al label       | `<span class="text-red-500">*</span>`             |
 
 **Helper de Validación (`getFieldStateClass`)**
 Se utiliza una función helper para aplicar condicionalmente las clases de error si el validor (Superforms/Zod) reporta un fallo.
 
 ```typescript
 function getFieldStateClass(field, value) {
-  // Si hay error en el objeto $errors o un error custom (ej. duplicados)
-  if ($errors[field] || customErrors[field]) {
-    return "!border-red-500/50 !ring-1 !ring-red-500/20";
-  }
-  return ""; // Retorna string vacío si es válido
+	// Si hay error en el objeto $errors o un error custom (ej. duplicados)
+	if ($errors[field] || customErrors[field]) {
+		return '!border-red-500/50 !ring-1 !ring-red-500/20';
+	}
+	return ''; // Retorna string vacío si es válido
 }
 ```
 
@@ -152,6 +156,7 @@ function getFieldStateClass(field, value) {
 Para mantener uniformidad visual y evitar los controles nativos del navegador (calendar pickers) que rompen el estilo, usamos `input[type="text"]` con formato `DD/MM/YYYY`.
 
 **Características:**
+
 - Auto-agrega barras `/` mientras el usuario escribe.
 - Validación de solo números.
 - Conversión transparente a formato backend (`YYYY-MM-DD`).
@@ -159,15 +164,15 @@ Para mantener uniformidad visual y evitar los controles nativos del navegador (c
 ```typescript
 // Helpers JS
 function formatDateForDisplay(isoDate: string): string {
-    if (!isoDate) return "";
-    const [year, month, day] = isoDate.split("T")[0].split("-");
-    return `${day}/${month}/${year}`;
+	if (!isoDate) return '';
+	const [year, month, day] = isoDate.split('T')[0].split('-');
+	return `${day}/${month}/${year}`;
 }
 
 function formatDateForBackend(displayDate: string): string {
-    if (!displayDate || displayDate.length !== 10) return "";
-    const [day, month, year] = displayDate.split("/");
-    return `${year}-${month}-${day}`;
+	if (!displayDate || displayDate.length !== 10) return '';
+	const [day, month, year] = displayDate.split('/');
+	return `${year}-${month}-${day}`;
 }
 ```
 
@@ -194,7 +199,7 @@ function formatDateForBackend(displayDate: string): string {
 />
 ```
 
-```
+````
 
 ### 7. Textareas "Container Pattern"
 
@@ -210,9 +215,9 @@ Para textareas (dirección, observaciones), usamos un contenedor div que gestion
     ></textarea>
   </div>
 </div>
-```
+````
 
-```
+````
 
 ### 8. Controles de Seguridad Integrados
 
@@ -228,9 +233,9 @@ Los controles especiales (como "Forzar cambio de clave") se integran directament
   </label>
   <span class="text-xs font-medium text-gray-300">Forzar cambio de clave</span>
 </div>
-```
+````
 
-```
+````
 
 ### 9. Footer de Acciones
 
@@ -252,15 +257,15 @@ El footer está siempre visible en la parte inferior (`flex-none`).
   <button class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm">
     Cancelar
   </button>
-  
+
   <!-- Guardar -->
   <button class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm">
     Guardar Cambios
   </button>
 </div>
-```
+````
 
-```
+````
 
 ### 10. CSS Globales Requeridos
 
@@ -288,7 +293,7 @@ input:focus, textarea:focus {
   box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
   outline: none !important;
 }
-```
+````
 
 ---
 
@@ -297,6 +302,7 @@ input:focus, textarea:focus {
 Referencia: `AdminConfirmModal.svelte`, `ConfirmPasswordModal.svelte`
 
 ### Tema "High Security"
+
 Usado para acciones destructivas o verificaciones de administrador.
 
 - **Fondo**: `bg-[#0d1117]` (Casi negro, "GitHub Dark")
@@ -305,10 +311,11 @@ Usado para acciones destructivas o verificaciones de administrador.
 - **Iconografía**: Escudos (`Shield`, `ShieldAlert`) con efectos de anillo y sombra.
 
 ### Alertas dentro del Modal
+
 ```svelte
 <div class="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-4 flex gap-3">
-  <TriangleAlert class="text-yellow-500" />
-  <p class="text-yellow-200/80">Mensaje de advertencia...</p>
+	<TriangleAlert class="text-yellow-500" />
+	<p class="text-yellow-200/80">Mensaje de advertencia...</p>
 </div>
 ```
 

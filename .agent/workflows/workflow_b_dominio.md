@@ -2,7 +2,7 @@
 
 **Versión**: 3.0  
 **Idioma**: Español  
-**Aplicación**: Brisas APP  
+**Aplicación**: Brisas APP
 
 ---
 
@@ -35,47 +35,51 @@ Garantizar que la capa de dominio contenga **únicamente lógica pura de negocio
 ## ❌ VIOLACIONES DE DOMINIO PURO
 
 ### Structs de Datos (deben ir a models/)
+
 - [ ] Línea XX: `struct {Nombre}` → Mover a `models/{modulo}.rs`
 - [ ] Línea YY: `struct {Otro}` → Mover a `models/{modulo}.rs`
 
 ### Imports Impuros (eliminar)
+
 - [ ] `use crate::services::`
 - [ ] `use crate::db::`
 - [ ] `use surrealdb::`
 - [ ] `use tauri::`
 
 ### Efectos Secundarios (refactorizar)
+
 - [ ] Línea XX: Acceso a DB → Debe estar en servicio
 - [ ] Línea YY: Logging excesivo → Solo para errores críticos
 - [ ] Línea ZZ: Mutación de estado global → Eliminar
 
 ### Código Obsoleto
+
 - [ ] N bloques de código comentado → Eliminar
 - [ ] M `TODO` obsoletos → Resolver o eliminar
 
 ## ✅ VALIDACIONES Y REGLAS (Correcto - mantener)
 
-| Función | Tipo | Estado |
-|---------|------|--------|
-| `validar_cedula()` | Validator | ✅ Pura |
-| `normalizar_placa()` | Normalizer | ✅ Pura |
+| Función                | Tipo          | Estado  |
+| ---------------------- | ------------- | ------- |
+| `validar_cedula()`     | Validator     | ✅ Pura |
+| `normalizar_placa()`   | Normalizer    | ✅ Pura |
 | `calcular_descuento()` | Business Rule | ✅ Pura |
 
 ## 📚 DOCUMENTACIÓN
 
-| Elemento | Estado | Acción |
-|----------|--------|--------|
-| Encabezado módulo | ✅/❌ | Agregar si falta |
-| Funciones públicas | X/Y (Z%) | Documentar faltantes |
-| Idioma español | ✅/❌ | Traducir si necesario |
+| Elemento           | Estado   | Acción                |
+| ------------------ | -------- | --------------------- |
+| Encabezado módulo  | ✅/❌    | Agregar si falta      |
+| Funciones públicas | X/Y (Z%) | Documentar faltantes  |
+| Idioma español     | ✅/❌    | Traducir si necesario |
 
 ## 🧪 TESTING
 
-| Función | Test Presente | Cobertura | Acción |
-|---------|---------------|-----------|--------|
-| `validar_*()` | ❌ | 0% | Crear test |
-| `normalizar_*()` | ✅ | 100% | - |
-| `calcular_*()` | ❌ | 0% | Crear test |
+| Función          | Test Presente | Cobertura | Acción     |
+| ---------------- | ------------- | --------- | ---------- |
+| `validar_*()`    | ❌            | 0%        | Crear test |
+| `normalizar_*()` | ✅            | 100%      | -          |
+| `calcular_*()`   | ❌            | 0%        | Crear test |
 
 **Cobertura total estimada**: X%
 ```
@@ -85,11 +89,11 @@ Garantizar que la capa de dominio contenga **únicamente lógica pura de negocio
 ```markdown
 ## VALORES MÁGICOS DETECTADOS
 
-| Línea | Código | Acción |
-|-------|--------|--------|
-| XX | `if valor > 100` | Crear constante `MAX_VALOR = 100` |
-| YY | `"ACTIVO"` literal | Crear constante `ESTADO_ACTIVO` |
-| ZZ | `0.16` (IVA) | Crear constante `TASA_IVA = 0.16` |
+| Línea | Código             | Acción                            |
+| ----- | ------------------ | --------------------------------- |
+| XX    | `if valor > 100`   | Crear constante `MAX_VALOR = 100` |
+| YY    | `"ACTIVO"` literal | Crear constante `ESTADO_ACTIVO`   |
+| ZZ    | `0.16` (IVA)       | Crear constante `TASA_IVA = 0.16` |
 ```
 
 ### [ ] 0.3 Auditoría de Errores (thiserror)
@@ -98,14 +102,16 @@ Garantizar que la capa de dominio contenga **únicamente lógica pura de negocio
 ## MANEJO DE ERRORES
 
 ### Estado Actual
+
 - [ ] Usa `#[derive(thiserror::Error)]`: Sí/No
 - [ ] Mensajes descriptivos: Sí/No
 - [ ] Idioma español: Sí/No
 
 ### Errores a Definir/Mejorar
-| Error | Estado | Acción |
-|-------|--------|--------|
-| `{Modulo}Error::CampoVacio` | ❌ Ausente | Crear |
+
+| Error                            | Estado      | Acción          |
+| -------------------------------- | ----------- | --------------- |
+| `{Modulo}Error::CampoVacio`      | ❌ Ausente  | Crear           |
 | `{Modulo}Error::FormatoInvalido` | ✅ Presente | Mejorar mensaje |
 ```
 
@@ -114,10 +120,10 @@ Garantizar que la capa de dominio contenga **únicamente lógica pura de negocio
 ```markdown
 ## VALIDACIONES DE FECHAS
 
-| Función | Formato Esperado | Usa `common::`? | Acción |
-|---------|------------------|-----------------|--------|
-| `validar_fecha_ingreso()` | RFC 3339 | ❌ | Usar `common::validar_fecha_rfc3339()` |
-| `validar_fecha_vencimiento()` | YYYY-MM-DD | ❌ | Usar `common::validar_fecha_simple()` |
+| Función                       | Formato Esperado | Usa `common::`? | Acción                                 |
+| ----------------------------- | ---------------- | --------------- | -------------------------------------- |
+| `validar_fecha_ingreso()`     | RFC 3339         | ❌              | Usar `common::validar_fecha_rfc3339()` |
+| `validar_fecha_vencimiento()` | YYYY-MM-DD       | ❌              | Usar `common::validar_fecha_simple()`  |
 ```
 
 ---
@@ -131,24 +137,29 @@ Garantizar que la capa de dominio contenga **únicamente lógica pura de negocio
 **LOC**: {número}
 
 ## PROBLEMAS CRÍTICOS
+
 1. [CRÍTICO] N structs de datos en dominio → Mover a models/
 2. [CRÍTICO] Imports impuros: `use crate::db::` → Eliminar
 
 ## PROBLEMAS MAYORES
+
 3. [ALTO] M funciones sin tests → Crear tests unitarios
 4. [MEDIO] K funciones sin documentar → Agregar docstrings
 
 ## MEJORAS RECOMENDADAS
+
 5. [BAJO] P valores mágicos → Crear constantes
 6. [BAJO] Q errores sin thiserror → Refactorizar
 
 ## ESTIMACIÓN
+
 - Separación dominio/models: X horas
 - Tests unitarios: Y horas
 - Documentación: Z horas
 - **TOTAL**: T horas
 
 ## ¿Proceder?
+
 Esperar aprobación del usuario.
 ```
 
@@ -182,6 +193,7 @@ pub struct Contratista {
 ```
 
 **Proceso**:
+
 1. Identificar structs de datos en dominio
 2. Moverlas a `models/{modulo}.rs` o crear archivo si no existe
 3. Actualizar imports en servicios y otros módulos
@@ -210,6 +222,7 @@ use regex::Regex;
 ```
 
 **Criterio**:
+
 - [ ] Sin imports de capas superiores (servicios, comandos)
 - [ ] Sin imports de infraestructura (DB, Tauri)
 - [ ] Solo lógica pura y tipos básicos
@@ -256,6 +269,7 @@ pub fn validar_edad(edad: u8) -> Result<(), ValidationError> {
 ```
 
 **Tipos de constantes a crear**:
+
 - Límites numéricos (MIN, MAX)
 - Formatos y patrones (REGEX)
 - Estados y valores de enumeración como strings (ESTADO_ACTIVO)
@@ -280,15 +294,15 @@ pub enum {Modulo}Error {
     /// La cédula proporcionada está vacía o no cumple el formato costarricense.
     #[error("Cédula inválida: {0}")]
     CedulaInvalida(String),
-    
+
     /// El campo obligatorio '{campo}' está vacío.
     #[error("El campo '{campo}' es obligatorio y no puede estar vacío")]
     CampoVacio { campo: String },
-    
+
     /// La fecha no cumple el formato esperado (RFC 3339 o YYYY-MM-DD).
     #[error("Formato de fecha inválido: {0}")]
     FormatoFechaInvalido(String),
-    
+
     /// Violación de regla de negocio: {motivo}.
     #[error("Regla de negocio violada: {motivo}")]
     ReglaNegocioViolada { motivo: String },
@@ -296,6 +310,7 @@ pub enum {Modulo}Error {
 ```
 
 **Criterio de calidad**:
+
 - [ ] Todos los errores tienen `#[error(...)]` descriptivo
 - [ ] Mensajes en español
 - [ ] Contexto suficiente (qué falló, por qué)
@@ -346,6 +361,7 @@ pub fn validar_fecha_vencimiento(fecha: &str) -> Result<NaiveDate, DomainError> 
 ```
 
 **Reglas de aplicación**:
+
 - **Timestamps con hora** → `validar_fecha_rfc3339()`
 - **Fechas simples** → `validar_fecha_simple()` / `parsear_fecha_simple()`
 - **Cálculos de tiempo** → `calcular_tiempo_permanencia()`
@@ -407,7 +423,7 @@ use once_cell::sync::Lazy;
 
 **Funciones Públicas**:
 
-```rust
+````rust
 /// Valida el formato de una cédula costarricense.
 ///
 /// La cédula debe cumplir el formato X-XXXX-XXXX (9 dígitos con guiones).
@@ -441,22 +457,23 @@ pub fn validar_cedula(cedula: &str) -> Result<(), DomainError> {
     if cedula.trim().is_empty() {
         return Err(DomainError::CedulaVacia);
     }
-    
+
     static CEDULA_REGEX: Lazy<Regex> = Lazy::new(|| {
         Regex::new(r"^\d{1}-\d{4}-\d{4}$").unwrap()
     });
-    
+
     if !CEDULA_REGEX.is_match(cedula) {
         return Err(DomainError::CedulaFormatoInvalido(
             cedula.to_string()
         ));
     }
-    
+
     Ok(())
 }
-```
+````
 
 **Calidad de documentación**:
+
 - [ ] Explicar el "por qué" (importancia de negocio)
 - [ ] Describir el proceso paso a paso
 - [ ] Ejemplos de uso con `assert!`
@@ -475,27 +492,27 @@ pub fn validar_cedula(cedula: &str) -> Result<(), DomainError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     // --------------------------------------------------------------------------
     // TESTS DE VALIDACIÓN
     // --------------------------------------------------------------------------
-    
+
     mod validar_cedula {
         use super::*;
-        
+
         #[test]
         fn acepta_cedula_valida() {
             let resultado = validar_cedula("1-2345-6789");
             assert!(resultado.is_ok());
         }
-        
+
         #[test]
         fn rechaza_cedula_vacia() {
             let resultado = validar_cedula("");
             assert!(resultado.is_err());
             assert!(matches!(resultado.unwrap_err(), DomainError::CedulaVacia));
         }
-        
+
         #[test]
         fn rechaza_cedula_sin_guiones() {
             let resultado = validar_cedula("123456789");
@@ -505,7 +522,7 @@ mod tests {
                 DomainError::CedulaFormatoInvalido(_)
             ));
         }
-        
+
         #[test]
         fn rechaza_formato_incorrecto() {
             let casos = vec![
@@ -513,60 +530,60 @@ mod tests {
                 "12-3456-7890",   // Demasiados dígitos al inicio
                 "A-2345-6789",    // Letra en lugar de número
             ];
-            
+
             for caso in casos {
                 let resultado = validar_cedula(caso);
                 assert!(resultado.is_err(), "Debería rechazar: {}", caso);
             }
         }
     }
-    
+
     // --------------------------------------------------------------------------
     // TESTS DE NORMALIZACIÓN
     // --------------------------------------------------------------------------
-    
+
     mod normalizar_cedula {
         use super::*;
-        
+
         #[test]
         fn elimina_espacios() {
             let resultado = normalizar_cedula(" 1-2345-6789 ");
             assert_eq!(resultado, "1-2345-6789");
         }
     }
-    
+
     // --------------------------------------------------------------------------
     // TESTS DE REGLAS DE NEGOCIO
     // --------------------------------------------------------------------------
-    
+
     mod reglas_negocio {
         use super::*;
-        
+
         #[test]
         fn test_regla_especifica() {
             // Test de lógica de negocio compleja
         }
     }
-    
+
     // --------------------------------------------------------------------------
     // TESTS DE FECHAS
     // --------------------------------------------------------------------------
-    
+
     mod validaciones_fechas {
         use super::*;
-        
+
         #[test]
         fn acepta_fecha_rfc3339_valida() {
             let resultado = validar_fecha_hora_ingreso("2026-01-15T08:30:00Z");
             assert!(resultado.is_ok());
         }
-        
+
         #[test]
         fn rechaza_fecha_formato_incorrecto() {
             let resultado = validar_fecha_hora_ingreso("15/01/2026");
             assert!(resultado.is_err());
         }
-        
+
         #[test]
         fn acepta_fecha_simple_valida() {
             let resultado = validar_fecha_vencimiento("2026-12-31");
@@ -577,6 +594,7 @@ mod tests {
 ```
 
 **Criterios de cobertura**:
+
 - [ ] Casos válidos (happy path)
 - [ ] Casos inválidos (errores esperados)
 - [ ] Casos límite (edge cases)
@@ -584,6 +602,7 @@ mod tests {
 - [ ] Al menos 1 test por error posible
 
 **Ejecutar tests**:
+
 ```bash
 # Tests del módulo específico
 cargo test --package mega-brisas -- domain::{modulo}

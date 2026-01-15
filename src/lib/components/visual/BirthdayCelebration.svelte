@@ -1,11 +1,11 @@
 <script lang="ts">
-  import SceneRenderer from "./SceneRenderer.svelte";
-  
-  interface Props {
-    name?: string;
-  }
-  
-  let { name = "Usuario" }: Props = $props();
+	import SceneRenderer from './SceneRenderer.svelte';
+
+	interface Props {
+		name?: string;
+	}
+
+	let {}: Props = $props();
 </script>
 
 <!-- 

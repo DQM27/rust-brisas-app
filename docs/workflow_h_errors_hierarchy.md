@@ -61,6 +61,7 @@ Establecer una **jerarquía de errores clara y consistente** que fluya desde la 
 
 ```markdown
 **Archivos de errores**:
+
 - `src/domain/errors.rs` (o errores por módulo)
 - `src/services/errors.rs`
 - `src/commands/errors.rs`
@@ -69,22 +70,25 @@ Establecer una **jerarquía de errores clara y consistente** que fluya desde la 
 ## ESTADO ACTUAL
 
 ### Errores de Dominio
-| Módulo | Archivo | Usa thiserror? | Mensajes en español? | Estado |
-|--------|---------|----------------|----------------------|--------|
-| contratista | `domain/errors.rs` | ✅ | ✅ | ✅ Correcto |
-| ingreso | `domain/ingreso.rs` | ❌ | ⚠️ | ⚠️ Mejorar |
+
+| Módulo      | Archivo             | Usa thiserror? | Mensajes en español? | Estado      |
+| ----------- | ------------------- | -------------- | -------------------- | ----------- |
+| contratista | `domain/errors.rs`  | ✅             | ✅                   | ✅ Correcto |
+| ingreso     | `domain/ingreso.rs` | ❌             | ⚠️                   | ⚠️ Mejorar  |
 
 ### Errores de Servicios
-| Servicio | Tipo de Error | Conversiones? | Estado |
-|----------|---------------|---------------|--------|
-| contratista_service | `ContratistaError` | ⚠️ Parcial | ⚠️ |
-| ingreso_service | `String` genérico | ❌ | ❌ CRÍTICO |
+
+| Servicio            | Tipo de Error      | Conversiones? | Estado     |
+| ------------------- | ------------------ | ------------- | ---------- |
+| contratista_service | `ContratistaError` | ⚠️ Parcial    | ⚠️         |
+| ingreso_service     | `String` genérico  | ❌            | ❌ CRÍTICO |
 
 ### Errores de Commands
-| Command | Tipo de Error | Serializable? | Estado |
-|---------|---------------|---------------|--------|
-| contratista_commands | `String` | ❌ | ❌ |
-| ingreso_commands | `String` | ❌ | ❌ |
+
+| Command              | Tipo de Error | Serializable? | Estado |
+| -------------------- | ------------- | ------------- | ------ |
+| contratista_commands | `String`      | ❌            | ❌     |
+| ingreso_commands     | `String`      | ❌            | ❌     |
 ```
 
 ### [ ] 0.2 Auditoría de Conversiones
@@ -93,14 +97,17 @@ Establecer una **jerarquía de errores clara y consistente** que fluya desde la 
 ## CONVERSIONES ENTRE CAPAS
 
 ### DB → Domain
+
 - [ ] `From<SurrealDbError> for ContratistaError` existe?
 - [ ] Contexto preservado en conversión?
 
 ### Domain → Command
+
 - [ ] `From<DomainError> for CommandError` existe?
 - [ ] Tipos de error mapeados correctamente?
 
 ### Conversiones Faltantes
+
 1. `SurrealDbError` → `ContratistaError`: ❌ Falta
 2. `ContratistaError` → `CommandError`: ❌ Falta
 ```
@@ -111,16 +118,19 @@ Establecer una **jerarquía de errores clara y consistente** que fluya desde la 
 ## CALIDAD DE MENSAJES DE ERROR
 
 ### Mensajes Genéricos (mejorar)
+
 - [ ] "Error" → Agregar contexto
 - [ ] "Invalid input" → Español: "Entrada inválida: {campo}"
 - [ ] "Not found" → "No se encontró {entidad} con ID {id}"
 
 ### Mensajes Técnicos Expuestos (ocultar)
+
 - [ ] Stack traces en errores de usuario
 - [ ] IDs internos de BD
 - [ ] Nombres de tablas/columnas
 
 ### Mensajes en Inglés (traducir)
+
 - [ ] X mensajes requieren traducción a español
 ```
 
@@ -132,24 +142,29 @@ Establecer una **jerarquía de errores clara y consistente** que fluya desde la 
 # Reporte de Análisis FASE 0 - Errors
 
 ## PROBLEMAS CRÍTICOS
+
 1. [CRÍTICO] Commands usan `String` en lugar de tipos específicos
 2. [CRÍTICO] Conversiones automáticas faltantes entre capas
 
 ## PROBLEMAS MAYORES
+
 3. [ALTO] N errores sin thiserror
 4. [ALTO] M mensajes genéricos sin contexto
 
 ## MEJORAS RECOMENDADAS
+
 5. [MEDIO] K mensajes en inglés (traducir)
 6. [BAJO] P errores exponiendo detalles técnicos
 
 ## ESTIMACIÓN
+
 - Implementar jerarquía completa: X horas
 - Conversiones automáticas: Y horas
 - Mejorar mensajes: Z horas
 - **TOTAL**: T horas
 
 ## ¿Proceder?
+
 Esperar aprobación del usuario.
 ```
 
@@ -161,7 +176,7 @@ Esperar aprobación del usuario.
 
 **Archivo**: `src/db/errors.rs`
 
-```rust
+````rust
 //! # Errores de Persistencia (SurrealDB)
 //!
 //! Errores que pueden ocurrir al interactuar con la base de datos.
@@ -180,35 +195,35 @@ pub enum SurrealDbError {
     /// o si hay problemas de configuración.
     #[error("Error de conexión a la base de datos: {0}")]
     Connection(String),
-    
+
     /// Error al ejecutar un query.
     ///
     /// Incluye el contexto del query que falló para facilitar debugging.
     #[error("Error en query: {0}")]
     Query(String),
-    
+
     /// Error al deserializar resultado de query.
     ///
     /// Ocurre cuando el resultado de BD no coincide con el tipo esperado.
     #[error("Error de deserialización: {0}")]
     Deserialization(String),
-    
+
     /// Registro no encontrado cuando se esperaba que existiera.
     ///
     /// Ejemplo: Buscar contratista por ID que no existe.
     #[error("Registro no encontrado: {0}")]
     NotFound(String),
-    
+
     /// Error durante una transacción.
     ///
     /// Incluye información de qué operación falló dentro de la transacción.
     #[error("Error en transacción: {0}")]
     Transaction(String),
-    
+
     /// Violación de constraint (ej: unicidad, foreign key).
     #[error("Violación de restricción de base de datos: {0}")]
     ConstraintViolation(String),
-    
+
     /// Error genérico del crate surrealdb.
     ///
     /// Se usa cuando no se puede mapear a un error más específico.
@@ -234,7 +249,7 @@ impl SurrealDbError {
         ))
     }
 }
-```
+````
 
 ---
 
@@ -264,43 +279,43 @@ pub enum ContratistaError {
     /// Formato esperado: X-XXXX-XXXX (ej: "1-2345-6789")
     #[error("Cédula inválida: {0}. Formato esperado: X-XXXX-XXXX")]
     CedulaInvalida(String),
-    
+
     /// La cédula ya está registrada en el sistema.
     ///
     /// No se permiten duplicados de cédulas por razones de seguridad.
     #[error("Ya existe un contratista registrado con la cédula: {0}")]
     CedulaDuplicada(String),
-    
+
     /// El campo obligatorio está vacío.
     #[error("El campo '{campo}' es obligatorio y no puede estar vacío")]
     CampoObligatorio { campo: String },
-    
+
     /// La fecha de vencimiento del PRAIND no es válida.
     ///
     /// Debe estar en formato YYYY-MM-DD y ser una fecha futura.
     #[error("Fecha de vencimiento PRAIND inválida: {0}")]
     FechaVencimientoPraindInvalida(String),
-    
+
     /// El PRAIND ha vencido.
     ///
     /// El contratista no puede ingresar con certificación vencida.
     #[error("PRAIND vencido. Fecha de vencimiento: {0}")]
     PraindVencido(String),
-    
+
     /// La empresa especificada no existe en el sistema.
     #[error("No se encontró la empresa con ID: {0}")]
     EmpresaNoEncontrada(String),
-    
+
     /// El contratista no fue encontrado.
     #[error("No se encontró el contratista con ID: {0}")]
     ContratistaNoEncontrado(String),
-    
+
     /// Error genérico de validación.
     ///
     /// Usar solo cuando no hay un tipo de error más específico.
     #[error("Error de validación: {0}")]
     Validacion(String),
-    
+
     /// Error de base de datos propagado.
     #[error("Error de base de datos: {0}")]
     Database(#[from] SurrealDbError),
@@ -338,37 +353,37 @@ pub enum IngresoError {
     /// Debe estar en formato RFC 3339.
     #[error("Fecha/hora de ingreso inválida: {0}")]
     FechaIngresoInvalida(String),
-    
+
     /// La fecha/hora de salida es anterior a la de ingreso.
     ///
     /// Esto es físicamente imposible y probablemente un error de captura.
     #[error("La fecha de salida no puede ser anterior a la de ingreso")]
     SalidaAnteriorAIngreso,
-    
+
     /// El visitante/contratista está en la lista negra.
     ///
     /// No se permite el ingreso por motivos de seguridad.
     #[error("Ingreso bloqueado: La persona está en la lista negra. Motivo: {motivo}")]
     PersonaBloqueada { motivo: String },
-    
+
     /// El visitante/contratista ya tiene un ingreso activo.
     ///
     /// Debe registrar salida antes de un nuevo ingreso.
     #[error("Ya existe un ingreso activo para la cédula: {0}")]
     IngresoActivoDuplicado(String),
-    
+
     /// No hay gafetes disponibles.
     #[error("No hay gafetes disponibles. Liberar gafetes antes de registrar nuevo ingreso")]
     GafeteNoDisponible,
-    
+
     /// El gafete especificado no existe.
     #[error("No se encontró el gafete con número: {0}")]
     GafeteNoEncontrado(String),
-    
+
     /// El ingreso no fue encontrado.
     #[error("No se encontró el ingreso con ID: {0}")]
     IngresoNoEncontrado(String),
-    
+
     /// Error de base de datos.
     #[error("Error de base de datos: {0}")]
     Database(#[from] SurrealDbError),
@@ -384,15 +399,15 @@ pub enum AlertaError {
     /// Error de validación de alerta.
     #[error("Error de validación: {0}")]
     Validacion(String),
-    
+
     /// La alerta no fue encontrada.
     #[error("No se encontró la alerta con ID: {0}")]
     AlertaNoEncontrada(String),
-    
+
     /// La alerta ya fue resuelta.
     #[error("La alerta ya fue resuelta previamente por: {usuario}")]
     AlertaYaResuelta { usuario: String },
-    
+
     /// Error de base de datos.
     #[error("Error de base de datos: {0}")]
     Database(#[from] SurrealDbError),
@@ -405,7 +420,7 @@ pub enum AlertaError {
 
 **Archivo**: `src/commands/errors.rs`
 
-```rust
+````rust
 //! # Errores de Commands (Tauri)
 //!
 //! Errores serializables que se envían al frontend.
@@ -450,7 +465,7 @@ pub enum CommandError {
         /// Mensaje descriptivo para el usuario
         message: String,
     },
-    
+
     /// Usuario no tiene permisos para esta operación.
     ///
     /// El frontend debe mostrar mensaje de error y no permitir retry.
@@ -461,7 +476,7 @@ pub enum CommandError {
         /// Rol requerido
         required_role: Option<String>,
     },
-    
+
     /// Recurso no encontrado.
     ///
     /// El frontend puede mostrar mensaje amigable o redirigir.
@@ -472,7 +487,7 @@ pub enum CommandError {
         /// ID del recurso (opcional, no exponer si es sensible)
         resource_id: Option<String>,
     },
-    
+
     /// Error de validación de datos de entrada.
     ///
     /// El frontend debe resaltar el campo con error.
@@ -483,7 +498,7 @@ pub enum CommandError {
         /// Mensaje descriptivo del error
         message: String,
     },
-    
+
     /// Conflicto (ej: recurso ya existe, ingreso duplicado).
     ///
     /// El frontend debe informar al usuario y no permitir retry automático.
@@ -492,7 +507,7 @@ pub enum CommandError {
         /// Descripción del conflicto
         message: String,
     },
-    
+
     /// Operación bloqueada por reglas de negocio.
     ///
     /// Ejemplo: Intento de ingreso de persona en lista negra.
@@ -503,7 +518,7 @@ pub enum CommandError {
         /// Explicación para el usuario
         message: String,
     },
-    
+
     /// Error interno del servidor.
     ///
     /// El frontend debe mostrar mensaje genérico y permitir reintentar.
@@ -655,7 +670,7 @@ impl From<AlertaError> for CommandError {
         }
     }
 }
-```
+````
 
 ---
 
@@ -682,7 +697,7 @@ pub async fn create_contratista(
         .ok_or(CommandError::Unauthorized {
             message: "Sesión no válida o expirada".to_string(),
         })?;
-    
+
     // Llamar servicio - la conversión es automática gracias a From<ContratistaError>
     contratista_service::create_contratista(&search_service, input)
         .await
@@ -694,45 +709,51 @@ pub async fn create_contratista(
 
 ```typescript
 interface CommandError {
-  type: 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'VALIDATION_ERROR' | 
-        'CONFLICT' | 'BUSINESS_RULE_VIOLATION' | 'SERVER_ERROR';
-  details: {
-    message: string;
-    field?: string;
-    resource_type?: string;
-    action?: string;
-    rule?: string;
-  };
+	type:
+		| 'UNAUTHORIZED'
+		| 'FORBIDDEN'
+		| 'NOT_FOUND'
+		| 'VALIDATION_ERROR'
+		| 'CONFLICT'
+		| 'BUSINESS_RULE_VIOLATION'
+		| 'SERVER_ERROR';
+	details: {
+		message: string;
+		field?: string;
+		resource_type?: string;
+		action?: string;
+		rule?: string;
+	};
 }
 
 try {
-  const contratista = await invoke('create_contratista', { input });
-  toast.success('Contratista registrado exitosamente');
+	const contratista = await invoke('create_contratista', { input });
+	toast.success('Contratista registrado exitosamente');
 } catch (error: CommandError) {
-  switch (error.type) {
-    case 'CONFLICT':
-      toast.error(error.details.message);
-      break;
-    case 'VALIDATION_ERROR':
-      if (error.details.field) {
-        setFieldError(error.details.field, error.details.message);
-      } else {
-        toast.error(error.details.message);
-      }
-      break;
-    case 'BUSINESS_RULE_VIOLATION':
-      showAlert({
-        title: 'Operación bloqueada',
-        message: error.details.message,
-        type: 'warning'
-      });
-      break;
-    case 'UNAUTHORIZED':
-      router.push('/login');
-      break;
-    default:
-      toast.error('Error inesperado. Intente nuevamente.');
-  }
+	switch (error.type) {
+		case 'CONFLICT':
+			toast.error(error.details.message);
+			break;
+		case 'VALIDATION_ERROR':
+			if (error.details.field) {
+				setFieldError(error.details.field, error.details.message);
+			} else {
+				toast.error(error.details.message);
+			}
+			break;
+		case 'BUSINESS_RULE_VIOLATION':
+			showAlert({
+				title: 'Operación bloqueada',
+				message: error.details.message,
+				type: 'warning'
+			});
+			break;
+		case 'UNAUTHORIZED':
+			router.push('/login');
+			break;
+		default:
+			toast.error('Error inesperado. Intente nuevamente.');
+	}
 }
 ```
 
@@ -744,22 +765,22 @@ try {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_cedula_duplicada_se_convierte_a_conflict() {
         let domain_error = ContratistaError::CedulaDuplicada("1-2345-6789".to_string());
         let command_error: CommandError = domain_error.into();
-        
+
         assert!(matches!(command_error, CommandError::Conflict { .. }));
     }
-    
+
     #[test]
     fn test_error_serializable_a_json() {
         let error = CommandError::ValidationError {
             field: Some("cedula".to_string()),
             message: "Formato inválido".to_string(),
         };
-        
+
         let json = serde_json::to_string(&error).unwrap();
         assert!(json.contains("VALIDATION_ERROR"));
         assert!(json.contains("cedula"));

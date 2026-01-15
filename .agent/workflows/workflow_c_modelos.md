@@ -2,7 +2,7 @@
 
 **Versión**: 3.0  
 **Idioma**: Español  
-**Aplicación**: Brisas APP  
+**Aplicación**: Brisas APP
 
 ---
 
@@ -35,29 +35,34 @@ Transformar archivos en `src/models` para adherirse a prácticas estrictas de Ru
 ## ❌ VIOLACIONES DE PUREZA DE MODELS
 
 ### Lógica de Negocio (mover a domain/)
+
 - [ ] Línea XX: Método `validar_*()` → Mover a `domain/{modulo}`
 - [ ] Línea YY: Método `calcular_*()` → Mover a `domain/{modulo}`
 - [ ] Línea ZZ: Acceso a DB → Mover a `services/` o `repositories/`
 
 ### "Stringly Typed" Code (crear enums)
-| Campo | Tipo Actual | Valores Posibles | Acción |
-|-------|-------------|------------------|--------|
-| `estado` | `String` | "ACTIVO", "INACTIVO", "SUSPENDIDO" | Crear `enum EstadoContratista` |
-| `tipo_vehiculo` | `String` | "AUTO", "MOTO", "CAMION" | Crear `enum TipoVehiculo` |
-| `prioridad` | `String` | "ALTA", "MEDIA", "BAJA" | Crear `enum Prioridad` |
+
+| Campo           | Tipo Actual | Valores Posibles                   | Acción                         |
+| --------------- | ----------- | ---------------------------------- | ------------------------------ |
+| `estado`        | `String`    | "ACTIVO", "INACTIVO", "SUSPENDIDO" | Crear `enum EstadoContratista` |
+| `tipo_vehiculo` | `String`    | "AUTO", "MOTO", "CAMION"           | Crear `enum TipoVehiculo`      |
+| `prioridad`     | `String`    | "ALTA", "MEDIA", "BAJA"            | Crear `enum Prioridad`         |
 
 ### Tipos Primitivos Débiles (value objects)
-| Campo | Tipo Actual | Validación Implícita | Acción |
-|-------|-------------|----------------------|--------|
-| `email` | `String` | Formato RFC 5322 | Crear `struct Email(String)` con validación |
-| `cedula` | `String` | Formato X-XXXX-XXXX | Crear `struct Cedula(String)` |
-| `placa` | `String` | Formato ABC-123 | Crear `struct Placa(String)` |
+
+| Campo    | Tipo Actual | Validación Implícita | Acción                                      |
+| -------- | ----------- | -------------------- | ------------------------------------------- |
+| `email`  | `String`    | Formato RFC 5322     | Crear `struct Email(String)` con validación |
+| `cedula` | `String`    | Formato X-XXXX-XXXX  | Crear `struct Cedula(String)`               |
+| `placa`  | `String`    | Formato ABC-123      | Crear `struct Placa(String)`                |
 
 ### Nulabilidad Implícita (usar Option)
+
 - [ ] Línea XX: Campo que usa `""` para indicar null → Cambiar a `Option<String>`
 - [ ] Línea YY: Campo que usa `0` para indicar null → Cambiar a `Option<i32>`
 
 ### Dependencias Impuras
+
 - [ ] Imports de `services/`
 - [ ] Imports de `db/`
 - [ ] Lógica de persistencia en el modelo
@@ -68,11 +73,11 @@ Transformar archivos en `src/models` para adherirse a prácticas estrictas de Ru
 ```markdown
 ## DOCUMENTACIÓN
 
-| Elemento | Estado | Acción |
-|----------|--------|--------|
-| Encabezado módulo | ✅/❌ | Agregar descripción |
-| Structs públicas | X/Y (Z%) | Documentar propósito de negocio |
-| Enums públicas | X/Y (Z%) | Documentar casos de uso |
+| Elemento          | Estado   | Acción                               |
+| ----------------- | -------- | ------------------------------------ |
+| Encabezado módulo | ✅/❌    | Agregar descripción                  |
+| Structs públicas  | X/Y (Z%) | Documentar propósito de negocio      |
+| Enums públicas    | X/Y (Z%) | Documentar casos de uso              |
 | Campos de negocio | X/Y (Z%) | Explicar significado para el negocio |
 
 **Idioma**: ✅/❌ Español
@@ -93,11 +98,11 @@ Transformar archivos en `src/models` para adherirse a prácticas estrictas de Ru
 ```markdown
 ## CAMPOS DE FECHA
 
-| Campo | Tipo Actual | Tipo Esperado | Acción |
-|-------|-------------|---------------|--------|
-| `fecha_creacion` | `String` | `String` (RFC 3339 validado) | Documentar formato |
-| `fecha_vencimiento` | `String` | `String` (YYYY-MM-DD validado) | Documentar formato |
-| `updated_at` | `chrono::DateTime<Utc>` | ✅ Correcto | - |
+| Campo               | Tipo Actual             | Tipo Esperado                  | Acción             |
+| ------------------- | ----------------------- | ------------------------------ | ------------------ |
+| `fecha_creacion`    | `String`                | `String` (RFC 3339 validado)   | Documentar formato |
+| `fecha_vencimiento` | `String`                | `String` (YYYY-MM-DD validado) | Documentar formato |
+| `updated_at`        | `chrono::DateTime<Utc>` | ✅ Correcto                    | -                  |
 
 **Nota**: Models puede usar `String` para fechas si la validación ocurre en `domain/`
 ```
@@ -113,18 +118,22 @@ Transformar archivos en `src/models` para adherirse a prácticas estrictas de Ru
 **LOC**: {número}
 
 ## PROBLEMAS CRÍTICOS
+
 1. [CRÍTICO] N campos "stringly typed" → Crear enums
 2. [CRÍTICO] M métodos con lógica de negocio → Mover a domain/
 
 ## PROBLEMAS MAYORES
+
 3. [ALTO] K campos sin `Option` (usan valores centinela) → Refactorizar
 4. [MEDIO] P structs/enums sin documentar → Agregar docstrings
 
 ## MEJORAS RECOMENDADAS
+
 5. [BAJO] Q campos primitivos débiles → Considerar value objects
 6. [BAJO] R sin separadores visuales → Organizar
 
 ## ESTIMACIÓN
+
 - Crear enums: X horas
 - Mover lógica a domain: Y horas
 - Refactorizar nulabilidad: Z horas
@@ -132,6 +141,7 @@ Transformar archivos en `src/models` para adherirse a prácticas estrictas de Ru
 - **TOTAL**: T horas
 
 ## ¿Proceder?
+
 Esperar aprobación del usuario.
 ```
 
@@ -187,7 +197,7 @@ impl EstadoContratista {
 
 impl std::str::FromStr for EstadoContratista {
     type Err = String;
-    
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_uppercase().as_str() {
             "ACTIVO" => Ok(Self::Activo),
@@ -205,12 +215,14 @@ pub struct Contratista {
 ```
 
 **Beneficios**:
+
 - ✅ Imposible tener valores inválidos en tiempo de compilación
 - ✅ IDE autocompletado
 - ✅ Pattern matching exhaustivo
 - ✅ Refactoring seguro
 
 **Campos candidatos a enum**:
+
 - Estados (activo/inactivo)
 - Tipos (categorías finitas)
 - Prioridades (alta/media/baja)
@@ -241,7 +253,7 @@ impl Contratista {
         // ... más validaciones
         Ok(())
     }
-    
+
     /// ❌ Esto es cálculo de negocio
     pub fn calcular_dias_vencimiento(&self) -> i64 {
         // ... lógica de cálculo
@@ -299,15 +311,15 @@ pub struct Contratista {
 pub struct Contratista {
     /// Primer nombre (obligatorio)
     pub nombre: String,
-    
+
     /// Segundo nombre (opcional, null si no tiene)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub segundo_nombre: Option<String>,
-    
+
     /// Teléfono de contacto (opcional)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub telefono: Option<String>,
-    
+
     /// Edad (opcional, null si no se registró)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub edad: Option<u8>,
@@ -315,6 +327,7 @@ pub struct Contratista {
 ```
 
 **Criterio**:
+
 - Campo puede no existir legítimamente → `Option<T>`
 - Campo siempre debe tener valor → `T` sin Option
 
@@ -325,11 +338,13 @@ pub struct Contratista {
 **Objetivo**: Encapsular validaciones en tipos específicos.
 
 **Cuándo usar**:
+
 - ✅ Campo con reglas de validación complejas
 - ✅ Campo que se usa en muchos lugares
 - ✅ Campo crítico para la seguridad
 
 **Cuándo NO usar**:
+
 - ❌ Campos simples sin validaciones
 - ❌ Over-engineering (no todo necesita ser un tipo)
 
@@ -354,7 +369,7 @@ impl Email {
         crate::domain::validar_email(&email)?;
         Ok(Self(email))
     }
-    
+
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -362,7 +377,7 @@ impl Email {
 
 impl TryFrom<String> for Email {
     type Error = DomainError;
-    
+
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::new(value)
     }
@@ -452,25 +467,26 @@ use surrealdb::RecordId;
 pub struct Contratista {
     /// ID único en SurrealDB
     pub id: RecordId,
-    
+
     /// Cédula costarricense (formato: X-XXXX-XXXX)
     pub cedula: String,
-    
+
     /// Primer nombre del contratista
     pub nombre: String,
-    
+
     /// Fecha de vencimiento de certificación PRAIND (formato: YYYY-MM-DD)
     pub fecha_vencimiento_praind: String,
-    
+
     /// Estado actual del contratista
     pub estado: EstadoContratista,
-    
+
     /// Relación con empresa empleadora
     pub empresa: RecordId,
 }
 ```
 
 **Calidad de documentación**:
+
 - [ ] Explicar propósito de negocio
 - [ ] Documentar campos críticos
 - [ ] Explicar relaciones con otras entidades
@@ -602,6 +618,7 @@ Closes #{numero_issue}
 ## Ejemplo de Transformación Completa
 
 **ANTES** (Débil):
+
 ```rust
 pub struct Cita {
     pub estado: String,               // "PROGRAMADA", "CANCELADA"
@@ -618,6 +635,7 @@ impl Cita {
 ```
 
 **DESPUÉS** (Fuerte):
+
 ```rust
 /// Estado del ciclo de vida de una cita médica.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

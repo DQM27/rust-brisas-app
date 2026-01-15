@@ -1,5 +1,5 @@
 <script lang="ts">
-  import IngresoListView from "./IngresoListView.svelte";
+	import IngresoListView from './IngresoListView.svelte';
 </script>
 
 <IngresoListView tabId="ingreso-list" />

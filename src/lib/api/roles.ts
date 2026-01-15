@@ -4,12 +4,12 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import type {
-    RoleResponse,
-    RoleListResponse,
-    CreateRoleInput,
-    UpdateRoleInput,
-    Permission,
-    VisibleModule,
+	RoleResponse,
+	RoleListResponse,
+	CreateRoleInput,
+	UpdateRoleInput,
+	Permission,
+	VisibleModule
 } from '$lib/types/role';
 
 // ==========================================
@@ -17,19 +17,19 @@ import type {
 // ==========================================
 
 export async function getAllRoles(): Promise<RoleListResponse> {
-    return invoke<RoleListResponse>('get_all_roles');
+	return invoke<RoleListResponse>('get_all_roles');
 }
 
 export async function getRoleById(id: string): Promise<RoleResponse> {
-    return invoke<RoleResponse>('get_role_by_id', { id });
+	return invoke<RoleResponse>('get_role_by_id', { id });
 }
 
 export async function getAllPermissions(): Promise<Permission[]> {
-    return invoke<Permission[]>('get_all_permissions');
+	return invoke<Permission[]>('get_all_permissions');
 }
 
 export async function getVisibleModules(): Promise<VisibleModule[]> {
-    return invoke<VisibleModule[]>('get_visible_modules');
+	return invoke<VisibleModule[]>('get_visible_modules');
 }
 
 // ==========================================
@@ -37,13 +37,13 @@ export async function getVisibleModules(): Promise<VisibleModule[]> {
 // ==========================================
 
 export async function createRole(input: CreateRoleInput): Promise<RoleResponse> {
-    return invoke<RoleResponse>('create_role', { input });
+	return invoke<RoleResponse>('create_role', { input });
 }
 
 export async function updateRole(id: string, input: UpdateRoleInput): Promise<RoleResponse> {
-    return invoke<RoleResponse>('update_role', { id, input });
+	return invoke<RoleResponse>('update_role', { id, input });
 }
 
 export async function deleteRole(id: string): Promise<void> {
-    return invoke<void>('delete_role', { id });
+	return invoke<void>('delete_role', { id });
 }

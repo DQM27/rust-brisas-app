@@ -1,7 +1,7 @@
 import { persisted } from './persistent';
 
 export const panelLayout = persisted('panelLayout', {
-  topHeight: 60,
-  bottomHeight: 250,
-  sidebarWidth: 260
+	topHeight: 60,
+	bottomHeight: 250,
+	sidebarWidth: 260
 });

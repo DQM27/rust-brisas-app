@@ -2,13 +2,14 @@
 
 **Versión**: 1.0  
 **Fecha**: 2026-01-02  
-**Propósito**: Documentación completa para refactorizar Brisas APP a estándares Enterprise con Rust idiomático + Tauri v2  
+**Propósito**: Documentación completa para refactorizar Brisas APP a estándares Enterprise con Rust idiomático + Tauri v2
 
 ---
 
 ## 🎯 ¿Qué es esto?
 
 Un **sistema completo de workflows** para refactorizar tu aplicación Tauri (Brisas APP) con:
+
 - ✅ Estándares profesionales
 - ✅ Patrones idiomáticos de Rust (no OOP)
 - ✅ Clean Architecture adaptada a Rust
@@ -50,16 +51,16 @@ Un **sistema completo de workflows** para refactorizar tu aplicación Tauri (Bri
 
 ### 🏗️ WORKFLOWS TÉCNICOS (8 workflows)
 
-| ID | Workflow | Cuándo Usar | Prioridad |
-|----|----------|-------------|-----------|
-| **A** | `workflow_a_servicios.md` | Archivos en `services/` | ⭐⭐⭐⭐⭐ |
-| **B** | `workflow_b_dominio.md` | Archivos en `domain/` | ⭐⭐⭐⭐ |
-| **C** | `workflow_c_modelos.md` | Archivos en `models/` | ⭐⭐ |
-| **D** | `workflow_d_queries_surrealdb.md` | Archivos en `db/` | ⭐⭐⭐ |
-| **E** | `workflow_e_commands_tauri.md` | Archivos en `commands/` | ⭐⭐⭐⭐⭐ SEGURIDAD |
-| **G** | `workflow_g_common_utils.md` | `common.rs` | ⭐⭐⭐ |
-| **H** | `workflow_h_errors_hierarchy.md` | Errores en general | ⭐⭐⭐⭐ |
-| **I** | `workflow_i_configuration_setup.md` | `main.rs`, config | ⭐⭐ |
+| ID    | Workflow                            | Cuándo Usar             | Prioridad            |
+| ----- | ----------------------------------- | ----------------------- | -------------------- |
+| **A** | `workflow_a_servicios.md`           | Archivos en `services/` | ⭐⭐⭐⭐⭐           |
+| **B** | `workflow_b_dominio.md`             | Archivos en `domain/`   | ⭐⭐⭐⭐             |
+| **C** | `workflow_c_modelos.md`             | Archivos en `models/`   | ⭐⭐                 |
+| **D** | `workflow_d_queries_surrealdb.md`   | Archivos en `db/`       | ⭐⭐⭐               |
+| **E** | `workflow_e_commands_tauri.md`      | Archivos en `commands/` | ⭐⭐⭐⭐⭐ SEGURIDAD |
+| **G** | `workflow_g_common_utils.md`        | `common.rs`             | ⭐⭐⭐               |
+| **H** | `workflow_h_errors_hierarchy.md`    | Errores en general      | ⭐⭐⭐⭐             |
+| **I** | `workflow_i_configuration_setup.md` | `main.rs`, config       | ⭐⭐                 |
 
 ---
 
@@ -76,6 +77,7 @@ Un **sistema completo de workflows** para refactorizar tu aplicación Tauri (Bri
 ### Para el Usuario (Tú):
 
 #### 1️⃣ **Leer documentos de orquestación** (30 min)
+
 ```
 1. Este README (estás aquí) ✅
 2. GUIA_GESTION_SESIONES.md → Estrategia
@@ -84,12 +86,14 @@ Un **sistema completo de workflows** para refactorizar tu aplicación Tauri (Bri
 ```
 
 #### 2️⃣ **Identificar primer archivo a refactorizar**
+
 ```bash
 # Ejemplo: Servicio de contratistas
 src/services/contratista_service.rs → Workflow A
 ```
 
 #### 3️⃣ **Abrir NUEVO chat con Claude**
+
 ```markdown
 [Copiar plantilla A de PLANTILLAS_INICIO_SESION.md]
 [Reemplazar {variables}]
@@ -99,17 +103,20 @@ src/services/contratista_service.rs → Workflow A
 ```
 
 #### 4️⃣ **Esperar análisis FASE 0**
+
 ```
 Claude ejecuta análisis → Genera reporte → Espera tu aprobación
 ```
 
 #### 5️⃣ **Aprobar y ejecutar refactor**
+
 ```
 Tú: "Procede con refactor completo"
 Claude: [Refactoriza siguiendo workflow]
 ```
 
 #### 6️⃣ **Verificar y commitear**
+
 ```bash
 cargo check --package mega-brisas
 cargo test --package mega-brisas
@@ -117,6 +124,7 @@ git commit -m "refactor(services): mensaje generado por Claude"
 ```
 
 #### 7️⃣ **Cerrar sesión y repetir**
+
 ```
 [Cerrar chat actual]
 [Abrir NUEVO chat para siguiente archivo]
@@ -139,6 +147,7 @@ git commit -m "refactor(services): mensaje generado por Claude"
 ```
 
 **Reglas de Oro** (ver META_WORKFLOW_AGENTE.md):
+
 - ⚠️ SIEMPRE FASE 0 primero
 - ⚠️ UN workflow a la vez
 - ⚠️ NO improvisar
@@ -152,6 +161,7 @@ git commit -m "refactor(services): mensaje generado por Claude"
 ### Fase 1: Seguridad (URGENTE - Semana 1)
 
 🔴 **Prioridad CRÍTICA**
+
 ```
 1. Revisar analisis_ingreso_general_commands.md
 2. Aplicar Workflow E a TODOS los commands
@@ -196,6 +206,7 @@ Módulo por módulo (ej: Contratista):
 ```
 
 ### ¿Por qué?
+
 - ✅ Contexto fresco (agente no se pierde)
 - ✅ Commits atómicos (fácil de revertir)
 - ✅ Historial limpio (fácil de buscar)
@@ -250,23 +261,27 @@ Módulo por módulo (ej: Contratista):
 Después de refactorizar cada archivo:
 
 ### Compilación ✅
+
 ```bash
 cargo check --package mega-brisas
 cargo clippy --package mega-brisas -- -D warnings
 ```
 
 ### Tests ✅
+
 ```bash
 cargo test --package mega-brisas -- {modulo}
 ```
 
 ### Documentación ✅
+
 - [ ] Todas las funciones públicas tienen `///`
 - [ ] Idioma español
 - [ ] Explica el "por qué"
 - [ ] Ejemplos de uso
 
 ### Estándares ✅
+
 - [ ] Fechas: RFC 3339 o YYYY-MM-DD según corresponda
 - [ ] Logging: `log::info!`, `log::warn!`, `log::error!`
 - [ ] Errores: `thiserror` con mensajes descriptivos
@@ -279,11 +294,13 @@ cargo test --package mega-brisas -- {modulo}
 ### "El agente se está perdiendo / omitiendo pasos"
 
 **Solución INMEDIATA**:
+
 ```markdown
 Tú en el chat: "ALTO. Lee META_WORKFLOW_AGENTE.md y reinicia desde FASE 0"
 ```
 
 **Solución DEFINITIVA**:
+
 1. Cerrar chat actual
 2. Abrir NUEVO chat
 3. Copiar plantilla fresca de PLANTILLAS_INICIO_SESION.md
@@ -294,6 +311,7 @@ Tú en el chat: "ALTO. Lee META_WORKFLOW_AGENTE.md y reinicia desde FASE 0"
 ### "No sé qué workflow usar"
 
 **Referencia rápida**:
+
 ```
 src/services/*.rs         → Workflow A
 src/domain/*.rs          → Workflow B
@@ -314,11 +332,13 @@ Ver INDICE_WORKFLOWS_COMPLETO.md para más detalles.
 **Problema**: El agente se saltó FASE 0.
 
 **Solución**:
+
 ```markdown
 Tú: "No aprobé cambios. Revierte y ejecuta FASE 0 primero."
 ```
 
 O mejor: **Reiniciar sesión** con plantilla que enfatice:
+
 ```markdown
 **🚨 OBLIGATORIO: FASE 0 PRIMERO 🚨**
 NO modificar código hasta mi "Procede" explícito.
@@ -334,6 +354,7 @@ NO modificar código hasta mi "Procede" explícito.
 # Progreso de Refactorización
 
 ## Módulo: Contratista
+
 - [x] services/contratista_service.rs (abc123)
 - [x] db/surrealdb_contratista_queries.rs (def456)
 - [ ] commands/contratista_commands.rs
@@ -341,6 +362,7 @@ NO modificar código hasta mi "Procede" explícito.
 - [ ] models/contratista.rs
 
 ## Módulo: Usuario
+
 - [ ] ...
 ```
 
@@ -349,6 +371,7 @@ NO modificar código hasta mi "Procede" explícito.
 ## 📚 DOCUMENTOS POR ROL
 
 ### Si eres el que EJECUTA el refactor:
+
 ```
 1. GUIA_GESTION_SESIONES.md (LEER PRIMERO)
 2. PLANTILLAS_INICIO_SESION.md (USAR EN CADA SESIÓN)
@@ -356,12 +379,14 @@ NO modificar código hasta mi "Procede" explícito.
 ```
 
 ### Si eres el AGENTE IA:
+
 ```
 1. META_WORKFLOW_AGENTE.md (INSTRUCCIONES ESTRICTAS)
 2. Workflow específico (A/B/C/D/E/G/H/I según archivo)
 ```
 
 ### Si quieres ENTENDER el sistema:
+
 ```
 1. Este README (overview general)
 2. INDICE_WORKFLOWS_COMPLETO.md (catálogo completo)
@@ -375,23 +400,27 @@ NO modificar código hasta mi "Procede" explícito.
 Después de aplicar todos los workflows a Brisas APP:
 
 ### Arquitectura ✅
+
 - Clean Architecture idiomática en Rust
 - Separación clara de responsabilidades
 - Testing completo (unitarios + integración)
 
 ### Código ✅
+
 - Type-safe (enums sobre strings)
 - Funciones puras en dominio
 - Errores descriptivos con jerarquía
 - Documentación exhaustiva en español
 
 ### Seguridad ✅
+
 - Validación de sesión en commands críticos
 - Validación de inputs
 - Secrets en keyring (no hardcoded)
 - Logging de auditoría
 
 ### Performance ✅
+
 - Queries optimizados (LIMIT, FETCH, índices)
 - Regex compilados con `Lazy<>`
 - Transacciones donde sea necesario
@@ -401,6 +430,7 @@ Después de aplicar todos los workflows a Brisas APP:
 ## 🎓 PRÓXIMOS PASOS
 
 ### Ahora mismo:
+
 ```
 1. ✅ Leer GUIA_GESTION_SESIONES.md
 2. ✅ Identificar primer archivo (sugiero: commands con análisis CRÍTICO)
@@ -410,6 +440,7 @@ Después de aplicar todos los workflows a Brisas APP:
 ```
 
 ### Esta semana:
+
 ```
 - Refactorizar todos los commands (seguridad)
 - Módulo Contratista completo
@@ -417,6 +448,7 @@ Después de aplicar todos los workflows a Brisas APP:
 ```
 
 ### Este mes:
+
 ```
 - 3-4 módulos principales
 - Common/Utils optimizado
@@ -476,6 +508,7 @@ Si tienes dudas:
 # 🔧 SESIÓN: Refactorización de Commands (URGENTE - Seguridad)
 
 ## Archivo
+
 - **Módulo**: Ingreso General
 - **Ruta**: src/commands/ingreso_general_commands.rs
 - **Workflow**: E - Commands Tauri

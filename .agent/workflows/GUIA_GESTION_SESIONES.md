@@ -2,7 +2,7 @@
 
 **Para**: Usuario de Brisas APP  
 **Propósito**: Cómo trabajar con el agente sin que se pierda u olvide instrucciones  
-**Versión**: 1.0  
+**Versión**: 1.0
 
 ---
 
@@ -21,6 +21,7 @@
 ## 🚨 Problema: ¿Por qué el agente se pierde?
 
 ### Síntomas comunes:
+
 - ❌ Omite pasos del workflow
 - ❌ Mezcla información de diferentes módulos
 - ❌ Olvida hacer FASE 0
@@ -28,6 +29,7 @@
 - ❌ Improvisa en lugar de seguir el workflow
 
 ### Causa raíz:
+
 **Saturación de contexto** - Cuando el chat es muy largo (>50K tokens), el agente pierde el hilo.
 
 ---
@@ -35,6 +37,7 @@
 ## ✅ Solución: Estrategia de Sesiones Modulares
 
 ### Concepto Clave
+
 > **1 Sesión = 1 Archivo = 1 Commit**
 
 ```
@@ -57,6 +60,7 @@
 ```
 
 ### Beneficios:
+
 - ✅ Contexto fresco cada vez
 - ✅ Agente enfocado en UNA tarea
 - ✅ Sin saturación de memoria
@@ -91,16 +95,19 @@ git status  # Debe estar limpio
 [Copiar plantilla completa de PLANTILLAS_INICIO_SESION.md]
 
 # Agregar al final:
+
 **⚠️ Instrucción adicional: Seguir META_WORKFLOW_AGENTE.md estrictamente**
 
 [Adjuntar archivo a refactorizar]
 ```
 
 **Ejemplo concreto**:
+
 ```markdown
 # 🔧 SESIÓN: Refactorización de Servicio
 
 ## Archivo
+
 - **Módulo**: Contratista
 - **Ruta**: src/services/contratista_service.rs
 - **Workflow**: A - Servicios
@@ -117,6 +124,7 @@ git status  # Debe estar limpio
 ### DURANTE la sesión:
 
 #### Fase 1: Análisis (FASE 0)
+
 ```
 Agente ejecuta análisis →
 Genera reporte de hallazgos →
@@ -125,6 +133,7 @@ Decides: "Procede" o "Solo críticos" o "Ajusta plan"
 ```
 
 #### Fase 2: Refactorización
+
 ```
 Agente ejecuta fases 1-N del workflow →
 Muestra progreso si es archivo grande →
@@ -133,6 +142,7 @@ TÚ VERIFICAS localmente
 ```
 
 #### Fase 3: Commit
+
 ```
 git add src/services/contratista_service.rs
 git commit -m "refactor(services): mensaje del agente"
@@ -146,16 +156,19 @@ git push
 ```markdown
 TÚ dices: "Perfecto, commit hecho. Siguiente archivo: contratista_queries.rs"
 
-Agente genera resumen:
----
+## Agente genera resumen:
+
 ## RESUMEN DE SESIÓN
+
 ✅ Archivo: contratista_service.rs
 ✅ Workflow: A
 ✅ Commit: Hecho
 
 ## PRÓXIMA SESIÓN SUGERIDA
+
 📌 Archivo: src/db/surrealdb_contratista_queries.rs
 📌 Workflow: D - Queries
+
 ---
 
 TÚ: "Gracias, cerrando esta sesión"
@@ -213,24 +226,28 @@ Tú: [Verifica y hace commit]
 ### Señales de alerta:
 
 1. **Omite FASE 0**
+
 ```
 ❌ Agente: "Voy a refactorizar el servicio..."
 ✅ Debería: "Ejecutando FASE 0. Leyendo workflow..."
 ```
 
 2. **Modifica código sin aprobación**
+
 ```
 ❌ Agente: [Presenta código modificado]
 ✅ Debería: "Análisis completo. ¿Deseas que proceda?"
 ```
 
 3. **Mezcla workflows**
+
 ```
 ❌ Agente: "Voy a aplicar Workflow A y también veo que necesita Workflow B..."
 ✅ Debería: "Aplicaré solo Workflow A según instrucciones"
 ```
 
 4. **Improvisa pasos**
+
 ```
 ❌ Agente: "Veo que también podríamos mejorar X..."
 ✅ Debería: "Siguiendo paso 3.2 del workflow..."
@@ -239,9 +256,10 @@ Tú: [Verifica y hace commit]
 ### Qué hacer si detectas señales:
 
 ```markdown
-Tú: "ALTO. Estás omitiendo pasos del workflow. 
+Tú: "ALTO. Estás omitiendo pasos del workflow.
 
 Por favor:
+
 1. Lee META_WORKFLOW_AGENTE.md
 2. Vuelve a FASE 0
 3. Sigue el protocolo estrictamente"
@@ -261,6 +279,7 @@ O más simple: **REINICIA LA SESIÓN** (chat nuevo con plantilla).
 ## Módulo: Contratista
 
 ### Archivos
+
 - [x] src/services/contratista_service.rs (Workflow A) - Commit: abc123
 - [x] src/db/surrealdb_contratista_queries.rs (Workflow D) - Commit: def456
 - [ ] src/commands/contratista_commands.rs (Workflow E) - Pendiente
@@ -270,6 +289,7 @@ O más simple: **REINICIA LA SESIÓN** (chat nuevo con plantilla).
 ## Módulo: Usuario
 
 ### Archivos
+
 - [ ] src/services/usuario_service.rs (Workflow A)
 - [ ] ...
 
@@ -287,6 +307,7 @@ O más simple: **REINICIA LA SESIÓN** (chat nuevo con plantilla).
 ### ✅ HACER:
 
 1. **Nueva sesión por archivo**
+
 ```bash
 # Después de cada commit
 git commit -m "..."
@@ -295,17 +316,21 @@ git commit -m "..."
 ```
 
 2. **Plantillas siempre**
+
 ```markdown
 # No improvises el prompt
+
 # Usa las plantillas de PLANTILLAS_INICIO_SESION.md
 ```
 
 3. **Mencionar meta-workflow**
+
 ```markdown
 **⚠️ Seguir META_WORKFLOW_AGENTE.md estrictamente**
 ```
 
 4. **Verificar localmente antes de commit**
+
 ```bash
 cargo check --package mega-brisas
 cargo clippy --package mega-brisas -- -D warnings
@@ -313,6 +338,7 @@ cargo test --package mega-brisas
 ```
 
 5. **Commits atómicos**
+
 ```bash
 # Un commit por archivo refactorizado
 git add src/services/contratista_service.rs
@@ -324,30 +350,35 @@ git commit -m "refactor(services): refactorizar contratista_service según Workf
 ### ❌ NO HACER:
 
 1. **Múltiples archivos en una sesión**
+
 ```
 ❌ "Refactoriza contratista_service.rs y usuario_service.rs"
 ✅ "Refactoriza contratista_service.rs" → commit → nueva sesión para usuario
 ```
 
 2. **Sesiones largas**
+
 ```
 ❌ Una sesión de 3 horas con 5 archivos
 ✅ 5 sesiones de 30-60 min cada una
 ```
 
 3. **Mezclar workflows**
+
 ```
 ❌ "Aplica Workflow A y B al mismo tiempo"
 ✅ "Aplica solo Workflow A" → commit → "Ahora Workflow B"
 ```
 
 4. **Improvisar prompts**
+
 ```
 ❌ "Mejora este código"
 ✅ [Usar plantilla con workflow específico]
 ```
 
 5. **Continuar si el agente se pierde**
+
 ```
 ❌ Intentar corregir al agente en la misma sesión
 ✅ Cerrar chat, abrir nuevo, copiar plantilla
@@ -405,6 +436,7 @@ NO modificar código hasta que yo apruebe explícitamente.
 **Causa**: Sesión demasiado larga o no cerraste el chat.
 
 **Solución**:
+
 1. Cerrar chat actual
 2. Abrir NUEVO chat
 3. Copiar plantilla fresca
@@ -415,6 +447,7 @@ NO modificar código hasta que yo apruebe explícitamente.
 ### "El agente improvisa pasos que no están en el workflow"
 
 **Solución inmediata**:
+
 ```markdown
 Tú: "ALTO. No improvises.
 
@@ -423,6 +456,7 @@ Ejemplo: 'Ejecutando Workflow A, Fase 3, Sección 3.2: Validación de Inputs'"
 ```
 
 **Solución preventiva**: Agregar a plantilla:
+
 ```markdown
 **⚠️ NO improvisar. Citar secciones del workflow textualmente.**
 ```
@@ -467,12 +501,14 @@ Antes de cada sesión nueva:
 Siguiendo esta estrategia:
 
 ### ✅ Agente será:
+
 - Enfocado en una tarea
 - Consistente entre sesiones
 - Menos propenso a olvidar pasos
 - Más fácil de corregir si se desvía
 
 ### ✅ Tú tendrás:
+
 - Commits atómicos y claros
 - Historial de chat organizado
 - Progreso trackeable

@@ -4,41 +4,41 @@ import type { BiomeData } from './types';
  * MOON BIOME
  * Diseño: Superficie lunar con cráteres de impacto variados, montes y mares
  * Estilo: Ilustración sci-fi evocadora, desolación bella con personalidad
- * 
+ *
  * Capas:
  * - Fondo: Montes lunares (cordillera tipo Apeninos) + horizonte irregular
  * - Medio: Cráteres grandes y medianos con bordes elevados característicos
  * - Frente: Regolito, rocas angulares, mini-cráteres, superficie texturizada
  */
 export const moonBiome: BiomeData = {
-    themes: {
-        winter: {
-            colors: ['#3f3f46', '#27272a', '#18181b'],
-            accent: '#e4e4e7'
-        },
-        spring: {
-            colors: ['#52525b', '#3f3f46', '#27272a'],
-            accent: '#d4d4d8'
-        },
-        summer: {
-            colors: ['#525252', '#404040', '#262626'],
-            accent: '#d4d4d4'
-        },
-        autumn: {
-            colors: ['#44403c', '#292524', '#1c1917'],
-            accent: '#d6d3d1'
-        },
-        rain: {
-            colors: ['#334155', '#1e293b', '#0f172a'],
-            accent: '#94a3b8'
-        },
-    },
-    paths: [
-        // ═══════════════════════════════════════════════════════════════
-        // FONDO: Montes lunares dramáticos + Mare (planicie)
-        // Inspiración: Montes Apeninos, Mare Imbrium, Cordillera lunar
-        // ═══════════════════════════════════════════════════════════════
-        `M0,320 L0,230
+	themes: {
+		winter: {
+			colors: ['#3f3f46', '#27272a', '#18181b'],
+			accent: '#e4e4e7'
+		},
+		spring: {
+			colors: ['#52525b', '#3f3f46', '#27272a'],
+			accent: '#d4d4d8'
+		},
+		summer: {
+			colors: ['#525252', '#404040', '#262626'],
+			accent: '#d4d4d4'
+		},
+		autumn: {
+			colors: ['#44403c', '#292524', '#1c1917'],
+			accent: '#d6d3d1'
+		},
+		rain: {
+			colors: ['#334155', '#1e293b', '#0f172a'],
+			accent: '#94a3b8'
+		}
+	},
+	paths: [
+		// ═══════════════════════════════════════════════════════════════
+		// FONDO: Montes lunares dramáticos + Mare (planicie)
+		// Inspiración: Montes Apeninos, Mare Imbrium, Cordillera lunar
+		// ═══════════════════════════════════════════════════════════════
+		`M0,320 L0,230
          
          C15,228 25,220 40,215
          C55,210 65,195 85,190
@@ -68,13 +68,13 @@ export const moonBiome: BiomeData = {
          
          L1440,320 Z`,
 
-        // ═══════════════════════════════════════════════════════════════
-        // MEDIO: Cráteres con estructura real
-        // - Borde elevado (rim)
-        // - Depresión central (floor)  
-        // - Variación de tamaños: Tycho, Copernicus, pequeños
-        // ═══════════════════════════════════════════════════════════════
-        `M0,320 L0,270
+		// ═══════════════════════════════════════════════════════════════
+		// MEDIO: Cráteres con estructura real
+		// - Borde elevado (rim)
+		// - Depresión central (floor)
+		// - Variación de tamaños: Tycho, Copernicus, pequeños
+		// ═══════════════════════════════════════════════════════════════
+		`M0,320 L0,270
          C12,268 22,265 35,268
          
          C48,271 55,265 68,260
@@ -108,14 +108,14 @@ export const moonBiome: BiomeData = {
          
          L1440,320 Z`,
 
-        // ═══════════════════════════════════════════════════════════════
-        // FRENTE: Superficie lunar detallada
-        // - Rocas angulares (boulders)
-        // - Mini-cráteres de impacto
-        // - Regolito texturizado
-        // - Algunas formaciones tipo "rilles" (grietas)
-        // ═══════════════════════════════════════════════════════════════
-        `M0,320 L0,292
+		// ═══════════════════════════════════════════════════════════════
+		// FRENTE: Superficie lunar detallada
+		// - Rocas angulares (boulders)
+		// - Mini-cráteres de impacto
+		// - Regolito texturizado
+		// - Algunas formaciones tipo "rilles" (grietas)
+		// ═══════════════════════════════════════════════════════════════
+		`M0,320 L0,292
          
          L8,290 L15,285 L22,288 L30,282 L40,286
          
@@ -155,5 +155,5 @@ export const moonBiome: BiomeData = {
          L1380,267 L1405,260 L1425,265 L1440,262
          
          L1440,320 Z`
-    ]
+	]
 };

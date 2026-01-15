@@ -10,21 +10,21 @@ export const online = writable<boolean>(true);
  * Llamar una sola vez en el layout o app principal
  */
 export function initNetworkMonitor(): () => void {
-  if (!browser) return () => {};
+	if (!browser) return () => {};
 
-  // Establecer valor inicial
-  online.set(navigator.onLine);
+	// Establecer valor inicial
+	online.set(navigator.onLine);
 
-  const updateOnlineStatus = () => {
-    online.set(navigator.onLine);
-  };
+	const updateOnlineStatus = () => {
+		online.set(navigator.onLine);
+	};
 
-  window.addEventListener('online', updateOnlineStatus);
-  window.addEventListener('offline', updateOnlineStatus);
+	window.addEventListener('online', updateOnlineStatus);
+	window.addEventListener('offline', updateOnlineStatus);
 
-  // Retornar función de cleanup
-  return () => {
-    window.removeEventListener('online', updateOnlineStatus);
-    window.removeEventListener('offline', updateOnlineStatus);
-  };
+	// Retornar función de cleanup
+	return () => {
+		window.removeEventListener('online', updateOnlineStatus);
+		window.removeEventListener('offline', updateOnlineStatus);
+	};
 }

@@ -29,13 +29,14 @@ Garantizar que la configuración de la aplicación Tauri (main.rs, plugins, vari
 
 **Plantilla de análisis**:
 
-```markdown
+````markdown
 **Archivo analizado**: `src/main.rs` (o `src-tauri/src/main.rs`)
 **LOC**: {número de líneas}
 
 ## ESTRUCTURA ACTUAL
 
 ### Setup de Builder
+
 ```rust
 tauri::Builder::default()
     .plugin(/* ... */)
@@ -43,14 +44,17 @@ tauri::Builder::default()
     .setup(/* ... */)
     .run(/* ... */)
 ```
+````
 
 ### Problemas Detectados
+
 - [ ] Lógica compleja en main.rs (debería estar en módulos)
 - [ ] Plugins sin configuración (usando defaults)
 - [ ] Setup de BD en main.rs (debería estar en módulo service)
 - [ ] Sin manejo de errores en .setup()
 - [ ] Logging no configurado o mal configurado
-```
+
+````
 
 ### [ ] 0.2 Auditoría de Plugins
 
@@ -70,7 +74,7 @@ tauri::Builder::default()
 - [ ] tauri-plugin-shell (si se ejecutan comandos externos)
 - [ ] tauri-plugin-fs (si se manejan archivos)
 - [ ] tauri-plugin-notification (si se usan notificaciones)
-```
+````
 
 ### [ ] 0.3 Auditoría de Configuración
 
@@ -78,17 +82,20 @@ tauri::Builder::default()
 ## ARCHIVOS DE CONFIGURACIÓN
 
 ### tauri.conf.json
+
 - [ ] ¿Configuración de seguridad (CSP)?
 - [ ] ¿allowlist correctamente configurado?
 - [ ] ¿Configuración de ventana?
 - [ ] ¿Nombre y versión de la app?
 
 ### .env / Variables de Entorno
+
 - [ ] ¿Se usan variables de entorno?
 - [ ] ¿Están documentadas?
 - [ ] ¿Ejemplo en .env.example?
 
 ### Secrets
+
 - [ ] ¿Se usan claves API?
 - [ ] ¿Se almacenan en keyring?
 - [ ] ¿Se hardcodean en el código? ❌ CRÍTICO
@@ -96,21 +103,25 @@ tauri::Builder::default()
 
 ### [ ] 0.4 Auditoría de Logging
 
-```markdown
+````markdown
 ## CONFIGURACIÓN DE LOGGING
 
 ### Estado Actual
+
 ```rust
 .plugin(tauri_plugin_log::Builder::default().build())
 ```
+````
 
 ### Problemas
+
 - [ ] Sin configuración de targets
 - [ ] Sin rotación de archivos
 - [ ] Sin nivel de log configurado
 - [ ] Sin logging a WebView (DevTools)
 
 ### Configuración Recomendada
+
 ```rust
 .plugin(
     tauri_plugin_log::Builder::default()
@@ -125,7 +136,8 @@ tauri::Builder::default()
         .build()
 )
 ```
-```
+
+````
 
 ### [ ] 0.5 Auditoría de Handlers
 
@@ -137,15 +149,18 @@ tauri::Builder::default()
 .invoke_handler(tauri::generate_handler![
     // Lista de comandos
 ])
-```
+````
 
 ### Problemas
-- [ ] >50 comandos en un solo handler (difícil de mantener)
+
+- [ ] > 50 comandos en un solo handler (difícil de mantener)
 - [ ] Sin organización por módulo
 - [ ] Comandos sin prefix (colisiones potenciales)
 
 ### Recomendación
+
 Organizar por módulos con macros helper:
+
 ```rust
 macro_rules! handlers {
     ($($mod:ident::$cmd:ident),* $(,)?) => {
@@ -157,13 +172,14 @@ macro_rules! handlers {
     // Contratistas
     contratista_commands::create_contratista,
     contratista_commands::get_all_contratistas,
-    
+
     // Ingresos
     ingreso_commands::registrar_ingreso,
     ingreso_commands::get_ingresos_abiertos,
 ])
 ```
-```
+
+````
 
 ---
 
@@ -195,7 +211,7 @@ macro_rules! handlers {
 
 ## ¿Proceder?
 Esperar aprobación del usuario.
-```
+````
 
 ---
 
@@ -242,9 +258,9 @@ use tauri::Manager;
 async fn main() {
     // Inicializar logging lo más pronto posible
     let _logger = setup_logging();
-    
+
     log::info!("Iniciando Brisas APP v{}", env!("CARGO_PKG_VERSION"));
-    
+
     tauri::Builder::default()
         // ====== PLUGINS ======
         .plugin(setup_log_plugin())
@@ -258,18 +274,18 @@ async fn main() {
                 let _ = window.set_focus();
             }
         }))
-        
+
         // ====== STATE MANAGEMENT ======
         .manage(SessionState::default())
-        
+
         // ====== SETUP ======
         .setup(|app| {
             log::info!("Ejecutando setup de aplicación");
-            
+
             // Inicializar base de datos
             let db_path = get_database_path(app)?;
             log::info!("Inicializando base de datos en: {:?}", db_path);
-            
+
             tauri::async_runtime::block_on(async {
                 surrealdb_service::init_db(&db_path)
                     .await
@@ -277,15 +293,15 @@ async fn main() {
                         log::error!("Error al inicializar BD: {}", e);
                         format!("No se pudo inicializar la base de datos: {}", e)
                     })?;
-                
+
                 log::info!("Base de datos inicializada correctamente");
                 Ok(())
             })
         })
-        
+
         // ====== COMMANDS ======
         .invoke_handler(register_handlers())
-        
+
         // ====== RUN ======
         .run(tauri::generate_context!())
         .expect("Error al iniciar Brisas APP");
@@ -294,13 +310,13 @@ async fn main() {
 /// Configura el plugin de logging con rotación y múltiples targets.
 fn setup_log_plugin() -> tauri_plugin_log::Builder {
     use tauri_plugin_log::{LogTarget, RotationStrategy};
-    
+
     let log_level = if cfg!(debug_assertions) {
         log::LevelFilter::Debug
     } else {
         log::LevelFilter::Info
     };
-    
+
     tauri_plugin_log::Builder::default()
         .targets([
             LogTarget::LogDir,      // Archivos en disco
@@ -332,11 +348,11 @@ fn get_database_path(app: &tauri::AppHandle) -> Result<String, String> {
             .path()
             .app_data_dir()
             .map_err(|e| format!("No se pudo obtener directorio de datos: {}", e))?;
-        
+
         let db_dir = app_data.join("db");
         std::fs::create_dir_all(&db_dir)
             .map_err(|e| format!("No se pudo crear directorio de BD: {}", e))?;
-        
+
         let db_path = db_dir.join("brisas.db");
         Ok(db_path.to_string_lossy().to_string())
     }
@@ -394,7 +410,7 @@ pub fn register_handlers() -> impl Fn(tauri::Invoke) + Send + Sync + 'static {
         contratista_commands::update_contratista,
         contratista_commands::delete_contratista,
         contratista_commands::cambiar_estado_contratista,
-        
+
         // ====== INGRESOS ======
         ingreso_commands::registrar_ingreso,
         ingreso_commands::registrar_salida,
@@ -402,18 +418,18 @@ pub fn register_handlers() -> impl Fn(tauri::Invoke) + Send + Sync + 'static {
         ingreso_commands::get_ingresos_abiertos,
         ingreso_commands::get_ingreso_by_id,
         ingreso_commands::get_ingreso_by_gafete,
-        
+
         // ====== ALERTAS ======
         alerta_commands::get_all_alertas_gafetes,
         alerta_commands::get_alertas_pendientes_by_cedula,
         alerta_commands::resolver_alerta_gafete,
-        
+
         // ====== USUARIOS & AUTH ======
         user_commands::login,
         user_commands::logout,
         user_commands::get_current_user,
         user_commands::cambiar_contrasena,
-        
+
         // ====== BÚSQUEDA ======
         search_commands::search_contratistas,
         search_commands::search_visitantes,
@@ -490,7 +506,7 @@ logs/
 
 **Uso del keyring para secrets sensibles**:
 
-```rust
+````rust
 // src/services/secrets_service.rs
 
 //! # Secrets Management
@@ -505,7 +521,7 @@ use thiserror::Error;
 pub enum SecretError {
     #[error("Error al acceder al keyring: {0}")]
     KeyringError(#[from] keyring::Error),
-    
+
     #[error("Secret no encontrado: {0}")]
     NotFound(String),
 }
@@ -530,7 +546,7 @@ impl SecretsService {
             service_name: service_name.into(),
         }
     }
-    
+
     /// Guarda un secret en el keyring.
     ///
     /// ## Ejemplo
@@ -544,7 +560,7 @@ impl SecretsService {
         log::info!("Secret '{}' guardado en keyring", key);
         Ok(())
     }
-    
+
     /// Obtiene un secret del keyring.
     ///
     /// ## Ejemplo
@@ -559,7 +575,7 @@ impl SecretsService {
             other => SecretError::KeyringError(other),
         })
     }
-    
+
     /// Elimina un secret del keyring.
     pub fn delete_secret(&self, key: &str) -> Result<(), SecretError> {
         let entry = Entry::new(&self.service_name, key)?;
@@ -577,7 +593,7 @@ pub async fn set_secret(key: String, value: String) -> Result<(), String> {
         .set_secret(&key, &value)
         .map_err(|e| e.to_string())
 }
-```
+````
 
 ---
 
@@ -587,71 +603,71 @@ pub async fn set_secret(key: String, value: String) -> Result<(), String> {
 
 ```json
 {
-  "build": {
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build",
-    "devPath": "http://localhost:1420",
-    "distDir": "../dist"
-  },
-  "package": {
-    "productName": "Brisas APP",
-    "version": "1.0.0"
-  },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "open": true
-      },
-      "dialog": {
-        "all": true,
-        "ask": true,
-        "confirm": true,
-        "message": true,
-        "open": true,
-        "save": true
-      },
-      "fs": {
-        "all": false,
-        "readFile": true,
-        "writeFile": true,
-        "readDir": true,
-        "createDir": true,
-        "removeDir": true,
-        "removeFile": true,
-        "scope": ["$APPDATA/brisas-app/**"]
-      }
-    },
-    "bundle": {
-      "active": true,
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ],
-      "identifier": "com.brisas.app",
-      "longDescription": "Sistema ERP de Control de Acceso",
-      "shortDescription": "Control de Acceso",
-      "targets": "all"
-    },
-    "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:"
-    },
-    "windows": [
-      {
-        "fullscreen": false,
-        "height": 800,
-        "resizable": true,
-        "title": "Brisas APP",
-        "width": 1200,
-        "minHeight": 600,
-        "minWidth": 800
-      }
-    ]
-  }
+	"build": {
+		"beforeDevCommand": "npm run dev",
+		"beforeBuildCommand": "npm run build",
+		"devPath": "http://localhost:1420",
+		"distDir": "../dist"
+	},
+	"package": {
+		"productName": "Brisas APP",
+		"version": "1.0.0"
+	},
+	"tauri": {
+		"allowlist": {
+			"all": false,
+			"shell": {
+				"all": false,
+				"open": true
+			},
+			"dialog": {
+				"all": true,
+				"ask": true,
+				"confirm": true,
+				"message": true,
+				"open": true,
+				"save": true
+			},
+			"fs": {
+				"all": false,
+				"readFile": true,
+				"writeFile": true,
+				"readDir": true,
+				"createDir": true,
+				"removeDir": true,
+				"removeFile": true,
+				"scope": ["$APPDATA/brisas-app/**"]
+			}
+		},
+		"bundle": {
+			"active": true,
+			"icon": [
+				"icons/32x32.png",
+				"icons/128x128.png",
+				"icons/128x128@2x.png",
+				"icons/icon.icns",
+				"icons/icon.ico"
+			],
+			"identifier": "com.brisas.app",
+			"longDescription": "Sistema ERP de Control de Acceso",
+			"shortDescription": "Control de Acceso",
+			"targets": "all"
+		},
+		"security": {
+			"csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:"
+		},
+		"windows": [
+			{
+				"fullscreen": false,
+				"height": 800,
+				"resizable": true,
+				"title": "Brisas APP",
+				"width": 1200,
+				"minHeight": 600,
+				"minWidth": 800
+			}
+		]
+	}
 }
 ```
 
@@ -661,7 +677,7 @@ pub async fn set_secret(key: String, value: String) -> Result<(), String> {
 
 **Archivo**: `SETUP.md`
 
-```markdown
+````markdown
 # Setup de Brisas APP
 
 ## Requisitos Previos
@@ -677,19 +693,23 @@ pub async fn set_secret(key: String, value: String) -> Result<(), String> {
    git clone https://github.com/tu-org/brisas-app.git
    cd brisas-app
    ```
+````
 
 2. **Instalar dependencias de Rust**:
+
    ```bash
    cd src-tauri
    cargo build
    ```
 
 3. **Instalar dependencias de frontend**:
+
    ```bash
    npm install
    ```
 
 4. **Configurar variables de entorno**:
+
    ```bash
    cp .env.example .env
    # Editar .env con tus valores
@@ -727,6 +747,7 @@ Ver `.env.example` para lista completa de variables configurables.
 ## Logging
 
 Los logs se guardan en:
+
 - **Windows**: `%APPDATA%\brisas-app\logs\`
 - **macOS**: `~/Library/Application Support/brisas-app/logs/`
 - **Linux**: `~/.local/share/brisas-app/logs/`
@@ -734,12 +755,15 @@ Los logs se guardan en:
 ## Troubleshooting
 
 ### Error: "No se pudo inicializar la base de datos"
+
 - Verificar permisos de escritura en el directorio de AppData
 - Revisar logs en `{AppData}/brisas-app/logs/`
 
 ### Error: "Sesión no válida"
+
 - El keyring del sistema puede no estar configurado
 - En Linux, instalar `gnome-keyring` o `libsecret`
+
 ```
 
 ---
@@ -764,6 +788,7 @@ Los logs se guardan en:
 ## Plantilla de Commit
 
 ```
+
 refactor(config): mejorar setup y configuración de Tauri v2
 
 - Reorganizar main.rs (delegar setup a módulos)
@@ -774,8 +799,10 @@ refactor(config): mejorar setup y configuración de Tauri v2
 - Agregar SETUP.md con instrucciones
 
 Closes #{numero_issue}
+
 ```
 
 ---
 
 **Fin del Workflow I - Configuration & Setup**
+```

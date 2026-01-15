@@ -3,16 +3,16 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [
-    tailwindcss(), // DEBE estar ANTES de sveltekit
-    sveltekit()
-  ],
-  clearScreen: false,
-  server: {
-    port: 1420,
-    strictPort: true,
-    watch: {
-      ignored: ['**/src-tauri/**']
-    }
-  }
+	plugins: [
+		tailwindcss(), // DEBE estar ANTES de sveltekit
+		sveltekit()
+	],
+	clearScreen: false,
+	server: {
+		port: 1420,
+		strictPort: true,
+		watch: {
+			ignored: ['**/src-tauri/**']
+		}
+	}
 });

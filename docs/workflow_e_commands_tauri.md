@@ -2,7 +2,7 @@
 
 **Versión**: 3.0  
 **Idioma**: Español  
-**Aplicación**: Brisas APP  
+**Aplicación**: Brisas APP
 
 ---
 
@@ -36,20 +36,23 @@ Garantizar que los comandos Tauri actúen como **adaptadores puros** entre el fr
 ## ❌ VIOLACIONES DE THIN LAYER
 
 ### Lógica de Negocio en Commands (mover a services/)
+
 - [ ] Línea XX: Cálculo/transformación de datos → Mover a servicio
 - [ ] Línea YY: Validación de reglas de negocio → Mover a domain
 - [ ] Línea ZZ: Construcción de queries → Mover a servicio
 
 ### Dependencias Directas Incorrectas
+
 - [ ] Importa `crate::db::` → ❌ CRÍTICO, debe usar servicios
 - [ ] Importa `crate::domain::` directamente → ⚠️ Usar a través de servicios
 - [ ] Llamadas a repositorios → ❌ CRÍTICO, usar servicios
 
 ### Commands con >15 Líneas de Lógica
-| Comando | LOC | Problema | Acción |
-|---------|-----|----------|--------|
-| `comando_complejo()` | 25 | Mucha transformación de datos | Extraer a servicio |
-| `otro_comando()` | 18 | Validaciones complejas | Mover a domain |
+
+| Comando              | LOC | Problema                      | Acción             |
+| -------------------- | --- | ----------------------------- | ------------------ |
+| `comando_complejo()` | 25  | Mucha transformación de datos | Extraer a servicio |
+| `otro_comando()`     | 18  | Validaciones complejas        | Mover a domain     |
 ```
 
 ### [ ] 0.2 Auditoría de Seguridad y Sesión
@@ -58,20 +61,23 @@ Garantizar que los comandos Tauri actúen como **adaptadores puros** entre el fr
 ## VALIDACIÓN DE SESIÓN
 
 ### Commands que Modifican Datos (requieren auth)
-| Comando | Valida Sesión? | Nivel Requerido | Estado |
-|---------|----------------|-----------------|--------|
-| `create_*()` | ❌ | Usuario | ❌ CRÍTICO |
-| `update_*()` | ❌ | Usuario | ❌ CRÍTICO |
-| `delete_*()` | ❌ | Admin | ❌ CRÍTICO |
-| `resolver_alerta()` | ✅ | Supervisor | ✅ Correcto |
+
+| Comando             | Valida Sesión? | Nivel Requerido | Estado      |
+| ------------------- | -------------- | --------------- | ----------- |
+| `create_*()`        | ❌             | Usuario         | ❌ CRÍTICO  |
+| `update_*()`        | ❌             | Usuario         | ❌ CRÍTICO  |
+| `delete_*()`        | ❌             | Admin           | ❌ CRÍTICO  |
+| `resolver_alerta()` | ✅             | Supervisor      | ✅ Correcto |
 
 ### Commands de Solo Lectura (evaluar si requieren auth)
-| Comando | Valida Sesión? | ¿Debe validar? | Acción |
-|---------|----------------|----------------|--------|
-| `get_all_*()` | ❌ | Depende | Evaluar con negocio |
-| `get_by_id()` | ❌ | Probablemente | Agregar validación |
+
+| Comando       | Valida Sesión? | ¿Debe validar? | Acción              |
+| ------------- | -------------- | -------------- | ------------------- |
+| `get_all_*()` | ❌             | Depende        | Evaluar con negocio |
+| `get_by_id()` | ❌             | Probablemente  | Agregar validación  |
 
 ### Validación de Permisos
+
 - [ ] ¿Se validan roles específicos? (admin, supervisor, usuario)
 - [ ] ¿Se valida propiedad de recursos? (ej: usuario solo ve sus datos)
 - [ ] ¿Se auditan operaciones sensibles?
@@ -79,21 +85,24 @@ Garantizar que los comandos Tauri actúen como **adaptadores puros** entre el fr
 
 ### [ ] 0.3 Auditoría de Manejo de Errores
 
-```markdown
+````markdown
 ## MANEJO DE ERRORES
 
 ### Mapeo Genérico (mejorar)
-| Comando | Línea | Patrón Actual | Problema |
-|---------|-------|---------------|----------|
-| `get_*()` | XX | `.map_err(\|e\| e.to_string())` | Pierde contexto de error |
-| `create_*()` | YY | `.map_err(\|e\| e.to_string())` | Frontend no puede manejar tipos |
+
+| Comando      | Línea | Patrón Actual                   | Problema                        |
+| ------------ | ----- | ------------------------------- | ------------------------------- |
+| `get_*()`    | XX    | `.map_err(\|e\| e.to_string())` | Pierde contexto de error        |
+| `create_*()` | YY    | `.map_err(\|e\| e.to_string())` | Frontend no puede manejar tipos |
 
 ### Mensajes de Error para el Usuario
+
 - [ ] ¿Errores son comprensibles para no-técnicos?
 - [ ] ¿Se expone información sensible? (IDs internos, stack traces)
 - [ ] ¿Errores están en español?
 
 ### Sugerencia: Crear enum de errores serializables
+
 ```rust
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", content = "message")]
@@ -104,7 +113,9 @@ pub enum CommandError {
     ServerError(String),
 }
 ```
-```
+````
+
+````
 
 ### [ ] 0.4 Auditoría de Validación de Input
 
@@ -123,22 +134,23 @@ pub enum CommandError {
 - [ ] IDs sin validar formato → Verificar que no estén vacíos
 - [ ] Strings sin trim() → Normalizar antes de pasar a servicio
 - [ ] Números sin validar rangos → Verificar positivos, límites
-```
+````
 
 ### [ ] 0.5 Auditoría de Documentación
 
 ```markdown
 ## DOCUMENTACIÓN
 
-| Comando | Tiene `///`? | Explica propósito? | Documenta auth? | Idioma |
-|---------|--------------|-------------------|-----------------|--------|
-| `get_ingreso_by_id()` | ✅ | ✅ | ❌ | Español |
-| `get_all_ingresos()` | ✅ | ✅ | ❌ | Español |
-| `resolver_alerta_gafete()` | ✅ | ✅ | ✅ | Español |
+| Comando                    | Tiene `///`? | Explica propósito? | Documenta auth? | Idioma  |
+| -------------------------- | ------------ | ------------------ | --------------- | ------- |
+| `get_ingreso_by_id()`      | ✅           | ✅                 | ❌              | Español |
+| `get_all_ingresos()`       | ✅           | ✅                 | ❌              | Español |
+| `resolver_alerta_gafete()` | ✅           | ✅                 | ✅              | Español |
 
 **Cobertura**: X/Y comandos documentados (Z%)
 
 ### Elementos faltantes en docs:
+
 - [ ] Requisitos de autenticación/autorización
 - [ ] Ejemplos de llamada desde TypeScript
 - [ ] Posibles errores retornados
@@ -151,16 +163,18 @@ pub enum CommandError {
 ## CONVENCIONES DE NAMING
 
 ### Prefijos de Comandos
-| Tipo Operación | Prefijo | Ejemplos | Estado |
-|----------------|---------|----------|--------|
-| Obtener uno | `get_{entidad}_by_{criterio}` | `get_ingreso_by_id` | ✅ |
-| Obtener todos | `get_all_{entidades}` | `get_all_ingresos` | ✅ |
-| Crear | `create_{entidad}` | `create_contratista` | ✅ |
-| Actualizar | `update_{entidad}` | `update_contratista` | ✅ |
-| Eliminar | `delete_{entidad}` | `delete_contratista` | ✅ |
-| Operación específica | `{verbo}_{entidad}` | `resolver_alerta` | ✅ |
+
+| Tipo Operación       | Prefijo                       | Ejemplos             | Estado |
+| -------------------- | ----------------------------- | -------------------- | ------ |
+| Obtener uno          | `get_{entidad}_by_{criterio}` | `get_ingreso_by_id`  | ✅     |
+| Obtener todos        | `get_all_{entidades}`         | `get_all_ingresos`   | ✅     |
+| Crear                | `create_{entidad}`            | `create_contratista` | ✅     |
+| Actualizar           | `update_{entidad}`            | `update_contratista` | ✅     |
+| Eliminar             | `delete_{entidad}`            | `delete_contratista` | ✅     |
+| Operación específica | `{verbo}_{entidad}`           | `resolver_alerta`    | ✅     |
 
 ### Inconsistencias Detectadas
+
 - [ ] Comando con nombre poco claro: `{nombre}` → Sugerir renombre
 - [ ] Prefijo incorrecto: `fetch_*` → Debe ser `get_*`
 ```
@@ -172,23 +186,27 @@ pub enum CommandError {
 ```markdown
 # Reporte de Análisis FASE 0 - Commands
 
-**Archivo**: src/commands/{modulo}_commands.rs
+**Archivo**: src/commands/{modulo}\_commands.rs
 **LOC**: {número}
 **Comandos**: {N}
 
 ## PROBLEMAS CRÍTICOS
+
 1. [CRÍTICO] N comandos sin validación de sesión en operaciones de escritura
 2. [CRÍTICO] M comandos con lógica de negocio → Extraer a servicios
 
 ## PROBLEMAS MAYORES
+
 3. [ALTO] K comandos con validación de input insuficiente
 4. [ALTO] P comandos con mapeo de errores genérico
 
 ## MEJORAS RECOMENDADAS
+
 5. [MEDIO] Q comandos sin documentar requisitos de auth
 6. [BAJO] R inconsistencias en naming
 
 ## ESTIMACIÓN
+
 - Validación de sesión: X horas
 - Extraer lógica a servicios: Y horas
 - Validación de inputs: Z horas
@@ -197,6 +215,7 @@ pub enum CommandError {
 - **TOTAL**: T horas
 
 ## ¿Proceder?
+
 Esperar aprobación del usuario.
 ```
 
@@ -210,7 +229,7 @@ Esperar aprobación del usuario.
 
 **Patrón Estándar**:
 
-```rust
+````rust
 use crate::services::session::SessionState;
 use tauri::State;
 
@@ -239,7 +258,7 @@ use tauri::State;
 /// ## Ejemplo desde TypeScript
 /// ```typescript
 /// import { invoke } from '@tauri-apps/api/tauri';
-/// 
+///
 /// const contratista = await invoke('create_contratista', {
 ///   input: {
 ///     cedula: '1-2345-6789',
@@ -257,12 +276,12 @@ pub async fn create_contratista(
     let user = session
         .get_user()
         .ok_or("Sesión no válida o expirada".to_string())?;
-    
+
     // 2. Validar permisos (si aplica)
     if user.rol != "Admin" && input.empresa_id != user.empresa_id {
         return Err("Sin permisos para crear contratistas de otra empresa".to_string());
     }
-    
+
     // 3. Llamar al servicio
     contratista_service::create_contratista(&search_service, input)
         .await
@@ -273,7 +292,7 @@ pub async fn create_contratista(
             _ => format!("Error del servidor: {}", e),
         })
 }
-```
+````
 
 **Clasificación de Commands por Nivel de Seguridad**:
 
@@ -293,7 +312,7 @@ pub async fn get_all_ingresos(
     let _user = session
         .get_user()
         .ok_or("Sesión no válida")?;
-    
+
     ingreso_service::get_all_ingresos().await
         .map_err(|e| format!("Error al obtener ingresos: {}", e))
 }
@@ -305,9 +324,9 @@ pub async fn create_entidad(
     input: CreateInput,
 ) -> Result<Response, String> {
     let user = session.get_user().ok_or("Sesión no válida")?;
-    
+
     // Validación de autorización si aplica
-    
+
     servicio::create(input).await
         .map_err(|e| e.to_string())
 }
@@ -319,12 +338,12 @@ pub async fn delete_usuario(
     id: String,
 ) -> Result<(), String> {
     let user = session.get_user().ok_or("Sesión no válida")?;
-    
+
     // Verificar rol de admin
     if user.rol != "Admin" {
         return Err("Operación requiere permisos de administrador".to_string());
     }
-    
+
     usuario_service::delete(&id).await
         .map_err(|e| format!("Error al eliminar usuario: {}", e))
 }
@@ -375,18 +394,18 @@ pub async fn get_salidas_en_rango(
     let _user = session
         .get_user()
         .ok_or("Sesión no válida")?;
-    
+
     // 2. Validar formato de fechas
     crate::common::validar_fecha_rfc3339(&fecha_inicio)
         .map_err(|_| "Formato de fecha de inicio inválido (debe ser RFC 3339)".to_string())?;
-    
+
     crate::common::validar_fecha_rfc3339(&fecha_fin)
         .map_err(|_| "Formato de fecha de fin inválido (debe ser RFC 3339)".to_string())?;
-    
+
     // 3. Validar que inicio < fin
     crate::common::validar_tiempo_salida(&fecha_inicio, &fecha_fin)
         .map_err(|_| "La fecha de fin debe ser posterior a la fecha de inicio".to_string())?;
-    
+
     // 4. Llamar al servicio
     ingreso_service::get_salidas_en_rango(&fecha_inicio, &fecha_fin)
         .await
@@ -432,7 +451,7 @@ pub async fn get_salidas_del_dia(fecha: String) -> Result<Vec<IngresoResponse>, 
     // ❌ Transformación de datos en el command
     let start = format!("{}T00:00:00Z", fecha);
     let end = format!("{}T23:59:59Z", fecha);
-    
+
     ingreso_service::get_salidas_en_rango(&start, &end)
         .await
         .map_err(|e| e.to_string())
@@ -445,11 +464,11 @@ pub async fn get_salidas_del_dia(
     fecha: String,
 ) -> Result<Vec<IngresoResponse>, String> {
     let _user = session.get_user().ok_or("Sesión no válida")?;
-    
+
     // Validar formato YYYY-MM-DD
     crate::common::validar_fecha_simple(&fecha)
         .map_err(|_| "Formato de fecha inválido (debe ser YYYY-MM-DD)".to_string())?;
-    
+
     // El servicio se encarga de convertir a rango
     ingreso_service::get_salidas_del_dia(&fecha)
         .await
@@ -487,23 +506,23 @@ pub enum CommandError {
     /// Operación requiere autenticación
     #[serde(rename = "UNAUTHORIZED")]
     Unauthorized { message: String },
-    
+
     /// Usuario no tiene permisos suficientes
     #[serde(rename = "FORBIDDEN")]
     Forbidden { message: String },
-    
+
     /// Recurso no encontrado
     #[serde(rename = "NOT_FOUND")]
     NotFound { message: String },
-    
+
     /// Error de validación de datos de entrada
     #[serde(rename = "VALIDATION_ERROR")]
     ValidationError { field: Option<String>, message: String },
-    
+
     /// Conflicto (ej: recurso ya existe)
     #[serde(rename = "CONFLICT")]
     Conflict { message: String },
-    
+
     /// Error interno del servidor
     #[serde(rename = "SERVER_ERROR")]
     ServerError { message: String },
@@ -545,7 +564,7 @@ pub async fn create_contratista(
         .ok_or(CommandError::Unauthorized {
             message: "Sesión no válida o expirada".to_string(),
         })?;
-    
+
     // Llamar servicio con mapeo específico de errores
     contratista_service::create_contratista(&search_service, input)
         .await
@@ -571,22 +590,22 @@ pub async fn create_contratista(
 
 ```typescript
 try {
-  const contratista = await invoke('create_contratista', { input });
+	const contratista = await invoke('create_contratista', { input });
 } catch (error: any) {
-  // error.type será "CONFLICT", "NOT_FOUND", etc.
-  switch (error.type) {
-    case 'CONFLICT':
-      toast.error('La cédula ya está registrada');
-      break;
-    case 'NOT_FOUND':
-      toast.error('Empresa no encontrada');
-      break;
-    case 'VALIDATION_ERROR':
-      toast.error(`Error: ${error.details.message}`);
-      break;
-    default:
-      toast.error('Error inesperado');
-  }
+	// error.type será "CONFLICT", "NOT_FOUND", etc.
+	switch (error.type) {
+		case 'CONFLICT':
+			toast.error('La cédula ya está registrada');
+			break;
+		case 'NOT_FOUND':
+			toast.error('Empresa no encontrada');
+			break;
+		case 'VALIDATION_ERROR':
+			toast.error(`Error: ${error.details.message}`);
+			break;
+		default:
+			toast.error('Error inesperado');
+	}
 }
 ```
 
@@ -598,7 +617,7 @@ try {
 
 **Plantilla**:
 
-```rust
+````rust
 /// {Descripción breve de la operación}.
 ///
 /// {Explicación más detallada del propósito de negocio}
@@ -633,7 +652,7 @@ try {
 /// ## Ejemplo desde TypeScript
 /// ```typescript
 /// import { invoke } from '@tauri-apps/api/tauri';
-/// 
+///
 /// try {
 ///   const resultado = await invoke('nombre_comando', {
 ///     parametro1: 'valor',
@@ -652,7 +671,7 @@ try {
 pub async fn nombre_comando(...) -> Result<...> {
     // implementación
 }
-```
+````
 
 ---
 
@@ -787,17 +806,17 @@ mod tests {
     use super::*;
     use crate::services::session::SessionState;
     use tauri::State;
-    
+
     #[tokio::test]
     async fn test_comando_sin_sesion_debe_fallar() {
         let session = SessionState::default();
         let state = State::from(&session);
-        
+
         let resultado = create_contratista(
             state,
             CreateContratistaInput { /* ... */ }
         ).await;
-        
+
         assert!(resultado.is_err());
         assert_eq!(resultado.unwrap_err(), "Sesión no válida o expirada");
     }

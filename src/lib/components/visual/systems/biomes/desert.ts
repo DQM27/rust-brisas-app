@@ -6,33 +6,33 @@ import type { BiomeData } from './types';
  * Estilo: Ilustración de libro de viajes, formas sensuales y orgánicas
  */
 export const desertBiome: BiomeData = {
-    themes: {
-        winter: {
-            colors: ['#e7e5e4', '#d6d3d1', '#a8a29e'],
-            accent: '#78716c'
-        },
-        spring: {
-            colors: ['#fef08a', '#fde047', '#facc15'],
-            accent: '#84cc16'
-        },
-        summer: {
-            colors: ['#fde68a', '#fcd34d', '#f59e0b'],
-            accent: '#65a30d'
-        },
-        autumn: {
-            colors: ['#fed7aa', '#fdba74', '#f97316'],
-            accent: '#84cc16'
-        },
-        rain: {
-            colors: ['#a8a29e', '#78716c', '#57534e'],
-            accent: '#64748b'
-        },
-    },
-    paths: [
-        // ═══════════════════════════════════════════════════════════════
-        // FONDO: Dunas lejanas - curvas suaves y atmosféricas
-        // ═══════════════════════════════════════════════════════════════
-        `M0,320 L0,230
+	themes: {
+		winter: {
+			colors: ['#e7e5e4', '#d6d3d1', '#a8a29e'],
+			accent: '#78716c'
+		},
+		spring: {
+			colors: ['#fef08a', '#fde047', '#facc15'],
+			accent: '#84cc16'
+		},
+		summer: {
+			colors: ['#fde68a', '#fcd34d', '#f59e0b'],
+			accent: '#65a30d'
+		},
+		autumn: {
+			colors: ['#fed7aa', '#fdba74', '#f97316'],
+			accent: '#84cc16'
+		},
+		rain: {
+			colors: ['#a8a29e', '#78716c', '#57534e'],
+			accent: '#64748b'
+		}
+	},
+	paths: [
+		// ═══════════════════════════════════════════════════════════════
+		// FONDO: Dunas lejanas - curvas suaves y atmosféricas
+		// ═══════════════════════════════════════════════════════════════
+		`M0,320 L0,230
          C60,220 100,200 160,210
          C220,220 260,190 320,200
          C380,210 420,180 480,195
@@ -44,10 +44,10 @@ export const desertBiome: BiomeData = {
          C1340,235 1380,215 1440,225
          L1440,320 Z`,
 
-        // ═══════════════════════════════════════════════════════════════
-        // MEDIO: Dunas principales con cactus saguaro estilizados
-        // ═══════════════════════════════════════════════════════════════
-        `M0,320 L0,265
+		// ═══════════════════════════════════════════════════════════════
+		// MEDIO: Dunas principales con cactus saguaro estilizados
+		// ═══════════════════════════════════════════════════════════════
+		`M0,320 L0,265
          C40,258 70,245 110,252
          C150,259 180,240 220,250
          C260,260 290,245 330,255
@@ -84,10 +84,10 @@ export const desertBiome: BiomeData = {
          C1400,282 1420,275 1440,280
          L1440,320 Z`,
 
-        // ═══════════════════════════════════════════════════════════════
-        // FRENTE: Arena ondulada con pequeños cactus y rocas
-        // ═══════════════════════════════════════════════════════════════
-        `M0,320 L0,300
+		// ═══════════════════════════════════════════════════════════════
+		// FRENTE: Arena ondulada con pequeños cactus y rocas
+		// ═══════════════════════════════════════════════════════════════
+		`M0,320 L0,300
          C25,297 40,292 60,295
          C80,298 95,290 115,294
          
@@ -121,5 +121,5 @@ export const desertBiome: BiomeData = {
          C1270,296 1305,288 1345,294
          C1385,300 1415,292 1440,296
          L1440,320 Z`
-    ]
+	]
 };

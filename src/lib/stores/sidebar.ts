@@ -6,16 +6,15 @@ import type { ComponentKey } from '$lib/types/Sidebar';
 export const activePanel = writable<string | null>(null);
 
 export function openView(componentKey: ComponentKey, title: string) {
-  openTab({
-    componentKey: componentKey,
-    title: title,
-    id: componentKey, // Usar componentKey como ID para evitar duplicados
-    focusOnOpen: true
-  });
+	openTab({
+		componentKey: componentKey,
+		title: title,
+		id: componentKey, // Usar componentKey como ID para evitar duplicados
+		focusOnOpen: true
+	});
 }
-
 
 // Función para cerrar el panel activo
 export function closeActivePanel() {
-  activePanel.set(null);
+	activePanel.set(null);
 }

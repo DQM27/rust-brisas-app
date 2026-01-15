@@ -6,90 +6,90 @@ import type { TipoVehiculo } from './vehiculo';
 // TIPOS CENTRALES DEL DOMINIO CONTRATISTA
 // ======================================================
 
-export type EstadoContratista = "activo" | "inactivo" | "suspendido";
+export type EstadoContratista = 'activo' | 'inactivo' | 'suspendido';
 
 export interface ContratistaBase {
-    id?: string;
-    cedula: string;
-    nombre: string;
-    segundoNombre?: string;
-    apellido: string;
-    segundoApellido?: string;
-    empresaId: string;
-    empresaNombre?: string;
-    fechaVencimientoPraind: string; // YYYY-MM-DD
-    isActive?: boolean;
+	id?: string;
+	cedula: string;
+	nombre: string;
+	segundoNombre?: string;
+	apellido: string;
+	segundoApellido?: string;
+	empresaId: string;
+	empresaNombre?: string;
+	fechaVencimientoPraind: string; // YYYY-MM-DD
+	isActive?: boolean;
 }
 
 export interface ContratistaResponse {
-    id: string;
-    cedula: string;
-    nombre: string;
-    segundoNombre?: string;
-    apellido: string;
-    segundoApellido?: string;
-    nombreCompleto: string;
-    empresaId: string;
-    empresaNombre: string;
-    fechaVencimientoPraind: string;
-    estado: EstadoContratista;
-    puedeIngresar: boolean;
-    praindVencido: boolean;
-    estaBloqueado: boolean;
-    diasHastaVencimiento: number;
-    requiereAtencion: boolean;
-    vehiculoTipo?: string;
-    vehiculoPlaca?: string;
-    createdAt: string;
-    updatedAt: string;
-    deletedAt?: string;
+	id: string;
+	cedula: string;
+	nombre: string;
+	segundoNombre?: string;
+	apellido: string;
+	segundoApellido?: string;
+	nombreCompleto: string;
+	empresaId: string;
+	empresaNombre: string;
+	fechaVencimientoPraind: string;
+	estado: EstadoContratista;
+	puedeIngresar: boolean;
+	praindVencido: boolean;
+	estaBloqueado: boolean;
+	diasHastaVencimiento: number;
+	requiereAtencion: boolean;
+	vehiculoTipo?: string;
+	vehiculoPlaca?: string;
+	createdAt: string;
+	updatedAt: string;
+	deletedAt?: string;
 }
 
 export interface CreateContratistaInput {
-    cedula: string;
-    nombre: string;
-    segundoNombre?: string;
-    apellido: string;
-    segundoApellido?: string;
-    empresaId: string;
-    fechaVencimientoPraind: string;
-    // Campos de vehículo (opcionales, dependen del toggle)
-    tieneVehiculo: boolean;
-    tipoVehiculo?: TipoVehiculo;
-    placa?: string;
-    marca?: string;
-    modelo?: string;
-    color?: string;
+	cedula: string;
+	nombre: string;
+	segundoNombre?: string;
+	apellido: string;
+	segundoApellido?: string;
+	empresaId: string;
+	fechaVencimientoPraind: string;
+	// Campos de vehículo (opcionales, dependen del toggle)
+	tieneVehiculo: boolean;
+	tipoVehiculo?: TipoVehiculo;
+	placa?: string;
+	marca?: string;
+	modelo?: string;
+	color?: string;
 }
 
 export interface UpdateContratistaInput {
-    id: string;
-    cedula?: string;
-    nombre?: string;
-    segundoNombre?: string;
-    apellido?: string;
-    segundoApellido?: string;
-    empresaId?: string;
-    fechaVencimientoPraind?: string;
-    isActive?: boolean;
-    // Campos para actualizar vehículo
-    tieneVehiculo?: boolean;
-    tipoVehiculo?: string;
-    placa?: string;
-    marca?: string;
-    modelo?: string;
-    color?: string;
+	id: string;
+	cedula?: string;
+	nombre?: string;
+	segundoNombre?: string;
+	apellido?: string;
+	segundoApellido?: string;
+	empresaId?: string;
+	fechaVencimientoPraind?: string;
+	isActive?: boolean;
+	// Campos para actualizar vehículo
+	tieneVehiculo?: boolean;
+	tipoVehiculo?: string;
+	placa?: string;
+	marca?: string;
+	modelo?: string;
+	color?: string;
 }
 
 export interface ContratistaListResponse {
-    contratistas: ContratistaResponse[];
-    total: number;
-    activos: number;
-    conPraindVencido: number;
-    requierenAtencion: number;
+	contratistas: ContratistaResponse[];
+	total: number;
+	activos: number;
+	conPraindVencido: number;
+	requierenAtencion: number;
 }
 
 export interface CambiarEstadoInput {
-    id: string;
-    estado: EstadoContratista;
+	id: string;
+	estado: EstadoContratista;
 }

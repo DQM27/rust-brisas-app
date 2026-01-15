@@ -8,8 +8,8 @@ import { searchGlobal } from '$lib/api/searchService';
 // ============================================
 
 interface SearchOptions {
-  limit?: number;
-  useCache?: boolean;
+	limit?: number;
+	useCache?: boolean;
 }
 
 // ============================================
@@ -41,57 +41,58 @@ let currentSearchId = 0;
  * ```
  */
 export async function performSearch(
-  query: string,
-  optionsOrLimit: number | SearchOptions = {}
+	query: string,
+	optionsOrLimit: number | SearchOptions = {}
 ): Promise<void> {
-  // Normalizar opciones (retrocompatibilidad con limit como número)
-  const opts: SearchOptions = typeof optionsOrLimit === 'number'
-    ? { limit: optionsOrLimit, useCache: true }
-    : { limit: DEFAULT_LIMIT, useCache: true, ...optionsOrLimit };
+	// Normalizar opciones (retrocompatibilidad con limit como número)
+	const opts: SearchOptions =
+		typeof optionsOrLimit === 'number'
+			? { limit: optionsOrLimit, useCache: true }
+			: { limit: DEFAULT_LIMIT, useCache: true, ...optionsOrLimit };
 
-  const trimmedQuery = query.trim();
+	const trimmedQuery = query.trim();
 
-  // Validación mínima
-  if (trimmedQuery.length < 2) {
-    searchStore.clearResults();
-    return;
-  }
+	// Validación mínima
+	if (trimmedQuery.length < 2) {
+		searchStore.clearResults();
+		return;
+	}
 
-  // Generar ID único para esta búsqueda
-  const searchId = ++currentSearchId;
+	// Generar ID único para esta búsqueda
+	const searchId = ++currentSearchId;
 
-  // Verificar caché primero
-  if (opts.useCache) {
-    const cachedResults = searchStore.getFromCache(trimmedQuery);
-    if (cachedResults !== null) {
-      // Verificar que no haya una búsqueda más reciente
-      if (searchId === currentSearchId) {
-        searchStore.setQuery(trimmedQuery);
-        searchStore.setResults(cachedResults);
-      }
-      return;
-    }
-  }
+	// Verificar caché primero
+	if (opts.useCache) {
+		const cachedResults = searchStore.getFromCache(trimmedQuery);
+		if (cachedResults !== null) {
+			// Verificar que no haya una búsqueda más reciente
+			if (searchId === currentSearchId) {
+				searchStore.setQuery(trimmedQuery);
+				searchStore.setResults(cachedResults);
+			}
+			return;
+		}
+	}
 
-  // Iniciar búsqueda
-  searchStore.setQuery(trimmedQuery);
-  searchStore.setLoading(true);
+	// Iniciar búsqueda
+	searchStore.setQuery(trimmedQuery);
+	searchStore.setLoading(true);
 
-  try {
-    const results = await searchGlobal(trimmedQuery, opts.limit);
+	try {
+		const results = await searchGlobal(trimmedQuery, opts.limit);
 
-    // Solo actualizar si esta búsqueda sigue siendo la actual
-    // (evita race conditions con búsquedas más recientes)
-    if (searchId === currentSearchId) {
-      searchStore.setResults(results);
-    }
-  } catch (err: unknown) {
-    // Solo mostrar error si esta búsqueda sigue siendo la actual
-    if (searchId === currentSearchId) {
-      const errorMessage = extractErrorMessage(err);
-      searchStore.setError(errorMessage);
-    }
-  }
+		// Solo actualizar si esta búsqueda sigue siendo la actual
+		// (evita race conditions con búsquedas más recientes)
+		if (searchId === currentSearchId) {
+			searchStore.setResults(results);
+		}
+	} catch (err: unknown) {
+		// Solo mostrar error si esta búsqueda sigue siendo la actual
+		if (searchId === currentSearchId) {
+			const errorMessage = extractErrorMessage(err);
+			searchStore.setError(errorMessage);
+		}
+	}
 }
 
 /**
@@ -99,25 +100,22 @@ export async function performSearch(
  * Útil cuando el componente se desmonta o se necesita limpiar el estado.
  */
 export function cancelSearch(): void {
-  currentSearchId++;
-  searchStore.setLoading(false);
+	currentSearchId++;
+	searchStore.setLoading(false);
 }
 
 /**
  * Realiza una búsqueda sin usar caché.
  * Útil cuando se sabe que los datos pueden haber cambiado.
  */
-export async function performFreshSearch(
-  query: string,
-  limit?: number
-): Promise<void> {
-  // Invalidar caché para este query específico
-  searchStore.invalidateCacheEntry(query);
+export async function performFreshSearch(query: string, limit?: number): Promise<void> {
+	// Invalidar caché para este query específico
+	searchStore.invalidateCacheEntry(query);
 
-  return performSearch(query, {
-    limit,
-    useCache: false,
-  });
+	return performSearch(query, {
+		limit,
+		useCache: false
+	});
 }
 
 /**
@@ -125,7 +123,7 @@ export async function performFreshSearch(
  * Útil después de operaciones que modifican datos (crear, editar, eliminar).
  */
 export function invalidateSearchCache(): void {
-  searchStore.invalidateCache();
+	searchStore.invalidateCache();
 }
 
 // ============================================
@@ -136,27 +134,27 @@ export function invalidateSearchCache(): void {
  * Extrae un mensaje de error legible de diferentes tipos de error
  */
 function extractErrorMessage(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message;
-  }
+	if (err instanceof Error) {
+		return err.message;
+	}
 
-  if (typeof err === 'string') {
-    return err;
-  }
+	if (typeof err === 'string') {
+		return err;
+	}
 
-  if (err && typeof err === 'object') {
-    // Manejar errores de Tauri
-    if ('message' in err && typeof err.message === 'string') {
-      return err.message;
-    }
+	if (err && typeof err === 'object') {
+		// Manejar errores de Tauri
+		if ('message' in err && typeof err.message === 'string') {
+			return err.message;
+		}
 
-    // Intentar serializar el objeto
-    try {
-      return JSON.stringify(err);
-    } catch {
-      return 'Error desconocido al buscar';
-    }
-  }
+		// Intentar serializar el objeto
+		try {
+			return JSON.stringify(err);
+		} catch {
+			return 'Error desconocido al buscar';
+		}
+	}
 
-  return 'Error desconocido al buscar';
+	return 'Error desconocido al buscar';
 }

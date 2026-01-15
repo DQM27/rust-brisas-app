@@ -6,33 +6,33 @@ import type { BiomeData } from './types';
  * Estilo: Ilustración editorial moderna, capas con profundidad
  */
 export const mountainsBiome: BiomeData = {
-    themes: {
-        winter: {
-            colors: ['#e2e8f0', '#cbd5e1', '#94a3b8'],
-            accent: '#f8fafc'
-        },
-        spring: {
-            colors: ['#bbf7d0', '#86efac', '#4ade80'],
-            accent: '#fef08a'
-        },
-        summer: {
-            colors: ['#ddd6fe', '#c4b5fd', '#a78bfa'],
-            accent: '#fde047'
-        },
-        autumn: {
-            colors: ['#fed7aa', '#fdba74', '#fb923c'],
-            accent: '#fef3c7'
-        },
-        rain: {
-            colors: ['#94a3b8', '#64748b', '#475569'],
-            accent: '#cbd5e1'
-        },
-    },
-    paths: [
-        // ═══════════════════════════════════════════════════════════════
-        // FONDO: Montañas lejanas - suaves y atmosféricas
-        // ═══════════════════════════════════════════════════════════════
-        `M0,320 
+	themes: {
+		winter: {
+			colors: ['#e2e8f0', '#cbd5e1', '#94a3b8'],
+			accent: '#f8fafc'
+		},
+		spring: {
+			colors: ['#bbf7d0', '#86efac', '#4ade80'],
+			accent: '#fef08a'
+		},
+		summer: {
+			colors: ['#ddd6fe', '#c4b5fd', '#a78bfa'],
+			accent: '#fde047'
+		},
+		autumn: {
+			colors: ['#fed7aa', '#fdba74', '#fb923c'],
+			accent: '#fef3c7'
+		},
+		rain: {
+			colors: ['#94a3b8', '#64748b', '#475569'],
+			accent: '#cbd5e1'
+		}
+	},
+	paths: [
+		// ═══════════════════════════════════════════════════════════════
+		// FONDO: Montañas lejanas - suaves y atmosféricas
+		// ═══════════════════════════════════════════════════════════════
+		`M0,320 
          L0,240 
          C30,235 50,200 90,180 
          C130,160 150,190 180,175 
@@ -49,10 +49,10 @@ export const mountainsBiome: BiomeData = {
          C1420,75 1440,90 1440,90 
          L1440,320 Z`,
 
-        // ═══════════════════════════════════════════════════════════════
-        // MEDIO: Montañas principales - picos dramáticos con carácter
-        // ═══════════════════════════════════════════════════════════════
-        `M0,320 
+		// ═══════════════════════════════════════════════════════════════
+		// MEDIO: Montañas principales - picos dramáticos con carácter
+		// ═══════════════════════════════════════════════════════════════
+		`M0,320 
          L0,220 
          C20,215 35,190 55,175 
          C75,160 90,180 110,165 
@@ -72,10 +72,10 @@ export const mountainsBiome: BiomeData = {
          C1440,52 1440,60 1440,60 
          L1440,320 Z`,
 
-        // ═══════════════════════════════════════════════════════════════
-        // FRENTE: Colinas con silueta de bosque de pinos estilizados
-        // ═══════════════════════════════════════════════════════════════
-        `M0,320 L0,270 
+		// ═══════════════════════════════════════════════════════════════
+		// FRENTE: Colinas con silueta de bosque de pinos estilizados
+		// ═══════════════════════════════════════════════════════════════
+		`M0,320 L0,270 
          C15,268 25,265 35,268 
          L40,268 L42,250 L48,235 L54,220 L60,235 L66,250 L68,268 
          C80,265 90,270 100,267 
@@ -114,5 +114,5 @@ export const mountainsBiome: BiomeData = {
          L1378,275 L1380,266 L1384,255 L1388,244 L1392,232 L1398,244 L1402,255 L1406,266 L1408,275 
          C1425,279 1435,275 1440,277 
          L1440,320 Z`
-    ]
+	]
 };

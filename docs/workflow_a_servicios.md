@@ -2,7 +2,7 @@
 
 **Versión**: 3.0  
 **Idioma**: Español  
-**Aplicación**: Brisas APP  
+**Aplicación**: Brisas APP
 
 ---
 
@@ -26,22 +26,24 @@ Elevar los servicios de aplicación a estándares Enterprise mediante desacoplam
 **Complejidad ciclomática**: {estimación}
 
 **Dependencias actuales**:
-- ✅ Permitidas: 
+
+- ✅ Permitidas:
   - `crate::domain::*` (X referencias)
   - `crate::models::*` (Y referencias)
   - `crate::common::*` (Z referencias)
-  
 - ⚠️ Sospechosas:
   - `crate::db::*` (N referencias) → ❌ Acceso directo a queries
   - `tauri::State` (M referencias) → ⚠️ Acoplamiento a infraestructura
   - `surrealdb::sql::Thing` → ❌ Fuga de abstracción
 
 **Lógica de negocio inline detectada**:
+
 1. Línea XX: `if campo.is_empty()` → Mover a `domain::validators`
 2. Línea YY: Cálculo de negocio → Mover a `domain::rules`
 3. Línea ZZ: Validación de fecha → Usar `common::validar_fecha_rfc3339`
 
 **Responsabilidades del servicio**:
+
 - [ ] ¿Actúa como orquestador puro? (Sí/No)
 - [ ] ¿Tiene >3 niveles de dependencias anidadas? (Sí/No)
 - [ ] ¿Accede directamente a queries de DB? (Sí/No) ❌ CRÍTICO
@@ -54,13 +56,14 @@ Elevar los servicios de aplicación a estándares Enterprise mediante desacoplam
 ```markdown
 **Validaciones encontradas**: {N} total
 
-| Línea | Código | Destino sugerido | Prioridad |
-|-------|--------|------------------|-----------|
-| 34 | `if campo.is_empty()` | `domain::validators::validate_campo()` | Media |
-| 56 | `fecha.parse::<DateTime>()` | `common::validar_fecha_rfc3339()` | Alta |
-| 89 | Cálculo de tiempo | `common::calcular_tiempo_permanencia()` | Alta |
+| Línea | Código                      | Destino sugerido                        | Prioridad |
+| ----- | --------------------------- | --------------------------------------- | --------- |
+| 34    | `if campo.is_empty()`       | `domain::validators::validate_campo()`  | Media     |
+| 56    | `fecha.parse::<DateTime>()` | `common::validar_fecha_rfc3339()`       | Alta      |
+| 89    | Cálculo de tiempo           | `common::calcular_tiempo_permanencia()` | Alta      |
 
 **Validaciones críticas de seguridad** (prioridad CRÍTICA):
+
 - Línea XX: Verificación de Lista Negra → Requiere test unitario + logging
 - Línea YY: Validación de permisos → Requiere auditoría
 ```
@@ -71,14 +74,17 @@ Elevar los servicios de aplicación a estándares Enterprise mediante desacoplam
 
 ```markdown
 **Inputs actuales**:
+
 - ❌ `funcion(arg1: String, arg2: String, ...)` → N parámetros sueltos
   - **Acción**: Crear `{Nombre}Command` en `models/{modulo}/commands.rs`
 
 **Outputs actuales**:
+
 - ❌ `Result<Thing, surrealdb::Error>` → Tipo de infraestructura expuesto
   - **Acción**: Crear `{Nombre}Response` en `models/{modulo}/responses.rs`
 
 **DTOs a crear**:
+
 1. `{Accion}Command` (input)
 2. `{Entidad}Response` (output)
 ```
@@ -89,11 +95,13 @@ Elevar los servicios de aplicación a estándares Enterprise mediante desacoplam
 
 ```markdown
 **Operaciones multi-entidad detectadas**:
+
 - Línea XX-YY: Creación de {entidad} + {relacionada} + log
   - **Riesgo**: Sin transacción explícita → Inconsistencia posible
   - **Acción**: Envolver en `BEGIN ... COMMIT`
 
 **Manejo de errores**:
+
 - ⚠️ N lugares usan `.unwrap()` → Reemplazar con propagación `?`
 - ⚠️ M lugares ignoran errores con `let _ =` → Evaluar si es correcto
 ```
@@ -104,15 +112,18 @@ Elevar los servicios de aplicación a estándares Enterprise mediante desacoplam
 
 ```markdown
 **Estado actual del logging**:
+
 - ✅ Importa `log` crate: Sí/No
 - ❌ Logs estructurados: X/Y operaciones cubiertas
 
 **Eventos críticos sin log**:
+
 1. Línea XX: Creación exitosa → Necesita `info!`
 2. Línea YY: Bloqueo de seguridad → Necesita `warn!`
 3. Línea ZZ: Error de DB → Necesita `error!` con contexto
 
 **Plan de logging**:
+
 - N `info!` para operaciones exitosas
 - M `warn!` para validaciones fallidas recuperables
 - K `error!` para fallos críticos de infraestructura
@@ -124,15 +135,18 @@ Elevar los servicios de aplicación a estándares Enterprise mediante desacoplam
 
 ```markdown
 **Cobertura actual**:
+
 - Documentación de módulo: ✅/❌
 - Funciones públicas documentadas: X/Y (Z%)
 - Comentarios obsoletos: N bloques
 
 **Funciones sin documentar**:
+
 1. `{nombre}()` → Falta descripción de validaciones críticas
 2. `{nombre}()` → Falta explicación del "por qué"
 
-**Idioma**: 
+**Idioma**:
+
 - ⚠️ N funciones con docs en inglés → Traducir a español
 ```
 
@@ -144,11 +158,13 @@ Elevar los servicios de aplicación a estándares Enterprise mediante desacoplam
 **Cobertura estimada**: ~X%
 
 **Lógica pura sin tests** (candidatos a tests unitarios):
+
 - `calcular_*()` → Lógica de cálculo
 - `formatear_*()` → Transformación de datos
 - `validar_*()` → Reglas de negocio
 
 **Dependencias de DB**: X/Y funciones
+
 - **Estrategia**: Introducir `trait {Nombre}Repository` para mocking
 ```
 
@@ -157,10 +173,10 @@ Elevar los servicios de aplicación a estándares Enterprise mediante desacoplam
 #### Estándar de Fechas
 
 ```markdown
-| Campo | Formato Actual | Formato Esperado | Acción |
-|-------|----------------|------------------|--------|
-| `fecha_hora_*` | String sin validar | RFC 3339 | Usar `validar_fecha_rfc3339()` |
-| `fecha_vencimiento_*` | `DD/MM/YYYY` | `YYYY-MM-DD` | Usar `validar_fecha_simple()` |
+| Campo                 | Formato Actual     | Formato Esperado | Acción                         |
+| --------------------- | ------------------ | ---------------- | ------------------------------ |
+| `fecha_hora_*`        | String sin validar | RFC 3339         | Usar `validar_fecha_rfc3339()` |
+| `fecha_vencimiento_*` | `DD/MM/YYYY`       | `YYYY-MM-DD`     | Usar `validar_fecha_simple()`  |
 ```
 
 #### Estándar de Documentación
@@ -179,30 +195,35 @@ Elevar los servicios de aplicación a estándares Enterprise mediante desacoplam
 ```markdown
 # Reporte de Análisis FASE 0
 
-**Archivo**: src/services/{nombre}_service.rs
+**Archivo**: src/services/{nombre}\_service.rs
 **LOC**: {número}
 **Complejidad**: {alta/media/baja}
 
 ## PROBLEMAS CRÍTICOS (Bloquean refactor)
+
 1. [CRÍTICO] Descripción del problema
    - **Impacto**: Qué riesgos genera
    - **Solución**: Qué hacer
    - **Esfuerzo**: Estimación en horas
 
 ## PROBLEMAS MAYORES
+
 2. [ALTO] Descripción
 3. [MEDIO] Descripción
 
 ## MEJORAS RECOMENDADAS
+
 4. [BAJO] Descripción
 
 ## ESTIMACIÓN DE ESFUERZO
+
 - Refactor obligatorio: X-Y horas
 - Testing: Z horas
 - Documentación: W horas
 - **TOTAL**: T horas
 
 ## ¿Proceder con el refactor?
+
 Esperar aprobación del usuario.
 ```
 
@@ -215,6 +236,7 @@ Esperar aprobación del usuario.
 **Acciones**:
 
 1. **Crear Traits de Repositorio** (si no existen):
+
 ```rust
 // src/repositories/traits/{modulo}_repository.rs
 
@@ -231,6 +253,7 @@ pub trait {Nombre}Repository: Send + Sync {
 ```
 
 2. **Implementar Repositorio para SurrealDB**:
+
 ```rust
 // src/repositories/surrealdb_{modulo}_repository.rs
 
@@ -250,6 +273,7 @@ impl {Nombre}Repository for SurrealDb{Nombre}Repository {
 ```
 
 3. **Refactorizar Servicio con Inyección de Dependencias**:
+
 ```rust
 // src/services/{modulo}_service.rs
 
@@ -265,14 +289,14 @@ impl {Nombre}Service {
     ) -> Self {
         Self { repo }
     }
-    
+
     pub async fn crear(&self, cmd: /*...*/) -> Result</*...*/, DomainError> {
         // Validaciones de dominio
         domain::validar_input(&cmd)?;
-        
+
         // Delegación al repositorio
         let entidad = self.repo.create(dto).await?;
-        
+
         info!("Entidad creada exitosamente: id={}", entidad.id);
         Ok(entidad)
     }
@@ -280,6 +304,7 @@ impl {Nombre}Service {
 ```
 
 **Criterio de éxito**:
+
 - [ ] Servicio NO importa `crate::db::`
 - [ ] Servicio recibe repositorios por constructor
 - [ ] Funciones son testables con mocks
@@ -291,6 +316,7 @@ impl {Nombre}Service {
 **Acciones**:
 
 1. **Identificar validaciones inline**:
+
 ```rust
 // ❌ ANTES (en servicio)
 if input.campo.is_empty() {
@@ -302,6 +328,7 @@ domain::validators::validate_campo(&input.campo)?;
 ```
 
 2. **Mover a capa de dominio**:
+
 ```rust
 // src/domain/{modulo}/validators.rs
 
@@ -314,14 +341,15 @@ pub fn validate_campo(valor: &str) -> Result<(), DomainError> {
     if valor.trim().is_empty() {
         return Err(DomainError::CampoVacio);
     }
-    
+
     // Validación de formato...
-    
+
     Ok(())
 }
 ```
 
 3. **Aplicar estándares de fechas**:
+
 ```rust
 // ✅ Usar funciones centralizadas de common.rs
 use crate::common::{validar_fecha_rfc3339, validar_fecha_simple};
@@ -340,6 +368,7 @@ validar_fecha_simple(&input.fecha_vencimiento)?;
 **Acciones**:
 
 1. **Crear Commands (Input)**:
+
 ```rust
 // src/models/{modulo}/commands.rs
 
@@ -359,6 +388,7 @@ pub struct Create{Entidad}Command {
 ```
 
 2. **Crear Responses (Output)**:
+
 ```rust
 // src/models/{modulo}/responses.rs
 
@@ -396,27 +426,27 @@ pub async fn crear_con_relaciones(
 ) -> Result<{Entidad}Response, DomainError> {
     // Inicio de transacción
     let tx = self.begin_transaction().await?;
-    
+
     // Paso 1: Crear entidad principal
     let entidad = tx.repo.create(&cmd).await.map_err(|e| {
         error!("Error al crear {entidad}: {}", e);
         e
     })?;
-    
+
     // Paso 2: Crear relaciones
     tx.relacion_repo.create_relacionada(&entidad.id).await?;
-    
+
     // Paso 3: Auditar
     tx.audit_repo.log_creacion(&entidad.id).await?;
-    
+
     // Commit
     tx.commit().await.map_err(|e| {
         error!("Error al confirmar transacción: {}", e);
         DomainError::TransactionFailed(e.to_string())
     })?;
-    
+
     info!("{Entidad} creada exitosamente: id={}", entidad.id);
-    
+
     Ok(entidad.into())
 }
 ```
@@ -540,7 +570,7 @@ use log::{info, warn, error};
 
 **Funciones Públicas**:
 
-```rust
+````rust
 /// {Descripción breve de la acción}.
 ///
 /// {Explicación del "por qué" es importante esta función y qué validaciones críticas realiza}
@@ -585,7 +615,7 @@ pub async fn operacion(
 ) -> Result<{Response}, DomainError> {
     // implementación
 }
-```
+````
 
 ---
 
@@ -598,14 +628,14 @@ pub async fn operacion(
 mod tests {
     use super::*;
     use chrono::{DateTime, Utc};
-    
+
     /// Test crítico: Verificar cálculo de {algo}.
     #[test]
     fn test_calculo_correcto() {
         let resultado = calcular(input);
         assert_eq!(resultado, esperado);
     }
-    
+
     /// Test de seguridad: Verificar que {condición peligrosa} es rechazada.
     #[test]
     fn test_validacion_rechaza_caso_invalido() {
@@ -623,7 +653,7 @@ mod tests {
 mod integration_tests {
     use mockall::predicate::*;
     use crate::repositories::Mock{Nombre}Repository;
-    
+
     #[tokio::test]
     async fn test_caso_critico() {
         let mut mock_repo = Mock{Nombre}Repository::new();
@@ -631,10 +661,10 @@ mod integration_tests {
             .expect_metodo()
             .with(eq("parametro"))
             .returning(|_| Ok(resultado_mock));
-        
+
         let servicio = {Nombre}Service::new(Arc::new(mock_repo));
         let resultado = servicio.operacion(command).await;
-        
+
         assert!(resultado.is_ok());
     }
 }
@@ -710,11 +740,11 @@ Closes #{numero_issue}
 
 ## 📂 Ubicaciones de Logs en Tauri
 
-| Sistema | Ruta |
-|---------|------|
-| **Windows** | `%APPDATA%\brisas-app\logs\brisas_app.log` |
-| **macOS** | `~/Library/Application Support/brisas-app/logs/brisas_app.log` |
-| **Linux** | `~/.local/share/brisas-app/logs/brisas_app.log` |
+| Sistema     | Ruta                                                           |
+| ----------- | -------------------------------------------------------------- |
+| **Windows** | `%APPDATA%\brisas-app\logs\brisas_app.log`                     |
+| **macOS**   | `~/Library/Application Support/brisas-app/logs/brisas_app.log` |
+| **Linux**   | `~/.local/share/brisas-app/logs/brisas_app.log`                |
 
 **Comando opcional para acceder desde UI**:
 

@@ -1,72 +1,66 @@
 <!-- BlacklistReasonInputs.svelte -->
 <script lang="ts">
-  // @ts-nocheck - Svelte 5 runes not recognized by TS
-  interface Props {
-    motivo: string;
-    observaciones: string;
-    isUnblock?: boolean;
-    loading?: boolean;
-    onMotivoChange: (value: string) => void;
-    onObservacionesChange: (value: string) => void;
-  }
+	// @ts-nocheck - Svelte 5 runes not recognized by TS
+	interface Props {
+		motivo: string;
+		observaciones: string;
+		isUnblock?: boolean;
+		loading?: boolean;
+		onMotivoChange: (value: string) => void;
+		onObservacionesChange: (value: string) => void;
+	}
 
-  let {
-    motivo,
-    observaciones,
-    isUnblock = false,
-    loading = false,
-    onMotivoChange,
-    onObservacionesChange,
-  }: Props = $props();
+	let {
+		motivo,
+		observaciones,
+		isUnblock = false,
+		loading = false,
+		onMotivoChange,
+		onObservacionesChange
+	}: Props = $props();
 
-  const motivoLabel = $derived(
-    isUnblock ? "Motivo del Desbloqueo" : "Motivo del Bloqueo",
-  );
-  const motivoPlaceholder = $derived(
-    isUnblock
-      ? "Detalle la razón de la desactivación del bloqueo (ej: Cumplió sanción, revisión de caso, etc.)"
-      : "Detalle la razón del bloqueo (ej: Agresión verbal a personal de seguridad, incumplimiento grave de normas, etc.)",
-  );
-  const observacionesLabel = $derived(
-    isUnblock
-      ? "Observaciones de Desbloqueo (Opcional)"
-      : "Observaciones Adicionales (Opcional)",
-  );
-  const observacionesPlaceholder = $derived(
-    isUnblock
-      ? "Notas internas sobre el desbloqueo."
-      : "Notas internas sobre el incidente.",
-  );
+	const motivoLabel = $derived(isUnblock ? 'Motivo del Desbloqueo' : 'Motivo del Bloqueo');
+	const motivoPlaceholder = $derived(
+		isUnblock
+			? 'Detalle la razón de la desactivación del bloqueo (ej: Cumplió sanción, revisión de caso, etc.)'
+			: 'Detalle la razón del bloqueo (ej: Agresión verbal a personal de seguridad, incumplimiento grave de normas, etc.)'
+	);
+	const observacionesLabel = $derived(
+		isUnblock ? 'Observaciones de Desbloqueo (Opcional)' : 'Observaciones Adicionales (Opcional)'
+	);
+	const observacionesPlaceholder = $derived(
+		isUnblock ? 'Notas internas sobre el desbloqueo.' : 'Notas internas sobre el incidente.'
+	);
 </script>
 
 <div class="space-y-3">
-  <div class="space-y-1">
-    <label for="motivoBloqueo" class="text-xs font-medium text-primary">
-      {motivoLabel} <span class="text-error">*</span>
-    </label>
-    <textarea
-      id="motivoBloqueo"
-      value={motivo}
-      oninput={(e) => onMotivoChange(e.currentTarget.value)}
-      rows="2"
-      disabled={loading}
-      placeholder={motivoPlaceholder}
-      class="input-base w-full resize-y text-sm"
-    ></textarea>
-  </div>
+	<div class="space-y-1">
+		<label for="motivoBloqueo" class="text-xs font-medium text-primary">
+			{motivoLabel} <span class="text-error">*</span>
+		</label>
+		<textarea
+			id="motivoBloqueo"
+			value={motivo}
+			oninput={(e) => onMotivoChange(e.currentTarget.value)}
+			rows="2"
+			disabled={loading}
+			placeholder={motivoPlaceholder}
+			class="input-base w-full resize-y text-sm"
+		></textarea>
+	</div>
 
-  <div class="space-y-1">
-    <label for="observaciones" class="text-xs font-medium text-primary">
-      {observacionesLabel}
-    </label>
-    <textarea
-      id="observaciones"
-      value={observaciones}
-      oninput={(e) => onObservacionesChange(e.currentTarget.value)}
-      rows="1"
-      disabled={loading}
-      placeholder={observacionesPlaceholder}
-      class="input-base w-full resize-y text-sm"
-    ></textarea>
-  </div>
+	<div class="space-y-1">
+		<label for="observaciones" class="text-xs font-medium text-primary">
+			{observacionesLabel}
+		</label>
+		<textarea
+			id="observaciones"
+			value={observaciones}
+			oninput={(e) => onObservacionesChange(e.currentTarget.value)}
+			rows="1"
+			disabled={loading}
+			placeholder={observacionesPlaceholder}
+			class="input-base w-full resize-y text-sm"
+		></textarea>
+	</div>
 </div>

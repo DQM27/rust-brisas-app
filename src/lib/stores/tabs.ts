@@ -1,4 +1,4 @@
-import { writable, derived, get } from 'svelte/store';
+import { derived, get } from 'svelte/store';
 import { persisted } from './persistent';
 import type { SerializableTab, HydratedTab, OpenTabOptions } from '$lib/types/tab';
 import { getComponent } from '$lib/config/components';
@@ -8,151 +8,148 @@ import type { Readable } from 'svelte/store';
  * Store persistido con tabs serializables
  */
 const tabsStorePersisted = persisted<SerializableTab[]>('brisas-tabs', [], {
-  storage: 'session'
+	storage: 'session'
 });
 
 /**
  * Store del tab activo
  */
 export const activeTabId = persisted<string>('brisas-active-tab', '', {
-  storage: 'session'
+	storage: 'session'
 });
 
 /**
  * Store derivado con componentes hidratados (solo en memoria)
- * 
+ *
  * Transforma SerializableTab[] en HydratedTab[] agregando el componente de Svelte
  */
-export const tabsStore: Readable<HydratedTab[]> = derived(
-  tabsStorePersisted,
-  ($tabs) => {
-    return $tabs.map((tab) => ({
-      ...tab,
-      component: getComponent(tab.componentKey)
-    })) as HydratedTab[];
-  }
-);
+export const tabsStore: Readable<HydratedTab[]> = derived(tabsStorePersisted, ($tabs) => {
+	return $tabs.map((tab) => ({
+		...tab,
+		component: getComponent(tab.componentKey)
+	})) as HydratedTab[];
+});
 
 /**
  * Genera ID único para un tab
- * 
+ *
  * @param componentKey - Identificador del componente
  * @param data - Datos opcionales que pueden contener un id
  * @returns ID único del tab
  */
 function generateTabId(componentKey: string, data?: Record<string, any>): string {
-  if (data?.id) {
-    return `${componentKey}-${data.id}`;
-  }
-  return `${componentKey}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+	if (data?.id) {
+		return `${componentKey}-${data.id}`;
+	}
+	return `${componentKey}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 }
 
 /**
  * Abre un nuevo tab o enfoca uno existente
- * 
+ *
  * @param options - Opciones para abrir el tab
  * @returns ID del tab abierto
  */
 export function openTab(options: OpenTabOptions): string {
-  const { componentKey, title, data, focusOnOpen = true } = options;
+	const { componentKey, title, data, focusOnOpen = true } = options;
 
-  const id = options.id || generateTabId(componentKey, data);
-  const tabs = get(tabsStorePersisted);
+	const id = options.id || generateTabId(componentKey, data);
+	const tabs = get(tabsStorePersisted);
 
-  // Si ya existe, solo enfocarlo
-  const existingTab = tabs.find(t => t.id === id);
-  if (existingTab) {
-    if (focusOnOpen) {
-      activeTabId.set(id);
-    }
-    return id;
-  }
+	// Si ya existe, solo enfocarlo
+	const existingTab = tabs.find((t) => t.id === id);
+	if (existingTab) {
+		if (focusOnOpen) {
+			activeTabId.set(id);
+		}
+		return id;
+	}
 
-  // Crear nuevo tab
-  const newTab: SerializableTab = {
-    id,
-    title,
-    componentKey,
-    data,
-    isDirty: false,
-    order: tabs.length
-  };
+	// Crear nuevo tab
+	const newTab: SerializableTab = {
+		id,
+		title,
+		componentKey,
+		data,
+		isDirty: false,
+		order: tabs.length
+	};
 
-  tabsStorePersisted.update(currentTabs => [...currentTabs, newTab]);
+	tabsStorePersisted.update((currentTabs) => [...currentTabs, newTab]);
 
-  if (focusOnOpen) {
-    activeTabId.set(id);
-  }
+	if (focusOnOpen) {
+		activeTabId.set(id);
+	}
 
-  return id;
+	return id;
 }
 
 /**
  * Cierra un tab con confirmación si tiene cambios sin guardar
- * 
+ *
  * @param id - ID del tab a cerrar
  * @param force - Si es true, cierra sin confirmación
  * @returns true si se cerró el tab, false si se canceló
  */
 export function closeTab(id: string, force: boolean = false): boolean {
-  const tabs = get(tabsStorePersisted);
-  const tab = tabs.find(t => t.id === id);
+	const tabs = get(tabsStorePersisted);
+	const tab = tabs.find((t) => t.id === id);
 
-  if (!tab) {
-    return false;
-  }
+	if (!tab) {
+		return false;
+	}
 
-  // Verificar si tiene cambios sin guardar
-  if (tab.isDirty && !force) {
-    const confirmed = confirm(`"${tab.title}" tiene cambios sin guardar. ¿Cerrar de todos modos?`);
-    if (!confirmed) {
-      return false;
-    }
-  }
+	// Verificar si tiene cambios sin guardar
+	if (tab.isDirty && !force) {
+		const confirmed = confirm(`"${tab.title}" tiene cambios sin guardar. ¿Cerrar de todos modos?`);
+		if (!confirmed) {
+			return false;
+		}
+	}
 
-  // Filtrar el tab
-  const remainingTabs = tabs.filter(t => t.id !== id);
-  tabsStorePersisted.set(remainingTabs);
+	// Filtrar el tab
+	const remainingTabs = tabs.filter((t) => t.id !== id);
+	tabsStorePersisted.set(remainingTabs);
 
-  // Manejar tab activo
-  const currentActive = get(activeTabId);
-  if (currentActive === id) {
-    if (remainingTabs.length > 0) {
-      // Activar el tab anterior o el primero
-      const closedIndex = tabs.findIndex(t => t.id === id);
-      const newIndex = Math.max(0, closedIndex - 1);
-      activeTabId.set(remainingTabs[newIndex].id);
-    } else {
-      activeTabId.set('');
-    }
-  }
+	// Manejar tab activo
+	const currentActive = get(activeTabId);
+	if (currentActive === id) {
+		if (remainingTabs.length > 0) {
+			// Activar el tab anterior o el primero
+			const closedIndex = tabs.findIndex((t) => t.id === id);
+			const newIndex = Math.max(0, closedIndex - 1);
+			activeTabId.set(remainingTabs[newIndex].id);
+		} else {
+			activeTabId.set('');
+		}
+	}
 
-  return true;
+	return true;
 }
 
 /**
  * Cierra todos los tabs con confirmación
- * 
+ *
  * @param force - Si es true, cierra sin confirmación
  * @returns true si se cerraron todos los tabs, false si se canceló
  */
 export function closeAllTabs(force: boolean = false): boolean {
-  const tabs = get(tabsStorePersisted);
-  const dirtyTabs = tabs.filter(t => t.isDirty);
+	const tabs = get(tabsStorePersisted);
+	const dirtyTabs = tabs.filter((t) => t.isDirty);
 
-  if (dirtyTabs.length > 0 && !force) {
-    const tabWord = dirtyTabs.length === 1 ? 'tab tiene' : 'tabs tienen';
-    const confirmed = confirm(
-      `${dirtyTabs.length} ${tabWord} cambios sin guardar. ¿Cerrar todos de todos modos?`
-    );
-    if (!confirmed) {
-      return false;
-    }
-  }
+	if (dirtyTabs.length > 0 && !force) {
+		const tabWord = dirtyTabs.length === 1 ? 'tab tiene' : 'tabs tienen';
+		const confirmed = confirm(
+			`${dirtyTabs.length} ${tabWord} cambios sin guardar. ¿Cerrar todos de todos modos?`
+		);
+		if (!confirmed) {
+			return false;
+		}
+	}
 
-  tabsStorePersisted.set([]);
-  activeTabId.set('');
-  return true;
+	tabsStorePersisted.set([]);
+	activeTabId.set('');
+	return true;
 }
 
 /**
@@ -163,26 +160,26 @@ export function closeAllTabs(force: boolean = false): boolean {
  * @returns true si se cerraron los tabs, false si se canceló
  */
 export function closeOtherTabs(id: string, force: boolean = false): boolean {
-  const tabs = get(tabsStorePersisted);
-  const tabsToClose = tabs.filter(t => t.id !== id);
-  const dirtyTabs = tabsToClose.filter(t => t.isDirty);
+	const tabs = get(tabsStorePersisted);
+	const tabsToClose = tabs.filter((t) => t.id !== id);
+	const dirtyTabs = tabsToClose.filter((t) => t.isDirty);
 
-  if (dirtyTabs.length > 0 && !force) {
-    const tabWord = dirtyTabs.length === 1 ? 'tab tiene' : 'tabs tienen';
-    const confirmed = confirm(
-      `${dirtyTabs.length} ${tabWord} cambios sin guardar. ¿Cerrar de todos modos?`
-    );
-    if (!confirmed) {
-      return false;
-    }
-  }
+	if (dirtyTabs.length > 0 && !force) {
+		const tabWord = dirtyTabs.length === 1 ? 'tab tiene' : 'tabs tienen';
+		const confirmed = confirm(
+			`${dirtyTabs.length} ${tabWord} cambios sin guardar. ¿Cerrar de todos modos?`
+		);
+		if (!confirmed) {
+			return false;
+		}
+	}
 
-  const tabToKeep = tabs.find(t => t.id === id);
-  if (tabToKeep) {
-    tabsStorePersisted.set([tabToKeep]);
-    activeTabId.set(id);
-  }
-  return true;
+	const tabToKeep = tabs.find((t) => t.id === id);
+	if (tabToKeep) {
+		tabsStorePersisted.set([tabToKeep]);
+		activeTabId.set(id);
+	}
+	return true;
 }
 
 /**
@@ -193,180 +190,166 @@ export function closeOtherTabs(id: string, force: boolean = false): boolean {
  * @returns true si se cerraron los tabs, false si se canceló
  */
 export function closeTabsToRight(id: string, force: boolean = false): boolean {
-  const tabs = get(tabsStorePersisted);
-  const tabIndex = tabs.findIndex(t => t.id === id);
+	const tabs = get(tabsStorePersisted);
+	const tabIndex = tabs.findIndex((t) => t.id === id);
 
-  if (tabIndex === -1) return false;
+	if (tabIndex === -1) return false;
 
-  const tabsToClose = tabs.slice(tabIndex + 1);
-  const dirtyTabs = tabsToClose.filter(t => t.isDirty);
+	const tabsToClose = tabs.slice(tabIndex + 1);
+	const dirtyTabs = tabsToClose.filter((t) => t.isDirty);
 
-  if (dirtyTabs.length > 0 && !force) {
-    const tabWord = dirtyTabs.length === 1 ? 'tab tiene' : 'tabs tienen';
-    const confirmed = confirm(
-      `${dirtyTabs.length} ${tabWord} cambios sin guardar. ¿Cerrar de todos modos?`
-    );
-    if (!confirmed) {
-      return false;
-    }
-  }
+	if (dirtyTabs.length > 0 && !force) {
+		const tabWord = dirtyTabs.length === 1 ? 'tab tiene' : 'tabs tienen';
+		const confirmed = confirm(
+			`${dirtyTabs.length} ${tabWord} cambios sin guardar. ¿Cerrar de todos modos?`
+		);
+		if (!confirmed) {
+			return false;
+		}
+	}
 
-  const tabsToKeep = tabs.slice(0, tabIndex + 1);
-  tabsStorePersisted.set(tabsToKeep);
+	const tabsToKeep = tabs.slice(0, tabIndex + 1);
+	tabsStorePersisted.set(tabsToKeep);
 
-  // Si el tab activo fue cerrado, activar el tab de referencia
-  const currentActive = get(activeTabId);
-  if (!tabsToKeep.find(t => t.id === currentActive)) {
-    activeTabId.set(id);
-  }
+	// Si el tab activo fue cerrado, activar el tab de referencia
+	const currentActive = get(activeTabId);
+	if (!tabsToKeep.find((t) => t.id === currentActive)) {
+		activeTabId.set(id);
+	}
 
-  return true;
+	return true;
 }
 
 /**
  * Marca un tab como modificado (dirty)
- * 
+ *
  * @param id - ID del tab
  * @param isDirty - Estado de modificación
  */
 export function markTabDirty(id: string, isDirty: boolean = true): void {
-  tabsStorePersisted.update(tabs =>
-    tabs.map(tab =>
-      tab.id === id
-        ? { ...tab, isDirty }
-        : tab
-    )
-  );
+	tabsStorePersisted.update((tabs) =>
+		tabs.map((tab) => (tab.id === id ? { ...tab, isDirty } : tab))
+	);
 }
 
 /**
  * Actualiza los datos de un tab
- * 
+ *
  * @param id - ID del tab
  * @param data - Datos a actualizar (se mezclan con los existentes)
  */
 export function updateTabData(id: string, data: Record<string, any>): void {
-  tabsStorePersisted.update(tabs =>
-    tabs.map(tab =>
-      tab.id === id
-        ? { ...tab, data: { ...tab.data, ...data } }
-        : tab
-    )
-  );
+	tabsStorePersisted.update((tabs) =>
+		tabs.map((tab) => (tab.id === id ? { ...tab, data: { ...tab.data, ...data } } : tab))
+	);
 }
 
 /**
  * Actualiza el título de un tab
- * 
+ *
  * @param id - ID del tab
  * @param title - Nuevo título
  */
 export function updateTabTitle(id: string, title: string): void {
-  tabsStorePersisted.update(tabs =>
-    tabs.map(tab =>
-      tab.id === id
-        ? { ...tab, title }
-        : tab
-    )
-  );
+	tabsStorePersisted.update((tabs) => tabs.map((tab) => (tab.id === id ? { ...tab, title } : tab)));
 }
 
 /**
  * Reordena tabs (para drag & drop)
- * 
+ *
  * @param newOrder - Array con los IDs en el nuevo orden
  */
 export function reorderTabs(newOrder: string[]): void {
-  const tabs = get(tabsStorePersisted);
+	const tabs = get(tabsStorePersisted);
 
-  const reordered = newOrder
-    .map(id => tabs.find(t => t.id === id))
-    .filter((tab): tab is SerializableTab => tab !== undefined)
-    .map((tab, index) => ({ ...tab, order: index }));
+	const reordered = newOrder
+		.map((id) => tabs.find((t) => t.id === id))
+		.filter((tab): tab is SerializableTab => tab !== undefined)
+		.map((tab, index) => ({ ...tab, order: index }));
 
-  tabsStorePersisted.set(reordered);
+	tabsStorePersisted.set(reordered);
 }
 
 /**
  * Hook para que componentes reporten cambios
- * 
+ *
  * @param tabId - ID del tab actual
  * @returns Objeto con métodos para manipular el estado del tab
  */
 export function useTabState(tabId: string) {
-  return {
-    markDirty: () => markTabDirty(tabId, true),
-    markClean: () => markTabDirty(tabId, false),
-    updateData: (data: Record<string, any>) => updateTabData(tabId, data),
-    updateTitle: (title: string) => updateTabTitle(tabId, title),
-    close: () => closeTab(tabId)
-  };
+	return {
+		markDirty: () => markTabDirty(tabId, true),
+		markClean: () => markTabDirty(tabId, false),
+		updateData: (data: Record<string, any>) => updateTabData(tabId, data),
+		updateTitle: (title: string) => updateTabTitle(tabId, title),
+		close: () => closeTab(tabId)
+	};
 }
 
 /**
  * Obtiene un tab por ID
- * 
+ *
  * @param id - ID del tab
  * @returns Tab encontrado o undefined si no existe
  */
 export function getTab(id: string): SerializableTab | undefined {
-  return get(tabsStorePersisted).find(t => t.id === id);
+	return get(tabsStorePersisted).find((t) => t.id === id);
 }
 
 /**
  * Verifica si existe un tab
- * 
+ *
  * @param id - ID del tab
  * @returns true si el tab existe
  */
 export function hasTab(id: string): boolean {
-  return get(tabsStorePersisted).some(t => t.id === id);
+	return get(tabsStorePersisted).some((t) => t.id === id);
 }
 
 /**
  * Obtiene el tab actualmente activo
- * 
+ *
  * @returns Tab activo o undefined si no hay ninguno
  */
 export function getActiveTab(): SerializableTab | undefined {
-  const activeId = get(activeTabId);
-  if (!activeId) {
-    return undefined;
-  }
-  return getTab(activeId);
+	const activeId = get(activeTabId);
+	if (!activeId) {
+		return undefined;
+	}
+	return getTab(activeId);
 }
 
 /**
  * Obtiene todos los tabs abiertos
- * 
+ *
  * @returns Array de tabs serializables
  */
 export function getAllTabs(): SerializableTab[] {
-  return get(tabsStorePersisted);
+	return get(tabsStorePersisted);
 }
 
 /**
  * Cuenta cuántos tabs están abiertos
- * 
+ *
  * @returns Número de tabs abiertos
  */
 export function getTabCount(): number {
-  return get(tabsStorePersisted).length;
+	return get(tabsStorePersisted).length;
 }
 
 /**
  * Obtiene todos los tabs con cambios sin guardar
- * 
+ *
  * @returns Array de tabs con isDirty: true
  */
 export function getDirtyTabs(): SerializableTab[] {
-  return get(tabsStorePersisted).filter(t => t.isDirty);
+	return get(tabsStorePersisted).filter((t) => t.isDirty);
 }
 
 /**
  * Reset completo (útil para logout)
  */
 export function resetTabs(): void {
-  tabsStorePersisted.set([]);
-  activeTabId.set('');
+	tabsStorePersisted.set([]);
+	activeTabId.set('');
 }

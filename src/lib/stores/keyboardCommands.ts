@@ -5,20 +5,20 @@ import { writable, get } from 'svelte/store';
  * Tipos de comandos que puede emitir el sistema de atajos
  */
 export type KeyboardCommand =
-    | 'create-new'
-    | 'edit'
-    | 'delete'
-    | 'search'
-    | 'refresh'
-    | 'save'
-    | 'escape';
+	| 'create-new'
+	| 'edit'
+	| 'delete'
+	| 'search'
+	| 'refresh'
+	| 'save'
+	| 'escape';
 
 /**
  * Estructura del evento de comando
  */
 interface CommandEvent {
-    command: KeyboardCommand;
-    timestamp: number;
+	command: KeyboardCommand;
+	timestamp: number;
 }
 
 /**
@@ -38,7 +38,7 @@ export const keyboardCommand = writable<CommandEvent | null>(null);
  * @param contextId - Identificador del contexto (ej: 'users-list')
  */
 export function setActiveContext(contextId: string | null): void {
-    activeContext.set(contextId);
+	activeContext.set(contextId);
 }
 
 /**
@@ -46,7 +46,7 @@ export function setActiveContext(contextId: string | null): void {
  * @param contextId - Contexto a verificar
  */
 export function isContextActive(contextId: string): boolean {
-    return get(activeContext) === contextId;
+	return get(activeContext) === contextId;
 }
 
 /**
@@ -54,12 +54,12 @@ export function isContextActive(contextId: string): boolean {
  * @param command - El comando a emitir
  */
 export function emitCommand(command: KeyboardCommand): void {
-    keyboardCommand.set({ command, timestamp: Date.now() });
+	keyboardCommand.set({ command, timestamp: Date.now() });
 }
 
 /**
  * Limpia el comando actual (útil después de procesarlo)
  */
 export function clearCommand(): void {
-    keyboardCommand.set(null);
+	keyboardCommand.set(null);
 }

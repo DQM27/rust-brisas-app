@@ -9,23 +9,23 @@ export const isAuthenticated = writable<boolean>(false);
 export const currentUser = writable<UserResponse | null>(null);
 
 export function login(user: UserResponse): void {
-  isAuthenticated.set(true);
-  currentUser.set(user);
+	isAuthenticated.set(true);
+	currentUser.set(user);
 
-  // Start session monitoring (activity tracking and timeout checking)
-  startSession();
+	// Start session monitoring (activity tracking and timeout checking)
+	startSession();
 }
 
 export async function logout(): Promise<void> {
-  // Stop session monitoring first
-  stopSession();
+	// Stop session monitoring first
+	stopSession();
 
-  // Clear authentication state
-  isAuthenticated.set(false);
-  currentUser.set(null);
+	// Clear authentication state
+	isAuthenticated.set(false);
+	currentUser.set(null);
 
-  // Close all tabs
-  resetTabs();
+	// Close all tabs
+	resetTabs();
 }
 
 /**
@@ -33,5 +33,5 @@ export async function logout(): Promise<void> {
  * Útil cuando se actualiza el perfil propio
  */
 export async function reloadSession(user: UserResponse): Promise<void> {
-  currentUser.set(user);
+	currentUser.set(user);
 }

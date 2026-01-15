@@ -1,16 +1,15 @@
 ---
-description: 
+description:
 ---
-
-
 
 ## ⚠️ REGLAS DE ORO (NUNCA OLVIDAR)
 
 ### 1. SIEMPRE EJECUTAR FASE 0 PRIMERO
+
 ```
 ❌ MAL: "Voy a refactorizar este servicio" → [empieza a modificar código]
 
-✅ BIEN: 
+✅ BIEN:
 1. Leer el workflow correspondiente COMPLETAMENTE
 2. Ejecutar análisis FASE 0 (view del archivo)
 3. Generar reporte de hallazgos
@@ -23,6 +22,7 @@ description:
 ---
 
 ### 2. UN WORKFLOW A LA VEZ
+
 ```
 ❌ MAL: "Voy a aplicar Workflow A, B y D al mismo tiempo"
 
@@ -34,6 +34,7 @@ description:
 ---
 
 ### 3. NO INVENTAR, SEGUIR EL WORKFLOW
+
 ```
 ❌ MAL: "Veo que este código necesita X, voy a agregarlo"
 
@@ -45,10 +46,11 @@ description:
 ---
 
 ### 4. REPORTAR ANTES DE ACTUAR
+
 ```
 ❌ MAL: [Hace cambios] "Listo, refactoricé el servicio"
 
-✅ BIEN: 
+✅ BIEN:
 "ANÁLISIS FASE 0:
 - Problema 1: ...
 - Problema 2: ...
@@ -60,6 +62,7 @@ description:
 ---
 
 ### 5. UN ARCHIVO A LA VEZ
+
 ```
 ❌ MAL: "Voy a refactorizar contratista_service.rs y vehiculo_service.rs"
 
@@ -78,6 +81,7 @@ description:
 Usuario dice: "Analiza este archivo: src/services/contratista_service.rs"
 
 Agente DEBE:
+
 1. ✅ Identificar capa: services/ → **Workflow A**
 2. ✅ Confirmar: "Usaré Workflow A - Servicios"
 3. ✅ Leer workflow completo: view /mnt/skills/... (SI HAY SKILL RELEVANTE)
@@ -85,6 +89,7 @@ Agente DEBE:
 ```
 
 **Mapeo rápido**:
+
 - `services/*.rs` → Workflow A
 - `domain/*.rs` → Workflow B
 - `models/*.rs` → Workflow C
@@ -112,27 +117,33 @@ Resultado: Generar archivo markdown con análisis completo
 ```
 
 **Plantilla de análisis**:
+
 ```markdown
 # ANÁLISIS FASE 0 - {nombre_archivo}
 
 ## PROBLEMAS CRÍTICOS (bloquean refactor)
+
 1. [CRÍTICO] Descripción del problema
    - Impacto: ...
    - Líneas afectadas: ...
    - Esfuerzo estimado: X horas
 
 ## PROBLEMAS MAYORES
+
 2. [ALTO] ...
 
 ## MEJORAS RECOMENDADAS
+
 3. [MEDIO] ...
 
 ## ESTIMACIÓN TOTAL
+
 - Críticos: X horas
 - Mayores: Y horas
 - **TOTAL**: Z horas
 
 ## ¿PROCEDER?
+
 Esperando aprobación del usuario.
 ```
 
@@ -144,12 +155,14 @@ Esperando aprobación del usuario.
 ❌ MAL: [Después del análisis] "Procedo a refactorizar..."
 
 ✅ BIEN: "Análisis completado. ¿Deseas que proceda con:
+
 - [ ] Refactor completo (Z horas)
 - [ ] Solo críticos (X horas)
 - [ ] Ajustar plan"
 ```
 
 **Usuario dirá**:
+
 - "Procede con refactor completo" → Ejecutar Fases 1-N
 - "Solo críticos" → Ejecutar solo secciones marcadas CRÍTICO
 - "Ajusta el plan" → Esperar nuevas instrucciones
@@ -173,7 +186,8 @@ Fase 2: [Según workflow]
 [Y así sucesivamente]
 ```
 
-**IMPORTANTE**: 
+**IMPORTANTE**:
+
 - Si el archivo es >500 LOC, el agente DEBE avisar: "Este archivo es grande. Haré el refactor en chunks."
 - Usar `str_replace` para cambios localizados
 - Crear archivo nuevo si el refactor es >80% del código
@@ -191,6 +205,7 @@ Agente DEBE ejecutar el checklist de "Verificación Final" del workflow:
 ✅ Formato: cargo fmt
 
 Si hay errores:
+
 - ❌ NO entregar el archivo
 - ✅ Corregir errores
 - ✅ Verificar nuevamente
@@ -202,6 +217,7 @@ Si hay errores:
 
 ```markdown
 Agente DEBE:
+
 1. ✅ Mover archivo refactorizado a /mnt/user-data/outputs/
 2. ✅ Usar present_files para mostrarlo
 3. ✅ Generar mensaje de commit usando plantilla del workflow
@@ -211,6 +227,7 @@ Agente DEBE:
 ```
 
 **Plantilla de mensaje de commit** (según workflow usado):
+
 ```
 refactor(services): refactorizar contratista_service según Workflow A
 
@@ -226,6 +243,7 @@ Closes #{numero_issue}
 ### Problema: Saturación de Contexto
 
 Cuando el chat es muy largo (>50K tokens), el agente puede:
+
 - ❌ Olvidar instrucciones iniciales
 - ❌ Mezclar información de diferentes módulos
 - ❌ Omitir pasos del workflow
@@ -255,6 +273,7 @@ Cuando el chat es muy largo (>50K tokens), el agente puede:
 ```
 
 **Beneficios**:
+
 - ✅ Contexto fresco en cada sesión
 - ✅ Agente enfocado en una sola tarea
 - ✅ Historial más limpio
@@ -270,16 +289,19 @@ Cuando el chat es muy largo (>50K tokens), el agente puede:
 # NUEVA SESIÓN: Refactorización de {Módulo}
 
 ## Contexto
+
 - Proyecto: Brisas APP (Rust + Tauri v2)
 - Módulo: {nombre del módulo, ej: Contratista}
 - Archivo a refactorizar: {ruta completa}
 - Workflow a usar: {A/B/C/D/E/G/H/I}
 
 ## Archivos Adjuntos
+
 1. {archivo_a_refactorizar.rs}
 2. [Workflows relevantes ya están en /mnt/user-data/outputs/]
 
 ## Instrucciones para el Agente
+
 1. Leer workflow correspondiente desde /mnt/user-data/outputs/
 2. Ejecutar FASE 0 (análisis sin modificar código)
 3. Generar reporte de hallazgos
@@ -287,12 +309,14 @@ Cuando el chat es muy largo (>50K tokens), el agente puede:
 5. Seguir protocolo de ejecución estándar
 
 ## Reglas Estrictas
+
 - ⚠️ NO modificar código hasta que yo apruebe
 - ⚠️ UN ARCHIVO a la vez
 - ⚠️ Seguir workflow al pie de la letra
 - ⚠️ Verificar compilación antes de entregar
 
 ## Estándares de Brisas APP
+
 - Documentación: Español, explicar "por qué"
 - Fechas: RFC 3339 para timestamps, YYYY-MM-DD para fechas simples
 - Logging: tauri-plugin-log con info!/warn!/error!
@@ -308,6 +332,7 @@ Cuando el chat es muy largo (>50K tokens), el agente puede:
 Antes de cada respuesta, el agente DEBE preguntarse:
 
 ### ¿Estoy siguiendo el protocolo?
+
 - [ ] ¿Leí el workflow completo antes de empezar?
 - [ ] ¿Ejecuté FASE 0 completamente?
 - [ ] ¿Esperé aprobación antes de modificar código?
@@ -315,12 +340,14 @@ Antes de cada respuesta, el agente DEBE preguntarse:
 - [ ] ¿Estoy siguiendo el workflow linealmente (Fase 1 → 2 → 3...)?
 
 ### ¿Estoy respetando las reglas de oro?
+
 - [ ] ¿Estoy aplicando solo UN workflow?
 - [ ] ¿Estoy reportando antes de actuar?
 - [ ] ¿Estoy siguiendo el checklist del workflow?
 - [ ] ¿NO estoy improvisando ni inventando pasos?
 
 ### ¿Voy a entregar calidad?
+
 - [ ] ¿Ejecuté los comandos de verificación (cargo check, test, clippy)?
 - [ ] ¿El código compila sin errores?
 - [ ] ¿Generé mensaje de commit usando plantilla?
@@ -333,8 +360,9 @@ Antes de cada respuesta, el agente DEBE preguntarse:
 Si el agente detecta alguna de estas situaciones, DEBE DETENERSE y reportar:
 
 ### 1. Archivo demasiado grande
+
 ```
-"⚠️ ALERTA: Este archivo tiene {N} líneas. 
+"⚠️ ALERTA: Este archivo tiene {N} líneas.
 Recomiendo dividir el refactor en múltiples sesiones:
 - Sesión 1: Fases 1-3
 - Sesión 2: Fases 4-6
@@ -342,6 +370,7 @@ Recomiendo dividir el refactor en múltiples sesiones:
 ```
 
 ### 2. Múltiples workflows aplicables
+
 ```
 "⚠️ ALERTA: Este archivo parece necesitar Workflow A y Workflow B.
 Recomiendo aplicarlos en sesiones separadas:
@@ -351,6 +380,7 @@ Recomiendo aplicarlos en sesiones separadas:
 ```
 
 ### 3. Dependencias circulares
+
 ```
 "⚠️ ALERTA: Para refactorizar este servicio, primero necesito:
 - Refactorizar {otro_archivo.rs}
@@ -359,6 +389,7 @@ Recomiendo aplicarlos en sesiones separadas:
 ```
 
 ### 4. Errores de compilación
+
 ```
 "⚠️ ALERTA: El código refactorizado no compila:
 {error de compilación}
@@ -378,6 +409,7 @@ El agente DEBE generar al final de cada sesión:
 # RESUMEN DE SESIÓN - {Fecha}
 
 ## Completado
+
 ✅ Módulo: Contratista
 ✅ Archivo: src/services/contratista_service.rs
 ✅ Workflow: A - Servicios
@@ -387,12 +419,14 @@ El agente DEBE generar al final de cada sesión:
 ✅ Commit: ✅ Listo
 
 ## Próxima Sesión Sugerida
+
 📌 Módulo: Contratista
 📌 Archivo: src/db/surrealdb_contratista_queries.rs
 📌 Workflow: D - Queries SurrealDB
 📌 Duración estimada: 5-7 horas
 
 ## Archivos Pendientes del Módulo Contratista
+
 - [ ] src/db/surrealdb_contratista_queries.rs (Workflow D)
 - [ ] src/commands/contratista_commands.rs (Workflow E)
 - [ ] src/domain/contratista.rs (Workflow B)
@@ -404,6 +438,7 @@ El agente DEBE generar al final de cada sesión:
 ## 🎓 EJEMPLO COMPLETO: Sesión Ideal
 
 ### Usuario inicia sesión:
+
 ```
 # NUEVA SESIÓN: Refactorización de Contratista (Servicio)
 
@@ -421,6 +456,7 @@ Aplica el protocolo estándar.
 Entendido. Usaré **Workflow A - Servicios**.
 
 ## Plan de Ejecución
+
 1. Leer workflow completo ✅
 2. Ejecutar FASE 0 (análisis)
 3. Reportar hallazgos
@@ -438,6 +474,7 @@ Comenzando con FASE 0...
 # ANÁLISIS FASE 0 - contratista_service.rs
 
 ## PROBLEMAS CRÍTICOS
+
 1. [CRÍTICO] Acceso directo a queries (líneas 45, 67, 89)
    - Viola Clean Architecture
    - Impacto: Testing imposible
@@ -453,11 +490,13 @@ Comenzando con FASE 0...
 ```
 
 ### Usuario aprueba:
+
 ```
 Sí, procede con refactor completo.
 ```
 
 ### Agente ejecuta:
+
 ```markdown
 Entendido. Ejecutando Fases 1-8...
 
@@ -480,6 +519,7 @@ Entendido. Ejecutando Fases 1-8...
 ### Cómo formular prompts claros
 
 #### ✅ BUENOS PROMPTS:
+
 ```
 "Analiza este servicio con Workflow A"
 "Aplica Workflow D a las queries de contratista"
@@ -489,6 +529,7 @@ Entendido. Ejecutando Fases 1-8...
 ```
 
 #### ❌ PROMPTS AMBIGUOS:
+
 ```
 "Mejora este código" (¿qué workflow? ¿qué criterios?)
 "Hazlo mejor" (demasiado vago)
@@ -500,12 +541,14 @@ Entendido. Ejecutando Fases 1-8...
 ## 🔄 CUANDO REINICIAR SESIÓN
 
 ### Reiniciar cuando:
+
 - ✅ Se completó refactor de 1 archivo (hacer commit y nueva sesión)
 - ✅ El chat tiene >40K tokens
 - ✅ El agente empieza a omitir pasos
 - ✅ Se cambió de módulo (Contratista → Usuario)
 
 ### NO reiniciar cuando:
+
 - ❌ Estás a mitad de un refactor
 - ❌ El agente está en FASE 0 (esperar reporte)
 - ❌ Hay errores de compilación por corregir
@@ -517,6 +560,7 @@ Entendido. Ejecutando Fases 1-8...
 El agente tiene acceso a estos archivos:
 
 ### Workflows:
+
 - `/mnt/user-data/outputs/workflow_a_servicios.md`
 - `/mnt/user-data/outputs/workflow_b_dominio.md`
 - `/mnt/user-data/outputs/workflow_c_modelos.md`
@@ -527,11 +571,13 @@ El agente tiene acceso a estos archivos:
 - `/mnt/user-data/outputs/workflow_i_configuration_setup.md`
 
 ### Análisis previos:
+
 - `/mnt/user-data/outputs/analisis_contratista_service.md`
 - `/mnt/user-data/outputs/analisis_contratista_queries.md`
 - `/mnt/user-data/outputs/analisis_ingreso_general_commands.md`
 
 ### Índice:
+
 - `/mnt/user-data/outputs/INDICE_WORKFLOWS_COMPLETO.md`
 
 ---
@@ -539,6 +585,7 @@ El agente tiene acceso a estos archivos:
 ## ✅ RESUMEN FINAL
 
 ### El agente SIEMPRE debe:
+
 1. ✅ Leer workflow completo antes de empezar
 2. ✅ Ejecutar FASE 0 primero (análisis)
 3. ✅ Esperar aprobación del usuario
@@ -549,6 +596,7 @@ El agente tiene acceso a estos archivos:
 8. ✅ Auto-verificarse con checklist
 
 ### El agente NUNCA debe:
+
 1. ❌ Modificar código sin análisis previo
 2. ❌ Improvisar o inventar pasos
 3. ❌ Trabajar en múltiples archivos simultáneamente

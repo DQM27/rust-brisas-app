@@ -6,8 +6,8 @@ export const activeView = writable('users');
 
 // Store para el sidebar
 export const sidebar = writable({
-  collapsed: false,
-  width: 20 // Porcentaje de ancho
+	collapsed: false,
+	width: 20 // Porcentaje de ancho
 });
 
 // Store para tabs (si no lo tienes en otro archivo)

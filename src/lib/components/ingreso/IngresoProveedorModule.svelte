@@ -1,5 +1,5 @@
 <script lang="ts">
-  import IngresoProveedorListView from "./IngresoProveedorListView.svelte";
+	import IngresoProveedorListView from './IngresoProveedorListView.svelte';
 </script>
 
 <IngresoProveedorListView tabId="ingreso-proveedor-list" />

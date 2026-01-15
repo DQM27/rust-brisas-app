@@ -1,0 +1,8 @@
+node_modules
+.svelte-kit
+build
+dist
+.tauri
+src-tauri
+package-lock.json
+*.surql

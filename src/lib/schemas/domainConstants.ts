@@ -1,9 +1,9 @@
 /**
  * Constantes de Validación del Dominio
- * 
+ *
  * Estas constantes DEBEN estar sincronizadas con:
  * Backend: src-tauri/src/domain/common.rs
- * 
+ *
  * FUENTE DE VERDAD: domain/common.rs (Rust)
  */
 

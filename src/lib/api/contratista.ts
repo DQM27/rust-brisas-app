@@ -3,65 +3,66 @@
 // ============================================
 // API Layer para contratistas - Tauri invoke calls
 
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from '@tauri-apps/api/core';
 import type {
-  ContratistaResponse,
-  ContratistaListResponse,
-  CreateContratistaInput,
-  UpdateContratistaInput
-} from "$lib/types/contratista";
+	ContratistaResponse,
+	ContratistaListResponse,
+	CreateContratistaInput,
+	UpdateContratistaInput
+} from '$lib/types/contratista';
 
 /**
  * API object for contratista operations
  * Follows the same pattern as users API
  */
 export const contratistas = {
-  create: async (input: CreateContratistaInput): Promise<ContratistaResponse> => {
-    return await invoke<ContratistaResponse>("create_contratista", { input });
-  },
+	create: async (input: CreateContratistaInput): Promise<ContratistaResponse> => {
+		return await invoke<ContratistaResponse>('create_contratista', { input });
+	},
 
-  list: async (): Promise<ContratistaListResponse> => {
-    return await invoke<ContratistaListResponse>("get_all_contratistas");
-  },
+	list: async (): Promise<ContratistaListResponse> => {
+		return await invoke<ContratistaListResponse>('get_all_contratistas');
+	},
 
-  getById: async (id: string): Promise<ContratistaResponse> => {
-    return await invoke<ContratistaResponse>("get_contratista_by_id", { id });
-  },
+	getById: async (id: string): Promise<ContratistaResponse> => {
+		return await invoke<ContratistaResponse>('get_contratista_by_id', { id });
+	},
 
-  update: async (id: string, input: UpdateContratistaInput): Promise<ContratistaResponse> => {
-    return await invoke<ContratistaResponse>("update_contratista", { id, input });
-  },
+	update: async (id: string, input: UpdateContratistaInput): Promise<ContratistaResponse> => {
+		return await invoke<ContratistaResponse>('update_contratista', { id, input });
+	},
 
-  delete: async (id: string): Promise<boolean> => {
-    return await invoke<boolean>("delete_contratista", { id });
-  },
+	delete: async (id: string): Promise<boolean> => {
+		return await invoke<boolean>('delete_contratista', { id });
+	},
 
-  changeEstado: async (id: string, estado: string): Promise<ContratistaResponse> => {
-    return await invoke<ContratistaResponse>("cambiar_estado_contratista", { id, input: { id, estado } });
-  },
+	changeEstado: async (id: string, estado: string): Promise<ContratistaResponse> => {
+		return await invoke<ContratistaResponse>('cambiar_estado_contratista', {
+			id,
+			input: { id, estado }
+		});
+	},
 
-  restore: async (id: string): Promise<{ ok: boolean; error?: string }> => {
-    try {
-      await invoke<void>("restore_contratista", { id });
-      return { ok: true };
-    } catch (e: any) {
-      return { ok: false, error: e.message || String(e) };
-    }
-  },
+	restore: async (id: string): Promise<{ ok: boolean; error?: string }> => {
+		try {
+			await invoke<void>('restore_contratista', { id });
+			return { ok: true };
+		} catch (e: any) {
+			return { ok: false, error: e.message || String(e) };
+		}
+	},
 
-  listArchived: async (): Promise<ContratistaResponse[]> => {
-    return await invoke<ContratistaResponse[]>("get_archived_contratistas");
-  },
+	listArchived: async (): Promise<ContratistaResponse[]> => {
+		return await invoke<ContratistaResponse[]>('get_archived_contratistas');
+	},
 
-  // Alias to satisfy TrashService interface
-  getArchived: async (): Promise<{ ok: boolean; data: ContratistaResponse[]; error?: string }> => {
-    try {
-      const data = await invoke<ContratistaResponse[]>("get_archived_contratistas");
-      return { ok: true, data };
-    } catch (e: any) {
-      return { ok: false, data: [], error: e.message || String(e) };
-    }
-  },
-
-
+	// Alias to satisfy TrashService interface
+	getArchived: async (): Promise<{ ok: boolean; data: ContratistaResponse[]; error?: string }> => {
+		try {
+			const data = await invoke<ContratistaResponse[]>('get_archived_contratistas');
+			return { ok: true, data };
+		} catch (e: any) {
+			return { ok: false, data: [], error: e.message || String(e) };
+		}
+	}
 };
