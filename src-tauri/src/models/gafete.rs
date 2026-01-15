@@ -20,7 +20,7 @@ pub struct Gafete {
     /// Estado físico del gafete.
     pub estado: GafeteEstado,
     /// Indica si el gafete está actualmente asignado a un ingreso activo.
-    #[serde(default)]
+    #[serde(default, alias = "en_uso")]
     pub en_uso: bool,
     #[serde(alias = "created_at")]
     pub created_at: Datetime,

@@ -287,7 +287,10 @@ where
             .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
 
         if let Some(ref g) = nuevo_ingreso.gafete_numero {
-            let _ = self.gafete_repo.marcar_en_uso(*g, "contratista").await;
+            if let Err(e) = self.gafete_repo.marcar_en_uso(*g, "contratista").await {
+                error!("ERROR CRÍTICO: No se pudo marcar gafete {} como 'en uso': {}", g, e);
+                // No fallamos la transacción general pero dejamos evidencia del problema
+            }
         }
 
         info!("Ingreso registrado: Contratista {} ingresó a planta", input.contratista_id);

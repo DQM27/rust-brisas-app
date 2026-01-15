@@ -384,7 +384,7 @@ pub enum IngresoContratistaError {
     PraindExpired(String),
     #[error("El contratista no está activo")]
     ContratistaInactive,
-    #[error("Gafete no disponible")]
+    #[error("Gafete no disponible (está en uso o tiene alerta pendiente)")]
     GafeteNotAvailable,
     #[error("Error de gafete: {0}")]
     Gafete(String),
