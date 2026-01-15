@@ -9,7 +9,8 @@
 use crate::db::surrealdb_alerta_queries as db;
 use crate::domain::errors::AlertaError;
 use crate::models::ingreso::AlertaGafete;
-use log::{error, info};
+use crate::services::gafete_service;
+use log::{error, info, warn};
 
 /// Localiza una alerta específica para su auditoría o resolución.
 ///
@@ -82,6 +83,7 @@ pub async fn insert(input: crate::models::ingreso::CreateAlertaInput) -> Result<
 /// Marca una alerta como gestionada/resuelta.
 ///
 /// Registra qué usuario resolvió la incidencia y las notas correspondientes.
+/// **IMPORTANTE**: También libera el gafete asociado para que vuelva al inventario.
 ///
 /// # Arguments
 ///
@@ -95,11 +97,41 @@ pub async fn resolver(
 ) -> Result<(), AlertaError> {
     let id = input.alerta_id.clone();
 
-    info!("Resolviendo alerta {id}");
+    // 1. Obtener la alerta antes de resolverla para conocer el gafete
+    let alerta = find_by_id(&id).await?;
+    let gafete_numero = alerta.gafete_numero;
+
+    // 2. Determinar el tipo de gafete basado en qué tipo de ingreso tiene
+    let tipo_gafete = if alerta.ingreso_contratista.is_some() {
+        "contratista"
+    } else if alerta.ingreso_proveedor.is_some() {
+        "proveedor"
+    } else if alerta.ingreso_visita.is_some() {
+        "visita"
+    } else {
+        "contratista" // Default fallback
+    };
+
+    info!("Resolviendo alerta {id} (gafete: {gafete_numero}, tipo: {tipo_gafete})");
+
+    // 3. Resolver la alerta en BD
     db::resolver(input).await.map_err(|e| {
         error!("Error al resolver alerta {id}: {e}");
         AlertaError::Database(e.to_string())
     })?;
+
+    // 4. Liberar el gafete para que vuelva al inventario
+    if gafete_numero != 0 {
+        match gafete_service::liberar_gafete(gafete_numero, tipo_gafete).await {
+            Ok(()) => {
+                info!("Gafete {gafete_numero} liberado exitosamente tras resolver alerta {id}");
+            }
+            Err(e) => {
+                // No fallamos la resolución por esto, solo advertimos
+                warn!("No se pudo liberar gafete {gafete_numero} tras resolver alerta: {e:?}");
+            }
+        }
+    }
 
     info!("Alerta {id} resuelta exitosamente");
     Ok(())

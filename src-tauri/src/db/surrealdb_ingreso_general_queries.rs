@@ -5,6 +5,7 @@
 
 use crate::models::ingreso::UniversalIngresoFetched;
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
+use log::{error, info};
 use surrealdb::RecordId;
 
 // NOTE: Now unifies [ingreso_contratista, ingreso_proveedor, ingreso_visita]
@@ -21,8 +22,9 @@ pub async fn find_all() -> Result<Vec<serde_json::Value>, SurrealDbError> {
 
 pub async fn find_all_fetched() -> Result<Vec<UniversalIngresoFetched>, SurrealDbError> {
     let db = get_db().await?;
+    // Cast type::table to string to ensure proper JSON serialization
     let mut result = db
-        .query(format!("SELECT *, type::table(id) AS tipo_ingreso FROM {TABLES} ORDER BY created_at DESC LIMIT 500 {FETCH_ALL}"))
+        .query(format!("SELECT *, <string>type::table(id) AS tipo_ingreso FROM {TABLES} ORDER BY created_at DESC LIMIT 500 {FETCH_ALL}"))
         .await?;
     Ok(result.take(0)?)
 }
@@ -30,39 +32,51 @@ pub async fn find_all_fetched() -> Result<Vec<UniversalIngresoFetched>, SurrealD
 pub async fn find_ingresos_abiertos_fetched() -> Result<Vec<UniversalIngresoFetched>, SurrealDbError>
 {
     let db = get_db().await?;
-    let mut result = db
-        .query(format!(
-            "SELECT *, type::table(id) AS tipo_ingreso, type::int(gafete_numero) AS gafete_numero FROM {TABLES} WHERE fecha_hora_salida IS NONE ORDER BY created_at DESC {FETCH_ALL}"
-        ))
-        .await?;
 
-    // LOGGING DEBUG
-    // We cannot peek into result without consuming it easily, so we rely on the specific error context
-    // or we fetch as Value separately for debugging (expensive but safe).
-    // Better approach: Let's catch the error if deserialization fails?
-    // Actually, SurrealDB driver errors on .take() if schema mismatch.
+    // Query each table separately to avoid SurrealDB SDK serialization issues with unified table syntax
+    let mut all_items: Vec<UniversalIngresoFetched> = Vec::new();
 
-    // For specific debugging, let's verify data structure by adding a raw query.
-    #[cfg(debug_assertions)]
-    {
-        let raw: Vec<serde_json::Value> = db.query(format!("SELECT *, type::table(id) AS tipo_ingreso FROM {TABLES} WHERE fecha_hora_salida IS NONE ORDER BY created_at DESC {FETCH_ALL}"))
-            .await?
-            .take(0)?;
-        println!(
-            "[DEBUG] Raw Ingresos Fetch: {}",
-            serde_json::to_string_pretty(&raw).unwrap_or_default()
-        );
+    // 1. Contratistas
+    let contratistas: Vec<crate::models::ingreso::IngresoContratistaFetched> = db
+        .query("SELECT * FROM ingreso_contratista WHERE fecha_hora_salida IS NONE ORDER BY created_at DESC FETCH usuario_ingreso, usuario_salida, contratista, contratista.empresa")
+        .await?
+        .take(0)?;
+
+    for c in contratistas {
+        all_items.push(UniversalIngresoFetched::Contratista(c));
     }
 
-    Ok(result.take(0)?)
+    // 2. Proveedores
+    let proveedores: Vec<crate::models::ingreso::IngresoProveedorFetched> = db
+        .query("SELECT * FROM ingreso_proveedor WHERE fecha_hora_salida IS NONE ORDER BY created_at DESC FETCH usuario_ingreso, usuario_salida, proveedor, proveedor.empresa")
+        .await?
+        .take(0)?;
+
+    for p in proveedores {
+        all_items.push(UniversalIngresoFetched::Proveedor(p));
+    }
+
+    // 3. Visitas
+    let visitas: Vec<crate::models::ingreso::IngresoVisitaFetched> = db
+        .query("SELECT * FROM ingreso_visita WHERE fecha_hora_salida IS NONE ORDER BY created_at DESC FETCH usuario_ingreso, usuario_salida")
+        .await?
+        .take(0)?;
+
+    for v in visitas {
+        all_items.push(UniversalIngresoFetched::Visita(v));
+    }
+
+    info!("find_ingresos_abiertos_fetched: {} total items from all tables", all_items.len());
+    Ok(all_items)
 }
 
 pub async fn find_by_id_fetched(
     id: &RecordId,
 ) -> Result<Option<UniversalIngresoFetched>, SurrealDbError> {
     let db = get_db().await?;
+    // Cast type::table to string to ensure proper JSON serialization
     let mut result = db
-        .query(format!("SELECT *, type::table(id) AS tipo_ingreso FROM $id {FETCH_ALL}"))
+        .query(format!("SELECT *, <string>type::table(id) AS tipo_ingreso FROM $id {FETCH_ALL}"))
         .bind(("id", id.clone()))
         .await?;
     Ok(result.take(0)?)
@@ -72,9 +86,10 @@ pub async fn find_ingreso_by_gafete_fetched(
     gafete: i32,
 ) -> Result<Option<UniversalIngresoFetched>, SurrealDbError> {
     let db = get_db().await?;
+    // Cast type::table to string to ensure proper JSON serialization
     let mut result = db
         .query(format!(
-            "SELECT *, type::table(id) AS tipo_ingreso FROM {TABLES} WHERE gafete_numero = $gafete AND fecha_hora_salida IS NONE LIMIT 1 {FETCH_ALL}"
+            "SELECT *, <string>type::table(id) AS tipo_ingreso FROM {TABLES} WHERE gafete_numero = $gafete AND fecha_hora_salida IS NONE LIMIT 1 {FETCH_ALL}"
         ))
         .bind(("gafete", gafete))
         .await?;
@@ -86,9 +101,10 @@ pub async fn find_salidas_in_range_fetched(
     end: &str,
 ) -> Result<Vec<UniversalIngresoFetched>, SurrealDbError> {
     let db = get_db().await?;
+    // Cast type::table to string to ensure proper JSON serialization
     let mut result = db
         .query(format!(
-            "SELECT *, type::table(id) AS tipo_ingreso FROM {TABLES} WHERE fecha_hora_salida >= type::datetime($start) AND fecha_hora_salida <= type::datetime($end) ORDER BY fecha_hora_salida DESC {FETCH_ALL}"
+            "SELECT *, <string>type::table(id) AS tipo_ingreso FROM {TABLES} WHERE fecha_hora_salida >= type::datetime($start) AND fecha_hora_salida <= type::datetime($end) ORDER BY fecha_hora_salida DESC {FETCH_ALL}"
         ))
         .bind(("start", start.to_string()))
         .bind(("end", end.to_string()))

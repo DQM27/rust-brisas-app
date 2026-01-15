@@ -76,6 +76,8 @@
       aria-modal="true"
       aria-labelledby="modal-title"
       aria-describedby="modal-desc"
+      tabindex="-1"
+      onkeydown={(e) => e.stopPropagation()}
     >
       <!-- Header -->
       <div

@@ -112,6 +112,16 @@ where
             });
         }
 
+        // Consultar alertas de gafete pendientes (deudas de gafetes no devueltos)
+        let alertas_pendientes =
+            crate::services::alerta_service::find_pendientes_by_cedula(&contratista.cedula)
+                .await
+                .unwrap_or_default();
+
+        let tiene_deuda_gafete = !alertas_pendientes.is_empty();
+        let alerta_gafete_msg =
+            alertas_pendientes.first().map(|a| format!("Debe gafete #{}", a.gafete_numero));
+
         let motor_ctx = MotorContexto {
             ident_cedula: contratista.cedula.clone(),
             ident_nombre: format!("{} {}", contratista.nombre, contratista.apellido),
@@ -129,20 +139,65 @@ where
             },
             ingreso_activo: None,
             estado_autorizacion: estado_autorizacion_calculado,
-            alerta_gafete: None,
+            alerta_gafete: alerta_gafete_msg,
         };
 
         let motor_res = motor::ejecutar_validacion_motor(&motor_ctx);
 
+        // Convertir alertas a lista de strings para el frontend
+        let alertas_str: Vec<String> = alertas_pendientes
+            .iter()
+            .map(|a| {
+                // Limpiar formato de fecha SurrealDB: d'2026-01-15T00:34:15.171651Z' -> 15/01/2026
+                let fecha_raw = a.fecha_reporte.to_string();
+                let fecha_iso = fecha_raw
+                    .trim_start_matches("d'")
+                    .trim_end_matches('\'')
+                    .split('T')
+                    .next()
+                    .unwrap_or(&fecha_raw);
+
+                // Convertir YYYY-MM-DD a DD/MM/YYYY
+                let fecha_formateada = if let Some((y, rest)) = fecha_iso.split_once('-') {
+                    if let Some((m, d)) = rest.split_once('-') {
+                        format!("{}/{}/{}", d, m, y)
+                    } else {
+                        fecha_iso.to_string()
+                    }
+                } else {
+                    fecha_iso.to_string()
+                };
+
+                format!("Gafete #{} no devuelto ({})", a.gafete_numero, fecha_formateada)
+            })
+            .collect();
+        let num_alertas = alertas_str.len();
+
+        // Regla de negocio: máximo 2 gafetes adeudados permitidos
+        const MAX_GAFETES_ADEUDADOS: usize = 2;
+        let excede_limite_gafetes = num_alertas > MAX_GAFETES_ADEUDADOS;
+
+        // El motor devuelve Warning para alertas de gafete, Allowed si todo está bien, Denied para bloqueos
+        let motor_permite = motor_res.status == ValidationStatus::Allowed
+            || motor_res.status == ValidationStatus::Warning;
+        let motor_denegado = motor_res.status == ValidationStatus::Denied;
+
         Ok(ValidacionIngresoResponse {
-            puede_ingresar: motor_res.status == ValidationStatus::Allowed,
-            motivo_rechazo: if motor_res.status == ValidationStatus::Allowed {
-                None
+            // Permitir si: motor permite Y no excede límite de gafetes
+            puede_ingresar: motor_permite && !excede_limite_gafetes,
+            motivo_rechazo: if motor_denegado {
+                // Bloqueado por lista negra, vencido, etc.
+                Some(motor_res.message.clone())
+            } else if excede_limite_gafetes {
+                Some(format!(
+                    "Tiene {} gafetes sin devolver (máximo permitido: {}). Debe pagar o devolver antes de ingresar.",
+                    num_alertas, MAX_GAFETES_ADEUDADOS
+                ))
             } else {
-                Some(motor_res.message)
+                None // Puede ingresar (con o sin alertas de gafete)
             },
             severidad_lista_negra: if b.is_blocked { b.nivel_severidad.clone() } else { None },
-            alertas: vec![],
+            alertas: alertas_str,
             contratista: Some(
                 serde_json::to_value(ContratistaResponse::from_fetched(contratista)).unwrap(),
             ),

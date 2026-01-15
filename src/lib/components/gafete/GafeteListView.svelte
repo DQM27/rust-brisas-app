@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
   import { toast } from "svelte-5-french-toast";
   import type { ColDef } from "@ag-grid-community/core";
+  import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
   import AGGridWrapper from "$lib/components/grid/AGGridWrapper.svelte";
   import { createCustomButton } from "$lib/config/agGridConfigs";
@@ -31,6 +32,9 @@
   // Estado para modal de resolución de alertas
   let showResolveModal = $state(false);
   let selectedAlertGafete = $state<GafeteResponse | null>(null);
+
+  // Event listener cleanup
+  let unlistenRefresh: UnlistenFn | null = null;
 
   // Definición de columnas usando la clase especializada
   const columnDefs = $derived(
@@ -214,8 +218,21 @@
     formLoading = false;
   }
 
-  onMount(() => {
+  onMount(async () => {
     loadGafetes();
+
+    // Escuchar evento de refresh cuando hay ingreso/salida
+    unlistenRefresh = await listen("gafetes:refresh", () => {
+      console.log("[GafeteListView] Refresh event received");
+      loadGafetes();
+    });
+  });
+
+  onDestroy(() => {
+    // Cleanup event listener
+    if (unlistenRefresh) {
+      unlistenRefresh();
+    }
   });
 </script>
 

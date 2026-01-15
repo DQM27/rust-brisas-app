@@ -379,6 +379,24 @@
               </div>
             </div>
 
+            <!-- Alertas de Gafete Pendientes (Amarillo) - Mostrar SIEMPRE si hay alertas -->
+            {#if validationResult.alertas && validationResult.alertas.length > 0}
+              <div
+                class="mb-4 flex flex-col gap-1 text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 p-2.5 rounded-lg text-xs"
+                transition:slide
+              >
+                <div class="flex items-center gap-2">
+                  <AlertTriangle size={16} />
+                  <span class="font-medium">
+                    ⚠️ Debe {validationResult.alertas.length} gafete(s)
+                  </span>
+                </div>
+                {#each validationResult.alertas as alerta}
+                  <span class="ml-6 text-yellow-400/80">{alerta}</span>
+                {/each}
+              </div>
+            {/if}
+
             <!-- Recordatorio PRAIND (Amarillo) - Solo si requiere atención o está vencido -->
             {#if validationResult.contratista?.requiereAtencion || (validationResult.contratista?.diasHastaVencimiento !== undefined && validationResult.contratista.diasHastaVencimiento < 0)}
               {@const days = validationResult.contratista.diasHastaVencimiento}
@@ -399,7 +417,7 @@
                 </span>
               </div>
             {:else if validationResult.puedeIngresar}
-              <!-- Badge Verde solo si NO hay alerta de PRAIND -->
+              <!-- Badge Verde solo si puede ingresar -->
               <div
                 class="flex items-center gap-2 text-sm text-success bg-success bg-opacity-10 px-3 py-2 rounded-md mb-4"
                 transition:fade
@@ -408,7 +426,7 @@
               </div>
             {/if}
 
-            <!-- Alertas/Warnings (amarillo) - Oculto el badge verde por redundancia -->
+            <!-- Motivo de Rechazo (Rojo) - Solo si NO puede ingresar -->
             {#if !validationResult.puedeIngresar}
               <div
                 class={getSeverityClasses(validationResult.severidadListaNegra)}

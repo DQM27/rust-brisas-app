@@ -23,7 +23,7 @@ use crate::repositories::{
 use crate::services::ingreso_contratista_service::IngresoContratistaService;
 use crate::services::session::SessionState;
 
-use tauri::{command, State};
+use tauri::{command, AppHandle, Emitter, State};
 
 // --------------------------------------------------------------------------
 // HELPERS: Construcción del Servicio
@@ -63,12 +63,18 @@ pub async fn validate_ingreso_contratista(
 /// El `usuario_id` se extrae de la sesión para evitar suplantación.
 #[command]
 pub async fn create_ingreso_contratista(
+    app: AppHandle,
     session: State<'_, SessionState>,
     input: CreateIngresoContratistaInput,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
     let user = require_session!(session);
     require_perm!(session, "ingresos:create")?;
-    create_service().crear_ingreso_contratista(input, user.id.clone()).await
+    let result = create_service().crear_ingreso_contratista(input, user.id.clone()).await?;
+
+    // Emit event to refresh gafete grid
+    let _ = app.emit("gafetes:refresh", ());
+
+    Ok(result)
 }
 
 // --------------------------------------------------------------------------
@@ -95,12 +101,18 @@ pub async fn validate_exit_contratista(
 /// El `usuario_id` se extrae de la sesión para evitar suplantación.
 #[command]
 pub async fn register_exit_contratista(
+    app: AppHandle,
     session: State<'_, SessionState>,
     input: RegistrarSalidaInput,
 ) -> Result<IngresoResponse, IngresoContratistaError> {
     let user = require_session!(session);
     require_perm!(session, "ingresos:update")?;
-    create_service().registrar_salida(input, user.id.clone()).await
+    let result = create_service().registrar_salida(input, user.id.clone()).await?;
+
+    // Emit event to refresh gafete grid
+    let _ = app.emit("gafetes:refresh", ());
+
+    Ok(result)
 }
 
 // --------------------------------------------------------------------------

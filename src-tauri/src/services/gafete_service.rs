@@ -47,6 +47,7 @@ fn parse_gafete_id(id_str: &str) -> Result<RecordId, GafeteError> {
 /// 1. El gafete debe existir en base de datos.
 /// 2. Su estado debe ser `Activo`.
 /// 3. No debe estar marcado como `en_uso`.
+/// 4. No debe tener alertas pendientes (gafete perdido/no devuelto).
 ///
 /// # Argumentos
 /// * `numero` - Número identificador del gafete.
@@ -55,8 +56,27 @@ fn parse_gafete_id(id_str: &str) -> Result<RecordId, GafeteError> {
 /// # Retorno
 /// `true` si puede asignarse, `false` en caso contrario.
 pub async fn is_gafete_disponible(numero: i32, tipo: &str) -> Result<bool, GafeteError> {
+    use crate::db::surrealdb_alerta_queries as alerta_db;
+
     match db::get_gafete(numero, tipo).await {
-        Ok(Some(g)) => Ok(g.estado == GafeteEstado::Activo && !g.en_uso),
+        Ok(Some(g)) => {
+            // Criterio básico: estado activo y no en uso
+            if g.estado != GafeteEstado::Activo || g.en_uso {
+                return Ok(false);
+            }
+
+            // Criterio adicional: verificar si hay alerta pendiente para este gafete
+            let alertas_pendientes = alerta_db::find_all(Some(false)).await.unwrap_or_default();
+
+            let tiene_alerta = alertas_pendientes.iter().any(|a| a.gafete_numero == numero);
+
+            if tiene_alerta {
+                warn!("Gafete {numero} tiene alerta pendiente - no disponible");
+                return Ok(false);
+            }
+
+            Ok(true)
+        }
         Ok(None) => Ok(false),
         Err(e) => {
             error!("Error DB consultando disponibilidad de gafete {numero}: {e}");
