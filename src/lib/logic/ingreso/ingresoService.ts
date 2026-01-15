@@ -22,7 +22,7 @@ export async function validarIngreso(
 	tipo: TipoIngreso,
 	id: string
 ): Promise<ValidacionIngresoResult> {
-	console.log(`[IngresoService] Validando ingreso ${tipo} para ID: ${id}`);
+
 
 	try {
 		let response: ValidacionIngresoResponse;
@@ -221,12 +221,7 @@ export async function crearIngreso(
 		});
 		throw new Error('Se requiere un usuario autenticado para registrar el ingreso');
 	}
-	console.log(`[IngresoService] Creando ingreso ${tipo}`, {
-		candidateId,
-		formData,
-		extraData,
-		usuarioId
-	});
+
 
 	try {
 		if (tipo === 'contratista') {
@@ -254,7 +249,7 @@ export async function crearIngreso(
 				},
 				usuarioId: usuarioId
 			};
-			console.log('[IngresoService] >>> Payload to send:', JSON.stringify(payload, null, 2));
+
 			return await invoke('create_ingreso_contratista', payload);
 		} else if (tipo === 'proveedor') {
 			return await invoke('crear_ingreso_proveedor_v2', {

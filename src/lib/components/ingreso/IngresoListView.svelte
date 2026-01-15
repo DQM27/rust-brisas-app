@@ -213,7 +213,8 @@
 					if (!date) return '';
 					return date.toLocaleTimeString('es-ES', {
 						hour: '2-digit',
-						minute: '2-digit'
+						minute: '2-digit',
+						hour12: false
 					});
 				}
 			},
@@ -249,7 +250,8 @@
 					if (!date) return '-';
 					return date.toLocaleTimeString('es-ES', {
 						hour: '2-digit',
-						minute: '2-digit'
+						minute: '2-digit',
+						hour12: false
 					});
 				}
 			},
@@ -327,7 +329,6 @@
 			label: 'List Contratista',
 			icon: FileText, // Icono de lista/archivo
 			onClick: () => {
-				console.log('Abriendo pestaña de contratistas...'); // Debug log
 				openTab({
 					componentKey: 'contratista-list',
 					title: 'List. Contratistas',

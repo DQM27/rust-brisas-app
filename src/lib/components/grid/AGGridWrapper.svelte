@@ -218,11 +218,8 @@
 
 		// Skip if grid is not ready yet (initial restore hasn't completed)
 		if (persistenceKey && !gridState.isReady(persistenceKey)) {
-			console.log('[AGGridWrapper] Skipping columnDefs update - grid not ready yet');
 			return;
 		}
-
-		console.log('[AGGridWrapper] columnDefs updated - preserving state');
 
 		// Save current column state BEFORE applying new columnDefs
 		const savedState = gridApi.getColumnState();

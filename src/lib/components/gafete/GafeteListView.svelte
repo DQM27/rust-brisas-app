@@ -213,7 +213,6 @@
 
 		// Escuchar evento de refresh cuando hay ingreso/salida
 		unlistenRefresh = await listen('gafetes:refresh', () => {
-			console.log('[GafeteListView] Refresh event received');
 			loadGafetes();
 		});
 	});

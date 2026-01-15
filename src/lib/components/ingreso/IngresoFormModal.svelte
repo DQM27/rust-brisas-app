@@ -131,18 +131,6 @@
 			validationResult = await ingresoService.validarIngreso('contratista', id);
 
 			// DEBUG: Ver estructura de datos para PRAIND
-			console.log(
-				'[IngresoFormModal] validationResult:',
-				JSON.stringify(validationResult, null, 2)
-			);
-			console.log(
-				'[IngresoFormModal] contratista praindVencido:',
-				validationResult?.contratista?.praindVencido
-			);
-			console.log(
-				'[IngresoFormModal] persona praindVigente:',
-				validationResult?.persona?.praindVigente
-			);
 
 			if (validationResult.persona) {
 				// Merge validation data. Note: validation returns string state, we need to handle that.
@@ -183,12 +171,6 @@
 
 			const contratistaIdStr = stringifyRecordId(selectedPerson.id);
 			const usuarioIdStr = stringifyRecordId($currentUser?.id);
-
-			console.log('[IngresoFormModal] Prep Submit:', {
-				contratistaIdStr,
-				usuarioIdStr,
-				currentUser: $currentUser
-			});
 
 			if (!usuarioIdStr) {
 				toast.error(

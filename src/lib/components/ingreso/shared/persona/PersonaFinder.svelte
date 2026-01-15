@@ -16,7 +16,6 @@
 
 	async function handleSearch(q: string): Promise<SearchResult[]> {
 		try {
-			console.log(`Searching for "${q}" in scope ${scope}`);
 			const rawResults: any[] = await invoke('search_global', {
 				query: q,
 				limit: 10

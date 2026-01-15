@@ -1,3 +1,4 @@
+use crate::domain::common::datetime_to_iso; // Import shared utility
 /// Modelo de Respuesta: Ingreso Unificado.
 ///
 /// Define las estructuras de transferencia de datos (DTOs) que representan
@@ -16,16 +17,6 @@ use crate::models::ingreso::{
 };
 use serde::Serialize;
 use surrealdb::Datetime;
-
-/// Convierte un `surrealdb::Datetime` a formato ISO8601 compatible con JavaScript
-fn datetime_to_iso(dt: &Datetime) -> String {
-    // La representación string de surrealdb::Datetime es "d'YYYY-MM-DD...'"
-    // Limpiamos los decoradores para obtener solo la fecha ISO
-    let raw = dt.to_string();
-    let clean = raw.trim_start_matches("d'").trim_end_matches('\'').to_string();
-    log::info!("Date conversion: raw='{raw}' -> clean='{clean}'");
-    clean
-}
 
 /// Calcula la duración entre dos fechas y devuelve (minutos, texto formateado)
 fn calculate_duration(start: &Datetime, end: Option<&Datetime>) -> (Option<i64>, Option<String>) {

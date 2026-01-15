@@ -101,27 +101,27 @@ class GridStateStore {
 
 		// If a restore is already in progress, return the existing promise
 		if (this.restorePromises.has(persistenceKey)) {
-			console.log(`[GridState] Joining existing restore for ${persistenceKey}`);
+
 			return this.restorePromises.get(persistenceKey)!;
 		}
 
 		const restorePromise = (async () => {
 			// Set restoring flag IMMEDIATELY to block any saves during async load
 			this.restoring.set(persistenceKey, true);
-			console.log(`[GridState] Starting restore for ${persistenceKey} (Blocking saves)`);
+
 
 			try {
 				const state = await loadColumnState(this.getKey(persistenceKey));
 
 				if (!state) {
-					console.log(`[GridState] No saved state found for ${persistenceKey}, unblocking saves`);
+
 					this.restoring.set(persistenceKey, false);
 					// Enable saving immediately for new grids
 					this.canSave.set(persistenceKey, true);
 					return false;
 				}
 
-				console.log(`[GridState] Applying state for ${persistenceKey}`, state);
+
 				api.applyColumnState({
 					state,
 					applyOrder: true
@@ -154,16 +154,16 @@ class GridStateStore {
 
 		// Don't save if restoring OR if there is an active restore promise
 		if (this.restoring.get(persistenceKey) || this.restorePromises.has(persistenceKey)) {
-			console.log(`[GridState] Skipping save for ${persistenceKey} (Restoring)`);
+
 			return;
 		}
 		if (!this.canSave.get(persistenceKey)) {
-			console.log(`[GridState] Skipping save for ${persistenceKey} (Not allowed yet)`);
+
 			return;
 		}
 
 		try {
-			console.log(`[GridState] Saving state for ${persistenceKey}`);
+
 			const state = api.getColumnState();
 			saveColumnState(this.getKey(persistenceKey), state);
 		} catch (e) {
