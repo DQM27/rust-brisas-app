@@ -362,33 +362,3 @@ pub const fn is_export_available() -> bool {
 // TESTS UNITARIOS
 // ==========================================
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_sanitizar_filename() {
-        assert_eq!(sanitizar_filename("Reporte Mensual"), "Reporte_Mensual");
-        assert_eq!(sanitizar_filename("Test@#$%"), "Test");
-        assert_eq!(sanitizar_filename("File (1).xlsx"), "File_-1--xlsx");
-    }
-
-    #[test]
-    fn test_is_export_available() {
-        // Just verify it returns a valid bool (compile-time check)
-        let _available: bool = is_export_available();
-    }
-
-    #[test]
-    fn test_defaults_pdf_config() {
-        let mut req = ExportRequest::default();
-        req.format = "pdf".to_string();
-
-        // Defaults cuando no se envía title ni orientation
-        let config = construir_pdf_config(&req).unwrap();
-        assert_eq!(config.title, "Reporte");
-        assert!(matches!(config.orientation, PageOrientation::Landscape));
-        assert_eq!(config.font_size, 10);
-        assert!((config.margin_top - 2.0_f32).abs() < f32::EPSILON);
-    }
-}

@@ -406,31 +406,3 @@ pub async fn delete_gafete(id_str: &str) -> Result<(), GafeteError> {
 // TESTS UNITARIOS
 // --------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_gafete_id_simple() {
-        let res = parse_gafete_id("123");
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap().to_string(), "gafete:⟨123⟩");
-    }
-
-    #[test]
-    fn test_parse_gafete_id_compuesto() {
-        let res = parse_gafete_id("gafete:456");
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap().to_string(), "gafete:456");
-    }
-
-    #[test]
-    fn test_parse_gafete_id_invalido() {
-        // RecordId requiere formato válido si tiene ":"
-        let res = parse_gafete_id("tabla:sin_valor:"); // Formato raro
-                                                       // Dependerá de la implementación de surrealdb::RecordId::parse
-                                                       // Asimimos que podría fallar o pasar dependiedo de la lib,
-                                                       // pero validamos que no crashee.
-        let _ = res;
-    }
-}

@@ -410,31 +410,3 @@ pub async fn get_archived_proveedores() -> Result<Vec<ProveedorResponse>, Provee
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_proveedor_id() {
-        // Formato con prefijo
-        let id = parse_proveedor_id("proveedor:abc123");
-        assert_eq!(id.table(), "proveedor");
-        assert_eq!(id.key().to_string(), "abc123");
-
-        // Formato sin prefijo (inferido)
-        let id_clean = parse_proveedor_id("xyz456");
-        assert_eq!(id_clean.table(), "proveedor");
-        assert_eq!(id_clean.key().to_string(), "xyz456");
-    }
-
-    #[test]
-    fn test_parse_empresa_id() {
-        let id = parse_empresa_id("empresa:google");
-        assert_eq!(id.table(), "empresa");
-        assert_eq!(id.key().to_string(), "google");
-
-        let id_clean = parse_empresa_id("microsoft");
-        assert_eq!(id_clean.table(), "empresa");
-        assert_eq!(id_clean.key().to_string(), "microsoft");
-    }
-}

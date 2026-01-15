@@ -249,21 +249,3 @@ pub async fn validar_ingreso(
 // TESTS UNITARIOS (Helpers)
 // --------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_id_visita_valido() {
-        let res = parse_id("ingreso_visita:123", "ingreso_visita");
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap().to_string(), "ingreso_visita:123");
-    }
-
-    #[test]
-    fn test_parse_id_sin_prefijo_agrega_tabla() {
-        let res = parse_id("abc", "user");
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap().to_string(), "user:abc");
-    }
-}

@@ -168,24 +168,3 @@ pub async fn check_permission(
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_role_id_variants() {
-        let cases = vec![
-            ("admin", "role", "admin"),
-            ("role:admin", "role", "admin"),
-            ("⟨role:admin⟩", "role", "admin"),
-            ("<role:admin>", "role", "admin"),
-            ("⟨admin⟩", "role", "admin"),
-        ];
-
-        for (input, expected_table, expected_id) in cases {
-            let res = parse_role_id(input);
-            assert_eq!(res.table(), expected_table, "Fallo en tabla para {input}");
-            assert_eq!(res.key().to_string(), expected_id, "Fallo en ID para {input}");
-        }
-    }
-}

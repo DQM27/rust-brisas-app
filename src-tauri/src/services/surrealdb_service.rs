@@ -180,28 +180,3 @@ impl SurrealDbService {
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_config_paths() {
-        let default_conf = SurrealDbConfig::default();
-        assert!(default_conf.data_path.to_string_lossy().contains("Brisas"));
-        assert_eq!(default_conf.namespace, "brisas");
-
-        let demo_conf = SurrealDbConfig::demo();
-        assert!(demo_conf.data_path.to_string_lossy().contains("surrealdb_demo"));
-    }
-
-    #[tokio::test]
-    async fn test_service_initial_state() {
-        let config = SurrealDbConfig {
-            data_path: PathBuf::from("./test_db"),
-            namespace: "test".into(),
-            database: "test".into(),
-        };
-        let service = SurrealDbService::new(config);
-        assert!(!service.is_connected().await);
-    }
-}

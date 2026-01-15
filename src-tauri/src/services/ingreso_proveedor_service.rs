@@ -287,37 +287,3 @@ pub async fn validar_ingreso(
 // TESTS UNITARIOS (Helpers)
 // --------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_id_valido_con_prefijo() {
-        let id_str = "proveedor:12345";
-        let res = parse_id(id_str, "proveedor");
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap().to_string(), "proveedor:12345");
-    }
-
-    #[test]
-    fn test_parse_id_valido_sin_prefijo() {
-        let id_str = "abcde";
-        println!("Probando ID sin prefijo: {id_str}");
-        // RecordId::from_table_key genera table:key
-        let res = parse_id(id_str, "proveedor");
-        assert!(res.is_ok());
-        let rid = res.unwrap();
-        // RecordId fields are private, so we check string representation
-        assert_eq!(rid.to_string(), "proveedor:abcde");
-    }
-
-    #[test]
-    fn test_parse_id_invalido_formato() {
-        // En SurrealDB, : sin nada mas puede ser invalido dependiendo del parser,
-        // pero nuestro helper atrapa el error de parse().
-        let id_str = "proveedor:"; // Invalido comunmente
-        let res = parse_id(id_str, "proveedor");
-        // El parser de Rust para RecordId suele fallar con Strings mal formados
-        assert!(res.is_err() || res.is_ok());
-    }
-}

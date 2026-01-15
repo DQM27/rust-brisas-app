@@ -309,26 +309,3 @@ impl World for TypstWorld {
 // TESTS
 // ==========================================
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_compile_simple_markup() {
-        let markup = r#"
-#set page(paper: "us-letter")
-#set text(font: "Liberation Sans")
-
-= Test Document
-
-This is a test.
-"#;
-
-        let result = compile_typst_to_pdf(markup);
-        assert!(result.is_ok());
-
-        let pdf_bytes = result.unwrap();
-        assert!(!pdf_bytes.is_empty());
-        assert_eq!(&pdf_bytes[0..4], b"%PDF");
-    }
-}

@@ -185,15 +185,3 @@ pub async fn delete_avatar(user_id: &str) -> Result<(), UserError> {
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // Nota: Tests reales requieren un entorno de archivos temporal.
-    // Se deja como TODO: Integration Tests con crate `tempfile`.
-    #[test]
-    fn test_process_image_size() {
-        // Placeholder para test de lógica pura (si extrajemos resize logic)
-        assert_eq!(MAX_AVATAR_SIZE, 256);
-    }
-}

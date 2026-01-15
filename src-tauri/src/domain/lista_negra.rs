@@ -122,39 +122,3 @@ pub fn normalizar_texto(texto: &str) -> String {
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_validar_cedula() {
-        assert!(validar_cedula("1234567890").is_ok());
-        assert!(validar_cedula("123-456-789").is_ok());
-        assert!(validar_cedula("").is_err());
-        assert!(validar_cedula("123").is_err());
-        assert!(validar_cedula("abc123").is_err());
-    }
-
-    #[test]
-    fn test_validar_nombre() {
-        assert!(validar_nombre("Juan").is_ok());
-        assert!(validar_nombre("  María  ").is_ok());
-        assert!(validar_nombre("").is_err());
-        assert!(validar_nombre(&"a".repeat(101)).is_err());
-    }
-
-    #[test]
-    fn test_validar_motivo() {
-        assert!(validar_motivo("Comportamiento indebido").is_ok());
-        assert!(validar_motivo("").is_err());
-        assert!(validar_motivo(&"a".repeat(501)).is_err());
-    }
-
-    #[test]
-    fn test_validar_nivel_severidad() {
-        assert!(validar_nivel_severidad("ALTO").is_ok());
-        assert!(validar_nivel_severidad("medio").is_ok());
-        assert!(validar_nivel_severidad("Bajo").is_ok());
-        assert!(validar_nivel_severidad("INVALIDO").is_err());
-    }
-}

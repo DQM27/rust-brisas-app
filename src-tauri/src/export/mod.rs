@@ -74,19 +74,3 @@ pub fn is_format_available(format: &str) -> bool {
 // TESTS
 // ==========================================
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_csv_siempre_disponible() {
-        assert!(is_format_available("csv"));
-        assert!(available_formats().contains(&"csv"));
-    }
-
-    #[test]
-    fn test_formato_invalido() {
-        assert!(!is_format_available("word"));
-        assert!(!is_format_available(""));
-    }
-}

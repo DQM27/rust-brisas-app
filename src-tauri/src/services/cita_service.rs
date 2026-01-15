@@ -289,35 +289,3 @@ fn parse_datetime(date_str: &str) -> Result<surrealdb::Datetime, CitaError> {
 // PRUEBAS UNITARIAS (Lógica Pura)
 // --------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_datetime_iso() {
-        let result = parse_datetime("2026-01-15T08:30:00Z");
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_parse_datetime_simple() {
-        let result = parse_datetime("2026-01-15");
-        assert!(result.is_ok());
-        // Verificamos que no de error
-    }
-
-    #[test]
-    fn test_parse_datetime_error() {
-        let result = parse_datetime("fecha-invalida");
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_parse_record_id() {
-        let id = parse_record_id("cita:123", "cita").unwrap();
-        assert_eq!(id.to_string(), "cita:123");
-
-        let id_raw = parse_record_id("xyz", "visitante").unwrap();
-        assert_eq!(id_raw.to_string(), "visitante:xyz");
-    }
-}

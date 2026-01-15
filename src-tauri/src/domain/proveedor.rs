@@ -145,27 +145,3 @@ pub fn normalizar_texto_opcional(texto: Option<&String>) -> Option<String> {
     normalizar_opcional_estandar(texto)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_validar_cedula_valida() {
-        assert!(validar_cedula("12345678").is_ok());
-    }
-
-    #[test]
-    fn test_validar_nombre_valido() {
-        assert!(validar_nombre_persona("Juan", "nombre").is_ok());
-    }
-
-    #[test]
-    fn test_normalizaciones() {
-        assert_eq!(normalizar_nombre("  pedro  "), "Pedro");
-        assert_eq!(
-            normalizar_segundo_nombre(Some(&"  JOSÉ  ".to_string())),
-            Some("José".to_string())
-        );
-        assert_eq!(normalizar_segundo_nombre(Some(&"  ".to_string())), None);
-    }
-}

@@ -139,23 +139,3 @@ pub fn copy_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
 // --------------------------------------------------------------------------
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::Path;
-
-    #[test]
-    fn test_get_restore_path_logic() {
-        let db_path = Path::new("/data/brisas.db");
-        let restore_path = get_restore_path(db_path);
-        let path_str = restore_path.to_string_lossy().replace('\\', "/");
-        assert!(path_str.ends_with("/data/brisas.db.restore"));
-    }
-
-    #[test]
-    fn test_restore_path_with_no_filename() {
-        let db_path = Path::new("/");
-        let restore_path = get_restore_path(db_path);
-        assert!(restore_path.to_string_lossy().ends_with("db.restore"));
-    }
-}

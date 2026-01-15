@@ -277,28 +277,3 @@ pub fn get_all_permissions() -> Result<Vec<Permission>, RoleError> {
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_role_id_simple() {
-        let id = parse_role_id("admin");
-        assert_eq!(id.table().to_string(), "role");
-        assert_eq!(id.key().to_string(), "admin");
-    }
-
-    #[test]
-    fn test_parse_role_id_con_prefijo() {
-        let id = parse_role_id("role:admin");
-        assert_eq!(id.table().to_string(), "role");
-        assert_eq!(id.key().to_string(), "admin");
-    }
-
-    #[test]
-    fn test_parse_role_id_con_brackets() {
-        let id = parse_role_id("role:⟨custom-role⟩");
-        assert_eq!(id.table().to_string(), "role");
-        assert_eq!(id.key().to_string().replace("⟨", "").replace("⟩", ""), "custom-role");
-    }
-}

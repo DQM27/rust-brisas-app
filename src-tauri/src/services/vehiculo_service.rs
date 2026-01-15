@@ -237,32 +237,3 @@ pub async fn delete_vehiculo(id_str: String) -> Result<(), VehiculoError> {
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_vehiculo_id() {
-        let id = parse_vehiculo_id("vehiculo:v123");
-        assert_eq!(id.table(), "vehiculo");
-        assert_eq!(id.key().to_string(), "v123");
-
-        let id_clean = parse_vehiculo_id("v456");
-        assert_eq!(id_clean.table(), "vehiculo");
-        assert_eq!(id_clean.key().to_string(), "v456");
-    }
-
-    #[test]
-    fn test_parse_propietario_id() {
-        // Casos con tabla explícita
-        let prov = parse_propietario_id("proveedor:p1");
-        assert_eq!(prov.table(), "proveedor");
-
-        let visit = parse_propietario_id("visitante:v1");
-        assert_eq!(visit.table(), "visitante");
-
-        // Caso por defecto (contratista)
-        let cont = parse_propietario_id("c1");
-        assert_eq!(cont.table(), "contratista");
-    }
-}

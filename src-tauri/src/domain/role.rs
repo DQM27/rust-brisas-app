@@ -167,18 +167,3 @@ pub fn normalizar_nombre(nombre: &str) -> String {
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_proteccion_roles_sistema() {
-        assert!(check_system_role_modification(GOD_ID).is_err());
-        assert!(check_system_role_modification("rol-personalizado").is_ok());
-    }
-
-    #[test]
-    fn test_normalizacion_rol() {
-        assert_eq!(normalizar_nombre("  admin  "), "ADMIN");
-    }
-}

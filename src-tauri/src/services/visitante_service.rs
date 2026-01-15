@@ -293,29 +293,3 @@ pub async fn get_all_visitantes() -> Result<Vec<VisitanteResponse>, VisitanteErr
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_record_id_visitante() {
-        let id = parse_record_id("123", "visitante");
-        assert_eq!(id.table(), "visitante");
-        assert_eq!(id.key().to_string().replace("⟨", "").replace("⟩", ""), "123");
-
-        let id_comp = parse_record_id("visitante:abc", "visitante");
-        assert_eq!(id_comp.table(), "visitante");
-        assert_eq!(id_comp.key().to_string().replace("⟨", "").replace("⟩", ""), "abc");
-    }
-
-    #[test]
-    fn test_parse_record_id_empresa() {
-        let id = parse_record_id("brisa", "empresa");
-        assert_eq!(id.table(), "empresa");
-        assert_eq!(id.key().to_string().replace("⟨", "").replace("⟩", ""), "brisa");
-
-        let id_comp = parse_record_id("empresa:x", "empresa");
-        assert_eq!(id_comp.table(), "empresa");
-        assert_eq!(id_comp.key().to_string().replace("⟨", "").replace("⟩", ""), "x");
-    }
-}

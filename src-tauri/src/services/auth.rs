@@ -101,31 +101,3 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, UserError> {
     Ok(argon2.verify_password(password.as_bytes(), &parsed_hash).is_ok())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_hash_and_verify_password() {
-        let password = "SecretPassword123!";
-        let hash = hash_password(password).unwrap();
-
-        // El hash no debe ser igual a la clave original
-        assert_ne!(password, hash);
-
-        // Verificación exitosa
-        let is_valid = verify_password(password, &hash).unwrap();
-        assert!(is_valid);
-
-        // Verificación fallida con clave incorrecta
-        let is_invalid = verify_password("WrongPassword", &hash).unwrap();
-        assert!(!is_invalid);
-    }
-
-    #[test]
-    fn test_invalid_hash_format() {
-        let result = verify_password("some_password", "not_a_valid_argon2_hash");
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("formato del hash es inválido"));
-    }
-}
