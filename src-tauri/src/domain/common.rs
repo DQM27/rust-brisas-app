@@ -288,7 +288,7 @@ pub fn parsear_fecha_simple(fecha_str: &str) -> Result<chrono::NaiveDate, Common
 }
 
 /// Convierte un `surrealdb::Datetime` a formato ISO8601 compatible con JavaScript.
-/// Elimina el decorador `d'...'` que agrega SurrealDB por defecto.
+/// Elimina el decorador `d'...'` que agrega `SurrealDB` por defecto.
 pub fn datetime_to_iso(dt: &surrealdb::Datetime) -> String {
     let raw = dt.to_string();
     raw.trim_start_matches("d'").trim_end_matches('\'').to_string()
