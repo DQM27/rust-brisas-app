@@ -176,6 +176,7 @@ DEFINE TABLE ingreso_visita SCHEMAFULL;
 DEFINE FIELD nombre ON TABLE ingreso_visita TYPE string ASSERT string::len($value) <= 100;
 DEFINE FIELD apellido ON TABLE ingreso_visita TYPE string ASSERT string::len($value) <= 100;
 DEFINE FIELD cedula ON TABLE ingreso_visita TYPE string ASSERT string::len($value) <= 20;
+DEFINE FIELD empresa_nombre ON TABLE ingreso_visita TYPE option<string> ASSERT $value == NONE OR string::len($value) <= 100;
 DEFINE FIELD anfitrion ON TABLE ingreso_visita TYPE string ASSERT string::len($value) <= 100;
 DEFINE FIELD area_visitada ON TABLE ingreso_visita TYPE string ASSERT string::len($value) <= 200;
 DEFINE FIELD motivo ON TABLE ingreso_visita TYPE string ASSERT string::len($value) <= 500;

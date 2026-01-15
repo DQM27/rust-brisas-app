@@ -26,6 +26,7 @@ pub struct IngresoVisita {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub segundo_apellido: Option<String>,
     pub cedula: String,
+    pub empresa_nombre: Option<String>,
     pub anfitrion: String,
     pub area_visitada: String,
     pub motivo: String,
@@ -53,6 +54,7 @@ pub struct IngresoVisitaFetched {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub segundo_apellido: Option<String>,
     pub cedula: String,
+    pub empresa_nombre: Option<String>,
     pub anfitrion: String,
     pub area_visitada: String,
     pub motivo: String,
@@ -78,6 +80,7 @@ pub struct CreateIngresoVisitaInput {
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
+    pub empresa_nombre: Option<String>,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
     pub anfitrion: String,
@@ -102,6 +105,7 @@ pub struct IngresoVisitaCreateDTO {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub segundo_apellido: Option<String>,
     pub cedula: String,
+    pub empresa_nombre: Option<String>,
     pub anfitrion: String,
     pub area_visitada: String,
     pub motivo: String,
@@ -129,6 +133,7 @@ pub struct IngresoVisitaPopulated {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub segundo_apellido: Option<String>,
     pub nombre_completo: String,
+    pub empresa_nombre: Option<String>,
     pub anfitrion: String,
     pub area_visitada: String,
     pub motivo: String,

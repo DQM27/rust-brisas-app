@@ -3,14 +3,11 @@
 	import { fade } from 'svelte/transition';
 	import { Users, History, FileText, Search, Plus, X, LogOut, Download } from 'lucide-svelte';
 	import AGGridWrapper from '$lib/components/grid/AGGridWrapper.svelte';
-	import SearchBar from '$lib/components/shared/SearchBar.svelte';
-	import QuickEntryModal from '$lib/components/ingreso/QuickEntryModal.svelte';
 	import IngresoVisitaFormModal from '$lib/components/ingreso/IngresoVisitaFormModal.svelte';
 	import SalidaModal from '$lib/components/ingreso/SalidaModal.svelte';
 	import ExportDialog from '$lib/components/export/ExportDialog.svelte';
 
 	import { ingresoVisitaService } from '$lib/services/ingresoVisitaService';
-	import { createVisitante } from '$lib/logic/visitante/visitanteService';
 	import { INGRESO_VISITA_COLUMNS } from '$lib/logic/visita/ingresoVisitaColumns';
 	import type { IngresoVisita } from '$lib/types/ingreso-nuevos';
 	import { toast } from 'svelte-5-french-toast';
@@ -24,7 +21,6 @@
 		extractGridData,
 		extractSelectedRows
 	} from '$lib/logic/export';
-	import VisitanteFormModal from '$lib/components/visitante/VisitanteFormModal.svelte';
 	import DateRangePicker from '$lib/components/shared/DateRangePicker.svelte';
 	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
 
@@ -40,15 +36,11 @@
 	let selectedRows = $state<IngresoVisita[]>([]);
 
 	// Modals
-	let showQuickEntry = $state(false);
 	let showIngresoModal = $state(false);
 	let showSalidaModal = $state(false);
 	let selectedPerson = $state<any>(null);
 	let selectedIngreso = $state<IngresoVisita | null>(null);
 	let salidaLoading = $state(false);
-
-	// Modal registro nuevo visitante
-	let showVisitanteModal = $state(false);
 
 	// Estado para Exportación
 	let gridApi = $state<GridApi<IngresoVisita> | null>(null);
@@ -116,15 +108,8 @@
 	}
 
 	function handleNuevoIngreso() {
-		showQuickEntry = true;
-	}
-
-	function handleQuickEntrySelect(person: any) {
-		selectedPerson = person;
-		showQuickEntry = false;
-		setTimeout(() => {
-			showIngresoModal = true;
-		}, 100);
+		selectedPerson = null;
+		showIngresoModal = true;
 	}
 
 	async function handleSalida(ingreso: IngresoVisita) {
@@ -180,34 +165,7 @@
 		const selected = selectedRows[0];
 		const defaultButtons: any[] = [createCustomButton.exportar(() => handleExportClick())];
 
-		// Botón List Visitantes siempre visible
-		defaultButtons.unshift({
-			id: 'list-visitante-view',
-			label: 'List. Visitantes',
-			icon: FileText,
-			onClick: () => {
-				openTab({
-					componentKey: 'visitante-list',
-					title: 'Lista de Visitantes',
-					id: 'visitante-list',
-					focusOnOpen: true
-				});
-			},
-			variant: 'default',
-			tooltip: 'Ir a listado maestro de visitantes'
-		});
-
 		if (viewMode === 'actives') {
-			// Botón "Nuevo Visitante"
-			defaultButtons.unshift({
-				id: 'new-visitant',
-				label: 'Nuevo Visitante',
-				icon: Users,
-				onClick: () => (showVisitanteModal = true),
-				variant: 'default',
-				tooltip: 'Registrar nuevo visitante en base de datos'
-			});
-
 			// Botón "Nuevo Ingreso"
 			defaultButtons.unshift(
 				createCustomButton.nuevo(() => handleNuevoIngreso(), false, 'Nuevo Ingreso')
@@ -317,59 +275,55 @@
 
 <div class="flex h-full flex-col relative bg-surface-1">
 	<!-- Header -->
-	<div class="border-b border-surface px-6 py-4 bg-surface-2">
-		<div class="flex flex-col gap-4">
-			<div class="flex items-center justify-between">
-				<div>
-					<h2 class="text-xl font-semibold text-primary">
-						{viewMode === 'actives' ? 'Visitas en Planta' : 'Historial de Visitas'}
-					</h2>
-					<p class="mt-1 text-sm text-secondary">
-						{viewMode === 'actives'
-							? 'Personas registradas actualmente dentro de las instalaciones'
-							: 'Registro histórico de visitas finalizadas'}
-					</p>
-				</div>
+	<div class="px-8 py-6 bg-surface-2 border-b border-surface">
+		<div class="flex items-center justify-between gap-6">
+			<div>
+				<h2 class="text-xl font-semibold text-primary">
+					{viewMode === 'actives' ? 'Visitas en Planta' : 'Historial de Visitas'}
+				</h2>
+				<p class="mt-1 text-xs text-secondary">
+					{viewMode === 'actives'
+						? 'Personas registradas actualmente en las instalaciones'
+						: 'Registro histórico de accesos finalizados'}
+				</p>
+			</div>
 
-				<div class="flex items-center gap-4">
-					<!-- Segment Control -->
-					<div class="relative flex items-center bg-surface-3 p-1 rounded-lg isolate min-w-[240px]">
-						<div
-							class="absolute top-1 bottom-1 rounded-md bg-white dark:bg-zinc-700 shadow-sm transition-all duration-300 ease-in-out z-[-1]"
-							style="
-                left: {viewMode === 'actives' ? '4px' : '50%'};
-                right: {viewMode === 'actives' ? '50%' : '4px'};
-                width: calc(50% - 6px);
-              "
-						></div>
-						<button
-							class="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors z-10
-              {viewMode === 'actives'
-								? 'text-primary dark:text-white'
-								: 'text-secondary hover:text-primary dark:hover:text-zinc-300'}"
-							onclick={() => toggleViewMode('actives')}
-						>
-							<Users size={16} />
-							Activos
-						</button>
-						<button
-							class="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors z-10
-              {viewMode === 'history'
-								? 'text-primary dark:text-white'
-								: 'text-secondary hover:text-primary dark:hover:text-zinc-300'}"
-							onclick={() => toggleViewMode('history')}
-						>
-							<History size={16} />
-							Historial
-						</button>
-					</div>
+			<!-- Center: SearchBar (handled by grid primarily, but we can put a global one if needed) -->
+			<!-- Using the one inside AGGridWrapper is usually enough, but let's keep headers clean -->
+
+			<div class="flex items-center gap-4">
+				<div class="relative flex items-center bg-surface-3 p-1 rounded-lg isolate">
+					<div
+						class="absolute top-1 bottom-1 rounded-md bg-white dark:bg-zinc-700 shadow-sm transition-all duration-300 ease-in-out z-[-1]"
+						style="
+								left: {viewMode === 'actives' ? '4px' : '50%'};
+								right: {viewMode === 'actives' ? '50%' : '4px'};
+								width: calc(50% - 6px);
+							"
+					></div>
+					<button
+						class="flex-1 flex items-center justify-center gap-2 px-6 py-2 rounded-md text-sm font-medium transition-colors z-10
+							{viewMode === 'actives' ? 'text-primary dark:text-white' : 'text-secondary hover:text-primary'}"
+						onclick={() => toggleViewMode('actives')}
+					>
+						<Users size={16} class={viewMode === 'actives' ? 'scale-110' : ''} />
+						Activos
+					</button>
+					<button
+						class="flex-1 flex items-center justify-center gap-2 px-6 py-2 rounded-md text-sm font-medium transition-colors z-10
+							{viewMode === 'history' ? 'text-primary dark:text-white' : 'text-secondary hover:text-primary'}"
+						onclick={() => toggleViewMode('history')}
+					>
+						<History size={16} class={viewMode === 'history' ? 'scale-110' : ''} />
+						Historial
+					</button>
 				</div>
 			</div>
 		</div>
 	</div>
 
 	<!-- Content -->
-	<div class="flex-1 overflow-hidden relative bg-surface-1 border-t border-surface">
+	<div class="flex-1 overflow-hidden relative bg-surface-1">
 		{#snippet toolbarControls()}
 			{#if viewMode === 'history'}
 				<div class="flex items-center" transition:fade={{ duration: 150 }}>
@@ -384,16 +338,19 @@
 
 		{#snippet postToolbarControls()}
 			{#if viewMode === 'history'}
-				<div class="flex items-center" transition:fade={{ duration: 150 }}>
+				<div
+					class="flex items-center gap-2 px-4 border-l border-surface"
+					transition:fade={{ duration: 150 }}
+				>
 					<input
 						type="checkbox"
 						id="hideActiveVisita"
 						bind:checked={hideActive}
-						class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+						class="h-4 w-4 rounded border-white/10 bg-black/20 text-blue-500 focus:ring-blue-500/20"
 					/>
 					<label
 						for="hideActiveVisita"
-						class="ml-2 text-sm text-secondary select-none cursor-pointer"
+						class="text-xs text-secondary select-none cursor-pointer hover:text-primary transition-colors"
 					>
 						Solo Finalizados
 					</label>
@@ -405,9 +362,9 @@
 			<div class="flex h-full items-center justify-center">
 				<div class="text-center">
 					<div
-						class="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4 mx-auto"
+						class="w-10 h-10 border-4 border-blue-500/10 border-t-blue-500 rounded-full animate-spin mb-4 mx-auto"
 					></div>
-					<p class="text-gray-400">Cargando visitas...</p>
+					<p class="text-secondary font-medium animate-pulse">Cargando registros...</p>
 				</div>
 			</div>
 		{:else}
@@ -418,7 +375,7 @@
 				{customButtons}
 				onSelectionChanged={(rows) => (selectedRows = rows)}
 				getRowId={(params) => params.data.id}
-				persistenceKey="visitas-ingreso-columns-v2"
+				persistenceKey="visitas-list-state-v1"
 				onRefresh={loadData}
 				onGridReady={(api) => (gridApi = api)}
 				customToolbarSlot={toolbarControls}
@@ -428,17 +385,10 @@
 	</div>
 </div>
 
-<QuickEntryModal
-	bind:show={showQuickEntry}
-	onSelect={handleQuickEntrySelect}
-	allowedTypes={['visita', 'all']}
-	onClose={() => (showQuickEntry = false)}
-/>
-
 <IngresoVisitaFormModal
 	bind:show={showIngresoModal}
 	initialPerson={selectedPerson}
-	on:complete={loadData}
+	onComplete={loadData}
 />
 
 <SalidaModal
@@ -449,24 +399,6 @@
 	on:close={() => {
 		showSalidaModal = false;
 		selectedIngreso = null;
-	}}
-/>
-
-<VisitanteFormModal
-	show={showVisitanteModal}
-	onClose={() => (showVisitanteModal = false)}
-	onSave={async (data) => {
-		try {
-			const res = await createVisitante(data as any);
-			if (res.ok) {
-				toast.success('Visitante creado');
-				showVisitanteModal = false;
-			} else {
-				toast.error(res.error);
-			}
-		} catch {
-			toast.error('Error al crear visitante');
-		}
 	}}
 />
 

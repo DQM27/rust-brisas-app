@@ -25,71 +25,113 @@ export const INGRESO_VISITA_COLUMNS: ColDef<IngresoVisita>[] = [
         colId: 'gafete',
         field: 'gafete',
         headerName: 'Gafete',
-        width: 100,
-        valueFormatter: (params) => params.value || 'S/G'
+        width: 90,
+        minWidth: 80,
+        valueFormatter: (params) => params.value || 'S/G',
+        cellClass: 'font-mono text-accent'
     },
     {
         colId: 'visitante',
         headerName: 'Visitante',
         flex: 2,
         minWidth: 200,
+        sortable: true,
+        filter: true,
         valueGetter: (params) => {
             if (!params.data) return '';
-            return `${params.data.visitanteNombre} ${params.data.visitanteApellido}`;
+            return `${params.data.nombre} ${params.data.apellido}`;
         }
     },
     {
-        colId: 'visitanteCedula',
-        field: 'visitanteCedula',
+        colId: 'cedula',
+        field: 'cedula',
         headerName: 'Cédula',
-        width: 120
+        width: 120,
+        minWidth: 100,
+        sortable: true,
+        filter: true,
+        cellClass: 'font-mono'
     },
     {
-        colId: 'visitanteEmpresa',
-        field: 'visitanteEmpresa',
-        headerName: 'Empresa / Procedencia',
+        colId: 'empresaNombre',
+        field: 'empresaNombre',
+        headerName: 'Empresa',
         flex: 1,
         minWidth: 150,
+        sortable: true,
+        filter: true,
         valueFormatter: (params) => params.value || 'Particular'
     },
     {
         colId: 'anfitrion',
         field: 'anfitrion',
         headerName: 'Anfitrión',
-        width: 150
+        width: 150,
+        sortable: true,
+        filter: true
     },
     {
         colId: 'areaVisitada',
         field: 'areaVisitada',
         headerName: 'Área',
-        width: 150
+        width: 150,
+        sortable: true,
+        filter: true
     },
     {
         colId: 'fechaIngreso',
         field: 'fechaIngreso',
-        headerName: 'Fecha Entrada',
-        width: 120,
+        headerName: 'Entrada',
+        width: 130,
+        minWidth: 120,
+        sortable: true,
         valueFormatter: dateFormatter
     },
     {
         colId: 'horaIngreso',
         field: 'fechaIngreso',
-        headerName: 'Hora Entrada',
+        headerName: 'Hora',
         width: 100,
+        minWidth: 90,
+        sortable: true,
         valueFormatter: timeFormatter
+    },
+    {
+        colId: 'usuarioIngresoNombre',
+        field: 'usuarioIngresoNombre',
+        headerName: 'Registrado Por',
+        width: 150,
+        minWidth: 120,
+        sortable: true,
+        filter: true,
+        hide: false
     },
     {
         colId: 'fechaSalida',
         field: 'fechaSalida',
-        headerName: 'Fecha Salida',
-        width: 120,
+        headerName: 'Salida',
+        width: 130,
+        minWidth: 120,
+        sortable: true,
         valueFormatter: dateFormatter
     },
     {
         colId: 'horaSalida',
         field: 'fechaSalida',
         headerName: 'Hora Salida',
-        width: 100,
+        width: 110,
+        minWidth: 90,
+        sortable: true,
         valueFormatter: timeFormatter
+    },
+    {
+        colId: 'usuarioSalidaNombre',
+        field: 'usuarioSalidaNombre',
+        headerName: 'Salida Por',
+        width: 150,
+        minWidth: 120,
+        sortable: true,
+        filter: true,
+        hide: false
     }
 ];

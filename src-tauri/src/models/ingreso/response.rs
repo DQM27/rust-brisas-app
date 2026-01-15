@@ -279,7 +279,7 @@ impl IngresoResponse {
             segundo_nombre,
             segundo_apellido,
             nombre_completo,
-            empresa_nombre: String::new(),
+            empresa_nombre: i.empresa_nombre.clone().unwrap_or_default(),
             tipo_ingreso: TipoIngreso::Visita,
             tipo_ingreso_display: "Visita".to_string(),
             tipo_autorizacion: TipoAutorizacion::Correo,
@@ -397,4 +397,3 @@ impl IngresoResponse {
         }
     }
 }
-

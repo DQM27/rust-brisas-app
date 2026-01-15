@@ -85,7 +85,7 @@ pub struct VisitanteCreateDTO {
     pub apellido: String,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
-    pub empresa: RecordId, // Obligatorio en creación
+    pub empresa: Option<RecordId>, // Opcional para visitas ocasionales o particulares
     pub has_vehicle: bool,
 }
 

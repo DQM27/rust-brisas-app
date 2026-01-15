@@ -7,10 +7,12 @@
 /// - Registro de salidas y liberación de recursos.
 /// - Trazabilidad de motivos y anfitriones.
 use crate::db::surrealdb_ingreso_visita_queries as db;
+use crate::db::surrealdb_visitante_queries as visitante_db;
 use crate::domain::errors::IngresoVisitaError;
 use crate::models::ingreso::{CreateIngresoVisitaInput, IngresoResponse, IngresoVisitaCreateDTO};
+use crate::models::visitante::VisitanteCreateDTO;
 use crate::services::{gafete_service, lista_negra_service};
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use surrealdb::RecordId;
 
 // --------------------------------------------------------------------------
@@ -105,6 +107,29 @@ pub async fn registrar_ingreso(
     validar_lista_negra(input.cedula.clone()).await?;
     validar_ingreso_unico_cedula(&input.cedula).await?;
 
+    // Asegurar que el perfil del visitante existe para futuras búsquedas
+    match visitante_db::get_visitante_by_cedula(&input.cedula).await {
+        Ok(None) => {
+            debug!("Creando perfil automático para nuevo visitante: {}", input.cedula);
+            let v_dto = VisitanteCreateDTO {
+                cedula: input.cedula.clone(),
+                nombre: input.nombre.clone(),
+                apellido: input.apellido.clone(),
+                segundo_nombre: input.segundo_nombre.clone(),
+                segundo_apellido: input.segundo_apellido.clone(),
+                empresa: None,
+                has_vehicle: input.placa_vehiculo.is_some(),
+            };
+            if let Err(e) = visitante_db::create_visitante(v_dto).await {
+                warn!("No se pudo crear el perfil automático del visitante (no fatal): {e}");
+            }
+        }
+        Err(e) => {
+            warn!("Error al verificar existencia de visitante (no fatal): {e}");
+        }
+        _ => {}
+    }
+
     let dto = IngresoVisitaCreateDTO {
         cedula: input.cedula.clone(),
         nombre: input.nombre.clone(),
@@ -112,6 +137,7 @@ pub async fn registrar_ingreso(
         segundo_nombre: input.segundo_nombre.clone(),
         segundo_apellido: input.segundo_apellido.clone(),
         anfitrion: input.anfitrion.clone(),
+        empresa_nombre: input.empresa_nombre.clone(),
         area_visitada: input.area_visitada.clone(),
         motivo: input.motivo.clone(),
         modo_ingreso: input.modo_ingreso.clone(),

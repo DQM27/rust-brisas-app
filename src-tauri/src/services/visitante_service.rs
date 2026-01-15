@@ -109,7 +109,7 @@ pub async fn create_visitante(
         apellido: input.apellido,
         segundo_nombre: input.segundo_nombre,
         segundo_apellido: input.segundo_apellido,
-        empresa: parse_record_id(&input.empresa_id, "empresa"),
+        empresa: Some(parse_record_id(&input.empresa_id, "empresa")),
         has_vehicle: input.has_vehicle,
     };
 
@@ -292,4 +292,3 @@ pub async fn get_all_visitantes() -> Result<Vec<VisitanteResponse>, VisitanteErr
 // --------------------------------------------------------------------------
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
-

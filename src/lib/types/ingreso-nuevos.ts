@@ -1,9 +1,9 @@
 export interface IngresoVisita {
 	id: string;
-	visitanteCedula: string;
-	visitanteNombre: string;
-	visitanteApellido: string;
-	visitanteEmpresa?: string;
+	cedula: string;
+	nombre: string;
+	apellido: string;
+	empresaNombre?: string;
 	anfitrion: string;
 	areaVisitada: string;
 	motivo: string;
@@ -11,7 +11,9 @@ export interface IngresoVisita {
 	fechaIngreso: string;
 	fechaSalida?: string;
 	usuarioIngresoId: string;
+	usuarioIngresoNombre?: string;
 	usuarioSalidaId?: string;
+	usuarioSalidaNombre?: string;
 	observaciones?: string;
 }
 
