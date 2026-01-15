@@ -40,7 +40,7 @@ fn default_backup_hora() -> String {
     "02:00".to_string()
 }
 
-fn default_dias_retencion() -> u32 {
+const fn default_dias_retencion() -> u32 {
     30
 }
 

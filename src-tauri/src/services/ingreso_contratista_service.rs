@@ -160,7 +160,7 @@ where
                 // Convertir YYYY-MM-DD a DD/MM/YYYY
                 let fecha_formateada = if let Some((y, rest)) = fecha_iso.split_once('-') {
                     if let Some((m, d)) = rest.split_once('-') {
-                        format!("{}/{}/{}", d, m, y)
+                        format!("{d}/{m}/{y}")
                     } else {
                         fecha_iso.to_string()
                     }
@@ -187,11 +187,10 @@ where
             puede_ingresar: motor_permite && !excede_limite_gafetes,
             motivo_rechazo: if motor_denegado {
                 // Bloqueado por lista negra, vencido, etc.
-                Some(motor_res.message.clone())
+                Some(motor_res.message)
             } else if excede_limite_gafetes {
                 Some(format!(
-                    "Tiene {} gafetes sin devolver (máximo permitido: {}). Debe pagar o devolver antes de ingresar.",
-                    num_alertas, MAX_GAFETES_ADEUDADOS
+                    "Tiene {num_alertas} gafetes sin devolver (máximo permitido: {MAX_GAFETES_ADEUDADOS}). Debe pagar o devolver antes de ingresar."
                 ))
             } else {
                 None // Puede ingresar (con o sin alertas de gafete)
@@ -288,7 +287,7 @@ where
 
         if let Some(ref g) = nuevo_ingreso.gafete_numero {
             if let Err(e) = self.gafete_repo.marcar_en_uso(*g, "contratista").await {
-                error!("ERROR CRÍTICO: No se pudo marcar gafete {} como 'en uso': {}", g, e);
+                error!("ERROR CRÍTICO: No se pudo marcar gafete {g} como 'en uso': {e}");
                 // No fallamos la transacción general pero dejamos evidencia del problema
             }
         }
@@ -461,7 +460,7 @@ where
         start: &str,
         end: &str,
     ) -> Result<Vec<IngresoResponse>, IngresoContratistaError> {
-        log::info!("Service: Fetching contractor history from {} to {}", start, end);
+        log::info!("Service: Fetching contractor history from {start} to {end}");
         let results = self
             .ingreso_repo
             .find_salidas_en_rango_fetched(start, end)

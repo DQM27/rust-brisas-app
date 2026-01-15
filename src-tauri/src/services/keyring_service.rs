@@ -249,7 +249,7 @@ pub fn export_master_key(file_path: PathBuf, password: &str) -> KeyringResult<()
     std::fs::write(&file_path, json)
         .map_err(|e| KeyringError::StoreError(format!("Error escribiendo archivo: {e}")))?;
 
-    log::info!("✅ Master Key exportada exitosamente a: {:?}", file_path);
+    log::info!("✅ Master Key exportada exitosamente a: {}", file_path.display());
     Ok(())
 }
 
@@ -316,7 +316,7 @@ pub fn generate_recovery_fragments() -> KeyringResult<Vec<String>> {
     let sharks = Sharks(3); // Threshold de 3
     let dealer = sharks.dealer(params.secret.as_bytes());
 
-    let shares: Vec<String> = dealer
+    let fragments_encoded: Vec<String> = dealer
         .take(5)
         .map(|share| {
             let share_bytes = Vec::from(&share);
@@ -324,7 +324,7 @@ pub fn generate_recovery_fragments() -> KeyringResult<Vec<String>> {
         })
         .collect();
 
-    Ok(shares)
+    Ok(fragments_encoded)
 }
 
 /// Reconstruye el secreto a partir de al menos 3 fragmentos.
@@ -333,7 +333,7 @@ pub fn reconstruct_from_fragments(fragments: Vec<String>) -> KeyringResult<Strin
         return Err(KeyringError::Message("Se requieren al menos 3 fragmentos".to_string()));
     }
 
-    let mut shares = Vec::new();
+    let mut decoded_shares = Vec::new();
     for frag in fragments {
         let data = base64::engine::general_purpose::STANDARD
             .decode(&frag)
@@ -341,12 +341,12 @@ pub fn reconstruct_from_fragments(fragments: Vec<String>) -> KeyringResult<Strin
         let share_obj = Share::try_from(data.as_slice()).map_err(|e| {
             KeyringError::Message(format!("Error interpretando fragmento de Shamir: {e}"))
         })?;
-        shares.push(share_obj);
+        decoded_shares.push(share_obj);
     }
 
     let sharks = Sharks(3);
     let secret_bytes = sharks
-        .recover(&shares)
+        .recover(&decoded_shares)
         .map_err(|e| KeyringError::Message(format!("No se pudo reconstruir el secreto: {e}")))?;
 
     String::from_utf8(secret_bytes)

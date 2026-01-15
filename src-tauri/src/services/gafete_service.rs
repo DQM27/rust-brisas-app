@@ -209,8 +209,8 @@ pub async fn get_gafete_by_id(id_str: &str) -> Result<Option<GafeteResponse>, Ga
         .map_err(|e| GafeteError::Database(e.to_string()))
 }
 
-/// Formatea un SurrealDB Datetime a ISO8601 estándar para frontend.
-/// SurrealDB Datetime.to_string() puede incluir prefijo o formato no parseable por JS.
+/// Formatea un `SurrealDB` Datetime a ISO8601 estándar para frontend.
+/// `SurrealDB` `Datetime.to_string()` puede incluir prefijo o formato no parseable por JS.
 fn format_datetime_iso(dt: &surrealdb::Datetime) -> String {
     let raw = dt.to_string();
 
@@ -223,9 +223,10 @@ fn format_datetime_iso(dt: &surrealdb::Datetime) -> String {
     cleaned = cleaned.trim_matches(|c| c == '\'' || c == '"');
 
     // Parse, convert to UTC to ensure 'Z' validity, and format as strict ISO8601
-    chrono::DateTime::parse_from_rfc3339(cleaned)
-        .map(|dt| dt.with_timezone(&chrono::Utc).to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
-        .unwrap_or_else(|_| cleaned.to_string())
+    chrono::DateTime::parse_from_rfc3339(cleaned).map_or_else(
+        |_| cleaned.to_string(),
+        |dt| dt.with_timezone(&chrono::Utc).to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+    )
 }
 
 /// Lista todos los gafetes registrados, enriquecidos con datos de alertas pendientes.
@@ -240,11 +241,12 @@ pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
 
     // Fetch ALL alerts (both pending and resolved) to show complete history
     let alertas = alerta_db::find_all(None).await.unwrap_or_else(|e| {
-        error!("Error fetching alerts: {}", e);
+        error!("Error fetching alerts: {e}");
         vec![]
     });
 
     // Collect all unique user IDs that we need to fetch (reportado_por, resuelto_por)
+    #[allow(clippy::mutable_key_type)]
     let mut user_ids_to_fetch: HashSet<RecordId> = HashSet::new();
     for alerta in &alertas {
         user_ids_to_fetch.insert(alerta.reportado_por.clone());
@@ -265,7 +267,7 @@ pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
     // Batch fetch ALL active ingresos to determine real usage status
     // This optimization replaces N+1 queries and ensures status is correct even if 'en_uso' flag is stale
     let active_ingresos = ingreso_db::find_ingresos_abiertos_fetched().await.unwrap_or_else(|e| {
-        error!("Error fetching active ingresos: {}", e);
+        error!("Error fetching active ingresos: {e}");
         vec![]
     });
 

@@ -36,7 +36,7 @@ impl std::str::FromStr for Operacion {
             "Coronado" => Ok(Self::Coronado),
             "Mega Brisas" => Ok(Self::MegaBrisas),
             "Belen" => Ok(Self::Belen),
-            _ => Err(format!("Operacion desconocida: {}", s)),
+            _ => Err(format!("Operacion desconocida: {s}")),
         }
     }
 }

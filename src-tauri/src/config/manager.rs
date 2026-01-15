@@ -167,8 +167,8 @@ pub fn get_database_path(config: &AppConfig) -> PathBuf {
     default_path
 }
 
-/// Versión estática de `get_database_path` para uso cuando ya se tiene AppConfig directamente.
-/// Útil cuando la configuración ya fue leída desde AppConfigState.
+/// Versión estática de `get_database_path` para uso cuando ya se tiene `AppConfig` directamente.
+/// Útil cuando la configuración ya fue leída desde `AppConfigState`.
 pub fn get_database_path_static(config: &AppConfig) -> PathBuf {
     get_database_path(config)
 }

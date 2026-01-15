@@ -573,6 +573,56 @@ pub fn normalizar_nombre_opcional_estandar(valor: Option<&String>) -> Option<Str
 }
 
 // --------------------------------------------------------------------------
+// LÓGICA DE CONTROL: PERMANENCIA (CENTRALIZADA)
+// --------------------------------------------------------------------------
+
+// Re-using types defined in ingreso logic for now, should be moved to common model if cleaner
+use crate::models::ingreso::contratista::{AlertaTiempo, EstadoPermanencia};
+
+/// Tiempo máximo de permanencia permitido en planta (horas).
+pub const TIEMPO_MAXIMO_HORAS: i64 = 14;
+
+/// Tiempo para disparo de alerta temprana de salida (13h 30min).
+pub const TIEMPO_ALERTA_TEMPRANA_MINUTOS: i64 = 13 * 60 + 30;
+
+/// Tiempo máximo convertido a minutos para cálculos internos (840 min).
+pub const TIEMPO_MAXIMO_MINUTOS: i64 = TIEMPO_MAXIMO_HORAS * 60;
+
+/// Calcula el margen de tiempo restante antes de incurrir en infracción.
+pub const fn calcular_minutos_restantes(minutos_transcurridos: i64) -> i64 {
+    TIEMPO_MAXIMO_MINUTOS - minutos_transcurridos
+}
+
+/// Determina la categoría de permanencia basada en el tiempo transcurrido.
+pub const fn evaluar_estado_permanencia(minutos_transcurridos: i64) -> EstadoPermanencia {
+    if minutos_transcurridos >= TIEMPO_MAXIMO_MINUTOS {
+        EstadoPermanencia::TiempoExcedido
+    } else if minutos_transcurridos >= TIEMPO_ALERTA_TEMPRANA_MINUTOS {
+        EstadoPermanencia::AlertaTemprana
+    } else {
+        EstadoPermanencia::Normal
+    }
+}
+
+/// Construye un objeto de alerta con metadatos descriptivos para la UI.
+pub fn construir_alerta_tiempo(minutos_transcurridos: i64) -> AlertaTiempo {
+    let estado = evaluar_estado_permanencia(minutos_transcurridos);
+    let minutos_restantes = calcular_minutos_restantes(minutos_transcurridos);
+
+    let mensaje = match estado {
+        EstadoPermanencia::TiempoExcedido => {
+            Some(format!("TIEMPO EXCEDIDO por {} min", minutos_restantes.abs()))
+        }
+        EstadoPermanencia::AlertaTemprana => {
+            Some(format!("Alerta: Quedan {minutos_restantes} min"))
+        }
+        EstadoPermanencia::Normal => None,
+    };
+
+    AlertaTiempo { estado, minutos_transcurridos, minutos_restantes, mensaje }
+}
+
+// --------------------------------------------------------------------------
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
 
@@ -638,54 +688,4 @@ mod tests {
         assert_eq!(evaluar_estado_permanencia(820), EstadoPermanencia::AlertaTemprana);
         assert_eq!(evaluar_estado_permanencia(850), EstadoPermanencia::TiempoExcedido);
     }
-}
-
-// --------------------------------------------------------------------------
-// LÓGICA DE CONTROL: PERMANENCIA (CENTRALIZADA)
-// --------------------------------------------------------------------------
-
-// Re-using types defined in ingreso logic for now, should be moved to common model if cleaner
-use crate::models::ingreso::contratista::{AlertaTiempo, EstadoPermanencia};
-
-/// Tiempo máximo de permanencia permitido en planta (horas).
-pub const TIEMPO_MAXIMO_HORAS: i64 = 14;
-
-/// Tiempo para disparo de alerta temprana de salida (13h 30min).
-pub const TIEMPO_ALERTA_TEMPRANA_MINUTOS: i64 = 13 * 60 + 30;
-
-/// Tiempo máximo convertido a minutos para cálculos internos (840 min).
-pub const TIEMPO_MAXIMO_MINUTOS: i64 = TIEMPO_MAXIMO_HORAS * 60;
-
-/// Calcula el margen de tiempo restante antes de incurrir en infracción.
-pub const fn calcular_minutos_restantes(minutos_transcurridos: i64) -> i64 {
-    TIEMPO_MAXIMO_MINUTOS - minutos_transcurridos
-}
-
-/// Determina la categoría de permanencia basada en el tiempo transcurrido.
-pub const fn evaluar_estado_permanencia(minutos_transcurridos: i64) -> EstadoPermanencia {
-    if minutos_transcurridos >= TIEMPO_MAXIMO_MINUTOS {
-        EstadoPermanencia::TiempoExcedido
-    } else if minutos_transcurridos >= TIEMPO_ALERTA_TEMPRANA_MINUTOS {
-        EstadoPermanencia::AlertaTemprana
-    } else {
-        EstadoPermanencia::Normal
-    }
-}
-
-/// Construye un objeto de alerta con metadatos descriptivos para la UI.
-pub fn construir_alerta_tiempo(minutos_transcurridos: i64) -> AlertaTiempo {
-    let estado = evaluar_estado_permanencia(minutos_transcurridos);
-    let minutos_restantes = calcular_minutos_restantes(minutos_transcurridos);
-
-    let mensaje = match estado {
-        EstadoPermanencia::TiempoExcedido => {
-            Some(format!("TIEMPO EXCEDIDO por {} min", minutos_restantes.abs()))
-        }
-        EstadoPermanencia::AlertaTemprana => {
-            Some(format!("Alerta: Quedan {minutos_restantes} min"))
-        }
-        EstadoPermanencia::Normal => None,
-    };
-
-    AlertaTiempo { estado, minutos_transcurridos, minutos_restantes, mensaje }
 }

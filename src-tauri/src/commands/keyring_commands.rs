@@ -232,7 +232,7 @@ pub fn generate_random_secret() -> String {
 // COMANDOS DE EXPORTACIÓN / IMPORTACIÓN (MASTER KEY)
 // ==========================================
 
-/// Exporta el archivo maestro de seguridad (.megabrisas_master) cifrado con contraseña.
+/// Exporta el archivo maestro de seguridad (.`megabrisas_master`) cifrado con contraseña.
 #[command]
 pub async fn export_master_key_cmd(
     file_path: String,
@@ -241,7 +241,7 @@ pub async fn export_master_key_cmd(
     ks::export_master_key(std::path::PathBuf::from(file_path), &password)
 }
 
-/// Importa un archivo maestro de seguridad (.megabrisas_master) para sincronizar esta PC.
+/// Importa un archivo maestro de seguridad (.`megabrisas_master`) para sincronizar esta PC.
 #[command]
 pub async fn import_master_key_cmd(
     file_path: String,

@@ -97,8 +97,7 @@ pub async fn update_backup_config(
     dias_retencion: u32,
 ) -> Result<crate::config::settings::BackupConfig, ConfigError> {
     info!(
-        "Actualizando configuración de backup: enabled={}, hora={}, dias={}",
-        enabled, hora, dias_retencion
+        "Actualizando configuración de backup: enabled={enabled}, hora={hora}, dias={dias_retencion}"
     );
 
     let mut config_guard = config

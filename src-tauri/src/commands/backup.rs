@@ -48,7 +48,7 @@ fn get_backup_directory(config: &AppConfigState) -> Result<PathBuf, BackupError>
 
 /// [Comando Tauri] Realiza una copia de seguridad manual de la base de datos activa.
 ///
-/// Ejecuta el comando `EXPORT FILE` de SurrealDB para generar un script SQL
+/// Ejecuta el comando `EXPORT FILE` de `SurrealDB` para generar un script SQL
 /// con la estructura y los datos actuales.
 ///
 /// # Argumentos
@@ -61,52 +61,53 @@ pub async fn backup_database(destination_path: String) -> Result<(), BackupError
     use futures::TryStreamExt;
     use tokio::io::AsyncWriteExt;
 
-    info!("📦 Iniciando respaldo manual de base de datos a: {}", destination_path);
+    info!("📦 Iniciando respaldo manual de base de datos a: {destination_path}");
 
     // 1. Obtener cliente de BD
     let db = crate::services::surrealdb_service::get_db().await.map_err(|e| {
-        error!("No se pudo obtener conexión a DB para respaldo: {}", e);
-        BackupError::IO(format!("Error de conexión al motor de base de datos: {}", e))
+        error!("No se pudo obtener conexión a DB para respaldo: {e}");
+        BackupError::IO(format!("Error de conexión al motor de base de datos: {e}"))
     })?;
 
     // 2. Crear directorio padre si no existe
     let path = std::path::Path::new(&destination_path);
     if let Some(parent) = path.parent() {
         if !parent.exists() {
-            fs::create_dir_all(parent).map_err(|e| {
-                BackupError::IO(format!("Error al crear directorio: {}", e))
-            })?;
+            fs::create_dir_all(parent)
+                .map_err(|e| BackupError::IO(format!("Error al crear directorio: {e}")))?;
         }
     }
 
     // 3. Usar el método export() del SDK para obtener un stream de bytes
     info!("⚙️ Ejecutando exportación via SDK...");
-    
+
     // Exportar sin argumento retorna un stream
     let mut stream = db.export(()).await.map_err(|e| {
-        error!("Error al iniciar exportación: {}", e);
-        BackupError::IO(format!("Error al exportar base de datos: {}", e))
+        error!("Error al iniciar exportación: {e}");
+        BackupError::IO(format!("Error al exportar base de datos: {e}"))
     })?;
 
     // 4. Escribir el stream a un archivo
     let mut file = tokio::fs::File::create(&destination_path).await.map_err(|e| {
-        error!("Error al crear archivo de backup: {}", e);
-        BackupError::IO(format!("Error al crear archivo: {}", e))
+        error!("Error al crear archivo de backup: {e}");
+        BackupError::IO(format!("Error al crear archivo: {e}"))
     })?;
 
-    while let Some(chunk) = stream.try_next().await.map_err(|e| {
-        BackupError::IO(format!("Error leyendo datos de exportación: {}", e))
-    })? {
-        file.write_all(&chunk).await.map_err(|e| {
-            BackupError::IO(format!("Error escribiendo archivo: {}", e))
-        })?;
+    while let Some(chunk) = stream
+        .try_next()
+        .await
+        .map_err(|e| BackupError::IO(format!("Error leyendo datos de exportación: {e}")))?
+    {
+        file.write_all(&chunk)
+            .await
+            .map_err(|e| BackupError::IO(format!("Error escribiendo archivo: {e}")))?;
     }
 
-    file.flush().await.map_err(|e| {
-        BackupError::IO(format!("Error al finalizar escritura: {}", e))
-    })?;
+    file.flush()
+        .await
+        .map_err(|e| BackupError::IO(format!("Error al finalizar escritura: {e}")))?;
 
-    info!("✅ Respaldo completado exitosamente en: {}", destination_path);
+    info!("✅ Respaldo completado exitosamente en: {destination_path}");
     Ok(())
 }
 
@@ -119,11 +120,11 @@ pub async fn backup_database_auto(
 
     // Generar nombre de archivo con timestamp
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
-    let filename = format!("brisas_backup_{}.surql", timestamp);
+    let filename = format!("brisas_backup_{timestamp}.surql");
     let destination = backup_dir.join(&filename);
     let destination_str = destination.to_string_lossy().to_string();
 
-    info!("📦 Iniciando respaldo automático a: {}", destination_str);
+    info!("📦 Iniciando respaldo automático a: {destination_str}");
 
     // Ejecutar backup
     backup_database(destination_str.clone()).await?;
@@ -147,7 +148,7 @@ pub async fn backup_database_auto(
         })?;
     }
 
-    info!("✅ Backup automático completado: {}", filename);
+    info!("✅ Backup automático completado: {filename}");
     Ok(filename)
 }
 
@@ -191,16 +192,15 @@ pub async fn list_backups(
 
         let nombre = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
 
-        let fecha_creacion = metadata
-            .created()
-            .or_else(|_| metadata.modified())
-            .map(|t| chrono::DateTime::<Local>::from(t).to_rfc3339())
-            .unwrap_or_else(|_| "Desconocida".to_string());
+        let fecha_creacion = metadata.created().or_else(|_| metadata.modified()).map_or_else(
+            |_| "Desconocida".to_string(),
+            |t| chrono::DateTime::<Local>::from(t).to_rfc3339(),
+        );
 
         // Calcular días de antigüedad
         let dias_antiguedad = if let Ok(created) = metadata.created() {
             let created_date = chrono::DateTime::<Local>::from(created).date_naive();
-            (today - created_date).num_days().max(0) as u32
+            (today - created_date).num_days().try_into().unwrap_or(0)
         } else {
             0
         };
@@ -242,7 +242,7 @@ pub async fn delete_backup(
     fs::remove_file(&file_path)
         .map_err(|e| BackupError::IO(format!("Error al eliminar backup: {e}")))?;
 
-    info!("🗑️ Backup eliminado: {}", filename);
+    info!("🗑️ Backup eliminado: {filename}");
     Ok(())
 }
 
@@ -341,26 +341,24 @@ pub async fn cleanup_old_backups(config: State<'_, AppConfigState>) -> Result<u3
         // Calcular antigüedad
         let dias_antiguedad = if let Ok(created) = metadata.created() {
             let created_date = chrono::DateTime::<Local>::from(created).date_naive();
-            (today - created_date).num_days().max(0) as u32
+            (today - created_date).num_days().try_into().unwrap_or(0)
         } else {
             continue;
         };
 
         // Eliminar si excede retención
-        if dias_antiguedad > dias_retencion {
-            if fs::remove_file(&path).is_ok() {
-                deleted_count += 1;
-                warn!(
-                    "🗑️ Backup antiguo eliminado: {} ({} días)",
-                    path.file_name().unwrap_or_default().to_string_lossy(),
-                    dias_antiguedad
-                );
-            }
+        if dias_antiguedad > dias_retencion && fs::remove_file(&path).is_ok() {
+            deleted_count += 1;
+            warn!(
+                "🗑️ Backup antiguo eliminado: {} ({} días)",
+                path.file_name().unwrap_or_default().to_string_lossy(),
+                dias_antiguedad
+            );
         }
     }
 
     if deleted_count > 0 {
-        info!("🧹 Limpieza completada: {} backups antiguos eliminados", deleted_count);
+        info!("🧹 Limpieza completada: {deleted_count} backups antiguos eliminados");
     }
 
     Ok(deleted_count)
