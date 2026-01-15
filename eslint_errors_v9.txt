@@ -1,9 +1,0 @@
-
-> mega-brisas@1.0.0-beta.1 lint
-> prettier --check . && eslint .
-
-Checking formatting...
-[warn] src/lib/logic/listaNegra/listaNegraService.ts
-[warn] src/lib/schemas/proveedorSchema.ts
-[warn] src/lib/schemas/userSchema.ts
-[warn] Code style issues found in 3 files. Run Prettier with --write to fix.

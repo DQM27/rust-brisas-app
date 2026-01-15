@@ -132,10 +132,10 @@ impl IngresoContratistaRepository for SurrealIngresoContratistaRepository {
         end: &str,
     ) -> Result<Vec<IngresoContratistaFetched>, SurrealDbError> {
         let db = get_db().await?;
-        log::debug!("Repo: Querying salidas from {start} to {end}");
+        log::debug!("Repo: Querying history (by entry date) from {start} to {end}");
         let mut result = db
             .query(format!(
-                "SELECT * FROM {TABLE} WHERE fecha_hora_salida >= type::datetime($start) AND fecha_hora_salida <= type::datetime($end) ORDER BY fecha_hora_salida DESC FETCH usuario_ingreso, usuario_salida, contratista, contratista.empresa"
+                "SELECT * FROM {TABLE} WHERE fecha_hora_ingreso >= type::datetime($start) AND fecha_hora_ingreso <= type::datetime($end) ORDER BY fecha_hora_ingreso DESC FETCH usuario_ingreso, usuario_salida, contratista, contratista.empresa"
             ))
             .bind(("start", start.to_string()))
             .bind(("end", end.to_string()))

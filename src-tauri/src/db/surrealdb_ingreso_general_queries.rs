@@ -104,7 +104,7 @@ pub async fn find_salidas_in_range_fetched(
     // Cast type::table to string to ensure proper JSON serialization
     let mut result = db
         .query(format!(
-            "SELECT *, <string>type::table(id) AS tipo_ingreso FROM {TABLES} WHERE fecha_hora_salida >= type::datetime($start) AND fecha_hora_salida <= type::datetime($end) ORDER BY fecha_hora_salida DESC {FETCH_ALL}"
+            "SELECT *, <string>type::table(id) AS tipo_ingreso FROM {TABLES} WHERE fecha_hora_ingreso >= type::datetime($start) AND fecha_hora_ingreso <= type::datetime($end) ORDER BY fecha_hora_ingreso DESC {FETCH_ALL}"
         ))
         .bind(("start", start.to_string()))
         .bind(("end", end.to_string()))

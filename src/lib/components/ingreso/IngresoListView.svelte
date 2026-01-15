@@ -74,8 +74,8 @@
 	type ViewMode = 'actives' | 'history';
 	let viewMode = $state<ViewMode>('actives');
 
-	// Rango de fechas por defecto: Hoy
-	const today = new Date().toISOString().split('T')[0];
+	// Rango de fechas por defecto: Hoy (Local)
+	const today = new Date().toLocaleDateString('en-CA');
 	let dateRange = $state({
 		start: today,
 		end: today

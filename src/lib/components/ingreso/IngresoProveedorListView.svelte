@@ -78,7 +78,7 @@
 	type ViewMode = 'actives' | 'history';
 	let viewMode = $state<ViewMode>('actives');
 
-	const today = new Date().toISOString().split('T')[0];
+	const today = new Date().toLocaleDateString('en-CA');
 	let dateRange = $state({
 		start: today,
 		end: today
