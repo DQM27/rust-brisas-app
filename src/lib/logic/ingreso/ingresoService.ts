@@ -1,5 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { TipoIngreso, ValidacionIngresoResult, FinalizarIngresoForm } from './types';
+import type { ValidacionIngresoResponse, IngresoResponse } from '$lib/types/ingreso';
+import type { VehiculoResponse } from '$lib/types/vehiculo';
+import type { ContratistaResponse } from '$lib/types/contratista';
+import type { ProveedorResponse } from '$lib/types/proveedor';
+import type { VisitanteResponse } from '$lib/types/visitante';
+import type { GafeteResponse } from '$lib/types/gafete';
+import type { CreateIngresoInput } from '$lib/types/ingreso';
 
 // ==========================================
 // TYPES FOR RESULTS
@@ -18,7 +25,7 @@ export async function validarIngreso(
 	console.log(`[IngresoService] Validando ingreso ${tipo} para ID: ${id}`);
 
 	try {
-		let response: any;
+		let response: ValidacionIngresoResponse;
 
 		if (tipo === 'contratista') {
 			response = await invoke('validate_ingreso_contratista', { contratistaId: id });
@@ -114,14 +121,15 @@ export function validarFormularioCompleto(params: {
  */
 export function validarGafete(params: {
 	gafeteNumero: string;
-	gafetesDisponibles: any[];
+	gafetesDisponibles: GafeteResponse[];
 }): ServiceResult<{ isValid: boolean; suggestions: string[] }> {
 	const numero = params.gafeteNumero.trim().toUpperCase();
 	if (!numero) {
 		return { ok: true, data: { isValid: false, suggestions: [] } };
 	}
 
-	const gafete = params.gafetesDisponibles.find((g) => g.numero === numero);
+	const numeroInt = parseInt(numero, 10);
+	const gafete = params.gafetesDisponibles.find((g) => g.numero === numeroInt);
 	if (!gafete) {
 		return { ok: true, data: { isValid: false, suggestions: [] } };
 	}
@@ -152,7 +160,7 @@ export function validarModoVehiculo(params: {
 // REGISTRO Y OPERACIONES
 // ==========================================
 
-export async function registrarEntrada(input: any): Promise<ServiceResult<any>> {
+export async function registrarEntrada(input: CreateIngresoInput): Promise<ServiceResult<IngresoResponse>> {
 	try {
 		const formData: FinalizarIngresoForm = {
 			gafete: input.gafeteNumero || '',
@@ -172,17 +180,17 @@ export async function registrarEntrada(input: any): Promise<ServiceResult<any>> 
 	}
 }
 
-export async function fetchContratistasAbiertos(): Promise<ServiceResult<any[]>> {
+export async function fetchContratistasAbiertos(): Promise<ServiceResult<IngresoResponse[]>> {
 	try {
 		const data = await invoke('get_ingresos_contratistas_activos');
-		return { ok: true, data: data as any[] };
+		return { ok: true, data: data as IngresoResponse[] };
 	} catch (e: unknown) {
 		const msg = e instanceof Error ? e.message : String(e);
 		return { ok: false, error: msg || 'Error cargando contratistas activos' };
 	}
 }
 
-export async function fetchAbiertos(): Promise<ServiceResult<any[]>> {
+export async function fetchAbiertos(): Promise<ServiceResult<IngresoResponse[]>> {
 	try {
 		// Por compatibilidad y claridad, ahora este llama explícitamente a contratistas
 		// ya que el usuario indicó que "ingresos abiertos" debe ser solo para contratistas.
@@ -201,9 +209,9 @@ export async function crearIngreso(
 	tipo: TipoIngreso,
 	candidateId: string,
 	formData: FinalizarIngresoForm,
-	extraData?: any,
+	extraData?: ContratistaResponse | ProveedorResponse | VisitanteResponse | any,
 	usuarioId?: string
-): Promise<any> {
+): Promise<IngresoResponse> {
 	// Validar que se proporcione un usuario válido
 	if (!usuarioId) {
 		console.error('[IngresoService] ERROR: No usuarioId provided to crearIngreso', {
@@ -225,7 +233,9 @@ export async function crearIngreso(
 			// Resolve vehicle plate from ID if possible
 			let placaVehiculo = null;
 			if (formData.vehiculoId && extraData?.vehiculos) {
-				const v = extraData.vehiculos.find((v: any) => v.id === formData.vehiculoId);
+				// Type guard or casting needed because extraData can be generic
+				const vehiculos = (extraData as any).vehiculos as VehiculoResponse[];
+				const v = vehiculos?.find((v) => v.id === formData.vehiculoId);
 				if (v) placaVehiculo = v.placa;
 			}
 
@@ -282,7 +292,11 @@ export async function crearIngreso(
 				},
 				usuarioId: usuarioId
 			});
+		} else {
+			throw new Error(`Tipo de ingreso no soportado: ${tipo}`);
 		}
+		// Should verify all paths return, but throw allows exhaustive check if types matched
+		throw new Error('Unexpected execution path');
 	} catch (error: unknown) {
 		console.error(`[IngresoService] Error creando ingreso:`, error);
 		throw error;
@@ -301,7 +315,7 @@ export async function registrarSalida(params: {
 	devolvioGafete: boolean;
 	observacionesSalida: string;
 	usuarioSalidaId: string;
-}): Promise<ServiceResult<any>> {
+}): Promise<ServiceResult<IngresoResponse>> {
 	try {
 		const res = await invoke('registrar_salida', {
 			input: {
@@ -311,7 +325,7 @@ export async function registrarSalida(params: {
 				usuario_salida_id: params.usuarioSalidaId
 			}
 		});
-		return { ok: true, data: res };
+		return { ok: true, data: res as IngresoResponse };
 	} catch (e: unknown) {
 		const msg = e instanceof Error ? e.message : String(e);
 		return { ok: false, error: msg || 'Error al registrar salida' };
@@ -324,13 +338,13 @@ export async function registrarSalida(params: {
 export async function fetchSalidasEnRango(
 	startDate: string,
 	endDate: string
-): Promise<ServiceResult<any[]>> {
+): Promise<ServiceResult<IngresoResponse[]>> {
 	try {
 		const data = await invoke('get_ingresos_salidas_rango', {
 			start_date: startDate,
 			end_date: endDate
 		});
-		return { ok: true, data: data as any[] };
+		return { ok: true, data: data as IngresoResponse[] };
 	} catch (e: unknown) {
 		const msg = e instanceof Error ? e.message : String(e);
 		return { ok: false, error: msg || 'Error cargando historial de salidas' };
@@ -370,6 +384,7 @@ export const ingresoService = {
 	validarIngreso,
 	prepararFormularioIngreso,
 	validarFormularioCompleto,
+
 	validarGafete,
 	validarModoVehiculo,
 	registrarEntrada,
@@ -384,7 +399,7 @@ export const ingresoService = {
 // MAPPERS
 // ==========================================
 
-function mapContratistaResponse(res: any): ValidacionIngresoResult {
+function mapContratistaResponse(res: ValidacionIngresoResponse): ValidacionIngresoResult {
 	// Calcular si PRAIND está vigente basándose en la fecha de vencimiento
 	let praindVigente = false;
 	if (res.contratista?.fechaVencimientoPraind) {
@@ -407,8 +422,8 @@ function mapContratistaResponse(res: any): ValidacionIngresoResult {
 				nombre: res.contratista.nombre,
 				apellido: res.contratista.apellido,
 				nombreCompleto: `${res.contratista.nombre} ${res.contratista.apellido}`,
-				empresa: res.contratista.empresa_nombre,
-				empresaId: res.contratista.empresa_id || undefined,
+				empresa: res.contratista.empresaNombre,
+				empresaId: res.contratista.empresaId || undefined,
 				estado: res.contratista.estado,
 				vehiculos: res.contratista.vehiculos || [],
 				praindVigente: praindVigente
@@ -417,7 +432,7 @@ function mapContratistaResponse(res: any): ValidacionIngresoResult {
 	};
 }
 
-function mapProveedorResponse(res: any): ValidacionIngresoResult {
+function mapProveedorResponse(res: ValidacionIngresoResponse): ValidacionIngresoResult {
 	return {
 		puedeIngresar: res.puedeIngresar,
 		motivoRechazo: res.motivoRechazo,
@@ -432,14 +447,14 @@ function mapProveedorResponse(res: any): ValidacionIngresoResult {
 				nombre: res.proveedor.nombre,
 				apellido: res.proveedor.apellido || '',
 				nombreCompleto: `${res.proveedor.nombre} ${res.proveedor.apellido || ''}`,
-				empresa: res.proveedor.empresa_nombre || res.proveedor.empresa,
+				empresa: res.proveedor.empresaNombre,
 				vehiculos: []
 			}
 			: undefined
 	};
 }
 
-function mapVisitaResponse(res: any): ValidacionIngresoResult {
+function mapVisitaResponse(res: ValidacionIngresoResponse): ValidacionIngresoResult {
 	return {
 		puedeIngresar: res.puedeIngresar,
 		motivoRechazo: res.motivoRechazo,
@@ -454,7 +469,7 @@ function mapVisitaResponse(res: any): ValidacionIngresoResult {
 				nombre: res.visitante.nombre,
 				apellido: res.visitante.apellido,
 				nombreCompleto: `${res.visitante.nombre} ${res.visitante.apellido}`,
-				empresa: res.visitante.empresa_nombre || res.visitante.empresa,
+				empresa: res.visitante.empresaNombre,
 				vehiculos: []
 			}
 			: undefined

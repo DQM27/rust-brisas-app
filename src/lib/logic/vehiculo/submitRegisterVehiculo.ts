@@ -12,10 +12,13 @@ export type SubmitVehiculoResult =
 	| { ok: true; vehiculo: VehiculoResponse }
 	| { ok: false; error: string };
 
-export function parseVehiculoError(err: any): string {
+export function parseVehiculoError(err: unknown): string {
 	if (!err) return 'Ocurrió un error desconocido.';
 	if (typeof err === 'string') return err;
-	if (typeof err === 'object' && err.message) return err.message;
+	if (err instanceof Error) return err.message;
+	if (typeof err === 'object' && err !== null && 'message' in err) {
+		return String((err as { message: unknown }).message);
+	}
 	return 'Ocurrió un error inesperado.';
 }
 
@@ -35,7 +38,7 @@ export async function submitRegisterVehiculo(
 	try {
 		const vehiculo = await registerVehiculo(input);
 		return { ok: true, vehiculo };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		const errorMessage = parseVehiculoError(err);
 		return { ok: false, error: errorMessage };
 	}
@@ -51,7 +54,7 @@ export async function submitUpdateVehiculo(
 	try {
 		const vehiculo = await vehiculos.update(id, input);
 		return { ok: true, vehiculo };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		const errorMessage = parseVehiculoError(err);
 		return { ok: false, error: errorMessage };
 	}
@@ -64,7 +67,7 @@ export async function submitDeleteVehiculo(id: string): Promise<SubmitVehiculoRe
 	try {
 		await vehiculos.delete(id);
 		return { ok: true, vehiculo: {} as VehiculoResponse };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		const errorMessage = parseVehiculoError(err);
 		return { ok: false, error: errorMessage };
 	}

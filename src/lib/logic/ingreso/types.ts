@@ -5,6 +5,12 @@ export type TipoAutorizacion =
 	| { tipo: 'correo'; referencia?: string }
 	| { tipo: 'excepcional'; autorizado_por: string; motivo: string };
 
+import type { VehiculoResponse } from '$lib/types/vehiculo';
+import type { ContratistaResponse } from '$lib/types/contratista';
+import type { ProveedorResponse } from '$lib/types/proveedor';
+import type { VisitanteResponse } from '$lib/types/visitante';
+import type { IngresoResponse, ValidacionIngresoResponse } from '$lib/types/ingreso';
+
 export type MotivoBloqueo =
 	| { tipo: 'lista_negra'; motivo: string }
 	| { tipo: 'ingreso_activo' }
@@ -16,7 +22,7 @@ export interface ResultadoValidacion {
 	puedeIngresar: boolean;
 	bloqueos: MotivoBloqueo[];
 	alertas: string[];
-	reportesPendientes: any[]; // Definir si es necesario
+	// reportesPendientes: any[]; // Definir si es necesario - Commented out as unused or unknown
 }
 
 // Interfaz espejo de lo que retorna la validación del backend
@@ -38,17 +44,17 @@ export interface ValidacionIngresoResult {
 		empresa?: string;
 		empresaId?: string;
 		estado?: string;
-		vehiculos?: any[];
+		vehiculos?: VehiculoResponse[];
 		praindVigente?: boolean;
 	};
 
 	// Atajos específicos para evitar errores de tipo en controladores
-	contratista?: any;
-	proveedor?: any;
-	visitante?: any;
+	contratista?: ContratistaResponse;
+	proveedor?: ProveedorResponse;
+	visitante?: VisitanteResponse;
 
 	tieneIngresoAbierto: boolean;
-	ingresoAbierto?: any;
+	ingresoAbierto?: IngresoResponse;
 }
 
 export type IngresoStep = 'SEARCH' | 'VALIDATION' | 'DETAILS' | 'CONFIRM';
@@ -57,7 +63,7 @@ export interface IngresoState {
 	step: IngresoStep;
 	tipoIngreso: TipoIngreso | null;
 	candidateId: string | null;
-	candidateData: any | null; // Datos crudos de la persona (Contratista | Proveedor | Visitante)
+	candidateData: ContratistaResponse | ProveedorResponse | VisitanteResponse | null; // Datos crudos de la persona
 	validationResult: ValidacionIngresoResult | null;
 
 	// Input final

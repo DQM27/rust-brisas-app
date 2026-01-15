@@ -51,8 +51,9 @@ export const proveedor = {
 		try {
 			const data = await invoke<ProveedorResponse[]>('get_archived_proveedores');
 			return { ok: true, data };
-		} catch (e: any) {
-			return { ok: false, data: [], error: e.message || String(e) };
+		} catch (e: unknown) {
+			const errMsg = e instanceof Error ? e.message : String(e);
+			return { ok: false, data: [], error: errMsg };
 		}
 	},
 	restore: async (
@@ -61,8 +62,9 @@ export const proveedor = {
 		try {
 			const data = await invoke<ProveedorResponse>('restore_proveedor', { id });
 			return { ok: true, data };
-		} catch (e: any) {
-			return { ok: false, error: e.message || String(e) };
+		} catch (e: unknown) {
+			const errMsg = e instanceof Error ? e.message : String(e);
+			return { ok: false, error: errMsg };
 		}
 	}
 };

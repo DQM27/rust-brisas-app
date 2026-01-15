@@ -47,8 +47,9 @@ export const contratistas = {
 		try {
 			await invoke<void>('restore_contratista', { id });
 			return { ok: true };
-		} catch (e: any) {
-			return { ok: false, error: e.message || String(e) };
+		} catch (e: unknown) {
+			const errMsg = e instanceof Error ? e.message : String(e);
+			return { ok: false, error: errMsg };
 		}
 	},
 
@@ -61,8 +62,9 @@ export const contratistas = {
 		try {
 			const data = await invoke<ContratistaResponse[]>('get_archived_contratistas');
 			return { ok: true, data };
-		} catch (e: any) {
-			return { ok: false, data: [], error: e.message || String(e) };
+		} catch (e: unknown) {
+			const errMsg = e instanceof Error ? e.message : String(e);
+			return { ok: false, data: [], error: errMsg };
 		}
 	}
 };

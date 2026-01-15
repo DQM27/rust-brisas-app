@@ -3,6 +3,8 @@
 
 import { z } from 'zod';
 import type { ContratistaResponse } from './contratista';
+import type { ProveedorResponse } from './proveedor';
+import type { VisitanteResponse } from './visitante';
 
 // ==========================================
 // ESQUEMAS (VALIDACIÓN)
@@ -88,6 +90,7 @@ export const ResolverAlertaSchema = z.object({
 export type CreateIngresoContratistaInput = z.infer<typeof CreateIngresoContratistaSchema>;
 export type CreateIngresoVisitaInput = z.infer<typeof CreateIngresoVisitaSchema>;
 export type CreateIngresoProveedorInput = z.infer<typeof CreateIngresoProveedorSchema>;
+export type CreateIngresoInput = CreateIngresoContratistaInput | CreateIngresoVisitaInput | CreateIngresoProveedorInput | any; // Fallback for UI form data
 export type RegistrarSalidaInput = z.infer<typeof RegistrarSalidaSchema>;
 export type ResolverAlertaInput = z.infer<typeof ResolverAlertaSchema>;
 
@@ -143,6 +146,8 @@ export interface ValidacionIngresoResponse {
 	severidadListaNegra?: string;
 	alertas: string[];
 	contratista?: ContratistaResponse;
+	proveedor?: ProveedorResponse;
+	visitante?: VisitanteResponse;
 	tieneIngresoAbierto: boolean;
 	ingresoAbierto?: IngresoResponse;
 }

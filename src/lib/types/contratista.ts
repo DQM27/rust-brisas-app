@@ -1,6 +1,6 @@
 // src/lib/types/contratista.ts
 
-import type { TipoVehiculo } from './vehiculo';
+import type { TipoVehiculo, VehiculoResponse } from './vehiculo';
 
 // ======================================================
 // TIPOS CENTRALES DEL DOMINIO CONTRATISTA
@@ -40,6 +40,8 @@ export interface ContratistaResponse {
 	requiereAtencion: boolean;
 	vehiculoTipo?: string;
 	vehiculoPlaca?: string;
+
+	vehiculos?: VehiculoResponse[]; // Relación completa si se incluye
 	createdAt: string;
 	updatedAt: string;
 	deletedAt?: string;
