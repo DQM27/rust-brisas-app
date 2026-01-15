@@ -4,13 +4,13 @@ import type { AlertaGafeteResponse } from '$lib/types/ingreso';
 // Result type similar to other services
 export type ServiceResult<T> =
 	| {
-			ok: true;
-			data: T;
-	  }
+		ok: true;
+		data: T;
+	}
 	| {
-			ok: false;
-			error: string;
-	  };
+		ok: false;
+		error: string;
+	};
 
 /**
  * Resolver una alerta de gafete
@@ -23,11 +23,11 @@ export async function resolverAlerta(
 	try {
 		await alertaGafete.resolver(alertaId, notas, usuarioId);
 		return { ok: true, data: undefined };
-	} catch (error) {
+	} catch (error: unknown) {
 		const errorMsg =
 			error instanceof Error
 				? error.message
-				: typeof error === 'object'
+				: typeof error === 'object' && error !== null
 					? JSON.stringify(error)
 					: String(error);
 		return {
@@ -46,7 +46,7 @@ export async function getAlertasPendientesByCedula(
 	try {
 		const data = await alertaGafete.getPendientesByCedula(cedula);
 		return { ok: true, data };
-	} catch (error) {
+	} catch (error: unknown) {
 		return {
 			ok: false,
 			error: error instanceof Error ? error.message : String(error)
@@ -63,7 +63,7 @@ export async function getAllAlertas(
 	try {
 		const data = await alertaGafete.getAll(resuelto);
 		return { ok: true, data };
-	} catch (error) {
+	} catch (error: unknown) {
 		return {
 			ok: false,
 			error: error instanceof Error ? error.message : String(error)

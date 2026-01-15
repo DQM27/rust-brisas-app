@@ -9,6 +9,19 @@ import type {
 	ValidacionProveedorResult
 } from '$lib/logic/ingreso/proveedorService';
 import { validarDatosProveedor } from '$lib/logic/ingreso/proveedorService';
+import type { ProveedorResponse } from '$lib/types/proveedor';
+import type { AlertaGafeteResponse } from '$lib/types/ingreso';
+
+interface ProveedorWithVehicles extends ProveedorResponse {
+	vehiculos?: {
+		id: string;
+		placa: string;
+		marca: string;
+		modelo: string;
+		color: string;
+		tipo_vehiculo: string;
+	}[];
+}
 
 // ==========================================
 // ESTADO INICIAL
@@ -19,10 +32,10 @@ export interface ProveedorFormState extends ProveedorFormData {
 	// Estado de validación
 	proveedorId: string;
 	proveedorNombre: string;
-	proveedorData: any; // JSON data del backend
+	proveedorData: ProveedorWithVehicles | null;
 	puedeIngresar: boolean;
 	mensajeValidacion: string;
-	alertas: any[]; // AlertaGafeteResponse[]
+	alertas: AlertaGafeteResponse[];
 	vehiculoId?: string;
 }
 
@@ -150,10 +163,10 @@ export function toggleModoIngreso(modo: 'caminando' | 'vehiculo') {
 export function setProveedorValidado(data: {
 	proveedorId: string;
 	proveedorNombre: string;
-	proveedorData: any;
+	proveedorData: ProveedorWithVehicles;
 	puedeIngresar: boolean;
 	mensajeValidacion: string;
-	alertas: any[];
+	alertas: AlertaGafeteResponse[];
 }) {
 	proveedorFormData.update((state) => ({
 		...state,
@@ -162,7 +175,7 @@ export function setProveedorValidado(data: {
 		cedula: data.proveedorData?.cedula || state.cedula,
 		nombre: data.proveedorData?.nombre || state.nombre,
 		apellido: data.proveedorData?.apellido || state.apellido,
-		empresaId: data.proveedorData?.empresa_id || state.empresaId
+		empresaId: data.proveedorData?.empresaId || state.empresaId
 	}));
 }
 
@@ -180,7 +193,7 @@ export function setVehiculoCatalogo(vehiculoId: string | null) {
 			};
 		}
 
-		const vehiculo = state.proveedorData?.vehiculos?.find((v: any) => v.id === vehiculoId);
+		const vehiculo = state.proveedorData?.vehiculos?.find((v) => v.id === vehiculoId);
 		if (vehiculo) {
 			return {
 				...state,

@@ -107,7 +107,7 @@ function validateUpdateInput(input: UpdateListaNegraInput): ValidationResult {
 // ERROR PARSING
 // ============================================
 
-function parseError(err: any): string {
+function parseError(err: unknown): string {
 	if (!err) return 'Ocurrió un error desconocido.';
 
 	if (typeof err === 'string') {
@@ -126,8 +126,13 @@ function parseError(err: any): string {
 		return err;
 	}
 
-	if (typeof err === 'object' && err.message) {
-		return parseError(err.message);
+	if (err instanceof Error) return parseError(err.message);
+
+	if (typeof err === 'object' && err !== null) {
+		const obj = err as Record<string, unknown>;
+		if (obj.message && typeof obj.message === 'string') {
+			return parseError(obj.message);
+		}
 	}
 
 	return 'Ocurrió un error inesperado al procesar la solicitud.';
@@ -144,7 +149,7 @@ export async function fetchAll(): Promise<ServiceResult<ListaNegraListResponse>>
 	try {
 		const data = await listaNegra.getAll();
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar lista negra:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -158,7 +163,7 @@ export async function fetchActivos(): Promise<ServiceResult<ListaNegraResponse[]
 		const result = await listaNegra.getAll();
 		const activos = result.bloqueados.filter((b) => b.isActive);
 		return { ok: true, data: activos };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar bloqueados activos:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -171,7 +176,7 @@ export async function fetchById(id: string): Promise<ServiceResult<ListaNegraRes
 	try {
 		const data = await listaNegra.getById(id);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar bloqueado:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -189,7 +194,7 @@ export async function add(input: AddToListaNegraInput): Promise<ServiceResult<Li
 	try {
 		const data = await listaNegra.add(input);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al agregar a lista negra:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -210,7 +215,7 @@ export async function update(
 	try {
 		const data = await listaNegra.update(id, input);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al actualizar lista negra:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -228,7 +233,7 @@ export async function unblock(id: string): Promise<ServiceResult<void>> {
 	try {
 		await listaNegra.remove(id);
 		return { ok: true, data: undefined };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al desbloquear:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -247,7 +252,7 @@ export async function reblock(id: string): Promise<ServiceResult<ListaNegraRespo
 	try {
 		const data = await listaNegra.reactivate(id);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al re-bloquear:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -264,7 +269,7 @@ export async function searchPersonas(query: string): Promise<ServiceResult<Perso
 	try {
 		const data = await listaNegra.searchPersonas(query.trim());
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al buscar personas:', err);
 		return { ok: false, error: parseError(err) };
 	}

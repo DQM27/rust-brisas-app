@@ -220,9 +220,9 @@
 				] as const;
 
 				for (const field of optionalFields) {
-					const value = (payloadData as any)[field];
+					const value = payloadData[field];
 					if (value === '' || (typeof value === 'string' && value.trim() === '')) {
-						delete (payloadData as any)[field];
+						delete payloadData[field];
 					}
 				}
 
@@ -277,7 +277,7 @@
 	let generatedPassword = $state<string | null>(null);
 
 	// Validación de duplicados en tiempo real
-	let checkTimeout: any;
+	let checkTimeout: ReturnType<typeof setTimeout>;
 	let cedulaDuplicateError = $state<string | null>(null);
 	let emailDuplicateError = $state<string | null>(null);
 
@@ -380,7 +380,6 @@
 
 		// Solo actualizar si hay caracteres inválidos que remover
 		if (input.value !== newValue) {
-			// @ts-ignore
 			$form[field] = newValue;
 			input.value = newValue;
 		}
@@ -410,7 +409,6 @@
 		let value = input.value.replace(/[^0-9]/g, '');
 		if (value.length > 11) value = value.substring(0, 11);
 		if (value === '') {
-			// @ts-ignore
 			$form[field] = '';
 			return;
 		}
@@ -418,7 +416,6 @@
 		if (value.length > 0) formatted += value.substring(0, 3);
 		if (value.length > 3) formatted += ' ' + value.substring(3, 7);
 		if (value.length > 7) formatted += '-' + value.substring(7, 11);
-		// @ts-ignore
 		$form[field] = formatted;
 		if (input.value !== formatted) {
 			input.value = formatted;
@@ -485,7 +482,7 @@
 		if (($errors as any)[field]) return '!border-red-500/50 !ring-1 !ring-red-500/20';
 
 		// Solo mostrar éxito si el campo ha sido "tocado" / cambiado
-		const isTainted = $tainted && ($tainted as any)[field];
+		const isTainted = $tainted && $tainted[field as keyof CreateUserForm];
 		if (
 			isTainted &&
 			value &&

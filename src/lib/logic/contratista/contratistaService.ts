@@ -29,7 +29,7 @@ export async function fetchAllContratistas(): Promise<ServiceResult<ContratistaL
 	try {
 		const result = await contratistas.list();
 		return { ok: true, data: result };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar contratistas:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -43,7 +43,7 @@ export async function fetchActiveContratistas(): Promise<ServiceResult<Contratis
 		const result = await contratistas.list();
 		const activos = result.contratistas.filter((c) => c.estado === 'activo');
 		return { ok: true, data: activos };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar contratistas activos:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -58,7 +58,7 @@ export async function fetchContratistaById(
 	try {
 		const contratista = await contratistas.getById(id);
 		return { ok: true, data: contratista };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar contratista:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -77,7 +77,7 @@ export async function createContratista(
 	try {
 		const contratista = await contratistas.create(input);
 		return { ok: true, data: contratista };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al crear contratista:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -93,7 +93,7 @@ export async function updateContratista(
 	try {
 		const contratista = await contratistas.update(id, input);
 		return { ok: true, data: contratista };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al actualizar contratista:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -106,7 +106,7 @@ export async function deleteContratista(id: string): Promise<ServiceResult<void>
 	try {
 		await contratistas.delete(id);
 		return { ok: true, data: undefined };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al eliminar contratista:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -122,7 +122,7 @@ export async function changeEstado(
 	try {
 		const contratista = await contratistas.changeEstado(id, nuevoEstado);
 		return { ok: true, data: contratista };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cambiar estado:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -132,7 +132,7 @@ export async function changeEstado(
 // ERROR PARSING
 // ============================================
 
-function parseError(err: any): string {
+function parseError(err: unknown): string {
 	if (!err) return 'Ocurrió un error desconocido.';
 
 	if (typeof err === 'string') {
@@ -142,8 +142,11 @@ function parseError(err: any): string {
 		return err;
 	}
 
-	if (typeof err === 'object') {
-		const msg = err.message ?? err.toString();
+	if (err instanceof Error) return parseError(err.message);
+
+	if (typeof err === 'object' && err !== null) {
+		const obj = err as Record<string, unknown>;
+		const msg = (obj.message as string) ?? obj.toString();
 		if (/unique|cedula|duplicat/i.test(msg)) return 'Ya existe un contratista con esa cédula.';
 		if (/empresa/i.test(msg)) return 'La empresa seleccionada no es válida.';
 		if (/failed/i.test(msg)) return 'Falló la operación en la base de datos.';
@@ -161,7 +164,7 @@ export async function restoreContratista(id: string): Promise<ServiceResult<void
 	try {
 		await contratistas.restore(id);
 		return { ok: true, data: undefined };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al restaurar contratista:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -171,7 +174,7 @@ export async function getArchivedContratistas(): Promise<ServiceResult<Contratis
 	try {
 		const result = await contratistas.listArchived();
 		return { ok: true, data: result };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar contratistas archivados:', err);
 		return { ok: false, error: parseError(err) };
 	}

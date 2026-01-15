@@ -75,9 +75,9 @@ export async function createCita(
 
 		const result = await cita.create(inputCita, inputVisitante);
 		return { ok: true, data: result };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error creando cita:', err);
-		return { ok: false, error: err.toString() };
+		return { ok: false, error: String(err) };
 	}
 }
 
@@ -87,9 +87,9 @@ export async function fetchVisitanteByCedula(
 	try {
 		const result = await cita.getVisitanteByCedula(cedula);
 		return { ok: true, data: result };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error buscando visitante:', err);
-		return { ok: false, error: err.toString() };
+		return { ok: false, error: String(err) };
 	}
 }
 
@@ -97,8 +97,8 @@ export async function fetchCitasHoy(): Promise<ServiceResult<CitaPopulated[]>> {
 	try {
 		const result = await cita.getHoy();
 		return { ok: true, data: result };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error cargando citas:', err);
-		return { ok: false, error: err.toString() };
+		return { ok: false, error: String(err) };
 	}
 }

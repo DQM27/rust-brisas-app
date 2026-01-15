@@ -137,16 +137,10 @@
 		const cols = ContratistaColumns.getColumns(handleStatusChange);
 
 		return cols.map(
-			(col) =>
+			(col) => (col) =>
 				({
-					field: String(col.field) as any,
-					headerName: col.headerName,
-					width: col.width,
-					minWidth: col.minWidth,
-					flex: col.flex,
-					sortable: col.sortable !== false,
-					filter: true,
-					resizable: true,
+					...col,
+					field: col.field as string,
 					cellRenderer: col.cellRenderer,
 					valueFormatter: col.valueFormatter,
 					cellStyle: col.cellStyle,
@@ -234,7 +228,7 @@
 		try {
 			const result = await contratistaService.fetchAllContratistas();
 			if (result.ok) {
-				contratistas = (result.data as any).contratistas;
+				contratistas = result.data.contratistas;
 			} else {
 				error = result.error;
 			}
@@ -324,7 +318,7 @@
 		const toastId = toast.loading(`Cambiando a ${newStatus}...`);
 
 		try {
-			const res = await contratistaService.changeEstado(id, newStatus as any);
+			const res = await contratistaService.changeEstado(id, newStatus as any); // Cast valid string to enum type if needed or import enum
 			if (res.ok) {
 				toast.success(`Estado actualizado a ${newStatus}`, { id: toastId });
 				// No need to reload - optimistic update already applied
@@ -494,7 +488,8 @@
 				>
 					{#each [['todos', 'Todos los estados'], ['activo', 'Activos'], ['inactivo', 'Inactivos'], ['suspendido', 'Suspendidos']] as [value, label]}
 						<button
-							onclick={() => handleEstadoSelect(value as any)}
+							onclick={() =>
+								handleEstadoSelect(value as 'todos' | 'activo' | 'inactivo' | 'suspendido')}
 							class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors {estadoFilter ===
 							value
 								? 'bg-blue-500/20 text-blue-400'
@@ -513,7 +508,8 @@
 				>
 					{#each [['todos', 'Todos PRAIND'], ['vigente', 'Vigentes'], ['por-vencer', 'Por vencer (≤30 días)'], ['vencido', 'Vencidos']] as [value, label]}
 						<button
-							onclick={() => handlePraindSelect(value as any)}
+							onclick={() =>
+								handlePraindSelect(value as 'todos' | 'vigente' | 'vencido' | 'por-vencer')}
 							class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors {praindFilter ===
 							value
 								? 'bg-blue-500/20 text-blue-400'

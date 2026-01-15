@@ -25,7 +25,7 @@ export async function fetchAllUsers(): Promise<ServiceResult<UserResponse[]>> {
 	try {
 		const result = await users.list();
 		return { ok: true, data: result.users };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar usuarios:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -42,7 +42,7 @@ export async function fetchActiveUsers(): Promise<ServiceResult<UserResponse[]>>
 			return { ok: true, data: activos };
 		}
 		return result;
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar usuarios activos:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -55,7 +55,7 @@ export async function fetchUserById(id: string): Promise<ServiceResult<UserRespo
 	try {
 		const user = await users.getById(id);
 		return { ok: true, data: user };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar usuario:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -72,7 +72,7 @@ export async function createUser(input: CreateUserInput): Promise<ServiceResult<
 	try {
 		const user = await users.create(input);
 		return { ok: true, data: user };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al crear usuario:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -92,7 +92,7 @@ export async function changeStatus(
 
 		const user = await users.update(id, input as UpdateUserInput);
 		return { ok: true, data: user };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cambiar estado:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -115,7 +115,7 @@ export async function updateUser(
 		}
 
 		return { ok: true, data: user };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al actualizar usuario:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -128,7 +128,7 @@ export async function deleteUser(id: string): Promise<ServiceResult<void>> {
 	try {
 		await users.delete(id);
 		return { ok: true, data: undefined };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al eliminar usuario:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -159,7 +159,7 @@ export async function uploadUserAvatar(
 		}
 
 		return { ok: true, data: fileUuid };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al subir avatar:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -172,7 +172,7 @@ export async function getUserAvatar(userId: string): Promise<ServiceResult<strin
 	try {
 		const b64 = await users.getAvatar(userId);
 		return { ok: true, data: b64 };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		// No loguear error si es solo que no tiene avatar, o manejarlo silenciosamente
 		return { ok: false, error: parseError(err) };
 	}
@@ -182,7 +182,7 @@ export async function getUserAvatar(userId: string): Promise<ServiceResult<strin
 // ERROR PARSING
 // ============================================
 
-function parseError(err: any): string {
+function parseError(err: unknown): string {
 	if (!err) return 'Ocurrió un error desconocido.';
 
 	if (typeof err === 'string') {
@@ -190,9 +190,16 @@ function parseError(err: any): string {
 		return err;
 	}
 
-	if (typeof err === 'object') {
-		const msg = err.message ?? err.toString();
-		// Errores de SurrealDB o Tauri
+	if (err instanceof Error) {
+		const msg = err.message;
+		if (/unique|email/i.test(msg)) return 'Ya existe un usuario con ese email.';
+		if (/failed/i.test(msg)) return 'Falló la operación en la base de datos.';
+		return msg;
+	}
+
+	if (typeof err === 'object' && err !== null) {
+		const obj = err as Record<string, unknown>;
+		const msg = (obj.message as string) ?? obj.toString();
 		if (/unique|email/i.test(msg)) return 'Ya existe un usuario con ese email.';
 		if (/failed/i.test(msg)) return 'Falló la operación en la base de datos.';
 		return msg;

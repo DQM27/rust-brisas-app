@@ -25,7 +25,7 @@
 	let globalError = $state<string | null>(null);
 
 	// Validation State
-	let checkTimeout: any;
+	let checkTimeout: ReturnType<typeof setTimeout>;
 	let duplicateError = $state<string | null>(null);
 
 	// Form State
@@ -115,7 +115,7 @@
 		}
 	}
 
-	async function saveData(data: any) {
+	async function saveData(data: VehiculoFormData) {
 		if (duplicateError) return; // Prevent save if duplicate
 
 		submitting = true;
@@ -201,8 +201,11 @@
 	const errorClass = 'text-xs text-red-500 mt-0.5';
 
 	// Helper to determine field border color based on state
-	function getFieldStateClass(field: string, value: any) {
-		if (($errors as any)[field] || (field === 'placa' && duplicateError))
+	function getFieldStateClass(field: string, value: string | undefined | null) {
+		if (
+			($errors as Record<string, string[] | undefined>)[field] ||
+			(field === 'placa' && duplicateError)
+		)
 			return '!border-red-500/50 !ring-1 !ring-red-500/20';
 
 		// Success state CHECK

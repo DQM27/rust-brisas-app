@@ -31,7 +31,7 @@
 
 	interface Props {
 		tabId: string;
-		data?: any;
+		tabId: string;
 	}
 
 	let { tabId }: Props = $props();
@@ -566,7 +566,7 @@
 			>
 				{#each [['todos', 'Todos los roles'], ['admin', 'Administradores'], ['supervisor', 'Supervisores'], ['guardia', 'Guardias']] as [value, label]}
 					<button
-						onclick={() => handleRoleSelect(value as any)}
+						onclick={() => handleRoleSelect(value as 'todos' | 'admin' | 'supervisor' | 'guardia')}
 						class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors {roleFilter ===
 						value
 							? 'bg-blue-500/20 text-blue-400'
@@ -585,7 +585,7 @@
 			>
 				{#each [['todos', 'Todos'], ['activo', 'Activos'], ['inactivo', 'Inactivos']] as [value, label]}
 					<button
-						onclick={() => handleEstadoSelect(value as any)}
+						onclick={() => handleEstadoSelect(value as 'todos' | 'activo' | 'inactivo')}
 						class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors {estadoFilter ===
 						value
 							? 'bg-blue-500/20 text-blue-400'

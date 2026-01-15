@@ -5,8 +5,13 @@ import type { LoginForm, ChangePasswordForm } from '$lib/schemas/userSchema';
 
 export type ServiceResult<T> = { ok: true; data: T } | { ok: false; error: string; code?: string };
 
+// Helper to check for payload
+function hasPayload(err: unknown): err is { payload: unknown } {
+	return typeof err === 'object' && err !== null && 'payload' in err;
+}
+
 // Helper para parsear errores
-function parseAuthError(err: any): { message: string; code?: string } {
+function parseAuthError(err: unknown): { message: string; code?: string } {
 	if (!err) return { message: 'Ocurrió un error desconocido.' };
 
 	if (typeof err === 'string') {
@@ -16,19 +21,21 @@ function parseAuthError(err: any): { message: string; code?: string } {
 		return { message: err };
 	}
 
-	if (typeof err === 'object') {
+	if (typeof err === 'object' && err !== null) {
+		const obj = err as Record<string, unknown>;
+
 		// Intentar extraer mensaje del objeto
 		let msg = 'Error desconocido';
 
-		if (err.message) {
-			msg = typeof err.message === 'string' ? err.message : JSON.stringify(err.message);
-		} else if (err.error) {
-			msg = typeof err.error === 'string' ? err.error : JSON.stringify(err.error);
+		if (obj.message) {
+			msg = typeof obj.message === 'string' ? obj.message : JSON.stringify(obj.message);
+		} else if (obj.error) {
+			msg = typeof obj.error === 'string' ? obj.error : JSON.stringify(obj.error);
 		} else {
-			msg = JSON.stringify(err);
+			msg = JSON.stringify(obj);
 		}
 
-		const code = err.code || undefined;
+		const code = (typeof obj.code === 'string' ? obj.code : undefined);
 
 		if (/credential/i.test(msg))
 			return { message: 'Credenciales inválidas.', code: 'INVALID_CREDENTIALS' };
@@ -52,8 +59,9 @@ export const authService = {
 		try {
 			const user = await authApi.login(data.email, data.password);
 			return { ok: true, data: user };
-		} catch (err: any) {
-			const { message, code } = parseAuthError(err?.payload ?? err);
+		} catch (err: unknown) {
+			const errorToParse = hasPayload(err) ? err.payload : err;
+			const { message, code } = parseAuthError(errorToParse);
 			return { ok: false, error: message, code };
 		}
 	},
@@ -68,8 +76,9 @@ export const authService = {
 		try {
 			await authApi.changePassword(userId, data);
 			return { ok: true, data: undefined };
-		} catch (err: any) {
-			const { message, code } = parseAuthError(err?.payload ?? err);
+		} catch (err: unknown) {
+			const errorToParse = hasPayload(err) ? err.payload : err;
+			const { message, code } = parseAuthError(errorToParse);
 			return { ok: false, error: message, code };
 		}
 	}

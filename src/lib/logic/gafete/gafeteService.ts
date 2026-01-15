@@ -21,12 +21,12 @@ export type ServiceResult<T> = { ok: true; data: T } | { ok: false; error: strin
 // ERROR PARSING
 // ============================================
 
-function parseError(err: any): string {
+function parseError(err: unknown): string {
 	if (!err) return 'Ocurrió un error desconocido.';
 
 	// Manejo de errores de Zod
 	if (err instanceof ZodError) {
-		return err.issues.map((e: any) => e.message).join(', ');
+		return err.issues.map((e) => e.message).join(', ');
 	}
 
 	if (typeof err === 'string') {
@@ -39,8 +39,13 @@ function parseError(err: any): string {
 		return err;
 	}
 
-	if (typeof err === 'object' && err.message) {
-		return parseError(err.message);
+	if (err instanceof Error) return parseError(err.message);
+
+	if (typeof err === 'object' && err !== null) {
+		const obj = err as Record<string, unknown>;
+		if (obj.message && typeof obj.message === 'string') {
+			return parseError(obj.message);
+		}
 	}
 
 	return 'Ocurrió un error inesperado al procesar la solicitud.';
@@ -57,7 +62,7 @@ export async function create(input: CreateGafeteInput): Promise<ServiceResult<Ga
 	try {
 		const data = await gafete.create(input);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al crear gafete:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -70,7 +75,7 @@ export async function fetchAll(): Promise<ServiceResult<GafeteListResponse>> {
 	try {
 		const data = await gafete.getAll();
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar gafetes:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -85,7 +90,7 @@ export async function fetchDisponibles(
 	try {
 		const data = await gafete.getDisponibles(tipo);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar gafetes disponibles:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -101,7 +106,7 @@ export async function fetchByNumero(
 	try {
 		const data = await gafete.get(numero, tipo);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar gafete:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -118,7 +123,7 @@ export async function update(
 	try {
 		const data = await gafete.update(numero, tipo, input);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al actualizar gafete:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -135,7 +140,7 @@ export async function remove(
 	try {
 		await gafete.delete(numero, tipo, userId);
 		return { ok: true, data: null };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al eliminar gafete:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -150,7 +155,7 @@ export async function createRange(
 	try {
 		const data = await gafete.createRange(input);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al crear rango de gafetes:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -163,7 +168,7 @@ export async function isDisponible(numero: string, tipo: string): Promise<Servic
 	try {
 		const data = await gafete.isDisponible(numero, tipo);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al verificar disponibilidad:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -181,7 +186,7 @@ export async function updateStatus(
 	try {
 		const data = await gafete.updateStatus(id, estado, usuarioId, motivo);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al actualizar estado del gafete:', err);
 		return { ok: false, error: parseError(err) };
 	}

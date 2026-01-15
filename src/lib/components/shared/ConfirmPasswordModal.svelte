@@ -74,7 +74,7 @@
 			// Password correct - execute the confirmed action
 			await onConfirm();
 			password = '';
-		} catch (err: any) {
+		} catch (err: unknown) {
 			console.error('Password verification failed:', err);
 			error = 'Contraseña incorrecta';
 			password = '';

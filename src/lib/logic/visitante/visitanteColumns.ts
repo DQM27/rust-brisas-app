@@ -1,4 +1,4 @@
-import type { ColDef } from '@ag-grid-community/core';
+import type { ColDef, ICellRendererParams, ValueFormatterParams } from '@ag-grid-community/core';
 import type { VisitanteResponse } from '$lib/types/visitante';
 
 // ============================================
@@ -44,7 +44,7 @@ export class VisitanteColumns {
 				field: 'hasVehicle',
 				headerName: 'Vehículo',
 				width: 100,
-				cellRenderer: (params: any) => {
+				cellRenderer: (params: ICellRendererParams<VisitanteResponse>) => {
 					return params.value ? 'Sí' : 'No';
 				}
 			},
@@ -90,7 +90,7 @@ export class VisitanteColumns {
 				field: 'deletedAt',
 				headerName: 'Fecha Eliminación',
 				width: 150,
-				valueFormatter: (params) => {
+				valueFormatter: (params: ValueFormatterParams<VisitanteResponse>) => {
 					if (!params.value) return '-';
 					return new Date(params.value).toLocaleDateString('es-PA', {
 						year: 'numeric',

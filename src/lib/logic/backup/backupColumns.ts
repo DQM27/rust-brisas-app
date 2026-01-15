@@ -1,5 +1,5 @@
 import type { BackupEntry } from '$lib/types/backup';
-import type { ColDef } from '@ag-grid-community/core';
+import type { ColDef, ICellRendererParams, ValueFormatterParams, CellClickedEvent } from '@ag-grid-community/core';
 
 /**
  * Formatea bytes a tamaño legible (KB, MB, GB)
@@ -46,7 +46,7 @@ export class BackupColumns {
 				filter: true,
 				flex: 2,
 				minWidth: 250,
-				cellRenderer: (params: any) => {
+				cellRenderer: (params: ICellRendererParams<BackupEntry>) => {
 					const nombre = params.value || '';
 					return `
                         <div class="flex items-center gap-2">
@@ -63,7 +63,7 @@ export class BackupColumns {
 				sortable: true,
 				filter: true,
 				width: 100,
-				valueFormatter: (params: any) => formatBytes(params.value || 0),
+				valueFormatter: (params: ValueFormatterParams<BackupEntry>) => formatBytes(params.value || 0),
 				cellStyle: { textAlign: 'right' }
 			},
 			{
@@ -73,7 +73,7 @@ export class BackupColumns {
 				sortable: true,
 				filter: true,
 				width: 180,
-				valueFormatter: (params: any) => formatDate(params.value || '')
+				valueFormatter: (params: ValueFormatterParams<BackupEntry>) => formatDate(params.value || '')
 			},
 			{
 				colId: 'diasAntiguedad',
@@ -82,7 +82,7 @@ export class BackupColumns {
 				sortable: true,
 				filter: true,
 				width: 120,
-				cellRenderer: (params: any) => {
+				cellRenderer: (params: ICellRendererParams<BackupEntry>) => {
 					const dias = params.value || 0;
 					let colorClass = 'text-emerald-600 bg-emerald-500/10';
 
@@ -125,10 +125,11 @@ export class BackupColumns {
                         </div>
                     `;
 				},
-				onCellClicked: (params: any) => {
+				onCellClicked: (params: CellClickedEvent<BackupEntry>) => {
 					const event = params.event;
 					const data = params.data;
-					const target = event.target as HTMLElement;
+					const target = params.event?.target as HTMLElement;
+					if (!target || !data) return;
 
 					if (target.classList.contains('restore-btn')) {
 						handlers.onRestore(data);

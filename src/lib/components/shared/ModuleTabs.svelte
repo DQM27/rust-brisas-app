@@ -2,7 +2,8 @@
 	import { createEventDispatcher } from 'svelte';
 	import { fade } from 'svelte/transition';
 
-	export let tabs: { id: string; label: string; icon?: any }[] = [];
+	import type { ComponentType } from 'svelte';
+	export let tabs: { id: string; label: string; icon?: ComponentType }[] = [];
 	export let activeTab: string;
 
 	const dispatch = createEventDispatcher();

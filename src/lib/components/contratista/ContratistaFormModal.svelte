@@ -66,7 +66,7 @@
 	let showVehiculoModal = $state(false);
 
 	// Validation State for Real-time checks
-	let checkTimeout: any;
+	let checkTimeout: ReturnType<typeof setTimeout>;
 	let cedulaDuplicateError = $state<string | null>(null);
 
 	// Initial Data Construction
@@ -101,18 +101,19 @@
 						fechaVencimientoPraind: formatDateForBackend(f.data.fechaVencimientoPraind)
 					};
 
-					const payload: any = {
+					const payload: CreateContratistaInput = {
 						cedula: data.cedula,
 						nombre: data.nombre,
 						apellido: data.apellido,
 						empresaId: data.empresaId,
-						fechaVencimientoPraind: data.fechaVencimientoPraind
+						fechaVencimientoPraind: data.fechaVencimientoPraind,
+						tieneVehiculo: false // Default to false for creation via this modal
 					};
 
 					if (data.segundoNombre) payload.segundoNombre = data.segundoNombre;
 					if (data.segundoApellido) payload.segundoApellido = data.segundoApellido;
 
-					const success = await onSave(payload);
+					const success = await onSave(payload as any); // Cast because onSave expects union but payload is partial logic here
 					if (success) {
 						handleClose();
 					}
@@ -222,8 +223,8 @@
 	const errorClass = 'text-xs text-red-500 mt-0.5';
 
 	// Helper to determine field border color based on state
-	function getFieldStateClass(field: string, value: any) {
-		if (($errors as any)[field]) return '!border-red-500/50 !ring-1 !ring-red-500/20';
+	function getFieldStateClass(field: keyof ContratistaFormData, value: any) {
+		if ($errors[field]) return '!border-red-500/50 !ring-1 !ring-red-500/20';
 		if (field === 'cedula' && cedulaDuplicateError)
 			return '!border-red-500/50 !ring-1 !ring-red-500/20';
 

@@ -2,6 +2,7 @@
 // Tipos compartidos para el módulo de ingresos
 
 import { z } from 'zod';
+import type { ContratistaResponse } from './contratista';
 
 // ==========================================
 // ESQUEMAS (VALIDACIÓN)
@@ -141,7 +142,7 @@ export interface ValidacionIngresoResponse {
 	motivoRechazo?: string;
 	severidadListaNegra?: string;
 	alertas: string[];
-	contratista?: any;
+	contratista?: ContratistaResponse;
 	tieneIngresoAbierto: boolean;
 	ingresoAbierto?: IngresoResponse;
 }

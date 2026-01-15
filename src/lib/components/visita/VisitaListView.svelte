@@ -69,7 +69,7 @@
 			} else {
 				visitas = await visitaService.getCitasPendientes();
 			}
-		} catch (_e: any) {
+		} catch (_e: unknown) {
 			console.error(_e);
 			toast.error('Error cargando visitas');
 		} finally {
@@ -85,9 +85,10 @@
 			toast.success('Visita agendada correctamente');
 			loadData();
 			return true;
-		} catch (e: any) {
+		} catch (e: unknown) {
 			console.error(e);
-			toast.error(e.message || 'Error al crear visita');
+			const msg = e instanceof Error ? e.message : 'Error al crear visita';
+			toast.error(msg);
 			return false;
 		} finally {
 			modalLoading = false;
@@ -106,8 +107,9 @@
 			await visitaService.procesarIngresoCita(visita.id, gafete, $currentUser.id);
 			toast.success('Ingreso registrado', { id: toastId });
 			loadData();
-		} catch (e: any) {
-			toast.error(e.message || 'Error al registrar ingreso', { id: toastId });
+		} catch (e: unknown) {
+			const msg = e instanceof Error ? e.message : 'Error al registrar ingreso';
+			toast.error(msg, { id: toastId });
 		}
 	}
 
@@ -117,7 +119,7 @@
 		{
 			headerName: 'Acciones',
 			width: 120,
-			cellRenderer: (_params: any) => {
+			cellRenderer: (_params: import('@ag-grid-community/core').ICellRendererParams) => {
 				return '';
 			},
 			hide: true

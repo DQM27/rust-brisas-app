@@ -32,7 +32,7 @@ export async function validarIngreso(
 		} else {
 			throw new Error(`Tipo de ingreso no soportado: ${tipo}`);
 		}
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error(`[IngresoService] Error validando ingreso:`, error);
 		throw error;
 	}
@@ -76,8 +76,9 @@ export async function prepararFormularioIngreso(contratistaId: string): Promise<
 				}
 			}
 		};
-	} catch (e: any) {
-		return { ok: false, error: e.message || 'Error al validar contratista' };
+	} catch (e: unknown) {
+		const msg = e instanceof Error ? e.message : String(e);
+		return { ok: false, error: msg || 'Error al validar contratista' };
 	}
 }
 
@@ -165,8 +166,9 @@ export async function registrarEntrada(input: any): Promise<ServiceResult<any>> 
 		const res = await crearIngreso('contratista', input.contratistaId, formData);
 
 		return { ok: true, data: res };
-	} catch (e: any) {
-		return { ok: false, error: e.message || 'Error al registrar entrada' };
+	} catch (e: unknown) {
+		const msg = e instanceof Error ? e.message : String(e);
+		return { ok: false, error: msg || 'Error al registrar entrada' };
 	}
 }
 
@@ -174,8 +176,9 @@ export async function fetchContratistasAbiertos(): Promise<ServiceResult<any[]>>
 	try {
 		const data = await invoke('get_ingresos_contratistas_activos');
 		return { ok: true, data: data as any[] };
-	} catch (e: any) {
-		return { ok: false, error: e.message || 'Error cargando contratistas activos' };
+	} catch (e: unknown) {
+		const msg = e instanceof Error ? e.message : String(e);
+		return { ok: false, error: msg || 'Error cargando contratistas activos' };
 	}
 }
 
@@ -184,8 +187,9 @@ export async function fetchAbiertos(): Promise<ServiceResult<any[]>> {
 		// Por compatibilidad y claridad, ahora este llama explícitamente a contratistas
 		// ya que el usuario indicó que "ingresos abiertos" debe ser solo para contratistas.
 		return await fetchContratistasAbiertos();
-	} catch (e: any) {
-		return { ok: false, error: e.message || 'Error cargando ingresos activos' };
+	} catch (e: unknown) {
+		const msg = e instanceof Error ? e.message : String(e);
+		return { ok: false, error: msg || 'Error cargando ingresos activos' };
 	}
 }
 
@@ -279,7 +283,7 @@ export async function crearIngreso(
 				usuarioId: usuarioId
 			});
 		}
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error(`[IngresoService] Error creando ingreso:`, error);
 		throw error;
 	}
@@ -308,8 +312,9 @@ export async function registrarSalida(params: {
 			}
 		});
 		return { ok: true, data: res };
-	} catch (e: any) {
-		return { ok: false, error: e.message || 'Error al registrar salida' };
+	} catch (e: unknown) {
+		const msg = e instanceof Error ? e.message : String(e);
+		return { ok: false, error: msg || 'Error al registrar salida' };
 	}
 }
 
@@ -326,8 +331,9 @@ export async function fetchSalidasEnRango(
 			end_date: endDate
 		});
 		return { ok: true, data: data as any[] };
-	} catch (e: any) {
-		return { ok: false, error: e.message || 'Error cargando historial de salidas' };
+	} catch (e: unknown) {
+		const msg = e instanceof Error ? e.message : String(e);
+		return { ok: false, error: msg || 'Error cargando historial de salidas' };
 	}
 }
 
@@ -396,17 +402,17 @@ function mapContratistaResponse(res: any): ValidacionIngresoResult {
 		contratista: res.contratista,
 		persona: res.contratista
 			? {
-					id: res.contratista.id,
-					cedula: res.contratista.cedula,
-					nombre: res.contratista.nombre,
-					apellido: res.contratista.apellido,
-					nombreCompleto: `${res.contratista.nombre} ${res.contratista.apellido}`,
-					empresa: res.contratista.empresa_nombre,
-					empresaId: res.contratista.empresa_id || undefined,
-					estado: res.contratista.estado,
-					vehiculos: res.contratista.vehiculos || [],
-					praindVigente: praindVigente
-				}
+				id: res.contratista.id,
+				cedula: res.contratista.cedula,
+				nombre: res.contratista.nombre,
+				apellido: res.contratista.apellido,
+				nombreCompleto: `${res.contratista.nombre} ${res.contratista.apellido}`,
+				empresa: res.contratista.empresa_nombre,
+				empresaId: res.contratista.empresa_id || undefined,
+				estado: res.contratista.estado,
+				vehiculos: res.contratista.vehiculos || [],
+				praindVigente: praindVigente
+			}
 			: undefined
 	};
 }
@@ -421,14 +427,14 @@ function mapProveedorResponse(res: any): ValidacionIngresoResult {
 		proveedor: res.proveedor,
 		persona: res.proveedor
 			? {
-					id: res.proveedor.id,
-					cedula: res.proveedor.cedula,
-					nombre: res.proveedor.nombre,
-					apellido: res.proveedor.apellido || '',
-					nombreCompleto: `${res.proveedor.nombre} ${res.proveedor.apellido || ''}`,
-					empresa: res.proveedor.empresa_nombre || res.proveedor.empresa,
-					vehiculos: []
-				}
+				id: res.proveedor.id,
+				cedula: res.proveedor.cedula,
+				nombre: res.proveedor.nombre,
+				apellido: res.proveedor.apellido || '',
+				nombreCompleto: `${res.proveedor.nombre} ${res.proveedor.apellido || ''}`,
+				empresa: res.proveedor.empresa_nombre || res.proveedor.empresa,
+				vehiculos: []
+			}
 			: undefined
 	};
 }
@@ -443,14 +449,14 @@ function mapVisitaResponse(res: any): ValidacionIngresoResult {
 		visitante: res.visitante,
 		persona: res.visitante
 			? {
-					id: res.visitante.id,
-					cedula: res.visitante.cedula,
-					nombre: res.visitante.nombre,
-					apellido: res.visitante.apellido,
-					nombreCompleto: `${res.visitante.nombre} ${res.visitante.apellido}`,
-					empresa: res.visitante.empresa_nombre || res.visitante.empresa,
-					vehiculos: []
-				}
+				id: res.visitante.id,
+				cedula: res.visitante.cedula,
+				nombre: res.visitante.nombre,
+				apellido: res.visitante.apellido,
+				nombreCompleto: `${res.visitante.nombre} ${res.visitante.apellido}`,
+				empresa: res.visitante.empresa_nombre || res.visitante.empresa,
+				vehiculos: []
+			}
 			: undefined
 	};
 }

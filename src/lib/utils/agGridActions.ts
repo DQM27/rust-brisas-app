@@ -39,8 +39,8 @@ export function exportToCsv(api: GridApi, gridId: GridId, onlySelected = false):
 	});
 }
 
-export function exportToJson(api: GridApi, gridId: GridId, onlySelected = false): void {
-	const data: any[] = [];
+export function exportToJson<T>(api: GridApi, gridId: GridId, onlySelected = false): void {
+	const data: T[] = [];
 
 	if (onlySelected) {
 		data.push(...api.getSelectedRows());

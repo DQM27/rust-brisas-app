@@ -2,7 +2,7 @@
 // src/lib/logic/proveedor/proveedorColumns.ts
 // ============================================
 
-import type { ColDef, ICellRendererParams } from '@ag-grid-community/core';
+import type { ColDef, ICellRendererParams, ValueFormatterParams, ValueGetterParams, CellClickedEvent } from '@ag-grid-community/core';
 import type { ProveedorResponse } from '$lib/types/proveedor';
 
 // ============================================
@@ -63,7 +63,7 @@ export function formatAccesoBadge(row: ProveedorResponse): string {
 
 export class ProveedorColumns {
 	static getColumns(
-		onStatusToggle?: (id: string, currentStatus: any) => void
+		onStatusToggle?: (id: string, currentStatus: string) => void
 	): ColDef<ProveedorResponse>[] {
 		return [
 			{
@@ -73,7 +73,7 @@ export class ProveedorColumns {
 				flex: 1,
 				minWidth: 200,
 				cellStyle: { fontWeight: 500 },
-				valueGetter: (params) => {
+				valueGetter: (params: ValueGetterParams<ProveedorResponse>) => {
 					const d = params.data;
 					if (!d) return '';
 					return [d.nombre, d.segundoNombre, d.apellido, d.segundoApellido]
@@ -104,14 +104,14 @@ export class ProveedorColumns {
 				field: 'vehiculoTipo',
 				headerName: 'Vehículo',
 				width: 120,
-				valueFormatter: (params) => params.value || '-'
+				valueFormatter: (params: ValueFormatterParams<ProveedorResponse>) => params.value || '-'
 			},
 			{
 				colId: 'vehiculoPlaca',
 				field: 'vehiculoPlaca',
 				headerName: 'Placa',
 				width: 100,
-				valueFormatter: (params) => params.value || '-',
+				valueFormatter: (params: ValueFormatterParams<ProveedorResponse>) => params.value || '-',
 				cellStyle: { fontFamily: 'monospace' }
 			},
 			{
@@ -119,15 +119,15 @@ export class ProveedorColumns {
 				field: 'estado',
 				headerName: 'Estado',
 				width: 130,
-				cellRenderer: (params: ICellRendererParams) => {
+				cellRenderer: (params: ICellRendererParams<ProveedorResponse>) => {
 					const estado = params.value as string;
 					return formatEstadoBadge(estado);
 				},
 				cellClass: 'cursor-pointer',
-				onCellClicked: (params) => {
+				onCellClicked: (params: CellClickedEvent<ProveedorResponse>) => {
 					if (onStatusToggle && params.data && params.event) {
-						const target = params.event.target as HTMLElement;
-						if (target.closest('span')) {
+						const target = params.event?.target as HTMLElement;
+						if (target && target.closest('span') && params.data) {
 							params.event.stopPropagation();
 							onStatusToggle(params.data.id, params.data.estado);
 						}
@@ -139,7 +139,7 @@ export class ProveedorColumns {
 				field: 'puedeIngresar',
 				headerName: 'Acceso',
 				width: 130,
-				cellRenderer: (params: ICellRendererParams) => {
+				cellRenderer: (params: ICellRendererParams<ProveedorResponse>) => {
 					const row = params.data as ProveedorResponse;
 					return formatAccesoBadge(row);
 				}
@@ -162,7 +162,7 @@ export class ProveedorColumns {
 				flex: 1,
 				minWidth: 200,
 				cellStyle: { fontWeight: 500 },
-				valueGetter: (params) => {
+				valueGetter: (params: ValueGetterParams<ProveedorResponse>) => {
 					const d = params.data;
 					if (!d) return '';
 					return [d.nombre, d.segundoNombre, d.apellido, d.segundoApellido]
@@ -181,7 +181,7 @@ export class ProveedorColumns {
 				field: 'deletedAt',
 				headerName: 'Fecha Eliminación',
 				width: 150,
-				valueFormatter: (params) => {
+				valueFormatter: (params: ValueFormatterParams<ProveedorResponse>) => {
 					if (!params.value) return '-';
 					return new Date(params.value).toLocaleDateString('es-PA', {
 						year: 'numeric',

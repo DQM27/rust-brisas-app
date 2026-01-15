@@ -2,11 +2,15 @@
 	import { createEventDispatcher } from 'svelte';
 	import { fade, scale, slide } from 'svelte/transition';
 	import { X, LogOut, CheckCircle, XCircle, ChevronDown, ChevronRight } from 'lucide-svelte';
+	import type { IngresoResponse } from '$lib/types/ingreso';
+	import type { IngresoProveedor } from '$lib/types/ingreso-nuevos';
+
+	type IngresoType = IngresoResponse | IngresoProveedor;
 
 	// Props
 	interface Props {
 		show: boolean;
-		ingreso: any;
+		ingreso: IngresoType | null;
 		loading?: boolean;
 	}
 
@@ -17,6 +21,15 @@
 	let observaciones = $state('');
 	let showObservaciones = $state(false);
 	let confirmButtonRef = $state<HTMLButtonElement>();
+
+	// Derived
+	let displayName = $derived.by(() => {
+		if (!ingreso) return 'Sin nombre';
+		if ('nombreCompleto' in ingreso) {
+			return (ingreso as IngresoResponse).nombreCompleto || 'Sin nombre';
+		}
+		return `${ingreso.nombre} ${ingreso.apellido}`;
+	});
 
 	const dispatch = createEventDispatcher();
 
@@ -61,7 +74,18 @@
 		if (ingreso && show) {
 			reset();
 			// Si no tiene gafete, auto-seleccionar true
-			const tieneGafete = ingreso.gafeteNumero && ingreso.gafeteNumero !== 'S/G';
+			// Si no tiene gafete, auto-seleccionar true
+			// Handle different field names if necessary, but currently both use gafete/gafeteNumero?
+			// IngresoResponse: gafete (string)
+			// IngresoProveedor: gafete (string optional) - mapped to 'gafete' in ListView?
+			// But SalidaModal uses 'gafeteNumero'.
+			// We need to check what 'ingreso' actually has.
+			// IngresoResponse (Step 1423 import) likely has 'gafete'.
+			// IngresoProveedor (Step 1555) has 'gafete'.
+			// But SalidaModal uses 'gafeteNumero'.
+			// If backend sends 'gafete', let's use 'gafete'.
+			const gafeteVal = (ingreso as any).gafeteNumero || (ingreso as any).gafete || 'S/G';
+			const tieneGafete = gafeteVal && gafeteVal !== 'S/G';
 			if (!tieneGafete) {
 				devolvioGafete = true;
 				// Enfocar el botón de confirmar tras un pequeño delay para que el DOM esté listo
@@ -127,7 +151,7 @@
 								>Nombre</span
 							>
 							<span class="text-primary font-semibold text-sm">
-								{ingreso.nombreCompleto || 'Sin nombre'}
+								{displayName}
 							</span>
 						</div>
 						<div class="flex items-center">
@@ -148,14 +172,14 @@
 								{ingreso.empresaNombre || 'Sin empresa'}
 							</span>
 						</div>
-						{#if ingreso.gafeteNumero && ingreso.gafeteNumero !== 'S/G'}
+						{#if ((ingreso as any).gafeteNumero || (ingreso as any).gafete) && (ingreso as any).gafeteNumero !== 'S/G' && (ingreso as any).gafete !== 'S/G'}
 							<div class="flex items-center">
 								<span
 									class="text-[12px] font-bold uppercase tracking-wider text-gray-500 w-20 shrink-0"
 									>Gafete</span
 								>
 								<span class="text-accent font-mono text-sm">
-									{ingreso.gafeteNumero}
+									{(ingreso as any).gafeteNumero || (ingreso as any).gafete}
 								</span>
 							</div>
 						{/if}
@@ -163,7 +187,7 @@
 				</div>
 
 				<!-- Pregunta del gafete -->
-				{#if ingreso.gafeteNumero && ingreso.gafeteNumero !== 'S/G'}
+				{#if ((ingreso as any).gafeteNumero || (ingreso as any).gafete) && (ingreso as any).gafeteNumero !== 'S/G' && (ingreso as any).gafete !== 'S/G'}
 					<div class="space-y-3">
 						<span class="block text-sm font-medium text-primary text-center">
 							¿El contratista devolvió el gafete?

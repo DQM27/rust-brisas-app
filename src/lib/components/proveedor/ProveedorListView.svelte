@@ -15,7 +15,8 @@
 	import type {
 		ProveedorResponse,
 		CreateProveedorInput,
-		UpdateProveedorInput
+		UpdateProveedorInput,
+		EstadoProveedor
 	} from '$lib/types/proveedor';
 	import { toast } from 'svelte-5-french-toast';
 	import { activeTabId } from '$lib/stores/tabs';
@@ -135,11 +136,11 @@
 	}
 
 	// Cambio de estado
-	async function handleStatusChange(id: string, currentStatus: any) {
+	async function handleStatusChange(id: string, currentStatus: EstadoProveedor | string) {
 		if (isUpdatingStatus) return;
 		isUpdatingStatus = true;
 
-		const newStatus = currentStatus === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
+		const newStatus: EstadoProveedor = currentStatus === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
 		const toastId = toast.loading(`Cambiando estado a ${newStatus}...`);
 
 		try {

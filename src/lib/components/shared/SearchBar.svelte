@@ -1,9 +1,6 @@
 <script lang="ts">
-	// @ts-ignore
 	import { createEventDispatcher, onMount, onDestroy } from 'svelte';
-	// @ts-ignore
 	import { slide } from 'svelte/transition';
-	// @ts-ignore
 	import { cubicOut } from 'svelte/easing';
 	import { searchStore, selectedSearchStore, hasResults } from '$lib/stores/searchStore';
 	import { performSearch } from '$lib/logic/search/performSearch';
@@ -34,7 +31,7 @@
 	const results = $derived(($searchStore as SearchState).results);
 	const isLoading = $derived(($searchStore as SearchState).isLoading);
 	const error = $derived(($searchStore as SearchState).error);
-	const selectedResult = $derived(($selectedSearchStore as any).result);
+	const selectedResult = $derived(($selectedSearchStore as { result: SearchResult | null }).result);
 
 	function handleInput() {
 		clearTimeout(debounceTimer);

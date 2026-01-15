@@ -18,7 +18,7 @@
 	import { getCurrentWindow } from '@tauri-apps/api/window';
 
 	// Load ingreso data on mount
-	let wakeLock: any = null;
+	let wakeLock: WakeLockSentinel | null = null;
 
 	async function requestWakeLock() {
 		try {

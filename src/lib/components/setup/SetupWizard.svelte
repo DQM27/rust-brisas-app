@@ -118,7 +118,7 @@
 			await exportMasterKey(filePath, installPass);
 			generatedPassword = installPass;
 			keyFoundInSystem = true;
-		} catch (e: any) {
+		} catch (e: unknown) {
 			error = String(e);
 			await message(`Error generando llave: ${e}`, {
 				title: 'Error de Seguridad',
@@ -151,7 +151,7 @@
 					await writeTextFile(filePath, fragments[i]);
 				}
 			}
-		} catch (e: any) {
+		} catch (e: unknown) {
 			error = String(e);
 			await message(`Error generando fragmentos: ${e}`, {
 				title: 'Error de Seguridad',
@@ -184,7 +184,7 @@
 			if (status.argon2_configured) {
 				argon2Params.secret = '********';
 			}
-		} catch (e: any) {
+		} catch (e: unknown) {
 			error = String(e);
 			await message(`Error importando llave: ${e}`, {
 				title: 'Error de Importación',
@@ -236,7 +236,7 @@
 				title: 'Recuperación Exitosa',
 				kind: 'info'
 			});
-		} catch (e: any) {
+		} catch (e: unknown) {
 			error = String(e);
 			await message(`Error en recuperación: ${e}`, {
 				title: 'Error de Recuperación',
@@ -257,8 +257,9 @@
 				terminal_location: terminalLocation
 			});
 			onComplete?.();
-		} catch (e: any) {
-			error = `Error guardando config: ${e.message || String(e)}`;
+		} catch (e: unknown) {
+			const errMsg = e instanceof Error ? e.message : String(e);
+			error = `Error guardando config: ${errMsg}`;
 		} finally {
 			isSubmitting = false;
 		}

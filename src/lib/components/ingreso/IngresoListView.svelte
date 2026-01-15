@@ -3,7 +3,8 @@
 	import { fade } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
 	import { AlertCircle } from 'lucide-svelte';
-	import type { ColDef } from '@ag-grid-community/core';
+	import type { ColDef, ICellRendererParams, GridApi } from '@ag-grid-community/core';
+	import type { IngresoResponse } from '$lib/types/ingreso';
 
 	// Components
 	import SearchBar from '$lib/components/shared/SearchBar.svelte';
@@ -45,10 +46,10 @@
 	// ==========================================
 	// STATE
 	// ==========================================
-	let ingresos = $state<any[]>([]);
+	let ingresos = $state<IngresoResponse[]>([]);
 	let loading = $state(false);
 	let error = $state('');
-	let selectedRows = $state<any[]>([]);
+	let selectedRows = $state<IngresoResponse[]>([]);
 	let showModal = $state(false);
 	let showContratistaModal = $state(false);
 
@@ -57,11 +58,11 @@
 	let showQuickExit = $state(false);
 	let showQuickEntry = $state(false);
 	let personForIngreso = $state<any>(null);
-	let selectedIngreso = $state<any>(null);
+	let selectedIngreso = $state<IngresoResponse | null>(null);
 	let salidaLoading = $state(false);
 
 	// Estado para Exportación
-	let gridApi = $state<any>(null);
+	let gridApi = $state<GridApi<IngresoResponse> | null>(null);
 	let showExportModal = $state(false);
 	let availableFormats = $state<string[]>([]);
 	let exportColumns = $state<{ id: string; name: string; selected: boolean }[]>([]);
@@ -139,8 +140,8 @@
 	// ==========================================
 	// COLUMNS
 	// ==========================================
-	let columnDefs = $derived.by((): ColDef<any>[] => {
-		const baseCols: ColDef<any>[] = [
+	let columnDefs = $derived.by((): ColDef<IngresoResponse>[] => {
+		const baseCols: ColDef<IngresoResponse>[] = [
 			{
 				field: 'gafeteNumero',
 				headerName: 'Gafete',
@@ -269,6 +270,7 @@
 				width: 140,
 				sortable: true,
 				valueGetter: (params) => {
+					if (!params.data) return '-';
 					if (params.data.fechaHoraSalida) {
 						return params.data.tiempoPermanenciaTexto || '-';
 					}
@@ -284,18 +286,20 @@
 				}
 			},
 			{
-				field: 'actions',
+				colId: 'actions',
 				headerName: 'Acciones',
 				width: 120,
 				sortable: false,
 				filter: false,
 				pinned: 'right',
-				cellRenderer: (params: any) => {
+				cellRenderer: (params: ICellRendererParams<IngresoResponse>) => {
 					const button = document.createElement('button');
 					button.className =
 						'px-3 py-1 bg-error text-white rounded-md text-sm hover:opacity-90 transition-opacity';
 					button.textContent = 'Salida';
-					button.onclick = () => handleSalida(params.data);
+					button.onclick = () => {
+						if (params.data) handleSalida(params.data);
+					};
 					return button;
 				}
 			}
@@ -303,7 +307,7 @@
 
 		// Filter out columns not needed in history mode
 		if (viewMode === 'history') {
-			return baseCols.filter((c) => c.field !== 'actions');
+			return baseCols.filter((c) => c.colId !== 'actions');
 		}
 		return baseCols;
 	});
@@ -393,7 +397,7 @@
 					fechaFin: end
 				});
 			}
-			ingresos = data as any[];
+			ingresos = data as IngresoResponse[];
 		} catch (err: any) {
 			error = err.message || 'Error al cargar datos';
 			toast.error(error);
@@ -434,7 +438,7 @@
 		loadIngresos();
 	}
 
-	function handleSalida(ingreso: any) {
+	function handleSalida(ingreso: IngresoResponse) {
 		selectedIngreso = ingreso;
 		showSalidaModal = true;
 	}

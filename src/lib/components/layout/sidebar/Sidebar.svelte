@@ -182,9 +182,7 @@
 	const sidebarItems = $derived(
 		allSidebarItems.filter((item) => {
 			if (!item) return false;
-			// @ts-ignore
-			if (item.permission && !can($currentUser, item.permission)) return false;
-			// @ts-ignore
+			if (item.permission && (!$currentUser || !can($currentUser, item.permission))) return false;
 			if (item.roleId && $currentUser && !item.roleId.includes($currentUser.roleId)) return false;
 			return true;
 		})

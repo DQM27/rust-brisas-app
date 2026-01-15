@@ -27,7 +27,7 @@
 	const labelClass = 'block text-xs font-medium text-secondary mb-1';
 	const errorClass = 'text-xs text-red-500 mt-1 pb-1';
 
-	let checkTimeout: any;
+	let checkTimeout: ReturnType<typeof setTimeout>;
 
 	function handlePlacaInput(event: Event) {
 		const input = event.target as HTMLInputElement;
@@ -46,12 +46,12 @@
 		// Solo validar si cambió respecto al original Y tiene longitud
 		if (value.length < 3 || value === originalPlaca) {
 			// Clear existing placa unique error if it's the original value or too short
-			errors.update((errs: any) => {
-				if (errs.placa && errs.placa.includes('Esta placa ya existe.')) {
-					const { placa: _placa, ...rest } = errs;
-					return rest;
+			errors.update((errs: Record<string, string[] | undefined>) => {
+				const newErrs = { ...errs };
+				if (newErrs.placa && newErrs.placa.includes('Esta placa ya existe.')) {
+					delete newErrs.placa;
 				}
-				return errs;
+				return newErrs;
 			});
 			return;
 		}
@@ -67,17 +67,17 @@
 				});
 
 				if (!isUnique) {
-					errors.update((errs: any) => ({
+					errors.update((errs: Record<string, string[] | undefined>) => ({
 						...errs,
 						placa: ['Esta placa ya existe.']
 					}));
 				} else {
-					errors.update((errs: any) => {
-						if (errs.placa && errs.placa.includes('Esta placa ya existe.')) {
-							const { placa: _placa, ...rest } = errs;
-							return rest;
+					errors.update((errs: Record<string, string[] | undefined>) => {
+						const newErrs = { ...errs };
+						if (newErrs.placa && newErrs.placa.includes('Esta placa ya existe.')) {
+							delete newErrs.placa;
 						}
-						return errs;
+						return newErrs;
 					});
 				}
 			} catch (e) {

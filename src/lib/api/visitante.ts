@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { VisitanteResponse, CreateVisitanteInput } from '$lib/types/visitante';
+import type { VisitanteResponse, CreateVisitanteInput, UpdateVisitanteInput } from '$lib/types/visitante';
 
 export const visitante = {
 	create: async (input: CreateVisitanteInput): Promise<VisitanteResponse> => {
@@ -14,7 +14,7 @@ export const visitante = {
 		return await invoke<VisitanteResponse | null>('get_visitante_by_cedula', { cedula });
 	},
 
-	update: async (id: string, input: CreateVisitanteInput): Promise<VisitanteResponse> => {
+	update: async (id: string, input: UpdateVisitanteInput): Promise<VisitanteResponse> => {
 		return await invoke<VisitanteResponse>('update_visitante', { id, input });
 	},
 

@@ -30,7 +30,7 @@ export async function fetchAllRoles(): Promise<ServiceResult<RoleListResponse>> 
 	try {
 		const result = await rolesApi.getAllRoles();
 		return { ok: true, data: result };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar roles:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -43,7 +43,7 @@ export async function fetchRoleById(id: string): Promise<ServiceResult<RoleRespo
 	try {
 		const role = await rolesApi.getRoleById(id);
 		return { ok: true, data: role };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar rol:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -56,7 +56,7 @@ export async function fetchAllPermissions(): Promise<ServiceResult<Permission[]>
 	try {
 		const permissions = await rolesApi.getAllPermissions();
 		return { ok: true, data: permissions };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar permisos:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -69,7 +69,7 @@ export async function fetchVisibleModules(): Promise<ServiceResult<VisibleModule
 	try {
 		const modules = await rolesApi.getVisibleModules();
 		return { ok: true, data: modules };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar módulos visibles:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -86,7 +86,7 @@ export async function createRole(input: CreateRoleInput): Promise<ServiceResult<
 	try {
 		const role = await rolesApi.createRole(input);
 		return { ok: true, data: role };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al crear rol:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -102,7 +102,7 @@ export async function updateRole(
 	try {
 		const role = await rolesApi.updateRole(id, input);
 		return { ok: true, data: role };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al actualizar rol:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -115,7 +115,7 @@ export async function deleteRole(id: string): Promise<ServiceResult<void>> {
 	try {
 		await rolesApi.deleteRole(id);
 		return { ok: true, data: undefined };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al eliminar rol:', err);
 		return { ok: false, error: parseError(err) };
 	}
@@ -125,7 +125,7 @@ export async function deleteRole(id: string): Promise<ServiceResult<void>> {
 // ERROR PARSING
 // ============================================
 
-function parseError(err: any): string {
+function parseError(err: unknown): string {
 	if (!err) return 'Ocurrió un error desconocido.';
 
 	if (typeof err === 'string') {
@@ -138,16 +138,18 @@ function parseError(err: any): string {
 		return err;
 	}
 
-	if (typeof err === 'object') {
-		// Si tiene message, usarlo
-		if (err.message) return err.message;
+	if (err instanceof Error) return err.message;
 
-		// Si es un error de Tauri/Backend serializado
-		// Intentar stringify para ver qué tiene dentro
+	if (typeof err === 'object' && err !== null) {
+		const obj = err as Record<string, unknown>;
+		if (obj.message && typeof obj.message === 'string') {
+			return obj.message;
+		}
+
 		try {
 			return JSON.stringify(err);
 		} catch {
-			return err.toString();
+			return String(err);
 		}
 	}
 

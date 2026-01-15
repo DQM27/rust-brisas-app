@@ -35,7 +35,7 @@
 		onCreateEmpresa
 	}: Props = $props();
 
-	let checkTimeout: any;
+	let checkTimeout: ReturnType<typeof setTimeout>;
 	let cedulaDuplicateError = $state<string | null>(null); // Estado independiente para persistencia
 	let showEmpresaDropdown = $state(false);
 
@@ -70,19 +70,19 @@
 				if (!isUnique) {
 					cedulaDuplicateError = 'Esta cédula ya está registrada.';
 					// También forzamos el error en el store para control (opcional)
-					errors.update((errs: any) => ({
+					errors.update((errs: Record<string, string[] | undefined>) => ({
 						...errs,
 						cedula: ['Esta cédula ya está registrada.']
 					}));
 				} else {
 					cedulaDuplicateError = null;
 					// Limpiamos error solo si era de duplicado
-					errors.update((errs: any) => {
-						if (errs.cedula && errs.cedula.includes('registrada')) {
-							const { cedula: _cedula, ...rest } = errs;
-							return rest;
+					errors.update((errs: Record<string, string[] | undefined>) => {
+						const newErrs = { ...errs };
+						if (newErrs.cedula && newErrs.cedula.includes('registrada')) {
+							delete newErrs.cedula;
 						}
-						return errs;
+						return newErrs;
 					});
 				}
 			} catch (e) {

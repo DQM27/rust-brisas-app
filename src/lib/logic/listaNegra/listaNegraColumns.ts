@@ -1,11 +1,11 @@
 // src/lib/logic/listaNegra/listaNegraColumns.ts
 import type { ListaNegraResponse } from '$lib/types/listaNegra';
-import type { ColDef, ICellRendererParams } from '@ag-grid-community/core';
+import type { ColDef, ICellRendererParams, ValueGetterParams, ValueFormatterParams } from '@ag-grid-community/core';
 
 export class ListaNegraColumns {
 	// Column configuration
 	// Helper para parsear fechas de SurrealDB
-	private static parseDate(value: any): Date | null {
+	private static parseDate(value: string | Date | null | undefined): Date | null {
 		if (!value) return null;
 		if (value instanceof Date) return value;
 
@@ -37,10 +37,10 @@ export class ListaNegraColumns {
 				flex: 1,
 				minWidth: 200,
 				cellStyle: { fontWeight: 500 },
-				valueGetter: (params) => {
-					const data = params.data as any;
+				valueGetter: (params: ValueGetterParams<ListaNegraResponse>) => {
+					const data = params.data;
 					if (!data) return '';
-					return data.nombreCompleto || data.nombre_completo || `${data.nombre} ${data.apellido}`;
+					return data?.nombreCompleto || (data as any)?.nombre_completo || `${data?.nombre} ${data?.apellido}`;
 				}
 			},
 			{
@@ -49,16 +49,16 @@ export class ListaNegraColumns {
 				field: 'empresaNombre', // Added for export/filter compatibility
 				flex: 1,
 				minWidth: 150,
-				valueGetter: (params) => {
-					const data = params.data as any;
+				valueGetter: (params: ValueGetterParams<ListaNegraResponse>) => {
+					const data = params.data;
 					// Debug Empresa
 					console.log('Debug Empresa:', {
 						nombre: data?.empresaNombre,
-						snake: data?.empresa_nombre,
-						full: data?.empresa
+						snake: (data as any)?.empresa_nombre,
+						full: (data as any)?.empresa
 					});
 					if (!data) return '';
-					return data.empresaNombre || data.empresa_nombre || 'Sin empresa';
+					return data?.empresaNombre || (data as any)?.empresa_nombre || 'Sin empresa';
 				}
 			},
 			{
@@ -66,11 +66,11 @@ export class ListaNegraColumns {
 				field: 'nivelSeveridad',
 				headerName: 'Nivel',
 				width: 100,
-				valueGetter: (params) => {
-					const data = params.data as any;
-					return data?.nivelSeveridad || data?.nivel_severidad;
+				valueGetter: (params: ValueGetterParams<ListaNegraResponse>) => {
+					const data = params.data;
+					return data?.nivelSeveridad || (data as any)?.nivel_severidad;
 				},
-				cellRenderer: (params: ICellRendererParams) => {
+				cellRenderer: (params: ICellRendererParams<ListaNegraResponse>) => {
 					return ListaNegraColumns.formatNivelBadge(params.value);
 				}
 			},
@@ -79,14 +79,14 @@ export class ListaNegraColumns {
 				field: 'isActive',
 				headerName: 'Estado',
 				width: 130,
-				valueGetter: (params) => {
-					const data = params.data as any;
+				valueGetter: (params: ValueGetterParams<ListaNegraResponse>) => {
+					const data = params.data;
 					if (!data) return false;
 					// is_active puede ser boolean o string "true"/"false" desde DB a veces
-					const val = data.isActive !== undefined ? data.isActive : data.is_active;
+					const val = data.isActive !== undefined ? data.isActive : (data as any).is_active;
 					return val;
 				},
-				cellRenderer: (params: ICellRendererParams) => {
+				cellRenderer: (params: ICellRendererParams<ListaNegraResponse>) => {
 					return ListaNegraColumns.formatEstadoBadge(params.value);
 				}
 			},
@@ -96,11 +96,11 @@ export class ListaNegraColumns {
 				headerName: 'Motivo',
 				flex: 1,
 				minWidth: 200,
-				valueGetter: (params) => {
-					const data = params.data as any;
-					return data?.motivoBloqueo || data?.motivo_bloqueo || 'Sin motivo especificado';
+				valueGetter: (params: ValueGetterParams<ListaNegraResponse>) => {
+					const data = params.data;
+					return data?.motivoBloqueo || (data as any)?.motivo_bloqueo || 'Sin motivo especificado';
 				},
-				cellRenderer: (params: ICellRendererParams) => {
+				cellRenderer: (params: ICellRendererParams<ListaNegraResponse>) => {
 					return `<span class="text-sm text-gray-300 truncate">${params.value}</span>`;
 				}
 			},
@@ -109,16 +109,16 @@ export class ListaNegraColumns {
 				field: 'bloqueadoPor',
 				headerName: 'Bloqueado Por',
 				width: 160,
-				valueGetter: (params) => {
-					const data = params.data as any;
+				valueGetter: (params: ValueGetterParams<ListaNegraResponse>) => {
+					const data = params.data;
 					return (
 						data?.bloqueadoPorNombre ||
-						data?.bloqueado_por_nombre ||
+						(data as any)?.bloqueado_por_nombre ||
 						data?.bloqueadoPor ||
 						'Sistema'
 					);
 				},
-				cellRenderer: (params: ICellRendererParams) => {
+				cellRenderer: (params: ICellRendererParams<ListaNegraResponse>) => {
 					return `<span class="text-sm text-gray-400">${params.value}</span>`;
 				}
 			},
@@ -131,7 +131,7 @@ export class ListaNegraColumns {
 					if (!data) return null;
 					return data.createdAt || data.created_at;
 				},
-				valueFormatter: (params) => {
+				valueFormatter: (params: ValueFormatterParams<ListaNegraResponse>) => {
 					const date = ListaNegraColumns.parseDate(params.value);
 					if (!date) return 'N/A';
 					return date.toLocaleDateString('es-CR', {
@@ -150,7 +150,7 @@ export class ListaNegraColumns {
 					if (!data) return null;
 					return data.createdAt || data.created_at;
 				},
-				valueFormatter: (params) => {
+				valueFormatter: (params: ValueFormatterParams<ListaNegraResponse>) => {
 					const date = ListaNegraColumns.parseDate(params.value);
 					if (!date) return '';
 					return date.toLocaleTimeString('es-CR', {

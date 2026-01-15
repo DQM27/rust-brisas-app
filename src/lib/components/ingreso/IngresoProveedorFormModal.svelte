@@ -12,19 +12,27 @@
 	import { ingresoProveedorService } from '$lib/services/ingresoProveedorService';
 	import { currentUser } from '$lib/stores/auth';
 	import { invoke } from '@tauri-apps/api/core';
+	import type {
+		ValidacionIngresoProveedorResponse,
+		ProveedorCatalogItem
+	} from '$lib/types/ingreso-nuevos';
+
+	interface FormProveedor extends Partial<ProveedorCatalogItem> {
+		vehiculos?: any[];
+	}
 
 	// Props
 	interface Props {
 		show: boolean;
-		initialPerson?: any;
+		initialPerson?: FormProveedor | null;
 	}
 
 	let { show = $bindable(false), initialPerson = null }: Props = $props();
 
 	// State
 	let loading = $state(false);
-	let selectedPerson = $state<any>(null);
-	let validationResult = $state<any>(null); // ValidacionIngresoProveedorResponse
+	let selectedPerson = $state<FormProveedor | null>(null);
+	let validationResult = $state<ValidacionIngresoProveedorResponse | null>(null); // ValidacionIngresoProveedorResponse
 	let gafete = $state('');
 	// Campos extra requeridos para proveedores según CreateIngresoProveedorInput:
 	// areaVisitada, motivo, tipoAutorizacion, modoIngreso
@@ -38,7 +46,20 @@
 	const dispatch = createEventDispatcher();
 
 	// Computed
-	let vehiculosDisponibles = $derived(selectedPerson?.vehiculos || []);
+	let vehiculosDisponibles = $derived.by(() => {
+		if (selectedPerson?.vehiculos?.length) return selectedPerson.vehiculos;
+		if (selectedPerson?.vehiculoPlaca) {
+			return [
+				{
+					id: 'primary',
+					placa: selectedPerson.vehiculoPlaca,
+					marca: selectedPerson.vehiculoMarca,
+					modelo: selectedPerson.vehiculoModelo
+				}
+			];
+		}
+		return [];
+	});
 	let tieneVehiculos = $derived(vehiculosDisponibles.length > 0);
 	let modoIngreso = $derived(vehiculoId ? 'vehiculo' : 'caminando');
 
@@ -58,21 +79,25 @@
 		}
 	});
 
-	async function handlePersonSelect(person: any) {
+	async function handlePersonSelect(person: FormProveedor) {
 		selectedPerson = person;
 		loading = true;
 		try {
 			// Validar ingreso proveedor
-			// Necesitamos el ID del proveedor. Si PersonaFinder devuelve un objeto mixto, asegurarnos de tener proveedorId.
 			// Si el buscador devuelve { id: "proveedor:xyz", ... } está bien.
-			validationResult = await ingresoProveedorService.validarIngreso(person.id);
+			if (person.id) {
+				validationResult = await ingresoProveedorService.validarIngreso(person.id);
+			} else {
+				throw new Error('Proveedor sin ID válido');
+			}
 
 			if (!validationResult.puedeIngresar) {
 				invoke('play_alert_sound');
 				toast.error(validationResult.motivoRechazo || 'Proveedor no autorizado');
 			}
-		} catch (e: any) {
-			toast.error('Error al validar proveedor: ' + e.message);
+		} catch (e: unknown) {
+			const msg = e instanceof Error ? e.message : String(e);
+			toast.error('Error al validar proveedor: ' + msg);
 			validationResult = null;
 		} finally {
 			loading = false;
@@ -81,6 +106,8 @@
 
 	async function handleSubmit() {
 		if (!selectedPerson || !validationResult?.puedeIngresar) return;
+		// TS check for validationResult to ensure it's not null in subsequent usage
+		const validResult = validationResult!;
 
 		// Validar campos requeridos
 		if (!areaVisitada.trim() || !motivo.trim()) {
@@ -97,12 +124,12 @@
 
 			await ingresoProveedorService.createIngreso(
 				{
-					cedula: validationResult.cedula || selectedPerson.cedula,
-					nombre: validationResult.nombre || selectedPerson.nombre,
-					apellido: validationResult.apellido || selectedPerson.apellido,
-					segundoNombre: validationResult.segundoNombre || selectedPerson.segundoNombre,
-					segundoApellido: validationResult.segundoApellido || selectedPerson.segundoApellido,
-					proveedorId: selectedPerson.id,
+					cedula: validResult.cedula || selectedPerson.cedula || '',
+					nombre: validResult.nombre || selectedPerson.nombre || '',
+					apellido: validResult.apellido || selectedPerson.apellido || '',
+					segundoNombre: validResult.segundoNombre,
+					segundoApellido: validResult.segundoApellido,
+					proveedorId: selectedPerson.id || '',
 					areaVisitada: areaVisitada,
 					motivo: motivo,
 					gafeteNumero: finalGafete,
@@ -118,9 +145,10 @@
 			toast.success('Ingreso de proveedor registrado');
 			dispatch('complete');
 			handleClose();
-		} catch (e: any) {
+		} catch (e: unknown) {
 			console.error(e);
-			toast.error('Error al registrar: ' + e.message);
+			const msg = e instanceof Error ? e.message : String(e);
+			toast.error('Error al registrar: ' + msg);
 		} finally {
 			loading = false;
 		}

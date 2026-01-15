@@ -36,7 +36,7 @@
 			// Password correct - exit screensaver
 			exitScreensaver();
 			password = '';
-		} catch (err: any) {
+		} catch (err: unknown) {
 			console.error('Screensaver password verification failed:', err);
 			error = 'Contraseña incorrecta';
 			password = '';

@@ -1,12 +1,12 @@
 // src/lib/logic/user/userColumns.ts
 import type { UserResponse } from '$lib/types/user';
-import type { ColDef } from '@ag-grid-community/core';
+import type { ColDef, ICellRendererParams, ValueFormatterParams, CellClickedEvent } from '@ag-grid-community/core';
 
 export class UserColumns {
 	// Column configuration
 	static getColumns(
 		onStatusToggle?: (id: string, currentStatus: boolean) => void
-	): (ColDef<UserResponse> | any)[] {
+	): ColDef<UserResponse>[] {
 		return [
 			// ... (resto de columnas igual)
 			{
@@ -24,7 +24,7 @@ export class UserColumns {
 				width: 250,
 				minWidth: 100,
 				cellStyle: { fontWeight: 500 },
-				valueFormatter: (params: any) => {
+				valueFormatter: (params: ValueFormatterParams<UserResponse>) => {
 					const user = params.data as UserResponse;
 					if (!user) return '';
 					const fullName = [user.nombre, user.segundoNombre, user.apellido, user.segundoApellido]
@@ -45,7 +45,7 @@ export class UserColumns {
 				field: 'roleName',
 				headerName: 'Rol',
 				width: 130,
-				cellRenderer: (params: any) => {
+				cellRenderer: (params: ICellRendererParams<UserResponse>) => {
 					return UserColumns.formatRoleBadge(params.value);
 				}
 			},
@@ -54,10 +54,10 @@ export class UserColumns {
 				field: 'isActive',
 				headerName: 'Estado',
 				width: 130,
-				cellRenderer: (params: any) => {
+				cellRenderer: (params: ICellRendererParams<UserResponse>) => {
 					return UserColumns.formatEstadoBadge(params.value);
 				},
-				onCellClicked: (params: any) => {
+				onCellClicked: (params: CellClickedEvent<UserResponse>) => {
 					if (onStatusToggle && params.data && params.event) {
 						const target = params.event.target as HTMLElement;
 						if (target && target.tagName !== 'BUTTON') return;
@@ -72,14 +72,14 @@ export class UserColumns {
 				field: 'telefono',
 				headerName: 'Teléfono',
 				width: 140,
-				valueFormatter: (params: any) => params.value || '-'
+				valueFormatter: (params: ValueFormatterParams<UserResponse>) => params.value || '-'
 			},
 			{
 				colId: 'numeroGafete',
 				field: 'numeroGafete',
 				headerName: 'Gafete',
 				width: 110,
-				valueFormatter: (params: any) => params.value || '-',
+				valueFormatter: (params: ValueFormatterParams<UserResponse>) => params.value || '-',
 				cellStyle: { fontFamily: 'monospace' }
 			},
 			{
@@ -87,7 +87,7 @@ export class UserColumns {
 				field: 'fechaInicioLabores',
 				headerName: 'Fecha Inicio',
 				width: 130,
-				valueFormatter: (params: any) => {
+				valueFormatter: (params: ValueFormatterParams<UserResponse>) => {
 					return UserColumns.formatDate(params.value);
 				}
 			},
@@ -104,7 +104,7 @@ export class UserColumns {
 				headerName: 'Venc. Portación',
 				width: 130,
 				hide: true,
-				valueFormatter: (params: any) => {
+				valueFormatter: (params: ValueFormatterParams<UserResponse>) => {
 					return UserColumns.formatDate(params.value);
 				}
 			},
@@ -114,7 +114,7 @@ export class UserColumns {
 				headerName: 'Fecha Nacimiento',
 				width: 130,
 				hide: true,
-				valueFormatter: (params: any) => {
+				valueFormatter: (params: ValueFormatterParams<UserResponse>) => {
 					return UserColumns.formatDate(params.value);
 				}
 			},
@@ -140,7 +140,7 @@ export class UserColumns {
 				headerName: 'Tel. Emergencia',
 				width: 140,
 				hide: true,
-				valueFormatter: (params: any) => params.value || '-'
+				valueFormatter: (params: ValueFormatterParams<UserResponse>) => params.value || '-'
 			},
 			{
 				colId: 'createdAt',
@@ -148,7 +148,7 @@ export class UserColumns {
 				headerName: 'Creado',
 				width: 150,
 				hide: true,
-				valueFormatter: (params: any) => {
+				valueFormatter: (params: ValueFormatterParams<UserResponse>) => {
 					if (!params.value) return '-';
 					const date = new Date(params.value);
 					const day = date.getDate().toString().padStart(2, '0');

@@ -11,18 +11,27 @@
 	// Logic
 	import { ingresoService } from '$lib/logic/ingreso/ingresoService';
 	import type { ValidacionIngresoResult } from '$lib/logic/ingreso/types';
+	import type { ContratistaResponse, EstadoContratista } from '$lib/types/contratista';
+	import type { SearchResult } from '$lib/types/search.types';
+
 	import { currentUser } from '$lib/stores/auth';
 	import { invoke } from '@tauri-apps/api/core';
 
+	interface FormPerson extends Partial<ContratistaResponse> {
+		vehiculos?: { id: string; placa: string; marca?: string; modelo?: string }[];
+		empresa?: string; // Legacy name often returned by search/validation
+		tipo?: string;
+	}
+
 	// Helper para normalizar IDs de SurrealDB (maneja strings, objetos y notación ⟨...⟩)
-	function stringifyRecordId(id: any): string {
+	function stringifyRecordId(id: unknown): string {
 		if (!id) return '';
 		if (typeof id === 'string') return id.replace(/[⟨⟩]/g, '');
 
 		if (typeof id === 'object') {
 			// Caso 1: Estructura { tb: 'user', id: 'abc' } o { tb: 'user', id: { String: 'abc' } }
-			const tb = id.tb;
-			const innerId = id.id?.String || id.id;
+			const tb = (id as any).tb;
+			const innerId = (id as any).id?.String || (id as any).id;
 			if (tb && innerId) {
 				return `${tb}:${innerId}`.replace(/[⟨⟩]/g, '');
 			}
@@ -34,21 +43,21 @@
 	// Props
 	interface Props {
 		show: boolean;
-		initialPerson?: any;
+		initialPerson?: FormPerson | null;
 	}
 
 	let { show = $bindable(false), initialPerson = null }: Props = $props();
 
 	// State
 	let loading = $state(false);
-	let selectedPerson = $state<any>(null);
+	let selectedPerson = $state<FormPerson | null>(null);
 	let validationResult = $state<ValidacionIngresoResult | null>(null);
 	let gafete = $state('');
 	let vehiculoId = $state<string | null>(null);
 	let tipoAutorizacion = $state<'praind' | 'correo'>('praind');
 	let observaciones = $state('');
 	let showObservaciones = $state(false);
-	let personaFinderRef = $state<any>();
+	let personaFinderRef = $state<PersonaFinder>();
 
 	const dispatch = createEventDispatcher();
 
@@ -84,7 +93,7 @@
 						type: initialPerson.tipo?.toLowerCase() || 'contratista',
 						data: initialPerson
 					}
-				} as any);
+				} as CustomEvent);
 			} else {
 				setTimeout(() => {
 					if (personaFinderRef) personaFinderRef.focus();
@@ -96,7 +105,9 @@
 	// ==========================================
 	// HANDLERS
 	// ==========================================
-	async function handlePersonSelect(event: CustomEvent) {
+	async function handlePersonSelect(
+		event: CustomEvent<{ id: string; type: string; data: SearchResult | FormPerson }>
+	) {
 		const { id, type, data } = event.detail;
 
 		// Solo contratistas por ahora
@@ -105,7 +116,13 @@
 			return;
 		}
 
-		selectedPerson = data;
+		// Sanitize SearchResult to match FormPerson (handle nulls)
+		selectedPerson = {
+			...data,
+			cedula: data.cedula || undefined,
+			nombreCompleto: data.nombreCompleto || undefined,
+			empresaNombre: (data as any).empresaNombre || undefined
+		} as FormPerson;
 
 		// Validar automáticamente
 		try {
@@ -127,7 +144,10 @@
 			);
 
 			if (validationResult.persona) {
-				selectedPerson = { ...selectedPerson, ...validationResult.persona };
+				// Merge validation data. Note: validation returns string state, we need to handle that.
+				const validatedPerson: Partial<FormPerson> = { ...(validationResult.persona as any) };
+				// Safe assignment avoiding type mismatch with Enum
+				selectedPerson = { ...selectedPerson, ...validatedPerson } as FormPerson;
 			}
 
 			if (!validationResult.puedeIngresar) {
@@ -135,8 +155,9 @@
 				invoke('play_alert_sound');
 				toast.error(validationResult.motivoRechazo || 'Contratista no autorizado');
 			}
-		} catch (e: any) {
-			toast.error('Error al validar: ' + e.message);
+		} catch (e: unknown) {
+			const msg = e instanceof Error ? e.message : String(e);
+			toast.error('Error al validar: ' + msg);
 			validationResult = null;
 		} finally {
 			loading = false;

@@ -50,7 +50,7 @@ export interface IngresoFormState {
 	// Datos del contratista
 	contratistaId: string;
 	contratistaNombre: string;
-	contratistaData: any | null;
+	contratistaData: import('$lib/types/contratista').ContratistaResponse | null;
 	puedeIngresar: boolean;
 	mensajeValidacion: string;
 

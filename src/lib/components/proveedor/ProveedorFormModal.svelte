@@ -82,7 +82,11 @@
 			resetForm: false,
 			async onUpdate({ form: f }) {
 				if (f.valid) {
-					const success = await onSave(f.data as any);
+					// Cast form data to input type expected by onSave.
+					// CombinedForm has superset of fields.
+					const success = await onSave(
+						f.data as unknown as CreateProveedorInput | UpdateProveedorInput
+					);
 					if (success !== false) {
 						onClose();
 					}
@@ -102,7 +106,7 @@
 				apellido: proveedor?.apellido ?? '',
 				segundoApellido: proveedor?.segundoApellido ?? '',
 				empresaId: proveedor?.empresaId ?? '',
-				estado: (proveedor?.estado as any) || 'ACTIVO'
+				estado: (proveedor?.estado as import('$lib/types/proveedor').EstadoProveedor) || 'ACTIVO'
 			};
 			reset({ data: newData });
 		}
@@ -139,7 +143,7 @@
 				empresaError =
 					(result as { ok: false; error: string }).error || 'Error al crear la empresa';
 			}
-		} catch (err: any) {
+		} catch (err: unknown) {
 			console.error('Error creating empresa:', err);
 			empresaError = 'Error inesperado al crear empresa';
 		} finally {

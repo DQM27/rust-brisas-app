@@ -1,5 +1,5 @@
 import type { GafeteResponse } from '$lib/types/gafete';
-import type { ColDef } from '@ag-grid-community/core';
+import type { ColDef, ICellRendererParams, ValueFormatterParams, CellClickedEvent } from '@ag-grid-community/core';
 
 export class GafeteColumns {
 	static getColumns(handlers: {
@@ -27,8 +27,8 @@ export class GafeteColumns {
 				sortable: true,
 				filter: true,
 				width: 130,
-				cellRenderer: (params: any) => {
-					const tipo = params.data.tipo;
+				cellRenderer: (params: ICellRendererParams<GafeteResponse>) => {
+					const tipo = params.data?.tipo;
 					const baseClass =
 						'inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-widest leading-none shadow-sm';
 					let colorClass = '';
@@ -61,7 +61,7 @@ export class GafeteColumns {
 				sortable: true,
 				filter: true,
 				width: 150,
-				cellRenderer: (params: any) => {
+				cellRenderer: (params: ICellRendererParams<GafeteResponse>) => {
 					const status = params.value;
 					const baseClass =
 						'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none shadow-sm';
@@ -114,16 +114,16 @@ export class GafeteColumns {
 			},
 			// Column removed as per user request
 			/*
-            {
-                colId: "asignadoA",
-                field: "asignadoA",
-                headerName: "Asignado A",
-                sortable: true,
-                filter: true,
-                width: 180,
-                valueFormatter: (params: any) => params.value || "-",
-            },
-            */
+			{
+				colId: "asignadoA",
+				field: "asignadoA",
+				headerName: "Asignado A",
+				sortable: true,
+				filter: true,
+				width: 180,
+				valueFormatter: (params: ValueFormatterParams<GafeteResponse>) => params.value || '-',
+			},
+			*/
 			{
 				colId: 'fechaPerdido',
 				field: 'fechaPerdido',
@@ -131,7 +131,7 @@ export class GafeteColumns {
 				sortable: true,
 				filter: true,
 				width: 160,
-				valueFormatter: (params: any) => {
+				valueFormatter: (params: ValueFormatterParams<GafeteResponse>) => {
 					if (!params.value) return '-';
 					const date = new Date(params.value);
 					if (isNaN(date.getTime())) return '-';
@@ -149,7 +149,7 @@ export class GafeteColumns {
 				sortable: true,
 				filter: true,
 				width: 180,
-				valueFormatter: (params: any) => params.value || '-'
+				valueFormatter: (params: ValueFormatterParams<GafeteResponse>) => params.value || '-'
 			},
 			{
 				colId: 'reportadoPorNombre',
@@ -158,7 +158,7 @@ export class GafeteColumns {
 				sortable: true,
 				filter: true,
 				width: 160,
-				valueFormatter: (params: any) => params.value || '-'
+				valueFormatter: (params: ValueFormatterParams<GafeteResponse>) => params.value || '-'
 			},
 			{
 				colId: 'resueltoPorNombre',
@@ -167,7 +167,7 @@ export class GafeteColumns {
 				sortable: true,
 				filter: true,
 				width: 150,
-				valueFormatter: (params: any) => params.value || '-'
+				valueFormatter: (params: ValueFormatterParams<GafeteResponse>) => params.value || '-'
 			},
 			{
 				colId: 'fechaResolucion',
@@ -176,7 +176,7 @@ export class GafeteColumns {
 				sortable: true,
 				filter: true,
 				width: 160,
-				valueFormatter: (params: any) => {
+				valueFormatter: (params: ValueFormatterParams<GafeteResponse>) => {
 					if (!params.value) return '-';
 					return new Date(params.value).toLocaleDateString();
 				}
@@ -188,15 +188,15 @@ export class GafeteColumns {
 				sortable: true,
 				filter: true,
 				width: 200,
-				valueFormatter: (params: any) => params.value || '-'
+				valueFormatter: (params: ValueFormatterParams<GafeteResponse>) => params.value || '-'
 			},
 			{
 				colId: 'acciones',
 				headerName: 'Acciones',
 				width: 220,
 				pinned: 'right',
-				cellRenderer: (params: any) => {
-					const status = params.data.status;
+				cellRenderer: (params: ICellRendererParams<GafeteResponse>) => {
+					const status = params.data?.status;
 					let buttons = '';
 
 					if (status === 'perdido') {
@@ -251,13 +251,15 @@ export class GafeteColumns {
 
 					return buttons || `<span class="text-xs text-gray-400">-</span>`;
 				},
-				onCellClicked: (params: any) => {
+				onCellClicked: (params: CellClickedEvent<GafeteResponse>) => {
 					const event = params.event;
 					const data = params.data;
-					const target = event.target as HTMLElement;
+					if (!event || !data) return;
 
 					// Prevent event bubbling that could cause double-firing
 					event.stopPropagation();
+
+					const target = event.target as HTMLElement;
 
 					if (target.classList.contains('resolve-btn')) {
 						handlers.onResolve(data);

@@ -10,6 +10,7 @@
 		createVisitante,
 		updateVisitante
 	} from '$lib/logic/visitante/visitanteService';
+	import type { CreateVisitanteInput, UpdateVisitanteInput } from '$lib/types/visitante';
 	import { VISITANTE_COLUMNS } from '$lib/logic/visitante/visitanteColumns';
 	import { createCustomButton } from '$lib/config/agGridConfigs';
 	import type { VisitanteResponse } from '$lib/types/visitante';
@@ -40,13 +41,13 @@
 		showModal = true;
 	}
 
-	async function handleSave(data: any) {
+	async function handleSave(data: CreateVisitanteInput | UpdateVisitanteInput) {
 		loading = true;
 		let res;
 		if (selectedVisitanteForEdit) {
-			res = await updateVisitante(selectedVisitanteForEdit.id, data);
+			res = await updateVisitante(selectedVisitanteForEdit.id, data as UpdateVisitanteInput);
 		} else {
-			res = await createVisitante(data);
+			res = await createVisitante(data as CreateVisitanteInput);
 		}
 
 		if (res.ok) {

@@ -14,10 +14,14 @@ import type {
 } from '$lib/types/empresa';
 
 /** Parseo de errores simple */
-function parseEmpresaError(err: any): string {
+function parseEmpresaError(err: unknown): string {
 	if (!err) return 'Ocurrió un error desconocido.';
 	if (typeof err === 'string') return err;
-	if (typeof err === 'object' && err.message) return err.message;
+	if (err instanceof Error) return err.message;
+	if (typeof err === 'object' && err !== null) {
+		const obj = err as Record<string, unknown>;
+		if (obj.message && typeof obj.message === 'string') return obj.message;
+	}
 	return 'Ocurrió un error inesperado.';
 }
 
@@ -76,7 +80,7 @@ export async function submitCreateEmpresa(nombre: string): Promise<SubmitCreateE
 	try {
 		const empresa = await createEmpresaService({ nombre });
 		return { ok: true, empresa };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		return { ok: false, error: parseEmpresaError(err) };
 	}
 }
@@ -91,7 +95,7 @@ export async function submitUpdateEmpresa(
 	try {
 		const empresa = await updateEmpresaService(id, { nombre });
 		return { ok: true, empresa };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		return { ok: false, error: parseEmpresaError(err) };
 	}
 }
@@ -100,7 +104,7 @@ export async function submitDeleteEmpresa(id: string): Promise<SubmitDeleteEmpre
 	try {
 		await deleteEmpresaService(id);
 		return { ok: true };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		return { ok: false, error: parseEmpresaError(err) };
 	}
 }
@@ -109,7 +113,7 @@ export async function submitFetchAllEmpresas(): Promise<SubmitFetchAllEmpresasRe
 	try {
 		const empresas = await fetchAllEmpresas();
 		return { ok: true, empresas };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		return { ok: false, error: parseEmpresaError(err) };
 	}
 }
@@ -118,7 +122,7 @@ export async function submitFetchActiveEmpresas(): Promise<SubmitFetchActiveEmpr
 	try {
 		const empresas = await fetchActiveEmpresas();
 		return { ok: true, empresas };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		return { ok: false, error: parseEmpresaError(err) };
 	}
 }

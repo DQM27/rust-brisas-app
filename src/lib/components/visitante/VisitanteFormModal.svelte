@@ -104,10 +104,22 @@
 		e.preventDefault();
 		if (!isFormValid) return;
 
-		const data = { ...formData };
-		if (!data.empresaId) delete (data as any).empresaId;
+		const payload: CreateVisitanteInput = {
+			cedula: formData.cedula,
+			nombre: formData.nombre,
+			apellido: formData.apellido,
+			segundoNombre: formData.segundoNombre || undefined,
+			segundoApellido: formData.segundoApellido || undefined,
+			empresaId: formData.empresaId || undefined,
+			hasVehicle: formData.hasVehicle,
+			tipoVehiculo: formData.hasVehicle ? formData.tipoVehiculo : undefined,
+			placa: formData.hasVehicle ? formData.placa : undefined,
+			marca: formData.hasVehicle ? formData.marca : undefined,
+			modelo: formData.hasVehicle ? formData.modelo : undefined,
+			color: formData.hasVehicle ? formData.color : undefined
+		};
 
-		const success = await onSave(data as CreateVisitanteInput);
+		const success = await onSave(payload);
 		if (success) {
 			onClose();
 		}

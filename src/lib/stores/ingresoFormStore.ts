@@ -72,7 +72,7 @@ function createIngresoFormStore() {
 		setContratistaValidado: (data: {
 			contratistaId: string;
 			contratistaNombre: string;
-			contratistaData: any;
+			contratistaData: import('$lib/types/contratista').ContratistaResponse;
 			puedeIngresar: boolean;
 			mensajeValidacion: string;
 		}) => {

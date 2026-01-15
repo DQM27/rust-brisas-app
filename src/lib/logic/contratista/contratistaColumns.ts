@@ -1,10 +1,10 @@
 import type { ContratistaResponse, EstadoContratista } from '$lib/types/contratista';
-import type { ColDef, ICellRendererParams } from '@ag-grid-community/core';
+import type { ColDef, ICellRendererParams, ValueFormatterParams, CellClickedEvent } from '@ag-grid-community/core';
 
 export class ContratistaColumns {
 	// Column configuration
 	static getColumns(
-		onStatusToggle?: (id: string, currentStatus: any) => void
+		onStatusToggle?: (id: string, currentStatus: EstadoContratista) => void
 	): ColDef<ContratistaResponse>[] {
 		return [
 			{
@@ -35,14 +35,14 @@ export class ContratistaColumns {
 				field: 'vehiculoTipo',
 				headerName: 'Vehículo',
 				width: 120,
-				valueFormatter: (params) => params.value || '-'
+				valueFormatter: (params: ValueFormatterParams<ContratistaResponse>) => params.value || '-'
 			},
 			{
 				colId: 'vehiculoPlaca',
 				field: 'vehiculoPlaca',
 				headerName: 'Placa',
 				width: 100,
-				valueFormatter: (params) => params.value || '-',
+				valueFormatter: (params: ValueFormatterParams<ContratistaResponse>) => params.value || '-',
 				cellStyle: { fontFamily: 'monospace' }
 			},
 			{
@@ -50,11 +50,11 @@ export class ContratistaColumns {
 				field: 'estado',
 				headerName: 'Estado',
 				width: 130,
-				cellRenderer: (params: ICellRendererParams) => {
+				cellRenderer: (params: ICellRendererParams<ContratistaResponse>) => {
 					const estado = params.value as EstadoContratista;
 					return ContratistaColumns.formatEstadoBadge(estado);
 				},
-				onCellClicked: (params) => {
+				onCellClicked: (params: CellClickedEvent<ContratistaResponse>) => {
 					if (onStatusToggle && params.data && params.event) {
 						const target = params.event.target as HTMLElement;
 						// Prevent toggle if clicking elsewhere (though cellClicked is usually specific)
@@ -73,7 +73,7 @@ export class ContratistaColumns {
 				field: 'praindVencido',
 				headerName: 'PRAIND',
 				width: 130,
-				cellRenderer: (params: ICellRendererParams) => {
+				cellRenderer: (params: ICellRendererParams<ContratistaResponse>) => {
 					const row = params.data as ContratistaResponse;
 					return ContratistaColumns.formatPraindBadge(row);
 				}
@@ -83,7 +83,7 @@ export class ContratistaColumns {
 				field: 'fechaVencimientoPraind',
 				headerName: 'Vencimiento',
 				width: 130,
-				valueFormatter: (params) => {
+				valueFormatter: (params: ValueFormatterParams<ContratistaResponse>) => {
 					if (!params.value) return '';
 					const date = new Date(params.value);
 					const day = date.getUTCDate();
@@ -97,7 +97,7 @@ export class ContratistaColumns {
 				field: 'puedeIngresar',
 				headerName: 'Acceso',
 				width: 130,
-				cellRenderer: (params: ICellRendererParams) => {
+				cellRenderer: (params: ICellRendererParams<ContratistaResponse>) => {
 					const row = params.data as ContratistaResponse;
 					return ContratistaColumns.formatAccesoBadge(row);
 				}
@@ -133,7 +133,7 @@ export class ContratistaColumns {
 				field: 'deletedAt',
 				headerName: 'Fecha Eliminación',
 				width: 150,
-				valueFormatter: (params) => {
+				valueFormatter: (params: ValueFormatterParams<ContratistaResponse>) => {
 					if (!params.value) return '-';
 					return new Date(params.value).toLocaleDateString('es-PA', {
 						year: 'numeric',

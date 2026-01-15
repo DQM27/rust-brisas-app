@@ -27,7 +27,7 @@ export async function fetchAllProveedores(): Promise<ServiceResult<ProveedorResp
 	try {
 		const data = await proveedor.getAll();
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar proveedores:', JSON.stringify(err));
 		return { ok: false, error: parseError(err) };
 	}
@@ -44,7 +44,7 @@ export async function fetchActiveProveedores(): Promise<ServiceResult<ProveedorR
 			return { ok: true, data: activos };
 		}
 		return result;
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar proveedores activos:', JSON.stringify(err));
 		return { ok: false, error: parseError(err) };
 	}
@@ -59,7 +59,7 @@ export async function searchProveedores(
 	try {
 		const data = await proveedor.search(query);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al buscar proveedores:', JSON.stringify(err));
 		return { ok: false, error: parseError(err) };
 	}
@@ -75,7 +75,7 @@ export async function fetchProveedorById(id: string): Promise<ServiceResult<Prov
 			return { ok: false, error: 'Proveedor no encontrado' };
 		}
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar proveedor:', JSON.stringify(err));
 		return { ok: false, error: parseError(err) };
 	}
@@ -93,7 +93,7 @@ export async function fetchProveedorByCedula(
 			return { ok: false, error: 'Proveedor no encontrado' };
 		}
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar proveedor:', JSON.stringify(err));
 		return { ok: false, error: parseError(err) };
 	}
@@ -112,7 +112,7 @@ export async function createProveedor(
 	try {
 		const data = await proveedor.create(input);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al crear proveedor:', JSON.stringify(err));
 		return { ok: false, error: parseError(err) };
 	}
@@ -128,7 +128,7 @@ export async function updateProveedor(
 	try {
 		const data = await proveedor.update(id, input);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al actualizar proveedor:', JSON.stringify(err));
 		return { ok: false, error: parseError(err) };
 	}
@@ -144,7 +144,7 @@ export async function changeStatus(
 	try {
 		const data = await proveedor.changeStatus(id, newStatus);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cambiar estado:', JSON.stringify(err));
 		return { ok: false, error: parseError(err) };
 	}
@@ -157,7 +157,7 @@ export async function deleteProveedor(id: string): Promise<ServiceResult<void>> 
 	try {
 		await proveedor.delete(id);
 		return { ok: true, data: undefined };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al eliminar proveedor:', JSON.stringify(err));
 		return { ok: false, error: parseError(err) };
 	}
@@ -181,7 +181,7 @@ export async function restoreProveedor(id: string): Promise<ServiceResult<Provee
 			return { ok: false, error: result.error || 'No se pudo restaurar el proveedor.' };
 		}
 		return { ok: true, data: result.data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al restaurar proveedor:', JSON.stringify(err));
 		return { ok: false, error: parseError(err) };
 	}
@@ -194,13 +194,13 @@ export async function getArchivedProveedores(): Promise<ServiceResult<ProveedorR
 	try {
 		const data = await proveedor.listArchived();
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		console.error('Error al cargar proveedores archivados:', JSON.stringify(err));
 		return { ok: false, error: parseError(err) };
 	}
 }
 
-function parseError(err: any): string {
+function parseError(err: unknown): string {
 	if (!err) return 'Ocurrió un error desconocido.';
 
 	if (typeof err === 'string') {
@@ -209,10 +209,19 @@ function parseError(err: any): string {
 		return err;
 	}
 
-	if (typeof err === 'object') {
+	if (err instanceof Error) {
+		const msg = err.message;
+		if (/unique|cedula/i.test(msg)) return 'Ya existe un proveedor con esa cédula.';
+		if (/empresa/i.test(msg)) return 'La empresa especificada no existe.';
+		return msg;
+	}
+
+	if (typeof err === 'object' && err !== null) {
+		const obj = err as Record<string, any>;
 		// Handle Rust Serde Enum errors
-		if (err.type) {
-			switch (err.type) {
+		if (obj.type) {
+			const type = obj.type as string;
+			switch (type) {
 				case 'CedulaExists':
 					return 'Ya existe un proveedor con esa cédula.';
 				case 'EmpresaNotFound':
@@ -222,10 +231,10 @@ function parseError(err: any): string {
 				case 'AlreadyInside':
 					return 'El proveedor ya tiene un ingreso activo.';
 			}
-			if (err.message) return err.message;
+			if (obj.message) return obj.message as string;
 		}
 
-		const msg = err.message ?? JSON.stringify(err);
+		const msg = (obj.message as string) ?? JSON.stringify(err);
 		if (/unique|cedula/i.test(msg)) return 'Ya existe un proveedor con esa cédula.';
 		if (/empresa/i.test(msg)) return 'La empresa especificada no existe.';
 		return msg;

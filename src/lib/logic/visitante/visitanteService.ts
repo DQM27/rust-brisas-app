@@ -1,5 +1,5 @@
 import { visitante } from '$lib/api/visitante';
-import type { VisitanteResponse, CreateVisitanteInput } from '$lib/types/visitante';
+import type { VisitanteResponse, CreateVisitanteInput, UpdateVisitanteInput } from '$lib/types/visitante';
 
 export type ServiceResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -9,7 +9,7 @@ export async function createVisitante(
 	try {
 		const data = await visitante.create(input);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		return { ok: false, error: parseError(err) };
 	}
 }
@@ -18,7 +18,7 @@ export async function searchVisitantes(query: string): Promise<ServiceResult<Vis
 	try {
 		const data = await visitante.search(query);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		return { ok: false, error: parseError(err) };
 	}
 }
@@ -29,19 +29,19 @@ export async function getVisitanteByCedula(
 	try {
 		const data = await visitante.getByCedula(cedula);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		return { ok: false, error: parseError(err) };
 	}
 }
 
 export async function updateVisitante(
 	id: string,
-	input: CreateVisitanteInput
+	input: UpdateVisitanteInput
 ): Promise<ServiceResult<VisitanteResponse>> {
 	try {
 		const data = await visitante.update(id, input);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		return { ok: false, error: parseError(err) };
 	}
 }
@@ -50,7 +50,7 @@ export async function deleteVisitante(id: string): Promise<ServiceResult<void>> 
 	try {
 		await visitante.delete(id);
 		return { ok: true, data: undefined };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		return { ok: false, error: parseError(err) };
 	}
 }
@@ -59,7 +59,7 @@ export async function restoreVisitante(id: string): Promise<ServiceResult<Visita
 	try {
 		const data = await visitante.restoreWithData(id);
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		return { ok: false, error: parseError(err) };
 	}
 }
@@ -68,7 +68,7 @@ export async function getArchivedVisitantes(): Promise<ServiceResult<VisitanteRe
 	try {
 		const data = await visitante.listArchived();
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		return { ok: false, error: parseError(err) };
 	}
 }
@@ -77,12 +77,12 @@ export async function listVisitantes(): Promise<ServiceResult<VisitanteResponse[
 	try {
 		const data = await visitante.list();
 		return { ok: true, data };
-	} catch (err: any) {
+	} catch (err: unknown) {
 		return { ok: false, error: parseError(err) };
 	}
 }
 
-function parseError(err: any): string {
+function parseError(err: unknown): string {
 	if (typeof err === 'string') {
 		if (/unique|cedula/i.test(err)) return 'La cédula ya existe.';
 		return err;

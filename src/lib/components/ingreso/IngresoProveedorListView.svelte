@@ -3,7 +3,7 @@
 	import { fade } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
 	import { AlertCircle, FileText, Users, History } from 'lucide-svelte';
-	import type { ColDef } from '@ag-grid-community/core';
+	import type { ColDef, GridApi, ICellRendererParams } from '@ag-grid-community/core';
 
 	// Components
 	import SearchBar from '$lib/components/shared/SearchBar.svelte';
@@ -47,7 +47,7 @@
 	let ingresos = $state<IngresoProveedor[]>([]);
 	let loading = $state(false);
 	let error = $state('');
-	let selectedRows = $state<any[]>([]); // Data row from grid
+	let selectedRows = $state<IngresoProveedor[]>([]); // Data row from grid
 
 	// Modals
 	// Modal registro nuevo proveedor
@@ -66,7 +66,7 @@
 	let providerForIngreso = $state<any>(null);
 
 	// Estado para Exportación
-	let gridApi = $state<any>(null);
+	let gridApi = $state<GridApi<IngresoProveedor> | null>(null);
 	let showExportModal = $state(false);
 	let availableFormats = $state<string[]>([]);
 	let exportColumns = $state<{ id: string; name: string; selected: boolean }[]>([]);
@@ -136,8 +136,8 @@
 	// ==========================================
 	// COLUMNS
 	// ==========================================
-	let columnDefs = $derived.by((): ColDef<any>[] => {
-		const baseCols: ColDef<any>[] = [
+	let columnDefs = $derived.by((): ColDef<IngresoProveedor>[] => {
+		const baseCols: ColDef<IngresoProveedor>[] = [
 			{
 				field: 'gafete', // Mapped from 'gafete' in IngresoProveedor
 				headerName: 'Gafete',
@@ -152,7 +152,10 @@
 				width: 150,
 				sortable: true,
 				filter: true,
-				valueGetter: (params) => `${params.data.nombre} ${params.data.apellido}`
+				valueGetter: (params) => {
+					if (!params.data) return '';
+					return `${params.data.nombre} ${params.data.apellido}`;
+				}
 			},
 			{
 				field: 'cedula',
@@ -168,13 +171,14 @@
 				sortable: true,
 				filter: true
 			},
-			{
-				field: 'tipoAutorizacion',
-				headerName: 'Autorización',
-				width: 130,
-				sortable: true,
-				filter: true
-			},
+			// Provider doesn't have tipoAutorizacion in type definition currently
+			// {
+			// 	field: 'tipoAutorizacion',
+			// 	headerName: 'Autorización',
+			// 	width: 130,
+			// 	sortable: true,
+			// 	filter: true
+			// },
 			{
 				field: 'modoIngreso',
 				headerName: 'Modo',
@@ -258,12 +262,12 @@
 				hide: true
 			},
 			{
-				field: 'tiempoPermanencia', // Calculated locally or returned? We'll calc locally if needed
+				colId: 'tiempoPermanencia', // Calculated locally or returned? We'll calc locally if needed
 				headerName: 'Tiempo Dentro',
 				width: 140,
 				sortable: false,
 				valueGetter: (params) => {
-					if (params.data.fechaSalida) {
+					if (params.data && params.data.fechaSalida) {
 						// If we have permanence info from backend, use it. Usually backend might send string.
 						// If not, calc diff.
 						const start = parseDate(params.data.fechaIngreso);
@@ -275,6 +279,7 @@
 						return `${diffHours}h ${diffMins}m`;
 					}
 					// Calcular tiempo transcurrido si aún está adentro
+					if (!params.data) return '-';
 					const entrada = parseDate(params.data.fechaIngreso);
 					if (!entrada) return '-';
 
@@ -286,26 +291,28 @@
 				}
 			},
 			{
-				field: 'actions',
+				colId: 'actions',
 				headerName: 'Acciones',
 				width: 120,
 				sortable: false,
 				filter: false,
 				pinned: 'right',
-				cellRenderer: (params: any) => {
+				cellRenderer: (params: ICellRendererParams<IngresoProveedor>) => {
 					if (viewMode === 'history') return null; // No exit button in history
 					const button = document.createElement('button');
 					button.className =
 						'px-3 py-1 bg-error text-white rounded-md text-sm hover:opacity-90 transition-opacity';
 					button.textContent = 'Salida';
-					button.onclick = () => handleSalida(params.data);
+					button.onclick = () => {
+						if (params.data) handleSalida(params.data);
+					};
 					return button;
 				}
 			}
 		];
 
 		if (viewMode === 'history') {
-			return baseCols.filter((c) => c.field !== 'actions');
+			return baseCols.filter((c) => c.colId !== 'actions');
 		}
 		return baseCols;
 	});
