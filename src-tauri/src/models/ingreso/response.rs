@@ -72,6 +72,11 @@ fn calculate_duration(start: &Datetime, end: Option<&Datetime>) -> (Option<i64>,
     (Some(total_minutes), Some(text))
 }
 
+fn is_time_exceeded(start: &Datetime, end: Option<&Datetime>) -> Option<bool> {
+    let (minutos, _) = calculate_duration(start, end);
+    minutos.map(|m| m >= crate::domain::ingreso_contratista::TIEMPO_MAXIMO_MINUTOS)
+}
+
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct IngresoResponse {
@@ -109,6 +114,8 @@ pub struct IngresoResponse {
     pub observaciones: Option<String>,
     pub esta_adentro: bool,
     pub tiene_gafete_asignado: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alerta_tiempo_excedido: Option<bool>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -170,6 +177,7 @@ impl IngresoResponse {
             tiene_gafete_asignado,
             created_at: datetime_to_iso(&i.created_at),
             updated_at: datetime_to_iso(&i.updated_at),
+            alerta_tiempo_excedido: None,
         }
     }
 
@@ -243,6 +251,10 @@ impl IngresoResponse {
             tiene_gafete_asignado,
             created_at: datetime_to_iso(&i.created_at),
             updated_at: datetime_to_iso(&i.updated_at),
+            alerta_tiempo_excedido: is_time_exceeded(
+                &i.fecha_hora_ingreso,
+                i.fecha_hora_salida.as_ref(),
+            ),
         })
     }
 
@@ -316,6 +328,7 @@ impl IngresoResponse {
             tiene_gafete_asignado,
             created_at: datetime_to_iso(&i.created_at),
             updated_at: datetime_to_iso(&i.updated_at),
+            alerta_tiempo_excedido: None,
         }
     }
 
@@ -389,6 +402,7 @@ impl IngresoResponse {
             tiene_gafete_asignado,
             created_at: datetime_to_iso(&i.created_at),
             updated_at: datetime_to_iso(&i.updated_at),
+            alerta_tiempo_excedido: None,
         }
     }
 }

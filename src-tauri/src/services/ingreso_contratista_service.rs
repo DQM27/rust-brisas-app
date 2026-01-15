@@ -352,6 +352,55 @@ where
             }
         }
 
+        // Validar exceso de tiempo (14 horas)
+        let fecha_ingreso_str = ingreso_actualizado.fecha_hora_ingreso.to_string();
+        let fecha_ingreso_iso = fecha_ingreso_str.trim_start_matches("d'").trim_end_matches('\'');
+
+        if let Ok(minutos) =
+            crate::domain::ingreso_contratista::calcular_tiempo_transcurrido(fecha_ingreso_iso)
+        {
+            let estado = crate::domain::ingreso_contratista::evaluar_estado_permanencia(minutos);
+
+            if estado == crate::domain::ingreso_contratista::EstadoPermanencia::TiempoExcedido {
+                warn!(
+                    "Tiempo excedido ({} min) para contratista {}",
+                    minutos, ingreso_actualizado.contratista.id
+                );
+
+                let gafete_num = ingreso_actualizado.gafete_numero.unwrap_or(0);
+
+                let alerta_input = crate::models::ingreso::CreateAlertaInput {
+                    id: uuid::Uuid::new_v4().to_string(),
+                    persona_id: Some(ingreso_actualizado.contratista.id.to_string()),
+                    cedula: ingreso_actualizado.cedula.clone(),
+                    nombre_completo: format!(
+                        "{} {}",
+                        ingreso_actualizado.nombre, ingreso_actualizado.apellido
+                    ),
+                    gafete_numero: gafete_num,
+                    ingreso_contratista_id: Some(ingreso_actualizado.id.to_string()),
+                    ingreso_proveedor_id: None,
+                    ingreso_visita_id: None,
+                    fecha_reporte: chrono::Utc::now().to_rfc3339(),
+                    notas: Some(format!(
+                        "EXCESO DE TIEMPO: {} horas ({} minutos)",
+                        minutos / 60,
+                        minutos
+                    )),
+                    reportado_por: usuario_id.to_string(),
+                };
+
+                if let Err(e) = crate::services::alerta_service::insert(alerta_input).await {
+                    error!("Error al crear alerta de tiempo excedido: {e}");
+                } else {
+                    info!(
+                        "Alerta de tiempo excedido creada para ingreso {}",
+                        ingreso_actualizado.id
+                    );
+                }
+            }
+        }
+
         info!("Salida registrada para ingreso: {}", input.ingreso_id);
 
         IngresoResponse::from_contratista_fetched(ingreso_actualizado)
