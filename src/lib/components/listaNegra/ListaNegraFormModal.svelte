@@ -2,9 +2,11 @@
 <!-- Modal para agregar/editar personas en lista negra (Validación Zod + Superforms) -->
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
-	import { X, User, CheckCircle, XCircle, ChevronDown, MonitorStop } from 'lucide-svelte';
+	import { X, User, CheckCircle, XCircle, ChevronDown, MonitorStop, Plus } from 'lucide-svelte';
 	import { get } from 'svelte/store';
 	import { currentUser } from '$lib/stores/auth';
+	import { empresaStore } from '$lib/stores/empresaStore.svelte';
+	import { submitCreateEmpresa } from '$lib/logic/empresa/empresaService';
 	import PersonaFinder from '$lib/components/ingreso/shared/persona/PersonaFinder.svelte';
 	import type { ListaNegraResponse, AddToListaNegraInput } from '$lib/types/listaNegra';
 	import { AddToListaNegraSchema, type AddToListaNegraForm } from '$lib/schemas/listaNegraSchema';
@@ -30,7 +32,13 @@
 	);
 
 	let showSeveridadDropdown = $state(false);
+	let showEmpresaDropdown = $state(false);
+	let showEmpresaModal = $state(false);
 	let searchResetKey = $state(0);
+
+	// Estado para crear empresa
+	let creatingEmpresa = $state(false);
+	let nuevaEmpresaNombre = $state('');
 
 	// --- SUPERFORMS SETUP ---
 	const initialValues: AddToListaNegraForm = {
@@ -243,7 +251,7 @@
 	const severidadOptions = [
 		{ value: 'ALTO', label: '🔴 ALTO - Crítico' },
 		{ value: 'MEDIO', label: '🟡 MEDIO - Moderado' },
-		{ value: 'BAJO', label: '⚪ BAJO - Bajo riesgo' }
+		{ value: 'BAJO', label: '🟢 BAJO - Bajo riesgo' }
 	];
 
 	// Handler para Ctrl+S
@@ -256,6 +264,26 @@
 				form.requestSubmit();
 			}
 		}
+	}
+
+	// Handler para crear nueva empresa (Inline)
+	async function handleCrearEmpresa() {
+		if (!nuevaEmpresaNombre.trim()) return;
+
+		creatingEmpresa = true;
+		const res = await submitCreateEmpresa(nuevaEmpresaNombre);
+
+		if (res.ok && res.empresa) {
+			await empresaStore.refresh(); // Recargar lista
+			// Seleccionar la nueva empresa
+			$form.empresaId = res.empresa.id;
+			$form.empresaNombre = res.empresa.nombre;
+			showEmpresaModal = false;
+			nuevaEmpresaNombre = ''; // Reset
+		} else if (!res.ok) {
+			console.error('Error creando empresa:', res.error);
+		}
+		creatingEmpresa = false;
 	}
 </script>
 
@@ -405,20 +433,85 @@
 								</div>
 							</div>
 
-							<!-- Empresa (Full Width) -->
-							<div>
-								<label for="empresaNombre" class={labelClass}>Empresa</label>
-								<input
-									id="empresaNombre"
-									name="empresaNombre"
-									type="text"
-									bind:value={$form.empresaNombre}
-									disabled={loading || !!selectedPersona}
-									class="{inputClass} {getFieldStateClass('empresaNombre')}"
-									placeholder={selectedPersona ? '' : 'Nombre de empresa'}
-									{...$constraints.empresaNombre}
-								/>
-								{#if $errors.empresaNombre}<p class={errorClass}>{$errors.empresaNombre}</p>{/if}
+							<!-- Empresa (Full Width, Dropdown + Add Button) -->
+							<div class="relative">
+								<label for="empresaId" class={labelClass}>Empresa</label>
+								<div class="flex gap-2 relative">
+									<!-- Custom Dropdown Trigger -->
+									<div class="relative flex-1">
+										<button
+											type="button"
+											onclick={() => (showEmpresaDropdown = !showEmpresaDropdown)}
+											disabled={loading || !!selectedPersona}
+											class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {showEmpresaDropdown
+												? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
+												: getFieldStateClass(
+														'empresaId'
+													)} disabled:cursor-not-allowed disabled:opacity-60"
+										>
+											<span class="truncate">
+												{#if empresaStore.loading}
+													Cargando...
+												{:else}
+													{empresaStore.empresas.find((e) => e.id === $form.empresaId)?.nombre ||
+														'Seleccione empresa'}
+												{/if}
+											</span>
+											<ChevronDown size={16} class="text-secondary" />
+										</button>
+
+										<!-- Dropdown Options -->
+										{#if showEmpresaDropdown && !selectedPersona}
+											<!-- Backdrop -->
+											<!-- svelte-ignore a11y_click_events_have_key_events -->
+											<!-- svelte-ignore a11y_no_static_element_interactions -->
+											<div
+												class="fixed inset-0 z-40"
+												onclick={() => (showEmpresaDropdown = false)}
+											></div>
+
+											<div
+												class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top max-h-60 overflow-y-auto"
+												transition:fly={{ y: -5, duration: 200 }}
+											>
+												{#if !empresaStore.empresas || empresaStore.empresas.length === 0}
+													<div class="px-3 py-2 text-sm text-gray-500">No hay empresas</div>
+												{:else}
+													{#each empresaStore.empresas as empresa}
+														<button
+															type="button"
+															onclick={() => {
+																$form.empresaId = empresa.id;
+																$form.empresaNombre = empresa.nombre; // Sync name too
+																showEmpresaDropdown = false;
+															}}
+															class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+														>
+															<span>{empresa.nombre}</span>
+															{#if $form.empresaId === empresa.id}
+																<CheckCircle size={14} class="text-white" />
+															{/if}
+														</button>
+													{/each}
+												{/if}
+											</div>
+										{/if}
+									</div>
+
+									<!-- Add Button -->
+									{#if !isEditMode && !selectedPersona}
+										<button
+											type="button"
+											onclick={() => (showEmpresaModal = true)}
+											disabled={loading}
+											class="px-3 py-1.5 rounded-lg border border-white/10 bg-black/20 text-secondary hover:text-white hover:bg-white/5 transition-colors"
+											title="Añadir nueva empresa"
+										>
+											<Plus size={16} />
+										</button>
+									{/if}
+								</div>
+								{#if $errors.empresaId}<p class={errorClass}>{$errors.empresaId}</p>{/if}
 							</div>
 
 							<!-- Nivel de Severidad CUSTOM DROPDOWN (Full Width) -->
@@ -433,10 +526,10 @@
 										'nivelSeveridad'
 									)} 
                                     {$form.nivelSeveridad === 'ALTO'
-										? 'text-red-400 border-red-500/30'
+										? '!text-red-400 !border-red-500/50 !ring-1 !ring-red-500/20'
 										: $form.nivelSeveridad === 'MEDIO'
-											? 'text-yellow-400 border-yellow-500/30'
-											: 'text-green-400 border-green-500/30'}"
+											? '!text-yellow-400 !border-yellow-500/50 !ring-1 !ring-yellow-500/20'
+											: '!text-green-400 !border-green-500/50 !ring-1 !ring-green-500/20'}"
 								>
 									<span class="truncate">
 										{severidadOptions.find((o) => o.value === $form.nivelSeveridad)?.label ||
@@ -541,6 +634,58 @@
 			</form>
 		</div>
 	</div>
+
+	<!-- Modal Inline para Crear Empresa -->
+	{#if showEmpresaModal}
+		<div
+			class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+			transition:fade={{ duration: 150 }}
+		>
+			<!-- Backdrop click -->
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="absolute inset-0" onclick={() => (showEmpresaModal = false)}></div>
+
+			<div
+				class="relative w-full max-w-[320px] bg-surface-2 rounded-xl shadow-2xl border border-surface overflow-hidden"
+				transition:fly={{ y: 10, duration: 200 }}
+			>
+				<div class="px-5 py-4">
+					<h3 class="text-sm font-semibold text-white mb-4">Nueva Empresa</h3>
+					<div class="space-y-1">
+						<label for="newEmpresa" class={labelClass}>Nombre Comercial</label>
+						<input
+							id="newEmpresa"
+							type="text"
+							bind:value={nuevaEmpresaNombre}
+							placeholder="Ej: Servicios Generales S.A."
+							disabled={creatingEmpresa}
+							class={inputClass}
+							onkeydown={(e) => e.key === 'Enter' && handleCrearEmpresa()}
+						/>
+					</div>
+				</div>
+				<div class="flex justify-end gap-2 px-5 py-3 border-t border-surface bg-surface-1">
+					<button
+						type="button"
+						disabled={creatingEmpresa}
+						onclick={() => (showEmpresaModal = false)}
+						class="px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary transition-all duration-200 hover:border-white/60 hover:text-white/80"
+					>
+						Cancelar
+					</button>
+					<button
+						type="button"
+						disabled={creatingEmpresa || !nuevaEmpresaNombre.trim()}
+						onclick={handleCrearEmpresa}
+						class="px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary transition-all duration-200 hover:border-blue-500 hover:text-blue-500 disabled:opacity-50"
+					>
+						{creatingEmpresa ? 'Guardando...' : 'Guardar'}
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 {/if}
 
 <style>
