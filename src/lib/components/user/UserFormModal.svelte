@@ -380,7 +380,7 @@
 
 		// Solo actualizar si hay caracteres inválidos que remover
 		if (input.value !== newValue) {
-			$form[field] = newValue;
+			($form as any)[field] = newValue;
 			input.value = newValue;
 		}
 	}
@@ -409,14 +409,14 @@
 		let value = input.value.replace(/[^0-9]/g, '');
 		if (value.length > 11) value = value.substring(0, 11);
 		if (value === '') {
-			$form[field] = '';
+			($form as any)[field] = '';
 			return;
 		}
 		let formatted = '+';
 		if (value.length > 0) formatted += value.substring(0, 3);
 		if (value.length > 3) formatted += ' ' + value.substring(3, 7);
 		if (value.length > 7) formatted += '-' + value.substring(7, 11);
-		$form[field] = formatted;
+		($form as any)[field] = formatted;
 		if (input.value !== formatted) {
 			input.value = formatted;
 			input.setSelectionRange(formatted.length, formatted.length);

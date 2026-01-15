@@ -76,7 +76,7 @@
 						<div>
 							<h3 class="font-bold">Ingreso Previo Activo</h3>
 							<div class="text-xs">
-								Entrada: {new Date(ingresoAbierto.fecha_ingreso).toLocaleString()}
+								Entrada: {new Date(ingresoAbierto.fechaHoraIngreso).toLocaleString()}
 							</div>
 						</div>
 					</div>

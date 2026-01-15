@@ -137,7 +137,7 @@
 		const cols = ContratistaColumns.getColumns(handleStatusChange);
 
 		return cols.map(
-			(col) => (col) =>
+			(col) =>
 				({
 					...col,
 					field: col.field as string,

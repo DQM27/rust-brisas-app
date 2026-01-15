@@ -17,8 +17,10 @@
 	import { currentUser } from '$lib/stores/auth';
 	import { invoke } from '@tauri-apps/api/core';
 
+	import type { VehiculoResponse } from '$lib/types/vehiculo';
+
 	interface FormPerson extends Partial<ContratistaResponse> {
-		vehiculos?: { id: string; placa: string; marca?: string; modelo?: string }[];
+		vehiculos?: VehiculoResponse[];
 		empresa?: string; // Legacy name often returned by search/validation
 		tipo?: string;
 	}
@@ -64,8 +66,7 @@
 	// Computed: tiene PRAIND vigente?
 	let tienePraind = $derived(
 		validationResult?.persona?.praindVigente === true ||
-			validationResult?.contratista?.praind_vigente === true ||
-			validationResult?.contratista?.praindVigente === true
+			validationResult?.contratista?.praindVencido === false
 	);
 
 	// Computed: vehículos disponibles
@@ -135,8 +136,8 @@
 				JSON.stringify(validationResult, null, 2)
 			);
 			console.log(
-				'[IngresoFormModal] contratista praind_vigente:',
-				validationResult?.contratista?.praind_vigente
+				'[IngresoFormModal] contratista praindVencido:',
+				validationResult?.contratista?.praindVencido
 			);
 			console.log(
 				'[IngresoFormModal] persona praindVigente:',

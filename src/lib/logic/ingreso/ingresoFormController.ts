@@ -57,7 +57,7 @@ export async function buscarYValidarContratista(contratistaId: string): Promise<
 	ingresoFormStore.setContratistaValidado({
 		contratistaId: validacion.contratista?.id || contratistaId,
 		contratistaNombre: validacion.contratista?.nombreCompleto || '',
-		contratistaData: validacion.contratista,
+		contratistaData: validacion.contratista as any, // Cast to any or ensure store accepts undefined
 		puedeIngresar: validacion.puedeIngresar,
 		mensajeValidacion: validacion.puedeIngresar ? '' : 'Contratista no autorizado para ingresar.'
 	});
@@ -225,7 +225,7 @@ export async function registrarEntrada(
 	}
 
 	// 3. Validación de modo vehículo
-	const tieneVehiculos = estado.contratistaData?.vehiculos?.length > 0;
+	const tieneVehiculos = ((estado.contratistaData as any)?.vehiculos?.length || 0) > 0;
 	const validacionModo = ingresoService.validarModoVehiculo({
 		modoIngreso: estado.modoIngreso,
 		vehiculoId: estado.vehiculoId,
