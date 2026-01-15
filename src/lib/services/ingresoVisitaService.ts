@@ -5,7 +5,9 @@ export interface CreateIngresoVisitaFullInput {
 	// Datos Visitante
 	cedula: string;
 	nombre: string;
+	segundo_nombre?: string;
 	apellido: string;
+	segundo_apellido?: string;
 	empresa_nombre?: string;
 
 	// Datos Ingreso

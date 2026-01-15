@@ -1,31 +1,34 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { fade, scale, slide } from 'svelte/transition';
+	import { onMount, onDestroy } from 'svelte';
+	import { fade, scale, fly } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
 	import {
 		X,
 		ChevronDown,
-		ChevronRight,
-		AlertTriangle,
-		User,
-		MapPin,
-		MessageSquare,
 		Plus,
-		Search,
-		Building2,
 		ShieldCheck,
 		SearchX,
-		IdCard,
-		LogOut
+		Building2,
+		UserCircle,
+		MapPin,
+		MessageSquare,
+		IdCard
 	} from 'lucide-svelte';
 
-	// Components
-	import GafeteInput from './shared/gafete/GafeteInput.svelte';
+	// Superforms & Zod v4
+	import { superForm } from 'sveltekit-superforms';
+	import { zod4 } from 'sveltekit-superforms/adapters';
+	import {
+		ingresoVisitaSchema,
+		ingresoVisitaSchemaBase,
+		type IngresoVisitaFormData
+	} from '$lib/schemas/visitaSchema';
 
 	// Logic
 	import { ingresoVisitaService } from '$lib/services/ingresoVisitaService';
 	import { getVisitanteByCedula } from '$lib/logic/visitante/visitanteService';
-	import { submitFetchActiveEmpresas } from '$lib/logic/empresa/empresaService';
+	import { empresaStore } from '$lib/stores/empresaStore.svelte';
+	import { submitCreateEmpresa } from '$lib/logic/empresa/empresaService';
 	import { currentUser } from '$lib/stores/auth';
 	import { invoke } from '@tauri-apps/api/core';
 
@@ -43,196 +46,228 @@
 	let searchingPerson = $state(false);
 	let validationResult = $state<any>(null);
 
-	// Visitor Data
-	let cedula = $state('');
-	let nombre = $state('');
-	let apellido = $state('');
-	let empresa_nombre = $state('');
-
-	// Ingress Data
-	let anfitrion = $state('');
-	let areaVisitada = $state('');
-	let motivo = $state('');
-	let gafete = $state('');
-	let observaciones = $state('');
-
 	// UI State
-	let showObservaciones = $state(false);
-	let submitted = $state(false);
-	let empresasSugeridas = $state<string[]>([]);
-	let showEmpresaSuggestions = $state(false);
+	let showEmpresaDropdown = $state(false);
+	let showEmpresaModal = $state(false);
+	let nuevaEmpresaNombre = $state('');
+	let creatingEmpresa = $state(false);
+	let empresaError = $state('');
+	let checkTimeout: ReturnType<typeof setTimeout>;
+	let cedulaDuplicateError = $state<string | null>(null);
 
-	// Reset y Validar al abrir
+	const defaultValues: IngresoVisitaFormData = {
+		cedula: '',
+		nombre: '',
+		segundoNombre: '',
+		apellido: '',
+		segundoApellido: '',
+		empresaId: '',
+		anfitrion: '',
+		areaVisitada: '',
+		motivo: '',
+		gafete: '',
+		observaciones: ''
+	};
+
+	// Superform Initialization
+	const { form, errors, constraints, enhance, reset, validate } = superForm<IngresoVisitaFormData>(
+		defaultValues,
+		{
+			SPA: true,
+			validators: zod4(ingresoVisitaSchema),
+			resetForm: false,
+			validationMethod: 'oninput',
+			onUpdate: async ({ form: f }) => {
+				if (f.valid) {
+					if (validationResult && !validationResult.puedeIngresar) {
+						toast.error('Acceso restringido para esta persona');
+						return;
+					}
+
+					loading = true;
+					try {
+						// Map empresaId to name for the backend
+						const selectedEmpresa = empresaStore.empresas.find((e) => e.id === f.data.empresaId);
+
+						await ingresoVisitaService.createIngreso({
+							cedula: f.data.cedula.trim(),
+							nombre: f.data.nombre.trim(),
+							segundo_nombre: f.data.segundoNombre.trim() || undefined,
+							apellido: f.data.apellido.trim(),
+							segundo_apellido: f.data.segundoApellido.trim() || undefined,
+							empresa_nombre: selectedEmpresa?.nombre || undefined,
+							anfitrion: f.data.anfitrion.trim(),
+							area_visitada: f.data.areaVisitada.trim(),
+							motivo: f.data.motivo.trim(),
+							gafete: f.data.gafete.trim() || undefined,
+							observaciones: f.data.observaciones.trim() || undefined,
+							usuario_ingreso_id: $currentUser?.id || ''
+						});
+
+						toast.success('Ingreso de visita registrado');
+						handleClose();
+						if (onComplete) onComplete();
+					} catch (e: any) {
+						console.error(e);
+						toast.error('Error al registrar: ' + (e.message || String(e)));
+					} finally {
+						loading = false;
+					}
+				}
+			}
+		}
+	);
+
+	// Sync y Reset al abrir
 	$effect(() => {
 		if (show) {
+			empresaStore.init();
 			if (initialPerson) {
 				fillPersonData(initialPerson);
 			} else {
 				reset();
+				validationResult = null;
+				cedulaDuplicateError = null;
 			}
 		}
 	});
 
-	onMount(async () => {
-		const res = await submitFetchActiveEmpresas();
-		if (res.ok) {
-			empresasSugeridas = res.empresas.map((e) => e.nombre);
-		}
+	onDestroy(() => {
+		if (checkTimeout) clearTimeout(checkTimeout);
 	});
 
-	function fillPersonData(person: any) {
-		cedula = person.cedula || '';
-		nombre = person.nombre || '';
-		apellido = person.apellido || '';
-		empresa_nombre = person.empresa || person.empresa_nombre || person.procedencia || '';
+	async function fillPersonData(person: any) {
+		const data = {
+			cedula: person.cedula || '',
+			nombre: person.nombre || '',
+			segundoNombre: person.segundoNombre || '',
+			apellido: person.apellido || '',
+			segundoApellido: person.segundoApellido || '',
+			empresaId: '', // We'll try to find it by name if possible
+			anfitrion: '',
+			areaVisitada: '',
+			motivo: '',
+			gafete: '',
+			observaciones: ''
+		};
 
-		if (person.id || person.cedula) {
+		// Try to match enterprise name to ID for the dropdown
+		if (person.empresa_nombre) {
+			const matched = empresaStore.empresas.find(
+				(e) => e.nombre.toLowerCase() === person.empresa_nombre.toLowerCase()
+			);
+			if (matched) data.empresaId = matched.id;
+		}
+
+		reset({ data });
+
+		if (person.cedula) {
 			validarAcceso(person.cedula);
 		}
 	}
 
-	async function handleCedulaBlur() {
-		if (!cedula || cedula.length < 5) return;
+	async function handleCedulaInput(event: Event) {
+		const input = event.target as HTMLInputElement;
+		const val = input.value;
+		$form.cedula = val;
 
-		searchingPerson = true;
-		try {
-			const res = await getVisitanteByCedula(cedula);
-			if (res.ok && res.data) {
-				const p = res.data;
-				nombre = p.nombre;
-				apellido = p.apellido;
-				empresa_nombre = p.empresaNombre || '';
-				toast.success('Visitante encontrado');
-			}
-			await validarAcceso(cedula);
-		} catch (e) {
-			console.error(e);
-		} finally {
-			searchingPerson = false;
+		if (checkTimeout) clearTimeout(checkTimeout);
+		validate('cedula');
+
+		if (val.length < 5) {
+			validationResult = null;
+			return;
 		}
+
+		checkTimeout = setTimeout(async () => {
+			searchingPerson = true;
+			try {
+				const res = await getVisitanteByCedula(val);
+				if (res.ok && res.data) {
+					const p = res.data;
+					$form.nombre = p.nombre;
+					$form.segundoNombre = p.segundoNombre || '';
+					$form.apellido = p.apellido;
+					$form.segundoApellido = p.segundoApellido || '';
+
+					// Sync company if found
+					if (p.empresaNombre) {
+						const matched = empresaStore.empresas.find(
+							(e) => e.nombre.toLowerCase() === p.empresaNombre!.toLowerCase()
+						);
+						if (matched) $form.empresaId = matched.id;
+					}
+					toast.success('Visitante encontrado');
+				}
+				await validarAcceso(val);
+			} catch (e) {
+				console.error(e);
+			} finally {
+				searchingPerson = false;
+			}
+		}, 500);
 	}
 
 	async function validarAcceso(ced: string) {
 		try {
-			// Usamos la cédula para validar
 			validationResult = await ingresoVisitaService.validarIngreso(ced);
-
 			if (validationResult && !validationResult.puedeIngresar) {
 				invoke('play_alert_sound');
 				toast.error(validationResult.motivoRechazo || 'Persona no autorizada');
 			}
-		} catch (e: unknown) {
-			console.error(e);
-			validationResult = { puedeIngresar: true }; // Fallback
+		} catch (e) {
+			validationResult = { puedeIngresar: true };
 		}
 	}
 
-	async function handleSubmit() {
-		if (validationResult && !validationResult.puedeIngresar) {
-			toast.error(
-				'No se puede registrar el ingreso: ' + (validationResult.motivoRechazo || 'Bloqueado')
-			);
-			return;
+	async function handleCrearEmpresa() {
+		if (!nuevaEmpresaNombre.trim()) return;
+		creatingEmpresa = true;
+		empresaError = '';
+		const result = await submitCreateEmpresa(nuevaEmpresaNombre);
+		if (result.ok) {
+			empresaStore.add(result.empresa);
+			$form.empresaId = result.empresa.id;
+			nuevaEmpresaNombre = '';
+			showEmpresaModal = false;
+		} else {
+			empresaError = result.error;
 		}
-
-		if (
-			!cedula.trim() ||
-			!nombre.trim() ||
-			!apellido.trim() ||
-			!anfitrion.trim() ||
-			!areaVisitada.trim() ||
-			!motivo.trim()
-		) {
-			submitted = true;
-			toast.error('Por favor complete los campos requeridos');
-			return;
-		}
-
-		loading = true;
-		try {
-			await ingresoVisitaService.createIngreso({
-				cedula: cedula.trim(),
-				nombre: nombre.trim(),
-				apellido: apellido.trim(),
-				empresa_nombre: empresa_nombre.trim() || undefined,
-				anfitrion: anfitrion.trim(),
-				area_visitada: areaVisitada.trim(),
-				motivo: motivo.trim(),
-				gafete: gafete.trim() || undefined,
-				observaciones: observaciones.trim() || undefined,
-				usuario_ingreso_id: $currentUser?.id || ''
-			});
-
-			toast.success('Ingreso de visita registrado');
-			show = false;
-			reset();
-			if (onComplete) onComplete();
-		} catch (e: unknown) {
-			console.error(e);
-			const msg = e instanceof Error ? e.message : String(e);
-			toast.error('Error al registrar: ' + msg);
-		} finally {
-			loading = false;
-		}
+		creatingEmpresa = false;
 	}
 
 	function handleClose() {
-		show = false;
-		reset();
-	}
-
-	function reset() {
-		validationResult = null;
-		cedula = '';
-		nombre = '';
-		apellido = '';
-		empresa_nombre = '';
-		gafete = '';
-		anfitrion = '';
-		areaVisitada = '';
-		motivo = '';
-		observaciones = '';
-		showObservaciones = false;
-		submitted = false;
-		searchingPerson = false;
-	}
-
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') handleClose();
-		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-			e.preventDefault();
-			handleSubmit();
+		if (!loading) {
+			show = false;
+			reset();
 		}
 	}
 
-	// --- UI PATTERNS ---
-	const inputClass =
-		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 transition-all outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20';
-	const labelClass = 'block text-[11px] font-medium text-secondary mb-1 uppercase tracking-wider';
-
-	function getFieldStateClass(value: any, isRequired = false) {
-		const hasValue = value && String(value).trim() !== '';
-		if (isRequired && !hasValue && submitted) return '!border-red-500/50 !ring-1 !ring-red-500/20';
-		if (isRequired && hasValue) return '!border-green-500/50 !ring-1 !ring-green-500/20';
-		return 'border-white/10';
+	function handleKeydown(e: KeyboardEvent) {
+		if (!show) return;
+		if (e.key === 'Escape') handleClose();
+		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+			e.preventDefault();
+			const f = document.querySelector('form[method="POST"]') as HTMLFormElement;
+			if (f) f.requestSubmit();
+		}
 	}
 
-	let filteredCompanies = $derived(
-		empresa_nombre.length > 1
-			? empresasSugeridas.filter(
-					(c) =>
-						c.toLowerCase().includes(empresa_nombre.toLowerCase()) &&
-						c.toLowerCase() !== empresa_nombre.toLowerCase()
-				)
-			: []
-	);
+	// UI Helpers
+	const inputClass =
+		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[38px] text-sm text-white placeholder:text-gray-600 transition-all outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50';
+	const labelClass = 'block text-[11px] font-medium text-secondary mb-1 uppercase tracking-wider';
+	const errorClass = 'text-[11px] text-red-500 mt-0.5';
 
-	function selectCompany(name: string) {
-		empresa_nombre = name;
-		showEmpresaSuggestions = false;
+	function getFieldStateClass(field: keyof IngresoVisitaFormData, value: any) {
+		if ($errors[field]) return '!border-red-500/50 !ring-1 !ring-red-500/20';
+		if (value && String(value).trim() !== '')
+			return '!border-green-500/50 !ring-1 !ring-green-500/20';
+		return '';
 	}
 </script>
 
+```svelte
 <svelte:window onkeydown={handleKeydown} />
 
 {#if show}
@@ -247,26 +282,18 @@
 		tabindex="-1"
 	>
 		<div
-			class="bg-surface-2 rounded-xl shadow-2xl border border-white/10 max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
-			transition:scale={{ start: 0.95 }}
-			onclick={(e) => e.stopPropagation()}
+			class="relative z-10 w-full max-w-4xl max-h-[95vh] overflow-hidden rounded-xl bg-surface-2 shadow-2xl border border-surface flex flex-col"
+			transition:fly={{ y: 20, duration: 200 }}
 		>
 			<!-- Header -->
 			<div
-				class="px-6 py-5 border-b border-white/5 bg-gradient-to-r from-blue-600/10 to-transparent flex items-center justify-between"
+				class="flex-none flex items-center justify-between px-5 py-4 bg-surface-2 border-b border-surface"
 			>
-				<div class="flex items-center gap-3">
-					<div class="p-2 bg-blue-500/20 rounded-lg text-blue-400">
-						<Plus size={24} />
-					</div>
-					<div>
-						<h2 class="text-xl font-bold text-white tracking-tight">Registro de Ingreso</h2>
-						<p class="text-xs text-secondary mt-0.5">Módulo de Visitantes Ocasionales</p>
-					</div>
-				</div>
+				<h2 class="text-xl font-semibold text-primary">Ingreso de Visita</h2>
 				<button
 					onclick={handleClose}
-					class="p-2 hover:bg-white/10 rounded-full transition-all text-secondary hover:text-white"
+					class="text-gray-400 hover:text-white transition-colors"
+					aria-label="Cerrar"
 				>
 					<X size={20} />
 				</button>
@@ -274,251 +301,384 @@
 
 			<!-- Body -->
 			<div class="flex-1 overflow-y-auto custom-scrollbar">
-				<div class="p-6 space-y-8">
-					<!-- Seccion 1: Datos Personales -->
-					<div class="space-y-4">
-						<div class="flex items-center gap-2 pb-1 border-b border-white/5">
-							<User size={14} class="text-blue-400" />
-							<h3 class="text-sm font-semibold text-white/90 uppercase tracking-widest">
-								Datos del Visitante
-							</h3>
-						</div>
-
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				<form method="POST" use:enhance class="p-5 space-y-5">
+					<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+						<!-- Columna 1: Datos Personales -->
+						<div
+							class="bg-surface-1 rounded-lg border border-surface p-5 grid grid-cols-1 md:grid-cols-2 gap-4"
+						>
 							<div class="md:col-span-2">
-								<label for="cedula" class={labelClass}
-									>Cédula / Identificación <span class="text-xs text-secondary font-normal ml-2"
-										>(Presione Enter para buscar)</span
-									> <span class="text-red-500">*</span></label
-								>
+								<label for="cedula" class={labelClass}>
+									Cédula <span class="text-red-500 ml-0.5">*</span>
+								</label>
 								<div class="relative">
-									<Search size={14} class="absolute left-3 top-2.5 text-gray-500" />
 									<input
 										id="cedula"
-										class="{inputClass} pl-9 {getFieldStateClass(cedula, true)}"
-										bind:value={cedula}
-										onblur={handleCedulaBlur}
-										onkeydown={(e) => e.key === 'Enter' && handleCedulaBlur()}
-										placeholder="Ingrese identificación..."
+										name="cedula"
+										class="{inputClass} {getFieldStateClass('cedula', $form.cedula)}"
+										bind:value={$form.cedula}
+										oninput={handleCedulaInput}
+										placeholder="1-2345-6789"
+										disabled={loading}
+										{...$constraints.cedula}
 									/>
 									{#if searchingPerson}
-										<div class="absolute right-3 top-2.5">
+										<div class="absolute right-3 top-3">
 											<div
-												class="w-3.5 h-3.5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"
+												class="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"
 											></div>
 										</div>
 									{/if}
 								</div>
+								{#if $errors.cedula}<p class={errorClass}>{$errors.cedula}</p>{/if}
 							</div>
 
 							<div>
 								<label for="nombre" class={labelClass}
-									>Nombres <span class="text-red-500">*</span></label
+									>Nombre <span class="text-red-500 ml-0.5">*</span></label
 								>
 								<input
 									id="nombre"
-									class="{inputClass} {getFieldStateClass(nombre, true)}"
-									bind:value={nombre}
-									placeholder="Ej. Jenna"
+									name="nombre"
+									class="{inputClass} {getFieldStateClass('nombre', $form.nombre)}"
+									bind:value={$form.nombre}
+									oninput={() => validate('nombre')}
+									placeholder="Juan"
+									disabled={loading}
+								/>
+								{#if $errors.nombre}<p class={errorClass}>{$errors.nombre}</p>{/if}
+							</div>
+
+							<div>
+								<label for="segundoNombre" class={labelClass}>Segundo Nombre</label>
+								<input
+									id="segundoNombre"
+									name="segundoNombre"
+									class={inputClass}
+									bind:value={$form.segundoNombre}
+									placeholder=""
+									disabled={loading}
 								/>
 							</div>
 
 							<div>
 								<label for="apellido" class={labelClass}
-									>Apellidos <span class="text-red-500">*</span></label
+									>Apellido <span class="text-red-500 ml-0.5">*</span></label
 								>
 								<input
 									id="apellido"
-									class="{inputClass} {getFieldStateClass(apellido, true)}"
-									bind:value={apellido}
-									placeholder="Ej. Ortega"
+									name="apellido"
+									class="{inputClass} {getFieldStateClass('apellido', $form.apellido)}"
+									bind:value={$form.apellido}
+									oninput={() => validate('apellido')}
+									placeholder="Pérez"
+									disabled={loading}
+								/>
+								{#if $errors.apellido}<p class={errorClass}>{$errors.apellido}</p>{/if}
+							</div>
+
+							<div>
+								<label for="segundoApellido" class={labelClass}>Segundo Apellido</label>
+								<input
+									id="segundoApellido"
+									name="segundoApellido"
+									class={inputClass}
+									bind:value={$form.segundoApellido}
+									placeholder=""
+									disabled={loading}
 								/>
 							</div>
 
 							<div class="md:col-span-2 relative">
-								<label for="empresa" class={labelClass}>Empresa / Procedencia</label>
-								<div class="relative">
-									<Building2 size={14} class="absolute left-3 top-2.5 text-gray-500" />
-									<input
-										id="empresa"
-										class="{inputClass} pl-9"
-										bind:value={empresa_nombre}
-										onfocus={() => (showEmpresaSuggestions = true)}
-										onblur={() => setTimeout(() => (showEmpresaSuggestions = false), 200)}
-										placeholder="Ej. Gomita S.A."
-										autocomplete="off"
-									/>
-								</div>
+								<label for="empresaId" class={labelClass}
+									>Empresa <span class="text-red-500 ml-0.5">*</span></label
+								>
+								<div class="flex gap-2 relative">
+									<div class="relative flex-1">
+										<button
+											type="button"
+											disabled={loading || empresaStore.loading}
+											onclick={() => (showEmpresaDropdown = !showEmpresaDropdown)}
+											class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {showEmpresaDropdown
+												? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
+												: getFieldStateClass('empresaId', $form.empresaId)}"
+										>
+											<span class="truncate">
+												{#if empresaStore.loading}
+													Cargando...
+												{:else}
+													{empresaStore.empresas.find((e) => e.id === $form.empresaId)?.nombre ||
+														'Seleccione empresa'}
+												{/if}
+											</span>
+											<ChevronDown size={16} class="text-secondary" />
+										</button>
 
-								{#if showEmpresaSuggestions && filteredCompanies.length > 0}
-									<div
-										class="absolute z-50 left-0 right-0 mt-1 bg-surface-3 border border-white/10 rounded-lg shadow-xl max-h-40 overflow-y-auto py-1"
-										transition:slide={{ duration: 150 }}
-									>
-										{#each filteredCompanies as comp}
-											<button
-												class="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2"
-												onclick={() => selectCompany(comp)}
+										{#if showEmpresaDropdown}
+											<div
+												class="fixed inset-0 z-40"
+												onclick={() => (showEmpresaDropdown = false)}
+												role="presentation"
+											></div>
+											<div
+												class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top max-h-60 overflow-y-auto"
+												transition:fly={{ y: -10, duration: 200 }}
 											>
-												<Building2 size={12} class="opacity-50" />
-												{comp}
-											</button>
-										{/each}
+												{#if empresaStore.empresas.length === 0}
+													<div class="px-3 py-2 text-sm text-gray-500">No hay empresas</div>
+												{:else}
+													{#each empresaStore.empresas as empresa}
+														<button
+															type="button"
+															onclick={() => {
+																$form.empresaId = empresa.id;
+																showEmpresaDropdown = false;
+																validate('empresaId');
+															}}
+															class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+														>
+															<span>{empresa.nombre}</span>
+															{#if $form.empresaId === empresa.id}
+																<ShieldCheck size={14} class="text-blue-400" />
+															{/if}
+														</button>
+													{/each}
+												{/if}
+											</div>
+										{/if}
 									</div>
-								{/if}
+									<button
+										type="button"
+										onclick={() => (showEmpresaModal = true)}
+										disabled={loading}
+										class="px-2.5 rounded-lg border border-white/10 bg-black/20 text-secondary hover:text-white hover:bg-white/5 transition-colors"
+										title="Añadir nueva empresa"
+									>
+										<Plus size={18} />
+									</button>
+								</div>
+								{#if $errors.empresaId}<p class={errorClass}>{$errors.empresaId}</p>{/if}
+							</div>
+						</div>
+
+						<!-- Columna 2: Datos del Ingreso y Validación -->
+						<div class="space-y-5">
+							<!-- Validación Status -->
+							{#if validationResult}
+								<div
+									class="p-4 rounded-xl border flex items-start gap-4 transition-all {!validationResult.puedeIngresar
+										? 'bg-red-500/10 border-red-500/20'
+										: 'bg-green-500/10 border-green-500/20'}"
+									transition:fade
+								>
+									{#if validationResult.puedeIngresar}
+										<div class="p-2 bg-green-500/20 rounded-lg text-green-400">
+											<ShieldCheck size={20} />
+										</div>
+										<div>
+											<h4 class="text-sm font-bold text-green-400 italic">ACREDITACIÓN VÁLIDA</h4>
+											<p class="text-xs text-green-500/80 mt-1">
+												El visitante no presenta restricciones.
+											</p>
+										</div>
+									{:else}
+										<div class="p-2 bg-red-500/20 rounded-lg text-red-400">
+											<SearchX size={20} />
+										</div>
+										<div class="flex-1">
+											<h4 class="text-sm font-bold text-red-400 italic">ACCESO RESTRINGIDO</h4>
+											<p class="text-xs text-red-500/80 mt-1 leading-relaxed">
+												{validationResult.motivoRechazo ||
+													'Existen registros de seguridad que impiden el ingreso.'}
+											</p>
+										</div>
+									{/if}
+								</div>
+							{/if}
+
+							<!-- Seccion 2: Datos del Ingreso -->
+							<div class="bg-surface-1 rounded-lg border border-surface p-5 space-y-4">
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+									<div class="md:col-span-2">
+										<label for="motivo" class={labelClass}
+											>Motivo <span class="text-red-500 ml-0.5">*</span></label
+										>
+										<div class="relative">
+											<MessageSquare size={14} class="absolute left-3 top-3 text-gray-500" />
+											<input
+												id="motivo"
+												name="motivo"
+												class="{inputClass} pl-9 {getFieldStateClass('motivo', $form.motivo)}"
+												bind:value={$form.motivo}
+												oninput={() => validate('motivo')}
+												placeholder="Ej. Entrevista, mantenimiento, reunión..."
+											/>
+										</div>
+										{#if $errors.motivo}<p class={errorClass}>{$errors.motivo}</p>{/if}
+									</div>
+
+									<div>
+										<label for="anfitrion" class={labelClass}
+											>Anfitrión <span class="text-red-500 ml-0.5">*</span></label
+										>
+										<div class="relative">
+											<UserCircle size={14} class="absolute left-3 top-3 text-gray-500" />
+											<input
+												id="anfitrion"
+												name="anfitrion"
+												class="{inputClass} pl-9 {getFieldStateClass('anfitrion', $form.anfitrion)}"
+												bind:value={$form.anfitrion}
+												oninput={() => validate('anfitrion')}
+												placeholder="¿A quién visita?"
+											/>
+										</div>
+										{#if $errors.anfitrion}<p class={errorClass}>{$errors.anfitrion}</p>{/if}
+									</div>
+
+									<div>
+										<label for="area" class={labelClass}
+											>Área <span class="text-red-500 ml-0.5">*</span></label
+										>
+										<div class="relative">
+											<MapPin size={14} class="absolute left-3 top-3 text-gray-500" />
+											<input
+												id="area"
+												name="areaVisitada"
+												class="{inputClass} pl-9 {getFieldStateClass(
+													'areaVisitada',
+													$form.areaVisitada
+												)}"
+												bind:value={$form.areaVisitada}
+												oninput={() => validate('areaVisitada')}
+												placeholder="Piso, etc."
+											/>
+										</div>
+										{#if $errors.areaVisitada}<p class={errorClass}>{$errors.areaVisitada}</p>{/if}
+									</div>
+
+									<div class="md:col-span-2">
+										<label
+											class="block text-[11px] font-bold uppercase tracking-wider text-secondary mb-2"
+											for="gafete"
+										>
+											Gafete
+										</label>
+										<div class="flex items-center">
+											<div class="relative w-[80px] group">
+												<div
+													class="absolute inset-0 bg-blue-500/5 rounded-lg opacity-0 group-focus-within:opacity-100 transition-opacity"
+												></div>
+												<input
+													id="gafete"
+													name="gafete"
+													type="text"
+													bind:value={$form.gafete}
+													placeholder="00"
+													class="w-full h-12 bg-black/20 border border-white/10 rounded-lg text-center font-mono text-2xl tracking-widest text-white focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all placeholder:text-gray-700"
+													autocomplete="off"
+												/>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<textarea
+									name="observaciones"
+									bind:value={$form.observaciones}
+									class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white resize-none outline-none focus:border-blue-500/50"
+									rows="2"
+									placeholder="Observaciones..."
+								></textarea>
 							</div>
 						</div>
 					</div>
 
-					<!-- Validación Status -->
-					{#if validationResult}
-						<div
-							class="p-4 rounded-xl border flex items-start gap-4 transition-all {!validationResult.puedeIngresar
-								? 'bg-red-500/10 border-red-500/20'
-								: 'bg-green-500/10 border-green-500/20'}"
-							transition:slide
+					<!-- Footer Actions (Inside Form) -->
+					<div
+						class="flex-none flex items-center justify-center gap-4 px-6 py-4 border-t border-surface bg-surface-1 sticky bottom-0 z-20"
+					>
+						<button
+							type="button"
+							onclick={handleClose}
+							disabled={loading}
+							class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white text-sm"
 						>
-							{#if validationResult.puedeIngresar}
-								<div class="p-2 bg-green-500/20 rounded-lg text-green-400">
-									<ShieldCheck size={20} />
-								</div>
-								<div>
-									<h4 class="text-sm font-bold text-green-400 italic">ACREDITACIÓN VÁLIDA</h4>
-									<p class="text-xs text-green-500/80 mt-1">
-										El visitante no presenta restricciones para el ingreso.
-									</p>
-								</div>
-							{:else}
-								<div class="p-2 bg-red-500/20 rounded-lg text-red-400">
-									<SearchX size={20} />
-								</div>
-								<div class="flex-1">
-									<h4 class="text-sm font-bold text-red-400 italic">ACCESO RESTRINGIDO</h4>
-									<p class="text-xs text-red-500/80 mt-1 leading-relaxed">
-										{validationResult.motivoRechazo ||
-											'Existen registros de seguridad que impiden el ingreso de esta persona.'}
-									</p>
-								</div>
+							Cancelar
+						</button>
+						<button
+							type="submit"
+							disabled={loading}
+							class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm flex items-center justify-center gap-2"
+						>
+							{#if loading}
+								<div
+									class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"
+								></div>
 							{/if}
-						</div>
-					{/if}
-
-					<!-- Seccion 2: Datos del Ingreso -->
-					<div class="space-y-4">
-						<div class="flex items-center gap-2 pb-1 border-b border-white/5">
-							<LogOut size={14} class="text-blue-400 rotate-180" />
-							<h3 class="text-sm font-semibold text-white/90 uppercase tracking-widest">
-								Detalles de la Visita
-							</h3>
-						</div>
-
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div class="md:col-span-2">
-								<label for="gafete" class={labelClass}>Gafete Asignado</label>
-								<div class="relative">
-									<IdCard size={14} class="absolute left-3 top-2.5 text-gray-500" />
-									<input
-										id="gafete"
-										class="{inputClass} pl-9"
-										bind:value={gafete}
-										placeholder="Número de gafete físico"
-									/>
-								</div>
-							</div>
-
-							<div>
-								<label for="anfitrion" class={labelClass}
-									>Anfitrión <span class="text-red-500">*</span></label
-								>
-								<div class="relative">
-									<User size={14} class="absolute left-3 top-2.5 text-gray-500" />
-									<input
-										id="anfitrion"
-										class="{inputClass} pl-9 {getFieldStateClass(anfitrion, true)}"
-										bind:value={anfitrion}
-										placeholder="¿A quién visita?"
-									/>
-								</div>
-							</div>
-
-							<div>
-								<label for="area" class={labelClass}
-									>Área Destino <span class="text-red-500">*</span></label
-								>
-								<div class="relative">
-									<MapPin size={14} class="absolute left-3 top-2.5 text-gray-500" />
-									<input
-										id="area"
-										class="{inputClass} pl-9 {getFieldStateClass(areaVisitada, true)}"
-										bind:value={areaVisitada}
-										placeholder="Piso, departamento, etc."
-									/>
-								</div>
-							</div>
-
-							<div class="md:col-span-2">
-								<label for="motivo" class={labelClass}
-									>Motivo del Ingreso <span class="text-red-500">*</span></label
-								>
-								<div class="relative">
-									<MessageSquare size={14} class="absolute left-3 top-2.5 text-gray-500" />
-									<input
-										id="motivo"
-										class="{inputClass} pl-9 {getFieldStateClass(motivo, true)}"
-										bind:value={motivo}
-										placeholder="Ej. Entrevista, mantenimiento, reunión..."
-									/>
-								</div>
-							</div>
-						</div>
-
-						<!-- Observaciones toggle -->
-						<div class="pt-2">
-							<button
-								type="button"
-								onclick={() => (showObservaciones = !showObservaciones)}
-								class="text-xs text-secondary hover:text-white flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 transition-all"
-							>
-								{#if showObservaciones}<ChevronDown size={14} />{:else}<ChevronRight
-										size={14}
-									/>{/if}
-								Información Adicional
-							</button>
-							{#if showObservaciones}
-								<div transition:slide={{ duration: 200 }} class="mt-3">
-									<textarea
-										bind:value={observaciones}
-										class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white resize-none outline-none focus:border-blue-500/50 transition-all"
-										rows="3"
-										placeholder="Cualquier aclaración relevante para este ingreso..."
-									></textarea>
-								</div>
-							{/if}
-						</div>
+							Crear Ingreso
+						</button>
 					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Modal para nueva empresa (Anidado) -->
+{#if showEmpresaModal}
+	<div
+		class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+		transition:fade={{ duration: 150 }}
+	>
+		<div
+			class="absolute inset-0"
+			onclick={() => !creatingEmpresa && (showEmpresaModal = false)}
+			role="presentation"
+		></div>
+
+		<div
+			class="relative w-full max-w-sm rounded-xl bg-surface-2 shadow-2xl border border-surface overflow-hidden"
+			transition:scale={{ start: 0.95 }}
+		>
+			<div class="px-5 py-4 border-b border-surface bg-surface-1">
+				<h3 class="text-base font-semibold text-primary">Nueva Empresa</h3>
+			</div>
+
+			<div class="p-5 space-y-4">
+				{#if empresaError}
+					<div class="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-300">
+						{empresaError}
+					</div>
+				{/if}
+				<div class="space-y-1">
+					<label for="newEmpresa" class={labelClass}>Nombre Comercial</label>
+					<input
+						id="newEmpresa"
+						type="text"
+						bind:value={nuevaEmpresaNombre}
+						placeholder="Ej: Brisas S.A."
+						disabled={creatingEmpresa}
+						class={inputClass}
+						onkeydown={(e) => e.key === 'Enter' && handleCrearEmpresa()}
+					/>
 				</div>
 			</div>
 
-			<!-- Footer -->
-			<div class="px-6 py-5 border-t border-white/5 bg-surface-1 flex justify-end gap-3">
+			<div class="flex justify-end gap-2 px-5 py-4 border-t border-surface bg-surface-1">
 				<button
-					onclick={handleClose}
-					disabled={loading}
-					class="px-5 py-2.5 rounded-lg border border-white/10 text-secondary hover:bg-white/5 hover:text-white transition-all text-sm font-medium disabled:opacity-50"
+					type="button"
+					onclick={() => (showEmpresaModal = false)}
+					class="px-4 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary hover:border-white/60 hover:text-white"
 				>
 					Cancelar
 				</button>
 				<button
-					onclick={handleSubmit}
-					disabled={loading || (validationResult && !validationResult.puedeIngresar)}
-					class="px-8 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 transition-all text-sm font-bold flex items-center gap-2 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed"
+					type="button"
+					disabled={creatingEmpresa || !nuevaEmpresaNombre.trim()}
+					onclick={handleCrearEmpresa}
+					class="px-5 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary hover:border-success hover:text-success"
 				>
-					{#if loading}
-						<div
-							class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
-						></div>
-					{/if}
-					REGISTRAR INGRESO
+					{creatingEmpresa ? 'Guardando...' : 'Guardar'}
 				</button>
 			</div>
 		</div>

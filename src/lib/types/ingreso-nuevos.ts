@@ -2,7 +2,9 @@ export interface IngresoVisita {
 	id: string;
 	cedula: string;
 	nombre: string;
+	segundoNombre?: string;
 	apellido: string;
+	segundoApellido?: string;
 	empresaNombre?: string;
 	anfitrion: string;
 	areaVisitada: string;

@@ -5,7 +5,8 @@ import {
 	NOMBRE_MAX_LEN,
 	SEGUNDO_NOMBRE_MAX_LEN,
 	PLACA_MAX_LEN,
-	ENTIDAD_NOMBRE_MAX_LEN
+	ENTIDAD_NOMBRE_MAX_LEN,
+	OBSERVACIONES_MAX_LEN
 } from './domainConstants';
 
 // ==========================================
@@ -83,3 +84,37 @@ export const VisitaSchema = z
 	});
 
 export type VisitaForm = z.infer<typeof VisitaSchema>;
+
+// ==========================================
+// INGRESO DIRECTO SCHEMA (SUPERFORMS)
+// ==========================================
+
+export const ingresoVisitaSchemaBase = z.object({
+	cedula: z.string().default(''),
+	nombre: z.string().default(''),
+	segundoNombre: z.string().default(''),
+	apellido: z.string().default(''),
+	segundoApellido: z.string().default(''),
+	empresaId: z.string().default(''),
+	anfitrion: z.string().default(''),
+	areaVisitada: z.string().default(''),
+	motivo: z.string().default(''),
+	gafete: z.string().default(''),
+	observaciones: z.string().default('')
+});
+
+export const ingresoVisitaSchema = z.object({
+	cedula: cedulaSchema,
+	nombre: nombreSchema,
+	segundoNombre: opcionalTextoSchema,
+	apellido: apellidoSchema,
+	segundoApellido: opcionalTextoSchema,
+	empresaId: z.string().min(1, 'Empresa requerida'),
+	anfitrion: z.string().trim().min(1, 'Anfitrión requerido').max(NOMBRE_MAX_LEN),
+	areaVisitada: z.string().trim().min(1, 'Área requerida').max(NOMBRE_MAX_LEN),
+	motivo: z.string().trim().min(1, 'Motivo requerido').max(200),
+	gafete: z.string().trim().max(20).optional().or(z.literal('')),
+	observaciones: z.string().trim().max(OBSERVACIONES_MAX_LEN).optional().or(z.literal(''))
+});
+
+export type IngresoVisitaFormData = z.infer<typeof ingresoVisitaSchemaBase>;
