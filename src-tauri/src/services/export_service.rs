@@ -67,7 +67,7 @@ pub async fn export_data(request: ExportRequest) -> ExportResult<ExportResponse>
     let result = match export_data.format {
         ExportFormat::Pdf => export_to_pdf_internal(export_data).await,
         ExportFormat::Excel => export_to_excel_internal(export_data).await,
-        ExportFormat::Csv => export_to_csv_internal(export_data).await,
+        ExportFormat::Csv => export_to_csv_internal(export_data),
     };
 
     if result.is_ok() {
@@ -216,13 +216,11 @@ async fn export_to_pdf_internal(data: ExportData) -> ExportResult<ExportResponse
         .pdf_config
         .ok_or_else(|| ExportError::Unknown("Config PDF no encontrada".to_string()))?;
 
-    // ✅ Obtener PERFIL (usando template_id como profile_id por compatibilidad o default)
-    let profile = if let Some(ref id) = config.template_id {
-        export_profile_service::get_profile_by_id(id)
-            .or_else(export_profile_service::get_default_profile)
-    } else {
-        export_profile_service::get_default_profile()
-    };
+    let profile = config
+        .template_id
+        .as_ref()
+        .and_then(|id| export_profile_service::get_profile_by_id(id))
+        .or_else(export_profile_service::get_default_profile);
 
     // Obtener diseño del perfil o usar uno default al vuelo
     let design = profile.and_then(|p| p.pdf_design).unwrap_or_else(|| PdfDesign {
@@ -316,7 +314,7 @@ async fn export_to_excel_internal(_data: ExportData) -> ExportResult<ExportRespo
 }
 
 /// Exporta a CSV (sin dependencias externas)
-async fn export_to_csv_internal(data: ExportData) -> ExportResult<ExportResponse> {
+fn export_to_csv_internal(data: ExportData) -> ExportResult<ExportResponse> {
     use crate::export::csv;
 
     let config = data

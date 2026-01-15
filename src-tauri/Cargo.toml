@@ -186,7 +186,7 @@ struct_excessive_bools = "allow"     # Structs con múltiples booleanos OK
 struct_field_names = "allow"         # Nombres de campos flexibles
 unnecessary_wraps = "allow"          # Result<T> para consistencia de API
 manual_let_else = "allow"            # Permitir if let sin let-else
-collapsible_match = "allow"          # Matches anidados para claridad
+collapsible_match = "warn"          # Detectar matches colapsables
 field_reassign_with_default = "allow" # Inicialización incremental
 format_push_string = "allow"         # push_str(format!()) permitido
 future_not_send = "allow"            # Futures async no requieren Send
@@ -197,8 +197,9 @@ unnecessary_unwrap = "allow"         # unwrap después de is_some permitido
 redundant_pattern_matching = "allow" # Patterns redundantes para claridad
 if_same_then_else = "allow"          # Branches iguales intencionales
 assigning_clones = "allow"           # Clone en asignación permitido
-ptr_arg = "allow"                    # &String, &Vec permitidos
-unused_async = "allow"               # Async para consistencia de API
+ptr_arg = "warn"                    # Sugerir &str o &[T] en lugar de &String o &Vec
+unused_async = "warn"               # Detectar funciones async que no lo requieren
+redundant_clone = "warn"             # Evitar clones innecesarios
 type_complexity = "warn"            # Detectar tipos excesivamente complejos
 
 [lints.rust]

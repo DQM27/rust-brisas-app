@@ -82,6 +82,96 @@ fn parse_role_id(id: &str) -> RecordId {
     }
 }
 
+/// Helper para construir el DTO de actualización de usuario y reducir complejidad.
+async fn build_user_update_dto(
+    id_thing: &RecordId,
+    input: UpdateUserInput,
+) -> Result<crate::models::user::UserUpdateDTO, UserError> {
+    let mut dto = crate::models::user::UserUpdateDTO::default();
+
+    if let Some(ref email) = input.email {
+        let normalizado = domain::normalizar_email(email);
+        let count = db::count_by_email_excluding_id(&normalizado, id_thing)
+            .await
+            .map_err(|e| UserError::Database(e.to_string()))?;
+        if count > 0 {
+            return Err(UserError::EmailExists);
+        }
+        dto.email = Some(normalizado);
+    }
+
+    if let Some(ref nombre) = input.nombre {
+        dto.nombre = Some(domain::normalizar_nombre(nombre));
+    }
+    if let Some(ref apellido) = input.apellido {
+        dto.apellido = Some(domain::normalizar_nombre(apellido));
+    }
+    if let Some(ref role_id) = input.role_id {
+        if !role_id.trim().is_empty() {
+            dto.role = Some(parse_role_id(role_id));
+        }
+    }
+    if let Some(pwd) = input.password {
+        if !pwd.trim().is_empty() {
+            let pwd_clone = pwd.clone();
+            let hash = spawn_blocking(move || auth::hash_password(&pwd_clone))
+                .await
+                .map_err(|e| UserError::Internal(format!("Error de hilo: {e}")))??;
+            dto.password_hash = Some(hash);
+        }
+    }
+    if let Some(is_active) = input.is_active {
+        dto.is_active = Some(is_active);
+    }
+    if let Some(op) = input.operacion {
+        dto.operacion = Some(op);
+    }
+    if let Some(cedula) = input.cedula {
+        dto.cedula = Some(cedula);
+    }
+    if let Some(v) = input.segundo_nombre {
+        dto.segundo_nombre = Some(v);
+    }
+    if let Some(v) = input.segundo_apellido {
+        dto.segundo_apellido = Some(v);
+    }
+    if let Some(v) = input.fecha_inicio_labores {
+        dto.fecha_inicio_labores = Some(v);
+    }
+    if let Some(v) = input.numero_gafete {
+        dto.numero_gafete = Some(v);
+    }
+    if let Some(v) = input.fecha_nacimiento {
+        if !v.is_empty() {
+            dto.fecha_nacimiento = Some(v);
+        }
+    }
+    if let Some(v) = input.telefono {
+        dto.telefono = Some(v);
+    }
+    if let Some(v) = input.direccion {
+        dto.direccion = Some(v);
+    }
+    if let Some(v) = input.contacto_emergencia_nombre {
+        dto.contacto_emergencia_nombre = Some(v);
+    }
+    if let Some(v) = input.contacto_emergencia_telefono {
+        dto.contacto_emergencia_telefono = Some(v);
+    }
+    if let Some(v) = input.vencimiento_portacion {
+        dto.vencimiento_portacion = Some(v);
+    }
+    if let Some(v) = input.must_change_password {
+        dto.must_change_password = Some(v);
+    }
+    if let Some(v) = input.avatar_path {
+        dto.avatar_path = Some(v);
+    }
+
+    dto.updated_at = Some(surrealdb::Datetime::from(chrono::Utc::now()));
+    Ok(dto)
+}
+
 // --------------------------------------------------------------------------
 // OPERACIONES DE CREACIÓN
 // --------------------------------------------------------------------------
@@ -287,90 +377,7 @@ pub async fn update_user(
         .map_err(|e| UserError::Database(e.to_string()))?
         .ok_or(UserError::NotFound)?;
 
-    let mut dto = crate::models::user::UserUpdateDTO::default();
-
-    // Actualización selectiva de campos basada en la entrada.
-    if let Some(ref email) = input.email {
-        let normalizado = domain::normalizar_email(email);
-        let count = db::count_by_email_excluding_id(&normalizado, &id_thing)
-            .await
-            .map_err(|e| UserError::Database(e.to_string()))?;
-        if count > 0 {
-            return Err(UserError::EmailExists);
-        }
-        dto.email = Some(normalizado);
-    }
-
-    if let Some(ref nombre) = input.nombre {
-        dto.nombre = Some(domain::normalizar_nombre(nombre));
-    }
-    if let Some(ref apellido) = input.apellido {
-        dto.apellido = Some(domain::normalizar_nombre(apellido));
-    }
-    if let Some(ref role_id) = input.role_id {
-        if !role_id.trim().is_empty() {
-            dto.role = Some(parse_role_id(role_id));
-        }
-    }
-    if let Some(pwd) = input.password {
-        if !pwd.trim().is_empty() {
-            // 🚀 Hashing en hilo separado
-            let pwd_clone = pwd.clone();
-            let hash = spawn_blocking(move || auth::hash_password(&pwd_clone))
-                .await
-                .map_err(|e| UserError::Internal(format!("Error de hilo: {e}")))??;
-            dto.password_hash = Some(hash);
-        }
-    }
-    if let Some(is_active) = input.is_active {
-        dto.is_active = Some(is_active);
-    }
-    if let Some(op) = input.operacion {
-        dto.operacion = Some(op);
-    }
-    if let Some(cedula) = input.cedula {
-        dto.cedula = Some(cedula);
-    }
-    if let Some(v) = input.segundo_nombre {
-        dto.segundo_nombre = Some(v);
-    }
-    if let Some(v) = input.segundo_apellido {
-        dto.segundo_apellido = Some(v);
-    }
-    if let Some(v) = input.fecha_inicio_labores {
-        dto.fecha_inicio_labores = Some(v);
-    }
-    if let Some(v) = input.numero_gafete {
-        dto.numero_gafete = Some(v);
-    }
-    if let Some(v) = input.fecha_nacimiento {
-        if !v.is_empty() {
-            dto.fecha_nacimiento = Some(v);
-        }
-    }
-    if let Some(v) = input.telefono {
-        dto.telefono = Some(v);
-    }
-    if let Some(v) = input.direccion {
-        dto.direccion = Some(v);
-    }
-    if let Some(v) = input.contacto_emergencia_nombre {
-        dto.contacto_emergencia_nombre = Some(v);
-    }
-    if let Some(v) = input.contacto_emergencia_telefono {
-        dto.contacto_emergencia_telefono = Some(v);
-    }
-    if let Some(v) = input.vencimiento_portacion {
-        dto.vencimiento_portacion = Some(v);
-    }
-    if let Some(v) = input.must_change_password {
-        dto.must_change_password = Some(v);
-    }
-    if let Some(v) = input.avatar_path {
-        dto.avatar_path = Some(v);
-    }
-
-    dto.updated_at = Some(surrealdb::Datetime::from(chrono::Utc::now()));
+    let dto = build_user_update_dto(&id_thing, input).await?;
 
     let user = db::update(&id_thing, dto)
         .await

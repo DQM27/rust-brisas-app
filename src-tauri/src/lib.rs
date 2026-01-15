@@ -30,11 +30,7 @@ pub struct AppState {
     pub backend_ready: AtomicBool,
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-#[allow(clippy::large_stack_frames)]
-pub fn run() {
-    let mut builder = tauri::Builder::default();
-
+fn setup_plugins(mut builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
     // Configuración del sistema de logs.
     builder = builder.plugin(
         tauri_plugin_log::Builder::new()
@@ -59,6 +55,15 @@ pub fn run() {
             }
         }));
     }
+    builder
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+#[allow(clippy::large_stack_frames, clippy::too_many_lines)]
+pub fn run() {
+    let mut builder = tauri::Builder::default();
+
+    builder = setup_plugins(builder);
 
     builder
         .setup(|app| {

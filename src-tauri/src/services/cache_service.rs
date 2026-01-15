@@ -55,12 +55,15 @@ impl<T: Clone> CacheEntry<T> {
 /// Tiempo de vida por defecto para las entradas de cache (5 minutos).
 pub const CACHE_TTL: u64 = 300;
 
+/// Alias de tipo para reducir la complejidad visual de las firmas de cache.
+type CacheMap<T> = Arc<RwLock<HashMap<String, CacheEntry<T>>>>;
+
 /// Cache de alta velocidad para Contratistas.
-pub static CONTRATISTA_CACHE: Lazy<Arc<RwLock<HashMap<String, CacheEntry<ContratistaFetched>>>>> =
+pub static CONTRATISTA_CACHE: Lazy<CacheMap<ContratistaFetched>> =
     Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
 
 /// Cache de alta velocidad para Proveedores.
-pub static PROVEEDOR_CACHE: Lazy<Arc<RwLock<HashMap<String, CacheEntry<ProveedorFetched>>>>> =
+pub static PROVEEDOR_CACHE: Lazy<CacheMap<ProveedorFetched>> =
     Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
 
 // --------------------------------------------------------------------------

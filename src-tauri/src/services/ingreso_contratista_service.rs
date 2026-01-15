@@ -144,33 +144,7 @@ where
 
         let motor_res = motor::ejecutar_validacion_motor(&motor_ctx);
 
-        // Convertir alertas a lista de strings para el frontend
-        let alertas_str: Vec<String> = alertas_pendientes
-            .iter()
-            .map(|a| {
-                // Limpiar formato de fecha SurrealDB: d'2026-01-15T00:34:15.171651Z' -> 15/01/2026
-                let fecha_raw = a.fecha_reporte.to_string();
-                let fecha_iso = fecha_raw
-                    .trim_start_matches("d'")
-                    .trim_end_matches('\'')
-                    .split('T')
-                    .next()
-                    .unwrap_or(&fecha_raw);
-
-                // Convertir YYYY-MM-DD a DD/MM/YYYY
-                let fecha_formateada = if let Some((y, rest)) = fecha_iso.split_once('-') {
-                    if let Some((m, d)) = rest.split_once('-') {
-                        format!("{d}/{m}/{y}")
-                    } else {
-                        fecha_iso.to_string()
-                    }
-                } else {
-                    fecha_iso.to_string()
-                };
-
-                format!("Gafete #{} no devuelto ({})", a.gafete_numero, fecha_formateada)
-            })
-            .collect();
+        let alertas_str = Self::format_alertas_pendientes(&alertas_pendientes);
         let num_alertas = alertas_str.len();
 
         // Regla de negocio: máximo 2 gafetes adeudados permitidos
@@ -406,7 +380,7 @@ where
             .map_err(IngresoContratistaError::Validation)
     }
 
-    pub async fn validar_puede_salir(
+    pub const fn validar_puede_salir(
         &self,
         _ingreso_id: &str,
         _gafete: Option<&str>,
@@ -479,10 +453,37 @@ where
         Ok(responses)
     }
 
-    pub async fn verificar_tiempos_excedidos(
+    pub const fn verificar_tiempos_excedidos(
         &self,
     ) -> Result<Vec<AlertaTiempoExcedido>, IngresoContratistaError> {
         Ok(vec![])
+    }
+
+    fn format_alertas_pendientes(alertas: &[crate::models::ingreso::AlertaGafete]) -> Vec<String> {
+        alertas
+            .iter()
+            .map(|a| {
+                let fecha_raw = a.fecha_reporte.to_string();
+                let fecha_iso = fecha_raw
+                    .trim_start_matches("d'")
+                    .trim_end_matches('\'')
+                    .split('T')
+                    .next()
+                    .unwrap_or(&fecha_raw);
+
+                let fecha_formateada = if let Some((y, rest)) = fecha_iso.split_once('-') {
+                    if let Some((m, d)) = rest.split_once('-') {
+                        format!("{d}/{m}/{y}")
+                    } else {
+                        fecha_iso.to_string()
+                    }
+                } else {
+                    fecha_iso.to_string()
+                };
+
+                format!("Gafete #{} no devuelto ({})", a.gafete_numero, fecha_formateada)
+            })
+            .collect()
     }
 }
 

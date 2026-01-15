@@ -93,7 +93,6 @@ pub async fn validate_exit_contratista(
 
     create_service()
         .validar_puede_salir(&ingreso_id, gafete_devuelto.as_deref())
-        .await
         .map_err(IngresoContratistaError::Validation)
 }
 
@@ -148,5 +147,5 @@ pub async fn check_time_alerts(
 ) -> Result<Vec<AlertaTiempoExcedido>, IngresoContratistaError> {
     require_session!(session);
     require_perm!(session, "ingresos:read")?;
-    create_service().verificar_tiempos_excedidos().await
+    create_service().verificar_tiempos_excedidos()
 }

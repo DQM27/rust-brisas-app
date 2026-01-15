@@ -1,0 +1,56 @@
+    Blocking waiting for file lock on build directory
+   Compiling mega-brisas v1.0.0 (C:\Users\Daniel Quintana\Documents\GitHub\rust-brisas-app\src-tauri)
+error: this function has too many lines (120/100)
+  --> src\services\ingreso_contratista_service.rs:58:5
+   |
+58 | /     pub async fn validar_ingreso_contratista(
+59 | |         &self,
+60 | |         contratista_id_str: String,
+61 | |     ) -> Result<ValidacionIngresoResponse, IngresoContratistaError> {
+   | |___________________________________________________________________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#too_many_lines
+   = note: `-D clippy::too-many-lines` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::too_many_lines)]`
+
+error: this function has too many lines (119/100)
+   --> src\services\user_service.rs:275:1
+    |
+275 | / pub async fn update_user(
+276 | |     search_service: &Arc<SearchService>,
+277 | |     id_str: String,
+278 | |     input: UpdateUserInput,
+279 | | ) -> Result<UserResponse, UserError> {
+    | |____________________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#too_many_lines
+
+error: very complex type used. Consider factoring parts into `type` definitions
+  --> src\services\cache_service.rs:59:31
+   |
+59 | pub static CONTRATISTA_CACHE: Lazy<Arc<RwLock<HashMap<String, CacheEntry<ContratistaFetched>>>>> =
+   |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#type_complexity
+   = note: `-D clippy::type-complexity` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::type_complexity)]`
+
+error: very complex type used. Consider factoring parts into `type` definitions
+  --> src\services\cache_service.rs:63:29
+   |
+63 | pub static PROVEEDOR_CACHE: Lazy<Arc<RwLock<HashMap<String, CacheEntry<ProveedorFetched>>>>> =
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#type_complexity
+
+error: this function has too many lines (141/100)
+  --> src\lib.rs:35:1
+   |
+35 | pub fn run() {
+   | ^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#too_many_lines
+
+error: could not compile `mega-brisas` (lib) due to 5 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `mega-brisas` (lib test) due to 5 previous errors

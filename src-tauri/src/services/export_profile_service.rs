@@ -193,7 +193,7 @@ fn delete_profile_from_list(
 
 /// Lógica pura para setear default.
 fn set_default_profile_in_list(
-    profiles: &mut Vec<ExportProfile>,
+    profiles: &mut [ExportProfile],
     id: &str,
 ) -> Result<(), ExportError> {
     if !profiles.iter().any(|p| p.id == id) {

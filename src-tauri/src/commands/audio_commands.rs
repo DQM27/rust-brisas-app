@@ -90,8 +90,7 @@ pub async fn upload_custom_sound(
 }
 
 /// Comando auxiliar para reproducción directa de archivos (Stub).
-#[tauri::command]
-pub async fn play_sound(
+pub fn play_sound(
     _sound: String,
     _custom_path: Option<String>,
     _use_custom: bool,

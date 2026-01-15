@@ -1,0 +1,110 @@
+    Blocking waiting for file lock on build directory
+   Compiling mega-brisas v1.0.0 (C:\Users\Daniel Quintana\Documents\GitHub\rust-brisas-app\src-tauri)
+error: this `if let` can be collapsed into the outer `if let`
+   --> src\config\manager.rs:139:9
+    |
+139 | /         if let Some(mac) = mac {
+140 | |             let mac_str = mac.to_string().replace(':', "");
+141 | |             return Ok(format!("HW-{mac_str}"));
+142 | |         }
+    | |_________^
+    |
+help: the outer pattern can be modified to include the inner pattern
+   --> src\config\manager.rs:138:15
+    |
+138 |     if let Ok(mac) = mac_address::get_mac_address() {
+    |               ^^^ replace this binding
+139 |         if let Some(mac) = mac {
+    |                ^^^^^^^^^ with this pattern
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#collapsible_match
+    = note: `-D clippy::collapsible-match` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::collapsible_match)]`
+
+error: writing `&mut Vec` instead of `&mut [_]` involves a new object where a slice will do
+   --> src\services\export_profile_service.rs:196:15
+    |
+196 |     profiles: &mut Vec<ExportProfile>,
+    |               ^^^^^^^^^^^^^^^^^^^^^^^ help: change this to: `&mut [ExportProfile]`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#ptr_arg
+    = note: `-D clippy::ptr-arg` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::ptr_arg)]`
+
+error: unused `async` for function with no await statements
+   --> src\commands\audio_commands.rs:94:1
+    |
+ 94 | / pub async fn play_sound(
+ 95 | |     _sound: String,
+ 96 | |     _custom_path: Option<String>,
+ 97 | |     _use_custom: bool,
+ 98 | | ) -> Result<(), String> {
+ 99 | |     Ok(())
+100 | | }
+    | |_^
+    |
+    = help: consider removing the `async` from this function
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#unused_async
+    = note: `-D clippy::unused-async` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::unused_async)]`
+
+error: unused `async` for function with no await statements
+   --> src\services\export_service.rs:319:1
+    |
+319 | / async fn export_to_csv_internal(data: ExportData) -> ExportResult<ExportResponse> {
+320 | |     use crate::export::csv;
+321 | |
+322 | |     let config = data
+...   |
+335 | |     })
+336 | | }
+    | |_^
+    |
+    = help: consider removing the `async` from this function
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#unused_async
+
+error: unused `async` for function with no await statements
+   --> src\services\role_service.rs:257:1
+    |
+257 | / pub async fn get_all_permissions() -> Result<Vec<Permission>, RoleError> {
+258 | |     let mut perms = Vec::new();
+259 | |
+260 | |     for module in Module::all() {
+...   |
+273 | |     Ok(perms)
+274 | | }
+    | |_^
+    |
+    = help: consider removing the `async` from this function
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#unused_async
+
+error: unused `async` for function with no await statements
+   --> src\services\ingreso_contratista_service.rs:383:5
+    |
+383 | /     pub async fn validar_puede_salir(
+384 | |         &self,
+385 | |         _ingreso_id: &str,
+386 | |         _gafete: Option<&str>,
+387 | |     ) -> Result<ResultadoValidacionSalida, String> {
+388 | |         Ok(ResultadoValidacionSalida { puede_salir: true, errores: vec![], advertencias: vec![] })
+389 | |     }
+    | |_____^
+    |
+    = help: consider removing the `async` from this function
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#unused_async
+
+error: unused `async` for function with no await statements
+   --> src\services\ingreso_contratista_service.rs:456:5
+    |
+456 | /     pub async fn verificar_tiempos_excedidos(
+457 | |         &self,
+458 | |     ) -> Result<Vec<AlertaTiempoExcedido>, IngresoContratistaError> {
+459 | |         Ok(vec![])
+460 | |     }
+    | |_____^
+    |
+    = help: consider removing the `async` from this function
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.92.0/index.html#unused_async
+
+error: could not compile `mega-brisas` (lib) due to 7 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `mega-brisas` (lib test) due to 7 previous errors

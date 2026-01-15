@@ -40,7 +40,7 @@ pub async fn get_all_permissions(
     session: State<'_, SessionState>,
 ) -> Result<Vec<Permission>, RoleError> {
     require_perm!(session, "roles:read")?;
-    role_service::get_all_permissions().await
+    role_service::get_all_permissions()
 }
 
 /// Orquestador Reactivo: Determina qué módulos de la UI debe mostrar el frontend

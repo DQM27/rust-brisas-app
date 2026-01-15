@@ -254,7 +254,7 @@ pub async fn get_user_visible_modules(
 
 /// Genera la lista completa de permisos granulares disponibles en el sistema.
 /// Se utiliza en el panel de creación/edición de roles.
-pub async fn get_all_permissions() -> Result<Vec<Permission>, RoleError> {
+pub fn get_all_permissions() -> Result<Vec<Permission>, RoleError> {
     let mut perms = Vec::new();
 
     for module in Module::all() {

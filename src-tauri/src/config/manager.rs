@@ -135,11 +135,9 @@ pub fn save_config(config: &AppConfig, path: &PathBuf) -> Result<(), Box<dyn std
 /// Genera un ID único basado en el hardware de la máquina
 fn generate_hardware_id() -> Result<String, Box<dyn std::error::Error>> {
     // Intentar obtener MAC address
-    if let Ok(mac) = mac_address::get_mac_address() {
-        if let Some(mac) = mac {
-            let mac_str = mac.to_string().replace(':', "");
-            return Ok(format!("HW-{mac_str}"));
-        }
+    if let Ok(Some(mac)) = mac_address::get_mac_address() {
+        let mac_str = mac.to_string().replace(':', "");
+        return Ok(format!("HW-{mac_str}"));
     }
 
     // Fallback: UUID aleatorio
