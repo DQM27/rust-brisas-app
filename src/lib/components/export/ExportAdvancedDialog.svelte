@@ -234,6 +234,8 @@
 		onclick={(e) => e.stopPropagation()}
 		role="dialog"
 		aria-modal="true"
+		tabindex="-1"
+		onkeydown={() => {}}
 	>
 		<!-- Panel Izquierdo: Configuración -->
 		<div class="w-[340px] flex flex-col border-r border-surface bg-surface-2">
@@ -607,6 +609,8 @@
 			style="top: {dropdownPos.top}px; left: {dropdownPos.left}px; width: {dropdownPos.width}px; max-height: 300px;"
 			transition:fly={{ y: -5, duration: 200 }}
 			onclick={(e) => e.stopPropagation()}
+			role="presentation"
+			onkeydown={() => {}}
 		>
 			{#if activeDropdown === 'paper'}
 				<div class="p-1">
@@ -714,7 +718,6 @@
 
 <style>
 	/* Focus Override Global */
-	select:focus,
 	input:focus {
 		border-color: rgba(59, 130, 246, 0.5) !important;
 		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
