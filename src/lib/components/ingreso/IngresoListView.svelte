@@ -217,6 +217,7 @@
 	function toggleViewMode(mode: ViewMode) {
 		if (viewMode === mode) return;
 		viewMode = mode;
+		if (mode === 'actives') groupByField = undefined;
 		loadIngresos();
 	}
 
@@ -563,23 +564,25 @@
 		{/snippet}
 
 		{#snippet secondaryActions()}
-			<div class="flex items-center gap-2 border-l border-white/5 pl-3">
-				<!-- Multi-Grouping Menu -->
-				<div class="flex items-center gap-1 bg-[#2d2d2d] border border-white/10 rounded-md p-0.5">
-					<span class="text-[10px] text-gray-500 font-bold uppercase px-2">Agrupar:</span>
-					{#each [{ id: undefined, label: 'Ninguno' }, { id: 'empresaNombre', label: 'Empresa' }, { id: 'tipoAutorizacionDisplay', label: 'Autorización' }, { id: 'modoIngresoDisplay', label: 'Modo' }] as opt}
-						<button
-							onclick={() => (groupByField = opt.id)}
-							class="px-2 py-1 rounded text-[11px] font-medium transition-all {groupByField ===
-							opt.id
-								? 'bg-blue-500/20 text-blue-400'
-								: 'text-gray-400 hover:text-white hover:bg-white/5'}"
-						>
-							{opt.label}
-						</button>
-					{/each}
+			{#if viewMode === 'history'}
+				<div class="flex items-center gap-2 border-l border-white/5 pl-3">
+					<!-- Multi-Grouping Menu -->
+					<div class="flex items-center gap-1 bg-[#2d2d2d] border border-white/10 rounded-md p-0.5">
+						<span class="text-[10px] text-gray-500 font-bold uppercase px-2">Agrupar:</span>
+						{#each [{ id: undefined, label: 'Ninguno' }, { id: 'empresaNombre', label: 'Empresa' }, { id: 'tipoAutorizacionDisplay', label: 'Autorización' }, { id: 'modoIngresoDisplay', label: 'Modo' }] as opt}
+							<button
+								onclick={() => (groupByField = opt.id)}
+								class="px-2 py-1 rounded text-[11px] font-medium transition-all {groupByField ===
+								opt.id
+									? 'bg-blue-500/20 text-blue-400'
+									: 'text-gray-400 hover:text-white hover:bg-white/5'}"
+							>
+								{opt.label}
+							</button>
+						{/each}
+					</div>
 				</div>
-			</div>
+			{/if}
 		{/snippet}
 
 		{#snippet CustomFilters()}
@@ -623,7 +626,7 @@
 				{columns}
 				withCheckboxSelection={true}
 				groupBy={groupByField}
-				columnCalculations={true}
+				columnCalculations={false}
 				{rowContextMenu}
 				options={{
 					...defaultTabulatorOptions,

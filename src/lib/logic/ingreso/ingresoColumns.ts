@@ -37,8 +37,6 @@ export const getIngresoColumns = (
             field: 'nombreCompleto',
             width: 200,
             headerFilter: 'input',
-            topCalc: 'count',
-            topCalcFormatter: (cell: any) => `Total: ${cell.getValue()}`,
             formatter: (cell) => `<span class="font-medium text-white">${cell.getValue() || ''}</span>`
         },
         {
