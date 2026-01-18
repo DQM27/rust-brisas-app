@@ -80,8 +80,7 @@ export function createTabulatorController(): TabulatorWrapperAPI {
  * Default options for the Brisas App Tabulator Theme
  */
 export const defaultTabulatorOptions: any = {
-    layout: "fitDataFill", // Safer than fitColumns for visibility
-    // responsiveLayout: "collapse", // Disabled to prevent hiding columns automatically
+    layout: "fitData", // Más compacto que fitDataFill
     validationMode: "highlight",
     pagination: true,
     paginationSize: 20,
@@ -91,6 +90,7 @@ export const defaultTabulatorOptions: any = {
     persistence: true, // Persist column layout
     index: "id", // Default ID
     selectable: true, // It is valid in JS, TS definitions are just missing it
+    headerWordWrap: true, // Permitir que el texto del encabezado se rompa en varias líneas
     locale: "es",
     langs: {
         "es": {

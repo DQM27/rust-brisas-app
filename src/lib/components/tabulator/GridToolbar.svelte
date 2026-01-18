@@ -55,7 +55,28 @@
 
 	let showColumnDropdown = $state(false);
 	let showFreezeDropdown = $state(false);
+
+	function closeAllDropdowns() {
+		showColumnDropdown = false;
+		showFreezeDropdown = false;
+	}
+
+	function toggleFreeze(e: MouseEvent) {
+		e.stopPropagation();
+		const newState = !showFreezeDropdown;
+		closeAllDropdowns();
+		showFreezeDropdown = newState;
+	}
+
+	function toggleColumns(e: MouseEvent) {
+		e.stopPropagation();
+		const newState = !showColumnDropdown;
+		closeAllDropdowns();
+		showColumnDropdown = newState;
+	}
 </script>
+
+<svelte:window onclick={closeAllDropdowns} />
 
 <div
 	class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between p-4 bg-[#1e1e1e] border-b border-white/5"
@@ -128,7 +149,7 @@
 			<div class="relative">
 				<button
 					class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
-					onclick={() => (showFreezeDropdown = !showFreezeDropdown)}
+					onclick={toggleFreeze}
 					title="Congelar/Fijar columnas"
 				>
 					<Pin class="h-4 w-4" />
@@ -136,6 +157,8 @@
 				{#if showFreezeDropdown && columns.length > 0}
 					<div
 						class="absolute right-0 mt-2 w-56 rounded-md shadow-xl bg-[#18181b] ring-1 ring-black ring-opacity-5 z-50 p-2 border border-white/10"
+						onclick={(e) => e.stopPropagation()}
+						role="presentation"
 					>
 						<div class="text-[10px] font-bold text-gray-500 mb-2 px-2 uppercase tracking-wider">
 							Fijar Columnas
@@ -169,7 +192,7 @@
 			<div class="relative">
 				<button
 					class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
-					onclick={() => (showColumnDropdown = !showColumnDropdown)}
+					onclick={toggleColumns}
 					title="Visibilidad de columnas"
 				>
 					<Eye class="h-4 w-4" />
@@ -177,6 +200,8 @@
 				{#if showColumnDropdown && columns.length > 0}
 					<div
 						class="absolute right-0 mt-2 w-56 rounded-md shadow-xl bg-[#18181b] ring-1 ring-black ring-opacity-5 z-50 p-2 border border-white/10"
+						onclick={(e) => e.stopPropagation()}
+						role="presentation"
 					>
 						<div class="text-[10px] font-bold text-gray-500 mb-2 px-2 uppercase tracking-wider">
 							Columnas Visibles

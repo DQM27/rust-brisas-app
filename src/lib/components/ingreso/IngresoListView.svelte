@@ -691,7 +691,7 @@
 					placeholder: 'No hay ingresos registrados'
 				}}
 				onRowSelectionChanged={(data) => (selectedRows = data)}
-				persistenceID="ingreso-list-v2"
+				persistenceID="ingreso-list-v3"
 			/>
 		{/if}
 	</div>

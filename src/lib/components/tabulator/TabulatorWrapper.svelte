@@ -66,7 +66,7 @@
 				title: '', // Required by types
 				headerSort: false,
 				hozAlign: 'center',
-				width: 40,
+				width: 30,
 				frozen: true,
 				headerHozAlign: 'center'
 			});
@@ -250,47 +250,39 @@
 		background-color: #1f2335 !important;
 		border-bottom: 1px solid #7aa2f7 !important;
 		color: #c0caf5 !important;
-		font-size: 12px;
+		font-size: 11px; /* Un punto menos */
 		font-weight: 500;
-		letter-spacing: 0.025em;
+		letter-spacing: 0.01em;
 	}
 
 	:global(.tabulator-col) {
-		padding: 10px 6px;
+		padding: 4px 4px !important; /* Reducido de 10px 6px */
 		border-right: 1px solid rgba(122, 162, 247, 0.15) !important;
 		background-color: #1f2335 !important;
 	}
 
-	:global(.tabulator-col:hover) {
-		background-color: #24283b !important;
-	}
-
 	:global(.tabulator-col .tabulator-col-content) {
 		padding: 2px;
+		white-space: normal !important; /* Permitir wrap en encabezados */
+		text-align: center;
 	}
 
-	/* Sort arrows - Tokyo Night blue */
-	:global(.tabulator-col[aria-sort='ascending'] .tabulator-arrow),
-	:global(.tabulator-col[aria-sort='descending'] .tabulator-arrow) {
-		border-bottom-color: #7aa2f7 !important;
-		border-top-color: #7aa2f7 !important;
+	:global(.tabulator-col .tabulator-col-title) {
+		white-space: normal !important;
+		line-height: 1.1;
 	}
 
 	/* Rows - Tokyo Night background */
 	:global(.tabulator-row) {
-		min-height: 40px;
+		min-height: 32px; /* Reducido de 40px */
 		background-color: #1a1b26 !important;
 		border-bottom: 1px solid rgba(122, 162, 247, 0.1) !important;
 		color: #c0caf5 !important;
 	}
 
-	:global(.tabulator-row.tabulator-row-even) {
-		background-color: #1f2335 !important;
-	}
-
 	:global(.tabulator-cell) {
-		padding: 10px 8px;
-		line-height: 1.4;
+		padding: 6px 4px !important; /* Reducido de 10px 8px */
+		line-height: 1.2;
 		border-right: 1px solid rgba(122, 162, 247, 0.08) !important;
 	}
 
