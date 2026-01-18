@@ -54,6 +54,7 @@
 
 	let table: Tabulator | undefined;
 	let tableElement: HTMLElement;
+	let isTableBuilt = $state(false);
 
 	// Construct final columns
 	let finalColumns = $derived.by(() => {

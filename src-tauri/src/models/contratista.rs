@@ -312,6 +312,7 @@ pub struct ContratistaResponse {
     pub vehiculo_marca: Option<String>,
     pub vehiculo_modelo: Option<String>,
     pub vehiculo_color: Option<String>,
+    pub vehiculos: Option<Vec<crate::models::vehiculo::VehiculoResponse>>,
     pub created_at: String,
     pub updated_at: String,
     pub deleted_at: Option<String>,
@@ -363,6 +364,7 @@ impl From<Contratista> for ContratistaResponse {
             vehiculo_marca: None,
             vehiculo_modelo: None,
             vehiculo_color: None,
+            vehiculos: None,
             created_at: c.created_at.to_string(),
             updated_at: c.updated_at.to_string(),
             deleted_at: c.deleted_at.map(|d| d.to_string()),
@@ -417,6 +419,7 @@ impl ContratistaResponse {
             vehiculo_marca: None,
             vehiculo_modelo: None,
             vehiculo_color: None,
+            vehiculos: None,
             created_at: c.created_at.to_string(),
             updated_at: c.updated_at.to_string(),
             deleted_at: c.deleted_at.map(|d| d.to_string()),
@@ -433,4 +436,3 @@ pub struct ContratistaListResponse {
     pub con_praind_vencido: usize,
     pub requieren_atencion: usize,
 }
-

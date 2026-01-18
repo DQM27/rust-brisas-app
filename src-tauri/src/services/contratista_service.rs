@@ -65,6 +65,13 @@ where
         let vehiculos =
             self.veh_repo.find_by_propietario(&contratista.id).await.map_err(map_db_error)?;
 
+        // Populate full vehicles list for frontend tree view
+        let vehiculos_response: Vec<crate::models::vehiculo::VehiculoResponse> = vehiculos
+            .iter()
+            .map(|v| crate::models::vehiculo::VehiculoResponse::from(v.clone()))
+            .collect();
+        response.vehiculos = Some(vehiculos_response);
+
         if let Some(v) = vehiculos.first() {
             response.vehiculo_tipo = Some(v.tipo_vehiculo.to_string());
             response.vehiculo_placa = Some(v.placa.clone());

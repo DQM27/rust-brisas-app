@@ -224,7 +224,23 @@
 		try {
 			const result = await contratistaService.fetchAllContratistas();
 			if (result.ok) {
-				contratistas = result.data.contratistas;
+				// Map vehicles to _children for Tree Data
+				contratistas = result.data.contratistas.map((c) => ({
+					...c,
+					_children: c.vehiculos?.map((v) => ({
+						id: v.id,
+						// Map vehicle fields to column matches
+						nombreCompleto: `${v.marca || ''} ${v.modelo || ''} ${v.color || ''}`.trim(),
+						vehiculoTipo: v.tipoVehiculo,
+						vehiculoPlaca: v.placa,
+						// Empty fields for other columns
+						cedula: '',
+						empresaNombre: '',
+						estado: null, // Avoid status badge
+						praindVencido: null,
+						puedeIngresar: null
+					}))
+				}));
 				// Manual update needed as prop is not reactive in wrapper
 				if (gridWrapper) {
 					gridWrapper.replaceData(contratistas);
@@ -400,6 +416,7 @@
 	function closeVehiculoModal() {
 		showVehiculoModal = false;
 		selectedContratistaForVehicles = null;
+		loadContratistas();
 	}
 
 	// Filter Logic
@@ -790,19 +807,22 @@
 				<TabulatorWrapper
 					bind:this={gridWrapper}
 					data={[]}
-					columns={columns as any}
-					searchable={false}
+					{columns}
+					options={{
+						height: '100%',
+						...defaultTabulatorOptions,
+						rowHeight: 40,
+						layout: 'fitDataFill',
+						dataTree: true,
+						dataTreeStartExpanded: false,
+						dataTreeChildField: '_children',
+						dataTreeElementColumn: 'vehiculoTipo'
+					}}
 					downloadable={false}
 					withCheckboxSelection={true}
 					persistenceID="contratista-list-v2"
 					onRowSelectionChanged={(data: any[], rows: any[]) => {
 						selectedRows = data;
-					}}
-					options={{
-						height: '100%', // Explicit height to separate from overflow container
-						...defaultTabulatorOptions,
-						rowHeight: 40,
-						layout: 'fitDataFill' // Ensure we use the safe layout
 					}}
 				/>
 			</div>
