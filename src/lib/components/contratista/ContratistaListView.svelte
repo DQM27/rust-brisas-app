@@ -34,6 +34,10 @@
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 	import ContratistaFormModal from './ContratistaFormModal.svelte';
 	import VehiculoManagerModal from '$lib/components/vehiculo/VehiculoManagerModal.svelte';
+	import ExportDialog from '$lib/components/export/ExportDialog.svelte';
+	import { getAvailableFormats } from '$lib/logic/export';
+	import { invoke } from '@tauri-apps/api/core';
+	import { save } from '@tauri-apps/plugin-dialog';
 
 	import type { ContratistaResponse, EstadoContratista } from '$lib/types/contratista';
 
@@ -73,6 +77,12 @@
 			? localStorage.getItem('tabulator-header-filters') === 'true'
 			: false
 	);
+
+	// Export State
+	let showExportModal = $state(false);
+	let availableFormats = $state<string[]>([]);
+	let exportColumns = $state<{ id: string; name: string; selected: boolean }[]>([]);
+	let exportRows = $state<Record<string, any>[]>([]);
 
 	// Filter Buttons logic (for keyboard nav state reference mostly, actual filtering is in derived data)
 	// NOTE: In Tabulator we pass the filtered data directly or use Filter API. Here we filter locally first.
@@ -409,6 +419,103 @@
 		}
 	}
 
+	// ==========================================
+	// EXPORT
+	// ==========================================
+	async function handleExportClick() {
+		if (!gridWrapper) return;
+		const table = gridWrapper.getTable();
+		if (!table) return;
+
+		availableFormats = await getAvailableFormats();
+
+		const cols = table.getColumns();
+		exportColumns = cols
+			.map((col: any) => ({
+				id: col.getField(),
+				name: col.getDefinition().title || col.getField(),
+				selected: col.isVisible()
+			}))
+			.filter((col: any) => col.id && col.name !== 'Acciones');
+
+		const isSelection = selectedRows.length > 0;
+		// Tabulator getData returns array of data objects
+		// 'active' returns data currently filtered/sorted in the table
+		const rowsData = isSelection ? selectedRows : table.getData('active');
+
+		exportRows = rowsData;
+		showExportModal = true;
+	}
+
+	async function handleExport(format: any, options: any) {
+		try {
+			const isSelection = selectedRows.length > 0;
+			const toastId = toast.loading(
+				`Exportando ${isSelection ? 'selección' : 'todo'} a ${format.toUpperCase()}...`
+			);
+
+			const targetColIds = options.columnIds;
+			const table = gridWrapper?.getTable();
+			const allCols = table?.getColumns() || [];
+
+			const headers: string[] = [];
+			const fields: string[] = [];
+
+			targetColIds.forEach((id: string) => {
+				const col = allCols.find((c: any) => c.getField() === id);
+				if (col) {
+					headers.push(col.getDefinition().title || id);
+					fields.push(id);
+				}
+			});
+
+			const rowsToExport = exportRows.map((row: any) => {
+				const newRow: Record<string, any> = {};
+				fields.forEach((field, index) => {
+					const header = headers[index];
+					let val = row[field];
+					// Handle nested properties (e.g. vehiculo.placa) if field has dots?
+					// Tabulator handles this via getField but raw data might have nested objects or not depending on how it was loaded
+					// Since we use rowsData from table.getData(), it returns the data objects.
+					// If field is 'empresaNombre', it's direct.
+					// For safety, convert to string
+					if (val === null || val === undefined) val = '';
+					newRow[header] = String(val);
+				});
+				return newRow;
+			});
+
+			const request: any = {
+				format,
+				headers,
+				rows: rowsToExport,
+				title: options.title || `Reporte ${new Date().toLocaleDateString()}`,
+				orientation: options.orientation || 'landscape',
+				delimiter: options.delimiter || 'comma',
+				includeBom: options.includeBom ?? true,
+				showPreview: options.showPreview || false,
+				generatedBy: $currentUser?.nombreCompleto || ''
+			};
+
+			let targetPath = null;
+			if (!options.showPreview) {
+				const defaultName = `${request.title.replace(/[^a-z0-9]/gi, '_')}.${format === 'excel' ? 'xlsx' : format}`;
+				const fileExtension = format === 'excel' ? 'xlsx' : format;
+				targetPath = await save({
+					defaultPath: defaultName,
+					filters: [{ name: format.toUpperCase(), extensions: [fileExtension] }]
+				});
+				if (!targetPath) throw new Error('Exportación cancelada');
+				request.targetPath = targetPath;
+			}
+
+			await invoke('export_data', { request });
+			toast.success('Exportación completada', { id: toastId });
+		} catch (err: any) {
+			toast.error('Error: ' + err.message);
+		}
+	}
+
 	// Keyboard Subscriptions
 	let unsubscribeKeyboard: (() => void) | null = null;
 	function setupKeyboardSubscription() {
@@ -546,6 +653,7 @@
 						}, 50);
 					}
 				}}
+				onAdvancedExport={handleExportClick}
 			>
 				{#snippet primaryActions()}
 					{#if selectedRows.length > 0}
@@ -721,6 +829,16 @@
 		propietarioNombre={selectedContratistaForVehicles.nombreCompleto ||
 			selectedContratistaForVehicles.nombre + ' ' + selectedContratistaForVehicles.apellido}
 		onClose={closeVehiculoModal}
+	/>
+{/if}
+
+{#if showExportModal}
+	<ExportDialog
+		onClose={() => (showExportModal = false)}
+		columns={exportColumns}
+		rows={exportRows}
+		{availableFormats}
+		onExport={handleExport}
 	/>
 {/if}
 

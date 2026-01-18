@@ -118,13 +118,20 @@
 					onRowSelectionChanged(data, rows);
 				}
 			});
+
+			table.on('tableBuilt', () => {
+				isTableBuilt = true;
+			});
 		}
 	});
 
 	// Reactive Updates
 	$effect(() => {
-		if (table && data) {
-			table.replaceData($state.snapshot(data));
+		if (table && isTableBuilt && data) {
+			// replaceData returns a promise, we handle error silently or log warn
+			table.replaceData($state.snapshot(data)).catch((e) => {
+				console.warn('Tabulator replaceData warning:', e);
+			});
 		}
 	});
 

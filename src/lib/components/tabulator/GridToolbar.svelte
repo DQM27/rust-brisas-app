@@ -22,6 +22,7 @@
 		onFitColumns?: () => void;
 		onToggleColumn?: (field: string) => void;
 		onToggleFilters?: () => void;
+		onAdvancedExport?: () => void;
 		columns?: any[]; // Column definitions for visibility toggle
 		primaryActions?: Snippet;
 		secondaryActions?: Snippet; // Left-aligned actions (e.g. Columns)
@@ -37,6 +38,7 @@
 		onFitColumns,
 		onToggleColumn,
 		onToggleFilters,
+		onAdvancedExport,
 		columns = [],
 		primaryActions,
 		secondaryActions,
@@ -158,6 +160,16 @@
 			>
 				<Filter class="h-4 w-4" />
 			</button>
+
+			<!-- Advanced Export Button -->
+			<button
+				class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+				onclick={() => onAdvancedExport?.()}
+				title="Exportar datos"
+			>
+				<Download class="h-4 w-4" />
+			</button>
+
 			<button
 				class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
 				onclick={() => {
