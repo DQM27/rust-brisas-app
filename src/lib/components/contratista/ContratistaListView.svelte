@@ -242,24 +242,31 @@
 			const result = await contratistaService.fetchAllContratistas();
 			if (result.ok) {
 				// Map vehicles to _children for Tree Data
-				contratistas = result.data.contratistas.map((c) => ({
-					...c,
-					_children: c.vehiculos?.map((v) => ({
-						_parent: c, // Reference to parent for actions
-						id: v.id,
-						// Map vehicle fields to column matches
-						nombreCompleto: '', // Clear name column for cleaner look
-						vehiculoTipo:
-							`${v.tipoVehiculo} - ${v.marca || ''} ${v.modelo || ''} ${v.color || ''}`.trim(),
-						vehiculoPlaca: v.placa,
-						// Empty fields for other columns
-						cedula: '',
-						empresaNombre: '',
-						estado: null, // Avoid status badge
-						praindVencido: null,
-						puedeIngresar: null
-					}))
-				}));
+				contratistas = result.data.contratistas.map((c) => {
+					const children =
+						c.vehiculos && c.vehiculos.length > 0
+							? c.vehiculos.map((v) => ({
+									_parent: c, // Reference to parent for actions
+									id: v.id,
+									// Map vehicle fields to column matches
+									nombreCompleto: '', // Clear name column for cleaner look
+									vehiculoTipo:
+										`${v.tipoVehiculo} - ${v.marca || ''} ${v.modelo || ''} ${v.color || ''}`.trim(),
+									vehiculoPlaca: v.placa,
+									// Empty fields for other columns
+									cedula: '',
+									empresaNombre: '',
+									estado: null, // Avoid status badge
+									praindVencido: null,
+									puedeIngresar: null
+								}))
+							: undefined;
+
+					return {
+						...c,
+						_children: children
+					};
+				});
 				// Manual update needed as prop is not reactive in wrapper
 				if (gridWrapper) {
 					gridWrapper.replaceData(contratistas);
@@ -835,7 +842,18 @@
 						dataTree: true,
 						dataTreeStartExpanded: false,
 						dataTreeChildField: '_children',
-						dataTreeElementColumn: 'vehiculoTipo'
+						dataTreeElementColumn: 'vehiculoTipo',
+						rowDblClick: (e: any, row: any) => {
+							console.log('Double click detected', row.getData());
+							const data = row.getData();
+							// Vehicle Row
+							if (!data.cedula && data._parent) {
+								openVehiculoModal(data._parent);
+							} else if (data.cedula) {
+								// Contractor Row
+								openModal(data);
+							}
+						}
 					}}
 					downloadable={false}
 					withCheckboxSelection={true}

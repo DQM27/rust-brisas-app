@@ -123,6 +123,10 @@
 			table.on('tableBuilt', () => {
 				isTableBuilt = true;
 			});
+
+			if (options && (options as any).rowDblClick) {
+				table.on('rowDblClick', (options as any).rowDblClick);
+			}
 		}
 	});
 
