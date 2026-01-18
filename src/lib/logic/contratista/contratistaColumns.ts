@@ -113,7 +113,6 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 			width: 140,
 			headerSort: false,
 			hozAlign: 'center',
-			frozen: true,
 			visible: true,
 			formatter: () => {
 				return `

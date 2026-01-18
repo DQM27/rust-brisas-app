@@ -621,7 +621,7 @@
 			</GridToolbar>
 
 			<!-- Tabulator Component (Clean) -->
-			<div class="flex-1 overflow-hidden p-4 relative bg-[#1e1e1e]">
+			<div class="flex-1 overflow-hidden relative bg-[#1e1e1e]">
 				<TabulatorWrapper
 					bind:this={gridWrapper}
 					data={[]}

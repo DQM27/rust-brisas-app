@@ -9,7 +9,7 @@
 		createTabulatorController,
 		defaultTabulatorOptions
 	} from '$lib/logic/tabulator/tabulatorController';
-	import 'tabulator-tables/dist/css/tabulator_midnight.min.css';
+	import 'tabulator-tables/dist/css/tabulator_site_dark.min.css';
 
 	interface Props {
 		data: any[];
@@ -213,151 +213,171 @@
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 	}
 
-	/* Global Overrides for Tabulator - Minimalist Premium */
+	/* Tokyo Night Storm Theme - Paleta profesional */
 	:global(.tabulator) {
-		border: none !important;
-		background-color: transparent !important;
-		font-family: 'Inter', system-ui, sans-serif;
+		font-family:
+			'Inter',
+			-apple-system,
+			BlinkMacSystemFont,
+			'Segoe UI',
+			system-ui,
+			sans-serif;
+		font-size: 13px;
+		background-color: #1a1b26 !important;
+		border-color: rgba(122, 162, 247, 0.3) !important;
 	}
 
-	/* Header Styling */
+	/* Header - Tokyo Night colors */
 	:global(.tabulator-header) {
-		background-color: transparent !important;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-		border-top: none !important;
-		color: #a1a1aa !important; /* zinc-400 */
+		background-color: #1f2335 !important;
+		border-bottom: 1px solid #7aa2f7 !important;
+		color: #c0caf5 !important;
+		font-size: 12px;
 		font-weight: 500;
-		font-size: 0.85rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
+		letter-spacing: 0.025em;
 	}
 
-	:global(.tabulator-headers .tabulator-col) {
-		background-color: transparent !important;
-		border-right: none !important; /* Remove vertical borders */
-		padding: 8px 4px !important;
+	:global(.tabulator-col) {
+		padding: 10px 6px;
+		border-right: 1px solid rgba(122, 162, 247, 0.15) !important;
+		background-color: #1f2335 !important;
 	}
 
-	:global(.tabulator-headers .tabulator-col:hover) {
-		background-color: rgba(255, 255, 255, 0.02) !important;
+	:global(.tabulator-col:hover) {
+		background-color: #24283b !important;
 	}
 
-	:global(.tabulator-headers .tabulator-col-content) {
-		padding: 4px !important;
+	:global(.tabulator-col .tabulator-col-content) {
+		padding: 2px;
 	}
 
-	:global(.tabulator-col-title) {
-		padding-bottom: 4px;
+	/* Sort arrows - Tokyo Night blue */
+	:global(.tabulator-col[aria-sort='ascending'] .tabulator-arrow),
+	:global(.tabulator-col[aria-sort='descending'] .tabulator-arrow) {
+		border-bottom-color: #7aa2f7 !important;
+		border-top-color: #7aa2f7 !important;
 	}
 
-	/* Row Styling */
+	/* Rows - Tokyo Night background */
 	:global(.tabulator-row) {
-		background-color: transparent !important;
-		color: #e4e4e7 !important; /* zinc-200 */
-		border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
-		font-size: 0.9rem;
-		min-height: 44px !important; /* slightly taller for breathability */
+		min-height: 40px;
+		background-color: #1a1b26 !important;
+		border-bottom: 1px solid rgba(122, 162, 247, 0.1) !important;
+		color: #c0caf5 !important;
 	}
 
-	:global(.tabulator-row .tabulator-cell) {
-		border-right: none !important;
-		padding: 10px 8px !important;
-		display: inline-flex !important;
-		align-items: center;
-	}
-
-	/* Subtle Zebra Striping */
 	:global(.tabulator-row.tabulator-row-even) {
-		background-color: rgba(255, 255, 255, 0.015) !important;
+		background-color: #1f2335 !important;
 	}
 
+	:global(.tabulator-cell) {
+		padding: 10px 8px;
+		line-height: 1.4;
+		border-right: 1px solid rgba(122, 162, 247, 0.08) !important;
+	}
+
+	/* Hover - Tokyo Night accent */
 	:global(.tabulator-row:hover) {
-		background-color: rgba(255, 255, 255, 0.05) !important;
-		transition: background-color 0.15s ease;
+		background-color: #24283b !important;
 	}
 
-	/* Selection Styling */
+	/* Selection - Tokyo Night blue */
 	:global(.tabulator-row.tabulator-selected) {
-		background-color: rgba(59, 130, 246, 0.1) !important; /* Blue-500 subtle */
-		border-left: 2px solid #3b82f6 !important; /* Blue accent */
+		background-color: rgba(122, 162, 247, 0.2) !important;
+		border-left: 3px solid #7aa2f7 !important;
 	}
 
-	:global(.tabulator-row.tabulator-selected:hover) {
-		background-color: rgba(59, 130, 246, 0.15) !important;
-	}
-
-	/* Footer Pagination */
-	:global(.tabulator-footer) {
-		background-color: transparent !important;
-		border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
-		padding: 12px 0 !important;
-	}
-
-	:global(.tabulator-page) {
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		border-radius: 6px;
-		color: #a1a1aa;
-		background: transparent;
-		margin: 0 2px;
-		font-size: 0.8rem;
-		padding: 4px 10px;
-	}
-
-	:global(.tabulator-page.active) {
-		background: #27272a; /* zinc-800 */
-		border-color: #3f3f46;
-		color: #fff;
-		font-weight: 600;
-	}
-
-	:global(.tabulator-page:hover:not(.active)) {
-		background: rgba(255, 255, 255, 0.05);
-		color: #fff;
-	}
-
-	/* Modern Filter Inputs */
+	/* Header filters - Tokyo Night style */
 	:global(.tabulator-header-filter input) {
-		background-color: transparent !important;
-		border: none !important;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
-		color: #e2e8f0 !important;
-		padding: 4px 0 !important;
-		font-size: 0.8rem;
-		transition: border-color 0.2s;
-		width: 100%;
-		margin-top: 4px;
+		padding: 6px 8px;
+		font-size: 12px;
+		border-radius: 4px;
+		background-color: #24283b !important;
+		border: 1px solid rgba(122, 162, 247, 0.3) !important;
+		color: #c0caf5 !important;
+		transition: border-color 0.2s ease;
 	}
 
 	:global(.tabulator-header-filter input:focus) {
-		border-bottom-color: #3b82f6 !important;
 		outline: none;
+		border-color: #7aa2f7 !important;
+		background-color: #1a1b26 !important;
 	}
 
 	:global(.tabulator-header-filter input::placeholder) {
-		color: rgba(255, 255, 255, 0.2);
-		font-style: italic;
+		color: rgba(192, 202, 245, 0.3);
 	}
 
-	/* Frozen Columns blending */
-	:global(.tabulator-col.tabulator-frozen),
-	:global(.tabulator-col.tabulator-frozen.tabulator-col-group) {
-		background-color: #18181b !important; /* zinc-900 match sidebar likely */
-		z-index: 10 !important;
+	/* Frozen columns - Tokyo Night integration */
+	:global(.tabulator-col.tabulator-frozen) {
+		border-left: 1px solid rgba(122, 162, 247, 0.15) !important;
+		background-color: #1f2335 !important;
 	}
 
-	/* Ensure row cells that are frozen match the row background correctly */
-	/* This is tricky with transparency. Best to give them a solid background match if possible, 
-       OR use backdrop-filter blur if supported effectively, but solid is safer for artifacts. */
+	:global(.tabulator-cell.tabulator-frozen) {
+		border-left: 1px solid rgba(122, 162, 247, 0.15) !important;
+	}
+
 	:global(.tabulator-row .tabulator-cell.tabulator-frozen) {
-		background-color: #18181b !important;
+		background-color: inherit !important;
 	}
+
 	:global(.tabulator-row.tabulator-row-even .tabulator-cell.tabulator-frozen) {
-		background-color: #1c1c1f !important; /* Slightly lighter for even rows */
+		background-color: inherit !important;
 	}
+
 	:global(.tabulator-row:hover .tabulator-cell.tabulator-frozen) {
-		background-color: #27272a !important; /* Hover state for frozen */
+		background-color: inherit !important;
 	}
+
 	:global(.tabulator-row.tabulator-selected .tabulator-cell.tabulator-frozen) {
-		background-color: #1e293b !important; /* Slate-800ish for selected */
+		background-color: inherit !important;
+	}
+
+	/* Footer & Pagination - Tokyo Night */
+	:global(.tabulator-footer) {
+		background-color: #1f2335 !important;
+		border-top: 1px solid rgba(122, 162, 247, 0.2) !important;
+		color: #c0caf5 !important;
+	}
+
+	:global(.tabulator-page) {
+		font-size: 13px;
+		padding: 6px 12px;
+		background-color: rgba(122, 162, 247, 0.1) !important;
+		border: 1px solid rgba(122, 162, 247, 0.3) !important;
+		color: #c0caf5 !important;
+		transition: all 0.15s ease;
+	}
+
+	:global(.tabulator-page.active) {
+		background-color: #7aa2f7 !important;
+		border-color: #7aa2f7 !important;
+		color: #1a1b26 !important;
+		font-weight: 600;
+	}
+
+	:global(.tabulator-page:hover) {
+		background-color: rgba(122, 162, 247, 0.25) !important;
+		border-color: #7aa2f7 !important;
+	}
+
+	/* Scrollbars - Tokyo Night (más gruesas para mejor usabilidad) */
+	:global(.tabulator-tableholder::-webkit-scrollbar) {
+		width: 14px;
+		height: 14px;
+	}
+
+	:global(.tabulator-tableholder::-webkit-scrollbar-track) {
+		background: #1a1b26;
+	}
+
+	:global(.tabulator-tableholder::-webkit-scrollbar-thumb) {
+		background: rgba(122, 162, 247, 0.3);
+		border-radius: 4px;
+	}
+
+	:global(.tabulator-tableholder::-webkit-scrollbar-thumb:hover) {
+		background: rgba(122, 162, 247, 0.5);
 	}
 </style>
