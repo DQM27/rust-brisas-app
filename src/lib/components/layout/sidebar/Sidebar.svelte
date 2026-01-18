@@ -60,18 +60,32 @@
 			permission: 'VIEW_USER_DETAIL'
 		},
 		{
-			id: 'blacklist',
-			icon: ShieldX,
-			label: 'Lista Negra',
+			id: 'ingresos',
+			icon: DoorOpen,
+			label: 'Contratistas',
 			action: () => {
 				openTab({
-					componentKey: 'lista-negra-list',
-					title: 'Lista Negra',
-					id: 'lista-negra-list',
+					componentKey: 'ingreso-list',
+					title: 'Control de Ingresos',
+					id: 'ingreso-list',
 					focusOnOpen: true
 				});
 			},
-			permission: 'VIEW_BLACKLIST'
+			permission: 'VIEW_ENTRY_LIST'
+		},
+		{
+			id: 'ingreso-proveedores',
+			icon: PackageCheck,
+			label: 'Proveedores',
+			action: () => {
+				openTab({
+					componentKey: 'proveedor-ingreso-list',
+					title: 'Ingreso Proveedores',
+					id: 'proveedor-ingreso-list',
+					focusOnOpen: true
+				});
+			},
+			permission: 'VIEW_ENTRY_LIST'
 		},
 		{
 			id: 'ingreso-visitas',
@@ -102,32 +116,18 @@
 			permission: 'VIEW_GAFETE_LIST'
 		},
 		{
-			id: 'ingresos',
-			icon: DoorOpen,
-			label: 'Ingresos',
+			id: 'blacklist',
+			icon: ShieldX,
+			label: 'Lista Negra',
 			action: () => {
 				openTab({
-					componentKey: 'ingreso-list',
-					title: 'Control de Ingresos',
-					id: 'ingreso-list',
+					componentKey: 'lista-negra-list',
+					title: 'Lista Negra',
+					id: 'lista-negra-list',
 					focusOnOpen: true
 				});
 			},
-			permission: 'VIEW_ENTRY_LIST'
-		},
-		{
-			id: 'ingreso-proveedores',
-			icon: PackageCheck,
-			label: 'Proveedores',
-			action: () => {
-				openTab({
-					componentKey: 'proveedor-ingreso-list',
-					title: 'Ingreso Proveedores',
-					id: 'proveedor-ingreso-list',
-					focusOnOpen: true
-				});
-			},
-			permission: 'VIEW_ENTRY_LIST'
+			permission: 'VIEW_BLACKLIST'
 		},
 		{
 			id: 'logs',
