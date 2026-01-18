@@ -1,5 +1,15 @@
 <script lang="ts">
-	import { Search, Download, Settings, X, FileText, Sheet } from 'lucide-svelte';
+	import {
+		Search,
+		Download,
+		Settings,
+		X,
+		FileText,
+		Sheet,
+		ScanText,
+		MoveHorizontal,
+		Eye
+	} from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
 
 	interface Props {
@@ -7,6 +17,10 @@
 		downloadable?: boolean;
 		onSearch?: (term: string) => void;
 		onExport?: (type: 'csv' | 'json' | 'xlsx') => void;
+		onAutoSizeColumns?: () => void;
+		onFitColumns?: () => void;
+		onToggleColumn?: (field: string) => void;
+		columns?: any[]; // Column definitions for visibility toggle
 		primaryActions?: Snippet;
 		secondaryActions?: Snippet; // Left-aligned actions (e.g. Columns)
 		CustomFilters?: Snippet; // Left-aligned filters
@@ -17,12 +31,17 @@
 		downloadable = false,
 		onSearch,
 		onExport,
+		onAutoSizeColumns,
+		onFitColumns,
+		onToggleColumn,
+		columns = [],
 		primaryActions,
 		secondaryActions,
 		CustomFilters
 	}: Props = $props();
 
 	let searchTerm = $state('');
+	let showColumnDropdown = $state(false);
 </script>
 
 <div
@@ -77,17 +96,70 @@
 			</div>
 		{/if}
 
-		<!-- Botón de Configuración -->
-		<button
-			class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
-			onclick={() => {
-				// TODO: Implementar lógica de configuración
-				console.log('Configuración clickeada');
-			}}
-			title="Configuración"
-		>
-			<Settings class="h-4 w-4" />
-		</button>
+		<!-- Botones de ajuste de columnas -->
+		<div class="flex items-center gap-2">
+			<button
+				class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+				onclick={() => onAutoSizeColumns?.()}
+				title="Ajustar columnas al contenido"
+			>
+				<ScanText class="h-4 w-4" />
+			</button>
+			<button
+				class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+				onclick={() => onFitColumns?.()}
+				title="Ajustar columnas al ancho"
+			>
+				<MoveHorizontal class="h-4 w-4" />
+			</button>
+			<!-- Column Visibility Button with Dropdown -->
+			<div class="relative">
+				<button
+					class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+					onclick={() => (showColumnDropdown = !showColumnDropdown)}
+					title="Visibilidad de columnas"
+				>
+					<Eye class="h-4 w-4" />
+				</button>
+				{#if showColumnDropdown && columns.length > 0}
+					<div
+						class="absolute right-0 mt-2 w-56 rounded-md shadow-xl bg-[#18181b] ring-1 ring-black ring-opacity-5 z-50 p-2 border border-white/10"
+					>
+						<div class="text-[10px] font-bold text-gray-500 mb-2 px-2 uppercase tracking-wider">
+							Columnas Visibles
+						</div>
+						{#each columns as col}
+							<label
+								class="flex items-center px-2 py-1.5 hover:bg-white/5 rounded cursor-pointer group transition-colors"
+							>
+								<input
+									type="checkbox"
+									class="form-checkbox h-3.5 w-3.5 text-blue-500 rounded bg-[#27272a] border-gray-600 focus:ring-blue-500/20 focus:ring-offset-0 transition-colors"
+									checked={col.visible !== false}
+									onclick={() => onToggleColumn?.(col.field)}
+								/>
+								<span
+									class="ml-2 text-xs text-gray-400 group-hover:text-gray-200 transition-colors"
+								>
+									{col.title}
+								</span>
+							</label>
+						{/each}
+					</div>
+				{/if}
+			</div>
+			<div class="w-px h-6 bg-white/10 mx-1"></div>
+			<button
+				class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+				onclick={() => {
+					// TODO: Implementar lógica de configuración
+					console.log('Configuración clickeada');
+				}}
+				title="Configuración"
+			>
+				<Settings class="h-4 w-4" />
+			</button>
+		</div>
 	</div>
 </div>
 

@@ -487,6 +487,46 @@
 						gridWrapper.getTable()?.setFilter('nombreCompleto', 'like', term);
 					}
 				}}
+				onAutoSizeColumns={() => {
+					if (gridWrapper) {
+						const table = gridWrapper.getTable();
+						if (table) {
+							const cols = table
+								.getColumnDefinitions()
+								.map((col: any) => ({ ...col, width: undefined }));
+							table.setColumns(cols);
+						}
+					}
+				}}
+				onFitColumns={() => {
+					if (gridWrapper) {
+						const table = gridWrapper.getTable();
+						if (table) {
+							// Get container width and distribute evenly
+							const containerWidth = table.element.clientWidth;
+							const columns = table.getColumns();
+							const columnWidth = Math.floor(containerWidth / columns.length);
+							const remainder = containerWidth - columnWidth * columns.length;
+
+							const cols = table.getColumnDefinitions().map((col: any, index: number) => ({
+								...col,
+								// Add remainder pixels to last column to fill completely
+								width: index === columns.length - 1 ? columnWidth + remainder : columnWidth
+							}));
+							table.setColumns(cols);
+						}
+					}
+				}}
+				{columns}
+				onToggleColumn={(field) => {
+					if (gridWrapper) {
+						const table = gridWrapper.getTable();
+						const column = table?.getColumn(field);
+						if (column) {
+							column.isVisible() ? column.hide() : column.show();
+						}
+					}
+				}}
 			>
 				{#snippet primaryActions()}
 					{#if selectedRows.length > 0}

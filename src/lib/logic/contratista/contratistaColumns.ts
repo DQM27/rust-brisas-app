@@ -17,7 +17,6 @@ const icons = {
 
 export const getContratistaColumns = (handlers: ContratistaColumnHandlers): ColumnDefinition[] => {
 	return [
-		{ title: 'ID', field: 'id', visible: false },
 		{
 			title: 'Cédula',
 			field: 'cedula',
