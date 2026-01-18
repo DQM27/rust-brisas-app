@@ -11,6 +11,7 @@ export interface TabulatorWrapperAPI {
     redraw: (force?: boolean) => void;
     getTable: () => Tabulator | undefined;
     setTable: (instance: Tabulator) => void;
+    deselectAll: () => void;
 }
 
 /**
@@ -46,6 +47,12 @@ export function createTabulatorController(): TabulatorWrapperAPI {
         if (table) table.deleteRow(id);
     };
 
+    const deselectAll = () => {
+        const table = getTable();
+        if (table) table.deselectRow(); // Tabulator deselectRow() without args deselects all? Verify docs. 
+        // Docs: "If no argument is passed to this function it will deselect all rows." -> Yes.
+    };
+
     const addData = (newData: any[]) => {
         const table = getTable();
         if (table) table.addData(safeClone(newData));
@@ -64,7 +71,8 @@ export function createTabulatorController(): TabulatorWrapperAPI {
         addData,
         redraw,
         getTable,
-        setTable
+        setTable,
+        deselectAll
     };
 }
 

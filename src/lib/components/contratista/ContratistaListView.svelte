@@ -14,7 +14,10 @@
 		ChevronDown, // Used in filter UI but kept here if needed for others
 		Eye,
 		Car,
-		Edit // Added from original imports
+		Edit, // Added from original imports
+		Filter,
+		Pencil,
+		X
 	} from 'lucide-svelte';
 	import { can } from '$lib/logic/permissions';
 	import { currentUser } from '$lib/stores/auth';
@@ -22,6 +25,8 @@
 	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
 
 	import { selectedSearchStore } from '$lib/stores/searchStore';
+	import { getContratistaColumns } from '$lib/logic/contratista/contratistaColumns';
+	// Services and Logic
 	import * as contratistaService from '$lib/logic/contratista/contratistaService';
 	// Components
 	import { TabulatorWrapper } from '$lib/components/tabulator';
@@ -45,6 +50,7 @@
 	let error = $state('');
 	let showColDropdown = $state(false);
 	let isUpdatingStatus = false;
+	let selectedRows = $state<any[]>([]); // Track selected rows
 
 	// Modal States
 	let showModal = $state(false);
@@ -145,112 +151,17 @@
 	};
 
 	// Cell Click Handler
-	const handleCellClick = (e: any, cell: any) => {
-		const data = cell.getData();
-		const target = e.target;
-
-		// Handle Status Click
-		if (target.closest('.status-btn')) {
-			handleStatusChange(data.id, data.estado);
-			return;
-		}
-
-		const btn = target.closest('.action-btn');
-		if (!btn) return;
-
-		if (btn.classList.contains('edit-btn')) {
-			openModal(data);
-		} else if (btn.classList.contains('car-btn')) {
-			openVehiculoModal(data);
-		} else if (btn.classList.contains('delete-btn')) {
-			handleDelete(data);
-		}
-	}; // End handleCellClick
-
 	// Column Definitions (Tabulator)
-	let columns = $state([
-		{ title: 'ID', field: 'id', visible: false },
-		{
-			title: 'Cédula',
-			field: 'cedula',
-			width: 130,
-			headerFilter: 'input',
-			frozen: true,
-			visible: true,
-			formatter: (cell: any) =>
-				`<span style="font-family:monospace; font-size:13px">${cell.getValue() || ''}</span>`
-		},
-		{
-			title: 'Nombre Completo',
-			field: 'nombreCompleto',
-			width: 220,
-			headerFilter: 'input',
-			visible: true,
-			formatter: (cell: any) =>
-				`<span style="font-weight:500; color:#e2e8f0">${cell.getValue() || ''}</span>`
-		},
-		{ title: 'Empresa', field: 'empresaNombre', width: 180, headerFilter: 'input', visible: true },
-		{ title: 'Vehículo', field: 'vehiculoTipo', width: 120, visible: true },
-		{
-			title: 'Placa',
-			field: 'vehiculoPlaca',
-			width: 110,
-			visible: true,
-			formatter: (cell: any) =>
-				`<span style="font-family:monospace">${cell.getValue() || '-'}</span>`
-		},
-		{
-			title: 'Estado',
-			field: 'estado',
-			width: 130,
-			formatter: statusFormatter,
-			cellClick: handleCellClick,
-			hozAlign: 'center',
-			visible: true
-		},
-		{
-			title: 'PRAIND',
-			field: 'praindVencido',
-			width: 130,
-			formatter: praindFormatter,
-			hozAlign: 'center',
-			visible: true
-		},
-		{
-			title: 'Vencimiento',
-			field: 'fechaVencimientoPraind',
-			width: 130,
-			visible: true,
-			formatter: (cell: any) => {
-				const val = cell.getValue();
-				if (!val) return '';
-				return new Date(val).toLocaleDateString('es-PA', {
-					day: 'numeric',
-					month: 'short',
-					year: 'numeric',
-					timeZone: 'UTC'
-				});
-			}
-		},
-		{
-			title: 'Acceso',
-			field: 'puedeIngresar',
-			width: 130,
-			formatter: accessFormatter,
-			hozAlign: 'center',
-			visible: true
-		},
-		{
-			title: 'Acciones',
-			formatter: actionsFormatter,
-			cellClick: handleCellClick,
-			width: 140,
-			headerSort: false,
-			hozAlign: 'center',
-			frozen: true,
-			visible: true
-		}
-	]);
+	// We use a derived state to ensure handlers are fresh if they depend on closure variables
+	// although handlers defined as functions on the component instance are stable enough.
+	let columns = $derived(
+		getContratistaColumns({
+			onStatusChange: handleStatusChange,
+			onEdit: (data: any) => openModal(data),
+			onDelete: (data: any) => handleDelete(data),
+			onVehiculoClick: (data: any) => openVehiculoModal(data)
+		})
+	);
 
 	// ==========================================
 	// DATA LOADING
@@ -584,18 +495,71 @@
 				}}
 			>
 				{#snippet primaryActions()}
-					{#if $currentUser && can($currentUser, 'CREATE_CONTRACTOR')}
-						<button
-							class="flex items-center gap-2 px-3 py-1.5
-                                   bg-blue-600/10 hover:bg-blue-600/20
-                                   text-blue-400 hover:text-blue-300
-                                   border border-blue-500/20 hover:border-blue-500/30
-                                   rounded-md text-sm font-medium transition-all"
-							onclick={() => openModal()}
+					{#if selectedRows.length > 0}
+						<!-- Selection Mode Actions -->
+						<div
+							class="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200"
 						>
-							<Plus size={16} />
-							<span>Nuevo</span>
-						</button>
+							<button
+								class="flex items-center gap-2 px-3 py-1.5
+                                       bg-red-600/10 hover:bg-red-600/20
+                                       text-red-400 hover:text-red-300
+                                       border border-red-500/20 hover:border-red-500/30
+                                       rounded-md text-sm font-medium transition-all"
+								onclick={() => {
+									if (confirm(`¿Eliminar ${selectedRows.length} elementos seleccionados?`)) {
+										// TODO: Implement bulk delete
+										console.log('Deleting', selectedRows);
+										// After delete, clear selection
+										gridWrapper?.deselectAll();
+									}
+								}}
+							>
+								<Trash2 size={16} />
+								<span>Eliminar ({selectedRows.length})</span>
+							</button>
+
+							{#if selectedRows.length === 1}
+								<button
+									class="flex items-center gap-2 px-3 py-1.5
+                                           bg-amber-600/10 hover:bg-amber-600/20
+                                           text-amber-400 hover:text-amber-300
+                                           border border-amber-500/20 hover:border-amber-500/30
+                                           rounded-md text-sm font-medium transition-all"
+									onclick={() => openModal(selectedRows[0])}
+								>
+									<Pencil size={16} />
+									<span>Editar</span>
+								</button>
+							{/if}
+
+							<button
+								class="flex items-center gap-2 px-3 py-1.5
+                                       bg-[#27272a] hover:bg-[#3f3f46]
+                                       text-gray-400 hover:text-white
+                                       border border-white/10
+                                       rounded-md text-sm font-medium transition-all"
+								onclick={() => gridWrapper?.deselectAll()}
+							>
+								<X size={16} />
+								<span>Cancelar</span>
+							</button>
+						</div>
+					{:else}
+						<!-- Default Actions -->
+						{#if $currentUser && can($currentUser, 'CREATE_CONTRACTOR')}
+							<button
+								class="flex items-center gap-2 px-3 py-1.5
+                                       bg-blue-600/10 hover:bg-blue-600/20
+                                       text-blue-400 hover:text-blue-300
+                                       border border-blue-500/20 hover:border-blue-500/30
+                                       rounded-md text-sm font-medium transition-all"
+								onclick={() => openModal()}
+							>
+								<Plus size={16} />
+								<span>Nuevo</span>
+							</button>
+						{/if}
 					{/if}
 				{/snippet}
 
@@ -663,6 +627,9 @@
 					searchable={false}
 					downloadable={false}
 					withCheckboxSelection={true}
+					onRowSelectionChanged={(data, rows) => {
+						selectedRows = data;
+					}}
 					options={{
 						height: '100%', // Explicit height to separate from overflow container
 						...defaultTabulatorOptions,

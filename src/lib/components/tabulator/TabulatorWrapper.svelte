@@ -27,6 +27,7 @@
 		downloadable?: boolean;
 		withCheckboxSelection?: boolean; // New prop for auto-checkbox column
 		toolbarActions?: import('svelte').Snippet;
+		onRowSelectionChanged?: (data: any[], rows: any[]) => void;
 	}
 
 	let {
@@ -43,7 +44,8 @@
 		searchable = false,
 		downloadable = false,
 		withCheckboxSelection = false,
-		toolbarActions
+		toolbarActions,
+		onRowSelectionChanged
 	}: Props = $props();
 
 	let table: Tabulator | undefined;
@@ -77,6 +79,7 @@
 	export const deleteRow = controller.deleteRow;
 	export const addData = controller.addData;
 	export const redraw = controller.redraw;
+	export const deselectAll = controller.deselectAll;
 
 	$effect(() => {
 		if (tableElement) {
@@ -99,13 +102,12 @@
 				// Handle row click
 			});
 
-			// Listen for selection changes if check selection is enabled
-			if (withCheckboxSelection) {
-				table.on('rowSelectionChanged', (data, rows) => {
-					// We could dispatch an event here if needed
-					// rowSelectionChanged && rowSelectionChanged(data);
-				});
-			}
+			// Listen for selection changes
+			table.on('rowSelectionChanged', (data: any[], rows: any[]) => {
+				if (onRowSelectionChanged) {
+					onRowSelectionChanged(data, rows);
+				}
+			});
 		}
 
 		return () => {
