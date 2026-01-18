@@ -32,6 +32,7 @@
 		"pdfjs-dist": "^5.4.449",
 		"svelte-5-french-toast": "^2.0.6",
 		"sveltekit-superforms": "^2.29.1",
+		"tabulator-tables": "^6.3.1",
 		"tinykeys": "^3.0.0",
 		"zod": "^4.3.2"
 	},
@@ -42,6 +43,7 @@
 		"@tailwindcss/vite": "^4.1.17",
 		"@tauri-apps/cli": "^2",
 		"@types/node": "^24.10.0",
+		"@types/tabulator-tables": "^6.3.1",
 		"eslint": "^9.18.0",
 		"eslint-config-prettier": "^10.0.1",
 		"eslint-plugin-svelte": "^2.46.1",
