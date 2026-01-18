@@ -49,6 +49,8 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 			hozAlign: 'center',
 			visible: true,
 			formatter: (cell) => {
+				const data = cell.getData() as ContratistaResponse;
+				if (!data.cedula) return '';
 				const val = cell.getValue() as EstadoContratista;
 				const badges: Record<string, string> = {
 					activo: 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20',
@@ -74,6 +76,7 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 			visible: true,
 			formatter: (cell) => {
 				const row = cell.getRow().getData() as ContratistaResponse;
+				if (!row.cedula) return '';
 				if (row.praindVencido) {
 					return `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">VENCIDO</span>`;
 				} else if (row.diasHastaVencimiento <= 30) {
@@ -88,6 +91,8 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 			width: 130,
 			visible: true,
 			formatter: (cell) => {
+				const data = cell.getData() as ContratistaResponse;
+				if (!data.cedula) return '';
 				const val = cell.getValue();
 				if (!val) return '';
 				return new Date(val).toLocaleDateString('es-PA', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -100,7 +105,9 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 			hozAlign: 'center',
 			visible: true,
 			formatter: (cell) => {
+				// Don't show access badge for vehicles (children)
 				const row = cell.getRow().getData() as ContratistaResponse;
+				if (!row.cedula) return '';
 				if (row.estaBloqueado) return `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">BLOQUEADO</span>`;
 				if (row.estado !== 'activo') return `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">DENEGADO</span>`;
 				if (row.puedeIngresar) return `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">PERMITIDO</span>`;
@@ -113,7 +120,20 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 			headerSort: false,
 			hozAlign: 'center',
 			visible: true,
-			formatter: () => {
+			formatter: (cell) => {
+				const data = cell.getData() as ContratistaResponse;
+
+				// Vehicle Actions (Child Row)
+				if (!data.cedula) {
+					return `
+						<div class="flex items-center justify-center gap-1">
+							<button class="edit-btn p-1.5 hover:bg-blue-500/20 rounded text-blue-400 transition-colors" title="Editar Vehículo">${icons.edit}</button>
+							<button class="delete-btn p-1.5 hover:bg-red-500/20 rounded text-red-400 transition-colors" title="Eliminar Vehículo">${icons.trash}</button>
+						</div>
+					`;
+				}
+
+				// Contractor Actions (Parent Row)
 				return `
                     <div class="flex items-center justify-center gap-1">
                         <button class="edit-btn p-1.5 hover:bg-blue-500/20 rounded text-blue-400 transition-colors" title="Editar">${icons.edit}</button>

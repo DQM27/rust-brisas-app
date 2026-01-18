@@ -173,9 +173,26 @@
 	let columns = $derived(
 		getContratistaColumns({
 			onStatusChange: handleStatusChange,
-			onEdit: (data: any) => openModal(data),
-			onDelete: (data: any) => handleDelete(data),
-			onVehiculoClick: (data: any) => openVehiculoModal(data)
+			onEdit: (c) => {
+				if (!c.cedula && c._parent) {
+					openVehiculoModal(c._parent);
+				} else {
+					openModal(c);
+				}
+			},
+			onDelete: (c) => {
+				if (!c.cedula) {
+					// Vehicle Deletion
+					if (confirm('¿Eliminar vehículo?')) {
+						invoke('delete_vehiculo', { id: c.id })
+							.then(() => loadContratistas())
+							.catch((e) => toast.error('Error al eliminar vehículo'));
+					}
+				} else {
+					handleDelete(c);
+				}
+			},
+			onVehiculoClick: (c) => openVehiculoModal(c)
 		})
 	);
 
@@ -228,10 +245,12 @@
 				contratistas = result.data.contratistas.map((c) => ({
 					...c,
 					_children: c.vehiculos?.map((v) => ({
+						_parent: c, // Reference to parent for actions
 						id: v.id,
 						// Map vehicle fields to column matches
-						nombreCompleto: `${v.marca || ''} ${v.modelo || ''} ${v.color || ''}`.trim(),
-						vehiculoTipo: v.tipoVehiculo,
+						nombreCompleto: '', // Clear name column for cleaner look
+						vehiculoTipo:
+							`${v.tipoVehiculo} - ${v.marca || ''} ${v.modelo || ''} ${v.color || ''}`.trim(),
 						vehiculoPlaca: v.placa,
 						// Empty fields for other columns
 						cedula: '',
