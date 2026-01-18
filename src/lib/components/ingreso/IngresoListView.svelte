@@ -21,6 +21,7 @@
 	import { save } from '@tauri-apps/plugin-dialog';
 	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
 	import { getIngresoColumns } from '$lib/logic/ingreso/ingresoColumns';
+	import PersonDetailModal from '../shared/PersonDetailModal.svelte';
 	import { currentUser } from '$lib/stores/auth';
 	import { activeTabId, openTab } from '$lib/stores/tabs';
 	import { statusBarInfo } from '$lib/stores/ui';
@@ -89,6 +90,10 @@
 	// Grouping State
 	let groupByField = $state<string | undefined>(undefined);
 
+	// Detail Modal State
+	let showDetailModal = $state(false);
+	let selectedPersonForDetail = $state<IngresoResponse | null>(null);
+
 	// Context Menu for Rows
 	const rowContextMenu = [
 		{
@@ -103,7 +108,8 @@
 			label: 'Ver Detalles del Contratista',
 			action: (e: any, row: any) => {
 				const data = row.getData();
-				toast('Función próximamente: Ver detalles de ' + data.nombreCompleto);
+				selectedPersonForDetail = data;
+				showDetailModal = true;
 			}
 		}
 	];
@@ -694,6 +700,8 @@
 		rows={exportRowsSnapshot}
 	/>
 {/if}
+
+<PersonDetailModal bind:show={showDetailModal} person={selectedPersonForDetail} />
 
 <style>
 	:global(.hide-filters .tabulator-header-filter) {
