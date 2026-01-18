@@ -1,0 +1,8 @@
+
+
+<style>
+	/* Hide header filters when toggled off */
+	:global(.hide-filters .tabulator-header-filter) {
+		display: none !important;
+	}
+</style>

@@ -67,6 +67,7 @@
 	let showEstadoDropdown = $state(false);
 	let praindFilter = $state<'todos' | 'vigente' | 'vencido' | 'por-vencer'>('todos');
 	let showPraindDropdown = $state(false);
+	let showHeaderFilters = $state(true); // Toggle header filters visibility
 
 	// Filter Buttons logic (for keyboard nav state reference mostly, actual filtering is in derived data)
 	// NOTE: In Tabulator we pass the filtered data directly or use Filter API. Here we filter locally first.
@@ -527,6 +528,15 @@
 						}
 					}
 				}}
+				onToggleFilters={() => {
+					showHeaderFilters = !showHeaderFilters;
+					// Redraw table to adjust header heights
+					if (gridWrapper) {
+						setTimeout(() => {
+							gridWrapper.redraw(true);
+						}, 50);
+					}
+				}}
 			>
 				{#snippet primaryActions()}
 					{#if selectedRows.length > 0}
@@ -655,7 +665,11 @@
 			</GridToolbar>
 
 			<!-- Tabulator Component (Clean) -->
-			<div class="flex-1 overflow-hidden relative bg-[#1e1e1e]">
+			<div
+				class="flex-1 overflow-hidden relative bg-[#1e1e1e] {showHeaderFilters
+					? ''
+					: 'hide-filters'}"
+			>
 				<TabulatorWrapper
 					bind:this={gridWrapper}
 					data={[]}
@@ -700,3 +714,10 @@
 		onClose={closeVehiculoModal}
 	/>
 {/if}
+
+<style>
+	/* Hide header filters when toggled off */
+	:global(.hide-filters .tabulator-header-filter) {
+		display: none !important;
+	}
+</style>

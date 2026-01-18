@@ -8,7 +8,8 @@
 		Sheet,
 		ScanText,
 		MoveHorizontal,
-		Eye
+		Eye,
+		Filter
 	} from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
 
@@ -20,6 +21,7 @@
 		onAutoSizeColumns?: () => void;
 		onFitColumns?: () => void;
 		onToggleColumn?: (field: string) => void;
+		onToggleFilters?: () => void;
 		columns?: any[]; // Column definitions for visibility toggle
 		primaryActions?: Snippet;
 		secondaryActions?: Snippet; // Left-aligned actions (e.g. Columns)
@@ -34,6 +36,7 @@
 		onAutoSizeColumns,
 		onFitColumns,
 		onToggleColumn,
+		onToggleFilters,
 		columns = [],
 		primaryActions,
 		secondaryActions,
@@ -148,6 +151,14 @@
 					</div>
 				{/if}
 			</div>
+			<!-- Toggle Filters Button -->
+			<button
+				class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+				onclick={() => onToggleFilters?.()}
+				title="Mostrar/Ocultar filtros"
+			>
+				<Filter class="h-4 w-4" />
+			</button>
 			<div class="w-px h-6 bg-white/10 mx-1"></div>
 			<button
 				class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
