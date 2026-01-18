@@ -23,6 +23,8 @@
 		onToggleColumn?: (field: string) => void;
 		onToggleFilters?: () => void;
 		onAdvancedExport?: () => void;
+		hasSelection?: boolean; // New: indicate if rows are selected
+		searchTerm?: string; // New: sync search term from parent
 		columns?: any[]; // Column definitions for visibility toggle
 		primaryActions?: Snippet;
 		secondaryActions?: Snippet; // Left-aligned actions (e.g. Columns)
@@ -42,10 +44,11 @@
 		columns = [],
 		primaryActions,
 		secondaryActions,
-		CustomFilters
+		CustomFilters,
+		hasSelection = false,
+		searchTerm = $bindable('')
 	}: Props = $props();
 
-	let searchTerm = $state('');
 	let showColumnDropdown = $state(false);
 </script>
 
@@ -163,9 +166,11 @@
 
 			<!-- Advanced Export Button -->
 			<button
-				class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+				class="p-2 transition-colors border rounded-md {hasSelection
+					? 'bg-blue-600/20 text-blue-400 border-blue-500/30 hover:bg-blue-600/30'
+					: 'text-gray-400 hover:text-white hover:bg-white/5 border-white/10 bg-[#2d2d2d]'}"
 				onclick={() => onAdvancedExport?.()}
-				title="Exportar datos"
+				title={hasSelection ? 'Exportar seleccionados' : 'Exportar datos'}
 			>
 				<Download class="h-4 w-4" />
 			</button>

@@ -421,7 +421,7 @@
 		toast('Abriendo listado de contratistas...');
 		openTab({
 			componentKey: 'contratista-list',
-			title: 'Lista Contratistas',
+			title: 'Lista de Contratistas',
 			id: 'contratista-list',
 			focusOnOpen: true
 		});
@@ -470,7 +470,8 @@
 
 	<!-- Tabulator Toolbar & Grid -->
 	<GridToolbar
-		onSearch={(term) => (searchTerm = term)}
+		bind:searchTerm
+		hasSelection={selectedRows.length > 0}
 		onAutoSizeColumns={handleAutoSize}
 		onFitColumns={handleFitColumns}
 		onToggleColumn={handleToggleColumn}
@@ -489,13 +490,15 @@
 						<X size={14} /> Cancelar
 					</button>
 				</div>
-			{:else if viewMode === 'actives'}
-				<button
-					onclick={handleNuevoIngreso}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
-				>
-					<LogIn size={14} /> Nuevo
-				</button>
+			{:else}
+				{#if viewMode === 'actives'}
+					<button
+						onclick={handleNuevoIngreso}
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
+					>
+						<LogIn size={14} /> Nuevo
+					</button>
+				{/if}
 				<button
 					onclick={() => (showContratistaModal = true)}
 					class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
