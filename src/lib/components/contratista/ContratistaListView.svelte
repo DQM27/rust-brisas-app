@@ -482,15 +482,9 @@
 			<!-- New Independent Toolbar -->
 			<GridToolbar
 				searchable={true}
-				downloadable={true}
 				onSearch={(term) => {
 					if (gridWrapper) {
 						gridWrapper.getTable()?.setFilter('nombreCompleto', 'like', term);
-					}
-				}}
-				onExport={(type) => {
-					if (gridWrapper) {
-						gridWrapper.getTable()?.download(type, `contratistas.${type}`);
 					}
 				}}
 			>

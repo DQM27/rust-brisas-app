@@ -14,7 +14,7 @@
 
 	let {
 		searchable = true,
-		downloadable = true,
+		downloadable = false,
 		onSearch,
 		onExport,
 		primaryActions,
@@ -77,25 +77,17 @@
 			</div>
 		{/if}
 
-		{#if downloadable}
-			<div class="flex items-center bg-[#2d2d2d] rounded-md border border-white/10 p-0.5">
-				<button
-					class="p-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded-sm transition-colors"
-					onclick={() => onExport?.('csv')}
-					title="Exportar CSV"
-				>
-					<FileText class="h-4 w-4" />
-				</button>
-				<div class="w-px h-4 bg-white/10 mx-0.5"></div>
-				<button
-					class="p-1.5 text-gray-400 hover:text-white hover:bg-white/5 rounded-sm transition-colors"
-					onclick={() => onExport?.('xlsx')}
-					title="Exportar Excel"
-				>
-					<Sheet class="h-4 w-4" />
-				</button>
-			</div>
-		{/if}
+		<!-- Botón de Configuración -->
+		<button
+			class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+			onclick={() => {
+				// TODO: Implementar lógica de configuración
+				console.log('Configuración clickeada');
+			}}
+			title="Configuración"
+		>
+			<Settings class="h-4 w-4" />
+		</button>
 	</div>
 </div>
 
