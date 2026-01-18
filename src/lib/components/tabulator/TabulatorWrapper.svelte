@@ -28,6 +28,8 @@
 		withCheckboxSelection?: boolean; // New prop for auto-checkbox column
 		toolbarActions?: import('svelte').Snippet;
 		onRowSelectionChanged?: (data: any[], rows: any[]) => void;
+		persistenceID?: string; // Unique ID for storing table state
+		persistenceMode?: 'local' | 'cookie';
 	}
 
 	let {
@@ -45,7 +47,9 @@
 		downloadable = false,
 		withCheckboxSelection = false,
 		toolbarActions,
-		onRowSelectionChanged
+		onRowSelectionChanged,
+		persistenceID,
+		persistenceMode = 'local'
 	}: Props = $props();
 
 	let table: Tabulator | undefined;
@@ -81,7 +85,8 @@
 	export const redraw = controller.redraw;
 	export const deselectAll = controller.deselectAll;
 
-	$effect(() => {
+	// Separate initialization from updates to prevent full rebuilds
+	onMount(() => {
 		if (tableElement) {
 			table = new Tabulator(tableElement, {
 				...defaultTabulatorOptions,
@@ -91,29 +96,43 @@
 				pagination,
 				paginationSize,
 				placeholder,
-				data: $state.snapshot(data) || [], // Initial data snapshot
-				columns: finalColumns as any[], // Use derived columns (cast to any[] to avoid strict type issues)
-				...options // Override with any specific options passed
+				data: $state.snapshot(data) || [], // Initial data
+				columns: finalColumns as any[],
+				// Persistence
+				persistence: persistenceID
+					? {
+							sort: true,
+							filter: true,
+							columns: true
+						}
+					: false,
+				persistenceID: persistenceID,
+				persistenceMode: persistenceMode,
+				...options
 			});
 
 			controller.setTable(table);
 
-			table.on('rowClick', (e, row) => {
-				// Handle row click
-			});
-
-			// Listen for selection changes
 			table.on('rowSelectionChanged', (data: any[], rows: any[]) => {
 				if (onRowSelectionChanged) {
 					onRowSelectionChanged(data, rows);
 				}
 			});
 		}
-
-		return () => {
-			table?.destroy();
-		};
 	});
+
+	// Reactive Updates
+	$effect(() => {
+		if (table && data) {
+			table.replaceData($state.snapshot(data));
+		}
+	});
+
+	// Derived columns update check? Tabulator handles mutations differently,
+	// but if columns structure changes significantly we might need setColumns.
+	// However, usually columns are static structure-wise.
+	// If we need dynamic columns, we'd need another effect or smart diffing.
+	// For now, assuming columns don't change structure after init (only visibility which is internal).
 
 	// Cleanup
 	onDestroy(() => {
@@ -194,97 +213,151 @@
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 	}
 
-	/* Global Overrides for Tabulator to make it look 'Premium' and Glassmorphism-ready */
+	/* Global Overrides for Tabulator - Minimalist Premium */
 	:global(.tabulator) {
 		border: none !important;
-		background-color: rgba(30, 30, 40, 0.6) !important; /* Semi-transparent background */
-		backdrop-filter: blur(10px);
-		border-radius: 8px;
-		box-shadow:
-			0 4px 6px -1px rgba(0, 0, 0, 0.1),
-			0 2px 4px -1px rgba(0, 0, 0, 0.06);
-		overflow: hidden; /* For rounded corners */
-		font-family: 'Inter', sans-serif; /* Setup in global or use here */
+		background-color: transparent !important;
+		font-family: 'Inter', system-ui, sans-serif;
 	}
 
+	/* Header Styling */
 	:global(.tabulator-header) {
-		background-color: rgba(40, 40, 50, 0.8) !important;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-		color: #e2e8f0 !important;
-		font-weight: 600;
+		background-color: transparent !important;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+		border-top: none !important;
+		color: #a1a1aa !important; /* zinc-400 */
+		font-weight: 500;
+		font-size: 0.85rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
 
 	:global(.tabulator-headers .tabulator-col) {
 		background-color: transparent !important;
-		border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+		border-right: none !important; /* Remove vertical borders */
+		padding: 8px 4px !important;
 	}
 
 	:global(.tabulator-headers .tabulator-col:hover) {
-		background-color: rgba(255, 255, 255, 0.05) !important;
-	}
-
-	:global(.tabulator-row) {
-		background-color: transparent !important;
-		color: #cbd5e1 !important;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-		transition: background-color 0.2s;
-	}
-
-	:global(.tabulator-row.tabulator-row-even) {
 		background-color: rgba(255, 255, 255, 0.02) !important;
 	}
 
+	:global(.tabulator-headers .tabulator-col-content) {
+		padding: 4px !important;
+	}
+
+	:global(.tabulator-col-title) {
+		padding-bottom: 4px;
+	}
+
+	/* Row Styling */
+	:global(.tabulator-row) {
+		background-color: transparent !important;
+		color: #e4e4e7 !important; /* zinc-200 */
+		border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+		font-size: 0.9rem;
+		min-height: 44px !important; /* slightly taller for breathability */
+	}
+
+	:global(.tabulator-row .tabulator-cell) {
+		border-right: none !important;
+		padding: 10px 8px !important;
+		display: inline-flex !important;
+		align-items: center;
+	}
+
+	/* Subtle Zebra Striping */
+	:global(.tabulator-row.tabulator-row-even) {
+		background-color: rgba(255, 255, 255, 0.015) !important;
+	}
+
 	:global(.tabulator-row:hover) {
-		background-color: rgba(255, 255, 255, 0.1) !important;
-		cursor: pointer;
+		background-color: rgba(255, 255, 255, 0.05) !important;
+		transition: background-color 0.15s ease;
 	}
 
+	/* Selection Styling */
 	:global(.tabulator-row.tabulator-selected) {
-		background-color: rgba(118, 75, 162, 0.3) !important;
-		border-left: 3px solid #764ba2;
+		background-color: rgba(59, 130, 246, 0.1) !important; /* Blue-500 subtle */
+		border-left: 2px solid #3b82f6 !important; /* Blue accent */
 	}
 
+	:global(.tabulator-row.tabulator-selected:hover) {
+		background-color: rgba(59, 130, 246, 0.15) !important;
+	}
+
+	/* Footer Pagination */
 	:global(.tabulator-footer) {
-		background-color: rgba(40, 40, 50, 0.8) !important;
-		border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+		background-color: transparent !important;
+		border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+		padding: 12px 0 !important;
 	}
 
 	:global(.tabulator-page) {
-		border-radius: 4px;
 		border: 1px solid rgba(255, 255, 255, 0.1);
-		color: #fff;
+		border-radius: 6px;
+		color: #a1a1aa;
 		background: transparent;
+		margin: 0 2px;
+		font-size: 0.8rem;
+		padding: 4px 10px;
 	}
 
 	:global(.tabulator-page.active) {
-		background: #764ba2;
-		border-color: #764ba2;
+		background: #27272a; /* zinc-800 */
+		border-color: #3f3f46;
+		color: #fff;
+		font-weight: 600;
+	}
+
+	:global(.tabulator-page:hover:not(.active)) {
+		background: rgba(255, 255, 255, 0.05);
 		color: #fff;
 	}
 
-	/* Input Styling for Filters */
+	/* Modern Filter Inputs */
 	:global(.tabulator-header-filter input) {
-		background-color: rgba(20, 20, 30, 0.8) !important;
-		border: 1px solid rgba(255, 255, 255, 0.2) !important;
+		background-color: transparent !important;
+		border: none !important;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
 		color: #e2e8f0 !important;
-		border-radius: 4px;
-		padding: 4px 8px;
-		font-size: 0.9em;
+		padding: 4px 0 !important;
+		font-size: 0.8rem;
+		transition: border-color 0.2s;
+		width: 100%;
+		margin-top: 4px;
 	}
 
 	:global(.tabulator-header-filter input:focus) {
-		border-color: #764ba2 !important;
+		border-bottom-color: #3b82f6 !important;
 		outline: none;
 	}
 
-	/* Fix frozen columns in dark mode */
-	:global(.tabulator-col.tabulator-frozen) {
-		background-color: rgba(40, 40, 50, 1) !important; /* Solid bg needed for frozen cols */
+	:global(.tabulator-header-filter input::placeholder) {
+		color: rgba(255, 255, 255, 0.2);
+		font-style: italic;
 	}
+
+	/* Frozen Columns blending */
+	:global(.tabulator-col.tabulator-frozen),
+	:global(.tabulator-col.tabulator-frozen.tabulator-col-group) {
+		background-color: #18181b !important; /* zinc-900 match sidebar likely */
+		z-index: 10 !important;
+	}
+
+	/* Ensure row cells that are frozen match the row background correctly */
+	/* This is tricky with transparency. Best to give them a solid background match if possible, 
+       OR use backdrop-filter blur if supported effectively, but solid is safer for artifacts. */
 	:global(.tabulator-row .tabulator-cell.tabulator-frozen) {
-		background-color: #1e1e1e !important; /* Match row bg */
+		background-color: #18181b !important;
 	}
 	:global(.tabulator-row.tabulator-row-even .tabulator-cell.tabulator-frozen) {
-		background-color: #252526 !important; /* Match even row bg */
+		background-color: #1c1c1f !important; /* Slightly lighter for even rows */
+	}
+	:global(.tabulator-row:hover .tabulator-cell.tabulator-frozen) {
+		background-color: #27272a !important; /* Hover state for frozen */
+	}
+	:global(.tabulator-row.tabulator-selected .tabulator-cell.tabulator-frozen) {
+		background-color: #1e293b !important; /* Slate-800ish for selected */
 	}
 </style>

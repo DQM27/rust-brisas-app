@@ -3,18 +3,17 @@
 	import { fade } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
 	import { RotateCcw, AlertCircle } from 'lucide-svelte';
-	import type { ColDef } from '@ag-grid-community/core';
+	import { TabulatorWrapper } from '$lib/components/tabulator';
+	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 
-	import AGGridWrapper from '$lib/components/grid/AGGridWrapper.svelte';
-	import type { GridId } from '$lib/types/agGrid';
 	import type { TrashService, TrashItem } from '$lib/logic/trash/trashService';
 	import TrashFormModal from './TrashFormModal.svelte';
 
 	interface Props<T extends TrashItem> {
 		title?: string;
 		service: TrashService<T>;
-		columnDefs: ColDef<T>[];
-		gridId: GridId;
+		columnDefs: any[]; // Tabulator definition
+		gridId: string;
 		onBack: () => void;
 		rowIdField?: string;
 		entityName?: string;
@@ -31,7 +30,9 @@
 	// State
 	let items = $state<any[]>([]);
 	let error = $state('');
+	let loading = $state(false);
 	let selectedRows = $state<any[]>([]);
+	let gridWrapper: any = $state();
 
 	// Modal State
 	let showModal = $state(false);
@@ -39,31 +40,17 @@
 	let modalAction = $state<'restore' | 'delete' | null>(null);
 	let itemToProcess = $state<any | null>(null);
 
-	// Derived Buttons
-	const customButtons = $derived.by(() => {
-		const selected = selectedRows[0];
-		return {
-			default: [],
-			singleSelect: [
-				{
-					id: 'restore',
-					label: 'Restaurar',
-					icon: RotateCcw,
-					onClick: () => confirmRestore(selected),
-					variant: 'default' as const
-				}
-			],
-			multiSelect: []
-		};
-	});
-
 	// Actions
 	async function loadArchived() {
 		error = '';
+		loading = true;
 		try {
 			const result = await service.getArchived();
 			if (result.ok) {
 				items = result.data;
+				if (gridWrapper) {
+					gridWrapper.replaceData(items);
+				}
 			} else {
 				error = result.error || 'Error desconocido';
 			}
@@ -71,11 +58,13 @@
 			console.error(err);
 			error = 'Error al cargar elementos eliminados';
 		}
+		loading = false;
 	}
 
-	function confirmRestore(item: any) {
-		if (!item) return;
-		itemToProcess = item;
+	function confirmRestore(rows: any[]) {
+		if (!rows || rows.length === 0) return;
+		// For now take the first one, or handle bulk
+		itemToProcess = rows[0];
 		modalAction = 'restore';
 		showModal = true;
 	}
@@ -92,13 +81,14 @@
 				if (result.ok) {
 					toast.success(`${entityName} restaurado`);
 					await loadArchived();
+					selectedRows = [];
+					gridWrapper?.deselectAll();
 					showModal = false;
 					itemToProcess = null;
 				} else {
 					toast.error(result.error || 'Error al restaurar');
 				}
 			}
-			// Future expansion for delete
 		} catch (_e) {
 			toast.error('Error inesperado');
 		}
@@ -112,12 +102,11 @@
 </script>
 
 <div class="h-full flex flex-col">
-	<div class="flex-1 overflow-hidden relative">
+	<div class="flex-1 overflow-hidden relative flex flex-col">
 		{#if error}
 			<div class="p-6">
 				<div
 					class="flex items-center gap-3 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-red-400"
-					transition:fade
 				>
 					<AlertCircle size={20} />
 					<div>
@@ -127,16 +116,39 @@
 				</div>
 			</div>
 		{:else}
-			<AGGridWrapper
-				{gridId}
-				{columnDefs}
-				rowData={items}
-				{customButtons}
-				getRowId={(params) => params.data[rowIdField]}
-				persistenceKey={`${gridId}-columns`}
-				onSelectionChanged={(rows) => (selectedRows = rows)}
-				onRefresh={loadArchived}
-			/>
+			<GridToolbar
+				searchable={true}
+				onSearch={(term) => {
+					gridWrapper?.getTable()?.setFilter('nombreCompleto', 'like', term);
+				}}
+			>
+				{#snippet primaryActions()}
+					{#if selectedRows.length > 0}
+						<button
+							class="flex items-center gap-2 px-3 py-1.5 bg-green-600/10 hover:bg-green-600/20 text-green-400 border border-green-500/20 rounded-md text-sm font-medium transition-all"
+							onclick={() => confirmRestore(selectedRows)}
+						>
+							<RotateCcw size={16} />
+							<span>Restaurar ({selectedRows.length})</span>
+						</button>
+					{/if}
+				{/snippet}
+			</GridToolbar>
+
+			<div class="flex-1 overflow-hidden p-4 relative bg-[#1e1e1e]">
+				<TabulatorWrapper
+					bind:this={gridWrapper}
+					columns={columnDefs}
+					data={items}
+					withCheckboxSelection={true}
+					persistenceID={gridId}
+					onRowSelectionChanged={(data) => (selectedRows = data)}
+					options={{
+						height: '100%',
+						layout: 'fitDataFill'
+					}}
+				/>
+			</div>
 		{/if}
 	</div>
 </div>

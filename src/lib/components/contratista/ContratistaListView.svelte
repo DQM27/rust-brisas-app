@@ -565,6 +565,7 @@
 
 				{#snippet secondaryActions()}
 					<!-- Column Visibility Toggle -->
+					<!-- Temporarily disabled for debugging reactivity issues
 					<div class="relative inline-block text-left">
 						<button
 							class="px-3 py-1.5
@@ -615,6 +616,7 @@
 							</div>
 						{/if}
 					</div>
+					-->
 				{/snippet}
 			</GridToolbar>
 
@@ -627,7 +629,8 @@
 					searchable={false}
 					downloadable={false}
 					withCheckboxSelection={true}
-					onRowSelectionChanged={(data, rows) => {
+					persistenceID="contratista-list-v2"
+					onRowSelectionChanged={(data: any[], rows: any[]) => {
 						selectedRows = data;
 					}}
 					options={{

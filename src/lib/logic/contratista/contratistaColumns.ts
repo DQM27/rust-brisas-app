@@ -142,3 +142,41 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 		}
 	];
 };
+
+export const getContratistaTrashColumns = (): ColumnDefinition[] => {
+	return [
+		{ title: 'ID', field: 'id', visible: false },
+		{
+			title: 'Cédula',
+			field: 'cedula',
+			width: 130,
+			visible: true,
+			formatter: (cell) => `<span style="font-family:monospace; font-size:13px">${cell.getValue() || ''}</span>`
+		},
+		{
+			title: 'Nombre Completo',
+			field: 'nombreCompleto',
+			width: 220,
+			visible: true,
+			formatter: (cell) => `<span style="font-weight:500; color:#e2e8f0">${cell.getValue() || ''}</span>`
+		},
+		{ title: 'Empresa', field: 'empresaNombre', width: 180, visible: true },
+		{
+			title: 'Fecha Eliminación',
+			field: 'deletedAt',
+			width: 160,
+			visible: true,
+			formatter: (cell) => {
+				const val = cell.getValue();
+				if (!val) return '-';
+				return new Date(val).toLocaleDateString('es-PA', {
+					year: 'numeric',
+					month: 'short',
+					day: 'numeric',
+					hour: '2-digit',
+					minute: '2-digit'
+				});
+			}
+		}
+	];
+};

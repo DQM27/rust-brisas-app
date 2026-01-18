@@ -5,7 +5,7 @@
 	import { contratistas as contratistaService } from '$lib/api/contratista';
 	import * as proveedorService from '$lib/api/proveedor';
 	import * as visitanteService from '$lib/api/visitante';
-	import { ContratistaColumns } from '$lib/logic/contratista/contratistaColumns';
+	import { getContratistaTrashColumns } from '$lib/logic/contratista/contratistaColumns';
 	import { ProveedorColumns } from '$lib/logic/proveedor/proveedorColumns';
 	import { VisitanteColumns } from '$lib/logic/visitante/visitanteColumns';
 	import { slide } from 'svelte/transition';
@@ -79,7 +79,7 @@
 				<TrashListView
 					entityName="Contratista"
 					service={contratistaService}
-					columnDefs={ContratistaColumns.getTrashColumns()}
+					columnDefs={getContratistaTrashColumns()}
 					gridId="trash-contratista"
 					onBack={() => {}}
 				/>
