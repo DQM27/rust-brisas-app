@@ -2,7 +2,9 @@
 <script lang="ts">
 	import {
 		X,
-		User,
+		HardHat,
+		Truck,
+		UserCircle,
 		Briefcase,
 		ShieldCheck,
 		Clock,
@@ -34,178 +36,209 @@
 				month: 'long',
 				year: 'numeric',
 				hour: '2-digit',
-				minute: '2-digit'
+				minute: '2-digit',
+				hour12: false
 			});
 		} catch (e) {
 			return dateStr;
 		}
 	}
+
+	// UI Patterns Classes
+	const labelClass = 'block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1';
+	const containerClass = 'bg-surface-1 rounded-lg border border-surface p-4';
 </script>
 
 {#if show && person}
+	<!-- Backdrop con Blur (UI-Pattern 1.80) -->
 	<div
 		class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
 		transition:fade={{ duration: 200 }}
 		onclick={handleClose}
+		onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleClose()}
+		role="button"
+		tabindex="0"
 	>
+		<!-- Contenedor Principal (UI-Pattern 2.76) -->
 		<div
-			class="relative w-full max-w-lg bg-surface-2 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
+			class="relative w-full max-w-[550px] bg-surface-2 border border-surface rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]"
 			transition:scale={{ duration: 200, start: 0.95 }}
 			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="presentation"
 		>
-			<!-- Header -->
+			<!-- Header Estándar (UI-Pattern 2.82) -->
 			<div
-				class="relative h-32 bg-gradient-to-br from-blue-600/20 to-purple-600/20 p-6 flex items-end"
+				class="flex-none flex items-center justify-between px-6 py-4 bg-surface-2 border-b border-surface"
 			>
-				<button
-					class="absolute top-4 right-4 p-2 text-gray-400 hover:text-white bg-black/20 hover:bg-black/40 rounded-full transition-all"
-					onclick={handleClose}
-				>
-					<X size={20} />
-				</button>
-
-				<div class="flex items-center gap-4">
+				<div class="flex items-center gap-3">
 					<div
-						class="w-16 h-16 rounded-full bg-surface-1 border-2 border-blue-500/50 flex items-center justify-center text-blue-400 shadow-lg"
+						class="w-10 h-10 rounded-full bg-surface-1 border border-surface flex items-center justify-center text-secondary"
 					>
-						<User size={32} />
+						{#if person.tipoIngreso === 'contratista'}
+							<HardHat size={20} />
+						{:else if person.tipoIngreso === 'proveedor'}
+							<Truck size={20} />
+						{:else}
+							<UserCircle size={20} />
+						{/if}
 					</div>
 					<div>
-						<h3 class="text-xl font-bold text-white leading-tight uppercase tracking-tight">
+						<h2 class="text-lg font-bold text-primary leading-tight uppercase">
 							{person.nombreCompleto}
-						</h3>
+						</h2>
 						<span
-							class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider {person.estaAdentro
-								? 'bg-green-500/10 text-green-400 border border-green-500/20'
-								: 'bg-gray-500/10 text-gray-400 border border-gray-500/20'}"
+							class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider {person.estaAdentro
+								? 'text-green-400'
+								: 'text-gray-500'}"
 						>
 							<span
 								class="w-1.5 h-1.5 rounded-full {person.estaAdentro
-									? 'bg-green-400 animate-pulse'
+									? 'bg-green-400'
 									: 'bg-gray-400'}"
 							></span>
 							{person.estaAdentro ? 'Dentro del Recinto' : 'Fuera del Recinto'}
 						</span>
 					</div>
 				</div>
+				<button
+					onclick={handleClose}
+					class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
+				>
+					<X size={20} />
+				</button>
 			</div>
 
-			<!-- Body -->
-			<div class="p-6 space-y-6">
-				<!-- Grid de Información -->
-				<div class="grid grid-cols-2 gap-4">
-					<div class="space-y-1">
-						<span
-							class="text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-1.5"
-						>
-							<CreditCard size={12} /> Identificación
-						</span>
-						<p class="text-sm font-mono text-white bg-surface-3/50 px-2 py-1 rounded">
-							{person.cedula}
-						</p>
-					</div>
+			<!-- Content (UI-Pattern 3.106) -->
+			<div class="flex-1 p-6 space-y-6 overflow-y-auto">
+				<!-- Grid de Información en Card (UI-Pattern 3.107) -->
+				<div class={containerClass}>
+					<div class="grid grid-cols-2 gap-6">
+						<div>
+							<span class={labelClass}>Identificación</span>
+							<p
+								class="text-sm font-mono text-white bg-black/20 px-2 py-1 rounded border border-white/5 inline-block"
+							>
+								{person.cedula}
+							</p>
+						</div>
 
-					<div class="space-y-1">
-						<span
-							class="text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-1.5"
-						>
-							<Briefcase size={12} /> Empresa
-						</span>
-						<p class="text-sm font-medium text-gray-200">
-							{person.empresaNombre || 'N/A'}
-						</p>
-					</div>
+						<div>
+							<span class={labelClass}>Empresa</span>
+							<p class="text-sm font-medium text-primary">
+								{person.empresaNombre || 'N/A'}
+							</p>
+						</div>
 
-					<div class="space-y-1">
-						<span
-							class="text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-1.5"
-						>
-							<ShieldCheck size={12} /> Autorización
-						</span>
-						<p class="text-sm text-blue-300 font-medium">
-							{person.tipoAutorizacionDisplay}
-						</p>
-					</div>
+						<div>
+							<span class={labelClass}>Autorización</span>
+							<p class="text-sm text-blue-400 font-medium">
+								{person.tipoAutorizacionDisplay}
+							</p>
+						</div>
 
-					<div class="space-y-1">
-						<span
-							class="text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-1.5"
-						>
-							<MapPin size={12} /> Modo Ingreso
-						</span>
-						<p class="text-sm text-gray-300 capitalize font-medium">
-							{person.modoIngresoDisplay}
-						</p>
+						<div>
+							<span class={labelClass}>Modo Ingreso</span>
+							<p class="text-sm text-primary capitalize font-medium">
+								{person.modoIngresoDisplay}
+							</p>
+						</div>
 					</div>
 				</div>
 
-				<hr class="border-white/5" />
-
-				<!-- Historial de Último Movimiento -->
+				<!-- Historial de Último Movimiento (UI-Pattern 3.107) -->
 				<div class="space-y-4">
-					<div class="flex items-start gap-3">
-						<div class="mt-1 p-1.5 bg-blue-500/10 text-blue-400 rounded">
-							<Calendar size={14} />
-						</div>
-						<div class="flex-1">
-							<p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-								Entrada Registrada
-							</p>
-							<p class="text-sm text-gray-300 mt-0.5">{formatDate(person.fechaHoraIngreso)}</p>
-							<p class="text-[11px] text-gray-500 mt-0.5 italic">
-								Por: {person.usuarioIngresoNombre}
-							</p>
-						</div>
-					</div>
+					<h4 class={labelClass}>Registro de Actividad</h4>
 
-					{#if person.fechaHoraSalida}
-						<div class="flex items-start gap-3">
-							<div class="mt-1 p-1.5 bg-orange-500/10 text-orange-400 rounded">
-								<LogOut size={14} />
+					<div class="grid grid-cols-1 gap-3">
+						<!-- Entrada -->
+						<div class="flex items-start gap-4 p-3 rounded-lg border border-surface transition-all">
+							<div class="mt-1 text-secondary">
+								<Calendar size={18} />
 							</div>
 							<div class="flex-1">
-								<p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-									Salida Registrada
-								</p>
-								<p class="text-sm text-gray-300 mt-0.5">{formatDate(person.fechaHoraSalida)}</p>
-								<p class="text-[11px] text-gray-500 mt-0.5 italic">
-									Por: {person.usuarioSalidaNombre || 'Sistema'}
+								<div class="flex justify-between items-start">
+									<p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+										Entrada
+									</p>
+									<p class="text-xs text-gray-400 font-mono">
+										{formatDate(person.fechaHoraIngreso)}
+									</p>
+								</div>
+								<p class="text-sm text-primary mt-1 italic">
+									Registrado por: <span class="font-semibold text-gray-300"
+										>{person.usuarioIngresoNombre}</span
+									>
 								</p>
 							</div>
 						</div>
-					{/if}
 
+						<!-- Salida (si aplica) -->
+						{#if person.fechaHoraSalida}
+							<div
+								class="flex items-start gap-4 p-3 rounded-lg border border-surface transition-all"
+							>
+								<div class="mt-1 text-secondary">
+									<LogOut size={18} />
+								</div>
+								<div class="flex-1">
+									<div class="flex justify-between items-start">
+										<p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+											Salida
+										</p>
+										<p class="text-xs text-gray-400 font-mono">
+											{formatDate(person.fechaHoraSalida)}
+										</p>
+									</div>
+									<p class="text-sm text-primary mt-1 italic">
+										Registrado por: <span class="font-semibold text-gray-300"
+											>{person.usuarioSalidaNombre || 'Sistema'}</span
+										>
+									</p>
+								</div>
+							</div>
+						{/if}
+					</div>
+
+					<!-- Tiempo de Permanencia (UI-Pattern 3.204) -->
 					{#if person.tiempoPermanenciaTexto}
-						<div
-							class="flex items-center gap-3 bg-surface-3/30 p-3 rounded-lg border border-white/5"
-						>
-							<Clock size={16} class="text-indigo-400" />
-							<div>
-								<p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-									Tiempo de Permanencia
-								</p>
-								<p class="text-xs text-indigo-300 font-mono">{person.tiempoPermanenciaTexto}</p>
+						<div class="flex items-center gap-3 bg-white/5 p-3 rounded-lg border border-white/5">
+							<Clock size={16} class="text-secondary" />
+							<div class="flex-1 flex justify-between items-center">
+								<span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest"
+									>Tiempo Total</span
+								>
+								<span
+									class="text-xs text-primary font-mono font-bold bg-white/5 px-2 py-0.5 rounded"
+									>{person.tiempoPermanenciaTexto}</span
+								>
 							</div>
 						</div>
 					{/if}
 				</div>
 
+				<!-- Observaciones (UI-Pattern 4.315) -->
 				{#if person.observaciones}
-					<div class="bg-yellow-500/5 border border-yellow-500/10 p-3 rounded-lg">
-						<span class="text-[10px] text-yellow-500/70 font-bold uppercase tracking-widest"
-							>Observaciones</span
-						>
-						<p class="text-xs text-gray-400 mt-1 italic">
-							"{person.observaciones}"
-						</p>
+					<div class="bg-white/5 border border-white/10 p-4 rounded-lg flex gap-3">
+						<Briefcase size={18} class="text-secondary shrink-0" />
+						<div>
+							<span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1"
+								>Observaciones de Registro</span
+							>
+							<p class="text-xs text-secondary leading-relaxed italic">
+								"{person.observaciones}"
+							</p>
+						</div>
 					</div>
 				{/if}
 			</div>
 
-			<!-- Footer -->
-			<div class="p-4 bg-surface-3 border-t border-white/5 flex justify-end">
+			<!-- Footer Estándar (UI-Pattern 9.240) -->
+			<div
+				class="flex-none flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1"
+			>
 				<button
-					class="px-5 py-2 bg-white/5 hover:bg-white/10 text-white text-sm font-medium rounded-lg border border-white/10 transition-all"
+					class="px-5 py-2 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm"
 					onclick={handleClose}
 				>
 					Cerrar Detalle
@@ -214,3 +247,11 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	/* Fix para scroll suave */
+	div {
+		scrollbar-width: thin;
+		scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+	}
+</style>
