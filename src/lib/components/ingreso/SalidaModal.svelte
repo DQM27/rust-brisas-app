@@ -28,10 +28,11 @@
 		if ('nombreCompleto' in ingreso) {
 			return (ingreso as IngresoResponse).nombreCompleto || 'Sin nombre';
 		}
-		if ('visitanteNombre' in ingreso) {
-			return `${(ingreso as IngresoVisita).visitanteNombre} ${(ingreso as IngresoVisita).visitanteApellido}`;
+		// Fallback for types that have separate name fields (IngresoVisita, IngresoProveedor)
+		if ('nombre' in ingreso && 'apellido' in ingreso) {
+			return `${(ingreso as any).nombre} ${(ingreso as any).apellido}`;
 		}
-		return `${(ingreso as IngresoProveedor).nombre} ${(ingreso as IngresoProveedor).apellido}`;
+		return 'Sin nombre';
 	});
 
 	const dispatch = createEventDispatcher();
