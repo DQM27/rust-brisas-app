@@ -67,7 +67,12 @@
 	let showEstadoDropdown = $state(false);
 	let praindFilter = $state<'todos' | 'vigente' | 'vencido' | 'por-vencer'>('todos');
 	let showPraindDropdown = $state(false);
-	let showHeaderFilters = $state(true); // Toggle header filters visibility
+	// Toggle header filters visibility - persist in localStorage
+	let showHeaderFilters = $state(
+		typeof window !== 'undefined'
+			? localStorage.getItem('tabulator-header-filters') === 'true'
+			: false
+	);
 
 	// Filter Buttons logic (for keyboard nav state reference mostly, actual filtering is in derived data)
 	// NOTE: In Tabulator we pass the filtered data directly or use Filter API. Here we filter locally first.
@@ -530,6 +535,10 @@
 				}}
 				onToggleFilters={() => {
 					showHeaderFilters = !showHeaderFilters;
+					// Save preference to localStorage
+					if (typeof window !== 'undefined') {
+						localStorage.setItem('tabulator-header-filters', String(showHeaderFilters));
+					}
 					// Redraw table to adjust header heights
 					if (gridWrapper) {
 						setTimeout(() => {
