@@ -57,9 +57,11 @@
 	let viewMode = $state<ViewMode>('actives');
 
 	// Date Range & Filters
+	// Date Range & Filters: Mostrar últimos 30 días por defecto en historial
 	const today = new Date().toLocaleDateString('en-CA');
+	const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
 	let dateRange = $state({
-		start: today,
+		start: thirtyDaysAgo,
 		end: today
 	});
 	let hideActive = $state(false);
@@ -70,6 +72,11 @@
 	let availableFormats = $state<string[]>([]);
 	let exportColumns = $state<{ id: string; name: string; selected: boolean }[]>([]);
 	let exportRowsSnapshot = $state<Record<string, any>[]>([]);
+
+	// Metadata para el Toolbar (visibilidad y fijado)
+	let toolbarColumns = $state<
+		{ field: string; title: string; visible: boolean; frozen: boolean }[]
+	>([]);
 
 	// Filters visibility
 	let showHeaderFilters = $state(
@@ -153,11 +160,23 @@
 					fechaFin: endLocal.toISOString()
 				});
 			}
-			ingresos = data as IngresoResponse[];
+
+			const rawData = data as IngresoResponse[];
+			// Enriquecer datos con campos virtuales para fecha/hora (evita colisiones en persistencia/export)
+			ingresos = rawData.map((i) => ({
+				...i,
+				fechaHoraIngreso_fecha: i.fechaHoraIngreso,
+				fechaHoraIngreso_hora: i.fechaHoraIngreso,
+				fechaHoraSalida_fecha: i.fechaHoraSalida,
+				fechaHoraSalida_hora: i.fechaHoraSalida
+			})) as any;
 
 			if (gridWrapper) {
 				gridWrapper.replaceData(ingresos);
 			}
+
+			// Actualizar metadata para el toolbar después de cargar
+			updateToolbarColumns();
 		} catch (err: any) {
 			error = err.message || 'Error al cargar datos';
 			toast.error(error);
@@ -190,31 +209,68 @@
 
 	// EXPORT LOGIC
 	async function handleExportClick() {
-		if (!gridWrapper) return;
-		const table = gridWrapper.getTable();
-		if (!table) return;
-
 		loading = true;
 		try {
 			availableFormats = await getAvailableFormats();
 
-			const cols = table.getColumns();
-			exportColumns = cols
-				.map((col: any) => ({
-					id: col.getField(),
-					name: col.getDefinition().title || col.getField(),
-					selected: col.isVisible()
-				}))
+			const table = gridWrapper.getTable();
+			const allCols = table.getColumns();
+
+			// 1. Obtener definiciones de columnas para exportar
+			exportColumns = allCols
+				.map((col: any) => {
+					const def = col.getDefinition();
+					return {
+						id: def.title || col.getField() || 'col',
+						name: def.title || col.getField() || 'Columna',
+						selected: col.isVisible()
+					};
+				})
 				.filter((col: any) => col.id && !['Acciones', 'ag-Grid-ControlsColumn'].includes(col.name));
 
+			// 2. Pre-formatear los datos para el exportador (esto arregla el preview y los valores)
 			const isSelection = selectedRows.length > 0;
-			// Tabulator getData('active') returns currently filtered/sorted data
-			const rowsData = isSelection ? $state.snapshot(selectedRows) : table.getData('active');
+			const rawRows = isSelection ? $state.snapshot(selectedRows) : table.getData('active');
 
-			exportRowsSnapshot = rowsData;
+			exportRowsSnapshot = rawRows.map((row: any) => {
+				const formattedRow: Record<string, any> = {};
+				allCols.forEach((col: any) => {
+					const def = col.getDefinition();
+					const header = def.title || col.getField();
+					if (!header || header === 'Acciones') return;
+
+					let val = row[col.getField()];
+
+					// Aplicar formateador si existe para limpiar HTML o dar formato
+					if (def.formatter && typeof def.formatter === 'function') {
+						try {
+							// Simulamos un objeto de celda para el formateador
+							const mockCell = {
+								getValue: () => val,
+								getData: () => row,
+								getElement: () => ({})
+							};
+							const res = def.formatter(mockCell);
+							if (typeof res === 'string') {
+								// Limpiar etiquetas HTML de los formatters (como los spans de colores)
+								val = res.replace(/<[^>]*>?/gm, '');
+							} else {
+								val = res;
+							}
+						} catch (e) {
+							console.warn('Error formatting col', header, e);
+						}
+					}
+
+					formattedRow[header] = val != null ? String(val) : '';
+				});
+				return formattedRow;
+			});
+
 			showExportModal = true;
 		} catch (err) {
 			console.error('Export preload error:', err);
+			toast.error('Error al preparar exportación');
 		} finally {
 			loading = false;
 		}
@@ -235,20 +291,19 @@
 			const fields: string[] = [];
 
 			targetColIds.forEach((id: string) => {
-				const col = allCols.find((c: any) => c.getField() === id);
+				// Buscar la columna por título primero, luego por campo
+				const col = allCols.find((c: any) => (c.getDefinition().title || c.getField()) === id);
 				if (col) {
+					const field = col.getField();
 					headers.push(col.getDefinition().title || id);
-					fields.push(id);
+					fields.push(field);
 				}
 			});
 
 			const rowsToExport = exportRowsSnapshot.map((row: any) => {
 				const newRow: Record<string, any> = {};
-				fields.forEach((field, index) => {
-					const header = headers[index];
-					let val = row[field];
-					if (val === null || val === undefined) val = '';
-					newRow[header] = String(val);
+				headers.forEach((header) => {
+					newRow[header] = row[header] || '';
 				});
 				return newRow;
 			});
@@ -297,6 +352,20 @@
 
 	$effect(() => {
 		if ($activeTabId === tabId) setActiveContext('ingreso-list');
+	});
+
+	// Asegurar que las columnas del toolbar se inicialicen cuando la tabla esté lista
+	$effect(() => {
+		if (gridWrapper) {
+			const checkTable = setInterval(() => {
+				const table = gridWrapper.getTable();
+				if (table) {
+					updateToolbarColumns();
+					clearInterval(checkTable);
+				}
+			}, 200);
+			return () => clearInterval(checkTable);
+		}
 	});
 
 	// Handlers from Modals
@@ -397,11 +466,73 @@
 		}
 	}
 
+	function updateToolbarColumns() {
+		const table = gridWrapper?.getTable();
+		if (table) {
+			const allCols = table.getColumns();
+			const seenFields = new Set<string>();
+			const cleanCols: any[] = [];
+
+			allCols.forEach((c: any) => {
+				const def = c.getDefinition();
+				const field = c.getField();
+				const title = def.title;
+
+				// 1. Omitir columnas sin título (como el checkbox de selección)
+				// 2. Omitir la columna de "Acciones" (no tiene sentido fijarla a la izquierda)
+				if (!title || title === '' || title === 'Acciones') return;
+
+				// 3. Evitar duplicados por campo
+				const fieldKey = field || title;
+				if (seenFields.has(fieldKey)) return;
+				seenFields.add(fieldKey);
+
+				cleanCols.push({
+					field: fieldKey,
+					title: title,
+					visible: c.isVisible(),
+					frozen: def.frozen === true || def.frozen === 'left'
+				});
+			});
+
+			toolbarColumns = cleanCols;
+		}
+	}
+
 	function handleToggleColumn(field: string) {
 		const table = gridWrapper?.getTable();
 		const column = table?.getColumn(field);
 		if (column) {
 			column.isVisible() ? column.hide() : column.show();
+			updateToolbarColumns();
+		}
+	}
+
+	function handleToggleFreeze(field: string) {
+		const table = gridWrapper?.getTable();
+		const column = table?.getColumn(field);
+		if (column) {
+			const def = column.getDefinition();
+			// Tabulator puede devolver true, 'left' o undefined
+			const currentlyFrozen = def.frozen === true || def.frozen === 'left';
+
+			// Invertir estado
+			const newState = !currentlyFrozen;
+
+			// Actualizar definición
+			column.updateDefinition({ frozen: newState });
+
+			if (newState) {
+				toast.success('Columna fijada');
+			} else {
+				toast.success('Columna liberada');
+			}
+
+			// IMPORTANTE: Tabulator necesita redibujar para reordenar las columnas fijadas
+			setTimeout(() => {
+				updateToolbarColumns();
+				gridWrapper?.redraw(true);
+			}, 10);
 		}
 	}
 
@@ -475,9 +606,10 @@
 		onAutoSizeColumns={handleAutoSize}
 		onFitColumns={handleFitColumns}
 		onToggleColumn={handleToggleColumn}
+		onToggleFreeze={handleToggleFreeze}
 		onToggleFilters={handleToggleFilters}
 		onAdvancedExport={handleExportClick}
-		{columns}
+		columns={toolbarColumns}
 	>
 		{#snippet primaryActions()}
 			{#if selectedRows.length > 0}
@@ -490,15 +622,14 @@
 						<X size={14} /> Cancelar
 					</button>
 				</div>
-			{:else}
-				{#if viewMode === 'actives'}
-					<button
-						onclick={handleNuevoIngreso}
-						class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
-					>
-						<LogIn size={14} /> Nuevo
-					</button>
-				{/if}
+			{:else if viewMode === 'actives'}
+				<button
+					onclick={handleNuevoIngreso}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
+				>
+					<LogIn size={14} /> Nuevo
+				</button>
+
 				<button
 					onclick={() => (showContratistaModal = true)}
 					class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
@@ -560,7 +691,7 @@
 					placeholder: 'No hay ingresos registrados'
 				}}
 				onRowSelectionChanged={(data) => (selectedRows = data)}
-				persistenceID="ingreso-list-v1"
+				persistenceID="ingreso-list-v2"
 			/>
 		{/if}
 	</div>

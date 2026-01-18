@@ -90,5 +90,23 @@ export const defaultTabulatorOptions: any = {
     resizableRows: true,
     persistence: true, // Persist column layout
     index: "id", // Default ID
-    selectable: true // It is valid in JS, TS definitions are just missing it
+    selectable: true, // It is valid in JS, TS definitions are just missing it
+    locale: "es",
+    langs: {
+        "es": {
+            "pagination": {
+                "page_size": "Por Página",
+                "page_title": "Ver Página",
+                "first": "Primero",
+                "first_title": "Primera Página",
+                "last": "Último",
+                "last_title": "Última Página",
+                "prev": "Anterior",
+                "prev_title": "Página Anterior",
+                "next": "Siguiente",
+                "next_title": "Página Siguiente",
+                "all": "Todos",
+            }
+        }
+    }
 };

@@ -64,28 +64,24 @@ export const getIngresoColumns = (
             title: 'Modo',
             field: 'modoIngresoDisplay',
             width: 110,
-            formatter: (cell) => {
-                const val = cell.getValue();
-                const icon = val === 'vehiculo' ? '🚗' : '🚶';
-                return `${icon} <span class="capitalize">${val || ''}</span>`;
-            }
+            formatter: (cell) => `<span class="capitalize">${cell.getValue() || ''}</span>`
         },
         {
             title: 'Fecha Entrada',
-            field: 'fechaHoraIngreso',
+            field: 'fechaHoraIngreso_fecha', // Campo único
             width: 130,
             formatter: (cell) => {
-                const d = parseDate(cell.getValue());
+                const d = parseDate(cell.getData().fechaHoraIngreso); // Acceder vía getData
                 return d ? d.toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
             }
         },
         {
             title: 'Hora Entrada',
-            field: 'fechaHoraIngreso',
+            field: 'fechaHoraIngreso_hora', // Campo único
             width: 110,
             formatter: (cell) => {
-                const d = parseDate(cell.getValue());
-                return d ? `<span class="font-mono">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
+                const d = parseDate(cell.getData().fechaHoraIngreso);
+                return d ? `<span class="font-mono text-white">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
             }
         },
         {
@@ -101,20 +97,20 @@ export const getIngresoColumns = (
         cols.push(
             {
                 title: 'Fecha Salida',
-                field: 'fechaHoraSalida',
+                field: 'fechaHoraSalida_fecha',
                 width: 130,
                 formatter: (cell) => {
-                    const d = parseDate(cell.getValue());
+                    const d = parseDate(cell.getData().fechaHoraSalida);
                     return d ? d.toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
                 }
             },
             {
                 title: 'Hora Salida',
-                field: 'fechaHoraSalida',
+                field: 'fechaHoraSalida_hora',
                 width: 110,
                 formatter: (cell) => {
-                    const d = parseDate(cell.getValue());
-                    return d ? `<span class="font-mono">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
+                    const d = parseDate(cell.getData().fechaHoraSalida);
+                    return d ? `<span class="font-mono text-white">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
                 }
             },
             {

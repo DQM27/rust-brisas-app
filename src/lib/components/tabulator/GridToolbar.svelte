@@ -9,7 +9,9 @@
 		ScanText,
 		MoveHorizontal,
 		Eye,
-		Filter
+		Filter,
+		Pin,
+		PinOff
 	} from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
 
@@ -21,6 +23,7 @@
 		onAutoSizeColumns?: () => void;
 		onFitColumns?: () => void;
 		onToggleColumn?: (field: string) => void;
+		onToggleFreeze?: (field: string) => void; // New
 		onToggleFilters?: () => void;
 		onAdvancedExport?: () => void;
 		hasSelection?: boolean; // New: indicate if rows are selected
@@ -39,6 +42,7 @@
 		onAutoSizeColumns,
 		onFitColumns,
 		onToggleColumn,
+		onToggleFreeze,
 		onToggleFilters,
 		onAdvancedExport,
 		columns = [],
@@ -50,6 +54,7 @@
 	}: Props = $props();
 
 	let showColumnDropdown = $state(false);
+	let showFreezeDropdown = $state(false);
 </script>
 
 <div
@@ -119,6 +124,47 @@
 			>
 				<MoveHorizontal class="h-4 w-4" />
 			</button>
+			<!-- Freeze Columns Button with Dropdown -->
+			<div class="relative">
+				<button
+					class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+					onclick={() => (showFreezeDropdown = !showFreezeDropdown)}
+					title="Congelar/Fijar columnas"
+				>
+					<Pin class="h-4 w-4" />
+				</button>
+				{#if showFreezeDropdown && columns.length > 0}
+					<div
+						class="absolute right-0 mt-2 w-56 rounded-md shadow-xl bg-[#18181b] ring-1 ring-black ring-opacity-5 z-50 p-2 border border-white/10"
+					>
+						<div class="text-[10px] font-bold text-gray-500 mb-2 px-2 uppercase tracking-wider">
+							Fijar Columnas
+						</div>
+						{#each columns as col}
+							<button
+								class="w-full flex items-center px-2 py-1.5 hover:bg-white/5 rounded cursor-pointer group transition-colors text-left"
+								onclick={() => onToggleFreeze?.(col.field)}
+							>
+								<div class="flex-none w-4 h-4 flex items-center justify-center">
+									{#if col.frozen}
+										<Pin class="h-3 w-3 text-blue-400 fill-blue-400/20" />
+									{:else}
+										<PinOff class="h-3 w-3 text-gray-600 group-hover:text-gray-400" />
+									{/if}
+								</div>
+								<span
+									class="ml-2 text-xs {col.frozen
+										? 'text-blue-400 font-medium'
+										: 'text-gray-400 group-hover:text-gray-200'} transition-colors"
+								>
+									{col.title}
+								</span>
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
 			<!-- Column Visibility Button with Dropdown -->
 			<div class="relative">
 				<button
