@@ -80,17 +80,29 @@ export function createTabulatorController(): TabulatorWrapperAPI {
  * Default options for the Brisas App Tabulator Theme
  */
 export const defaultTabulatorOptions: any = {
-    layout: "fitData", // Más compacto que fitDataFill
+    layout: "fitData",
     validationMode: "highlight",
     pagination: true,
     paginationSize: 20,
     paginationSizeSelector: [10, 20, 50, 100],
     movableColumns: true,
     resizableRows: true,
-    persistence: true, // Persist column layout
-    index: "id", // Default ID
-    selectable: true, // It is valid in JS, TS definitions are just missing it
-    headerWordWrap: true, // Permitir que el texto del encabezado se rompa en varias líneas
+    persistence: true,
+    index: "id",
+    selectable: true,
+    headerWordWrap: true,
+    placeholder: "No se encontraron datos",
+    // Pro Arsenal Features
+    clipboard: "copy", // Permite Ctrl+C para copiar datos (tipo Excel)
+    clipboardCopyStyled: false,
+    clipboardCopyConfig: {
+        columnHeaders: true,
+    },
+    columnHeaderVertAlign: "middle",
+    // Configuración estética de grupos
+    groupHeader: (value: any, count: number) => {
+        return `<span class='text-blue-400 font-bold'>${value}</span> <span class='text-gray-500 font-normal ml-2'>(${count} registros)</span>`;
+    },
     locale: "es",
     langs: {
         "es": {
@@ -106,6 +118,14 @@ export const defaultTabulatorOptions: any = {
                 "next": "Siguiente",
                 "next_title": "Página Siguiente",
                 "all": "Todos",
+            },
+            "groups": {
+                "item": "registro",
+                "items": "registros",
+            },
+            "ajax": {
+                "loading": "Cargando...",
+                "error": "Error al cargar datos",
             }
         }
     }

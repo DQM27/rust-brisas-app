@@ -23,6 +23,7 @@
 	import { getIngresoColumns } from '$lib/logic/ingreso/ingresoColumns';
 	import { currentUser } from '$lib/stores/auth';
 	import { activeTabId, openTab } from '$lib/stores/tabs';
+	import { statusBarInfo } from '$lib/stores/ui';
 	import * as contratistaService from '$lib/logic/contratista/contratistaService';
 	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
 	import { getAvailableFormats } from '$lib/api/export';
@@ -84,6 +85,28 @@
 			? localStorage.getItem('tabulator-header-filters') === 'true'
 			: false
 	);
+
+	// Grouping State
+	let groupByField = $state<string | undefined>(undefined);
+
+	// Context Menu for Rows
+	const rowContextMenu = [
+		{
+			label: 'Copiar Nombre',
+			action: (e: any, row: any) => {
+				const data = row.getData();
+				navigator.clipboard.writeText(data.nombreCompleto);
+				toast.success('Nombre copiado');
+			}
+		},
+		{
+			label: 'Ver Detalles del Contratista',
+			action: (e: any, row: any) => {
+				const data = row.getData();
+				toast('Función próximamente: Ver detalles de ' + data.nombreCompleto);
+			}
+		}
+	];
 
 	// Derived Data (Search + ViewMode + Filter)
 	let filteredIngresos = $derived.by(() => {
@@ -175,8 +198,7 @@
 				gridWrapper.replaceData(ingresos);
 			}
 
-			// Actualizar metadata para el toolbar después de cargar
-			updateToolbarColumns();
+			// La actualización de toolbarColumns ahora la gestiona TabulatorWrapper automáticamente
 		} catch (err: any) {
 			error = err.message || 'Error al cargar datos';
 			toast.error(error);
@@ -346,26 +368,23 @@
 		setupKeyboardSubscription();
 	});
 
+	$effect(() => {
+		if ($activeTabId === tabId) {
+			setActiveContext('ingreso-list');
+			// Actualizar StatusBar con el conteo actual
+			statusBarInfo.set({
+				count: filteredIngresos.length,
+				selectedCount: selectedRows.length,
+				label: 'Registros',
+				message: viewMode === 'actives' ? 'Visualizando Ingresos Activos' : 'Visualizando Historial'
+			});
+		}
+	});
+
+	// Limpiar StatusBar al salir si la pestaña se cierra o cambia
 	onDestroy(() => {
 		if (unsubscribeKeyboard) unsubscribeKeyboard();
-	});
-
-	$effect(() => {
-		if ($activeTabId === tabId) setActiveContext('ingreso-list');
-	});
-
-	// Asegurar que las columnas del toolbar se inicialicen cuando la tabla esté lista
-	$effect(() => {
-		if (gridWrapper) {
-			const checkTable = setInterval(() => {
-				const table = gridWrapper.getTable();
-				if (table) {
-					updateToolbarColumns();
-					clearInterval(checkTable);
-				}
-			}, 200);
-			return () => clearInterval(checkTable);
-		}
+		statusBarInfo.set({ count: undefined, label: '', message: '' });
 	});
 
 	// Handlers from Modals
@@ -431,108 +450,6 @@
 			toast.error('Error al registrar salida: ' + err.message);
 		} finally {
 			salidaLoading = false;
-		}
-	}
-
-	// Toolbar handlers
-	function handleAutoSize() {
-		const table = gridWrapper?.getTable();
-		if (table) {
-			const cols = table.getColumnDefinitions().map((col: any) => ({ ...col, width: undefined }));
-			table.setColumns(cols);
-			toast.success('Columnas ajustadas al contenido');
-		} else {
-			console.warn('AutoSize: Table not ready');
-		}
-	}
-
-	function handleFitColumns() {
-		const table = gridWrapper?.getTable();
-		if (table) {
-			const containerWidth = table.element.clientWidth;
-			const columns = table.getColumns();
-			if (columns.length === 0) return;
-			const columnWidth = Math.floor(containerWidth / columns.length);
-			const remainder = containerWidth - columnWidth * columns.length;
-
-			const cols = table.getColumnDefinitions().map((col: any, index: number) => ({
-				...col,
-				width: index === columns.length - 1 ? columnWidth + remainder : columnWidth
-			}));
-			table.setColumns(cols);
-			toast.success('Columnas ajustadas al ancho');
-		} else {
-			console.warn('FitColumns: Table not ready');
-		}
-	}
-
-	function updateToolbarColumns() {
-		const table = gridWrapper?.getTable();
-		if (table) {
-			const allCols = table.getColumns();
-			const seenFields = new Set<string>();
-			const cleanCols: any[] = [];
-
-			allCols.forEach((c: any) => {
-				const def = c.getDefinition();
-				const field = c.getField();
-				const title = def.title;
-
-				// 1. Omitir columnas sin título (como el checkbox de selección)
-				// 2. Omitir la columna de "Acciones" (no tiene sentido fijarla a la izquierda)
-				if (!title || title === '' || title === 'Acciones') return;
-
-				// 3. Evitar duplicados por campo
-				const fieldKey = field || title;
-				if (seenFields.has(fieldKey)) return;
-				seenFields.add(fieldKey);
-
-				cleanCols.push({
-					field: fieldKey,
-					title: title,
-					visible: c.isVisible(),
-					frozen: def.frozen === true || def.frozen === 'left'
-				});
-			});
-
-			toolbarColumns = cleanCols;
-		}
-	}
-
-	function handleToggleColumn(field: string) {
-		const table = gridWrapper?.getTable();
-		const column = table?.getColumn(field);
-		if (column) {
-			column.isVisible() ? column.hide() : column.show();
-			updateToolbarColumns();
-		}
-	}
-
-	function handleToggleFreeze(field: string) {
-		const table = gridWrapper?.getTable();
-		const column = table?.getColumn(field);
-		if (column) {
-			const def = column.getDefinition();
-			// Tabulator puede devolver true, 'left' o undefined
-			const currentlyFrozen = def.frozen === true || def.frozen === 'left';
-
-			// Invertir estado
-			const newState = !currentlyFrozen;
-
-			// Actualizar definición
-			column.updateDefinition({ frozen: newState });
-
-			if (newState) {
-				toast.success('Columna fijada');
-			} else {
-				toast.success('Columna liberada');
-			}
-
-			// IMPORTANTE: Tabulator necesita redibujar para reordenar las columnas fijadas
-			setTimeout(() => {
-				updateToolbarColumns();
-				gridWrapper?.redraw(true);
-			}, 10);
 		}
 	}
 
@@ -603,10 +520,10 @@
 	<GridToolbar
 		bind:searchTerm
 		hasSelection={selectedRows.length > 0}
-		onAutoSizeColumns={handleAutoSize}
-		onFitColumns={handleFitColumns}
-		onToggleColumn={handleToggleColumn}
-		onToggleFreeze={handleToggleFreeze}
+		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
+		onFitColumns={() => gridWrapper?.fitColumns()}
+		onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
+		onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
 		onToggleFilters={handleToggleFilters}
 		onAdvancedExport={handleExportClick}
 		columns={toolbarColumns}
@@ -643,6 +560,26 @@
 					<FileText size={14} /> Listado
 				</button>
 			{/if}
+		{/snippet}
+
+		{#snippet secondaryActions()}
+			<div class="flex items-center gap-2 border-l border-white/5 pl-3">
+				<!-- Multi-Grouping Menu -->
+				<div class="flex items-center gap-1 bg-[#2d2d2d] border border-white/10 rounded-md p-0.5">
+					<span class="text-[10px] text-gray-500 font-bold uppercase px-2">Agrupar:</span>
+					{#each [{ id: undefined, label: 'Ninguno' }, { id: 'empresaNombre', label: 'Empresa' }, { id: 'tipoAutorizacionDisplay', label: 'Autorización' }, { id: 'modoIngresoDisplay', label: 'Modo' }] as opt}
+						<button
+							onclick={() => (groupByField = opt.id)}
+							class="px-2 py-1 rounded text-[11px] font-medium transition-all {groupByField ===
+							opt.id
+								? 'bg-blue-500/20 text-blue-400'
+								: 'text-gray-400 hover:text-white hover:bg-white/5'}"
+						>
+							{opt.label}
+						</button>
+					{/each}
+				</div>
+			</div>
 		{/snippet}
 
 		{#snippet CustomFilters()}
@@ -685,9 +622,12 @@
 				data={filteredIngresos}
 				{columns}
 				withCheckboxSelection={true}
+				groupBy={groupByField}
+				columnCalculations={true}
+				{rowContextMenu}
 				options={{
 					...defaultTabulatorOptions,
-					layout: 'fitColumns',
+					layout: 'fitData',
 					placeholder: 'No hay ingresos registrados'
 				}}
 				onRowSelectionChanged={(data) => (selectedRows = data)}

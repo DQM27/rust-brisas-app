@@ -5,6 +5,7 @@
 		type ColumnDefinition,
 		type Options
 	} from 'tabulator-tables';
+	import { toast } from 'svelte-5-french-toast';
 	import {
 		createTabulatorController,
 		defaultTabulatorOptions
@@ -30,6 +31,10 @@
 		onRowSelectionChanged?: (data: any[], rows: any[]) => void;
 		persistenceID?: string; // Unique ID for storing table state
 		persistenceMode?: 'local' | 'cookie';
+		groupBy?: string | string[] | ((data: any) => string); // New: Grouping field
+		columnCalculations?: boolean; // New: Enable footer calculations
+		rowContextMenu?: any[]; // New: Context menu items
+		toolbarColumns?: { field: string; title: string; visible: boolean; frozen: boolean }[]; // Bindable
 	}
 
 	let {
@@ -39,7 +44,7 @@
 		class: className = '',
 		height = '100%',
 		placeholder = 'No Data Available',
-		layout = 'fitDataFill',
+		layout = 'fitData',
 		responsiveLayout,
 		pagination = false,
 		paginationSize = 10,
@@ -49,7 +54,11 @@
 		toolbarActions,
 		onRowSelectionChanged,
 		persistenceID,
-		persistenceMode = 'local'
+		persistenceMode = 'local',
+		groupBy,
+		columnCalculations = false,
+		rowContextMenu = [],
+		toolbarColumns = $bindable([])
 	}: Props = $props();
 
 	let table: Tabulator | undefined;
@@ -109,6 +118,10 @@
 					: false,
 				persistenceID: persistenceID,
 				persistenceMode: persistenceMode,
+				// Pro Features Setup
+				groupBy,
+				columnCalcs: columnCalculations ? 'both' : false,
+				rowContextMenu,
 				...options
 			});
 
@@ -146,11 +159,103 @@
 		}
 	});
 
+	// Reactive Updates for Grouping
+	$effect(() => {
+		if (table && isTableBuilt) {
+			table.setGroupBy(groupBy as any);
+		}
+	});
+
 	// Derived columns update check? Tabulator handles mutations differently,
 	// but if columns structure changes significantly we might need setColumns.
 	// However, usually columns are static structure-wise.
 	// If we need dynamic columns, we'd need another effect or smart diffing.
 	// For now, assuming columns don't change structure after init (only visibility which is internal).
+
+	// --- PRO Column Management (Centralized) ---
+	function updateToolbarColumns() {
+		if (!table || !isTableBuilt) return;
+		const allCols = table.getColumns();
+		const seenFields = new Set<string>();
+		const cleanCols: any[] = [];
+
+		allCols.forEach((c: any) => {
+			const def = c.getDefinition();
+			const field = c.getField();
+			const title = def.title;
+
+			if (!title || title === '' || title === 'Acciones') return;
+
+			const fieldKey = field || title;
+			if (seenFields.has(fieldKey)) return;
+			seenFields.add(fieldKey);
+
+			cleanCols.push({
+				field: fieldKey,
+				title: title,
+				visible: c.isVisible(),
+				frozen: def.frozen === true || def.frozen === 'left'
+			});
+		});
+
+		toolbarColumns = cleanCols;
+	}
+
+	export function toggleColumn(field: string) {
+		const column = table?.getColumn(field);
+		if (column) {
+			column.isVisible() ? column.hide() : column.show();
+			updateToolbarColumns();
+		}
+	}
+
+	export function toggleFreeze(field: string) {
+		const column = table?.getColumn(field);
+		if (column) {
+			const def = column.getDefinition();
+			const currentlyFrozen = (def.frozen as any) === true || (def.frozen as any) === 'left';
+			const newState = !currentlyFrozen;
+			column.updateDefinition({ frozen: newState } as any);
+
+			setTimeout(() => {
+				updateToolbarColumns();
+				redraw(true);
+			}, 10);
+		}
+	}
+
+	export function autoSizeColumns() {
+		if (table) {
+			const cols = table.getColumnDefinitions().map((col: any) => ({ ...col, width: undefined }));
+			table.setColumns(cols);
+			toast.success('Columnas ajustadas al contenido');
+		}
+	}
+
+	export function fitColumns() {
+		if (table) {
+			const containerWidth = table.element.clientWidth;
+			const columns = table.getColumns();
+			if (columns.length === 0) return;
+			const columnWidth = Math.floor(containerWidth / columns.length);
+			const remainder = containerWidth - columnWidth * columns.length;
+
+			const cols = table.getColumnDefinitions().map((col: any, index: number) => ({
+				...col,
+				width: index === columns.length - 1 ? columnWidth + remainder : columnWidth
+			}));
+			table.setColumns(cols);
+			toast.success('Columnas ajustadas al ancho');
+		}
+	}
+
+	// Sync toolbar columns when table is ready
+	table?.on('tableBuilt', updateToolbarColumns);
+	table?.on('columnVisibilityChanged', updateToolbarColumns);
+	table?.on('columnMoved', updateToolbarColumns);
+
+	// Export toolbar state for snippets
+	export const getToolbarColumns = () => toolbarColumns;
 
 	// Cleanup
 	onDestroy(() => {
@@ -389,5 +494,52 @@
 
 	:global(.tabulator-tableholder::-webkit-scrollbar-thumb:hover) {
 		background: rgba(122, 162, 247, 0.5);
+	}
+
+	/* Grouping Styles */
+	:global(.tabulator-group) {
+		background: rgba(122, 162, 247, 0.05) !important;
+		border-left: 4px solid #7aa2f7 !important;
+		min-height: 28px !important;
+	}
+
+	:global(.tabulator-group-toggle) {
+		color: #7aa2f7 !important;
+	}
+
+	/* Calculation Rows (Footer/Header Totals) */
+	:global(.tabulator-calcs) {
+		background-color: #1f2335 !important;
+		font-weight: 700 !important;
+		color: #bb9af7 !important; /* Purple accent for totals */
+	}
+
+	:global(.tabulator-calcs-top) {
+		border-bottom: 2px solid rgba(122, 162, 247, 0.3) !important;
+	}
+
+	:global(.tabulator-calcs-bottom) {
+		border-top: 2px solid rgba(122, 162, 247, 0.3) !important;
+	}
+
+	/* Context Menu Premium Style */
+	:global(.tabulator-menu) {
+		background: #1a1b26 !important;
+		border: 1px solid rgba(122, 162, 247, 0.3) !important;
+		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+		border-radius: 6px !important;
+		padding: 4px !important;
+	}
+
+	:global(.tabulator-menu-item) {
+		color: #c0caf5 !important;
+		padding: 6px 12px !important;
+		font-size: 12px !important;
+		border-radius: 4px !important;
+	}
+
+	:global(.tabulator-menu-item:hover) {
+		background: #7aa2f7 !important;
+		color: #1a1b26 !important;
 	}
 </style>

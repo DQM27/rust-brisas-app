@@ -15,3 +15,18 @@ export const tabs = writable([]);
 
 // Store para visibilidad del wizard de setup (para debug)
 export const setupWizardVisible = writable(false);
+
+// Store para información de la barra de estado (StatusBar)
+export interface StatusBarInfo {
+	count?: number;
+	selectedCount?: number;
+	label?: string;
+	message?: string;
+}
+
+export const statusBarInfo = writable<StatusBarInfo>({
+	count: 0,
+	selectedCount: 0,
+	label: 'registros',
+	message: ''
+});
