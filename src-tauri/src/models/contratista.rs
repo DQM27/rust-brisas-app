@@ -408,7 +408,7 @@ impl ContratistaResponse {
             empresa_id: c.empresa.id.to_string(),
             empresa_nombre: c.empresa.nombre.clone(),
             fecha_vencimiento_praind: clean_date_str.to_string(),
-            estado: c.estado.clone(), // Enum expected here
+            estado: c.estado.clone(),
             puede_ingresar: puede,
             praind_vencido: estado_praind.vencido,
             esta_bloqueado: false,
@@ -420,9 +420,9 @@ impl ContratistaResponse {
             vehiculo_modelo: None,
             vehiculo_color: None,
             vehiculos: None,
-            created_at: c.created_at.to_string(),
-            updated_at: c.updated_at.to_string(),
-            deleted_at: c.deleted_at.map(|d| d.to_string()),
+            created_at: crate::domain::common::datetime_to_iso(&c.created_at),
+            updated_at: crate::domain::common::datetime_to_iso(&c.updated_at),
+            deleted_at: c.deleted_at.as_ref().map(crate::domain::common::datetime_to_iso),
         }
     }
 }

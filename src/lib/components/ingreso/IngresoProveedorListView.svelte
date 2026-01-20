@@ -37,9 +37,17 @@
 	// Effect to handle external actions (like from Spotlight)
 	$effect(() => {
 		if (data?.openCreateModal) {
-			setTimeout(() => {
-				if (!showQuickEntry) showQuickEntry = true;
-			}, 100);
+			if (data.initialPersonId) {
+				// Cargar proveedor y abrir modal directamente
+				setTimeout(() => {
+					providerForIngreso = { id: data.initialPersonId, tipo: 'proveedor' };
+					showIngresoModal = true;
+				}, 100);
+			} else {
+				setTimeout(() => {
+					if (!showQuickEntry) showQuickEntry = true;
+				}, 100);
+			}
 		}
 	});
 

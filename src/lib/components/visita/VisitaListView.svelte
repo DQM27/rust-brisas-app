@@ -30,9 +30,16 @@
 
 	$effect(() => {
 		if (data?.openCreateModal) {
-			setTimeout(() => {
-				handleNuevoIngreso();
-			}, 100);
+			if (data.initialPersonId) {
+				setTimeout(() => {
+					selectedPerson = { id: data.initialPersonId, tipo: 'visita' };
+					showIngresoModal = true;
+				}, 100);
+			} else {
+				setTimeout(() => {
+					handleNuevoIngreso();
+				}, 100);
+			}
 		}
 	});
 

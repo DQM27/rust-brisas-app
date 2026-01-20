@@ -113,6 +113,10 @@ pub trait IngresoContratistaRepository: Send + Sync {
         start: &str,
         end: &str,
     ) -> Result<Vec<IngresoContratistaFetched>, SurrealDbError>;
+    async fn find_last_by_contratista(
+        &self,
+        contratista_id: &RecordId,
+    ) -> Result<Option<IngresoContratistaFetched>, SurrealDbError>;
 }
 
 #[async_trait]

@@ -118,3 +118,18 @@ pub async fn find_by_id_fetched(
         .await?;
     Ok(result.take(0)?)
 }
+/// Busca el último ingreso (abierto o cerrado) de un contratista.
+pub async fn find_last_by_contratista(
+    contratista_id: &RecordId,
+) -> Result<Option<IngresoContratistaFetched>, SurrealDbError> {
+    let db = get_db().await?;
+
+    let mut result = db
+        .query(format!(
+            "SELECT * FROM {TABLE} WHERE contratista = $contratista ORDER BY fecha_hora_ingreso DESC LIMIT 1 FETCH usuario_ingreso, usuario_salida, contratista, contratista.empresa"
+        ))
+        .bind(("contratista", contratista_id.clone()))
+        .await?;
+
+    Ok(result.take(0)?)
+}

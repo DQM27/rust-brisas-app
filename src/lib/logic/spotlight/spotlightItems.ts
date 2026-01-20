@@ -10,7 +10,8 @@ import { can } from '$lib/logic/permissions';
 import { get } from 'svelte/store';
 import { invoke } from '@tauri-apps/api/core';
 import { spotlightSettings, recentSpotlightItems } from '$lib/stores/spotlightStore';
-import { showShortcutsHelp } from '$lib/stores/ui';
+import { showShortcutsHelp, personaQuickView } from '$lib/stores/ui';
+
 import type { SpotlightItem, SpotlightItemDefinition, SpotlightGroups, SpotlightCategory, SpotlightSubCategory } from '$lib/types/spotlight';
 import { MODULE_DEFINITIONS, ACTION_DEFINITIONS, MODULE_COMPONENT_MAP, TAB_ICON } from '$lib/logic/spotlight/spotlightDefinitions';
 import { User, Building2, ShieldCheck, Mail, IdCard, Search } from 'lucide-svelte';
@@ -372,7 +373,7 @@ export function getCategoryLabel(category: SpotlightCategory): string {
 /**
  * Realiza una búsqueda profunda en el índice de Tantivy
  */
-export async function searchDeep(query: string, settings: any): Promise<SpotlightItem[]> {
+export async function searchDeep(query: string, settings: any, onClose: () => void): Promise<SpotlightItem[]> {
     if (!settings.enableTantivySearch || !query || query.length < 2) return [];
 
     try {
@@ -414,19 +415,12 @@ export async function searchDeep(query: string, settings: any): Promise<Spotligh
                 category: 'data',
                 subCategory,
                 action: () => {
-                    // Acción genérica: Abrir el módulo correspondiente y buscar/filtrar?
-                    // Por ahora solo logueamos o podemos abrir el tab del tipo
-                    console.log('Abrir registro:', res);
-                    const mapping = Object.entries(MODULE_COMPONENT_MAP).find(([_, v]) => v.componentKey.includes(res.tipo));
-                    if (mapping) {
-                        openTab({
-                            componentKey: mapping[1].componentKey as any,
-                            title: mapping[1].title,
-                            id: mapping[0],
-                            focusOnOpen: true,
-                            data: { search: res.cedula || res.id }
-                        });
-                    }
+                    // Acción: Abrir la vista rápida de la persona
+                    personaQuickView.set({
+                        id: res.id,
+                        type: res.tipo
+                    });
+                    onClose();
                 }
             };
         });

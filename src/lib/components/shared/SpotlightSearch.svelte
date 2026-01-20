@@ -52,7 +52,7 @@
 		highlightedIndex = 0;
 
 		if (q.length >= 2 && settings.enableTantivySearch && q !== '>') {
-			searchDeep(q, settings).then((results) => {
+			searchDeep(q, settings, handleClose).then((results) => {
 				tantivyItems = results;
 			});
 		} else {

@@ -55,6 +55,7 @@ export interface ValidacionIngresoResult {
 
 	tieneIngresoAbierto: boolean;
 	ingresoAbierto?: IngresoResponse;
+	ultimoIngreso?: IngresoResponse;
 }
 
 export type IngresoStep = 'SEARCH' | 'VALIDATION' | 'DETAILS' | 'CONFIRM';

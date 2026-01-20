@@ -409,6 +409,7 @@ function mapContratistaResponse(res: ValidacionIngresoResponse): ValidacionIngre
 		alertas: res.alertas || [],
 		tieneIngresoAbierto: res.tieneIngresoAbierto,
 		ingresoAbierto: res.ingresoAbierto,
+		ultimoIngreso: res.ultimoIngreso,
 		contratista: res.contratista,
 		persona: res.contratista
 			? {
@@ -423,7 +424,18 @@ function mapContratistaResponse(res: ValidacionIngresoResponse): ValidacionIngre
 				vehiculos: res.contratista.vehiculos || [],
 				praindVigente: praindVigente
 			}
-			: undefined
+			: res.ingresoAbierto
+				? {
+					id: res.ingresoAbierto.contratistaId || '',
+					cedula: res.ingresoAbierto.cedula,
+					nombre: res.ingresoAbierto.nombre,
+					apellido: res.ingresoAbierto.apellido,
+					nombreCompleto: res.ingresoAbierto.nombreCompleto,
+					empresa: res.ingresoAbierto.empresaNombre,
+					vehiculos: [],
+					praindVigente: res.ingresoAbierto.praindVigenteAlIngreso ?? false
+				}
+				: undefined
 	};
 }
 
@@ -434,6 +446,7 @@ function mapProveedorResponse(res: ValidacionIngresoResponse): ValidacionIngreso
 		alertas: res.alertas || [],
 		tieneIngresoAbierto: res.tieneIngresoAbierto,
 		ingresoAbierto: res.ingresoAbierto,
+		ultimoIngreso: res.ultimoIngreso,
 		proveedor: res.proveedor,
 		persona: res.proveedor
 			? {
@@ -456,6 +469,7 @@ function mapVisitaResponse(res: ValidacionIngresoResponse): ValidacionIngresoRes
 		alertas: res.alertas || [],
 		tieneIngresoAbierto: res.tieneIngresoAbierto,
 		ingresoAbierto: res.ingresoAbierto,
+		ultimoIngreso: res.ultimoIngreso,
 		visitante: res.visitante,
 		persona: res.visitante
 			? {

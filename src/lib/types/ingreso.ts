@@ -150,6 +150,7 @@ export interface ValidacionIngresoResponse {
 	visitante?: VisitanteResponse;
 	tieneIngresoAbierto: boolean;
 	ingresoAbierto?: IngresoResponse;
+	ultimoIngreso?: IngresoResponse;
 }
 
 export interface AlertaGafeteResponse {

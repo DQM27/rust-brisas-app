@@ -234,6 +234,7 @@ pub struct ValidacionIngresoResponse {
     pub contratista: Option<serde_json::Value>,
     pub tiene_ingreso_abierto: bool,
     pub ingreso_abierto: Option<IngresoResponse>,
+    pub ultimo_ingreso: Option<IngresoResponse>,
 }
 
 // --------------------------------------------------------------------------

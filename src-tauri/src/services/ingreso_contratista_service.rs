@@ -101,6 +101,7 @@ where
         if let Some(ing) = ing_ab {
             let resp = IngresoResponse::from_contratista_fetched(ing)
                 .map_err(IngresoContratistaError::Validation)?;
+
             return Ok(ValidacionIngresoResponse {
                 puede_ingresar: false,
                 motivo_rechazo: Some("Ya tiene un ingreso activo en planta".to_string()),
@@ -108,7 +109,8 @@ where
                 alertas: vec![],
                 contratista: None,
                 tiene_ingreso_abierto: true,
-                ingreso_abierto: Some(resp),
+                ingreso_abierto: Some(resp.clone()),
+                ultimo_ingreso: Some(resp),
             });
         }
 
@@ -156,6 +158,19 @@ where
             || motor_res.status == ValidationStatus::Warning;
         let motor_denegado = motor_res.status == ValidationStatus::Denied;
 
+        // Fetch last entry (might be the same as 'currently in' or a previous one)
+        let last_ing = self
+            .ingreso_repo
+            .find_last_by_contratista(&contratista.id)
+            .await
+            .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
+
+        let ultimo_ingreso_resp = if let Some(ing) = last_ing {
+            IngresoResponse::from_contratista_fetched(ing).ok()
+        } else {
+            None
+        };
+
         Ok(ValidacionIngresoResponse {
             // Permitir si: motor permite Y no excede límite de gafetes
             puede_ingresar: motor_permite && !excede_limite_gafetes,
@@ -176,6 +191,7 @@ where
             ),
             tiene_ingreso_abierto: false,
             ingreso_abierto: None,
+            ultimo_ingreso: ultimo_ingreso_resp,
         })
     }
 
@@ -520,4 +536,3 @@ fn parse_ingreso_id(id_str: &str) -> Result<RecordId, IngresoContratistaError> {
         Ok(RecordId::from_table_key("ingreso_contratista", id_str))
     }
 }
-

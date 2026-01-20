@@ -15,7 +15,9 @@
 	import KeyboardShortcuts from '$lib/components/layout/KeyboardShortcuts.svelte';
 	import SpotlightSearch from '$lib/components/shared/SpotlightSearch.svelte';
 	import ShortcutHelpModal from '$lib/components/modals/ShortcutHelpModal.svelte';
+	import PersonaQuickCardModal from '$lib/components/shared/PersonaQuickCardModal.svelte';
 	import { needsSetup, setWindowDecorations, setWindowSize } from '$lib/services/keyringService';
+
 	import {
 		isScreensaverActive,
 		awaitingScreensaverPassword,
@@ -270,6 +272,8 @@
 				isOpen={$showShortcutsHelp}
 				on:close={() => ($showShortcutsHelp = false)}
 			/>
+
+			<PersonaQuickCardModal />
 		{/if}
 
 		<!-- Screensaver Password Modal -->

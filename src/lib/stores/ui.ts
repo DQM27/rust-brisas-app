@@ -35,3 +35,7 @@ export const showSpotlight = writable(false);
 
 // Store para visibilidad del modal de ayuda de atajos
 export const showShortcutsHelp = writable(false);
+
+// Store para vista rápida de persona (desde Spotlight)
+export const personaQuickView = writable<{ id: string; type: string } | null>(null);
+
