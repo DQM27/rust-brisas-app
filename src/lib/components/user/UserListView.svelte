@@ -29,9 +29,24 @@
 
 	interface Props {
 		tabId: string;
+		data?: any;
 	}
 
-	let { tabId }: Props = $props();
+	let { tabId, data }: Props = $props();
+
+	// Effect to handle external actions (like from Spotlight)
+	$effect(() => {
+		if (data?.openCreateModal) {
+			// Usamos un timeout pequeño para asegurar que el componente esté listo
+			setTimeout(() => {
+				if (!showModal) {
+					openModal(null);
+				}
+			}, 100);
+			// Consumir el flag para evitar re-aperturas no deseadas (opcional, pero buena práctica)
+			data.openCreateModal = false;
+		}
+	});
 
 	// ==========================================
 	// ESTADO LOCAL

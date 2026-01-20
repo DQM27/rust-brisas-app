@@ -13,7 +13,14 @@ import {
     Trash2,
     Plus,
     Settings,
-    ArrowRight
+    ArrowRight,
+    Monitor,
+    ShieldCheck,
+    Users,
+    Download,
+    Database,
+    RefreshCw,
+    UserPlus
 } from 'lucide-svelte';
 import type { SpotlightItemDefinition } from '$lib/types/spotlight';
 
@@ -75,15 +82,6 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
         category: 'module',
         keywords: ['lista negra', 'blacklist', 'bloqueado', 'restringido'],
         permission: 'VIEW_BLACKLIST'
-    },
-    {
-        id: 'trash-list',
-        label: 'Papelera',
-        description: 'Elementos eliminados',
-        icon: Trash2,
-        category: 'module',
-        keywords: ['papelera', 'trash', 'eliminado', 'borrado'],
-        permission: 'VIEW_TRASH'
     }
 ];
 
@@ -100,6 +98,15 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         category: 'action',
         keywords: ['nuevo', 'crear', 'contratista', 'ingreso', 'registrar'],
         permission: 'CREATE_ENTRY'
+    },
+    {
+        id: 'create-user',
+        label: 'Crear Nuevo Usuario',
+        description: 'Registrar un nuevo usuario en el sistema',
+        icon: UserPlus,
+        category: 'action',
+        keywords: ['nuevo', 'crear', 'usuario', 'user', 'registrar', 'empleado'],
+        permission: 'EDIT_USER'
     },
     {
         id: 'create-proveedor',
@@ -119,13 +126,78 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         keywords: ['nuevo', 'crear', 'visita', 'visitante', 'registrar'],
         permission: 'CREATE_VISITOR'
     },
+    // Configuración
     {
-        id: 'open-settings',
-        label: 'Configuración',
-        description: 'Abrir panel de configuración',
+        id: 'settings-general',
+        label: 'Ajustes Generales',
+        description: 'Preferencias globales del sistema',
         icon: Settings,
         category: 'action',
-        keywords: ['configuracion', 'settings', 'ajustes', 'opciones']
+        keywords: ['configuracion', 'ajustes', 'general', 'sistema'],
+        permission: 'VIEW_SETTINGS_GENERAL'
+    },
+    {
+        id: 'settings-visual',
+        label: 'Ajustes Gráficos',
+        description: 'Configuración visual y temas',
+        icon: Monitor,
+        category: 'action',
+        keywords: ['configuracion', 'ajustes', 'graficos', 'visual', 'tema', 'modo oscuro'],
+        permission: 'VIEW_SETTINGS_VISUAL'
+    },
+    {
+        id: 'settings-session',
+        label: 'Gestión de Sesión',
+        description: 'Configuración de seguridad y sesiones',
+        icon: ShieldCheck,
+        category: 'action',
+        keywords: ['configuracion', 'ajustes', 'sesion', 'seguridad', 'password'],
+        permission: 'VIEW_SETTINGS_SESSIONS'
+    },
+    {
+        id: 'settings-roles',
+        label: 'Roles y Permisos',
+        description: 'Gestión de roles de usuario',
+        icon: Users,
+        category: 'action',
+        keywords: ['configuracion', 'roles', 'permisos', 'usuarios', 'acceso'],
+        permission: 'VIEW_ROLE_LIST'
+    },
+    {
+        id: 'settings-export',
+        label: 'Configuración de Exportación',
+        description: 'Ajustes de reportes y exportación',
+        icon: Download,
+        category: 'action',
+        keywords: ['configuracion', 'exportacion', 'reportes', 'excel', 'pdf'],
+        permission: 'VIEW_SETTINGS_BACKUP'
+    },
+    {
+        id: 'settings-backup',
+        label: 'Copias de Seguridad',
+        description: 'Gestión de respaldos del sistema',
+        icon: Database,
+        category: 'action',
+        keywords: ['configuracion', 'backup', 'respaldo', 'copia', 'seguridad'],
+        permission: 'VIEW_SETTINGS_BACKUP'
+    },
+    {
+        id: 'trash-settings',
+        label: 'Papelera',
+        description: 'Gestión de elementos eliminados',
+        icon: Trash2,
+        category: 'action',
+        keywords: ['papelera', 'trash', 'eliminado', 'restaurar'],
+        permission: 'VIEW_TRASH'
+    },
+    {
+        id: 'action-reindex',
+        label: 'Reindexar Búsqueda',
+        description: 'Regenerar índices de búsqueda',
+        icon: RefreshCw,
+        category: 'action',
+        keywords: ['reindexar', 'busqueda', 'indice', 'regenerar'],
+        // Permiso de superusuario o admin (se validará en lógica)
     }
 ];
 
@@ -140,7 +212,14 @@ export const MODULE_COMPONENT_MAP: Record<string, { componentKey: string; title:
     'visitas-list': { componentKey: 'visitas-list', title: 'Ingreso Visitas' },
     'gafete-list': { componentKey: 'gafete-list', title: 'Gestión de Gafetes' },
     'lista-negra-list': { componentKey: 'lista-negra-list', title: 'Lista Negra' },
-    'trash-list': { componentKey: 'trash-list', title: 'Papelera' }
+    // Settings mappings
+    'settings-general': { componentKey: 'general-settings', title: 'Ajustes Generales' },
+    'settings-visual': { componentKey: 'visual-settings', title: 'Ajustes Gráficos' },
+    'settings-session': { componentKey: 'session-settings', title: 'Gestión de Sesión' },
+    'settings-roles': { componentKey: 'roles-settings', title: 'Roles y Permisos' },
+    'settings-export': { componentKey: 'export-settings', title: 'Configuración de Exportación' },
+    'settings-backup': { componentKey: 'backup-settings', title: 'Copias de Seguridad' },
+    'trash-settings': { componentKey: 'trash-settings', title: 'Papelera de Reciclaje' },
 };
 
 // ============================================

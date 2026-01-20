@@ -15,6 +15,7 @@
 	} from '$lib/logic/spotlight/spotlightItems';
 
 	import { showSpotlight } from '$lib/stores/ui';
+	import { tabsStore } from '$lib/stores/tabs';
 
 	// Props
 	interface Props {
@@ -32,7 +33,7 @@
 	let show = $derived($showSpotlight);
 
 	// Build items reactively
-	const allItems = $derived(buildSpotlightItems(handleClose));
+	const allItems = $derived(buildSpotlightItems($tabsStore, handleClose));
 	const filteredItemsList = $derived(query.trim() === '' ? [] : filterItems(allItems, query));
 	const groupedItems = $derived(groupItems(filteredItemsList));
 	const flatItems = $derived(flattenGroups(groupedItems));

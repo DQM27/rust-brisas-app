@@ -60,6 +60,12 @@ export function executeModuleAction(moduleId: string, onClose: () => void): void
  * Ejecuta una acción rápida
  */
 export function executeQuickAction(actionId: string, onClose: () => void): void {
+    // Verificar si la acción tiene un mapeo de componente (para configuraciones)
+    if (MODULE_COMPONENT_MAP[actionId]) {
+        executeModuleAction(actionId, onClose);
+        return;
+    }
+
     switch (actionId) {
         case 'create-contratista':
             openTab({
@@ -79,6 +85,15 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
                 data: { openCreateModal: true }
             });
             break;
+        case 'create-user':
+            openTab({
+                componentKey: 'user-list',
+                title: 'Lista de Usuarios',
+                id: 'users-list',
+                focusOnOpen: true,
+                data: { openCreateModal: true }
+            });
+            break;
         case 'create-visita':
             openTab({
                 componentKey: 'visitas-list',
@@ -88,13 +103,9 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
                 data: { openCreateModal: true }
             });
             break;
-        case 'open-settings':
-            openTab({
-                componentKey: 'settings-view' as any,
-                title: 'Configuración',
-                id: 'settings',
-                focusOnOpen: true
-            });
+        case 'action-reindex':
+            // TODO: Implementar llamada global a reindexado si es accesible
+            console.log('Solicitud de reindexado desde Spotlight');
             break;
     }
     onClose();
@@ -115,15 +126,17 @@ export function navigateToTab(tabId: string, onClose: () => void): void {
 /**
  * Construye la lista completa de items del Spotlight
  */
-export function buildSpotlightItems(onClose: () => void): SpotlightItem[] {
+export function buildSpotlightItems(tabs: any[], onClose: () => void): SpotlightItem[] {
     const items: SpotlightItem[] = [];
-    const openTabs = getAllTabs();
+
+    // Helper para verificar si un tab está abierto
+    const hasTabId = (id: string) => tabs.some(t => t.id === id);
 
     // 1. Módulos principales (filtrados por permisos)
     for (const mod of MODULE_DEFINITIONS) {
         if (!hasPermission(mod)) continue;
 
-        const isTabOpen = hasTab(mod.id);
+        const isTabOpen = hasTabId(mod.id);
 
         items.push({
             ...mod,
@@ -143,7 +156,7 @@ export function buildSpotlightItems(onClose: () => void): SpotlightItem[] {
     }
 
     // 3. Tabs abiertos (para navegación rápida)
-    for (const tab of openTabs) {
+    for (const tab of tabs) {
         // No duplicar si ya está en módulos
         if (MODULE_DEFINITIONS.some((m: SpotlightItemDefinition) => m.id === tab.id)) continue;
 
