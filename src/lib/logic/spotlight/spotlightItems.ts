@@ -79,10 +79,22 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
     }
 
     if (actionId === 'logout') {
-        if (confirm('¿Cerrar sesión ahora?')) {
-            logout();
-            onClose();
-        }
+        import('@tauri-apps/plugin-dialog').then(async ({ ask }) => {
+            const confirmed = await ask('¿Cerrar sesión ahora?', {
+                title: 'Cerrar Sesión',
+                kind: 'info'
+            });
+            if (confirmed) {
+                logout();
+                onClose();
+            }
+        }).catch(() => {
+            // Fallback
+            if (confirm('¿Cerrar sesión ahora?')) {
+                logout();
+                onClose();
+            }
+        });
         return;
     }
 

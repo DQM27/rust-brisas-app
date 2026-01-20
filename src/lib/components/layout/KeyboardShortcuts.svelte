@@ -5,6 +5,8 @@
 	import { emitCommand, activeContext } from '$lib/stores/keyboardCommands';
 	import { showSpotlight } from '$lib/stores/ui';
 	import { get } from 'svelte/store';
+	import { logout } from '$lib/stores/auth';
+	import { toggleTheme } from '$lib/stores/themeStore';
 
 	let unsubscribe: (() => void) | null = null;
 
@@ -123,6 +125,37 @@
 			'$mod+s': (event) => {
 				event.preventDefault();
 				emitCommand('save');
+			},
+			// ============================================
+			// SYSTEM SHORTCUTS
+			// ============================================
+
+			// Ctrl+Q: Cerrar Sesión
+			'$mod+q': async (event) => {
+				event.preventDefault();
+				try {
+					const { ask } = await import('@tauri-apps/plugin-dialog');
+					const confirmed = await ask('¿Cerrar sesión ahora?', {
+						title: 'Cerrar Sesión',
+						kind: 'info'
+					});
+
+					if (confirmed) {
+						logout();
+					}
+				} catch (error) {
+					// Fallback system confirmation
+					console.error('Dialog error:', error);
+					if (confirm('¿Cerrar sesión ahora?')) {
+						logout();
+					}
+				}
+			},
+
+			// Ctrl+T: Cambiar Tema
+			'$mod+t': (event) => {
+				event.preventDefault();
+				toggleTheme();
 			}
 		});
 	});
