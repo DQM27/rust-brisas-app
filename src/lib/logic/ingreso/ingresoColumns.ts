@@ -50,13 +50,15 @@ export const getIngresoColumns = (
             title: 'Empresa',
             field: 'empresaNombre',
             width: 180,
-            headerFilter: 'input'
+            headerFilter: 'list',
+            headerFilterParams: { valuesLookup: 'active', clearable: true }
         },
         {
             title: 'Autorización',
             field: 'tipoAutorizacionDisplay',
             width: 140,
-            headerFilter: 'input',
+            headerFilter: 'list',
+            headerFilterParams: { valuesLookup: 'active', clearable: true },
             formatter: (cell) =>
                 `<span class="px-2 py-0.5 rounded-full text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20">${cell.getValue() || '-'}</span>`
         },
@@ -64,14 +66,22 @@ export const getIngresoColumns = (
             title: 'Modo',
             field: 'modoIngresoDisplay',
             width: 100,
+            headerFilter: 'list',
+            headerFilterParams: { valuesLookup: 'active', clearable: true },
             formatter: (cell) => `<span class="capitalize">${cell.getValue() || ''}</span>`
         },
         {
             title: 'Fecha Entrada',
-            field: 'fechaHoraIngreso_fecha', // Campo único
-            width: 110,
+            field: 'fechaHoraIngreso', // Usamos el campo base para filtrar mejor
+            width: 125,
+            headerFilter: 'date',
+            headerFilterFunc: (headerValue, rowValue) => {
+                if (!headerValue || !rowValue) return true;
+                const rowDate = new Date(rowValue).toISOString().split('T')[0];
+                return rowDate === headerValue;
+            },
             formatter: (cell) => {
-                const d = parseDate(cell.getData().fechaHoraIngreso); // Acceder vía getData
+                const d = parseDate(cell.getValue());
                 return d ? d.toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
             }
         },
@@ -97,10 +107,16 @@ export const getIngresoColumns = (
         cols.push(
             {
                 title: 'Fecha Salida',
-                field: 'fechaHoraSalida_fecha',
-                width: 110,
+                field: 'fechaHoraSalida',
+                width: 125,
+                headerFilter: 'date',
+                headerFilterFunc: (headerValue, rowValue) => {
+                    if (!headerValue || !rowValue) return true;
+                    const rowDate = new Date(rowValue).toISOString().split('T')[0];
+                    return rowDate === headerValue;
+                },
                 formatter: (cell) => {
-                    const d = parseDate(cell.getData().fechaHoraSalida);
+                    const d = parseDate(cell.getValue());
                     return d ? d.toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
                 }
             },
