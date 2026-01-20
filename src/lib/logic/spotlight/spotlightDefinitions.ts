@@ -27,7 +27,8 @@ import {
     History,
     Moon,
     Sun,
-    LogOut
+    LogOut,
+    Keyboard
 } from 'lucide-svelte';
 import type { SpotlightItemDefinition } from '$lib/types/spotlight';
 
@@ -349,6 +350,16 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         subCategory: 'settings',
         keywords: ['salir', 'cerrar', 'sesión', 'logout', 'desconectar'],
         shortcut: 'Ctrl+Q'
+    },
+    {
+        id: 'show-shortcuts',
+        label: 'Atajos de Teclado',
+        description: 'Ver lista de comandos disponibles',
+        icon: Keyboard,
+        category: 'action',
+        subCategory: 'settings',
+        keywords: ['atajos', 'teclado', 'shortcuts', 'comandos', 'ayuda', 'teclas'],
+        shortcut: 'Shift+?'
     }
 ];
 

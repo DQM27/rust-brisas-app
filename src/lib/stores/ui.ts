@@ -32,3 +32,6 @@ export const statusBarInfo = writable<StatusBarInfo>({
 
 // Store para visibilidad del buscador global (Spotlight)
 export const showSpotlight = writable(false);
+
+// Store para visibilidad del modal de ayuda de atajos
+export const showShortcutsHelp = writable(false);

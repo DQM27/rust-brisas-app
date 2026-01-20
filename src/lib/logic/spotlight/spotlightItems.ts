@@ -10,6 +10,7 @@ import { can } from '$lib/logic/permissions';
 import { get } from 'svelte/store';
 import { invoke } from '@tauri-apps/api/core';
 import { spotlightSettings, recentSpotlightItems } from '$lib/stores/spotlightStore';
+import { showShortcutsHelp } from '$lib/stores/ui';
 import type { SpotlightItem, SpotlightItemDefinition, SpotlightGroups, SpotlightCategory, SpotlightSubCategory } from '$lib/types/spotlight';
 import { MODULE_DEFINITIONS, ACTION_DEFINITIONS, MODULE_COMPONENT_MAP, TAB_ICON } from '$lib/logic/spotlight/spotlightDefinitions';
 import { User, Building2, ShieldCheck, Mail, IdCard, Search } from 'lucide-svelte';
@@ -74,6 +75,13 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
         toggleTheme();
         // No cerramos el buscador para que vea el cambio? 
         // O lo cerramos? Mejor cerrarlo para evitar parpadeo si es pesado.
+        onClose();
+        return;
+
+    }
+
+    if (actionId === 'show-shortcuts') {
+        showShortcutsHelp.set(true);
         onClose();
         return;
     }

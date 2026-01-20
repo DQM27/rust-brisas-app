@@ -6,7 +6,7 @@
 	import { isAuthenticated } from '$lib/stores/auth';
 	import Sidebar from '$lib/components/layout/sidebar/Sidebar.svelte';
 	import StatusBar from '$lib/components/layout/StatusBar.svelte';
-	import { setupWizardVisible } from '$lib/stores/ui';
+	import { setupWizardVisible, showShortcutsHelp } from '$lib/stores/ui';
 	import { initNetworkMonitor } from '$lib/stores/network';
 	import Toast from '$lib/components/Toast.svelte';
 	import '$lib/stores/themeStore'; // Inicializar tema
@@ -14,6 +14,7 @@
 	import SetupWizard from '$lib/components/setup/SetupWizard.svelte';
 	import KeyboardShortcuts from '$lib/components/layout/KeyboardShortcuts.svelte';
 	import SpotlightSearch from '$lib/components/shared/SpotlightSearch.svelte';
+	import ShortcutHelpModal from '$lib/components/modals/ShortcutHelpModal.svelte';
 	import { needsSetup, setWindowDecorations, setWindowSize } from '$lib/services/keyringService';
 	import {
 		isScreensaverActive,
@@ -264,6 +265,11 @@
 		{#if authenticated}
 			<KeyboardShortcuts />
 			<SpotlightSearch />
+
+			<ShortcutHelpModal
+				isOpen={$showShortcutsHelp}
+				on:close={() => ($showShortcutsHelp = false)}
+			/>
 		{/if}
 
 		<!-- Screensaver Password Modal -->
