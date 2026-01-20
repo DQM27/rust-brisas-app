@@ -35,45 +35,37 @@
 	] as const;
 </script>
 
-<div class="h-full flex flex-col">
-	<!-- Header & Tabs Section -->
-	<div class="flex flex-col space-y-4 p-6 pb-4">
-		<!-- Header -->
-		<div class="flex items-center gap-3">
-			<div class="p-2 bg-red-500/10 rounded-lg">
-				<Trash2 class="w-6 h-6 text-red-500" />
-			</div>
+<div class="h-full flex flex-col bg-surface-1">
+	<!-- Header Minimalista con Toggle a la Derecha -->
+	<div class="border-b border-surface px-6 py-4 bg-surface-2">
+		<div class="flex items-center justify-between">
 			<div>
-				<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-					Papelera de Reciclaje
-				</h2>
-				<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+				<h2 class="text-xl font-semibold text-primary">Papelera de Reciclaje</h2>
+				<p class="mt-1 text-sm text-secondary">
 					Gestiona y restaura elementos eliminados del sistema
 				</p>
 			</div>
-		</div>
 
-		<!-- Tabs -->
-		<div class="flex gap-1 bg-gray-100 dark:bg-[#161b22] p-1 rounded-lg w-fit">
-			{#each tabs as tab}
-				<button
-					onclick={() => (activeTab = tab.id)}
-					class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all
-            {activeTab === tab.id
-						? 'bg-white dark:bg-[#21262d] text-gray-900 dark:text-gray-100 shadow-sm'
-						: 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}"
-				>
-					<tab.icon size={16} class={activeTab === tab.id ? tab.color : ''} />
-					{tab.label}
-				</button>
-			{/each}
+			<!-- Toggle de Pestañas (Derecha) -->
+			<div class="relative flex items-center bg-surface-3 p-1 rounded-lg">
+				{#each tabs as tab}
+					<button
+						onclick={() => (activeTab = tab.id)}
+						class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors {activeTab ===
+						tab.id
+							? 'bg-surface-1 text-primary shadow-sm'
+							: 'text-secondary hover:text-primary'}"
+					>
+						<tab.icon size={16} class={activeTab === tab.id ? tab.color : ''} />
+						{tab.label}
+					</button>
+				{/each}
+			</div>
 		</div>
 	</div>
 
 	<!-- Content Area (Full Width/Height) -->
-	<div
-		class="flex-1 bg-white dark:bg-[#0d1117] border-t border-gray-200 dark:border-gray-700 overflow-hidden relative"
-	>
+	<div class="flex-1 overflow-hidden relative">
 		{#if activeTab === 'contratista'}
 			<div class="absolute inset-0" transition:slide={{ axis: 'x', duration: 200 }}>
 				<TrashListView

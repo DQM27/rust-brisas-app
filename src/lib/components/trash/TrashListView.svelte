@@ -146,7 +146,7 @@
 				{/snippet}
 			</GridToolbar>
 
-			<div class="flex-1 overflow-hidden p-4 relative bg-[#1e1e1e]">
+			<div class="flex-1 overflow-hidden relative bg-[#1e1e1e]">
 				<TabulatorWrapper
 					bind:this={gridWrapper}
 					bind:toolbarColumns
@@ -154,10 +154,11 @@
 					data={items}
 					withCheckboxSelection={true}
 					persistenceID={gridId}
+					pagination={true}
 					onRowSelectionChanged={(data) => (selectedRows = data)}
 					options={{
-						height: '100%',
-						layout: 'fitDataFill'
+						layout: 'fitData',
+						placeholder: 'No hay elementos en la papelera'
 					}}
 				/>
 			</div>
