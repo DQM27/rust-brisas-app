@@ -293,7 +293,7 @@
 					onclick={() => openFormModal(null)}
 					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
 				>
-					<Plus size={14} /> Nuevo Proveedor
+					<Plus size={14} /> Nuevo
 				</button>
 			{/if}
 		{/snippet}

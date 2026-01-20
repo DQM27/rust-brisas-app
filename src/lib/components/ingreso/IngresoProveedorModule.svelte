@@ -2,4 +2,4 @@
 	import IngresoProveedorListView from './IngresoProveedorListView.svelte';
 </script>
 
-<IngresoProveedorListView tabId="ingreso-proveedor-list" />
+<IngresoProveedorListView tabId="proveedor-ingreso-list" />

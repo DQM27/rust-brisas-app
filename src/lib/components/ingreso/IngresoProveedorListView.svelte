@@ -3,7 +3,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
-	import { AlertCircle, FileText, Users, History, X, Plus } from 'lucide-svelte';
+	import { AlertCircle, FileText, Users, History, X, LogIn, UserPlus } from 'lucide-svelte';
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
@@ -31,7 +31,7 @@
 	interface Props {
 		tabId?: string;
 	}
-	let { tabId = 'ingreso-proveedor-list' }: Props = $props();
+	let { tabId = 'proveedor-ingreso-list' }: Props = $props();
 
 	// State
 	let ingresos = $state<IngresoProveedor[]>([]);
@@ -216,10 +216,15 @@
 		});
 	}
 
+	// Tab State for title update
+	import { useTabState } from '$lib/stores/tabs';
+	const { updateTitle } = useTabState(tabId);
+
 	// Lifecycle
 	onMount(() => {
 		loadIngresos();
 		setupKeyboardSubscription();
+		updateTitle('Ingresos Proveedor');
 	});
 
 	onDestroy(() => {
@@ -245,7 +250,7 @@
 		<div class="flex items-center justify-between gap-6">
 			<div>
 				<h2 class="text-xl font-semibold text-primary">
-					{viewMode === 'actives' ? 'Proveedores en Planta' : 'Historial de Proveedores'}
+					{viewMode === 'actives' ? 'Ingresos Proveedor' : 'Historial de Proveedores'}
 				</h2>
 				<p class="mt-1 text-xs text-secondary">
 					{viewMode === 'actives'
@@ -329,9 +334,9 @@
 			{/if}
 			<button
 				onclick={handleGoToCatalog}
-				class="flex items-center gap-1.5 px-3 py-1.5 text-secondary border border-surface rounded-md hover:bg-surface-3 hover:text-primary text-sm font-medium transition-colors"
+				class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
 			>
-				<FileText size={14} /> Catálogo
+				<FileText size={14} /> Listado
 			</button>
 		{/snippet}
 
@@ -340,7 +345,7 @@
 				<div class="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
 					<button
 						onclick={() => gridWrapper?.deselectAll()}
-						class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-4 hover:text-primary text-sm font-medium transition-colors"
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
 					>
 						<X size={14} /> Cancelar
 					</button>
@@ -356,16 +361,16 @@
 			{:else if viewMode === 'actives'}
 				<div class="flex items-center gap-2">
 					<button
-						onclick={() => (showProveedorModal = true)}
-						class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-4 hover:text-primary text-sm font-medium transition-colors"
-					>
-						<Plus size={14} /> Nuevo Prov.
-					</button>
-					<button
 						onclick={() => (showQuickEntry = true)}
 						class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
 					>
-						<Users size={14} /> Nuevo Ingreso
+						<LogIn size={14} /> Nuevo
+					</button>
+					<button
+						onclick={() => (showProveedorModal = true)}
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
+					>
+						<UserPlus size={14} /> Proveedor
 					</button>
 				</div>
 			{/if}

@@ -62,11 +62,11 @@
 		{
 			id: 'ingresos',
 			icon: DoorOpen,
-			label: 'Contratistas',
+			label: 'Ingresos Contratista',
 			action: () => {
 				openTab({
 					componentKey: 'ingreso-list',
-					title: 'Control de Ingresos',
+					title: 'Ingresos Contratista',
 					id: 'ingreso-list',
 					focusOnOpen: true
 				});
@@ -76,11 +76,11 @@
 		{
 			id: 'ingreso-proveedores',
 			icon: PackageCheck,
-			label: 'Proveedores',
+			label: 'Ingresos Proveedor',
 			action: () => {
 				openTab({
 					componentKey: 'proveedor-ingreso-list',
-					title: 'Ingreso Proveedores',
+					title: 'Ingresos Proveedor',
 					id: 'proveedor-ingreso-list',
 					focusOnOpen: true
 				});

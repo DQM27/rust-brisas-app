@@ -466,6 +466,20 @@
 		}
 	}
 
+	// Tab State for title update
+	import { useTabState } from '$lib/stores/tabs';
+	const { updateTitle } = useTabState(tabId);
+
+	onMount(() => {
+		loadIngresos();
+		setupKeyboardSubscription();
+		updateTitle('Ingresos Contratista');
+	});
+
+	onDestroy(() => {
+		if (unsubscribeKeyboard) unsubscribeKeyboard();
+	});
+
 	function handleToggleFilters() {
 		showHeaderFilters = !showHeaderFilters;
 		if (typeof window !== 'undefined') {
@@ -496,7 +510,7 @@
 			<div class="flex items-center justify-between">
 				<div>
 					<h2 class="text-xl font-semibold text-primary">
-						{viewMode === 'actives' ? 'Ingresos Activos' : 'Historial de Salidas'}
+						{viewMode === 'actives' ? 'Ingresos Contratista' : 'Historial de Contratistas'}
 					</h2>
 					<p class="mt-1 text-sm text-secondary">
 						{viewMode === 'actives'
