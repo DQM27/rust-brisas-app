@@ -42,9 +42,6 @@
 			if (data.initialPersonId) {
 				// Si viene con ID de persona, cargamos y abrimos el modal directamente
 				const personId = data.initialPersonId;
-				// Buscamos en el store local si ya lo tenemos o invocamos servicio
-				// Para simplificar, abrimos el modal de ingreso con un mock mínimo,
-				// el propio IngresoFormModal se encarga de re-validar al recibir initialPerson.
 				setTimeout(() => {
 					personForIngreso = { id: personId, tipo: 'contratista' };
 					showModal = true;

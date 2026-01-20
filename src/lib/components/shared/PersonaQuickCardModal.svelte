@@ -23,10 +23,10 @@
 	import { openTab } from '$lib/stores/tabs';
 	import { toast } from 'svelte-5-french-toast';
 	import { fade, scale, slide } from 'svelte/transition';
-	import { ingresoService, registrarSalida } from '$lib/logic/ingreso/ingresoService';
-	import type { ValidacionIngresoResult } from '$lib/logic/ingreso/types';
 	import { currentUser } from '$lib/stores/auth';
 	import SalidaModal from '$lib/components/ingreso/SalidaModal.svelte';
+	import { validarIngreso, registrarSalida } from '$lib/logic/ingreso/ingresoService';
+	import type { ValidacionIngresoResult } from '$lib/logic/ingreso/types';
 
 	// State
 	let show = $derived($personaQuickView !== null);
@@ -48,7 +48,7 @@
 	async function loadData(id: string, type: string) {
 		loading = true;
 		try {
-			validationResult = await ingresoService.validarIngreso(type as any, id);
+			validationResult = await validarIngreso(type as any, id);
 		} catch (e) {
 			console.error('Error al cargar datos de persona:', e);
 			toast.error('Error al cargar información detallada');
@@ -131,6 +131,10 @@
 		} finally {
 			loadingSalida = false;
 		}
+	}
+
+	function handleOpenSalida() {
+		showSalidaModal = true;
 	}
 
 	// UI Patterns Classes
@@ -433,7 +437,7 @@
 				{:else if validationResult?.tieneIngresoAbierto}
 					<button
 						class="flex items-center gap-2 px-6 py-2.5 rounded-lg border-2 border-surface text-rose-400 font-medium transition-all duration-200 hover:border-rose-500 hover:bg-rose-500/10 text-sm"
-						onclick={() => (showSalidaModal = true)}
+						onclick={handleOpenSalida}
 					>
 						<LogOut size={16} />
 						<span>Registrar Salida</span>
@@ -442,7 +446,6 @@
 			</div>
 		</div>
 	</div>
-
 	<SalidaModal
 		bind:show={showSalidaModal}
 		ingreso={validationResult?.ingresoAbierto ?? null}

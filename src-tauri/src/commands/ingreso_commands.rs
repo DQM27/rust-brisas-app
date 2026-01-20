@@ -103,3 +103,50 @@ pub async fn resolver_alerta_gafete(
 
     Ok(())
 }
+
+/// [Comando Tauri] Punto de entrada unificado para registrar la salida de cualquier tipo de persona.
+/// Detecta automáticamente el tipo de registro (Contratista, Proveedor, Visita) basándose en el ID.
+#[tauri::command]
+pub async fn registrar_salida(
+    app: AppHandle,
+    session: State<'_, SessionState>,
+    input: crate::models::ingreso::RegistrarSalidaInput,
+) -> Result<IngresoResponse, IngresoError> {
+    use crate::commands::{
+        ingreso_contratista_commands, ingreso_proveedor_commands, ingreso_visita_commands,
+    };
+
+    let id_str = &input.ingreso_id;
+
+    if id_str.contains("ingreso_contratista") || !id_str.contains(':') {
+        // Por defecto o si es contratista, delegar a contratista commands
+        ingreso_contratista_commands::register_exit_contratista(app, session, input)
+            .await
+            .map_err(|e| IngresoError::Validation(e.to_string()))
+    } else if id_str.contains("ingreso_proveedor") {
+        let user = session
+            .get_user()
+            .ok_or(IngresoError::Validation("Usuario no autenticado".to_string()))?;
+        ingreso_proveedor_commands::registrar_salida_proveedor(
+            input.ingreso_id,
+            user.id,
+            input.observaciones_salida,
+            input.devolvio_gafete,
+        )
+        .await
+        .map_err(IngresoError::Validation)
+    } else if id_str.contains("ingreso_visita") {
+        ingreso_visita_commands::registrar_salida_visita(
+            input.ingreso_id,
+            input.devolvio_gafete,
+            input.observaciones_salida,
+            session,
+        )
+        .await
+        .map_err(|e| IngresoError::Validation(e.to_string()))
+    } else {
+        Err(IngresoError::Validation(format!(
+            "Tipo de ingreso no reconocido para salida: {id_str}"
+        )))
+    }
+}
