@@ -1,108 +1,101 @@
-import type { ColDef, ICellRendererParams, ValueFormatterParams } from '@ag-grid-community/core';
+import type { ColumnDefinition } from 'tabulator-tables';
 import type { VisitanteResponse } from '$lib/types/visitante';
 
-// ============================================
-// COLUMNAS
-// ============================================
-
-export class VisitanteColumns {
-	static getColumns(): ColDef<VisitanteResponse>[] {
-		return [
-			{
-				colId: 'cedula',
-				field: 'cedula',
-				headerName: 'Cédula',
-				filter: 'agTextColumnFilter',
-				width: 150,
-				pinned: 'left'
-			},
-			{
-				colId: 'nombre',
-				field: 'nombre',
-				headerName: 'Nombre',
-				filter: 'agTextColumnFilter',
-				width: 150,
-				valueGetter: (params) => (params.data ? `${params.data.nombre}` : '')
-			},
-			{
-				colId: 'apellido',
-				field: 'apellido',
-				headerName: 'Apellido',
-				filter: 'agTextColumnFilter',
-				width: 150
-			},
-			{
-				colId: 'empresaNombre',
-				field: 'empresaNombre',
-				headerName: 'Empresa',
-				filter: 'agTextColumnFilter',
-				width: 200,
-				valueGetter: (params) => params.data?.empresaNombre || 'N/A'
-			},
-			{
-				colId: 'hasVehicle',
-				field: 'hasVehicle',
-				headerName: 'Vehículo',
-				width: 100,
-				cellRenderer: (params: ICellRendererParams<VisitanteResponse>) => {
-					return params.value ? 'Sí' : 'No';
-				}
-			},
-			{
-				colId: 'createdAt',
-				field: 'createdAt',
-				headerName: 'Fecha Registro',
-				filter: 'agDateColumnFilter',
-				width: 180,
-				valueFormatter: (params) => {
-					if (!params.value) return '';
-					return new Date(params.value).toLocaleString('es-ES');
-				}
+export const getVisitanteColumns = (): ColumnDefinition[] => {
+	return [
+		{
+			title: 'Cédula',
+			field: 'cedula',
+			width: 140,
+			headerFilter: 'input',
+			frozen: true,
+			formatter: (cell) => `<span class="font-mono text-xs">${cell.getValue() || ''}</span>`
+		},
+		{
+			title: 'Nombre',
+			field: 'nombre',
+			width: 200,
+			headerFilter: 'input',
+			formatter: (cell) => {
+				const data = cell.getData() as VisitanteResponse;
+				return `<span class="font-medium text-white">${data.nombre} ${data.apellido || ''}</span>`;
 			}
-		];
-	}
-
-	static getTrashColumns(): ColDef<VisitanteResponse>[] {
-		return [
-			{
-				field: 'cedula',
-				headerName: 'Cédula',
-				width: 150,
-				pinned: 'left'
-			},
-			{
-				colId: 'nombreCompleto',
-				headerName: 'Nombre',
-				flex: 1,
-				minWidth: 200,
-				valueGetter: (params) => {
-					if (!params.data) return '';
-					return [params.data.nombre, params.data.apellido].filter(Boolean).join(' ');
-				}
-			},
-			{
-				field: 'empresaNombre',
-				headerName: 'Empresa',
-				width: 200
-			},
-			{
-				colId: 'deletedAt',
-				field: 'deletedAt',
-				headerName: 'Fecha Eliminación',
-				width: 150,
-				valueFormatter: (params: ValueFormatterParams<VisitanteResponse>) => {
-					if (!params.value) return '-';
-					return new Date(params.value).toLocaleDateString('es-PA', {
-						year: 'numeric',
-						month: '2-digit',
-						day: '2-digit',
-						hour: '2-digit',
-						minute: '2-digit'
-					});
-				}
+		},
+		{
+			title: 'Empresa',
+			field: 'empresaNombre',
+			width: 200,
+			headerFilter: 'input',
+			formatter: (cell) => cell.getValue() || '<span class="text-secondary italic">N/A</span>'
+		},
+		{
+			title: 'Vehículo',
+			field: 'hasVehicle',
+			width: 100,
+			hozAlign: 'center',
+			formatter: (cell) => {
+				return cell.getValue()
+					? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">Sí</span>'
+					: '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-500/10 text-gray-400 border border-gray-500/20 uppercase">No</span>';
 			}
-		];
-	}
-}
+		},
+		{
+			title: 'Fecha Registro',
+			field: 'createdAt',
+			width: 180,
+			headerFilter: 'date',
+			formatter: (cell) => {
+				const val = cell.getValue();
+				if (!val) return '';
+				return new Date(val).toLocaleString('es-ES', {
+					day: '2-digit',
+					month: '2-digit',
+					year: 'numeric',
+					hour: '2-digit',
+					minute: '2-digit'
+				});
+			}
+		}
+	];
+};
 
-export const VISITANTE_COLUMNS = VisitanteColumns.getColumns();
+export const getVisitanteTrashColumns = (): ColumnDefinition[] => {
+	return [
+		{
+			title: 'Cédula',
+			field: 'cedula',
+			width: 140,
+			formatter: (cell) => `<span class="font-mono text-xs">${cell.getValue() || ''}</span>`
+		},
+		{
+			title: 'Nombre',
+			field: 'nombreCompleto',
+			width: 250,
+			formatter: (cell) => {
+				const data = cell.getData() as VisitanteResponse;
+				return `<span class="font-medium text-white">${data.nombre} ${data.apellido || ''}</span>`;
+			}
+		},
+		{
+			title: 'Empresa',
+			field: 'empresaNombre',
+			width: 200
+		},
+		{
+			title: 'Fecha Eliminación',
+			field: 'deletedAt',
+			width: 180,
+			formatter: (cell) => {
+				const val = cell.getValue();
+				if (!val) return '-';
+				return new Date(val).toLocaleString('es-ES', {
+					day: '2-digit',
+					month: '2-digit',
+					year: 'numeric',
+					hour: '2-digit',
+					minute: '2-digit'
+				});
+			}
+		}
+	];
+};

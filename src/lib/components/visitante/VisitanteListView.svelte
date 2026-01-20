@@ -1,83 +1,146 @@
 <!-- src/lib/components/visitante/VisitanteListView.svelte -->
 <script lang="ts">
-	import AGGridWrapper from '$lib/components/grid/AGGridWrapper.svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { fade } from 'svelte/transition';
+	import { toast } from 'svelte-5-french-toast';
+	import { Plus, Pencil, Trash2, X } from 'lucide-svelte';
 
+	// Components
+	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
+	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 	import VisitanteFormModal from '$lib/components/visitante/VisitanteFormModal.svelte';
+
+	// Logic & Services
 	import {
-		searchVisitantes,
-		deleteVisitante,
 		listVisitantes,
 		createVisitante,
-		updateVisitante
+		updateVisitante,
+		deleteVisitante
 	} from '$lib/logic/visitante/visitanteService';
-	import type { CreateVisitanteInput, UpdateVisitanteInput } from '$lib/types/visitante';
-	import { VISITANTE_COLUMNS } from '$lib/logic/visitante/visitanteColumns';
-	import { createCustomButton } from '$lib/config/agGridConfigs';
-	import type { VisitanteResponse } from '$lib/types/visitante';
-	import { toast } from 'svelte-5-french-toast';
-	import type { ColDef } from '@ag-grid-community/core';
+	import { getVisitanteColumns } from '$lib/logic/visitante/visitanteColumns';
+	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
+
+	// Types
+	import type {
+		VisitanteResponse,
+		CreateVisitanteInput,
+		UpdateVisitanteInput
+	} from '$lib/types/visitante';
+
+	// Stores
+	import { activeTabId } from '$lib/stores/tabs';
+	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
 
 	interface Props {
 		tabId?: string;
 	}
-	let {}: Props = $props();
+	let { tabId = 'visitante-list' }: Props = $props();
 
-	// Estado del Grid
+	// State
 	let visitantes = $state<VisitanteResponse[]>([]);
 	let loading = $state(false);
 	let error = $state<string | null>(null);
-
-	// Filtros
-
-	// Selección
 	let selectedRows = $state<VisitanteResponse[]>([]);
+	let searchTerm = $state('');
 
-	// Modal state
+	// Modals State
 	let showModal = $state(false);
-	let selectedVisitanteForEdit = $state<VisitanteResponse | null>(null);
+	let selectedVisitante = $state<VisitanteResponse | null>(null);
+	let modalLoading = $state(false);
 
-	function openFormModal(visitante: VisitanteResponse | null = null) {
-		selectedVisitanteForEdit = visitante;
+	// Grid State
+	let gridWrapper = $state<any>(null);
+	let toolbarColumns = $state<
+		{ field: string; title: string; visible: boolean; frozen: boolean }[]
+	>([]);
+	let showHeaderFilters = $state(
+		typeof window !== 'undefined'
+			? localStorage.getItem('tabulator-header-filters') === 'true'
+			: false
+	);
+
+	// Keyboard Subscription
+	let unsubscribeKeyboard: (() => void) | null = null;
+	function setupKeyboardSubscription() {
+		unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
+			if (!event) return;
+			if ($activeTabId !== tabId) return;
+
+			switch (event.command) {
+				case 'create-new':
+					if (!showModal) {
+						openFormModal(null);
+						clearCommand();
+					}
+					break;
+				case 'escape':
+					if (showModal) {
+						showModal = false;
+						clearCommand();
+					}
+					break;
+				case 'refresh':
+					loadData();
+					clearCommand();
+					break;
+			}
+		});
+	}
+
+	// Data Loading
+	const loadData = async () => {
+		loading = true;
+		error = null;
+		try {
+			const res = await listVisitantes();
+			if (res.ok) {
+				visitantes = res.data;
+				if (gridWrapper) {
+					gridWrapper.replaceData(visitantes);
+				}
+			} else {
+				error = res.error;
+				toast.error(res.error);
+			}
+		} finally {
+			loading = false;
+		}
+	};
+
+	// Columns Definition
+	let columns = $derived(getVisitanteColumns());
+
+	// Modal Handlers
+	function openFormModal(visitante: VisitanteResponse | null) {
+		selectedVisitante = visitante;
 		showModal = true;
 	}
 
 	async function handleSave(data: CreateVisitanteInput | UpdateVisitanteInput) {
-		loading = true;
-		let res;
-		if (selectedVisitanteForEdit) {
-			res = await updateVisitante(selectedVisitanteForEdit.id, data as UpdateVisitanteInput);
-		} else {
-			res = await createVisitante(data as CreateVisitanteInput);
-		}
+		modalLoading = true;
+		try {
+			let result;
+			if (selectedVisitante) {
+				result = await updateVisitante(selectedVisitante.id, data as UpdateVisitanteInput);
+			} else {
+				result = await createVisitante(data as CreateVisitanteInput);
+			}
 
-		if (res.ok) {
-			toast.success(selectedVisitanteForEdit ? 'Visitante actualizado' : 'Visitante creado');
-			showModal = false;
-			loadData();
-		} else {
-			toast.error(res.error);
+			if (result.ok) {
+				toast.success(selectedVisitante ? 'Visitante actualizado' : 'Visitante creado');
+				loadData();
+				showModal = false;
+				return true;
+			} else {
+				toast.error(result.error);
+				return false;
+			}
+		} finally {
+			modalLoading = false;
 		}
-		loading = false;
 	}
 
-	// Carga inicial
-	const loadData = async () => {
-		loading = true;
-		error = null;
-
-		// Use listVisitantes for the main view
-		let res = await listVisitantes();
-
-		if (res.ok) {
-			visitantes = res.data;
-		} else {
-			error = res.error;
-			toast.error(res.error);
-		}
-		loading = false;
-	};
-
-	// Eliminar
+	// Delete Handlers
 	async function confirmDelete(visitante: VisitanteResponse) {
 		if (
 			!confirm(
@@ -85,7 +148,6 @@
 			)
 		)
 			return;
-
 		const res = await deleteVisitante(visitante.id);
 		if (res.ok) {
 			toast.success('Visitante eliminado');
@@ -95,79 +157,163 @@
 		}
 	}
 
-	// Botones Custom
-	const customButtons = $derived.by(() => {
-		const selected = selectedRows[0];
-		return {
-			default: [
-				{
-					id: 'nuevo',
-					label: 'Nuevo',
-					category: 'action',
-					onClick: () => openFormModal(null),
-					tooltip: 'Registrar nuevo visitante'
-				}
-			],
-			singleSelect: [
-				{
-					id: 'edit',
-					label: 'Editar',
-					category: 'action',
-					onClick: () => {
-						if (selected) openFormModal(selected);
-					},
-					tooltip: 'Editar visitante seleccionado'
-				},
-				createCustomButton.eliminar(() => {
-					if (selected) confirmDelete(selected);
-				})
-			],
-			multiSelect: []
-		};
+	async function handleDeleteMultiple(selection: VisitanteResponse[]) {
+		if (!confirm(`¿Eliminar ${selection.length} visitantes?`)) return;
+		const toastId = toast.loading('Eliminando...');
+		let errors = 0;
+		for (const p of selection) {
+			const res = await deleteVisitante(p.id);
+			if (!res.ok) errors++;
+		}
+		if (errors === 0) {
+			toast.success('Visitantes eliminados', { id: toastId });
+		} else {
+			toast.error(`Errores: ${errors}`, { id: toastId });
+		}
+		loadData();
+		gridWrapper?.deselectAll();
+	}
+
+	function handleRowDblClick(e: any, row: any) {
+		const data = row.getData();
+		openFormModal(data);
+	}
+
+	function handleToggleFilters() {
+		showHeaderFilters = !showHeaderFilters;
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('tabulator-header-filters', String(showHeaderFilters));
+		}
+		if (gridWrapper) {
+			setTimeout(() => {
+				gridWrapper.redraw(true);
+			}, 50);
+		}
+	}
+
+	// Lifecycle
+	onMount(() => {
+		loadData();
+		setupKeyboardSubscription();
 	});
 
-	// Definición de columnas
-	const columnDefs = $derived([...VISITANTE_COLUMNS] as ColDef<VisitanteResponse>[]);
+	onDestroy(() => {
+		if (unsubscribeKeyboard) unsubscribeKeyboard();
+	});
 
 	$effect(() => {
-		loadData();
+		if ($activeTabId === tabId) {
+			setActiveContext('visitante-list');
+		}
 	});
 </script>
 
-<div class="h-full flex flex-col space-y-4 p-4 animate-fade-in bg-[#1e1e1e]">
-	<div class="flex items-center justify-between">
-		<div>
-			<h2 class="text-xl font-semibold text-gray-100">"Lista de Visitantes"</h2>
+<div class="flex h-full flex-col relative bg-surface-1">
+	<!-- Header -->
+	<div class="border-b border-surface px-6 py-4 bg-surface-2">
+		<div class="flex items-center justify-between gap-4">
+			<div>
+				<h2 class="text-xl font-semibold text-primary">Lista de Visitantes</h2>
+				<p class="mt-1 text-sm text-secondary">Gestión y visualización de visitantes registrados</p>
+			</div>
 		</div>
 	</div>
 
-	{#if loading}
-		<div class="flex h-full items-center justify-center">
-			<div class="text-center">
-				<div class="animate-spin text-blue-500 text-4xl mb-4">⌛</div>
-				<p class="text-gray-400">Cargando visitantes...</p>
+	<!-- Toolbar -->
+	<GridToolbar
+		bind:searchTerm
+		onSearch={(term) => {
+			if (gridWrapper) {
+				gridWrapper.getTable()?.setFilter('nombre', 'like', term);
+			}
+		}}
+		hasSelection={selectedRows.length > 0}
+		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
+		onFitColumns={() => gridWrapper?.fitColumns()}
+		onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
+		onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
+		onToggleFilters={handleToggleFilters}
+		columns={toolbarColumns}
+	>
+		{#snippet primaryActions()}
+			{#if selectedRows.length > 0}
+				<div class="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
+					<button
+						onclick={() => gridWrapper?.deselectAll()}
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-4 hover:text-primary text-sm font-medium transition-colors"
+						title="Cancelar selección"
+					>
+						<X size={14} /> Cancelar
+					</button>
+
+					{#if selectedRows.length === 1}
+						<button
+							onclick={() => openFormModal(selectedRows[0])}
+							class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-md hover:bg-amber-500/20 text-sm font-medium transition-colors"
+						>
+							<Pencil size={14} /> Editar
+						</button>
+					{/if}
+
+					<button
+						onclick={() => handleDeleteMultiple(selectedRows)}
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
+					>
+						<Trash2 size={14} /> Eliminar ({selectedRows.length})
+					</button>
+				</div>
+			{:else}
+				<button
+					onclick={() => openFormModal(null)}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
+				>
+					<Plus size={14} /> Nuevo Visitante
+				</button>
+			{/if}
+		{/snippet}
+	</GridToolbar>
+
+	<!-- Content -->
+	<div
+		class="flex-1 overflow-hidden relative bg-surface-1 border-t border-surface {showHeaderFilters
+			? ''
+			: 'hide-filters'}"
+	>
+		{#if loading && visitantes.length === 0}
+			<div class="flex h-full items-center justify-center">
+				<div class="loading loading-spinner loading-lg text-primary"></div>
 			</div>
-		</div>
-	{:else}
-		<AGGridWrapper
-			gridId="visitante-list"
-			rowData={visitantes}
-			{columnDefs}
-			{customButtons}
-			onSelectionChanged={(rows) => {
-				selectedRows = rows;
-			}}
-			getRowId={(params) => params.data.id}
-		/>
-	{/if}
+		{:else if error}
+			<div class="p-8 text-center text-red-400">{error}</div>
+		{:else}
+			<TabulatorWrapper
+				bind:this={gridWrapper}
+				bind:toolbarColumns
+				data={visitantes}
+				{columns}
+				withCheckboxSelection={true}
+				onRowSelectionChanged={(data) => (selectedRows = data)}
+				onRowDblClick={handleRowDblClick}
+				persistenceID="visitante-list-v1"
+				options={{
+					...defaultTabulatorOptions,
+					placeholder: 'No hay visitantes registrados'
+				}}
+			/>
+		{/if}
+	</div>
 </div>
 
-{#if showModal}
-	<VisitanteFormModal
-		show={showModal}
-		visitante={selectedVisitanteForEdit}
-		{loading}
-		onSave={handleSave}
-		onClose={() => (showModal = false)}
-	/>
-{/if}
+<VisitanteFormModal
+	show={showModal}
+	visitante={selectedVisitante}
+	loading={modalLoading}
+	onSave={handleSave}
+	onClose={() => (showModal = false)}
+/>
+
+<style>
+	:global(.hide-filters .tabulator-header-filter) {
+		display: none !important;
+	}
+</style>

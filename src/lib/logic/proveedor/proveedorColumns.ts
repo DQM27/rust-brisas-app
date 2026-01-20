@@ -1,200 +1,145 @@
-// ============================================
 // src/lib/logic/proveedor/proveedorColumns.ts
-// ============================================
-
-import type { ColDef, ICellRendererParams, ValueFormatterParams, ValueGetterParams, CellClickedEvent } from '@ag-grid-community/core';
+import type { ColumnDefinition } from 'tabulator-tables';
 import type { ProveedorResponse } from '$lib/types/proveedor';
 
-// ============================================
-// BADGE RENDERERS
-// ============================================
-
-export function formatEstadoBadge(estado: string, _onClick?: () => void): string {
-	const baseClass =
-		'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity';
-
-	const badges: Record<string, string> = {
-		activo:
-			'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
-		inactivo:
-			'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700',
-		suspendido:
-			'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
-	};
-
-	const estadoLower = estado?.toLowerCase() || 'inactivo';
-	const badgeClass = badges[estadoLower] || badges.inactivo;
-	const displayText = estado
-		? estado.charAt(0).toUpperCase() + estado.slice(1).toLowerCase()
-		: 'N/A';
-
-	// Nota: El evento onClick se maneja via onCellClicked en la definición de columna
-	return `<span class="${baseClass} ${badgeClass}">${displayText}</span>`;
+export interface ProveedorColumnHandlers {
+	onStatusToggle: (id: string, currentStatus: string) => void;
 }
 
-export function formatAccesoBadge(row: ProveedorResponse): string {
-	const redBadge =
-		'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
-	const greenBadge =
-		'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
+export const getProveedorColumns = (handlers: ProveedorColumnHandlers): ColumnDefinition[] => {
+	return [
+		{
+			title: 'Nombre Completo',
+			field: 'nombre',
+			width: 250,
+			headerFilter: 'input',
+			formatter: (cell) => {
+				const d = cell.getData() as ProveedorResponse;
+				if (!d) return '';
+				return [d.nombre, d.segundoNombre, d.apellido, d.segundoApellido]
+					.filter(Boolean)
+					.join(' ');
+			}
+		},
+		{
+			title: 'Cédula',
+			field: 'cedula',
+			width: 130,
+			frozen: true,
+			headerFilter: 'input',
+			formatter: (cell) => `<span class="font-mono text-xs">${cell.getValue() || ''}</span>`
+		},
+		{
+			title: 'Empresa',
+			field: 'empresaNombre',
+			width: 200,
+			headerFilter: 'input'
+		},
+		{
+			title: 'Vehículo',
+			field: 'vehiculoTipo',
+			width: 120,
+			formatter: (cell) => cell.getValue() || '-'
+		},
+		{
+			title: 'Placa',
+			field: 'vehiculoPlaca',
+			width: 100,
+			headerFilter: 'input',
+			formatter: (cell) => `<span class="font-mono">${cell.getValue() || '-'}</span>`
+		},
+		{
+			title: 'Estado',
+			field: 'estado',
+			width: 130,
+			hozAlign: 'center',
+			headerFilter: 'list',
+			headerFilterParams: { valuesLookup: 'active', clearable: true },
+			formatter: (cell) => {
+				const estado = (cell.getValue() || 'INACTIVO').toLowerCase();
+				const baseClass = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none cursor-pointer hover:opacity-80 transition-opacity';
 
-	if (row.estado?.toLowerCase() !== 'activo') {
-		return `<span class="${redBadge}">Denegado</span>`;
-	}
+				const badges: Record<string, string> = {
+					activo: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+					inactivo: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+					suspendido: 'bg-red-500/10 text-red-400 border-red-500/20'
+				};
 
-	if (row.puedeIngresar) {
-		return `<span class="${greenBadge}">Permitido</span>`;
-	} else {
-		return `<span class="${redBadge}">Denegado</span>`;
-	}
-}
-
-// ============================================
-// COLUMNAS
-// ============================================
-
-/**
- * Obtiene las definiciones de columnas para el Grid de Proveedores
- * @param onStatusToggle Callback opcional para cuando se hace click en el estado
- */
-// ============================================
-// COLUMNAS - CLASSIC STYLE
-// ============================================
-
-export class ProveedorColumns {
-	static getColumns(
-		onStatusToggle?: (id: string, currentStatus: string) => void
-	): ColDef<ProveedorResponse>[] {
-		return [
-			{
-				colId: 'nombre',
-				field: 'nombre',
-				headerName: 'Nombre Completo',
-				flex: 1,
-				minWidth: 200,
-				cellStyle: { fontWeight: 500 },
-				valueGetter: (params: ValueGetterParams<ProveedorResponse>) => {
-					const d = params.data;
-					if (!d) return '';
-					return [d.nombre, d.segundoNombre, d.apellido, d.segundoApellido]
-						.filter(Boolean)
-						.join(' ');
-				},
-				filter: 'agTextColumnFilter'
+				const badgeClass = badges[estado] || badges.inactivo;
+				const displayText = estado.toUpperCase();
+				return `<button class="status-btn ${baseClass} ${badgeClass}">${displayText}</button>`;
 			},
-			{
-				colId: 'cedula',
-				field: 'cedula',
-				headerName: 'Cédula',
-				width: 130,
-				pinned: 'left',
-				cellStyle: { fontFamily: 'monospace', fontSize: '13px' },
-				filter: 'agTextColumnFilter'
-			},
-			{
-				colId: 'empresaNombre',
-				field: 'empresaNombre',
-				headerName: 'Empresa',
-				flex: 1,
-				minWidth: 180,
-				filter: 'agTextColumnFilter'
-			},
-			{
-				colId: 'vehiculoTipo',
-				field: 'vehiculoTipo',
-				headerName: 'Vehículo',
-				width: 120,
-				valueFormatter: (params: ValueFormatterParams<ProveedorResponse>) => params.value || '-'
-			},
-			{
-				colId: 'vehiculoPlaca',
-				field: 'vehiculoPlaca',
-				headerName: 'Placa',
-				width: 100,
-				valueFormatter: (params: ValueFormatterParams<ProveedorResponse>) => params.value || '-',
-				cellStyle: { fontFamily: 'monospace' }
-			},
-			{
-				colId: 'estado',
-				field: 'estado',
-				headerName: 'Estado',
-				width: 130,
-				cellRenderer: (params: ICellRendererParams<ProveedorResponse>) => {
-					const estado = params.value as string;
-					return formatEstadoBadge(estado);
-				},
-				cellClass: 'cursor-pointer',
-				onCellClicked: (params: CellClickedEvent<ProveedorResponse>) => {
-					if (onStatusToggle && params.data && params.event) {
-						const target = params.event?.target as HTMLElement;
-						if (target && target.closest('span') && params.data) {
-							params.event.stopPropagation();
-							onStatusToggle(params.data.id, params.data.estado);
-						}
-					}
-				}
-			},
-			{
-				colId: 'puedeIngresar',
-				field: 'puedeIngresar',
-				headerName: 'Acceso',
-				width: 130,
-				cellRenderer: (params: ICellRendererParams<ProveedorResponse>) => {
-					const row = params.data as ProveedorResponse;
-					return formatAccesoBadge(row);
+			cellClick: (e, cell) => {
+				const target = e.target as HTMLElement;
+				if (target.classList.contains('status-btn')) {
+					const data = cell.getData() as ProveedorResponse;
+					handlers.onStatusToggle(data.id, data.estado);
 				}
 			}
-		];
-	}
+		},
+		{
+			title: 'Acceso',
+			field: 'puedeIngresar',
+			width: 130,
+			hozAlign: 'center',
+			formatter: (cell) => {
+				const row = cell.getData() as ProveedorResponse;
+				const baseClass = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none';
+				const redBadge = 'bg-red-500/10 text-red-400 border-red-500/20';
+				const greenBadge = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
 
-	static getTrashColumns(): ColDef<ProveedorResponse>[] {
-		return [
-			{
-				field: 'cedula',
-				headerName: 'Cédula',
-				width: 130,
-				pinned: 'left',
-				cellStyle: { fontFamily: 'monospace', fontSize: '13px' }
-			},
-			{
-				field: 'nombre',
-				headerName: 'Nombre',
-				flex: 1,
-				minWidth: 200,
-				cellStyle: { fontWeight: 500 },
-				valueGetter: (params: ValueGetterParams<ProveedorResponse>) => {
-					const d = params.data;
-					if (!d) return '';
-					return [d.nombre, d.segundoNombre, d.apellido, d.segundoApellido]
-						.filter(Boolean)
-						.join(' ');
+				if (row.estado?.toLowerCase() !== 'activo') {
+					return `<span class="${baseClass} ${redBadge}">Denegado</span>`;
 				}
-			},
-			{
-				field: 'empresaNombre',
-				headerName: 'Empresa',
-				flex: 1,
-				minWidth: 180
-			},
-			{
-				colId: 'deletedAt',
-				field: 'deletedAt',
-				headerName: 'Fecha Eliminación',
-				width: 150,
-				valueFormatter: (params: ValueFormatterParams<ProveedorResponse>) => {
-					if (!params.value) return '-';
-					return new Date(params.value).toLocaleDateString('es-PA', {
-						year: 'numeric',
-						month: '2-digit',
-						day: '2-digit',
-						hour: '2-digit',
-						minute: '2-digit'
-					});
-				}
+
+				return row.puedeIngresar
+					? `<span class="${baseClass} ${greenBadge}">Permitido</span>`
+					: `<span class="${baseClass} ${redBadge}">Denegado</span>`;
 			}
-		];
-	}
-}
+		}
+	];
+};
 
-// Keep export for backward compatibility if other files import PROVEEDOR_COLUMNS directly
-export const PROVEEDOR_COLUMNS = ProveedorColumns.getColumns();
+export const getProveedorTrashColumns = (): ColumnDefinition[] => {
+	return [
+		{
+			title: 'Cédula',
+			field: 'cedula',
+			width: 130,
+			formatter: (cell) => `<span class="font-mono text-xs">${cell.getValue() || ''}</span>`
+		},
+		{
+			title: 'Nombre',
+			field: 'nombre',
+			width: 250,
+			formatter: (cell) => {
+				const d = cell.getData() as ProveedorResponse;
+				if (!d) return '';
+				return [d.nombre, d.segundoNombre, d.apellido, d.segundoApellido]
+					.filter(Boolean)
+					.join(' ');
+			}
+		},
+		{
+			title: 'Empresa',
+			field: 'empresaNombre',
+			width: 200
+		},
+		{
+			title: 'Fecha Eliminación',
+			field: 'deletedAt',
+			width: 150,
+			formatter: (cell) => {
+				const val = cell.getValue();
+				if (!val) return '-';
+				return new Date(val).toLocaleDateString('es-PA', {
+					year: 'numeric',
+					month: '2-digit',
+					day: '2-digit',
+					hour: '2-digit',
+					minute: '2-digit'
+				});
+			}
+		}
+	];
+};

@@ -6,8 +6,8 @@
 	import * as proveedorService from '$lib/api/proveedor';
 	import * as visitanteService from '$lib/api/visitante';
 	import { getContratistaTrashColumns } from '$lib/logic/contratista/contratistaColumns';
-	import { ProveedorColumns } from '$lib/logic/proveedor/proveedorColumns';
-	import { VisitanteColumns } from '$lib/logic/visitante/visitanteColumns';
+	import { getProveedorTrashColumns } from '$lib/logic/proveedor/proveedorColumns';
+	import { getVisitanteTrashColumns } from '$lib/logic/visitante/visitanteColumns';
 	import { slide } from 'svelte/transition';
 
 	// Estado de pestañas
@@ -89,7 +89,7 @@
 				<TrashListView
 					entityName="Proveedor"
 					service={proveedorService.proveedor}
-					columnDefs={ProveedorColumns.getTrashColumns()}
+					columnDefs={getProveedorTrashColumns()}
 					gridId="trash-proveedor"
 					onBack={() => {}}
 				/>
@@ -99,7 +99,7 @@
 				<TrashListView
 					entityName="Visitante"
 					service={visitanteService.visitante}
-					columnDefs={VisitanteColumns.getTrashColumns()}
+					columnDefs={getVisitanteTrashColumns()}
 					gridId="trash-visitante"
 					onBack={() => {}}
 				/>
