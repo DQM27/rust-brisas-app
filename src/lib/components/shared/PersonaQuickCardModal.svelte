@@ -9,14 +9,12 @@
 		Clock,
 		Calendar,
 		History,
-		CheckCircle2,
 		ShieldX,
 		User,
 		Users,
 		HardHat,
 		Truck,
 		UserCircle,
-		LogOut,
 		FileText
 	} from 'lucide-svelte';
 	import { personaQuickView } from '$lib/stores/ui';
@@ -24,16 +22,13 @@
 	import { toast } from 'svelte-5-french-toast';
 	import { fade, scale, slide } from 'svelte/transition';
 	import { currentUser } from '$lib/stores/auth';
-	import SalidaModal from '$lib/components/ingreso/SalidaModal.svelte';
-	import { validarIngreso, registrarSalida } from '$lib/logic/ingreso/ingresoService';
+	import { validarIngreso } from '$lib/logic/ingreso/ingresoService';
 	import type { ValidacionIngresoResult } from '$lib/logic/ingreso/types';
 
 	// State
 	let show = $derived($personaQuickView !== null);
 	let data = $derived($personaQuickView);
 	let loading = $state(false);
-	let showSalidaModal = $state(false);
-	let loadingSalida = $state(false);
 	let validationResult = $state<ValidacionIngresoResult | null>(null);
 
 	// Fetch data when modal opens
@@ -89,54 +84,6 @@
 		handleClose();
 	}
 
-	function handleRegisterEntry() {
-		personaQuickView.set(null);
-		// Aquí abriríamos el modal de ingreso real con los datos ya validados
-		if (validationResult) {
-			openTab({
-				id: 'ingreso-list',
-				title: 'Lista de Ingresos',
-				componentKey: 'ingreso-list',
-				data: {
-					openCreateModal: Date.now(),
-					initialPersonId: data?.id
-				}
-			});
-		}
-	}
-
-	async function handleConfirmSalida(
-		event: CustomEvent<{ devolvioGafete: boolean; observaciones: string }>
-	) {
-		if (!validationResult?.ingresoAbierto) return;
-
-		loadingSalida = true;
-		try {
-			const res = await registrarSalida({
-				ingresoId: validationResult.ingresoAbierto.id,
-				devolvioGafete: event.detail.devolvioGafete,
-				observacionesSalida: event.detail.observaciones || '',
-				usuarioSalidaId: $currentUser?.id || ''
-			});
-
-			if (res.ok) {
-				toast.success('Salida registrada correctamente');
-				showSalidaModal = false;
-				personaQuickView.set(null);
-			} else {
-				toast.error(res.error);
-			}
-		} catch (e: any) {
-			toast.error('Error al registrar salida');
-		} finally {
-			loadingSalida = false;
-		}
-	}
-
-	function handleOpenSalida() {
-		showSalidaModal = true;
-	}
-
 	// UI Patterns Classes
 	const labelClass = 'block text-[10px] font-bold text-secondary uppercase tracking-widest mb-1';
 	const containerClass = 'bg-surface-1 rounded-lg border border-surface p-4';
@@ -167,6 +114,12 @@
 		}
 	}
 </script>
+
+<svelte:window
+	onkeydown={(e) => {
+		if (show && e.key === 'Escape') handleClose();
+	}}
+/>
 
 {#if show}
 	<!-- Backdrop con Blur (UI-Pattern 1.80) -->
@@ -208,25 +161,31 @@
 							{loading ? 'Cargando...' : validationResult?.persona?.nombreCompleto || 'Persona'}
 						</h2>
 						<span
-							class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider {validationResult?.puedeIngresar
-								? 'text-green-400'
-								: 'text-error'}"
+							class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider {validationResult?.tieneIngresoAbierto
+								? 'text-blue-400'
+								: validationResult?.puedeIngresar
+									? 'text-green-400'
+									: 'text-error'}"
 						>
 							<span
-								class="w-1.5 h-1.5 rounded-full {validationResult?.puedeIngresar
-									? 'bg-green-400'
-									: 'bg-error'} {loading ? 'animate-pulse' : ''}"
+								class="w-1.5 h-1.5 rounded-full {validationResult?.tieneIngresoAbierto
+									? 'bg-blue-400'
+									: validationResult?.puedeIngresar
+										? 'bg-green-400'
+										: 'bg-error'} {loading ? 'animate-pulse' : ''}"
 							></span>
 							{#if loading}
 								Validando...
 							{:else if validationResult}
 								<span
-									class="text-[10px] font-bold uppercase tracking-widest {validationResult?.puedeIngresar
-										? 'text-emerald-400'
-										: 'text-rose-400'}"
+									class="text-[10px] font-bold uppercase tracking-widest {validationResult?.tieneIngresoAbierto
+										? 'text-blue-400'
+										: validationResult?.puedeIngresar
+											? 'text-emerald-400'
+											: 'text-rose-400'}"
 								>
 									{#if validationResult?.tieneIngresoAbierto}
-										Persona en Planta
+										Ingreso Activo
 									{:else}
 										{validationResult?.puedeIngresar ? 'Acceso Autorizado' : 'Acceso Denegado'}
 									{/if}
@@ -257,8 +216,27 @@
 						</p>
 					</div>
 				{:else if validationResult}
-					<!-- Card de Estado Destacada (Si hay rechazo) -->
-					{#if !validationResult.puedeIngresar}
+					<!-- Card de Estado -->
+					{#if validationResult.tieneIngresoAbierto}
+						<div
+							class="bg-blue-500/10 border border-blue-500/20 p-4 rounded-lg flex items-start gap-4"
+							transition:slide
+						>
+							<div
+								class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400"
+							>
+								<Clock size={18} />
+							</div>
+							<div>
+								<p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-0.5">
+									Ingreso Activo
+								</p>
+								<p class="text-sm text-blue-400/90 font-medium leading-relaxed font-mono">
+									{formatDate(validationResult.ingresoAbierto?.fechaHoraIngreso)}
+								</p>
+							</div>
+						</div>
+					{:else if !validationResult.puedeIngresar}
 						<div
 							class="bg-error/10 border border-error/20 p-4 rounded-lg flex items-start gap-4"
 							transition:slide
@@ -423,35 +401,11 @@
 					class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm"
 					onclick={handleClose}
 				>
-					Cancelar
+					Cerrar
 				</button>
-
-				{#if validationResult?.puedeIngresar}
-					<button
-						class="flex items-center gap-2 px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm"
-						onclick={handleRegisterEntry}
-					>
-						<CheckCircle2 size={16} />
-						<span>Registrar Ingreso</span>
-					</button>
-				{:else if validationResult?.tieneIngresoAbierto}
-					<button
-						class="flex items-center gap-2 px-6 py-2.5 rounded-lg border-2 border-surface text-rose-400 font-medium transition-all duration-200 hover:border-rose-500 hover:bg-rose-500/10 text-sm"
-						onclick={handleOpenSalida}
-					>
-						<LogOut size={16} />
-						<span>Registrar Salida</span>
-					</button>
-				{/if}
 			</div>
 		</div>
 	</div>
-	<SalidaModal
-		bind:show={showSalidaModal}
-		ingreso={validationResult?.ingresoAbierto ?? null}
-		loading={loadingSalida}
-		on:confirm={handleConfirmSalida}
-	/>
 {/if}
 
 <style>
