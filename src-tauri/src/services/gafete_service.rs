@@ -294,16 +294,34 @@ pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
     for g in gafetes {
         let mut resp = GafeteResponse::from(g.clone());
 
-        // Check if there's a pending alert for this gafete number
+        // 1. First check ACTIVE INGRESO (Base Status: En Uso)
+        if let Some(ingreso) = active_gafete_map.get(&g.numero) {
+            resp.status = "en_uso".to_string();
+            resp.esta_disponible = false;
+
+            // Populate assignment info
+            let nombre = match ingreso {
+                UniversalIngresoFetched::Contratista(i) => {
+                    format!("{} {}", i.nombre, i.apellido)
+                }
+                UniversalIngresoFetched::Proveedor(i) => {
+                    format!("{} {}", i.nombre, i.apellido)
+                }
+                UniversalIngresoFetched::Visita(i) => {
+                    format!("{} {}", i.nombre, i.apellido)
+                }
+            };
+            resp.asignado_a = Some(nombre);
+        }
+
+        // 2. Then apply ALERT overlays (Overrides status to Perdido if active alert exists)
         if let Some(alerta) = alertas_map.get(&g.numero) {
             resp.alerta_id = Some(alerta.id.to_string());
-            // Format date properly as ISO8601 for JavaScript
             resp.fecha_perdido = Some(format_datetime_iso(&alerta.fecha_reporte));
             resp.quien_perdio = Some(alerta.nombre_completo.clone());
             resp.alerta_resuelta = Some(alerta.resuelto);
             resp.notas = alerta.notas.clone();
 
-            // Get actual user name from lookup map
             let reportado_key = alerta.reportado_por.to_string();
             resp.reportado_por_nombre = Some(
                 user_names
@@ -312,7 +330,6 @@ pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
                     .unwrap_or_else(|| "Usuario desconocido".to_string()),
             );
 
-            // Fecha de resolución if available
             if let Some(ref fecha) = alerta.fecha_resolucion {
                 resp.fecha_resolucion = Some(format_datetime_iso(fecha));
             }
@@ -326,31 +343,11 @@ pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
                 );
             }
 
-            // Mark status as "perdido" if there's an active alert
+            // CRITICAL: If alert is not resolved, status MUST be 'perdido', even if there is an active ingress
             if !alerta.resuelto {
                 resp.status = "perdido".to_string();
+                // We keep 'asignado_a' from the ingress if present, which is useful context
             }
-        }
-
-        // If there is an ACTIVE INGRESO for this gafete, force status to "en_uso"
-        // This relies on the ingress record as the Source of Truth
-        if let Some(ingreso) = active_gafete_map.get(&g.numero) {
-            resp.status = "en_uso".to_string();
-            resp.esta_disponible = false;
-
-            // We still populate this field even if hidden in frontend, as it's useful data
-            let nombre = match ingreso {
-                UniversalIngresoFetched::Contratista(i) => {
-                    format!("{} {}", i.nombre, i.apellido)
-                }
-                UniversalIngresoFetched::Proveedor(i) => {
-                    format!("{} {}", i.nombre, i.apellido)
-                }
-                UniversalIngresoFetched::Visita(i) => {
-                    format!("{} {}", i.nombre, i.apellido)
-                }
-            };
-            resp.asignado_a = Some(nombre);
         }
 
         enriched.push(resp);
@@ -405,4 +402,3 @@ pub async fn delete_gafete(id_str: &str) -> Result<(), GafeteError> {
 // --------------------------------------------------------------------------
 // TESTS UNITARIOS
 // --------------------------------------------------------------------------
-

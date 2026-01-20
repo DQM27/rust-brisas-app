@@ -1,8 +1,9 @@
 <!-- src/lib/components/gafete/GafeteFormModal.svelte -->
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
-	import { X } from 'lucide-svelte';
+	import { X, ChevronDown, Check } from 'lucide-svelte';
 	import type { GafeteResponse, CreateGafeteInput, UpdateGafeteInput } from '$lib/types/gafete';
+	import { gafeteSchema } from '$lib/schemas/gafeteSchema';
 
 	interface Props {
 		show: boolean;
@@ -22,6 +23,37 @@
 	let numero = $state('');
 	let tipo = $state<'contratista' | 'proveedor' | 'visita' | 'otro'>('contratista');
 	let errors = $state<Record<string, string>>({});
+	let showTipoDropdown = $state(false);
+
+	// Referencias y posición del dropdown
+	let triggerButton: HTMLButtonElement;
+	let dropdownTop = $state(0);
+	let dropdownLeft = $state(0);
+	let dropdownWidth = $state(0);
+
+	// Opciones de tipo
+	const tipoOptions = [
+		{ value: 'contratista', label: 'Contratista' },
+		{ value: 'proveedor', label: 'Proveedor' },
+		{ value: 'visita', label: 'Visita' },
+		{ value: 'otro', label: 'Otro' }
+	] as const;
+
+	// Label derivado para el dropdown
+	const tipoLabel = $derived(
+		tipoOptions.find((opt) => opt.value === tipo)?.label ?? 'Seleccionar...'
+	);
+
+	// Función para toggle del dropdown y calcular posición
+	function handleTipoDropdownToggle() {
+		showTipoDropdown = !showTipoDropdown;
+		if (showTipoDropdown && triggerButton) {
+			const rect = triggerButton.getBoundingClientRect();
+			dropdownTop = rect.bottom + 4; // 4px de margen
+			dropdownLeft = rect.left;
+			dropdownWidth = rect.width;
+		}
+	}
 
 	// Cargar datos iniciales
 	$effect(() => {
@@ -38,134 +70,221 @@
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
+		errors = {};
 
-		const data = { numero, tipo };
+		// Validar con Zod
+		const result = gafeteSchema.safeParse({ numero: numero.trim(), tipo });
 
-		// Validación por ahora simple o vía schema si se prefiere
-		if (!numero.trim()) {
-			errors.numero = 'El número es requerido';
+		if (!result.success) {
+			// Convertir errores de Zod a nuestro formato
+			result.error.issues.forEach((err) => {
+				if (err.path[0]) {
+					errors[err.path[0] as string] = err.message;
+				}
+			});
 			return;
 		}
 
 		try {
-			await onSave(data);
+			await onSave(result.data);
 		} catch (err: any) {
 			errors.form = err.message || 'Error al guardar';
 		}
 	}
 
+	// Función helper para clases de validación
+	function getFieldStateClass(field: string) {
+		if (errors[field]) {
+			return '!border-red-500/50 !ring-1 !ring-red-500/20';
+		}
+		return '';
+	}
+
+	// Clases estándar según ui-patterns.md
 	const inputClass =
-		'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#2da44e] disabled:opacity-60 transition-all';
-	const labelClass = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
+		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all';
+	const labelClass = 'block text-xs font-medium text-secondary mb-1';
+	const errorClass = 'text-xs text-red-500 mt-0.5';
 </script>
 
 {#if show}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+		class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
 		transition:fade={{ duration: 150 }}
 	>
-		<!-- Backdrop/Overlay (No cierra al hacer click fuera como pidió el usuario para ingresos, mantenemos consistencia) -->
-		<div class="absolute inset-0"></div>
+		<div class="absolute inset-0" onclick={onClose} role="presentation"></div>
 
-		<!-- Modal Content -->
 		<div
-			class="relative z-10 w-full max-w-md bg-white dark:bg-[#0d1117] rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+			class="relative z-10 w-full max-w-[450px] max-h-[95vh] overflow-hidden bg-surface-2 shadow-2xl border border-surface rounded-xl flex flex-col"
 			transition:fly={{ y: 20, duration: 200 }}
 		>
 			<!-- Header -->
 			<div
-				class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-[#0d1117]"
+				class="flex-none flex items-center justify-between px-3 py-3 bg-surface-2 border-b border-surface"
 			>
-				<h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">
+				<h2 class="text-xl font-semibold text-primary">
 					{modalTitle}
 				</h2>
 				<button
 					onclick={onClose}
-					class="p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+					class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
 				>
 					<X size={20} />
 				</button>
 			</div>
 
-			<form onsubmit={handleSubmit} class="p-6 space-y-4">
-				<!-- Número de Gafete -->
-				<div>
-					<label for="numero" class={labelClass}> Número de Gafete </label>
-					<input
-						type="text"
-						id="numero"
-						bind:value={numero}
-						disabled={isEditMode || loading}
-						class={inputClass}
-						placeholder="Ej: G-101"
-						required
-					/>
-					{#if isEditMode}
-						<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-							El número no se puede cambiar una vez creado.
-						</p>
-					{/if}
-					{#if errors.numero}
-						<p class="mt-1 text-xs text-red-500">{errors.numero}</p>
-					{/if}
-				</div>
-
-				<!-- Tipo de Gafete -->
-				<div>
-					<label for="tipo" class={labelClass}> Tipo </label>
-					<select id="tipo" bind:value={tipo} disabled={loading} class={inputClass}>
-						<option value="contratista">Contratista</option>
-						<option value="proveedor">Proveedor</option>
-						<option value="visita">Visita</option>
-						<option value="otro">Otro</option>
-					</select>
-				</div>
-
-				<!-- Botones de Acción -->
-				<div
-					class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700"
-				>
-					<button
-						type="button"
-						onclick={onClose}
-						disabled={loading}
-						class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border border-transparent rounded-md transition-colors"
-					>
-						Cancelar
-					</button>
-					<button
-						type="submit"
-						disabled={loading || !numero.trim()}
-						class="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-[#2da44e] border border-transparent rounded-md shadow-sm hover:bg-[#2c974b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2da44e] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-					>
-						{#if loading}
-							<svg
-								class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-								xmlns="http://www.w3.org/2000/svg"
-								fill="none"
-								viewBox="0 0 24 24"
-							>
-								<circle
-									class="opacity-25"
-									cx="12"
-									cy="12"
-									r="10"
-									stroke="currentColor"
-									stroke-width="4"
-								></circle>
-								<path
-									class="opacity-75"
-									fill="currentColor"
-									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-								></path>
-							</svg>
-							Guardando...
-						{:else}
-							{isEditMode ? 'Actualizar' : 'Crear Gafete'}
+			<!-- Content -->
+			<form onsubmit={handleSubmit} class="flex-1 p-6 space-y-4 overflow-y-auto">
+				<!-- Card de Inputs -->
+				<div class="bg-surface-1 rounded-lg border border-surface p-6 space-y-4">
+					<!-- Número de Gafete -->
+					<div>
+						<label for="numero" class={labelClass}>
+							Número de Gafete <span class="text-red-500">*</span>
+						</label>
+						<input
+							type="text"
+							id="numero"
+							name="numero"
+							bind:value={numero}
+							disabled={isEditMode || loading}
+							class="{inputClass} {getFieldStateClass('numero')}"
+							placeholder="Ej: G-101"
+						/>
+						{#if isEditMode}
+							<p class="mt-1 text-xs text-gray-500">
+								El número no se puede cambiar una vez creado.
+							</p>
 						{/if}
-					</button>
+						{#if errors.numero}
+							<p class={errorClass}>{errors.numero}</p>
+						{/if}
+					</div>
+
+					<!-- Tipo de Gafete (Custom Dropdown) -->
+					<div class="relative">
+						<label class={labelClass}>
+							Tipo <span class="text-red-500">*</span>
+						</label>
+
+						<!-- Trigger -->
+						<button
+							type="button"
+							bind:this={triggerButton}
+							onclick={handleTipoDropdownToggle}
+							disabled={loading}
+							class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {getFieldStateClass(
+								'tipo'
+							)}"
+							class:!border-blue-500={showTipoDropdown}
+						>
+							<span class="truncate">{tipoLabel}</span>
+							<ChevronDown size={16} class="text-secondary" />
+						</button>
+
+						{#if showTipoDropdown}
+							<!-- Backdrop -->
+							<div
+								class="fixed inset-0 z-[60]"
+								onclick={() => (showTipoDropdown = false)}
+								role="presentation"
+							></div>
+
+							<!-- Menú Fixed -->
+							<div
+								style="top: {dropdownTop}px; left: {dropdownLeft}px; width: {dropdownWidth}px;"
+								class="fixed z-[70] bg-[#1c2128] border border-white/10 rounded-lg shadow-xl max-h-[200px] overflow-y-auto p-1"
+								transition:fly={{ y: -5, duration: 200 }}
+							>
+								{#each tipoOptions as option}
+									<button
+										type="button"
+										onclick={() => {
+											tipo = option.value;
+											showTipoDropdown = false;
+										}}
+										class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+									>
+										<span>{option.label}</span>
+										{#if tipo === option.value}
+											<Check size={14} class="text-white" />
+										{/if}
+									</button>
+								{/each}
+							</div>
+						{/if}
+
+						{#if errors.tipo}
+							<p class={errorClass}>{errors.tipo}</p>
+						{/if}
+					</div>
 				</div>
 			</form>
+
+			<!-- Footer -->
+			<div
+				class="flex-none flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1"
+			>
+				<!-- Cancelar -->
+				<button
+					type="button"
+					onclick={onClose}
+					disabled={loading}
+					class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm disabled:opacity-50"
+				>
+					Cancelar
+				</button>
+
+				<!-- Guardar -->
+				<button
+					type="submit"
+					disabled={loading || !numero.trim()}
+					onclick={handleSubmit}
+					class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+				>
+					{#if loading}
+						<svg
+							class="animate-spin h-4 w-4"
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+						>
+							<circle
+								class="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								stroke-width="4"
+							></circle>
+							<path
+								class="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+							></path>
+						</svg>
+						Guardando...
+					{:else}
+						{isEditMode ? 'Actualizar' : 'Crear Gafete'}
+					{/if}
+				</button>
+			</div>
 		</div>
 	</div>
 {/if}
+
+<style>
+	/* Autofill Fix (Evita fondo blanco de Chrome) */
+	input:-webkit-autofill {
+		-webkit-text-fill-color: white !important;
+		-webkit-box-shadow: 0 0 0px 1000px #1c2128 inset !important;
+		transition: background-color 5000s ease-in-out 0s;
+	}
+
+	/* Focus Override Global */
+	input:focus {
+		border-color: rgba(59, 130, 246, 0.5) !important;
+		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+		outline: none !important;
+	}
+</style>
