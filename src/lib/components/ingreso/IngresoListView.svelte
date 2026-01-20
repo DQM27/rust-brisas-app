@@ -114,6 +114,12 @@
 		}
 	];
 
+	function handleRowDblClick(e: any, row: any) {
+		const data = row.getData();
+		selectedPersonForDetail = data;
+		showDetailModal = true;
+	}
+
 	// Derived Data (Search + ViewMode + Filter)
 	let filteredIngresos = $derived.by(() => {
 		let data = ingresos;
@@ -641,6 +647,7 @@
 					placeholder: 'No hay ingresos registrados'
 				}}
 				onRowSelectionChanged={(data) => (selectedRows = data)}
+				onRowDblClick={handleRowDblClick}
 				persistenceID="ingreso-list-v3"
 			/>
 		{/if}

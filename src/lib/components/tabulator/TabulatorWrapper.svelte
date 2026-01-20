@@ -35,6 +35,7 @@
 		columnCalculations?: boolean; // New: Enable footer calculations
 		rowContextMenu?: any[]; // New: Context menu items
 		toolbarColumns?: { field: string; title: string; visible: boolean; frozen: boolean }[]; // Bindable
+		onRowDblClick?: (e: any, row: any) => void;
 	}
 
 	let {
@@ -58,7 +59,8 @@
 		groupBy,
 		columnCalculations = false,
 		rowContextMenu = [],
-		toolbarColumns = $bindable([])
+		toolbarColumns = $bindable([]),
+		onRowDblClick
 	}: Props = $props();
 
 	let table: Tabulator | undefined;
@@ -137,7 +139,9 @@
 				isTableBuilt = true;
 			});
 
-			if (options && (options as any).rowDblClick) {
+			if (onRowDblClick) {
+				table.on('rowDblClick', onRowDblClick);
+			} else if (options && (options as any).rowDblClick) {
 				table.on('rowDblClick', (options as any).rowDblClick);
 			}
 
