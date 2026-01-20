@@ -463,9 +463,4 @@
 
 <style>
 	/* Focus Override Global */
-	select:focus {
-		border-color: rgba(59, 130, 246, 0.5) !important;
-		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
-		outline: none !important;
-	}
 </style>

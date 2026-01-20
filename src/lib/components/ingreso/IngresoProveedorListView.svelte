@@ -33,6 +33,9 @@
 	}
 	let { tabId = 'proveedor-ingreso-list' }: Props = $props();
 
+	// Reactive wrapper to satisfy Svelte 5 linter regarding effect dependencies
+	let activeTabIdValue = $derived(tabId);
+
 	// State
 	let ingresos = $state<IngresoProveedor[]>([]);
 	let loading = $state(false);
@@ -224,13 +227,11 @@
 
 	// Tab State for title update
 	import { useTabState } from '$lib/stores/tabs';
-	const { updateTitle } = useTabState(tabId);
-
 	// Lifecycle
 	onMount(() => {
 		loadIngresos();
 		setupKeyboardSubscription();
-		updateTitle('Ingresos Proveedor');
+		useTabState(tabId).updateTitle('Ingresos Proveedor');
 	});
 
 	onDestroy(() => {
@@ -238,7 +239,7 @@
 	});
 
 	$effect(() => {
-		if ($activeTabId === tabId) {
+		if ($activeTabId === activeTabIdValue) {
 			setActiveContext('proveedor-ingreso-list');
 		}
 	});
