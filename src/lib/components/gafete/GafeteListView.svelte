@@ -31,6 +31,7 @@
 	// Grid State
 	let gridWrapper = $state<any>(null);
 	let toolbarColumns = $state<any[]>([]);
+	let selectedRows = $state<GafeteResponse[]>([]);
 
 	// Estado para modal de resolución de alertas
 	let showResolveModal = $state(false);
@@ -214,7 +215,7 @@
 	<!-- Toolbar & Grid -->
 	<GridToolbar
 		bind:searchTerm
-		hasSelection={false}
+		hasSelection={selectedRows.length > 0}
 		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
 		onFitColumns={() => gridWrapper?.fitColumns()}
 		onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
@@ -234,18 +235,68 @@
 		columns={toolbarColumns}
 	>
 		{#snippet primaryActions()}
-			<button
-				onclick={handleNew}
-				class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
-			>
-				<Plus size={14} /> Nuevo
-			</button>
-			<button
-				onclick={() => (showBulkModal = true)}
-				class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
-			>
-				<ListPlus size={14} /> Generar Lote
-			</button>
+			{#if selectedRows.length > 0}
+				<!-- Modo Selección -->
+				<div class="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
+					{#if selectedRows.length === 1}
+						<button
+							class="flex items-center gap-2 px-3 py-1.5
+							       bg-amber-600/10 hover:bg-amber-600/20
+							       text-amber-400 hover:text-amber-300
+							       border border-amber-500/20 hover:border-amber-500/30
+							       rounded-md text-sm font-medium transition-all"
+							onclick={() => {
+								handleEdit(selectedRows[0]);
+								gridWrapper?.deselectAll();
+							}}
+						>
+							<svg
+								class="w-4 h-4"
+								xmlns="http://www.w3.org/2000/svg"
+								width="24"
+								height="24"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg
+							>
+							<span>Editar</span>
+						</button>
+					{/if}
+
+					<button
+						class="flex items-center gap-2 px-3 py-1.5
+						       bg-[#27272a] hover:bg-[#3f3f46]
+						       text-gray-400 hover:text-white
+						       border border-white/10
+						       rounded-md text-sm font-medium transition-all"
+						onclick={() => {
+							gridWrapper?.deselectAll();
+							selectedRows = [];
+						}}
+					>
+						<X size={16} />
+						<span>Cancelar</span>
+					</button>
+				</div>
+			{:else}
+				<!-- Acciones normales -->
+				<button
+					onclick={handleNew}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
+				>
+					<Plus size={14} /> Nuevo
+				</button>
+				<button
+					onclick={() => (showBulkModal = true)}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
+				>
+					<ListPlus size={14} /> Generar Lote
+				</button>
+			{/if}
 		{/snippet}
 	</GridToolbar>
 
@@ -263,12 +314,21 @@
 				data={gafetes}
 				{columns}
 				class="h-full"
-				persistenceID="gafete-list-v3"
+				persistenceID="gafete-list-v4"
 				pagination={true}
+				withCheckboxSelection={true}
 				options={{
 					...defaultTabulatorOptions,
 					layout: 'fitData',
-					placeholder: 'No se encontraron gafetes'
+					placeholder: 'No se encontraron gafetes',
+					selectableRowsCheck: (row) => {
+						// Permitir selección solo si no está en estado perdido
+						const data = row.getData() as GafeteResponse;
+						return data.status !== 'perdido';
+					}
+				}}
+				onRowSelectionChanged={(rows) => {
+					selectedRows = rows as GafeteResponse[];
 				}}
 			/>
 		{/if}

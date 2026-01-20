@@ -143,13 +143,15 @@
 							Número de Gafete <span class="text-red-500">*</span>
 						</label>
 						<input
-							type="text"
+							type="number"
 							id="numero"
 							name="numero"
 							bind:value={numero}
 							disabled={isEditMode || loading}
 							class="{inputClass} {getFieldStateClass('numero')}"
-							placeholder="Ej: G-101"
+							placeholder="Ej: 101"
+							min="1"
+							step="1"
 						/>
 						{#if isEditMode}
 							<p class="mt-1 text-xs text-gray-500">
