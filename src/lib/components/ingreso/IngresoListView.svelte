@@ -628,6 +628,7 @@
 		{:else}
 			<TabulatorWrapper
 				bind:this={gridWrapper}
+				bind:toolbarColumns
 				data={filteredIngresos}
 				{columns}
 				withCheckboxSelection={true}

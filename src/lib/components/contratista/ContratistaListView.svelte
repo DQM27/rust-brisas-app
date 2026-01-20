@@ -83,6 +83,12 @@
 	let availableFormats = $state<string[]>([]);
 	let exportColumns = $state<{ id: string; name: string; selected: boolean }[]>([]);
 	let exportRows = $state<Record<string, any>[]>([]);
+	let searchTerm = $state('');
+
+	// Metadata para el Toolbar (visibilidad y fijado)
+	let toolbarColumns = $state<
+		{ field: string; title: string; visible: boolean; frozen: boolean }[]
+	>([]);
 
 	// Filter Buttons logic (for keyboard nav state reference mostly, actual filtering is in derived data)
 	// NOTE: In Tabulator we pass the filtered data directly or use Filter API. Here we filter locally first.
@@ -199,7 +205,7 @@
 	// ==========================================
 	// DATA LOADING
 	// ==========================================
-	let gridWrapper: any = $state(); // Reference to the TabulatorWrapper component
+	let gridWrapper: any = $state(null); // Reference to the TabulatorWrapper component
 
 	// ==========================================
 	// DERIVED DATA (Filtering)
@@ -603,7 +609,6 @@
 	});
 </script>
 
-```
 <svelte:window onclick={handleClickOutside} />
 
 <div class="flex h-full flex-col relative bg-[#1e1e1e]">
@@ -637,59 +642,21 @@
 		{:else}
 			<!-- New Independent Toolbar -->
 			<GridToolbar
-				searchable={true}
+				bind:searchTerm
 				onSearch={(term) => {
 					if (gridWrapper) {
 						gridWrapper.getTable()?.setFilter('nombreCompleto', 'like', term);
 					}
 				}}
-				onAutoSizeColumns={() => {
-					if (gridWrapper) {
-						const table = gridWrapper.getTable();
-						if (table) {
-							const cols = table
-								.getColumnDefinitions()
-								.map((col: any) => ({ ...col, width: undefined }));
-							table.setColumns(cols);
-						}
-					}
-				}}
-				onFitColumns={() => {
-					if (gridWrapper) {
-						const table = gridWrapper.getTable();
-						if (table) {
-							// Get container width and distribute evenly
-							const containerWidth = table.element.clientWidth;
-							const columns = table.getColumns();
-							const columnWidth = Math.floor(containerWidth / columns.length);
-							const remainder = containerWidth - columnWidth * columns.length;
-
-							const cols = table.getColumnDefinitions().map((col: any, index: number) => ({
-								...col,
-								// Add remainder pixels to last column to fill completely
-								width: index === columns.length - 1 ? columnWidth + remainder : columnWidth
-							}));
-							table.setColumns(cols);
-						}
-					}
-				}}
-				{columns}
-				onToggleColumn={(field) => {
-					if (gridWrapper) {
-						const table = gridWrapper.getTable();
-						const column = table?.getColumn(field);
-						if (column) {
-							column.isVisible() ? column.hide() : column.show();
-						}
-					}
-				}}
+				onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
+				onFitColumns={() => gridWrapper?.fitColumns()}
+				onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
+				onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
 				onToggleFilters={() => {
 					showHeaderFilters = !showHeaderFilters;
-					// Save preference to localStorage
 					if (typeof window !== 'undefined') {
 						localStorage.setItem('tabulator-header-filters', String(showHeaderFilters));
 					}
-					// Redraw table to adjust header heights
 					if (gridWrapper) {
 						setTimeout(() => {
 							gridWrapper.redraw(true);
@@ -697,6 +664,8 @@
 					}
 				}}
 				onAdvancedExport={handleExportClick}
+				columns={toolbarColumns}
+				hasSelection={selectedRows.length > 0}
 			>
 				{#snippet primaryActions()}
 					{#if selectedRows.length > 0}
@@ -832,35 +801,28 @@
 			>
 				<TabulatorWrapper
 					bind:this={gridWrapper}
-					data={[]}
+					bind:toolbarColumns
+					data={contratistas}
 					{columns}
+					withCheckboxSelection={true}
+					persistenceID="contratista-list-v3"
 					options={{
-						height: '100%',
 						...defaultTabulatorOptions,
-						rowHeight: 40,
-						layout: 'fitDataFill',
 						dataTree: true,
-						dataTreeStartExpanded: false,
 						dataTreeChildField: '_children',
+						dataTreeStartExpanded: false,
 						dataTreeElementColumn: 'vehiculoTipo',
+						layout: 'fitData',
 						rowDblClick: (e: any, row: any) => {
-							console.log('Double click detected', row.getData());
 							const data = row.getData();
-							// Vehicle Row
 							if (!data.cedula && data._parent) {
 								openVehiculoModal(data._parent);
 							} else if (data.cedula) {
-								// Contractor Row
 								openModal(data);
 							}
 						}
 					}}
-					downloadable={false}
-					withCheckboxSelection={true}
-					persistenceID="contratista-list-v2"
-					onRowSelectionChanged={(data: any[], rows: any[]) => {
-						selectedRows = data;
-					}}
+					onRowSelectionChanged={(data) => (selectedRows = data)}
 				/>
 			</div>
 		{/if}

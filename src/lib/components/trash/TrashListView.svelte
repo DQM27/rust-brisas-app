@@ -32,7 +32,11 @@
 	let error = $state('');
 	let loading = $state(false);
 	let selectedRows = $state<any[]>([]);
+	let searchTerm = $state('');
 	let gridWrapper: any = $state();
+	let toolbarColumns = $state<
+		{ field: string; title: string; visible: boolean; frozen: boolean }[]
+	>([]);
 
 	// Modal State
 	let showModal = $state(false);
@@ -117,10 +121,17 @@
 			</div>
 		{:else}
 			<GridToolbar
+				bind:searchTerm
 				searchable={true}
 				onSearch={(term) => {
 					gridWrapper?.getTable()?.setFilter('nombreCompleto', 'like', term);
 				}}
+				onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
+				onFitColumns={() => gridWrapper?.fitColumns()}
+				onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
+				onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
+				columns={toolbarColumns}
+				hasSelection={selectedRows.length > 0}
 			>
 				{#snippet primaryActions()}
 					{#if selectedRows.length > 0}
@@ -138,6 +149,7 @@
 			<div class="flex-1 overflow-hidden p-4 relative bg-[#1e1e1e]">
 				<TabulatorWrapper
 					bind:this={gridWrapper}
+					bind:toolbarColumns
 					columns={columnDefs}
 					data={items}
 					withCheckboxSelection={true}

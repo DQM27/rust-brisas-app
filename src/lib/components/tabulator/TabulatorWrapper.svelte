@@ -140,6 +140,11 @@
 			if (options && (options as any).rowDblClick) {
 				table.on('rowDblClick', (options as any).rowDblClick);
 			}
+
+			// Sync toolbar columns when table is ready
+			table.on('tableBuilt', updateToolbarColumns);
+			table.on('columnVisibilityChanged', updateToolbarColumns);
+			table.on('columnMoved', updateToolbarColumns);
 		}
 	});
 
@@ -248,11 +253,6 @@
 			toast.success('Columnas ajustadas al ancho');
 		}
 	}
-
-	// Sync toolbar columns when table is ready
-	table?.on('tableBuilt', updateToolbarColumns);
-	table?.on('columnVisibilityChanged', updateToolbarColumns);
-	table?.on('columnMoved', updateToolbarColumns);
 
 	// Export toolbar state for snippets
 	export const getToolbarColumns = () => toolbarColumns;
