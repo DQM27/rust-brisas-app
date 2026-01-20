@@ -105,7 +105,7 @@
 {#if show}
 	<!-- Overlay -->
 	<div
-		class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 outline-none"
+		class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-start justify-center pt-[30vh] p-4 outline-none"
 		transition:fade={{ duration: 150 }}
 		onclick={(e) => e.target === e.currentTarget && handleClose()}
 		role="button"
@@ -122,15 +122,14 @@
 				<div
 					class="search-container relative flex items-center bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 transition-all outline-none"
 				>
-					<Search class="absolute left-3 text-gray-500" size={18} />
+					<Search class="absolute left-3 text-gray-500" size={16} />
 					<input
 						bind:this={inputRef}
 						bind:value={query}
 						type="text"
 						placeholder="Buscar en Megabrisas..."
-						class="w-full bg-transparent pl-10 pr-4 py-3 text-[15px] text-white focus:outline-none outline-none border-none placeholder:text-gray-600 appearance-none ring-0"
+						class="w-full bg-transparent pl-10 pr-4 py-2.5 text-[15px] text-white focus:outline-none outline-none border-none placeholder:text-gray-600 appearance-none ring-0"
 						autocomplete="off"
-						onkeydown={handleKeyDown}
 					/>
 					<div class="absolute right-3 flex gap-2">
 						<kbd
@@ -158,7 +157,7 @@
 								<!-- Header Categoría -->
 								{#if shouldShowHeader(i, item)}
 									<div
-										class="px-2 py-1.5 mt-2 first:mt-0 text-[10px] font-semibold text-gray-500 uppercase tracking-wider bg-transparent"
+										class="px-2 py-1 mt-1.5 first:mt-0 text-[11px] font-semibold text-gray-500 uppercase tracking-wider bg-transparent"
 									>
 										{getCategoryLabel(item.category)}
 									</div>
@@ -181,7 +180,7 @@
 								>
 									<div class="flex-shrink-0">
 										<item.icon
-											size={18}
+											size={16}
 											class={i === highlightedIndex
 												? 'text-white'
 												: item.subCategory === 'master'
@@ -201,7 +200,7 @@
 											<div class="flex gap-1 items-center">
 												{#if item.subCategory === 'master'}
 													<span
-														class="text-[8px] px-1 py-0 rounded border leading-none font-bold uppercase tracking-tight
+														class="text-[8.5px] px-1 py-0 rounded border leading-none font-bold uppercase tracking-tight
                                                         {i === highlightedIndex
 															? 'bg-white/20 text-white border-white/30'
 															: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}"
@@ -210,7 +209,7 @@
 													</span>
 												{:else if item.subCategory === 'transaction'}
 													<span
-														class="text-[8px] px-1 py-0 rounded border leading-none font-bold uppercase tracking-tight
+														class="text-[8.5px] px-1 py-0 rounded border leading-none font-bold uppercase tracking-tight
                                                         {i === highlightedIndex
 															? 'bg-white/20 text-white border-white/30'
 															: 'bg-amber-500/10 text-amber-400 border-amber-500/20'}"
@@ -219,7 +218,7 @@
 													</span>
 												{:else if item.subCategory === 'settings'}
 													<span
-														class="text-[8px] px-1 py-0 rounded border leading-none font-bold uppercase tracking-tight
+														class="text-[8.5px] px-1 py-0 rounded border leading-none font-bold uppercase tracking-tight
                                                         {i === highlightedIndex
 															? 'bg-white/20 text-white border-white/30'
 															: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'}"
@@ -230,7 +229,7 @@
 
 												{#if item.isOpen}
 													<span
-														class="text-[8px] px-1 py-0 rounded border leading-none font-bold uppercase tracking-tight
+														class="text-[8.5px] px-1 py-0 rounded border leading-none font-bold uppercase tracking-tight
                                                         {i === highlightedIndex
 															? 'bg-white/20 text-white border-white/30'
 															: 'bg-blue-500/10 text-blue-400 border-blue-500/20'}"
