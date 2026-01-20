@@ -33,7 +33,7 @@
 
 	// Build items reactively
 	const allItems = $derived(buildSpotlightItems(handleClose));
-	const filteredItemsList = $derived(filterItems(allItems, query));
+	const filteredItemsList = $derived(query.trim() === '' ? [] : filterItems(allItems, query));
 	const groupedItems = $derived(groupItems(filteredItemsList));
 	const flatItems = $derived(flattenGroups(groupedItems));
 
@@ -79,10 +79,25 @@
 		item.action();
 	}
 
-	function getGlobalIndex(category: 'module' | 'action' | 'tab', localIndex: number): number {
-		if (category === 'module') return localIndex;
-		if (category === 'action') return groupedItems.modules.length + localIndex;
-		return groupedItems.modules.length + groupedItems.actions.length + localIndex;
+	// Función para scroll automático
+	function scrollIntoView(index: number) {
+		const el = document.getElementById(`spotlight-item-${index}`);
+		if (el) {
+			el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+		}
+	}
+
+	$effect(() => {
+		if (show && flatItems.length > 0) {
+			scrollIntoView(highlightedIndex);
+		}
+	});
+
+	// Determinar si mostrar cabecera
+	function shouldShowHeader(index: number, item: SpotlightItem): boolean {
+		if (index === 0) return true;
+		const prevItem = flatItems[index - 1];
+		return item.category !== prevItem.category;
 	}
 </script>
 
@@ -116,171 +131,95 @@
 						autocomplete="off"
 						onkeydown={handleKeyDown}
 					/>
-					<kbd
-						class="absolute right-3 px-1.5 py-0.5 bg-black/40 rounded border border-white/10 text-[10px] text-gray-500 font-mono"
-					>
-						ESC
-					</kbd>
+					<div class="absolute right-3 flex gap-2">
+						<kbd
+							class="px-1.5 py-0.5 bg-black/40 rounded border border-white/10 text-[10px] text-gray-500 font-mono"
+						>
+							ESC
+						</kbd>
+					</div>
 				</div>
 			</div>
 
 			<!-- Results Section -->
-			<div class="results-container max-h-[50vh] overflow-y-auto p-2">
-				{#if flatItems.length === 0}
+			<div class="results-container max-h-[50vh] overflow-y-auto p-2 scrollbar-thin">
+				{#if query.trim() === ''}
+					<div class="p-8 text-center text-gray-500">
+						<Search size={32} class="mx-auto mb-3 opacity-10" />
+						<p class="text-xs uppercase tracking-wider opacity-60">
+							Escribe para comenzar a buscar
+						</p>
+					</div>
+				{:else if flatItems.length === 0}
 					<div class="p-8 text-center text-gray-500">
 						<Search size={32} class="mx-auto mb-3 opacity-20" />
-						<p class="text-sm">No se encontraron resultados</p>
+						<p class="text-sm">No se encontraron resultados para "{query}"</p>
 					</div>
 				{:else}
-					<!-- Módulos -->
-					{#if groupedItems.modules.length > 0}
-						<div class="mb-3">
-							<div
-								class="px-2 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider"
-							>
-								{getCategoryLabel('module')}
-							</div>
-							<div class="space-y-0.5">
-								{#each groupedItems.modules as item, i}
-									{@const globalIndex = getGlobalIndex('module', i)}
-									<button
-										onclick={() => handleItemClick(item)}
-										onmouseenter={() => (highlightedIndex = globalIndex)}
-										class="w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-all
-                       {globalIndex === highlightedIndex
-											? 'bg-blue-600 text-white'
-											: 'hover:bg-white/5 text-gray-300'}"
-									>
-										<div class="flex-shrink-0">
-											<item.icon
-												size={18}
-												class={globalIndex === highlightedIndex ? 'text-white' : 'text-gray-500'}
-											/>
-										</div>
-										<div class="flex-1 min-w-0">
-											<div class="font-medium text-[14px] truncate flex items-center gap-2">
-												{item.label}
-												{#if item.isOpen}
-													<span
-														class="text-[9px] px-1.5 py-0.5 rounded bg-green-600/20 text-green-400 border border-green-500/30"
-													>
-														ABIERTO
-													</span>
-												{/if}
-											</div>
-											{#if item.description}
-												<div
-													class="text-[11px] truncate {globalIndex === highlightedIndex
-														? 'text-white/70'
-														: 'text-gray-500'}"
-												>
-													{item.description}
-												</div>
-											{/if}
-										</div>
-										{#if globalIndex === highlightedIndex}
-											<div
-												class="text-[9px] font-bold opacity-60 px-1.5 py-0.5 border border-white/20 rounded"
-											>
-												ENTER
-											</div>
-										{/if}
-									</button>
-								{/each}
-							</div>
-						</div>
-					{/if}
+					<div class="space-y-0.5">
+						{#each flatItems as item, i (item.id)}
+							<!-- Header Categoría -->
+							{#if shouldShowHeader(i, item)}
+								<div
+									class="px-2 py-1.5 mt-2 first:mt-0 text-[10px] font-semibold text-gray-500 uppercase tracking-wider bg-[#1e1e1e] z-10"
+								>
+									{getCategoryLabel(item.category)}
+								</div>
+							{/if}
 
-					<!-- Acciones -->
-					{#if groupedItems.actions.length > 0}
-						<div class="mb-3">
-							<div
-								class="px-2 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider"
+							<button
+								id="spotlight-item-{i}"
+								onclick={() => handleItemClick(item)}
+								onmouseenter={() => (highlightedIndex = i)}
+								class="w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors relative scroll-mt-10
+                                    {i === highlightedIndex
+									? 'bg-blue-600 text-white'
+									: 'hover:bg-white/5 text-gray-300'}"
 							>
-								{getCategoryLabel('action')}
-							</div>
-							<div class="space-y-0.5">
-								{#each groupedItems.actions as item, i}
-									{@const globalIndex = getGlobalIndex('action', i)}
-									<button
-										onclick={() => handleItemClick(item)}
-										onmouseenter={() => (highlightedIndex = globalIndex)}
-										class="w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-all
-                       {globalIndex === highlightedIndex
-											? 'bg-blue-600 text-white'
-											: 'hover:bg-white/5 text-gray-300'}"
-									>
-										<div class="flex-shrink-0">
-											<item.icon
-												size={18}
-												class={globalIndex === highlightedIndex ? 'text-white' : 'text-emerald-500'}
-											/>
-										</div>
-										<div class="flex-1 min-w-0">
-											<div class="font-medium text-[14px] truncate">{item.label}</div>
-											{#if item.description}
-												<div
-													class="text-[11px] truncate {globalIndex === highlightedIndex
-														? 'text-white/70'
-														: 'text-gray-500'}"
-												>
-													{item.description}
-												</div>
-											{/if}
-										</div>
-										{#if globalIndex === highlightedIndex}
-											<div
-												class="text-[9px] font-bold opacity-60 px-1.5 py-0.5 border border-white/20 rounded"
+								<div class="flex-shrink-0">
+									<item.icon
+										size={18}
+										class={i === highlightedIndex
+											? 'text-white'
+											: item.category === 'action'
+												? 'text-emerald-500'
+												: 'text-gray-500'}
+									/>
+								</div>
+								<div class="flex-1 min-w-0">
+									<div class="font-medium text-[14px] truncate flex items-center gap-2">
+										{item.label}
+										{#if item.isOpen}
+											<span
+												class="text-[9px] px-1.5 py-0.5 rounded border
+                                                {i === highlightedIndex
+													? 'bg-white/20 text-white border-white/30'
+													: 'bg-green-500/10 text-green-400 border-green-500/20'}"
 											>
-												ENTER
-											</div>
+												ABIERTO
+											</span>
 										{/if}
-									</button>
-								{/each}
-							</div>
-						</div>
-					{/if}
-
-					<!-- Tabs abiertos -->
-					{#if groupedItems.tabs.length > 0}
-						<div class="mb-3">
-							<div
-								class="px-2 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider"
-							>
-								{getCategoryLabel('tab')}
-							</div>
-							<div class="space-y-0.5">
-								{#each groupedItems.tabs as item, i}
-									{@const globalIndex = getGlobalIndex('tab', i)}
-									<button
-										onclick={() => handleItemClick(item)}
-										onmouseenter={() => (highlightedIndex = globalIndex)}
-										class="w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-all
-                       {globalIndex === highlightedIndex
-											? 'bg-blue-600 text-white'
-											: 'hover:bg-white/5 text-gray-300'}"
+									</div>
+									{#if item.description}
+										<div
+											class="text-[11px] truncate {i === highlightedIndex
+												? 'text-white/70'
+												: 'text-gray-500'}"
+										>
+											{item.description}
+										</div>
+									{/if}
+								</div>
+								{#if i === highlightedIndex}
+									<div
+										class="text-[9px] font-bold opacity-60 px-1.5 py-0.5 border border-white/20 rounded ml-2"
 									>
-										<div class="flex-shrink-0">
-											<item.icon
-												size={18}
-												class={globalIndex === highlightedIndex ? 'text-white' : 'text-gray-500'}
-											/>
-										</div>
-										<div class="flex-1 min-w-0">
-											<div class="font-medium text-[14px] truncate">{item.label}</div>
-										</div>
-										{#if globalIndex === highlightedIndex}
-											<div
-												class="text-[9px] font-bold opacity-60 px-1.5 py-0.5 border border-white/20 rounded"
-											>
-												ENTER
-											</div>
-										{/if}
-									</button>
-								{/each}
-							</div>
-						</div>
-					{/if}
+										ENTER
+									</div>
+								{/if}
+							</button>
+						{/each}
+					</div>
 				{/if}
 			</div>
 
