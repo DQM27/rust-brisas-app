@@ -36,15 +36,17 @@
 
 	// Effect to handle external actions (like from Spotlight)
 	$effect(() => {
-		if (data?.openCreateModal) {
+		const trigger = data?.openCreateModal;
+		if (trigger) {
+			console.log('UserListView: Trigger received', trigger);
 			// Usamos un timeout pequeño para asegurar que el componente esté listo
 			setTimeout(() => {
 				if (!showModal) {
+					console.log('UserListView: Opening modal');
 					openModal(null);
 				}
-			}, 100);
-			// Consumir el flag para evitar re-aperturas no deseadas (opcional, pero buena práctica)
-			data.openCreateModal = false;
+			}, 200);
+			// No reseteamos data aqui porque ahora es un timestamp que cambia
 		}
 	});
 

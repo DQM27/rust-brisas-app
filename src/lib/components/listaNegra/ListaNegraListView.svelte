@@ -23,9 +23,20 @@
 
 	interface Props {
 		tabId: string;
+		data?: any;
 	}
 
-	let { tabId }: Props = $props();
+	let { tabId, data }: Props = $props();
+
+	// Effect to handle external actions (like from Spotlight)
+	$effect(() => {
+		if (data?.openCreateModal) {
+			setTimeout(() => {
+				if (!showFormModal) openFormModal(null);
+			}, 100);
+			data.openCreateModal = false;
+		}
+	});
 
 	// State
 	let bloqueados = $state<ListaNegraResponse[]>([]);

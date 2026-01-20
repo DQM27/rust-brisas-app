@@ -56,9 +56,16 @@ export function openTab(options: OpenTabOptions): string {
 	const id = options.id || generateTabId(componentKey, data);
 	const tabs = get(tabsStorePersisted);
 
-	// Si ya existe, solo enfocarlo
+	// Si ya existe, actualizamos datos y enfocamos
 	const existingTab = tabs.find((t) => t.id === id);
 	if (existingTab) {
+		// Actualizar data si se proporciona
+		if (data) {
+			tabsStorePersisted.update(current =>
+				current.map(t => t.id === id ? { ...t, data: { ...t.data, ...data } } : t)
+			);
+		}
+
 		if (focusOnOpen) {
 			activeTabId.set(id);
 		}

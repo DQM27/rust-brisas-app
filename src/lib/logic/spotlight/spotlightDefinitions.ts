@@ -20,7 +20,8 @@ import {
     Download,
     Database,
     RefreshCw,
-    UserPlus
+    UserPlus,
+    Ban
 } from 'lucide-svelte';
 import type { SpotlightItemDefinition } from '$lib/types/spotlight';
 
@@ -125,6 +126,24 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         category: 'action',
         keywords: ['nuevo', 'crear', 'visita', 'visitante', 'registrar'],
         permission: 'CREATE_VISITOR'
+    },
+    {
+        id: 'create-blacklist',
+        label: 'Bloquear Persona',
+        description: 'Añadir persona a lista negra',
+        icon: Ban,
+        category: 'action',
+        keywords: ['bloquear', 'banear', 'lista negra', 'denegar', 'restringir'],
+        permission: 'MANAGE_BLACKLIST'
+    },
+    {
+        id: 'create-gafete',
+        label: 'Nuevo Gafete',
+        description: 'Registrar un nuevo gafete',
+        icon: Plus,
+        category: 'action',
+        keywords: ['nuevo', 'crear', 'gafete', 'carnet', 'tarjeta', 'inventario'],
+        permission: 'VIEW_GAFETE_LIST'
     },
     // Configuración
     {

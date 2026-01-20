@@ -91,7 +91,7 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
                 title: 'Lista de Usuarios',
                 id: 'users-list',
                 focusOnOpen: true,
-                data: { openCreateModal: true }
+                data: { openCreateModal: Date.now() }
             });
             break;
         case 'create-visita':
@@ -99,6 +99,24 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
                 componentKey: 'visitas-list',
                 title: 'Ingreso Visitas',
                 id: 'visitas-list',
+                focusOnOpen: true,
+                data: { openCreateModal: true }
+            });
+            break;
+        case 'create-blacklist':
+            openTab({
+                componentKey: 'lista-negra-list',
+                title: 'Lista Negra',
+                id: 'lista-negra-list',
+                focusOnOpen: true,
+                data: { openCreateModal: true }
+            });
+            break;
+        case 'create-gafete':
+            openTab({
+                componentKey: 'gafete-list',
+                title: 'Gestión de Gafetes',
+                id: 'gafete-list',
                 focusOnOpen: true,
                 data: { openCreateModal: true }
             });

@@ -19,6 +19,22 @@
 	import { currentUser } from '$lib/stores/auth';
 	import type { GafeteResponse } from '$lib/types/gafete';
 
+	// Props
+	interface Props {
+		tabId?: string;
+		data?: any;
+	}
+	let { tabId = 'gafete-list', data }: Props = $props();
+
+	$effect(() => {
+		if (data?.openCreateModal) {
+			setTimeout(() => {
+				handleNew();
+			}, 100);
+			data.openCreateModal = false;
+		}
+	});
+
 	// State
 	let gafetes = $state<GafeteResponse[]>([]);
 	let loading = $state(false);

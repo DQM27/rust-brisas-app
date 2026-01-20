@@ -24,8 +24,18 @@
 
 	interface Props {
 		tabId?: string;
+		data?: any;
 	}
-	let { tabId = 'visitas-list' }: Props = $props();
+	let { tabId = 'visitas-list', data }: Props = $props();
+
+	$effect(() => {
+		if (data?.openCreateModal) {
+			setTimeout(() => {
+				handleNuevoIngreso();
+			}, 100);
+			data.openCreateModal = false;
+		}
+	});
 
 	// Estado
 	let ingresos = $state<IngresoVisita[]>([]);

@@ -32,8 +32,21 @@
 
 	interface Props {
 		tabId?: string;
+		data?: any;
 	}
-	let { tabId = 'ingreso-list' }: Props = $props();
+	let { tabId = 'ingreso-list', data }: Props = $props();
+
+	// Effect to handle external actions
+	$effect(() => {
+		if (data?.openCreateModal) {
+			setTimeout(() => {
+				if (!showQuickEntry) {
+					showQuickEntry = true;
+				}
+			}, 100);
+			data.openCreateModal = false;
+		}
+	});
 
 	// State
 	let ingresos = $state<IngresoResponse[]>([]);
