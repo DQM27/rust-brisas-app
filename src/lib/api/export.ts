@@ -1,23 +1,22 @@
 import { invoke } from '@tauri-apps/api/core';
 import { save } from '@tauri-apps/plugin-dialog';
-import type { GridApi } from '@ag-grid-community/core';
 import type { ExportOptions, ExportRequest, ExportResponse } from '$lib/types/export';
-import { extractGridData, extractSelectedRows } from '$lib/logic/export/exportGrid';
+import { extractTabulatorData, extractTabulatorSelectedRows } from '$lib/logic/export/exportTabulator';
 
 /**
- * Exporta datos usando el backend
+ * Exporta datos usando el backend, compatible con Tabulator
  */
 export async function exportData(
-	gridApi: GridApi,
+	table: any, // Tabulator instance
 	format: 'pdf' | 'excel' | 'csv',
 	options: ExportOptions = {},
 	onlySelected: boolean = false
 ): Promise<ExportResponse> {
 	try {
-		// Extraer datos
+		// Extraer datos usando la nueva lógica de Tabulator
 		const { headers, rows } = onlySelected
-			? extractSelectedRows(gridApi, options.columnIds)
-			: extractGridData(gridApi, options.columnIds);
+			? extractTabulatorSelectedRows(table, options.columnIds)
+			: extractTabulatorData(table, options.columnIds);
 
 		if (rows.length === 0) {
 			throw new Error('No hay datos para exportar');
@@ -31,7 +30,6 @@ export async function exportData(
 				? `${options.title.replace(/[^a-z0-9]/gi, '_')}.${format === 'excel' ? 'xlsx' : format}`
 				: `export.${format === 'excel' ? 'xlsx' : format}`;
 
-			// ✅ Mapear extensión correcta para el filtro del diálogo
 			const fileExtension = format === 'excel' ? 'xlsx' : format;
 
 			targetPath = await save({
@@ -39,7 +37,7 @@ export async function exportData(
 				filters: [
 					{
 						name: format.toUpperCase(),
-						extensions: [fileExtension] // ✅ Usar 'xlsx' no 'excel'
+						extensions: [fileExtension]
 					}
 				]
 			});
@@ -61,7 +59,6 @@ export async function exportData(
 			showPreview: options.showPreview || false,
 			templateId: options.templateId,
 			targetPath: targetPath || undefined,
-			// PDF specific options
 			fontSize: options.fontSize,
 			fontFamily: options.fontFamily,
 			marginTop: options.marginTop,
@@ -100,9 +97,10 @@ export async function getAvailableFormats(): Promise<string[]> {
 	try {
 		return await invoke<string[]>('get_available_export_formats');
 	} catch {
-		return ['csv']; // CSV siempre disponible
+		return ['csv'];
 	}
 }
+
 /**
  * Genera una vista previa del PDF
  */

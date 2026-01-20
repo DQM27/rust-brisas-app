@@ -1,5 +1,3 @@
-import type { ColDef } from '@ag-grid-community/core';
-
 export interface TrashItem {
 	id: string;
 	deletedAt?: string | Date;
@@ -15,7 +13,7 @@ export interface TrashService<T extends TrashItem> {
 export interface TrashViewProps<T extends TrashItem> {
 	title?: string;
 	service: TrashService<T>;
-	columnDefs: ColDef<T>[];
+	columnDefs: any[]; // Tabulator definition
 	gridId: string;
 	onBack: () => void;
 	entityName?: string;

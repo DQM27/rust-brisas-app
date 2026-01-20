@@ -34,7 +34,6 @@
 
 	// Types
 	import type { BackupEntry, BackupConfig } from '$lib/types/backup';
-	import type { CustomToolbarButton } from '$lib/types/agGrid';
 
 	// Logic
 	import { getBackupColumns } from '$lib/logic/backup/backupColumns';

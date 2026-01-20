@@ -16,10 +16,6 @@
 	},
 	"license": "MIT",
 	"dependencies": {
-		"@ag-grid-community/client-side-row-model": "^32.3.9",
-		"@ag-grid-community/core": "^32.3.9",
-		"@ag-grid-community/csv-export": "^32.3.9",
-		"@ag-grid-community/theming": "^32.3.9",
 		"@tauri-apps/api": "^2",
 		"@tauri-apps/plugin-dialog": "^2.4.2",
 		"@tauri-apps/plugin-fs": "^2.4.5",
@@ -27,7 +23,6 @@
 		"@tauri-apps/plugin-process": "^2.3.1",
 		"@tauri-apps/plugin-store": "^2.4.1",
 		"@tauri-apps/plugin-updater": "^2.9.0",
-		"ag-grid-svelte5-extended": "^0.0.13",
 		"lucide-svelte": "^0.553.0",
 		"pdfjs-dist": "^5.4.449",
 		"svelte-5-french-toast": "^2.0.6",
