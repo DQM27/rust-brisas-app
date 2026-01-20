@@ -13,6 +13,7 @@
 	// Logic & Services
 	import * as listaNegraService from '$lib/logic/listaNegra/listaNegraService';
 	import { getListaNegraColumns } from '$lib/logic/listaNegra/listaNegraColumns';
+	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
 	import { currentUser } from '$lib/stores/auth';
 	import { can } from '$lib/logic/permissions';
 	import type { ListaNegraResponse, AddToListaNegraInput } from '$lib/types/listaNegra';
@@ -253,7 +254,9 @@
 				onRowSelectionChanged={(data) => (selectedRows = data)}
 				withCheckboxSelection={true}
 				class="h-full"
+				pagination={true}
 				options={{
+					...defaultTabulatorOptions,
 					layout: 'fitColumns',
 					placeholder: 'No se encontraron registros en lista negra'
 				}}

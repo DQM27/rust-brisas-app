@@ -15,6 +15,7 @@
 	import * as gafeteService from '$lib/logic/gafete/gafeteService';
 	import * as alertaGafeteService from '$lib/logic/alertaGafete/alertaGafeteService';
 	import { getGafeteColumns } from '$lib/logic/gafete/gafeteColumns';
+	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
 	import { currentUser } from '$lib/stores/auth';
 	import type { GafeteResponse } from '$lib/types/gafete';
 
@@ -34,6 +35,11 @@
 	// Estado para modal de resolución de alertas
 	let showResolveModal = $state(false);
 	let selectedAlertGafete = $state<GafeteResponse | null>(null);
+	let showHeaderFilters = $state(
+		typeof window !== 'undefined'
+			? localStorage.getItem('tabulator-header-filters') === 'true'
+			: false
+	);
 
 	// Event listener cleanup
 	let unlistenRefresh: UnlistenFn | null = null;
@@ -213,7 +219,17 @@
 		onFitColumns={() => gridWrapper?.fitColumns()}
 		onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
 		onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
-		onToggleFilters={() => {}}
+		onToggleFilters={() => {
+			showHeaderFilters = !showHeaderFilters;
+			if (typeof window !== 'undefined') {
+				localStorage.setItem('tabulator-header-filters', String(showHeaderFilters));
+			}
+			if (gridWrapper) {
+				setTimeout(() => {
+					gridWrapper.redraw(true);
+				}, 50);
+			}
+		}}
 		onAdvancedExport={() => {}}
 		columns={toolbarColumns}
 	>
@@ -233,7 +249,9 @@
 		{/snippet}
 	</GridToolbar>
 
-	<div class="flex-1 overflow-hidden relative bg-surface-1">
+	<div
+		class="flex-1 overflow-hidden relative bg-surface-1 {showHeaderFilters ? '' : 'hide-filters'}"
+	>
 		{#if loading && gafetes.length === 0}
 			<div class="flex h-full items-center justify-center">
 				<div class="loading loading-spinner loading-lg text-primary opacity-20"></div>
@@ -245,9 +263,10 @@
 				data={gafetes}
 				{columns}
 				class="h-full"
-				persistenceID="gafete-list-v2"
-				pagination={false}
+				persistenceID="gafete-list-v3"
+				pagination={true}
 				options={{
+					...defaultTabulatorOptions,
 					layout: 'fitColumns',
 					placeholder: 'No se encontraron gafetes'
 				}}
@@ -293,3 +312,10 @@
 		}}
 	/>
 {/if}
+
+<style>
+	/* Ocultar filtros de encabezado cuando se desactiven */
+	:global(.hide-filters .tabulator-header-filter) {
+		display: none !important;
+	}
+</style>
