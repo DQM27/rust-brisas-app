@@ -1,5 +1,6 @@
 import type { ColumnDefinition } from 'tabulator-tables';
 import type { GafeteResponse } from '$lib/types/gafete';
+import { createGridBadge, type BadgeColor } from '$lib/components/tabulator/gridBadge';
 
 export interface GafeteColumnHandlers {
 	onResolve: (data: GafeteResponse) => void;
@@ -18,7 +19,7 @@ export const getGafeteColumns = (handlers: GafeteColumnHandlers): ColumnDefiniti
 			width: 100,
 			headerFilter: 'input',
 			frozen: true,
-			formatter: (cell) => `<span class="font-mono font-bold text-white text-sm tracking-widest">${cell.getValue()}</span>`
+			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6; font-weight:700; letter-spacing:0.05em;">${cell.getValue()}</span>`
 		},
 		{
 			title: 'Tipo',
@@ -28,16 +29,15 @@ export const getGafeteColumns = (handlers: GafeteColumnHandlers): ColumnDefiniti
 			headerFilterParams: { valuesLookup: 'active', clearable: true },
 			formatter: (cell) => {
 				const tipo = (cell.getData() as GafeteResponse).tipo;
-				const baseClass = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-widest leading-none shadow-sm';
-
-				const types: Record<string, string> = {
-					contratista: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-					proveedor: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-					visita: 'bg-violet-500/10 text-violet-400 border-violet-500/20'
+				const types: Record<string, BadgeColor> = {
+					contratista: 'blue',
+					proveedor: 'amber',
+					visita: 'blue'
 				};
-
-				const colorClass = types[tipo] || 'bg-gray-500/10 text-gray-400 border-gray-500/20';
-				return `<span class="${baseClass} ${colorClass}">${cell.getValue()}</span>`;
+				return createGridBadge({
+					text: cell.getValue(),
+					color: types[tipo] || 'gray'
+				});
 			}
 		},
 		{
@@ -48,46 +48,21 @@ export const getGafeteColumns = (handlers: GafeteColumnHandlers): ColumnDefiniti
 			headerFilterParams: { valuesLookup: 'active', clearable: true },
 			formatter: (cell) => {
 				const status = cell.getValue();
-				const baseClass = 'inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none';
-
-				let classes = '';
-				let icon = '';
-				let label = '';
-
 				switch (status) {
 					case 'disponible':
 					case 'activo':
-						classes = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-						icon = '●';
-						label = 'Disponible';
-						break;
+						return createGridBadge({ text: 'Disponible', color: 'green', withDot: true });
 					case 'en_uso':
-						classes = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-						icon = '○';
-						label = 'En Uso';
-						break;
+						return createGridBadge({ text: 'En Uso', color: 'blue', withDot: true });
 					case 'perdido':
-						classes = 'bg-red-500/10 text-red-400 border-red-500/20';
-						icon = '⚠';
-						label = 'Perdido';
-						break;
+						return createGridBadge({ text: 'Perdido', color: 'red', withDot: true });
 					case 'danado':
-						classes = 'bg-rose-500/10 text-rose-400 border-rose-500/20';
-						icon = '⚡';
-						label = 'Dañado';
-						break;
+						return createGridBadge({ text: 'Dañado', color: 'red', withDot: true });
 					case 'extraviado':
-						classes = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-						icon = '?';
-						label = 'Extraviado';
-						break;
+						return createGridBadge({ text: 'Extraviado', color: 'amber', withDot: true });
 					default:
-						classes = 'bg-gray-500/10 text-gray-400 border-gray-500/20';
-						icon = '-';
-						label = status;
+						return createGridBadge({ text: status || 'N/A', color: 'gray' });
 				}
-
-				return `<span class="${baseClass} ${classes}"><span class="mr-1.5 opacity-70">${icon}</span>${label}</span>`;
 			}
 		},
 		{
@@ -137,21 +112,21 @@ export const getGafeteColumns = (handlers: GafeteColumnHandlers): ColumnDefiniti
 				let buttons = '<div class="flex items-center justify-end gap-1.5">';
 
 				if (status === 'perdido') {
-					buttons += `<button class="action-btn resolve-btn px-2 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded hover:bg-emerald-500/20 text-[10px] font-bold uppercase transition-colors">Resolver</button>`;
+					buttons += createGridBadge({ text: 'Resolver', color: 'green', isButton: true, className: 'resolve-btn' });
 				}
 
 				if (status !== 'perdido') {
 					buttons += `<button class="action-btn edit-btn p-1.5 text-gray-400 hover:text-white transition-colors" title="Editar">✏️</button>`;
 
 					if (status === 'extraviado') {
-						buttons += `<button class="action-btn recover-btn px-2 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded hover:bg-emerald-500/20 text-[10px] font-bold uppercase transition-colors">Recuperar</button>`;
+						buttons += createGridBadge({ text: 'Recuperar', color: 'green', isButton: true, className: 'recover-btn' });
 					} else if (status !== 'danado') {
-						buttons += `<button class="action-btn lost-btn px-2 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded hover:bg-amber-500/20 text-[10px] font-bold uppercase transition-colors" title="Marcar como Extraviado">?</button>`;
-						buttons += `<button class="action-btn damage-btn px-2 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded hover:bg-rose-500/20 text-[10px] font-bold uppercase transition-colors" title="Marcar como Dañado">⚡</button>`;
+						buttons += createGridBadge({ text: '?', color: 'amber', isButton: true, className: 'lost-btn' });
+						buttons += createGridBadge({ text: '⚡', color: 'red', isButton: true, className: 'damage-btn' });
 					}
 
 					if (status === 'danado') {
-						buttons += `<button class="action-btn recover-btn px-2 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded hover:bg-emerald-500/20 text-[10px] font-bold uppercase transition-colors" title="Reparado">✓ Rep</button>`;
+						buttons += createGridBadge({ text: '✓ Rep', color: 'green', isButton: true, className: 'recover-btn' });
 					}
 
 					if (status === 'danado' || status === 'disponible') {

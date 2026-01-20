@@ -1,5 +1,6 @@
 import type { ColumnDefinition } from 'tabulator-tables';
 import type { ContratistaResponse, EstadoContratista } from '$lib/types/contratista';
+import { createGridBadge, type BadgeColor } from '$lib/components/tabulator/gridBadge';
 
 export interface ContratistaColumnHandlers {
 	onStatusChange: (id: string, currentStatus: string) => void;
@@ -52,13 +53,17 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 				const data = cell.getData() as ContratistaResponse;
 				if (!data.cedula) return '';
 				const val = cell.getValue() as EstadoContratista;
-				const badges: Record<string, string> = {
-					activo: 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20',
-					inactivo: 'bg-gray-500/10 text-gray-400 border-gray-500/20 hover:bg-gray-500/20',
-					suspendido: 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
+				const colorMap: Record<string, BadgeColor> = {
+					activo: 'green',
+					inactivo: 'gray',
+					suspendido: 'red'
 				};
-				const color = badges[val] || badges.inactivo;
-				return `<button class="status-btn px-2.5 py-0.5 rounded-full text-xs font-medium border ${color} transition-colors cursor-pointer">${val?.toUpperCase() || 'N/A'}</button>`;
+				return createGridBadge({
+					text: val || 'N/A',
+					color: colorMap[val] || 'gray',
+					isButton: true,
+					className: 'status-btn'
+				});
 			},
 			cellClick: (e, cell) => {
 				const target = e.target as HTMLElement;
@@ -78,11 +83,11 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 				const row = cell.getRow().getData() as ContratistaResponse;
 				if (!row.cedula) return '';
 				if (row.praindVencido) {
-					return `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">VENCIDO</span>`;
+					return createGridBadge({ text: 'VENCIDO', color: 'red' });
 				} else if (row.diasHastaVencimiento <= 30) {
-					return `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">${row.diasHastaVencimiento} Días</span>`;
+					return createGridBadge({ text: `${row.diasHastaVencimiento} Días`, color: 'amber' });
 				}
-				return `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">VIGENTE</span>`;
+				return createGridBadge({ text: 'VIGENTE', color: 'green' });
 			}
 		},
 		{
@@ -108,10 +113,10 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 				// Don't show access badge for vehicles (children)
 				const row = cell.getRow().getData() as ContratistaResponse;
 				if (!row.cedula) return '';
-				if (row.estaBloqueado) return `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">BLOQUEADO</span>`;
-				if (row.estado !== 'activo') return `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">DENEGADO</span>`;
-				if (row.puedeIngresar) return `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">PERMITIDO</span>`;
-				return `<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">DENEGADO</span>`;
+				if (row.estaBloqueado) return createGridBadge({ text: 'BLOQUEADO', color: 'red' });
+				if (row.estado !== 'activo') return createGridBadge({ text: 'DENEGADO', color: 'red' });
+				if (row.puedeIngresar) return createGridBadge({ text: 'PERMITIDO', color: 'green' });
+				return createGridBadge({ text: 'DENEGADO', color: 'red' });
 			}
 		},
 		{

@@ -1,6 +1,6 @@
-// src/lib/logic/proveedor/proveedorColumns.ts
 import type { ColumnDefinition } from 'tabulator-tables';
 import type { ProveedorResponse } from '$lib/types/proveedor';
+import { createGridBadge, type BadgeColor } from '$lib/components/tabulator/gridBadge';
 
 export interface ProveedorColumnHandlers {
 	onStatusToggle: (id: string, currentStatus: string) => void;
@@ -16,9 +16,10 @@ export const getProveedorColumns = (handlers: ProveedorColumnHandlers): ColumnDe
 			formatter: (cell) => {
 				const d = cell.getData() as ProveedorResponse;
 				if (!d) return '';
-				return [d.nombre, d.segundoNombre, d.apellido, d.segundoApellido]
+				const nombre = [d.nombre, d.segundoNombre, d.apellido, d.segundoApellido]
 					.filter(Boolean)
 					.join(' ');
+				return `<span style="font-weight:500; color:#e2e8f0">${nombre}</span>`;
 			}
 		},
 		{
@@ -27,7 +28,7 @@ export const getProveedorColumns = (handlers: ProveedorColumnHandlers): ColumnDe
 			width: 130,
 			frozen: true,
 			headerFilter: 'input',
-			formatter: (cell) => `<span class="font-mono text-xs">${cell.getValue() || ''}</span>`
+			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Empresa',
@@ -57,17 +58,17 @@ export const getProveedorColumns = (handlers: ProveedorColumnHandlers): ColumnDe
 			headerFilterParams: { valuesLookup: 'active', clearable: true },
 			formatter: (cell) => {
 				const estado = (cell.getValue() || 'INACTIVO').toLowerCase();
-				const baseClass = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none cursor-pointer hover:opacity-80 transition-opacity';
-
-				const badges: Record<string, string> = {
-					activo: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-					inactivo: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
-					suspendido: 'bg-red-500/10 text-red-400 border-red-500/20'
+				const colorMap: Record<string, BadgeColor> = {
+					activo: 'green',
+					inactivo: 'gray',
+					suspendido: 'red'
 				};
-
-				const badgeClass = badges[estado] || badges.inactivo;
-				const displayText = estado.toUpperCase();
-				return `<button class="status-btn ${baseClass} ${badgeClass}">${displayText}</button>`;
+				return createGridBadge({
+					text: estado,
+					color: colorMap[estado] || 'gray',
+					isButton: true,
+					className: 'status-btn'
+				});
 			},
 			cellClick: (e, cell) => {
 				const target = e.target as HTMLElement;
@@ -84,17 +85,13 @@ export const getProveedorColumns = (handlers: ProveedorColumnHandlers): ColumnDe
 			hozAlign: 'center',
 			formatter: (cell) => {
 				const row = cell.getData() as ProveedorResponse;
-				const baseClass = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none';
-				const redBadge = 'bg-red-500/10 text-red-400 border-red-500/20';
-				const greenBadge = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-
 				if (row.estado?.toLowerCase() !== 'activo') {
-					return `<span class="${baseClass} ${redBadge}">Denegado</span>`;
+					return createGridBadge({ text: 'Denegado', color: 'red' });
 				}
 
 				return row.puedeIngresar
-					? `<span class="${baseClass} ${greenBadge}">Permitido</span>`
-					: `<span class="${baseClass} ${redBadge}">Denegado</span>`;
+					? createGridBadge({ text: 'Permitido', color: 'green' })
+					: createGridBadge({ text: 'Denegado', color: 'red' });
 			}
 		}
 	];

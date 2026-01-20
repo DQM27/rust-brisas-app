@@ -1,5 +1,6 @@
 import type { ColumnDefinition } from 'tabulator-tables';
 import type { ListaNegraResponse } from '$lib/types/listaNegra';
+import { createGridBadge } from '$lib/components/tabulator/gridBadge';
 
 export const getListaNegraColumns = (): ColumnDefinition[] => {
 	return [
@@ -41,18 +42,10 @@ export const getListaNegraColumns = (): ColumnDefinition[] => {
 			headerFilterParams: { valuesLookup: 'active', clearable: true },
 			formatter: (cell) => {
 				const nivel = cell.getValue();
-				const baseClass = 'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-widest leading-none shadow-sm';
-
-				switch (nivel) {
-					case 'ALTO':
-						return `<span class="${baseClass} bg-red-500/10 text-red-400 border-red-500/20">ALTO</span>`;
-					case 'MEDIO':
-						return `<span class="${baseClass} bg-amber-500/10 text-amber-400 border-amber-500/20">MEDIO</span>`;
-					case 'BAJO':
-						return `<span class="${baseClass} bg-blue-500/10 text-blue-400 border-blue-500/20">BAJO</span>`;
-					default:
-						return `<span class="${baseClass} bg-gray-500/10 text-gray-400 border-gray-500/20">${nivel || 'N/A'}</span>`;
-				}
+				if (nivel === 'ALTO') return createGridBadge({ text: 'ALTO', color: 'red' });
+				if (nivel === 'MEDIO') return createGridBadge({ text: 'MEDIO', color: 'amber' });
+				if (nivel === 'BAJO') return createGridBadge({ text: 'BAJO', color: 'blue' });
+				return createGridBadge({ text: nivel || 'N/A', color: 'gray' });
 			}
 		},
 		{
@@ -66,12 +59,10 @@ export const getListaNegraColumns = (): ColumnDefinition[] => {
 			},
 			formatter: (cell) => {
 				const isActive = cell.getValue();
-				const baseClass = 'inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none';
-
 				if (isActive) {
-					return `<span class="${baseClass} bg-red-500/10 text-red-400 border-red-500/20"><span class="mr-1.5 opacity-70">●</span>Bloqueado</span>`;
+					return createGridBadge({ text: 'Bloqueado', color: 'red', withDot: true });
 				} else {
-					return `<span class="${baseClass} bg-emerald-500/10 text-emerald-400 border-emerald-500/20"><span class="mr-1.5 opacity-70">✓</span>Desbloqueado</span>`;
+					return createGridBadge({ text: 'Desbloqueado', color: 'green', withCheck: true });
 				}
 			}
 		},

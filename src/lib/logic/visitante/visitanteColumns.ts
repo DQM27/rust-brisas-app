@@ -1,5 +1,6 @@
 import type { ColumnDefinition } from 'tabulator-tables';
 import type { VisitanteResponse } from '$lib/types/visitante';
+import { createGridBadge } from '$lib/components/tabulator/gridBadge';
 
 export const getVisitanteColumns = (): ColumnDefinition[] => {
 	return [
@@ -9,7 +10,7 @@ export const getVisitanteColumns = (): ColumnDefinition[] => {
 			width: 140,
 			headerFilter: 'input',
 			frozen: true,
-			formatter: (cell) => `<span class="font-mono text-xs">${cell.getValue() || ''}</span>`
+			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Nombre',
@@ -18,7 +19,7 @@ export const getVisitanteColumns = (): ColumnDefinition[] => {
 			headerFilter: 'input',
 			formatter: (cell) => {
 				const data = cell.getData() as VisitanteResponse;
-				return `<span class="font-medium text-white">${data.nombre} ${data.apellido || ''}</span>`;
+				return `<span style="font-weight:500; color:#e2e8f0">${data.nombre} ${data.apellido || ''}</span>`;
 			}
 		},
 		{
@@ -35,8 +36,8 @@ export const getVisitanteColumns = (): ColumnDefinition[] => {
 			hozAlign: 'center',
 			formatter: (cell) => {
 				return cell.getValue()
-					? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">Sí</span>'
-					: '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-500/10 text-gray-400 border border-gray-500/20 uppercase">No</span>';
+					? createGridBadge({ text: 'Sí', color: 'blue' })
+					: createGridBadge({ text: 'No', color: 'gray' });
 			}
 		},
 		{

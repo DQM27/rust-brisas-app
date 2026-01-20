@@ -1,5 +1,6 @@
 import type { ColumnDefinition } from 'tabulator-tables';
 import type { IngresoResponse } from '$lib/types/ingreso';
+import { createGridBadge } from '$lib/components/tabulator/gridBadge';
 
 export interface IngresoColumnHandlers {
     onSalida: (ingreso: IngresoResponse) => void;
@@ -60,7 +61,7 @@ export const getIngresoColumns = (
             headerFilter: 'list',
             headerFilterParams: { valuesLookup: 'active', clearable: true },
             formatter: (cell) =>
-                `<span class="px-2 py-0.5 rounded-full text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20">${cell.getValue() || '-'}</span>`
+                createGridBadge({ text: cell.getValue() || '-', color: 'blue' })
         },
         {
             title: 'Modo',
@@ -164,7 +165,12 @@ export const getIngresoColumns = (
             headerSort: false,
             hozAlign: 'center',
             formatter: () =>
-                `<button class="salida-btn bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-1 rounded text-xs transition-colors font-medium">Salida</button>`,
+                createGridBadge({
+                    text: 'Salida',
+                    color: 'red',
+                    isButton: true,
+                    className: 'salida-btn'
+                }),
             cellClick: (e, cell) => {
                 const target = e.target as HTMLElement;
                 if (target.classList.contains('salida-btn')) {
