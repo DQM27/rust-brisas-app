@@ -61,6 +61,8 @@
 	let searchTerm = $state('');
 	// Selección
 	let selectedRows = $state<BackupEntry[]>([]);
+	// Filtros Header
+	let showHeaderFilters = $state(false);
 
 	// Modal de contraseña para backups portables
 	let showPasswordModal = $state(false);
@@ -83,9 +85,10 @@
 	);
 
 	function handleToggleFilters() {
-		// Esta vista es interna de settings, quizás no necesita toggle de filtros?
-		// Pero para consistencia lo incluimos.
-		if (gridWrapper) gridWrapper.redraw(true);
+		showHeaderFilters = !showHeaderFilters;
+		if (gridWrapper) {
+			setTimeout(() => gridWrapper.redraw(true), 50);
+		}
 	}
 
 	// ==========================================
@@ -344,7 +347,9 @@
 	</GridToolbar>
 
 	<!-- Content -->
-	<div class="flex-1 overflow-hidden relative bg-surface-1">
+	<div
+		class="flex-1 overflow-hidden relative bg-surface-1 {showHeaderFilters ? '' : 'hide-filters'}"
+	>
 		{#if error}
 			<div class="p-6">
 				<div
@@ -380,10 +385,10 @@
 				{columns}
 				withCheckboxSelection={true}
 				onRowSelectionChanged={(data) => (selectedRows = data)}
-				persistenceID="backup-list-v1"
+				persistenceID="backup-list-v2"
 				options={{
 					...defaultTabulatorOptions,
-					layout: 'fitColumns',
+					layout: 'fitData',
 					placeholder: 'No se encontraron backups'
 				}}
 			/>
@@ -458,3 +463,9 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	:global(.hide-filters .tabulator-header-filter) {
+		display: none !important;
+	}
+</style>

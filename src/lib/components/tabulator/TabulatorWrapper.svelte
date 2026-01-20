@@ -110,6 +110,7 @@
 				placeholder,
 				data: $state.snapshot(data) || [], // Initial data
 				columns: finalColumns as any[],
+				resizableColumnFit: false, // Fix for resize bug
 				// Persistence
 				persistence: persistenceID
 					? {

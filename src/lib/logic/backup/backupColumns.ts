@@ -41,6 +41,7 @@ export const getBackupColumns = (handlers: {
 		{
 			title: 'Archivo',
 			field: 'nombre',
+			headerFilter: 'input',
 			width: 300,
 			formatter: (cell) => {
 				const nombre = cell.getValue() || '';
@@ -55,6 +56,7 @@ export const getBackupColumns = (handlers: {
 		{
 			title: 'Tamaño',
 			field: 'tamano',
+			headerFilter: 'number',
 			width: 100,
 			hozAlign: 'right',
 			formatter: (cell) => `<span style="font-family:monospace; color:#9ca3af">${formatBytes(cell.getValue() || 0)}</span>`
@@ -62,12 +64,14 @@ export const getBackupColumns = (handlers: {
 		{
 			title: 'Fecha',
 			field: 'fechaCreacion',
+			headerFilter: 'input',
 			width: 180,
 			formatter: (cell) => `<span style="font-family:monospace; color:#9ca3af">${formatDate(cell.getValue() || '')}</span>`
 		},
 		{
 			title: 'Antigüedad',
 			field: 'diasAntiguedad',
+			headerFilter: 'number',
 			width: 120,
 			formatter: (cell) => {
 				const dias = cell.getValue() || 0;
@@ -86,6 +90,7 @@ export const getBackupColumns = (handlers: {
 		{
 			title: 'Seguridad',
 			field: 'encryptionType',
+			headerFilter: 'input',
 			width: 140,
 			formatter: (cell) => {
 				const type = cell.getValue() || 'none';
