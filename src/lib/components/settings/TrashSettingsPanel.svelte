@@ -8,7 +8,6 @@
 	import { getContratistaTrashColumns } from '$lib/logic/contratista/contratistaColumns';
 	import { getProveedorTrashColumns } from '$lib/logic/proveedor/proveedorColumns';
 	import { getVisitanteTrashColumns } from '$lib/logic/visitante/visitanteColumns';
-	import { slide } from 'svelte/transition';
 
 	// Estado de pestañas
 	let activeTab = $state<'contratista' | 'proveedor' | 'visitante'>('contratista');
@@ -67,7 +66,7 @@
 	<!-- Content Area (Full Width/Height) -->
 	<div class="flex-1 overflow-hidden relative">
 		{#if activeTab === 'contratista'}
-			<div class="absolute inset-0" transition:slide={{ axis: 'x', duration: 200 }}>
+			<div class="absolute inset-0">
 				<TrashListView
 					entityName="Contratista"
 					service={contratistaService}
@@ -77,7 +76,7 @@
 				/>
 			</div>
 		{:else if activeTab === 'proveedor'}
-			<div class="absolute inset-0" transition:slide={{ axis: 'x', duration: 200 }}>
+			<div class="absolute inset-0">
 				<TrashListView
 					entityName="Proveedor"
 					service={proveedorService.proveedor}
@@ -87,7 +86,7 @@
 				/>
 			</div>
 		{:else if activeTab === 'visitante'}
-			<div class="absolute inset-0" transition:slide={{ axis: 'x', duration: 200 }}>
+			<div class="absolute inset-0">
 				<TrashListView
 					entityName="Visitante"
 					service={visitanteService.visitante}
