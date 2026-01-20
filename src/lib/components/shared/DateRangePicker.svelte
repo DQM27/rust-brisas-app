@@ -35,6 +35,8 @@
 	let tempStartDate = $state('');
 	let tempEndDate = $state('');
 	let error = $state<string | null>(null);
+	let buttonRef = $state<HTMLButtonElement | null>(null);
+	let dropdownRef = $state<HTMLDivElement | null>(null);
 
 	// ==========================================
 	// CONSTANTES - Presets de fechas
@@ -241,13 +243,39 @@
 	// Click outside para cerrar
 	function handleClickOutside(event: MouseEvent) {
 		const target = event.target as HTMLElement;
-		if (!target.closest('.date-range-picker')) {
-			isOpen = false;
+		// Si el click fue en el botón o dentro del dropdown (portal), no cerrar
+		if (buttonRef?.contains(target) || dropdownRef?.contains(target)) {
+			return;
 		}
+		isOpen = false;
 	}
 
 	$effect(() => {
 		if (isOpen) {
+			if (buttonRef) {
+				// Calcular posición next tick para asegurar que esta montado
+				setTimeout(() => {
+					if (!buttonRef) return;
+					const rect = buttonRef.getBoundingClientRect();
+
+					// Default: Alineado a la izquierda
+					let style = `top: ${rect.bottom + 8}px; left: ${rect.left}px;`;
+
+					// Ajuste si se sale por la derecha
+					if (rect.left + 288 > window.innerWidth) {
+						// 288px es w-72 approx
+						style = `top: ${rect.bottom + 8}px; left: ${rect.right - 288}px;`;
+					}
+
+					// Ajuste si se sale por abajo (opcional, pero buena practica)
+					if (rect.bottom + 400 > window.innerHeight) {
+						style = `bottom: ${window.innerHeight - rect.top + 8}px; left: ${rect.left}px;`;
+					}
+
+					dropdownStyle = style;
+				}, 0);
+			}
+
 			document.addEventListener('click', handleClickOutside);
 			document.addEventListener('keydown', handleKeydown);
 			return () => {
@@ -256,15 +284,18 @@
 			};
 		}
 	});
+
+	let dropdownStyle = $state('');
 </script>
 
-<div class="date-range-picker relative">
+<div class="date-range-picker">
 	<!-- Botón principal -->
 	<button
 		type="button"
+		bind:this={buttonRef}
 		onclick={() => !disabled && (isOpen = !isOpen)}
 		{disabled}
-		class="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors
+		class="date-range-trigger flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors
       bg-[#1e1e1e] border-white/10
       {disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-white/20 hover:bg-white/5'}"
 	>
@@ -274,85 +305,90 @@
 		<ChevronDown class="w-4 h-4 text-gray-500 transition-transform {isOpen ? 'rotate-180' : ''}" />
 	</button>
 
-	<!-- Dropdown -->
+	<!-- Portal Dropdown -->
 	{#if isOpen}
-		<div
-			transition:slide={{ duration: 150, easing: cubicOut }}
-			class="absolute top-full mt-2 right-0 z-50 w-72
-        bg-[#1e1e1e] border border-white/10 rounded-lg shadow-xl overflow-hidden"
-		>
-			<!-- Presets -->
-			<div class="p-3 border-b border-white/5">
-				<p class="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-2">
-					Acceso rápido
-				</p>
-				<div class="grid grid-cols-2 gap-1.5">
-					{#each Object.entries(presets) as [key, preset]}
-						<button
-							type="button"
-							onclick={() => applyPreset(key as PresetKey)}
-							class="px-2 py-1.5 text-xs text-gray-300 rounded
-                bg-white/5 hover:bg-white/10 transition-colors text-left"
-						>
-							{preset.label}
-						</button>
-					{/each}
-				</div>
-			</div>
-
-			<!-- Date inputs -->
-			<div class="p-3 space-y-3">
-				<div>
-					<label for="start-date" class="block text-xs text-gray-500 mb-1"> Desde </label>
-					<input
-						id="start-date"
-						type="date"
-						bind:value={tempStartDate}
-						class="w-full px-3 py-2 text-sm rounded-lg
-              bg-[#252526] border border-white/10 text-white
-              focus:outline-none focus:border-white/30
-              [color-scheme:dark]"
-					/>
-				</div>
-
-				<div>
-					<label for="end-date" class="block text-xs text-gray-500 mb-1"> Hasta </label>
-					<input
-						id="end-date"
-						type="date"
-						bind:value={tempEndDate}
-						class="w-full px-3 py-2 text-sm rounded-lg
-              bg-[#252526] border border-white/10 text-white
-              focus:outline-none focus:border-white/30
-              [color-scheme:dark]"
-					/>
-				</div>
-
-				<!-- Error -->
-				{#if error}
-					<p transition:fade={{ duration: 100 }} class="text-xs text-red-400">
-						{error}
+		<div class="fixed inset-0 z-[99999] pointer-events-none">
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				bind:this={dropdownRef}
+				class="fixed pointer-events-auto z-[99999] w-72 bg-[#1e1e1e] border border-white/10 rounded-lg shadow-2xl overflow-hidden flex flex-col"
+				style={dropdownStyle}
+				transition:fade={{ duration: 100 }}
+			>
+				<!-- Presets -->
+				<div class="p-3 border-b border-white/5">
+					<p class="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-2">
+						Acceso rápido
 					</p>
-				{/if}
-			</div>
+					<div class="grid grid-cols-2 gap-1.5">
+						{#each Object.entries(presets) as [key, preset]}
+							<button
+								type="button"
+								onclick={() => applyPreset(key as PresetKey)}
+								class="px-2 py-1.5 text-xs text-gray-300 rounded
+					bg-white/5 hover:bg-white/10 transition-colors text-left"
+							>
+								{preset.label}
+							</button>
+						{/each}
+					</div>
+				</div>
 
-			<!-- Actions -->
-			<div class="flex justify-end gap-2 px-3 py-2.5 border-t border-white/5 bg-black/20">
-				<button
-					type="button"
-					onclick={handleCancel}
-					class="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
-				>
-					Cancelar
-				</button>
-				<button
-					type="button"
-					onclick={handleApply}
-					class="px-3 py-1.5 text-sm font-medium text-white
-            bg-blue-600 hover:bg-blue-500 rounded transition-colors"
-				>
-					Aplicar
-				</button>
+				<!-- Date inputs -->
+				<div class="p-3 space-y-3">
+					<div>
+						<label for="start-date" class="block text-xs text-gray-500 mb-1"> Desde </label>
+						<input
+							id="start-date"
+							type="date"
+							bind:value={tempStartDate}
+							class="w-full px-3 py-2 text-sm rounded-lg
+				  bg-[#252526] border border-white/10 text-white
+				  focus:outline-none focus:border-white/30
+				  [color-scheme:dark]"
+						/>
+					</div>
+
+					<div>
+						<label for="end-date" class="block text-xs text-gray-500 mb-1"> Hasta </label>
+						<input
+							id="end-date"
+							type="date"
+							bind:value={tempEndDate}
+							class="w-full px-3 py-2 text-sm rounded-lg
+				  bg-[#252526] border border-white/10 text-white
+				  focus:outline-none focus:border-white/30
+				  [color-scheme:dark]"
+						/>
+					</div>
+
+					<!-- Error -->
+					{#if error}
+						<p transition:fade={{ duration: 100 }} class="text-xs text-red-400">
+							{error}
+						</p>
+					{/if}
+				</div>
+
+				<!-- Actions -->
+				<div class="flex justify-end gap-2 px-3 py-2.5 border-t border-white/5 bg-black/20">
+					<button
+						type="button"
+						onclick={handleCancel}
+						class="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+					>
+						Cancelar
+					</button>
+					<button
+						type="button"
+						onclick={handleApply}
+						class="px-3 py-1.5 text-sm font-medium text-white
+				bg-blue-600 hover:bg-blue-500 rounded transition-colors"
+					>
+						Aplicar
+					</button>
+				</div>
 			</div>
 		</div>
 	{/if}

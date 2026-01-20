@@ -66,6 +66,7 @@
 			? localStorage.getItem('tabulator-header-filters') === 'true'
 			: false
 	);
+	let groupByField = $state<string | undefined>(undefined);
 
 	// Derived Data
 	let filteredIngresos = $derived(
@@ -116,7 +117,12 @@
 			if (viewMode === 'actives') {
 				data = await ingresoProveedorService.getActivos();
 			} else {
-				data = await ingresoProveedorService.getHistorial();
+				const startLocal = new Date(dateRange.start + 'T00:00:00');
+				const endLocal = new Date(dateRange.end + 'T23:59:59.999');
+				data = await ingresoProveedorService.getHistorial({
+					fechaInicio: startLocal.toISOString(),
+					fechaFin: endLocal.toISOString()
+				});
 			}
 			ingresos = data;
 			if (gridWrapper) {
@@ -308,36 +314,51 @@
 	>
 		{#snippet CustomFilters()}
 			{#if viewMode === 'history'}
-				<div class="flex items-center border-r border-surface pr-4 mr-2" transition:fade>
+				<div class="flex items-center gap-2 border-l border-white/10 pl-3 ml-1" transition:fade>
 					<DateRangePicker
 						startDate={dateRange.start}
 						endDate={dateRange.end}
 						on:change={handleDateRangeChange}
 					/>
+					<div class="flex items-center gap-2 ml-2">
+						<input
+							type="checkbox"
+							id="hideActiveProv"
+							bind:checked={hideActive}
+							class="rounded border-surface bg-surface-3"
+						/>
+						<label for="hideActiveProv" class="text-xs text-secondary cursor-pointer select-none">
+							Solo Finalizados
+						</label>
+					</div>
 				</div>
 			{/if}
 		{/snippet}
 
 		{#snippet secondaryActions()}
 			{#if viewMode === 'history'}
-				<div class="flex items-center gap-2 px-3 py-1 border-x border-surface" transition:fade>
-					<input
-						type="checkbox"
-						id="hideActiveProv"
-						bind:checked={hideActive}
-						class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-					/>
-					<label for="hideActiveProv" class="text-sm text-secondary cursor-pointer select-none">
-						Solo Finalizados
-					</label>
+				<!-- Separator moved to start of block if needed, but IngresoListView uses border-l inside the div -->
+				<div class="flex items-center gap-2 border-l border-white/5 pl-3">
+					<!-- Multi-Grouping Menu -->
+					<div
+						class="flex items-center gap-1 bg-[#2d2d2d] border border-white/10 rounded-md p-0.5"
+						transition:fade
+					>
+						<span class="text-[10px] text-gray-500 font-bold uppercase px-2">Agrupar:</span>
+						{#each [{ label: 'Ninguno', value: undefined }, { label: 'Empresa', value: 'empresaNombre' }, { label: 'Área', value: 'areaVisitada' }, { label: 'Modo', value: 'modoIngreso' }] as option}
+							<button
+								onclick={() => (groupByField = option.value)}
+								class="px-2 py-1 rounded text-[11px] font-medium transition-all {groupByField ===
+								option.value
+									? 'bg-blue-500/20 text-blue-400'
+									: 'text-gray-400 hover:text-white hover:bg-white/5'}"
+							>
+								{option.label}
+							</button>
+						{/each}
+					</div>
 				</div>
 			{/if}
-			<button
-				onclick={handleGoToCatalog}
-				class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
-			>
-				<FileText size={14} /> Listado
-			</button>
 		{/snippet}
 
 		{#snippet primaryActions()}
@@ -405,6 +426,7 @@
 				bind:toolbarColumns
 				data={filteredIngresos}
 				{columns}
+				groupBy={groupByField}
 				withCheckboxSelection={true}
 				onRowSelectionChanged={(data) => (selectedRows = data)}
 				persistenceID="ingresos-proveedores-v1"

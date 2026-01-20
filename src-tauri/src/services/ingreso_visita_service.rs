@@ -234,9 +234,12 @@ pub async fn get_activos() -> Result<Vec<IngresoResponse>, IngresoVisitaError> {
     Ok(activos.into_iter().map(IngresoResponse::from_visita_fetched).collect())
 }
 
-/// Consulta el historial de visitas finalizadas.
-pub async fn get_historial() -> Result<Vec<IngresoResponse>, IngresoVisitaError> {
-    let historial = db::find_historial_fetched()
+/// Consulta el historial de visitas finalizadas en un rango de fechas.
+pub async fn get_historial(
+    start: String,
+    end: String,
+) -> Result<Vec<IngresoResponse>, IngresoVisitaError> {
+    let historial = db::find_historial_fetched(start, end)
         .await
         .map_err(|e| IngresoVisitaError::Database(e.to_string()))?;
 

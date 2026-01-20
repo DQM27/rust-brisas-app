@@ -93,3 +93,18 @@ pub async fn find_activos_fetched() -> Result<Vec<IngresoProveedorFetched>, Surr
         .await?;
     Ok(result.take(0)?)
 }
+
+pub async fn find_historial_fetched(
+    start: String,
+    end: String,
+) -> Result<Vec<IngresoProveedorFetched>, SurrealDbError> {
+    let db = get_db().await?;
+    let mut result = db
+        .query(format!(
+            "SELECT * FROM {TABLE} WHERE fecha_hora_salida >= $start AND fecha_hora_salida <= $end ORDER BY created_at DESC FETCH usuario_ingreso, usuario_salida, proveedor, proveedor.empresa"
+        ))
+        .bind(("start", start))
+        .bind(("end", end))
+        .await?;
+    Ok(result.take(0)?)
+}

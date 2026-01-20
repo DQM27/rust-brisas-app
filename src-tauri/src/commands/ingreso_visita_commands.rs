@@ -36,9 +36,13 @@ pub async fn get_ingresos_visita_activos() -> Result<Vec<IngresoResponse>, Ingre
     service::get_activos().await
 }
 
+/// Historial filtrado por fechas.
 #[command]
-pub async fn get_ingresos_visita_historial() -> Result<Vec<IngresoResponse>, IngresoVisitaError> {
-    service::get_historial().await
+pub async fn get_ingresos_visita_historial(
+    fecha_inicio: String,
+    fecha_fin: String,
+) -> Result<Vec<IngresoResponse>, IngresoVisitaError> {
+    service::get_historial(fecha_inicio, fecha_fin).await
 }
 
 /// Cierre de Registro: Registra la salida física del visitante.

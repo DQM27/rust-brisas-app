@@ -13,8 +13,22 @@ export const ingresoProveedorService = {
 		return await invoke<IngresoProveedor[]>('get_ingresos_proveedores_activos');
 	},
 
-	async getHistorial(): Promise<IngresoProveedor[]> {
-		return await invoke<IngresoProveedor[]>('get_ingresos_proveedores_historial');
+	async getHistorial(range?: {
+		fechaInicio: string;
+		fechaFin: string;
+	}): Promise<IngresoProveedor[]> {
+		if (!range) {
+			// Fallback seguro si no se pasan fechas (por ejemplo: hoy)
+			const today = new Date().toISOString().split('T')[0];
+			range = {
+				fechaInicio: `${today}T00:00:00`,
+				fechaFin: `${today}T23:59:59`
+			};
+		}
+		return await invoke<IngresoProveedor[]>('get_ingresos_proveedores_historial', {
+			fechaInicio: range.fechaInicio,
+			fechaFin: range.fechaFin
+		});
 	},
 
 	async registrarSalida(

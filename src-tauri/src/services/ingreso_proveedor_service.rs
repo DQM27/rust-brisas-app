@@ -226,6 +226,25 @@ pub async fn get_activos() -> Result<Vec<IngresoResponse>, IngresoProveedorError
     Ok(activos.into_iter().map(IngresoResponse::from_proveedor_fetched).collect())
 }
 
+/// Consulta el historial de ingresos finalizados en un rango de fechas.
+///
+/// # Argumentos
+/// * `start` - Fecha inicio ISO8601
+/// * `end` - Fecha fin ISO8601
+///
+/// # Retorno
+/// Lista de ingresos cerrados en ese periodo.
+pub async fn get_historial(
+    start: String,
+    end: String,
+) -> Result<Vec<IngresoResponse>, IngresoProveedorError> {
+    let historial = db::find_historial_fetched(start, end)
+        .await
+        .map_err(|e| IngresoProveedorError::Database(e.to_string()))?;
+
+    Ok(historial.into_iter().map(IngresoResponse::from_proveedor_fetched).collect())
+}
+
 /// Valida si un proveedor es apto para ingresar antes de abrir el formulario de admisión.
 ///
 /// Permite al frontend "pre-validar" una cédula o ID para mostrar alertas tempranas
@@ -286,4 +305,3 @@ pub async fn validar_ingreso(
 // --------------------------------------------------------------------------
 // TESTS UNITARIOS (Helpers)
 // --------------------------------------------------------------------------
-

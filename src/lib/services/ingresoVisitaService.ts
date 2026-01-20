@@ -36,8 +36,17 @@ export const ingresoVisitaService = {
 	},
 
 	/** Obtiene historial de visitas completadas */
-	async getHistorial(): Promise<IngresoVisita[]> {
-		return await invoke<IngresoVisita[]>('get_ingresos_visita_historial');
+	async getHistorial(range?: { start: string; end: string }): Promise<IngresoVisita[]> {
+		if (!range) {
+			const now = new Date();
+			const startStr = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+			const endStr = new Date().toISOString();
+			range = { start: startStr, end: endStr };
+		}
+		return await invoke<IngresoVisita[]>('get_ingresos_visita_historial', {
+			fechaInicio: range.start, // Ojo: los nombres de argumentos deben coincidir con Rust
+			fechaFin: range.end
+		});
 	},
 
 	async registrarSalida(

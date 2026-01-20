@@ -64,6 +64,13 @@
 	// Filtro local: Solo finalizados
 	let hideActive = $state(false);
 
+	// Grouping
+	let groupByField = $state<string | undefined>(undefined);
+
+	function setGrouping(field: string | undefined) {
+		groupByField = field;
+	}
+
 	let filteredIngresos = $derived.by(() => {
 		let data = ingresos;
 		if (viewMode === 'history' && hideActive) {
@@ -137,7 +144,10 @@
 			if (viewMode === 'actives') {
 				ingresos = await ingresoVisitaService.getActivos();
 			} else {
-				ingresos = await ingresoVisitaService.getHistorial();
+				// Convert to full ISO string for backend filtering
+				const startISO = `${dateRange.start}T00:00:00`;
+				const endISO = `${dateRange.end}T23:59:59`;
+				ingresos = await ingresoVisitaService.getHistorial({ start: startISO, end: endISO });
 			}
 		} catch (_e: unknown) {
 			console.error(_e);
@@ -320,22 +330,46 @@
 			{/if}
 		{/snippet}
 
-		{#snippet CustomFilters()}
+		{#snippet secondaryActions()}
 			{#if viewMode === 'history'}
-				<div class="flex items-center gap-2 border-l border-white/10 pl-3">
+				<!-- Grouping Controls -->
+				<div class="flex items-center gap-2 border-l border-white/5 pl-3">
+					<!-- Multi-Grouping Menu -->
+					<div class="flex items-center gap-1 bg-[#2d2d2d] border border-white/10 rounded-md p-0.5">
+						<span class="text-[10px] text-gray-500 font-bold uppercase px-2">Agrupar:</span>
+						{#each [{ id: undefined, label: 'Ninguno' }, { id: 'empresa', label: 'Empresa' }, { id: 'anfitrion', label: 'Anfitrión' }, { id: 'area', label: 'Área' }] as opt}
+							<button
+								onclick={() => setGrouping(opt.id)}
+								class="px-2 py-1 rounded text-[11px] font-medium transition-all {groupByField ===
+								opt.id
+									? 'bg-blue-500/20 text-blue-400'
+									: 'text-gray-400 hover:text-white hover:bg-white/5'}"
+							>
+								{opt.label}
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Date & Filter Controls -->
+				<div class="flex items-center gap-2 border-l border-white/10 pl-3 ml-1">
 					<DateRangePicker
 						startDate={dateRange.start}
 						endDate={dateRange.end}
 						on:change={handleDateRangeChange}
 					/>
-					<div class="flex items-center gap-2 ml-2">
+					<div class="flex items-center gap-2 ml-2 cursor-pointer">
 						<input
 							type="checkbox"
 							id="hideActiveVisita"
 							bind:checked={hideActive}
-							class="rounded border-surface bg-surface-3"
+							class="rounded border-surface bg-surface-3 cursor-pointer"
 						/>
-						<label for="hideActiveVisita" class="text-xs text-secondary">Solo Finalizados</label>
+						<label
+							for="hideActiveVisita"
+							class="text-xs text-secondary cursor-pointer hover:text-white transition-colors"
+							>Solo Finalizados</label
+						>
 					</div>
 				</div>
 			{/if}
@@ -359,6 +393,7 @@
 				{columns}
 				class="h-full"
 				withCheckboxSelection={true}
+				groupBy={groupByField}
 				onRowSelectionChanged={(data) => (selectedRows = data)}
 				persistenceID="visitas-list-v1"
 				pagination={true}

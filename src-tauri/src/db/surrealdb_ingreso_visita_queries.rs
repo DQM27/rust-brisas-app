@@ -87,12 +87,17 @@ pub async fn find_activos_fetched() -> Result<Vec<IngresoVisitaFetched>, Surreal
     Ok(result.take(0)?)
 }
 
-pub async fn find_historial_fetched() -> Result<Vec<IngresoVisitaFetched>, SurrealDbError> {
+pub async fn find_historial_fetched(
+    start: String,
+    end: String,
+) -> Result<Vec<IngresoVisitaFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
         .query(format!(
-            "SELECT * FROM {TABLE} WHERE fecha_hora_salida IS NOT NONE ORDER BY fecha_hora_salida DESC FETCH usuario_ingreso, usuario_salida"
+            "SELECT * FROM {TABLE} WHERE fecha_hora_salida >= $start AND fecha_hora_salida <= $end ORDER BY fecha_hora_salida DESC FETCH usuario_ingreso, usuario_salida"
         ))
+        .bind(("start", start))
+        .bind(("end", end))
         .await?;
     Ok(result.take(0)?)
 }

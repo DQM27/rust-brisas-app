@@ -24,6 +24,15 @@ pub async fn get_ingresos_proveedores_activos() -> Result<Vec<IngresoResponse>, 
     service::get_activos().await.map_err(|e| e.to_string())
 }
 
+/// Lista el historial de accesos de proveedores finalizados en un rango de fechas.
+#[command]
+pub async fn get_ingresos_proveedores_historial(
+    fecha_inicio: String,
+    fecha_fin: String,
+) -> Result<Vec<IngresoResponse>, String> {
+    service::get_historial(fecha_inicio, fecha_fin).await.map_err(|e| e.to_string())
+}
+
 /// Cierra el ciclo de admisión registrando la salida física.
 #[command]
 pub async fn registrar_salida_proveedor(
