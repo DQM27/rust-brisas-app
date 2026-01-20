@@ -296,16 +296,24 @@
 		</div>
 	{/if}
 
-	<div bind:this={tableElement}></div>
+	<div bind:this={tableElement} class="table-element"></div>
 </div>
 
 <style>
 	.tabulator-wrapper {
 		width: 100%;
+		height: 100%;
+		min-height: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0;
 		background: transparent;
+	}
+
+	.table-element {
+		flex: 1;
+		width: 100%;
+		min-height: 0;
 	}
 
 	.toolbar {

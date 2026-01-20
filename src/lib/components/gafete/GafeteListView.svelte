@@ -2,30 +2,34 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { toast } from 'svelte-5-french-toast';
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+	import { Plus, X, ListPlus, LayoutGrid } from 'lucide-svelte';
 
-	import AGGridWrapper from '$lib/components/grid/AGGridWrapper.svelte';
-	import { createCustomButton } from '$lib/config/agGridConfigs';
-
-	import * as gafeteService from '$lib/logic/gafete/gafeteService';
-	import * as alertaGafeteService from '$lib/logic/alertaGafete/alertaGafeteService';
-	import { GafeteColumns } from '$lib/logic/gafete/gafeteColumns';
-
-	import type { GafeteResponse } from '$lib/types/gafete';
-	import { Plus } from 'lucide-svelte';
-	import { currentUser } from '$lib/stores/auth';
-
-	// Modales
+	// Components
+	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
+	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 	import GafeteFormModal from './GafeteFormModal.svelte';
 	import ResolveAlertModal from './modals/ResolveAlertModal.svelte';
 	import BulkCreateGafeteModal from './modals/BulkCreateGafeteModal.svelte';
 
-	// Estado
+	// Logic & Services
+	import * as gafeteService from '$lib/logic/gafete/gafeteService';
+	import * as alertaGafeteService from '$lib/logic/alertaGafete/alertaGafeteService';
+	import { getGafeteColumns } from '$lib/logic/gafete/gafeteColumns';
+	import { currentUser } from '$lib/stores/auth';
+	import type { GafeteResponse } from '$lib/types/gafete';
+
+	// State
 	let gafetes = $state<GafeteResponse[]>([]);
 	let loading = $state(false);
+	let searchTerm = $state('');
 	let showModal = $state(false);
 	let showBulkModal = $state(false);
 	let selectedGafete = $state<GafeteResponse | null>(null);
 	let formLoading = $state(false);
+
+	// Grid State
+	let gridWrapper = $state<any>(null);
+	let toolbarColumns = $state<any[]>([]);
 
 	// Estado para modal de resolución de alertas
 	let showResolveModal = $state(false);
@@ -34,9 +38,9 @@
 	// Event listener cleanup
 	let unlistenRefresh: UnlistenFn | null = null;
 
-	// Definición de columnas usando la clase especializada
-	const columnDefs = $derived(
-		GafeteColumns.getColumns({
+	// Column definitions
+	const columns = $derived(
+		getGafeteColumns({
 			onResolve: (data) => handleResolve(data),
 			onRecover: (data) => changeStatus(data, 'activo'),
 			onLost: (data) => changeStatus(data, 'extraviado'),
@@ -46,34 +50,6 @@
 		})
 	);
 
-	// Custom buttons para la toolbar
-	const customButtons = $derived.by(() => {
-		try {
-			if (!createCustomButton) return {};
-			return {
-				default: [
-					createCustomButton.nuevo(() => handleNew()),
-					{
-						id: 'bulk-create',
-						label: 'Generar Lote',
-						icon: Plus,
-						onClick: () => {
-							showBulkModal = true;
-						},
-						classes: 'bg-blue-600 hover:bg-blue-700 text-white',
-						tooltip: 'Generar múltiples gafetes'
-					}
-				]
-			};
-		} catch (err) {
-			console.error('Error generating customButtons:', err);
-			return {};
-		}
-	});
-
-	// ==========================================
-	// CARGA DE DATOS
-	// ==========================================
 	async function loadGafetes() {
 		loading = true;
 		try {
@@ -90,9 +66,6 @@
 		}
 	}
 
-	// ==========================================
-	// MANEJADORES DE ACCIONES
-	// ==========================================
 	function handleNew() {
 		selectedGafete = null;
 		showModal = true;
@@ -109,45 +82,32 @@
 	}
 
 	async function changeStatus(data: GafeteResponse, newStatus: string) {
-		// Guard against multiple simultaneous calls
 		if (loading) return;
-		if (!data) return;
-
 		try {
 			loading = true;
 			const userId = $currentUser?.id;
 			const result = await gafeteService.updateStatus(data.id, newStatus, userId);
 			if (result.ok) {
 				toast.success(`Estado actualizado a ${newStatus}`);
-				// Small delay to avoid transaction conflicts with SurrealDB
-				await new Promise((resolve) => setTimeout(resolve, 100));
 				await loadGafetes();
 			} else {
 				toast.error(result.error);
 			}
-		} catch (error: any) {
-			toast.error(error.message || 'Error al cambiar el estado del gafete.');
 		} finally {
 			loading = false;
 		}
 	}
 
 	async function handleResolveSubmit(notas: string) {
-		if (!selectedAlertGafete?.alertaId) {
-			toast.error('No se encontró el ID de la alerta');
-			return;
-		}
-
+		if (!selectedAlertGafete?.alertaId) return;
 		formLoading = true;
-		const userId = $currentUser?.id;
 		const result = await alertaGafeteService.resolverAlerta(
 			selectedAlertGafete.alertaId,
 			notas,
-			userId
+			$currentUser?.id
 		);
-
 		if (result.ok) {
-			toast.success('Alerta resuelta correctamente');
+			toast.success('Alerta resuelta');
 			showResolveModal = false;
 			selectedAlertGafete = null;
 			loadGafetes();
@@ -158,10 +118,12 @@
 	}
 
 	async function handleDelete(gafete: GafeteResponse) {
-		if (!confirm(`¿Estás seguro de eliminar PERMANENTEMENTE el gafete ${gafete.numero}?`)) return;
-
-		const userId = $currentUser?.id;
-		const result = await gafeteService.remove(gafete.numero.toString(), gafete.tipo, userId);
+		if (!confirm(`¿Eliminar permanentemente el gafete ${gafete.numero}?`)) return;
+		const result = await gafeteService.remove(
+			gafete.numero.toString(),
+			gafete.tipo,
+			$currentUser?.id
+		);
 		if (result.ok) {
 			toast.success('Gafete eliminado');
 			loadGafetes();
@@ -172,17 +134,9 @@
 
 	async function handleFormSubmit(data: any) {
 		formLoading = true;
-		let result;
-
-		if (selectedGafete) {
-			result = await gafeteService.update(
-				selectedGafete.numero.toString(),
-				selectedGafete.tipo,
-				data
-			);
-		} else {
-			result = await gafeteService.create(data);
-		}
+		const result = selectedGafete
+			? await gafeteService.update(selectedGafete.numero.toString(), selectedGafete.tipo, data)
+			: await gafeteService.create(data);
 
 		if (result.ok) {
 			toast.success(selectedGafete ? 'Gafete actualizado' : 'Gafete creado');
@@ -197,9 +151,8 @@
 	async function handleBulkSubmit(data: any) {
 		formLoading = true;
 		const result = await gafeteService.createRange(data);
-
 		if (result.ok) {
-			toast.success(`Se generaron ${result.data.length} gafetes correctamente`);
+			toast.success(`${result.data.length} gafetes generados`);
 			showBulkModal = false;
 			loadGafetes();
 		} else {
@@ -210,62 +163,100 @@
 
 	onMount(async () => {
 		loadGafetes();
-
-		// Escuchar evento de refresh cuando hay ingreso/salida
-		unlistenRefresh = await listen('gafetes:refresh', () => {
-			loadGafetes();
-		});
+		unlistenRefresh = await listen('gafetes:refresh', loadGafetes);
 	});
 
-	onDestroy(() => {
-		// Cleanup event listener
-		if (unlistenRefresh) {
-			unlistenRefresh();
-		}
-	});
+	onDestroy(() => unlistenRefresh?.());
 </script>
 
-<!-- ========================================== -->
-<!-- LAYOUT -->
-<!-- ========================================== -->
-<div class="flex h-full flex-col relative bg-[#1e1e1e]">
-	<div class="border-b border-white/10 px-6 py-4 bg-[#252526]">
-		<div class="flex items-center justify-between gap-4">
+<div class="flex h-full flex-col relative bg-surface-1">
+	<!-- Header -->
+	<div class="border-b border-surface px-6 py-4 bg-surface-2 shadow-sm z-10">
+		<div class="flex items-center justify-between gap-6">
 			<div>
-				<h2 class="text-xl font-semibold text-gray-100">Gestión de Gafetes</h2>
-				<p class="mt-1 text-sm text-gray-400">
-					Administración de inventario, estado físico y alertas
+				<h2 class="text-xl font-semibold text-primary">Gestión de Gafetes</h2>
+				<p class="mt-1 text-xs text-secondary">
+					Administración de inventario, estado físico y alertas de seguridad
 				</p>
 			</div>
 
-			<div class="flex gap-4 text-xs text-gray-400">
-				<div class="flex items-center">
-					<span class="w-2 h-2 rounded-full bg-emerald-500 mr-1"></span> Disponibles
-				</div>
-				<div class="flex items-center">
-					<span class="w-2 h-2 rounded-full bg-blue-500 mr-1"></span> En Uso
-				</div>
-				<div class="flex items-center">
-					<span class="w-2 h-2 rounded-full bg-rose-500 mr-1"></span> Dañados
+			<div class="flex items-center gap-4 bg-[#2d2d2d] border border-white/5 p-1 rounded-lg px-3">
+				<div class="flex items-center gap-3 text-[10px] font-bold uppercase tracking-wider">
+					<div class="flex items-center gap-1.5 text-emerald-400">
+						<span
+							class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+						></span>
+						Disponibles: {gafetes.filter((g) => g.status === 'disponible').length}
+					</div>
+					<div class="w-px h-3 bg-white/10"></div>
+					<div class="flex items-center gap-1.5 text-blue-400">
+						<span class="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+						></span>
+						En Uso: {gafetes.filter((g) => g.status === 'en_uso').length}
+					</div>
+					<div class="w-px h-3 bg-white/10"></div>
+					<div class="flex items-center gap-1.5 text-rose-400">
+						<span class="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"
+						></span>
+						Dañados: {gafetes.filter((g) => g.status === 'danado').length}
+					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<div class="flex-1 overflow-hidden relative bg-[#1e1e1e]">
-		<AGGridWrapper
-			gridId="badges-list"
-			rowData={gafetes}
-			{columnDefs}
-			{customButtons}
-			getRowId={(params) => params.data.numero}
-		/>
+	<!-- Toolbar & Grid -->
+	<GridToolbar
+		bind:searchTerm
+		hasSelection={false}
+		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
+		onFitColumns={() => gridWrapper?.fitColumns()}
+		onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
+		onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
+		onToggleFilters={() => {}}
+		onAdvancedExport={() => {}}
+		columns={toolbarColumns}
+	>
+		{#snippet primaryActions()}
+			<button
+				onclick={handleNew}
+				class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
+			>
+				<Plus size={14} /> Nuevo
+			</button>
+			<button
+				onclick={() => (showBulkModal = true)}
+				class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
+			>
+				<ListPlus size={14} /> Generar Lote
+			</button>
+		{/snippet}
+	</GridToolbar>
+
+	<div class="flex-1 overflow-hidden relative bg-surface-1">
+		{#if loading && gafetes.length === 0}
+			<div class="flex h-full items-center justify-center">
+				<div class="loading loading-spinner loading-lg text-primary opacity-20"></div>
+			</div>
+		{:else}
+			<TabulatorWrapper
+				bind:this={gridWrapper}
+				bind:toolbarColumns
+				data={gafetes}
+				{columns}
+				class="h-full"
+				persistenceID="gafete-list-v2"
+				pagination={false}
+				options={{
+					layout: 'fitColumns',
+					placeholder: 'No se encontraron gafetes'
+				}}
+			/>
+		{/if}
 	</div>
 </div>
 
-<!-- ========================================== -->
-<!-- MODALES -->
-<!-- ========================================== -->
+<!-- Modals -->
 {#if showModal}
 	<GafeteFormModal
 		show={showModal}
@@ -284,9 +275,7 @@
 		show={showBulkModal}
 		loading={formLoading}
 		onSave={handleBulkSubmit}
-		onClose={() => {
-			showBulkModal = false;
-		}}
+		onClose={() => (showBulkModal = false)}
 	/>
 {/if}
 
