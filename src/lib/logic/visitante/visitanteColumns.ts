@@ -66,7 +66,7 @@ export const getVisitanteTrashColumns = (): ColumnDefinition[] => {
 			title: 'Cédula',
 			field: 'cedula',
 			width: 140,
-			formatter: (cell) => `<span class="font-mono text-xs">${cell.getValue() || ''}</span>`
+			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Nombre',
@@ -74,7 +74,7 @@ export const getVisitanteTrashColumns = (): ColumnDefinition[] => {
 			width: 250,
 			formatter: (cell) => {
 				const data = cell.getData() as VisitanteResponse;
-				return `<span class="font-medium text-white">${data.nombre} ${data.apellido || ''}</span>`;
+				return `<span style="font-weight:500; color:#e2e8f0">${data.nombre} ${data.apellido || ''}</span>`;
 			}
 		},
 		{

@@ -1,6 +1,6 @@
-// src/lib/logic/user/userColumns.ts
 import type { ColumnDefinition } from 'tabulator-tables';
 import type { UserResponse } from '$lib/types/user';
+import { createGridBadge, type BadgeColor } from '$lib/components/tabulator/gridBadge';
 
 export interface UserColumnHandlers {
 	onStatusToggle: (id: string, currentStatus: boolean) => void;
@@ -14,7 +14,7 @@ export const getUserColumns = (handlers: UserColumnHandlers): ColumnDefinition[]
 			width: 130,
 			frozen: true,
 			headerFilter: 'input',
-			formatter: (cell) => `<span class="font-mono text-xs">${cell.getValue() || ''}</span>`
+			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Nombre Completo',
@@ -24,9 +24,10 @@ export const getUserColumns = (handlers: UserColumnHandlers): ColumnDefinition[]
 			formatter: (cell) => {
 				const user = cell.getData() as UserResponse;
 				if (!user) return '';
-				return [user.nombre, user.segundoNombre, user.apellido, user.segundoApellido]
+				const nombre = [user.nombre, user.segundoNombre, user.apellido, user.segundoApellido]
 					.filter(Boolean)
 					.join(' ');
+				return `<span style="font-weight:500; color:#e2e8f0">${nombre}</span>`;
 			}
 		},
 		{
@@ -42,16 +43,16 @@ export const getUserColumns = (handlers: UserColumnHandlers): ColumnDefinition[]
 			headerFilter: 'list',
 			headerFilterParams: { valuesLookup: 'active', clearable: true },
 			formatter: (cell) => {
-				const role = cell.getValue();
-				const baseClass = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none';
-				const badges: Record<string, string> = {
-					admin: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-					supervisor: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-					guardia: 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+				const role = (cell.getValue() || '').toLowerCase();
+				const colors: Record<string, BadgeColor> = {
+					admin: 'blue',
+					supervisor: 'amber',
+					guardia: 'gray'
 				};
-				const badgeClass = badges[role] || badges.guardia;
-				const displayText = role ? role.toUpperCase() : 'N/A';
-				return `<span class="${baseClass} ${badgeClass}">${displayText}</span>`;
+				return createGridBadge({
+					text: role.toUpperCase() || 'N/A',
+					color: colors[role] || 'gray'
+				});
 			}
 		},
 		{
@@ -66,12 +67,12 @@ export const getUserColumns = (handlers: UserColumnHandlers): ColumnDefinition[]
 			},
 			formatter: (cell) => {
 				const isActive = cell.getValue();
-				const baseClass = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none cursor-pointer hover:opacity-80 transition-opacity';
-				const activeBadge = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-				const inactiveBadge = 'bg-red-500/10 text-red-400 border-red-500/20';
-				const badgeClass = isActive ? activeBadge : inactiveBadge;
-				const displayText = isActive ? 'Activo' : 'Inactivo';
-				return `<button class="status-btn ${baseClass} ${badgeClass}">${displayText}</button>`;
+				return createGridBadge({
+					text: isActive ? 'Activo' : 'Inactivo',
+					color: isActive ? 'green' : 'red',
+					isButton: true,
+					className: 'status-btn'
+				});
 			},
 			cellClick: (e, cell) => {
 				const target = e.target as HTMLElement;

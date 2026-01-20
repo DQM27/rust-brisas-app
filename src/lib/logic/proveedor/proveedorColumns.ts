@@ -103,7 +103,7 @@ export const getProveedorTrashColumns = (): ColumnDefinition[] => {
 			title: 'Cédula',
 			field: 'cedula',
 			width: 130,
-			formatter: (cell) => `<span class="font-mono text-xs">${cell.getValue() || ''}</span>`
+			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Nombre',
@@ -112,9 +112,10 @@ export const getProveedorTrashColumns = (): ColumnDefinition[] => {
 			formatter: (cell) => {
 				const d = cell.getData() as ProveedorResponse;
 				if (!d) return '';
-				return [d.nombre, d.segundoNombre, d.apellido, d.segundoApellido]
+				const nombre = [d.nombre, d.segundoNombre, d.apellido, d.segundoApellido]
 					.filter(Boolean)
 					.join(' ');
+				return `<span style="font-weight:500; color:#e2e8f0">${nombre}</span>`;
 			}
 		},
 		{

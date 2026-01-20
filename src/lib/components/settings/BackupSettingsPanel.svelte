@@ -9,12 +9,12 @@
 		Upload,
 		Trash2,
 		ArchiveRestore,
-		Key
+		Key,
+		X
 	} from 'lucide-svelte';
-	import type { ColDef } from '@ag-grid-community/core';
-
 	// Components
-	import AGGridWrapper from '$lib/components/grid/AGGridWrapper.svelte';
+	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
+	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 
 	// Services
 	import {
@@ -37,7 +37,8 @@
 	import type { CustomToolbarButton } from '$lib/types/agGrid';
 
 	// Logic
-	import { BackupColumns } from '$lib/logic/backup/backupColumns';
+	import { getBackupColumns } from '$lib/logic/backup/backupColumns';
+	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
 
 	// Stores
 	import { currentUser } from '$lib/stores/auth';
@@ -55,7 +56,10 @@
 	let configEnabled = $state(false);
 	let configHora = $state('02:00');
 	let configDiasRetencion = $state(30);
-
+	// Grid State
+	let gridWrapper = $state<any>(null);
+	let toolbarColumns = $state<any[]>([]);
+	let searchTerm = $state('');
 	// Selección
 	let selectedRows = $state<BackupEntry[]>([]);
 
@@ -70,94 +74,20 @@
 	const canUpdate = $derived($currentUser && can($currentUser, 'UPDATE_SETTINGS_BACKUP'));
 
 	// ==========================================
-	// COLUMNAS AG GRID
+	// COLUMNAS
 	// ==========================================
-	const columnDefs: ColDef<BackupEntry>[] = BackupColumns.getColumns({
-		onRestore: handleRestore,
-		onDelete: handleDelete
-	});
+	const columns = $derived(
+		getBackupColumns({
+			onRestore: handleRestore,
+			onDelete: handleDelete
+		})
+	);
 
-	// ==========================================
-	// BOTONES TOOLBAR POR CONTEXTO
-	// ==========================================
-	const customButtons = $derived.by(() => {
-		const selected = selectedRows[0];
-
-		const defaultBtns: CustomToolbarButton[] = [
-			{
-				id: 'backup-now',
-				label: 'Crear Backup',
-				icon: Database,
-				onClick: handleBackupNow,
-				variant: 'success',
-				tooltip: 'Crear backup inmediato al directorio automático'
-			},
-			{
-				id: 'backup-portable',
-				label: 'Portable',
-				icon: Key,
-				onClick: handlePortableBackup,
-				variant: 'primary',
-				tooltip: 'Crear backup encriptado con contraseña (portable a otra máquina)'
-			},
-			{
-				id: 'backup-manual',
-				label: 'Exportar',
-				icon: Download,
-				onClick: handleBackupManual,
-				variant: 'default',
-				tooltip: 'Exportar a ubicación personalizada'
-			},
-			{
-				id: 'restore-file',
-				label: 'Importar',
-				icon: Upload,
-				onClick: handleRestoreFromFile,
-				variant: 'default',
-				tooltip: 'Restaurar desde archivo externo'
-			}
-		];
-
-		const singleSelectBtns: CustomToolbarButton[] = [
-			{
-				id: 'restore',
-				label: 'Restaurar',
-				icon: ArchiveRestore,
-				onClick: () => {
-					if (selected) handleRestore(selected);
-				},
-				variant: 'primary',
-				tooltip: 'Restaurar este backup'
-			},
-			{
-				id: 'delete',
-				label: 'Eliminar',
-				icon: Trash2,
-				onClick: () => {
-					if (selected) handleDelete(selected);
-				},
-				variant: 'danger',
-				tooltip: 'Eliminar backup'
-			}
-		];
-
-		const multiSelectBtns: CustomToolbarButton[] = [
-			{
-				id: 'delete-multi',
-				label: `Eliminar (${selectedRows.length})`,
-				icon: Trash2,
-				onClick: handleDeleteMultiple,
-				variant: 'danger',
-				tooltip: 'Eliminar backups seleccionados'
-			}
-		];
-
-		return {
-			default: defaultBtns,
-			singleSelect: singleSelectBtns,
-			multiSelect: multiSelectBtns
-		};
-	});
+	function handleToggleFilters() {
+		// Esta vista es interna de settings, quizás no necesita toggle de filtros?
+		// Pero para consistencia lo incluimos.
+		if (gridWrapper) gridWrapper.redraw(true);
+	}
 
 	// ==========================================
 	// HANDLERS - DATA
@@ -343,25 +273,79 @@
 	});
 </script>
 
-<div class="flex h-full flex-col relative bg-[#1e1e1e]">
+<div class="flex h-full flex-col relative bg-surface-1">
 	<!-- Header -->
-	<div class="border-b border-white/10 px-6 py-4 bg-[#252526]">
+	<div class="border-b border-surface px-6 py-4 bg-surface-2">
 		<div class="flex items-center gap-4">
 			<div>
-				<h2 class="text-xl font-semibold text-gray-100 flex items-center gap-2">
+				<h2 class="text-xl font-semibold text-primary flex items-center gap-2">
 					<Database class="w-5 h-5 text-purple-500" />
 					Copias de Seguridad
 				</h2>
-				<p class="mt-1 text-sm text-gray-400">
-					Gestión de backups automáticos y manuales • Usa el botón "Configuración" en la toolbar
-					para ajustar auto-backup
+				<p class="mt-1 text-sm text-secondary">
+					Gestión de backups automáticos y manuales • Usa la toolbar para gestionar tus archivos
 				</p>
 			</div>
 		</div>
 	</div>
 
+	<!-- Toolbar -->
+	<GridToolbar
+		bind:searchTerm
+		hasSelection={selectedRows.length > 0}
+		selectionCount={selectedRows.length}
+		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
+		onFitColumns={() => gridWrapper?.fitColumns()}
+		onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
+		onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
+		onToggleFilters={handleToggleFilters}
+		columns={toolbarColumns}
+	>
+		{#snippet primaryActions()}
+			{#if selectedRows.length > 0}
+				<button
+					onclick={() => gridWrapper?.deselectAll()}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-4 hover:text-primary text-sm font-medium transition-colors"
+				>
+					<X size={14} /> Cancelar
+				</button>
+				<button
+					onclick={handleDeleteMultiple}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
+				>
+					<Trash2 size={14} /> Eliminar seleccionado
+				</button>
+			{:else}
+				<button
+					onclick={handleBackupNow}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded-md hover:bg-green-500/20 text-sm font-medium transition-colors"
+				>
+					<Database size={14} /> Crear Backup
+				</button>
+				<button
+					onclick={handlePortableBackup}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
+				>
+					<Key size={14} /> Portable
+				</button>
+				<button
+					onclick={handleBackupManual}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-4 hover:text-primary text-sm font-medium transition-colors"
+				>
+					<Download size={14} /> Exportar
+				</button>
+				<button
+					onclick={handleRestoreFromFile}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-4 hover:text-primary text-sm font-medium transition-colors"
+				>
+					<Upload size={14} /> Importar
+				</button>
+			{/if}
+		{/snippet}
+	</GridToolbar>
+
 	<!-- Content -->
-	<div class="flex-1 overflow-hidden relative bg-[#1e1e1e]">
+	<div class="flex-1 overflow-hidden relative bg-surface-1">
 		{#if error}
 			<div class="p-6">
 				<div
@@ -375,55 +359,34 @@
 					</div>
 				</div>
 			</div>
-		{:else if loading}
+		{:else if loading && backups.length === 0}
 			<div class="flex h-full items-center justify-center">
-				<div class="text-center">
-					<svg class="mx-auto h-8 w-8 animate-spin text-purple-500" fill="none" viewBox="0 0 24 24">
-						<circle
-							class="opacity-25"
-							cx="12"
-							cy="12"
-							r="10"
-							stroke="currentColor"
-							stroke-width="4"
-						/>
-						<path
-							class="opacity-75"
-							fill="currentColor"
-							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-						/>
-					</svg>
-					<p class="mt-4 text-sm text-gray-400">Cargando backups...</p>
-				</div>
+				<div class="loading loading-spinner loading-lg text-primary opacity-20"></div>
 			</div>
 		{:else if backups.length === 0}
 			<div class="flex h-full items-center justify-center">
 				<div class="text-center">
-					<Database size={48} class="mx-auto text-gray-400" />
-					<p class="mt-4 text-lg font-medium text-gray-300">No hay backups</p>
-					<p class="mt-2 text-sm text-gray-400">
-						Crea tu primer backup usando el botón "Crear Backup"
+					<Database size={48} class="mx-auto text-secondary opacity-20" />
+					<p class="mt-4 text-lg font-medium text-secondary">No hay backups</p>
+					<p class="mt-2 text-sm text-secondary opacity-60">
+						Crea tu primer backup usando los botones de arriba
 					</p>
-					{#if canUpdate}
-						<button
-							onclick={handleBackupNow}
-							class="mt-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-						>
-							Crear Backup Ahora
-						</button>
-					{/if}
 				</div>
 			</div>
 		{:else}
-			<AGGridWrapper
-				gridId="backup-list"
-				{columnDefs}
-				rowData={backups}
-				{customButtons}
-				getRowId={(params) => params.data.ruta}
-				persistenceKey="backup-list-columns"
-				onSelectionChanged={(rows) => (selectedRows = rows)}
-				onRefresh={loadBackups}
+			<TabulatorWrapper
+				bind:this={gridWrapper}
+				bind:toolbarColumns
+				data={backups}
+				{columns}
+				withCheckboxSelection={true}
+				onRowSelectionChanged={(data) => (selectedRows = data)}
+				persistenceID="backup-list-v1"
+				options={{
+					...defaultTabulatorOptions,
+					layout: 'fitColumns',
+					placeholder: 'No se encontraron backups'
+				}}
 			/>
 		{/if}
 	</div>

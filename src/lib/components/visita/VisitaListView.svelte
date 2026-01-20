@@ -1,28 +1,26 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { fade } from 'svelte/transition';
-	import { Users, History, FileText, Search, Plus, X, LogOut, Download } from 'lucide-svelte';
-	import AGGridWrapper from '$lib/components/grid/AGGridWrapper.svelte';
+	import { Users, History, Plus, X, LogOut } from 'lucide-svelte';
+
+	// Components
+	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
+	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 	import IngresoVisitaFormModal from '$lib/components/ingreso/IngresoVisitaFormModal.svelte';
 	import SalidaModal from '$lib/components/ingreso/SalidaModal.svelte';
 	import ExportDialog from '$lib/components/export/ExportDialog.svelte';
+	import DateRangePicker from '$lib/components/shared/DateRangePicker.svelte';
 
+	// Logic & Services
 	import { ingresoVisitaService } from '$lib/services/ingresoVisitaService';
-	import { INGRESO_VISITA_COLUMNS } from '$lib/logic/visita/ingresoVisitaColumns';
+	import { getIngresoVisitaColumns } from '$lib/logic/visita/ingresoVisitaColumns';
+	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
+	import { createGridBadge } from '$lib/components/tabulator/gridBadge';
 	import type { IngresoVisita } from '$lib/types/ingreso-nuevos';
 	import { toast } from 'svelte-5-french-toast';
-	import type { ColDef, GridApi, ICellRendererParams } from '@ag-grid-community/core';
 	import { currentUser } from '$lib/stores/auth';
-	import { createCustomButton } from '$lib/config/agGridConfigs';
-	import { activeTabId, openTab } from '$lib/stores/tabs';
-	import {
-		exportData,
-		getAvailableFormats,
-		extractGridData,
-		extractSelectedRows
-	} from '$lib/logic/export';
-	import DateRangePicker from '$lib/components/shared/DateRangePicker.svelte';
+	import { activeTabId } from '$lib/stores/tabs';
 	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
+	import { getAvailableFormats, exportData } from '$lib/logic/export';
 
 	interface Props {
 		tabId?: string;
@@ -34,6 +32,7 @@
 	let loading = $state(false);
 	let viewMode = $state<'actives' | 'history'>('actives');
 	let selectedRows = $state<IngresoVisita[]>([]);
+	let searchTerm = $state('');
 
 	// Modals
 	let showIngresoModal = $state(false);
@@ -42,12 +41,18 @@
 	let selectedIngreso = $state<IngresoVisita | null>(null);
 	let salidaLoading = $state(false);
 
+	// Grid State
+	let gridWrapper = $state<any>(null);
+	let toolbarColumns = $state<any[]>([]);
+	let showHeaderFilters = $state(
+		typeof window !== 'undefined'
+			? localStorage.getItem('tabulator-header-filters') === 'true'
+			: false
+	);
+
 	// Estado para Exportación
-	let gridApi = $state<GridApi<IngresoVisita> | null>(null);
 	let showExportModal = $state(false);
 	let availableFormats = $state<string[]>([]);
-	let exportColumns = $state<{ id: string; name: string; selected: boolean }[]>([]);
-	let exportRows = $state<Record<string, any>[]>([]);
 
 	// Rango de fechas por defecto: Hoy (Local)
 	const today = new Date().toLocaleDateString('en-CA');
@@ -59,13 +64,54 @@
 	// Filtro local: Solo finalizados
 	let hideActive = $state(false);
 
-	let filteredIngresos = $derived(
-		viewMode === 'history' && hideActive ? ingresos.filter((i) => i.fechaSalida) : ingresos
-	);
+	let filteredIngresos = $derived.by(() => {
+		let data = ingresos;
+		if (viewMode === 'history' && hideActive) {
+			data = data.filter((i) => i.fechaSalida);
+		}
+		return data;
+	});
+
+	// Columnas dinámicas
+	const columns = $derived.by(() => {
+		let cols = getIngresoVisitaColumns();
+
+		// Filtrar columnas según viewMode
+		if (viewMode === 'actives') {
+			cols = cols.filter(
+				(c) =>
+					c.field !== 'fechaSalida' &&
+					c.field !== 'fechaSalida_hora' &&
+					c.field !== 'usuarioSalidaNombre'
+			);
+
+			// Añadir columna de acciones
+			cols.push({
+				title: 'Acciones',
+				width: 100,
+				headerSort: false,
+				hozAlign: 'center',
+				formatter: () =>
+					createGridBadge({
+						text: 'Salida',
+						color: 'red',
+						isButton: true,
+						className: 'salida-btn'
+					}),
+				cellClick: (e, cell) => {
+					const target = e.target as HTMLElement;
+					if (target.classList.contains('salida-btn')) {
+						handleSalida(cell.getRow().getData() as IngresoVisita);
+					}
+				}
+			});
+		}
+
+		return cols;
+	});
 
 	// Suscripción a comandos de teclado
 	let unsubscribeKeyboard: (() => void) | null = null;
-
 	function setupKeyboardSubscription() {
 		unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
 			if (!event) return;
@@ -112,7 +158,7 @@
 		showIngresoModal = true;
 	}
 
-	async function handleSalida(ingreso: IngresoVisita) {
+	function handleSalida(ingreso: IngresoVisita) {
 		selectedIngreso = ingreso;
 		showSalidaModal = true;
 	}
@@ -135,117 +181,38 @@
 		}
 	}
 
-	const columnDefs = $derived.by((): ColDef<IngresoVisita>[] => {
-		const baseCols: ColDef<IngresoVisita>[] = [
-			...INGRESO_VISITA_COLUMNS,
-			{
-				colId: 'actions',
-				headerName: 'Acciones',
-				width: 120,
-				pinned: 'right',
-				cellRenderer: (params: any) => {
-					if (viewMode === 'history') return null;
-					const button = document.createElement('button');
-					button.className =
-						'px-3 py-1 bg-red-600/10 text-red-500 border border-red-500/20 rounded-md text-xs hover:bg-red-600 hover:text-white transition-all';
-					button.textContent = 'Salida';
-					button.onclick = () => handleSalida(params.data);
-					return button;
-				}
-			}
-		];
-
-		if (viewMode === 'history') {
-			return baseCols.filter((c) => c.colId !== 'actions');
+	function handleToggleFilters() {
+		showHeaderFilters = !showHeaderFilters;
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('tabulator-header-filters', String(showHeaderFilters));
 		}
-		return baseCols;
-	});
-
-	const customButtons = $derived.by(() => {
-		const selected = selectedRows[0];
-		const defaultButtons: any[] = [createCustomButton.exportar(() => handleExportClick())];
-
-		if (viewMode === 'actives') {
-			// Botón "Nuevo Ingreso"
-			defaultButtons.unshift(
-				createCustomButton.nuevo(() => handleNuevoIngreso(), false, 'Nuevo Ingreso')
-			);
+		if (gridWrapper) {
+			setTimeout(() => {
+				gridWrapper.redraw(true);
+			}, 50);
 		}
+	}
 
-		return {
-			default: defaultButtons,
-			singleSelect: [
-				createCustomButton.exportar(() => handleExportClick()),
-				{
-					id: 'check-out',
-					label: 'Registrar Salida',
-					icon: LogOut,
-					category: 'action' as any,
-					onClick: () => selected && handleSalida(selected),
-					hide: viewMode === 'history',
-					variant: 'danger' as any
-				},
-				{
-					id: 'cancel-selection',
-					label: 'Cancelar',
-					icon: X,
-					onClick: () => gridApi?.deselectAll(),
-					variant: 'ghost' as any,
-					tooltip: 'Cancelar selección'
-				}
-			],
-			multiSelect: [
-				createCustomButton.exportar(() => handleExportClick()),
-				{
-					id: 'cancel-selection',
-					label: 'Cancelar',
-					icon: X,
-					onClick: () => gridApi?.deselectAll(),
-					variant: 'ghost' as any,
-					tooltip: 'Cancelar selección'
-				}
-			]
-		};
-	});
-
-	// ==========================================
-	// EXPORT
-	// ==========================================
 	async function handleExportClick() {
-		if (!gridApi) return;
 		availableFormats = await getAvailableFormats();
-		const cols = gridApi.getAllGridColumns();
-		exportColumns = cols
-			.map((col: any) => ({
-				id: col.getColId(),
-				name: col.getColDef().headerName || col.getColId(),
-				selected: col.isVisible()
-			}))
-			.filter((col: any) => col.id !== 'actions' && col.id !== 'selection');
-
-		const isSelection = selectedRows.length > 0;
-		const allColIds = exportColumns.map((c) => c.id);
-		try {
-			const extracted = isSelection
-				? extractSelectedRows(gridApi, allColIds)
-				: extractGridData(gridApi, allColIds);
-			exportRows = extracted.rows;
-		} catch (e) {
-			console.error(e);
-			exportRows = [];
-		}
 		showExportModal = true;
 	}
 
 	async function handleExport(format: any, options: any) {
-		if (!gridApi) return;
+		if (!gridWrapper) return;
 		try {
+			const table = gridWrapper.getTable();
+			if (!table) return;
+
 			const isSelection = selectedRows.length > 0;
-			const toastId = toast.loading(
-				`Exportando ${isSelection ? 'selección' : 'todo'} a ${format.toUpperCase()}...`
-			);
-			await exportData(gridApi, format, options, isSelection);
+			const toastId = toast.loading(`Exportando ${isSelection ? 'selección' : 'todo'}...`);
+
+			// Nota: La lógica de exportación puede necesitar adaptación si dependía íntimamente de AG Grid
+			// Pero exportData parece estar diseñado para manejar la abstracción si se le pasan los datos
+			await exportData(table, format, options, isSelection);
+
 			toast.success('Exportación completada', { id: toastId });
+			showExportModal = false;
 		} catch (err: any) {
 			toast.error('Error: ' + err.message);
 		}
@@ -275,111 +242,131 @@
 
 <div class="flex h-full flex-col relative bg-surface-1">
 	<!-- Header -->
-	<div class="px-8 py-6 bg-surface-2 border-b border-surface">
-		<div class="flex items-center justify-between gap-6">
-			<div>
-				<h2 class="text-xl font-semibold text-primary">
-					{viewMode === 'actives' ? 'Visitas en Planta' : 'Historial de Visitas'}
-				</h2>
-				<p class="mt-1 text-xs text-secondary">
-					{viewMode === 'actives'
-						? 'Personas registradas actualmente en las instalaciones'
-						: 'Registro histórico de accesos finalizados'}
-				</p>
-			</div>
+	<div class="border-b border-surface px-6 py-4 bg-surface-2">
+		<div class="flex flex-col gap-4">
+			<div class="flex items-center justify-between">
+				<div>
+					<h2 class="text-xl font-semibold text-primary">
+						{viewMode === 'actives' ? 'Visitas en Planta' : 'Historial de Visitas'}
+					</h2>
+					<p class="mt-1 text-sm text-secondary">
+						{viewMode === 'actives'
+							? 'Personas registradas actualmente'
+							: 'Registro histórico de accesos'}
+					</p>
+				</div>
 
-			<!-- Center: SearchBar (handled by grid primarily, but we can put a global one if needed) -->
-			<!-- Using the one inside AGGridWrapper is usually enough, but let's keep headers clean -->
-
-			<div class="flex items-center gap-4">
-				<div class="relative flex items-center bg-surface-3 p-1 rounded-lg isolate">
-					<div
-						class="absolute top-1 bottom-1 rounded-md bg-white dark:bg-zinc-700 shadow-sm transition-all duration-300 ease-in-out z-[-1]"
-						style="
-								left: {viewMode === 'actives' ? '4px' : '50%'};
-								right: {viewMode === 'actives' ? '50%' : '4px'};
-								width: calc(50% - 6px);
-							"
-					></div>
+				<!-- View Toggle -->
+				<div class="relative flex items-center bg-surface-3 p-1 rounded-lg">
 					<button
-						class="flex-1 flex items-center justify-center gap-2 px-6 py-2 rounded-md text-sm font-medium transition-colors z-10
-							{viewMode === 'actives' ? 'text-primary dark:text-white' : 'text-secondary hover:text-primary'}"
+						class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors {viewMode ===
+						'actives'
+							? 'bg-surface-1 text-primary shadow-sm'
+							: 'text-secondary hover:text-primary'}"
 						onclick={() => toggleViewMode('actives')}
 					>
-						<Users size={16} class={viewMode === 'actives' ? 'scale-110' : ''} />
-						Activos
+						<Users size={16} /> Activos
 					</button>
 					<button
-						class="flex-1 flex items-center justify-center gap-2 px-6 py-2 rounded-md text-sm font-medium transition-colors z-10
-							{viewMode === 'history' ? 'text-primary dark:text-white' : 'text-secondary hover:text-primary'}"
+						class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors {viewMode ===
+						'history'
+							? 'bg-surface-1 text-primary shadow-sm'
+							: 'text-secondary hover:text-primary'}"
 						onclick={() => toggleViewMode('history')}
 					>
-						<History size={16} class={viewMode === 'history' ? 'scale-110' : ''} />
-						Historial
+						<History size={16} /> Historial
 					</button>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- Content -->
-	<div class="flex-1 overflow-hidden relative bg-surface-1">
-		{#snippet toolbarControls()}
+	<!-- Toolbar & Grid -->
+	<GridToolbar
+		bind:searchTerm
+		hasSelection={selectedRows.length > 0}
+		selectionCount={selectedRows.length}
+		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
+		onFitColumns={() => gridWrapper?.fitColumns()}
+		onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
+		onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
+		onToggleFilters={handleToggleFilters}
+		onAdvancedExport={handleExportClick}
+		columns={toolbarColumns}
+	>
+		{#snippet primaryActions()}
+			{#if selectedRows.length > 0}
+				<button
+					onclick={() => gridWrapper?.deselectAll()}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-4 hover:text-primary text-sm font-medium transition-colors"
+				>
+					<X size={14} /> Cancelar
+				</button>
+				{#if selectedRows.length === 1 && viewMode === 'actives'}
+					<button
+						onclick={() => handleSalida(selectedRows[0])}
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
+					>
+						<LogOut size={14} /> Salida
+					</button>
+				{/if}
+			{:else if viewMode === 'actives'}
+				<button
+					onclick={handleNuevoIngreso}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
+				>
+					<Plus size={14} /> Nuevo
+				</button>
+			{/if}
+		{/snippet}
+
+		{#snippet CustomFilters()}
 			{#if viewMode === 'history'}
-				<div class="flex items-center" transition:fade={{ duration: 150 }}>
+				<div class="flex items-center gap-2 border-l border-white/10 pl-3">
 					<DateRangePicker
 						startDate={dateRange.start}
 						endDate={dateRange.end}
 						on:change={handleDateRangeChange}
 					/>
+					<div class="flex items-center gap-2 ml-2">
+						<input
+							type="checkbox"
+							id="hideActiveVisita"
+							bind:checked={hideActive}
+							class="rounded border-surface bg-surface-3"
+						/>
+						<label for="hideActiveVisita" class="text-xs text-secondary">Solo Finalizados</label>
+					</div>
 				</div>
 			{/if}
 		{/snippet}
+	</GridToolbar>
 
-		{#snippet postToolbarControls()}
-			{#if viewMode === 'history'}
-				<div
-					class="flex items-center gap-2 px-4 border-l border-surface"
-					transition:fade={{ duration: 150 }}
-				>
-					<input
-						type="checkbox"
-						id="hideActiveVisita"
-						bind:checked={hideActive}
-						class="h-4 w-4 rounded border-white/10 bg-black/20 text-blue-500 focus:ring-blue-500/20"
-					/>
-					<label
-						for="hideActiveVisita"
-						class="text-xs text-secondary select-none cursor-pointer hover:text-primary transition-colors"
-					>
-						Solo Finalizados
-					</label>
-				</div>
-			{/if}
-		{/snippet}
-
+	<div
+		class="flex-1 overflow-hidden relative bg-surface-1 border-t border-surface {showHeaderFilters
+			? ''
+			: 'hide-filters'}"
+	>
 		{#if loading && ingresos.length === 0}
 			<div class="flex h-full items-center justify-center">
-				<div class="text-center">
-					<div
-						class="w-10 h-10 border-4 border-blue-500/10 border-t-blue-500 rounded-full animate-spin mb-4 mx-auto"
-					></div>
-					<p class="text-secondary font-medium animate-pulse">Cargando registros...</p>
-				</div>
+				<div class="loading loading-spinner loading-lg text-primary"></div>
 			</div>
 		{:else}
-			<AGGridWrapper
-				gridId="visitas-list"
-				rowData={filteredIngresos}
-				{columnDefs}
-				{customButtons}
-				onSelectionChanged={(rows) => (selectedRows = rows)}
-				getRowId={(params) => params.data.id}
-				persistenceKey="visitas-list-state-v1"
-				onRefresh={loadData}
-				onGridReady={(api) => (gridApi = api)}
-				customToolbarSlot={toolbarControls}
-				customPostToolbarSlot={postToolbarControls}
+			<TabulatorWrapper
+				bind:this={gridWrapper}
+				bind:toolbarColumns
+				data={filteredIngresos}
+				{columns}
+				class="h-full"
+				withCheckboxSelection={true}
+				onRowSelectionChanged={(data) => (selectedRows = data)}
+				persistenceID="visitas-list-v1"
+				pagination={true}
+				options={{
+					...defaultTabulatorOptions,
+					layout: 'fitColumns',
+					placeholder: 'No se encontraron registros'
+				}}
 			/>
 		{/if}
 	</div>
@@ -405,9 +392,13 @@
 {#if showExportModal}
 	<ExportDialog
 		onClose={() => (showExportModal = false)}
-		columns={exportColumns}
-		rows={exportRows}
 		{availableFormats}
 		onExport={handleExport}
 	/>
 {/if}
+
+<style>
+	:global(.hide-filters .tabulator-header-filter) {
+		display: none !important;
+	}
+</style>

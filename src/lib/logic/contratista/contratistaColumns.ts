@@ -174,7 +174,7 @@ export const getContratistaTrashColumns = (): ColumnDefinition[] => {
 			field: 'cedula',
 			width: 130,
 			visible: true,
-			formatter: (cell) => `<span style="font-family:monospace; font-size:13px">${cell.getValue() || ''}</span>`
+			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Nombre Completo',
