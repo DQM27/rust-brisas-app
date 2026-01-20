@@ -71,6 +71,15 @@
 				</button>
 			{/if}
 
+			{#if currentUser && can(currentUser, 'VIEW_SETTINGS_GENERAL')}
+				<button
+					class="settings-menu-item"
+					onclick={() => handleAction(() => openView('spotlight-settings', 'Ajustes de Spotlight'))}
+				>
+					Ajustes de Spotlight
+				</button>
+			{/if}
+
 			{#if currentUser && can(currentUser, 'VIEW_SETTINGS_SESSIONS')}
 				<button
 					class="settings-menu-item"

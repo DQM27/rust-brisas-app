@@ -30,6 +30,7 @@
 	// Stores
 	import { activeTabId } from '$lib/stores/tabs';
 	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
+	import { searchByType } from '$lib/api/searchService';
 
 	interface Props {
 		tabId?: string;
@@ -43,6 +44,12 @@
 			setTimeout(() => {
 				if (!showModal) openFormModal(null);
 			}, 100);
+		}
+
+		if (data?.search) {
+			setTimeout(() => {
+				handleSearch(data.search);
+			}, 300);
 		}
 	});
 
@@ -184,9 +191,21 @@
 		gridWrapper?.deselectAll();
 	}
 
-	function handleRowDblClick(e: any, row: any) {
-		const data = row.getData();
-		openFormModal(data);
+	async function handleSearch(term: string) {
+		searchTerm = term;
+		if (!term || term.trim().length < 2) {
+			if (gridWrapper) gridWrapper.replaceData(visitantes);
+			return;
+		}
+		try {
+			const results = await searchByType(term, 'visitante', 100);
+			const matchedIds = new Set(results.map((r) => r.id));
+			const filtered = visitantes.filter((v) => matchedIds.has(v.id));
+			if (gridWrapper) gridWrapper.replaceData(filtered);
+		} catch (e) {
+			console.error('Error en búsqueda inteligente:', e);
+			if (gridWrapper) gridWrapper.getTable()?.setFilter('nombre', 'like', term);
+		}
 	}
 
 	function handleToggleFilters() {
@@ -232,11 +251,7 @@
 	<!-- Toolbar -->
 	<GridToolbar
 		bind:searchTerm
-		onSearch={(term) => {
-			if (gridWrapper) {
-				gridWrapper.getTable()?.setFilter('nombre', 'like', term);
-			}
-		}}
+		onSearch={handleSearch}
 		hasSelection={selectedRows.length > 0}
 		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
 		onFitColumns={() => gridWrapper?.fitColumns()}
@@ -303,7 +318,7 @@
 				{columns}
 				withCheckboxSelection={true}
 				onRowSelectionChanged={(data) => (selectedRows = data)}
-				onRowDblClick={handleRowDblClick}
+				onRowDblClick={(e: any, row: any) => openFormModal(row.getData())}
 				persistenceID="visitante-list-v1"
 				options={{
 					...defaultTabulatorOptions,

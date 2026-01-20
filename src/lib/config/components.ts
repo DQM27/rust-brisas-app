@@ -24,6 +24,7 @@ import TrashSettingsPanel from '$lib/components/settings/TrashSettingsPanel.svel
 import RolesSettingsPanel from '$lib/components/settings/RolesSettingsPanel.svelte';
 import ReportesListView from '$lib/components/settings/ReportesListView.svelte';
 import AboutPanel from '$lib/components/settings/AboutPanel.svelte';
+import SpotlightSettingsPanel from '$lib/components/settings/SpotlightSettingsPanel.svelte';
 
 import GafeteListView from '$lib/components/gafete/GafeteListView.svelte';
 import IngresoModule from '$lib/components/ingreso/IngresoModule.svelte';
@@ -63,6 +64,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
 	'roles-settings': RolesSettingsPanel,
 	'reportes-list': ReportesListView,
 	about: AboutPanel,
+	'spotlight-settings': SpotlightSettingsPanel as any,
 
 	'gafete-list': GafeteListView,
 	'ingreso-list': IngresoModule, // Point legacy/main link to new Module

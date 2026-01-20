@@ -27,4 +27,5 @@ export type ComponentKey =
 	| 'reportes-list'
 	| 'about'
 	| 'under-construction'
-	| 'dev-settings';
+	| 'dev-settings'
+	| 'spotlight-settings';

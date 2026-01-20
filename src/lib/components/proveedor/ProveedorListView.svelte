@@ -47,6 +47,12 @@
 				if (!showModal) openFormModal(null);
 			}, 200);
 		}
+
+		if (data?.search) {
+			setTimeout(() => {
+				handleSearch(data.search);
+			}, 300);
+		}
 	});
 
 	// State

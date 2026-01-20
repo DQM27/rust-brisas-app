@@ -2,7 +2,7 @@
  * Spotlight Search Types
  */
 
-export type SpotlightCategory = 'module' | 'action' | 'tab';
+export type SpotlightCategory = 'module' | 'action' | 'tab' | 'data' | 'recent';
 export type SpotlightSubCategory = 'master' | 'transaction' | 'settings' | 'link';
 
 export interface SpotlightItem {
@@ -17,6 +17,7 @@ export interface SpotlightItem {
     permission?: string;
     roleId?: string[];
     isOpen?: boolean;
+    shortcut?: string;
 }
 
 export interface SpotlightItemDefinition {
@@ -29,10 +30,13 @@ export interface SpotlightItemDefinition {
     keywords?: string[];
     permission?: string;
     roleId?: string[];
+    shortcut?: string;
 }
 
 export interface SpotlightGroups {
     modules: SpotlightItem[];
     actions: SpotlightItem[];
     tabs: SpotlightItem[];
+    data: SpotlightItem[];
+    recent: SpotlightItem[];
 }

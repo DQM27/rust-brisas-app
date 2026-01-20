@@ -22,7 +22,12 @@ import {
     RefreshCw,
     UserPlus,
     Ban,
-    ListPlus
+    ListPlus,
+    Search,
+    History,
+    Moon,
+    Sun,
+    LogOut
 } from 'lucide-svelte';
 import type { SpotlightItemDefinition } from '$lib/types/spotlight';
 
@@ -39,7 +44,8 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
         category: 'module',
         subCategory: 'link',
         keywords: ['user', 'usuarios', 'lista', 'administrar'],
-        permission: 'VIEW_USER_DETAIL'
+        permission: 'VIEW_USER_DETAIL',
+        shortcut: 'Shift+U'
     },
     {
         id: 'ingreso-list',
@@ -49,7 +55,8 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
         category: 'module',
         subCategory: 'link',
         keywords: ['ingreso', 'contratista', 'entrada', 'acceso'],
-        permission: 'VIEW_ENTRY_LIST'
+        permission: 'VIEW_ENTRY_LIST',
+        shortcut: 'Shift+I'
     },
     {
         id: 'contratista-list',
@@ -59,7 +66,8 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
         category: 'module',
         subCategory: 'link',
         keywords: ['lista', 'contratista', 'maestro', 'administrar'],
-        permission: 'VIEW_ENTRY_LIST'
+        permission: 'VIEW_ENTRY_LIST',
+        shortcut: 'Shift+C'
     },
     {
         id: 'proveedor-ingreso-list',
@@ -137,7 +145,8 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         category: 'action',
         subCategory: 'transaction',
         keywords: ['nuevo', 'crear', 'contratista', 'ingreso', 'registrar'],
-        permission: 'CREATE_ENTRY'
+        permission: 'CREATE_ENTRY',
+        shortcut: 'Ctrl+N'
     },
     {
         id: 'create-proveedor',
@@ -292,6 +301,16 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         permission: 'VIEW_SETTINGS_BACKUP'
     },
     {
+        id: 'settings-spotlight',
+        label: 'Ajustes del Buscador',
+        description: 'Personalizar experiencia de Spotlight',
+        icon: Search,
+        category: 'action',
+        subCategory: 'settings',
+        keywords: ['configuracion', 'ajustes', 'spotlight', 'buscador', 'omnibox'],
+        permission: 'VIEW_SETTINGS_GENERAL'
+    },
+    {
         id: 'trash-settings',
         label: 'Papelera',
         description: 'Gestión de elementos eliminados',
@@ -308,8 +327,28 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         icon: RefreshCw,
         category: 'action',
         subCategory: 'link',
-        keywords: ['reindexar', 'busqueda', 'indice', 'regenerar'],
-        // Permiso de superusuario o admin (se validará en lógica)
+        keywords: ['reindexar', 'busqueda', 'indice', 'regenerar']
+    },
+    // --- SISTEMA (AJUSTES RÁPIDOS) ---
+    {
+        id: 'toggle-theme',
+        label: 'Cambiar Tema (Oscuro/Claro)',
+        description: 'Alternar entre tema visual oscuro y claro',
+        icon: Moon,
+        category: 'action',
+        subCategory: 'settings',
+        keywords: ['tema', 'oscuro', 'claro', 'diseño', 'color'],
+        shortcut: 'Ctrl+T'
+    },
+    {
+        id: 'logout',
+        label: 'Cerrar Sesión',
+        description: 'Salir de la cuenta Megabrisas',
+        icon: LogOut,
+        category: 'action',
+        subCategory: 'settings',
+        keywords: ['salir', 'cerrar', 'sesión', 'logout', 'desconectar'],
+        shortcut: 'Ctrl+Q'
     }
 ];
 
@@ -334,6 +373,7 @@ export const MODULE_COMPONENT_MAP: Record<string, { componentKey: string; title:
     'settings-roles': { componentKey: 'roles-settings', title: 'Roles y Permisos' },
     'settings-export': { componentKey: 'export-settings', title: 'Configuración de Exportación' },
     'settings-backup': { componentKey: 'backup-settings', title: 'Copias de Seguridad' },
+    'settings-spotlight': { componentKey: 'spotlight-settings', title: 'Ajustes de Spotlight' },
     'trash-settings': { componentKey: 'trash-settings', title: 'Papelera de Reciclaje' },
 };
 

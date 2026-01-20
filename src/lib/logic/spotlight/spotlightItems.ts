@@ -4,11 +4,15 @@
  */
 
 import { openTab, hasTab, activeTabId, getAllTabs } from '$lib/stores/tabs';
-import { currentUser } from '$lib/stores/auth';
+import { currentUser, logout } from '$lib/stores/auth';
+import { themeStore, toggleTheme } from '$lib/stores/themeStore';
 import { can } from '$lib/logic/permissions';
 import { get } from 'svelte/store';
-import type { SpotlightItem, SpotlightItemDefinition, SpotlightGroups, SpotlightCategory } from '$lib/types/spotlight';
+import { invoke } from '@tauri-apps/api/core';
+import { spotlightSettings, recentSpotlightItems } from '$lib/stores/spotlightStore';
+import type { SpotlightItem, SpotlightItemDefinition, SpotlightGroups, SpotlightCategory, SpotlightSubCategory } from '$lib/types/spotlight';
 import { MODULE_DEFINITIONS, ACTION_DEFINITIONS, MODULE_COMPONENT_MAP, TAB_ICON } from '$lib/logic/spotlight/spotlightDefinitions';
+import { User, Building2, ShieldCheck, Mail, IdCard, Search } from 'lucide-svelte';
 import type { Action } from '$lib/logic/permissions';
 
 // Re-export types for convenience
@@ -46,6 +50,7 @@ export function hasPermission(definition: SpotlightItemDefinition): boolean {
 export function executeModuleAction(moduleId: string, onClose: () => void): void {
     const mapping = MODULE_COMPONENT_MAP[moduleId];
     if (mapping) {
+        recentSpotlightItems.add(moduleId);
         openTab({
             componentKey: mapping.componentKey as any,
             title: mapping.title,
@@ -60,6 +65,32 @@ export function executeModuleAction(moduleId: string, onClose: () => void): void
  * Ejecuta una acción rápida
  */
 export function executeQuickAction(actionId: string, onClose: () => void): void {
+    if (actionId !== 'toggle-theme') {
+        recentSpotlightItems.add(actionId);
+    }
+
+    // --- ACCIONES ESPECIALES DE SISTEMA ---
+    if (actionId === 'toggle-theme') {
+        toggleTheme();
+        // No cerramos el buscador para que vea el cambio? 
+        // O lo cerramos? Mejor cerrarlo para evitar parpadeo si es pesado.
+        onClose();
+        return;
+    }
+
+    if (actionId === 'logout') {
+        if (confirm('¿Cerrar sesión ahora?')) {
+            logout();
+            onClose();
+        }
+        return;
+    }
+
+    if (actionId === 'app-reload') {
+        window.location.reload();
+        return;
+    }
+
     // Verificar si la acción tiene un mapeo de componente (para configuraciones)
     if (MODULE_COMPONENT_MAP[actionId]) {
         executeModuleAction(actionId, onClose);
@@ -70,7 +101,7 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
         case 'create-contratista':
             openTab({
                 componentKey: 'ingreso-list',
-                title: 'Ingresos Contratista',
+                title: 'Ingresos Contratistas',
                 id: 'ingreso-list',
                 focusOnOpen: true,
                 data: { openCreateModal: Date.now() }
@@ -79,7 +110,7 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
         case 'create-proveedor':
             openTab({
                 componentKey: 'proveedor-ingreso-list',
-                title: 'Ingresos Proveedor',
+                title: 'Ingresos Proveedores',
                 id: 'proveedor-ingreso-list',
                 focusOnOpen: true,
                 data: { openCreateModal: Date.now() }
@@ -88,7 +119,7 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
         case 'master-contratista':
             openTab({
                 componentKey: 'contratista-list',
-                title: 'Catálogo de Contratistas',
+                title: 'Lista Contratistas',
                 id: 'contratista-list',
                 focusOnOpen: true,
                 data: { openCreateModal: Date.now() }
@@ -97,7 +128,7 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
         case 'master-proveedor':
             openTab({
                 componentKey: 'proveedor-list',
-                title: 'Catálogo de Proveedores',
+                title: 'Lista Proveedores',
                 id: 'proveedor-list',
                 focusOnOpen: true,
                 data: { openCreateModal: Date.now() }
@@ -106,7 +137,7 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
         case 'master-visitante':
             openTab({
                 componentKey: 'visitante-list',
-                title: 'Catálogo de Visitantes',
+                title: 'Lista Visitantes',
                 id: 'visitante-list',
                 focusOnOpen: true,
                 data: { openCreateModal: Date.now() }
@@ -115,7 +146,7 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
         case 'create-user':
             openTab({
                 componentKey: 'user-list',
-                title: 'Lista de Usuarios',
+                title: 'Lista Usuarios',
                 id: 'users-list',
                 focusOnOpen: true,
                 data: { openCreateModal: Date.now() }
@@ -124,7 +155,7 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
         case 'create-visita':
             openTab({
                 componentKey: 'visitas-list',
-                title: 'Ingreso Visitas',
+                title: 'Ingresos Visitas',
                 id: 'visitas-list',
                 focusOnOpen: true,
                 data: { openCreateModal: Date.now() }
@@ -180,36 +211,59 @@ export function navigateToTab(tabId: string, onClose: () => void): void {
 /**
  * Construye la lista completa de items del Spotlight
  */
-export function buildSpotlightItems(tabs: any[], onClose: () => void): SpotlightItem[] {
+export function buildSpotlightItems(tabs: any[], settings: any, onClose: () => void): SpotlightItem[] {
     const items: SpotlightItem[] = [];
 
     // Helper para verificar si un tab está abierto
     const hasTabId = (id: string) => tabs.some(t => t.id === id);
 
-    // 1. Módulos principales (filtrados por permisos)
-    for (const mod of MODULE_DEFINITIONS) {
-        if (!hasPermission(mod)) continue;
+    // 1. Módulos principales (filtrados por permisos y configuración)
+    if (settings.showModules) {
+        for (const mod of MODULE_DEFINITIONS) {
+            if (!hasPermission(mod)) continue;
 
-        const isTabOpen = hasTabId(mod.id);
+            const isTabOpen = hasTabId(mod.id);
 
-        items.push({
-            ...mod,
-            isOpen: isTabOpen,
-            action: () => executeModuleAction(mod.id, onClose)
-        });
+            items.push({
+                ...mod,
+                isOpen: isTabOpen,
+                action: () => executeModuleAction(mod.id, onClose)
+            });
+        }
     }
 
-    // 2. Acciones rápidas (filtradas por permisos)
-    for (const action of ACTION_DEFINITIONS) {
-        if (!hasPermission(action)) continue;
+    // 2. Acciones rápidas (filtradas por permisos y configuración)
+    if (settings.showActions) {
+        for (const action of ACTION_DEFINITIONS) {
+            if (!hasPermission(action)) continue;
 
-        items.push({
-            ...action,
-            action: () => executeQuickAction(action.id, onClose)
-        });
+            items.push({
+                ...action,
+                action: () => executeQuickAction(action.id, onClose)
+            });
+        }
     }
 
-    // 3. Tabs abiertos (para navegación rápida)
+    // 3. Recientes
+    if (settings.showRecent) {
+        const recentIds = get(recentSpotlightItems);
+        for (const id of recentIds) {
+            const def = [...MODULE_DEFINITIONS, ...ACTION_DEFINITIONS].find(d => d.id === id);
+            if (def && hasPermission(def)) {
+                // Respetar visibilidad de la categoría original
+                if (def.category === 'module' && !settings.showModules) continue;
+                if (def.category === 'action' && !settings.showActions) continue;
+
+                items.push({
+                    ...def,
+                    category: 'recent',
+                    action: () => executeQuickAction(def.id, onClose)
+                });
+            }
+        }
+    }
+
+    // 4. Tabs abiertos (para navegación rápida)
     for (const tab of tabs) {
         // No duplicar si ya está en módulos
         if (MODULE_DEFINITIONS.some((m: SpotlightItemDefinition) => m.id === tab.id)) continue;
@@ -243,6 +297,9 @@ export function filterItems(items: SpotlightItem[], query: string): SpotlightIte
     if (q === '>' || q === 'todo' || q === 'all') return items;
 
     return items.filter((item) => {
+        // Excluir recientes de los resultados de búsqueda para evitar duplicados
+        if (item.category === 'recent') return false;
+
         const labelMatch = item.label.toLowerCase().includes(q);
         const descMatch = item.description?.toLowerCase().includes(q);
         const keywordMatch = item.keywords?.some((k) => k.toLowerCase().includes(q));
@@ -255,9 +312,11 @@ export function filterItems(items: SpotlightItem[], query: string): SpotlightIte
  */
 export function groupItems(items: SpotlightItem[]): SpotlightGroups {
     return {
+        recent: items.filter((i) => i.category === 'recent'),
         modules: items.filter((i) => i.category === 'module'),
         actions: items.filter((i) => i.category === 'action'),
-        tabs: items.filter((i) => i.category === 'tab')
+        tabs: items.filter((i) => i.category === 'tab'),
+        data: items.filter((i) => i.category === 'data')
     };
 }
 
@@ -265,7 +324,7 @@ export function groupItems(items: SpotlightItem[]): SpotlightGroups {
  * Aplana los grupos en una lista ordenada
  */
 export function flattenGroups(groups: SpotlightGroups): SpotlightItem[] {
-    return [...groups.modules, ...groups.actions, ...groups.tabs];
+    return [...groups.recent, ...groups.modules, ...groups.actions, ...groups.tabs, ...groups.data];
 }
 
 /**
@@ -279,5 +338,80 @@ export function getCategoryLabel(category: SpotlightCategory): string {
             return 'Acciones Rápidas';
         case 'tab':
             return 'Tabs Abiertos';
+        case 'data':
+            return 'Registros del Sistema';
+        case 'recent':
+            return 'Recientes';
+    }
+}
+
+// ============================================
+// TANTIVY INTEGRATION
+// ============================================
+
+/**
+ * Realiza una búsqueda profunda en el índice de Tantivy
+ */
+export async function searchDeep(query: string, settings: any): Promise<SpotlightItem[]> {
+    if (!settings.enableTantivySearch || !query || query.length < 2) return [];
+
+    try {
+        const results = await invoke<any[]>('search_global', {
+            query,
+            limit: settings.tantivyLimit
+        });
+
+        return results.map(res => {
+            let icon = User;
+            let subCategory: SpotlightSubCategory = 'link';
+            let label = res.nombreCompleto || res.id;
+            let description = res.tipo.toUpperCase();
+
+            // Lógica de iconos y labels según tipo
+            if (res.tipo === 'contratista') {
+                icon = IdCard;
+                subCategory = 'master';
+                if (res.empresaNombre) {
+                    description += ` • ${res.empresaNombre}`;
+                }
+            } else if (res.tipo === 'proveedor') {
+                icon = Building2;
+                subCategory = 'master';
+            } else if (res.tipo === 'user') {
+                icon = ShieldCheck;
+                subCategory = 'settings';
+            }
+
+            if (res.cedula) {
+                description = `${res.cedula} • ${description}`;
+            }
+
+            return {
+                id: ` tantivy-${res.id}`,
+                label,
+                description,
+                icon,
+                category: 'data',
+                subCategory,
+                action: () => {
+                    // Acción genérica: Abrir el módulo correspondiente y buscar/filtrar?
+                    // Por ahora solo logueamos o podemos abrir el tab del tipo
+                    console.log('Abrir registro:', res);
+                    const mapping = Object.entries(MODULE_COMPONENT_MAP).find(([_, v]) => v.componentKey.includes(res.tipo));
+                    if (mapping) {
+                        openTab({
+                            componentKey: mapping[1].componentKey as any,
+                            title: mapping[1].title,
+                            id: mapping[0],
+                            focusOnOpen: true,
+                            data: { search: res.cedula || res.id }
+                        });
+                    }
+                }
+            };
+        });
+    } catch (e) {
+        console.error('Error en búsqueda profunda:', e);
+        return [];
     }
 }

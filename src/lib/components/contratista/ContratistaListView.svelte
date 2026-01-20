@@ -55,6 +55,13 @@
 				if (!showModal) openModal();
 			}, 100);
 		}
+
+		if (data?.search) {
+			// Small delay to ensure grid is ready if just opening
+			setTimeout(() => {
+				handleGridSearch(data.search);
+			}, 200);
+		}
 	});
 
 	// ==========================================

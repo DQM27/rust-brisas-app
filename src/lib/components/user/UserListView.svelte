@@ -48,6 +48,12 @@
 			}, 200);
 			// No reseteamos data aqui porque ahora es un timestamp que cambia
 		}
+
+		if (data?.search) {
+			setTimeout(() => {
+				handleSearch(data.search);
+			}, 300);
+		}
 	});
 
 	// ==========================================

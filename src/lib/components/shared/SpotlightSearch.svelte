@@ -2,7 +2,7 @@
 <script lang="ts">
 	import { fade, scale } from 'svelte/transition';
 	import { onMount, onDestroy } from 'svelte';
-	import { Search } from 'lucide-svelte';
+	import { Search, Database, History } from 'lucide-svelte';
 
 	// Import logic
 	import {
@@ -11,8 +11,10 @@
 		groupItems,
 		flattenGroups,
 		getCategoryLabel,
+		searchDeep,
 		type SpotlightItem
 	} from '$lib/logic/spotlight/spotlightItems';
+	import { spotlightSettings, recentSpotlightItems } from '$lib/stores/spotlightStore';
 
 	import { showSpotlight } from '$lib/stores/ui';
 	import { tabsStore } from '$lib/stores/tabs';
@@ -28,20 +30,34 @@
 	let query = $state('');
 	let inputRef = $state<HTMLInputElement>();
 	let highlightedIndex = $state(0);
+	let tantivyItems = $state<SpotlightItem[]>([]);
 
 	// Store subscription
 	let show = $derived($showSpotlight);
 
 	// Build items reactively
-	const allItems = $derived(buildSpotlightItems($tabsStore, handleClose));
-	const filteredItemsList = $derived(query.trim() === '' ? [] : filterItems(allItems, query));
-	const groupedItems = $derived(groupItems(filteredItemsList));
+	const allItems = $derived(buildSpotlightItems($tabsStore, $spotlightSettings, handleClose));
+	const filteredItemsList = $derived(
+		query.trim() === ''
+			? allItems.filter((i) => i.category === 'recent')
+			: filterItems(allItems, query)
+	);
+	const groupedItems = $derived(groupItems([...filteredItemsList, ...tantivyItems]));
 	const flatItems = $derived(flattenGroups(groupedItems));
 
-	// Reset highlight when query changes
+	// Reset highlight and fetch Tantivy results when query changes
 	$effect(() => {
-		query;
+		const q = query.trim();
+		const settings = $spotlightSettings;
 		highlightedIndex = 0;
+
+		if (q.length >= 2 && settings.enableTantivySearch && q !== '>') {
+			searchDeep(q, settings).then((results) => {
+				tantivyItems = results;
+			});
+		} else {
+			tantivyItems = [];
+		}
 	});
 
 	// Focus input when opened
@@ -127,7 +143,7 @@
 						bind:this={inputRef}
 						bind:value={query}
 						type="text"
-						placeholder="Buscar en Megabrisas... (escribe '>' para ver todo)"
+						placeholder="Buscar en Megabrisas..."
 						class="w-full bg-transparent pl-10 pr-4 py-2.5 text-[15px] text-white focus:outline-none outline-none border-none placeholder:text-gray-600 appearance-none ring-0"
 						autocomplete="off"
 					/>
@@ -141,8 +157,8 @@
 				</div>
 			</div>
 
-			<!-- Results Section (Only if query is not empty) -->
-			{#if query.trim() !== ''}
+			<!-- Results Section -->
+			{#if flatItems.length > 0}
 				<div
 					class="results-container max-h-[50vh] overflow-y-auto p-2 scrollbar-thin shadow-inner bg-[#1e1e1e]/50"
 				>
@@ -239,7 +255,7 @@
 												{/if}
 											</div>
 										</div>
-										{#if item.description}
+										{#if item.description && $spotlightSettings.showDescriptions}
 											<div
 												class="text-[11px] truncate {i === highlightedIndex
 													? 'text-white/70'
@@ -249,13 +265,30 @@
 											</div>
 										{/if}
 									</div>
+
+									{#if item.shortcut}
+										<div
+											class="hidden sm:block text-[9px] font-medium text-white/40 border border-white/10 rounded px-1.5 py-0.5 bg-black/20 group-hover:border-white/20"
+										>
+											{item.shortcut}
+										</div>
+									{/if}
+
+									{#if item.category === 'data'}
+										<div
+											class="text-[10px] text-gray-500 px-1.5 py-0.5 border border-white/10 rounded flex items-center gap-1 group-hover:border-white/20 transition-colors"
+										>
+											<Database size={10} />
+											<span>Tantivy</span>
+										</div>
+									{/if}
 								</button>
 							{/each}
 						</div>
 					{/if}
 				</div>
 
-				<!-- Footer Info (Only if query is not empty) -->
+				<!-- Footer Info -->
 				<div
 					class="px-4 py-2 bg-black/20 border-t border-white/5 flex justify-between items-center bg-[#252526]"
 				>
