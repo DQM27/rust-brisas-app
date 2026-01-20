@@ -1,223 +1,173 @@
 // src/lib/logic/user/userColumns.ts
+import type { ColumnDefinition } from 'tabulator-tables';
 import type { UserResponse } from '$lib/types/user';
-import type { ColDef, ICellRendererParams, ValueFormatterParams, CellClickedEvent } from '@ag-grid-community/core';
 
-export class UserColumns {
-	// Column configuration
-	static getColumns(
-		onStatusToggle?: (id: string, currentStatus: boolean) => void
-	): ColDef<UserResponse>[] {
-		return [
-			// ... (resto de columnas igual)
-			{
-				colId: 'cedula',
-				field: 'cedula',
-				headerName: 'Cédula',
-				width: 130,
-				pinned: 'left',
-				cellStyle: { fontFamily: 'monospace', fontSize: '13px' }
+export interface UserColumnHandlers {
+	onStatusToggle: (id: string, currentStatus: boolean) => void;
+}
+
+export const getUserColumns = (handlers: UserColumnHandlers): ColumnDefinition[] => {
+	return [
+		{
+			title: 'Cédula',
+			field: 'cedula',
+			width: 130,
+			frozen: true,
+			headerFilter: 'input',
+			formatter: (cell) => `<span class="font-mono text-xs">${cell.getValue() || ''}</span>`
+		},
+		{
+			title: 'Nombre Completo',
+			field: 'nombre',
+			width: 250,
+			headerFilter: 'input',
+			formatter: (cell) => {
+				const user = cell.getData() as UserResponse;
+				if (!user) return '';
+				return [user.nombre, user.segundoNombre, user.apellido, user.segundoApellido]
+					.filter(Boolean)
+					.join(' ');
+			}
+		},
+		{
+			title: 'Email',
+			field: 'email',
+			width: 250,
+			headerFilter: 'input'
+		},
+		{
+			title: 'Rol',
+			field: 'roleName',
+			width: 130,
+			headerFilter: 'list',
+			headerFilterParams: { valuesLookup: 'active', clearable: true },
+			formatter: (cell) => {
+				const role = cell.getValue();
+				const baseClass = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none';
+				const badges: Record<string, string> = {
+					admin: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+					supervisor: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+					guardia: 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+				};
+				const badgeClass = badges[role] || badges.guardia;
+				const displayText = role ? role.toUpperCase() : 'N/A';
+				return `<span class="${baseClass} ${badgeClass}">${displayText}</span>`;
+			}
+		},
+		{
+			title: 'Estado',
+			field: 'isActive',
+			width: 130,
+			hozAlign: 'center',
+			headerFilter: 'list',
+			headerFilterParams: {
+				values: { "true": "Activo", "false": "Inactivo" },
+				clearable: true
 			},
-			{
-				colId: 'nombre',
-				field: 'nombre',
-				headerName: 'Nombre Completo',
-				width: 250,
-				minWidth: 100,
-				cellStyle: { fontWeight: 500 },
-				valueFormatter: (params: ValueFormatterParams<UserResponse>) => {
-					const user = params.data as UserResponse;
-					if (!user) return '';
-					const fullName = [user.nombre, user.segundoNombre, user.apellido, user.segundoApellido]
-						.filter(Boolean)
-						.join(' ');
-					return fullName || user.nombre;
-				}
+			formatter: (cell) => {
+				const isActive = cell.getValue();
+				const baseClass = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none cursor-pointer hover:opacity-80 transition-opacity';
+				const activeBadge = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+				const inactiveBadge = 'bg-red-500/10 text-red-400 border-red-500/20';
+				const badgeClass = isActive ? activeBadge : inactiveBadge;
+				const displayText = isActive ? 'Activo' : 'Inactivo';
+				return `<button class="status-btn ${baseClass} ${badgeClass}">${displayText}</button>`;
 			},
-			{
-				colId: 'email',
-				field: 'email',
-				headerName: 'Email',
-				width: 250,
-				minWidth: 100
-			},
-			{
-				colId: 'roleName',
-				field: 'roleName',
-				headerName: 'Rol',
-				width: 130,
-				cellRenderer: (params: ICellRendererParams<UserResponse>) => {
-					return UserColumns.formatRoleBadge(params.value);
-				}
-			},
-			{
-				colId: 'isActive',
-				field: 'isActive',
-				headerName: 'Estado',
-				width: 130,
-				cellRenderer: (params: ICellRendererParams<UserResponse>) => {
-					return UserColumns.formatEstadoBadge(params.value);
-				},
-				onCellClicked: (params: CellClickedEvent<UserResponse>) => {
-					if (onStatusToggle && params.data && params.event) {
-						const target = params.event.target as HTMLElement;
-						if (target && target.tagName !== 'BUTTON') return;
-						params.event.stopPropagation();
-						const row = params.data as UserResponse;
-						onStatusToggle(row.id, row.isActive);
-					}
-				}
-			},
-			{
-				colId: 'telefono',
-				field: 'telefono',
-				headerName: 'Teléfono',
-				width: 140,
-				valueFormatter: (params: ValueFormatterParams<UserResponse>) => params.value || '-'
-			},
-			{
-				colId: 'numeroGafete',
-				field: 'numeroGafete',
-				headerName: 'Gafete',
-				width: 110,
-				valueFormatter: (params: ValueFormatterParams<UserResponse>) => params.value || '-',
-				cellStyle: { fontFamily: 'monospace' }
-			},
-			{
-				colId: 'fechaInicioLabores',
-				field: 'fechaInicioLabores',
-				headerName: 'Fecha Inicio',
-				width: 130,
-				valueFormatter: (params: ValueFormatterParams<UserResponse>) => {
-					return UserColumns.formatDate(params.value);
-				}
-			},
-			{
-				colId: 'operacion',
-				field: 'operacion',
-				headerName: 'Operación',
-				width: 120,
-				hide: true
-			},
-			{
-				colId: 'vencimientoPortacion',
-				field: 'vencimientoPortacion',
-				headerName: 'Venc. Portación',
-				width: 130,
-				hide: true,
-				valueFormatter: (params: ValueFormatterParams<UserResponse>) => {
-					return UserColumns.formatDate(params.value);
-				}
-			},
-			{
-				colId: 'fechaNacimiento',
-				field: 'fechaNacimiento',
-				headerName: 'Fecha Nacimiento',
-				width: 130,
-				hide: true,
-				valueFormatter: (params: ValueFormatterParams<UserResponse>) => {
-					return UserColumns.formatDate(params.value);
-				}
-			},
-			{
-				colId: 'direccion',
-				field: 'direccion',
-				headerName: 'Dirección',
-				width: 200,
-				hide: true,
-				wrapText: true,
-				autoHeight: true
-			},
-			{
-				colId: 'contactoEmergenciaNombre',
-				field: 'contactoEmergenciaNombre',
-				headerName: 'Contacto Emergencia',
-				width: 160,
-				hide: true
-			},
-			{
-				colId: 'contactoEmergenciaTelefono',
-				field: 'contactoEmergenciaTelefono',
-				headerName: 'Tel. Emergencia',
-				width: 140,
-				hide: true,
-				valueFormatter: (params: ValueFormatterParams<UserResponse>) => params.value || '-'
-			},
-			{
-				colId: 'createdAt',
-				field: 'createdAt',
-				headerName: 'Creado',
-				width: 150,
-				hide: true,
-				valueFormatter: (params: ValueFormatterParams<UserResponse>) => {
-					if (!params.value) return '-';
-					const date = new Date(params.value);
-					const day = date.getDate().toString().padStart(2, '0');
-					const month = (date.getMonth() + 1).toString().padStart(2, '0');
-					const year = date.getFullYear();
-					const hours = date.getHours().toString().padStart(2, '0');
-					const minutes = date.getMinutes().toString().padStart(2, '0');
-					return `${day}/${month}/${year} - ${hours}:${minutes}`;
+			cellClick: (e, cell) => {
+				const target = e.target as HTMLElement;
+				if (target.classList.contains('status-btn')) {
+					const row = cell.getData() as UserResponse;
+					handlers.onStatusToggle(row.id, row.isActive);
 				}
 			}
-		];
-	}
+		},
+		{
+			title: 'Teléfono',
+			field: 'telefono',
+			width: 140,
+			formatter: (cell) => cell.getValue() || '-'
+		},
+		{
+			title: 'Gafete',
+			field: 'numeroGafete',
+			width: 110,
+			formatter: (cell) => `<span class="font-mono">${cell.getValue() || '-'}</span>`
+		},
+		{
+			title: 'Fecha Inicio',
+			field: 'fechaInicioLabores',
+			width: 130,
+			formatter: (cell) => formatDate(cell.getValue())
+		},
+		{
+			title: 'Operación',
+			field: 'operacion',
+			width: 120,
+			visible: false
+		},
+		{
+			title: 'Venc. Portación',
+			field: 'vencimientoPortacion',
+			width: 130,
+			visible: false,
+			formatter: (cell) => formatDate(cell.getValue())
+		},
+		{
+			title: 'Fecha Nacimiento',
+			field: 'fechaNacimiento',
+			width: 130,
+			visible: false,
+			formatter: (cell) => formatDate(cell.getValue())
+		},
+		{
+			title: 'Dirección',
+			field: 'direccion',
+			width: 200,
+			visible: false,
+			formatter: (cell) => `<div class="whitespace-normal">${cell.getValue() || '-'}</div>`
+		},
+		{
+			title: 'Contacto Emergencia',
+			field: 'contactoEmergenciaNombre',
+			width: 160,
+			visible: false
+		},
+		{
+			title: 'Tel. Emergencia',
+			field: 'contactoEmergenciaTelefono',
+			width: 140,
+			visible: false,
+			formatter: (cell) => cell.getValue() || '-'
+		},
+		{
+			title: 'Creado',
+			field: 'createdAt',
+			width: 150,
+			visible: false,
+			formatter: (cell) => {
+				const val = cell.getValue();
+				if (!val) return '-';
+				const date = new Date(val);
+				return date.toLocaleString('es-PA', {
+					day: '2-digit',
+					month: '2-digit',
+					year: 'numeric',
+					hour: '2-digit',
+					minute: '2-digit'
+				});
+			}
+		}
+	];
+};
 
-	// Helper methods
-	static formatDate(value: string | null | undefined): string {
-		if (!value) return '-';
-		const val = String(value);
-		// Manejo básico de fecha ISO o YYYY-MM-DD
+function formatDate(value: any): string {
+	if (!value) return '-';
+	const val = String(value);
+	try {
 		const [year, month, day] = val.split('T')[0].split('-').map(Number);
 		if (!year || !month || !day) return val;
-
-		// Retornar formato estricto DD/MM/YYYY con ceros a la izquierda
-		const dd = day.toString().padStart(2, '0');
-		const mm = month.toString().padStart(2, '0');
-		return `${dd}/${mm}/${year}`;
-	}
-
-	static formatRoleBadge(role: string): string {
-		const baseClass =
-			'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border';
-
-		const badges: Record<string, string> = {
-			admin:
-				'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
-			supervisor:
-				'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
-			guardia:
-				'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'
-		};
-
-		const badgeClass = badges[role] || badges.guardia;
-		const displayText = role ? role.charAt(0).toUpperCase() + role.slice(1) : 'N/A';
-
-		return `
-      <span class="${baseClass} ${badgeClass}">
-        ${displayText}
-      </span>
-    `;
-	}
-
-	static formatEstadoBadge(isActive: boolean): string {
-		const baseClass =
-			'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity';
-
-		const activeBadge =
-			'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
-		const inactiveBadge =
-			'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
-
-		const badgeClass = isActive ? activeBadge : inactiveBadge;
-		const displayText = isActive ? 'Activo' : 'Inactivo';
-
-		return `
-      <button 
-        class="${baseClass} ${badgeClass}"
-        title="Clic para cambiar estado"
-      >
-        ${displayText}
-      </button>
-    `;
+		return `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
+	} catch (e) {
+		return val;
 	}
 }
