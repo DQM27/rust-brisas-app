@@ -73,7 +73,7 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
                 title: 'Ingresos Contratista',
                 id: 'ingreso-list',
                 focusOnOpen: true,
-                data: { openCreateModal: true }
+                data: { openCreateModal: Date.now() }
             });
             break;
         case 'create-proveedor':
@@ -82,7 +82,34 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
                 title: 'Ingresos Proveedor',
                 id: 'proveedor-ingreso-list',
                 focusOnOpen: true,
-                data: { openCreateModal: true }
+                data: { openCreateModal: Date.now() }
+            });
+            break;
+        case 'master-contratista':
+            openTab({
+                componentKey: 'contratista-list',
+                title: 'Catálogo de Contratistas',
+                id: 'contratista-list',
+                focusOnOpen: true,
+                data: { openCreateModal: Date.now() }
+            });
+            break;
+        case 'master-proveedor':
+            openTab({
+                componentKey: 'proveedor-list',
+                title: 'Catálogo de Proveedores',
+                id: 'proveedor-list',
+                focusOnOpen: true,
+                data: { openCreateModal: Date.now() }
+            });
+            break;
+        case 'master-visitante':
+            openTab({
+                componentKey: 'visitante-list',
+                title: 'Catálogo de Visitantes',
+                id: 'visitante-list',
+                focusOnOpen: true,
+                data: { openCreateModal: Date.now() }
             });
             break;
         case 'create-user':
@@ -100,7 +127,7 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
                 title: 'Ingreso Visitas',
                 id: 'visitas-list',
                 focusOnOpen: true,
-                data: { openCreateModal: true }
+                data: { openCreateModal: Date.now() }
             });
             break;
         case 'create-blacklist':
@@ -109,7 +136,7 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
                 title: 'Lista Negra',
                 id: 'lista-negra-list',
                 focusOnOpen: true,
-                data: { openCreateModal: true }
+                data: { openCreateModal: Date.now() }
             });
             break;
         case 'create-gafete':
@@ -118,7 +145,7 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
                 title: 'Gestión de Gafetes',
                 id: 'gafete-list',
                 focusOnOpen: true,
-                data: { openCreateModal: true }
+                data: { openCreateModal: Date.now() }
             });
             break;
         case 'action-reindex':

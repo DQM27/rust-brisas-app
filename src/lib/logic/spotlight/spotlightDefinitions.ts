@@ -32,55 +32,81 @@ import type { SpotlightItemDefinition } from '$lib/types/spotlight';
 export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
     {
         id: 'users-list',
-        label: 'Usuarios',
+        label: 'Lista de Usuarios',
         description: 'Gestión de usuarios del sistema',
         icon: UserCircle2,
         category: 'module',
+        subCategory: 'link',
         keywords: ['user', 'usuarios', 'lista', 'administrar'],
         permission: 'VIEW_USER_DETAIL'
     },
     {
         id: 'ingreso-list',
-        label: 'Ingresos Contratista',
+        label: 'Listado de Ingresos Contratista',
         description: 'Control de ingresos de contratistas',
         icon: DoorOpen,
         category: 'module',
+        subCategory: 'link',
         keywords: ['ingreso', 'contratista', 'entrada', 'acceso'],
         permission: 'VIEW_ENTRY_LIST'
     },
     {
+        id: 'contratista-list',
+        label: 'Catálogo de Contratistas',
+        description: 'Gestión de maestros de contratistas',
+        icon: Users,
+        category: 'module',
+        subCategory: 'link',
+        keywords: ['lista', 'contratista', 'maestro', 'administrar'],
+        permission: 'VIEW_ENTRY_LIST'
+    },
+    {
         id: 'proveedor-ingreso-list',
-        label: 'Ingresos Proveedor',
+        label: 'Listado de Ingresos Proveedor',
         description: 'Control de ingresos de proveedores',
         icon: PackageCheck,
         category: 'module',
+        subCategory: 'link',
         keywords: ['proveedor', 'ingreso', 'suministro', 'entrada'],
         permission: 'VIEW_ENTRY_LIST'
     },
     {
+        id: 'proveedor-list',
+        label: 'Catálogo de Proveedores',
+        description: 'Gestión de maestros de proveedores',
+        icon: PackageCheck,
+        category: 'module',
+        subCategory: 'link',
+        keywords: ['lista', 'proveedor', 'maestro', 'administrar'],
+        permission: 'VIEW_ENTRY_LIST'
+    },
+    {
         id: 'visitas-list',
-        label: 'Visitas',
+        label: 'Listado de Visitas',
         description: 'Gestión de visitantes',
         icon: Contact,
         category: 'module',
+        subCategory: 'link',
         keywords: ['visita', 'visitante', 'invitado', 'entrada'],
         permission: 'VIEW_VISITOR_LIST'
     },
     {
         id: 'gafete-list',
-        label: 'Gafetes',
+        label: 'Inventario de Gafetes',
         description: 'Gestión de gafetes e identificaciones',
         icon: IdCard,
         category: 'module',
+        subCategory: 'link',
         keywords: ['gafete', 'identificacion', 'tarjeta', 'badge'],
         permission: 'VIEW_GAFETE_LIST'
     },
     {
         id: 'lista-negra-list',
-        label: 'Lista Negra',
+        label: 'Registro de Lista Negra',
         description: 'Control de acceso restringido',
         icon: ShieldX,
         category: 'module',
+        subCategory: 'link',
         keywords: ['lista negra', 'blacklist', 'bloqueado', 'restringido'],
         permission: 'VIEW_BLACKLIST'
     }
@@ -91,67 +117,106 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
 // ============================================
 
 export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
+    // --- TRANSACCIONES (NUEVO) ---
     {
         id: 'create-contratista',
         label: 'Nuevo Ingreso Contratista',
-        description: 'Registrar nuevo ingreso de contratista',
+        description: 'Registrar entrada de contratista',
         icon: Plus,
         category: 'action',
+        subCategory: 'transaction',
         keywords: ['nuevo', 'crear', 'contratista', 'ingreso', 'registrar'],
         permission: 'CREATE_ENTRY'
     },
     {
-        id: 'create-user',
-        label: 'Crear Nuevo Usuario',
-        description: 'Registrar un nuevo usuario en el sistema',
-        icon: UserPlus,
-        category: 'action',
-        keywords: ['nuevo', 'crear', 'usuario', 'user', 'registrar', 'empleado'],
-        permission: 'EDIT_USER'
-    },
-    {
         id: 'create-proveedor',
         label: 'Nuevo Ingreso Proveedor',
-        description: 'Registrar nuevo ingreso de proveedor',
+        description: 'Registrar entrada de proveedor',
         icon: Plus,
         category: 'action',
+        subCategory: 'transaction',
         keywords: ['nuevo', 'crear', 'proveedor', 'ingreso', 'registrar'],
         permission: 'CREATE_ENTRY'
     },
     {
         id: 'create-visita',
         label: 'Nueva Visita',
-        description: 'Registrar nueva visita',
+        description: 'Registrar entrada de visitante',
         icon: Plus,
         category: 'action',
+        subCategory: 'transaction',
         keywords: ['nuevo', 'crear', 'visita', 'visitante', 'registrar'],
         permission: 'CREATE_VISITOR'
     },
+    // --- MAESTROS (CREAR) ---
+    {
+        id: 'master-contratista',
+        label: 'Crear Maestro Contratista',
+        description: 'Añadir nuevo contratista al catálogo',
+        icon: UserPlus,
+        category: 'action',
+        subCategory: 'master',
+        keywords: ['crear', 'maestro', 'catálogo', 'contratista'],
+        permission: 'CREATE_ENTRY'
+    },
+    {
+        id: 'master-proveedor',
+        label: 'Crear Maestro Proveedor',
+        description: 'Añadir nuevo proveedor al catálogo',
+        icon: UserPlus,
+        category: 'action',
+        subCategory: 'master',
+        keywords: ['crear', 'maestro', 'catálogo', 'proveedor'],
+        permission: 'CREATE_ENTRY'
+    },
+    {
+        id: 'master-visitante',
+        label: 'Crear Maestro Visitante',
+        description: 'Añadir nuevo visitante al catálogo',
+        icon: UserPlus,
+        category: 'action',
+        subCategory: 'master',
+        keywords: ['crear', 'maestro', 'catálogo', 'visitante'],
+        permission: 'CREATE_VISITOR'
+    },
+    {
+        id: 'create-user',
+        label: 'Crear Nuevo Usuario',
+        description: 'Registrar un nuevo acceso al sistema',
+        icon: UserPlus,
+        category: 'action',
+        subCategory: 'master',
+        keywords: ['nuevo', 'crear', 'usuario', 'user', 'registrar', 'empleado'],
+        permission: 'EDIT_USER'
+    },
     {
         id: 'create-blacklist',
-        label: 'Bloquear Persona',
+        label: 'Crear Bloqueo (Lista Negra)',
         description: 'Añadir persona a lista negra',
         icon: Ban,
         category: 'action',
+        subCategory: 'master',
         keywords: ['bloquear', 'banear', 'lista negra', 'denegar', 'restringir'],
         permission: 'MANAGE_BLACKLIST'
     },
     {
         id: 'create-gafete',
-        label: 'Nuevo Gafete',
-        description: 'Registrar un nuevo gafete',
+        label: 'Crear Nuevo Gafete',
+        description: 'Registrar un nuevo gafete físico',
         icon: Plus,
         category: 'action',
+        subCategory: 'master',
         keywords: ['nuevo', 'crear', 'gafete', 'carnet', 'tarjeta', 'inventario'],
         permission: 'VIEW_GAFETE_LIST'
     },
-    // Configuración
+    // --- CONFIGURACIÓN ---
     {
         id: 'settings-general',
         label: 'Ajustes Generales',
         description: 'Preferencias globales del sistema',
         icon: Settings,
         category: 'action',
+        subCategory: 'settings',
         keywords: ['configuracion', 'ajustes', 'general', 'sistema'],
         permission: 'VIEW_SETTINGS_GENERAL'
     },
@@ -161,6 +226,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         description: 'Configuración visual y temas',
         icon: Monitor,
         category: 'action',
+        subCategory: 'settings',
         keywords: ['configuracion', 'ajustes', 'graficos', 'visual', 'tema', 'modo oscuro'],
         permission: 'VIEW_SETTINGS_VISUAL'
     },
@@ -170,6 +236,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         description: 'Configuración de seguridad y sesiones',
         icon: ShieldCheck,
         category: 'action',
+        subCategory: 'settings',
         keywords: ['configuracion', 'ajustes', 'sesion', 'seguridad', 'password'],
         permission: 'VIEW_SETTINGS_SESSIONS'
     },
@@ -179,6 +246,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         description: 'Gestión de roles de usuario',
         icon: Users,
         category: 'action',
+        subCategory: 'settings',
         keywords: ['configuracion', 'roles', 'permisos', 'usuarios', 'acceso'],
         permission: 'VIEW_ROLE_LIST'
     },
@@ -188,6 +256,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         description: 'Ajustes de reportes y exportación',
         icon: Download,
         category: 'action',
+        subCategory: 'settings',
         keywords: ['configuracion', 'exportacion', 'reportes', 'excel', 'pdf'],
         permission: 'VIEW_SETTINGS_BACKUP'
     },
@@ -197,6 +266,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         description: 'Gestión de respaldos del sistema',
         icon: Database,
         category: 'action',
+        subCategory: 'settings',
         keywords: ['configuracion', 'backup', 'respaldo', 'copia', 'seguridad'],
         permission: 'VIEW_SETTINGS_BACKUP'
     },
@@ -206,6 +276,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         description: 'Gestión de elementos eliminados',
         icon: Trash2,
         category: 'action',
+        subCategory: 'link',
         keywords: ['papelera', 'trash', 'eliminado', 'restaurar'],
         permission: 'VIEW_TRASH'
     },
@@ -215,6 +286,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         description: 'Regenerar índices de búsqueda',
         icon: RefreshCw,
         category: 'action',
+        subCategory: 'link',
         keywords: ['reindexar', 'busqueda', 'indice', 'regenerar'],
         // Permiso de superusuario o admin (se validará en lógica)
     }

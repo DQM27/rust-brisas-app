@@ -3,6 +3,7 @@
  */
 
 export type SpotlightCategory = 'module' | 'action' | 'tab';
+export type SpotlightSubCategory = 'master' | 'transaction' | 'settings' | 'link';
 
 export interface SpotlightItem {
     id: string;
@@ -10,6 +11,7 @@ export interface SpotlightItem {
     description?: string;
     icon: any; // Componente Svelte (lucide-svelte)
     category: SpotlightCategory;
+    subCategory?: SpotlightSubCategory;
     action: () => void;
     keywords?: string[];
     permission?: string;
@@ -23,6 +25,7 @@ export interface SpotlightItemDefinition {
     description?: string;
     icon: any; // Componente Svelte (lucide-svelte)
     category: SpotlightCategory;
+    subCategory?: SpotlightSubCategory;
     keywords?: string[];
     permission?: string;
     roleId?: string[];

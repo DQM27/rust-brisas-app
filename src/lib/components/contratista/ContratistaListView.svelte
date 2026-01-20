@@ -44,8 +44,18 @@
 
 	interface Props {
 		tabId?: string;
+		data?: any;
 	}
-	let { tabId = 'contratista-list' }: Props = $props();
+	let { tabId = 'contratista-list', data }: Props = $props();
+
+	// Effect to handle external actions (like from Spotlight)
+	$effect(() => {
+		if (data?.openCreateModal) {
+			setTimeout(() => {
+				if (!showModal) openModal();
+			}, 100);
+		}
+	});
 
 	// ==========================================
 	// ESTADO LOCAL

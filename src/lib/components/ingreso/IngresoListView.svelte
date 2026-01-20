@@ -44,7 +44,6 @@
 					showQuickEntry = true;
 				}
 			}, 100);
-			data.openCreateModal = false;
 		}
 	});
 

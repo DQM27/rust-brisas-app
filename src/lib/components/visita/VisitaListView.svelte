@@ -33,7 +33,6 @@
 			setTimeout(() => {
 				handleNuevoIngreso();
 			}, 100);
-			data.openCreateModal = false;
 		}
 	});
 

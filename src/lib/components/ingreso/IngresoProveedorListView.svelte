@@ -30,8 +30,18 @@
 
 	interface Props {
 		tabId?: string;
+		data?: any;
 	}
-	let { tabId = 'proveedor-ingreso-list' }: Props = $props();
+	let { tabId = 'proveedor-ingreso-list', data }: Props = $props();
+
+	// Effect to handle external actions (like from Spotlight)
+	$effect(() => {
+		if (data?.openCreateModal) {
+			setTimeout(() => {
+				if (!showQuickEntry) showQuickEntry = true;
+			}, 100);
+		}
+	});
 
 	// Reactive wrapper to satisfy Svelte 5 linter regarding effect dependencies
 	let activeTabIdValue = $derived(tabId);

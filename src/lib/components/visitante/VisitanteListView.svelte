@@ -33,8 +33,18 @@
 
 	interface Props {
 		tabId?: string;
+		data?: any;
 	}
-	let { tabId = 'visitante-list' }: Props = $props();
+	let { tabId = 'visitante-list', data }: Props = $props();
+
+	// Effect to handle external actions (like from Spotlight)
+	$effect(() => {
+		if (data?.openCreateModal) {
+			setTimeout(() => {
+				if (!showModal) openFormModal(null);
+			}, 100);
+		}
+	});
 
 	// State
 	let visitantes = $state<VisitanteResponse[]>([]);

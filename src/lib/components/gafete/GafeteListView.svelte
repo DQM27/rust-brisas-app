@@ -31,7 +31,6 @@
 			setTimeout(() => {
 				handleNew();
 			}, 100);
-			data.openCreateModal = false;
 		}
 	});
 

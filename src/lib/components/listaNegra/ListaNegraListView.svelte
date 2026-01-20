@@ -34,7 +34,6 @@
 			setTimeout(() => {
 				if (!showFormModal) openFormModal(null);
 			}, 100);
-			data.openCreateModal = false;
 		}
 	});
 

@@ -36,8 +36,18 @@
 
 	interface Props {
 		tabId?: string;
+		data?: any;
 	}
-	let { tabId = 'proveedor-list' }: Props = $props();
+	let { tabId = 'proveedor-list', data }: Props = $props();
+
+	// Effect to handle external actions (like from Spotlight)
+	$effect(() => {
+		if (data?.openCreateModal) {
+			setTimeout(() => {
+				if (!showModal) openFormModal(null);
+			}, 200);
+		}
+	});
 
 	// State
 	let proveedores = $state<ProveedorResponse[]>([]);
