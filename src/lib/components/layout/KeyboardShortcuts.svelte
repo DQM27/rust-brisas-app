@@ -3,6 +3,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { tinykeys } from 'tinykeys';
 	import { emitCommand, activeContext } from '$lib/stores/keyboardCommands';
+	import { showSpotlight } from '$lib/stores/ui';
 	import { get } from 'svelte/store';
 
 	let unsubscribe: (() => void) | null = null;
@@ -100,6 +101,11 @@
 				emitCommand('search');
 			},
 
+			// Ctrl+K: Spotlight Search (Global)
+			'$mod+k': (event) => {
+				event.preventDefault();
+				showSpotlight.update((v: boolean) => !v);
+			},
 			// Ctrl+R / F5: Refrescar datos
 			'$mod+r': (event) => {
 				event.preventDefault();

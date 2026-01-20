@@ -28,5 +28,7 @@ export const statusBarInfo = writable<StatusBarInfo>({
 	count: 0,
 	selectedCount: 0,
 	label: 'registros',
-	message: ''
 });
+
+// Store para visibilidad del buscador global (Spotlight)
+export const showSpotlight = writable(false);

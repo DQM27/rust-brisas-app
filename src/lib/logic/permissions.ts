@@ -83,7 +83,10 @@ export type Action =
 	// Blacklist
 	| 'VIEW_BLACKLIST'
 	| 'MANAGE_BLACKLIST'
-	| 'VIEW_BLACKLIST_REASON';
+	| 'VIEW_BLACKLIST_REASON'
+
+	// Trash
+	| 'VIEW_TRASH';
 
 // ==========================================
 // HELPERS
@@ -218,7 +221,10 @@ export function can(
 			VIEW_BLACKLIST: 'lista_negra:read',
 			MANAGE_BLACKLIST: 'lista_negra:create',
 			VIEW_BLACKLIST_REASON: 'lista_negra:read',
-			VIEW_ADMIN_DASHBOARD: 'dashboard:view'
+			VIEW_ADMIN_DASHBOARD: 'dashboard:view',
+
+			// Trash
+			VIEW_TRASH: 'trash:read'
 		};
 
 		const backendPerm = permissionMap[action];

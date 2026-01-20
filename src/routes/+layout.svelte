@@ -13,6 +13,7 @@
 	import { generalSettings } from '$lib/stores/settingsStore';
 	import SetupWizard from '$lib/components/setup/SetupWizard.svelte';
 	import KeyboardShortcuts from '$lib/components/layout/KeyboardShortcuts.svelte';
+	import SpotlightSearch from '$lib/components/shared/SpotlightSearch.svelte';
 	import { needsSetup, setWindowDecorations, setWindowSize } from '$lib/services/keyringService';
 	import {
 		isScreensaverActive,
@@ -262,6 +263,7 @@
 		<!-- Keyboard Shortcuts (Solo si autenticado) -->
 		{#if authenticated}
 			<KeyboardShortcuts />
+			<SpotlightSearch />
 		{/if}
 
 		<!-- Screensaver Password Modal -->
