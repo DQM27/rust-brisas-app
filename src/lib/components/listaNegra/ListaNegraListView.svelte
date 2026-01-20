@@ -1,30 +1,21 @@
-<!-- src/lib/components/listaNegra/ListaNegraListView.svelte -->
-<!-- Vista unificada: Lista Negra + Modal para CRUD (Patrón Users) -->
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { fade } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
-	import { AlertCircle, RotateCw, Lock, LockOpen } from 'lucide-svelte';
-	import type { ColDef } from '@ag-grid-community/core';
+	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+	import { Plus, RotateCw, Lock, LockOpen, UserPlus, FileText, Ban } from 'lucide-svelte';
 
 	// Components
-	import SearchBar from '$lib/components/shared/SearchBar.svelte';
-	import AGGridWrapper from '$lib/components/grid/AGGridWrapper.svelte';
+	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
+	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 	import ListaNegraFormModal from './ListaNegraFormModal.svelte';
 	import BlacklistConfirmModal from './blacklistForm/BlacklistConfirmModal.svelte';
 
-	// Logic & Config
+	// Logic & Services
 	import * as listaNegraService from '$lib/logic/listaNegra/listaNegraService';
-	import { ListaNegraColumns } from '$lib/logic/listaNegra/listaNegraColumns';
-	import { createCustomButton } from '$lib/config/agGridConfigs';
-	import { can } from '$lib/logic/permissions';
-
-	// Types
-	import type { ListaNegraResponse, AddToListaNegraInput } from '$lib/types/listaNegra';
-
-	// Stores
-	import { selectedSearchStore } from '$lib/stores/searchStore';
+	import { getListaNegraColumns } from '$lib/logic/listaNegra/listaNegraColumns';
 	import { currentUser } from '$lib/stores/auth';
+	import { can } from '$lib/logic/permissions';
+	import type { ListaNegraResponse, AddToListaNegraInput } from '$lib/types/listaNegra';
 	import { activeTabId } from '$lib/stores/tabs';
 	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
 
@@ -34,441 +25,255 @@
 
 	let { tabId }: Props = $props();
 
-	// ==========================================
-	// ESTADO LOCAL
-	// ==========================================
+	// State
 	let bloqueados = $state<ListaNegraResponse[]>([]);
 	let loading = $state(false);
-	let error = $state('');
-
-	// Permisos derivados
-	let canManage = $derived(can($currentUser, 'MANAGE_BLACKLIST'));
-	// let canViewReason = $derived(can($currentUser, "VIEW_BLACKLIST_REASON"));
-
-	// Filtros
-	let showEstadoDropdown = $state(false);
-	let showNivelDropdown = $state(false);
-
-	let estadoFilter = $state<'todos' | 'activo' | 'inactivo'>('todos');
-	let nivelFilter = $state<'todos' | 'ALTO' | 'MEDIO' | 'BAJO'>('todos');
-
-	// Selección en grid
+	let searchTerm = $state('');
 	let selectedRows = $state<ListaNegraResponse[]>([]);
 
-	// ==========================================
-	// ESTADO DE MODALES
-	// ==========================================
-	// 1. Modal Agregar/Editar
+	// Grid Controller
+	let gridWrapper = $state<any>(null);
+	let toolbarColumns = $state<any[]>([]);
+
+	// Modales
 	let showFormModal = $state(false);
 	let editingBloqueado = $state<ListaNegraResponse | null>(null);
 	let formLoading = $state(false);
-
-	// 2. Modal Desbloquear/Re-bloquear
 	let showConfirmModal = $state(false);
 	let confirmMotivo = $state('');
 	let confirmActionType = $state<'unblock' | 'reblock'>('unblock');
 
-	// Suscripción a comandos de teclado centralizados
+	// Keyboard handling
 	let unsubscribeKeyboard: (() => void) | null = null;
 
-	function setupKeyboardSubscription() {
-		unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
-			if (!event) return;
-			if ($activeTabId !== tabId) return;
-
-			switch (event.command) {
-				case 'create-new':
-					if (canManage && !showFormModal && !showConfirmModal) {
-						openFormModal(null);
-						clearCommand();
-					}
-					break;
-				case 'edit':
-					if (canManage && selectedRows.length === 1 && !showFormModal) {
-						openFormModal(selectedRows[0]);
-						clearCommand();
-					}
-					break;
-				case 'escape':
-					if (showFormModal) {
-						closeFormModal();
-						clearCommand();
-					} else if (showConfirmModal) {
-						closeConfirmModal();
-						clearCommand();
-					}
-					break;
-				case 'refresh':
-					loadListaNegra();
-					clearCommand();
-					break;
-			}
-		});
-	}
-
-	// ==========================================
-	// DERIVADOS
-	// ==========================================
-
-	// Datos filtrados
-	let filteredData = $derived.by(() => {
-		let filtered = bloqueados;
-
-		// Filtro por búsqueda seleccionada (tiene prioridad)
-		const selectedSearch = $selectedSearchStore;
-		if (selectedSearch.result) {
-			const cedula = selectedSearch.result.cedula || selectedSearch.result.id;
-			filtered = filtered.filter((b) => b.cedula === cedula);
-			return filtered;
-		}
-
-		// Filtro de estado
-		if (estadoFilter === 'activo') {
-			filtered = filtered.filter((b) => b.isActive);
-		} else if (estadoFilter === 'inactivo') {
-			filtered = filtered.filter((b) => !b.isActive);
-		}
-
-		// Filtro de nivel
-		if (nivelFilter !== 'todos') {
-			filtered = filtered.filter((b) => b.nivelSeveridad === nivelFilter);
-		}
-
-		return filtered;
-	});
-
-	// Columnas AG Grid
-	let columnDefs = $derived.by((): ColDef<ListaNegraResponse>[] => {
-		return ListaNegraColumns.getColumns();
-	});
-	const customButtons = $derived.by(() => {
-		const selected = selectedRows[0];
-
-		// Solo si tiene permisos (DESHABILITADO TEMPORALMENTE PARA DEBUG)
-		// if (!canManage) {
-		//   return {
-		//     default: [
-		//       {
-		//         id: "refresh",
-		//         label: "Actualizar",
-		//         icon: RotateCw,
-		//         onClick: loadListaNegra,
-		//         variant: "default" as const,
-		//       },
-		//     ],
-		//   };
-		// }
-
-		return {
-			default: [createCustomButton.nuevo(() => openFormModal(null))],
-			singleSelect: [
-				// EDITAR (Solo campos permitidos como nivel/motivo)
-				createCustomButton.editar(() => {
-					if (selected) openFormModal(selected);
-				}),
-
-				// ACCIÓN DINÁMICA: DESBLOQUEAR / RE-BLOQUEAR
-				selected?.isActive
-					? {
-							id: 'unblock',
-							label: 'Desbloquear',
-							icon: LockOpen,
-							variant: 'destructive' as const,
-							onClick: () => openConfirmModal(selected, 'unblock')
-						}
-					: {
-							id: 'reblock',
-							label: 'Re-bloquear',
-							icon: Lock,
-							variant: 'warning' as const,
-							onClick: () => openConfirmModal(selected, 'reblock')
-						}
-			]
-		};
-	});
-
-	// ==========================================
-	// DATA LOADING
-	// ==========================================
+	const canManage = $derived(can($currentUser, 'MANAGE_BLACKLIST'));
+	const columns = $derived(getListaNegraColumns());
 
 	async function loadListaNegra() {
 		loading = true;
-		error = '';
 		const result = await listaNegraService.fetchAll();
 		if (result.ok) {
 			bloqueados = result.data.bloqueados;
 		} else {
-			error = result.error;
+			toast.error(result.error);
 		}
 		loading = false;
 	}
-
-	// ==========================================
-	// ACTIONS - FORM MODAL
-	// ==========================================
 
 	function openFormModal(bloqueado: ListaNegraResponse | null) {
 		editingBloqueado = bloqueado;
 		showFormModal = true;
 	}
 
-	function closeFormModal() {
-		showFormModal = false;
-		editingBloqueado = null;
-	}
-
 	async function handleSaveForm(input: AddToListaNegraInput): Promise<boolean> {
 		formLoading = true;
-		try {
-			if (editingBloqueado) {
-				// EDICIÓN
-				const updateInput = {
-					nivelSeveridad: input.nivelSeveridad,
-					motivoBloqueo: input.motivoBloqueo,
-					empresaId: input.empresaId,
-					empresaNombre: input.empresaNombre
-				};
-				const result = await listaNegraService.update(editingBloqueado.id, updateInput);
-				if (result.ok) {
-					toast.success('Información actualizada');
-					// Actualización optimista local
-					bloqueados = bloqueados.map((b) => (b.id === editingBloqueado!.id ? result.data : b));
-					return true;
-				} else {
-					toast.error(result.error);
-					return false;
-				}
-			} else {
-				// CREACIÓN
-				const result = await listaNegraService.add(input);
-				if (result.ok) {
-					toast.success('Persona agregada a lista negra');
-					await loadListaNegra();
-					return true;
-				} else {
-					toast.error(result.error);
-					return false;
-				}
-			}
-		} finally {
-			formLoading = false;
+		let result;
+		if (editingBloqueado) {
+			result = await listaNegraService.update(editingBloqueado.id, {
+				nivelSeveridad: input.nivelSeveridad,
+				motivoBloqueo: input.motivoBloqueo,
+				empresaId: input.empresaId,
+				empresaNombre: input.empresaNombre
+			});
+		} else {
+			result = await listaNegraService.add(input);
+		}
+
+		if (result.ok) {
+			toast.success(editingBloqueado ? 'Información actualizada' : 'Persona bloqueada');
+			showFormModal = false;
+			loadListaNegra();
+			return true;
+		} else {
+			toast.error(result.error);
+			return false;
 		}
 	}
 
-	// ==========================================
-	// ACTIONS - CONFIRM MODAL (Unblock/Reblock)
-	// ==========================================
-
 	function openConfirmModal(bloqueado: ListaNegraResponse, type: 'unblock' | 'reblock') {
-		editingBloqueado = bloqueado; // Usamos la misma variable temporal
+		editingBloqueado = bloqueado;
 		confirmActionType = type;
 		confirmMotivo = '';
 		showConfirmModal = true;
 	}
 
-	function closeConfirmModal() {
-		showConfirmModal = false;
-		editingBloqueado = null;
-	}
-
 	async function handleConfirmAction() {
 		if (!editingBloqueado) return;
-
 		formLoading = true;
-		try {
-			if (confirmActionType === 'unblock') {
-				// DESBLOQUEAR
-				// Nota: El servicio unblock actual solo pide ID. Motivo y Observaciones
-				// no se están enviando en la firma simple del servicio nuevo,
-				// pero el modal viejo los pedía.
-				// Si el backend soporta historial de desbloqueos deberíamos enviarlos.
-				// Asumiremos la firma simple `unblock(id)` por ahora, o actualizar servicio si es crítico.
-				// REVISIÓN: El backend `remove_from_lista_negra` usa motivo/observaciones?
-				// Mirando lista_negra_commands.rs: `remove_from_lista_negra` NO recibe args extras, solo ID.
-				// Para mantener compatibilidad visual del modal, ignoraremos esos campos o los loguearemos.
+		const result =
+			confirmActionType === 'unblock'
+				? await listaNegraService.unblock(editingBloqueado.id)
+				: await listaNegraService.reblock(editingBloqueado.id);
 
-				// ERROR: El usuario espera poder poner un motivo de desbloqueo.
-				// El servicio legacy tenía `remove(id, motivo, obs)`.
-				// El command `remove_from_lista_negra` usa `unblock_lista_negra` service que SÍ tomaba parámetros?
-				// Vamos a usar la función simple.
-
-				const result = await listaNegraService.unblock(editingBloqueado.id);
-				if (result.ok) {
-					toast.success('Persona desbloqueada');
-					await loadListaNegra();
-					closeConfirmModal();
-				} else {
-					toast.error(result.error);
-				}
-			} else {
-				// RE-BLOQUEAR
-				// El servicio reblock pide: (id, nivel, motivo, por)
-				const result = await listaNegraService.reblock(editingBloqueado.id);
-
-				if (result.ok) {
-					toast.success('Persona re-bloqueada');
-					await loadListaNegra();
-					closeConfirmModal();
-				} else {
-					toast.error(result.error);
-				}
-			}
-		} finally {
-			formLoading = false;
+		if (result.ok) {
+			toast.success(
+				confirmActionType === 'unblock' ? 'Persona desbloqueada' : 'Persona re-bloqueada'
+			);
+			showConfirmModal = false;
+			loadListaNegra();
+		} else {
+			toast.error(result.error);
 		}
+		formLoading = false;
 	}
 
-	// ==========================================
-	// FILTERS HANDLERS
-	// ==========================================
-
-	function handleEstadoSelect(value: any) {
-		estadoFilter = value;
-		showEstadoDropdown = false;
-	}
-
-	function handleNivelSelect(value: any) {
-		nivelFilter = value;
-		showNivelDropdown = false;
-	}
-
-	function handleClickOutside(e: MouseEvent) {
-		const target = e.target as HTMLElement;
-		if (!target.closest('.filter-dropdown-container') && !target.closest('[data-filter-button]')) {
-			showEstadoDropdown = false;
-			showNivelDropdown = false;
-		}
-	}
-
-	// Lifecycle
 	onMount(() => {
 		loadListaNegra();
-		setupKeyboardSubscription();
+		unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
+			if (!event || $activeTabId !== tabId) return;
+			if (event.command === 'create-new' && canManage) openFormModal(null);
+			if (event.command === 'edit' && canManage && selectedRows.length === 1)
+				openFormModal(selectedRows[0]);
+			if (event.command === 'refresh') loadListaNegra();
+			if (event.command === 'escape') {
+				showFormModal = false;
+				showConfirmModal = false;
+			}
+		});
 	});
 
-	onDestroy(() => {
-		if (unsubscribeKeyboard) {
-			unsubscribeKeyboard();
-		}
-	});
+	onDestroy(() => unsubscribeKeyboard?.());
 
-	// Registrar contexto activo cuando esta pestaña está activa
 	$effect(() => {
-		if ($activeTabId === tabId) {
-			setActiveContext('lista-negra');
-		}
+		if ($activeTabId === tabId) setActiveContext('lista-negra');
 	});
 </script>
 
-<svelte:window onclick={handleClickOutside} />
-
-<div class="flex h-full flex-col relative bg-[#1e1e1e]">
+<div class="flex h-full flex-col relative bg-surface-1">
 	<!-- Header -->
-	<div class="border-b border-white/10 px-6 py-4 bg-[#252526]">
-		<div class="flex items-center justify-between gap-4">
-			<div>
-				<h2 class="text-xl font-semibold text-gray-100">Lista Negra</h2>
-				<p class="mt-1 text-sm text-gray-400">Control de accesos denegados y restricciones</p>
+	<div class="border-b border-surface px-6 py-4 bg-surface-2 shadow-sm z-10">
+		<div class="flex items-center justify-between gap-6">
+			<div class="flex items-center gap-3">
+				<div class="p-2 bg-red-500/10 rounded-lg text-red-500">
+					<Ban size={24} />
+				</div>
+				<div>
+					<h2 class="text-xl font-semibold text-primary">Lista Negra</h2>
+					<p class="mt-0.5 text-xs text-secondary">
+						Control de accesos denegados y restricciones de seguridad
+					</p>
+				</div>
 			</div>
-			<div class="flex-1 max-w-md">
-				<SearchBar placeholder="Buscar por cédula o nombre..." limit={10} />
+
+			<div class="flex items-center gap-4 bg-[#2d2d2d] border border-white/5 p-1.5 rounded-lg px-4">
+				<div class="flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider">
+					<div class="flex items-center gap-2 text-rose-400">
+						<span
+							class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.5)]"
+						></span>
+						Bloqueados: {bloqueados.filter((b) => b.isActive).length}
+					</div>
+					<div class="w-px h-3 bg-white/10"></div>
+					<div class="flex items-center gap-2 text-emerald-400">
+						<span class="w-1.5 h-1.5 rounded-full bg-emerald-500/50"></span>
+						Histórico: {bloqueados.filter((b) => !b.isActive).length}
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- Content -->
-	<div class="flex-1 overflow-hidden relative bg-[#1e1e1e]">
-		{#if error}
-			<div class="p-6">
-				<div
-					class="flex items-center gap-3 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-red-400"
-					transition:fade
+	<!-- Toolbar & Grid -->
+	<GridToolbar
+		bind:searchTerm
+		hasSelection={selectedRows.length > 0}
+		selectionCount={selectedRows.length}
+		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
+		onFitColumns={() => gridWrapper?.fitColumns()}
+		onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
+		onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
+		columns={toolbarColumns}
+	>
+		{#snippet primaryActions()}
+			{#if canManage}
+				<button
+					onclick={() => openFormModal(null)}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
 				>
-					<AlertCircle size={20} />
-					<div>
-						<div class="font-medium">Error al cargar datos</div>
-						<div class="text-sm opacity-90">{error}</div>
-					</div>
-				</div>
-			</div>
-		{:else if loading}
-			<!-- Skeleton / Loading State -->
+					<UserPlus size={14} /> Bloquear
+				</button>
+			{/if}
+			<button
+				onclick={loadListaNegra}
+				class="p-2 text-secondary hover:text-white transition-colors"
+				title="Actualizar"
+			>
+				<RotateCw size={18} class={loading ? 'animate-spin' : ''} />
+			</button>
+		{/snippet}
+
+		{#snippet selectionActions()}
+			{#if selectedRows.length === 1 && canManage}
+				<button
+					onclick={() => openFormModal(selectedRows[0])}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-300 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
+				>
+					<FileText size={14} /> Editar
+				</button>
+
+				{#if selectedRows[0].isActive}
+					<button
+						onclick={() => openConfirmModal(selectedRows[0], 'unblock')}
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md hover:bg-emerald-500/20 text-sm font-medium transition-colors"
+					>
+						<LockOpen size={14} /> Desbloquear
+					</button>
+				{:else}
+					<button
+						onclick={() => openConfirmModal(selectedRows[0], 'reblock')}
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-md hover:bg-amber-500/20 text-sm font-medium transition-colors"
+					>
+						<Lock size={14} /> Re-bloquear
+					</button>
+				{/if}
+			{/if}
+		{/snippet}
+	</GridToolbar>
+
+	<div class="flex-1 overflow-hidden relative bg-surface-1">
+		{#if loading && bloqueados.length === 0}
 			<div class="flex h-full items-center justify-center">
-				<div class="text-center text-gray-400">
-					<RotateCw class="animate-spin mx-auto mb-2" size={32} />
-					<p>Cargando lista negra...</p>
-				</div>
+				<div class="loading loading-spinner loading-lg text-primary opacity-20"></div>
 			</div>
 		{:else}
-			<AGGridWrapper
-				gridId="lista-negra"
-				{columnDefs}
-				rowData={filteredData}
-				{customButtons}
-				getRowId={(params) => params.data.id}
-				persistenceKey="lista-negra-columns"
-				onSelectionChanged={(rows) => (selectedRows = rows)}
+			<TabulatorWrapper
+				bind:this={gridWrapper}
+				bind:toolbarColumns
+				data={bloqueados}
+				{columns}
+				persistenceID="lista-negra-v1"
+				onRowSelectionChanged={(data) => (selectedRows = data)}
+				withCheckboxSelection={true}
+				class="h-full"
+				options={{
+					layout: 'fitColumns',
+					placeholder: 'No se encontraron registros en lista negra'
+				}}
 			/>
-		{/if}
-	</div>
-
-	<!-- Dropdowns de Filtros -->
-	<div class="filter-dropdown-container">
-		{#if showEstadoDropdown}
-			<div
-				class="absolute top-16 left-6 z-50 bg-[#252526] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
-				transition:fade={{ duration: 150 }}
-			>
-				{#each [['todos', 'Todos'], ['activo', 'Bloqueados'], ['inactivo', 'Desbloqueados']] as [value, label]}
-					<button
-						onclick={() => handleEstadoSelect(value)}
-						class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors {estadoFilter ===
-						value
-							? 'bg-blue-500/20 text-blue-400'
-							: ''}"
-					>
-						{label}
-					</button>
-				{/each}
-			</div>
-		{/if}
-
-		{#if showNivelDropdown}
-			<div
-				class="absolute top-16 left-44 z-50 bg-[#252526] border border-white/10 rounded-lg shadow-2xl py-2 min-w-[200px]"
-				transition:fade={{ duration: 150 }}
-			>
-				{#each [['todos', 'Todos'], ['ALTO', 'Alto'], ['MEDIO', 'Medio'], ['BAJO', 'Bajo']] as [value, label]}
-					<button
-						onclick={() => handleNivelSelect(value)}
-						class="w-full px-4 py-2 text-left text-sm text-white hover:bg-white/5 transition-colors {nivelFilter ===
-						value
-							? 'bg-blue-500/20 text-blue-400'
-							: ''}"
-					>
-						{label}
-					</button>
-				{/each}
-			</div>
 		{/if}
 	</div>
 </div>
 
-<!-- Modal Formulario -->
+<!-- Modals -->
 <ListaNegraFormModal
 	show={showFormModal}
 	bloqueado={editingBloqueado}
 	loading={formLoading}
 	onSave={handleSaveForm}
-	onClose={closeFormModal}
+	onClose={() => {
+		showFormModal = false;
+		editingBloqueado = null;
+	}}
 />
 
-<!-- Modal Confirmación -->
 <BlacklistConfirmModal
 	show={showConfirmModal}
 	contratistaName={editingBloqueado?.nombreCompleto || ''}
 	motivo={confirmMotivo}
 	onConfirm={handleConfirmAction}
-	onCancel={closeConfirmModal}
+	onCancel={() => {
+		showConfirmModal = false;
+		editingBloqueado = null;
+	}}
 	onMotivoChange={(v) => (confirmMotivo = v)}
 />
