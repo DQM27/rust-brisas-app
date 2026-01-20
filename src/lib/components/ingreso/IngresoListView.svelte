@@ -28,6 +28,7 @@
 	import * as contratistaService from '$lib/logic/contratista/contratistaService';
 	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
 	import { getAvailableFormats } from '$lib/api/export';
+	import { searchByType } from '$lib/api/searchService';
 
 	interface Props {
 		tabId?: string;
@@ -121,25 +122,7 @@
 	}
 
 	// Derived Data (Search + ViewMode + Filter)
-	let filteredIngresos = $derived.by(() => {
-		let data = ingresos;
-		// 1. View Mode Filter
-		if (viewMode === 'history' && hideActive) {
-			data = data.filter((i) => i.fechaHoraSalida);
-		}
-		// 2. Search Filter
-		if (searchTerm) {
-			const q = searchTerm.toLowerCase();
-			data = data.filter(
-				(i) =>
-					i.nombreCompleto?.toLowerCase().includes(q) ||
-					i.cedula?.toLowerCase().includes(q) ||
-					i.empresaNombre?.toLowerCase().includes(q) ||
-					i.gafeteNumero?.toLowerCase().includes(q)
-			);
-		}
-		return data;
-	});
+	let filteredIngresos = $derived(ingresos);
 
 	let columns = $derived(
 		getIngresoColumns(
@@ -240,6 +223,85 @@
 	function handleSalida(ingreso: IngresoResponse) {
 		selectedIngreso = ingreso;
 		showSalidaModal = true;
+	}
+
+	// Smart Search for Ingresos (Transactional)
+	async function handleSearch(term: string) {
+		searchTerm = term;
+
+		// 1. Reset si está vacío
+		if (!term || term.trim().length === 0) {
+			if (gridWrapper) gridWrapper.replaceData(ingresos);
+			return;
+		}
+
+		// Si es muy corto, filtro local simple para evitar llamadas rápidas al backend, pero seguro a tipos
+		if (term.trim().length < 2) {
+			const q = term.toLowerCase();
+			const simpleFiltered = ingresos.filter((i) =>
+				String(i.nombreCompleto || '')
+					.toLowerCase()
+					.includes(q)
+			);
+			if (gridWrapper) gridWrapper.replaceData(simpleFiltered);
+			return;
+		}
+
+		try {
+			// Estrategia Híbrida Robustecida
+
+			// Paso A: Buscamos PERSONAS (Contratistas) en Tantivy para obtener sus IDs.
+			// Esto cubre coincidencias difusas en Nombres, Apellidos y Cédulas de la persona.
+			let matchedPersonIds = new Set<string>();
+			try {
+				const results = await searchByType(term, 'contratista', 100);
+				matchedPersonIds = new Set(results.map((r) => r.id));
+			} catch (err) {
+				console.warn('Tantivy search unavailable, falling back to full local search', err);
+			}
+
+			const q = term.toLowerCase();
+
+			const filtered = ingresos.filter((ingreso) => {
+				// 1. Coincidencia por Entidad (Tantivy)
+				const matchesPerson = ingreso.contratistaId
+					? matchedPersonIds.has(ingreso.contratistaId)
+					: false;
+
+				// 2. Coincidencia Local (Campos Transaccionales y de Auditoría)
+				// Usamos String() explicitamente para que valores numéricos (gafete) o undefined no rompan la app
+				const matchesLocal =
+					String(ingreso.gafeteNumero || '')
+						.toLowerCase()
+						.includes(q) ||
+					String(ingreso.empresaNombre || '')
+						.toLowerCase()
+						.includes(q) ||
+					String(ingreso.usuarioIngresoNombre || '')
+						.toLowerCase()
+						.includes(q) ||
+					String(ingreso.usuarioSalidaNombre || '')
+						.toLowerCase()
+						.includes(q) ||
+					String(ingreso.cedula || '')
+						.toLowerCase()
+						.includes(q) || // Redundancia por seguridad
+					String(ingreso.nombreCompleto || '')
+						.toLowerCase()
+						.includes(q);
+
+				return matchesPerson || matchesLocal;
+			});
+
+			if (gridWrapper) gridWrapper.replaceData(filtered);
+		} catch (e) {
+			console.error('Error crítico en búsqueda de ingresos:', e);
+			// Fallback de emergencia
+			if (gridWrapper) {
+				gridWrapper.replaceData(ingresos);
+				toast.error('Error al realizar la búsqueda');
+			}
+		}
 	}
 
 	// EXPORT LOGIC
@@ -466,14 +528,17 @@
 		}
 	}
 
-	// Tab State for title update
-	import { useTabState } from '$lib/stores/tabs';
-	const { updateTitle } = useTabState(tabId);
-
+	// Lifecycle
 	onMount(() => {
 		loadIngresos();
 		setupKeyboardSubscription();
-		updateTitle('Ingresos Contratista');
+
+		// Update tab title
+		// @ts-ignore
+		import('$lib/stores/tabs').then(({ useTabState }) => {
+			const { updateTitle } = useTabState(tabId);
+			updateTitle('Ingresos Contratista');
+		});
 	});
 
 	onDestroy(() => {
@@ -545,7 +610,8 @@
 
 	<!-- Tabulator Toolbar & Grid -->
 	<GridToolbar
-		bind:searchTerm
+		{searchTerm}
+		onSearch={handleSearch}
 		hasSelection={selectedRows.length > 0}
 		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
 		onFitColumns={() => gridWrapper?.fitColumns()}
@@ -649,7 +715,7 @@
 			<TabulatorWrapper
 				bind:this={gridWrapper}
 				bind:toolbarColumns
-				data={filteredIngresos}
+				data={ingresos}
 				{columns}
 				withCheckboxSelection={true}
 				groupBy={groupByField}
@@ -662,7 +728,7 @@
 				}}
 				onRowSelectionChanged={(data) => (selectedRows = data)}
 				onRowDblClick={handleRowDblClick}
-				persistenceID="ingreso-list-v3"
+				persistenceID="ingreso-list-v4"
 			/>
 		{/if}
 	</div>
