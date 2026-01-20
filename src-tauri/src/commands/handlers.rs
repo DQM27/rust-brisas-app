@@ -133,6 +133,7 @@ macro_rules! register_handlers {
             // Comandos de búsqueda
             commands::search_commands::search_omnibox,
             commands::search_commands::search_global,
+            commands::search_commands::search_by_type,
             commands::search_commands::reindex_global_search,
             // ==========================================
             // COMANDOS DE EXPORTACIÓN

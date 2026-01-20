@@ -28,6 +28,7 @@
 		UpdateProveedorInput,
 		EstadoProveedor
 	} from '$lib/types/proveedor';
+	import { searchByType } from '$lib/api/searchService';
 
 	// Stores
 	import { activeTabId } from '$lib/stores/tabs';
@@ -203,6 +204,23 @@
 		openFormModal(data);
 	}
 
+	async function handleSearch(term: string) {
+		searchTerm = term;
+		if (!term || term.trim().length < 2) {
+			if (gridWrapper) gridWrapper.replaceData(proveedores);
+			return;
+		}
+		try {
+			const results = await searchByType(term, 'proveedor', 100);
+			const matchedIds = new Set(results.map((r) => r.id));
+			const filtered = proveedores.filter((p) => matchedIds.has(p.id));
+			if (gridWrapper) gridWrapper.replaceData(filtered);
+		} catch (e) {
+			console.error('Error en búsqueda inteligente:', e);
+			if (gridWrapper) gridWrapper.getTable()?.setFilter('nombre', 'like', term);
+		}
+	}
+
 	function handleToggleFilters() {
 		showHeaderFilters = !showHeaderFilters;
 		if (typeof window !== 'undefined') {
@@ -247,12 +265,8 @@
 
 	<!-- Toolbar -->
 	<GridToolbar
-		bind:searchTerm
-		onSearch={(term) => {
-			if (gridWrapper) {
-				gridWrapper.getTable()?.setFilter('nombre', 'like', term);
-			}
-		}}
+		{searchTerm}
+		onSearch={handleSearch}
 		hasSelection={selectedRows.length > 0}
 		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
 		onFitColumns={() => gridWrapper?.fitColumns()}

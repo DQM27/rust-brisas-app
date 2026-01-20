@@ -536,3 +536,56 @@ pub fn update_proveedor_fetched_in_index(
     index_proveedor_fetched(writer, handles, proveedor, empresa_nombre)?;
     Ok(())
 }
+
+/// Indexa un visitante (Fetched) con su nombre de empresa.
+pub fn index_visitante_fetched(
+    writer: &mut IndexWriter,
+    handles: &FieldHandles,
+    visitante: &crate::models::visitante::VisitanteFetched,
+    empresa_nombre: &str,
+) -> Result<(), SearchError> {
+    // Construir texto de búsqueda concatenado
+    let mut search_text_parts = vec![
+        visitante.cedula.clone(),
+        visitante.nombre.clone(),
+        visitante.apellido.clone(),
+        empresa_nombre.to_string(),
+    ];
+
+    if let Some(ref segundo_nombre) = visitante.segundo_nombre {
+        search_text_parts.push(segundo_nombre.clone());
+    }
+
+    if let Some(ref segundo_apellido) = visitante.segundo_apellido {
+        search_text_parts.push(segundo_apellido.clone());
+    }
+
+    let search_text = search_text_parts.join(" ");
+
+    // Crear documento usando handles pre-cargados
+    let mut doc = TantivyDocument::default();
+    doc.add_text(handles.id, visitante.id.to_string());
+    doc.add_text(handles.tipo, "visitante");
+    doc.add_text(handles.cedula, &visitante.cedula);
+    doc.add_text(handles.nombre, &visitante.nombre);
+
+    if let Some(ref segundo_nombre) = visitante.segundo_nombre {
+        doc.add_text(handles.segundo_nombre, segundo_nombre);
+    }
+
+    doc.add_text(handles.apellido, &visitante.apellido);
+
+    if let Some(ref segundo_apellido) = visitante.segundo_apellido {
+        doc.add_text(handles.segundo_apellido, segundo_apellido);
+    }
+
+    doc.add_text(handles.empresa_nombre, empresa_nombre);
+    doc.add_text(handles.search_text, &search_text);
+
+    // Agregar al índice
+    writer
+        .add_document(doc)
+        .map_err(|e| SearchError::TantivyError(format!("Error al agregar visitante: {e}")))?;
+
+    Ok(())
+}

@@ -19,6 +19,7 @@
 	import type { ListaNegraResponse, AddToListaNegraInput } from '$lib/types/listaNegra';
 	import { activeTabId } from '$lib/stores/tabs';
 	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
+	import { searchByType } from '$lib/api/searchService';
 
 	interface Props {
 		tabId: string;
@@ -103,6 +104,23 @@
 		showConfirmModal = true;
 	}
 
+	async function handleSearch(term: string) {
+		searchTerm = term;
+		if (!term || term.trim().length < 2) {
+			if (gridWrapper) gridWrapper.replaceData(bloqueados);
+			return;
+		}
+		try {
+			const results = await searchByType(term, 'lista_negra', 100);
+			const matchedIds = new Set(results.map((r) => r.id));
+			const filtered = bloqueados.filter((b) => matchedIds.has(b.id));
+			if (gridWrapper) gridWrapper.replaceData(filtered);
+		} catch (e) {
+			console.error('Error en búsqueda inteligente:', e);
+			if (gridWrapper) gridWrapper.getTable()?.setFilter('nombreCompleto', 'like', term);
+		}
+	}
+
 	async function handleConfirmAction() {
 		if (!editingBloqueado) return;
 		formLoading = true;
@@ -178,7 +196,8 @@
 
 	<!-- Toolbar & Grid -->
 	<GridToolbar
-		bind:searchTerm
+		{searchTerm}
+		onSearch={handleSearch}
 		hasSelection={selectedRows.length > 0}
 		selectionCount={selectedRows.length}
 		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}

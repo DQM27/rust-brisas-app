@@ -19,6 +19,7 @@
 
 	// Types
 	import type { UserResponse, CreateUserInput, UpdateUserInput } from '$lib/types/user';
+	import { searchByType } from '$lib/api/searchService';
 
 	// Stores
 	import { currentUser } from '$lib/stores/auth';
@@ -272,6 +273,23 @@
 		}
 	}
 
+	async function handleSearch(term: string) {
+		searchTerm = term;
+		if (!term || term.trim().length < 2) {
+			if (gridWrapper) gridWrapper.replaceData(users);
+			return;
+		}
+		try {
+			const results = await searchByType(term, 'user', 100);
+			const matchedIds = new Set(results.map((r) => r.id));
+			const filtered = users.filter((u) => matchedIds.has(u.id));
+			if (gridWrapper) gridWrapper.replaceData(filtered);
+		} catch (e) {
+			console.error('Error en búsqueda inteligente:', e);
+			if (gridWrapper) gridWrapper.getTable()?.setFilter('nombre', 'like', term);
+		}
+	}
+
 	function handleToggleFilters() {
 		showHeaderFilters = !showHeaderFilters;
 		if (typeof window !== 'undefined') {
@@ -316,12 +334,8 @@
 
 	<!-- Toolbar -->
 	<GridToolbar
-		bind:searchTerm
-		onSearch={(term) => {
-			if (gridWrapper) {
-				gridWrapper.getTable()?.setFilter('nombre', 'like', term);
-			}
-		}}
+		{searchTerm}
+		onSearch={handleSearch}
 		hasSelection={selectedRows.length > 0}
 		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
 		onFitColumns={() => gridWrapper?.fitColumns()}

@@ -25,6 +25,7 @@ use crate::models::contratista::ContratistaFetched;
 use crate::models::lista_negra::ListaNegra;
 use crate::models::proveedor::ProveedorFetched;
 use crate::models::user::{User, UserFetched};
+use crate::models::visitante::VisitanteFetched;
 use crate::search::errors::SearchError;
 use crate::search::schema::FieldHandles;
 use crate::search::searcher::SearchResultDto;
@@ -141,12 +142,18 @@ impl SearchService {
             SearchError::DatabaseError(e.to_string())
         })?;
 
+        let visitantes = crate::db::surrealdb_visitante_queries::find_all().await.map_err(|e| {
+            error!("❌ Error al cargar visitantes para reindexación: {e}");
+            SearchError::DatabaseError(e.to_string())
+        })?;
+
         debug!(
-            "📊 Entidades a indexar: {} contratistas, {} usuarios, {} lista_negra, {} proveedores",
+            "📊 Entidades a indexar: {} contratistas, {} usuarios, {} lista_negra, {} proveedores, {} visitantes",
             contratistas.len(),
             users.len(),
             lista_negra.len(),
-            proveedores.len()
+            proveedores.len(),
+            visitantes.len()
         );
 
         // Adquirimos el lock de escritura para evitar que otras actualizaciones parciales
@@ -178,6 +185,13 @@ impl SearchService {
             }
             for p in &proveedores {
                 index_proveedor_fetched(&mut writer, &handles, p, &p.empresa.nombre)?;
+            }
+            for v in &visitantes {
+                // Visitante tiene empresa opcional
+                let empresa_nombre =
+                    v.empresa.as_ref().map(|e| e.nombre.as_str()).unwrap_or("Sin Empresa");
+
+                crate::search::index_visitante_fetched(&mut writer, &handles, v, empresa_nombre)?;
             }
 
             // El commit persiste los cambios en disco.
@@ -397,10 +411,26 @@ impl SearchService {
 
     /// Realiza una búsqueda multitabla.
     ///
-    /// Se optimiza pasando los campos pre-calculados (Cache), permitiendo devolver
-    /// resultados relevantes en milisegundos incluso con miles de registros.
+    /// Búsqueda multitabla.
     pub fn search(&self, query: &str, limit: usize) -> Result<Vec<SearchResultDto>, SearchError> {
         search_index(&self.index, &self.reader, &self.fields, query, limit)
+    }
+
+    /// Búsqueda filtrada por tipo de entidad.
+    pub fn search_by_type(
+        &self,
+        query: &str,
+        tipo: &str,
+        limit: usize,
+    ) -> Result<Vec<SearchResultDto>, SearchError> {
+        crate::search::searcher::search_by_type(
+            &self.index,
+            &self.reader,
+            &self.fields,
+            query,
+            tipo,
+            limit,
+        )
     }
 
     pub fn is_empty(&self) -> bool {
@@ -470,9 +500,74 @@ impl SearchService {
         self.reader.reload().map_err(|e| SearchError::TantivyError(e.to_string()))?;
         Ok(())
     }
+
+    pub async fn delete_visitante(&self, id: &str) -> Result<(), SearchError> {
+        debug!("🗑️ Eliminando visitante del índice: {id}");
+        let _lock = self.writer_mutex.lock().await;
+
+        {
+            let mut writer = get_index_writer(&self.index)?;
+
+            delete_from_index(&mut writer, &self.handles, id)?;
+            commit_index(&mut writer)?;
+        }
+
+        self.reader.reload().map_err(|e| SearchError::TantivyError(e.to_string()))?;
+        Ok(())
+    }
+
+    pub async fn add_visitante_fetched(
+        &self,
+        visitante: &VisitanteFetched,
+        empresa_nombre: &str,
+    ) -> Result<(), SearchError> {
+        debug!("➕ Indexando visitante: {}", visitante.id);
+        let _lock = self.writer_mutex.lock().await;
+
+        {
+            let mut writer = get_index_writer(&self.index)?;
+
+            crate::search::index_visitante_fetched(
+                &mut writer,
+                &self.handles,
+                visitante,
+                empresa_nombre,
+            )?;
+            commit_index(&mut writer)?;
+        }
+
+        self.reader.reload().map_err(|e| SearchError::TantivyError(e.to_string()))?;
+        Ok(())
+    }
+
+    pub async fn update_visitante_fetched(
+        &self,
+        visitante: &VisitanteFetched,
+        empresa_nombre: &str,
+    ) -> Result<(), SearchError> {
+        debug!("✏️ Actualizando índice visitante: {}", visitante.id);
+        let _lock = self.writer_mutex.lock().await;
+
+        {
+            let mut writer = get_index_writer(&self.index)?;
+
+            // Delete + Insert explícito para evitar modificar indexer.rs
+            delete_from_index(&mut writer, &self.handles, &visitante.id.to_string())?;
+            crate::search::index_visitante_fetched(
+                &mut writer,
+                &self.handles,
+                visitante,
+                empresa_nombre,
+            )?;
+
+            commit_index(&mut writer)?;
+        }
+
+        self.reader.reload().map_err(|e| SearchError::TantivyError(e.to_string()))?;
+        Ok(())
+    }
 }
 
 // --------------------------------------------------------------------------
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
-

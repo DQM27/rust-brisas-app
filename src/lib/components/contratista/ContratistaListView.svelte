@@ -25,6 +25,7 @@
 	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
 
 	import { selectedSearchStore } from '$lib/stores/searchStore';
+	import { searchByType } from '$lib/api/searchService';
 	import { getContratistaColumns } from '$lib/logic/contratista/contratistaColumns';
 	// Services and Logic
 	import * as contratistaService from '$lib/logic/contratista/contratistaService';
@@ -289,25 +290,46 @@
 		loading = false;
 	}
 
-	// Filter Application Logic
-	function applyFilters() {
-		if (!gridWrapper) return;
-
-		let filtered = [...contratistas];
-
-		// Search
-		if ($selectedSearchStore.result) {
-			filtered = filtered.filter((c) => c.id === $selectedSearchStore.result!.id);
+	// Smart Search implementation using Tantivy
+	async function handleGridSearch(term: string) {
+		searchTerm = term;
+		if (!term || term.trim().length < 2) {
+			if (gridWrapper) gridWrapper.replaceData(contratistas);
+			return;
 		}
 
-		// Apply to grid
-		gridWrapper.replaceData(filtered);
+		try {
+			// Usamos Tantivy para obtener los IDs que coinciden
+			const results = await searchByType(term, 'contratista', 100);
+			const matchedIds = new Set(results.map((r) => r.id));
+
+			// Filtramos la lista local basándonos en los poderes de Tantivy
+			const filtered = contratistas.filter((c) => matchedIds.has(c.id));
+
+			if (gridWrapper) {
+				gridWrapper.replaceData(filtered);
+				// Si no hay resultados locales pero Tantivy encontró algo,
+				// podríamos opcionalmente cargar esos registros específicos de la DB.
+				// Por ahora, asumimos que 'contratistas' tiene el set completo.
+			}
+		} catch (e) {
+			console.error('Error en búsqueda inteligente:', e);
+			// Fallback al filtro local básico si falla el motor
+			if (gridWrapper) {
+				gridWrapper.getTable()?.setFilter('nombreCompleto', 'like', term);
+			}
+		}
 	}
 
-	// Subscribe to global search
+	// Subscribe to global search (old mechanism for dropdown selection)
 	$effect(() => {
-		const _ = $selectedSearchStore;
-		applyFilters();
+		const result = $selectedSearchStore.result;
+		if (result && result.tipo === 'contratista') {
+			const filtered = contratistas.filter((c) => c.id === result.id);
+			if (gridWrapper) gridWrapper.replaceData(filtered);
+		} else if (!result && searchTerm === '') {
+			if (gridWrapper) gridWrapper.replaceData(contratistas);
+		}
 	});
 
 	// ==========================================
@@ -642,12 +664,8 @@
 		{:else}
 			<!-- New Independent Toolbar -->
 			<GridToolbar
-				bind:searchTerm
-				onSearch={(term) => {
-					if (gridWrapper) {
-						gridWrapper.getTable()?.setFilter('nombreCompleto', 'like', term);
-					}
-				}}
+				{searchTerm}
+				onSearch={handleGridSearch}
 				onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
 				onFitColumns={() => gridWrapper?.fitColumns()}
 				onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}

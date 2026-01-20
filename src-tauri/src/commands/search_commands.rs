@@ -46,3 +46,24 @@ pub async fn search_global(
     require_perm!(session, "users:read", "Ejecutando búsqueda global en repositorios")?;
     search_service.search(&query, limit.unwrap_or(20)).map_err(SearchError::Engine)
 }
+
+/// Búsqueda Específica: Consulta filtrada por tipo de entidad.
+#[tauri::command]
+pub async fn search_by_type(
+    session: State<'_, SessionState>,
+    search_service: State<'_, Arc<SearchService>>,
+    query: String,
+    tipo: String,
+    limit: Option<usize>,
+) -> Result<Vec<SearchResultDto>, SearchError> {
+    // Validamos permisos según el tipo
+    match tipo.as_str() {
+        "contratista" => require_perm!(session, "contratistas:read")?,
+        "user" => require_perm!(session, "users:read")?,
+        "proveedor" => require_perm!(session, "proveedores:read")?,
+        "visitante" | "visita" => require_perm!(session, "visitas:read")?,
+        _ => require_perm!(session, "contratistas:read")?, // Fallback
+    };
+
+    search_service.search_by_type(&query, &tipo, limit.unwrap_or(50)).map_err(SearchError::Engine)
+}

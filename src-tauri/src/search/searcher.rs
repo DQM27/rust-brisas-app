@@ -150,16 +150,23 @@ pub fn search_index(
     Ok(results)
 }
 
-/// Busca solo en contratistas (Optimizado)
-pub fn search_contratistas(
+/// Busca en el índice filtrando por un tipo de entidad específico
+pub fn search_by_type(
     index: &Index,
     reader: &IndexReader,
-    fields: &SearchFields, // Cache de campos inyectada
+    fields: &SearchFields,
     query_str: &str,
+    tipo: &str,
     limit: usize,
 ) -> Result<Vec<SearchResultDto>, SearchError> {
-    // Agregar filtro de tipo
-    let filtered_query = format!("+tipo:contratista +({query_str})");
+    // Si el query está vacío, no podemos hacer búsqueda por términos, pero Tantivy requiere un query.
+    // Manejamos esto devolviendo vacío o una búsqueda de "todo" para ese tipo.
+    if query_str.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // Agregar filtro de tipo obligatorio (+)
+    let filtered_query = format!("+tipo:{} +({})", tipo, query_str);
     search_index(index, reader, fields, &filtered_query, limit)
 }
 
