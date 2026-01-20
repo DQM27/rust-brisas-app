@@ -32,6 +32,11 @@
 				handleNew();
 			}, 100);
 		}
+		if (data?.openCreateBatchModal) {
+			setTimeout(() => {
+				showBulkModal = true;
+			}, 100);
+		}
 	});
 
 	// State

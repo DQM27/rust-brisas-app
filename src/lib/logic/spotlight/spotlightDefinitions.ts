@@ -21,7 +21,8 @@ import {
     Database,
     RefreshCw,
     UserPlus,
-    Ban
+    Ban,
+    ListPlus
 } from 'lucide-svelte';
 import type { SpotlightItemDefinition } from '$lib/types/spotlight';
 
@@ -32,7 +33,7 @@ import type { SpotlightItemDefinition } from '$lib/types/spotlight';
 export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
     {
         id: 'users-list',
-        label: 'Lista de Usuarios',
+        label: 'Lista Usuarios',
         description: 'Gestión de usuarios del sistema',
         icon: UserCircle2,
         category: 'module',
@@ -42,7 +43,7 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
     },
     {
         id: 'ingreso-list',
-        label: 'Listado de Ingresos Contratista',
+        label: 'Ingresos Contratistas',
         description: 'Control de ingresos de contratistas',
         icon: DoorOpen,
         category: 'module',
@@ -52,8 +53,8 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
     },
     {
         id: 'contratista-list',
-        label: 'Catálogo de Contratistas',
-        description: 'Gestión de maestros de contratistas',
+        label: 'Lista Contratistas',
+        description: 'Gestión de catálogo de contratistas',
         icon: Users,
         category: 'module',
         subCategory: 'link',
@@ -62,7 +63,7 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
     },
     {
         id: 'proveedor-ingreso-list',
-        label: 'Listado de Ingresos Proveedor',
+        label: 'Ingresos Proveedores',
         description: 'Control de ingresos de proveedores',
         icon: PackageCheck,
         category: 'module',
@@ -72,8 +73,8 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
     },
     {
         id: 'proveedor-list',
-        label: 'Catálogo de Proveedores',
-        description: 'Gestión de maestros de proveedores',
+        label: 'Lista Proveedores',
+        description: 'Gestión de catálogo de proveedores',
         icon: PackageCheck,
         category: 'module',
         subCategory: 'link',
@@ -82,8 +83,8 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
     },
     {
         id: 'visitas-list',
-        label: 'Listado de Visitas',
-        description: 'Gestión de visitantes',
+        label: 'Ingresos Visitas',
+        description: 'Control de ingresos de visitantes',
         icon: Contact,
         category: 'module',
         subCategory: 'link',
@@ -91,9 +92,19 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
         permission: 'VIEW_VISITOR_LIST'
     },
     {
+        id: 'visitante-list',
+        label: 'Lista Visitantes',
+        description: 'Catálogo histórico de visitantes',
+        icon: Users,
+        category: 'module',
+        subCategory: 'link',
+        keywords: ['lista', 'visitante', 'maestro', 'administrar'],
+        permission: 'VIEW_VISITOR_LIST'
+    },
+    {
         id: 'gafete-list',
-        label: 'Inventario de Gafetes',
-        description: 'Gestión de gafetes e identificaciones',
+        label: 'Lista Gafetes',
+        description: 'Gestión de inventario de gafetes',
         icon: IdCard,
         category: 'module',
         subCategory: 'link',
@@ -102,7 +113,7 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
     },
     {
         id: 'lista-negra-list',
-        label: 'Registro de Lista Negra',
+        label: 'Lista Negra',
         description: 'Control de acceso restringido',
         icon: ShieldX,
         category: 'module',
@@ -140,12 +151,12 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
     },
     {
         id: 'create-visita',
-        label: 'Nueva Visita',
+        label: 'Nuevo Ingreso Visita',
         description: 'Registrar entrada de visitante',
         icon: Plus,
         category: 'action',
         subCategory: 'transaction',
-        keywords: ['nuevo', 'crear', 'visita', 'visitante', 'registrar'],
+        keywords: ['nuevo', 'crear', 'visita', 'visitante', 'ingreso', 'registrar'],
         permission: 'CREATE_VISITOR'
     },
     // --- MAESTROS (CREAR) ---
@@ -171,27 +182,27 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
     },
     {
         id: 'master-visitante',
-        label: 'Crear Visitante',
+        label: 'Crear Visita',
         description: 'Añadir nuevo visitante al catálogo',
         icon: UserPlus,
         category: 'action',
         subCategory: 'master',
-        keywords: ['crear', 'maestro', 'catálogo', 'visitante'],
+        keywords: ['crear', 'maestro', 'catálogo', 'visitante', 'visita'],
         permission: 'CREATE_VISITOR'
     },
     {
         id: 'create-user',
-        label: 'Crear Nuevo Usuario',
+        label: 'Crear Usuario',
         description: 'Registrar un nuevo acceso al sistema',
         icon: UserPlus,
         category: 'action',
         subCategory: 'master',
         keywords: ['nuevo', 'crear', 'usuario', 'user', 'registrar', 'empleado'],
-        permission: 'EDIT_USER'
+        permission: 'CREATE_USER'
     },
     {
         id: 'create-blacklist',
-        label: 'Crear Bloqueo (Lista Negra)',
+        label: 'Crear Bloqueo',
         description: 'Añadir persona a lista negra',
         icon: Ban,
         category: 'action',
@@ -201,13 +212,23 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
     },
     {
         id: 'create-gafete',
-        label: 'Crear Nuevo Gafete',
+        label: 'Crear Gafete',
         description: 'Registrar un nuevo gafete físico',
         icon: Plus,
         category: 'action',
         subCategory: 'master',
         keywords: ['nuevo', 'crear', 'gafete', 'carnet', 'tarjeta', 'inventario'],
-        permission: 'VIEW_GAFETE_LIST'
+        permission: 'CREATE_GAFETE'
+    },
+    {
+        id: 'create-gafete-batch',
+        label: 'Crear Lote de Gafetes',
+        description: 'Generar múltiples gafetes por rango',
+        icon: ListPlus,
+        category: 'action',
+        subCategory: 'master',
+        keywords: ['lote', 'rango', 'generar', 'masivo', 'gafetes'],
+        permission: 'CREATE_GAFETE'
     },
     // --- CONFIGURACIÓN ---
     {
@@ -297,11 +318,14 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
 // ============================================
 
 export const MODULE_COMPONENT_MAP: Record<string, { componentKey: string; title: string }> = {
-    'users-list': { componentKey: 'user-list', title: 'Lista de Usuarios' },
-    'ingreso-list': { componentKey: 'ingreso-list', title: 'Ingresos Contratista' },
-    'proveedor-ingreso-list': { componentKey: 'proveedor-ingreso-list', title: 'Ingresos Proveedor' },
-    'visitas-list': { componentKey: 'visitas-list', title: 'Ingreso Visitas' },
-    'gafete-list': { componentKey: 'gafete-list', title: 'Gestión de Gafetes' },
+    'users-list': { componentKey: 'user-list', title: 'Lista Usuarios' },
+    'ingreso-list': { componentKey: 'ingreso-list', title: 'Ingresos Contratistas' },
+    'contratista-list': { componentKey: 'contratista-list', title: 'Lista Contratistas' },
+    'proveedor-ingreso-list': { componentKey: 'proveedor-ingreso-list', title: 'Ingresos Proveedores' },
+    'proveedor-list': { componentKey: 'proveedor-list', title: 'Lista Proveedores' },
+    'visitas-list': { componentKey: 'visitas-list', title: 'Ingresos Visitas' },
+    'visitante-list': { componentKey: 'visitante-list', title: 'Lista Visitantes' },
+    'gafete-list': { componentKey: 'gafete-list', title: 'Lista Gafetes' },
     'lista-negra-list': { componentKey: 'lista-negra-list', title: 'Lista Negra' },
     // Settings mappings
     'settings-general': { componentKey: 'general-settings', title: 'Ajustes Generales' },

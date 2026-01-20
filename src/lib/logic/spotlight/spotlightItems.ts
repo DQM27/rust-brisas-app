@@ -142,10 +142,19 @@ export function executeQuickAction(actionId: string, onClose: () => void): void 
         case 'create-gafete':
             openTab({
                 componentKey: 'gafete-list',
-                title: 'Gestión de Gafetes',
+                title: 'Lista Gafetes',
                 id: 'gafete-list',
                 focusOnOpen: true,
                 data: { openCreateModal: Date.now() }
+            });
+            break;
+        case 'create-gafete-batch':
+            openTab({
+                componentKey: 'gafete-list',
+                title: 'Lista Gafetes',
+                id: 'gafete-list',
+                focusOnOpen: true,
+                data: { openCreateBatchModal: Date.now() }
             });
             break;
         case 'action-reindex':
@@ -229,6 +238,9 @@ export function buildSpotlightItems(tabs: any[], onClose: () => void): Spotlight
 export function filterItems(items: SpotlightItem[], query: string): SpotlightItem[] {
     const q = query.trim().toLowerCase();
     if (!q) return items;
+
+    // Trigger para mostrar todo (estilo VS Code / Raycast)
+    if (q === '>' || q === 'todo' || q === 'all') return items;
 
     return items.filter((item) => {
         const labelMatch = item.label.toLowerCase().includes(q);

@@ -127,7 +127,7 @@
 						bind:this={inputRef}
 						bind:value={query}
 						type="text"
-						placeholder="Buscar en Megabrisas..."
+						placeholder="Buscar en Megabrisas... (escribe '>' para ver todo)"
 						class="w-full bg-transparent pl-10 pr-4 py-2.5 text-[15px] text-white focus:outline-none outline-none border-none placeholder:text-gray-600 appearance-none ring-0"
 						autocomplete="off"
 					/>
