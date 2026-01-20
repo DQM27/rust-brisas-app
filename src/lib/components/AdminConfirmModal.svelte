@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Shield, TriangleAlert, Lock, Eye, EyeOff } from 'lucide-svelte';
-	import { fade, scale } from 'svelte/transition';
+	import { Shield, TriangleAlert, Lock, Eye, EyeOff, X } from 'lucide-svelte';
+	import { fade, fly } from 'svelte/transition';
 	import { currentUser } from '$lib/stores/auth';
 
 	interface Props {
@@ -32,132 +32,170 @@
 		password = '';
 		onCancel();
 	}
+
+	// Clases estándar según ui-patterns.md
+	const inputClass =
+		'w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-10 py-2 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all';
+	const labelClass = 'block text-xs font-medium text-secondary mb-1';
 </script>
 
 {#if isOpen}
 	<div
-		class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-		transition:fade={{ duration: 200 }}
+		class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+		transition:fade={{ duration: 150 }}
 	>
-		<div
-			class="w-full max-w-[480px] bg-[#0d1117] rounded-xl shadow-2xl border border-white/10 overflow-hidden relative"
-			transition:scale={{ duration: 200, start: 0.95 }}
-		>
-			<!-- Background Glow Effect -->
-			<div
-				class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-orange-500/10 blur-[60px] rounded-full pointer-events-none"
-			></div>
+		<!-- Backdrop -->
+		<div class="absolute inset-0" onclick={handleCancel} role="presentation"></div>
 
-			<div class="p-8 relative z-10">
-				<!-- Header -->
-				<div class="flex items-start gap-4 mb-6">
-					<div
-						class="flex-none p-3 rounded-2xl bg-gradient-to-br from-orange-500/20 to-orange-600/5 ring-1 ring-orange-500/20 shadow-lg shadow-orange-900/20"
-					>
-						<Shield class="w-8 h-8 text-orange-400" strokeWidth={1.5} />
+		<!-- Modal -->
+		<div
+			class="relative z-10 w-full max-w-[500px] max-h-[95vh] overflow-hidden bg-surface-2 shadow-2xl border border-surface rounded-xl flex flex-col"
+			transition:fly={{ y: 20, duration: 200 }}
+		>
+			<!-- Header -->
+			<div
+				class="flex-none flex items-center justify-between px-6 py-4 bg-surface-2 border-b border-surface"
+			>
+				<div class="flex items-center gap-3">
+					<div class="p-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
+						<Shield class="w-5 h-5 text-orange-400" />
 					</div>
 					<div>
-						<h2 class="text-xl font-bold text-white leading-tight">Desactivar Tu Cuenta</h2>
-						<p class="text-gray-400 text-sm mt-1">Acción que requiere verificación</p>
+						<h2 class="text-lg font-semibold text-primary">Desactivar Tu Cuenta</h2>
+						<p class="text-xs text-secondary">Acción que requiere verificación</p>
 					</div>
 				</div>
-
-				<!-- Warning Alert -->
-				<div
-					class="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-4 mb-6 flex items-start gap-3"
+				<button
+					onclick={handleCancel}
+					class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
 				>
-					<TriangleAlert class="w-5 h-5 text-yellow-500 flex-none relative top-0.5" />
-					<p class="text-sm text-yellow-200/80 leading-relaxed">
+					<X size={20} />
+				</button>
+			</div>
+
+			<!-- Content -->
+			<form
+				onsubmit={(e) => {
+					e.preventDefault();
+					handleSubmit();
+				}}
+				class="flex-1 p-6 space-y-4 overflow-y-auto"
+			>
+				<!-- Warning Alert Card -->
+				<div class="bg-yellow-900/10 border border-yellow-700/30 rounded-lg p-4 flex gap-3">
+					<TriangleAlert class="w-5 h-5 text-yellow-500 flex-none mt-0.5" />
+					<div class="text-sm text-yellow-200/90 leading-relaxed">
 						<span class="font-semibold text-yellow-400">ADVERTENCIA:</span> Estás a punto de desactivar
 						tu propia cuenta. Una vez desactivada, NO podrás iniciar sesión hasta que otro administrador
-						te reactive. ¿Estás seguro de que deseas continuar?
-					</p>
+						te reactive.
+					</div>
 				</div>
 
 				<!-- User Card -->
 				{#if $currentUser}
-					<div class="bg-white/5 border border-white/5 rounded-lg p-4 mb-6 flex items-center gap-4">
+					<div class="bg-surface-1 border border-surface rounded-lg p-4 flex items-center gap-3">
 						<div
-							class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg"
+							class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-base flex-none"
 						>
 							{$currentUser.nombre[0].toUpperCase()}
 						</div>
 						<div class="flex-1 min-w-0">
-							<p class="text-sm font-medium text-white truncate">
+							<p class="text-sm font-medium text-primary truncate">
 								{$currentUser.nombre}
 								{$currentUser.apellido}
 							</p>
-							<p class="text-xs text-gray-500 truncate">
+							<p class="text-xs text-secondary truncate">
 								{$currentUser.email}
 							</p>
 						</div>
 					</div>
 				{/if}
 
-				<form
-					onsubmit={(e) => {
-						e.preventDefault();
-						handleSubmit();
-					}}
-					class="space-y-6"
-				>
-					<!-- Password Input -->
-					<div class="space-y-2">
-						<label for="admin-pass" class="block text-sm font-medium text-gray-300">
-							Ingresa tu contraseña para confirmar
-						</label>
-						<div class="relative group">
-							<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-								<Lock
-									class="h-5 w-5 text-gray-500 group-focus-within:text-blue-500 transition-colors"
-								/>
-							</div>
-							<input
-								bind:this={inputRef}
-								id="admin-pass"
-								type={showPassword ? 'text' : 'password'}
-								bind:value={password}
-								class="block w-full pl-10 pr-10 py-3 bg-black/40 border border-white/10 rounded-lg text-white placeholder-gray-600 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all text-sm tracking-wide sm:text-base outline-none"
-								placeholder="••••••••"
-							/>
-							<button
-								type="button"
-								class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-gray-500 hover:text-gray-300 transition-colors"
-								onclick={() => (showPassword = !showPassword)}
-							>
-								{#if showPassword}
-									<EyeOff class="h-5 w-5" />
-								{:else}
-									<Eye class="h-5 w-5" />
-								{/if}
-							</button>
-						</div>
-					</div>
+				<!-- Password Input Card -->
+				<div class="bg-surface-1 rounded-lg border border-surface p-4 space-y-3">
+					<label for="admin-pass" class={labelClass}>
+						Ingresa tu contraseña para confirmar <span class="text-red-500">*</span>
+					</label>
 
-					<!-- Actions -->
-					<div class="grid grid-cols-2 gap-3">
+					<div class="relative group">
+						<!-- Lock Icon -->
+						<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+							<Lock
+								class="h-4 w-4 text-gray-500 group-focus-within:text-blue-400 transition-colors"
+							/>
+						</div>
+
+						<!-- Input -->
+						<input
+							bind:this={inputRef}
+							id="admin-pass"
+							type={showPassword ? 'text' : 'password'}
+							bind:value={password}
+							class={inputClass}
+							placeholder="••••••••"
+						/>
+
+						<!-- Toggle Password Visibility -->
 						<button
 							type="button"
-							onclick={handleCancel}
-							class="px-4 py-2.5 rounded-lg border border-white/10 text-gray-300 font-medium hover:bg-white/5 hover:text-white transition-all text-sm"
+							class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-gray-500 hover:text-gray-300 transition-colors"
+							onclick={() => (showPassword = !showPassword)}
 						>
-							Cancelar
-						</button>
-						<button
-							type="submit"
-							disabled={!password}
-							class="px-4 py-2.5 rounded-lg bg-orange-700 hover:bg-orange-600 text-white font-medium shadow-lg shadow-orange-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
-						>
-							Sí, Desactivar Mi Cuenta
+							{#if showPassword}
+								<EyeOff class="h-4 w-4" />
+							{:else}
+								<Eye class="h-4 w-4" />
+							{/if}
 						</button>
 					</div>
 
-					<div class="flex items-center justify-center gap-2 text-xs text-gray-600 mt-2">
+					<!-- Security Note -->
+					<div class="flex items-center gap-2 text-xs text-secondary mt-2">
 						<Lock class="w-3 h-3" />
 						Tu contraseña se verifica localmente y no se almacena
 					</div>
-				</form>
+				</div>
+			</form>
+
+			<!-- Footer -->
+			<div
+				class="flex-none flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1"
+			>
+				<!-- Cancelar -->
+				<button
+					type="button"
+					onclick={handleCancel}
+					class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm"
+				>
+					Cancelar
+				</button>
+
+				<!-- Confirmar -->
+				<button
+					type="submit"
+					disabled={!password}
+					onclick={handleSubmit}
+					class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-red-500 hover:text-red-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+				>
+					Sí, Desactivar Mi Cuenta
+				</button>
 			</div>
 		</div>
 	</div>
 {/if}
+
+<style>
+	/* Autofill Fix (Evita fondo blanco de Chrome) */
+	input:-webkit-autofill {
+		-webkit-text-fill-color: white !important;
+		-webkit-box-shadow: 0 0 0px 1000px #1c2128 inset !important;
+		transition: background-color 5000s ease-in-out 0s;
+	}
+
+	/* Focus Override Global */
+	input:focus {
+		border-color: rgba(59, 130, 246, 0.5) !important;
+		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+		outline: none !important;
+	}
+</style>
