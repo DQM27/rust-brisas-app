@@ -103,17 +103,6 @@
 			{#if selectionActions}
 				{@render selectionActions()}
 			{/if}
-
-			{#if selectionCount > 0}
-				<div
-					class="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-md animate-in fade-in zoom-in duration-200"
-				>
-					<span class="flex h-2 w-2 rounded-full bg-blue-500"></span>
-					<span class="text-xs font-bold text-blue-400 uppercase tracking-wider">
-						{selectionCount} Seleccionados
-					</span>
-				</div>
-			{/if}
 		{/if}
 	</div>
 

@@ -9,7 +9,7 @@ export const getListaNegraColumns = (): ColumnDefinition[] => {
 			width: 130,
 			frozen: true,
 			headerFilter: 'input',
-			formatter: (cell) => `<span class="font-mono text-sm text-gray-100">${cell.getValue()}</span>`
+			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Nombre Completo',
@@ -19,7 +19,7 @@ export const getListaNegraColumns = (): ColumnDefinition[] => {
 			formatter: (cell) => {
 				const data = cell.getData() as any;
 				const nombre = data.nombreCompleto || data.nombre_completo || `${data.nombre} ${data.apellido}`;
-				return `<span class="font-medium text-white">${nombre}</span>`;
+				return `<span style="font-weight:500; color:#e2e8f0">${nombre || ''}</span>`;
 			}
 		},
 		{
@@ -29,7 +29,7 @@ export const getListaNegraColumns = (): ColumnDefinition[] => {
 			minWidth: 150,
 			formatter: (cell) => {
 				const data = cell.getData() as any;
-				return `<span>${data.empresaNombre || data.empresa_nombre || 'Sin empresa'}</span>`;
+				return `<span style="color:#9ca3af">${data.empresaNombre || data.empresa_nombre || 'Sin empresa'}</span>`;
 			}
 		},
 		{
@@ -81,7 +81,7 @@ export const getListaNegraColumns = (): ColumnDefinition[] => {
 			minWidth: 200,
 			formatter: (cell) => {
 				const val = cell.getValue() || (cell.getData() as any).motivo_bloqueo || 'Sin motivo';
-				return `<span class="text-xs text-gray-400 truncate block max-w-xs" title="${val}">${val}</span>`;
+				return `<span style="color:#9ca3af" class="truncate block max-w-xs" title="${val}">${val}</span>`;
 			}
 		},
 		{
@@ -91,7 +91,7 @@ export const getListaNegraColumns = (): ColumnDefinition[] => {
 			formatter: (cell) => {
 				const data = cell.getData() as any;
 				const nombre = data.bloqueadoPorNombre || data.bloqueado_por_nombre || data.bloqueadoPor || 'Sistema';
-				return `<span class="text-xs text-secondary italic">${nombre}</span>`;
+				return `<span style="color:#9ca3af">${nombre}</span>`;
 			}
 		},
 		{

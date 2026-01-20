@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { toast } from 'svelte-5-french-toast';
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-	import { Plus, RotateCw, Lock, LockOpen, UserPlus, FileText, Ban } from 'lucide-svelte';
+	import { Plus, RotateCw, Lock, LockOpen, UserPlus, Pencil, Ban } from 'lucide-svelte';
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
@@ -42,6 +42,11 @@
 	let showConfirmModal = $state(false);
 	let confirmMotivo = $state('');
 	let confirmActionType = $state<'unblock' | 'reblock'>('unblock');
+	let showHeaderFilters = $state(
+		typeof window !== 'undefined'
+			? localStorage.getItem('tabulator-header-filters') === 'true'
+			: false
+	);
 
 	// Keyboard handling
 	let unsubscribeKeyboard: (() => void) | null = null;
@@ -144,9 +149,6 @@
 	<div class="border-b border-surface px-6 py-4 bg-surface-2 shadow-sm z-10">
 		<div class="flex items-center justify-between gap-6">
 			<div class="flex items-center gap-3">
-				<div class="p-2 bg-red-500/10 rounded-lg text-red-500">
-					<Ban size={24} />
-				</div>
 				<div>
 					<h2 class="text-xl font-semibold text-primary">Lista Negra</h2>
 					<p class="mt-0.5 text-xs text-secondary">
@@ -182,10 +184,21 @@
 		onFitColumns={() => gridWrapper?.fitColumns()}
 		onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
 		onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
+		onToggleFilters={() => {
+			showHeaderFilters = !showHeaderFilters;
+			if (typeof window !== 'undefined') {
+				localStorage.setItem('tabulator-header-filters', String(showHeaderFilters));
+			}
+			if (gridWrapper) {
+				setTimeout(() => {
+					gridWrapper.redraw(true);
+				}, 50);
+			}
+		}}
 		columns={toolbarColumns}
 	>
 		{#snippet primaryActions()}
-			{#if canManage}
+			{#if canManage && selectedRows.length === 0}
 				<button
 					onclick={() => openFormModal(null)}
 					class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
@@ -193,22 +206,15 @@
 					<UserPlus size={14} /> Bloquear
 				</button>
 			{/if}
-			<button
-				onclick={loadListaNegra}
-				class="p-2 text-secondary hover:text-white transition-colors"
-				title="Actualizar"
-			>
-				<RotateCw size={18} class={loading ? 'animate-spin' : ''} />
-			</button>
 		{/snippet}
 
 		{#snippet selectionActions()}
 			{#if selectedRows.length === 1 && canManage}
 				<button
 					onclick={() => openFormModal(selectedRows[0])}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-300 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
+					class="flex items-center gap-2 px-3 py-1.5 bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 hover:text-amber-300 border border-amber-500/20 hover:border-amber-500/30 rounded-md text-sm font-medium transition-all"
 				>
-					<FileText size={14} /> Editar
+					<Pencil size={16} /> Editar
 				</button>
 
 				{#if selectedRows[0].isActive}
@@ -230,7 +236,9 @@
 		{/snippet}
 	</GridToolbar>
 
-	<div class="flex-1 overflow-hidden relative bg-surface-1">
+	<div
+		class="flex-1 overflow-hidden relative bg-surface-1 {showHeaderFilters ? '' : 'hide-filters'}"
+	>
 		{#if loading && bloqueados.length === 0}
 			<div class="flex h-full items-center justify-center">
 				<div class="loading loading-spinner loading-lg text-primary opacity-20"></div>
@@ -277,3 +285,10 @@
 	}}
 	onMotivoChange={(v) => (confirmMotivo = v)}
 />
+
+<style>
+	/* Ocultar filtros de encabezado cuando se desactiven */
+	:global(.hide-filters .tabulator-header-filter) {
+		display: none !important;
+	}
+</style>
