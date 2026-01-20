@@ -267,7 +267,7 @@
 				pagination={true}
 				options={{
 					...defaultTabulatorOptions,
-					layout: 'fitColumns',
+					layout: 'fitData',
 					placeholder: 'No se encontraron gafetes'
 				}}
 			/>
