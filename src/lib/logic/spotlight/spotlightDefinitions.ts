@@ -151,7 +151,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
     // --- MAESTROS (CREAR) ---
     {
         id: 'master-contratista',
-        label: 'Crear Maestro Contratista',
+        label: 'Crear Contratista',
         description: 'Añadir nuevo contratista al catálogo',
         icon: UserPlus,
         category: 'action',
@@ -161,7 +161,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
     },
     {
         id: 'master-proveedor',
-        label: 'Crear Maestro Proveedor',
+        label: 'Crear Proveedor',
         description: 'Añadir nuevo proveedor al catálogo',
         icon: UserPlus,
         category: 'action',
@@ -171,7 +171,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
     },
     {
         id: 'master-visitante',
-        label: 'Crear Maestro Visitante',
+        label: 'Crear Visitante',
         description: 'Añadir nuevo visitante al catálogo',
         icon: UserPlus,
         category: 'action',
