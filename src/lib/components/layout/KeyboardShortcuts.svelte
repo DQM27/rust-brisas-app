@@ -1,17 +1,21 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { shortcutRegistry } from '$lib/shortcuts';
+	import { getUserShortcuts } from '$lib/shortcuts/userShortcutsService';
 
-	onMount(() => {
-		// Inicializar el registro con los atajos por defecto
-		// En el futuro, esto podría cargar personalizaciones del usuario
-		shortcutRegistry.init();
+	onMount(async () => {
+		try {
+			// Cargar personalizaciones del usuario
+			const customs = await getUserShortcuts();
+			shortcutRegistry.init(customs);
+		} catch (e) {
+			console.error('[Shortcuts] Error loading user customizations', e);
+			// Inicializar con defaults si falla
+			shortcutRegistry.init();
+		}
 	});
 
 	onDestroy(() => {
 		shortcutRegistry.destroy();
 	});
 </script>
-
-
-

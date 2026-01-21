@@ -14,10 +14,12 @@
 		searchDeep,
 		type SpotlightItem
 	} from '$lib/logic/spotlight/spotlightItems';
+	import { getShortcutDisplay } from '$lib/logic/spotlight/shortcutResolver';
 	import { spotlightSettings, recentSpotlightItems } from '$lib/stores/spotlightStore';
 
 	import { showSpotlight } from '$lib/stores/ui';
 	import { tabsStore } from '$lib/stores/tabs';
+	import { activeShortcuts } from '$lib/shortcuts';
 
 	// Props
 	interface Props {
@@ -266,11 +268,11 @@
 										{/if}
 									</div>
 
-									{#if item.shortcut}
+									{#if getShortcutDisplay(item.id, item.shortcut, $activeShortcuts)}
 										<div
 											class="hidden sm:block text-[9px] font-medium text-white/40 border border-white/10 rounded px-1.5 py-0.5 bg-black/20 group-hover:border-white/20"
 										>
-											{item.shortcut}
+											{getShortcutDisplay(item.id, item.shortcut, $activeShortcuts)}
 										</div>
 									{/if}
 
@@ -346,6 +348,3 @@
 		background: rgba(255, 255, 255, 0.2);
 	}
 </style>
-
-
-
