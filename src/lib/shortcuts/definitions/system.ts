@@ -8,6 +8,8 @@ import type { ShortcutDefinition } from '../types';
 import { showSpotlight, showShortcutsHelp } from '$lib/stores/ui';
 import { toggleTheme } from '$lib/stores/themeStore';
 import { logout } from '$lib/stores/auth';
+import { activeTabId, closeTab } from '$lib/stores/tabs';
+import { get } from 'svelte/store';
 
 export const systemShortcuts: ShortcutDefinition[] = [
     {
@@ -34,6 +36,22 @@ export const systemShortcuts: ShortcutDefinition[] = [
         handler: (e) => {
             e.preventDefault();
             toggleTheme();
+        }
+    },
+    {
+        id: 'close-active-tab',
+        keys: 'alt+q',
+        label: 'Cerrar Pestaña',
+        description: 'Cierra la pestaña activa actual',
+        category: 'system',
+        scope: 'all',
+        icon: 'Tabs',
+        handler: (e) => {
+            e.preventDefault();
+            const currentId = get(activeTabId);
+            if (currentId) {
+                closeTab(currentId);
+            }
         }
     },
     {
