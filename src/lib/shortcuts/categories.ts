@@ -41,6 +41,13 @@ export const SHORTCUT_CATEGORIES: Record<ShortcutCategory, CategoryMetadata> = {
         description: 'Acciones rápidas de ingreso',
         icon: 'DoorOpen',
         order: 5
+    },
+    'ingress-access': {
+        id: 'ingress-access',
+        label: 'Accesos Rápidos',
+        description: 'Acceso rápido a módulos de ingreso',
+        icon: 'Zap',
+        order: 6
     }
 };
 

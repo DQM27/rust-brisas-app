@@ -13,7 +13,8 @@
 		Layout,
 		Grid3x3,
 		Box,
-		LogIn
+		LogIn,
+		Zap
 	} from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
 	import { onMount } from 'svelte';
@@ -76,7 +77,8 @@
 		modules: Layout,
 		modals: Box,
 		grids: Grid3x3,
-		ingresos: LogIn
+		ingresos: LogIn,
+		'ingress-access': Zap
 	};
 
 	function showSuccess(msg: string) {

@@ -13,7 +13,8 @@ export type ShortcutCategory =
     | 'modules'     // En vistas de lista/módulos
     | 'modals'      // En modales abiertos
     | 'grids'       // En grids/tablas
-    | 'ingresos';   // Específicos del módulo de ingresos
+    | 'ingresos'    // Específicos del módulo de ingresos
+    | 'ingress-access'; // Accesos rápidos a módulos de ingreso
 
 export interface CategoryMetadata {
     id: ShortcutCategory;

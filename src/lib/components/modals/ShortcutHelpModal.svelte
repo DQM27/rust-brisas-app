@@ -9,7 +9,8 @@
 		LayoutList,
 		Square,
 		Table,
-		DoorOpen
+		DoorOpen,
+		Zap
 	} from 'lucide-svelte';
 	import { slide, fade } from 'svelte/transition';
 	import { createEventDispatcher } from 'svelte';
@@ -36,27 +37,35 @@
 		modules: LayoutList,
 		modals: Square,
 		grids: Table,
-		ingresos: DoorOpen
+		ingresos: DoorOpen,
+		'ingress-access': Zap
 	};
 
 	// Agrupar por categoría usando las nuevas categorías
-	$: categoriesWithShortcuts = getOrderedCategories()
+	$: allCategories = getOrderedCategories()
 		.map((category) => ({
 			...category,
 			items: shortcuts.filter((s) => s.category === category.id)
 		}))
 		.filter((cat) => cat.items.length > 0);
 
+	$: globalCategories = allCategories.filter((cat) =>
+		['system', 'ingress-access'].includes(cat.id)
+	);
+	$: contextualCategories = allCategories.filter(
+		(cat) => !['system', 'ingress-access'].includes(cat.id)
+	);
+
 	function formatKeys(keys: string): string[] {
 		return keys
-			.replace('ctrl', 'Ctrl')
-			.replace('shift', 'Shift')
-			.replace('alt', 'Alt')
-			.replace('escape', 'Esc')
-			.replace('delete', 'Del')
-			.replace('pagedown', 'PgDn')
-			.replace('pageup', 'PgUp')
-			.replace('home', 'Home')
+			.replace(/ctrl/gi, 'Ctrl')
+			.replace(/shift/gi, 'Shift')
+			.replace(/alt/gi, 'Alt')
+			.replace(/escape/gi, 'Esc')
+			.replace(/delete/gi, 'Del')
+			.replace(/pagedown/gi, 'PgDn')
+			.replace(/pageup/gi, 'PgUp')
+			.replace(/home/gi, 'Home')
 			.split('+');
 	}
 </script>
@@ -72,87 +81,133 @@
 
 {#if isOpen}
 	<div
-		class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+		class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
 		role="presentation"
 		transition:fade={{ duration: 200 }}
 		on:click|self={close}
-		on:keydown={(e) => {
-			if (e.key === 'Escape') close();
-		}}
 	>
 		<div
-			class="w-full max-w-4xl bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden max-h-[85vh] flex flex-col"
+			class="w-full max-w-5xl bg-[#1c2128] rounded-2xl shadow-2xl border border-white/10 overflow-hidden max-h-[90vh] flex flex-col"
 			transition:slide={{ duration: 250, axis: 'y' }}
 		>
 			<!-- Header -->
-			<div
-				class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50"
-			>
-				<div class="flex items-center gap-3">
-					<div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-						<Keyboard class="w-6 h-6 text-blue-600 dark:text-blue-400" />
+			<div class="flex items-center justify-between p-8 border-b border-white/5 bg-white/[0.02]">
+				<div class="flex items-center gap-4">
+					<div class="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
+						<Keyboard class="w-7 h-7 text-blue-400" />
 					</div>
 					<div>
-						<h2 class="text-xl font-bold text-gray-900 dark:text-white">Atajos de Teclado</h2>
-						<p class="text-sm text-gray-500 dark:text-gray-400">
-							Guía rápida de comandos disponibles
-						</p>
+						<h2 class="text-2xl font-bold text-white tracking-tight">Atajos de Teclado</h2>
+						<p class="text-sm text-gray-400 font-medium">Guía rápida de comandos disponibles</p>
 					</div>
 				</div>
 				<button
 					on:click={close}
-					class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500"
+					class="p-2 hover:bg-white/5 rounded-full transition-colors text-gray-500 hover:text-white"
 				>
-					<X class="w-5 h-5" />
+					<X class="w-6 h-6" />
 				</button>
 			</div>
 
 			<!-- Content -->
-			<div class="flex-1 overflow-y-auto p-6">
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-					{#each categoriesWithShortcuts as category}
-						{@const CategoryIcon = categoryIcons[category.id] || Settings}
-						<div class="space-y-3">
-							<div class="flex items-center gap-2">
-								<div class="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-md">
-									<CategoryIcon class="w-4 h-4 text-gray-500 dark:text-gray-400" />
-								</div>
-								<h3
-									class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
-								>
-									{category.label}
-								</h3>
-							</div>
-
-							<div class="space-y-2 pl-1">
-								{#each category.items as item}
-									<div class="flex items-center justify-between group py-1">
-										<div class="flex flex-col">
-											<span
-												class="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
-											>
-												{item.label}
-											</span>
-											{#if item.description}
-												<span class="text-xs text-gray-500 dark:text-gray-500 line-clamp-1">
-													{item.description}
-												</span>
-											{/if}
-										</div>
-										<div class="flex items-center gap-1 flex-shrink-0 ml-2">
-											{#each formatKeys(item.keys) as key}
-												<kbd
-													class="px-2 py-1 min-w-[1.5rem] text-center text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 shadow-sm"
-												>
-													{key}
-												</kbd>
-											{/each}
-										</div>
+			<div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+				<div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+					<!-- Columna Izquierda: Globales -->
+					<div class="lg:col-span-5 space-y-10">
+						{#each globalCategories as category}
+							{@const CategoryIcon = categoryIcons[category.id] || Settings}
+							<div class="space-y-5">
+								<div class="flex items-center gap-3 pb-2 border-b border-white/5">
+									<div class="p-2 bg-white/5 rounded-lg">
+										<CategoryIcon class="w-5 h-5 text-blue-400" />
 									</div>
-								{/each}
+									<h3 class="text-sm font-bold text-white uppercase tracking-[0.2em]">
+										{category.label}
+									</h3>
+								</div>
+
+								<div class="space-y-1">
+									{#each category.items as item}
+										<div
+											class="flex items-center justify-between group py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-all"
+										>
+											<div class="flex flex-col gap-0.5">
+												<span
+													class="text-sm font-semibold text-gray-200 group-hover:text-blue-400 transition-colors"
+												>
+													{item.label}
+												</span>
+												{#if item.description}
+													<span class="text-[11px] text-gray-500 font-medium leading-tight">
+														{item.description}
+													</span>
+												{/if}
+											</div>
+											<div class="flex items-center gap-1.5 flex-shrink-0 ml-4">
+												{#each formatKeys(item.keys) as key}
+													<kbd
+														class="px-2.5 py-1.5 min-w-[2.2rem] text-center text-[10px] font-bold text-gray-100 bg-[#0d1117] border border-[#30363d] rounded-lg shadow-[0_2px_0_0_#161b22]"
+													>
+														{key}
+													</kbd>
+												{/each}
+											</div>
+										</div>
+									{/each}
+								</div>
 							</div>
-						</div>
-					{/each}
+						{/each}
+					</div>
+
+					<!-- Separador Vertical (Desktop) -->
+					<div class="hidden lg:block lg:col-span-1 w-px bg-white/5 justify-self-center"></div>
+
+					<!-- Columna Derecha: Contextuales -->
+					<div class="lg:col-span-6 space-y-10">
+						{#each contextualCategories as category}
+							{@const CategoryIcon = categoryIcons[category.id] || Settings}
+							<div class="space-y-5">
+								<div class="flex items-center gap-3 pb-2 border-b border-white/5">
+									<div class="p-2 bg-white/5 rounded-lg">
+										<CategoryIcon class="w-5 h-5 text-purple-400" />
+									</div>
+									<h3 class="text-sm font-bold text-white uppercase tracking-[0.2em]">
+										{category.label}
+									</h3>
+								</div>
+
+								<div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+									{#each category.items as item}
+										<div
+											class="flex items-center justify-between group py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-all"
+										>
+											<div class="flex flex-col gap-0.5">
+												<span
+													class="text-sm font-semibold text-gray-200 group-hover:text-purple-400 transition-colors"
+												>
+													{item.label}
+												</span>
+												{#if item.description}
+													<span class="text-[11px] text-gray-500 font-medium leading-tight">
+														{item.description}
+													</span>
+												{/if}
+											</div>
+											<div class="flex items-center gap-1.5 flex-shrink-0 ml-3">
+												{#each formatKeys(item.keys) as key}
+													<kbd
+														class="px-2 py-1.2 min-w-[2rem] text-center text-[9px] font-bold text-gray-200 bg-[#0d1117] border border-[#30363d] rounded-lg shadow-[0_2px_0_0_#161b22]"
+													>
+														{key}
+													</kbd>
+												{/each}
+											</div>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/each}
+					</div>
 				</div>
 			</div>
 
