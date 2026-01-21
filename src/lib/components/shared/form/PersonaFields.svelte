@@ -273,11 +273,9 @@
 							aria-hidden="true"
 						></div>
 
-						<div
-							class="absolute z-[70] w-full mt-1 bg-surface-2 border border-surface rounded-lg shadow-xl overflow-hidden p-1 origin-top max-h-60 overflow-y-auto"
-						>
+						<div class="form-dropdown absolute z-[70] w-full mt-1 max-h-60 overflow-y-auto">
 							{#if empresas.length === 0}
-								<div class="px-3 py-2 text-sm text-gray-500">No hay empresas</div>
+								<div class="px-3 py-2 text-sm text-secondary">No hay empresas</div>
 							{:else}
 								{#each empresas as emp}
 									<button
@@ -286,16 +284,15 @@
 											$form.empresaId = emp.id;
 											showEmpresaDropdown = false;
 										}}
-										class="w-full text-left px-3 py-1.5 text-sm rounded-md transition-colors flex items-center justify-between group {$form.empresaId ===
-										emp.id
-											? 'bg-white/5 text-white font-medium'
-											: 'text-secondary hover:bg-white/10'}"
+										class="form-dropdown-item w-full flex items-center justify-between group"
 									>
-										<span>{emp.nombre}</span>
+										<span class={$form.empresaId === emp.id ? 'text-primary font-medium' : ''}>
+											{emp.nombre}
+										</span>
 										{#if $form.empresaId === emp.id}
 											<svg
 												xmlns="http://www.w3.org/2000/svg"
-												class="h-4 w-4 text-white"
+												class="h-4 w-4 text-accent"
 												viewBox="0 0 20 20"
 												fill="currentColor"
 											>
@@ -317,7 +314,7 @@
 						type="button"
 						onclick={onCreateEmpresa}
 						disabled={loading}
-						class="px-2 h-[34px] rounded-lg border-2 border-surface text-secondary hover:border-accent hover:text-accent transition-all flex items-center justify-center text-xs disabled:opacity-50"
+						class="form-btn-outline-secondary h-[34px] px-2 justify-center"
 						title="Crear nueva empresa"
 					>
 						<Plus size={16} />
@@ -338,10 +335,10 @@
 		outline: none !important;
 	}
 
-	/* Autofill Fix for Dark Theme */
+	/* Autofill Fix for Dark Theme - using standard var if possible or transparent */
 	input:-webkit-autofill {
-		-webkit-text-fill-color: white !important;
-		-webkit-box-shadow: 0 0 0px 1000px #1c2128 inset !important;
+		-webkit-text-fill-color: var(--color-text-primary) !important;
+		-webkit-box-shadow: 0 0 0px 1000px var(--color-surface-secondary) inset !important;
 		transition: background-color 5000s ease-in-out 0s;
 	}
 </style>

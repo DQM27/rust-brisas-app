@@ -152,10 +152,9 @@
 	}
 
 	// Estilos (mismos que Contratista para consistencia)
-	// Estilos
-	const labelClass = 'text-xs font-medium text-secondary mb-1';
-	const inputClass =
-		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 transition-all outline-none disabled:opacity-50';
+	// Estilos (mismos que Contratista para consistencia)
+	const labelClass = 'form-label';
+	const inputClass = 'form-input';
 
 	// Handler para Ctrl+S
 	function handleKeydown(e: KeyboardEvent) {
@@ -239,7 +238,7 @@
 								<button
 									type="button"
 									onclick={() => (showVehiculoModal = true)}
-									class="flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg border border-surface bg-surface-3 text-secondary hover:text-primary hover:border-white/20 transition-all"
+									class="form-btn-outline-secondary"
 								>
 									<Car size={14} />
 									Gestionar Flotilla
@@ -257,7 +256,7 @@
 						type="button"
 						onclick={onClose}
 						disabled={loading}
-						class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm"
+						class="form-btn-outline-secondary"
 					>
 						Cancelar
 					</button>
@@ -265,7 +264,7 @@
 						<button
 							type="submit"
 							disabled={loading}
-							class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm disabled:opacity-50 flex items-center gap-2"
+							class="form-btn-outline-success font-semibold flex items-center gap-2"
 						>
 							{#if loading}
 								<span
@@ -288,9 +287,8 @@
 		transition:fade={{ duration: 200 }}
 	>
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
-			class="absolute inset-0 bg-black/50"
+			class="absolute inset-0 bg-black/60 backdrop-blur-sm"
 			onclick={() => !creatingEmpresa && (showEmpresaModal = false)}
 		></div>
 		<div
@@ -302,7 +300,9 @@
 			</div>
 			<div class="p-5 space-y-3">
 				{#if empresaError}
-					<div class="rounded bg-red-900/20 border border-red-800 p-2 text-xs text-red-300">
+					<div
+						class="rounded bg-red-50 border border-red-200 p-2 text-xs text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300"
+					>
 						{empresaError}
 					</div>
 				{/if}
@@ -324,7 +324,7 @@
 					type="button"
 					disabled={creatingEmpresa}
 					onclick={() => (showEmpresaModal = false)}
-					class="px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary transition-all duration-200 hover:border-white/60 hover:text-white/80"
+					class="form-btn-outline-secondary"
 				>
 					Cancelar
 				</button>
@@ -332,7 +332,7 @@
 					type="button"
 					disabled={creatingEmpresa || !nuevaEmpresaNombre.trim()}
 					onclick={handleSaveEmpresa}
-					class="px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary transition-all duration-200 hover:border-success hover:text-success disabled:opacity-50"
+					class="form-btn-outline-success"
 				>
 					{creatingEmpresa ? 'Guardando...' : 'Guardar'}
 				</button>
@@ -365,6 +365,3 @@
 		transition: background-color 5000s ease-in-out 0s;
 	}
 </style>
-
-
-
