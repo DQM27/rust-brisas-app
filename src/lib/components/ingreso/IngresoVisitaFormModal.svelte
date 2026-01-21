@@ -11,6 +11,7 @@
 		SearchX,
 		ChevronRight
 	} from 'lucide-svelte';
+	import { shortcutRegistry, shortcutCommand } from '$lib/shortcuts';
 
 	// Superforms & Zod v4
 	import { superForm } from 'sveltekit-superforms';
@@ -113,6 +114,7 @@
 	// Sync y Reset al abrir
 	$effect(() => {
 		if (show) {
+			shortcutRegistry.pushScope('modal');
 			empresaStore.init();
 			if (initialPerson) {
 				fillPersonData(initialPerson);
@@ -121,6 +123,16 @@
 				validationResult = null;
 				showObservaciones = false;
 			}
+		} else {
+			shortcutRegistry.popScope();
+		}
+	});
+
+	// Handle global shortcuts
+	$effect(() => {
+		const cmd = $shortcutCommand;
+		if (show && cmd?.command === 'cancel') {
+			handleClose();
 		}
 	});
 
@@ -245,16 +257,6 @@
 		}
 	}
 
-	function handleKeydown(e: KeyboardEvent) {
-		if (!show) return;
-		if (e.key === 'Escape') handleClose();
-		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-			e.preventDefault();
-			const f = document.querySelector('form[method="POST"]') as HTMLFormElement;
-			if (f) f.requestSubmit();
-		}
-	}
-
 	// UI Helpers
 	const inputClass =
 		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-gray-500 transition-all outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed';
@@ -269,7 +271,17 @@
 	}
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window
+	onkeydown={(e) => {
+		if (show) {
+			if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+				e.preventDefault();
+				const f = document.querySelector('form[method="POST"]') as HTMLFormElement;
+				if (f) f.requestSubmit();
+			}
+		}
+	}}
+/>
 
 {#if show}
 	<div
@@ -719,6 +731,3 @@
 		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
 	}
 </style>
-
-
-

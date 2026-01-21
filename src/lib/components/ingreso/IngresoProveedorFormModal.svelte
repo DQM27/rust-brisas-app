@@ -3,6 +3,8 @@
 	import { fade, scale, slide } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
 	import { X, ChevronDown, ChevronRight, AlertTriangle } from 'lucide-svelte';
+	import { shortcutRegistry, shortcutCommand } from '$lib/shortcuts';
+	import { onMount } from 'svelte';
 
 	// Components
 	// Podemos reusar GafeteInput
@@ -73,8 +75,23 @@
 	// Reset y Validar al abrir
 	$effect(() => {
 		if (show) {
+			shortcutRegistry.pushScope('modal');
 			if (initialPerson) {
 				handlePersonSelect(initialPerson);
+			}
+		} else {
+			shortcutRegistry.popScope();
+		}
+	});
+
+	// Handle global shortcuts
+	$effect(() => {
+		const cmd = $shortcutCommand;
+		if (show && !loading) {
+			if (cmd?.command === 'cancel') {
+				handleClose();
+			} else if (cmd?.command === 'save') {
+				handleSubmit();
 			}
 		}
 	});
@@ -171,14 +188,6 @@
 		submitted = false;
 	}
 
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') handleClose();
-		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-			e.preventDefault();
-			handleSubmit();
-		}
-	}
-
 	function getSeverityClasses(_severity?: string) {
 		const base = 'flex items-center gap-2 text-sm px-3 py-2 rounded-md border transition-colors';
 		return `${base} text-red-700 bg-red-50 border-red-200 dark:text-red-300 dark:bg-red-900/30 dark:border-red-800`;
@@ -203,8 +212,6 @@
 		return 'border-white/10';
 	}
 </script>
-
-<svelte:window onkeydown={handleKeydown} />
 
 {#if show}
 	<div
@@ -452,6 +459,3 @@
 		transition: background-color 5000s ease-in-out 0s;
 	}
 </style>
-
-
-

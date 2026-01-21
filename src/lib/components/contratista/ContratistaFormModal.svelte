@@ -11,6 +11,7 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { empresaStore } from '$lib/stores/empresaStore.svelte';
 	import VehiculoManagerModal from '$lib/components/vehiculo/VehiculoManagerModal.svelte';
+	import { shortcutRegistry, shortcutCommand } from '$lib/shortcuts';
 
 	// Superforms & Zod v4
 	import { superForm } from 'sveltekit-superforms';
@@ -125,11 +126,27 @@
 	// Sync form with props when modal opens/changes
 	$effect(() => {
 		if (show) {
+			shortcutRegistry.pushScope('modal');
 			if (contratista) {
 				reset({ data: initialData });
 			} else {
 				reset();
 				cedulaDuplicateError = null;
+			}
+		} else {
+			shortcutRegistry.popScope();
+		}
+	});
+
+	// Handle global shortcuts
+	$effect(() => {
+		const cmd = $shortcutCommand;
+		if (show && !loading && !readonly) {
+			if (cmd?.command === 'cancel') {
+				handleClose();
+			} else if (cmd?.command === 'save') {
+				const f = document.querySelector('form[method="POST"]') as HTMLFormElement;
+				if (f) f.requestSubmit();
 			}
 		}
 	});
@@ -232,24 +249,8 @@
 		if (value && String(value).trim() !== '') {
 			return '!border-green-500/50 !ring-1 !ring-green-500/20';
 		}
-
-		return '';
-	}
-
-	// Handler para Ctrl+S
-	function handleKeydown(e: KeyboardEvent) {
-		if (!show || readonly || loading) return;
-		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-			e.preventDefault();
-			const form = document.querySelector('form[method="POST"]') as HTMLFormElement;
-			if (form) {
-				form.requestSubmit();
-			}
-		}
 	}
 </script>
-
-<svelte:window onkeydown={handleKeydown} />
 
 {#if show}
 	<!-- Backdrop -->
@@ -661,6 +662,3 @@
 		transition: background-color 5000s ease-in-out 0s;
 	}
 </style>
-
-
-

@@ -12,6 +12,8 @@
 	import { zod4 } from 'sveltekit-superforms/adapters';
 	import { ROLE_GUARDIA_ID } from '$lib/types/role';
 	import AdminConfirmModal from '$lib/components/AdminConfirmModal.svelte';
+	import { shortcutRegistry, shortcutCommand } from '$lib/shortcuts';
+	import { onMount } from 'svelte';
 	import { auth } from '$lib/api/auth';
 	import { currentUser } from '$lib/stores/auth';
 	import { toast } from 'svelte-5-french-toast';
@@ -302,39 +304,55 @@
 	// Cargar datos del usuario cuando se abre en modo edición
 	$effect(() => {
 		if (show) {
+			shortcutRegistry.pushScope('modal');
 			// Reset view modes
 			isChangingPassword = false;
 			loadRoles();
 			activeAvatar = null;
 			cedulaDuplicateError = null;
 			emailDuplicateError = null;
-		}
 
-		if (show && user) {
-			loadAvatar(user.id);
-			$form = {
-				cedula: user.cedula || '',
-				nombre: user.nombre || '',
-				apellido: user.apellido || '',
-				segundoNombre: user.segundoNombre || '',
-				segundoApellido: user.segundoApellido || '',
-				email: user.email || '',
-				operacion: user.operacion || Operacion.CalleBlancos,
-				password: '',
-				roleId: user.roleId || ROLE_GUARDIA_ID,
-				telefono: user.telefono || '',
-				direccion: user.direccion || '',
-				fechaInicioLabores: formatDateForDisplay(user.fechaInicioLabores || ''),
-				numeroGafete: user.numeroGafete || '',
-				fechaNacimiento: formatDateForDisplay(user.fechaNacimiento || ''),
-				contactoEmergenciaNombre: user.contactoEmergenciaNombre || '',
-				contactoEmergenciaTelefono: user.contactoEmergenciaTelefono || '',
-				vencimientoPortacion: formatDateForDisplay(user.vencimientoPortacion || ''),
-				mustChangePassword: user.mustChangePassword || false
-			};
-		} else if (show && !user) {
-			// Reset para creación
-			resetForm({ data: initialValues });
+			if (user) {
+				loadAvatar(user.id);
+				$form = {
+					cedula: user.cedula || '',
+					nombre: user.nombre || '',
+					apellido: user.apellido || '',
+					segundoNombre: user.segundoNombre || '',
+					segundoApellido: user.segundoApellido || '',
+					email: user.email || '',
+					operacion: user.operacion || Operacion.CalleBlancos,
+					password: '',
+					roleId: user.roleId || ROLE_GUARDIA_ID,
+					telefono: user.telefono || '',
+					direccion: user.direccion || '',
+					fechaInicioLabores: formatDateForDisplay(user.fechaInicioLabores || ''),
+					numeroGafete: user.numeroGafete || '',
+					fechaNacimiento: formatDateForDisplay(user.fechaNacimiento || ''),
+					contactoEmergenciaNombre: user.contactoEmergenciaNombre || '',
+					contactoEmergenciaTelefono: user.contactoEmergenciaTelefono || '',
+					vencimientoPortacion: formatDateForDisplay(user.vencimientoPortacion || ''),
+					mustChangePassword: user.mustChangePassword || false
+				};
+			} else {
+				// Reset para creación
+				resetForm({ data: initialValues });
+			}
+		} else {
+			shortcutRegistry.popScope();
+		}
+	});
+
+	// Handle global shortcuts
+	$effect(() => {
+		const cmd = $shortcutCommand;
+		if (show && !loading && !readonly) {
+			if (cmd?.command === 'cancel') {
+				onClose();
+			} else if (cmd?.command === 'save') {
+				const f = document.getElementById('user-form') as HTMLFormElement;
+				if (f) f.requestSubmit();
+			}
 		}
 	});
 
@@ -492,7 +510,6 @@
 		) {
 			return '!border-green-500/50 !ring-1 !ring-green-500/20';
 		}
-		return '';
 	}
 
 	// Handler for custom Tab navigation in date inputs
@@ -503,22 +520,7 @@
 			next?.focus();
 		}
 	}
-
-	// Handler para Ctrl+S
-	function handleKeydown(e: KeyboardEvent) {
-		if (!show || readonly || loading) return;
-		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-			e.preventDefault();
-			// Disparar submit del formulario
-			const form = document.getElementById('user-form') as HTMLFormElement;
-			if (form) {
-				form.requestSubmit();
-			}
-		}
-	}
 </script>
-
-<svelte:window onkeydown={handleKeydown} />
 
 {#if show}
 	<div
@@ -1334,6 +1336,3 @@
 		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
 	}
 </style>
-
-
-

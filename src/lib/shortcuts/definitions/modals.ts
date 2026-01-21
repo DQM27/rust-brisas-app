@@ -31,12 +31,8 @@ export const modalShortcuts: ShortcutDefinition[] = [
         icon: 'X',
         readonly: true, // No se puede personalizar
         handler: (e) => {
-            // Solo cerrar si no estamos en un campo de texto
-            const target = e.target as HTMLElement;
-            if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
-                e.preventDefault();
-                emitCommand('cancel');
-            }
+            e.preventDefault();
+            emitCommand('cancel');
         }
     }
 ];
