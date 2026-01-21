@@ -193,16 +193,6 @@
 					toast('Modo escaneo activado');
 					clearCommand();
 					break;
-				case 'escape':
-					if (showModal) showModal = false;
-					else if (showSalidaModal) showSalidaModal = false;
-					else if (showQuickEntry) showQuickEntry = false;
-					else if (showQuickExit) showQuickExit = false;
-					else if (showExportModal) showExportModal = false;
-					else if (showContratistaModal) showContratistaModal = false;
-					else if (showDetailModal) showDetailModal = false;
-					clearCommand();
-					break;
 				case 'refresh':
 					loadIngresos();
 					clearCommand();

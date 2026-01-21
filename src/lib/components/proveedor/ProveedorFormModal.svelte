@@ -12,6 +12,7 @@
 	import { toast } from 'svelte-5-french-toast';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4 } from 'sveltekit-superforms/adapters';
+	import { shortcutRegistry, shortcutCommand, clearCommand } from '$lib/shortcuts';
 	import {
 		CreateProveedorSchema,
 		UpdateProveedorSchema,
@@ -98,6 +99,7 @@
 	// Sincronizar datos cuando cambia el proveedor
 	$effect(() => {
 		if (show) {
+			shortcutRegistry.pushScope('modal');
 			empresaStore.init();
 			const newData: CombinedForm = {
 				cedula: proveedor?.cedula ?? '',
@@ -109,6 +111,23 @@
 				estado: (proveedor?.estado as import('$lib/types/proveedor').EstadoProveedor) || 'ACTIVO'
 			};
 			reset({ data: newData });
+		} else {
+			shortcutRegistry.popScope();
+		}
+	});
+
+	// Handle global shortcuts
+	$effect(() => {
+		const cmd = $shortcutCommand;
+		if (show && !loading && !readonly) {
+			if (cmd?.command === 'cancel') {
+				onClose();
+				clearCommand();
+			} else if (cmd?.command === 'save') {
+				const f = document.getElementById('proveedorForm') as HTMLFormElement;
+				if (f) f.requestSubmit();
+				clearCommand();
+			}
 		}
 	});
 
@@ -152,22 +171,9 @@
 	}
 
 	// Estilos (mismos que Contratista para consistencia)
-	// Estilos (mismos que Contratista para consistencia)
 	const labelClass = 'form-label';
 	const inputClass = 'form-input';
-
-	// Handler para Ctrl+S
-	function handleKeydown(e: KeyboardEvent) {
-		if (!show || readonly || loading) return;
-		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-			e.preventDefault();
-			const f = document.getElementById('proveedorForm') as HTMLFormElement;
-			if (f) f.requestSubmit();
-		}
-	}
 </script>
-
-<svelte:window onkeydown={handleKeydown} />
 
 {#if show}
 	<div
@@ -287,10 +293,12 @@
 		transition:fade={{ duration: 200 }}
 	>
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<div
-			class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+		<button
+			type="button"
+			class="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-default"
 			onclick={() => !creatingEmpresa && (showEmpresaModal = false)}
-		></div>
+			aria-label="Cerrar modal"
+		></button>
 		<div
 			class="relative w-full max-w-md rounded-xl bg-surface-2 shadow-2xl border border-surface"
 			transition:scale={{ start: 0.95, duration: 200 }}

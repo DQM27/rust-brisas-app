@@ -133,13 +133,8 @@
 					toast('Modo escaneo activado');
 					clearCommand();
 					break;
-				case 'escape':
-					if (showIngresoModal) showIngresoModal = false;
-					else if (showSalidaModal) showSalidaModal = false;
-					else if (showQuickEntry) showQuickEntry = false;
-					else if (showQuickExit) showQuickExit = false;
-					else if (showProveedorModal) showProveedorModal = false;
-					else if (showDetailModal) showDetailModal = false;
+				case 'scan-badge':
+					toast('Modo escaneo activado');
 					clearCommand();
 					break;
 				case 'refresh':

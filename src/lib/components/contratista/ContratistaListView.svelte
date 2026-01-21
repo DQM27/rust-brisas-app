@@ -631,12 +631,8 @@
 					loadContratistas();
 					clearCommand();
 					break;
-				case 'escape':
-					if (showModal) showModal = false;
-					else if (showVehiculoModal) showVehiculoModal = false;
-					else if (showExportModal) showExportModal = false;
-					else if (showEstadoDropdown) showEstadoDropdown = false;
-					else if (showPraindDropdown) showPraindDropdown = false;
+				case 'refresh':
+					loadContratistas();
 					clearCommand();
 					break;
 			}

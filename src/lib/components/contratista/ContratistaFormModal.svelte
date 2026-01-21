@@ -11,7 +11,7 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { empresaStore } from '$lib/stores/empresaStore.svelte';
 	import VehiculoManagerModal from '$lib/components/vehiculo/VehiculoManagerModal.svelte';
-	import { shortcutRegistry, shortcutCommand } from '$lib/shortcuts';
+	import { shortcutRegistry, shortcutCommand, clearCommand } from '$lib/shortcuts';
 
 	// Superforms & Zod v4
 	import { superForm } from 'sveltekit-superforms';
@@ -144,9 +144,11 @@
 		if (show && !loading && !readonly) {
 			if (cmd?.command === 'cancel') {
 				handleClose();
+				clearCommand();
 			} else if (cmd?.command === 'save') {
 				const f = document.querySelector('form[method="POST"]') as HTMLFormElement;
 				if (f) f.requestSubmit();
+				clearCommand();
 			}
 		}
 	});

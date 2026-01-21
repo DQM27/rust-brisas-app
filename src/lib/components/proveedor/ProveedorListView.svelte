@@ -101,9 +101,11 @@
 						clearCommand();
 					}
 					break;
-				case 'escape':
-					if (showModal) showModal = false;
-					clearCommand();
+				case 'create':
+					if (!showModal) {
+						openFormModal(null);
+						clearCommand();
+					}
 					break;
 				case 'refresh':
 					loadData();

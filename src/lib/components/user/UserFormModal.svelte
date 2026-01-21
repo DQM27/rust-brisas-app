@@ -12,7 +12,7 @@
 	import { zod4 } from 'sveltekit-superforms/adapters';
 	import { ROLE_GUARDIA_ID } from '$lib/types/role';
 	import AdminConfirmModal from '$lib/components/AdminConfirmModal.svelte';
-	import { shortcutRegistry, shortcutCommand } from '$lib/shortcuts';
+	import { shortcutRegistry, shortcutCommand, clearCommand } from '$lib/shortcuts';
 	import { onMount } from 'svelte';
 	import { auth } from '$lib/api/auth';
 	import { currentUser } from '$lib/stores/auth';
@@ -349,9 +349,11 @@
 		if (show && !loading && !readonly) {
 			if (cmd?.command === 'cancel') {
 				onClose();
+				clearCommand();
 			} else if (cmd?.command === 'save') {
 				const f = document.getElementById('user-form') as HTMLFormElement;
 				if (f) f.requestSubmit();
+				clearCommand();
 			}
 		}
 	});

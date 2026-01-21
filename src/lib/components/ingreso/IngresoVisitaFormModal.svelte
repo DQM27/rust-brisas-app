@@ -11,7 +11,7 @@
 		SearchX,
 		ChevronRight
 	} from 'lucide-svelte';
-	import { shortcutRegistry, shortcutCommand } from '$lib/shortcuts';
+	import { shortcutRegistry, shortcutCommand, clearCommand } from '$lib/shortcuts';
 
 	// Superforms & Zod v4
 	import { superForm } from 'sveltekit-superforms';
@@ -133,6 +133,7 @@
 		const cmd = $shortcutCommand;
 		if (show && cmd?.command === 'cancel') {
 			handleClose();
+			clearCommand();
 		}
 	});
 
