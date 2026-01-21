@@ -152,6 +152,15 @@
 	--grid-border: #e5e7eb;
 	--grid-border-emphasis: #d1d5db;
 	--grid-accent: #0066cc;
+
+	/* Botones Primarios - Adaptación de Estilo */
+	/* Light Mode: Estilo Sólido (Standard) */
+	--btn-primary-bg: var(--color-accent-primary);
+	--btn-primary-text: #ffffff;
+	--btn-primary-border: transparent;
+	--btn-primary-hover-bg: var(--color-accent-hover);
+	--btn-primary-hover-border: transparent;
+	--btn-primary-hover-text: #ffffff;
 }
 
 .dark {
@@ -167,6 +176,16 @@
 	--grid-border: #303030;
 	--grid-border-emphasis: #454545;
 	--grid-accent: #4da6ff;
+
+	/* Botones Primarios - Adaptación de Estilo */
+	/* Dark Mode: Estilo Ghost (Bordeado) para conservar apariencia original */
+	--btn-primary-bg: transparent;
+	--btn-primary-text: var(--color-text-secondary);
+	--btn-primary-border: var(--color-surface-tertiary);
+	/* o border-subtle */
+	--btn-primary-hover-bg: rgba(255, 255, 255, 0.05);
+	--btn-primary-hover-border: var(--color-text-primary);
+	--btn-primary-hover-text: var(--color-text-primary);
 }
 
 /* grid-tokyo: Clase opcional para tema Tokyo Night
@@ -540,6 +559,135 @@
 	font-size: 0.75rem;
 	color: var(--color-error);
 	margin-top: 0.125rem;
+}
+
+/* Form Actions Container */
+.form-actions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 0.75rem;
+	padding-top: 1.5rem;
+	margin-top: auto;
+	border-top: 1px solid var(--color-border-subtle);
+}
+
+/* Form Buttons */
+.form-btn-primary {
+	padding: 0.5rem 1.25rem;
+	border-radius: 0.5rem;
+	font-weight: 500;
+	font-size: 0.875rem;
+
+	/* Variables dinámicas según tema */
+	background-color: var(--btn-primary-bg);
+	color: var(--btn-primary-text);
+	border: 1px solid var(--btn-primary-border);
+
+	transition: all 0.2s ease;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.form-btn-primary:hover:not(:disabled) {
+	background-color: var(--btn-primary-hover-bg);
+	border-color: var(--btn-primary-hover-border);
+	color: var(--btn-primary-hover-text);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.form-btn-primary:active:not(:disabled) {
+	background-color: var(--color-accent-active);
+	transform: translateY(0);
+}
+
+.form-btn-primary:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+	background-color: var(--color-surface-tertiary);
+	color: var(--color-text-tertiary);
+}
+
+.form-btn-secondary {
+	padding: 0.5rem 1.25rem;
+	border-radius: 0.5rem;
+	font-weight: 500;
+	font-size: 0.875rem;
+	background-color: var(--color-surface-secondary);
+	color: var(--color-text-primary);
+	border: 1px solid var(--color-border-subtle);
+	transition: all 0.2s ease;
+}
+
+.form-btn-secondary:hover:not(:disabled) {
+	background-color: var(--color-surface-hover);
+	border-color: var(--color-border-emphasis);
+	color: var(--color-text-primary);
+}
+
+.form-btn-secondary:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.form-btn-ghost {
+	padding: 0.5rem 1rem;
+	border-radius: 0.5rem;
+	font-weight: 500;
+	font-size: 0.875rem;
+	color: var(--color-text-secondary);
+	transition: color 0.2s ease;
+	background-color: transparent;
+	border: 1px solid transparent;
+}
+
+.form-btn-ghost:hover:not(:disabled) {
+	color: var(--color-text-primary);
+	background-color: var(--color-surface-hover);
+}
+
+/* Botones Estilo Contratista (Outline) */
+.form-btn-outline-success {
+	padding: 0.625rem 1.5rem;
+	/* py-2.5 px-6 */
+	border-radius: 0.5rem;
+	border: 2px solid var(--color-border-subtle);
+	color: var(--color-text-secondary);
+	font-weight: 500;
+	font-size: 0.875rem;
+	background-color: transparent;
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.form-btn-outline-success:hover:not(:disabled) {
+	border-color: var(--color-success);
+	color: var(--color-success);
+}
+
+.form-btn-outline-success:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.form-btn-outline-secondary {
+	padding: 0.625rem 1rem;
+	/* py-2.5 px-4 */
+	border-radius: 0.5rem;
+	border: 2px solid var(--color-border-subtle);
+	color: var(--color-text-secondary);
+	font-weight: 500;
+	font-size: 0.875rem;
+	background-color: transparent;
+	transition: all 0.2s ease;
+}
+
+.form-btn-outline-secondary:hover:not(:disabled) {
+	border-color: var(--color-text-primary);
+	/* Adapta white/60 a tema activo */
+	color: var(--color-text-primary);
 }
 
 /* ==========================================

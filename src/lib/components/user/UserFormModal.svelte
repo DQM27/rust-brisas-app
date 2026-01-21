@@ -1157,23 +1157,16 @@
 							</div>
 						</div>
 						<!-- Footer Actions -->
+						<!-- Footer Actions -->
 						<div
 							class="flex-none flex items-center justify-end gap-3 px-6 py-4 border-t border-surface bg-surface-1"
 						>
-							<button
-								type="button"
-								onclick={onClose}
-								class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm"
-							>
-								Cancelar
-							</button>
-
 							{#if isSelf && !isChangingPassword && !readonly}
 								<button
 									type="button"
 									onclick={() => (isChangingPassword = true)}
 									disabled={loading}
-									class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-accent hover:text-accent flex items-center gap-2 text-sm disabled:opacity-50"
+									class="mr-auto px-4 py-2 rounded-lg border border-surface text-secondary hover:text-primary hover:border-border-emphasis transition-all text-sm flex items-center gap-2"
 								>
 									<svg
 										xmlns="http://www.w3.org/2000/svg"
@@ -1195,9 +1188,17 @@
 
 							{#if !isChangingPassword && !readonly}
 								<button
+									type="button"
+									disabled={loading}
+									onclick={onClose}
+									class="form-btn-outline-secondary"
+								>
+									Cancelar
+								</button>
+								<button
 									type="submit"
 									disabled={loading || !!cedulaDuplicateError || !!emailDuplicateError}
-									class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm disabled:opacity-50"
+									class="form-btn-outline-success"
 								>
 									{loading ? 'Guardando...' : isEditMode ? 'Guardar Cambios' : 'Crear Usuario'}
 								</button>
