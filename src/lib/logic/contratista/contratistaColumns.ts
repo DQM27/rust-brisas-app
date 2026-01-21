@@ -35,7 +35,13 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 			formatter: (cell) => `<span class="cell-name">${cell.getValue() || ''}</span>`
 		},
 		{ title: 'Empresa', field: 'empresaNombre', width: 180, headerFilter: 'input', visible: true },
-		{ title: 'Vehículo', field: 'vehiculoTipo', width: 120, visible: true },
+		{
+			title: 'Vehículo',
+			field: 'vehiculoTipo',
+			width: 120,
+			visible: true,
+			formatter: (cell) => `<span class="cell-text">${cell.getValue() || '-'}</span>`
+		},
 		{
 			title: 'Placa',
 			field: 'vehiculoPlaca',
@@ -78,7 +84,7 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 			field: 'praindVencido',
 			width: 130,
 			hozAlign: 'center',
-			visible: true,
+			visible: false,
 			formatter: (cell) => {
 				const row = cell.getRow().getData() as ContratistaResponse;
 				if (!row.cedula) return '';
@@ -95,16 +101,44 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 			field: 'fechaVencimientoPraind',
 			width: 130,
 			visible: true,
+			hozAlign: 'center',
 			formatter: (cell) => {
 				const data = cell.getData() as ContratistaResponse;
 				if (!data.cedula) return '';
 				const val = cell.getValue();
 				if (!val) return '';
-				return new Date(val).toLocaleDateString('es-PA', { day: 'numeric', month: 'short', year: 'numeric' });
+
+				// Robust parsing to handle both ISO strings (with T) and simple dates
+				const dateStr = String(val).split('T')[0]; // Takes "2026-02-01" from "2026-02-01T00:00:00..."
+
+				const parts = dateStr.split('-');
+				if (parts.length === 3) {
+					const [y, m, d] = parts;
+					// Remove quotes if present (double safety for SurrealDB formats)
+					const cleanY = y.replace(/['"]/g, '');
+					const cleanD = d.replace(/['"]/g, '');
+
+					const months = [
+						'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+						'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
+					];
+
+					const monthIndex = parseInt(m) - 1;
+					if (monthIndex >= 0 && monthIndex < 12) {
+						return `${cleanD} ${months[monthIndex]} ${cleanY}`;
+					}
+				}
+
+				// Fallback only if manual parsing failed
+				return new Date(val).toLocaleDateString('es-PA', {
+					day: 'numeric',
+					month: 'short',
+					year: 'numeric'
+				});
 			}
 		},
 		{
-			title: 'Acceso',
+			title: 'Autorización',
 			field: 'puedeIngresar',
 			width: 130,
 			hozAlign: 'center',

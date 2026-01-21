@@ -326,7 +326,13 @@ impl From<Contratista> for ContratistaResponse {
 
         let raw_date_str = c.fecha_vencimiento_praind.to_string();
         // Clean SurrealDB format explicitly in infrastructure layer
-        let clean_date_str = raw_date_str.trim_start_matches("d'").trim_end_matches('\'');
+        // And strip time component to avoid timezone shifts in frontend
+        let clean_date_str = raw_date_str
+            .trim_start_matches("d'")
+            .trim_end_matches('\'')
+            .split('T')
+            .next()
+            .unwrap_or("");
 
         // Delegar cálculo de estado PRAIND a domain (lógica pura)
         let estado_praind = calcular_estado_praind(clean_date_str);
