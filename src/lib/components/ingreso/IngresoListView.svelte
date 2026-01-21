@@ -26,7 +26,12 @@
 	import { activeTabId, openTab } from '$lib/stores/tabs';
 	import { statusBarInfo } from '$lib/stores/ui';
 	import * as contratistaService from '$lib/logic/contratista/contratistaService';
-	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
+	import {
+		shortcutCommand,
+		setActiveContext,
+		clearCommand,
+		shortcutRegistry
+	} from '$lib/shortcuts';
 	import { getAvailableFormats } from '$lib/api/export';
 	import { searchByType } from '$lib/api/searchService';
 
@@ -467,6 +472,7 @@
 
 	$effect(() => {
 		if ($activeTabId === tabId) {
+			shortcutRegistry.setScope('list');
 			setActiveContext('ingreso-list');
 			// Actualizar StatusBar con el conteo actual
 			statusBarInfo.set({
@@ -818,6 +824,3 @@
 		display: none !important;
 	}
 </style>
-
-
-

@@ -29,7 +29,12 @@
 
 	// Stores
 	import { activeTabId } from '$lib/stores/tabs';
-	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
+	import {
+		shortcutCommand,
+		setActiveContext,
+		clearCommand,
+		shortcutRegistry
+	} from '$lib/shortcuts';
 	import { searchByType } from '$lib/api/searchService';
 
 	interface Props {
@@ -232,6 +237,7 @@
 
 	$effect(() => {
 		if ($activeTabId === tabId) {
+			shortcutRegistry.setScope('list');
 			setActiveContext('visitante-list');
 		}
 	});
@@ -342,6 +348,3 @@
 		display: none !important;
 	}
 </style>
-
-
-

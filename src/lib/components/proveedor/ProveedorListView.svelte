@@ -32,7 +32,12 @@
 
 	// Stores
 	import { activeTabId } from '$lib/stores/tabs';
-	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
+	import {
+		shortcutCommand,
+		setActiveContext,
+		clearCommand,
+		shortcutRegistry
+	} from '$lib/shortcuts';
 
 	interface Props {
 		tabId?: string;
@@ -261,6 +266,7 @@
 
 	$effect(() => {
 		if ($activeTabId === tabId) {
+			shortcutRegistry.setScope('list');
 			setActiveContext('proveedor-list');
 		}
 	});
@@ -374,6 +380,3 @@
 		display: none !important;
 	}
 </style>
-
-
-

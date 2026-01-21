@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { activeShortcuts, getOrderedCategories, SHORTCUT_CATEGORIES } from '$lib/shortcuts';
+	import { activeShortcuts, getOrderedCategories, shortcutRegistry } from '$lib/shortcuts';
 	import type { ShortcutDefinition, CategoryMetadata } from '$lib/shortcuts';
 	import {
 		X,
@@ -19,10 +19,12 @@
 
 	let shortcuts: ShortcutDefinition[] = [];
 
-	// Suscribirse al store de atajos activos
-	const unsubscribe = activeShortcuts.subscribe((value) => {
-		shortcuts = value;
-	});
+	// Cuando cambian los atajos activos (triggers update), obtenemos TODOS los atajos
+	// para mostrarlos en la guía, no solo los del scope actual.
+	// También se actualiza al montar si isOpen cambia.
+	$: if ($activeShortcuts || isOpen) {
+		shortcuts = shortcutRegistry.getAllShortcuts();
+	}
 
 	function close() {
 		dispatch('close');
@@ -163,9 +165,12 @@
 			>
 				<div class="flex items-center justify-center gap-4">
 					<span>
-						Tip: Abre Spotlight con <kbd
-							class="font-bold px-1.5 py-0.5 bg-gray-200 dark:bg-gray-800 rounded">Ctrl+K</kbd
-						>
+						Tip: Abre Spotlight con
+						<kbd class="font-bold px-1.5 py-0.5 bg-gray-200 dark:bg-gray-800 rounded">
+							{formatKeys(shortcutRegistry.getShortcut('toggle-spotlight')?.keys || 'Ctrl+K').join(
+								'+'
+							)}
+						</kbd>
 					</span>
 					<span class="text-gray-400">•</span>
 					<span> Los atajos pueden personalizarse en Configuración </span>
@@ -174,6 +179,3 @@
 		</div>
 	</div>
 {/if}
-
-
-

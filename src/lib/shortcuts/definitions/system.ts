@@ -38,7 +38,7 @@ export const systemShortcuts: ShortcutDefinition[] = [
     },
     {
         id: 'show-shortcuts-help',
-        keys: 'shift+/',  // ? es shift+/ en teclado US
+        keys: 'shift+a',
         label: 'Ayuda de Atajos',
         description: 'Muestra todos los atajos disponibles',
         category: 'system',

@@ -368,7 +368,7 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         category: 'action',
         subCategory: 'settings',
         keywords: ['atajos', 'teclado', 'shortcuts', 'comandos', 'ayuda', 'teclas'],
-        shortcut: 'Shift+?'
+        shortcut: 'Shift+A'
     }
 ];
 

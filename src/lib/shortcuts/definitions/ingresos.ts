@@ -14,7 +14,7 @@ export const ingresoShortcuts: ShortcutDefinition[] = [
         label: 'Entrada Rápida',
         description: 'Registra una entrada rápida',
         category: 'ingresos',
-        scope: 'ingreso',
+        scope: 'list',
         icon: 'LogIn',
         handler: (e) => {
             e.preventDefault();
@@ -27,7 +27,7 @@ export const ingresoShortcuts: ShortcutDefinition[] = [
         label: 'Salida Rápida',
         description: 'Registra una salida rápida',
         category: 'ingresos',
-        scope: 'ingreso',
+        scope: 'list',
         icon: 'LogOut',
         handler: (e) => {
             e.preventDefault();
@@ -40,7 +40,7 @@ export const ingresoShortcuts: ShortcutDefinition[] = [
         label: 'Escanear Gafete',
         description: 'Activa el modo de escaneo de gafete',
         category: 'ingresos',
-        scope: 'ingreso',
+        scope: 'list',
         icon: 'CreditCard',
         handler: (e) => {
             e.preventDefault();

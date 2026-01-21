@@ -22,7 +22,12 @@
 	import { can } from '$lib/logic/permissions';
 	import { currentUser } from '$lib/stores/auth';
 	import { activeTabId } from '$lib/stores/tabs';
-	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
+	import {
+		shortcutCommand,
+		setActiveContext,
+		clearCommand,
+		shortcutRegistry
+	} from '$lib/shortcuts';
 
 	import { selectedSearchStore } from '$lib/stores/searchStore';
 	import { searchByType } from '$lib/api/searchService';
@@ -643,6 +648,7 @@
 	});
 	$effect(() => {
 		if ($activeTabId === tabId) {
+			shortcutRegistry.setScope('list');
 			setActiveContext('contratista-list');
 		}
 	});
@@ -902,6 +908,3 @@
 		display: none !important;
 	}
 </style>
-
-
-

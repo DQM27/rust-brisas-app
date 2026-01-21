@@ -23,7 +23,12 @@
 	// Stores
 	import { currentUser } from '$lib/stores/auth';
 	import { activeTabId, openTab } from '$lib/stores/tabs';
-	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
+	import {
+		shortcutCommand,
+		setActiveContext,
+		clearCommand,
+		shortcutRegistry
+	} from '$lib/shortcuts';
 
 	// Types
 	import type { IngresoProveedor } from '$lib/types/ingreso-nuevos';
@@ -258,6 +263,7 @@
 
 	$effect(() => {
 		if ($activeTabId === activeTabIdValue) {
+			shortcutRegistry.setScope('list');
 			setActiveContext('proveedor-ingreso-list');
 		}
 	});
@@ -506,6 +512,3 @@
 		display: none !important;
 	}
 </style>
-
-
-
