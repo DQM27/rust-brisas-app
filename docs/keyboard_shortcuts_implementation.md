@@ -44,22 +44,19 @@ Refactorización completa del sistema de atajos de teclado para hacerlo más rob
 ### Arquitectura
 
 ```
-SQLite (user_shortcuts) → Rust Backend → Frontend → hotkeys-js
+SurrealDB (user_shortcuts) → Rust Backend → Frontend → hotkeys-js
 ```
 
-### Tabla en SQLite
+### Tabla en SurrealDB
 
-```sql
-CREATE TABLE user_shortcuts (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    shortcut_id TEXT NOT NULL,
-    custom_keys TEXT NOT NULL,
-    enabled BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    UNIQUE(user_id, shortcut_id)
-);
+```surql
+DEFINE TABLE user_shortcuts SCHEMAFULL;
+DEFINE FIELD user_id ON user_shortcuts TYPE record<users>;
+DEFINE FIELD shortcut_id ON user_shortcuts TYPE string;
+DEFINE FIELD custom_keys ON user_shortcuts TYPE string;
+DEFINE FIELD enabled ON user_shortcuts TYPE bool DEFAULT true;
+DEFINE FIELD created_at ON user_shortcuts TYPE datetime DEFAULT time::now();
+DEFINE INDEX unique_user_shortcut ON user_shortcuts COLUMNS user_id, shortcut_id UNIQUE;
 ```
 
 ---

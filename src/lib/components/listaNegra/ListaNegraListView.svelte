@@ -155,7 +155,7 @@
 		loadListaNegra();
 		unsubscribeKeyboard = shortcutCommand.subscribe((event) => {
 			if (!event || $activeTabId !== tabId) return;
-			if (event.command === 'create-new' && canManage) openFormModal(null);
+			if (event.command === 'create' && canManage) openFormModal(null);
 			if (event.command === 'edit' && canManage && selectedRows.length === 1)
 				openFormModal(selectedRows[0]);
 			if (event.command === 'refresh') loadListaNegra();
@@ -324,6 +324,3 @@
 		display: none !important;
 	}
 </style>
-
-
-
