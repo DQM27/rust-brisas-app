@@ -102,10 +102,8 @@
 					}
 					break;
 				case 'escape':
-					if (showModal) {
-						showModal = false;
-						clearCommand();
-					}
+					if (showModal) showModal = false;
+					clearCommand();
 					break;
 				case 'refresh':
 					loadData();

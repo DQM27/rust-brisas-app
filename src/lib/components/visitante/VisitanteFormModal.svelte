@@ -132,7 +132,19 @@
 	const labelClass = 'text-xs font-medium text-gray-700 dark:text-gray-300';
 	const inputClass =
 		'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none transition-all placeholder-gray-400';
+
+	function handleKeydown(e: KeyboardEvent) {
+		if (!show || loading) return;
+		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+			e.preventDefault();
+			if (isFormValid) {
+				handleSubmit(e);
+			}
+		}
+	}
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 {#if show}
 	<div
@@ -279,6 +291,3 @@
 		</div>
 	</div>
 {/if}
-
-
-
