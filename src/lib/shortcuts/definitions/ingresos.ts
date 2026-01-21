@@ -1,0 +1,50 @@
+/**
+ * Atajos de Ingresos
+ * 
+ * Atajos específicos para el módulo de control de ingresos
+ */
+
+import type { ShortcutDefinition } from '../types';
+import { emitCommand } from '../commands';
+
+export const ingresoShortcuts: ShortcutDefinition[] = [
+    {
+        id: 'quick-entry',
+        keys: 'f1',
+        label: 'Entrada Rápida',
+        description: 'Registra una entrada rápida',
+        category: 'ingresos',
+        scope: 'ingreso',
+        icon: 'LogIn',
+        handler: (e) => {
+            e.preventDefault();
+            emitCommand('quick-entry');
+        }
+    },
+    {
+        id: 'quick-exit',
+        keys: 'f2',
+        label: 'Salida Rápida',
+        description: 'Registra una salida rápida',
+        category: 'ingresos',
+        scope: 'ingreso',
+        icon: 'LogOut',
+        handler: (e) => {
+            e.preventDefault();
+            emitCommand('quick-exit');
+        }
+    },
+    {
+        id: 'scan-badge',
+        keys: 'f3',
+        label: 'Escanear Gafete',
+        description: 'Activa el modo de escaneo de gafete',
+        category: 'ingresos',
+        scope: 'ingreso',
+        icon: 'CreditCard',
+        handler: (e) => {
+            e.preventDefault();
+            emitCommand('scan-badge');
+        }
+    }
+];

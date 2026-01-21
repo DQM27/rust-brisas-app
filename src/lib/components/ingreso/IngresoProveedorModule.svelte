@@ -8,3 +8,6 @@
 </script>
 
 <IngresoProveedorListView tabId="proveedor-ingreso-list" {data} />
+
+
+

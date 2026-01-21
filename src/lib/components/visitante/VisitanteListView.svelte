@@ -29,7 +29,7 @@
 
 	// Stores
 	import { activeTabId } from '$lib/stores/tabs';
-	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
+	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
 	import { searchByType } from '$lib/api/searchService';
 
 	interface Props {
@@ -79,12 +79,12 @@
 	// Keyboard Subscription
 	let unsubscribeKeyboard: (() => void) | null = null;
 	function setupKeyboardSubscription() {
-		unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
+		unsubscribeKeyboard = shortcutCommand.subscribe((event) => {
 			if (!event) return;
 			if ($activeTabId !== tabId) return;
 
 			switch (event.command) {
-				case 'create-new':
+				case 'create':
 					if (!showModal) {
 						openFormModal(null);
 						clearCommand();
@@ -342,3 +342,6 @@
 		display: none !important;
 	}
 </style>
+
+
+

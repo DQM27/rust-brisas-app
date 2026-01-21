@@ -25,7 +25,7 @@
 	import { currentUser } from '$lib/stores/auth';
 	import { activeTabId } from '$lib/stores/tabs';
 	import { can } from '$lib/logic/permissions';
-	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
+	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
 
 	interface Props {
 		tabId: string;
@@ -90,7 +90,7 @@
 	let unsubscribeKeyboard: (() => void) | null = null;
 
 	function setupKeyboardSubscription() {
-		unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
+		unsubscribeKeyboard = shortcutCommand.subscribe((event) => {
 			if (!event) return;
 			if ($activeTabId !== tabId) return;
 
@@ -98,7 +98,7 @@
 			const canDelete = $currentUser && can($currentUser, 'DELETE_USER');
 
 			switch (event.command) {
-				case 'create-new':
+				case 'create':
 					if (canCreate && !showModal) {
 						openModal(null);
 						clearCommand();
@@ -470,3 +470,6 @@
 		display: none !important;
 	}
 </style>
+
+
+

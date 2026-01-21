@@ -1,12 +1,10 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { shortcutRegistry } from '$lib/logic/shortcuts/registry';
-	import { DEFAULT_SHORTCUTS } from '$lib/logic/shortcuts/definitions';
+	import { shortcutRegistry } from '$lib/shortcuts';
 
 	onMount(() => {
 		// Inicializar el registro con los atajos por defecto
-		// En el futuro, esto podría fusionarse con configuraciones de usuario
-		shortcutRegistry.loadDefinitions(DEFAULT_SHORTCUTS);
+		// En el futuro, esto podría cargar personalizaciones del usuario
 		shortcutRegistry.init();
 	});
 
@@ -14,3 +12,6 @@
 		shortcutRegistry.destroy();
 	});
 </script>
+
+
+

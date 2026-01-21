@@ -19,7 +19,7 @@
 	import { toast } from 'svelte-5-french-toast';
 	import { currentUser } from '$lib/stores/auth';
 	import { activeTabId } from '$lib/stores/tabs';
-	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
+	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
 	import { getAvailableFormats, exportData } from '$lib/logic/export';
 
 	interface Props {
@@ -136,12 +136,12 @@
 	// Suscripción a comandos de teclado
 	let unsubscribeKeyboard: (() => void) | null = null;
 	function setupKeyboardSubscription() {
-		unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
+		unsubscribeKeyboard = shortcutCommand.subscribe((event) => {
 			if (!event) return;
 			if ($activeTabId !== tabId) return;
 
 			switch (event.command) {
-				case 'create-new':
+				case 'create':
 					handleNuevoIngreso();
 					clearCommand();
 					break;
@@ -453,3 +453,6 @@
 		display: none !important;
 	}
 </style>
+
+
+

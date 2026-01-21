@@ -23,7 +23,7 @@
 	// Stores
 	import { currentUser } from '$lib/stores/auth';
 	import { activeTabId, openTab } from '$lib/stores/tabs';
-	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
+	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
 
 	// Types
 	import type { IngresoProveedor } from '$lib/types/ingreso-nuevos';
@@ -97,12 +97,12 @@
 	// Keyboard Subscription
 	let unsubscribeKeyboard: (() => void) | null = null;
 	function setupKeyboardSubscription() {
-		unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
+		unsubscribeKeyboard = shortcutCommand.subscribe((event) => {
 			if (!event) return;
 			if ($activeTabId !== tabId) return;
 
 			switch (event.command) {
-				case 'create-new':
+				case 'create':
 					if (!showIngresoModal && !showSalidaModal && !showQuickEntry) {
 						showQuickEntry = true;
 						clearCommand();
@@ -506,3 +506,6 @@
 		display: none !important;
 	}
 </style>
+
+
+

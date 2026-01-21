@@ -1,20 +1,26 @@
 <script lang="ts">
-	import { shortcutRegistry } from '$lib/logic/shortcuts/registry';
-	import type { ShortcutDefinition } from '$lib/logic/shortcuts/types';
-	import { X, Command, Keyboard } from 'lucide-svelte';
+	import { activeShortcuts, getOrderedCategories, SHORTCUT_CATEGORIES } from '$lib/shortcuts';
+	import type { ShortcutDefinition, CategoryMetadata } from '$lib/shortcuts';
+	import {
+		X,
+		Keyboard,
+		Settings,
+		Search,
+		LayoutList,
+		Square,
+		Table,
+		DoorOpen
+	} from 'lucide-svelte';
 	import { slide, fade } from 'svelte/transition';
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { createEventDispatcher } from 'svelte';
 
 	export let isOpen = false;
 	const dispatch = createEventDispatcher();
 
-	// Podemos suscribirnos al store del registro si queremos actualizaciones en vivo
-	// Pero como los atajos cargados son estáticos por ahora, basta con leerlos al montar o reactivamente al store.
-
 	let shortcuts: ShortcutDefinition[] = [];
 
 	// Suscribirse al store de atajos activos
-	const unsubscribe = shortcutRegistry.activeShortcuts.subscribe((value) => {
+	const unsubscribe = activeShortcuts.subscribe((value) => {
 		shortcuts = value;
 	});
 
@@ -22,16 +28,35 @@
 		dispatch('close');
 	}
 
-	// Agrupar por categoría
-	$: grouped = {
-		Sistema: shortcuts.filter((s) => s.category === 'system'),
-		Navegación: shortcuts.filter((s) => s.category === 'navigation'),
-		'Acciones Globales': shortcuts.filter((s) => s.category === 'action'),
-		Edición: shortcuts.filter((s) => s.category === 'edit')
+	// Obtener ícono por categoría
+	const categoryIcons: Record<string, typeof Settings> = {
+		system: Settings,
+		spotlight: Search,
+		modules: LayoutList,
+		modals: Square,
+		grids: Table,
+		ingresos: DoorOpen
 	};
 
+	// Agrupar por categoría usando las nuevas categorías
+	$: categoriesWithShortcuts = getOrderedCategories()
+		.map((category) => ({
+			...category,
+			items: shortcuts.filter((s) => s.category === category.id)
+		}))
+		.filter((cat) => cat.items.length > 0);
+
 	function formatKeys(keys: string): string[] {
-		return keys.replace('$mod', 'Ctrl').split('+');
+		return keys
+			.replace('ctrl', 'Ctrl')
+			.replace('shift', 'Shift')
+			.replace('alt', 'Alt')
+			.replace('escape', 'Esc')
+			.replace('delete', 'Del')
+			.replace('pagedown', 'PgDn')
+			.replace('pageup', 'PgUp')
+			.replace('home', 'Home')
+			.split('+');
 	}
 </script>
 
@@ -55,7 +80,7 @@
 		}}
 	>
 		<div
-			class="w-full max-w-3xl bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden max-h-[80vh] flex flex-col"
+			class="w-full max-w-4xl bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden max-h-[85vh] flex flex-col"
 			transition:slide={{ duration: 250, axis: 'y' }}
 		>
 			<!-- Header -->
@@ -83,42 +108,51 @@
 
 			<!-- Content -->
 			<div class="flex-1 overflow-y-auto p-6">
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-					{#each Object.entries(grouped) as [category, items]}
-						{#if items.length > 0}
-							<div class="space-y-4">
-								<h3
-									class="text-sm font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2"
-								>
-									{category}
-								</h3>
-								<div class="space-y-2">
-									{#each items as item}
-										<div class="flex items-center justify-between group">
-											<div class="flex flex-col">
-												<span
-													class="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
-												>
-													{item.label}
-												</span>
-												{#if item.description}
-													<span class="text-xs text-gray-500">{item.description}</span>
-												{/if}
-											</div>
-											<div class="flex items-center gap-1">
-												{#each formatKeys(item.keys) as key}
-													<kbd
-														class="px-2 py-1 min-w-[1.5rem] text-center text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 shadow-sm"
-													>
-														{key === ' ' ? 'Space' : key}
-													</kbd>
-												{/each}
-											</div>
-										</div>
-									{/each}
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					{#each categoriesWithShortcuts as category}
+						<div class="space-y-3">
+							<div class="flex items-center gap-2">
+								<div class="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-md">
+									<svelte:component
+										this={categoryIcons[category.id] || Settings}
+										class="w-4 h-4 text-gray-500 dark:text-gray-400"
+									/>
 								</div>
+								<h3
+									class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+								>
+									{category.label}
+								</h3>
 							</div>
-						{/if}
+
+							<div class="space-y-2 pl-1">
+								{#each category.items as item}
+									<div class="flex items-center justify-between group py-1">
+										<div class="flex flex-col">
+											<span
+												class="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+											>
+												{item.label}
+											</span>
+											{#if item.description}
+												<span class="text-xs text-gray-500 dark:text-gray-500 line-clamp-1">
+													{item.description}
+												</span>
+											{/if}
+										</div>
+										<div class="flex items-center gap-1 flex-shrink-0 ml-2">
+											{#each formatKeys(item.keys) as key}
+												<kbd
+													class="px-2 py-1 min-w-[1.5rem] text-center text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 shadow-sm"
+												>
+													{key}
+												</kbd>
+											{/each}
+										</div>
+									</div>
+								{/each}
+							</div>
+						</div>
 					{/each}
 				</div>
 			</div>
@@ -127,8 +161,19 @@
 			<div
 				class="p-4 bg-gray-50 dark:bg-gray-950/50 border-t border-gray-200 dark:border-gray-800 text-center text-xs text-gray-500"
 			>
-				Tip: Puedes abrir Spotlight con <kbd class="font-bold">Ctrl+K</kbd> para buscar acciones rápidamente.
+				<div class="flex items-center justify-center gap-4">
+					<span>
+						Tip: Abre Spotlight con <kbd
+							class="font-bold px-1.5 py-0.5 bg-gray-200 dark:bg-gray-800 rounded">Ctrl+K</kbd
+						>
+					</span>
+					<span class="text-gray-400">•</span>
+					<span> Los atajos pueden personalizarse en Configuración </span>
+				</div>
 			</div>
 		</div>
 	</div>
 {/if}
+
+
+

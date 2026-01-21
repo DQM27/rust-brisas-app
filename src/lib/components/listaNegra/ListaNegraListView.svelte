@@ -18,7 +18,7 @@
 	import { can } from '$lib/logic/permissions';
 	import type { ListaNegraResponse, AddToListaNegraInput } from '$lib/types/listaNegra';
 	import { activeTabId } from '$lib/stores/tabs';
-	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
+	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
 	import { searchByType } from '$lib/api/searchService';
 
 	interface Props {
@@ -153,7 +153,7 @@
 
 	onMount(() => {
 		loadListaNegra();
-		unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
+		unsubscribeKeyboard = shortcutCommand.subscribe((event) => {
 			if (!event || $activeTabId !== tabId) return;
 			if (event.command === 'create-new' && canManage) openFormModal(null);
 			if (event.command === 'edit' && canManage && selectedRows.length === 1)
@@ -324,3 +324,6 @@
 		display: none !important;
 	}
 </style>
+
+
+

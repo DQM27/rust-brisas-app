@@ -22,7 +22,7 @@
 	import { can } from '$lib/logic/permissions';
 	import { currentUser } from '$lib/stores/auth';
 	import { activeTabId } from '$lib/stores/tabs';
-	import { keyboardCommand, setActiveContext, clearCommand } from '$lib/stores/keyboardCommands';
+	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
 
 	import { selectedSearchStore } from '$lib/stores/searchStore';
 	import { searchByType } from '$lib/api/searchService';
@@ -607,14 +607,14 @@
 	// Keyboard Subscriptions
 	let unsubscribeKeyboard: (() => void) | null = null;
 	function setupKeyboardSubscription() {
-		unsubscribeKeyboard = keyboardCommand.subscribe((event) => {
+		unsubscribeKeyboard = shortcutCommand.subscribe((event) => {
 			if (!event) return;
 			if ($activeTabId !== tabId) return;
 
 			const canCreate = $currentUser && can($currentUser, 'CREATE_CONTRACTOR');
 
 			switch (event.command) {
-				case 'create-new':
+				case 'create':
 					if (canCreate && !showModal && !showVehiculoModal) {
 						openModal();
 						clearCommand();
@@ -902,3 +902,6 @@
 		display: none !important;
 	}
 </style>
+
+
+

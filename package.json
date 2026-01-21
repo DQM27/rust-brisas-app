@@ -23,6 +23,7 @@
 		"@tauri-apps/plugin-process": "^2.3.1",
 		"@tauri-apps/plugin-store": "^2.4.1",
 		"@tauri-apps/plugin-updater": "^2.9.0",
+		"hotkeys-js": "^4.0.0",
 		"lucide-svelte": "^0.553.0",
 		"pdfjs-dist": "^5.4.449",
 		"svelte-5-french-toast": "^2.0.6",
