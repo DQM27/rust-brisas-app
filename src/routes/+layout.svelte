@@ -6,7 +6,6 @@
 	import { isAuthenticated } from '$lib/stores/auth';
 	import Sidebar from '$lib/components/layout/sidebar/Sidebar.svelte';
 	import StatusBar from '$lib/components/layout/StatusBar.svelte';
-	import { setupWizardVisible, showShortcutsHelp } from '$lib/stores/ui';
 	import { initNetworkMonitor } from '$lib/stores/network';
 	import Toast from '$lib/components/Toast.svelte';
 	import '$lib/stores/themeStore'; // Inicializar tema
@@ -16,7 +15,14 @@
 	import SpotlightSearch from '$lib/components/shared/SpotlightSearch.svelte';
 	import ShortcutHelpModal from '$lib/components/modals/ShortcutHelpModal.svelte';
 	import PersonaQuickCardModal from '$lib/components/shared/PersonaQuickCardModal.svelte';
+	import QuickUserSwitchModal from '$lib/components/modals/QuickUserSwitchModal.svelte';
 	import { needsSetup, setWindowDecorations, setWindowSize } from '$lib/services/keyringService';
+	import {
+		setupWizardVisible,
+		showShortcutsHelp,
+		showSpotlight,
+		showQuickSwitch
+	} from '$lib/stores/ui';
 
 	import {
 		isScreensaverActive,
@@ -274,6 +280,7 @@
 			/>
 
 			<PersonaQuickCardModal />
+			<QuickUserSwitchModal />
 		{/if}
 
 		<!-- Screensaver Password Modal -->

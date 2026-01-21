@@ -10,7 +10,7 @@ import { can } from '$lib/logic/permissions';
 import { get } from 'svelte/store';
 import { invoke } from '@tauri-apps/api/core';
 import { spotlightSettings, recentSpotlightItems } from '$lib/stores/spotlightStore';
-import { showShortcutsHelp, personaQuickView } from '$lib/stores/ui';
+import { showShortcutsHelp, personaQuickView, quickSwitchTarget } from '$lib/stores/ui';
 
 import type { SpotlightItem, SpotlightItemDefinition, SpotlightGroups, SpotlightCategory, SpotlightSubCategory } from '$lib/types/spotlight';
 import { MODULE_DEFINITIONS, ACTION_DEFINITIONS, MODULE_COMPONENT_MAP, TAB_ICON } from '$lib/logic/spotlight/spotlightDefinitions';
@@ -415,13 +415,16 @@ export async function searchDeep(query: string, settings: any, onClose: () => vo
                 category: 'data',
                 subCategory,
                 action: () => {
-                    // Acción: Abrir la vista rápida de la persona
-                    personaQuickView.set({
+                    // Acción: Disparar cambio rápido de usuario
+                    quickSwitchTarget.set({
                         id: res.id,
-                        type: res.tipo
+                        email: res.email, // Importante para el login
+                        nombreCompleto: res.nombreCompleto || res.id,
+                        tipo: res.tipo
                     });
                     onClose();
                 }
+
             };
         });
     } catch (e) {

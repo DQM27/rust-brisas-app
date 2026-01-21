@@ -5,7 +5,7 @@
  */
 
 import type { ShortcutDefinition } from '../types';
-import { showSpotlight, showShortcutsHelp } from '$lib/stores/ui';
+import { showSpotlight, showShortcutsHelp, showQuickSwitch } from '$lib/stores/ui';
 import { toggleTheme } from '$lib/stores/themeStore';
 import { logout } from '$lib/stores/auth';
 import { activeTabId, closeTab } from '$lib/stores/tabs';
@@ -13,7 +13,21 @@ import { get } from 'svelte/store';
 
 export const systemShortcuts: ShortcutDefinition[] = [
     {
+        id: 'toggle-quick-switch',
+        keys: 'ctrl+shift+u',
+        label: 'Cambio de Usuario',
+        description: 'Búsqueda rápida para cambiar de usuario',
+        category: 'system',
+        scope: 'all',
+        icon: 'UserRoundPen',
+        handler: (e) => {
+            e.preventDefault();
+            showQuickSwitch.update(v => !v);
+        }
+    },
+    {
         id: 'toggle-spotlight',
+
         keys: 'ctrl+k',
         label: 'Abrir Spotlight',
         description: 'Abre el buscador global',

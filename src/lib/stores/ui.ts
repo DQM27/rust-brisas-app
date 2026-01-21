@@ -39,3 +39,9 @@ export const showShortcutsHelp = writable(false);
 // Store para vista rápida de persona (desde Spotlight)
 export const personaQuickView = writable<{ id: string; type: string } | null>(null);
 
+// Store para visibilidad del modal de cambio rápido de usuario
+export const showQuickSwitch = writable(false);
+
+// Store para establecer un usuario objetivo para el cambio rápido desde afuera (ej. Spotlight)
+export const quickSwitchTarget = writable<any | null>(null);
+
