@@ -71,7 +71,7 @@
 </script>
 
 <svelte:window
-	on:keydown={(e) => {
+	onkeydown={(e) => {
 		if (isOpen && e.key === 'Escape') {
 			e.preventDefault();
 			close();
@@ -80,154 +80,120 @@
 />
 
 {#if isOpen}
+	<!-- Backdrop -->
 	<div
-		class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+		class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
 		role="presentation"
 		transition:fade={{ duration: 200 }}
-		on:click|self={close}
+		onclick={(e) => e.target === e.currentTarget && close()}
 	>
+		<!-- Modal Container -->
 		<div
-			class="w-full max-w-5xl bg-[#1c2128] rounded-2xl shadow-2xl border border-white/10 overflow-hidden max-h-[90vh] flex flex-col"
+			class="w-full max-w-[750px] bg-surface-2 shadow-2xl border border-surface rounded-xl overflow-hidden max-h-[95vh] flex flex-col"
 			transition:slide={{ duration: 250, axis: 'y' }}
 		>
-			<!-- Header -->
-			<div class="flex items-center justify-between p-8 border-b border-white/5 bg-white/[0.02]">
-				<div class="flex items-center gap-4">
-					<div class="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
-						<Keyboard class="w-7 h-7 text-blue-400" />
+			<!-- Header Estándar -->
+			<div
+				class="flex-none flex items-center justify-between px-6 py-4 bg-surface-2 border-b border-surface"
+			>
+				<div class="flex items-center gap-3">
+					<div class="p-2 bg-primary/10 rounded-lg">
+						<Keyboard class="w-6 h-6 text-primary" />
 					</div>
-					<div>
-						<h2 class="text-2xl font-bold text-white tracking-tight">Atajos de Teclado</h2>
-						<p class="text-sm text-gray-400 font-medium">Guía rápida de comandos disponibles</p>
-					</div>
+					<h2 class="text-xl font-semibold text-primary">Atajos de Teclado</h2>
 				</div>
 				<button
-					on:click={close}
-					class="p-2 hover:bg-white/5 rounded-full transition-colors text-gray-500 hover:text-white"
+					onclick={close}
+					class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
 				>
-					<X class="w-6 h-6" />
+					<X size={20} />
 				</button>
 			</div>
 
-			<!-- Content -->
-			<div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
-				<div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
-					<!-- Columna Izquierda: Globales -->
-					<div class="lg:col-span-5 space-y-10">
-						{#each globalCategories as category}
-							{@const CategoryIcon = categoryIcons[category.id] || Settings}
-							<div class="space-y-5">
-								<div class="flex items-center gap-3 pb-2 border-b border-white/5">
-									<div class="p-2 bg-white/5 rounded-lg">
-										<CategoryIcon class="w-5 h-5 text-blue-400" />
-									</div>
-									<h3 class="text-sm font-bold text-white uppercase tracking-[0.2em]">
-										{category.label}
-									</h3>
-								</div>
-
-								<div class="space-y-1">
-									{#each category.items as item}
-										<div
-											class="flex items-center justify-between group py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-all"
-										>
-											<div class="flex flex-col gap-0.5">
-												<span
-													class="text-sm font-semibold text-gray-200 group-hover:text-blue-400 transition-colors"
-												>
-													{item.label}
-												</span>
-												{#if item.description}
-													<span class="text-[11px] text-gray-500 font-medium leading-tight">
-														{item.description}
-													</span>
-												{/if}
-											</div>
-											<div class="flex items-center gap-1.5 flex-shrink-0 ml-4">
-												{#each formatKeys(item.keys) as key}
-													<kbd
-														class="px-2.5 py-1.5 min-w-[2.2rem] text-center text-[10px] font-bold text-gray-100 bg-[#0d1117] border border-[#30363d] rounded-lg shadow-[0_2px_0_0_#161b22]"
-													>
-														{key}
-													</kbd>
-												{/each}
-											</div>
-										</div>
-									{/each}
-								</div>
+			<!-- Content Section -->
+			<div class="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar bg-surface-1/30">
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+					{#each allCategories as category}
+						{@const CategoryIcon = categoryIcons[category.id] || Settings}
+						<div class="space-y-4">
+							<!-- Categoría Title -->
+							<div class="flex items-center gap-2 pb-1">
+								<CategoryIcon size={16} class="text-secondary" />
+								<h3 class="text-xs font-bold text-secondary uppercase tracking-widest">
+									{category.label}
+								</h3>
 							</div>
-						{/each}
-					</div>
 
-					<!-- Separador Vertical (Desktop) -->
-					<div class="hidden lg:block lg:col-span-1 w-px bg-white/5 justify-self-center"></div>
-
-					<!-- Columna Derecha: Contextuales -->
-					<div class="lg:col-span-6 space-y-10">
-						{#each contextualCategories as category}
-							{@const CategoryIcon = categoryIcons[category.id] || Settings}
-							<div class="space-y-5">
-								<div class="flex items-center gap-3 pb-2 border-b border-white/5">
-									<div class="p-2 bg-white/5 rounded-lg">
-										<CategoryIcon class="w-5 h-5 text-purple-400" />
-									</div>
-									<h3 class="text-sm font-bold text-white uppercase tracking-[0.2em]">
-										{category.label}
-									</h3>
-								</div>
-
-								<div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
-									{#each category.items as item}
-										<div
-											class="flex items-center justify-between group py-2 px-3 rounded-lg hover:bg-white/[0.03] transition-all"
-										>
-											<div class="flex flex-col gap-0.5">
-												<span
-													class="text-sm font-semibold text-gray-200 group-hover:text-purple-400 transition-colors"
-												>
-													{item.label}
+							<!-- Atajos List (Structured Grouping) -->
+							<div class="bg-surface-1 border border-surface rounded-xl overflow-hidden">
+								{#each category.items as item}
+									<div
+										class="flex items-center justify-between p-3.5 hover:bg-primary/5 transition-colors group"
+									>
+										<div class="flex flex-col gap-0.5 min-w-0">
+											<span
+												class="text-sm font-medium text-primary group-hover:text-primary transition-colors line-clamp-1"
+											>
+												{item.label}
+											</span>
+											{#if item.description}
+												<span class="text-[11px] text-secondary/60 line-clamp-1">
+													{item.description}
 												</span>
-												{#if item.description}
-													<span class="text-[11px] text-gray-500 font-medium leading-tight">
-														{item.description}
-													</span>
-												{/if}
-											</div>
-											<div class="flex items-center gap-1.5 flex-shrink-0 ml-3">
-												{#each formatKeys(item.keys) as key}
-													<kbd
-														class="px-2 py-1.2 min-w-[2rem] text-center text-[9px] font-bold text-gray-200 bg-[#0d1117] border border-[#30363d] rounded-lg shadow-[0_2px_0_0_#161b22]"
-													>
-														{key}
-													</kbd>
-												{/each}
-											</div>
+											{/if}
 										</div>
-									{/each}
-								</div>
+										<div class="flex items-center gap-1.5 ml-4 flex-none">
+											{#each formatKeys(item.keys) as key}
+												<kbd
+													class="px-2 py-1 min-w-[2rem] text-center text-[10px] font-bold text-primary bg-surface-3 border border-surface rounded shadow-sm group-hover:border-primary/30 transition-colors"
+												>
+													{key}
+												</kbd>
+											{/each}
+										</div>
+									</div>
+								{/each}
 							</div>
-						{/each}
-					</div>
+						</div>
+					{/each}
 				</div>
 			</div>
 
-			<!-- Footer -->
+			<!-- Footer Estándar -->
 			<div
-				class="p-4 bg-gray-50 dark:bg-gray-950/50 border-t border-gray-200 dark:border-gray-800 text-center text-xs text-gray-500"
+				class="flex-none flex items-center justify-between px-6 py-4 border-t border-surface bg-surface-1"
 			>
-				<div class="flex items-center justify-center gap-4">
-					<span>
-						Tip: Abre Spotlight con
-						<kbd class="font-bold px-1.5 py-0.5 bg-gray-200 dark:bg-gray-800 rounded">
-							{formatKeys(shortcutRegistry.getShortcut('toggle-spotlight')?.keys || 'Ctrl+K').join(
-								'+'
-							)}
-						</kbd>
-					</span>
-					<span class="text-gray-400">•</span>
-					<span> Los atajos pueden personalizarse en Configuración </span>
+				<div class="flex items-center gap-2 text-[11px] text-secondary">
+					<Search size={14} />
+					<span
+						>Usa <kbd class="font-bold px-1.5 py-0.5 bg-surface-3 rounded border border-surface"
+							>Ctrl+K</kbd
+						> para búsqueda rápida</span
+					>
 				</div>
+				<button
+					onclick={close}
+					class="px-6 py-2 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm"
+				>
+					Entendido
+				</button>
 			</div>
 		</div>
 	</div>
 {/if}
+
+<style>
+	.custom-scrollbar::-webkit-scrollbar {
+		width: 6px;
+	}
+	.custom-scrollbar::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.custom-scrollbar::-webkit-scrollbar-thumb {
+		background: rgba(255, 255, 255, 0.05);
+		border-radius: 10px;
+	}
+	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+		background: rgba(255, 255, 255, 0.1);
+	}
+</style>
