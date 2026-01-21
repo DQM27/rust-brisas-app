@@ -255,7 +255,8 @@
 		}
 	}
 
-	function handleGoToCatalog() {
+	function handleOpenListado() {
+		toast('Abriendo listado de proveedores...');
 		openTab({
 			componentKey: 'proveedor-list',
 			title: 'Lista de Proveedores',
@@ -433,6 +434,12 @@
 						class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
 					>
 						<UserPlus size={14} /> Proveedor
+					</button>
+					<button
+						onclick={handleOpenListado}
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
+					>
+						<FileText size={14} /> Listado
 					</button>
 				</div>
 			{/if}

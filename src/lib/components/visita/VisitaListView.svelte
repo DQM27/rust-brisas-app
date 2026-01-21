@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { Users, History, Plus, X, LogOut } from 'lucide-svelte';
+	import { Users, History, Plus, X, LogOut, FileText, UserPlus, LogIn } from 'lucide-svelte';
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
@@ -18,7 +18,7 @@
 	import type { IngresoVisita } from '$lib/types/ingreso-nuevos';
 	import { toast } from 'svelte-5-french-toast';
 	import { currentUser } from '$lib/stores/auth';
-	import { activeTabId } from '$lib/stores/tabs';
+	import { activeTabId, openTab } from '$lib/stores/tabs';
 	import { shortcutCommand, setActiveContext, clearCommand } from '$lib/shortcuts';
 	import { getAvailableFormats, exportData } from '$lib/logic/export';
 
@@ -207,6 +207,16 @@
 		}
 	}
 
+	function handleOpenListado() {
+		toast('Abriendo catálogo de visitantes...');
+		openTab({
+			componentKey: 'visitante-list',
+			title: 'Catálogo de Visitantes',
+			id: 'visitante-list',
+			focusOnOpen: true
+		});
+	}
+
 	function handleToggleFilters() {
 		showHeaderFilters = !showHeaderFilters;
 		if (typeof window !== 'undefined') {
@@ -341,7 +351,14 @@
 					onclick={handleNuevoIngreso}
 					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
 				>
-					<Plus size={14} /> Nuevo
+					<LogIn size={14} /> Nuevo
+				</button>
+
+				<button
+					onclick={handleOpenListado}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
+				>
+					<FileText size={14} /> Listado
 				</button>
 			{/if}
 		{/snippet}
@@ -453,6 +470,3 @@
 		display: none !important;
 	}
 </style>
-
-
-
