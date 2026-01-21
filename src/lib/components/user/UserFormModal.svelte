@@ -496,7 +496,7 @@
 
 	// Helper to determine field border color based on state
 	function getFieldStateClass(field: string, value: any) {
-		if (($errors as any)[field]) return '!border-red-500/50 !ring-1 !ring-red-500/20';
+		if (($errors as any)[field]) return 'is-error';
 
 		// Solo mostrar éxito si el campo ha sido "tocado" / cambiado
 		const isTainted = $tainted && $tainted[field as keyof CreateUserForm];
@@ -507,7 +507,7 @@
 			value !== 'Selec CDI' &&
 			value !== 'Selec Rol'
 		) {
-			return '!border-green-500/50 !ring-1 !ring-green-500/20';
+			return 'is-valid';
 		}
 	}
 
@@ -640,9 +640,7 @@
 												class="{inputClass} {getFieldStateClass(
 													'cedula',
 													$form.cedula
-												)} {cedulaDuplicateError
-													? '!border-red-500/50 !ring-1 !ring-red-500/20'
-													: ''}"
+												)} {cedulaDuplicateError ? 'is-error' : ''}"
 											/>
 											{#if $errors.cedula || cedulaDuplicateError}
 												<p class={errorClass}>
@@ -749,8 +747,8 @@
 													type="button"
 													disabled={loading || readonly}
 													onclick={() => (showOperacionDropdown = !showOperacionDropdown)}
-													class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {showOperacionDropdown
-														? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
+													class="form-select {showOperacionDropdown
+														? 'border-accent ring-1 ring-accent-bg'
 														: getFieldStateClass('operacion', $form.operacion)}"
 												>
 													<span class="truncate">
@@ -774,7 +772,7 @@
 
 													<!-- Dropdown Menu -->
 													<div
-														class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top"
+														class="absolute z-50 w-full mt-1 form-dropdown origin-top"
 														transition:fly={{ y: -10, duration: 300 }}
 													>
 														{#each Object.values(Operacion) as op}
@@ -784,13 +782,13 @@
 																	$form.operacion = op;
 																	showOperacionDropdown = false;
 																}}
-																class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+																class="form-dropdown-item flex items-center justify-between group"
 															>
 																<span>{op}</span>
 																{#if $form.operacion === op}
 																	<svg
 																		xmlns="http://www.w3.org/2000/svg"
-																		class="h-4 w-4 text-white"
+																		class="h-4 w-4 text-accent"
 																		viewBox="0 0 20 20"
 																		fill="currentColor"
 																	>
@@ -811,7 +809,7 @@
 												<label for="operacion-readonly" class={labelClass}>Operación / CDI</label>
 												<div
 													id="operacion-readonly"
-													class="flex items-center justify-center px-3 h-[34px] bg-black/20 rounded-lg border border-white/10 text-sm text-secondary text-center select-none"
+													class="flex items-center justify-center px-3 h-[34px] form-input bg-surface-tertiary text-center select-none"
 												>
 													{$form.operacion}
 												</div>
@@ -829,8 +827,8 @@
 													type="button"
 													disabled={loading || rolesLoading || readonly}
 													onclick={() => (showRoleDropdown = !showRoleDropdown)}
-													class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {showRoleDropdown
-														? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
+													class="form-select {showRoleDropdown
+														? 'border-accent ring-1 ring-accent-bg'
 														: getFieldStateClass('roleId', $form.roleId)}"
 												>
 													<span class="truncate">
@@ -859,7 +857,7 @@
 
 													<!-- Dropdown Menu -->
 													<div
-														class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top"
+														class="absolute z-50 w-full mt-1 form-dropdown origin-top"
 														transition:fly={{ y: -10, duration: 300 }}
 													>
 														{#each availableRoles.filter((r) => r.isSystem) as role}
@@ -869,13 +867,13 @@
 																	$form.roleId = role.id;
 																	showRoleDropdown = false;
 																}}
-																class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+																class="form-dropdown-item flex items-center justify-between group"
 															>
 																<span>{role.name}</span>
 																{#if $form.roleId === role.id}
 																	<svg
 																		xmlns="http://www.w3.org/2000/svg"
-																		class="h-4 w-4 text-white"
+																		class="h-4 w-4 text-accent"
 																		viewBox="0 0 20 20"
 																		fill="currentColor"
 																	>
@@ -897,13 +895,13 @@
 																		$form.roleId = role.id;
 																		showRoleDropdown = false;
 																	}}
-																	class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+																	class="form-dropdown-item flex items-center justify-between group"
 																>
 																	<span>{role.name}</span>
 																	{#if $form.roleId === role.id}
 																		<svg
 																			xmlns="http://www.w3.org/2000/svg"
-																			class="h-4 w-4 text-white"
+																			class="h-4 w-4 text-accent"
 																			viewBox="0 0 20 20"
 																			fill="currentColor"
 																		>
@@ -925,7 +923,7 @@
 												<label for="role-readonly" class={labelClass}>Rol</label>
 												<div
 													id="role-readonly"
-													class="flex items-center justify-center px-3 h-[34px] bg-black/20 rounded-lg border border-white/10 text-sm text-secondary text-center select-none"
+													class="flex items-center justify-center px-3 h-[34px] form-input bg-surface-tertiary text-center select-none"
 												>
 													{currentRoleName}
 												</div>
@@ -947,7 +945,7 @@
 											class="{inputClass} {getFieldStateClass(
 												'email',
 												$form.email
-											)} {emailDuplicateError ? '!border-red-500/50 !ring-1 !ring-red-500/20' : ''}"
+											)} {emailDuplicateError ? 'is-error' : ''}"
 										/>
 										{#if $errors.email || emailDuplicateError}
 											<p class={errorClass}>
@@ -1114,21 +1112,14 @@
 									<!-- Dirección -->
 									<div>
 										<label for="direccion" class={labelClass}>Dirección</label>
-										<div
-											class="obs-container w-full bg-black/20 border border-white/10 rounded-lg transition-all outline-none {getFieldStateClass(
-												'direccion',
-												$form.direccion
-											)} focus-within:!border-blue-500/50 focus-within:!ring-1 focus-within:!ring-blue-500/20"
-										>
-											<textarea
-												id="direccion"
-												bind:value={$form.direccion}
-												disabled={loading || readonly}
-												class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none outline-none border-none appearance-none ring-0 h-[93px]"
-												rows="4"
-												placeholder="Ej: San José, Calle 5, Av 3, Casa #123"
-											></textarea>
-										</div>
+										<textarea
+											id="direccion"
+											bind:value={$form.direccion}
+											disabled={loading || readonly}
+											class="form-textarea {getFieldStateClass('direccion', $form.direccion)}"
+											rows="4"
+											placeholder="Ej: San José, Calle 5, Av 3, Casa #123"
+										></textarea>
 									</div>
 								</div>
 
@@ -1257,14 +1248,14 @@
 				</p>
 
 				<div
-					class="flex items-center justify-center gap-3 bg-gray-50 dark:bg-[#161b22] p-3 rounded-md border border-gray-200 dark:border-gray-700 mb-6"
+					class="flex items-center justify-center gap-3 bg-surface-2 p-3 rounded-md border border-surface mb-6"
 				>
-					<code class="text-lg font-mono font-bold text-gray-900 dark:text-white tracking-wider"
+					<code class="text-lg font-mono font-bold text-primary tracking-wider"
 						>{generatedPassword}</code
 					>
 					<button
 						onclick={copyNewPassword}
-						class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+						class="p-2 text-secondary hover:text-primary transition-colors"
 						title="Copiar"
 					>
 						<svg
@@ -1289,7 +1280,7 @@
 						showSuccessModal = false;
 						onClose();
 					}}
-					class="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-medium py-2 rounded-md transition-colors border border-gray-200 dark:border-gray-700"
+					class="w-full bg-surface-3 hover:bg-surface-hover text-primary font-medium py-2 rounded-md transition-colors border border-surface"
 				>
 					Cerrar
 				</button>
@@ -1299,39 +1290,12 @@
 {/if}
 
 <style>
-	/* Standardized input focus style */
-	input:focus,
-	textarea:focus {
-		border-color: rgba(59, 130, 246, 0.5) !important;
-		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
-		outline: none !important;
-	}
-
 	/* Fix browser autofill white background */
 	input:-webkit-autofill,
 	input:-webkit-autofill:hover,
 	input:-webkit-autofill:focus {
-		-webkit-text-fill-color: white !important;
-		-webkit-box-shadow: 0 0 0px 1000px #1c2128 inset !important;
+		-webkit-text-fill-color: var(--color-text-primary) !important;
+		-webkit-box-shadow: 0 0 0px 1000px var(--color-surface-secondary) inset !important;
 		transition: background-color 5000s ease-in-out 0s;
-	}
-
-	/* Select arrow styling */
-	.select-arrow {
-		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-		background-position: right 0.5rem center;
-		background-size: 1.25em 1.25em;
-	}
-
-	/* Address/Observations toggle container */
-	.obs-container,
-	.obs-container *:focus {
-		outline: none !important;
-		box-shadow: none !important;
-	}
-
-	.obs-container:focus-within {
-		border-color: rgba(59, 130, 246, 0.5) !important;
-		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
 	}
 </style>
