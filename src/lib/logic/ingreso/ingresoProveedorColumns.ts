@@ -40,7 +40,7 @@ export const getIngresoProveedorColumns = (
             headerFilter: 'input',
             formatter: (cell) => {
                 const data = cell.getData() as IngresoProveedor;
-                return `<span style="font-weight:500; color:#e2e8f0">${data.nombre} ${data.apellido}</span>`;
+                return `<span class="font-medium text-primary">${data.nombre} ${data.apellido}</span>`;
             }
         },
         {
@@ -48,7 +48,7 @@ export const getIngresoProveedorColumns = (
             field: 'cedula',
             width: 130,
             headerFilter: 'input',
-            formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#9ca3af">${cell.getValue() || ''}</span>`
+            formatter: (cell) => `<span class="font-mono text-xs text-secondary">${cell.getValue() || ''}</span>`
         },
         {
             title: 'Empresa',
@@ -80,7 +80,7 @@ export const getIngresoProveedorColumns = (
             width: 90,
             formatter: (cell) => {
                 const d = parseDate(cell.getData().fechaIngreso);
-                return d ? `<span class="font-mono text-white">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
+                return d ? `<span class="font-mono text-primary">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
             }
         }
     ];
@@ -103,7 +103,7 @@ export const getIngresoProveedorColumns = (
                 width: 100,
                 formatter: (cell) => {
                     const d = parseDate(cell.getData().fechaSalida);
-                    return d ? `<span class="font-mono text-white">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
+                    return d ? `<span class="font-mono text-primary">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
                 }
             }
         );

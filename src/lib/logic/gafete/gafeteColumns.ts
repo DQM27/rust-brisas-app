@@ -19,7 +19,7 @@ export const getGafeteColumns = (handlers: GafeteColumnHandlers): ColumnDefiniti
 			width: 100,
 			headerFilter: 'input',
 			frozen: true,
-			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6; font-weight:700; letter-spacing:0.05em;">${cell.getValue()}</span>`
+			formatter: (cell) => `<span class="cell-code font-bold tracking-wide">${cell.getValue()}</span>`
 		},
 		{
 			title: 'Tipo',

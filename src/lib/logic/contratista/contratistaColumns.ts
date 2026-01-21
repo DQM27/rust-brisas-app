@@ -24,7 +24,7 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 			width: 130,
 			headerFilter: 'input',
 			visible: true,
-			formatter: (cell) => `<span style="font-family:monospace; font-size:13px">${cell.getValue() || ''}</span>`
+			formatter: (cell) => `<span class="cell-code">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Nombre Completo',
@@ -32,7 +32,7 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 			width: 220,
 			headerFilter: 'input',
 			visible: true,
-			formatter: (cell) => `<span style="font-weight:500; color:#e2e8f0">${cell.getValue() || ''}</span>`
+			formatter: (cell) => `<span class="cell-name">${cell.getValue() || ''}</span>`
 		},
 		{ title: 'Empresa', field: 'empresaNombre', width: 180, headerFilter: 'input', visible: true },
 		{ title: 'Vehículo', field: 'vehiculoTipo', width: 120, visible: true },
@@ -41,7 +41,7 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 			field: 'vehiculoPlaca',
 			width: 110,
 			visible: true,
-			formatter: (cell) => `<span style="font-family:monospace">${cell.getValue() || '-'}</span>`
+			formatter: (cell) => `<span class="cell-code">${cell.getValue() || '-'}</span>`
 		},
 		{
 			title: 'Estado',
@@ -174,14 +174,14 @@ export const getContratistaTrashColumns = (): ColumnDefinition[] => {
 			field: 'cedula',
 			width: 130,
 			visible: true,
-			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
+			formatter: (cell) => `<span class="cell-code">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Nombre Completo',
 			field: 'nombreCompleto',
 			width: 220,
 			visible: true,
-			formatter: (cell) => `<span style="font-weight:500; color:#e2e8f0">${cell.getValue() || ''}</span>`
+			formatter: (cell) => `<span class="cell-name">${cell.getValue() || ''}</span>`
 		},
 		{ title: 'Empresa', field: 'empresaNombre', width: 180, visible: true },
 		{

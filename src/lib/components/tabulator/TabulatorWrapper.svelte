@@ -10,7 +10,8 @@
 		createTabulatorController,
 		defaultTabulatorOptions
 	} from '$lib/logic/tabulator/tabulatorController';
-	import 'tabulator-tables/dist/css/tabulator_site_dark.min.css';
+	// CSS base simple de Tabulator - nuestras variables CSS lo personalizan
+	import 'tabulator-tables/dist/css/tabulator_simple.min.css';
 
 	interface Props {
 		data: any[];
@@ -349,7 +350,9 @@
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 	}
 
-	/* Tokyo Night Storm Theme - Paleta profesional */
+	/* ==========================================
+	   Tabulator Theme - Usando CSS Variables
+	   ========================================== */
 	:global(.tabulator) {
 		font-family:
 			'Inter',
@@ -359,29 +362,29 @@
 			system-ui,
 			sans-serif;
 		font-size: 13px;
-		background-color: #1a1b26 !important;
-		border-color: rgba(122, 162, 247, 0.3) !important;
+		background-color: var(--grid-bg) !important;
+		border-color: var(--grid-border-emphasis) !important;
 	}
 
-	/* Header - Tokyo Night colors */
+	/* Header */
 	:global(.tabulator-header) {
-		background-color: #1f2335 !important;
-		border-bottom: 1px solid #7aa2f7 !important;
-		color: #c0caf5 !important;
-		font-size: 11px; /* Un punto menos */
+		background-color: var(--grid-header-bg) !important;
+		border-bottom: 1px solid var(--grid-accent) !important;
+		color: var(--grid-text) !important;
+		font-size: 11px;
 		font-weight: 500;
 		letter-spacing: 0.01em;
 	}
 
 	:global(.tabulator-col) {
-		padding: 4px 4px !important; /* Reducido de 10px 6px */
-		border-right: 1px solid rgba(122, 162, 247, 0.15) !important;
-		background-color: #1f2335 !important;
+		padding: 4px 4px !important;
+		border-right: 1px solid var(--grid-border) !important;
+		background-color: var(--grid-header-bg) !important;
 	}
 
 	:global(.tabulator-col .tabulator-col-content) {
 		padding: 2px;
-		white-space: normal !important; /* Permitir wrap en encabezados */
+		white-space: normal !important;
 		text-align: center;
 	}
 
@@ -390,60 +393,61 @@
 		line-height: 1.1;
 	}
 
-	/* Rows - Tokyo Night background */
+	/* Rows */
 	:global(.tabulator-row) {
-		min-height: 32px; /* Reducido de 40px */
-		background-color: #1a1b26 !important;
-		border-bottom: 1px solid rgba(122, 162, 247, 0.1) !important;
-		color: #c0caf5 !important;
+		min-height: 32px;
+		background-color: var(--grid-row-bg) !important;
+		border-bottom: 1px solid var(--grid-border) !important;
+		color: var(--grid-text) !important;
 	}
 
 	:global(.tabulator-cell) {
-		padding: 6px 4px !important; /* Reducido de 10px 8px */
+		padding: 6px 4px !important;
 		line-height: 1.2;
-		border-right: 1px solid rgba(122, 162, 247, 0.08) !important;
+		border-right: 1px solid var(--grid-border) !important;
 	}
 
-	/* Hover - Tokyo Night accent */
+	/* Hover */
 	:global(.tabulator-row:hover) {
-		background-color: #24283b !important;
+		background-color: var(--grid-row-hover) !important;
 	}
 
-	/* Selection - Tokyo Night blue */
+	/* Selection */
 	:global(.tabulator-row.tabulator-selected) {
-		background-color: rgba(122, 162, 247, 0.2) !important;
-		border-left: 3px solid #7aa2f7 !important;
+		background-color: var(--grid-row-selected) !important;
+		border-left: 3px solid var(--grid-accent) !important;
 	}
 
-	/* Header filters - Tokyo Night style */
+	/* Header filters */
 	:global(.tabulator-header-filter input) {
 		padding: 6px 8px;
 		font-size: 12px;
 		border-radius: 4px;
-		background-color: #24283b !important;
-		border: 1px solid rgba(122, 162, 247, 0.3) !important;
-		color: #c0caf5 !important;
+		background-color: var(--grid-row-hover) !important;
+		border: 1px solid var(--grid-border-emphasis) !important;
+		color: var(--grid-text) !important;
 		transition: border-color 0.2s ease;
 	}
 
 	:global(.tabulator-header-filter input:focus) {
 		outline: none;
-		border-color: #7aa2f7 !important;
-		background-color: #1a1b26 !important;
+		border-color: var(--grid-accent) !important;
+		background-color: var(--grid-bg) !important;
 	}
 
 	:global(.tabulator-header-filter input::placeholder) {
-		color: rgba(192, 202, 245, 0.3);
+		color: var(--grid-text-secondary);
+		opacity: 0.5;
 	}
 
-	/* Frozen columns - Tokyo Night integration */
+	/* Frozen columns */
 	:global(.tabulator-col.tabulator-frozen) {
-		border-left: 1px solid rgba(122, 162, 247, 0.15) !important;
-		background-color: #1f2335 !important;
+		border-left: 1px solid var(--grid-border) !important;
+		background-color: var(--grid-header-bg) !important;
 	}
 
 	:global(.tabulator-cell.tabulator-frozen) {
-		border-left: 1px solid rgba(122, 162, 247, 0.15) !important;
+		border-left: 1px solid var(--grid-border) !important;
 	}
 
 	:global(.tabulator-row .tabulator-cell.tabulator-frozen) {
@@ -462,100 +466,98 @@
 		background-color: inherit !important;
 	}
 
-	/* Footer & Pagination - Tokyo Night */
+	/* Footer & Pagination */
 	:global(.tabulator-footer) {
-		background-color: #1f2335 !important;
-		border-top: 1px solid rgba(122, 162, 247, 0.2) !important;
-		color: #c0caf5 !important;
+		background-color: var(--grid-header-bg) !important;
+		border-top: 1px solid var(--grid-border-emphasis) !important;
+		color: var(--grid-text) !important;
 	}
 
 	:global(.tabulator-page) {
 		font-size: 13px;
 		padding: 6px 12px;
-		background-color: rgba(122, 162, 247, 0.1) !important;
-		border: 1px solid rgba(122, 162, 247, 0.3) !important;
-		color: #c0caf5 !important;
+		background-color: var(--grid-row-hover) !important;
+		border: 1px solid var(--grid-border-emphasis) !important;
+		color: var(--grid-text) !important;
 		transition: all 0.15s ease;
 	}
 
 	:global(.tabulator-page.active) {
-		background-color: #7aa2f7 !important;
-		border-color: #7aa2f7 !important;
-		color: #1a1b26 !important;
+		background-color: var(--grid-accent) !important;
+		border-color: var(--grid-accent) !important;
+		color: var(--grid-bg) !important;
 		font-weight: 600;
 	}
 
 	:global(.tabulator-page:hover) {
-		background-color: rgba(122, 162, 247, 0.25) !important;
-		border-color: #7aa2f7 !important;
+		background-color: var(--grid-row-selected) !important;
+		border-color: var(--grid-accent) !important;
 	}
 
-	/* Scrollbars - Tokyo Night (más gruesas para mejor usabilidad) */
+	/* Scrollbars */
 	:global(.tabulator-tableholder::-webkit-scrollbar) {
 		width: 14px;
 		height: 14px;
 	}
 
 	:global(.tabulator-tableholder::-webkit-scrollbar-track) {
-		background: #1a1b26;
+		background: var(--grid-bg);
 	}
 
 	:global(.tabulator-tableholder::-webkit-scrollbar-thumb) {
-		background: rgba(122, 162, 247, 0.3);
+		background: var(--grid-border-emphasis);
 		border-radius: 4px;
 	}
 
 	:global(.tabulator-tableholder::-webkit-scrollbar-thumb:hover) {
-		background: rgba(122, 162, 247, 0.5);
+		background: var(--grid-accent);
+		opacity: 0.7;
 	}
 
 	/* Grouping Styles */
 	:global(.tabulator-group) {
-		background: rgba(122, 162, 247, 0.05) !important;
-		border-left: 4px solid #7aa2f7 !important;
+		background: var(--grid-row-selected) !important;
+		border-left: 4px solid var(--grid-accent) !important;
 		min-height: 28px !important;
 	}
 
 	:global(.tabulator-group-toggle) {
-		color: #7aa2f7 !important;
+		color: var(--grid-accent) !important;
 	}
 
-	/* Calculation Rows (Footer/Header Totals) */
+	/* Calculation Rows */
 	:global(.tabulator-calcs) {
-		background-color: #1f2335 !important;
+		background-color: var(--grid-header-bg) !important;
 		font-weight: 700 !important;
-		color: #bb9af7 !important; /* Purple accent for totals */
+		color: var(--grid-accent) !important;
 	}
 
 	:global(.tabulator-calcs-top) {
-		border-bottom: 2px solid rgba(122, 162, 247, 0.3) !important;
+		border-bottom: 2px solid var(--grid-border-emphasis) !important;
 	}
 
 	:global(.tabulator-calcs-bottom) {
-		border-top: 2px solid rgba(122, 162, 247, 0.3) !important;
+		border-top: 2px solid var(--grid-border-emphasis) !important;
 	}
 
-	/* Context Menu Premium Style */
+	/* Context Menu */
 	:global(.tabulator-menu) {
-		background: #1a1b26 !important;
-		border: 1px solid rgba(122, 162, 247, 0.3) !important;
-		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+		background: var(--grid-bg) !important;
+		border: 1px solid var(--grid-border-emphasis) !important;
+		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
 		border-radius: 6px !important;
 		padding: 4px !important;
 	}
 
 	:global(.tabulator-menu-item) {
-		color: #c0caf5 !important;
+		color: var(--grid-text) !important;
 		padding: 6px 12px !important;
 		font-size: 12px !important;
 		border-radius: 4px !important;
 	}
 
 	:global(.tabulator-menu-item:hover) {
-		background: #7aa2f7 !important;
-		color: #1a1b26 !important;
+		background: var(--grid-accent) !important;
+		color: var(--grid-bg) !important;
 	}
 </style>
-
-
-

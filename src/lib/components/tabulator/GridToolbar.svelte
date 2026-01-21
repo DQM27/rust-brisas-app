@@ -83,7 +83,7 @@
 <svelte:window onclick={closeAllDropdowns} />
 
 <div
-	class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between p-4 bg-[#1e1e1e] border-b border-white/5"
+	class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between p-4 bg-surface-2 border-b border-surface"
 >
 	<!-- Left Section: Primary Actions + Secondary Actions + Filters -->
 	<div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -120,14 +120,14 @@
 					bind:value={searchTerm}
 					oninput={(e) => onSearch?.(e.currentTarget.value)}
 					placeholder="Buscar en tabla..."
-					class="block w-full pl-10 pr-3 py-1.5 border border-white/10 rounded-md
-                               bg-[#2d2d2d] text-gray-300 placeholder-gray-500
+					class="block w-full pl-10 pr-3 py-1.5 border border-surface rounded-md
+                               bg-surface-3 text-primary placeholder-tertiary
                                focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
                                text-sm transition-all"
 				/>
 				{#if searchTerm}
 					<button
-						class="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-500 hover:text-white"
+						class="absolute inset-y-0 right-0 pr-2 flex items-center text-tertiary hover:text-primary"
 						onclick={() => {
 							searchTerm = '';
 							onSearch?.('');
@@ -142,14 +142,14 @@
 		<!-- Botones de ajuste de columnas -->
 		<div class="flex items-center gap-2">
 			<button
-				class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+				class="p-2 text-secondary hover:text-primary hover:bg-surface-hover rounded-md transition-colors border border-surface bg-surface-3"
 				onclick={() => onAutoSizeColumns?.()}
 				title="Ajustar columnas al contenido"
 			>
 				<ScanText class="h-4 w-4" />
 			</button>
 			<button
-				class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+				class="p-2 text-secondary hover:text-primary hover:bg-surface-hover rounded-md transition-colors border border-surface bg-surface-3"
 				onclick={() => onFitColumns?.()}
 				title="Ajustar columnas al ancho"
 			>
@@ -158,7 +158,7 @@
 			<!-- Freeze Columns Button with Dropdown -->
 			<div class="relative">
 				<button
-					class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+					class="p-2 text-secondary hover:text-primary hover:bg-surface-hover rounded-md transition-colors border border-surface bg-surface-3"
 					onclick={toggleFreeze}
 					title="Congelar/Fijar columnas"
 				>
@@ -166,29 +166,29 @@
 				</button>
 				{#if showFreezeDropdown && columns.length > 0}
 					<div
-						class="absolute right-0 mt-2 w-56 rounded-md shadow-xl bg-[#18181b] ring-1 ring-black ring-opacity-5 z-50 p-2 border border-white/10"
+						class="absolute right-0 mt-2 w-56 rounded-md shadow-xl bg-surface-2 ring-1 ring-black ring-opacity-5 z-50 p-2 border border-surface"
 						onclick={(e) => e.stopPropagation()}
 						role="presentation"
 					>
-						<div class="text-[10px] font-bold text-gray-500 mb-2 px-2 uppercase tracking-wider">
+						<div class="text-[10px] font-bold text-tertiary mb-2 px-2 uppercase tracking-wider">
 							Fijar Columnas
 						</div>
 						{#each columns as col}
 							<button
-								class="w-full flex items-center px-2 py-1.5 hover:bg-white/5 rounded cursor-pointer group transition-colors text-left"
+								class="w-full flex items-center px-2 py-1.5 hover:bg-surface-hover rounded cursor-pointer group transition-colors text-left"
 								onclick={() => onToggleFreeze?.(col.field)}
 							>
 								<div class="flex-none w-4 h-4 flex items-center justify-center">
 									{#if col.frozen}
 										<Pin class="h-3 w-3 text-blue-400 fill-blue-400/20" />
 									{:else}
-										<PinOff class="h-3 w-3 text-gray-600 group-hover:text-gray-400" />
+										<PinOff class="h-3 w-3 text-tertiary group-hover:text-secondary" />
 									{/if}
 								</div>
 								<span
 									class="ml-2 text-xs {col.frozen
-										? 'text-blue-400 font-medium'
-										: 'text-gray-400 group-hover:text-gray-200'} transition-colors"
+										? 'text-accent font-medium'
+										: 'text-secondary group-hover:text-primary'} transition-colors"
 								>
 									{col.title}
 								</span>
@@ -201,7 +201,7 @@
 			<!-- Column Visibility Button with Dropdown -->
 			<div class="relative">
 				<button
-					class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+					class="p-2 text-secondary hover:text-primary hover:bg-surface-hover rounded-md transition-colors border border-surface bg-surface-3"
 					onclick={toggleColumns}
 					title="Visibilidad de columnas"
 				>
@@ -209,25 +209,25 @@
 				</button>
 				{#if showColumnDropdown && columns.length > 0}
 					<div
-						class="absolute right-0 mt-2 w-56 rounded-md shadow-xl bg-[#18181b] ring-1 ring-black ring-opacity-5 z-50 p-2 border border-white/10"
+						class="absolute right-0 mt-2 w-56 rounded-md shadow-xl bg-surface-2 ring-1 ring-black ring-opacity-5 z-50 p-2 border border-surface"
 						onclick={(e) => e.stopPropagation()}
 						role="presentation"
 					>
-						<div class="text-[10px] font-bold text-gray-500 mb-2 px-2 uppercase tracking-wider">
+						<div class="text-[10px] font-bold text-tertiary mb-2 px-2 uppercase tracking-wider">
 							Columnas Visibles
 						</div>
 						{#each columns as col}
 							<label
-								class="flex items-center px-2 py-1.5 hover:bg-white/5 rounded cursor-pointer group transition-colors"
+								class="flex items-center px-2 py-1.5 hover:bg-surface-hover rounded cursor-pointer group transition-colors"
 							>
 								<input
 									type="checkbox"
-									class="form-checkbox h-3.5 w-3.5 text-blue-500 rounded bg-[#27272a] border-gray-600 focus:ring-blue-500/20 focus:ring-offset-0 transition-colors"
+									class="form-checkbox h-3.5 w-3.5 text-blue-500 rounded bg-surface-3 border-emphasis focus:ring-blue-500/20 focus:ring-offset-0 transition-colors"
 									checked={col.visible !== false}
 									onclick={() => onToggleColumn?.(col.field)}
 								/>
 								<span
-									class="ml-2 text-xs text-gray-400 group-hover:text-gray-200 transition-colors"
+									class="ml-2 text-xs text-secondary group-hover:text-primary transition-colors"
 								>
 									{col.title}
 								</span>
@@ -238,7 +238,7 @@
 			</div>
 			<!-- Toggle Filters Button -->
 			<button
-				class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+				class="p-2 text-secondary hover:text-primary hover:bg-surface-hover rounded-md transition-colors border border-surface bg-surface-3"
 				onclick={() => onToggleFilters?.()}
 				title="Mostrar/Ocultar filtros"
 			>
@@ -249,7 +249,7 @@
 			<button
 				class="p-2 transition-colors border rounded-md {hasSelection
 					? 'bg-blue-600/20 text-blue-400 border-blue-500/30 hover:bg-blue-600/30'
-					: 'text-gray-400 hover:text-white hover:bg-white/5 border-white/10 bg-[#2d2d2d]'}"
+					: 'text-secondary hover:text-primary hover:bg-surface-hover border-surface bg-surface-3'}"
 				onclick={() => onAdvancedExport?.()}
 				title={hasSelection ? 'Exportar seleccionados' : 'Exportar datos'}
 			>
@@ -257,7 +257,7 @@
 			</button>
 
 			<button
-				class="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-colors border border-white/10 bg-[#2d2d2d]"
+				class="p-2 text-secondary hover:text-primary hover:bg-surface-hover rounded-md transition-colors border border-surface bg-surface-3"
 				onclick={() => {
 					// TODO: Implementar lógica de configuración
 					console.log('Configuración clickeada');
@@ -276,6 +276,3 @@
      * to avoid @apply issues in Svelte/Vite.
      */
 </style>
-
-
-

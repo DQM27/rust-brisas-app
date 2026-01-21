@@ -662,13 +662,13 @@
 
 <svelte:window onclick={handleClickOutside} />
 
-<div class="flex h-full flex-col relative bg-[#1e1e1e]">
+<div class="flex h-full flex-col relative bg-surface-1">
 	<!-- Header -->
-	<div class="border-b border-white/10 px-6 py-4 bg-[#252526]">
+	<div class="border-b border-surface px-6 py-4 bg-surface-2">
 		<div class="flex items-center justify-between gap-4">
 			<div>
-				<h2 class="text-xl font-semibold text-gray-100">Lista de Contratistas</h2>
-				<p class="mt-1 text-sm text-gray-400">
+				<h2 class="text-xl font-semibold text-primary">Lista de Contratistas</h2>
+				<p class="mt-1 text-sm text-secondary">
 					Gestión y visualización de contratistas registrados
 				</p>
 			</div>
@@ -677,7 +677,7 @@
 	</div>
 
 	<!-- Content -->
-	<div class="flex-1 flex flex-col overflow-hidden relative bg-[#1e1e1e]">
+	<div class="flex-1 flex flex-col overflow-hidden relative bg-surface-1">
 		{#if error}
 			<div class="p-6">
 				<div

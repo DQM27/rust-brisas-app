@@ -27,11 +27,11 @@ export const createGridBadge = ({
     withCheck = false
 }: BadgeOptions): string => {
     const colors: Record<BadgeColor, string> = {
-        green: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20',
-        red: 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20',
-        amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20',
-        blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20',
-        gray: 'bg-gray-500/10 text-gray-400 border-gray-500/20 hover:bg-gray-500/20'
+        green: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-600/30 dark:border-emerald-500/20 hover:bg-emerald-500/25',
+        red: 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-600/30 dark:border-rose-500/20 hover:bg-rose-500/25',
+        amber: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-600/30 dark:border-amber-500/20 hover:bg-amber-500/25',
+        blue: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-600/30 dark:border-blue-500/20 hover:bg-blue-500/25',
+        gray: 'bg-gray-500/15 text-gray-700 dark:text-gray-400 border-gray-600/30 dark:border-gray-500/20 hover:bg-gray-500/25'
     };
 
     const baseClass =

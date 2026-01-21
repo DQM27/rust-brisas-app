@@ -296,13 +296,13 @@
 		onclick={() => !disabled && (isOpen = !isOpen)}
 		{disabled}
 		class="date-range-trigger flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors
-      bg-[#1e1e1e] border-white/10
-      {disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-white/20 hover:bg-white/5'}"
+      bg-surface-3 border-surface
+      {disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-emphasis hover:bg-surface-hover'}"
 	>
-		<Calendar class="w-4 h-4 text-gray-500" />
-		<span class="text-gray-400">{label}:</span>
-		<span class="text-white font-medium">{formatDateRange(startDate, endDate)}</span>
-		<ChevronDown class="w-4 h-4 text-gray-500 transition-transform {isOpen ? 'rotate-180' : ''}" />
+		<Calendar class="w-4 h-4 text-tertiary" />
+		<span class="text-secondary">{label}:</span>
+		<span class="text-primary font-medium">{formatDateRange(startDate, endDate)}</span>
+		<ChevronDown class="w-4 h-4 text-tertiary transition-transform {isOpen ? 'rotate-180' : ''}" />
 	</button>
 
 	<!-- Portal Dropdown -->
@@ -312,13 +312,13 @@
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
 				bind:this={dropdownRef}
-				class="fixed pointer-events-auto z-[99999] w-72 bg-[#1e1e1e] border border-white/10 rounded-lg shadow-2xl overflow-hidden flex flex-col"
+				class="fixed pointer-events-auto z-[99999] w-72 bg-surface-2 border border-surface rounded-lg shadow-2xl overflow-hidden flex flex-col"
 				style={dropdownStyle}
 				transition:fade={{ duration: 100 }}
 			>
 				<!-- Presets -->
-				<div class="p-3 border-b border-white/5">
-					<p class="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-2">
+				<div class="p-3 border-b border-surface">
+					<p class="text-[10px] font-medium text-tertiary uppercase tracking-wider mb-2">
 						Acceso rápido
 					</p>
 					<div class="grid grid-cols-2 gap-1.5">
@@ -326,8 +326,8 @@
 							<button
 								type="button"
 								onclick={() => applyPreset(key as PresetKey)}
-								class="px-2 py-1.5 text-xs text-gray-300 rounded
-					bg-white/5 hover:bg-white/10 transition-colors text-left"
+								class="px-2 py-1.5 text-xs text-secondary rounded
+				bg-surface-hover hover:bg-surface-active transition-colors text-left"
 							>
 								{preset.label}
 							</button>
@@ -338,28 +338,26 @@
 				<!-- Date inputs -->
 				<div class="p-3 space-y-3">
 					<div>
-						<label for="start-date" class="block text-xs text-gray-500 mb-1"> Desde </label>
+						<label for="start-date" class="block text-xs text-tertiary mb-1"> Desde </label>
 						<input
 							id="start-date"
 							type="date"
 							bind:value={tempStartDate}
 							class="w-full px-3 py-2 text-sm rounded-lg
-				  bg-[#252526] border border-white/10 text-white
-				  focus:outline-none focus:border-white/30
-				  [color-scheme:dark]"
+				  bg-surface-3 border border-surface text-primary
+				  focus:outline-none focus:border-emphasis"
 						/>
 					</div>
 
 					<div>
-						<label for="end-date" class="block text-xs text-gray-500 mb-1"> Hasta </label>
+						<label for="end-date" class="block text-xs text-tertiary mb-1"> Hasta </label>
 						<input
 							id="end-date"
 							type="date"
 							bind:value={tempEndDate}
 							class="w-full px-3 py-2 text-sm rounded-lg
-				  bg-[#252526] border border-white/10 text-white
-				  focus:outline-none focus:border-white/30
-				  [color-scheme:dark]"
+				  bg-surface-3 border border-surface text-primary
+				  focus:outline-none focus:border-emphasis"
 						/>
 					</div>
 
@@ -372,11 +370,11 @@
 				</div>
 
 				<!-- Actions -->
-				<div class="flex justify-end gap-2 px-3 py-2.5 border-t border-white/5 bg-black/20">
+				<div class="flex justify-end gap-2 px-3 py-2.5 border-t border-surface bg-surface-active">
 					<button
 						type="button"
 						onclick={handleCancel}
-						class="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+						class="px-3 py-1.5 text-sm text-secondary hover:text-primary transition-colors"
 					>
 						Cancelar
 					</button>
@@ -393,6 +391,3 @@
 		</div>
 	{/if}
 </div>
-
-
-

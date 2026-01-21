@@ -26,10 +26,14 @@
 	--color-border-strong: #8a8a8a;
 
 	/* Text colors - MEJORADO: Mayor contraste */
-	--color-text-primary: #1a1a1a; /* Casi negro - excelente contraste */
-	--color-text-secondary: #383838; /* Gris oscuro - buen contraste */
-	--color-text-tertiary: #6e6e6e; /* Gris medio - legible */
-	--color-text-disabled: #a3a3a3; /* Gris claro - para disabled */
+	--color-text-primary: #1a1a1a;
+	/* Casi negro - excelente contraste */
+	--color-text-secondary: #383838;
+	/* Gris oscuro - buen contraste */
+	--color-text-tertiary: #6e6e6e;
+	/* Gris medio - legible */
+	--color-text-disabled: #a3a3a3;
+	/* Gris claro - para disabled */
 
 	/* Interactive elements - MEJORADO */
 	--color-interactive-default: #525252;
@@ -85,10 +89,14 @@
 	--color-border-strong: #5a5a5a;
 
 	/* Text colors - MEJORADO: Más brillante */
-	--color-text-primary: #e8e8e8; /* Muy claro - excelente legibilidad */
-	--color-text-secondary: #c8c8c8; /* Claro - buen contraste */
-	--color-text-tertiary: #9d9d9d; /* Gris claro - legible */
-	--color-text-disabled: #6e6e6e; /* Gris oscuro - para disabled */
+	--color-text-primary: #e8e8e8;
+	/* Muy claro - excelente legibilidad */
+	--color-text-secondary: #c8c8c8;
+	/* Claro - buen contraste */
+	--color-text-tertiary: #9d9d9d;
+	/* Gris claro - legible */
+	--color-text-disabled: #6e6e6e;
+	/* Gris oscuro - para disabled */
 
 	/* Interactive elements - MEJORADO */
 	--color-interactive-default: #c8c8c8;
@@ -127,10 +135,65 @@
 }
 
 /* ==========================================
+   GRID VARIABLES (CSS normal, no @theme)
+   Estas variables funcionan independientemente
+   ========================================== */
+
+:root {
+	/* Light mode grid colors */
+	--grid-bg: #ffffff;
+	--grid-header-bg: #f5f7fa;
+	--grid-row-bg: #ffffff;
+	--grid-row-alt-bg: #f9fafb;
+	--grid-row-hover: #f0f2f5;
+	--grid-row-selected: rgba(0, 102, 204, 0.08);
+	--grid-text: #1a1a1a;
+	--grid-text-secondary: #4a5568;
+	--grid-border: #e5e7eb;
+	--grid-border-emphasis: #d1d5db;
+	--grid-accent: #0066cc;
+}
+
+.dark {
+	/* Dark mode grid colors */
+	--grid-bg: #1e1e1e;
+	--grid-header-bg: #252526;
+	--grid-row-bg: #1e1e1e;
+	--grid-row-alt-bg: #252526;
+	--grid-row-hover: #37373d;
+	--grid-row-selected: rgba(77, 166, 255, 0.15);
+	--grid-text: #e8e8e8;
+	--grid-text-secondary: #c8c8c8;
+	--grid-border: #303030;
+	--grid-border-emphasis: #454545;
+	--grid-accent: #4da6ff;
+}
+
+/* ==========================================
+   TOKYO NIGHT GRID (Opcional)
+   Aplicar .grid-tokyo al contenedor de la grid
+   ========================================== */
+
+.grid-tokyo {
+	--grid-bg: #1a1b26;
+	--grid-header-bg: #1f2335;
+	--grid-row-bg: #1a1b26;
+	--grid-row-alt-bg: #1f2335;
+	--grid-row-hover: #24283b;
+	--grid-row-selected: rgba(122, 162, 247, 0.2);
+	--grid-text: #c0caf5;
+	--grid-text-secondary: #a9b1d6;
+	--grid-border: rgba(122, 162, 247, 0.15);
+	--grid-border-emphasis: rgba(122, 162, 247, 0.3);
+	--grid-accent: #7aa2f7;
+}
+
+/* ==========================================
    UTILITY CLASSES
    ========================================== */
 
 @layer utilities {
+
 	/* Surface utilities */
 	.bg-surface-1 {
 		background-color: var(--color-surface-primary);
@@ -272,6 +335,67 @@
 }
 
 /* ==========================================
+   GRID CELL FORMATTERS (Centralizados)
+   Usar estas clases en los formatters de columns
+   para mantener consistencia con el tema
+   ========================================== */
+
+/* Celda de nombre/título principal */
+.cell-name {
+	font-weight: 500;
+	color: var(--color-text-primary);
+}
+
+/* Celda tipo código (cédula, ID, etc) */
+.cell-code {
+	font-family: ui-monospace, monospace;
+	font-size: 13px;
+	color: var(--color-text-primary);
+}
+
+/* Celda secundaria (gris) */
+.cell-secondary {
+	font-family: ui-monospace, monospace;
+	font-size: 13px;
+	color: var(--color-text-secondary);
+}
+
+/* Celda de hora/tiempo */
+.cell-time {
+	font-family: ui-monospace, monospace;
+	color: var(--color-text-primary);
+}
+
+/* Celda para gafete destacado */
+.cell-badge {
+	font-family: ui-monospace, monospace;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	color: var(--color-accent-primary);
+	background-color: var(--color-surface-tertiary);
+	padding: 2px 6px;
+	border-radius: 4px;
+}
+
+/* Celda sin valor (placeholder) */
+.cell-empty {
+	font-size: 11px;
+	font-style: italic;
+	color: var(--color-text-tertiary);
+}
+
+/* Celda truncada con tooltip */
+.cell-truncate {
+	color: var(--color-text-secondary);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 200px;
+	display: block;
+}
+
+/* ==========================================
    COMPONENT PATTERNS - MEJORADOS
    ========================================== */
 
@@ -355,7 +479,8 @@
 
 /* GitHub-like Success Button */
 .btn-success {
-	background-color: #2da44e; /* GitHub Green */
+	background-color: #2da44e;
+	/* GitHub Green */
 	color: #ffffff;
 	border: 1px solid rgba(27, 31, 36, 0.15);
 }
@@ -526,7 +651,8 @@
 /* Sidebar icons column */
 .sidebar-icons {
 	display: flex;
-	width: 3.25rem; /* 52px */
+	width: 3.25rem;
+	/* 52px */
 	flex-direction: column;
 	justify-content: space-between;
 	border-right: 1px solid var(--color-border-subtle);
@@ -546,7 +672,8 @@
 /* User avatar button */
 .user-avatar {
 	display: flex;
-	height: 2rem; /* 32px */
+	height: 2rem;
+	/* 32px */
 	width: 2rem;
 	align-items: center;
 	justify-content: center;
@@ -554,7 +681,8 @@
 	border: none;
 	background-color: var(--color-accent-primary);
 	color: #ffffff;
-	font-size: 0.8125rem; /* 13px */
+	font-size: 0.8125rem;
+	/* 13px */
 	font-weight: 600;
 	cursor: pointer;
 	transition: all 0.2s ease;
@@ -579,7 +707,8 @@
 .sidebar-action-btn {
 	position: relative;
 	display: flex;
-	height: 1.75rem; /* 28px */
+	height: 1.75rem;
+	/* 28px */
 	width: 80%;
 	align-items: center;
 	justify-content: center;
@@ -608,7 +737,8 @@
 /* Sidebar tooltip (used by action buttons) */
 .sidebar-tooltip {
 	position: absolute;
-	left: 3.25rem; /* 52px */
+	left: 3.25rem;
+	/* 52px */
 	z-index: 1000;
 	display: none;
 	white-space: nowrap;
@@ -616,7 +746,8 @@
 	background-color: var(--color-surface-hover);
 	color: var(--color-text-primary);
 	padding: 0.375rem 0.5rem;
-	font-size: 0.71875rem; /* 11.5px */
+	font-size: 0.71875rem;
+	/* 11.5px */
 	box-shadow: var(--shadow-md);
 	border: 1px solid var(--color-border-emphasis);
 	animation: slideInFromLeft 0.15s ease-out;
@@ -631,6 +762,7 @@
 		opacity: 0;
 		transform: translateX(-0.25rem);
 	}
+
 	to {
 		opacity: 1;
 		transform: translateX(0);
@@ -758,6 +890,7 @@
 }
 
 @keyframes ping {
+
 	75%,
 	100% {
 		transform: scale(2);
@@ -818,7 +951,8 @@
 .sidebar-icon-btn {
 	position: relative;
 	display: flex;
-	height: 2.625rem; /* 42px */
+	height: 2.625rem;
+	/* 42px */
 	width: 100%;
 	align-items: center;
 	justify-content: center;
@@ -847,7 +981,8 @@
 /* Sidebar icon tooltip */
 .sidebar-icon-tooltip {
 	position: absolute;
-	left: 3.25rem; /* 52px */
+	left: 3.25rem;
+	/* 52px */
 	z-index: 1000;
 	display: none;
 	white-space: nowrap;
@@ -855,7 +990,8 @@
 	background-color: var(--color-surface-hover);
 	color: var(--color-text-primary);
 	padding: 0.375rem 0.5rem;
-	font-size: 0.71875rem; /* 11.5px */
+	font-size: 0.71875rem;
+	/* 11.5px */
 	box-shadow: var(--shadow-md);
 	border: 1px solid var(--color-border-emphasis);
 	animation: slideInFromLeft 0.15s ease-out;
@@ -872,7 +1008,8 @@
 /* Panel container */
 .sidebar-panel {
 	display: flex;
-	width: 15.625rem; /* 250px */
+	width: 15.625rem;
+	/* 250px */
 	flex-direction: column;
 	border-right: 1px solid var(--color-border-subtle);
 	background-color: var(--color-surface-secondary);
@@ -886,8 +1023,10 @@
 	justify-content: space-between;
 	border-bottom: 1px solid var(--color-border-subtle);
 	background-color: var(--color-surface-tertiary);
-	padding: 0.75rem 0.9375rem; /* 12px 15px */
-	font-size: 0.8125rem; /* 13px */
+	padding: 0.75rem 0.9375rem;
+	/* 12px 15px */
+	font-size: 0.8125rem;
+	/* 13px */
 	font-weight: 600;
 	color: var(--color-text-primary);
 }
@@ -895,7 +1034,8 @@
 /* Panel close button */
 .sidebar-panel-close {
 	display: flex;
-	height: 1.25rem; /* 20px */
+	height: 1.25rem;
+	/* 20px */
 	width: 1.25rem;
 	align-items: center;
 	justify-content: center;

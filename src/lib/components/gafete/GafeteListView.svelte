@@ -207,7 +207,7 @@
 				</p>
 			</div>
 
-			<div class="flex items-center gap-4 bg-[#2d2d2d] border border-white/5 p-1 rounded-lg px-3">
+			<div class="flex items-center gap-4 bg-surface-3 border border-surface p-1 rounded-lg px-3">
 				<div class="flex items-center gap-3 text-[10px] font-bold uppercase tracking-wider">
 					<div class="flex items-center gap-1.5 text-emerald-400">
 						<span
@@ -289,9 +289,9 @@
 
 					<button
 						class="flex items-center gap-2 px-3 py-1.5
-						       bg-[#27272a] hover:bg-[#3f3f46]
-						       text-gray-400 hover:text-white
-						       border border-white/10
+						       bg-surface-3 hover:bg-surface-hover
+						       text-secondary hover:text-primary
+						       border border-surface
 						       rounded-md text-sm font-medium transition-all"
 						onclick={() => {
 							gridWrapper?.deselectAll();
@@ -312,7 +312,7 @@
 				</button>
 				<button
 					onclick={() => (showBulkModal = true)}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-hover hover:text-primary text-sm font-medium transition-colors"
 				>
 					<ListPlus size={14} /> Generar Lote
 				</button>
@@ -399,6 +399,3 @@
 		display: none !important;
 	}
 </style>
-
-
-

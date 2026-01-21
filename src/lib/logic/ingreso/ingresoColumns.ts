@@ -38,7 +38,7 @@ export const getIngresoColumns = (
             field: 'nombreCompleto',
             width: 200,
             headerFilter: 'input',
-            formatter: (cell) => `<span class="font-medium text-white">${cell.getValue() || ''}</span>`
+            formatter: (cell) => `<span class="font-medium text-primary">${cell.getValue() || ''}</span>`
         },
         {
             title: 'Cédula',
@@ -92,7 +92,7 @@ export const getIngresoColumns = (
             width: 100,
             formatter: (cell) => {
                 const d = parseDate(cell.getData().fechaHoraIngreso);
-                return d ? `<span class="font-mono text-white">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
+                return d ? `<span class="font-mono text-primary">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
             }
         },
         {
@@ -127,7 +127,7 @@ export const getIngresoColumns = (
                 width: 100,
                 formatter: (cell) => {
                     const d = parseDate(cell.getData().fechaHoraSalida);
-                    return d ? `<span class="font-mono text-white">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
+                    return d ? `<span class="font-mono text-primary">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
                 }
             },
             {

@@ -676,7 +676,7 @@
 				<div class="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
 					<button
 						onclick={() => gridWrapper?.deselectAll()}
-						class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-hover hover:text-primary text-sm font-medium transition-colors"
 						title="Cancelar selección"
 					>
 						<X size={14} /> Cancelar
@@ -692,13 +692,13 @@
 
 				<button
 					onclick={() => (showContratistaModal = true)}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-hover hover:text-primary text-sm font-medium transition-colors"
 				>
 					<UserPlus size={14} /> Contratista
 				</button>
 				<button
 					onclick={handleOpenListado}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-hover hover:text-primary text-sm font-medium transition-colors"
 				>
 					<FileText size={14} /> Listado
 				</button>
@@ -707,17 +707,17 @@
 
 		{#snippet secondaryActions()}
 			{#if viewMode === 'history'}
-				<div class="flex items-center gap-2 border-l border-white/5 pl-3">
+				<div class="flex items-center gap-2 border-l border-surface pl-3">
 					<!-- Multi-Grouping Menu -->
-					<div class="flex items-center gap-1 bg-[#2d2d2d] border border-white/10 rounded-md p-0.5">
-						<span class="text-[10px] text-gray-500 font-bold uppercase px-2">Agrupar:</span>
+					<div class="flex items-center gap-1 bg-surface-3 border border-surface rounded-md p-0.5">
+						<span class="text-[10px] text-tertiary font-bold uppercase px-2">Agrupar:</span>
 						{#each [{ id: undefined, label: 'Ninguno' }, { id: 'empresaNombre', label: 'Empresa' }, { id: 'tipoAutorizacionDisplay', label: 'Autorización' }, { id: 'modoIngresoDisplay', label: 'Modo' }] as opt}
 							<button
 								onclick={() => (groupByField = opt.id)}
 								class="px-2 py-1 rounded text-[11px] font-medium transition-all {groupByField ===
 								opt.id
-									? 'bg-blue-500/20 text-blue-400'
-									: 'text-gray-400 hover:text-white hover:bg-white/5'}"
+									? 'bg-accent-subtle text-accent'
+									: 'text-secondary hover:text-primary hover:bg-surface-hover'}"
 							>
 								{opt.label}
 							</button>
@@ -729,7 +729,7 @@
 
 		{#snippet CustomFilters()}
 			{#if viewMode === 'history'}
-				<div class="flex items-center gap-2 border-l border-white/10 pl-3 ml-1">
+				<div class="flex items-center gap-2 border-l border-surface pl-3 ml-1">
 					<DateRangePicker
 						startDate={dateRange.start}
 						endDate={dateRange.end}
