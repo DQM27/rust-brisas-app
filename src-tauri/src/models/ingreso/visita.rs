@@ -17,6 +17,7 @@ use surrealdb::{Datetime, RecordId};
 #[serde(rename_all = "snake_case")]
 pub struct IngresoVisita {
     pub id: RecordId,
+    pub pre_registro: Option<RecordId>, // Nuevo enlace opcional
     pub nombre: String,
     pub apellido: String,
     /// Segundo nombre (snapshot).
@@ -47,6 +48,7 @@ pub struct IngresoVisita {
 #[serde(rename_all = "snake_case")]
 pub struct IngresoVisitaFetched {
     pub id: RecordId,
+    pub pre_registro: Option<RecordId>,
     pub nombre: String,
     pub apellido: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -78,6 +80,7 @@ pub struct IngresoVisitaFetched {
 #[serde(rename_all = "camelCase")]
 pub struct CreateIngresoVisitaInput {
     pub cedula: String,
+    pub pre_registro_id: Option<String>,
     pub nombre: String,
     pub apellido: String,
     pub empresa_nombre: Option<String>,
@@ -98,6 +101,7 @@ pub struct CreateIngresoVisitaInput {
 
 #[derive(Debug, Serialize)]
 pub struct IngresoVisitaCreateDTO {
+    pub pre_registro: Option<RecordId>,
     pub nombre: String,
     pub apellido: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -167,4 +171,120 @@ pub struct ValidacionIngresoVisitaResponse {
     pub motivo_rechazo: Option<String>,
     pub alertas_gafete: Vec<String>,
     pub tiene_gafetes_pendientes: bool,
+}
+
+// --------------------------------------------------------------------------
+// MODELO DE DOMINIO: PRE-REGISTRO DE VISITA
+// --------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum PreRegistroEstado {
+    Pendiente,
+    Completado,
+    Cancelado,
+    NoShow,
+}
+
+impl ToString for PreRegistroEstado {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Pendiente => "PENDIENTE".to_string(),
+            Self::Completado => "COMPLETADO".to_string(),
+            Self::Cancelado => "CANCELADO".to_string(),
+            Self::NoShow => "NO_SHOW".to_string(),
+        }
+    }
+}
+
+impl std::str::FromStr for PreRegistroEstado {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_uppercase().as_str() {
+            "PENDIENTE" => Ok(Self::Pendiente),
+            "COMPLETADO" => Ok(Self::Completado),
+            "CANCELADO" => Ok(Self::Cancelado),
+            "NO_SHOW" => Ok(Self::NoShow),
+            _ => Err(format!("Estado desconocido: {}", s)),
+        }
+    }
+}
+
+/// Cita o invitación previa para una visita.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct PreRegistroVisita {
+    pub id: RecordId,
+    pub cedula: String,
+    pub nombre: String,
+    pub apellido: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_apellido: Option<String>,
+    pub empresa_nombre: Option<String>,
+    pub fecha_esperada: String, // YYYY-MM-DD
+    pub anfitrion: String,
+    pub area_visitada: String,
+    pub motivo: String,
+    pub modo_ingreso: String,
+    pub observaciones: Option<String>,
+    pub estado: String,              // Enum as String for DB
+    pub visitante: Option<RecordId>, // Link to catalog if exists
+    pub registrado_por: RecordId,
+    pub created_at: Datetime,
+    pub updated_at: Datetime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct PreRegistroVisitaFetched {
+    pub id: RecordId,
+    pub cedula: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub empresa_nombre: Option<String>,
+    pub fecha_esperada: String,
+    pub anfitrion: String,
+    pub area_visitada: String,
+    pub motivo: String,
+    pub modo_ingreso: String,
+    pub estado: String,
+    pub observaciones: Option<String>,
+    pub registrado_por: User,
+    pub created_at: Datetime,
+}
+
+// DTO para crear pre-registro
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatePreRegistroInput {
+    pub cedula: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub empresa_nombre: Option<String>,
+    pub fecha_esperada: String,
+    pub anfitrion: String,
+    pub area_visitada: String,
+    pub motivo: String,
+    pub modo_ingreso: String,
+    pub observaciones: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PreRegistroVisitaCreateDTO {
+    pub cedula: String,
+    pub nombre: String,
+    pub apellido: String,
+    pub empresa_nombre: Option<String>,
+    pub fecha_esperada: String,
+    pub anfitrion: String,
+    pub area_visitada: String,
+    pub motivo: String,
+    pub modo_ingreso: String,
+    pub observaciones: Option<String>,
+    pub estado: String,
+    pub visitante: Option<RecordId>,
+    pub registrado_por: RecordId,
 }

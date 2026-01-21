@@ -1,5 +1,6 @@
 export interface IngresoVisita {
 	id: string;
+	preRegistroId?: string;
 	cedula: string;
 	nombre: string;
 	segundoNombre?: string;
@@ -87,4 +88,38 @@ export interface ValidacionIngresoProveedorResponse {
 	alertasGafete: string[];
 	tieneGafetesPendientes: boolean;
 	tieneIngresoAbierto: boolean;
+}
+
+export type PreRegistroEstado = 'PENDIENTE' | 'COMPLETADO' | 'CANCELADO' | 'NO_SHOW';
+
+export interface PreRegistroVisita {
+	id: string;
+	cedula: string;
+	nombre: string;
+	apellido: string;
+	segundoNombre?: string;
+	segundoApellido?: string;
+	empresaNombre?: string;
+	fechaEsperada: string;
+	anfitrion: string;
+	areaVisitada: string;
+	motivo: string;
+	modoIngreso: string;
+	estado: PreRegistroEstado;
+	observaciones?: string;
+	registradoPor?: any; // User object
+	createdAt: string;
+}
+
+export interface CreatePreRegistroInput {
+	cedula: string;
+	nombre: string;
+	apellido: string;
+	empresaNombre?: string;
+	fechaEsperada: string;
+	anfitrion: string;
+	areaVisitada: string;
+	motivo: string;
+	modoIngreso: string;
+	observaciones?: string;
 }

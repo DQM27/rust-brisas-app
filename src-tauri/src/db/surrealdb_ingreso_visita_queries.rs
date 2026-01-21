@@ -23,7 +23,7 @@ pub async fn insert(dto: IngresoVisitaCreateDTO) -> Result<IngresoVisitaFetched,
 
     // Fetch relations
     let mut result = db
-        .query("SELECT * FROM $id FETCH usuario_ingreso, usuario_salida")
+        .query("SELECT * FROM $id FETCH usuario_ingreso, usuario_salida, pre_registro")
         .bind(("id", ingreso.id.clone()))
         .await?;
 
@@ -81,7 +81,7 @@ pub async fn find_activos_fetched() -> Result<Vec<IngresoVisitaFetched>, Surreal
     let db = get_db().await?;
     let mut result = db
         .query(format!(
-            "SELECT * FROM {TABLE} WHERE fecha_hora_salida IS NONE ORDER BY created_at DESC FETCH usuario_ingreso, usuario_salida"
+            "SELECT * FROM {TABLE} WHERE fecha_hora_salida IS NONE ORDER BY created_at DESC FETCH usuario_ingreso, usuario_salida, pre_registro"
         ))
         .await?;
     Ok(result.take(0)?)
@@ -94,7 +94,7 @@ pub async fn find_historial_fetched(
     let db = get_db().await?;
     let mut result = db
         .query(format!(
-            "SELECT * FROM {TABLE} WHERE fecha_hora_ingreso >= type::datetime($start) AND fecha_hora_ingreso <= type::datetime($end) ORDER BY fecha_hora_ingreso DESC FETCH usuario_ingreso, usuario_salida"
+            "SELECT * FROM {TABLE} WHERE fecha_hora_ingreso >= type::datetime($start) AND fecha_hora_ingreso <= type::datetime($end) ORDER BY fecha_hora_ingreso DESC FETCH usuario_ingreso, usuario_salida, pre_registro"
         ))
         .bind(("start", start))
         .bind(("end", end))

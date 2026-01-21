@@ -84,6 +84,13 @@ macro_rules! register_handlers {
             commands::ingreso_visita_commands::validar_ingreso_visita,
             commands::ingreso_visita_commands::registrar_salida_visita,
             // ==========================================
+            // COMANDOS DE PRE-REGISTRO VISITAS
+            // ==========================================
+            commands::pre_registro_visita_commands::create_pre_registro_visita,
+            commands::pre_registro_visita_commands::get_pre_registros_pendientes,
+            commands::pre_registro_visita_commands::check_pre_registro_by_cedula,
+            commands::pre_registro_visita_commands::cancel_pre_registro_visita,
+            // ==========================================
             // COMANDOS DE INGRESO PROVEEDORES
             // ==========================================
             commands::ingreso_proveedor_commands::crear_ingreso_proveedor_v2,

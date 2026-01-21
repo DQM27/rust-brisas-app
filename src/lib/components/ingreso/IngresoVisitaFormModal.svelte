@@ -20,6 +20,7 @@
 
 	// Logic
 	import { ingresoVisitaService } from '$lib/services/ingresoVisitaService';
+	import { preRegistroVisitaService } from '$lib/services/preRegistroVisitaService';
 	import { getVisitanteByCedula } from '$lib/logic/visitante/visitanteService';
 	import { empresaStore } from '$lib/stores/empresaStore.svelte';
 	import { submitCreateEmpresa } from '$lib/logic/empresa/empresaService';
@@ -39,6 +40,7 @@
 	let loading = $state(false);
 	let searchingPerson = $state(false);
 	let validationResult = $state<any>(null);
+	let foundPreRegistroId = $state<string | undefined>(undefined);
 
 	// UI State
 	let showEmpresaDropdown = $state(false);
@@ -94,7 +96,8 @@
 							motivo: f.data.motivo.trim(),
 							gafete: f.data.gafete.trim() || undefined,
 							observaciones: f.data.observaciones.trim() || undefined,
-							usuario_ingreso_id: $currentUser?.id || ''
+							usuario_ingreso_id: $currentUser?.id || '',
+							pre_registro_id: foundPreRegistroId
 						});
 
 						toast.success('Ingreso de visita registrado');
@@ -122,6 +125,7 @@
 				reset();
 				validationResult = null;
 				showObservaciones = false;
+				foundPreRegistroId = undefined;
 			}
 		} else {
 			shortcutRegistry.popScope();
@@ -194,23 +198,51 @@
 		checkTimeout = setTimeout(async () => {
 			searchingPerson = true;
 			try {
-				const res = await getVisitanteByCedula(val);
-				if (res.ok && res.data) {
-					const p = res.data;
-					$form.nombre = p.nombre;
-					$form.segundoNombre = p.segundoNombre || '';
-					$form.apellido = p.apellido;
-					$form.segundoApellido = p.segundoApellido || '';
+				// 1. Check Pre-Registro (Cita)
+				const preReg = await preRegistroVisitaService.checkByCedula(val);
 
-					// Sync company if found
-					if (p.empresaNombre) {
+				if (preReg) {
+					// Cargar datos de la cita
+					$form.nombre = preReg.nombre;
+					$form.apellido = preReg.apellido;
+					$form.segundoNombre = preReg.segundoNombre || '';
+					$form.segundoApellido = preReg.segundoApellido || '';
+					$form.anfitrion = preReg.anfitrion;
+					$form.areaVisitada = preReg.areaVisitada;
+					$form.motivo = preReg.motivo;
+					$form.observaciones = preReg.observaciones || '';
+					foundPreRegistroId = preReg.id;
+
+					if (preReg.empresaNombre) {
 						const matched = empresaStore.empresas.find(
-							(e) => e.nombre.toLowerCase() === p.empresaNombre!.toLowerCase()
+							(e) => e.nombre.toLowerCase() === preReg.empresaNombre!.toLowerCase()
 						);
 						if (matched) $form.empresaId = matched.id;
 					}
-					toast.success('Visitante encontrado');
+
+					toast.success('📅 Cita encontrada: Datos cargados');
+				} else {
+					// 2. Si no hay cita, buscar en historial (Catálogo)
+					foundPreRegistroId = undefined;
+					const res = await getVisitanteByCedula(val);
+					if (res.ok && res.data) {
+						const p = res.data;
+						$form.nombre = p.nombre;
+						$form.segundoNombre = p.segundoNombre || '';
+						$form.apellido = p.apellido;
+						$form.segundoApellido = p.segundoApellido || '';
+
+						// Sync company if found
+						if (p.empresaNombre) {
+							const matched = empresaStore.empresas.find(
+								(e) => e.nombre.toLowerCase() === p.empresaNombre!.toLowerCase()
+							);
+							if (matched) $form.empresaId = matched.id;
+						}
+						toast.success('Visitante encontrado en historial');
+					}
 				}
+
 				await validarAcceso(val);
 			} catch (e) {
 				console.error(e);

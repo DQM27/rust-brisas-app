@@ -15,6 +15,7 @@ pub mod surrealdb_ingreso_proveedor_queries;
 pub mod surrealdb_ingreso_queries;
 pub mod surrealdb_ingreso_visita_queries;
 pub mod surrealdb_lista_negra_queries;
+pub mod surrealdb_pre_registro_visita_queries;
 pub mod surrealdb_proveedor_queries;
 pub mod surrealdb_role_queries;
 pub mod surrealdb_user_queries;

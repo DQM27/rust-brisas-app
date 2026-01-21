@@ -19,7 +19,7 @@ export interface CreateIngresoVisitaFullInput {
 	usuario_ingreso_id: string;
 
 	// Opcional
-	cita_id?: string;
+	pre_registro_id?: string;
 }
 
 export const ingresoVisitaService = {

@@ -100,7 +100,8 @@ export const ingresoVisitaSchemaBase = z.object({
 	areaVisitada: z.string().default(''),
 	motivo: z.string().default(''),
 	gafete: z.string().default(''),
-	observaciones: z.string().default('')
+	observaciones: z.string().default(''),
+	pre_registro_id: z.string().optional()
 });
 
 export const ingresoVisitaSchema = z.object({

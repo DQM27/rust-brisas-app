@@ -1,11 +1,23 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { Users, History, Plus, X, LogOut, FileText, UserPlus, LogIn } from 'lucide-svelte';
+	import {
+		Users,
+		History,
+		Plus,
+		X,
+		LogOut,
+		FileText,
+		UserPlus,
+		LogIn,
+		CalendarClock
+	} from 'lucide-svelte';
+	import { scale } from 'svelte/transition';
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 	import IngresoVisitaFormModal from '$lib/components/ingreso/IngresoVisitaFormModal.svelte';
+	import PreRegistroListView from '$lib/components/visita/PreRegistroListView.svelte';
 	import SalidaModal from '$lib/components/ingreso/SalidaModal.svelte';
 	import ExportDialog from '$lib/components/export/ExportDialog.svelte';
 	import DateRangePicker from '$lib/components/shared/DateRangePicker.svelte';
@@ -52,6 +64,7 @@
 
 	// Modals
 	let showIngresoModal = $state(false);
+	let showPreRegistrosModal = $state(false);
 	let showSalidaModal = $state(false);
 	let selectedPerson = $state<any>(null);
 	let selectedIngreso = $state<IngresoVisita | null>(null);
@@ -352,6 +365,14 @@
 				>
 					<FileText size={14} /> Listado
 				</button>
+
+				<button
+					onclick={() => (showPreRegistrosModal = true)}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-md hover:bg-purple-500/20 text-sm font-medium transition-colors ml-2"
+					title="Ver visitas esperadas (Pre-Registros)"
+				>
+					<CalendarClock size={14} /> Esperadas
+				</button>
 			{/if}
 		{/snippet}
 
@@ -455,6 +476,26 @@
 		{availableFormats}
 		onExport={handleExport}
 	/>
+{/if}
+
+{#if showPreRegistrosModal}
+	<div
+		class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+		onclick={(e) => e.target === e.currentTarget && (showPreRegistrosModal = false)}
+	>
+		<div
+			class="w-full max-w-4xl h-[80vh] bg-surface-1 rounded-xl shadow-2xl overflow-hidden flex flex-col relative"
+			transition:scale={{ duration: 200, start: 0.95 }}
+		>
+			<button
+				onclick={() => (showPreRegistrosModal = false)}
+				class="absolute top-2 right-2 p-1.5 rounded-lg text-secondary hover:text-white hover:bg-white/10 z-10"
+			>
+				<X size={20} />
+			</button>
+			<PreRegistroListView />
+		</div>
+	</div>
 {/if}
 
 <style>

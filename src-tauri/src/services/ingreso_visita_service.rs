@@ -130,12 +130,20 @@ pub async fn registrar_ingreso(
         _ => {}
     }
 
+    // Parsear pre_registro opcional
+    let pre_registro_opt = if let Some(ref pid) = input.pre_registro_id {
+        Some(parse_id(pid, "pre_registro_visita")?)
+    } else {
+        None
+    };
+
     let dto = IngresoVisitaCreateDTO {
         cedula: input.cedula.clone(),
         nombre: input.nombre.clone(),
         apellido: input.apellido.clone(),
         segundo_nombre: input.segundo_nombre.clone(),
         segundo_apellido: input.segundo_apellido.clone(),
+        pre_registro: pre_registro_opt, // Campo nuevo
         anfitrion: input.anfitrion.clone(),
         empresa_nombre: input.empresa_nombre.clone(),
         area_visitada: input.area_visitada.clone(),

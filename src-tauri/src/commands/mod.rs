@@ -39,5 +39,7 @@ pub mod vehiculo_commands;
 pub mod visitante_commands;
 pub mod window_commands;
 
+pub mod pre_registro_visita_commands;
+
 #[macro_use]
 pub mod handlers;
