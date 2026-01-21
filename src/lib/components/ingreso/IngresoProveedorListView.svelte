@@ -383,17 +383,17 @@
 				<div class="flex items-center gap-2 border-l border-white/5 pl-3">
 					<!-- Multi-Grouping Menu -->
 					<div
-						class="flex items-center gap-1 bg-[#2d2d2d] border border-white/10 rounded-md p-0.5"
+						class="flex items-center gap-1 bg-surface-3 border border-surface rounded-md p-0.5"
 						transition:fade
 					>
-						<span class="text-[10px] text-gray-500 font-bold uppercase px-2">Agrupar:</span>
+						<span class="text-[10px] text-tertiary font-bold uppercase px-2">Agrupar:</span>
 						{#each [{ label: 'Ninguno', value: undefined }, { label: 'Empresa', value: 'empresaNombre' }, { label: 'Área', value: 'areaVisitada' }, { label: 'Modo', value: 'modoIngreso' }] as option}
 							<button
 								onclick={() => (groupByField = option.value)}
 								class="px-2 py-1 rounded text-[11px] font-medium transition-all {groupByField ===
 								option.value
 									? 'bg-blue-500/20 text-blue-400'
-									: 'text-gray-400 hover:text-white hover:bg-white/5'}"
+									: 'text-secondary hover:text-primary hover:bg-surface-hover'}"
 							>
 								{option.label}
 							</button>
@@ -408,7 +408,7 @@
 				<div class="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
 					<button
 						onclick={() => gridWrapper?.deselectAll()}
-						class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-hover hover:text-primary text-sm font-medium transition-colors"
 					>
 						<X size={14} /> Cancelar
 					</button>
@@ -431,13 +431,13 @@
 					</button>
 					<button
 						onclick={() => (showProveedorModal = true)}
-						class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-hover hover:text-primary text-sm font-medium transition-colors"
 					>
 						<UserPlus size={14} /> Proveedor
 					</button>
 					<button
 						onclick={handleOpenListado}
-						class="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d2d2d] text-gray-400 border border-white/10 rounded-md hover:bg-white/5 hover:text-white text-sm font-medium transition-colors"
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-hover hover:text-primary text-sm font-medium transition-colors"
 					>
 						<FileText size={14} /> Listado
 					</button>

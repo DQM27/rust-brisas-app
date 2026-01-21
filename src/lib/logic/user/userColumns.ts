@@ -14,7 +14,7 @@ export const getUserColumns = (handlers: UserColumnHandlers): ColumnDefinition[]
 			width: 130,
 			frozen: true,
 			headerFilter: 'input',
-			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
+			formatter: (cell) => `<span class="cell-code">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Nombre Completo',
@@ -27,7 +27,7 @@ export const getUserColumns = (handlers: UserColumnHandlers): ColumnDefinition[]
 				const nombre = [user.nombre, user.segundoNombre, user.apellido, user.segundoApellido]
 					.filter(Boolean)
 					.join(' ');
-				return `<span style="font-weight:500; color:#e2e8f0">${nombre}</span>`;
+				return `<span class="cell-name">${nombre}</span>`;
 			}
 		},
 		{

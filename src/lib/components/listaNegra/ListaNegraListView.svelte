@@ -186,7 +186,7 @@
 				</div>
 			</div>
 
-			<div class="flex items-center gap-4 bg-[#2d2d2d] border border-white/5 p-1.5 rounded-lg px-4">
+			<div class="flex items-center gap-4 bg-surface-3 border border-surface p-1.5 rounded-lg px-4">
 				<div class="flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider">
 					<div class="flex items-center gap-2 text-rose-400">
 						<span

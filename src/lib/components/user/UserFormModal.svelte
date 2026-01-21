@@ -489,11 +489,10 @@
 		}
 	}
 
-	// Standardized UI Pattern - CRUD Form Standard
-	const inputClass =
-		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all';
-	const labelClass = 'block text-xs font-medium text-secondary mb-1';
-	const errorClass = 'text-xs text-red-500 mt-0.5';
+	// Standardized UI Pattern - CRUD Form Standard (usando clases centralizadas de theme.css)
+	const inputClass = 'form-input';
+	const labelClass = 'form-label';
+	const errorClass = 'form-error';
 
 	// Helper to determine field border color based on state
 	function getFieldStateClass(field: string, value: any) {
