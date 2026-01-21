@@ -32,7 +32,6 @@ export {
     modalShortcuts,
     gridShortcuts,
     ingresoShortcuts,
-    spotlightShortcuts,
     getShortcutsByCategory,
     getShortcutsByScope,
     createModalCloseHandler,

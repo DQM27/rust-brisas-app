@@ -10,7 +10,6 @@
 
 export type ShortcutCategory =
     | 'system'      // Globales del sistema (tema, spotlight, logout)
-    | 'spotlight'   // Cuando spotlight está abierto
     | 'modules'     // En vistas de lista/módulos
     | 'modals'      // En modales abiertos
     | 'grids'       // En grids/tablas
@@ -31,7 +30,6 @@ export interface CategoryMetadata {
 export type ShortcutScope =
     | 'all'         // Siempre activo (hotkeys-js default)
     | 'global'      // Alias para 'all'
-    | 'spotlight'   // Cuando spotlight está abierto
     | 'modal'       // Cuando un modal está abierto
     | 'list'        // En vistas de lista
     | 'grid'        // En grids

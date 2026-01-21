@@ -7,14 +7,12 @@ export { moduleShortcuts } from './modules';
 export { modalShortcuts, createModalCloseHandler, createModalSaveHandler } from './modals';
 export { gridShortcuts } from './grids';
 export { ingresoShortcuts } from './ingresos';
-export { spotlightShortcuts } from './spotlight';
 
 import { systemShortcuts } from './system';
 import { moduleShortcuts } from './modules';
 import { modalShortcuts } from './modals';
 import { gridShortcuts } from './grids';
 import { ingresoShortcuts } from './ingresos';
-import { spotlightShortcuts } from './spotlight';
 import type { ShortcutDefinition } from '../types';
 
 /**
@@ -25,8 +23,7 @@ export const ALL_SHORTCUTS: ShortcutDefinition[] = [
     ...moduleShortcuts,
     ...modalShortcuts,
     ...gridShortcuts,
-    ...ingresoShortcuts,
-    ...spotlightShortcuts
+    ...ingresoShortcuts
 ];
 
 /**

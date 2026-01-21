@@ -19,7 +19,7 @@
 	let showTipoDropdown = $state(false);
 
 	// Referencias y posición del dropdown
-	let triggerButton: HTMLButtonElement;
+	let triggerButton = $state<HTMLButtonElement>();
 	let dropdownTop = $state(0);
 	let dropdownLeft = $state(0);
 	let dropdownWidth = $state(0);
@@ -268,6 +268,3 @@
 		outline: none !important;
 	}
 </style>
-
-
-
