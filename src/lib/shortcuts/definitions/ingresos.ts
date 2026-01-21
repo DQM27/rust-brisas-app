@@ -10,7 +10,7 @@ import { emitCommand } from '../commands';
 export const ingresoShortcuts: ShortcutDefinition[] = [
     {
         id: 'quick-entry',
-        keys: 'f1',
+        keys: 'alt+i',
         label: 'Entrada Rápida',
         description: 'Registra una entrada rápida',
         category: 'ingresos',
@@ -23,7 +23,7 @@ export const ingresoShortcuts: ShortcutDefinition[] = [
     },
     {
         id: 'quick-exit',
-        keys: 'f2',
+        keys: 'alt+o',
         label: 'Salida Rápida',
         description: 'Registra una salida rápida',
         category: 'ingresos',
@@ -36,7 +36,7 @@ export const ingresoShortcuts: ShortcutDefinition[] = [
     },
     {
         id: 'scan-badge',
-        keys: 'f3',
+        keys: 'alt+p',
         label: 'Escanear Gafete',
         description: 'Activa el modo de escaneo de gafete',
         category: 'ingresos',

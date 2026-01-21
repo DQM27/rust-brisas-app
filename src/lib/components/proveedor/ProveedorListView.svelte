@@ -32,6 +32,7 @@
 
 	// Stores
 	import { activeTabId } from '$lib/stores/tabs';
+	import { get } from 'svelte/store';
 	import {
 		shortcutCommand,
 		setActiveContext,
@@ -90,7 +91,8 @@
 	function setupKeyboardSubscription() {
 		unsubscribeKeyboard = shortcutCommand.subscribe((event) => {
 			if (!event) return;
-			if ($activeTabId !== tabId) return;
+			const current = get(activeTabId);
+			if (current !== tabId) return;
 
 			switch (event.command) {
 				case 'create':

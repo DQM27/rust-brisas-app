@@ -22,6 +22,7 @@
 	import { can } from '$lib/logic/permissions';
 	import { currentUser } from '$lib/stores/auth';
 	import { activeTabId } from '$lib/stores/tabs';
+	import { get } from 'svelte/store';
 	import {
 		shortcutCommand,
 		setActiveContext,
@@ -614,7 +615,8 @@
 	function setupKeyboardSubscription() {
 		unsubscribeKeyboard = shortcutCommand.subscribe((event) => {
 			if (!event) return;
-			if ($activeTabId !== tabId) return;
+			const current = get(activeTabId);
+			if (current !== tabId) return;
 
 			const canCreate = $currentUser && can($currentUser, 'CREATE_CONTRACTOR');
 

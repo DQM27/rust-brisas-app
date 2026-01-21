@@ -32,6 +32,7 @@
 		clearCommand,
 		shortcutRegistry
 	} from '$lib/shortcuts';
+	import { get } from 'svelte/store';
 	import { getAvailableFormats } from '$lib/api/export';
 	import { searchByType } from '$lib/api/searchService';
 
@@ -165,20 +166,41 @@
 	function setupKeyboardSubscription() {
 		unsubscribeKeyboard = shortcutCommand.subscribe((event) => {
 			if (!event) return;
-			if ($activeTabId !== tabId) return;
+			const current = get(activeTabId);
+			if (current !== tabId) return;
 
 			switch (event.command) {
 				case 'create':
-					if (!showModal && !showSalidaModal && !showQuickEntry) {
+					if (!showModal && !showSalidaModal && !showQuickEntry && !showContratistaModal) {
+						showContratistaModal = true;
+						clearCommand();
+					}
+					break;
+				case 'quick-entry':
+					if (!showModal && !showQuickEntry) {
 						showQuickEntry = true;
 						clearCommand();
 					}
+					break;
+				case 'quick-exit':
+					if (!showSalidaModal && !showQuickExit) {
+						showQuickExit = true;
+						clearCommand();
+					}
+					break;
+				case 'scan-badge':
+					// Implement scan logic or focus input
+					toast('Modo escaneo activado');
+					clearCommand();
 					break;
 				case 'escape':
 					if (showModal) showModal = false;
 					else if (showSalidaModal) showSalidaModal = false;
 					else if (showQuickEntry) showQuickEntry = false;
+					else if (showQuickExit) showQuickExit = false;
 					else if (showExportModal) showExportModal = false;
+					else if (showContratistaModal) showContratistaModal = false;
+					else if (showDetailModal) showDetailModal = false;
 					clearCommand();
 					break;
 				case 'refresh':

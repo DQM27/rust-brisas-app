@@ -23,6 +23,7 @@
 	// Stores
 	import { currentUser } from '$lib/stores/auth';
 	import { activeTabId, openTab } from '$lib/stores/tabs';
+	import { get } from 'svelte/store';
 	import {
 		shortcutCommand,
 		setActiveContext,
@@ -81,6 +82,8 @@
 	let showQuickEntry = $state(false);
 	let showIngresoModal = $state(false);
 	let providerForIngreso = $state<any>(null);
+	let showQuickExit = $state(false);
+	let showDetailModal = $state(false);
 
 	// Grid State
 	let gridWrapper = $state<any>(null);
@@ -104,27 +107,40 @@
 	function setupKeyboardSubscription() {
 		unsubscribeKeyboard = shortcutCommand.subscribe((event) => {
 			if (!event) return;
-			if ($activeTabId !== tabId) return;
+			const current = get(activeTabId);
+			if (current !== tabId) return;
 
 			switch (event.command) {
 				case 'create':
-					if (!showIngresoModal && !showSalidaModal && !showQuickEntry) {
+					if (!showIngresoModal && !showSalidaModal && !showQuickEntry && !showProveedorModal) {
+						showProveedorModal = true;
+						clearCommand();
+					}
+					break;
+				case 'quick-entry':
+					if (!showIngresoModal && !showQuickEntry) {
 						showQuickEntry = true;
 						clearCommand();
 					}
 					break;
-				case 'escape':
-					if (showIngresoModal) {
-						showIngresoModal = false;
-						clearCommand();
-					} else if (showSalidaModal) {
-						showSalidaModal = false;
-						selectedIngreso = null;
-						clearCommand();
-					} else if (showQuickEntry) {
-						showQuickEntry = false;
+				case 'quick-exit':
+					if (!showSalidaModal && !showQuickExit) {
+						showQuickExit = true;
 						clearCommand();
 					}
+					break;
+				case 'scan-badge':
+					toast('Modo escaneo activado');
+					clearCommand();
+					break;
+				case 'escape':
+					if (showIngresoModal) showIngresoModal = false;
+					else if (showSalidaModal) showSalidaModal = false;
+					else if (showQuickEntry) showQuickEntry = false;
+					else if (showQuickExit) showQuickExit = false;
+					else if (showProveedorModal) showProveedorModal = false;
+					else if (showDetailModal) showDetailModal = false;
+					clearCommand();
 					break;
 				case 'refresh':
 					loadIngresos();
