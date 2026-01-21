@@ -90,25 +90,17 @@
 	let filteredIngresos = $derived.by(() => {
 		let data = ingresos;
 		if (viewMode === 'history' && hideActive) {
-			data = data.filter((i) => i.fechaSalida);
+			data = data.filter((i: any) => i.fechaHoraSalida);
 		}
 		return data;
 	});
 
 	// Columnas dinámicas
 	const columns = $derived.by(() => {
-		let cols = getIngresoVisitaColumns();
+		let cols = getIngresoVisitaColumns(viewMode);
 
-		// Filtrar columnas según viewMode
+		// Añadir columna de acciones solo en modo activos
 		if (viewMode === 'actives') {
-			cols = cols.filter(
-				(c) =>
-					c.field !== 'fechaSalida' &&
-					c.field !== 'fechaSalida_hora' &&
-					c.field !== 'usuarioSalidaNombre'
-			);
-
-			// Añadir columna de acciones
 			cols.push({
 				title: 'Acciones',
 				width: 100,
