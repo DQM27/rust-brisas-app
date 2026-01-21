@@ -99,23 +99,20 @@
 		value: any,
 		isRequired: boolean = false
 	) {
-		const base =
-			'w-full bg-black/20 border rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 transition-all outline-none disabled:opacity-50';
+		const base = 'form-input';
 
-		if (hasError) return `${base} !border-red-500/50 !ring-1 !ring-red-500/20`;
+		if (hasError) return `${base} is-error`;
 
 		// Success state: ONLY for required fields that are not empty and not readonly
 		if (isRequired && value && String(value).trim() !== '' && !isReadonly) {
-			return `${base} !border-green-500/50 !ring-1 !ring-green-500/20`;
+			return `${base} is-valid`;
 		}
 
-		const standard = isReadonly ? 'border-white/5 opacity-70 bg-gray-800/10' : 'border-white/10';
-
-		return `${base} ${standard}`;
+		return base;
 	}
 
-	const labelClass = 'block text-xs font-medium text-secondary mb-1';
-	const errorClass = 'text-xs text-red-500 mt-0.5';
+	const labelClass = 'form-label';
+	const errorClass = 'form-error';
 </script>
 
 <div>
@@ -348,6 +345,3 @@
 		transition: background-color 5000s ease-in-out 0s;
 	}
 </style>
-
-
-

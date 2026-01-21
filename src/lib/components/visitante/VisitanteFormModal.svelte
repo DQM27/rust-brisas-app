@@ -129,9 +129,8 @@
 		if (!loading) onClose();
 	}
 
-	const labelClass = 'text-xs font-medium text-gray-700 dark:text-gray-300';
-	const inputClass =
-		'w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#0d1117] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#2da44e] focus:border-transparent focus:outline-none transition-all placeholder-gray-400';
+	const labelClass = 'form-label';
+	const inputClass = 'form-input';
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (!show || loading) return;
@@ -148,26 +147,24 @@
 
 {#if show}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center p-4 text-gray-100"
+		class="fixed inset-0 z-50 flex items-center justify-center p-4 copy-select-none"
 		transition:fade={{ duration: 200 }}
 	>
 		<button
 			type="button"
-			class="absolute inset-0 bg-black/60 w-full h-full cursor-default"
+			class="absolute inset-0 bg-black/60 w-full h-full cursor-default backdrop-blur-sm"
 			onclick={handleClose}
 			aria-label="Cerrar modal"
 		></button>
 
 		<div
-			class="relative z-10 w-full max-w-md overflow-hidden rounded-lg bg-[#0d1117] shadow-2xl border border-gray-700"
+			class="relative z-10 w-full max-w-md overflow-hidden rounded-lg bg-surface-2 shadow-2xl border border-surface"
 			transition:fly={{ y: 20, duration: 300 }}
 		>
 			<!-- Header -->
-			<div
-				class="flex items-center justify-between px-6 py-4 border-b border-gray-700 bg-[#161b22]"
-			>
-				<h2 class="text-lg font-semibold">{modalTitle}</h2>
-				<button onclick={handleClose} class="text-gray-400 hover:text-white">
+			<div class="flex items-center justify-between px-6 py-4 border-b border-surface bg-surface-2">
+				<h2 class="text-lg font-semibold text-primary">{modalTitle}</h2>
+				<button onclick={handleClose} class="text-secondary hover:text-primary">
 					<X class="w-5 h-5" />
 				</button>
 			</div>
@@ -207,7 +204,7 @@
 
 				<div class="space-y-1">
 					<label class={labelClass} for="empresaId">Empresa (Opcional)</label>
-					<select id="empresaId" bind:value={formData.empresaId} class={inputClass}>
+					<select id="empresaId" bind:value={formData.empresaId} class="form-select">
 						<option value="">Ninguna / Independiente</option>
 						{#each empresas as emp}
 							<option value={emp.id}>{emp.nombre}</option>
@@ -222,19 +219,21 @@
 						bind:checked={formData.hasVehicle}
 						class="checkbox checkbox-primary checkbox-sm"
 					/>
-					<label for="hasVehicle" class="text-sm cursor-pointer">¿Tiene vehículo?</label>
+					<label for="hasVehicle" class="text-sm cursor-pointer text-secondary"
+						>¿Tiene vehículo?</label
+					>
 				</div>
 
 				{#if formData.hasVehicle}
-					<div class="p-4 rounded border border-gray-700 bg-black/20 space-y-3">
+					<div class="p-4 rounded border border-surface bg-surface-1 space-y-3">
 						<div class="grid grid-cols-2 gap-2">
 							<button
 								type="button"
 								onclick={() => (formData.tipoVehiculo = 'motocicleta')}
 								class="py-2 px-3 rounded border text-sm font-medium transition-all {formData.tipoVehiculo ===
 								'motocicleta'
-									? 'border-[#2da44e] bg-[#2da44e]/10 text-[#2da44e]'
-									: 'border-gray-600 text-gray-400 hover:border-gray-500'}"
+									? 'border-success bg-success/10 text-success'
+									: 'border-surface text-secondary hover:border-border-emphasis'}"
 							>
 								🏍️ Moto
 							</button>
@@ -243,8 +242,8 @@
 								onclick={() => (formData.tipoVehiculo = 'automovil')}
 								class="py-2 px-3 rounded border text-sm font-medium transition-all {formData.tipoVehiculo ===
 								'automovil'
-									? 'border-[#2da44e] bg-[#2da44e]/10 text-[#2da44e]'
-									: 'border-gray-600 text-gray-400 hover:border-gray-500'}"
+									? 'border-success bg-success/10 text-success'
+									: 'border-surface text-secondary hover:border-border-emphasis'}"
 							>
 								🚗 Auto
 							</button>
@@ -273,17 +272,11 @@
 					</div>
 				{/if}
 
-				<div class="flex justify-end gap-3 pt-4">
-					<button
-						type="button"
-						onclick={handleClose}
-						class="px-4 py-2 rounded border border-gray-600 hover:bg-gray-800">Cancelar</button
+				<div class="flex justify-end gap-3 pt-4 border-t border-surface">
+					<button type="button" onclick={handleClose} class="form-btn-outline-secondary"
+						>Cancelar</button
 					>
-					<button
-						type="submit"
-						disabled={!isFormValid || loading}
-						class="px-4 py-2 rounded bg-[#2da44e] hover:bg-[#2c974b] text-white disabled:opacity-50"
-					>
+					<button type="submit" disabled={!isFormValid || loading} class="form-btn-outline-success">
 						{loading ? 'Guardando...' : isEditMode ? 'Actualizar' : 'Crear'}
 					</button>
 				</div>

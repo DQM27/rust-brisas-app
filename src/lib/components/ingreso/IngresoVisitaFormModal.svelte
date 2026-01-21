@@ -472,7 +472,10 @@
 												onclick={() => (showEmpresaDropdown = false)}
 											></div>
 
-											<div class="form-dropdown" transition:fly={{ y: -5, duration: 200 }}>
+											<div
+												class="form-dropdown absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto"
+												transition:fly={{ y: -5, duration: 200 }}
+											>
 												{#if !empresaStore.empresas || empresaStore.empresas.length === 0}
 													<div class="px-3 py-2 text-sm text-secondary">No hay empresas</div>
 												{:else}

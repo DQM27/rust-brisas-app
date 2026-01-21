@@ -470,7 +470,7 @@
 											></div>
 
 											<div
-												class="form-dropdown max-h-60 overflow-y-auto"
+												class="form-dropdown absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto"
 												transition:fly={{ y: -5, duration: 200 }}
 											>
 												{#if !empresaStore.empresas || empresaStore.empresas.length === 0}
@@ -503,7 +503,7 @@
 											type="button"
 											onclick={() => (showEmpresaModal = true)}
 											disabled={loading}
-											class="px-3 py-1.5 rounded-lg border border-white/10 bg-black/20 text-secondary hover:text-white hover:bg-white/5 transition-colors"
+											class="form-btn-outline-secondary p-1.5"
 											title="Añadir nueva empresa"
 										>
 											<Plus size={16} />
@@ -557,7 +557,10 @@
 										onclick={() => (showSeveridadDropdown = false)}
 									></div>
 
-									<div class="form-dropdown" transition:fly={{ y: -5, duration: 200 }}>
+									<div
+										class="form-dropdown absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto"
+										transition:fly={{ y: -5, duration: 200 }}
+									>
 										{#each severidadOptions as option}
 											<button
 												type="button"

@@ -191,19 +191,15 @@
 	}
 
 	// --- STANDARD UI PATTERNS ---
-	// Input de texto estándar (34px altura)
-	const inputClass =
-		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all';
-
-	// Botón trigger para Selects Custom
-	const selectClass =
-		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white focus:outline-none disabled:opacity-50 transition-all cursor-pointer appearance-none bg-no-repeat bg-right pr-8 flex items-center justify-between';
+	// Usando clases centralizadas de theme.css
+	const inputClass = 'form-input';
+	const selectClass = 'form-select';
 
 	// Labels
-	const labelClass = 'block text-xs font-medium text-secondary mb-1';
+	const labelClass = 'form-label';
 
 	// Mensajes de Error
-	const errorClass = 'text-xs text-red-500 mt-0.5';
+	const errorClass = 'form-error';
 
 	// Helper to determine field border color based on state
 	function getFieldStateClass(field: string, value: string | undefined | null) {
@@ -373,10 +369,10 @@
 
 									{#if showTipoDropdown}
 										<div
-											class="absolute z-50 left-0 right-0 top-full mt-1 bg-[#1c2128] border border-surface rounded-lg shadow-xl overflow-hidden"
+											class="form-dropdown absolute z-50 left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto"
 											transition:slide={{ duration: 150 }}
 										>
-											<div class="max-h-48 overflow-y-auto p-1">
+											<div>
 												{#each tipoOptions as option}
 													<button
 														type="button"
@@ -384,11 +380,11 @@
 															$form.tipoVehiculo = option.value;
 															showTipoDropdown = false;
 														}}
-														class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white rounded-md transition-colors flex items-center justify-between"
+														class="form-dropdown-item flex items-center justify-between group"
 													>
 														{option.label}
 														{#if $form.tipoVehiculo === option.value}
-															<Check size={14} class="text-blue-400" />
+															<Check size={14} class="text-primary" />
 														{/if}
 													</button>
 												{/each}
@@ -541,6 +537,3 @@
 		outline: none !important;
 	}
 </style>
-
-
-

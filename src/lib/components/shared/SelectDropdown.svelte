@@ -34,11 +34,11 @@
 		isOpen = false;
 	}
 
-	// Styles inspired by UserFormModal
-	const buttonClass =
-		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white focus:outline-none disabled:opacity-50 transition-all cursor-pointer flex items-center justify-between text-left hover:border-white/20';
-	const labelStyle = 'block text-xs font-medium text-zinc-400 mb-1.5 ml-0.5';
-	const activeClass = '!border-blue-500/50 !ring-1 !ring-blue-500/20';
+	// Styles inspired by UserFormModal, enabling centralized theme control
+	const buttonClass = 'form-select text-left flex items-center justify-between cursor-pointer';
+	const labelStyle = 'form-label ml-0.5';
+	// form-select handles active/focus states via theme, but we can keep overrides if passed via className
+	const activeClass = 'border-accent ring-1 ring-accent-bg'; // Matching manual active state if needed, or rely on focus-within
 
 	const selectedLabel = $derived(options.find((o) => o.value === value)?.label ?? placeholder);
 	const labelId = `dropdown-label-${Math.random().toString(36).slice(2, 9)}`;
@@ -56,10 +56,10 @@
 		onclick={() => (isOpen = !isOpen)}
 		class="{buttonClass} {isOpen ? activeClass : ''}"
 	>
-		<span class="truncate pr-2 {value ? 'text-white' : 'text-zinc-500'}">
+		<span class="truncate pr-2 {value ? 'text-primary' : 'text-secondary'}">
 			{selectedLabel}
 		</span>
-		<ChevronDown size={14} class="text-zinc-500 flex-shrink-0" />
+		<ChevronDown size={14} class="text-secondary flex-shrink-0" />
 	</button>
 
 	{#if isOpen && !disabled}
@@ -72,7 +72,7 @@
 		></div>
 
 		<div
-			class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top min-w-[150px]"
+			class="form-dropdown absolute z-50 w-full mt-1 origin-top min-w-[150px]"
 			transition:scale={{ duration: 150, start: 0.95 }}
 		>
 			<div class="max-h-[200px] overflow-y-auto custom-scrollbar">
@@ -80,11 +80,11 @@
 					<button
 						type="button"
 						onclick={() => handleSelect(opt)}
-						class="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+						class="form-dropdown-item w-full flex items-center justify-between group"
 					>
-						<span class={value === opt.value ? 'text-white font-medium' : ''}>{opt.label}</span>
+						<span class={value === opt.value ? 'text-primary font-medium' : ''}>{opt.label}</span>
 						{#if value === opt.value}
-							<Check size={14} class="text-blue-500" />
+							<Check size={14} class="text-accent" />
 						{/if}
 					</button>
 				{/each}
@@ -105,6 +105,3 @@
 		border-radius: 2px;
 	}
 </style>
-
-
-

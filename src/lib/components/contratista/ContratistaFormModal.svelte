@@ -399,7 +399,7 @@
 											type="button"
 											disabled={loading || empresaStore.loading || readonly}
 											onclick={() => (showEmpresaDropdown = !showEmpresaDropdown)}
-											class="form-select w-full text-left flex items-center justify-between {showEmpresaDropdown
+											class="form-select w-full text-left flex items-center justify-between transition-colors {showEmpresaDropdown
 												? 'border-accent ring-1 ring-accent/20'
 												: getFieldStateClass('empresaId', $form.empresaId)}"
 										>
@@ -424,7 +424,10 @@
 												aria-hidden="true"
 											></div>
 
-											<div class="form-dropdown" transition:fly={{ y: -10, duration: 200 }}>
+											<div
+												class="form-dropdown absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto"
+												transition:fly={{ y: -10, duration: 200 }}
+											>
 												{#if empresaStore.empresas.length === 0}
 													<div class="px-3 py-2 text-sm text-secondary">No hay empresas</div>
 												{:else}
