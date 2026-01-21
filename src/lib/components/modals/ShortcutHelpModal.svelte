@@ -33,7 +33,6 @@
 	// Obtener ícono por categoría
 	const categoryIcons: Record<string, typeof Settings> = {
 		system: Settings,
-		spotlight: Search,
 		modules: LayoutList,
 		modals: Square,
 		grids: Table,
@@ -112,13 +111,11 @@
 			<div class="flex-1 overflow-y-auto p-6">
 				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					{#each categoriesWithShortcuts as category}
+						{@const CategoryIcon = categoryIcons[category.id] || Settings}
 						<div class="space-y-3">
 							<div class="flex items-center gap-2">
 								<div class="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-md">
-									<svelte:component
-										this={categoryIcons[category.id] || Settings}
-										class="w-4 h-4 text-gray-500 dark:text-gray-400"
-									/>
+									<CategoryIcon class="w-4 h-4 text-gray-500 dark:text-gray-400" />
 								</div>
 								<h3
 									class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider"

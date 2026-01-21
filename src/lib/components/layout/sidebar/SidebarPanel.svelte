@@ -17,8 +17,14 @@
 		};
 	}
 
-	export let item: SidebarItem;
-	export let onClose: () => void;
+	interface Props {
+		item: SidebarItem;
+		onClose: () => void;
+	}
+
+	let { item, onClose }: Props = $props();
+
+	const PanelComponent = $derived(item.panelComponent);
 </script>
 
 <div
@@ -28,12 +34,9 @@
 >
 	<div class="sidebar-panel-header">
 		<span>{item.label}</span>
-		<button class="sidebar-panel-close" on:click={onClose} title="Cerrar panel"> × </button>
+		<button class="sidebar-panel-close" onclick={onClose} title="Cerrar panel"> × </button>
 	</div>
 	<div class="sidebar-panel-content">
-		<svelte:component this={item.panelComponent} />
+		<PanelComponent />
 	</div>
 </div>
-
-
-

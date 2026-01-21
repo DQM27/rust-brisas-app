@@ -30,17 +30,19 @@
 		}
 	};
 
-	let loading = false;
-	let searchTerm = '';
+	let loading = $state(false);
+	let searchTerm = $state('');
 
 	// Derivamos la lista de módulos del store
-	$: modulesList = Object.values($modulesStore);
+	const modulesList = $derived(Object.values($modulesStore));
 
 	// Filtramos por búsqueda
-	$: filteredModules = modulesList.filter(
-		(m) =>
-			m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			m.key.toLowerCase().includes(searchTerm.toLowerCase())
+	const filteredModules = $derived(
+		modulesList.filter(
+			(m) =>
+				m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				m.key.toLowerCase().includes(searchTerm.toLowerCase())
+		)
 	);
 
 	async function handleStatusChange(key: string, newStatus: string) {
@@ -106,6 +108,7 @@
 	>
 		{#each filteredModules as module (module.key)}
 			{@const config = STATUS_CONFIG[module.status] || STATUS_CONFIG.active}
+			{@const StatusIcon = config.icon}
 
 			<div
 				class="bg-surface-2 border border-white/5 rounded-xl p-5 hover:border-white/10 transition-colors group relative overflow-hidden"
@@ -123,7 +126,7 @@
 					</div>
 
 					<div class="p-2 rounded-lg {config.class}">
-						<svelte:component this={config.icon} size={20} />
+						<StatusIcon size={20} />
 					</div>
 				</div>
 
@@ -138,7 +141,7 @@
 						<select
 							id="status-{module.key}"
 							value={module.status}
-							on:change={(e) => handleStatusChange(module.key, e.currentTarget.value)}
+							onchange={(e) => handleStatusChange(module.key, e.currentTarget.value)}
 							class="w-full bg-surface-3 border border-white/10 text-white rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer hover:border-white/20 focus:border-primary-500 focus:outline-none transition-colors"
 							disabled={loading}
 						>
@@ -199,6 +202,3 @@
 		border-radius: 20px;
 	}
 </style>
-
-
-

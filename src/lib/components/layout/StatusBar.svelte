@@ -6,8 +6,8 @@
 	import { Database } from 'lucide-svelte';
 
 	// Clases reactivas para el estado de conexión
-	$: connectionClasses = $online ? 'text-success' : 'text-error';
-	$: connectionIcon = $online ? Wifi : WifiOff;
+	const connectionClasses = $derived($online ? 'text-success' : 'text-error');
+	const ConnectionIcon = $derived($online ? Wifi : WifiOff);
 </script>
 
 <div
@@ -23,8 +23,7 @@
 			role="status"
 			aria-live="polite"
 		>
-			<svelte:component
-				this={connectionIcon}
+			<ConnectionIcon
 				size={14}
 				class="transition-all duration-300 {$online ? 'animate-pulse' : 'animate-bounce'}"
 			/>
@@ -63,6 +62,3 @@
 		{$statusBarInfo.message || 'Sistema Brisas - Listo'}
 	</div>
 </div>
-
-
-

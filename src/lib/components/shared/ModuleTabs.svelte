@@ -22,8 +22,8 @@
 			onclick={() => selectTab(tab.id)}
 		>
 			{#if tab.icon}
-				<svelte:component
-					this={tab.icon}
+				{@const TabIcon = tab.icon}
+				<TabIcon
 					size={16}
 					class={activeTab === tab.id
 						? 'text-primary'
@@ -42,6 +42,3 @@
 		</button>
 	{/each}
 </div>
-
-
-

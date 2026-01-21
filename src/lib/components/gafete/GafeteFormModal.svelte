@@ -180,12 +180,13 @@
 
 					<!-- Tipo de Gafete (Custom Dropdown) -->
 					<div class="relative">
-						<label class={labelClass}>
+						<label class={labelClass} for="tipo-gafete">
 							Tipo <span class="text-red-500">*</span>
 						</label>
 
 						<!-- Trigger -->
 						<button
+							id="tipo-gafete"
 							type="button"
 							bind:this={triggerButton}
 							onclick={handleTipoDropdownToggle}

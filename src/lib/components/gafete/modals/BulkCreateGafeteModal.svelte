@@ -132,10 +132,11 @@
 
 					<!-- Tipo (Custom Dropdown) -->
 					<div class="relative">
-						<label class={labelClass}>Tipo de Gafete</label>
+						<label class={labelClass} for="tipo-gafete-bulk">Tipo de Gafete</label>
 
 						<!-- Trigger -->
 						<button
+							id="tipo-gafete-bulk"
 							type="button"
 							bind:this={triggerButton}
 							onclick={handleTipoDropdownToggle}

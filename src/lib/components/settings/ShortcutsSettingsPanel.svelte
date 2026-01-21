@@ -73,7 +73,6 @@
 	// Iconos por categoría
 	const categoryIcons: Record<ShortcutCategory, any> = {
 		system: Globe,
-		spotlight: Command,
 		modules: Layout,
 		modals: Box,
 		grids: Grid3x3,
@@ -316,15 +315,12 @@
 			<!-- Categories Grid -->
 			<div class="flex-1 overflow-y-auto custom-scrollbar space-y-6 pb-4">
 				{#each categoriesWithShortcuts() as category}
+					{@const CategoryIcon = categoryIcons[category.id] || Settings2}
 					<div class="bg-surface-2 border border-white/5 rounded-xl overflow-hidden">
 						<!-- Category Header -->
 						<div class="px-5 py-4 bg-surface-3 border-b border-white/5 flex items-center gap-3">
 							<div class="p-2 rounded-lg bg-primary-500/10">
-								<svelte:component
-									this={categoryIcons[category.id] || Settings2}
-									size={20}
-									class="text-primary-400"
-								/>
+								<CategoryIcon size={20} class="text-primary-400" />
 							</div>
 							<div>
 								<h3 class="text-lg font-semibold text-white">{category.label}</h3>

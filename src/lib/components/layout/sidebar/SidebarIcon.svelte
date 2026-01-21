@@ -2,9 +2,15 @@
 <script lang="ts">
 	import type { SidebarItem } from '../../../types/Sidebar';
 
-	export let item: SidebarItem;
-	export let isActive: boolean = false;
-	export let onSelect: (item: SidebarItem) => void;
+	interface Props {
+		item: SidebarItem;
+		isActive?: boolean;
+		onSelect: (item: SidebarItem) => void;
+	}
+
+	let { item, isActive = false, onSelect }: Props = $props();
+
+	const Icon = $derived(item.icon);
 
 	function handleClick() {
 		onSelect(item);
@@ -20,20 +26,13 @@
 
 <button
 	class="sidebar-icon-btn group {isActive ? 'active' : ''}"
-	on:click={handleClick}
-	on:keydown={handleKeydown}
+	onclick={handleClick}
+	onkeydown={handleKeydown}
 	tabindex="0"
 >
-	<svelte:component
-		this={item.icon}
-		size={22}
-		class="transition-transform duration-200 group-hover:scale-110"
-	/>
+	<Icon size={22} class="transition-transform duration-200 group-hover:scale-110" />
 
 	<span class="sidebar-icon-tooltip">
 		{item.label}
 	</span>
 </button>
-
-
-
