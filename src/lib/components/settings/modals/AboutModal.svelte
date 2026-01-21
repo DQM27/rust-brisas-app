@@ -69,7 +69,7 @@
 	>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
-			class="relative z-10 w-full max-w-sm overflow-hidden rounded-xl bg-white dark:bg-[#0d1117] shadow-2xl border border-gray-200 dark:border-gray-700"
+			class="relative z-10 w-full max-w-sm overflow-hidden rounded-xl bg-surface-1 shadow-2xl border border-surface"
 			transition:scale={{ duration: 200, start: 0.95 }}
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => e.stopPropagation()}
@@ -78,60 +78,52 @@
 			<div class="pt-8 pb-4 flex justify-center relative">
 				<button
 					onclick={onClose}
-					class="absolute top-2 right-2 p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+					class="absolute top-2 right-2 p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
 					aria-label="Cerrar"
 				>
 					<X size={20} />
 				</button>
-				<div
-					class="overflow-hidden bg-white dark:bg-[#161b22] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700"
-				>
+				<div class="overflow-hidden bg-surface-2 rounded-2xl shadow-sm border border-surface">
 					<img src="/icono-brisas.png" alt="Brisas" class="w-24 h-24 object-cover" />
 				</div>
 			</div>
 
 			<!-- Body -->
 			<div class="pb-8 px-6 text-center">
-				<h2 class="text-xl font-bold text-gray-900 dark:text-white mb-1">
+				<h2 class="text-xl font-bold text-primary mb-1">
 					{APP_CONFIG.name}
 				</h2>
-				<p class="text-sm text-gray-500 dark:text-gray-400 mb-6 font-medium">
+				<p class="text-sm text-secondary mb-6 font-medium">
 					{APP_CONFIG.description}
 				</p>
 
 				<div class="space-y-4">
-					<div class="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap justify-center gap-2">
-						<span class="px-2 py-1 rounded bg-gray-100 dark:bg-[#161b22]">Rust</span>
-						<span class="px-2 py-1 rounded bg-gray-100 dark:bg-[#161b22]">Tauri</span>
-						<span class="px-2 py-1 rounded bg-gray-100 dark:bg-[#161b22]">SvelteKit</span>
-						<span class="px-2 py-1 rounded bg-gray-100 dark:bg-[#161b22]">SurrealDB</span>
+					<div class="text-[10px] font-bold text-secondary flex flex-wrap justify-center gap-2">
+						<span class="px-2 py-1 rounded-md bg-surface-3 border border-surface">RUST</span>
+						<span class="px-2 py-1 rounded-md bg-surface-3 border border-surface">TAURI</span>
+						<span class="px-2 py-1 rounded-md bg-surface-3 border border-surface">SVELTEKIT</span>
+						<span class="px-2 py-1 rounded-md bg-surface-3 border border-surface">SURREALDB</span>
 					</div>
 
 					<div
-						class="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-[#161b22] border border-gray-100 dark:border-gray-700/50"
+						class="flex items-center justify-between p-2.5 rounded-lg bg-surface-2 border border-surface shadow-inner"
 					>
-						<span class="text-xs text-gray-500 dark:text-gray-400">Versión</span>
-						<span class="font-mono text-xs font-medium text-gray-900 dark:text-gray-200"
-							>{appVersion}</span
-						>
+						<span class="text-xs text-secondary font-medium uppercase tracking-wider">Versión</span>
+						<span class="font-mono text-xs font-bold text-primary">{appVersion}</span>
 					</div>
 
 					<!-- Agradecimientos especiales con scroll suave -->
-					<div
-						class="p-3 rounded-lg bg-gray-50 dark:bg-[#161b22] border border-gray-100 dark:border-gray-700/50"
-					>
+					<div class="p-4 rounded-lg bg-surface-2 border border-surface">
 						<div class="flex items-center justify-center gap-2 mb-2">
-							<span
-								class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold"
-							>
+							<span class="text-[10px] text-accent font-bold uppercase tracking-widest">
 								✨ Agradecimiento Especial
 							</span>
 						</div>
-						<div class="h-5 overflow-hidden relative">
+						<div class="h-24 overflow-hidden relative credits-mask">
 							<div class="credits-scroll">
-								{#each [...contributors, ...contributors] as name}
+								{#each [...contributors, ...contributors, ...contributors] as name}
 									<span
-										class="block text-center text-sm font-medium text-gray-700 dark:text-gray-300 py-0.5"
+										class="block text-center text-sm font-bold text-white py-2 opacity-40 hover:opacity-100 transition-opacity duration-300 cursor-default"
 									>
 										{name}
 									</span>
@@ -140,27 +132,21 @@
 						</div>
 					</div>
 
-					<div class="pt-4 border-t border-gray-100 dark:border-gray-700/50">
-						<p
-							class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold mb-3"
-						>
+					<div class="pt-4 border-t border-surface">
+						<p class="text-[10px] text-tertiary uppercase tracking-widest font-bold mb-3">
 							Desarrollado por
 						</p>
-						<div
-							class="flex items-center justify-center gap-2 text-gray-800 dark:text-gray-200 font-medium"
-						>
-							<Code2 class="w-4 h-4 text-blue-500" />
-							<span>27Design</span>
+						<div class="flex items-center justify-center gap-2 text-primary font-bold">
+							<Code2 class="w-4 h-4 text-accent" />
+							<span class="text-lg">27Design</span>
 						</div>
 					</div>
 				</div>
 			</div>
 
 			<!-- Footer -->
-			<div
-				class="bg-gray-50 dark:bg-[#161b22] px-6 py-3 border-t border-gray-200 dark:border-gray-700 text-center"
-			>
-				<p class="text-xs text-gray-400 dark:text-gray-500">
+			<div class="bg-surface-2 px-6 py-4 border-t border-surface text-center">
+				<p class="text-[10px] text-tertiary">
 					© {new Date().getFullYear()} Todos los derechos reservados
 				</p>
 			</div>
@@ -169,8 +155,13 @@
 {/if}
 
 <style>
+	.credits-mask {
+		mask-image: linear-gradient(to bottom, transparent, black 25%, black 75%, transparent);
+		-webkit-mask-image: linear-gradient(to bottom, transparent, black 25%, black 75%, transparent);
+	}
+
 	.credits-scroll {
-		animation: scroll-up 50s linear infinite;
+		animation: scroll-up 40s linear infinite;
 	}
 
 	@keyframes scroll-up {
@@ -178,14 +169,15 @@
 			transform: translateY(0);
 		}
 		100% {
-			transform: translateY(-50%);
+			transform: translateY(-33.33%);
 		}
 	}
 
 	.credits-scroll:hover {
 		animation-play-state: paused;
 	}
+
+	.credits-scroll span {
+		text-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
+	}
 </style>
-
-
-
