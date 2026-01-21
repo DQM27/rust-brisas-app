@@ -101,7 +101,7 @@ pub async fn find_historial_fetched(
     let db = get_db().await?;
     let mut result = db
         .query(format!(
-            "SELECT * FROM {TABLE} WHERE fecha_hora_salida >= $start AND fecha_hora_salida <= $end ORDER BY created_at DESC FETCH usuario_ingreso, usuario_salida, proveedor, proveedor.empresa"
+            "SELECT * FROM {TABLE} WHERE fecha_hora_ingreso >= type::datetime($start) AND fecha_hora_ingreso <= type::datetime($end) ORDER BY fecha_hora_ingreso DESC FETCH usuario_ingreso, usuario_salida, proveedor, proveedor.empresa"
         ))
         .bind(("start", start))
         .bind(("end", end))

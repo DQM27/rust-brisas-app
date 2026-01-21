@@ -23,7 +23,7 @@ export const getIngresoProveedorColumns = (
     const cols: ColumnDefinition[] = [
         {
             title: 'Gafete',
-            field: 'gafete',
+            field: 'gafeteNumero',
             width: 90,
             headerFilter: 'input',
             formatter: (cell) => {
@@ -35,12 +35,11 @@ export const getIngresoProveedorColumns = (
         },
         {
             title: 'Nombre',
-            field: 'nombre',
+            field: 'nombreCompleto',
             width: 200,
             headerFilter: 'input',
             formatter: (cell) => {
-                const data = cell.getData() as IngresoProveedor;
-                return `<span class="font-medium text-primary">${data.nombre} ${data.apellido}</span>`;
+                return `<span class="font-medium text-primary">${cell.getValue() || ''}</span>`;
             }
         },
         {
@@ -58,7 +57,7 @@ export const getIngresoProveedorColumns = (
         },
         {
             title: 'Modo',
-            field: 'modoIngreso',
+            field: 'modoIngresoDisplay',
             width: 100,
             headerFilter: 'list',
             headerFilterParams: { valuesLookup: 'active', clearable: true },
@@ -66,7 +65,7 @@ export const getIngresoProveedorColumns = (
         },
         {
             title: 'Entrada',
-            field: 'fechaIngreso',
+            field: 'fechaHoraIngreso',
             width: 125,
             headerFilter: 'date',
             formatter: (cell) => {
@@ -76,10 +75,10 @@ export const getIngresoProveedorColumns = (
         },
         {
             title: 'Hora',
-            field: 'fechaIngreso_hora',
+            field: 'fechaHoraIngreso_hora',
             width: 90,
             formatter: (cell) => {
-                const d = parseDate(cell.getData().fechaIngreso);
+                const d = parseDate(cell.getData().fechaHoraIngreso);
                 return d ? `<span class="font-mono text-primary">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
             }
         }
@@ -89,7 +88,7 @@ export const getIngresoProveedorColumns = (
         cols.push(
             {
                 title: 'Salida',
-                field: 'fechaSalida',
+                field: 'fechaHoraSalida',
                 width: 125,
                 headerFilter: 'date',
                 formatter: (cell) => {
@@ -99,32 +98,88 @@ export const getIngresoProveedorColumns = (
             },
             {
                 title: 'Hora Salida',
-                field: 'fechaSalida_hora',
+                field: 'fechaHoraSalida_hora',
                 width: 100,
                 formatter: (cell) => {
-                    const d = parseDate(cell.getData().fechaSalida);
+                    const d = parseDate(cell.getData().fechaHoraSalida);
                     return d ? `<span class="font-mono text-primary">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
+                }
+            },
+            {
+                title: 'Permanencia',
+                field: 'tiempoPermanenciaTexto',
+                width: 110,
+                formatter: (cell) => {
+                    const val = cell.getValue();
+                    return val ? `<span class="text-secondary">${val}</span>` : '-';
+                }
+            },
+            {
+                title: 'Área Visitada',
+                field: 'areaVisitada',
+                width: 150,
+                headerFilter: 'input',
+                formatter: (cell) => `<span class="text-secondary">${cell.getValue() || '-'}</span>`
+            },
+            {
+                title: 'Motivo',
+                field: 'motivo',
+                width: 180,
+                headerFilter: 'input',
+                formatter: (cell) => `<span class="text-secondary">${cell.getValue() || '-'}</span>`
+            },
+            {
+                title: 'Registró Ingreso',
+                field: 'usuarioIngresoNombre',
+                width: 150,
+                headerFilter: 'input',
+                formatter: (cell) => `<span class="text-xs text-secondary">${cell.getValue() || '-'}</span>`
+            },
+            {
+                title: 'Registró Salida',
+                field: 'usuarioSalidaNombre',
+                width: 150,
+                headerFilter: 'input',
+                formatter: (cell) => `<span class="text-xs text-secondary">${cell.getValue() || '-'}</span>`
+            },
+            {
+                title: 'Observaciones',
+                field: 'observaciones',
+                width: 200,
+                formatter: (cell) => {
+                    const val = cell.getValue();
+                    return val ? `<span class="text-xs text-secondary italic">${val}</span>` : '-';
+                }
+            }
+        );
+    } else {
+        // En modo activos, agregar área y motivo también
+        cols.push(
+            {
+                title: 'Área Visitada',
+                field: 'areaVisitada',
+                width: 150,
+                headerFilter: 'input',
+                formatter: (cell) => `<span class="text-secondary">${cell.getValue() || '-'}</span>`
+            },
+            {
+                title: 'Motivo',
+                field: 'motivo',
+                width: 180,
+                headerFilter: 'input',
+                formatter: (cell) => `<span class="text-secondary">${cell.getValue() || '-'}</span>`
+            },
+            {
+                title: 'Permanencia',
+                field: 'tiempoPermanenciaTexto',
+                width: 110,
+                formatter: (cell) => {
+                    const val = cell.getValue();
+                    return val ? `<span class="text-secondary">${val}</span>` : '-';
                 }
             }
         );
     }
-
-    cols.push({
-        title: 'Permanencia',
-        field: 'tiempoPermanencia',
-        width: 120,
-        formatter: (cell) => {
-            const data = cell.getData() as IngresoProveedor;
-            const start = parseDate(data.fechaIngreso);
-            const end = data.fechaSalida ? parseDate(data.fechaSalida) : new Date();
-
-            if (!start || !end) return '-';
-            const diffMs = end.getTime() - start.getTime();
-            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            return `<span class="text-secondary">${diffHours}h ${diffMins}m</span>`;
-        }
-    });
 
     if (viewMode === 'actives') {
         cols.push({
