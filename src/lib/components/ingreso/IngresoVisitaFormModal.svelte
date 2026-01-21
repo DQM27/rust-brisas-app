@@ -258,15 +258,12 @@
 	}
 
 	// UI Helpers
-	const inputClass =
-		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-gray-500 transition-all outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed';
-	const labelClass = 'block text-[11px] font-bold uppercase tracking-wider text-secondary mb-1.5';
-	const errorClass = 'text-[10px] text-red-400 mt-1 ml-0.5';
+	// Usando clases centralizadas de theme.css
+	// inputClass, labelClass, errorClass reemplazados por form-input, form-label, form-error
 
 	function getFieldStateClass(field: keyof IngresoVisitaFormData, value?: any) {
-		if ($errors[field]) return '!border-red-500/50 !ring-1 !ring-red-500/20';
-		if (value && String(value).trim() !== '')
-			return '!border-green-500/50 !ring-1 !ring-green-500/20';
+		if ($errors[field]) return 'is-error';
+		if (value && String(value).trim() !== '') return 'is-valid';
 		return '';
 	}
 </script>
@@ -353,14 +350,14 @@
 						<div class="bg-surface-1 rounded-lg border border-surface p-5 grid grid-cols-2 gap-4">
 							<!-- Cédula (Full) -->
 							<div class="col-span-2">
-								<label for="cedula" class={labelClass}>
-									Cédula <span class="text-red-500">*</span>
+								<label for="cedula" class="form-label">
+									Cédula <span class="text-error">*</span>
 								</label>
 								<div class="relative">
 									<input
 										id="cedula"
 										name="cedula"
-										class="{inputClass} {getFieldStateClass('cedula', $form.cedula)}"
+										class="form-input {getFieldStateClass('cedula', $form.cedula)}"
 										bind:value={$form.cedula}
 										oninput={handleCedulaInput}
 										placeholder="1-2345-6789"
@@ -370,38 +367,38 @@
 									{#if searchingPerson}
 										<div class="absolute right-3 top-2.5">
 											<div
-												class="w-3.5 h-3.5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"
+												class="w-3.5 h-3.5 border-2 border-accent border-t-transparent rounded-full animate-spin"
 											></div>
 										</div>
 									{/if}
 								</div>
-								{#if $errors.cedula}<p class={errorClass}>{$errors.cedula}</p>{/if}
+								{#if $errors.cedula}<p class="form-error">{$errors.cedula}</p>{/if}
 							</div>
 
 							<!-- Nombre -->
 							<div>
-								<label for="nombre" class={labelClass}
-									>Nombre <span class="text-red-500">*</span></label
+								<label for="nombre" class="form-label"
+									>Nombre <span class="text-error">*</span></label
 								>
 								<input
 									id="nombre"
 									name="nombre"
-									class="{inputClass} {getFieldStateClass('nombre', $form.nombre)}"
+									class="form-input {getFieldStateClass('nombre', $form.nombre)}"
 									bind:value={$form.nombre}
 									oninput={() => validate('nombre')}
 									placeholder="Juan"
 									disabled={loading || searchingPerson}
 								/>
-								{#if $errors.nombre}<p class={errorClass}>{$errors.nombre}</p>{/if}
+								{#if $errors.nombre}<p class="form-error">{$errors.nombre}</p>{/if}
 							</div>
 
 							<!-- Segundo Nombre -->
 							<div>
-								<label for="segundoNombre" class={labelClass}>Segundo Nombre</label>
+								<label for="segundoNombre" class="form-label">Segundo Nombre</label>
 								<input
 									id="segundoNombre"
 									name="segundoNombre"
-									class={inputClass}
+									class="form-input"
 									bind:value={$form.segundoNombre}
 									placeholder=""
 									disabled={loading || searchingPerson}
@@ -410,28 +407,28 @@
 
 							<!-- Apellido -->
 							<div>
-								<label for="apellido" class={labelClass}
-									>Apellido <span class="text-red-500">*</span></label
+								<label for="apellido" class="form-label"
+									>Apellido <span class="text-error">*</span></label
 								>
 								<input
 									id="apellido"
 									name="apellido"
-									class="{inputClass} {getFieldStateClass('apellido', $form.apellido)}"
+									class="form-input {getFieldStateClass('apellido', $form.apellido)}"
 									bind:value={$form.apellido}
 									oninput={() => validate('apellido')}
 									placeholder="Pérez"
 									disabled={loading || searchingPerson}
 								/>
-								{#if $errors.apellido}<p class={errorClass}>{$errors.apellido}</p>{/if}
+								{#if $errors.apellido}<p class="form-error">{$errors.apellido}</p>{/if}
 							</div>
 
 							<!-- Segundo Apellido -->
 							<div>
-								<label for="segundoApellido" class={labelClass}>Segundo Apellido</label>
+								<label for="segundoApellido" class="form-label">Segundo Apellido</label>
 								<input
 									id="segundoApellido"
 									name="segundoApellido"
-									class={inputClass}
+									class="form-input"
 									bind:value={$form.segundoApellido}
 									placeholder=""
 									disabled={loading || searchingPerson}
@@ -440,8 +437,8 @@
 
 							<!-- Empresa (Full) -->
 							<div class="col-span-2 relative">
-								<label for="empresaId" class={labelClass}
-									>Empresa <span class="text-red-500">*</span></label
+								<label for="empresaId" class="form-label"
+									>Empresa <span class="text-error">*</span></label
 								>
 								<div class="flex gap-2 relative">
 									<!-- Custom Dropdown Trigger -->
@@ -450,8 +447,8 @@
 											type="button"
 											onclick={() => (showEmpresaDropdown = !showEmpresaDropdown)}
 											disabled={loading || searchingPerson || empresaStore.loading}
-											class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {showEmpresaDropdown
-												? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
+											class="form-select w-full text-left {showEmpresaDropdown
+												? 'border-accent ring-1 ring-accent/20'
 												: getFieldStateClass('empresaId', $form.empresaId)}"
 										>
 											<span class="truncate">
@@ -475,12 +472,9 @@
 												onclick={() => (showEmpresaDropdown = false)}
 											></div>
 
-											<div
-												class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top max-h-60 overflow-y-auto"
-												transition:fly={{ y: -5, duration: 200 }}
-											>
+											<div class="form-dropdown" transition:fly={{ y: -5, duration: 200 }}>
 												{#if !empresaStore.empresas || empresaStore.empresas.length === 0}
-													<div class="px-3 py-2 text-sm text-gray-500">No hay empresas</div>
+													<div class="px-3 py-2 text-sm text-secondary">No hay empresas</div>
 												{:else}
 													{#each empresaStore.empresas as empresa}
 														<button
@@ -490,11 +484,11 @@
 																showEmpresaDropdown = false;
 																validate('empresaId');
 															}}
-															class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+															class="form-dropdown-item justify-between group"
 														>
 															<span>{empresa.nombre}</span>
 															{#if $form.empresaId === empresa.id}
-																<CheckCircle size={14} class="text-white" />
+																<CheckCircle size={14} class="text-primary" />
 															{/if}
 														</button>
 													{/each}
@@ -508,73 +502,67 @@
 										type="button"
 										onclick={() => (showEmpresaModal = true)}
 										disabled={loading || searchingPerson}
-										class="px-3 py-1.5 rounded-lg border border-white/10 bg-black/20 text-secondary hover:text-white hover:bg-white/5 transition-colors"
+										class="px-3 py-1.5 rounded-lg border border-surface bg-surface-2 text-secondary hover:text-primary hover:border-border-emphasis transition-colors"
 										title="Añadir nueva empresa"
 									>
 										<Plus size={16} />
 									</button>
 								</div>
-								{#if $errors.empresaId}<p class={errorClass}>{$errors.empresaId}</p>{/if}
+								{#if $errors.empresaId}<p class="form-error">{$errors.empresaId}</p>{/if}
 							</div>
 
 							<!-- Seccion de Ingreso Mixed In but visually grouped -->
 
 							<!-- Anfitrión & Motivo -->
 							<div>
-								<label for="anfitrion" class={labelClass}
-									>Anfitrión <span class="text-red-500">*</span></label
+								<label for="anfitrion" class="form-label"
+									>Anfitrión <span class="text-error">*</span></label
 								>
 								<input
 									id="anfitrion"
 									name="anfitrion"
-									class="{inputClass} {getFieldStateClass('anfitrion', $form.anfitrion)}"
+									class="form-input {getFieldStateClass('anfitrion', $form.anfitrion)}"
 									bind:value={$form.anfitrion}
 									oninput={() => validate('anfitrion')}
 									placeholder="¿A quién visita?"
 									disabled={loading}
 								/>
-								{#if $errors.anfitrion}<p class={errorClass}>{$errors.anfitrion}</p>{/if}
+								{#if $errors.anfitrion}<p class="form-error">{$errors.anfitrion}</p>{/if}
 							</div>
 
 							<div>
-								<label for="motivo" class={labelClass}
-									>Motivo <span class="text-red-500">*</span></label
+								<label for="motivo" class="form-label"
+									>Motivo <span class="text-error">*</span></label
 								>
 								<input
 									id="motivo"
 									name="motivo"
-									class="{inputClass} {getFieldStateClass('motivo', $form.motivo)}"
+									class="form-input {getFieldStateClass('motivo', $form.motivo)}"
 									bind:value={$form.motivo}
 									oninput={() => validate('motivo')}
 									placeholder="Ej. Entrevista..."
 									disabled={loading}
 								/>
-								{#if $errors.motivo}<p class={errorClass}>{$errors.motivo}</p>{/if}
+								{#if $errors.motivo}<p class="form-error">{$errors.motivo}</p>{/if}
 							</div>
 
 							<!-- Área & Gafete -->
 							<div>
-								<label for="area" class={labelClass}>Área <span class="text-red-500">*</span></label
-								>
+								<label for="area" class="form-label">Área <span class="text-error">*</span></label>
 								<input
 									id="area"
 									name="areaVisitada"
-									class="{inputClass} {getFieldStateClass('areaVisitada', $form.areaVisitada)}"
+									class="form-input {getFieldStateClass('areaVisitada', $form.areaVisitada)}"
 									bind:value={$form.areaVisitada}
 									oninput={() => validate('areaVisitada')}
 									placeholder="Piso, etc."
 									disabled={loading}
 								/>
-								{#if $errors.areaVisitada}<p class={errorClass}>{$errors.areaVisitada}</p>{/if}
+								{#if $errors.areaVisitada}<p class="form-error">{$errors.areaVisitada}</p>{/if}
 							</div>
 
 							<div>
-								<label
-									class="block text-[11px] font-bold uppercase tracking-wider text-secondary mb-1.5"
-									for="gafete"
-								>
-									Gafete
-								</label>
+								<label class="form-label" for="gafete"> Gafete </label>
 								<div class="relative w-full group">
 									<input
 										id="gafete"
@@ -582,7 +570,7 @@
 										type="text"
 										bind:value={$form.gafete}
 										placeholder="00"
-										class="{inputClass} text-center font-mono tracking-widest"
+										class="form-input text-center font-mono tracking-widest"
 										autocomplete="off"
 										disabled={loading}
 									/>
@@ -603,17 +591,17 @@
 									{/if}
 									<span>Observaciones</span>
 									{#if !showObservaciones && $form.observaciones?.trim()}
-										<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+										<span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
 									{/if}
 								</button>
 
 								{#if showObservaciones}
 									<div class="mt-2" transition:slide>
 										<div
-											class="obs-container w-full bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all outline-none"
+											class="obs-container w-full bg-surface-2 border border-surface rounded-lg focus-within:border-accent focus-within:ring-1 focus-within:ring-accent/20 transition-all outline-none"
 										>
 											<textarea
-												class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none outline-none border-none appearance-none ring-0"
+												class="w-full bg-transparent px-3 py-2 text-sm text-primary placeholder:text-secondary/50 resize-none focus:outline-none outline-none border-none appearance-none ring-0"
 												rows="2"
 												placeholder="Notas adicionales..."
 												bind:value={$form.observaciones}
@@ -634,15 +622,11 @@
 							type="button"
 							onclick={handleClose}
 							disabled={loading}
-							class="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-xs"
+							class="form-btn-outline-secondary"
 						>
 							Cancelar
 						</button>
-						<button
-							type="submit"
-							disabled={loading}
-							class="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-						>
+						<button type="submit" disabled={loading} class="form-btn-outline-success">
 							{loading ? 'Guardando...' : 'Crear Ingreso'}
 						</button>
 					</div>
@@ -670,14 +654,14 @@
 			<div class="px-5 py-4">
 				<h3 class="text-sm font-semibold text-white mb-4">Nueva Empresa</h3>
 				<div class="space-y-1">
-					<label for="newEmpresa" class={labelClass}>Nombre Comercial</label>
+					<label for="newEmpresa" class="form-label">Nombre Comercial</label>
 					<input
 						id="newEmpresa"
 						type="text"
 						bind:value={nuevaEmpresaNombre}
 						placeholder="Ej: Servicios Generales S.A."
 						disabled={creatingEmpresa}
-						class={inputClass}
+						class="form-input"
 						onkeydown={(e) => e.key === 'Enter' && handleCrearEmpresa()}
 					/>
 				</div>
@@ -719,7 +703,7 @@
 		background: rgba(255, 255, 255, 0.2);
 	}
 
-	/* Observaciones container - match IngresoFormModal */
+	/* Observaciones container */
 	.obs-container,
 	.obs-container *:focus {
 		outline: none !important;
@@ -727,7 +711,7 @@
 	}
 
 	.obs-container:focus-within {
-		border-color: rgba(59, 130, 246, 0.5) !important;
-		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+		border-color: var(--color-accent) !important;
+		box-shadow: 0 0 0 1px var(--color-accent-bg) !important;
 	}
 </style>

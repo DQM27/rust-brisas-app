@@ -194,22 +194,21 @@
 	}
 
 	// --- UI PATTERNS ---
-	const inputClass =
-		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 transition-all outline-none disabled:opacity-50';
-	const labelClass = 'block text-xs font-medium text-secondary mb-1';
+	// --- UI PATTERNS ---
+	// Usando clases centralizadas de theme.css
 
 	function getFieldStateClass(value: any, isRequired = false) {
 		const hasValue = value && String(value).trim() !== '';
 
 		if (isRequired && !hasValue && submitted) {
-			return '!border-red-500/50 !ring-1 !ring-red-500/20';
+			return 'is-error';
 		}
 
 		if (isRequired && hasValue) {
-			return '!border-green-500/50 !ring-1 !ring-green-500/20';
+			return 'is-valid';
 		}
 
-		return 'border-white/10';
+		return '';
 	}
 </script>
 
@@ -333,26 +332,26 @@
 									<!-- Área y Motivo -->
 									<div class="grid grid-cols-1 gap-4">
 										<div>
-											<label for="areaVisitada" class={labelClass}
-												>Área Visitada <span class="text-red-500">*</span></label
+											<label for="areaVisitada" class="form-label"
+												>Área Visitada <span class="text-error">*</span></label
 											>
 											<input
 												id="areaVisitada"
 												type="text"
 												bind:value={areaVisitada}
-												class="{inputClass} {getFieldStateClass(areaVisitada, true)}"
+												class="form-input {getFieldStateClass(areaVisitada, true)}"
 												placeholder="Ej. Almacén, Mantenimiento"
 											/>
 										</div>
 										<div>
-											<label for="motivoVisita" class={labelClass}
-												>Motivo <span class="text-red-500">*</span></label
+											<label for="motivoVisita" class="form-label"
+												>Motivo <span class="text-error">*</span></label
 											>
 											<input
 												id="motivoVisita"
 												type="text"
 												bind:value={motivo}
-												class="{inputClass} {getFieldStateClass(motivo, true)}"
+												class="form-input {getFieldStateClass(motivo, true)}"
 												placeholder="Ej. Entrega de material"
 											/>
 										</div>
@@ -361,12 +360,12 @@
 									<!-- Vehiculo -->
 									{#if tieneVehiculos}
 										<div>
-											<label for="vehiculoSelect" class={labelClass}>
+											<label for="vehiculoSelect" class="form-label">
 												Vehículo <span class="text-xs text-tertiary ml-1">(opcional)</span>
 											</label>
 											<select
 												id="vehiculoSelect"
-												class="{inputClass} cursor-pointer appearance-none bg-no-repeat bg-right pr-8"
+												class="form-select cursor-pointer bg-right pr-8"
 												style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239CA3AF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-size: 10px; background-position: calc(100% - 12px) 50%;"
 												bind:value={vehiculoId}
 											>
@@ -396,7 +395,7 @@
 											<div class="mt-2" transition:slide>
 												<textarea
 													bind:value={observaciones}
-													class="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white resize-none focus:outline-none"
+													class="form-textarea w-full"
 													rows="2"
 													placeholder="Notas adicionales..."
 												></textarea>
@@ -418,7 +417,7 @@
 					onclick={handleClose}
 					type="button"
 					disabled={loading}
-					class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm"
+					class="form-btn-outline-secondary"
 				>
 					Cancelar
 				</button>
@@ -427,7 +426,7 @@
 						type="submit"
 						form="ingresoProveedorForm"
 						disabled={loading}
-						class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm disabled:opacity-50 flex items-center gap-2"
+						class="form-btn-outline-success"
 					>
 						{#if loading}
 							<span

@@ -234,15 +234,13 @@
 	}
 
 	// --- STANDARD STYLES (ui-patterns.md) ---
-	const inputClass =
-		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all';
-	const labelClass = 'block text-xs font-medium text-secondary mb-1';
-	const errorClass = 'text-xs text-red-500 mt-0.5';
+	// --- STANDARD STYLES (ui-patterns.md) ---
+	// Usando theme.css classes
 
 	// Helper de Validación
 	function getFieldStateClass(field: keyof AddToListaNegraForm) {
 		if ($errors[field]) {
-			return '!border-red-500/50 !ring-1 !ring-red-500/20';
+			return 'is-error';
 		}
 		return '';
 	}
@@ -350,9 +348,10 @@
 						<!-- Input Card Container -->
 						<div class="bg-surface-1 rounded-lg border border-surface p-5 space-y-4">
 							<!-- Cédula (Full Width) -->
+							<!-- Cédula (Full Width) -->
 							<div>
-								<label for="cedula" class={labelClass}
-									>Cédula <span class="text-red-500">*</span></label
+								<label for="cedula" class="form-label"
+									>Cédula <span class="text-error">*</span></label
 								>
 								<input
 									id="cedula"
@@ -360,18 +359,18 @@
 									type="text"
 									bind:value={$form.cedula}
 									disabled={loading || isEditMode || !!selectedPersona}
-									class="{inputClass} {getFieldStateClass('cedula')}"
+									class="form-input {getFieldStateClass('cedula')}"
 									placeholder={selectedPersona ? '' : '1-1234-5678'}
 									{...$constraints.cedula}
 								/>
-								{#if $errors.cedula}<p class={errorClass}>{$errors.cedula}</p>{/if}
+								{#if $errors.cedula}<p class="form-error">{$errors.cedula}</p>{/if}
 							</div>
 
 							<!-- Row: Nombre + Segundo Nombre -->
 							<div class="grid grid-cols-2 gap-3">
 								<div>
-									<label for="nombre" class={labelClass}
-										>Nombre <span class="text-red-500">*</span></label
+									<label for="nombre" class="form-label"
+										>Nombre <span class="text-error">*</span></label
 									>
 									<input
 										id="nombre"
@@ -379,21 +378,21 @@
 										type="text"
 										bind:value={$form.nombre}
 										disabled={loading || !!selectedPersona}
-										class="{inputClass} {getFieldStateClass('nombre')}"
+										class="form-input {getFieldStateClass('nombre')}"
 										placeholder={selectedPersona ? '' : 'Juan'}
 										{...$constraints.nombre}
 									/>
-									{#if $errors.nombre}<p class={errorClass}>{$errors.nombre}</p>{/if}
+									{#if $errors.nombre}<p class="form-error">{$errors.nombre}</p>{/if}
 								</div>
 								<div>
-									<label for="segundoNombre" class={labelClass}>Segundo Nombre</label>
+									<label for="segundoNombre" class="form-label">Segundo Nombre</label>
 									<input
 										id="segundoNombre"
 										name="segundoNombre"
 										type="text"
 										bind:value={$form.segundoNombre}
 										disabled={loading || !!selectedPersona}
-										class="{inputClass} {getFieldStateClass('segundoNombre')}"
+										class="form-input {getFieldStateClass('segundoNombre')}"
 										placeholder="Opcional"
 										{...$constraints.segundoNombre}
 									/>
@@ -403,8 +402,8 @@
 							<!-- Row: Apellido + Segundo Apellido -->
 							<div class="grid grid-cols-2 gap-3">
 								<div>
-									<label for="apellido" class={labelClass}
-										>Apellido <span class="text-red-500">*</span></label
+									<label for="apellido" class="form-label"
+										>Apellido <span class="text-error">*</span></label
 									>
 									<input
 										id="apellido"
@@ -412,21 +411,21 @@
 										type="text"
 										bind:value={$form.apellido}
 										disabled={loading || !!selectedPersona}
-										class="{inputClass} {getFieldStateClass('apellido')}"
+										class="form-input {getFieldStateClass('apellido')}"
 										placeholder={selectedPersona ? '' : 'Pérez'}
 										{...$constraints.apellido}
 									/>
-									{#if $errors.apellido}<p class={errorClass}>{$errors.apellido}</p>{/if}
+									{#if $errors.apellido}<p class="form-error">{$errors.apellido}</p>{/if}
 								</div>
 								<div>
-									<label for="segundoApellido" class={labelClass}>Segundo Apellido</label>
+									<label for="segundoApellido" class="form-label">Segundo Apellido</label>
 									<input
 										id="segundoApellido"
 										name="segundoApellido"
 										type="text"
 										bind:value={$form.segundoApellido}
 										disabled={loading || !!selectedPersona}
-										class="{inputClass} {getFieldStateClass('segundoApellido')}"
+										class="form-input {getFieldStateClass('segundoApellido')}"
 										placeholder="Opcional"
 										{...$constraints.segundoApellido}
 									/>
@@ -435,7 +434,7 @@
 
 							<!-- Empresa (Full Width, Dropdown + Add Button) -->
 							<div class="relative">
-								<label for="empresaId" class={labelClass}>Empresa</label>
+								<label for="empresaId" class="form-label">Empresa</label>
 								<div class="flex gap-2 relative">
 									<!-- Custom Dropdown Trigger -->
 									<div class="relative flex-1">
@@ -443,8 +442,8 @@
 											type="button"
 											onclick={() => (showEmpresaDropdown = !showEmpresaDropdown)}
 											disabled={loading || !!selectedPersona}
-											class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {showEmpresaDropdown
-												? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
+											class="form-select flex items-center justify-between cursor-pointer w-full text-left {showEmpresaDropdown
+												? 'border-accent ring-1 ring-accent-subtle/50'
 												: getFieldStateClass(
 														'empresaId'
 													)} disabled:cursor-not-allowed disabled:opacity-60"
@@ -471,11 +470,11 @@
 											></div>
 
 											<div
-												class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top max-h-60 overflow-y-auto"
+												class="form-dropdown max-h-60 overflow-y-auto"
 												transition:fly={{ y: -5, duration: 200 }}
 											>
 												{#if !empresaStore.empresas || empresaStore.empresas.length === 0}
-													<div class="px-3 py-2 text-sm text-gray-500">No hay empresas</div>
+													<div class="px-3 py-2 text-sm text-tertiary">No hay empresas</div>
 												{:else}
 													{#each empresaStore.empresas as empresa}
 														<button
@@ -485,11 +484,11 @@
 																$form.empresaNombre = empresa.nombre; // Sync name too
 																showEmpresaDropdown = false;
 															}}
-															class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+															class="form-dropdown-item flex items-center justify-between group"
 														>
 															<span>{empresa.nombre}</span>
 															{#if $form.empresaId === empresa.id}
-																<CheckCircle size={14} class="text-white" />
+																<CheckCircle size={14} class="text-primary" />
 															{/if}
 														</button>
 													{/each}
@@ -511,25 +510,25 @@
 										</button>
 									{/if}
 								</div>
-								{#if $errors.empresaId}<p class={errorClass}>{$errors.empresaId}</p>{/if}
+								{#if $errors.empresaId}<p class="form-error">{$errors.empresaId}</p>{/if}
 							</div>
 
 							<!-- Nivel de Severidad CUSTOM DROPDOWN (Full Width) -->
 							<div class="relative">
-								<label for="nivelSeveridad" class={labelClass}
-									>Nivel de Severidad <span class="text-red-500">*</span></label
+								<label for="nivelSeveridad" class="form-label"
+									>Nivel de Severidad <span class="text-error">*</span></label
 								>
 								<button
 									type="button"
 									onclick={() => (showSeveridadDropdown = !showSeveridadDropdown)}
-									class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {getFieldStateClass(
+									class="form-select flex items-center justify-between cursor-pointer w-full text-left {getFieldStateClass(
 										'nivelSeveridad'
 									)} 
                                     {$form.nivelSeveridad === 'ALTO'
-										? '!text-red-400 !border-red-500/50 !ring-1 !ring-red-500/20'
+										? '!text-red-500 border-red-500/50'
 										: $form.nivelSeveridad === 'MEDIO'
-											? '!text-yellow-400 !border-yellow-500/50 !ring-1 !ring-yellow-500/20'
-											: '!text-green-400 !border-green-500/50 !ring-1 !ring-green-500/20'}"
+											? '!text-yellow-500 border-yellow-500/50'
+											: '!text-green-500 border-green-500/50'}"
 								>
 									<span class="truncate">
 										{severidadOptions.find((o) => o.value === $form.nivelSeveridad)?.label ||
@@ -558,10 +557,7 @@
 										onclick={() => (showSeveridadDropdown = false)}
 									></div>
 
-									<div
-										class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top"
-										transition:fly={{ y: -5, duration: 200 }}
-									>
+									<div class="form-dropdown" transition:fly={{ y: -5, duration: 200 }}>
 										{#each severidadOptions as option}
 											<button
 												type="button"
@@ -569,41 +565,35 @@
 													$form.nivelSeveridad = option.value as any;
 													showSeveridadDropdown = false;
 												}}
-												class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+												class="form-dropdown-item flex items-center justify-between group"
 											>
 												<span>{option.label}</span>
 												{#if $form.nivelSeveridad === option.value}
-													<CheckCircle size={14} class="text-white" />
+													<CheckCircle size={14} class="text-primary" />
 												{/if}
 											</button>
 										{/each}
 									</div>
 								{/if}
-								{#if $errors.nivelSeveridad}<p class={errorClass}>{$errors.nivelSeveridad}</p>{/if}
+								{#if $errors.nivelSeveridad}<p class="form-error">{$errors.nivelSeveridad}</p>{/if}
 							</div>
 
 							<!-- Motivo - Container Pattern -->
 							<div>
-								<label for="motivoBloqueo" class={labelClass}>Motivo del Bloqueo</label>
-								<div
-									class="w-full bg-black/20 border border-white/10 rounded-lg transition-all outline-none focus-within:!border-blue-500/50 focus-within:!ring-1 focus-within:!ring-blue-500/20 {getFieldStateClass(
-										'motivoBloqueo'
-									)
-										? '!border-red-500/50'
-										: ''}"
-								>
+								<label for="motivoBloqueo" class="form-label">Motivo del Bloqueo</label>
+								<div class="w-full">
 									<textarea
 										id="motivoBloqueo"
 										name="motivoBloqueo"
 										bind:value={$form.motivoBloqueo}
 										disabled={loading}
-										class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none !outline-none !border-none !ring-0 !shadow-none appearance-none h-[80px]"
+										class="form-textarea w-full h-[80px] {getFieldStateClass('motivoBloqueo')}"
 										rows="3"
 										placeholder="Describa el motivo del bloqueo..."
 										{...$constraints.motivoBloqueo}
 									></textarea>
 								</div>
-								{#if $errors.motivoBloqueo}<p class={errorClass}>{$errors.motivoBloqueo}</p>{/if}
+								{#if $errors.motivoBloqueo}<p class="form-error">{$errors.motivoBloqueo}</p>{/if}
 							</div>
 						</div>
 					</div>
@@ -614,20 +604,12 @@
 					class="flex-none flex items-center justify-end gap-3 px-5 py-4 border-t border-surface bg-surface-1"
 				>
 					<!-- Cancelar -->
-					<button
-						type="button"
-						onclick={onClose}
-						class="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-xs"
-					>
+					<button type="button" onclick={onClose} class="form-btn-outline-secondary">
 						Cancelar
 					</button>
 
 					<!-- Guardar -->
-					<button
-						type="submit"
-						disabled={loading}
-						class="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-red-500 hover:text-red-500 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-					>
+					<button type="submit" disabled={loading} class="form-btn-outline-danger">
 						{loading ? 'Guardando...' : 'Bloquear'}
 					</button>
 				</div>
@@ -651,16 +633,16 @@
 				transition:fly={{ y: 10, duration: 200 }}
 			>
 				<div class="px-5 py-4">
-					<h3 class="text-sm font-semibold text-white mb-4">Nueva Empresa</h3>
+					<h3 class="text-sm font-semibold text-primary mb-4">Nueva Empresa</h3>
 					<div class="space-y-1">
-						<label for="newEmpresa" class={labelClass}>Nombre Comercial</label>
+						<label for="newEmpresa" class="form-label">Nombre Comercial</label>
 						<input
 							id="newEmpresa"
 							type="text"
 							bind:value={nuevaEmpresaNombre}
 							placeholder="Ej: Servicios Generales S.A."
 							disabled={creatingEmpresa}
-							class={inputClass}
+							class="form-input"
 							onkeydown={(e) => e.key === 'Enter' && handleCrearEmpresa()}
 						/>
 					</div>
@@ -670,7 +652,7 @@
 						type="button"
 						disabled={creatingEmpresa}
 						onclick={() => (showEmpresaModal = false)}
-						class="px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary transition-all duration-200 hover:border-white/60 hover:text-white/80"
+						class="form-btn-outline-secondary"
 					>
 						Cancelar
 					</button>
@@ -678,7 +660,7 @@
 						type="button"
 						disabled={creatingEmpresa || !nuevaEmpresaNombre.trim()}
 						onclick={handleCrearEmpresa}
-						class="px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary transition-all duration-200 hover:border-blue-500 hover:text-blue-500 disabled:opacity-50"
+						class="form-btn-outline-success"
 					>
 						{creatingEmpresa ? 'Guardando...' : 'Guardar'}
 					</button>
@@ -697,6 +679,3 @@
 		transition: background-color 5000s ease-in-out 0s;
 	}
 </style>
-
-
-

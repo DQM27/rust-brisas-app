@@ -415,16 +415,12 @@
 								<!-- Vehículo - Solo si tiene vehículos registrados -->
 								{#if tieneVehiculos}
 									<div class="space-y-1.5" transition:slide>
-										<label class="flex items-center gap-2 text-sm font-medium text-secondary">
+										<label class="form-label flex items-center gap-2">
 											<Car size={16} />
 											Vehículo
 											<span class="text-xs text-tertiary">(opcional)</span>
 										</label>
-										<select
-											class="w-full bg-surface-1 border border-surface rounded-md px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent"
-											bind:value={vehiculoId}
-											disabled={loading}
-										>
+										<select class="form-select w-full" bind:value={vehiculoId} disabled={loading}>
 											<option value={null}>Sin vehículo (caminando)</option>
 											{#each vehiculosDisponibles as v}
 												<option value={v.id}>
@@ -500,7 +496,7 @@
 												class="obs-container w-full bg-black/20 border border-white/10 rounded-lg focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all outline-none"
 											>
 												<textarea
-													class="w-full bg-transparent px-3 py-2 text-sm text-white placeholder:text-gray-500 resize-none focus:outline-none outline-none border-none appearance-none ring-0"
+													class="form-textarea w-full"
 													rows="2"
 													placeholder="Notas adicionales..."
 													bind:value={observaciones}
@@ -524,7 +520,7 @@
 					type="button"
 					onclick={handleClose}
 					disabled={loading}
-					class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all duration-200 border-surface text-secondary hover:border-white/60 hover:text-white/80 focus:outline-none disabled:opacity-50"
+					class="form-btn-outline-secondary"
 				>
 					Cancelar
 				</button>
@@ -533,7 +529,7 @@
 						type="button"
 						onclick={handleSubmit}
 						disabled={loading}
-						class="flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg border-2 transition-all duration-200 border-surface text-secondary hover:border-success hover:text-success focus:outline-none disabled:opacity-50 font-semibold"
+						class="form-btn-outline-success font-semibold"
 					>
 						{#if loading}
 							<span class="inline-block animate-spin mr-1">⏳</span>
@@ -560,10 +556,7 @@
 	}
 
 	.obs-container:focus-within {
-		border-color: rgba(59, 130, 246, 0.5) !important;
-		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+		border-color: var(--color-accent) !important;
+		box-shadow: 0 0 0 1px var(--color-accent-bg) !important;
 	}
 </style>
-
-
-

@@ -690,6 +690,30 @@
 	color: var(--color-text-primary);
 }
 
+.form-btn-outline-danger {
+	padding: 0.625rem 1.5rem;
+	border-radius: 0.5rem;
+	border: 2px solid var(--color-border-subtle);
+	color: var(--color-text-secondary);
+	font-weight: 500;
+	font-size: 0.875rem;
+	background-color: transparent;
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.form-btn-outline-danger:hover:not(:disabled) {
+	border-color: var(--color-danger);
+	color: var(--color-danger);
+}
+
+.form-btn-outline-danger:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
 /* ==========================================
    COMPONENT PATTERNS - MEJORADOS
    ========================================== */

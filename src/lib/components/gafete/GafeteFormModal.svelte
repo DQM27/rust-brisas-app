@@ -95,16 +95,10 @@
 	// Función helper para clases de validación
 	function getFieldStateClass(field: string) {
 		if (errors[field]) {
-			return '!border-red-500/50 !ring-1 !ring-red-500/20';
+			return 'is-error';
 		}
 		return '';
 	}
-
-	// Clases estándar según ui-patterns.md
-	const inputClass =
-		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all';
-	const labelClass = 'block text-xs font-medium text-secondary mb-1';
-	const errorClass = 'text-xs text-red-500 mt-0.5';
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (!show || loading) return;
@@ -154,8 +148,8 @@
 				<div class="bg-surface-1 rounded-lg border border-surface p-6 space-y-4">
 					<!-- Número de Gafete -->
 					<div>
-						<label for="numero" class={labelClass}>
-							Número de Gafete <span class="text-red-500">*</span>
+						<label for="numero" class="form-label">
+							Número de Gafete <span class="text-error">*</span>
 						</label>
 						<input
 							type="number"
@@ -163,25 +157,25 @@
 							name="numero"
 							bind:value={numero}
 							disabled={isEditMode || loading}
-							class="{inputClass} {getFieldStateClass('numero')}"
+							class="form-input {getFieldStateClass('numero')}"
 							placeholder="Ej: 101"
 							min="1"
 							step="1"
 						/>
 						{#if isEditMode}
-							<p class="mt-1 text-xs text-gray-500">
+							<p class="mt-1 text-xs text-tertiary">
 								El número no se puede cambiar una vez creado.
 							</p>
 						{/if}
 						{#if errors.numero}
-							<p class={errorClass}>{errors.numero}</p>
+							<p class="form-error">{errors.numero}</p>
 						{/if}
 					</div>
 
 					<!-- Tipo de Gafete (Custom Dropdown) -->
 					<div class="relative">
-						<label class={labelClass} for="tipo-gafete">
-							Tipo <span class="text-red-500">*</span>
+						<label class="form-label" for="tipo-gafete">
+							Tipo <span class="text-error">*</span>
 						</label>
 
 						<!-- Trigger -->
@@ -191,10 +185,12 @@
 							bind:this={triggerButton}
 							onclick={handleTipoDropdownToggle}
 							disabled={loading}
-							class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left {getFieldStateClass(
+							class="form-select flex items-center justify-between cursor-pointer w-full text-left {getFieldStateClass(
 								'tipo'
 							)}"
-							class:!border-blue-500={showTipoDropdown}
+							class:border-accent={showTipoDropdown}
+							class:ring-1={showTipoDropdown}
+							class:ring-accent-subtle={showTipoDropdown}
 						>
 							<span class="truncate">{tipoLabel}</span>
 							<ChevronDown size={16} class="text-secondary" />
@@ -211,7 +207,7 @@
 							<!-- Menú Fixed -->
 							<div
 								style="top: {dropdownTop}px; left: {dropdownLeft}px; width: {dropdownWidth}px;"
-								class="fixed z-[70] bg-[#1c2128] border border-white/10 rounded-lg shadow-xl max-h-[200px] overflow-y-auto p-1"
+								class="fixed z-[70] form-dropdown p-1"
 								transition:fly={{ y: -5, duration: 200 }}
 							>
 								{#each tipoOptions as option}
@@ -221,11 +217,11 @@
 											tipo = option.value;
 											showTipoDropdown = false;
 										}}
-										class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+										class="form-dropdown-item flex items-center justify-between group"
 									>
 										<span>{option.label}</span>
 										{#if tipo === option.value}
-											<Check size={14} class="text-white" />
+											<Check size={14} class="text-primary" />
 										{/if}
 									</button>
 								{/each}
@@ -233,7 +229,7 @@
 						{/if}
 
 						{#if errors.tipo}
-							<p class={errorClass}>{errors.tipo}</p>
+							<p class="form-error">{errors.tipo}</p>
 						{/if}
 					</div>
 				</div>
@@ -248,7 +244,7 @@
 					type="button"
 					onclick={onClose}
 					disabled={loading}
-					class="px-4 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-white/60 hover:text-white/80 text-sm disabled:opacity-50"
+					class="form-btn-outline-secondary"
 				>
 					Cancelar
 				</button>
@@ -258,7 +254,7 @@
 					type="submit"
 					disabled={loading || !numero.trim()}
 					onclick={handleSubmit}
-					class="px-6 py-2.5 rounded-lg border-2 border-surface text-secondary font-medium transition-all duration-200 hover:border-success hover:text-success text-sm disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+					class="form-btn-outline-success inline-flex items-center gap-2"
 				>
 					{#if loading}
 						<svg
@@ -292,17 +288,5 @@
 {/if}
 
 <style>
-	/* Autofill Fix (Evita fondo blanco de Chrome) */
-	input:-webkit-autofill {
-		-webkit-text-fill-color: white !important;
-		-webkit-box-shadow: 0 0 0px 1000px #1c2128 inset !important;
-		transition: background-color 5000s ease-in-out 0s;
-	}
-
-	/* Focus Override Global */
-	input:focus {
-		border-color: rgba(59, 130, 246, 0.5) !important;
-		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
-		outline: none !important;
-	}
+	/* Autofill Fix handled globally in theme.css or reset.css, removing duplicate here */
 </style>
