@@ -26,6 +26,7 @@ pub mod proveedor_service;
 pub mod search_service;
 
 pub mod user_service;
+pub mod user_shortcuts_service;
 pub mod vehiculo_service;
 pub mod visitante_service;
 

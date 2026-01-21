@@ -31,6 +31,7 @@ pub mod role_commands;
 
 pub mod search_commands;
 pub mod security_commands;
+pub mod shortcuts_commands;
 
 pub mod user_commands;
 pub mod validation_commands;

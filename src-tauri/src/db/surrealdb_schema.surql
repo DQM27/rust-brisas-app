@@ -351,3 +351,19 @@ DEFINE FIELD min_role ON TABLE module TYPE option<record<role>>;
 DEFINE FIELD created_at ON TABLE module TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE module TYPE datetime VALUE time::now();
 DEFINE INDEX idx_module_key ON module COLUMNS key UNIQUE;
+
+-- =========================================================
+-- 8. PREFERENCIAS DE USUARIO (Shortcuts, Settings)
+-- =========================================================
+
+-- =========================================================
+-- Tabla USER_SHORTCUTS (Atajos personalizados)
+-- =========================================================
+DEFINE TABLE user_shortcuts SCHEMAFULL;
+DEFINE FIELD user ON TABLE user_shortcuts TYPE record<user>;
+DEFINE FIELD shortcut_id ON TABLE user_shortcuts TYPE string ASSERT string::len($value) >= 1 AND string::len($value) <= 50;
+DEFINE FIELD custom_keys ON TABLE user_shortcuts TYPE string ASSERT string::len($value) >= 1 AND string::len($value) <= 50;
+DEFINE FIELD enabled ON TABLE user_shortcuts TYPE bool DEFAULT true;
+DEFINE FIELD created_at ON TABLE user_shortcuts TYPE datetime DEFAULT time::now();
+DEFINE FIELD updated_at ON TABLE user_shortcuts TYPE datetime VALUE time::now();
+DEFINE INDEX idx_user_shortcut_unique ON user_shortcuts COLUMNS user, shortcut_id UNIQUE;

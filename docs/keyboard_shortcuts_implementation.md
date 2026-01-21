@@ -1,7 +1,7 @@
 # Plan de Implementación: Sistema de Atajos de Teclado
 
 > **Fecha**: 2026-01-20  
-> **Estado**: ✅ Implementado  
+> **Estado**: ✅ Implementado Completamente  
 > **Prioridad**: Alta
 > **Librería**: hotkeys-js (migrado desde tinykeys)
 
@@ -13,51 +13,45 @@ Refactorización completa del sistema de atajos de teclado para hacerlo más rob
 
 ---
 
-## Problema Actual
+## ✅ Implementación Completada
 
-- ❌ No permite cambiar atajos dinámicamente (tinykeys requiere reinicializar todo)
-- ❌ No detecta colisiones entre atajos
-- ❌ Scopes manuales (lógica que ya existe en otras librerías)
-- ❌ Categorización básica
-- ❌ Handler de modales no centralizado
+### Backend (Rust)
+
+| Archivo | Descripción |
+|---------|-------------|
+| `src-tauri/src/db/surrealdb_schema.surql` | Tabla `user_shortcuts` agregada |
+| `src-tauri/src/models/user_shortcuts.rs` | Tipos de respuesta |
+| `src-tauri/src/services/user_shortcuts_service.rs` | CRUD en SurrealDB |
+| `src-tauri/src/commands/shortcuts_commands.rs` | Comandos Tauri |
+
+### Frontend (Svelte)
+
+| Archivo | Descripción |
+|---------|-------------|
+| `src/lib/shortcuts/` | Sistema completo |
+| `src/lib/shortcuts/userShortcutsService.ts` | Cliente del backend |
+| `src/lib/components/settings/ShortcutsSettingsPanel.svelte` | UI de configuración |
+| `src/lib/components/modals/ShortcutConfigModal.svelte` | Modal alternativo |
+
+### Acceso
+
+- **Menu Configuración** → "Atajos de Teclado" → Abre pestaña de configuración
+- Visible para **todos los usuarios**
 
 ---
 
-## Análisis: Tinykeys vs Hotkeys-js
+## Características Implementadas
 
-| Característica | Tinykeys (actual) | Hotkeys-js (propuesto) |
-|----------------|-------------------|------------------------|
-| Tamaño | ~650B | ~2.5KB |
-| Cambiar atajos dinámicamente | ❌ Requiere reinicializar | ✅ `unbind()` + `hotkeys()` |
-| Detectar colisiones | ❌ No soportado | ✅ `getAllKeyCodes()` |
-| Scopes/Contexts | ❌ Manual | ✅ Built-in |
-| Unbind individual | ❌ No soportado | ✅ Soportado |
-| Filtrar inputs | ❌ Manual | ✅ `hotkeys.filter` |
-| Trigger programático | ❌ No | ✅ `hotkeys.trigger()` |
-
-**Recomendación**: Migrar a hotkeys-js.
-
----
-
-## Personalización por Usuario
-
-### Arquitectura
-
-```
-SurrealDB (user_shortcuts) → Rust Backend → Frontend → hotkeys-js
-```
-
-### Tabla en SurrealDB
-
-```surql
-DEFINE TABLE user_shortcuts SCHEMAFULL;
-DEFINE FIELD user_id ON user_shortcuts TYPE record<users>;
-DEFINE FIELD shortcut_id ON user_shortcuts TYPE string;
-DEFINE FIELD custom_keys ON user_shortcuts TYPE string;
-DEFINE FIELD enabled ON user_shortcuts TYPE bool DEFAULT true;
-DEFINE FIELD created_at ON user_shortcuts TYPE datetime DEFAULT time::now();
-DEFINE INDEX unique_user_shortcut ON user_shortcuts COLUMNS user_id, shortcut_id UNIQUE;
-```
+| Característica | Estado |
+|----------------|--------|
+| Migración a hotkeys-js | ✅ |
+| Sistema de categorías | ✅ |
+| Detección de colisiones | ✅ |
+| Persistencia en SurrealDB | ✅ |
+| UI de configuración tipo Roles | ✅ |
+| Recording de teclas en vivo | ✅ |
+| Restaurar atajos individuales | ✅ |
+| Restaurar todos los atajos | ✅ |
 
 ---
 
@@ -102,7 +96,7 @@ DEFINE INDEX unique_user_shortcut ON user_shortcuts COLUMNS user_id, shortcut_id
 
 ---
 
-## Estructura de Archivos Propuesta
+## Estructura de Archivos
 
 ```
 src/lib/
@@ -110,47 +104,32 @@ src/lib/
 │   ├── index.ts              # Exports públicos
 │   ├── types.ts              # Tipos centralizados
 │   ├── categories.ts         # Definición de categorías
-│   ├── definitions/
-│   │   ├── system.ts         # Atajos de sistema
-│   │   ├── spotlight.ts      # Atajos de spotlight
-│   │   ├── modules.ts        # Atajos de listas/módulos
-│   │   ├── modals.ts         # Atajos de modales
-│   │   ├── grids.ts          # Atajos de grids
-│   │   └── ingresos.ts       # Atajos específicos de ingresos
-│   ├── registry.ts           # Registro central
-│   └── handlers/
-│       ├── modalHandler.ts   # Handler centralizado para modales
-│       └── gridHandler.ts    # Handler centralizado para grids
-├── stores/
-│   └── shortcuts.ts          # Store unificado
-└── actions/
-    └── shortcutScope.ts      # Svelte action para scopes
+│   ├── commands.ts           # Stores de comandos
+│   ├── registry.ts           # Registro central (hotkeys-js)
+│   ├── userShortcutsService.ts # Cliente backend
+│   └── definitions/
+│       ├── index.ts          # Barrel export
+│       ├── system.ts         # Atajos de sistema
+│       ├── spotlight.ts      # Atajos de spotlight
+│       ├── modules.ts        # Atajos de listas/módulos
+│       ├── modals.ts         # Atajos de modales
+│       ├── grids.ts          # Atajos de grids
+│       └── ingresos.ts       # Atajos específicos
+
+src-tauri/src/
+├── models/user_shortcuts.rs
+├── services/user_shortcuts_service.rs
+└── commands/shortcuts_commands.rs
 ```
 
 ---
 
-## Archivos a Modificar
+## Comandos Tauri
 
-| Acción | Archivo |
-|--------|---------|
-| [NEW] | `src/lib/shortcuts/index.ts` |
-| [NEW] | `src/lib/shortcuts/types.ts` |
-| [NEW] | `src/lib/shortcuts/categories.ts` |
-| [NEW] | `src/lib/shortcuts/definitions/*.ts` |
-| [NEW] | `src/lib/shortcuts/registry.ts` |
-| [NEW] | `src/lib/shortcuts/handlers/*.ts` |
-| [MODIFY] | `src/lib/components/layout/KeyboardShortcuts.svelte` |
-| [MODIFY] | `src/lib/components/modals/ShortcutHelpModal.svelte` |
-| [DELETE] | `src/lib/stores/keyboardCommands.ts` |
-| [DELETE] | `src/lib/types/shortcuts.ts` |
-| [DELETE] | `src/lib/logic/shortcuts/` |
+| Comando | Descripción |
+|---------|-------------|
+| `get_user_shortcuts` | Obtiene atajos personalizados del usuario actual |
+| `save_user_shortcut` | Guarda/actualiza un atajo personalizado |
+| `delete_user_shortcut` | Elimina un atajo (vuelve al default) |
+| `reset_user_shortcuts` | Resetea todos los atajos del usuario |
 
----
-
-## Verificación
-
-1. **Atajos Globales**: Ctrl+K, Ctrl+T, Shift+?
-2. **Atajos de Lista**: Ctrl+N, Ctrl+R, Delete
-3. **Atajos de Modal**: Escape, Ctrl+S
-4. **UI de Ayuda**: Verificar categorías y agrupación
-5. **Sin Conflictos**: Escape en inputs, Ctrl+F en grids

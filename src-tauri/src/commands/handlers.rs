@@ -231,6 +231,13 @@ macro_rules! register_handlers {
             // COMANDOS DE VALIDACIÓN
             // ==========================================
             commands::validation_commands::check_unique,
+            // ==========================================
+            // COMANDOS DE ATAJOS DE TECLADO
+            // ==========================================
+            commands::shortcuts_commands::get_user_shortcuts,
+            commands::shortcuts_commands::save_user_shortcut,
+            commands::shortcuts_commands::delete_user_shortcut,
+            commands::shortcuts_commands::reset_user_shortcuts,
         ]
     };
 }

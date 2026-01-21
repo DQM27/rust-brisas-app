@@ -98,6 +98,14 @@
 				</button>
 			{/if}
 
+			<!-- Atajos de Teclado - visible para todos -->
+			<button
+				class="settings-menu-item"
+				onclick={() => handleAction(() => openView('shortcuts-settings', 'Atajos de Teclado'))}
+			>
+				Atajos de Teclado
+			</button>
+
 			<!-- Grupo 2: Datos -->
 			{#if currentUser && can(currentUser, 'VIEW_SETTINGS_BACKUP')}
 				<button
@@ -204,6 +212,3 @@
 		margin: 4px 0;
 	}
 </style>
-
-
-

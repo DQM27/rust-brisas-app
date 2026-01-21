@@ -22,6 +22,7 @@ import SessionSettingsPanel from '$lib/components/settings/SessionSettingsPanel.
 import ExportSettingsPanel from '$lib/components/settings/ExportSettingsPanel.svelte';
 import TrashSettingsPanel from '$lib/components/settings/TrashSettingsPanel.svelte';
 import RolesSettingsPanel from '$lib/components/settings/RolesSettingsPanel.svelte';
+import ShortcutsSettingsPanel from '$lib/components/settings/ShortcutsSettingsPanel.svelte';
 import ReportesListView from '$lib/components/settings/ReportesListView.svelte';
 import AboutPanel from '$lib/components/settings/AboutPanel.svelte';
 import SpotlightSettingsPanel from '$lib/components/settings/SpotlightSettingsPanel.svelte';
@@ -62,6 +63,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
 	'export-settings': ExportSettingsPanel,
 	'trash-settings': TrashSettingsPanel,
 	'roles-settings': RolesSettingsPanel,
+	'shortcuts-settings': ShortcutsSettingsPanel,
 	'reportes-list': ReportesListView,
 	about: AboutPanel,
 	'spotlight-settings': SpotlightSettingsPanel as any,

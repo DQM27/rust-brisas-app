@@ -312,6 +312,15 @@ export const ACTION_DEFINITIONS: SpotlightItemDefinition[] = [
         permission: 'VIEW_SETTINGS_GENERAL'
     },
     {
+        id: 'settings-shortcuts',
+        label: 'Configurar Atajos',
+        description: 'Personalizar atajos de teclado',
+        icon: Keyboard,
+        category: 'action',
+        subCategory: 'settings',
+        keywords: ['atajos', 'teclado', 'shortcuts', 'teclas', 'personalizar', 'configurar'],
+    },
+    {
         id: 'trash-settings',
         label: 'Papelera',
         description: 'Gestión de elementos eliminados',
@@ -382,6 +391,7 @@ export const MODULE_COMPONENT_MAP: Record<string, { componentKey: string; title:
     'settings-visual': { componentKey: 'visual-settings', title: 'Ajustes Gráficos' },
     'settings-session': { componentKey: 'session-settings', title: 'Gestión de Sesión' },
     'settings-roles': { componentKey: 'roles-settings', title: 'Roles y Permisos' },
+    'settings-shortcuts': { componentKey: 'shortcuts-settings', title: 'Atajos de Teclado' },
     'settings-export': { componentKey: 'export-settings', title: 'Configuración de Exportación' },
     'settings-backup': { componentKey: 'backup-settings', title: 'Copias de Seguridad' },
     'settings-spotlight': { componentKey: 'spotlight-settings', title: 'Ajustes de Spotlight' },
