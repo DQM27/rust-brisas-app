@@ -31,6 +31,18 @@ impl From<DbUserShortcut> for UserShortcutResponse {
     }
 }
 
+/// Extrae el ID limpio de un user_id que puede venir como "user:⟨uuid⟩" o solo "uuid"
+fn extract_user_id(user_id: &str) -> String {
+    // Si viene como "user:⟨uuid⟩" extraemos solo el uuid
+    if user_id.starts_with("user:") {
+        let id = user_id.trim_start_matches("user:");
+        // Remover los caracteres unicode ⟨ y ⟩
+        id.trim_start_matches('⟨').trim_end_matches('⟩').to_string()
+    } else {
+        user_id.to_string()
+    }
+}
+
 pub struct UserShortcutService;
 
 impl UserShortcutService {
@@ -39,10 +51,11 @@ impl UserShortcutService {
         user_id: &str,
     ) -> Result<UserShortcutsListResponse, SurrealDbError> {
         let db = get_db().await?;
+        let clean_id = extract_user_id(user_id);
 
         let results: Vec<DbUserShortcut> = db
-            .query("SELECT * FROM user_shortcuts WHERE user = $user_id")
-            .bind(("user_id", user_id.to_string()))
+            .query("SELECT * FROM user_shortcuts WHERE user = type::thing('user', $user_id)")
+            .bind(("user_id", clean_id))
             .await?
             .take(0)?;
 
@@ -57,11 +70,12 @@ impl UserShortcutService {
         input: UserShortcutInput,
     ) -> Result<UserShortcutResponse, SurrealDbError> {
         let db = get_db().await?;
+        let clean_id = extract_user_id(user_id);
 
         // Verificar si ya existe
         let existing: Option<DbUserShortcut> = db
-            .query("SELECT * FROM user_shortcuts WHERE user = $user_id AND shortcut_id = $shortcut_id LIMIT 1")
-            .bind(("user_id", user_id.to_string()))
+            .query("SELECT * FROM user_shortcuts WHERE user = type::thing('user', $user_id) AND shortcut_id = $shortcut_id LIMIT 1")
+            .bind(("user_id", clean_id.clone()))
             .bind(("shortcut_id", input.shortcut_id.clone()))
             .await?
             .take(0)?;
@@ -86,14 +100,14 @@ impl UserShortcutService {
                 .query(
                     r#"
                 CREATE user_shortcuts SET 
-                    user = $user_id,
+                    user = type::thing('user', $user_id),
                     shortcut_id = $shortcut_id,
                     custom_keys = $custom_keys,
                     enabled = $enabled
                 RETURN AFTER
                 "#,
                 )
-                .bind(("user_id", user_id.to_string()))
+                .bind(("user_id", clean_id))
                 .bind(("shortcut_id", input.shortcut_id.clone()))
                 .bind(("custom_keys", input.custom_keys.clone()))
                 .bind(("enabled", input.enabled))
@@ -111,11 +125,12 @@ impl UserShortcutService {
     /// Elimina un atajo personalizado (vuelve al default)
     pub async fn delete_shortcut(user_id: &str, shortcut_id: &str) -> Result<(), SurrealDbError> {
         let db = get_db().await?;
+        let clean_id = extract_user_id(user_id);
 
         info!("🗑️ Eliminando atajo personalizado '{}' para usuario '{}'", shortcut_id, user_id);
 
-        db.query("DELETE FROM user_shortcuts WHERE user = $user_id AND shortcut_id = $shortcut_id")
-            .bind(("user_id", user_id.to_string()))
+        db.query("DELETE FROM user_shortcuts WHERE user = type::thing('user', $user_id) AND shortcut_id = $shortcut_id")
+            .bind(("user_id", clean_id))
             .bind(("shortcut_id", shortcut_id.to_string()))
             .await?;
 
@@ -125,11 +140,12 @@ impl UserShortcutService {
     /// Elimina todas las personalizaciones de un usuario (reset total)
     pub async fn reset_all_shortcuts(user_id: &str) -> Result<(), SurrealDbError> {
         let db = get_db().await?;
+        let clean_id = extract_user_id(user_id);
 
         info!("🔄 Reseteando todos los atajos personalizados para usuario '{}'", user_id);
 
-        db.query("DELETE FROM user_shortcuts WHERE user = $user_id")
-            .bind(("user_id", user_id.to_string()))
+        db.query("DELETE FROM user_shortcuts WHERE user = type::thing('user', $user_id)")
+            .bind(("user_id", clean_id))
             .await?;
 
         Ok(())
