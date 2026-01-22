@@ -122,11 +122,14 @@
 						v.vehiculos && v.vehiculos.length > 0
 							? v.vehiculos.map((vh: any) => ({
 									_parent: v,
+									_isChild: true,
 									id: vh.id,
 									cedula: '',
-									// Repurposing fields for the tree view
-									nombre: `${vh.tipoVehiculoDisplay} - ${vh.placa} ${vh.marca || ''}`,
-									empresaNombre: vh.color || '',
+									nombre: '', // Empty to align with parent
+									apellido: '',
+									empresaNombre: '',
+									vehiculoTipo: vh.tipoVehiculoDisplay,
+									vehiculoPlaca: vh.placa,
 									hasVehicle: null,
 									createdAt: vh.createdAt
 								}))
@@ -346,7 +349,7 @@
 					dataTree: true,
 					dataTreeChildField: '_children',
 					dataTreeStartExpanded: false,
-					dataTreeElementColumn: 'nombre',
+					dataTreeElementColumn: 'hasVehicle',
 					placeholder: 'No hay visitantes registrados'
 				}}
 			/>

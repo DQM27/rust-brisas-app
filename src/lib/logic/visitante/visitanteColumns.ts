@@ -13,17 +13,37 @@ export const getVisitanteColumns = (): ColumnDefinition[] => {
 			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
 		},
 		{
-			title: 'Nombre',
+			title: 'Nombre Completo',
 			field: 'nombre',
 			width: 250,
 			headerFilter: 'input',
 			formatter: (cell) => {
 				const data = cell.getData() as any;
-				// Si no hay cédula, es una fila de vehículo (hijo)
-				if (!data.cedula) {
-					return `<span class="text-blue-400 font-medium"><i class="lucide-car mr-2"></i>${data.nombre}</span>`;
+				// Si es un hijo (vehículo), no mostramos el nombre del visitante
+				if (data._isChild) {
+					return '';
 				}
 				return `<span style="font-weight:600; color:#e2e8f0">${data.nombre} ${data.apellido || ''}</span>`;
+			}
+		},
+		{
+			title: 'Tipo',
+			field: 'vehiculoTipo',
+			width: 120,
+			formatter: (cell) => {
+				const data = cell.getData() as any;
+				if (!data.vehiculoTipo) return '';
+				return `<span class="text-blue-400"><i class="lucide-car mr-2"></i>${data.vehiculoTipo}</span>`;
+			}
+		},
+		{
+			title: 'Placa',
+			field: 'vehiculoPlaca',
+			width: 120,
+			formatter: (cell) => {
+				const data = cell.getData() as any;
+				if (!data.vehiculoPlaca) return '';
+				return `<span class="font-mono font-medium text-blue-300 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">${data.vehiculoPlaca}</span>`;
 			}
 		},
 		{
@@ -39,6 +59,8 @@ export const getVisitanteColumns = (): ColumnDefinition[] => {
 			width: 100,
 			hozAlign: 'center',
 			formatter: (cell) => {
+				const data = cell.getData() as any;
+				if (data._isChild) return '';
 				return cell.getValue()
 					? createGridBadge({ text: 'Sí', color: 'blue' })
 					: createGridBadge({ text: 'No', color: 'gray' });

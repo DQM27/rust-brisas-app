@@ -13,6 +13,8 @@ export interface VisitanteResponse {
 	createdAt: string;
 	updatedAt: string;
 	deletedAt?: string;
+	vehiculoTipo?: string;
+	vehiculoPlaca?: string;
 	vehiculos?: VehiculoResponse[];
 }
 

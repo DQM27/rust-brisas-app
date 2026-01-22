@@ -248,6 +248,7 @@ impl From<Vehiculo> for VehiculoResponse {
 
 impl VehiculoResponse {
     pub fn from_fetched(v: VehiculoFetched) -> Self {
+        use crate::domain::common::datetime_to_iso;
         let marca_str = v.marca.clone().unwrap_or_else(|| "N/A".to_string());
         let modelo_str = v.modelo.clone().unwrap_or_else(|| "N/A".to_string());
         let color_str = v.color.clone().unwrap_or_else(|| "N/A".to_string());
@@ -280,8 +281,8 @@ impl VehiculoResponse {
             color: v.color,
             descripcion_completa,
             is_active: v.is_active,
-            created_at: v.created_at.to_string(),
-            updated_at: v.updated_at.to_string(),
+            created_at: datetime_to_iso(&v.created_at),
+            updated_at: datetime_to_iso(&v.updated_at),
         };
 
         match v.propietario {
@@ -309,6 +310,45 @@ impl VehiculoResponse {
         }
 
         res
+    }
+
+    pub fn from_lite_manual(v: Vehiculo) -> Self {
+        use crate::domain::common::datetime_to_iso;
+        let marca_str = v.marca.clone().unwrap_or_else(|| "N/A".to_string());
+        let modelo_str = v.modelo.clone().unwrap_or_else(|| "N/A".to_string());
+        let color_str = v.color.clone().unwrap_or_else(|| "N/A".to_string());
+
+        let descripcion_completa = if v.marca.is_some() || v.modelo.is_some() {
+            format!(
+                "{} - Placa {} - {} {} ({})",
+                v.tipo_vehiculo.display(),
+                v.placa,
+                marca_str,
+                modelo_str,
+                color_str
+            )
+        } else {
+            format!("{} - Placa {}", v.tipo_vehiculo.display(), v.placa)
+        };
+
+        Self {
+            id: v.id.to_string(),
+            propietario_id: v.propietario.to_string(),
+            propietario_nombre: String::new(),
+            propietario_cedula: String::new(),
+            propietario_tipo: v.propietario.table().to_string(),
+            empresa_nombre: String::new(),
+            tipo_vehiculo: v.tipo_vehiculo.clone(),
+            tipo_vehiculo_display: v.tipo_vehiculo.display().to_string(),
+            placa: v.placa,
+            marca: v.marca,
+            modelo: v.modelo,
+            color: v.color,
+            descripcion_completa,
+            is_active: v.is_active,
+            created_at: datetime_to_iso(&v.created_at),
+            updated_at: datetime_to_iso(&v.updated_at),
+        }
     }
 }
 

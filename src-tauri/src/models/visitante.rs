@@ -131,6 +131,8 @@ pub struct VisitanteResponse {
     pub created_at: String,
     pub updated_at: String,
     pub deleted_at: Option<String>,
+    pub vehiculo_tipo: Option<String>,
+    pub vehiculo_placa: Option<String>,
     pub vehiculos: Option<Vec<crate::models::vehiculo::VehiculoResponse>>,
     /// Mensaje de advertencia si hubo un error parcial durante la operación.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -153,6 +155,8 @@ impl From<Visitante> for VisitanteResponse {
             created_at: datetime_to_iso(&v.created_at),
             updated_at: datetime_to_iso(&v.updated_at),
             deleted_at: v.deleted_at.map(|d| datetime_to_iso(&d)),
+            vehiculo_tipo: None,
+            vehiculo_placa: None,
             vehiculos: None,
             warning: None,
         }
@@ -178,10 +182,12 @@ impl VisitanteResponse {
             created_at: datetime_to_iso(&v.created_at),
             updated_at: datetime_to_iso(&v.updated_at),
             deleted_at: v.deleted_at.map(|d| datetime_to_iso(&d)),
+            vehiculo_tipo: None,
+            vehiculo_placa: None,
             vehiculos: Some(
                 v.vehiculos
                     .into_iter()
-                    .map(crate::models::vehiculo::VehiculoResponse::from)
+                    .map(crate::models::vehiculo::VehiculoResponse::from_lite_manual)
                     .collect(),
             ),
             warning: None,
