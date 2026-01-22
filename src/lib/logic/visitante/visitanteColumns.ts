@@ -15,11 +15,15 @@ export const getVisitanteColumns = (): ColumnDefinition[] => {
 		{
 			title: 'Nombre',
 			field: 'nombre',
-			width: 200,
+			width: 250,
 			headerFilter: 'input',
 			formatter: (cell) => {
-				const data = cell.getData() as VisitanteResponse;
-				return `<span style="font-weight:500; color:#e2e8f0">${data.nombre} ${data.apellido || ''}</span>`;
+				const data = cell.getData() as any;
+				// Si no hay cédula, es una fila de vehículo (hijo)
+				if (!data.cedula) {
+					return `<span class="text-blue-400 font-medium"><i class="lucide-car mr-2"></i>${data.nombre}</span>`;
+				}
+				return `<span style="font-weight:600; color:#e2e8f0">${data.nombre} ${data.apellido || ''}</span>`;
 			}
 		},
 		{
@@ -51,9 +55,7 @@ export const getVisitanteColumns = (): ColumnDefinition[] => {
 				return new Date(val).toLocaleString('es-ES', {
 					day: '2-digit',
 					month: '2-digit',
-					year: 'numeric',
-					hour: '2-digit',
-					minute: '2-digit'
+					year: 'numeric'
 				});
 			}
 		}

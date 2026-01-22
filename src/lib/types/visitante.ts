@@ -1,3 +1,5 @@
+import type { VehiculoResponse } from './vehiculo';
+
 export interface VisitanteResponse {
 	id: string;
 	cedula: string;
@@ -11,6 +13,7 @@ export interface VisitanteResponse {
 	createdAt: string;
 	updatedAt: string;
 	deletedAt?: string;
+	vehiculos?: VehiculoResponse[];
 }
 
 export interface CreateVisitanteInput {

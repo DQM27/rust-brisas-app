@@ -40,6 +40,7 @@ pub struct VisitanteFetched {
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
     pub empresa: Option<crate::models::empresa::Empresa>,
+    pub vehiculos: Vec<crate::models::vehiculo::Vehiculo>,
     pub has_vehicle: bool,
     pub created_at: Datetime,
     pub updated_at: Datetime,
@@ -124,12 +125,13 @@ pub struct VisitanteResponse {
     pub apellido: String,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
-    pub empresa: String, // Nombre de la empresa para display
+    pub empresa_nombre: String, // Nombre de la empresa para display
     pub empresa_id: Option<String>,
     pub has_vehicle: bool,
     pub created_at: String,
     pub updated_at: String,
     pub deleted_at: Option<String>,
+    pub vehiculos: Option<Vec<crate::models::vehiculo::VehiculoResponse>>,
     /// Mensaje de advertencia si hubo un error parcial durante la operación.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub warning: Option<String>,
@@ -137,6 +139,7 @@ pub struct VisitanteResponse {
 
 impl From<Visitante> for VisitanteResponse {
     fn from(v: Visitante) -> Self {
+        use crate::domain::common::datetime_to_iso;
         Self {
             id: v.id.to_string(),
             cedula: v.cedula,
@@ -144,12 +147,13 @@ impl From<Visitante> for VisitanteResponse {
             apellido: v.apellido,
             segundo_nombre: v.segundo_nombre,
             segundo_apellido: v.segundo_apellido,
-            empresa: "Desconocida".to_string(), // Se rellena en capa superior o servicio
+            empresa_nombre: "Desconocida".to_string(), // Se rellena en capa superior o servicio
             empresa_id: v.empresa.map(|t| t.to_string()),
             has_vehicle: v.has_vehicle,
-            created_at: v.created_at.to_string(),
-            updated_at: v.updated_at.to_string(),
-            deleted_at: v.deleted_at.map(|d| d.to_string()),
+            created_at: datetime_to_iso(&v.created_at),
+            updated_at: datetime_to_iso(&v.updated_at),
+            deleted_at: v.deleted_at.map(|d| datetime_to_iso(&d)),
+            vehiculos: None,
             warning: None,
         }
     }
@@ -157,6 +161,7 @@ impl From<Visitante> for VisitanteResponse {
 
 impl VisitanteResponse {
     pub fn from_fetched(v: VisitanteFetched) -> Self {
+        use crate::domain::common::datetime_to_iso;
         Self {
             id: v.id.to_string(),
             cedula: v.cedula,
@@ -164,15 +169,21 @@ impl VisitanteResponse {
             apellido: v.apellido,
             segundo_nombre: v.segundo_nombre,
             segundo_apellido: v.segundo_apellido,
-            empresa: v
+            empresa_nombre: v
                 .empresa
                 .as_ref()
                 .map_or_else(|| "Sin Empresa".to_string(), |e| e.nombre.clone()),
             empresa_id: v.empresa.as_ref().map(|e| e.id.to_string()),
             has_vehicle: v.has_vehicle,
-            created_at: v.created_at.to_string(),
-            updated_at: v.updated_at.to_string(),
-            deleted_at: v.deleted_at.map(|d| d.to_string()),
+            created_at: datetime_to_iso(&v.created_at),
+            updated_at: datetime_to_iso(&v.updated_at),
+            deleted_at: v.deleted_at.map(|d| datetime_to_iso(&d)),
+            vehiculos: Some(
+                v.vehiculos
+                    .into_iter()
+                    .map(crate::models::vehiculo::VehiculoResponse::from)
+                    .collect(),
+            ),
             warning: None,
         }
     }

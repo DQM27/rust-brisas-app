@@ -54,7 +54,10 @@ pub async fn get_visitante_by_cedula(cedula: &str) -> Result<Option<Visitante>, 
 pub async fn find_by_id_fetched(id: &RecordId) -> Result<Option<VisitanteFetched>, SurrealDbError> {
     let db = get_db().await?;
     debug!("DB: Consultando visitante hidratado (FETCH) ID: {id}");
-    let mut result = db.query("SELECT * FROM $id FETCH empresa").bind(("id", id.clone())).await?;
+    let mut result = db
+        .query("SELECT *, (SELECT * FROM vehiculo WHERE propietario = $parent.id AND is_active = true) AS vehiculos FROM $id FETCH empresa")
+        .bind(("id", id.clone()))
+        .await?;
     Ok(result.take(0)?)
 }
 
@@ -66,7 +69,8 @@ pub async fn search_visitantes(term: &str) -> Result<Vec<VisitanteFetched>, Surr
     let mut result = db
         .query(
             r"
-            SELECT * FROM visitante 
+            SELECT *, (SELECT * FROM vehiculo WHERE propietario = $parent.id AND is_active = true) AS vehiculos 
+            FROM visitante 
             WHERE 
                 (string::uppercase(cedula) CONTAINS $term OR 
                 string::uppercase(nombre) CONTAINS $term OR 
@@ -121,7 +125,7 @@ pub async fn restore(id: &RecordId) -> Result<Visitante, SurrealDbError> {
 pub async fn find_archived() -> Result<Vec<VisitanteFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM visitante WHERE deleted_at IS NOT NONE ORDER BY deleted_at DESC FETCH empresa")
+        .query("SELECT *, (SELECT * FROM vehiculo WHERE propietario = $parent.id AND is_active = true) AS vehiculos FROM visitante WHERE deleted_at IS NOT NONE ORDER BY deleted_at DESC FETCH empresa")
         .await?;
     Ok(result.take(0)?)
 }
@@ -129,7 +133,7 @@ pub async fn find_archived() -> Result<Vec<VisitanteFetched>, SurrealDbError> {
 pub async fn find_all() -> Result<Vec<VisitanteFetched>, SurrealDbError> {
     let db = get_db().await?;
     let mut result = db
-        .query("SELECT * FROM visitante WHERE deleted_at IS NONE ORDER BY created_at DESC FETCH empresa")
+        .query("SELECT *, (SELECT * FROM vehiculo WHERE propietario = $parent.id AND is_active = true) AS vehiculos FROM visitante WHERE deleted_at IS NONE ORDER BY created_at DESC FETCH empresa")
         .await?;
     Ok(result.take(0)?)
 }

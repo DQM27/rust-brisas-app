@@ -116,7 +116,22 @@
 		try {
 			const res = await listVisitantes();
 			if (res.ok) {
-				visitantes = res.data;
+				visitantes = res.data.map((v: any) => ({
+					...v,
+					_children:
+						v.vehiculos && v.vehiculos.length > 0
+							? v.vehiculos.map((vh: any) => ({
+									_parent: v,
+									id: vh.id,
+									cedula: '',
+									// Repurposing fields for the tree view
+									nombre: `${vh.tipoVehiculoDisplay} - ${vh.placa} ${vh.marca || ''}`,
+									empresaNombre: vh.color || '',
+									hasVehicle: null,
+									createdAt: vh.createdAt
+								}))
+							: undefined
+				}));
 				if (gridWrapper) {
 					gridWrapper.replaceData(visitantes);
 				}
@@ -328,6 +343,10 @@
 				persistenceID="visitante-list-v1"
 				options={{
 					...defaultTabulatorOptions,
+					dataTree: true,
+					dataTreeChildField: '_children',
+					dataTreeStartExpanded: false,
+					dataTreeElementColumn: 'nombre',
 					placeholder: 'No hay visitantes registrados'
 				}}
 			/>
