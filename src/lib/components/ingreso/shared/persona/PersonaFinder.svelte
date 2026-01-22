@@ -6,7 +6,7 @@
 
 	// Props
 	interface Props {
-		scope?: 'all' | 'contratista' | 'proveedor' | 'visita';
+		scope?: 'all' | 'contratista' | 'proveedor' | 'visitante';
 		autoFocus?: boolean;
 	}
 
@@ -57,6 +57,3 @@
 		on:select={handleSelect}
 	/>
 </div>
-
-
-

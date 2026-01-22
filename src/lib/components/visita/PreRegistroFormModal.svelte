@@ -2,7 +2,6 @@
 	import { createEventDispatcher } from 'svelte';
 	import type { CreatePreRegistroInput } from '$lib/types/ingreso-nuevos';
 	import { preRegistroVisitaService } from '$lib/services/preRegistroVisitaService';
-	import { searchByType } from '$lib/api/searchService';
 	import type { SearchResult } from '$lib/types/search.types';
 	import { slide, fly } from 'svelte/transition';
 	import {
@@ -13,9 +12,10 @@
 		Car,
 		Loader2,
 		Check,
-		Search,
-		User as UserIcon
+		User as UserIcon,
+		RefreshCw
 	} from 'lucide-svelte';
+	import PersonaFinder from '$lib/components/ingreso/shared/persona/PersonaFinder.svelte';
 
 	export let isOpen = false;
 	const dispatch = createEventDispatcher();
@@ -39,9 +39,8 @@
 	let observaciones = '';
 
 	// Search logic
-	let searchResults: SearchResult[] = [];
-	let showSearchResults = false;
-	let searchLoading = false;
+	let visitorSelected = false; // Indica si los datos vienen de un visitante existente en catálogo
+	let searchResetKey = 0;
 
 	// Clases estándar según ui-patterns.md
 	const inputClass =
@@ -112,26 +111,8 @@
 		segundoApellido = '';
 		empresaNombre = '';
 		error = '';
-		searchResults = [];
-		showSearchResults = false;
-	}
-
-	async function performSearch(term: string) {
-		if (term.length < 3) {
-			searchResults = [];
-			showSearchResults = false;
-			return;
-		}
-
-		searchLoading = true;
-		try {
-			searchResults = await searchByType(term, 'visitante', 5);
-			showSearchResults = searchResults.length > 0;
-		} catch (e) {
-			console.error('Error en búsqueda Tantivy:', e);
-		} finally {
-			searchLoading = false;
-		}
+		visitorSelected = false;
+		searchResetKey++;
 	}
 
 	function selectVisitor(result: SearchResult) {
@@ -141,8 +122,23 @@
 		apellido = result.apellido || '';
 		segundoApellido = result.segundoApellido || '';
 		empresaNombre = result.empresaNombre || '';
-		showSearchResults = false;
-		searchResults = [];
+		visitorSelected = true;
+	}
+
+	function handlePersonaSelect(event: CustomEvent) {
+		const { data } = event.detail;
+		selectVisitor(data);
+	}
+
+	function clearSearch() {
+		visitorSelected = false;
+		cedula = '';
+		nombre = '';
+		segundoNombre = '';
+		apellido = '';
+		segundoApellido = '';
+		empresaNombre = '';
+		searchResetKey++;
 	}
 
 	function handleDateInput(e: Event) {
@@ -196,7 +192,32 @@
 				{/if}
 
 				<!-- Card de Inputs -->
-				<div class="bg-surface-1 rounded-lg border border-surface p-6">
+				<div class="bg-surface-1 rounded-lg border border-surface p-6 space-y-6">
+					<!-- Buscador Unificado (Multi-Campo) -->
+					<div>
+						<div class="flex items-center justify-between mb-2">
+							<span class="text-xs font-semibold text-accent uppercase tracking-wider">
+								Buscador de Visitantes (Catálogo)
+							</span>
+							{#if visitorSelected}
+								<button
+									type="button"
+									onclick={clearSearch}
+									class="text-[10px] text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5 bg-red-400/5 px-2 py-1 rounded-md border border-red-400/10"
+								>
+									<RefreshCw size={10} /> Limpiar y editar manual
+								</button>
+							{/if}
+						</div>
+						{#key searchResetKey}
+							<PersonaFinder scope="visitante" on:select={handlePersonaSelect} autoFocus={true} />
+						{/key}
+						<p class="mt-1.5 text-[10px] text-tertiary italic">
+							* Busca por Nombre, Apellido o Cédula para autocompletar.
+						</p>
+					</div>
+
+					<div class="h-px bg-surface border-0"></div>
 					<form
 						onsubmit={(e) => {
 							e.preventDefault();
@@ -215,57 +236,16 @@
 										id="cedula"
 										type="text"
 										bind:value={cedula}
-										oninput={() => performSearch(cedula)}
-										class="{inputClass} pr-10"
-										placeholder="Buscar o ingresar ID (Cédula)"
+										class="{inputClass} {visitorSelected ? 'opacity-70 bg-white/5' : ''}"
+										placeholder="Ingrese ID (Cédula)"
+										readonly={visitorSelected}
 									/>
-									<div
-										class="absolute right-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none"
-									>
-										{#if searchLoading}
-											<Loader2 size={14} class="animate-spin" />
-										{:else}
-											<Search size={14} />
-										{/if}
-									</div>
+									{#if visitorSelected}
+										<div class="absolute right-3 top-1/2 -translate-y-1/2 text-accent">
+											<Check size={14} />
+										</div>
+									{/if}
 								</div>
-
-								{#if showSearchResults}
-									<div
-										class="absolute z-50 w-full mt-1 bg-surface-2 border border-surface rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-										transition:slide
-									>
-										{#each searchResults as result}
-											<button
-												type="button"
-												onclick={() => selectVisitor(result)}
-												class="w-full text-left px-4 py-2 hover:bg-white/5 border-b border-surface last:border-0 transition-colors group"
-											>
-												<div class="flex items-center justify-between">
-													<span class="text-sm font-medium text-primary">
-														{result.nombreCompleto}
-													</span>
-													<span
-														class="text-[10px] text-accent font-bold uppercase tracking-wider bg-accent/10 px-1.5 py-0.5 rounded"
-													>
-														Catálogo
-													</span>
-												</div>
-												<div class="flex items-center gap-3 mt-1">
-													<span class="text-xs text-secondary flex items-center gap-1">
-														<UserIcon size={12} />
-														ID: <span class="text-primary/70">{result.cedula}</span>
-													</span>
-													{#if result.empresaNombre}
-														<span class="text-xs text-secondary flex items-center gap-1">
-															• {result.empresaNombre}
-														</span>
-													{/if}
-												</div>
-											</button>
-										{/each}
-									</div>
-								{/if}
 							</div>
 
 							<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -278,8 +258,9 @@
 											id="nombre"
 											type="text"
 											bind:value={nombre}
-											class={inputClass}
+											class="{inputClass} {visitorSelected ? 'opacity-70 bg-white/5' : ''}"
 											placeholder="Nombre"
+											readonly={visitorSelected}
 										/>
 									</div>
 									<div>
@@ -288,8 +269,9 @@
 											id="segundoNombre"
 											type="text"
 											bind:value={segundoNombre}
-											class={inputClass}
+											class="{inputClass} {visitorSelected ? 'opacity-70 bg-white/5' : ''}"
 											placeholder="Nombre"
+											readonly={visitorSelected}
 										/>
 									</div>
 								</div>
@@ -302,8 +284,9 @@
 											id="apellido"
 											type="text"
 											bind:value={apellido}
-											class={inputClass}
+											class="{inputClass} {visitorSelected ? 'opacity-70 bg-white/5' : ''}"
 											placeholder="Apellido"
+											readonly={visitorSelected}
 										/>
 									</div>
 									<div>
@@ -312,8 +295,9 @@
 											id="segundoApellido"
 											type="text"
 											bind:value={segundoApellido}
-											class={inputClass}
+											class="{inputClass} {visitorSelected ? 'opacity-70 bg-white/5' : ''}"
 											placeholder="Apellido"
+											readonly={visitorSelected}
 										/>
 									</div>
 								</div>
@@ -328,8 +312,9 @@
 									id="empresaNombre"
 									type="text"
 									bind:value={empresaNombre}
-									class={inputClass}
+									class="{inputClass} {visitorSelected ? 'opacity-70 bg-white/5' : ''}"
 									placeholder="Empresa visitante"
+									readonly={visitorSelected}
 								/>
 							</div>
 							<div>
