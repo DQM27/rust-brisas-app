@@ -12,6 +12,7 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { empresaStore } from '$lib/stores/empresaStore.svelte';
 	import { submitCreateEmpresa } from '$lib/logic/empresa/empresaService';
+	import VehiculoManagerModal from '$lib/components/vehiculo/VehiculoManagerModal.svelte';
 
 	// Superforms & Zod v4
 	import { superForm } from 'sveltekit-superforms';
@@ -55,6 +56,20 @@
 	let nuevaEmpresaNombre = $state('');
 	let creatingEmpresa = $state(false);
 	let empresaError = $state('');
+
+	// Vehicle Modal State (for edit mode)
+	let showVehiculoModal = $state(false);
+
+	// Inline Vehicle Form State (for create mode)
+	let showVehiculoForm = $state(false);
+	let showTipoDropdown = $state(false);
+	const tipoOptions = [
+		{ value: 'motocicleta', label: 'Motocicleta' },
+		{ value: 'automovil', label: 'Automóvil' },
+		{ value: 'camioneta', label: 'Camioneta' },
+		{ value: 'camion', label: 'Camión' },
+		{ value: 'otro', label: 'Otro' }
+	];
 
 	// Validation State for Real-time checks
 	let checkTimeout: ReturnType<typeof setTimeout>;
@@ -439,124 +454,88 @@
 							</div>
 						</div>
 
-						<!-- Vehículo Section -->
-						<div class="bg-surface-1 rounded-lg border border-surface p-5 space-y-4">
-							<!-- Toggle Vehículo -->
+						<!-- Sección Vehículos -->
+						<div class="bg-surface-1 rounded-lg border border-surface p-4">
 							<div class="flex items-center justify-between">
-								<span class="text-sm font-medium text-secondary">¿Tiene vehículo?</span>
-								<label class="relative inline-flex items-center cursor-pointer">
-									<input type="checkbox" bind:checked={$form.hasVehicle} class="sr-only peer" />
-									<div
-										class="w-9 h-5 bg-surface-3 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"
-									></div>
-								</label>
+								<span class="text-xs font-semibold text-secondary uppercase tracking-wider"
+									>Vehículo</span
+								>
+								{#if isEditMode && visitante?.id}
+									<!-- Modo Edición: Botón para abrir VehiculoManagerModal -->
+									<button
+										type="button"
+										onclick={() => (showVehiculoModal = true)}
+										class="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border border-surface bg-surface-2 text-secondary hover:text-primary hover:border-border-emphasis transition-colors"
+									>
+										<Car size={14} />
+										Gestionar Vehículos
+									</button>
+								{:else}
+									<!-- Modo Creación: Botón para añadir vehículo -->
+									{#if !$form.hasVehicle}
+										<button
+											type="button"
+											onclick={() => (showVehiculoForm = true)}
+											class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-surface bg-surface-2 text-secondary hover:text-primary hover:border-border-emphasis transition-colors"
+										>
+											<Plus size={14} />
+											Añadir Vehículo
+										</button>
+									{:else}
+										<button
+											type="button"
+											onclick={() => {
+												$form.hasVehicle = false;
+												$form.tipoVehiculo = '';
+												$form.placa = '';
+												$form.marca = '';
+												$form.modelo = '';
+												$form.color = '';
+											}}
+											class="text-xs text-red-400 hover:text-red-300 transition-colors"
+										>
+											Quitar vehículo
+										</button>
+									{/if}
+								{/if}
 							</div>
 
-							<!-- Campos de Vehículo (condicional) -->
-							{#if $form.hasVehicle}
-								<div class="space-y-4 pt-2" transition:fly={{ y: -10, duration: 200 }}>
-									<!-- Tipo de Vehículo - Botones de Selección -->
-									<div>
-										<span class="form-label"
-											>Tipo de Vehículo <span class="text-error ml-0.5">*</span></span
-										>
-										<div class="grid grid-cols-2 gap-3">
-											<button
-												type="button"
-												onclick={() => {
-													$form.tipoVehiculo = 'motocicleta';
-													validate('tipoVehiculo');
-												}}
-												class="flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all
-													{$form.tipoVehiculo === 'motocicleta'
-													? 'border-success bg-success/10 text-success'
-													: 'border-surface hover:border-success/50 text-secondary hover:text-success'}"
-											>
-												<Bike size={20} />
-												<span class="font-medium">Moto</span>
-											</button>
-											<button
-												type="button"
-												onclick={() => {
-													$form.tipoVehiculo = 'automovil';
-													validate('tipoVehiculo');
-												}}
-												class="flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all
-													{$form.tipoVehiculo === 'automovil'
-													? 'border-success bg-success/10 text-success'
-													: 'border-surface hover:border-success/50 text-secondary hover:text-success'}"
-											>
-												<Car size={20} />
-												<span class="font-medium">Auto</span>
-											</button>
+							<!-- Modo Creación: Mostrar preview del vehículo -->
+							{#if !isEditMode}
+								{#if $form.hasVehicle}
+									<!-- Preview del vehículo añadido -->
+									<button
+										type="button"
+										onclick={() => (showVehiculoForm = true)}
+										class="w-full flex items-center justify-between p-3 mt-3 rounded-lg border border-surface bg-surface-2 hover:border-border-emphasis transition-colors"
+									>
+										<div class="flex items-center gap-3">
+											<div class="p-2 rounded-lg bg-surface-3 text-primary">
+												{#if $form.tipoVehiculo === 'motocicleta'}
+													<Bike size={18} />
+												{:else}
+													<Car size={18} />
+												{/if}
+											</div>
+											<div class="text-left">
+												<div class="font-semibold text-primary text-sm">
+													{$form.placa || 'Sin placa'}
+												</div>
+												<div class="text-xs text-secondary">
+													{$form.marca || 'Sin marca'} • {$form.modelo || 'Sin modelo'} • {$form.color ||
+														'Sin color'}
+												</div>
+											</div>
 										</div>
-										{#if $errors.tipoVehiculo}<p class="form-error">{$errors.tipoVehiculo}</p>{/if}
+										<span class="text-xs text-secondary">Editar</span>
+									</button>
+								{:else}
+									<div
+										class="text-center py-4 mt-3 text-secondary text-xs border border-dashed border-surface rounded-lg"
+									>
+										Sin vehículo registrado
 									</div>
-
-									<!-- Placa -->
-									<div>
-										<label for="placa" class="form-label"
-											>Placa <span class="text-error ml-0.5">*</span></label
-										>
-										<input
-											id="placa"
-											name="placa"
-											type="text"
-											bind:value={$form.placa}
-											oninput={() => validate('placa')}
-											placeholder="ABC-123"
-											disabled={loading}
-											class="form-input uppercase {getFieldStateClass('placa', $form.placa)}"
-											{...$constraints.placa}
-										/>
-										{#if $errors.placa}<p class="form-error">{$errors.placa}</p>{/if}
-									</div>
-
-									<!-- Marca y Modelo -->
-									<div class="grid grid-cols-2 gap-4">
-										<div>
-											<label for="marca" class="form-label">Marca</label>
-											<input
-												id="marca"
-												name="marca"
-												type="text"
-												bind:value={$form.marca}
-												placeholder="Toyota, Honda..."
-												disabled={loading}
-												class="form-input"
-												{...$constraints.marca}
-											/>
-										</div>
-										<div>
-											<label for="modelo" class="form-label">Modelo</label>
-											<input
-												id="modelo"
-												name="modelo"
-												type="text"
-												bind:value={$form.modelo}
-												placeholder="Corolla, Civic..."
-												disabled={loading}
-												class="form-input"
-												{...$constraints.modelo}
-											/>
-										</div>
-									</div>
-
-									<!-- Color -->
-									<div>
-										<label for="color" class="form-label">Color</label>
-										<input
-											id="color"
-											name="color"
-											type="text"
-											bind:value={$form.color}
-											placeholder="Blanco, Negro..."
-											disabled={loading}
-											class="form-input"
-											{...$constraints.color}
-										/>
-									</div>
-								</div>
+								{/if}
 							{/if}
 						</div>
 					</div>
@@ -656,6 +635,180 @@
 			</div>
 		</div>
 	</div>
+{/if}
+
+<!-- Mini Modal para añadir vehículo (modo creación) -->
+{#if showVehiculoForm && !isEditMode}
+	<div
+		class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+		transition:fade={{ duration: 200 }}
+	>
+		<div
+			class="absolute inset-0"
+			role="button"
+			tabindex="0"
+			onclick={() => (showVehiculoForm = false)}
+			onkeydown={(e) => e.key === 'Escape' && (showVehiculoForm = false)}
+		></div>
+
+		<div
+			class="relative w-full max-w-[400px] rounded-lg bg-surface-2 shadow-xl border border-surface overflow-hidden"
+			transition:scale={{ start: 0.95, duration: 200 }}
+		>
+			<!-- Header -->
+			<div class="flex items-center justify-between px-5 py-4 border-b border-surface bg-surface-1">
+				<h3 class="text-base font-semibold text-primary">Nuevo Vehículo</h3>
+				<button
+					onclick={() => (showVehiculoForm = false)}
+					class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
+				>
+					<X size={18} />
+				</button>
+			</div>
+
+			<!-- Form Content -->
+			<div class="p-5 space-y-4">
+				<!-- Tipo de Vehículo Dropdown -->
+				<div class="space-y-1 relative">
+					<div class="form-label">Tipo de Vehículo <span class="text-error">*</span></div>
+					<div class="relative">
+						<button
+							id="tipoVehiculoDropdown"
+							type="button"
+							onclick={() => (showTipoDropdown = !showTipoDropdown)}
+							class="form-select w-full text-left flex items-center justify-between"
+						>
+							<span class={$form.tipoVehiculo ? 'text-primary' : 'text-secondary'}>
+								{tipoOptions.find((o) => o.value === $form.tipoVehiculo)?.label ||
+									'Seleccione un tipo'}
+							</span>
+							<ChevronDown size={14} class="text-secondary" />
+						</button>
+
+						{#if showTipoDropdown}
+							<div
+								class="fixed inset-0 z-40"
+								onclick={() => (showTipoDropdown = false)}
+								role="presentation"
+								aria-hidden="true"
+							></div>
+							<div
+								class="form-dropdown absolute z-50 left-0 right-0 top-full mt-1"
+								transition:fly={{ y: -5, duration: 150 }}
+							>
+								{#each tipoOptions as option}
+									<button
+										type="button"
+										onclick={() => {
+											$form.tipoVehiculo = option.value;
+											showTipoDropdown = false;
+										}}
+										class="form-dropdown-item flex items-center gap-2"
+									>
+										{#if option.value === 'motocicleta'}
+											<Bike size={16} />
+										{:else}
+											<Car size={16} />
+										{/if}
+										{option.label}
+									</button>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				</div>
+
+				<!-- Placa y Marca -->
+				<div class="grid grid-cols-2 gap-4">
+					<div class="space-y-1">
+						<label for="vehiculo_placa" class="form-label"
+							>Placa <span class="text-error">*</span></label
+						>
+						<input
+							id="vehiculo_placa"
+							type="text"
+							bind:value={$form.placa}
+							placeholder="ABC-123"
+							class="form-input uppercase"
+						/>
+					</div>
+					<div class="space-y-1">
+						<label for="vehiculo_marca" class="form-label">Marca</label>
+						<input
+							id="vehiculo_marca"
+							type="text"
+							bind:value={$form.marca}
+							placeholder="Toyota"
+							class="form-input"
+						/>
+					</div>
+				</div>
+
+				<!-- Modelo y Color -->
+				<div class="grid grid-cols-2 gap-4">
+					<div class="space-y-1">
+						<label for="vehiculo_modelo" class="form-label">Modelo</label>
+						<input
+							id="vehiculo_modelo"
+							type="text"
+							bind:value={$form.modelo}
+							placeholder="Corolla"
+							class="form-input"
+						/>
+					</div>
+					<div class="space-y-1">
+						<label for="vehiculo_color" class="form-label">Color</label>
+						<input
+							id="vehiculo_color"
+							type="text"
+							bind:value={$form.color}
+							placeholder="Blanco"
+							class="form-input"
+						/>
+					</div>
+				</div>
+			</div>
+
+			<!-- Footer -->
+			<div class="flex justify-end gap-2 px-5 py-3 border-t border-surface bg-surface-1">
+				<button
+					type="button"
+					onclick={() => {
+						showVehiculoForm = false;
+						if (!$form.tipoVehiculo && !$form.placa) {
+							$form.hasVehicle = false;
+						}
+					}}
+					class="form-btn-outline-secondary py-1.5 px-3 text-xs"
+				>
+					Cancelar
+				</button>
+				<button
+					type="button"
+					disabled={!$form.tipoVehiculo || !$form.placa}
+					onclick={() => {
+						if ($form.tipoVehiculo && $form.placa) {
+							$form.hasVehicle = true;
+							showVehiculoForm = false;
+						}
+					}}
+					class="form-btn-outline-success py-1.5 px-3 text-xs"
+				>
+					Guardar
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Vehiculo Manager Modal (Nested, solo modo edición) -->
+{#if showVehiculoModal && visitante}
+	<VehiculoManagerModal
+		show={showVehiculoModal}
+		propietarioId={visitante.id}
+		propietarioNombre={visitante.nombre + ' ' + visitante.apellido}
+		onClose={() => (showVehiculoModal = false)}
+	/>
 {/if}
 
 <style>

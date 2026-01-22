@@ -15,7 +15,6 @@ use surrealdb::{Datetime, RecordId};
 /// En modo estricto, todo visitante debe estar asociado a una empresa registrada
 /// en el sistema para garantizar la trazabilidad y consistencia de datos.
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct Visitante {
     pub id: RecordId,
     pub cedula: String,

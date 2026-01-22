@@ -119,6 +119,7 @@ DEFINE FIELD segundo_apellido ON TABLE visitante TYPE option<string> ASSERT $val
 DEFINE FIELD nombre_completo ON TABLE visitante VALUE 
     string::trim(nombre + ' ' + (segundo_nombre OR '') + ' ' + apellido + ' ' + (segundo_apellido OR ''));
 DEFINE FIELD empresa ON TABLE visitante TYPE option<record<empresa>>;
+DEFINE FIELD has_vehicle ON TABLE visitante TYPE bool DEFAULT false;
 DEFINE FIELD created_at ON TABLE visitante TYPE datetime DEFAULT time::now();
 DEFINE FIELD updated_at ON TABLE visitante TYPE datetime VALUE time::now();
 DEFINE FIELD deleted_at ON TABLE visitante TYPE option<datetime>;

@@ -92,7 +92,7 @@ const placaRequeridaSchema = z
     .max(PLACA_MAX_LEN, `Máximo ${PLACA_MAX_LEN} caracteres`)
     .regex(/^[a-zA-Z0-9\-\s]+$/, 'Solo letras, números, guiones y espacios');
 
-const tipoVehiculoSchema = z.enum(['motocicleta', 'automovil'], {
+const tipoVehiculoSchema = z.enum(['motocicleta', 'automovil', 'camioneta', 'camion', 'otro'], {
     message: 'Seleccione tipo de vehículo'
 });
 
