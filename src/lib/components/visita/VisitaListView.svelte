@@ -481,6 +481,9 @@
 {#if showPreRegistrosModal}
 	<div
 		class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+		role="button"
+		tabindex="0"
+		onkeydown={(e) => e.key === 'Escape' && (showPreRegistrosModal = false)}
 		onclick={(e) => e.target === e.currentTarget && (showPreRegistrosModal = false)}
 	>
 		<div
