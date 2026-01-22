@@ -11,6 +11,27 @@ use log::info;
 use surrealdb::RecordId;
 use tauri::State;
 
+/// Parsea un ID de usuario (acepta "user:id" o "id").
+fn parse_user_id(id: &str) -> RecordId {
+    let clean_id = id
+        .trim_start_matches("⟨")
+        .trim_end_matches("⟩")
+        .trim_start_matches('<')
+        .trim_end_matches('>');
+
+    if clean_id.contains(':') {
+        let parts: Vec<&str> = clean_id.split(':').collect();
+        let key = parts[1]
+            .trim_start_matches("⟨")
+            .trim_end_matches("⟩")
+            .trim_start_matches('<')
+            .trim_end_matches('>');
+        RecordId::from_table_key(parts[0], key)
+    } else {
+        RecordId::from_table_key("user", clean_id)
+    }
+}
+
 #[tauri::command]
 pub async fn create_pre_registro_visita(
     session: State<'_, SessionState>,
@@ -18,7 +39,8 @@ pub async fn create_pre_registro_visita(
 ) -> Result<PreRegistroVisitaFetched, String> {
     let user = session.get_user().ok_or("Usuario no autenticado para esta acción".to_string())?;
 
-    let user_id_str = user.id.clone();
+    let user_id = parse_user_id(&user.id);
+    let now = surrealdb::Datetime::from(chrono::Utc::now());
 
     // Create DTO
     let dto = PreRegistroVisitaCreateDTO {
@@ -34,7 +56,9 @@ pub async fn create_pre_registro_visita(
         observaciones: input.observaciones,
         estado: PreRegistroEstado::Pendiente.to_string(), // Default state
         visitante: None, // Logic to link existing visitor could be added here or in UI
-        registrado_por: RecordId::from(("user", user_id_str)),
+        registrado_por: user_id,
+        created_at: now.clone(),
+        updated_at: now,
     };
 
     let result = db::create(dto).await.map_err(|e| e.to_string())?;

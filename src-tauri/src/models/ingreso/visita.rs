@@ -287,4 +287,6 @@ pub struct PreRegistroVisitaCreateDTO {
     pub estado: String,
     pub visitante: Option<RecordId>,
     pub registrado_por: RecordId,
+    pub created_at: Datetime,
+    pub updated_at: Datetime,
 }

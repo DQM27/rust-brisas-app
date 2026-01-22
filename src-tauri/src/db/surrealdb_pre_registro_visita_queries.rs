@@ -6,7 +6,6 @@ use crate::models::ingreso::{
     PreRegistroEstado, PreRegistroVisita, PreRegistroVisitaCreateDTO, PreRegistroVisitaFetched,
 };
 use crate::services::surrealdb_service::{get_db, SurrealDbError};
-use surrealdb::Datetime;
 use surrealdb::RecordId;
 
 const TABLE: &str = "pre_registro_visita";
@@ -16,31 +15,8 @@ pub async fn create(
 ) -> Result<PreRegistroVisitaFetched, SurrealDbError> {
     let db = get_db().await?;
 
-    // Agregar timestamps al DTO
-    let now = Datetime::from(chrono::Utc::now());
-    let dto_with_timestamps = serde_json::json!({
-        "cedula": dto.cedula,
-        "nombre": dto.nombre,
-        "apellido": dto.apellido,
-        "empresa_nombre": dto.empresa_nombre,
-        "fecha_esperada": dto.fecha_esperada,
-        "anfitrion": dto.anfitrion,
-        "area_visitada": dto.area_visitada,
-        "motivo": dto.motivo,
-        "modo_ingreso": dto.modo_ingreso,
-        "observaciones": dto.observaciones,
-        "estado": dto.estado,
-        "visitante": dto.visitante,
-        "registrado_por": dto.registrado_por,
-        "created_at": now,
-        "updated_at": now,
-    });
-
-    let created: Option<PreRegistroVisita> = db
-        .query(format!("CREATE {TABLE} CONTENT $dto"))
-        .bind(("dto", dto_with_timestamps))
-        .await?
-        .take(0)?;
+    let created: Option<PreRegistroVisita> =
+        db.query(format!("CREATE {TABLE} CONTENT $dto")).bind(("dto", dto)).await?.take(0)?;
 
     let registro = created.ok_or(SurrealDbError::TransactionError(
         "Error al crear pre-registro de visita".to_string(),
