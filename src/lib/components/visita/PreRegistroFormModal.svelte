@@ -2,8 +2,20 @@
 	import { createEventDispatcher } from 'svelte';
 	import type { CreatePreRegistroInput } from '$lib/types/ingreso-nuevos';
 	import { preRegistroVisitaService } from '$lib/services/preRegistroVisitaService';
+	import { searchByType } from '$lib/api/searchService';
+	import type { SearchResult } from '$lib/types/search.types';
 	import { slide, fly } from 'svelte/transition';
-	import { X, CalendarDays, Save, PersonStanding, Car, Loader2, Check } from 'lucide-svelte';
+	import {
+		X,
+		CalendarDays,
+		Save,
+		PersonStanding,
+		Car,
+		Loader2,
+		Check,
+		Search,
+		User as UserIcon
+	} from 'lucide-svelte';
 
 	export let isOpen = false;
 	const dispatch = createEventDispatcher();
@@ -14,7 +26,9 @@
 	// Form data
 	let cedula = '';
 	let nombre = '';
+	let segundoNombre = '';
 	let apellido = '';
+	let segundoApellido = '';
 	let empresaNombre = '';
 	let fechaEsperadaDisplay = formatDateForDisplay(new Date().toISOString().split('T')[0]);
 	let anfitrion = '';
@@ -23,6 +37,11 @@
 	let modoIngreso = 'caminando';
 	let showModoIngresoDropdown = false;
 	let observaciones = '';
+
+	// Search logic
+	let searchResults: SearchResult[] = [];
+	let showSearchResults = false;
+	let searchLoading = false;
 
 	// Clases estándar según ui-patterns.md
 	const inputClass =
@@ -57,7 +76,9 @@
 			const input: CreatePreRegistroInput = {
 				cedula,
 				nombre,
+				segundoNombre,
 				apellido,
+				segundoApellido,
 				empresaNombre,
 				fechaEsperada: formatDateForBackend(fechaEsperadaDisplay),
 				anfitrion,
@@ -86,9 +107,42 @@
 	function resetForm() {
 		cedula = '';
 		nombre = '';
+		segundoNombre = '';
 		apellido = '';
+		segundoApellido = '';
 		empresaNombre = '';
 		error = '';
+		searchResults = [];
+		showSearchResults = false;
+	}
+
+	async function performSearch(term: string) {
+		if (term.length < 3) {
+			searchResults = [];
+			showSearchResults = false;
+			return;
+		}
+
+		searchLoading = true;
+		try {
+			searchResults = await searchByType(term, 'visitante', 5);
+			showSearchResults = searchResults.length > 0;
+		} catch (e) {
+			console.error('Error en búsqueda Tantivy:', e);
+		} finally {
+			searchLoading = false;
+		}
+	}
+
+	function selectVisitor(result: SearchResult) {
+		cedula = result.cedula || '';
+		nombre = result.nombre || '';
+		segundoNombre = result.segundoNombre || '';
+		apellido = result.apellido || '';
+		segundoApellido = result.segundoApellido || '';
+		empresaNombre = result.empresaNombre || '';
+		showSearchResults = false;
+		searchResults = [];
 	}
 
 	function handleDateInput(e: Event) {
@@ -148,40 +202,130 @@
 							e.preventDefault();
 							handleSubmit();
 						}}
-						class="space-y-5"
+						class="space-y-6"
 					>
-						<!-- Fila 1: Datos Personales -->
-						<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-							<div>
-								<label class={labelClass}>Cédula <span class="text-red-500">*</span></label>
-								<input
-									type="text"
-									bind:value={cedula}
-									class={inputClass}
-									placeholder="ID Visitante"
-									autofocus
-								/>
+						<!-- Fila 1: Captura de Identidad -->
+						<div class="space-y-5">
+							<div class="relative">
+								<label for="cedula" class={labelClass}
+									>Cédula <span class="text-red-500">*</span></label
+								>
+								<div class="relative">
+									<input
+										id="cedula"
+										type="text"
+										bind:value={cedula}
+										oninput={() => performSearch(cedula)}
+										class="{inputClass} pr-10"
+										placeholder="Buscar o ingresar ID (Cédula)"
+									/>
+									<div
+										class="absolute right-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none"
+									>
+										{#if searchLoading}
+											<Loader2 size={14} class="animate-spin" />
+										{:else}
+											<Search size={14} />
+										{/if}
+									</div>
+								</div>
+
+								{#if showSearchResults}
+									<div
+										class="absolute z-50 w-full mt-1 bg-surface-2 border border-surface rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+										transition:slide
+									>
+										{#each searchResults as result}
+											<button
+												type="button"
+												onclick={() => selectVisitor(result)}
+												class="w-full text-left px-4 py-2 hover:bg-white/5 border-b border-surface last:border-0 transition-colors group"
+											>
+												<div class="flex items-center justify-between">
+													<span class="text-sm font-medium text-primary">
+														{result.nombreCompleto}
+													</span>
+													<span
+														class="text-[10px] text-accent font-bold uppercase tracking-wider bg-accent/10 px-1.5 py-0.5 rounded"
+													>
+														Catálogo
+													</span>
+												</div>
+												<div class="flex items-center gap-3 mt-1">
+													<span class="text-xs text-secondary flex items-center gap-1">
+														<UserIcon size={12} />
+														ID: <span class="text-primary/70">{result.cedula}</span>
+													</span>
+													{#if result.empresaNombre}
+														<span class="text-xs text-secondary flex items-center gap-1">
+															• {result.empresaNombre}
+														</span>
+													{/if}
+												</div>
+											</button>
+										{/each}
+									</div>
+								{/if}
 							</div>
-							<div>
-								<label class={labelClass}>Nombre <span class="text-red-500">*</span></label>
-								<input type="text" bind:value={nombre} class={inputClass} placeholder="Nombre" />
-							</div>
-							<div>
-								<label class={labelClass}>Apellido <span class="text-red-500">*</span></label>
-								<input
-									type="text"
-									bind:value={apellido}
-									class={inputClass}
-									placeholder="Apellido"
-								/>
+
+							<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+								<div class="grid grid-cols-2 gap-3">
+									<div>
+										<label for="nombre" class={labelClass}
+											>Primer Nombre <span class="text-red-500">*</span></label
+										>
+										<input
+											id="nombre"
+											type="text"
+											bind:value={nombre}
+											class={inputClass}
+											placeholder="Nombre"
+										/>
+									</div>
+									<div>
+										<label for="segundoNombre" class={labelClass}>Segundo (Opc)</label>
+										<input
+											id="segundoNombre"
+											type="text"
+											bind:value={segundoNombre}
+											class={inputClass}
+											placeholder="Nombre"
+										/>
+									</div>
+								</div>
+								<div class="grid grid-cols-2 gap-3">
+									<div>
+										<label for="apellido" class={labelClass}
+											>Primer Apellido <span class="text-red-500">*</span></label
+										>
+										<input
+											id="apellido"
+											type="text"
+											bind:value={apellido}
+											class={inputClass}
+											placeholder="Apellido"
+										/>
+									</div>
+									<div>
+										<label for="segundoApellido" class={labelClass}>Segundo (Opc)</label>
+										<input
+											id="segundoApellido"
+											type="text"
+											bind:value={segundoApellido}
+											class={inputClass}
+											placeholder="Apellido"
+										/>
+									</div>
+								</div>
 							</div>
 						</div>
 
 						<!-- Fila 2: Empresa y Fecha -->
 						<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 							<div>
-								<label class={labelClass}>Empresa (Opcional)</label>
+								<label for="empresaNombre" class={labelClass}>Empresa (Opcional)</label>
 								<input
+									id="empresaNombre"
 									type="text"
 									bind:value={empresaNombre}
 									class={inputClass}
@@ -189,8 +333,11 @@
 								/>
 							</div>
 							<div>
-								<label class={labelClass}>Fecha Esperada <span class="text-red-500">*</span></label>
+								<label for="fechaEsperada" class={labelClass}
+									>Fecha Esperada <span class="text-red-500">*</span></label
+								>
 								<input
+									id="fechaEsperada"
 									type="text"
 									value={fechaEsperadaDisplay}
 									oninput={handleDateInput}
@@ -209,8 +356,11 @@
 						<!-- Fila 3: Detalles Visita -->
 						<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 							<div>
-								<label class={labelClass}>Anfitrión <span class="text-red-500">*</span></label>
+								<label for="anfitrion" class={labelClass}
+									>Anfitrión <span class="text-red-500">*</span></label
+								>
 								<input
+									id="anfitrion"
 									type="text"
 									bind:value={anfitrion}
 									class={inputClass}
@@ -218,8 +368,11 @@
 								/>
 							</div>
 							<div>
-								<label class={labelClass}>Área Visitada <span class="text-red-500">*</span></label>
+								<label for="areaVisitada" class={labelClass}
+									>Área Visitada <span class="text-red-500">*</span></label
+								>
 								<input
+									id="areaVisitada"
 									type="text"
 									bind:value={areaVisitada}
 									class={inputClass}
@@ -231,8 +384,11 @@
 						<!-- Fila 4: Motivo y Modo -->
 						<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 							<div>
-								<label class={labelClass}>Motivo <span class="text-red-500">*</span></label>
+								<label for="motivo" class={labelClass}
+									>Motivo <span class="text-red-500">*</span></label
+								>
 								<input
+									id="motivo"
 									type="text"
 									bind:value={motivo}
 									class={inputClass}
@@ -240,10 +396,11 @@
 								/>
 							</div>
 							<div>
-								<label class={labelClass}>Modo Ingreso</label>
+								<label for="modoIngreso" class={labelClass}>Modo Ingreso</label>
 								<div class="relative">
 									<!-- Trigger Button -->
 									<button
+										id="modoIngreso"
 										type="button"
 										onclick={() => (showModoIngresoDropdown = !showModoIngresoDropdown)}
 										class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left"
@@ -259,11 +416,10 @@
 											{/if}
 										</span>
 										<!-- Icono dinámico -->
-										{#if modoIngreso === 'caminando'}
-											<PersonStanding size={16} class="text-secondary" />
-										{:else}
-											<Car size={16} class="text-secondary" />
-										{/if}
+										<X
+											size={14}
+											class="text-secondary opacity-0 group-hover:opacity-100 transition-opacity"
+										/>
 									</button>
 
 									{#if showModoIngresoDropdown}
@@ -316,6 +472,17 @@
 								</div>
 							</div>
 						</div>
+
+						<!-- Fila 5: Observaciones -->
+						<div>
+							<label for="observaciones" class={labelClass}>Observaciones (Opcional)</label>
+							<textarea
+								id="observaciones"
+								bind:value={observaciones}
+								class="{inputClass} h-[80px] py-2 resize-none"
+								placeholder="Notas adicionales sobre la visita..."
+							></textarea>
+						</div>
 					</form>
 				</div>
 			</div>
@@ -362,15 +529,9 @@
 
 	/* Focus Override Global */
 	input:focus,
-	textarea:focus,
-	select:focus {
+	textarea:focus {
 		border-color: rgba(59, 130, 246, 0.5) !important;
 		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
 		outline: none !important;
-	}
-
-	/* Fix para el select en dark mode */
-	select {
-		color-scheme: dark;
 	}
 </style>

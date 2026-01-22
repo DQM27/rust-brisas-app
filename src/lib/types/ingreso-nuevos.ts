@@ -114,7 +114,9 @@ export interface PreRegistroVisita {
 export interface CreatePreRegistroInput {
 	cedula: string;
 	nombre: string;
+	segundoNombre?: string;
 	apellido: string;
+	segundoApellido?: string;
 	empresaNombre?: string;
 	fechaEsperada: string;
 	anfitrion: string;

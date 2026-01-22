@@ -3,11 +3,8 @@
 // ==========================================
 
 use crate::db::surrealdb_pre_registro_visita_queries as db;
-use crate::models::ingreso::{
-    CreatePreRegistroInput, PreRegistroEstado, PreRegistroVisitaCreateDTO, PreRegistroVisitaFetched,
-};
+use crate::models::ingreso::{CreatePreRegistroInput, PreRegistroEstado, PreRegistroVisitaFetched};
 use crate::services::session::SessionState;
-use log::info;
 use surrealdb::RecordId;
 use tauri::State;
 
@@ -40,30 +37,8 @@ pub async fn create_pre_registro_visita(
     let user = session.get_user().ok_or("Usuario no autenticado para esta acción".to_string())?;
 
     let user_id = parse_user_id(&user.id);
-    let now = surrealdb::Datetime::from(chrono::Utc::now());
 
-    // Create DTO
-    let dto = PreRegistroVisitaCreateDTO {
-        cedula: input.cedula,
-        nombre: input.nombre,
-        apellido: input.apellido,
-        empresa_nombre: input.empresa_nombre,
-        fecha_esperada: input.fecha_esperada,
-        anfitrion: input.anfitrion,
-        area_visitada: input.area_visitada,
-        motivo: input.motivo,
-        modo_ingreso: input.modo_ingreso,
-        observaciones: input.observaciones,
-        estado: PreRegistroEstado::Pendiente.to_string(), // Default state
-        visitante: None, // Logic to link existing visitor could be added here or in UI
-        registrado_por: user_id,
-        created_at: now.clone(),
-        updated_at: now,
-    };
-
-    let result = db::create(dto).await.map_err(|e| e.to_string())?;
-    info!("Pre-registro creado: {}", result.id);
-    Ok(result)
+    crate::services::pre_registro_visita_service::create_pre_registro(input, user_id).await
 }
 
 #[tauri::command]

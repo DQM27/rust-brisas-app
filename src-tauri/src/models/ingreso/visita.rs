@@ -244,6 +244,10 @@ pub struct PreRegistroVisitaFetched {
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_apellido: Option<String>,
     pub empresa_nombre: Option<String>,
     pub fecha_esperada: String,
     pub anfitrion: String,
@@ -263,6 +267,8 @@ pub struct CreatePreRegistroInput {
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
+    pub segundo_nombre: Option<String>,
+    pub segundo_apellido: Option<String>,
     pub empresa_nombre: Option<String>,
     pub fecha_esperada: String,
     pub anfitrion: String,
@@ -277,6 +283,10 @@ pub struct PreRegistroVisitaCreateDTO {
     pub cedula: String,
     pub nombre: String,
     pub apellido: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_nombre: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub segundo_apellido: Option<String>,
     pub empresa_nombre: Option<String>,
     pub fecha_esperada: String,
     pub anfitrion: String,
