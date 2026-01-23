@@ -1,153 +1,97 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { CalendarClock } from 'lucide-svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { toast } from 'svelte-5-french-toast';
-	import { preRegistroVisitaService } from '$lib/services/preRegistroVisitaService';
-	import type { PreRegistroVisita } from '$lib/types/ingreso-nuevos';
-	import { openTab } from '$lib/stores/tabs';
-	import PreRegistroFormModal from '$lib/components/visita/PreRegistroFormModal.svelte';
-	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
-	import { getPreRegistroColumns } from '$lib/logic/visita/preRegistroColumns';
+	import { UserPlus, RefreshCw, X, Calendar, Search } from 'lucide-svelte';
+	import type { ColumnDefinition } from 'tabulator-tables';
 
+	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
-	import { Plus } from 'lucide-svelte';
+	import PreRegistroFormModal from '$lib/components/visita/PreRegistroFormModal.svelte';
+	import { preRegistroVisitaService } from '$lib/services/preRegistroVisitaService';
+	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
+	import type { PreRegistroVisita } from '$lib/types/ingreso-nuevos';
 
 	interface Props {
 		showHeader?: boolean;
 		showTitle?: boolean;
-		viewMode?: 'grid' | 'focus';
-		toolbarColumns?: any[];
 	}
-	let {
-		showHeader = true,
-		showTitle = true,
-		viewMode = $bindable('grid'),
-		toolbarColumns = $bindable([])
-	}: Props = $props();
 
-	let pendientes = $state<PreRegistroVisita[]>([]);
+	let { showHeader = true, showTitle = true }: Props = $props();
+
+	let preRegistros = $state<PreRegistroVisita[]>([]);
 	let loading = $state(false);
-	let showCreateModal = $state(false);
-	let selectedPreRegistro = $state<PreRegistroVisita | null>(null);
-
-	// Toolbar State
 	let searchTerm = $state('');
-	let showHeaderFilters = $state(false);
-
-	// Tabulator State
 	let gridWrapper = $state<any>(null);
-	let tabulatorColumns = $derived(
-		getPreRegistroColumns(handleIngreso, handleCancel, showHeaderFilters)
+	let selectedRows = $state<any[]>([]);
+
+	// Modal state
+	let showCreateModal = $state(false);
+	let editingPreRegistro = $state<PreRegistroVisita | null>(null);
+
+	const columns: ColumnDefinition[] = [
+		{ title: 'Cédula', field: 'cedula', width: 120 },
+		{
+			title: 'Visitante',
+			field: 'nombre',
+			formatter: (cell: any) => {
+				const data = cell.getData();
+				return `${data.nombre} ${data.apellido} ${data.segundoNombre || ''} ${data.segundoApellido || ''}`.trim();
+			}
+		},
+		{ title: 'Empresa', field: 'empresaNombre', width: 150 },
+		{ title: 'Anfitrión', field: 'anfitrion', width: 150 },
+		{
+			title: 'Fecha Esperada',
+			field: 'fechaEsperada',
+			width: 140,
+			formatter: (cell: any) => {
+				const val = cell.getValue();
+				return val ? new Date(val).toLocaleDateString() : '';
+			}
+		},
+		{ title: 'Hora', field: 'horaEsperada', width: 80 },
+		{
+			title: 'Estado',
+			field: 'estado',
+			width: 100,
+			hozAlign: 'center' as 'center',
+			formatter: (cell: any) => {
+				const val = cell.getValue();
+				let color = 'bg-gray-500';
+				if (val === 'PENDIENTE') color = 'bg-yellow-500/20 text-yellow-500';
+				if (val === 'COMPLETADO') color = 'bg-green-500/20 text-green-500';
+				if (val === 'CANCELADO') color = 'bg-red-500/20 text-red-500';
+				return `<span class="px-2 py-0.5 rounded text-xs font-semibold ${color}">${val}</span>`;
+			}
+		},
+		{
+			title: 'Acciones',
+			width: 120,
+			hozAlign: 'center' as 'center',
+			headerSort: false,
+			formatter: (cell: any) => {
+				return `<button class="p-1 text-red-400 hover:text-red-300 transition-colors" title="Cancelar"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 18 18"/></svg></button>`;
+			},
+			cellClick: (e: any, cell: any) => {
+				e.stopPropagation();
+				handleCancelPreRegistro(cell.getRow().getData().id.toString());
+			}
+		}
+	];
+
+	// Grid State
+	let toolbarColumns = $state<any[]>([]);
+	let showHeaderFilters = $state(
+		typeof window !== 'undefined'
+			? localStorage.getItem('tabulator-header-filters') === 'true'
+			: false
 	);
 
-	// Derived filtered data
-	let filteredPendientes = $derived.by(() => {
-		if (!searchTerm) return pendientes;
-		const lower = searchTerm.toLowerCase();
-		return pendientes.filter(
-			(p) =>
-				p.nombre?.toLowerCase().includes(lower) ||
-				p.cedula?.toLowerCase().includes(lower) ||
-				p.empresaNombre?.toLowerCase().includes(lower) ||
-				p.anfitrion?.toLowerCase().includes(lower)
-		);
-	});
-
-	onMount(() => {
-		loadPendientes();
-	});
-
-	async function loadPendientes() {
-		loading = true;
-		try {
-			const rawData = await preRegistroVisitaService.getPendientes();
-
-			// Normalize data (Handling SurrealDB IDs)
-			pendientes = rawData.map((p) => {
-				let id = p.id;
-				// Maintain backward compatibility with SurrealDB object IDs
-				if (typeof p.id === 'object' && p.id !== null) {
-					// @ts-ignore
-					if (p.id.tb && p.id.id && p.id.id.String) {
-						// @ts-ignore
-						id = `${p.id.tb}:${p.id.id.String}`;
-					} else {
-						id = (p.id as any).toString();
-					}
-				}
-
-				return {
-					...p,
-					id: id
-				};
-			});
-			// Wrapper updates via reactive 'data' prop now
-		} catch (error) {
-			console.error('Error loading pendientes:', error);
-			toast.error('Error cargando visitas esperadas');
-		} finally {
-			loading = false;
-		}
-	}
-
-	function handleGridSearch(term: string) {
-		searchTerm = term;
-	}
-
-	function handleIngreso(row: PreRegistroVisita) {
-		openTab({
-			componentKey: 'visitas-list',
-			title: 'Gestión de Visitas',
-			id: 'visitas-list',
-			data: {
-				openCreateModal: true,
-				initialPersonId: row.cedula
-			},
-			focusOnOpen: true
-		});
-	}
-
-	async function handleCancel(id: string) {
-		if (!confirm('¿Está seguro de borrar este registro?')) return;
-		try {
-			await preRegistroVisitaService.cancel(id);
-			toast.success('Registro borrado');
-			loadPendientes();
-		} catch (e) {
-			console.error(e);
-			toast.error('Error al borrar');
-		}
-	}
-
-	function handleRowDblClick(e: any, row: any) {
-		const data = row.getData();
-		selectedPreRegistro = data;
-		showCreateModal = true;
-	}
-
-	export function openCreateModal() {
-		selectedPreRegistro = null;
-		showCreateModal = true;
-	}
-
-	export function autoSizeColumns() {
-		gridWrapper?.autoSizeColumns();
-	}
-
-	export function fitColumns() {
-		gridWrapper?.fitColumns();
-	}
-
-	export function toggleColumn(field: string) {
-		gridWrapper?.toggleColumn(field);
-	}
-
-	export function toggleFreeze(field: string) {
-		gridWrapper?.toggleFreeze(field);
-	}
-
-	export function toggleFilters() {
+	function handleToggleFilters() {
 		showHeaderFilters = !showHeaderFilters;
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('tabulator-header-filters', String(showHeaderFilters));
+		}
 		if (gridWrapper) {
 			setTimeout(() => {
 				gridWrapper.redraw(true);
@@ -155,78 +99,131 @@
 		}
 	}
 
+	export async function loadData() {
+		loading = true;
+		try {
+			preRegistros = await preRegistroVisitaService.getPendientes();
+		} catch (error) {
+			console.error(error);
+			toast.error('Error al cargar pre-registros');
+		} finally {
+			loading = false;
+		}
+	}
+
+	// Expose methods if needed by parent
 	export function setSearchTerm(term: string) {
 		searchTerm = term;
+		gridWrapper?.setFilter(term); // Assuming wrapper or tabulator logic handles this or we filter locally
 	}
+
+	async function handleCancelPreRegistro(id: string) {
+		if (!confirm('¿Estás seguro de cancelar este pre-registro?')) return;
+		try {
+			await preRegistroVisitaService.cancel(id);
+			toast.success('Pre-registro cancelado');
+			loadData();
+		} catch (e) {
+			console.error(e);
+			toast.error('Error al cancelar');
+		}
+	}
+
+	function handleRowDblClick(e: any, row: any) {
+		editingPreRegistro = row.getData();
+		showCreateModal = true;
+	}
+
+	onMount(() => {
+		loadData();
+	});
+
+	// Auto-update toolbar columns when grid is ready or changes
+	// This is handled by binding in TabulatorWrapper
 </script>
 
 <div class="flex flex-col h-full bg-surface-1">
-	<style>
-		:global(.hide-filters .tabulator-header-filter) {
-			display: none !important;
-		}
-	</style>
-	{#if showHeader}
-		<div class="px-6 pt-4 pb-2 bg-surface-2 border-b border-surface">
-			{#if showTitle}
-				<div class="flex items-center justify-between gap-4 mb-4">
-					<div>
-						<h2 class="text-xl font-semibold text-primary">Visitas Esperadas</h2>
-						<p class="text-sm text-secondary">Gestión de pre-registros y agenda</p>
-					</div>
-				</div>
+	<GridToolbar
+		bind:searchTerm
+		hasSelection={selectedRows.length > 0}
+		selectionCount={selectedRows.length}
+		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
+		onFitColumns={() => gridWrapper?.fitColumns()}
+		onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
+		onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
+		onToggleFilters={() => handleToggleFilters()}
+		columns={toolbarColumns}
+	>
+		{#snippet primaryActions()}
+			{#if selectedRows.length > 0}
+				<button
+					onclick={() => gridWrapper?.deselectAll()}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-4 hover:text-primary text-sm font-medium transition-colors"
+				>
+					<X size={14} /> Cancelar
+				</button>
+			{:else}
+				<button
+					onclick={loadData}
+					class="p-1.5 text-secondary hover:text-primary transition-colors hover:bg-surface-3 rounded-lg border border-surface"
+					title="Actualizar"
+				>
+					<RefreshCw size={16} class={loading ? 'animate-spin' : ''} />
+				</button>
+				<button
+					onclick={() => {
+						editingPreRegistro = null;
+						showCreateModal = true;
+					}}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
+				>
+					<UserPlus size={14} />
+					{showTitle ? 'Nuevo Pre-Registro' : 'Nuevo'}
+				</button>
 			{/if}
+		{/snippet}
+	</GridToolbar>
 
-			<GridToolbar
-				{searchTerm}
-				onSearch={handleGridSearch}
-				onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
-				onFitColumns={() => gridWrapper?.fitColumns()}
-				onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
-				onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
-				onToggleFilters={() => {
-					showHeaderFilters = !showHeaderFilters;
-				}}
-				columns={toolbarColumns}
+	<div class="flex-1 overflow-hidden p-0 relative {showHeaderFilters ? '' : 'hide-filters'}">
+		{#if loading && preRegistros.length === 0}
+			<div
+				class="absolute inset-0 flex items-center justify-center bg-surface-1/50 z-10 backdrop-blur-[1px]"
 			>
-				{#snippet primaryActions()}
-					<button class="form-btn-primary gap-2" onclick={openCreateModal}>
-						<Plus size={16} />
-						<span>Nuevo Pre-Registro</span>
-					</button>
-				{/snippet}
-			</GridToolbar>
-		</div>
-	{/if}
-
-	<div class="flex-1 overflow-hidden relative {showHeaderFilters ? '' : 'hide-filters'}">
-		{#if loading && pendientes.length === 0}
-			<div class="flex h-full items-center justify-center">
-				<div class="loading loading-spinner loading-lg text-primary"></div>
+				<span class="loading loading-spinner loading-md text-primary"></span>
 			</div>
-		{:else}
-			<TabulatorWrapper
-				bind:this={gridWrapper}
-				data={filteredPendientes}
-				columns={tabulatorColumns}
-				bind:toolbarColumns
-				class="h-full"
-				layout="fitColumns"
-				placeholder="No hay visitas esperadas"
-				onRowDblClick={handleRowDblClick}
-			/>
 		{/if}
+
+		<TabulatorWrapper
+			bind:this={gridWrapper}
+			bind:toolbarColumns
+			data={preRegistros}
+			{columns}
+			class="h-full"
+			pagination={true}
+			layout="fitColumns"
+			onRowDblClick={handleRowDblClick}
+			withCheckboxSelection={true}
+			onRowSelectionChanged={(data) => (selectedRows = data)}
+			options={{
+				...defaultTabulatorOptions,
+				placeholder: 'No hay pre-registros pendientes'
+			}}
+		/>
 	</div>
 </div>
 
-{#if showCreateModal}
-	<PreRegistroFormModal
-		show={showCreateModal}
-		initialData={selectedPreRegistro}
-		on:success={loadPendientes}
-		onClose={() => {
-			showCreateModal = false;
-			loadPendientes();
-		}}
-	/>
-{/if}
+<PreRegistroFormModal
+	bind:show={showCreateModal}
+	initialData={editingPreRegistro}
+	onClose={() => (showCreateModal = false)}
+	on:success={() => {
+		loadData();
+		showCreateModal = false;
+	}}
+/>
+
+<style>
+	:global(.hide-filters .tabulator-header-filter) {
+		display: none !important;
+	}
+</style>

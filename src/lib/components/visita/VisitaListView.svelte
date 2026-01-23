@@ -18,7 +18,7 @@
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 	import IngresoVisitaFormModal from '$lib/components/ingreso/IngresoVisitaFormModal.svelte';
 	import PreRegistroListView from '$lib/components/visita/PreRegistroListView.svelte';
-	import type PreRegistroListViewComponent from '$lib/components/visita/PreRegistroListView.svelte';
+
 	import SalidaModal from '$lib/components/ingreso/SalidaModal.svelte';
 	import ExportDialog from '$lib/components/export/ExportDialog.svelte';
 	import DateRangePicker from '$lib/components/shared/DateRangePicker.svelte';
@@ -450,15 +450,10 @@
 	<div
 		class="flex-1 overflow-hidden relative bg-surface-1 {viewMode !== 'expected'
 			? 'border-t border-surface'
-			: ''} {showHeaderFilters ? '' : 'hide-filters'}"
+			: ''} {viewMode !== 'expected' && !showHeaderFilters ? 'hide-filters' : ''}"
 	>
 		{#if viewMode === 'expected'}
-			<PreRegistroListView
-				bind:this={preRegistroList}
-				showHeader={true}
-				showTitle={false}
-				bind:toolbarColumns
-			/>
+			<PreRegistroListView bind:this={preRegistroList} showHeader={true} showTitle={false} />
 		{:else if loading && ingresos.length === 0}
 			<div class="flex h-full items-center justify-center">
 				<div class="loading loading-spinner loading-lg text-primary"></div>

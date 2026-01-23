@@ -27,7 +27,7 @@
 	import { onMount, untrack } from 'svelte';
 
 	let {
-		show = false,
+		show = $bindable(false),
 		initialData = null,
 		onClose
 	}: { show: boolean; initialData?: PreRegistroVisita | null; onClose: () => void } = $props();
