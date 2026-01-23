@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { toast } from 'svelte-5-french-toast';
-	import { UserPlus, RefreshCw, X, Calendar, Search, LogIn } from 'lucide-svelte';
+	import { UserPlus, RefreshCw, X, Calendar, Search, LogIn, Pencil, Trash2 } from 'lucide-svelte';
 	import type { ColumnDefinition } from 'tabulator-tables';
 
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
@@ -66,7 +66,22 @@
 				return data.empresaNombre || data.empresa_nombre || '';
 			}
 		},
-		{ title: 'Anfitrión', field: 'anfitrion', width: 150 },
+		{ title: 'Anfitrión', field: 'anfitrion', width: 140 },
+		{
+			title: 'Área Visitada',
+			field: 'areaVisitada',
+			width: 140,
+			formatter: (cell: any) => {
+				const data = cell.getData();
+				return data.areaVisitada || data.area_visitada || '-';
+			}
+		},
+		{
+			title: 'Motivo',
+			field: 'motivo',
+			width: 160,
+			formatter: (cell: any) => cell.getValue() || '-'
+		},
 		{
 			title: 'Fecha Esperada',
 			field: 'fechaEsperada',
@@ -128,7 +143,7 @@
 				if (btn?.classList.contains('ingreso-btn')) {
 					handleIngreso(cell.getRow().getData());
 				} else if (btn?.classList.contains('cancel-btn')) {
-					handleCancelPreRegistro(cell.getRow().getData().id.toString());
+					handleCancelPreRegistro(cell.getRow().getData().id);
 				}
 			}
 		}
@@ -171,8 +186,21 @@
 		searchTerm = term;
 	}
 
-	async function handleCancelPreRegistro(id: string) {
-		if (!confirm('¿Estás seguro de cancelar este pre-registro?')) return;
+	// Normalizar ID de empresa para SurrealDB (tb:id)
+	const normalizeId = (id: any): string => {
+		if (!id) return '';
+		if (typeof id === 'string') return id;
+		if (typeof id === 'object' && id.tb && id.id) {
+			const innerId =
+				typeof id.id === 'object' ? id.id.String || id.id.id || JSON.stringify(id.id) : id.id;
+			return `${id.tb}:${innerId}`;
+		}
+		return id.toString();
+	};
+
+	async function handleCancelPreRegistro(idRaw: any) {
+		const id = normalizeId(idRaw);
+		if (!id || !confirm('¿Estás seguro de cancelar este pre-registro?')) return;
 		try {
 			await preRegistroVisitaService.cancel(id);
 			toast.success('Pre-registro cancelado');
@@ -181,6 +209,27 @@
 			console.error(e);
 			toast.error('Error al cancelar');
 		}
+	}
+
+	async function handleCancelMultiple(selection: any[]) {
+		if (!confirm(`¿Estás seguro de cancelar ${selection.length} pre-registros?`)) return;
+		const toastId = toast.loading('Cancelando pre-registros...');
+		let errors = 0;
+		for (const p of selection) {
+			try {
+				const id = normalizeId(p.id);
+				await preRegistroVisitaService.cancel(id);
+			} catch (e) {
+				errors++;
+			}
+		}
+		if (errors === 0) {
+			toast.success('Pre-registros cancelados', { id: toastId });
+		} else {
+			toast.error(`Error en ${errors} cancelaciones`, { id: toastId });
+		}
+		loadData();
+		gridWrapper?.deselectAll();
 	}
 
 	function handleRowDblClick(e: any, row: any) {
@@ -215,12 +264,45 @@
 	>
 		{#snippet primaryActions()}
 			{#if selectedRows.length > 0}
-				<button
-					onclick={() => gridWrapper?.deselectAll()}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-4 hover:text-primary text-sm font-medium transition-colors"
-				>
-					<X size={14} /> Cancelar
-				</button>
+				<div class="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
+					<button
+						onclick={() => gridWrapper?.deselectAll()}
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-4 hover:text-primary text-sm font-medium transition-colors"
+						title="Cancelar selección"
+					>
+						<X size={14} /> Cancelar
+					</button>
+
+					{#if selectedRows.length === 1}
+						<button
+							onclick={() => handleIngreso(selectedRows[0])}
+							class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md hover:bg-emerald-500/20 text-sm font-medium transition-colors"
+							title="Registrar Ingreso"
+						>
+							<LogIn size={14} /> Ingresar
+						</button>
+
+						<button
+							onclick={() => {
+								editingPreRegistro = selectedRows[0];
+								showCreateModal = true;
+							}}
+							class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-md hover:bg-amber-500/20 text-sm font-medium transition-colors"
+							title="Editar Pre-Registro"
+						>
+							<Pencil size={14} /> Editar
+						</button>
+					{/if}
+
+					<button
+						onclick={() => handleCancelMultiple(selectedRows)}
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
+						title="Cancelar Pre-Registros"
+					>
+						<Trash2 size={14} />
+						{selectedRows.length === 1 ? 'Cancelar' : `Cancelar (${selectedRows.length})`}
+					</button>
+				</div>
 			{:else}
 				<button
 					onclick={() => {

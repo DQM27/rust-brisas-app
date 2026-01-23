@@ -104,7 +104,11 @@
 							apellido: f.data.apellido.trim(),
 							segundoNombre: f.data.segundoNombre?.trim() || undefined,
 							segundoApellido: f.data.segundoApellido?.trim() || undefined,
-							empresaNombre: selectedEmpresa?.nombre || undefined,
+							empresaNombre:
+								selectedEmpresa?.nombre ||
+								initialPerson?.empresaNombre ||
+								initialPerson?.empresa_nombre ||
+								undefined,
 							anfitrion: f.data.anfitrion.trim(),
 							areaVisitada: f.data.areaVisitada.trim(),
 							motivo: f.data.motivo.trim(),

@@ -167,7 +167,21 @@ export const getIngresoVisitaColumns = (
                 field: 'tiempoPermanenciaTexto',
                 width: 110,
                 formatter: (cell) => {
-                    const val = cell.getValue();
+                    let val = cell.getValue();
+                    if (!val) {
+                        const data = cell.getData();
+                        if (data.fechaHoraIngreso) {
+                            const start = parseDate(data.fechaHoraIngreso);
+                            if (start) {
+                                const now = new Date();
+                                const diff = Math.floor((now.getTime() - start.getTime()) / 60000);
+                                if (diff < 0) return 'Justo ahora';
+                                const hours = Math.floor(diff / 60);
+                                const minutes = diff % 60;
+                                return `<span class="text-accent font-medium">${hours}h ${minutes}m</span>`;
+                            }
+                        }
+                    }
                     return val ? `<span class="text-secondary">${val}</span>` : '-';
                 }
             },

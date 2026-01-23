@@ -168,8 +168,9 @@
 				ingresos = await ingresoVisitaService.getActivos();
 			} else {
 				// Convert to full ISO string for backend filtering
-				const startISO = `${dateRange.start}T00:00:00`;
-				const endISO = `${dateRange.end}T23:59:59`;
+				// Convert to full ISO string for backend filtering (adding Z for UTC/Datetime compatibility)
+				const startISO = `${dateRange.start}T00:00:00Z`;
+				const endISO = `${dateRange.end}T23:59:59Z`;
 				ingresos = await ingresoVisitaService.getHistorial({ start: startISO, end: endISO });
 			}
 		} catch (_e: unknown) {

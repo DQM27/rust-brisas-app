@@ -52,7 +52,8 @@
 
 	function populateForm(data: PreRegistroVisita) {
 		try {
-			console.log('Populating form with:', data);
+			// @ts-ignore - Svelte 5 rune for snapshotting state
+			console.log('[snapshot] Populating form with:', $state.snapshot(data));
 			if (!data) return;
 
 			// Store ID for update
@@ -73,9 +74,9 @@
 
 			cedula = data.cedula || '';
 			nombre = data.nombre || '';
-			segundoNombre = data.segundoNombre || '';
+			segundoNombre = data.segundoNombre || (data as any).segundo_nombre || '';
 			apellido = data.apellido || '';
-			segundoApellido = data.segundoApellido || '';
+			segundoApellido = data.segundoApellido || (data as any).segundo_apellido || '';
 
 			// Normalizar ID de empresa para SurrealDB (tb:id)
 			const normalizeId = (id: any) => {
@@ -118,8 +119,8 @@
 
 			horaEsperada = data.horaEsperada || (data as any).hora_esperada || '';
 
-			if (data.placa) {
-				vehiculoPlaca = data.placa;
+			if (data.placa || (data as any).placa) {
+				vehiculoPlaca = data.placa || (data as any).placa;
 			}
 
 			// If we have data, we assume visitor is selected (locks fields)
