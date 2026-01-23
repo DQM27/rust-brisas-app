@@ -33,7 +33,8 @@ export const getVisitanteColumns = (): ColumnDefinition[] => {
 			formatter: (cell) => {
 				const data = cell.getData() as any;
 				if (!data.vehiculoTipo) return '';
-				return `<span class="text-blue-400"><i class="lucide-car mr-2"></i>${data.vehiculoTipo}</span>`;
+				const brand = data.vehiculoMarca ? ` - ${data.vehiculoMarca}` : '';
+				return `<span class="text-blue-400 capitalize"><i class="lucide-car mr-2"></i>${data.vehiculoTipo}${brand}</span>`;
 			}
 		},
 		{
@@ -51,7 +52,7 @@ export const getVisitanteColumns = (): ColumnDefinition[] => {
 			field: 'empresaNombre',
 			width: 200,
 			headerFilter: 'input',
-			formatter: (cell) => cell.getValue() || '<span class="text-secondary italic">N/A</span>'
+			formatter: (cell) => cell.getValue() || ''
 		},
 		{
 			title: 'Vehículo',

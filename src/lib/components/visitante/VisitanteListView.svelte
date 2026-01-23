@@ -130,6 +130,7 @@
 									empresaNombre: '',
 									vehiculoTipo: vh.tipoVehiculoDisplay,
 									vehiculoPlaca: vh.placa,
+									vehiculoMarca: vh.marca,
 									hasVehicle: null,
 									createdAt: vh.createdAt
 								}))

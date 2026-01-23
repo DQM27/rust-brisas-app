@@ -142,8 +142,14 @@
 		if (show) {
 			if (visitante) {
 				reset({ data: initialData });
+				if (visitante.id) {
+					loadVehiculos(visitante.id);
+				} else {
+					vehiculosList = [];
+				}
 			} else {
 				reset();
+				vehiculosList = [];
 				cedulaDuplicateError = null;
 			}
 		}
@@ -152,15 +158,23 @@
 	// Load data
 	onMount(async () => {
 		await empresaStore.init();
-		loadVehiculos();
+		// Evitamos carga global de vehículos para prevenir fuga de datos entre perfiles
+		// loadVehiculos();
 	});
 
-	async function loadVehiculos() {
+	async function loadVehiculos(propietarioId?: string) {
+		if (!propietarioId) {
+			vehiculosList = [];
+			return;
+		}
+
 		loadingVehiculos = true;
 		try {
-			vehiculosList = await vehiculos.getActivos();
+			// Solo cargamos los vehículos vinculados a este propietario específico
+			vehiculosList = await vehiculos.getByPropietario(propietarioId);
 		} catch (e) {
-			console.error('Error loading vehiculos:', e);
+			console.error('Error loading vehiculos for owner:', e);
+			vehiculosList = [];
 		} finally {
 			loadingVehiculos = false;
 		}
