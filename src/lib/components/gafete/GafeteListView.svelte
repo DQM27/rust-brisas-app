@@ -334,7 +334,7 @@
 				data={gafetes}
 				{columns}
 				class="h-full"
-				persistenceID="gafete-list-v4"
+				persistenceID="gafete-list-v5"
 				pagination={true}
 				withCheckboxSelection={true}
 				options={{

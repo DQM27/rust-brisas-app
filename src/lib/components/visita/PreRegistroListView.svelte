@@ -338,6 +338,7 @@
 			onRowDblClick={handleRowDblClick}
 			withCheckboxSelection={true}
 			onRowSelectionChanged={(data) => (selectedRows = data)}
+			persistenceID="pre-registros-grid-v5"
 			options={{
 				...defaultTabulatorOptions,
 				placeholder: 'No hay pre-registros pendientes'

@@ -464,20 +464,22 @@
 				<div class="loading loading-spinner loading-lg text-primary"></div>
 			</div>
 		{:else}
-			<TabulatorWrapper
-				bind:this={gridWrapper}
-				bind:toolbarColumns
-				data={filteredIngresos}
-				{columns}
-				groupBy={groupByField}
-				withCheckboxSelection={true}
-				onRowSelectionChanged={(data) => (selectedRows = data)}
-				persistenceID="ingresos-proveedores-v1"
-				options={{
-					...defaultTabulatorOptions,
-					placeholder: 'No hay registros para mostrar'
-				}}
-			/>
+			{#key viewMode}
+				<TabulatorWrapper
+					bind:this={gridWrapper}
+					bind:toolbarColumns
+					data={filteredIngresos}
+					{columns}
+					groupBy={groupByField}
+					withCheckboxSelection={true}
+					onRowSelectionChanged={(data) => (selectedRows = data)}
+					persistenceID={`ingresos-proveedores-grid-${viewMode}-v5`}
+					options={{
+						...defaultTabulatorOptions,
+						placeholder: 'No hay registros para mostrar'
+					}}
+				/>
+			{/key}
 		{/if}
 	</div>
 </div>

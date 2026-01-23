@@ -408,7 +408,7 @@
 							class="flex items-center gap-1 bg-surface-3 border border-surface rounded-md p-0.5"
 						>
 							<span class="text-[10px] text-tertiary font-bold uppercase px-2">Agrupar:</span>
-							{#each [{ id: undefined, label: 'Ninguno' }, { id: 'empresa', label: 'Empresa' }, { id: 'anfitrion', label: 'Anfitrión' }, { id: 'area', label: 'Área' }] as opt}
+							{#each [{ id: undefined, label: 'Ninguno' }, { id: 'empresaNombre', label: 'Empresa' }, { id: 'anfitrion', label: 'Anfitrión' }, { id: 'areaVisitada', label: 'Área' }] as opt}
 								<button
 									onclick={() => setGrouping(opt.id)}
 									class="px-2 py-1 rounded text-[11px] font-medium transition-all {groupByField ===
@@ -460,23 +460,36 @@
 				<div class="loading loading-spinner loading-lg text-primary"></div>
 			</div>
 		{:else}
-			<TabulatorWrapper
-				bind:this={gridWrapper}
-				bind:toolbarColumns
-				data={filteredIngresos}
-				{columns}
-				class="h-full"
-				withCheckboxSelection={true}
-				groupBy={groupByField}
-				onRowSelectionChanged={(data) => (selectedRows = data)}
-				persistenceID="visitas-list-v1"
-				pagination={true}
-				options={{
-					...defaultTabulatorOptions,
-					layout: 'fitColumns',
-					placeholder: 'No se encontraron registros'
-				}}
-			/>
+			{#key viewMode}
+				<TabulatorWrapper
+					bind:this={gridWrapper}
+					bind:toolbarColumns
+					data={filteredIngresos}
+					{columns}
+					class="h-full"
+					withCheckboxSelection={true}
+					groupBy={groupByField}
+					onRowSelectionChanged={(data) => (selectedRows = data)}
+					persistenceID={`visitas-grid-${viewMode}-v5`}
+					pagination={true}
+					options={{
+						...defaultTabulatorOptions,
+						layout: 'fitColumns',
+						placeholder: 'No se encontraron registros',
+						groupHeader: (value, count, data, group) => {
+							const field = group.getField();
+							let displayValue = value;
+
+							if (!value || value === 'undefined' || value === 'null') {
+								if (field === 'empresaNombre') displayValue = 'Particular';
+								else displayValue = 'Sin especificar';
+							}
+
+							return `<span class="text-accent font-bold">${displayValue}</span> <span class="text-secondary ml-2">(${count} ${count === 1 ? 'registro' : 'registros'})</span>`;
+						}
+					}}
+				/>
+			{/key}
 		{/if}
 	</div>
 </div>

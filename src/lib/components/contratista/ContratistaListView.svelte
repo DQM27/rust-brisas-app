@@ -848,7 +848,7 @@
 					data={contratistas}
 					{columns}
 					withCheckboxSelection={true}
-					persistenceID="contratista-list-v3"
+					persistenceID="contratista-list-grid-v5"
 					options={{
 						...defaultTabulatorOptions,
 						dataTree: true,

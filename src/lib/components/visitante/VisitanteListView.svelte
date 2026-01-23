@@ -344,7 +344,7 @@
 				withCheckboxSelection={true}
 				onRowSelectionChanged={(data) => (selectedRows = data)}
 				onRowDblClick={(e: any, row: any) => openFormModal(row.getData())}
-				persistenceID="visitante-list-v1"
+				persistenceID="visitante-list-v5"
 				options={{
 					...defaultTabulatorOptions,
 					dataTree: true,

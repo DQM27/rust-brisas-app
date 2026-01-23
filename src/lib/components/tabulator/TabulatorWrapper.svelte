@@ -76,6 +76,7 @@
 				formatter: 'rowSelection',
 				titleFormatter: 'rowSelection',
 				title: '', // Required by types
+				field: 'select',
 				headerSort: false,
 				hozAlign: 'center',
 				width: 30,

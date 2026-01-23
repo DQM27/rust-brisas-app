@@ -752,24 +752,26 @@
 		{:else if error}
 			<div class="p-8 text-center text-red-400">{error}</div>
 		{:else}
-			<TabulatorWrapper
-				bind:this={gridWrapper}
-				bind:toolbarColumns
-				data={ingresos}
-				{columns}
-				withCheckboxSelection={true}
-				groupBy={groupByField}
-				columnCalculations={false}
-				{rowContextMenu}
-				options={{
-					...defaultTabulatorOptions,
-					layout: 'fitData',
-					placeholder: 'No hay ingresos registrados'
-				}}
-				onRowSelectionChanged={(data) => (selectedRows = data)}
-				onRowDblClick={handleRowDblClick}
-				persistenceID="ingreso-list-v4"
-			/>
+			{#key viewMode}
+				<TabulatorWrapper
+					bind:this={gridWrapper}
+					bind:toolbarColumns
+					data={ingresos}
+					{columns}
+					withCheckboxSelection={true}
+					groupBy={groupByField}
+					columnCalculations={false}
+					{rowContextMenu}
+					options={{
+						...defaultTabulatorOptions,
+						layout: 'fitData',
+						placeholder: 'No hay ingresos registrados'
+					}}
+					onRowSelectionChanged={(data) => (selectedRows = data)}
+					onRowDblClick={handleRowDblClick}
+					persistenceID={`ingreso-contratista-grid-${viewMode}-v5`}
+				/>
+			{/key}
 		{/if}
 	</div>
 </div>

@@ -74,6 +74,13 @@ export const getIngresoVisitaColumns = (
                 const d = parseDate(cell.getData().fechaHoraIngreso);
                 return d ? `<span class="font-mono text-primary">${d.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '-';
             }
+        },
+        {
+            title: 'Anfitrión',
+            field: 'anfitrion',
+            width: 150,
+            headerFilter: 'input',
+            formatter: (cell) => `<span class="text-primary font-medium">${cell.getValue() || '-'}</span>`
         }
     ];
 
