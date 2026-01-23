@@ -14,12 +14,21 @@ const TABLE: &str = "ingreso_visita";
 pub async fn insert(dto: IngresoVisitaCreateDTO) -> Result<IngresoVisitaFetched, SurrealDbError> {
     let db = get_db().await?;
 
+    // We need to keep a copy of pre_registro id if it exists to update its status
+    let pre_registro_id = dto.pre_registro.clone();
+
     let created: Option<IngresoVisita> =
         db.query(format!("CREATE {TABLE} CONTENT $dto")).bind(("dto", dto)).await?.take(0)?;
 
     let ingreso = created.ok_or(SurrealDbError::TransactionError(
         "Error al insertar ingreso de visita".to_string(),
     ))?;
+
+    // Update PreRegistro status if applicable
+    if let Some(pid) = pre_registro_id {
+        // We optimize by not waiting for result or checking it strictly, as the main action succeeded
+        let _ = db.query("UPDATE $id SET estado = 'COMPLETADO'").bind(("id", pid)).await;
+    }
 
     // Fetch relations
     let mut result = db

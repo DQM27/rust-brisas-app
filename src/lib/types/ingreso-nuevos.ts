@@ -110,6 +110,9 @@ export interface PreRegistroVisita {
 	observaciones?: string;
 	registradoPor?: any; // User object
 	createdAt: string;
+	// Backend compatibility
+	empresa_id?: string;
+	empresaId?: string;
 }
 
 export interface CreatePreRegistroInput {

@@ -153,29 +153,49 @@
 	});
 
 	async function fillPersonData(person: any) {
+		// Determine if this is a PreRegistro object
+		// PreRegistro has specific fields like 'fechaEsperada' or 'anfitrion' populated
+		// Backend returns snake_case, so we check both
+		const isPreRegistro = !!person.fechaEsperada || !!person.fecha_esperada;
+
+		if (isPreRegistro) {
+			foundPreRegistroId = person.id;
+		}
+
 		const data = {
 			cedula: person.cedula || '',
 			nombre: person.nombre || '',
-			segundoNombre: person.segundoNombre || '',
+			segundoNombre: person.segundoNombre || person.segundo_nombre || '',
 			apellido: person.apellido || '',
-			segundoApellido: person.segundoApellido || '',
-			empresaId: '', // We'll try to find it by name if possible
-			anfitrion: '',
-			areaVisitada: '',
-			motivo: '',
+			segundoApellido: person.segundoApellido || person.segundo_apellido || '',
+			empresaId: person.empresaId || person.empresa_id || '', // Use ID directly if available
+			anfitrion: person.anfitrion || '',
+			areaVisitada: person.areaVisitada || person.area_visitada || '',
+			motivo: person.motivo || '',
 			gafete: '',
-			observaciones: ''
+			observaciones: person.observaciones || ''
 		};
 
-		// Try to match enterprise name to ID for the dropdown
-		if (person.empresa_nombre) {
+		// Fallback: Try to match enterprise name to ID for the dropdown if ID is missing
+		if (!data.empresaId && person.empresa_nombre) {
 			const matched = empresaStore.empresas.find(
 				(e) => e.nombre.toLowerCase() === person.empresa_nombre.toLowerCase()
+			);
+			if (matched) data.empresaId = matched.id;
+		} else if (!data.empresaId && person.empresaNombre) {
+			// Handle camelCase variant often found in frontend types
+			const matched = empresaStore.empresas.find(
+				(e) => e.nombre.toLowerCase() === person.empresaNombre.toLowerCase()
 			);
 			if (matched) data.empresaId = matched.id;
 		}
 
 		reset({ data });
+
+		// Auto-show observaciones if present
+		if (data.observaciones) {
+			showObservaciones = true;
+		}
 
 		if (person.cedula) {
 			validarAcceso(person.cedula);

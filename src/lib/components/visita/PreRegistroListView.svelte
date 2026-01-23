@@ -3,11 +3,25 @@
 	import { preRegistroVisitaService } from '$lib/services/preRegistroVisitaService';
 	import type { PreRegistroVisita } from '$lib/types/ingreso-nuevos';
 	import PreRegistroFormModal from './PreRegistroFormModal.svelte';
-	import { CalendarClock, Plus, Trash2, Building2, User, MapPin, MailOpen } from 'lucide-svelte';
+	import IngresoVisitaFormModal from '../ingreso/IngresoVisitaFormModal.svelte';
+	import {
+		CalendarClock,
+		Plus,
+		Trash2,
+		Building2,
+		User,
+		MapPin,
+		MailOpen,
+		LogIn
+	} from 'lucide-svelte';
 
 	let pendientes: PreRegistroVisita[] = [];
 	let loading = true;
 	let showCreateModal = false;
+
+	// Ingreso Modal State
+	let showIngresoModal = false;
+	let selectedPreRegistro: PreRegistroVisita | null = null;
 
 	onMount(() => {
 		loadPendientes();
@@ -33,6 +47,11 @@
 			console.error(error);
 			alert('Error al cancelar');
 		}
+	}
+
+	function handleIngreso(preRegistro: PreRegistroVisita) {
+		selectedPreRegistro = preRegistro;
+		showIngresoModal = true;
 	}
 </script>
 
@@ -145,6 +164,13 @@
 							class="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity absolute top-3 right-3"
 						>
 							<button
+								onclick={() => handleIngreso(p)}
+								title="Dar Ingreso"
+								class="p-2 bg-accent/10 hover:bg-accent text-accent hover:text-white border border-accent/20 rounded-lg transition-all shadow-sm"
+							>
+								<LogIn size={16} />
+							</button>
+							<button
 								onclick={() => handleCancel(p.id)}
 								title="Cancelar Pre-Registro"
 								class="p-2 hover:bg-error/10 text-secondary hover:text-error border border-transparent hover:border-error/20 rounded-lg transition-all"
@@ -163,4 +189,13 @@
 	bind:isOpen={showCreateModal}
 	on:close={() => (showCreateModal = false)}
 	on:success={loadPendientes}
+/>
+
+<IngresoVisitaFormModal
+	bind:show={showIngresoModal}
+	initialPerson={selectedPreRegistro}
+	onComplete={() => {
+		showIngresoModal = false;
+		loadPendientes();
+	}}
 />
