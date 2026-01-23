@@ -9,9 +9,7 @@
 		FileText,
 		UserPlus,
 		LogIn,
-		CalendarClock,
-		GanttChart,
-		Table2
+		CalendarClock
 	} from 'lucide-svelte';
 	import { scale } from 'svelte/transition';
 
@@ -73,7 +71,6 @@
 	let selectedIngreso = $state<IngresoVisita | null>(null);
 	let salidaLoading = $state(false);
 	let preRegistroList = $state<any>(null); // Use any for now to avoid TS issues with Svelte 5 exports in bind:this
-	let preRegistroViewMode = $state<'grid' | 'focus' | 'svar-gantt' | 'svar-grid'>('svar-grid');
 
 	// Grid State
 	let gridWrapper = $state<any>(null);
@@ -286,6 +283,12 @@
 			setActiveContext('visita-list');
 		}
 	});
+
+	$effect(() => {
+		if (viewMode === 'expected' && preRegistroList) {
+			preRegistroList.setSearchTerm(searchTerm);
+		}
+	});
 </script>
 
 <div class="flex h-full flex-col relative bg-surface-1">
@@ -349,126 +352,100 @@
 	</div>
 
 	<!-- Toolbar & Grid -->
-	<GridToolbar
-		bind:searchTerm
-		hasSelection={selectedRows.length > 0}
-		selectionCount={selectedRows.length}
-		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
-		onFitColumns={() => gridWrapper?.fitColumns()}
-		onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
-		onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
-		onToggleFilters={handleToggleFilters}
-		onAdvancedExport={handleExportClick}
-		columns={toolbarColumns}
-	>
-		{#snippet primaryActions()}
-			{#if selectedRows.length > 0}
-				<button
-					onclick={() => gridWrapper?.deselectAll()}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-4 hover:text-primary text-sm font-medium transition-colors"
-				>
-					<X size={14} /> Cancelar
-				</button>
-				{#if selectedRows.length === 1 && viewMode === 'actives'}
+	{#if viewMode !== 'expected'}
+		<GridToolbar
+			bind:searchTerm
+			hasSelection={selectedRows.length > 0}
+			selectionCount={selectedRows.length}
+			onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
+			onFitColumns={() => gridWrapper?.fitColumns()}
+			onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
+			onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
+			onToggleFilters={() => handleToggleFilters()}
+			onAdvancedExport={handleExportClick}
+			columns={toolbarColumns}
+		>
+			{#snippet primaryActions()}
+				{#if selectedRows.length > 0}
 					<button
-						onclick={() => handleSalida(selectedRows[0])}
-						class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
+						onclick={() => gridWrapper?.deselectAll()}
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-4 hover:text-primary text-sm font-medium transition-colors"
 					>
-						<LogOut size={14} /> Salida
+						<X size={14} /> Cancelar
+					</button>
+					{#if selectedRows.length === 1 && viewMode === 'actives'}
+						<button
+							onclick={() => handleSalida(selectedRows[0])}
+							class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
+						>
+							<LogOut size={14} /> Salida
+						</button>
+					{/if}
+				{:else}
+					<button
+						onclick={handleNuevoIngreso}
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
+					>
+						<LogIn size={14} /> Nuevo
+					</button>
+
+					<button
+						onclick={handleOpenListado}
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-hover hover:text-primary text-sm font-medium transition-colors"
+					>
+						<FileText size={14} /> Listado
 					</button>
 				{/if}
-			{:else if viewMode === 'actives'}
-				<button
-					onclick={handleNuevoIngreso}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
-				>
-					<LogIn size={14} /> Nuevo
-				</button>
+			{/snippet}
 
-				<button
-					onclick={handleOpenListado}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 text-secondary border border-surface rounded-md hover:bg-surface-hover hover:text-primary text-sm font-medium transition-colors"
-				>
-					<FileText size={14} /> Listado
-				</button>
-			{:else if viewMode === 'expected'}
-				<button
-					onclick={() => preRegistroList?.openCreateModal()}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-md hover:bg-purple-500/20 text-sm font-medium transition-colors"
-				>
-					<Plus size={14} /> Nuevo Pre-Registro
-				</button>
-			{/if}
-		{/snippet}
-
-		{#snippet secondaryActions()}
-			{#if viewMode === 'history'}
-				<!-- Grouping Controls -->
-				<div class="flex items-center gap-2 border-l border-white/5 pl-3">
-					<!-- Multi-Grouping Menu -->
-					<div class="flex items-center gap-1 bg-surface-3 border border-surface rounded-md p-0.5">
-						<span class="text-[10px] text-tertiary font-bold uppercase px-2">Agrupar:</span>
-						{#each [{ id: undefined, label: 'Ninguno' }, { id: 'empresa', label: 'Empresa' }, { id: 'anfitrion', label: 'Anfitrión' }, { id: 'area', label: 'Área' }] as opt}
-							<button
-								onclick={() => setGrouping(opt.id)}
-								class="px-2 py-1 rounded text-[11px] font-medium transition-all {groupByField ===
-								opt.id
-									? 'bg-blue-500/20 text-blue-400'
-									: 'text-secondary hover:text-primary hover:bg-surface-hover'}"
-							>
-								{opt.label}
-							</button>
-						{/each}
-					</div>
-				</div>
-
-				<!-- Date & Filter Controls -->
-				<div class="flex items-center gap-2 border-l border-white/10 pl-3 ml-1">
-					<DateRangePicker
-						startDate={dateRange.start}
-						endDate={dateRange.end}
-						on:change={handleDateRangeChange}
-					/>
-					<div class="flex items-center gap-2 ml-2 cursor-pointer">
-						<input
-							type="checkbox"
-							id="hideActiveVisita"
-							bind:checked={hideActive}
-							class="rounded border-surface bg-surface-3 cursor-pointer"
-						/>
-						<label
-							for="hideActiveVisita"
-							class="text-xs text-secondary cursor-pointer hover:text-white transition-colors"
-							>Solo Finalizados</label
+			{#snippet secondaryActions()}
+				{#if viewMode === 'history'}
+					<!-- Grouping Controls -->
+					<div class="flex items-center gap-2 border-l border-white/5 pl-3">
+						<!-- Multi-Grouping Menu -->
+						<div
+							class="flex items-center gap-1 bg-surface-3 border border-surface rounded-md p-0.5"
 						>
+							<span class="text-[10px] text-tertiary font-bold uppercase px-2">Agrupar:</span>
+							{#each [{ id: undefined, label: 'Ninguno' }, { id: 'empresa', label: 'Empresa' }, { id: 'anfitrion', label: 'Anfitrión' }, { id: 'area', label: 'Área' }] as opt}
+								<button
+									onclick={() => setGrouping(opt.id)}
+									class="px-2 py-1 rounded text-[11px] font-medium transition-all {groupByField ===
+									opt.id
+										? 'bg-blue-500/20 text-blue-400'
+										: 'text-secondary hover:text-primary hover:bg-surface-hover'}"
+								>
+									{opt.label}
+								</button>
+							{/each}
+						</div>
 					</div>
-				</div>
-			{:else if viewMode === 'expected'}
-				<div
-					class="flex items-center bg-surface-3 rounded-lg p-1 border border-surface shadow-inner"
-				>
-					<button
-						onclick={() => (preRegistroViewMode = 'svar-gantt')}
-						class="p-1.5 rounded-md transition-all {preRegistroViewMode === 'svar-gantt'
-							? 'bg-primary text-white shadow-md'
-							: 'text-secondary hover:bg-surface-hover'}"
-						title="Gantt"
-					>
-						<GanttChart size={14} />
-					</button>
-					<button
-						onclick={() => (preRegistroViewMode = 'svar-grid')}
-						class="p-1.5 rounded-md transition-all {preRegistroViewMode === 'svar-grid'
-							? 'bg-primary text-white shadow-md'
-							: 'text-secondary hover:bg-surface-hover'}"
-						title="SVAR Grid"
-					>
-						<Table2 size={14} />
-					</button>
-				</div>
-			{/if}
-		{/snippet}
-	</GridToolbar>
+
+					<!-- Date & Filter Controls -->
+					<div class="flex items-center gap-2 border-l border-white/10 pl-3 ml-1">
+						<DateRangePicker
+							startDate={dateRange.start}
+							endDate={dateRange.end}
+							on:change={handleDateRangeChange}
+						/>
+						<div class="flex items-center gap-2 ml-2 cursor-pointer">
+							<input
+								type="checkbox"
+								id="hideActiveVisita"
+								bind:checked={hideActive}
+								class="rounded border-surface bg-surface-3 cursor-pointer"
+							/>
+							<label
+								for="hideActiveVisita"
+								class="text-xs text-secondary cursor-pointer hover:text-white transition-colors"
+								>Solo Finalizados</label
+							>
+						</div>
+					</div>
+				{/if}
+			{/snippet}
+		</GridToolbar>
+	{/if}
 
 	<div
 		class="flex-1 overflow-hidden relative bg-surface-1 {viewMode !== 'expected'
@@ -478,8 +455,9 @@
 		{#if viewMode === 'expected'}
 			<PreRegistroListView
 				bind:this={preRegistroList}
-				showHeader={false}
-				bind:viewMode={preRegistroViewMode}
+				showHeader={true}
+				showTitle={false}
+				bind:toolbarColumns
 			/>
 		{:else if loading && ingresos.length === 0}
 			<div class="flex h-full items-center justify-center">

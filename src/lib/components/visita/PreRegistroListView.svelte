@@ -14,9 +14,16 @@
 
 	interface Props {
 		showHeader?: boolean;
-		viewMode: 'svar-grid' | 'svar-gantt' | 'grid' | 'focus';
+		showTitle?: boolean;
+		viewMode?: 'grid' | 'focus';
+		toolbarColumns?: any[];
 	}
-	let { showHeader = true, viewMode = $bindable('svar-grid') }: Props = $props();
+	let {
+		showHeader = true,
+		showTitle = true,
+		viewMode = $bindable('grid'),
+		toolbarColumns = $bindable([])
+	}: Props = $props();
 
 	let pendientes = $state<PreRegistroVisita[]>([]);
 	let loading = $state(false);
@@ -26,7 +33,6 @@
 	// Toolbar State
 	let searchTerm = $state('');
 	let showHeaderFilters = $state(false);
-	let toolbarColumns = $state([]);
 
 	// Tabulator State
 	let gridWrapper = $state<any>(null);
@@ -123,17 +129,53 @@
 		selectedPreRegistro = null;
 		showCreateModal = true;
 	}
+
+	export function autoSizeColumns() {
+		gridWrapper?.autoSizeColumns();
+	}
+
+	export function fitColumns() {
+		gridWrapper?.fitColumns();
+	}
+
+	export function toggleColumn(field: string) {
+		gridWrapper?.toggleColumn(field);
+	}
+
+	export function toggleFreeze(field: string) {
+		gridWrapper?.toggleFreeze(field);
+	}
+
+	export function toggleFilters() {
+		showHeaderFilters = !showHeaderFilters;
+		if (gridWrapper) {
+			setTimeout(() => {
+				gridWrapper.redraw(true);
+			}, 50);
+		}
+	}
+
+	export function setSearchTerm(term: string) {
+		searchTerm = term;
+	}
 </script>
 
 <div class="flex flex-col h-full bg-surface-1">
+	<style>
+		:global(.hide-filters .tabulator-header-filter) {
+			display: none !important;
+		}
+	</style>
 	{#if showHeader}
 		<div class="px-6 pt-4 pb-2 bg-surface-2 border-b border-surface">
-			<div class="flex items-center justify-between gap-4 mb-4">
-				<div>
-					<h2 class="text-xl font-semibold text-primary">Visitas Esperadas</h2>
-					<p class="text-sm text-secondary">Gestión de pre-registros y agenda</p>
+			{#if showTitle}
+				<div class="flex items-center justify-between gap-4 mb-4">
+					<div>
+						<h2 class="text-xl font-semibold text-primary">Visitas Esperadas</h2>
+						<p class="text-sm text-secondary">Gestión de pre-registros y agenda</p>
+					</div>
 				</div>
-			</div>
+			{/if}
 
 			<GridToolbar
 				{searchTerm}
@@ -144,7 +186,6 @@
 				onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
 				onToggleFilters={() => {
 					showHeaderFilters = !showHeaderFilters;
-					// Here you would implement filter toggling if supported by wrapper/columns
 				}}
 				columns={toolbarColumns}
 			>
@@ -158,7 +199,7 @@
 		</div>
 	{/if}
 
-	<div class="flex-1 overflow-hidden relative">
+	<div class="flex-1 overflow-hidden relative {showHeaderFilters ? '' : 'hide-filters'}">
 		{#if loading && pendientes.length === 0}
 			<div class="flex h-full items-center justify-center">
 				<div class="loading loading-spinner loading-lg text-primary"></div>
