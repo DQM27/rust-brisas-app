@@ -57,6 +57,19 @@
 	// Mode is now inferred from vehiculoPlaca
 	// Integración completa de vehículos:
 	let vehiculosList = $state<VehiculoResponse[]>([]);
+
+	let groupedVehiculos = $derived(
+		vehiculosList.reduce(
+			(acc, v) => {
+				const key = v.tipoVehiculoDisplay;
+				if (!acc[key]) acc[key] = [];
+				acc[key].push(v);
+				return acc;
+			},
+			{} as Record<string, VehiculoResponse[]>
+		)
+	);
+
 	let loadingVehiculos = $state(false);
 	let showVehiculoDropdown = $state(false);
 	let showVehiculoForm = $state(false); // Mini modal
@@ -558,37 +571,38 @@
 												</button>
 
 												{#if vehiculosList.length > 0}
-													<div class="px-3 py-1 text-xs text-secondary/50 font-medium bg-black/20">
-														Vehículos recientes
-													</div>
-													{#each vehiculosList as v}
-														<button
-															type="button"
-															onclick={() => {
-																vehiculoTipo = v.tipoVehiculo;
-																vehiculoPlaca = v.placa;
-																vehiculoMarca = v.marca || '';
-																vehiculoModelo = v.modelo || '';
-																vehiculoColor = v.color || '';
-																showVehiculoDropdown = false;
-															}}
-															class="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-300 hover:bg-white/10 transition-colors group"
+													{#each Object.entries(groupedVehiculos) as [tipo, list]}
+														<div
+															class="px-3 py-1 text-xs text-secondary/50 font-medium bg-black/20"
 														>
-															<div class="flex items-center gap-2">
-																{#if v.tipoVehiculo === 'motocicleta'}
-																	<Bike size={14} class="opacity-70" />
-																{:else}
-																	<Car size={14} class="opacity-70" />
+															{tipo}
+														</div>
+														{#each list as v}
+															<button
+																type="button"
+																onclick={() => {
+																	vehiculoTipo = v.tipoVehiculo;
+																	vehiculoPlaca = v.placa;
+																	vehiculoMarca = v.marca || '';
+																	vehiculoModelo = v.modelo || '';
+																	vehiculoColor = v.color || '';
+																	showVehiculoDropdown = false;
+																}}
+																class="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-300 hover:bg-white/10 transition-colors group"
+															>
+																<div class="flex items-center gap-2">
+																	{#if v.tipoVehiculo === 'motocicleta'}
+																		<Bike size={14} class="opacity-70" />
+																	{:else}
+																		<Car size={14} class="opacity-70" />
+																	{/if}
+																	<span class="font-mono font-bold">{v.placa}</span>
+																</div>
+																{#if vehiculoPlaca === v.placa}
+																	<Check size={14} class="text-blue-500" />
 																{/if}
-																<span class="font-mono font-bold">{v.placa}</span>
-																<span class="text-xs opacity-50 truncate"
-																	>{v.descripcionCompleta}</span
-																>
-															</div>
-															{#if vehiculoPlaca === v.placa}
-																<Check size={14} class="text-blue-500" />
-															{/if}
-														</button>
+															</button>
+														{/each}
 													{/each}
 												{:else}
 													<div class="px-3 py-4 text-xs text-secondary opacity-50 text-center">

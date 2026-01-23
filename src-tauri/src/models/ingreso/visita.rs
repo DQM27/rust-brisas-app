@@ -231,7 +231,7 @@ pub struct PreRegistroVisita {
     pub motivo: String,
     pub modo_ingreso: String,
     pub placa: Option<String>,
-    pub empresa_id: Option<String>,
+    pub empresa_id: Option<RecordId>,
     pub observaciones: Option<String>,
     pub estado: String,              // Enum as String for DB
     pub visitante: Option<RecordId>, // Link to catalog if exists
@@ -252,14 +252,14 @@ pub struct PreRegistroVisitaFetched {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub segundo_apellido: Option<String>,
     pub empresa_nombre: Option<String>,
-    pub fecha_esperada: String,
-    pub hora_esperada: String,
+    pub fecha_esperada: String, // YYYY-MM-DD
+    pub hora_esperada: String,  // HH:MM
     pub anfitrion: String,
     pub area_visitada: String,
     pub motivo: String,
     pub modo_ingreso: String,
     pub placa: Option<String>,
-    pub empresa_id: Option<String>,
+    pub empresa_id: Option<RecordId>,
     pub estado: String,
     pub observaciones: Option<String>,
     pub registrado_por: User,
