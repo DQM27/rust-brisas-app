@@ -9,7 +9,6 @@ use crate::models::ingreso::{
 };
 use crate::models::visitante::VisitanteCreateDTO;
 use log::{debug, info, warn};
-use surrealdb::sql::thing;
 use surrealdb::RecordId;
 
 use crate::services::search_service::SearchService;

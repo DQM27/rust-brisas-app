@@ -41,7 +41,7 @@ pub struct Vehiculo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VehiculoFetched {
     pub id: RecordId,
-    pub propietario: PropietarioFetched,
+    pub propietario: Option<PropietarioUnion>, // Changed to Option<Union>
     #[serde(alias = "tipo_vehiculo")]
     pub tipo_vehiculo: TipoVehiculo,
     pub placa: String,
@@ -63,6 +63,14 @@ pub enum PropietarioFetched {
     Contratista(ContratistaFetched),
     Proveedor(ProveedorFetched),
     Visitante(VisitanteFetched),
+}
+
+/// Union para manejar respuestas polimórficas o fallidas (links rotos/no expandidos)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PropietarioUnion {
+    Fetched(PropietarioFetched),
+    Unfetched(RecordId),
 }
 
 // --------------------------------------------------------------------------
@@ -285,28 +293,37 @@ impl VehiculoResponse {
             updated_at: datetime_to_iso(&v.updated_at),
         };
 
-        match v.propietario {
-            PropietarioFetched::Contratista(c) => {
-                res.propietario_id = c.id.to_string();
-                res.propietario_nombre = format!("{} {}", c.nombre, c.apellido);
-                res.propietario_cedula = c.cedula;
-                res.propietario_tipo = "contratista".to_string();
-                res.empresa_nombre = c.empresa.nombre;
+        if let Some(PropietarioUnion::Fetched(prop)) = &v.propietario {
+            match prop {
+                PropietarioFetched::Contratista(c) => {
+                    res.propietario_id = c.id.to_string();
+                    res.propietario_nombre = format!("{} {}", c.nombre, c.apellido);
+                    res.propietario_cedula = c.cedula.clone();
+                    res.propietario_tipo = "contratista".to_string();
+                    res.empresa_nombre = c.empresa.nombre.clone();
+                }
+                PropietarioFetched::Proveedor(p) => {
+                    res.propietario_id = p.id.to_string();
+                    res.propietario_nombre = format!("{} {}", p.nombre, p.apellido);
+                    res.propietario_cedula = p.cedula.clone();
+                    res.propietario_tipo = "proveedor".to_string();
+                    res.empresa_nombre = p.empresa.nombre.clone();
+                }
+                PropietarioFetched::Visitante(vis) => {
+                    res.propietario_id = vis.id.to_string();
+                    res.propietario_nombre = format!("{} {}", vis.nombre, vis.apellido);
+                    res.propietario_cedula = vis.cedula.clone();
+                    res.propietario_tipo = "visitante".to_string();
+                    res.empresa_nombre = vis
+                        .empresa
+                        .as_ref()
+                        .map_or_else(|| "N/A".to_string(), |e| e.nombre.clone());
+                }
             }
-            PropietarioFetched::Proveedor(p) => {
-                res.propietario_id = p.id.to_string();
-                res.propietario_nombre = format!("{} {}", p.nombre, p.apellido);
-                res.propietario_cedula = p.cedula;
-                res.propietario_tipo = "proveedor".to_string();
-                res.empresa_nombre = p.empresa.nombre;
-            }
-            PropietarioFetched::Visitante(vis) => {
-                res.propietario_id = vis.id.to_string();
-                res.propietario_nombre = format!("{} {}", vis.nombre, vis.apellido);
-                res.propietario_cedula = vis.cedula;
-                res.propietario_tipo = "visitante".to_string();
-                res.empresa_nombre = vis.empresa.map_or_else(|| "N/A".to_string(), |e| e.nombre);
-            }
+        } else {
+            // Fallback para vehículos con link roto, id sin expandir o null
+            res.propietario_nombre = "Propietario Desconocido / Link Roto".to_string();
+            res.propietario_tipo = "unknown".to_string();
         }
 
         res

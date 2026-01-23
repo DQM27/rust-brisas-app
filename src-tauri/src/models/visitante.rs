@@ -40,6 +40,7 @@ pub struct VisitanteFetched {
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
     pub empresa: Option<crate::models::empresa::Empresa>,
+    #[serde(default)]
     pub vehiculos: Vec<crate::models::vehiculo::Vehiculo>,
     pub has_vehicle: bool,
     pub created_at: Datetime,
