@@ -1,16 +1,23 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
 	import { LogIn, Trash2 } from 'lucide-svelte';
+	import type { PreRegistroVisita } from '$lib/types/ingreso-nuevos';
 
-	let { row, onaction } = $props();
+	let { row } = $props();
+
+	const actions = getContext<{
+		ingreso: (r: PreRegistroVisita) => void;
+		cancel: (r: PreRegistroVisita) => void;
+	}>('gridActions');
 
 	function handleIngreso(e: MouseEvent) {
 		e.stopPropagation();
-		onaction({ action: 'ingreso', data: row });
+		actions.ingreso(row);
 	}
 
 	function handleCancel(e: MouseEvent) {
 		e.stopPropagation();
-		onaction({ action: 'cancel', data: row });
+		actions.cancel(row);
 	}
 </script>
 

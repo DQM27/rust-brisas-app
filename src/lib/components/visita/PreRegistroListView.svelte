@@ -1,37 +1,51 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { CalendarClock } from 'lucide-svelte';
+	import { toast } from 'svelte-5-french-toast';
 	import { preRegistroVisitaService } from '$lib/services/preRegistroVisitaService';
 	import type { PreRegistroVisita } from '$lib/types/ingreso-nuevos';
-	import PreRegistroFormModal from './PreRegistroFormModal.svelte';
-	import IngresoVisitaFormModal from '../ingreso/IngresoVisitaFormModal.svelte';
-	import {
-		CalendarClock,
-		Plus,
-		Trash2,
-		Building2,
-		User,
-		MapPin,
-		MailOpen,
-		LogIn,
-		GanttChart,
-		Table2
-	} from 'lucide-svelte';
-	import SvarGanttView from './SvarGanttView.svelte';
-	import SvarGridView from './SvarGridView.svelte';
+	import { openTab } from '$lib/stores/tabs';
+	import PreRegistroFormModal from '$lib/components/visita/PreRegistroFormModal.svelte';
+	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
+	import { getPreRegistroColumns } from '$lib/logic/visita/preRegistroColumns';
+
+	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
+	import { Plus } from 'lucide-svelte';
 
 	interface Props {
 		showHeader?: boolean;
-		viewMode?: 'grid' | 'focus' | 'svar-gantt' | 'svar-grid';
+		viewMode: 'svar-grid' | 'svar-gantt' | 'grid' | 'focus';
 	}
 	let { showHeader = true, viewMode = $bindable('svar-grid') }: Props = $props();
 
-	let pendientes: PreRegistroVisita[] = $state([]);
-	let loading = $state(true);
+	let pendientes = $state<PreRegistroVisita[]>([]);
+	let loading = $state(false);
 	let showCreateModal = $state(false);
+	let selectedPreRegistro = $state<PreRegistroVisita | null>(null);
 
-	// Ingreso Modal State
-	let showIngresoModal = $state(false);
-	let selectedPreRegistro: PreRegistroVisita | null = $state(null);
+	// Toolbar State
+	let searchTerm = $state('');
+	let showHeaderFilters = $state(false);
+	let toolbarColumns = $state([]);
+
+	// Tabulator State
+	let gridWrapper = $state<any>(null);
+	let tabulatorColumns = $derived(
+		getPreRegistroColumns(handleIngreso, handleCancel, showHeaderFilters)
+	);
+
+	// Derived filtered data
+	let filteredPendientes = $derived.by(() => {
+		if (!searchTerm) return pendientes;
+		const lower = searchTerm.toLowerCase();
+		return pendientes.filter(
+			(p) =>
+				p.nombre?.toLowerCase().includes(lower) ||
+				p.cedula?.toLowerCase().includes(lower) ||
+				p.empresaNombre?.toLowerCase().includes(lower) ||
+				p.anfitrion?.toLowerCase().includes(lower)
+		);
+	});
 
 	onMount(() => {
 		loadPendientes();
@@ -40,126 +54,138 @@
 	async function loadPendientes() {
 		loading = true;
 		try {
-			pendientes = await preRegistroVisitaService.getPendientes();
+			const rawData = await preRegistroVisitaService.getPendientes();
+
+			// Normalize data (Handling SurrealDB IDs)
+			pendientes = rawData.map((p) => {
+				let id = p.id;
+				// Maintain backward compatibility with SurrealDB object IDs
+				if (typeof p.id === 'object' && p.id !== null) {
+					// @ts-ignore
+					if (p.id.tb && p.id.id && p.id.id.String) {
+						// @ts-ignore
+						id = `${p.id.tb}:${p.id.id.String}`;
+					} else {
+						id = (p.id as any).toString();
+					}
+				}
+
+				return {
+					...p,
+					id: id
+				};
+			});
+			// Wrapper updates via reactive 'data' prop now
 		} catch (error) {
-			console.error(error);
+			console.error('Error loading pendientes:', error);
+			toast.error('Error cargando visitas esperadas');
 		} finally {
 			loading = false;
 		}
 	}
 
+	function handleGridSearch(term: string) {
+		searchTerm = term;
+	}
+
+	function handleIngreso(row: PreRegistroVisita) {
+		openTab({
+			componentKey: 'visitas-list',
+			title: 'Gestión de Visitas',
+			id: 'visitas-list',
+			data: {
+				openCreateModal: true,
+				initialPersonId: row.cedula
+			},
+			focusOnOpen: true
+		});
+	}
+
 	async function handleCancel(id: string) {
-		if (!confirm('¿Estás seguro de cancelar esta visita esperada?')) return;
+		if (!confirm('¿Está seguro de borrar este registro?')) return;
 		try {
 			await preRegistroVisitaService.cancel(id);
-			await loadPendientes();
-		} catch (error) {
-			console.error(error);
-			alert('Error al cancelar');
+			toast.success('Registro borrado');
+			loadPendientes();
+		} catch (e) {
+			console.error(e);
+			toast.error('Error al borrar');
 		}
 	}
 
-	function handleIngreso(preRegistro: PreRegistroVisita) {
-		selectedPreRegistro = preRegistro;
-		showIngresoModal = true;
-	}
-
-	export function openCreateModal() {
+	function handleRowDblClick(e: any, row: any) {
+		const data = row.getData();
+		selectedPreRegistro = data;
 		showCreateModal = true;
 	}
 
-	export function setViewMode(mode: typeof viewMode) {
-		viewMode = mode;
+	export function openCreateModal() {
+		selectedPreRegistro = null;
+		showCreateModal = true;
 	}
-
-	export const getViewMode = () => viewMode;
 </script>
 
-<div
-	class="flex flex-col h-full bg-surface-1 {showHeader
-		? 'rounded-xl border border-surface'
-		: ''} overflow-hidden"
->
-	<!-- Toolbar -->
+<div class="flex flex-col h-full bg-surface-1">
 	{#if showHeader}
-		<div class="px-6 py-4 border-b border-surface bg-surface-2 flex justify-between items-center">
-			<h3 class="font-bold text-lg text-primary flex items-center gap-2.5">
-				<div class="p-2 rounded-lg bg-surface-3 text-accent">
-					<CalendarClock size={20} />
+		<div class="px-6 pt-4 pb-2 bg-surface-2 border-b border-surface">
+			<div class="flex items-center justify-between gap-4 mb-4">
+				<div>
+					<h2 class="text-xl font-semibold text-primary">Visitas Esperadas</h2>
+					<p class="text-sm text-secondary">Gestión de pre-registros y agenda</p>
 				</div>
-				Visitas Esperadas
-				<span
-					class="bg-surface-3 text-xs font-mono px-2 py-0.5 rounded-full text-secondary border border-surface shadow-sm"
-					>{pendientes.length}</span
-				>
-			</h3>
-			<div class="flex items-center gap-3">
-				<div
-					class="flex items-center bg-surface-3 rounded-lg p-1 border border-surface shadow-inner mr-2"
-				>
-					<button
-						onclick={() => (viewMode = 'svar-gantt')}
-						class="p-1.5 rounded-md transition-all {viewMode === 'svar-gantt'
-							? 'bg-primary text-white shadow-md'
-							: 'text-secondary hover:bg-surface-1'}"
-						title="SVAR Gantt"
-					>
-						<GanttChart size={16} />
-					</button>
-					<button
-						onclick={() => (viewMode = 'svar-grid')}
-						class="p-1.5 rounded-md transition-all {viewMode === 'svar-grid'
-							? 'bg-primary text-white shadow-md'
-							: 'text-secondary hover:bg-surface-1'}"
-						title="SVAR Data Grid"
-					>
-						<Table2 size={16} />
-					</button>
-				</div>
-				<button
-					onclick={() => (showCreateModal = true)}
-					class="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg hover:bg-primary/20 hover:border-primary/40 transition-all font-medium text-sm shadow-sm"
-				>
-					<Plus size={16} />
-					<span>Nuevo Pre-Registro</span>
-				</button>
 			</div>
+
+			<GridToolbar
+				{searchTerm}
+				onSearch={handleGridSearch}
+				onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
+				onFitColumns={() => gridWrapper?.fitColumns()}
+				onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
+				onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
+				onToggleFilters={() => {
+					showHeaderFilters = !showHeaderFilters;
+					// Here you would implement filter toggling if supported by wrapper/columns
+				}}
+				columns={toolbarColumns}
+			>
+				{#snippet primaryActions()}
+					<button class="form-btn-primary gap-2" onclick={openCreateModal}>
+						<Plus size={16} />
+						<span>Nuevo Pre-Registro</span>
+					</button>
+				{/snippet}
+			</GridToolbar>
 		</div>
 	{/if}
 
-	<!-- Lista -->
-	<div class="flex-1 overflow-y-auto p-6 bg-black/20">
-		{#if loading}
-			<div class="flex justify-center items-center h-full text-secondary gap-2">
-				<div class="loading loading-spinner loading-md"></div>
-				<span class="text-sm">Cargando datos...</span>
+	<div class="flex-1 overflow-hidden relative">
+		{#if loading && pendientes.length === 0}
+			<div class="flex h-full items-center justify-center">
+				<div class="loading loading-spinner loading-lg text-primary"></div>
 			</div>
-		{:else if pendientes.length === 0}
-			<div class="flex flex-col justify-center items-center h-full text-secondary gap-4 opacity-60">
-				<div class="p-6 rounded-full bg-surface-2 border border-surface">
-					<MailOpen size={48} strokeWidth={1} />
-				</div>
-				<p class="text-sm font-medium">No hay visitas esperadas pendientes.</p>
-			</div>
-		{:else if viewMode === 'svar-gantt'}
-			<SvarGanttView {pendientes} />
-		{:else if viewMode === 'svar-grid'}
-			<SvarGridView {pendientes} onIngreso={handleIngreso} onCancel={handleCancel} />
+		{:else}
+			<TabulatorWrapper
+				bind:this={gridWrapper}
+				data={filteredPendientes}
+				columns={tabulatorColumns}
+				bind:toolbarColumns
+				class="h-full"
+				layout="fitColumns"
+				placeholder="No hay visitas esperadas"
+				onRowDblClick={handleRowDblClick}
+			/>
 		{/if}
 	</div>
 </div>
 
-<PreRegistroFormModal
-	bind:isOpen={showCreateModal}
-	on:close={() => (showCreateModal = false)}
-	on:success={loadPendientes}
-/>
-
-<IngresoVisitaFormModal
-	bind:show={showIngresoModal}
-	initialPerson={selectedPreRegistro}
-	onComplete={() => {
-		showIngresoModal = false;
-		loadPendientes();
-	}}
-/>
+{#if showCreateModal}
+	<PreRegistroFormModal
+		show={showCreateModal}
+		initialData={selectedPreRegistro}
+		on:success={loadPendientes}
+		onClose={() => {
+			showCreateModal = false;
+			loadPendientes();
+		}}
+	/>
+{/if}

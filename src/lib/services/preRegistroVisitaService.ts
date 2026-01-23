@@ -8,6 +8,10 @@ export const preRegistroVisitaService = {
         return await invoke('create_pre_registro_visita', { input });
     },
 
+    async update(id: string, input: CreatePreRegistroInput): Promise<PreRegistroVisita> {
+        return await invoke('update_pre_registro_visita', { id, input });
+    },
+
     async getPendientes(): Promise<PreRegistroVisita[]> {
         return await invoke('get_pre_registros_pendientes');
     },

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import type { CreatePreRegistroInput } from '$lib/types/ingreso-nuevos';
+	import type { CreatePreRegistroInput, PreRegistroVisita } from '$lib/types/ingreso-nuevos';
 	import { preRegistroVisitaService } from '$lib/services/preRegistroVisitaService';
 	import type { SearchResult } from '$lib/types/search.types';
 	import { slide, fly, fade, scale } from 'svelte/transition';
@@ -24,13 +24,90 @@
 	import { submitCreateEmpresa } from '$lib/logic/empresa/empresaService';
 	import { vehiculos } from '$lib/api/vehiculos';
 	import type { VehiculoResponse } from '$lib/types/vehiculo';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 
-	let { isOpen = $bindable(false) } = $props();
+	let {
+		show = false,
+		initialData = null,
+		onClose
+	}: { show: boolean; initialData?: PreRegistroVisita | null; onClose: () => void } = $props();
+
 	const dispatch = createEventDispatcher();
 
 	let loading = $state(false);
 	let error = $state('');
+
+	// State for ID tracking
+	let editingId = $state<string | null>(null);
+
+	$effect(() => {
+		if (show) {
+			if (initialData) {
+				untrack(() => populateForm(initialData!));
+			} else {
+				untrack(() => resetForm());
+			}
+		}
+	});
+
+	function populateForm(data: PreRegistroVisita) {
+		try {
+			console.log('Populating form with:', data);
+			if (!data) return;
+
+			// Store ID for update
+			if (data.id) {
+				// Handle both string and object IDs
+				if (typeof data.id === 'object') {
+					// @ts-ignore
+					if (data.id.tb && data.id.id && data.id.id.String) {
+						// @ts-ignore
+						editingId = `${data.id.tb}:${data.id.id.String}`;
+					} else {
+						editingId = (data.id as any).toString();
+					}
+				} else {
+					editingId = data.id.toString();
+				}
+			}
+
+			cedula = data.cedula || '';
+			nombre = data.nombre || '';
+			segundoNombre = data.segundoNombre || '';
+			apellido = data.apellido || '';
+			segundoApellido = data.segundoApellido || '';
+
+			empresaId = data.empresaId || '';
+			empresaNombre = data.empresaNombre || '';
+
+			anfitrion = data.anfitrion || '';
+			areaVisitada = data.areaVisitada || '';
+			motivo = data.motivo || '';
+
+			if (data.fechaEsperada) {
+				try {
+					fechaEsperadaDisplay = formatDateForDisplay(data.fechaEsperada);
+				} catch (e) {
+					console.warn('Error formatting date:', e);
+					fechaEsperadaDisplay = ''; // Fallback
+				}
+			} else {
+				fechaEsperadaDisplay = '';
+			}
+
+			horaEsperada = data.horaEsperada || '';
+
+			if (data.placa) {
+				vehiculoPlaca = data.placa;
+			}
+
+			// If we have data, we assume visitor is selected (locks fields)
+			visitorSelected = true;
+		} catch (err) {
+			console.error('Error populating form:', err);
+			error = 'Error cargando datos del registro';
+		}
+	}
 
 	// Form data
 	let cedula = $state('');
@@ -54,8 +131,6 @@
 	let motivo = $state('');
 
 	// Mode & Vehicle State
-	// Mode is now inferred from vehiculoPlaca
-	// Integración completa de vehículos:
 	let vehiculosList = $state<VehiculoResponse[]>([]);
 
 	let groupedVehiculos = $derived(
@@ -73,27 +148,19 @@
 	let loadingVehiculos = $state(false);
 	let showVehiculoDropdown = $state(false);
 	let showVehiculoForm = $state(false); // Mini modal
-	let showTipoDropdown = $state(false);
 
 	// Vehicle Form Data (para creación inline)
-	let vehiculoTipo = $state(''); // 'motocicleta' | 'automovil' ...
+	let vehiculoTipo = $state('');
 	let vehiculoPlaca = $state('');
 	let vehiculoMarca = $state('');
 	let vehiculoModelo = $state('');
 	let vehiculoColor = $state('');
 
-	const tipoOptions = [
-		{ value: 'motocicleta', label: 'Motocicleta' },
-		{ value: 'automovil', label: 'Automóvil' },
-		{ value: 'camioneta', label: 'Camioneta' },
-		{ value: 'camion', label: 'Camión' },
-		{ value: 'otro', label: 'Otro' }
-	];
 	// Search logic
 	let visitorSelected = $state(false);
 	let searchResetKey = $state(0);
 
-	// Clases estándar según ui-patterns.md
+	// Clases estándar
 	const inputClass =
 		'w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 h-[34px] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:!border-blue-500/50 focus:!ring-1 focus:!ring-blue-500/20 disabled:opacity-50 transition-all';
 	const selectClass =
@@ -159,11 +226,17 @@
 				placa: vehiculoPlaca || undefined
 			};
 
-			await preRegistroVisitaService.create(input);
+			if (editingId) {
+				await preRegistroVisitaService.update(editingId, input);
+				// TODO: Check if update returns new data, but generally we just need success
+			} else {
+				await preRegistroVisitaService.create(input);
+			}
+
 			dispatch('success');
 			close();
 		} catch (e: any) {
-			error = e.message || 'Error al crear pre-registro';
+			error = e.message || 'Error al guardar pre-registro';
 			console.error(e);
 		} finally {
 			loading = false;
@@ -171,11 +244,11 @@
 	}
 
 	function close() {
-		resetForm();
-		dispatch('close');
+		onClose();
 	}
 
 	function resetForm() {
+		editingId = null;
 		cedula = '';
 		nombre = '';
 		segundoNombre = '';
@@ -191,6 +264,7 @@
 		error = '';
 		visitorSelected = false;
 		searchResetKey++;
+		fechaEsperadaDisplay = formatDateForDisplay(new Date().toISOString().split('T')[0]);
 	}
 
 	function resetVehiculoForm() {
@@ -230,8 +304,16 @@
 
 	function clearSearch() {
 		visitorSelected = false;
+		// Don't fully reset, just clear visual selection state if needed, or allow editing fields
+		// Actually, clearSearch usually means "I want to type manually"
+		// so we just unlock fields
+		cedula = '';
+		nombre = '';
+		apellido = '';
+		// ... etc if they want to clear
+		// But usually "Limpiar y editar manual" means "Unlock me"
+		// For now let's reuse logic
 		resetForm();
-		fechaEsperadaDisplay = formatDateForDisplay(new Date().toISOString().split('T')[0]);
 	}
 
 	async function handleCrearEmpresa() {
@@ -282,7 +364,7 @@
 	}
 </script>
 
-{#if isOpen}
+{#if show}
 	<!-- Backdrop -->
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
@@ -299,7 +381,11 @@
 			>
 				<h2 class="text-xl font-semibold text-primary flex items-center gap-2">
 					<CalendarDays size={20} class="text-accent" />
-					Nuevo Pre-Registro de Visita
+					{#if editingId}
+						Editar Pre-Registro
+					{:else}
+						Nuevo Pre-Registro de Visita
+					{/if}
 				</h2>
 				<button
 					onclick={close}
@@ -320,22 +406,24 @@
 				<!-- Card de Inputs -->
 				<div class="bg-surface-1 rounded-lg border border-surface p-6 space-y-6">
 					<!-- Buscador Unificado -->
-					<div>
-						<div class="flex items-center justify-end mb-2">
-							{#if visitorSelected}
-								<button
-									type="button"
-									onclick={clearSearch}
-									class="text-[10px] text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5 bg-red-400/5 px-2 py-1 rounded-md border border-red-400/10"
-								>
-									<RefreshCw size={10} /> Limpiar y editar manual
-								</button>
-							{/if}
+					{#if !editingId}
+						<div>
+							<div class="flex items-center justify-end mb-2">
+								{#if visitorSelected}
+									<button
+										type="button"
+										onclick={clearSearch}
+										class="text-[10px] text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5 bg-red-400/5 px-2 py-1 rounded-md border border-red-400/10"
+									>
+										<RefreshCw size={10} /> Limpiar y editar manual
+									</button>
+								{/if}
+							</div>
+							{#key searchResetKey}
+								<PersonaFinder scope="visitante" on:select={handlePersonaSelect} autoFocus={true} />
+							{/key}
 						</div>
-						{#key searchResetKey}
-							<PersonaFinder scope="visitante" on:select={handlePersonaSelect} autoFocus={true} />
-						{/key}
-					</div>
+					{/if}
 
 					<form
 						onsubmit={(e) => {
@@ -724,7 +812,9 @@
 						<span>Guardando...</span>
 					{:else}
 						<Save size={16} />
-						<span>Guardar Pre-Registro</span>
+						<span
+							>{#if editingId}Actualizar{:else}Guardar{/if}</span
+						>
 					{/if}
 				</button>
 			</div>
@@ -756,39 +846,31 @@
 
 			<div class="p-5 space-y-4">
 				{#if empresaError}
-					<div class="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-300">
+					<div class="p-3 bg-error/10 border border-error/20 text-error rounded-lg text-sm">
 						{empresaError}
 					</div>
 				{/if}
-
-				<div class="space-y-1">
-					<label for="newEmpresa" class={labelClass}>Nombre Comercial</label>
-					<input
-						id="newEmpresa"
-						type="text"
-						bind:value={nuevaEmpresaNombre}
-						placeholder="Ej: Servicios Generales S.A."
-						disabled={creatingEmpresa}
-						class={inputClass}
-						onkeydown={(e) => e.key === 'Enter' && handleCrearEmpresa()}
-					/>
-				</div>
+				<input
+					type="text"
+					bind:value={nuevaEmpresaNombre}
+					placeholder="Nombre de la empresa"
+					class={inputClass}
+				/>
 			</div>
 
-			<div class="flex justify-end gap-2 px-5 py-3 border-t border-surface bg-surface-1">
+			<div
+				class="flex items-center justify-end gap-3 px-5 py-4 border-t border-surface bg-surface-1"
+			>
 				<button
-					type="button"
-					disabled={creatingEmpresa}
 					onclick={() => (showEmpresaModal = false)}
-					class="px-3 py-1.5 rounded-lg border border-white/10 text-secondary hover:text-white text-xs"
+					class="px-3 py-1.5 rounded-lg border border-surface text-secondary hover:text-white transition-colors text-sm"
 				>
 					Cancelar
 				</button>
 				<button
-					type="button"
-					disabled={creatingEmpresa || !nuevaEmpresaNombre.trim()}
 					onclick={handleCrearEmpresa}
-					class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium"
+					disabled={creatingEmpresa}
+					class="px-3 py-1.5 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors text-sm"
 				>
 					{creatingEmpresa ? 'Guardando...' : 'Guardar'}
 				</button>
@@ -796,190 +878,3 @@
 		</div>
 	</div>
 {/if}
-
-<!-- Mini Modal para añadir vehículo (modo creación) -->
-{#if showVehiculoForm}
-	<div
-		class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-		transition:fade={{ duration: 200 }}
-	>
-		<div
-			class="absolute inset-0"
-			role="button"
-			tabindex="0"
-			onclick={() => (showVehiculoForm = false)}
-			onkeydown={(e) => e.key === 'Escape' && (showVehiculoForm = false)}
-		></div>
-
-		<div
-			class="relative w-full max-w-[400px] rounded-lg bg-surface-2 shadow-xl border border-surface overflow-hidden"
-			transition:scale={{ start: 0.95, duration: 200 }}
-		>
-			<!-- Header -->
-			<div class="flex items-center justify-between px-5 py-4 border-b border-surface bg-surface-1">
-				<h3 class="text-base font-semibold text-primary">Nuevo Vehículo</h3>
-				<button
-					onclick={() => (showVehiculoForm = false)}
-					class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
-				>
-					<X size={18} />
-				</button>
-			</div>
-
-			<!-- Form Content -->
-			<div class="p-5 space-y-4">
-				<!-- Tipo de Vehículo Dropdown -->
-				<div class="space-y-1 relative">
-					<div class={labelClass}>Tipo de Vehículo <span class="text-error">*</span></div>
-					<div class="relative">
-						<button
-							id="tipoVehiculoDropdown"
-							type="button"
-							onclick={() => (showTipoDropdown = !showTipoDropdown)}
-							class="{selectClass} flex items-center justify-between"
-						>
-							<span class={vehiculoTipo ? 'text-white' : 'text-gray-500'}>
-								{tipoOptions.find((o) => o.value === vehiculoTipo)?.label || 'Seleccione un tipo'}
-							</span>
-							<ChevronDown size={14} class="text-secondary" />
-						</button>
-
-						{#if showTipoDropdown}
-							<div
-								class="fixed inset-0 z-40"
-								onclick={() => (showTipoDropdown = false)}
-								role="presentation"
-								aria-hidden="true"
-							></div>
-							<div
-								class="absolute z-50 left-0 right-0 top-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1"
-								transition:fly={{ y: -5, duration: 150 }}
-							>
-								{#each tipoOptions as option}
-									<button
-										type="button"
-										onclick={() => {
-											vehiculoTipo = option.value;
-											showTipoDropdown = false;
-										}}
-										class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center gap-2"
-									>
-										{#if option.value === 'motocicleta'}
-											<Bike size={16} />
-										{:else}
-											<Car size={16} />
-										{/if}
-										{option.label}
-									</button>
-								{/each}
-							</div>
-						{/if}
-					</div>
-				</div>
-
-				<!-- Placa y Marca -->
-				<div class="grid grid-cols-2 gap-4">
-					<div class="space-y-1">
-						<label for="vehiculo_placa" class={labelClass}
-							>Placa <span class="text-error">*</span></label
-						>
-						<input
-							id="vehiculo_placa"
-							type="text"
-							bind:value={vehiculoPlaca}
-							placeholder="ABC-123"
-							class="{inputClass} uppercase"
-						/>
-					</div>
-					<div class="space-y-1">
-						<label for="vehiculo_marca" class={labelClass}>Marca</label>
-						<input
-							id="vehiculo_marca"
-							type="text"
-							bind:value={vehiculoMarca}
-							placeholder="Toyota"
-							class={inputClass}
-						/>
-					</div>
-				</div>
-
-				<!-- Modelo y Color -->
-				<div class="grid grid-cols-2 gap-4">
-					<div class="space-y-1">
-						<label for="vehiculo_modelo" class={labelClass}>Modelo</label>
-						<input
-							id="vehiculo_modelo"
-							type="text"
-							bind:value={vehiculoModelo}
-							placeholder="Corolla"
-							class={inputClass}
-						/>
-					</div>
-					<div class="space-y-1">
-						<label for="vehiculo_color" class={labelClass}>Color</label>
-						<input
-							id="vehiculo_color"
-							type="text"
-							bind:value={vehiculoColor}
-							placeholder="Blanco"
-							class={inputClass}
-						/>
-					</div>
-				</div>
-			</div>
-
-			<!-- Footer -->
-			<div class="flex justify-end gap-2 px-5 py-3 border-t border-surface bg-surface-1">
-				<button
-					type="button"
-					onclick={() => {
-						showVehiculoForm = false;
-						// No clearing if canceled, just close
-					}}
-					class="px-3 py-1.5 rounded-lg border border-white/10 text-secondary hover:text-white text-xs"
-				>
-					Cancelar
-				</button>
-				<button
-					type="button"
-					disabled={!vehiculoTipo || !vehiculoPlaca}
-					onclick={() => {
-						if (vehiculoTipo && vehiculoPlaca) {
-							// Update main form state to reflect new vehicle
-							// We are effectively "selecting" this new manual vehicle
-							// Since we don't save it to DB yet, we just fill the fields
-
-							// If we wanted to properly support creation, we should probably add it to the list?
-							// Or just assume it's "selected" for the form submission.
-
-							// The main form uses `vehiculoPlaca` state variable, which is bound to this input too?
-							// Yes, `bind:value={vehiculoPlaca}`. So data is already there.
-							// Just close.
-
-							showVehiculoForm = false;
-						}
-					}}
-					class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium disabled:opacity-50"
-				>
-					Guardar
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
-
-<style>
-	/* Autofill Fix (Evita fondo blanco de Chrome) */
-	input:-webkit-autofill {
-		-webkit-text-fill-color: white !important;
-		-webkit-box-shadow: 0 0 0px 1000px #1c2128 inset !important;
-		transition: background-color 5000s ease-in-out 0s;
-	}
-
-	/* Focus Override Global */
-	input:focus {
-		border-color: rgba(59, 130, 246, 0.5) !important;
-		box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
-		outline: none !important;
-	}
-</style>
