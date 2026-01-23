@@ -54,8 +54,7 @@
 	let motivo = $state('');
 
 	// Mode & Vehicle State
-	let modoIngreso = $state('caminando');
-	let showModoIngresoDropdown = $state(false); // Mantengo esto para el switch principal, o lo integro?
+	// Mode is now inferred from vehiculoPlaca
 	// Integración completa de vehículos:
 	let vehiculosList = $state<VehiculoResponse[]>([]);
 	let loadingVehiculos = $state(false);
@@ -115,11 +114,8 @@
 			return;
 		}
 
-		// Validar vehículo si el modo es vehículo
-		if (modoIngreso === 'vehiculo' && !vehiculoPlaca) {
-			error = 'Si selecciona modo Vehículo, debe indicar la placa.';
-			return;
-		}
+		// Inferir modo ingreso
+		const modoIngreso = vehiculoPlaca ? 'vehiculo' : 'caminando';
 
 		loading = true;
 		error = '';
@@ -134,8 +130,6 @@
 				segundoApellido,
 
 				// Lógica Empresa:
-				// 1. Si seleccionó ID -> enviar nombre de la empresaStore (para el campo legacy) Y el ID
-				// 2. Si no, enviar el texto manual?? No, ahora forzamos selección/creación
 				empresaNombre: empresaId
 					? empresaStore.empresas.find((e) => e.id === empresaId)?.nombre
 					: undefined,
@@ -149,10 +143,7 @@
 				modoIngreso,
 
 				// Lógica Vehículo
-				placa: modoIngreso === 'vehiculo' ? vehiculoPlaca : undefined
-				// Nota: No enviamos marca/color porque el endpoint no lo soporta aun,
-				// pero si el pre-registro dispara creación de visitante, el backend lo manejará si lo actualizamos.
-				// Por ahora MVP: Se guarda placa.
+				placa: vehiculoPlaca || undefined
 			};
 
 			await preRegistroVisitaService.create(input);
@@ -181,7 +172,6 @@
 		empresaId = '';
 		empresaNombre = '';
 
-		modoIngreso = 'caminando';
 		resetVehiculoForm();
 
 		horaEsperada = '';
@@ -211,18 +201,11 @@
 		if (result.empresaId) {
 			empresaId = result.empresaId;
 		} else if (result.empresaNombre) {
-			// Try to find by name or just leave empty ID but fill name?
-			// For this component we prioritize ID if possible.
 			const found = empresaStore.empresas.find(
 				(e) => e.nombre?.toLowerCase() === result.empresaNombre?.toLowerCase()
 			);
 			if (found) empresaId = found.id;
 		}
-
-		// Vehicle logic?
-		// Visitante search result might not have vehicle details populated in search result object directly
-		// But if they have a vehicle, we might want to fetch it?
-		// For MVP, just fill personal data.
 
 		visitorSelected = true;
 	}
@@ -235,8 +218,6 @@
 	function clearSearch() {
 		visitorSelected = false;
 		resetForm();
-		// Mantener fecha y hora tal vez? No, resetForm las borra.
-		// Restauremos fecha
 		fechaEsperadaDisplay = formatDateForDisplay(new Date().toISOString().split('T')[0]);
 	}
 
@@ -429,7 +410,7 @@
 							</div>
 						</div>
 
-						<!-- Fila 2: Empresa y Modo Ingreso -->
+						<!-- Fila 2: Empresa y Vehículo (Unificado) -->
 						<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 							<!-- Selector Empresa -->
 							<div>
@@ -508,185 +489,129 @@
 								</div>
 							</div>
 
-							<!-- Selector Modo Ingreso -->
+							<!-- Selector Vehículo (Simplificado - Unificado) -->
 							<div>
-								<label for="modoIngreso" class={labelClass}>Modo Ingreso</label>
-								<div class="relative">
-									<button
-										id="modoIngreso"
-										type="button"
-										onclick={() => (showModoIngresoDropdown = !showModoIngresoDropdown)}
-										class="{selectClass} flex items-center justify-between"
-										class:!border-blue-500={showModoIngresoDropdown}
-									>
-										<span class="flex items-center gap-2">
-											{#if modoIngreso === 'caminando'}
-												<PersonStanding size={16} class="text-secondary" />
-												<span>Caminando</span>
-											{:else}
-												<Car size={16} class="text-secondary" />
-												<span>Vehículo</span>
-											{/if}
-										</span>
-										<ChevronDown size={14} class="text-secondary" />
-									</button>
-
-									{#if showModoIngresoDropdown}
-										<div
-											class="fixed inset-0 z-40"
-											onclick={() => (showModoIngresoDropdown = false)}
-											role="presentation"
-										></div>
-
-										<div
-											class="absolute z-50 w-full top-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1"
-											transition:fly={{ y: 5, duration: 200 }}
+								<label for="vehiculoPlaca" class={labelClass}>Vehículo / Medio Ingreso</label>
+								<div class="flex gap-2 relative">
+									<!-- Custom Dropdown Trigger -->
+									<div class="relative flex-1">
+										<button
+											type="button"
+											disabled={loading || loadingVehiculos}
+											onclick={() => (showVehiculoDropdown = !showVehiculoDropdown)}
+											class="{selectClass} flex items-center justify-between {vehiculoPlaca
+												? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
+												: ''}"
 										>
-											<button
-												type="button"
-												onclick={() => {
-													modoIngreso = 'caminando';
-													showModoIngresoDropdown = false;
-													// Reset vehículo al cambiar a caminando
-													vehiculoPlaca = '';
-													vehiculoTipo = '';
-												}}
-												class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
-											>
-												<span class="flex items-center gap-2">
-													<PersonStanding size={16} />
-													Caminando
-												</span>
-												{#if modoIngreso === 'caminando'}
-													<Check size={14} class="text-white" />
+											<span class="truncate flex items-center gap-2">
+												{#if loadingVehiculos}
+													Cargando...
+												{:else if vehiculoPlaca}
+													<span class="font-mono font-bold bg-white/10 px-1.5 rounded text-xs"
+														>{vehiculoPlaca}</span
+													>
+													{#if vehiculoMarca}
+														<span class="text-xs opacity-70">
+															{vehiculoMarca}
+															{vehiculoModelo}
+														</span>
+													{/if}
+												{:else}
+													<span class="opacity-50 flex items-center gap-2">
+														<PersonStanding size={14} />
+														Caminando (Sin vehículo)
+													</span>
 												{/if}
-											</button>
-											<button
-												type="button"
-												onclick={() => {
-													modoIngreso = 'vehiculo';
-													showModoIngresoDropdown = false;
-												}}
-												class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+											</span>
+											<ChevronDown size={14} class="text-secondary" />
+										</button>
+
+										<!-- Dropdown Options -->
+										{#if showVehiculoDropdown}
+											<div
+												class="fixed inset-0 z-40"
+												onclick={() => (showVehiculoDropdown = false)}
+												role="presentation"
+												aria-hidden="true"
+											></div>
+
+											<div
+												class="absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto bg-[#1c2128] border border-white/10 rounded-lg shadow-xl"
+												transition:fly={{ y: -5, duration: 200 }}
 											>
-												<span class="flex items-center gap-2">
-													<Car size={16} />
-													Vehículo
-												</span>
-												{#if modoIngreso === 'vehiculo'}
-													<Check size={14} class="text-white" />
+												<!-- Opción Caminando (Limpiar) -->
+												<button
+													type="button"
+													onclick={() => {
+														resetVehiculoForm(); // Limpia placa -> Modo caminando
+														showVehiculoDropdown = false;
+													}}
+													class="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-300 hover:bg-white/10 transition-colors border-b border-white/5"
+												>
+													<div class="flex items-center gap-2">
+														<PersonStanding size={16} class="opacity-70" />
+														<span>Caminando</span>
+													</div>
+													{#if !vehiculoPlaca}
+														<Check size={14} class="text-blue-500" />
+													{/if}
+												</button>
+
+												{#if vehiculosList.length > 0}
+													<div class="px-3 py-1 text-xs text-secondary/50 font-medium bg-black/20">
+														Vehículos recientes
+													</div>
+													{#each vehiculosList as v}
+														<button
+															type="button"
+															onclick={() => {
+																vehiculoTipo = v.tipoVehiculo;
+																vehiculoPlaca = v.placa;
+																vehiculoMarca = v.marca || '';
+																vehiculoModelo = v.modelo || '';
+																vehiculoColor = v.color || '';
+																showVehiculoDropdown = false;
+															}}
+															class="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-300 hover:bg-white/10 transition-colors group"
+														>
+															<div class="flex items-center gap-2">
+																{#if v.tipoVehiculo === 'motocicleta'}
+																	<Bike size={14} class="opacity-70" />
+																{:else}
+																	<Car size={14} class="opacity-70" />
+																{/if}
+																<span class="font-mono font-bold">{v.placa}</span>
+																<span class="text-xs opacity-50 truncate"
+																	>{v.descripcionCompleta}</span
+																>
+															</div>
+															{#if vehiculoPlaca === v.placa}
+																<Check size={14} class="text-blue-500" />
+															{/if}
+														</button>
+													{/each}
+												{:else}
+													<div class="px-3 py-4 text-xs text-secondary opacity-50 text-center">
+														No hay vehículos recientes
+													</div>
 												{/if}
-											</button>
-										</div>
-									{/if}
+											</div>
+										{/if}
+									</div>
+
+									<!-- Add Button -->
+									<button
+										type="button"
+										onclick={() => (showVehiculoForm = true)}
+										disabled={loading}
+										class="px-3 py-1.5 rounded-lg border border-white/10 bg-black/20 text-secondary hover:text-white hover:border-white/30 transition-colors"
+										title="Registrar nuevo vehículo"
+									>
+										<Plus size={16} />
+									</button>
 								</div>
 							</div>
 						</div>
-
-						<!-- Selector Vehículo (Condicional) -->
-						{#if modoIngreso === 'vehiculo'}
-							<div transition:slide|local>
-								<div class="space-y-1">
-									<label for="vehiculoPlaca" class={labelClass}
-										>Vehículo <span class="text-red-500">*</span></label
-									>
-									<div class="flex gap-2 relative">
-										<!-- Custom Dropdown Trigger -->
-										<div class="relative flex-1">
-											<button
-												type="button"
-												disabled={loading || loadingVehiculos}
-												onclick={() => (showVehiculoDropdown = !showVehiculoDropdown)}
-												class="{selectClass} flex items-center justify-between {vehiculoPlaca
-													? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
-													: ''}"
-											>
-												<span class="truncate flex items-center gap-2">
-													{#if loadingVehiculos}
-														Cargando...
-													{:else if vehiculoPlaca}
-														<span class="font-mono font-bold bg-white/10 px-1.5 rounded text-xs"
-															>{vehiculoPlaca}</span
-														>
-														{#if vehiculoMarca}
-															<span class="text-xs opacity-70">
-																{vehiculoMarca}
-																{vehiculoModelo}
-															</span>
-														{/if}
-													{:else}
-														<span class="opacity-50">Seleccione o registre vehículo</span>
-													{/if}
-												</span>
-												<ChevronDown size={14} class="text-secondary" />
-											</button>
-
-											<!-- Dropdown Options -->
-											{#if showVehiculoDropdown}
-												<div
-													class="fixed inset-0 z-40"
-													onclick={() => (showVehiculoDropdown = false)}
-													role="presentation"
-													aria-hidden="true"
-												></div>
-
-												<div
-													class="absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto bg-[#1c2128] border border-white/10 rounded-lg shadow-xl"
-													transition:fly={{ y: -5, duration: 200 }}
-												>
-													{#if vehiculosList.length > 0}
-														{#each vehiculosList as v}
-															<button
-																type="button"
-																onclick={() => {
-																	vehiculoTipo = v.tipoVehiculo;
-																	vehiculoPlaca = v.placa;
-																	vehiculoMarca = v.marca || '';
-																	vehiculoModelo = v.modelo || '';
-																	vehiculoColor = v.color || '';
-																	showVehiculoDropdown = false;
-																}}
-																class="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-300 hover:bg-white/10 transition-colors group"
-															>
-																<div class="flex items-center gap-2">
-																	{#if v.tipoVehiculo === 'motocicleta'}
-																		<Bike size={14} class="opacity-70" />
-																	{:else}
-																		<Car size={14} class="opacity-70" />
-																	{/if}
-																	<span class="font-mono font-bold">{v.placa}</span>
-																	<span class="text-xs opacity-50 truncate"
-																		>{v.descripcionCompleta}</span
-																	>
-																</div>
-																{#if vehiculoPlaca === v.placa}
-																	<Check size={14} class="text-blue-500" />
-																{/if}
-															</button>
-														{/each}
-													{:else}
-														<div class="px-3 py-2 text-xs text-secondary opacity-50 text-center">
-															No hay vehículos recientes
-														</div>
-													{/if}
-												</div>
-											{/if}
-										</div>
-
-										<!-- Add Button -->
-										<button
-											type="button"
-											onclick={() => (showVehiculoForm = true)}
-											disabled={loading}
-											class="px-3 py-1.5 rounded-lg border border-white/10 bg-black/20 text-secondary hover:text-white hover:border-white/30 transition-colors"
-											title="Registrar nuevo vehículo"
-										>
-											<Plus size={16} />
-										</button>
-									</div>
-								</div>
-							</div>
-						{/if}
 
 						<!-- Fila 3: Detalles Visita -->
 						<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -716,7 +641,7 @@
 							</div>
 						</div>
 
-						<!-- Fila 4: Motivo y Modo -->
+						<!-- Fila 4: Motivo y Fecha -->
 						<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 							<div>
 								<label for="motivo" class={labelClass}

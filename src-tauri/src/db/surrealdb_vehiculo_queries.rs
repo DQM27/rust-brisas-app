@@ -53,13 +53,9 @@ pub async fn find_all_fetched() -> Result<Vec<VehiculoFetched>, SurrealDbError> 
     Ok(result.take(0)?)
 }
 
-pub async fn find_activos_fetched() -> Result<Vec<VehiculoFetched>, SurrealDbError> {
+pub async fn find_activos() -> Result<Vec<Vehiculo>, SurrealDbError> {
     let db = get_db().await?;
-    let mut result = db
-        .query(
-            "SELECT * FROM vehiculo WHERE is_active = true FETCH propietario, propietario.empresa",
-        )
-        .await?;
+    let mut result = db.query("SELECT * FROM vehiculo WHERE is_active = true").await?;
     Ok(result.take(0)?)
 }
 

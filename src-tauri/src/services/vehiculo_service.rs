@@ -168,10 +168,10 @@ pub async fn get_all_vehiculos() -> Result<VehiculoListResponse, VehiculoError> 
 }
 
 pub async fn get_vehiculos_activos() -> Result<Vec<VehiculoResponse>, VehiculoError> {
-    let vehiculos = db::find_activos_fetched().await.map_err(map_db_error)?;
+    let vehiculos = db::find_activos().await.map_err(map_db_error)?;
     let mut vehiculo_responses = Vec::with_capacity(vehiculos.len());
     for vehiculo in vehiculos {
-        vehiculo_responses.push(VehiculoResponse::from_fetched(vehiculo));
+        vehiculo_responses.push(VehiculoResponse::from(vehiculo));
     }
     Ok(vehiculo_responses)
 }
@@ -236,4 +236,3 @@ pub async fn delete_vehiculo(id_str: String) -> Result<(), VehiculoError> {
 // --------------------------------------------------------------------------
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
-
