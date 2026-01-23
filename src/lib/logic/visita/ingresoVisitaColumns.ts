@@ -12,7 +12,7 @@ function parseDate(value: any): Date | null {
 }
 
 export const getIngresoVisitaColumns = (
-    viewMode: 'actives' | 'history' = 'actives'
+    viewMode: 'actives' | 'history' | 'expected' = 'actives'
 ): ColumnDefinition[] => {
     const cols: ColumnDefinition[] = [
         {

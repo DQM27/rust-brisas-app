@@ -7,6 +7,9 @@ export default defineConfig({
 		tailwindcss(), // DEBE estar ANTES de sveltekit
 		sveltekit()
 	],
+	define: {
+		__APP_VERSION__: JSON.stringify('2.5.0'),
+	},
 	clearScreen: false,
 	server: {
 		port: 1420,

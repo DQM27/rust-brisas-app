@@ -115,6 +115,10 @@ export interface PreRegistroVisita {
 	// Backend compatibility
 	empresa_id?: any;
 	empresaId?: string;
+	empresa_nombre?: string;
+	fecha_esperada?: string;
+	hora_esperada?: string;
+	area_visitada?: string;
 }
 
 export interface CreatePreRegistroInput {

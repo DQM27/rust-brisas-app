@@ -9,7 +9,9 @@
 		FileText,
 		UserPlus,
 		LogIn,
-		CalendarClock
+		CalendarClock,
+		GanttChart,
+		Table2
 	} from 'lucide-svelte';
 	import { scale } from 'svelte/transition';
 
@@ -18,6 +20,7 @@
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 	import IngresoVisitaFormModal from '$lib/components/ingreso/IngresoVisitaFormModal.svelte';
 	import PreRegistroListView from '$lib/components/visita/PreRegistroListView.svelte';
+	import type PreRegistroListViewComponent from '$lib/components/visita/PreRegistroListView.svelte';
 	import SalidaModal from '$lib/components/ingreso/SalidaModal.svelte';
 	import ExportDialog from '$lib/components/export/ExportDialog.svelte';
 	import DateRangePicker from '$lib/components/shared/DateRangePicker.svelte';
@@ -58,7 +61,7 @@
 	// Estado
 	let ingresos = $state<IngresoVisita[]>([]);
 	let loading = $state(false);
-	let viewMode = $state<'actives' | 'history'>('actives');
+	let viewMode = $state<'actives' | 'history' | 'expected'>('actives');
 	let selectedRows = $state<IngresoVisita[]>([]);
 	let searchTerm = $state('');
 
@@ -69,6 +72,8 @@
 	let selectedPerson = $state<any>(null);
 	let selectedIngreso = $state<IngresoVisita | null>(null);
 	let salidaLoading = $state(false);
+	let preRegistroList = $state<any>(null); // Use any for now to avoid TS issues with Svelte 5 exports in bind:this
+	let preRegistroViewMode = $state<'grid' | 'focus' | 'svar-gantt' | 'svar-grid'>('svar-grid');
 
 	// Grid State
 	let gridWrapper = $state<any>(null);
@@ -178,10 +183,12 @@
 		}
 	}
 
-	function toggleViewMode(mode: 'actives' | 'history') {
+	function toggleViewMode(mode: 'actives' | 'history' | 'expected') {
 		if (viewMode === mode) return;
 		viewMode = mode;
-		loadData();
+		if (mode !== 'expected') {
+			loadData();
+		}
 	}
 
 	function handleNuevoIngreso() {
@@ -288,12 +295,22 @@
 			<div class="flex items-center justify-between">
 				<div>
 					<h2 class="text-xl font-semibold text-primary">
-						{viewMode === 'actives' ? 'Visitas en Planta' : 'Historial de Visitas'}
+						{#if viewMode === 'actives'}
+							Visitas en Planta
+						{:else if viewMode === 'history'}
+							Historial de Visitas
+						{:else}
+							Visitas Esperadas
+						{/if}
 					</h2>
 					<p class="mt-1 text-sm text-secondary">
-						{viewMode === 'actives'
-							? 'Personas registradas actualmente'
-							: 'Registro histórico de accesos'}
+						{#if viewMode === 'actives'}
+							Personas registradas actualmente
+						{:else if viewMode === 'history'}
+							Registro histórico de accesos
+						{:else}
+							Gestión de pre-registros y agenda
+						{/if}
 					</p>
 				</div>
 
@@ -307,6 +324,15 @@
 						onclick={() => toggleViewMode('actives')}
 					>
 						<Users size={16} /> Activos
+					</button>
+					<button
+						class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors {viewMode ===
+						'expected'
+							? 'bg-surface-1 text-primary shadow-sm'
+							: 'text-secondary hover:text-primary'}"
+						onclick={() => toggleViewMode('expected')}
+					>
+						<CalendarClock size={16} /> Esperadas
 					</button>
 					<button
 						class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors {viewMode ===
@@ -354,7 +380,7 @@
 			{:else if viewMode === 'actives'}
 				<button
 					onclick={handleNuevoIngreso}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
 				>
 					<LogIn size={14} /> Nuevo
 				</button>
@@ -365,13 +391,12 @@
 				>
 					<FileText size={14} /> Listado
 				</button>
-
+			{:else if viewMode === 'expected'}
 				<button
-					onclick={() => (showPreRegistrosModal = true)}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-md hover:bg-purple-500/20 text-sm font-medium transition-colors ml-2"
-					title="Ver visitas esperadas (Pre-Registros)"
+					onclick={() => preRegistroList?.openCreateModal()}
+					class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-md hover:bg-purple-500/20 text-sm font-medium transition-colors"
 				>
-					<CalendarClock size={14} /> Esperadas
+					<Plus size={14} /> Nuevo Pre-Registro
 				</button>
 			{/if}
 		{/snippet}
@@ -418,16 +443,45 @@
 						>
 					</div>
 				</div>
+			{:else if viewMode === 'expected'}
+				<div
+					class="flex items-center bg-surface-3 rounded-lg p-1 border border-surface shadow-inner"
+				>
+					<button
+						onclick={() => (preRegistroViewMode = 'svar-gantt')}
+						class="p-1.5 rounded-md transition-all {preRegistroViewMode === 'svar-gantt'
+							? 'bg-primary text-white shadow-md'
+							: 'text-secondary hover:bg-surface-hover'}"
+						title="Gantt"
+					>
+						<GanttChart size={14} />
+					</button>
+					<button
+						onclick={() => (preRegistroViewMode = 'svar-grid')}
+						class="p-1.5 rounded-md transition-all {preRegistroViewMode === 'svar-grid'
+							? 'bg-primary text-white shadow-md'
+							: 'text-secondary hover:bg-surface-hover'}"
+						title="SVAR Grid"
+					>
+						<Table2 size={14} />
+					</button>
+				</div>
 			{/if}
 		{/snippet}
 	</GridToolbar>
 
 	<div
-		class="flex-1 overflow-hidden relative bg-surface-1 border-t border-surface {showHeaderFilters
-			? ''
-			: 'hide-filters'}"
+		class="flex-1 overflow-hidden relative bg-surface-1 {viewMode !== 'expected'
+			? 'border-t border-surface'
+			: ''} {showHeaderFilters ? '' : 'hide-filters'}"
 	>
-		{#if loading && ingresos.length === 0}
+		{#if viewMode === 'expected'}
+			<PreRegistroListView
+				bind:this={preRegistroList}
+				showHeader={false}
+				bind:viewMode={preRegistroViewMode}
+			/>
+		{:else if loading && ingresos.length === 0}
 			<div class="flex h-full items-center justify-center">
 				<div class="loading loading-spinner loading-lg text-primary"></div>
 			</div>
@@ -476,29 +530,6 @@
 		{availableFormats}
 		onExport={handleExport}
 	/>
-{/if}
-
-{#if showPreRegistrosModal}
-	<div
-		class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-		role="button"
-		tabindex="0"
-		onkeydown={(e) => e.key === 'Escape' && (showPreRegistrosModal = false)}
-		onclick={(e) => e.target === e.currentTarget && (showPreRegistrosModal = false)}
-	>
-		<div
-			class="w-full max-w-4xl h-[80vh] bg-surface-1 rounded-xl shadow-2xl overflow-hidden flex flex-col relative"
-			transition:scale={{ duration: 200, start: 0.95 }}
-		>
-			<button
-				onclick={() => (showPreRegistrosModal = false)}
-				class="absolute top-2 right-2 p-1.5 rounded-lg text-secondary hover:text-white hover:bg-white/10 z-10"
-			>
-				<X size={20} />
-			</button>
-			<PreRegistroListView />
-		</div>
-	</div>
 {/if}
 
 <style>
