@@ -7,18 +7,21 @@
 use crate::domain::errors::VisitanteError;
 use crate::models::visitante::{CreateVisitanteInput, VisitanteResponse};
 
+use crate::services::search_service::SearchService;
 use crate::services::session::SessionState;
 use crate::services::visitante_service as service;
+use std::sync::Arc;
 use tauri::{command, State};
 
 /// Registra los datos básicos de un nuevo visitante en la base de datos de seguridad.
 #[command]
 pub async fn create_visitante(
     session: State<'_, SessionState>,
+    search_service: State<'_, Arc<SearchService>>,
     input: CreateVisitanteInput,
 ) -> Result<VisitanteResponse, VisitanteError> {
     require_perm!(session, "visitantes:create", "Registrando nuevo perfil de visitante")?;
-    service::create_visitante(input).await
+    service::create_visitante(search_service.inner(), input).await
 }
 
 /// Motor de Búsqueda: Localiza visitantes recurrentes para agilizar su re-ingreso.
@@ -55,6 +58,7 @@ pub async fn get_visitante_by_id(
 #[command]
 pub async fn update_visitante(
     session: State<'_, SessionState>,
+    search_service: State<'_, Arc<SearchService>>,
     id: String,
     input: CreateVisitanteInput,
 ) -> Result<VisitanteResponse, VisitanteError> {
@@ -63,27 +67,29 @@ pub async fn update_visitante(
         "visitantes:update",
         format!("Actualizando información de visitante ID: {}", id)
     )?;
-    service::update_visitante(&id, input).await
+    service::update_visitante(search_service.inner(), &id, input).await
 }
 
 /// Baja Administrativa: Archiva el perfil del visitante del catálogo operativo.
 #[command]
 pub async fn delete_visitante(
     session: State<'_, SessionState>,
+    search_service: State<'_, Arc<SearchService>>,
     id: String,
 ) -> Result<(), VisitanteError> {
     require_perm!(session, "visitantes:delete", format!("Archivando perfil de visitante {}", id))?;
-    service::delete_visitante(&id).await
+    service::delete_visitante(search_service.inner(), &id).await
 }
 
 /// Restablecimiento: Recupera un perfil de visitante anteriormente archivado.
 #[command]
 pub async fn restore_visitante(
     session: State<'_, SessionState>,
+    search_service: State<'_, Arc<SearchService>>,
     id: String,
 ) -> Result<VisitanteResponse, VisitanteError> {
     require_perm!(session, "visitantes:delete", format!("Restaurando perfil de visitante {}", id))?;
-    service::restore_visitante(&id).await
+    service::restore_visitante(search_service.inner(), &id).await
 }
 
 /// Consulta histórica de visitantes dados de baja administrativa.

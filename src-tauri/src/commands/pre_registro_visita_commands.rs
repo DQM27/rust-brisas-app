@@ -29,16 +29,25 @@ fn parse_user_id(id: &str) -> RecordId {
     }
 }
 
+use crate::services::search_service::SearchService;
+use std::sync::Arc;
+
 #[tauri::command]
 pub async fn create_pre_registro_visita(
     session: State<'_, SessionState>,
+    search_service: State<'_, Arc<SearchService>>,
     input: CreatePreRegistroInput,
 ) -> Result<PreRegistroVisitaFetched, String> {
     let user = session.get_user().ok_or("Usuario no autenticado para esta acción".to_string())?;
 
     let user_id = parse_user_id(&user.id);
 
-    crate::services::pre_registro_visita_service::create_pre_registro(input, user_id).await
+    crate::services::pre_registro_visita_service::create_pre_registro(
+        search_service.inner(),
+        input,
+        user_id,
+    )
+    .await
 }
 
 #[tauri::command]

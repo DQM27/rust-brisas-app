@@ -17,30 +17,28 @@
 	} from 'lucide-svelte';
 	import PersonaFinder from '$lib/components/ingreso/shared/persona/PersonaFinder.svelte';
 
-	export let isOpen = false;
+	let { isOpen = $bindable(false) } = $props();
 	const dispatch = createEventDispatcher();
 
-	let loading = false;
-	let error = '';
+	let loading = $state(false);
+	let error = $state('');
 
 	// Form data
-	let cedula = '';
-	let nombre = '';
-	let segundoNombre = '';
-	let apellido = '';
-	let segundoApellido = '';
-	let empresaNombre = '';
-	let fechaEsperadaDisplay = formatDateForDisplay(new Date().toISOString().split('T')[0]);
-	let anfitrion = '';
-	let areaVisitada = '';
-	let motivo = '';
-	let modoIngreso = 'caminando';
-	let showModoIngresoDropdown = false;
-	let observaciones = '';
-
+	let cedula = $state('');
+	let nombre = $state('');
+	let segundoNombre = $state('');
+	let apellido = $state('');
+	let segundoApellido = $state('');
+	let empresaNombre = $state('');
+	let fechaEsperadaDisplay = $state(formatDateForDisplay(new Date().toISOString().split('T')[0]));
+	let anfitrion = $state('');
+	let areaVisitada = $state('');
+	let motivo = $state('');
+	let modoIngreso = $state('caminando');
+	let showModoIngresoDropdown = $state(false);
 	// Search logic
-	let visitorSelected = false; // Indica si los datos vienen de un visitante existente en catálogo
-	let searchResetKey = 0;
+	let visitorSelected = $state(false);
+	let searchResetKey = $state(0);
 
 	// Clases estándar según ui-patterns.md
 	const inputClass =
@@ -83,8 +81,7 @@
 				anfitrion,
 				areaVisitada,
 				motivo,
-				modoIngreso,
-				observaciones
+				modoIngreso
 			};
 
 			await preRegistroVisitaService.create(input);
@@ -217,7 +214,6 @@
 						</p>
 					</div>
 
-					<div class="h-px bg-surface border-0"></div>
 					<form
 						onsubmit={(e) => {
 							e.preventDefault();
@@ -456,17 +452,6 @@
 									{/if}
 								</div>
 							</div>
-						</div>
-
-						<!-- Fila 5: Observaciones -->
-						<div>
-							<label for="observaciones" class={labelClass}>Observaciones (Opcional)</label>
-							<textarea
-								id="observaciones"
-								bind:value={observaciones}
-								class="{inputClass} h-[80px] py-2 resize-none"
-								placeholder="Notas adicionales sobre la visita..."
-							></textarea>
 						</div>
 					</form>
 				</div>

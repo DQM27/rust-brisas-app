@@ -11,11 +11,12 @@ use crate::models::visitante::VisitanteCreateDTO;
 use log::{debug, info, warn};
 use surrealdb::RecordId;
 
+use crate::services::search_service::SearchService;
+use std::sync::Arc;
+
 /// Crea un pre-registro de visita asegurando que el visitante exista en el catálogo.
-///
-/// Sigue el patrón de "doble registro" para que si el visitante es nuevo,
-/// se cree automáticamente su perfil, permitiendo búsquedas futuras.
 pub async fn create_pre_registro(
+    search_service: &Arc<SearchService>,
     input: CreatePreRegistroInput,
     registrado_por: RecordId,
 ) -> Result<PreRegistroVisitaFetched, String> {
@@ -25,8 +26,6 @@ pub async fn create_pre_registro(
     let visitante_id = match visitante_db::get_visitante_by_cedula(&input.cedula).await {
         Ok(Some(v)) => {
             debug!("Visitante existente encontrado: {}", v.id);
-            // Nota: Aquí se podría implementar una actualización parcial si los nombres cambiaron
-            // pero por simplicidad y seguridad de datos, usamos el registro existente.
             Some(v.id)
         }
         Ok(None) => {
@@ -37,12 +36,18 @@ pub async fn create_pre_registro(
                 apellido: input.apellido.clone(),
                 segundo_nombre: input.segundo_nombre.clone(),
                 segundo_apellido: input.segundo_apellido.clone(),
-                empresa: None, // En pre-registro solo tenemos el nombre de la empresa como String
+                empresa: None,
                 has_vehicle: input.modo_ingreso == "vehiculo",
             };
 
             match visitante_db::create_visitante(v_dto).await {
-                Ok(v) => Some(v.id),
+                Ok(v) => {
+                    // Indexar nuevo visitante creado automáticamente
+                    if let Ok(Some(fetched)) = visitante_db::find_by_id_fetched(&v.id).await {
+                        let _ = search_service.add_visitante_fetched(&fetched, "Sin Empresa").await;
+                    }
+                    Some(v.id)
+                }
                 Err(e) => {
                     warn!("No se pudo crear perfil de visitante (no fatal): {e}");
                     None
@@ -70,7 +75,7 @@ pub async fn create_pre_registro(
         area_visitada: input.area_visitada,
         motivo: input.motivo,
         modo_ingreso: input.modo_ingreso,
-        observaciones: input.observaciones,
+        observaciones: None, // Campo removido del formulario
         estado: PreRegistroEstado::Pendiente.to_string(),
         visitante: visitante_id,
         registrado_por,

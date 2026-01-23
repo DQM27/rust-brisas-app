@@ -123,5 +123,4 @@ export interface CreatePreRegistroInput {
 	areaVisitada: string;
 	motivo: string;
 	modoIngreso: string;
-	observaciones?: string;
 }

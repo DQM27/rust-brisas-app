@@ -27,9 +27,11 @@ use crate::models::vehiculo::{TipoVehiculo, VehiculoCreateDTO};
 use crate::models::visitante::{
     CreateVisitanteInput, VisitanteCreateDTO, VisitanteResponse, VisitanteUpdateDTO,
 };
+use crate::services::search_service::SearchService;
 use crate::services::surrealdb_service::SurrealDbError;
 use chrono::Utc;
 use log::{debug, error, info, warn};
+use std::sync::Arc;
 
 // --------------------------------------------------------------------------
 // UTILIDADES INTERNAS
@@ -52,6 +54,7 @@ fn map_db_error(e: SurrealDbError) -> VisitanteError {
 /// 2. Filtro de Seguridad: Bloqueo si aparece en la lista negra.
 /// 3. Registro de Propiedad Vehicular: Si el visitante ingresa con vehículo.
 pub async fn create_visitante(
+    search_service: &Arc<SearchService>,
     mut input: CreateVisitanteInput,
 ) -> Result<VisitanteResponse, VisitanteError> {
     debug!("Iniciando registro de nuevo visitante para cédula: {}", input.cedula);
@@ -148,6 +151,12 @@ pub async fn create_visitante(
 
     // Retornamos el perfil completo (incluyendo resolución de empresa si aplica).
     let mut response = if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
+        // Sincronización con Tantivy
+        let emp_nombre =
+            fetched.empresa.as_ref().map(|e| e.nombre.as_str()).unwrap_or("Sin Empresa");
+        if let Err(e) = search_service.add_visitante_fetched(&fetched, emp_nombre).await {
+            warn!("⚠️ Error al indexar nuevo visitante: {e}");
+        }
         VisitanteResponse::from_fetched(fetched)
     } else {
         VisitanteResponse::from(visitante)
@@ -221,6 +230,7 @@ pub async fn get_visitante_by_cedula(
 
 /// Actualiza los datos de un visitante.
 pub async fn update_visitante(
+    search_service: &Arc<SearchService>,
     id_str: &str,
     mut input: CreateVisitanteInput,
 ) -> Result<VisitanteResponse, VisitanteError> {
@@ -245,6 +255,12 @@ pub async fn update_visitante(
     let visitante = db::update(&id_thing, dto).await.map_err(map_db_error)?;
 
     if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
+        // Actualizar índice
+        let emp_nombre =
+            fetched.empresa.as_ref().map(|e| e.nombre.as_str()).unwrap_or("Sin Empresa");
+        if let Err(e) = search_service.update_visitante_fetched(&fetched, emp_nombre).await {
+            warn!("⚠️ Error al actualizar índice de visitante: {e}");
+        }
         return Ok(VisitanteResponse::from_fetched(fetched));
     }
 
@@ -254,21 +270,40 @@ pub async fn update_visitante(
 /// Archiva un visitante (borrado lógico).
 ///
 /// El visitante permanece en la base de datos pero marcado como eliminado.
-pub async fn delete_visitante(id_str: &str) -> Result<(), VisitanteError> {
+pub async fn delete_visitante(
+    search_service: &Arc<SearchService>,
+    id_str: &str,
+) -> Result<(), VisitanteError> {
     let id_thing = parse_record_id(id_str, "visitante");
     db::find_by_id(&id_thing).await.map_err(map_db_error)?.ok_or(VisitanteError::NotFound)?;
 
     info!("🗑️ Archivando visitante: {id_str}");
-    db::delete(&id_thing).await.map_err(map_db_error)
+    db::delete(&id_thing).await.map_err(map_db_error)?;
+
+    // Remover del índice
+    if let Err(e) = search_service.delete_visitante(id_str).await {
+        warn!("⚠️ Error al remover visitante del índice: {e}");
+    }
+
+    Ok(())
 }
 
 /// Restaura un visitante previamente archivado.
-pub async fn restore_visitante(id_str: &str) -> Result<VisitanteResponse, VisitanteError> {
+pub async fn restore_visitante(
+    search_service: &Arc<SearchService>,
+    id_str: &str,
+) -> Result<VisitanteResponse, VisitanteError> {
     let id_thing = parse_record_id(id_str, "visitante");
     info!("♻️ Restaurando visitante: {id_str}");
     let visitante = db::restore(&id_thing).await.map_err(map_db_error)?;
 
     if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
+        // Re-indexar
+        let emp_nombre =
+            fetched.empresa.as_ref().map(|e| e.nombre.as_str()).unwrap_or("Sin Empresa");
+        if let Err(e) = search_service.add_visitante_fetched(&fetched, emp_nombre).await {
+            warn!("⚠️ Error al re-indexar visitante restaurado: {e}");
+        }
         return Ok(VisitanteResponse::from_fetched(fetched));
     }
 
