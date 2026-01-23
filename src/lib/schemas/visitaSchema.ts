@@ -101,6 +101,8 @@ export const ingresoVisitaSchemaBase = z.object({
 	motivo: z.string().default(''),
 	gafete: z.string().default(''),
 	observaciones: z.string().default(''),
+	placaVehiculo: z.string().default(''),
+	modoIngreso: z.string().default('caminando'), // caminando | vehiculo
 	pre_registro_id: z.string().optional()
 });
 
@@ -115,7 +117,9 @@ export const ingresoVisitaSchema = z.object({
 	areaVisitada: z.string().trim().min(1, 'Área requerida').max(NOMBRE_MAX_LEN),
 	motivo: z.string().trim().min(1, 'Motivo requerido').max(200),
 	gafete: z.string().trim().max(20).optional().or(z.literal('')),
-	observaciones: z.string().trim().max(OBSERVACIONES_MAX_LEN).optional().or(z.literal(''))
+	observaciones: z.string().trim().max(OBSERVACIONES_MAX_LEN).optional().or(z.literal('')),
+	placaVehiculo: z.string().max(PLACA_MAX_LEN).optional().or(z.literal('')),
+	modoIngreso: z.string().optional()
 });
 
 export type IngresoVisitaFormData = z.infer<typeof ingresoVisitaSchemaBase>;

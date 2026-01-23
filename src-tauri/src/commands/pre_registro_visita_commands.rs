@@ -63,7 +63,6 @@ pub async fn check_pre_registro_by_cedula(
 }
 
 #[tauri::command]
-pub async fn cancel_pre_registro_visita(id: String) -> Result<PreRegistroVisitaFetched, String> {
-    let rid = RecordId::from(("pre_registro_visita", id));
-    db::update_status(&rid, PreRegistroEstado::Cancelado).await.map_err(|e| e.to_string())
+pub async fn cancel_pre_registro_visita(id: RecordId) -> Result<PreRegistroVisitaFetched, String> {
+    db::update_status(&id, PreRegistroEstado::Cancelado).await.map_err(|e| e.to_string())
 }

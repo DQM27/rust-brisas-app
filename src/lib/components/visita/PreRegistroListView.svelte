@@ -113,10 +113,10 @@
 								>
 							</div>
 
-							{#if p.empresaNombre}
+							{#if p.empresa_nombre}
 								<div class="text-xs text-secondary mb-3 flex items-center gap-1.5 font-medium">
 									<Building2 size={12} class="text-tertiary" />
-									{p.empresaNombre}
+									{p.empresa_nombre}
 								</div>
 							{/if}
 
@@ -130,7 +130,7 @@
 										<CalendarClock size={10} /> Fecha
 									</span>
 									<div class="text-accent font-medium text-sm">
-										{new Date(p.fechaEsperada).toLocaleDateString(undefined, {
+										{new Date(p.fecha_esperada).toLocaleDateString(undefined, {
 											weekday: 'short',
 											day: 'numeric',
 											month: 'short'
@@ -152,7 +152,7 @@
 										<MapPin size={10} /> Área / Motivo
 									</span>
 									<div class="text-gray-300">
-										<span class="text-white">{p.areaVisitada}</span>
+										<span class="text-white">{p.area_visitada}</span>
 										<span class="text-surface mx-1">•</span>
 										<span class="italic">{p.motivo}</span>
 									</div>

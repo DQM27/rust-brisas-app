@@ -106,12 +106,14 @@ export interface PreRegistroVisita {
 	areaVisitada: string;
 	motivo: string;
 	modoIngreso: string;
+	modo_ingreso?: string;
+	placa?: string;
 	estado: PreRegistroEstado;
 	observaciones?: string;
 	registradoPor?: any; // User object
 	createdAt: string;
 	// Backend compatibility
-	empresa_id?: string;
+	empresa_id?: any;
 	empresaId?: string;
 }
 
