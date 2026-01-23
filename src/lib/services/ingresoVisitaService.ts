@@ -2,24 +2,20 @@ import { invoke } from '@tauri-apps/api/core';
 import type { IngresoVisita } from '$lib/types/ingreso-nuevos';
 
 export interface CreateIngresoVisitaFullInput {
-	// Datos Visitante
 	cedula: string;
+	preRegistroId?: string;
 	nombre: string;
-	segundoNombre?: string;
 	apellido: string;
-	segundoApellido?: string;
 	empresaNombre?: string;
-
-	// Datos Ingreso
+	segundoNombre?: string;
+	segundoApellido?: string;
 	anfitrion: string;
 	areaVisitada: string;
 	motivo: string;
-	gafete?: string;
+	modoIngreso: string;
+	placaVehiculo?: string;
+	gafeteNumero?: number;
 	observaciones?: string;
-	usuarioIngresoId: string;
-
-	// Opcional
-	preRegistroId?: string;
 }
 
 export const ingresoVisitaService = {

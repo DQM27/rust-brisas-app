@@ -89,20 +89,29 @@
 						// Map empresaId to name for the backend
 						const selectedEmpresa = empresaStore.empresas.find((e) => e.id === f.data.empresaId);
 
+						// Convertir gafete a número si existe
+						const gafeteNum = f.data.gafete ? parseInt(f.data.gafete, 10) : undefined;
+
 						await ingresoVisitaService.createIngreso({
 							cedula: f.data.cedula.trim(),
+							preRegistroId:
+								typeof foundPreRegistroId === 'object'
+									? (foundPreRegistroId as any).id?.String ||
+										(foundPreRegistroId as any).id ||
+										JSON.stringify(foundPreRegistroId)
+									: foundPreRegistroId,
 							nombre: f.data.nombre.trim(),
-							segundoNombre: f.data.segundoNombre.trim() || undefined,
 							apellido: f.data.apellido.trim(),
-							segundoApellido: f.data.segundoApellido.trim() || undefined,
+							segundoNombre: f.data.segundoNombre?.trim() || undefined,
+							segundoApellido: f.data.segundoApellido?.trim() || undefined,
 							empresaNombre: selectedEmpresa?.nombre || undefined,
 							anfitrion: f.data.anfitrion.trim(),
 							areaVisitada: f.data.areaVisitada.trim(),
 							motivo: f.data.motivo.trim(),
-							gafete: f.data.gafete.trim() || undefined,
-							observaciones: f.data.observaciones.trim() || undefined,
-							usuarioIngresoId: $currentUser?.id || '',
-							preRegistroId: foundPreRegistroId
+							modoIngreso: f.data.modoIngreso,
+							placaVehiculo: f.data.placaVehiculo?.trim() || undefined,
+							gafeteNumero: !isNaN(Number(gafeteNum)) ? gafeteNum : undefined,
+							observaciones: f.data.observaciones?.trim() || undefined
 						});
 
 						toast.success('Ingreso de visita registrado');
@@ -164,7 +173,12 @@
 		const isPreRegistro = !!person.fechaEsperada || !!person.fecha_esperada;
 
 		if (isPreRegistro) {
-			foundPreRegistroId = person.id;
+			// Normalizar ID para evitar objetos RecordId enviados al backend como string
+			if (person.id && typeof person.id === 'object') {
+				foundPreRegistroId = person.id.id?.String || person.id.id || person.id.toString();
+			} else {
+				foundPreRegistroId = person.id;
+			}
 		}
 
 		const data = {
