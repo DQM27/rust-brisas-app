@@ -78,18 +78,6 @@
 			apellido = data.apellido || '';
 			segundoApellido = data.segundoApellido || (data as any).segundo_apellido || '';
 
-			// Normalizar ID de empresa para SurrealDB (tb:id)
-			const normalizeId = (id: any) => {
-				if (!id) return '';
-				if (typeof id === 'string') return id;
-				if (typeof id === 'object' && id.tb && id.id) {
-					const innerId =
-						typeof id.id === 'object' ? id.id.String || id.id.id || JSON.stringify(id.id) : id.id;
-					return `${id.tb}:${innerId}`;
-				}
-				return id.toString();
-			};
-
 			empresaId = normalizeId(data.empresaId || (data as any).empresa_id);
 			empresaNombre = data.empresaNombre || (data as any).empresa_nombre || '';
 
@@ -99,6 +87,12 @@
 					(e) => e.nombre?.toLowerCase() === empresaNombre.toLowerCase()
 				);
 				if (matched) empresaId = matched.id;
+			}
+
+			// Cargar vehículos si el visitante está vinculado
+			const vId = (data as any).visitante || (data as any).visitante_id;
+			if (vId) {
+				loadVehiculos(normalizeId(vId));
 			}
 
 			anfitrion = data.anfitrion || '';
@@ -194,6 +188,18 @@
 		if (!isoDate) return '';
 		const [year, month, day] = isoDate.split('T')[0].split('-');
 		return `${day}/${month}/${year}`;
+	}
+
+	// Normalizar ID de empresa para SurrealDB (tb:id)
+	function normalizeId(id: any): string {
+		if (!id) return '';
+		if (typeof id === 'string') return id;
+		if (typeof id === 'object' && id.tb && id.id) {
+			const innerId =
+				typeof id.id === 'object' ? id.id.String || id.id.id || JSON.stringify(id.id) : id.id;
+			return `${id.tb}:${innerId}`;
+		}
+		return id.toString();
 	}
 
 	function formatDateForBackend(displayDate: string): string {
@@ -296,6 +302,7 @@
 		vehiculoMarca = '';
 		vehiculoModelo = '';
 		vehiculoColor = '';
+		vehiculosList = []; // Clear list
 		showVehiculoDropdown = false;
 		showVehiculoForm = false;
 	}
@@ -315,6 +322,13 @@
 				(e) => e.nombre?.toLowerCase() === result.empresaNombre?.toLowerCase()
 			);
 			if (found) empresaId = found.id;
+		}
+
+		// Load vehicles for this specific visitor
+		if (result.id) {
+			loadVehiculos(result.id);
+		} else {
+			vehiculosList = [];
 		}
 
 		visitorSelected = true;
@@ -358,15 +372,22 @@
 	// Init Data
 	onMount(async () => {
 		await empresaStore.init();
-		loadVehiculos();
+		// No cargamos vehículos globales para evitar mostrar datos de otros visitantes
+		// loadVehiculos();
 	});
 
-	async function loadVehiculos() {
+	async function loadVehiculos(propietarioId?: string) {
+		if (!propietarioId) {
+			vehiculosList = [];
+			return;
+		}
+
 		loadingVehiculos = true;
 		try {
-			vehiculosList = await vehiculos.getActivos();
+			vehiculosList = await vehiculos.getByPropietario(propietarioId);
 		} catch (e) {
-			console.error(e);
+			console.error('Error loading vehicles for visitor:', e);
+			vehiculosList = [];
 		} finally {
 			loadingVehiculos = false;
 		}
@@ -443,7 +464,7 @@
 								{/if}
 							</div>
 							{#key searchResetKey}
-								<PersonaFinder scope="visitante" on:select={handlePersonaSelect} autoFocus={true} />
+								<PersonaFinder scope="all" on:select={handlePersonaSelect} autoFocus={true} />
 							{/key}
 						</div>
 					{/if}

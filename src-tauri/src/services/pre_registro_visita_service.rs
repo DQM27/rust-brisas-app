@@ -30,13 +30,17 @@ pub async fn create_pre_registro(
         }
         Ok(None) => {
             info!("Creando perfil automático para nuevo visitante: {}", input.cedula);
+
+            // Intentar parsear el ID de empresa si viene en el input
+            let empresa_id = input.empresa_id.as_ref().and_then(|id| id.parse::<RecordId>().ok());
+
             let v_dto = VisitanteCreateDTO {
                 cedula: input.cedula.clone(),
                 nombre: input.nombre.clone(),
                 apellido: input.apellido.clone(),
                 segundo_nombre: input.segundo_nombre.clone(),
                 segundo_apellido: input.segundo_apellido.clone(),
-                empresa: None,
+                empresa: empresa_id,
                 has_vehicle: input.modo_ingreso == "vehiculo",
             };
 
@@ -44,7 +48,8 @@ pub async fn create_pre_registro(
                 Ok(v) => {
                     // Indexar nuevo visitante creado automáticamente
                     if let Ok(Some(fetched)) = visitante_db::find_by_id_fetched(&v.id).await {
-                        let _ = search_service.add_visitante_fetched(&fetched, "Sin Empresa").await;
+                        let empresa_name = input.empresa_nombre.as_deref().unwrap_or("Sin Empresa");
+                        let _ = search_service.add_visitante_fetched(&fetched, empresa_name).await;
                     }
                     Some(v.id)
                 }
