@@ -77,16 +77,17 @@
 			apellido = data.apellido || '';
 			segundoApellido = data.segundoApellido || '';
 
-			empresaId = data.empresaId || '';
-			empresaNombre = data.empresaNombre || '';
+			empresaId = data.empresaId || (data as any).empresa_id || '';
+			empresaNombre = data.empresaNombre || (data as any).empresa_nombre || '';
 
 			anfitrion = data.anfitrion || '';
-			areaVisitada = data.areaVisitada || '';
+			areaVisitada = data.areaVisitada || (data as any).area_visitada || '';
 			motivo = data.motivo || '';
 
-			if (data.fechaEsperada) {
+			const rawFecha = data.fechaEsperada || (data as any).fecha_esperada;
+			if (rawFecha) {
 				try {
-					fechaEsperadaDisplay = formatDateForDisplay(data.fechaEsperada);
+					fechaEsperadaDisplay = formatDateForDisplay(rawFecha);
 				} catch (e) {
 					console.warn('Error formatting date:', e);
 					fechaEsperadaDisplay = ''; // Fallback
@@ -95,7 +96,7 @@
 				fechaEsperadaDisplay = '';
 			}
 
-			horaEsperada = data.horaEsperada || '';
+			horaEsperada = data.horaEsperada || (data as any).hora_esperada || '';
 
 			if (data.placa) {
 				vehiculoPlaca = data.placa;

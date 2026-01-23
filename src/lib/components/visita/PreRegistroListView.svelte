@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { toast } from 'svelte-5-french-toast';
-	import { UserPlus, RefreshCw, X, Calendar, Search } from 'lucide-svelte';
+	import { UserPlus, RefreshCw, X, Calendar, Search, LogIn } from 'lucide-svelte';
 	import type { ColumnDefinition } from 'tabulator-tables';
 
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
@@ -10,6 +10,7 @@
 	import { preRegistroVisitaService } from '$lib/services/preRegistroVisitaService';
 	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
 	import type { PreRegistroVisita } from '$lib/types/ingreso-nuevos';
+	import IngresoVisitaFormModal from '$lib/components/ingreso/IngresoVisitaFormModal.svelte';
 
 	interface Props {
 		showHeader?: boolean;
@@ -26,7 +27,9 @@
 
 	// Modal state
 	let showCreateModal = $state(false);
+	let showIngresoModal = $state(false);
 	let editingPreRegistro = $state<PreRegistroVisita | null>(null);
+	let selectedPreRegistroForIngreso = $state<PreRegistroVisita | null>(null);
 
 	const columns: ColumnDefinition[] = [
 		{ title: 'Cédula', field: 'cedula', width: 120 },
@@ -38,18 +41,39 @@
 				return `${data.nombre} ${data.apellido} ${data.segundoNombre || ''} ${data.segundoApellido || ''}`.trim();
 			}
 		},
-		{ title: 'Empresa', field: 'empresaNombre', width: 150 },
+		{
+			title: 'Empresa',
+			field: 'empresaNombre',
+			width: 150,
+			formatter: (cell: any) => {
+				const data = cell.getData();
+				return data.empresaNombre || data.empresa_nombre || '';
+			}
+		},
 		{ title: 'Anfitrión', field: 'anfitrion', width: 150 },
 		{
 			title: 'Fecha Esperada',
 			field: 'fechaEsperada',
 			width: 140,
 			formatter: (cell: any) => {
-				const val = cell.getValue();
-				return val ? new Date(val).toLocaleDateString() : '';
+				const data = cell.getData();
+				const val = data.fechaEsperada || data.fecha_esperada;
+				if (!val) return '';
+				// Si ya viene formateada como YYYY-MM-DD
+				const bits = val.split('T')[0].split('-');
+				if (bits.length === 3) return `${bits[2]}/${bits[1]}/${bits[0]}`;
+				return new Date(val).toLocaleDateString();
 			}
 		},
-		{ title: 'Hora', field: 'horaEsperada', width: 80 },
+		{
+			title: 'Hora',
+			field: 'horaEsperada',
+			width: 80,
+			formatter: (cell: any) => {
+				const data = cell.getData();
+				return data.horaEsperada || data.hora_esperada || '';
+			}
+		},
 		{
 			title: 'Estado',
 			field: 'estado',
@@ -70,11 +94,26 @@
 			hozAlign: 'center' as 'center',
 			headerSort: false,
 			formatter: (cell: any) => {
-				return `<button class="p-1 text-red-400 hover:text-red-300 transition-colors" title="Cancelar"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 18 18"/></svg></button>`;
+				return `
+					<div class="flex items-center justify-center gap-2">
+						<button class="p-1.5 text-blue-400 hover:text-blue-300 transition-colors ingreso-btn" title="Ingresar">
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+						</button>
+						<button class="p-1.5 text-red-400 hover:text-red-300 transition-colors cancel-btn" title="Cancelar">
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 18 18"/></svg>
+						</button>
+					</div>
+				`;
 			},
 			cellClick: (e: any, cell: any) => {
 				e.stopPropagation();
-				handleCancelPreRegistro(cell.getRow().getData().id.toString());
+				const target = e.target as HTMLElement;
+				const btn = target.closest('button');
+				if (btn?.classList.contains('ingreso-btn')) {
+					handleIngreso(cell.getRow().getData());
+				} else if (btn?.classList.contains('cancel-btn')) {
+					handleCancelPreRegistro(cell.getRow().getData().id.toString());
+				}
 			}
 		}
 	];
@@ -134,6 +173,11 @@
 		showCreateModal = true;
 	}
 
+	function handleIngreso(preRegistro: PreRegistroVisita) {
+		selectedPreRegistroForIngreso = preRegistro;
+		showIngresoModal = true;
+	}
+
 	onMount(() => {
 		loadData();
 	});
@@ -163,13 +207,6 @@
 					<X size={14} /> Cancelar
 				</button>
 			{:else}
-				<button
-					onclick={loadData}
-					class="p-1.5 text-secondary hover:text-primary transition-colors hover:bg-surface-3 rounded-lg border border-surface"
-					title="Actualizar"
-				>
-					<RefreshCw size={16} class={loading ? 'animate-spin' : ''} />
-				</button>
 				<button
 					onclick={() => {
 						editingPreRegistro = null;
@@ -219,6 +256,15 @@
 	on:success={() => {
 		loadData();
 		showCreateModal = false;
+	}}
+/>
+
+<IngresoVisitaFormModal
+	bind:show={showIngresoModal}
+	initialPerson={selectedPreRegistroForIngreso}
+	onComplete={() => {
+		loadData();
+		showIngresoModal = false;
 	}}
 />
 
