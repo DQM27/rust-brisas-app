@@ -1,7 +1,7 @@
 <!-- src/lib/components/visitante/VisitanteFormModal.svelte -->
 <script lang="ts">
 	import { fade, fly, scale } from 'svelte/transition';
-	import { X, User, Bike, Car, Plus, ChevronDown } from 'lucide-svelte';
+	import { X, User, Bike, Car, Plus, ChevronDown, Check } from 'lucide-svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import type {
 		VisitanteResponse,
@@ -12,7 +12,10 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { empresaStore } from '$lib/stores/empresaStore.svelte';
 	import { submitCreateEmpresa } from '$lib/logic/empresa/empresaService';
+
 	import VehiculoManagerModal from '$lib/components/vehiculo/VehiculoManagerModal.svelte';
+	import { vehiculos } from '$lib/api/vehiculos';
+	import type { VehiculoResponse } from '$lib/types/vehiculo';
 
 	// Superforms & Zod v4
 	import { superForm } from 'sveltekit-superforms';
@@ -60,7 +63,12 @@
 	// Vehicle Modal State (for edit mode)
 	let showVehiculoModal = $state(false);
 
-	// Inline Vehicle Form State (for create mode)
+	// Vehicle State
+	let vehiculosList = $state<VehiculoResponse[]>([]);
+	let loadingVehiculos = $state(false);
+	let showVehiculoDropdown = $state(false);
+
+	// Vehicle Form State
 	let showVehiculoForm = $state(false);
 	let showTipoDropdown = $state(false);
 	const tipoOptions = [
@@ -141,10 +149,22 @@
 		}
 	});
 
-	// Load companies
+	// Load data
 	onMount(async () => {
 		await empresaStore.init();
+		loadVehiculos();
 	});
+
+	async function loadVehiculos() {
+		loadingVehiculos = true;
+		try {
+			vehiculosList = await vehiculos.getActivos();
+		} catch (e) {
+			console.error('Error loading vehiculos:', e);
+		} finally {
+			loadingVehiculos = false;
+		}
+	}
 
 	onDestroy(() => {
 		if (checkTimeout) clearTimeout(checkTimeout);
@@ -452,91 +472,134 @@
 										{$errors.empresaId}
 									</p>{/if}
 							</div>
-						</div>
 
-						<!-- Sección Vehículos -->
-						<div class="bg-surface-1 rounded-lg border border-surface p-4">
-							<div class="flex items-center justify-between">
-								<span class="text-xs font-semibold text-secondary uppercase tracking-wider"
-									>Vehículo</span
-								>
-								{#if isEditMode && visitante?.id}
-									<!-- Modo Edición: Botón para abrir VehiculoManagerModal -->
-									<button
-										type="button"
-										onclick={() => (showVehiculoModal = true)}
-										class="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border border-surface bg-surface-2 text-secondary hover:text-primary hover:border-border-emphasis transition-colors"
+							<!-- Vehículo (Full Width) -->
+							<div class="col-span-1 lg:col-span-2 pt-2">
+								<div class="space-y-1">
+									<label for="vehiculoPlaca" class="form-label"
+										>Vehículo <span class="text-xs font-normal text-secondary opacity-70 ml-1"
+											>(Opcional)</span
+										></label
 									>
-										<Car size={14} />
-										Gestionar Vehículos
-									</button>
-								{:else}
-									<!-- Modo Creación: Botón para añadir vehículo -->
-									{#if !$form.hasVehicle}
+									<div class="flex gap-2 relative">
+										<!-- Custom Dropdown Trigger -->
+										<div class="relative flex-1">
+											<button
+												type="button"
+												disabled={loading || loadingVehiculos}
+												onclick={() => (showVehiculoDropdown = !showVehiculoDropdown)}
+												class="form-select w-full text-left flex items-center justify-between transition-colors {showVehiculoDropdown
+													? 'border-accent ring-1 ring-accent/20'
+													: $form.hasVehicle
+														? 'is-valid'
+														: ''}"
+											>
+												<span class="truncate flex items-center gap-2">
+													{#if loadingVehiculos}
+														Cargando...
+													{:else if $form.hasVehicle && $form.placa}
+														<span class="font-mono font-bold bg-white/10 px-1.5 rounded text-xs"
+															>{$form.placa}</span
+														>
+														<span class="text-xs opacity-70">
+															{$form.marca || ''}
+															{$form.modelo || ''}
+														</span>
+													{:else}
+														<span class="opacity-50">Sin vehículo registrado</span>
+													{/if}
+												</span>
+												<ChevronDown size={16} class="text-secondary" />
+											</button>
+
+											<!-- Dropdown Options -->
+											{#if showVehiculoDropdown}
+												<!-- Backdrop -->
+												<div
+													class="fixed inset-0 z-40"
+													onclick={() => (showVehiculoDropdown = false)}
+													role="presentation"
+													aria-hidden="true"
+												></div>
+
+												<div
+													class="form-dropdown absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto"
+													transition:fly={{ y: -10, duration: 200 }}
+												>
+													<!-- Option: No Vehicle -->
+													<button
+														type="button"
+														onclick={() => {
+															$form.hasVehicle = false;
+															$form.placa = '';
+															$form.tipoVehiculo = '';
+															$form.marca = '';
+															$form.modelo = '';
+															$form.color = '';
+															showVehiculoDropdown = false;
+														}}
+														class="form-dropdown-item justify-between group text-secondary hover:text-white"
+													>
+														<span class="italic">Sin vehículo</span>
+														{#if !$form.hasVehicle}
+															<Check size={14} class="text-secondary" />
+														{/if}
+													</button>
+
+													{#if vehiculosList.length > 0}
+														<div class="border-t border-white/5 my-1"></div>
+														{#each vehiculosList as v}
+															<button
+																type="button"
+																onclick={() => {
+																	$form.hasVehicle = true;
+																	$form.tipoVehiculo = v.tipoVehiculo;
+																	$form.placa = v.placa;
+																	$form.marca = v.marca || '';
+																	$form.modelo = v.modelo || '';
+																	$form.color = v.color || '';
+																	showVehiculoDropdown = false;
+																}}
+																class="form-dropdown-item justify-between group"
+															>
+																<div class="flex items-center gap-2">
+																	{#if v.tipoVehiculo === 'motocicleta'}
+																		<Bike size={14} class="opacity-70" />
+																	{:else}
+																		<Car size={14} class="opacity-70" />
+																	{/if}
+																	<span class="font-mono font-bold">{v.placa}</span>
+																	<span class="text-xs opacity-50 truncate"
+																		>{v.descripcionCompleta}</span
+																	>
+																</div>
+																{#if $form.hasVehicle && $form.placa === v.placa}
+																	<Check size={14} class="text-primary" />
+																{/if}
+															</button>
+														{/each}
+													{:else}
+														<div class="px-3 py-2 text-xs text-secondary opacity-50 text-center">
+															No hay vehículos recientes
+														</div>
+													{/if}
+												</div>
+											{/if}
+										</div>
+
+										<!-- Add Button -->
 										<button
 											type="button"
 											onclick={() => (showVehiculoForm = true)}
-											class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-surface bg-surface-2 text-secondary hover:text-primary hover:border-border-emphasis transition-colors"
+											disabled={loading}
+											class="px-3 py-1.5 rounded-lg border border-surface bg-surface-2 text-secondary hover:text-primary hover:border-border-emphasis transition-colors"
+											title="Registrar nuevo vehículo"
 										>
-											<Plus size={14} />
-											Añadir Vehículo
+											<Plus size={16} />
 										</button>
-									{:else}
-										<button
-											type="button"
-											onclick={() => {
-												$form.hasVehicle = false;
-												$form.tipoVehiculo = '';
-												$form.placa = '';
-												$form.marca = '';
-												$form.modelo = '';
-												$form.color = '';
-											}}
-											class="text-xs text-red-400 hover:text-red-300 transition-colors"
-										>
-											Quitar vehículo
-										</button>
-									{/if}
-								{/if}
-							</div>
-
-							<!-- Modo Creación: Mostrar preview del vehículo -->
-							{#if !isEditMode}
-								{#if $form.hasVehicle}
-									<!-- Preview del vehículo añadido -->
-									<button
-										type="button"
-										onclick={() => (showVehiculoForm = true)}
-										class="w-full flex items-center justify-between p-3 mt-3 rounded-lg border border-surface bg-surface-2 hover:border-border-emphasis transition-colors"
-									>
-										<div class="flex items-center gap-3">
-											<div class="p-2 rounded-lg bg-surface-3 text-primary">
-												{#if $form.tipoVehiculo === 'motocicleta'}
-													<Bike size={18} />
-												{:else}
-													<Car size={18} />
-												{/if}
-											</div>
-											<div class="text-left">
-												<div class="font-semibold text-primary text-sm">
-													{$form.placa || 'Sin placa'}
-												</div>
-												<div class="text-xs text-secondary">
-													{$form.marca || 'Sin marca'} • {$form.modelo || 'Sin modelo'} • {$form.color ||
-														'Sin color'}
-												</div>
-											</div>
-										</div>
-										<span class="text-xs text-secondary">Editar</span>
-									</button>
-								{:else}
-									<div
-										class="text-center py-4 mt-3 text-secondary text-xs border border-dashed border-surface rounded-lg"
-									>
-										Sin vehículo registrado
 									</div>
-								{/if}
-							{/if}
+								</div>
+							</div>
 						</div>
 					</div>
 
