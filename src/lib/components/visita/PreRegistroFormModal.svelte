@@ -77,8 +77,28 @@
 			apellido = data.apellido || '';
 			segundoApellido = data.segundoApellido || '';
 
-			empresaId = data.empresaId || (data as any).empresa_id || '';
+			// Normalizar ID de empresa para SurrealDB (tb:id)
+			const normalizeId = (id: any) => {
+				if (!id) return '';
+				if (typeof id === 'string') return id;
+				if (typeof id === 'object' && id.tb && id.id) {
+					const innerId =
+						typeof id.id === 'object' ? id.id.String || id.id.id || JSON.stringify(id.id) : id.id;
+					return `${id.tb}:${innerId}`;
+				}
+				return id.toString();
+			};
+
+			empresaId = normalizeId(data.empresaId || (data as any).empresa_id);
 			empresaNombre = data.empresaNombre || (data as any).empresa_nombre || '';
+
+			// Si tenemos nombre pero no ID (sucede a veces en el catálogo), intentar buscarlo
+			if (!empresaId && empresaNombre) {
+				const matched = empresaStore.empresas.find(
+					(e) => e.nombre?.toLowerCase() === empresaNombre.toLowerCase()
+				);
+				if (matched) empresaId = matched.id;
+			}
 
 			anfitrion = data.anfitrion || '';
 			areaVisitada = data.areaVisitada || (data as any).area_visitada || '';
@@ -186,6 +206,7 @@
 			!cedula ||
 			!nombre ||
 			!apellido ||
+			!empresaId ||
 			!anfitrion ||
 			!areaVisitada ||
 			!motivo ||
@@ -516,18 +537,17 @@
 						<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 							<!-- Selector Empresa -->
 							<div>
-								<label for="empresaId" class={labelClass}>Empresa (Opcional)</label>
+								<label for="empresaId" class={labelClass}
+									>Empresa <span class="text-red-500">*</span></label
+								>
 								<div class="flex gap-2 relative">
 									<!-- Custom Dropdown Trigger -->
 									<div class="relative flex-1">
 										<button
 											type="button"
-											disabled={loading || empresaStore.loading || visitorSelected}
-											onclick={() =>
-												!visitorSelected && (showEmpresaDropdown = !showEmpresaDropdown)}
-											class="{selectClass} flex items-center justify-between {visitorSelected
-												? 'opacity-70 bg-white/5 cursor-not-allowed'
-												: ''}"
+											disabled={loading || empresaStore.loading}
+											onclick={() => (showEmpresaDropdown = !showEmpresaDropdown)}
+											class="{selectClass} flex items-center justify-between"
 										>
 											<span class="truncate">
 												{#if empresaStore.loading}
@@ -543,7 +563,7 @@
 										</button>
 
 										<!-- Dropdown Options -->
-										{#if showEmpresaDropdown && !visitorSelected}
+										{#if showEmpresaDropdown}
 											<!-- Backdrop -->
 											<div
 												class="fixed inset-0 z-40"
@@ -582,7 +602,7 @@
 									<button
 										type="button"
 										onclick={() => (showEmpresaModal = true)}
-										disabled={loading || visitorSelected}
+										disabled={loading}
 										class="px-3 py-1.5 rounded-lg border border-white/10 bg-black/20 text-secondary hover:text-white hover:border-white/30 transition-colors"
 										title="Añadir nueva empresa"
 									>

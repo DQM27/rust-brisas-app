@@ -20,6 +20,22 @@
 	let { showHeader = true, showTitle = true }: Props = $props();
 
 	let preRegistros = $state<PreRegistroVisita[]>([]);
+	let filteredPreRegistros = $derived.by(() => {
+		if (!searchTerm) return preRegistros;
+		const term = searchTerm.toLowerCase();
+		return preRegistros.filter((p) => {
+			const fullName =
+				`${p.nombre} ${p.apellido} ${p.segundoNombre || ''} ${p.segundoApellido || ''}`.toLowerCase();
+			return (
+				p.cedula?.toLowerCase().includes(term) ||
+				fullName.includes(term) ||
+				p.empresaNombre?.toLowerCase().includes(term) ||
+				(p as any).empresa_nombre?.toLowerCase().includes(term) ||
+				p.anfitrion?.toLowerCase().includes(term) ||
+				p.motivo?.toLowerCase().includes(term)
+			);
+		});
+	});
 	let loading = $state(false);
 	let searchTerm = $state('');
 	let gridWrapper = $state<any>(null);
@@ -153,7 +169,6 @@
 	// Expose methods if needed by parent
 	export function setSearchTerm(term: string) {
 		searchTerm = term;
-		gridWrapper?.setFilter(term); // Assuming wrapper or tabulator logic handles this or we filter locally
 	}
 
 	async function handleCancelPreRegistro(id: string) {
@@ -233,7 +248,7 @@
 		<TabulatorWrapper
 			bind:this={gridWrapper}
 			bind:toolbarColumns
-			data={preRegistros}
+			data={filteredPreRegistros}
 			{columns}
 			class="h-full"
 			pagination={true}

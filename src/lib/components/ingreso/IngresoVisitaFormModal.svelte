@@ -92,17 +92,17 @@
 						await ingresoVisitaService.createIngreso({
 							cedula: f.data.cedula.trim(),
 							nombre: f.data.nombre.trim(),
-							segundo_nombre: f.data.segundoNombre.trim() || undefined,
+							segundoNombre: f.data.segundoNombre.trim() || undefined,
 							apellido: f.data.apellido.trim(),
-							segundo_apellido: f.data.segundoApellido.trim() || undefined,
-							empresa_nombre: selectedEmpresa?.nombre || undefined,
+							segundoApellido: f.data.segundoApellido.trim() || undefined,
+							empresaNombre: selectedEmpresa?.nombre || undefined,
 							anfitrion: f.data.anfitrion.trim(),
-							area_visitada: f.data.areaVisitada.trim(),
+							areaVisitada: f.data.areaVisitada.trim(),
 							motivo: f.data.motivo.trim(),
 							gafete: f.data.gafete.trim() || undefined,
 							observaciones: f.data.observaciones.trim() || undefined,
-							usuario_ingreso_id: $currentUser?.id || '',
-							pre_registro_id: foundPreRegistroId
+							usuarioIngresoId: $currentUser?.id || '',
+							preRegistroId: foundPreRegistroId
 						});
 
 						toast.success('Ingreso de visita registrado');
@@ -445,16 +445,7 @@
 											</div>
 										</div>
 
-										<div>
-											<span class="text-[10px] uppercase font-bold text-secondary tracking-wider"
-												>Empresa</span
-											>
-											<div class="text-sm font-medium text-white flex items-center gap-2">
-												{empresaStore.empresas.find((e) => e.id === $form.empresaId)?.nombre ||
-													'Sin Empresa'}
-											</div>
-										</div>
-
+										<!-- Sección 1: Quién y De Dónde -->
 										<div>
 											<span class="text-[10px] uppercase font-bold text-secondary tracking-wider"
 												>Anfitrión</span
@@ -462,14 +453,49 @@
 											<div class="text-sm font-medium text-white">{$form.anfitrion}</div>
 										</div>
 
-										<div class="col-span-2">
+										<div>
 											<span class="text-[10px] uppercase font-bold text-secondary tracking-wider"
-												>Destino / Motivo</span
+												>Empresa</span
 											>
-											<div class="text-sm text-gray-300">
-												<span class="font-medium text-white">{$form.areaVisitada}</span>
-												<span class="mx-1 text-surface-4">•</span>
-												{$form.motivo}
+											<div class="text-sm font-medium text-white">
+												{empresaStore.empresas.find((e) => e.id === $form.empresaId)?.nombre ||
+													initialPerson?.empresa_nombre ||
+													initialPerson?.empresaNombre ||
+													'Sin Empresa'}
+											</div>
+										</div>
+
+										<!-- Sección 2: Dónde y Por Qué -->
+										<div>
+											<span class="text-[10px] uppercase font-bold text-secondary tracking-wider"
+												>Área Visitada</span
+											>
+											<div class="text-sm font-medium text-white">{$form.areaVisitada}</div>
+										</div>
+
+										<div>
+											<span class="text-[10px] uppercase font-bold text-secondary tracking-wider"
+												>Motivo</span
+											>
+											<div class="text-sm font-medium text-white">{$form.motivo}</div>
+										</div>
+
+										<!-- Sección 3: Cuándo y Cómo -->
+										<div>
+											<span class="text-[10px] uppercase font-bold text-secondary tracking-wider"
+												>Fecha / Hora Cita</span
+											>
+											<div class="text-sm font-medium text-white">
+												{(() => {
+													const f = initialPerson?.fecha_esperada || initialPerson?.fechaEsperada;
+													if (!f) return 'No definida';
+													const h =
+														initialPerson?.hora_esperada || initialPerson?.horaEsperada || '';
+													const bits = f.split('T')[0].split('-');
+													const dateStr =
+														bits.length === 3 ? `${bits[2]}/${bits[1]}/${bits[0]}` : f;
+													return `${dateStr} ${h}`;
+												})()}
 											</div>
 										</div>
 
@@ -483,16 +509,6 @@
 												{:else}
 													<span>🚶 Caminando</span>
 												{/if}
-											</div>
-										</div>
-
-										<div>
-											<span class="text-[10px] uppercase font-bold text-secondary tracking-wider"
-												>Fecha Esperada</span
-											>
-											<div class="text-sm font-medium text-white">
-												{initialPerson?.fecha_esperada || 'N/A'}
-												{initialPerson?.hora_esperada || ''}
 											</div>
 										</div>
 									</div>

@@ -5,21 +5,21 @@ export interface CreateIngresoVisitaFullInput {
 	// Datos Visitante
 	cedula: string;
 	nombre: string;
-	segundo_nombre?: string;
+	segundoNombre?: string;
 	apellido: string;
-	segundo_apellido?: string;
-	empresa_nombre?: string;
+	segundoApellido?: string;
+	empresaNombre?: string;
 
 	// Datos Ingreso
 	anfitrion: string;
-	area_visitada: string;
+	areaVisitada: string;
 	motivo: string;
 	gafete?: string;
 	observaciones?: string;
-	usuario_ingreso_id: string;
+	usuarioIngresoId: string;
 
 	// Opcional
-	pre_registro_id?: string;
+	preRegistroId?: string;
 }
 
 export const ingresoVisitaService = {
