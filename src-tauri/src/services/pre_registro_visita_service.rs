@@ -71,6 +71,7 @@ pub async fn create_pre_registro(
         segundo_apellido: input.segundo_apellido,
         empresa_nombre: input.empresa_nombre,
         fecha_esperada: input.fecha_esperada,
+        hora_esperada: input.hora_esperada,
         anfitrion: input.anfitrion,
         area_visitada: input.area_visitada,
         motivo: input.motivo,

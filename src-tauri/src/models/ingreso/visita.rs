@@ -225,6 +225,7 @@ pub struct PreRegistroVisita {
     pub segundo_apellido: Option<String>,
     pub empresa_nombre: Option<String>,
     pub fecha_esperada: String, // YYYY-MM-DD
+    pub hora_esperada: String,  // HH:MM
     pub anfitrion: String,
     pub area_visitada: String,
     pub motivo: String,
@@ -250,6 +251,7 @@ pub struct PreRegistroVisitaFetched {
     pub segundo_apellido: Option<String>,
     pub empresa_nombre: Option<String>,
     pub fecha_esperada: String,
+    pub hora_esperada: String,
     pub anfitrion: String,
     pub area_visitada: String,
     pub motivo: String,
@@ -271,6 +273,7 @@ pub struct CreatePreRegistroInput {
     pub segundo_apellido: Option<String>,
     pub empresa_nombre: Option<String>,
     pub fecha_esperada: String,
+    pub hora_esperada: String,
     pub anfitrion: String,
     pub area_visitada: String,
     pub motivo: String,
@@ -289,6 +292,7 @@ pub struct PreRegistroVisitaCreateDTO {
     pub segundo_apellido: Option<String>,
     pub empresa_nombre: Option<String>,
     pub fecha_esperada: String,
+    pub hora_esperada: String,
     pub anfitrion: String,
     pub area_visitada: String,
     pub motivo: String,

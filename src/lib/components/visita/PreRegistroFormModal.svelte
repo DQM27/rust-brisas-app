@@ -31,6 +31,7 @@
 	let segundoApellido = $state('');
 	let empresaNombre = $state('');
 	let fechaEsperadaDisplay = $state(formatDateForDisplay(new Date().toISOString().split('T')[0]));
+	let horaEsperada = $state('');
 	let anfitrion = $state('');
 	let areaVisitada = $state('');
 	let motivo = $state('');
@@ -61,7 +62,15 @@
 	}
 
 	async function handleSubmit() {
-		if (!cedula || !nombre || !apellido || !anfitrion || !areaVisitada || !motivo) {
+		if (
+			!cedula ||
+			!nombre ||
+			!apellido ||
+			!anfitrion ||
+			!areaVisitada ||
+			!motivo ||
+			!horaEsperada
+		) {
 			error = 'Por favor complete los campos obligatorios (*)';
 			return;
 		}
@@ -78,6 +87,7 @@
 				segundoApellido,
 				empresaNombre,
 				fechaEsperada: formatDateForBackend(fechaEsperadaDisplay),
+				horaEsperada,
 				anfitrion,
 				areaVisitada,
 				motivo,
@@ -107,6 +117,7 @@
 		apellido = '';
 		segundoApellido = '';
 		empresaNombre = '';
+		horaEsperada = '';
 		error = '';
 		visitorSelected = false;
 		searchResetKey++;
@@ -190,12 +201,9 @@
 
 				<!-- Card de Inputs -->
 				<div class="bg-surface-1 rounded-lg border border-surface p-6 space-y-6">
-					<!-- Buscador Unificado (Multi-Campo) -->
+					<!-- Buscador Unificado -->
 					<div>
-						<div class="flex items-center justify-between mb-2">
-							<span class="text-xs font-semibold text-accent uppercase tracking-wider">
-								Buscador de Visitantes (Catálogo)
-							</span>
+						<div class="flex items-center justify-end mb-2">
 							{#if visitorSelected}
 								<button
 									type="button"
@@ -209,9 +217,6 @@
 						{#key searchResetKey}
 							<PersonaFinder scope="visitante" on:select={handlePersonaSelect} autoFocus={true} />
 						{/key}
-						<p class="mt-1.5 text-[10px] text-tertiary italic">
-							* Busca por Nombre, Apellido o Cédula para autocompletar.
-						</p>
 					</div>
 
 					<form
@@ -314,69 +319,6 @@
 								/>
 							</div>
 							<div>
-								<label for="fechaEsperada" class={labelClass}
-									>Fecha Esperada <span class="text-red-500">*</span></label
-								>
-								<input
-									id="fechaEsperada"
-									type="text"
-									value={fechaEsperadaDisplay}
-									oninput={handleDateInput}
-									class={inputClass}
-									placeholder="DD/MM/YYYY"
-									maxlength="10"
-								/>
-							</div>
-						</div>
-
-						<!-- Separador con Título de Sección -->
-						<div class="border-t border-surface pt-5">
-							<h3 class="text-sm font-semibold text-primary mb-4">Datos de la Visita</h3>
-						</div>
-
-						<!-- Fila 3: Detalles Visita -->
-						<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-							<div>
-								<label for="anfitrion" class={labelClass}
-									>Anfitrión <span class="text-red-500">*</span></label
-								>
-								<input
-									id="anfitrion"
-									type="text"
-									bind:value={anfitrion}
-									class={inputClass}
-									placeholder="¿A quién visita?"
-								/>
-							</div>
-							<div>
-								<label for="areaVisitada" class={labelClass}
-									>Área Visitada <span class="text-red-500">*</span></label
-								>
-								<input
-									id="areaVisitada"
-									type="text"
-									bind:value={areaVisitada}
-									class={inputClass}
-									placeholder="Ej. Administración, Planta..."
-								/>
-							</div>
-						</div>
-
-						<!-- Fila 4: Motivo y Modo -->
-						<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-							<div>
-								<label for="motivo" class={labelClass}
-									>Motivo <span class="text-red-500">*</span></label
-								>
-								<input
-									id="motivo"
-									type="text"
-									bind:value={motivo}
-									class={inputClass}
-									placeholder="Ej. Reunión, Entrega..."
-								/>
-							</div>
-							<div>
 								<label for="modoIngreso" class={labelClass}>Modo Ingreso</label>
 								<div class="relative">
 									<!-- Trigger Button -->
@@ -450,6 +392,77 @@
 											</button>
 										</div>
 									{/if}
+								</div>
+							</div>
+						</div>
+
+						<!-- Fila 3: Detalles Visita -->
+						<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+							<div>
+								<label for="anfitrion" class={labelClass}
+									>Anfitrión <span class="text-red-500">*</span></label
+								>
+								<input
+									id="anfitrion"
+									type="text"
+									bind:value={anfitrion}
+									class={inputClass}
+									placeholder="¿A quién visita?"
+								/>
+							</div>
+							<div>
+								<label for="areaVisitada" class={labelClass}
+									>Área Visitada <span class="text-red-500">*</span></label
+								>
+								<input
+									id="areaVisitada"
+									type="text"
+									bind:value={areaVisitada}
+									class={inputClass}
+									placeholder="Ej. Administración, Planta..."
+								/>
+							</div>
+						</div>
+
+						<!-- Fila 4: Motivo y Modo -->
+						<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+							<div>
+								<label for="motivo" class={labelClass}
+									>Motivo <span class="text-red-500">*</span></label
+								>
+								<input
+									id="motivo"
+									type="text"
+									bind:value={motivo}
+									class={inputClass}
+									placeholder="Ej. Reunión, Entrega..."
+								/>
+							</div>
+							<div class="grid grid-cols-2 gap-3">
+								<div>
+									<label for="fechaEsperada" class={labelClass}
+										>Fecha Esperada <span class="text-red-500">*</span></label
+									>
+									<input
+										id="fechaEsperada"
+										type="text"
+										value={fechaEsperadaDisplay}
+										oninput={handleDateInput}
+										class={inputClass}
+										placeholder="DD/MM/YYYY"
+										maxlength="10"
+									/>
+								</div>
+								<div>
+									<label for="horaEsperada" class={labelClass}
+										>Hora <span class="text-red-500">*</span></label
+									>
+									<input
+										id="horaEsperada"
+										type="time"
+										bind:value={horaEsperada}
+										class="{inputClass} [color-scheme:dark]"
+									/>
 								</div>
 							</div>
 						</div>

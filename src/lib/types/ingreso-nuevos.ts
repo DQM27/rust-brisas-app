@@ -101,6 +101,7 @@ export interface PreRegistroVisita {
 	segundoApellido?: string;
 	empresaNombre?: string;
 	fechaEsperada: string;
+	horaEsperada: string;
 	anfitrion: string;
 	areaVisitada: string;
 	motivo: string;
@@ -119,6 +120,7 @@ export interface CreatePreRegistroInput {
 	segundoApellido?: string;
 	empresaNombre?: string;
 	fechaEsperada: string;
+	horaEsperada: string;
 	anfitrion: string;
 	areaVisitada: string;
 	motivo: string;
