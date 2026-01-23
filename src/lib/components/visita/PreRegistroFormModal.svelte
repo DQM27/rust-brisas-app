@@ -3,19 +3,28 @@
 	import type { CreatePreRegistroInput } from '$lib/types/ingreso-nuevos';
 	import { preRegistroVisitaService } from '$lib/services/preRegistroVisitaService';
 	import type { SearchResult } from '$lib/types/search.types';
-	import { slide, fly } from 'svelte/transition';
+	import { slide, fly, fade, scale } from 'svelte/transition';
+
 	import {
 		X,
 		CalendarDays,
 		Save,
 		PersonStanding,
 		Car,
+		Bike,
 		Loader2,
 		Check,
 		User as UserIcon,
-		RefreshCw
+		RefreshCw,
+		Plus,
+		ChevronDown
 	} from 'lucide-svelte';
 	import PersonaFinder from '$lib/components/ingreso/shared/persona/PersonaFinder.svelte';
+	import { empresaStore } from '$lib/stores/empresaStore.svelte';
+	import { submitCreateEmpresa } from '$lib/logic/empresa/empresaService';
+	import { vehiculos } from '$lib/api/vehiculos';
+	import type { VehiculoResponse } from '$lib/types/vehiculo';
+	import { onMount } from 'svelte';
 
 	let { isOpen = $bindable(false) } = $props();
 	const dispatch = createEventDispatcher();
@@ -30,13 +39,44 @@
 	let apellido = $state('');
 	let segundoApellido = $state('');
 	let empresaNombre = $state('');
+	// Empresa State (Dropdown)
+	let empresaId = $state('');
+	let showEmpresaDropdown = $state(false);
+	let showEmpresaModal = $state(false);
+	let nuevaEmpresaNombre = $state('');
+	let creatingEmpresa = $state(false);
+	let empresaError = $state('');
+
 	let fechaEsperadaDisplay = $state(formatDateForDisplay(new Date().toISOString().split('T')[0]));
 	let horaEsperada = $state('');
 	let anfitrion = $state('');
 	let areaVisitada = $state('');
 	let motivo = $state('');
+
+	// Mode & Vehicle State
 	let modoIngreso = $state('caminando');
-	let showModoIngresoDropdown = $state(false);
+	let showModoIngresoDropdown = $state(false); // Mantengo esto para el switch principal, o lo integro?
+	// Integración completa de vehículos:
+	let vehiculosList = $state<VehiculoResponse[]>([]);
+	let loadingVehiculos = $state(false);
+	let showVehiculoDropdown = $state(false);
+	let showVehiculoForm = $state(false); // Mini modal
+	let showTipoDropdown = $state(false);
+
+	// Vehicle Form Data (para creación inline)
+	let vehiculoTipo = $state(''); // 'motocicleta' | 'automovil' ...
+	let vehiculoPlaca = $state('');
+	let vehiculoMarca = $state('');
+	let vehiculoModelo = $state('');
+	let vehiculoColor = $state('');
+
+	const tipoOptions = [
+		{ value: 'motocicleta', label: 'Motocicleta' },
+		{ value: 'automovil', label: 'Automóvil' },
+		{ value: 'camioneta', label: 'Camioneta' },
+		{ value: 'camion', label: 'Camión' },
+		{ value: 'otro', label: 'Otro' }
+	];
 	// Search logic
 	let visitorSelected = $state(false);
 	let searchResetKey = $state(0);
@@ -75,23 +115,44 @@
 			return;
 		}
 
+		// Validar vehículo si el modo es vehículo
+		if (modoIngreso === 'vehiculo' && !vehiculoPlaca) {
+			error = 'Si selecciona modo Vehículo, debe indicar la placa.';
+			return;
+		}
+
 		loading = true;
 		error = '';
 
 		try {
+			// Construir input
 			const input: CreatePreRegistroInput = {
 				cedula,
 				nombre,
 				segundoNombre,
 				apellido,
 				segundoApellido,
-				empresaNombre,
+
+				// Lógica Empresa:
+				// 1. Si seleccionó ID -> enviar nombre de la empresaStore (para el campo legacy) Y el ID
+				// 2. Si no, enviar el texto manual?? No, ahora forzamos selección/creación
+				empresaNombre: empresaId
+					? empresaStore.empresas.find((e) => e.id === empresaId)?.nombre
+					: undefined,
+				empresaId: empresaId || undefined,
+
 				fechaEsperada: formatDateForBackend(fechaEsperadaDisplay),
 				horaEsperada,
 				anfitrion,
 				areaVisitada,
 				motivo,
-				modoIngreso
+				modoIngreso,
+
+				// Lógica Vehículo
+				placa: modoIngreso === 'vehiculo' ? vehiculoPlaca : undefined
+				// Nota: No enviamos marca/color porque el endpoint no lo soporta aun,
+				// pero si el pre-registro dispara creación de visitante, el backend lo manejará si lo actualizamos.
+				// Por ahora MVP: Se guarda placa.
 			};
 
 			await preRegistroVisitaService.create(input);
@@ -116,11 +177,27 @@
 		segundoNombre = '';
 		apellido = '';
 		segundoApellido = '';
+
+		empresaId = '';
 		empresaNombre = '';
+
+		modoIngreso = 'caminando';
+		resetVehiculoForm();
+
 		horaEsperada = '';
 		error = '';
 		visitorSelected = false;
 		searchResetKey++;
+	}
+
+	function resetVehiculoForm() {
+		vehiculoTipo = '';
+		vehiculoPlaca = '';
+		vehiculoMarca = '';
+		vehiculoModelo = '';
+		vehiculoColor = '';
+		showVehiculoDropdown = false;
+		showVehiculoForm = false;
 	}
 
 	function selectVisitor(result: SearchResult) {
@@ -129,7 +206,24 @@
 		segundoNombre = result.segundoNombre || '';
 		apellido = result.apellido || '';
 		segundoApellido = result.segundoApellido || '';
-		empresaNombre = result.empresaNombre || '';
+
+		// Map empresa info
+		if (result.empresaId) {
+			empresaId = result.empresaId;
+		} else if (result.empresaNombre) {
+			// Try to find by name or just leave empty ID but fill name?
+			// For this component we prioritize ID if possible.
+			const found = empresaStore.empresas.find(
+				(e) => e.nombre?.toLowerCase() === result.empresaNombre?.toLowerCase()
+			);
+			if (found) empresaId = found.id;
+		}
+
+		// Vehicle logic?
+		// Visitante search result might not have vehicle details populated in search result object directly
+		// But if they have a vehicle, we might want to fetch it?
+		// For MVP, just fill personal data.
+
 		visitorSelected = true;
 	}
 
@@ -140,13 +234,43 @@
 
 	function clearSearch() {
 		visitorSelected = false;
-		cedula = '';
-		nombre = '';
-		segundoNombre = '';
-		apellido = '';
-		segundoApellido = '';
-		empresaNombre = '';
-		searchResetKey++;
+		resetForm();
+		// Mantener fecha y hora tal vez? No, resetForm las borra.
+		// Restauremos fecha
+		fechaEsperadaDisplay = formatDateForDisplay(new Date().toISOString().split('T')[0]);
+	}
+
+	async function handleCrearEmpresa() {
+		if (!nuevaEmpresaNombre.trim()) return;
+		creatingEmpresa = true;
+		empresaError = '';
+		const result = await submitCreateEmpresa(nuevaEmpresaNombre);
+		if (result.ok) {
+			empresaStore.add(result.empresa);
+			empresaId = result.empresa.id;
+			nuevaEmpresaNombre = '';
+			showEmpresaModal = false;
+		} else {
+			empresaError = result.error;
+		}
+		creatingEmpresa = false;
+	}
+
+	// Init Data
+	onMount(async () => {
+		await empresaStore.init();
+		loadVehiculos();
+	});
+
+	async function loadVehiculos() {
+		loadingVehiculos = true;
+		try {
+			vehiculosList = await vehiculos.getActivos();
+		} catch (e) {
+			console.error(e);
+		} finally {
+			loadingVehiculos = false;
+		}
 	}
 
 	function handleDateInput(e: Event) {
@@ -305,28 +429,94 @@
 							</div>
 						</div>
 
-						<!-- Fila 2: Empresa y Fecha -->
+						<!-- Fila 2: Empresa y Modo Ingreso -->
 						<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+							<!-- Selector Empresa -->
 							<div>
-								<label for="empresaNombre" class={labelClass}>Empresa (Opcional)</label>
-								<input
-									id="empresaNombre"
-									type="text"
-									bind:value={empresaNombre}
-									class="{inputClass} {visitorSelected ? 'opacity-70 bg-white/5' : ''}"
-									placeholder="Empresa visitante"
-									readonly={visitorSelected}
-								/>
+								<label for="empresaId" class={labelClass}>Empresa (Opcional)</label>
+								<div class="flex gap-2 relative">
+									<!-- Custom Dropdown Trigger -->
+									<div class="relative flex-1">
+										<button
+											type="button"
+											disabled={loading || empresaStore.loading || visitorSelected}
+											onclick={() =>
+												!visitorSelected && (showEmpresaDropdown = !showEmpresaDropdown)}
+											class="{selectClass} flex items-center justify-between {visitorSelected
+												? 'opacity-70 bg-white/5 cursor-not-allowed'
+												: ''}"
+										>
+											<span class="truncate">
+												{#if empresaStore.loading}
+													Cargando...
+												{:else}
+													{empresaStore.empresas.find((e) => e.id === empresaId)?.nombre ||
+														'Seleccione empresa'}
+												{/if}
+											</span>
+											{#if !visitorSelected}
+												<ChevronDown size={14} class="text-secondary" />
+											{/if}
+										</button>
+
+										<!-- Dropdown Options -->
+										{#if showEmpresaDropdown && !visitorSelected}
+											<!-- Backdrop -->
+											<div
+												class="fixed inset-0 z-40"
+												onclick={() => (showEmpresaDropdown = false)}
+												role="presentation"
+												aria-hidden="true"
+											></div>
+
+											<div
+												class="form-dropdown absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto bg-[#1c2128] border border-white/10 rounded-lg shadow-xl"
+												transition:fly={{ y: -5, duration: 200 }}
+											>
+												{#if empresaStore.empresas.length === 0}
+													<div class="px-3 py-2 text-sm text-secondary">No hay empresas</div>
+												{:else}
+													{#each empresaStore.empresas as empresa}
+														<button
+															type="button"
+															onclick={() => {
+																empresaId = empresa.id;
+																showEmpresaDropdown = false;
+															}}
+															class="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-300 hover:bg-white/10 transition-colors"
+														>
+															<span>{empresa.nombre}</span>
+															{#if empresaId === empresa.id}
+																<Check size={14} class="text-blue-500" />
+															{/if}
+														</button>
+													{/each}
+												{/if}
+											</div>
+										{/if}
+									</div>
+
+									<button
+										type="button"
+										onclick={() => (showEmpresaModal = true)}
+										disabled={loading || visitorSelected}
+										class="px-3 py-1.5 rounded-lg border border-white/10 bg-black/20 text-secondary hover:text-white hover:border-white/30 transition-colors"
+										title="Añadir nueva empresa"
+									>
+										<Plus size={16} />
+									</button>
+								</div>
 							</div>
+
+							<!-- Selector Modo Ingreso -->
 							<div>
 								<label for="modoIngreso" class={labelClass}>Modo Ingreso</label>
 								<div class="relative">
-									<!-- Trigger Button -->
 									<button
 										id="modoIngreso"
 										type="button"
 										onclick={() => (showModoIngresoDropdown = !showModoIngresoDropdown)}
-										class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left"
+										class="{selectClass} flex items-center justify-between"
 										class:!border-blue-500={showModoIngresoDropdown}
 									>
 										<span class="flex items-center gap-2">
@@ -338,24 +528,18 @@
 												<span>Vehículo</span>
 											{/if}
 										</span>
-										<!-- Icono dinámico -->
-										<X
-											size={14}
-											class="text-secondary opacity-0 group-hover:opacity-100 transition-opacity"
-										/>
+										<ChevronDown size={14} class="text-secondary" />
 									</button>
 
 									{#if showModoIngresoDropdown}
-										<!-- Backdrop -->
 										<div
 											class="fixed inset-0 z-40"
 											onclick={() => (showModoIngresoDropdown = false)}
 											role="presentation"
 										></div>
 
-										<!-- Menú Flotante -->
 										<div
-											class="absolute z-50 w-full bottom-[calc(100%+4px)] bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-bottom"
+											class="absolute z-50 w-full top-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1"
 											transition:fly={{ y: 5, duration: 200 }}
 										>
 											<button
@@ -363,6 +547,9 @@
 												onclick={() => {
 													modoIngreso = 'caminando';
 													showModoIngresoDropdown = false;
+													// Reset vehículo al cambiar a caminando
+													vehiculoPlaca = '';
+													vehiculoTipo = '';
 												}}
 												class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
 											>
@@ -395,6 +582,111 @@
 								</div>
 							</div>
 						</div>
+
+						<!-- Selector Vehículo (Condicional) -->
+						{#if modoIngreso === 'vehiculo'}
+							<div transition:slide|local>
+								<div class="space-y-1">
+									<label for="vehiculoPlaca" class={labelClass}
+										>Vehículo <span class="text-red-500">*</span></label
+									>
+									<div class="flex gap-2 relative">
+										<!-- Custom Dropdown Trigger -->
+										<div class="relative flex-1">
+											<button
+												type="button"
+												disabled={loading || loadingVehiculos}
+												onclick={() => (showVehiculoDropdown = !showVehiculoDropdown)}
+												class="{selectClass} flex items-center justify-between {vehiculoPlaca
+													? '!border-blue-500/50 !ring-1 !ring-blue-500/20'
+													: ''}"
+											>
+												<span class="truncate flex items-center gap-2">
+													{#if loadingVehiculos}
+														Cargando...
+													{:else if vehiculoPlaca}
+														<span class="font-mono font-bold bg-white/10 px-1.5 rounded text-xs"
+															>{vehiculoPlaca}</span
+														>
+														{#if vehiculoMarca}
+															<span class="text-xs opacity-70">
+																{vehiculoMarca}
+																{vehiculoModelo}
+															</span>
+														{/if}
+													{:else}
+														<span class="opacity-50">Seleccione o registre vehículo</span>
+													{/if}
+												</span>
+												<ChevronDown size={14} class="text-secondary" />
+											</button>
+
+											<!-- Dropdown Options -->
+											{#if showVehiculoDropdown}
+												<div
+													class="fixed inset-0 z-40"
+													onclick={() => (showVehiculoDropdown = false)}
+													role="presentation"
+													aria-hidden="true"
+												></div>
+
+												<div
+													class="absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto bg-[#1c2128] border border-white/10 rounded-lg shadow-xl"
+													transition:fly={{ y: -5, duration: 200 }}
+												>
+													{#if vehiculosList.length > 0}
+														{#each vehiculosList as v}
+															<button
+																type="button"
+																onclick={() => {
+																	vehiculoTipo = v.tipoVehiculo;
+																	vehiculoPlaca = v.placa;
+																	vehiculoMarca = v.marca || '';
+																	vehiculoModelo = v.modelo || '';
+																	vehiculoColor = v.color || '';
+																	showVehiculoDropdown = false;
+																}}
+																class="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-300 hover:bg-white/10 transition-colors group"
+															>
+																<div class="flex items-center gap-2">
+																	{#if v.tipoVehiculo === 'motocicleta'}
+																		<Bike size={14} class="opacity-70" />
+																	{:else}
+																		<Car size={14} class="opacity-70" />
+																	{/if}
+																	<span class="font-mono font-bold">{v.placa}</span>
+																	<span class="text-xs opacity-50 truncate"
+																		>{v.descripcionCompleta}</span
+																	>
+																</div>
+																{#if vehiculoPlaca === v.placa}
+																	<Check size={14} class="text-blue-500" />
+																{/if}
+															</button>
+														{/each}
+													{:else}
+														<div class="px-3 py-2 text-xs text-secondary opacity-50 text-center">
+															No hay vehículos recientes
+														</div>
+													{/if}
+												</div>
+											{/if}
+										</div>
+
+										<!-- Add Button -->
+										<button
+											type="button"
+											onclick={() => (showVehiculoForm = true)}
+											disabled={loading}
+											class="px-3 py-1.5 rounded-lg border border-white/10 bg-black/20 text-secondary hover:text-white hover:border-white/30 transition-colors"
+											title="Registrar nuevo vehículo"
+										>
+											<Plus size={16} />
+										</button>
+									</div>
+								</div>
+							</div>
+						{/if}
 
 						<!-- Fila 3: Detalles Visita -->
 						<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -495,6 +787,242 @@
 						<Save size={16} />
 						<span>Guardar Pre-Registro</span>
 					{/if}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Modal para crear nueva empresa (Mini version inline) -->
+{#if showEmpresaModal}
+	<div
+		class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+		transition:fade={{ duration: 200 }}
+	>
+		<div
+			class="absolute inset-0"
+			role="button"
+			tabindex="0"
+			onclick={() => !creatingEmpresa && (showEmpresaModal = false)}
+			onkeydown={(e) => e.key === 'Escape' && !creatingEmpresa && (showEmpresaModal = false)}
+		></div>
+
+		<div
+			class="relative w-full max-w-sm rounded-lg bg-surface-2 shadow-xl border border-surface overflow-hidden"
+			transition:scale={{ start: 0.95, duration: 200 }}
+		>
+			<div class="px-5 py-4 border-b border-surface bg-surface-1">
+				<h3 class="text-base font-semibold text-primary">Nueva Empresa</h3>
+			</div>
+
+			<div class="p-5 space-y-4">
+				{#if empresaError}
+					<div class="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-300">
+						{empresaError}
+					</div>
+				{/if}
+
+				<div class="space-y-1">
+					<label for="newEmpresa" class={labelClass}>Nombre Comercial</label>
+					<input
+						id="newEmpresa"
+						type="text"
+						bind:value={nuevaEmpresaNombre}
+						placeholder="Ej: Servicios Generales S.A."
+						disabled={creatingEmpresa}
+						class={inputClass}
+						onkeydown={(e) => e.key === 'Enter' && handleCrearEmpresa()}
+					/>
+				</div>
+			</div>
+
+			<div class="flex justify-end gap-2 px-5 py-3 border-t border-surface bg-surface-1">
+				<button
+					type="button"
+					disabled={creatingEmpresa}
+					onclick={() => (showEmpresaModal = false)}
+					class="px-3 py-1.5 rounded-lg border border-white/10 text-secondary hover:text-white text-xs"
+				>
+					Cancelar
+				</button>
+				<button
+					type="button"
+					disabled={creatingEmpresa || !nuevaEmpresaNombre.trim()}
+					onclick={handleCrearEmpresa}
+					class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium"
+				>
+					{creatingEmpresa ? 'Guardando...' : 'Guardar'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Mini Modal para añadir vehículo (modo creación) -->
+{#if showVehiculoForm}
+	<div
+		class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+		transition:fade={{ duration: 200 }}
+	>
+		<div
+			class="absolute inset-0"
+			role="button"
+			tabindex="0"
+			onclick={() => (showVehiculoForm = false)}
+			onkeydown={(e) => e.key === 'Escape' && (showVehiculoForm = false)}
+		></div>
+
+		<div
+			class="relative w-full max-w-[400px] rounded-lg bg-surface-2 shadow-xl border border-surface overflow-hidden"
+			transition:scale={{ start: 0.95, duration: 200 }}
+		>
+			<!-- Header -->
+			<div class="flex items-center justify-between px-5 py-4 border-b border-surface bg-surface-1">
+				<h3 class="text-base font-semibold text-primary">Nuevo Vehículo</h3>
+				<button
+					onclick={() => (showVehiculoForm = false)}
+					class="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-surface-3 transition-colors"
+				>
+					<X size={18} />
+				</button>
+			</div>
+
+			<!-- Form Content -->
+			<div class="p-5 space-y-4">
+				<!-- Tipo de Vehículo Dropdown -->
+				<div class="space-y-1 relative">
+					<div class={labelClass}>Tipo de Vehículo <span class="text-error">*</span></div>
+					<div class="relative">
+						<button
+							id="tipoVehiculoDropdown"
+							type="button"
+							onclick={() => (showTipoDropdown = !showTipoDropdown)}
+							class="{selectClass} flex items-center justify-between"
+						>
+							<span class={vehiculoTipo ? 'text-white' : 'text-gray-500'}>
+								{tipoOptions.find((o) => o.value === vehiculoTipo)?.label || 'Seleccione un tipo'}
+							</span>
+							<ChevronDown size={14} class="text-secondary" />
+						</button>
+
+						{#if showTipoDropdown}
+							<div
+								class="fixed inset-0 z-40"
+								onclick={() => (showTipoDropdown = false)}
+								role="presentation"
+								aria-hidden="true"
+							></div>
+							<div
+								class="absolute z-50 left-0 right-0 top-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1"
+								transition:fly={{ y: -5, duration: 150 }}
+							>
+								{#each tipoOptions as option}
+									<button
+										type="button"
+										onclick={() => {
+											vehiculoTipo = option.value;
+											showTipoDropdown = false;
+										}}
+										class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center gap-2"
+									>
+										{#if option.value === 'motocicleta'}
+											<Bike size={16} />
+										{:else}
+											<Car size={16} />
+										{/if}
+										{option.label}
+									</button>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				</div>
+
+				<!-- Placa y Marca -->
+				<div class="grid grid-cols-2 gap-4">
+					<div class="space-y-1">
+						<label for="vehiculo_placa" class={labelClass}
+							>Placa <span class="text-error">*</span></label
+						>
+						<input
+							id="vehiculo_placa"
+							type="text"
+							bind:value={vehiculoPlaca}
+							placeholder="ABC-123"
+							class="{inputClass} uppercase"
+						/>
+					</div>
+					<div class="space-y-1">
+						<label for="vehiculo_marca" class={labelClass}>Marca</label>
+						<input
+							id="vehiculo_marca"
+							type="text"
+							bind:value={vehiculoMarca}
+							placeholder="Toyota"
+							class={inputClass}
+						/>
+					</div>
+				</div>
+
+				<!-- Modelo y Color -->
+				<div class="grid grid-cols-2 gap-4">
+					<div class="space-y-1">
+						<label for="vehiculo_modelo" class={labelClass}>Modelo</label>
+						<input
+							id="vehiculo_modelo"
+							type="text"
+							bind:value={vehiculoModelo}
+							placeholder="Corolla"
+							class={inputClass}
+						/>
+					</div>
+					<div class="space-y-1">
+						<label for="vehiculo_color" class={labelClass}>Color</label>
+						<input
+							id="vehiculo_color"
+							type="text"
+							bind:value={vehiculoColor}
+							placeholder="Blanco"
+							class={inputClass}
+						/>
+					</div>
+				</div>
+			</div>
+
+			<!-- Footer -->
+			<div class="flex justify-end gap-2 px-5 py-3 border-t border-surface bg-surface-1">
+				<button
+					type="button"
+					onclick={() => {
+						showVehiculoForm = false;
+						// No clearing if canceled, just close
+					}}
+					class="px-3 py-1.5 rounded-lg border border-white/10 text-secondary hover:text-white text-xs"
+				>
+					Cancelar
+				</button>
+				<button
+					type="button"
+					disabled={!vehiculoTipo || !vehiculoPlaca}
+					onclick={() => {
+						if (vehiculoTipo && vehiculoPlaca) {
+							// Update main form state to reflect new vehicle
+							// We are effectively "selecting" this new manual vehicle
+							// Since we don't save it to DB yet, we just fill the fields
+
+							// If we wanted to properly support creation, we should probably add it to the list?
+							// Or just assume it's "selected" for the form submission.
+
+							// The main form uses `vehiculoPlaca` state variable, which is bound to this input too?
+							// Yes, `bind:value={vehiculoPlaca}`. So data is already there.
+							// Just close.
+
+							showVehiculoForm = false;
+						}
+					}}
+					class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium disabled:opacity-50"
+				>
+					Guardar
 				</button>
 			</div>
 		</div>

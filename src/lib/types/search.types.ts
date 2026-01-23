@@ -13,6 +13,7 @@ export interface SearchResult {
 	segundoApellido: string | null;
 	nombreCompleto: string | null;
 	empresaNombre: string | null;
+	empresaId?: string;
 	email: string | null;
 }
 

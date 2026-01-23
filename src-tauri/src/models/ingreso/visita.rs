@@ -230,6 +230,8 @@ pub struct PreRegistroVisita {
     pub area_visitada: String,
     pub motivo: String,
     pub modo_ingreso: String,
+    pub placa: Option<String>,
+    pub empresa_id: Option<String>,
     pub observaciones: Option<String>,
     pub estado: String,              // Enum as String for DB
     pub visitante: Option<RecordId>, // Link to catalog if exists
@@ -256,6 +258,8 @@ pub struct PreRegistroVisitaFetched {
     pub area_visitada: String,
     pub motivo: String,
     pub modo_ingreso: String,
+    pub placa: Option<String>,
+    pub empresa_id: Option<String>,
     pub estado: String,
     pub observaciones: Option<String>,
     pub registrado_por: User,
@@ -278,6 +282,8 @@ pub struct CreatePreRegistroInput {
     pub area_visitada: String,
     pub motivo: String,
     pub modo_ingreso: String,
+    pub placa: Option<String>,
+    pub empresa_id: Option<String>,
     pub observaciones: Option<String>,
 }
 
@@ -297,6 +303,8 @@ pub struct PreRegistroVisitaCreateDTO {
     pub area_visitada: String,
     pub motivo: String,
     pub modo_ingreso: String,
+    pub placa: Option<String>,
+    pub empresa_id: Option<RecordId>,
     pub observaciones: Option<String>,
     pub estado: String,
     pub visitante: Option<RecordId>,

@@ -9,6 +9,7 @@ use crate::models::ingreso::{
 };
 use crate::models::visitante::VisitanteCreateDTO;
 use log::{debug, info, warn};
+use surrealdb::sql::thing;
 use surrealdb::RecordId;
 
 use crate::services::search_service::SearchService;
@@ -76,7 +77,9 @@ pub async fn create_pre_registro(
         area_visitada: input.area_visitada,
         motivo: input.motivo,
         modo_ingreso: input.modo_ingreso,
-        observaciones: None, // Campo removido del formulario
+        placa: input.placa,
+        empresa_id: input.empresa_id.and_then(|id| id.parse::<RecordId>().ok()),
+        observaciones: input.observaciones,
         estado: PreRegistroEstado::Pendiente.to_string(),
         visitante: visitante_id,
         registrado_por,

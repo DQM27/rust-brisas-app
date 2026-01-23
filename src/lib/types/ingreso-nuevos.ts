@@ -119,6 +119,8 @@ export interface CreatePreRegistroInput {
 	apellido: string;
 	segundoApellido?: string;
 	empresaNombre?: string;
+	empresaId?: string;
+	placa?: string;
 	fechaEsperada: string;
 	horaEsperada: string;
 	anfitrion: string;
