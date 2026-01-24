@@ -77,8 +77,7 @@
 			onRecover: (data) => changeStatus(data, 'activo'),
 			onLost: (data) => changeStatus(data, 'extraviado'),
 			onDamage: (data) => changeStatus(data, 'danado'),
-			onDelete: (data) => handleDelete(data),
-			onEdit: (data) => handleEdit(data)
+			onDelete: (data) => handleDelete(data)
 		})
 	);
 
@@ -100,11 +99,6 @@
 
 	function handleNew() {
 		selectedGafete = null;
-		showModal = true;
-	}
-
-	function handleEdit(gafete: GafeteResponse) {
-		selectedGafete = gafete;
 		showModal = true;
 	}
 
@@ -166,12 +160,10 @@
 
 	async function handleFormSubmit(data: any) {
 		formLoading = true;
-		const result = selectedGafete
-			? await gafeteService.update(selectedGafete.numero.toString(), selectedGafete.tipo, data)
-			: await gafeteService.create(data);
+		const result = await gafeteService.create(data);
 
 		if (result.ok) {
-			toast.success(selectedGafete ? 'Gafete actualizado' : 'Gafete creado');
+			toast.success('Gafete creado');
 			showModal = false;
 			loadGafetes();
 		} else {
@@ -291,37 +283,6 @@
 				{#if selectedRows.length > 0}
 					<!-- Modo Selección -->
 					<div class="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
-						{#if selectedRows.length === 1}
-							<button
-								class="flex items-center gap-2 px-3 py-1.5
-									   bg-amber-600/10 hover:bg-amber-600/20
-									   text-amber-400 hover:text-amber-300
-									   border border-amber-500/20 hover:border-amber-500/30
-									   rounded-md text-sm font-medium transition-all"
-								onclick={() => {
-									handleEdit(selectedRows[0]);
-									gridWrapper?.deselectAll();
-								}}
-							>
-								<svg
-									class="w-4 h-4"
-									xmlns="http://www.w3.org/2000/svg"
-									width="24"
-									height="24"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									><path d="M12 20h9" /><path
-										d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"
-									/></svg
-								>
-								<span>Editar</span>
-							</button>
-						{/if}
-
 						<button
 							class="flex items-center gap-2 px-3 py-1.5
 								   bg-surface-3 hover:bg-surface-hover
@@ -369,12 +330,12 @@
 					data={gafetes}
 					{columns}
 					class="h-full"
-					persistenceID="gafete-list-v5"
+					persistenceID="gafete-list-v6"
 					pagination={true}
 					withCheckboxSelection={true}
 					options={{
 						...defaultTabulatorOptions,
-						layout: 'fitData',
+						layout: 'fitColumns',
 						placeholder: 'No se encontraron gafetes',
 						selectableRowsCheck: (row) => {
 							// Permitir selección solo si no está en estado perdido

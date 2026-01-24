@@ -8,7 +8,6 @@ export interface GafeteColumnHandlers {
 	onLost: (data: GafeteResponse) => void;
 	onDamage: (data: GafeteResponse) => void;
 	onDelete: (data: GafeteResponse) => void;
-	onEdit: (data: GafeteResponse) => void;
 }
 
 export const getGafeteColumns = (handlers: GafeteColumnHandlers): ColumnDefinition[] => {
@@ -41,6 +40,18 @@ export const getGafeteColumns = (handlers: GafeteColumnHandlers): ColumnDefiniti
 			}
 		},
 		{
+			title: 'Asignado a',
+			field: 'asignadoA',
+			width: 200,
+			headerFilter: 'input',
+			formatter: (cell) => {
+				const val = cell.getValue();
+				return val
+					? `<span class="text-primary font-medium">${val}</span>`
+					: '<span class="text-tertiary opacity-30 italic"> - </span>';
+			}
+		},
+		{
 			title: 'Estado',
 			field: 'status',
 			width: 150,
@@ -66,40 +77,6 @@ export const getGafeteColumns = (handlers: GafeteColumnHandlers): ColumnDefiniti
 			}
 		},
 		{
-			title: 'Fecha Reporte',
-			field: 'fechaPerdido',
-			width: 150,
-			formatter: (cell) => {
-				const val = cell.getValue();
-				if (!val) return '-';
-				return new Date(val).toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' });
-			}
-		},
-		{
-			title: 'Persona reporte',
-			field: 'quienPerdio',
-			width: 180,
-			formatter: (cell) => cell.getValue() || '-'
-		},
-		{
-			title: 'Reportado Por',
-			field: 'reportadoPorNombre',
-			width: 160,
-			formatter: (cell) => cell.getValue() || '-'
-		},
-		{
-			title: 'Resolución',
-			field: 'resueltoPorNombre',
-			width: 150,
-			formatter: (cell) => cell.getValue() || '-'
-		},
-		{
-			title: 'Notas',
-			field: 'notas',
-			width: 200,
-			formatter: (cell) => cell.getValue() || '-'
-		},
-		{
 			title: 'Acciones',
 			field: 'acciones',
 			width: 220,
@@ -116,7 +93,6 @@ export const getGafeteColumns = (handlers: GafeteColumnHandlers): ColumnDefiniti
 				}
 
 				if (status !== 'perdido') {
-					buttons += `<button class="action-btn edit-btn p-1.5 text-gray-400 hover:text-white transition-colors" title="Editar">✏️</button>`;
 
 					if (status === 'extraviado') {
 						buttons += createGridBadge({ text: 'Recuperar', color: 'green', isButton: true, className: 'recover-btn' });
@@ -142,7 +118,6 @@ export const getGafeteColumns = (handlers: GafeteColumnHandlers): ColumnDefiniti
 				const data = cell.getData() as GafeteResponse;
 
 				if (target.classList.contains('resolve-btn')) handlers.onResolve(data);
-				if (target.classList.contains('edit-btn')) handlers.onEdit(data);
 				if (target.classList.contains('recover-btn')) handlers.onRecover(data);
 				if (target.classList.contains('lost-btn')) handlers.onLost(data);
 				if (target.classList.contains('damage-btn')) handlers.onDamage(data);

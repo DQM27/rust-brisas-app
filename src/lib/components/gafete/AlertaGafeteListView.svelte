@@ -6,6 +6,7 @@
 	import { getAllAlertas, resolverAlerta } from '$lib/logic/alertaGafete/alertaGafeteService';
 	import { getAlertaGafeteColumns } from '$lib/logic/alertaGafete/alertaGafeteColumns';
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
+	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
 
 	let alerts = $state<AlertaGafeteResponse[]>([]);
@@ -13,6 +14,15 @@
 	let error = $state<string | null>(null);
 	let showResolved = $state(false);
 	let gridWrapper = $state<any>(null);
+
+	// Grid Toolbar State
+	let searchTerm = $state('');
+	let toolbarColumns = $state<any[]>([]);
+	let showHeaderFilters = $state(
+		typeof window !== 'undefined'
+			? localStorage.getItem('tabulator-header-filters') === 'true'
+			: false
+	);
 
 	async function loadAlerts() {
 		loading = true;
@@ -51,6 +61,36 @@
 		}
 	}
 
+	function handleSearch(term: string) {
+		searchTerm = term;
+		if (gridWrapper) {
+			const table = gridWrapper.getTable();
+			if (term) {
+				table.setFilter([
+					[
+						{ field: 'nombreCompleto', type: 'like', value: term },
+						{ field: 'cedula', type: 'like', value: term },
+						{ field: 'gafeteNumero', type: 'like', value: term }
+					]
+				]);
+			} else {
+				table.clearFilter();
+			}
+		}
+	}
+
+	function handleToggleFilters() {
+		showHeaderFilters = !showHeaderFilters;
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('tabulator-header-filters', String(showHeaderFilters));
+		}
+		if (gridWrapper) {
+			setTimeout(() => {
+				gridWrapper.redraw(true);
+			}, 50);
+		}
+	}
+
 	let columns = $derived(
 		getAlertaGafeteColumns({
 			onResolve: handleResolve
@@ -69,22 +109,33 @@
 </script>
 
 <div class="flex h-full flex-col bg-surface-1">
-	<div class="p-4 border-b border-surface bg-surface-2 flex items-center justify-between gap-4">
-		<div class="flex items-center gap-2">
-			<div class="p-2 bg-red-500/10 rounded-lg">
-				<AlertCircle class="text-red-400" size={20} />
-			</div>
-			<div>
-				<h3 class="text-base font-bold text-primary">Gestión de Alertas de Gafetes</h3>
-				<p class="text-xs text-secondary">Control de incidencias, pérdidas y retornos pendientes</p>
-			</div>
-		</div>
+	<!-- Grid Toolbar -->
+	<GridToolbar
+		bind:searchTerm
+		onSearch={handleSearch}
+		hasSelection={false}
+		onAutoSizeColumns={() => gridWrapper?.autoSizeColumns()}
+		onFitColumns={() => gridWrapper?.fitColumns()}
+		onToggleColumn={(field) => gridWrapper?.toggleColumn(field)}
+		onToggleFreeze={(field) => gridWrapper?.toggleFreeze(field)}
+		onToggleFilters={handleToggleFilters}
+		columns={toolbarColumns}
+	>
+		{#snippet primaryActions()}
+			<button
+				onclick={loadAlerts}
+				class="p-2 text-secondary hover:text-primary transition-colors bg-surface-3 border border-surface rounded-md"
+				title="Refrescar datos"
+			>
+				<History size={16} />
+			</button>
+		{/snippet}
 
-		<div class="flex items-center gap-3">
-			<div class="flex items-center p-1 bg-surface-3 rounded-lg border border-surface">
+		{#snippet secondaryActions()}
+			<div class="flex items-center p-1 bg-surface-3 rounded-lg border border-surface ml-2">
 				<button
 					onclick={() => (showResolved = false)}
-					class="px-3 py-1.5 text-xs font-bold uppercase rounded-md transition-all {!showResolved
+					class="px-3 py-1 text-[10px] font-bold uppercase rounded-md transition-all {!showResolved
 						? 'bg-surface-1 text-primary shadow-sm'
 						: 'text-secondary hover:text-primary'}"
 				>
@@ -92,25 +143,17 @@
 				</button>
 				<button
 					onclick={() => (showResolved = true)}
-					class="px-3 py-1.5 text-xs font-bold uppercase rounded-md transition-all {showResolved
+					class="px-3 py-1 text-[10px] font-bold uppercase rounded-md transition-all {showResolved
 						? 'bg-surface-1 text-primary shadow-sm'
 						: 'text-secondary hover:text-primary'}"
 				>
-					Todas / Historial
+					Historial
 				</button>
 			</div>
+		{/snippet}
+	</GridToolbar>
 
-			<button
-				onclick={loadAlerts}
-				class="p-2 text-secondary hover:text-primary transition-colors"
-				title="Refrescar datos"
-			>
-				<History size={18} />
-			</button>
-		</div>
-	</div>
-
-	<div class="flex-1 overflow-hidden relative">
+	<div class="flex-1 overflow-hidden relative {showHeaderFilters ? '' : 'hide-filters'}">
 		{#if loading && alerts.length === 0}
 			<div
 				class="absolute inset-0 flex items-center justify-center bg-surface-1/50 backdrop-blur-sm z-10"
@@ -133,6 +176,7 @@
 		{:else}
 			<TabulatorWrapper
 				bind:this={gridWrapper}
+				bind:toolbarColumns
 				data={alerts}
 				{columns}
 				options={{
@@ -148,3 +192,9 @@
 		{/if}
 	</div>
 </div>
+
+<style>
+	:global(.hide-filters .tabulator-header-filter) {
+		display: none !important;
+	}
+</style>
