@@ -9,6 +9,7 @@
 use crate::db::surrealdb_ingreso_proveedor_queries as db;
 use crate::db::surrealdb_proveedor_queries as proveedor_queries;
 use crate::domain::errors::IngresoProveedorError;
+use crate::models::gafete::GafeteEstado;
 use crate::models::ingreso::{
     CreateIngresoProveedorInput, IngresoProveedorCreateDTO, IngresoResponse,
     ValidacionIngresoProveedorResponse,
@@ -204,6 +205,36 @@ pub async fn registrar_salida(
     } else if let Some(g) = ingreso_actualizado.gafete_numero {
         if g != 0 {
             warn!("ALERTA: Proveedor salió SIN devolver gafete {g}");
+
+            // 1. Marcar el gafete como EXTRAVIADO en el inventario físico
+            if let Ok(Some(gafete_obj)) = gafete_service::get_gafete_by_numero(g, "proveedor").await
+            {
+                let _ =
+                    gafete_service::update_gafete_status(&gafete_obj.id, GafeteEstado::Extraviado)
+                        .await;
+            }
+
+            // 2. Generar Alerta de Seguridad para trazabilidad
+            let alerta_input = crate::models::ingreso::CreateAlertaInput {
+                id: uuid::Uuid::new_v4().to_string(),
+                persona_id: Some(ingreso_actualizado.proveedor.id.to_string()),
+                cedula: ingreso_actualizado.cedula.clone(),
+                nombre_completo: format!(
+                    "{} {}",
+                    ingreso_actualizado.nombre, ingreso_actualizado.apellido
+                ),
+                gafete_numero: g,
+                ingreso_contratista_id: None,
+                ingreso_proveedor_id: Some(ingreso_actualizado.id.to_string()),
+                ingreso_visita_id: None,
+                fecha_reporte: chrono::Utc::now().to_rfc3339(),
+                notas: Some("Gafete no devuelto al registrar salida de proveedor".to_string()),
+                reportado_por: usuario_id_str,
+            };
+
+            if let Err(e) = crate::services::alerta_service::insert(alerta_input).await {
+                error!("Error al crear alerta de gafete no devuelto (proveedor): {e}");
+            }
         }
     }
 

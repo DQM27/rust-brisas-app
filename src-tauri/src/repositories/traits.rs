@@ -124,4 +124,10 @@ pub trait GafeteRepository: Send + Sync {
     async fn is_disponible(&self, numero: i32, tipo: &str) -> Result<bool, SurrealDbError>;
     async fn marcar_en_uso(&self, numero: i32, tipo: &str) -> Result<(), SurrealDbError>;
     async fn liberar(&self, numero: i32, tipo: &str) -> Result<(), SurrealDbError>;
+    async fn update_status(
+        &self,
+        numero: i32,
+        tipo: &str,
+        status: crate::models::gafete::GafeteEstado,
+    ) -> Result<(), SurrealDbError>;
 }

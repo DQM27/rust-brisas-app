@@ -26,4 +26,21 @@ impl GafeteRepository for SurrealGafeteRepository {
             .map_err(|e| SurrealDbError::Query(e.to_string()))?;
         Ok(())
     }
+
+    async fn update_status(
+        &self,
+        numero: i32,
+        tipo: &str,
+        status: crate::models::gafete::GafeteEstado,
+    ) -> Result<(), SurrealDbError> {
+        let gafete = gafete_service::get_gafete_by_numero(numero, tipo)
+            .await
+            .map_err(|e| SurrealDbError::Query(e.to_string()))?
+            .ok_or_else(|| SurrealDbError::Query("Gafete no encontrado".to_string()))?;
+
+        gafete_service::update_gafete_status(&gafete.id, status)
+            .await
+            .map_err(|e| SurrealDbError::Query(e.to_string()))?;
+        Ok(())
+    }
 }

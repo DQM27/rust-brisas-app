@@ -211,6 +211,17 @@ pub async fn create_gafete_range(input: CreateGafeteRangeInput) -> Result<i32, G
     Ok(created)
 }
 
+/// Obtiene un gafete por su número y tipo.
+pub async fn get_gafete_by_numero(
+    numero: i32,
+    tipo: &str,
+) -> Result<Option<GafeteResponse>, GafeteError> {
+    db::get_gafete(numero, tipo)
+        .await
+        .map(|opt| opt.map(GafeteResponse::from))
+        .map_err(|e| GafeteError::Database(e.to_string()))
+}
+
 /// Obtiene un gafete por su ID.
 pub async fn get_gafete_by_id(id_str: &str) -> Result<Option<GafeteResponse>, GafeteError> {
     let id = parse_gafete_id(id_str)?;

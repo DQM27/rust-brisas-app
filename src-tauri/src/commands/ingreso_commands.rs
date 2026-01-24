@@ -118,9 +118,9 @@ pub async fn registrar_salida(
 
     let id_str = &input.ingreso_id;
 
-    if id_str.contains("ingreso_contratista") || !id_str.contains(':') {
+    let res = if id_str.contains("ingreso_contratista") || !id_str.contains(':') {
         // Por defecto o si es contratista, delegar a contratista commands
-        ingreso_contratista_commands::register_exit_contratista(app, session, input)
+        ingreso_contratista_commands::register_exit_contratista(app.clone(), session, input)
             .await
             .map_err(|e| IngresoError::Validation(e.to_string()))
     } else if id_str.contains("ingreso_proveedor") {
@@ -148,5 +148,12 @@ pub async fn registrar_salida(
         Err(IngresoError::Validation(format!(
             "Tipo de ingreso no reconocido para salida: {id_str}"
         )))
+    };
+
+    // Emit refresh event if success (contractor already does it internally, but doing it again is safe)
+    if res.is_ok() {
+        let _ = app.emit("gafetes:refresh", ());
     }
+
+    res
 }

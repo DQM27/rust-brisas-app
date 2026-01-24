@@ -9,6 +9,7 @@
 use crate::db::surrealdb_ingreso_visita_queries as db;
 use crate::db::surrealdb_visitante_queries as visitante_db;
 use crate::domain::errors::IngresoVisitaError;
+use crate::models::gafete::GafeteEstado;
 use crate::models::ingreso::{CreateIngresoVisitaInput, IngresoResponse, IngresoVisitaCreateDTO};
 use crate::models::visitante::VisitanteCreateDTO;
 use crate::services::{gafete_service, lista_negra_service};
@@ -222,6 +223,32 @@ pub async fn registrar_salida(
     } else if let Some(g) = actualizado.gafete_numero {
         if g != 0 {
             warn!("ALERTA: Visitante salió SIN devolver gafete {g}");
+
+            // 1. Marcar el gafete como EXTRAVIADO en el inventario físico
+            if let Ok(Some(gafete_obj)) = gafete_service::get_gafete_by_numero(g, "visita").await {
+                let _ =
+                    gafete_service::update_gafete_status(&gafete_obj.id, GafeteEstado::Extraviado)
+                        .await;
+            }
+
+            // 2. Generar Alerta de Seguridad para trazabilidad
+            let alerta_input = crate::models::ingreso::CreateAlertaInput {
+                id: uuid::Uuid::new_v4().to_string(),
+                persona_id: None, // Podríamos buscar el ID del visitante si es necesario
+                cedula: actualizado.cedula.clone(),
+                nombre_completo: format!("{} {}", actualizado.nombre, actualizado.apellido),
+                gafete_numero: g,
+                ingreso_contratista_id: None,
+                ingreso_proveedor_id: None,
+                ingreso_visita_id: Some(actualizado.id.to_string()),
+                fecha_reporte: chrono::Utc::now().to_rfc3339(),
+                notas: Some("Gafete no devuelto al registrar salida de visita".to_string()),
+                reportado_por: usuario_id_str,
+            };
+
+            if let Err(e) = crate::services::alerta_service::insert(alerta_input).await {
+                error!("Error al crear alerta de gafete no devuelto (visita): {e}");
+            }
         }
     }
 

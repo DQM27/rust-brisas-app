@@ -313,7 +313,17 @@ where
                 if *g != 0 {
                     warn!("Gafete {g} no devuelto por contratista, generando alerta");
 
-                    // Crear alerta de gafete no devuelto
+                    // 1. Marcar el gafete como EXTRAVIADO en el inventario físico
+                    let _ = self
+                        .gafete_repo
+                        .update_status(
+                            *g,
+                            "contratista",
+                            crate::models::gafete::GafeteEstado::Extraviado,
+                        )
+                        .await;
+
+                    // 2. Crear alerta de gafete no devuelto para trazabilidad
                     let alerta_input = crate::models::ingreso::CreateAlertaInput {
                         id: uuid::Uuid::new_v4().to_string(),
                         persona_id: Some(ingreso_actualizado.contratista.id.to_string()),
