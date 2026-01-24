@@ -68,10 +68,21 @@ pub async fn is_gafete_disponible(numero: i32, tipo: &str) -> Result<bool, Gafet
             // Criterio adicional: verificar si hay alerta pendiente para este gafete
             let alertas_pendientes = alerta_db::find_all(Some(false)).await.unwrap_or_default();
 
-            let tiene_alerta = alertas_pendientes.iter().any(|a| a.gafete_numero == numero);
+            let tiene_alerta = alertas_pendientes.iter().any(|a| {
+                if a.gafete_numero != numero {
+                    return false;
+                }
+                // Verificar si la alerta corresponde al tipo de gafete solicitado
+                match tipo {
+                    "visita" => a.ingreso_visita.is_some(),
+                    "contratista" => a.ingreso_contratista.is_some(),
+                    "proveedor" => a.ingreso_proveedor.is_some(),
+                    _ => false, // Para otros tipos, si no hay campo de ingreso, asumimos que no hay alerta vinculada de esta forma
+                }
+            });
 
             if tiene_alerta {
-                warn!("Gafete {numero} tiene alerta pendiente - no disponible");
+                warn!("Gafete {numero} ({tipo}) tiene alerta pendiente - no disponible");
                 return Ok(false);
             }
 
@@ -271,22 +282,35 @@ pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
         vec![]
     });
 
-    // Create lookup map: gafete_numero -> Ingreso
-    let mut active_gafete_map: HashMap<i32, UniversalIngresoFetched> = HashMap::new();
+    // Create lookup map: (gafete_numero, TipoGafete) -> Ingreso
+    let mut active_gafete_map: HashMap<(i32, TipoGafete), UniversalIngresoFetched> = HashMap::new();
     for ingreso in active_ingresos {
-        let gafete_num = match &ingreso {
-            UniversalIngresoFetched::Contratista(i) => i.gafete_numero,
-            UniversalIngresoFetched::Proveedor(i) => i.gafete_numero,
-            UniversalIngresoFetched::Visita(i) => i.gafete_numero,
+        let (gafete_num, gafete_tipo) = match &ingreso {
+            UniversalIngresoFetched::Contratista(i) => (i.gafete_numero, TipoGafete::Contratista),
+            UniversalIngresoFetched::Proveedor(i) => (i.gafete_numero, TipoGafete::Proveedor),
+            UniversalIngresoFetched::Visita(i) => (i.gafete_numero, TipoGafete::Visita),
         };
 
         if let Some(num) = gafete_num {
-            active_gafete_map.insert(num, ingreso);
+            active_gafete_map.insert((num, gafete_tipo), ingreso);
         }
     }
 
-    // Create lookup map by gafete_numero
-    let alertas_map: HashMap<i32, _> = alertas.into_iter().map(|a| (a.gafete_numero, a)).collect();
+    // Create lookup map by (gafete_numero, TipoGafete)
+    let mut alertas_map: HashMap<(i32, TipoGafete), crate::models::ingreso::alerta::AlertaGafete> =
+        HashMap::new();
+    for a in alertas {
+        let tipo = if a.ingreso_contratista.is_some() {
+            TipoGafete::Contratista
+        } else if a.ingreso_proveedor.is_some() {
+            TipoGafete::Proveedor
+        } else if a.ingreso_visita.is_some() {
+            TipoGafete::Visita
+        } else {
+            TipoGafete::Otro
+        };
+        alertas_map.insert((a.gafete_numero, tipo), a);
+    }
 
     // Enrich each gafete with alert and ingreso data
     let mut enriched: Vec<GafeteResponse> = Vec::with_capacity(gafetes.len());
@@ -295,7 +319,7 @@ pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
         let mut resp = GafeteResponse::from(g.clone());
 
         // 1. First check ACTIVE INGRESO (Base Status: En Uso)
-        if let Some(ingreso) = active_gafete_map.get(&g.numero) {
+        if let Some(ingreso) = active_gafete_map.get(&(g.numero, g.tipo.clone())) {
             resp.status = "en_uso".to_string();
             resp.esta_disponible = false;
 
@@ -315,7 +339,7 @@ pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
         }
 
         // 2. Then apply ALERT overlays (Overrides status to Perdido if active alert exists)
-        if let Some(alerta) = alertas_map.get(&g.numero) {
+        if let Some(alerta) = alertas_map.get(&(g.numero, g.tipo.clone())) {
             resp.alerta_id = Some(alerta.id.to_string());
             resp.fecha_perdido = Some(format_datetime_iso(&alerta.fecha_reporte));
             resp.quien_perdio = Some(alerta.nombre_completo.clone());

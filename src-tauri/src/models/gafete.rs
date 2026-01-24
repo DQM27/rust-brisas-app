@@ -33,7 +33,7 @@ pub struct Gafete {
 // --------------------------------------------------------------------------
 
 /// Clasificación del gafete según el tipo de visita.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum TipoGafete {
     Contratista,
@@ -83,7 +83,7 @@ impl std::str::FromStr for TipoGafete {
 }
 
 /// Estado operativo y físico del gafete.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum GafeteEstado {
     Activo,
