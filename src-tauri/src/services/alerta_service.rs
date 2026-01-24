@@ -43,17 +43,154 @@ pub async fn find_pendientes_by_cedula(cedula: &str) -> Result<Vec<AlertaGafete>
     db::find_pendientes_by_cedula(cedula).await.map_err(|e| AlertaError::Database(e.to_string()))
 }
 
-/// Lista alertas filtradas por su estado de resolución.
-///
-/// # Arguments
-///
-/// * `resuelto` - Filtro opcional: `Some(true)` (resueltas), `Some(false)` (pendientes), `None` (todas).
-///
-/// # Returns
-///
-/// Lista de alertas que coinciden con el criterio.
-pub async fn find_all(resuelto: Option<bool>) -> Result<Vec<AlertaGafete>, AlertaError> {
-    db::find_all(resuelto).await.map_err(|e| AlertaError::Database(e.to_string()))
+/// Lista alertas filtradas por su estado de resolución, enriquecidas con nombres de usuarios y empresas.
+pub async fn find_all(
+    resuelto: Option<bool>,
+) -> Result<Vec<crate::models::ingreso::AlertaGafeteResponse>, AlertaError> {
+    use crate::db::surrealdb_user_queries as user_db;
+    use crate::models::ingreso::AlertaGafeteResponse;
+    use crate::services::surrealdb_service::get_db;
+    use std::collections::{HashMap, HashSet};
+    use surrealdb::RecordId;
+
+    let alertas = db::find_all(resuelto).await.map_err(|e| AlertaError::Database(e.to_string()))?;
+    let db = get_db().await.map_err(|e| AlertaError::Database(e.to_string()))?;
+
+    // 1. Recolectar IDs para batch fetch
+    let mut user_ids: HashSet<RecordId> = HashSet::new();
+    let mut contractor_ids: HashSet<RecordId> = HashSet::new();
+    let mut provider_ids: HashSet<RecordId> = HashSet::new();
+    let mut visitor_ids: HashSet<RecordId> = HashSet::new();
+
+    for a in &alertas {
+        user_ids.insert(a.reportado_por.clone());
+        if let Some(ref rid) = a.ingreso_contratista {
+            contractor_ids.insert(rid.clone());
+        }
+        if let Some(ref rid) = a.ingreso_proveedor {
+            provider_ids.insert(rid.clone());
+        }
+        if let Some(ref rid) = a.ingreso_visita {
+            visitor_ids.insert(rid.clone());
+        }
+    }
+
+    // 2. Mapa de Usuarios
+    let mut user_names: HashMap<String, String> = HashMap::new();
+    for id in user_ids {
+        if let Ok(Some(u)) = user_db::find_by_id(&id).await {
+            user_names.insert(id.to_string(), format!("{} {}", u.nombre, u.apellido));
+        }
+    }
+
+    // 3. Mapa de Empresas (Normalización de IDs para el matching)
+    let mut company_map: HashMap<String, String> = HashMap::new();
+
+    // Batch para Contratistas
+    if !contractor_ids.is_empty() {
+        let q = "SELECT string::item(id) as id_str, contratista.empresa.nombre as nombre FROM ingreso_contratista WHERE id IN $ids FETCH contratista, contratista.empresa";
+        if let Ok(mut res) =
+            db.query(q).bind(("ids", contractor_ids.into_iter().collect::<Vec<_>>())).await
+        {
+            if let Ok(rows) = res.take::<Vec<serde_json::Value>>(0) {
+                for row in rows {
+                    if let (Some(id_str), Some(n)) = (
+                        row.get("id_str").and_then(|v| v.as_str()),
+                        row.get("nombre").and_then(|v| v.as_str()),
+                    ) {
+                        company_map.insert(id_str.to_string(), n.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    // Batch para Proveedores
+    if !provider_ids.is_empty() {
+        let q = "SELECT string::item(id) as id_str, proveedor.empresa.nombre as nombre FROM ingreso_proveedor WHERE id IN $ids FETCH proveedor, proveedor.empresa";
+        if let Ok(mut res) =
+            db.query(q).bind(("ids", provider_ids.into_iter().collect::<Vec<_>>())).await
+        {
+            if let Ok(rows) = res.take::<Vec<serde_json::Value>>(0) {
+                for row in rows {
+                    if let (Some(id_str), Some(n)) = (
+                        row.get("id_str").and_then(|v| v.as_str()),
+                        row.get("nombre").and_then(|v| v.as_str()),
+                    ) {
+                        company_map.insert(id_str.to_string(), n.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    // Batch para Visitas
+    if !visitor_ids.is_empty() {
+        let q = "SELECT string::item(id) as id_str, empresa_nombre as nombre FROM ingreso_visita WHERE id IN $ids";
+        if let Ok(mut res) =
+            db.query(q).bind(("ids", visitor_ids.into_iter().collect::<Vec<_>>())).await
+        {
+            if let Ok(rows) = res.take::<Vec<serde_json::Value>>(0) {
+                for row in rows {
+                    if let (Some(id_str), Some(n)) = (
+                        row.get("id_str").and_then(|v| v.as_str()),
+                        row.get("nombre").and_then(|v| v.as_str()),
+                    ) {
+                        company_map.insert(id_str.to_string(), n.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. Transformación final
+    let response = alertas
+        .into_iter()
+        .map(|a| {
+            let mut resp = AlertaGafeteResponse::from(a.clone());
+
+            // Nombre reportador
+            if let Some(name) = user_names.get(&a.reportado_por.to_string()) {
+                resp.reportado_por_nombre = name.clone();
+            } else {
+                resp.reportado_por_nombre = "Sistema".to_string();
+            }
+
+            // Nombre empresa
+            let possible_ids = [
+                a.ingreso_contratista.as_ref().map(|r| r.to_string()),
+                a.ingreso_proveedor.as_ref().map(|r| r.to_string()),
+                a.ingreso_visita.as_ref().map(|r| r.to_string()),
+            ];
+
+            for id_opt in possible_ids.iter().flatten() {
+                if let Some(c) = company_map.get(id_opt) {
+                    resp.empresa_nombre = c.clone();
+                    break;
+                }
+            }
+
+            // Normalización de fechas para JS
+            resp.fecha_reporte = clean_surreal_date(&resp.fecha_reporte);
+            if let Some(ref fr) = resp.fecha_resolucion {
+                resp.fecha_resolucion = Some(clean_surreal_date(fr));
+            }
+
+            resp
+        })
+        .collect();
+
+    Ok(response)
+}
+
+/// Helper privado para limpiar fechas de SurrealDB d'YYYY-MM-DD...' -> YYYY-MM-DD...
+fn clean_surreal_date(raw: &str) -> String {
+    let mut cleaned = raw;
+    if cleaned.starts_with('d') {
+        cleaned = &cleaned[1..];
+    }
+    cleaned = cleaned.trim_matches(|c| c == '\'' || c == '"');
+    cleaned.to_string()
 }
 
 /// Registra una nueva alerta en el sistema.
@@ -148,4 +285,3 @@ pub async fn resolver(
 pub async fn delete(id: &str) -> Result<(), AlertaError> {
     db::delete(id).await.map_err(|e| AlertaError::Database(e.to_string()))
 }
-

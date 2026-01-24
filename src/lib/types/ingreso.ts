@@ -158,14 +158,17 @@ export interface AlertaGafeteResponse {
 	personaId?: string;
 	cedula: string;
 	nombreCompleto: string;
-	gafeteNumero: string;
-	ingresoId: string;
+	gafeteNumero: string | number;
+	ingresoContratistaId?: string;
+	ingresoProveedorId?: string;
+	ingresoVisitaId?: string;
 	fechaReporte: string;
 	resuelto: boolean;
 	fechaResolucion?: string;
 	notas?: string;
-	reportadoPor: string;
+	reportado_por: string;
 	reportadoPorNombre: string;
+	empresaNombre: string;
 	createdAt: string;
 	updatedAt: string;
 }

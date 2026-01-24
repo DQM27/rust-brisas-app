@@ -77,10 +77,10 @@ pub async fn get_alertas_pendientes_by_cedula(
 
 /// Central de Alertas: Lista todas las incidencias de seguridad registradas en el sistema.
 #[tauri::command]
-pub async fn get_all_alertas_gafetes() -> Result<Vec<AlertaGafeteResponse>, AlertaError> {
-    let alertas = alerta_service::find_all(None).await?;
-    let response = alertas.into_iter().map(AlertaGafeteResponse::from).collect();
-    Ok(response)
+pub async fn get_all_alertas_gafetes(
+    resuelto: Option<bool>,
+) -> Result<Vec<AlertaGafeteResponse>, AlertaError> {
+    alerta_service::find_all(resuelto).await
 }
 
 /// Protocolo de Resolución: Permite a un supervisor cerrar una alerta tras una inspección manual.

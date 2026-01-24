@@ -386,6 +386,8 @@
 		gafeteNumero={selectedAlertGafete.numero.toString()}
 		nombrePersona={selectedAlertGafete.quienPerdio || 'Desconocido'}
 		fechaReporte={selectedAlertGafete.fechaPerdido || new Date().toISOString()}
+		tipoAsignacion={selectedAlertGafete.tipoDisplay}
+		reportadoPor={selectedAlertGafete.reportadoPorNombre || 'Sistema'}
 		loading={formLoading}
 		onResolve={handleResolveSubmit}
 		onCancel={() => {

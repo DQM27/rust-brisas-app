@@ -87,6 +87,7 @@ pub struct AlertaGafeteResponse {
     pub notas: Option<String>,
     pub reportado_por: String,
     pub reportado_por_nombre: String,
+    pub empresa_nombre: String,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -114,6 +115,7 @@ impl From<AlertaGafete> for AlertaGafeteResponse {
             notas: a.notas,
             reportado_por: a.reportado_por.to_string(),
             reportado_por_nombre: String::new(),
+            empresa_nombre: String::new(),
             created_at: a.created_at.to_string(),
             updated_at: a.updated_at.to_string(),
         }

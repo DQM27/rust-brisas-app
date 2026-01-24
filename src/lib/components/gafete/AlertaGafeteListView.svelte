@@ -7,6 +7,7 @@
 	import { getAlertaGafeteColumns } from '$lib/logic/alertaGafete/alertaGafeteColumns';
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
+	import ResolveAlertModal from './modals/ResolveAlertModal.svelte';
 	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
 
 	let alerts = $state<AlertaGafeteResponse[]>([]);
@@ -14,6 +15,11 @@
 	let error = $state<string | null>(null);
 	let showResolved = $state(false);
 	let gridWrapper = $state<any>(null);
+
+	// Modal State
+	let showResolveModal = $state(false);
+	let selectedAlerta = $state<AlertaGafeteResponse | null>(null);
+	let formLoading = $state(false);
 
 	// Grid Toolbar State
 	let searchTerm = $state('');
@@ -43,21 +49,29 @@
 		}
 	}
 
-	async function handleResolve(alerta: AlertaGafeteResponse) {
-		const notas = prompt('Notas de resolución (ej. Devolvió gafete, Pagó multa):', '');
-		if (notas === null) return;
+	function handleResolve(alerta: AlertaGafeteResponse) {
+		selectedAlerta = alerta;
+		showResolveModal = true;
+	}
+
+	async function handleResolveSubmit(notas: string) {
+		if (!selectedAlerta) return;
 
 		loading = true;
+		formLoading = true;
 		try {
-			const res = await resolverAlerta(alerta.id, notas);
+			const res = await resolverAlerta(selectedAlerta.id, notas);
 			if (res.ok) {
 				toast.success('Alerta resuelta correctamente');
+				showResolveModal = false;
+				selectedAlerta = null;
 				loadAlerts();
 			} else {
 				toast.error(res.error);
 			}
 		} finally {
 			loading = false;
+			formLoading = false;
 		}
 	}
 
@@ -106,6 +120,12 @@
 			loadAlerts();
 		}
 	});
+	function getTipoAsignacion(alerta: AlertaGafeteResponse): string {
+		if (alerta.ingresoContratistaId) return 'Contratista';
+		if (alerta.ingresoProveedorId) return 'Proveedor';
+		if (alerta.ingresoVisitaId) return 'Visita';
+		return 'General';
+	}
 </script>
 
 <div class="flex h-full flex-col bg-surface-1">
@@ -192,6 +212,25 @@
 		{/if}
 	</div>
 </div>
+
+{#if showResolveModal && selectedAlerta}
+	<ResolveAlertModal
+		show={showResolveModal}
+		gafeteNumero={selectedAlerta.gafeteNumero.toString()}
+		nombrePersona={selectedAlerta.nombreCompleto}
+		cedulaPersona={selectedAlerta.cedula}
+		empresaPersona={selectedAlerta.empresaNombre}
+		fechaReporte={selectedAlerta.fechaReporte}
+		tipoAsignacion={getTipoAsignacion(selectedAlerta)}
+		reportadoPor={selectedAlerta.reportadoPorNombre}
+		loading={formLoading}
+		onResolve={handleResolveSubmit}
+		onCancel={() => {
+			showResolveModal = false;
+			selectedAlerta = null;
+		}}
+	/>
+{/if}
 
 <style>
 	:global(.hide-filters .tabulator-header-filter) {
