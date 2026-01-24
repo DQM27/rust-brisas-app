@@ -42,8 +42,9 @@ function formatMilitaryTime(val: string) {
 
 export function getAlertaGafeteColumns(callbacks: {
     onResolve?: (alerta: AlertaGafeteResponse) => void;
+    hideActions?: boolean;
 }): ColumnDefinition[] {
-    return [
+    const columns: ColumnDefinition[] = [
         {
             title: 'Gafete #',
             field: 'gafeteNumero',
@@ -94,18 +95,18 @@ export function getAlertaGafeteColumns(callbacks: {
             formatter: (cell: any) => `<span class="text-secondary uppercase text-[11px] font-medium">${cell.getValue() || 'S/E'}</span>`
         },
         {
-            title: 'Fecha',
+            title: 'F. Reporte',
             field: 'fechaReporte',
-            width: 110,
+            width: 100,
             hozAlign: 'center',
-            formatter: (cell: any) => `<span class="text-secondary">${formatDateSlashed(cell.getValue())}</span>`
+            formatter: (cell: any) => `<span class="text-secondary text-[11px]">${formatDateSlashed(cell.getValue())}</span>`
         },
         {
-            title: 'Hora',
+            title: 'H. Reporte',
             field: 'fechaReporte',
             width: 80,
             hozAlign: 'center',
-            formatter: (cell: any) => `<span class="text-secondary font-medium">${formatMilitaryTime(cell.getValue())}</span>`
+            formatter: (cell: any) => `<span class="text-secondary font-medium text-[11px]">${formatMilitaryTime(cell.getValue())}</span>`
         },
         {
             title: 'Estado',
@@ -120,22 +121,58 @@ export function getAlertaGafeteColumns(callbacks: {
             }
         },
         {
+            title: 'F. Resuelto',
+            field: 'fechaResolucion',
+            width: 100,
+            hozAlign: 'center',
+            formatter: (cell: any) => {
+                const val = cell.getValue();
+                if (!val) return `<span class="text-gray-500 opacity-30">-</span>`;
+                return `<span class="text-green-500/80 text-[11px]">${formatDateSlashed(val)}</span>`;
+            }
+        },
+        {
+            title: 'H. Resuelto',
+            field: 'fechaResolucion',
+            width: 80,
+            hozAlign: 'center',
+            formatter: (cell: any) => {
+                const val = cell.getValue();
+                if (!val) return `<span class="text-gray-500 opacity-30">-</span>`;
+                return `<span class="text-green-500 font-medium text-[11px]">${formatMilitaryTime(val)}</span>`;
+            }
+        },
+        {
             title: 'Reportado por',
             field: 'reportadoPorNombre',
-            width: 180,
+            width: 150,
             hozAlign: 'left',
             formatter: (cell) => `<span class="text-secondary text-[11px] font-medium">${cell.getValue() || 'Sistema'}</span>`
         },
         {
-            title: 'Observación',
-            field: 'notas',
-            width: 250,
-            formatter: 'textarea'
+            title: 'Resuelto por',
+            field: 'resueltoPorNombre',
+            width: 150,
+            hozAlign: 'left',
+            formatter: (cell) => {
+                const val = cell.getValue();
+                if (!val) return `<span class="text-gray-500 opacity-30">-</span>`;
+                return `<span class="text-green-400 text-[11px] font-medium">${val}</span>`;
+            }
         },
         {
+            title: 'Observación',
+            field: 'notas',
+            width: 200,
+            formatter: 'textarea'
+        }
+    ];
+
+    if (!callbacks.hideActions) {
+        columns.push({
             title: 'Acciones',
             field: 'actions',
-            width: 110,
+            width: 100,
             hozAlign: 'center',
             headerSort: false,
             formatter: (cell: any) => {
@@ -149,6 +186,8 @@ export function getAlertaGafeteColumns(callbacks: {
                     callbacks.onResolve?.(cell.getData());
                 }
             }
-        }
-    ];
+        });
+    }
+
+    return columns;
 }

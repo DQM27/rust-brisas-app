@@ -107,7 +107,8 @@
 
 	let columns = $derived(
 		getAlertaGafeteColumns({
-			onResolve: handleResolve
+			onResolve: handleResolve,
+			hideActions: showResolved
 		})
 	);
 

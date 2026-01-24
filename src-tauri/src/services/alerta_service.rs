@@ -64,6 +64,9 @@ pub async fn find_all(
 
     for a in &alertas {
         user_ids.insert(a.reportado_por.clone());
+        if let Some(ref rid) = a.resuelto_por {
+            user_ids.insert(rid.clone());
+        }
         if let Some(ref rid) = a.ingreso_contratista {
             contractor_ids.insert(rid.clone());
         }
@@ -88,17 +91,17 @@ pub async fn find_all(
 
     // Batch para Contratistas
     if !contractor_ids.is_empty() {
-        let q = "SELECT string::item(id) as id_str, contratista.empresa.nombre as nombre FROM ingreso_contratista WHERE id IN $ids FETCH contratista, contratista.empresa";
+        let q = "SELECT id, contratista.empresa.nombre as nombre FROM ingreso_contratista WHERE id IN $ids FETCH contratista, contratista.empresa";
         if let Ok(mut res) =
             db.query(q).bind(("ids", contractor_ids.into_iter().collect::<Vec<_>>())).await
         {
             if let Ok(rows) = res.take::<Vec<serde_json::Value>>(0) {
                 for row in rows {
-                    if let (Some(id_str), Some(n)) = (
-                        row.get("id_str").and_then(|v| v.as_str()),
-                        row.get("nombre").and_then(|v| v.as_str()),
-                    ) {
-                        company_map.insert(id_str.to_string(), n.to_string());
+                    if let (Some(id), Some(n)) =
+                        (row.get("id"), row.get("nombre").and_then(|v| v.as_str()))
+                    {
+                        company_map
+                            .insert(id.to_string().trim_matches('"').to_string(), n.to_string());
                     }
                 }
             }
@@ -107,17 +110,17 @@ pub async fn find_all(
 
     // Batch para Proveedores
     if !provider_ids.is_empty() {
-        let q = "SELECT string::item(id) as id_str, proveedor.empresa.nombre as nombre FROM ingreso_proveedor WHERE id IN $ids FETCH proveedor, proveedor.empresa";
+        let q = "SELECT id, proveedor.empresa.nombre as nombre FROM ingreso_proveedor WHERE id IN $ids FETCH proveedor, proveedor.empresa";
         if let Ok(mut res) =
             db.query(q).bind(("ids", provider_ids.into_iter().collect::<Vec<_>>())).await
         {
             if let Ok(rows) = res.take::<Vec<serde_json::Value>>(0) {
                 for row in rows {
-                    if let (Some(id_str), Some(n)) = (
-                        row.get("id_str").and_then(|v| v.as_str()),
-                        row.get("nombre").and_then(|v| v.as_str()),
-                    ) {
-                        company_map.insert(id_str.to_string(), n.to_string());
+                    if let (Some(id), Some(n)) =
+                        (row.get("id"), row.get("nombre").and_then(|v| v.as_str()))
+                    {
+                        company_map
+                            .insert(id.to_string().trim_matches('"').to_string(), n.to_string());
                     }
                 }
             }
@@ -126,17 +129,17 @@ pub async fn find_all(
 
     // Batch para Visitas
     if !visitor_ids.is_empty() {
-        let q = "SELECT string::item(id) as id_str, empresa_nombre as nombre FROM ingreso_visita WHERE id IN $ids";
+        let q = "SELECT id, empresa_nombre as nombre FROM ingreso_visita WHERE id IN $ids";
         if let Ok(mut res) =
             db.query(q).bind(("ids", visitor_ids.into_iter().collect::<Vec<_>>())).await
         {
             if let Ok(rows) = res.take::<Vec<serde_json::Value>>(0) {
                 for row in rows {
-                    if let (Some(id_str), Some(n)) = (
-                        row.get("id_str").and_then(|v| v.as_str()),
-                        row.get("nombre").and_then(|v| v.as_str()),
-                    ) {
-                        company_map.insert(id_str.to_string(), n.to_string());
+                    if let (Some(id), Some(n)) =
+                        (row.get("id"), row.get("nombre").and_then(|v| v.as_str()))
+                    {
+                        company_map
+                            .insert(id.to_string().trim_matches('"').to_string(), n.to_string());
                     }
                 }
             }
@@ -154,6 +157,15 @@ pub async fn find_all(
                 resp.reportado_por_nombre = name.clone();
             } else {
                 resp.reportado_por_nombre = "Sistema".to_string();
+            }
+
+            // Nombre resolutor
+            if let Some(ref rid) = a.resuelto_por {
+                if let Some(name) = user_names.get(&rid.to_string()) {
+                    resp.resuelto_por_nombre = name.clone();
+                } else {
+                    resp.resuelto_por_nombre = "Desconocido".to_string();
+                }
             }
 
             // Nombre empresa

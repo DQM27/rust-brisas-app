@@ -127,6 +127,12 @@ pub async fn liberar_gafete(numero: i32, tipo: &str) -> Result<(), GafeteError> 
         .await
         .map_err(|e| GafeteError::Database(e.to_string()))?;
 
+    // Importante: Si el gafete estaba marcado como 'extraviado' o 'danado',
+    // al ser liberado (recuperado) vuelve a estar 'activo'.
+    if gafete.estado != GafeteEstado::Activo {
+        let _ = db::update_estado(&gafete.id, "activo").await;
+    }
+
     Ok(())
 }
 
@@ -320,7 +326,12 @@ pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
         } else {
             TipoGafete::Otro
         };
-        alertas_map.insert((a.gafete_numero, tipo), a);
+
+        let key = (a.gafete_numero, tipo);
+        // alerts are DESC (newest first), so only insert if not already present
+        if !alertas_map.contains_key(&key) {
+            alertas_map.insert(key, a);
+        }
     }
 
     // Enrich each gafete with alert and ingreso data

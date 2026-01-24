@@ -165,6 +165,8 @@ export interface AlertaGafeteResponse {
 	fechaReporte: string;
 	resuelto: boolean;
 	fechaResolucion?: string;
+	resueltoPor?: string;
+	resueltoPorNombre?: string;
 	notas?: string;
 	reportado_por: string;
 	reportadoPorNombre: string;
