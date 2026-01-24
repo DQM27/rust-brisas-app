@@ -171,6 +171,7 @@ export interface AlertaGafeteResponse {
 	reportado_por: string;
 	reportadoPorNombre: string;
 	empresaNombre: string;
+	notasResolucion?: string;
 	createdAt: string;
 	updatedAt: string;
 }

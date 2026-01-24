@@ -367,6 +367,7 @@ pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
             resp.quien_perdio = Some(alerta.nombre_completo.clone());
             resp.alerta_resuelta = Some(alerta.resuelto);
             resp.notas = alerta.notas.clone();
+            resp.notas_resolucion = alerta.notas_resolucion.clone(); // Added resolution notes
 
             let reportado_key = alerta.reportado_por.to_string();
             resp.reportado_por_nombre = Some(

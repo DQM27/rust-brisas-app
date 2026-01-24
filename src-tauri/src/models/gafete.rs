@@ -200,6 +200,8 @@ pub struct GafeteResponse {
     pub fecha_resolucion: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notas: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub notas_resolucion: Option<String>,
     // Info about who has the gafete when "en_uso"
     #[serde(skip_serializing_if = "Option::is_none")]
     pub asignado_a: Option<String>,
@@ -237,6 +239,7 @@ impl From<Gafete> for GafeteResponse {
             resuelto_por_nombre: None,
             fecha_resolucion: None,
             notas: None,
+            notas_resolucion: None,
             asignado_a: None,
             created_at: g.created_at.to_string(),
             updated_at: g.updated_at.to_string(),

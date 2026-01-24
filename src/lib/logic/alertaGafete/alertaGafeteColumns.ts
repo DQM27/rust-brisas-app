@@ -44,6 +44,8 @@ export function getAlertaGafeteColumns(callbacks: {
     onResolve?: (alerta: AlertaGafeteResponse) => void;
     hideActions?: boolean;
 }): ColumnDefinition[] {
+    const isHistory = callbacks.hideActions; // hideActions is used as 'isHistory' flag essentially
+
     const columns: ColumnDefinition[] = [
         {
             title: 'Gafete #',
@@ -87,7 +89,6 @@ export function getAlertaGafeteColumns(callbacks: {
             headerFilter: 'input',
             formatter: (cell: any) => `<span class="text-secondary">${cell.getValue() || '-'}</span>`
         },
-
         {
             title: 'F. Reporte',
             field: 'fechaReporte',
@@ -102,48 +103,59 @@ export function getAlertaGafeteColumns(callbacks: {
             hozAlign: 'center',
             formatter: (cell: any) => `<span class="text-secondary font-medium text-[11px]">${formatMilitaryTime(cell.getValue())}</span>`
         },
-        {
-            title: 'Estado',
-            field: 'resuelto',
-            width: 110,
-            hozAlign: 'center',
-            formatter: (cell: any) => {
-                const isResuelto = cell.getValue();
-                return isResuelto
-                    ? createGridBadge({ text: 'Resuelto', color: 'green', withDot: true })
-                    : createGridBadge({ text: 'Pendiente', color: 'red', withDot: true });
+    ];
+
+    if (isHistory) {
+        columns.push(
+            {
+                title: 'Estado',
+                field: 'resuelto',
+                width: 110,
+                hozAlign: 'center',
+                formatter: (cell: any) => {
+                    const isResuelto = cell.getValue();
+                    return isResuelto
+                        ? createGridBadge({ text: 'Resuelto', color: 'green', withDot: true })
+                        : createGridBadge({ text: 'Pendiente', color: 'red', withDot: true });
+                }
+            },
+            {
+                title: 'F. Resuelto',
+                field: 'fechaResolucion',
+                width: 100,
+                hozAlign: 'center',
+                formatter: (cell: any) => {
+                    const val = cell.getValue();
+                    if (!val) return `<span class="text-gray-500 opacity-30">-</span>`;
+                    return `<span class="text-green-500/80 text-[11px]">${formatDateSlashed(val)}</span>`;
+                }
+            },
+            {
+                title: 'H. Resuelto',
+                field: 'fechaResolucion',
+                width: 80,
+                hozAlign: 'center',
+                formatter: (cell: any) => {
+                    const val = cell.getValue();
+                    if (!val) return `<span class="text-gray-500 opacity-30">-</span>`;
+                    return `<span class="text-green-500 font-medium text-[11px]">${formatMilitaryTime(val)}</span>`;
+                }
             }
-        },
-        {
-            title: 'F. Resuelto',
-            field: 'fechaResolucion',
-            width: 100,
-            hozAlign: 'center',
-            formatter: (cell: any) => {
-                const val = cell.getValue();
-                if (!val) return `<span class="text-gray-500 opacity-30">-</span>`;
-                return `<span class="text-green-500/80 text-[11px]">${formatDateSlashed(val)}</span>`;
-            }
-        },
-        {
-            title: 'H. Resuelto',
-            field: 'fechaResolucion',
-            width: 80,
-            hozAlign: 'center',
-            formatter: (cell: any) => {
-                const val = cell.getValue();
-                if (!val) return `<span class="text-gray-500 opacity-30">-</span>`;
-                return `<span class="text-green-500 font-medium text-[11px]">${formatMilitaryTime(val)}</span>`;
-            }
-        },
+        );
+    }
+
+    columns.push(
         {
             title: 'Reportado por',
             field: 'reportadoPorNombre',
             width: 150,
             hozAlign: 'left',
             formatter: (cell) => `<span class="text-secondary text-[11px] font-medium">${cell.getValue() || 'Sistema'}</span>`
-        },
-        {
+        }
+    );
+
+    if (isHistory) {
+        columns.push({
             title: 'Resuelto por',
             field: 'resueltoPorNombre',
             width: 150,
@@ -153,14 +165,25 @@ export function getAlertaGafeteColumns(callbacks: {
                 if (!val) return `<span class="text-gray-500 opacity-30">-</span>`;
                 return `<span class="text-green-400 text-[11px] font-medium">${val}</span>`;
             }
-        },
-        {
-            title: 'Observación',
-            field: 'notas',
+        });
+    }
+
+    if (isHistory) {
+        columns.push({
+            title: 'Notas Resolución',
+            field: 'notasResolucion',
             width: 200,
             formatter: 'textarea'
-        }
-    ];
+        });
+    }
+
+
+    columns.push({
+        title: 'Observación Inicial',
+        field: 'notas',
+        width: 200,
+        formatter: 'textarea'
+    });
 
     if (!callbacks.hideActions) {
         columns.push({

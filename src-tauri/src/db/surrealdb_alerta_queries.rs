@@ -73,7 +73,12 @@ pub async fn insert(
         .bind(("ingreso_contratista_id", ingreso_contratista_rid))
         .bind(("ingreso_proveedor_id", ingreso_proveedor_rid))
         .bind(("ingreso_visita_id", ingreso_visita_rid))
-        .bind(("fecha_reporte", input.fecha_reporte))
+        .bind(("fecha_reporte", {
+            let dt = chrono::DateTime::parse_from_rfc3339(&input.fecha_reporte)
+                .map_err(|e| SurrealDbError::Query(format!("Invalid date format: {e}")))?
+                .with_timezone(&chrono::Utc);
+            surrealdb::Datetime::from(dt)
+        }))
         .bind(("notas", input.notas))
         .bind(("reportado_por", reportado_por_rid))
         .await?;
@@ -142,7 +147,7 @@ pub async fn resolver(
             UPDATE type::thing('alerta_gafete', $id) MERGE {
                 resuelto: true,
                 fechaResolucion: time::now(),
-                notas: $notas,
+                notasResolucion: $notas,
                 resueltoPor: $usuario_id,
                 updatedAt: time::now()
             }
