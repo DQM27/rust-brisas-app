@@ -28,7 +28,8 @@ import {
     Moon,
     Sun,
     LogOut,
-    Keyboard
+    Keyboard,
+    AlertTriangle
 } from 'lucide-svelte';
 import type { SpotlightItemDefinition } from '$lib/types/spotlight';
 
@@ -129,6 +130,17 @@ export const MODULE_DEFINITIONS: SpotlightItemDefinition[] = [
         subCategory: 'link',
         keywords: ['lista negra', 'blacklist', 'bloqueado', 'restringido'],
         permission: 'VIEW_BLACKLIST'
+    },
+    {
+        id: 'alerta-gafete-list',
+        label: 'Control de Alertas',
+        description: 'Resolución de incidencias de gafetes',
+        icon: AlertTriangle,
+        category: 'module',
+        subCategory: 'link',
+        keywords: ['alerta', 'incidencia', 'resolucion', 'gafete', 'seguridad', 'pendiente'],
+        permission: 'VIEW_GAFETE_LIST',
+        shortcut: 'Alt+A'
     }
 ];
 
@@ -385,6 +397,7 @@ export const MODULE_COMPONENT_MAP: Record<string, { componentKey: string; title:
     'visitas-list': { componentKey: 'visitas-list', title: 'Ingresos Visitas' },
     'visitante-list': { componentKey: 'visitante-list', title: 'Lista Visitantes' },
     'gafete-list': { componentKey: 'gafete-list', title: 'Lista Gafetes' },
+    'alerta-gafete-list': { componentKey: 'alerta-gafete-list', title: 'Control de Alertas' },
     'lista-negra-list': { componentKey: 'lista-negra-list', title: 'Lista Negra' },
     // Settings mappings
     'settings-general': { componentKey: 'general-settings', title: 'Ajustes Generales' },

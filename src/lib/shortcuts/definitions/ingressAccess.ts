@@ -43,5 +43,18 @@ export const ingressAccessShortcuts: ShortcutDefinition[] = [
             e.preventDefault();
             openView('visitas-list', 'Ingreso Visitas');
         }
+    },
+    {
+        id: 'open-alertas',
+        keys: 'alt+a',
+        label: 'Ver Alertas',
+        description: 'Abre el panel de control de alertas',
+        category: 'ingress-access',
+        scope: 'all',
+        icon: 'AlertTriangle',
+        handler: (e) => {
+            e.preventDefault();
+            openView('alerta-gafete-list', 'Control de Alertas');
+        }
     }
 ];

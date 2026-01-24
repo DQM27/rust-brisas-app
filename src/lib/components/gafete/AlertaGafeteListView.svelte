@@ -142,16 +142,6 @@
 		onToggleFilters={handleToggleFilters}
 		columns={toolbarColumns}
 	>
-		{#snippet primaryActions()}
-			<button
-				onclick={loadAlerts}
-				class="p-2 text-secondary hover:text-primary transition-colors bg-surface-3 border border-surface rounded-md"
-				title="Refrescar datos"
-			>
-				<History size={16} />
-			</button>
-		{/snippet}
-
 		{#snippet secondaryActions()}
 			<div class="flex items-center p-1 bg-surface-3 rounded-lg border border-surface ml-2">
 				<button

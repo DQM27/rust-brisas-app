@@ -28,6 +28,7 @@ import AboutPanel from '$lib/components/settings/AboutPanel.svelte';
 import SpotlightSettingsPanel from '$lib/components/settings/SpotlightSettingsPanel.svelte';
 
 import GafeteListView from '$lib/components/gafete/GafeteListView.svelte';
+import AlertaGafeteListView from '$lib/components/gafete/AlertaGafeteListView.svelte';
 import IngresoModule from '$lib/components/ingreso/IngresoModule.svelte';
 import IngresoProveedorModule from '$lib/components/ingreso/IngresoProveedorModule.svelte';
 import VisitaListView from '$lib/components/visita/VisitaListView.svelte';
@@ -69,6 +70,7 @@ export const COMPONENT_REGISTRY: Record<ComponentKey, Component<any, any>> = {
 	'spotlight-settings': SpotlightSettingsPanel as any,
 
 	'gafete-list': GafeteListView,
+	'alerta-gafete-list': AlertaGafeteListView,
 	'ingreso-list': IngresoModule, // Point legacy/main link to new Module
 	'ingreso-module': IngresoModule,
 	'proveedor-ingreso-list': IngresoProveedorModule,
