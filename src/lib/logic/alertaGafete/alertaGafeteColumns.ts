@@ -87,13 +87,7 @@ export function getAlertaGafeteColumns(callbacks: {
             headerFilter: 'input',
             formatter: (cell: any) => `<span class="text-secondary">${cell.getValue() || '-'}</span>`
         },
-        {
-            title: 'Empresa',
-            field: 'empresaNombre',
-            width: 180,
-            headerFilter: 'input',
-            formatter: (cell: any) => `<span class="text-secondary uppercase text-[11px] font-medium">${cell.getValue() || 'S/E'}</span>`
-        },
+
         {
             title: 'F. Reporte',
             field: 'fechaReporte',

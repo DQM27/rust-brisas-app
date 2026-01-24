@@ -100,8 +100,7 @@ pub async fn find_all(
                     if let (Some(id), Some(n)) =
                         (row.get("id"), row.get("nombre").and_then(|v| v.as_str()))
                     {
-                        company_map
-                            .insert(id.to_string().trim_matches('"').to_string(), n.to_string());
+                        company_map.insert(id.to_string(), n.to_string());
                     }
                 }
             }
@@ -119,8 +118,7 @@ pub async fn find_all(
                     if let (Some(id), Some(n)) =
                         (row.get("id"), row.get("nombre").and_then(|v| v.as_str()))
                     {
-                        company_map
-                            .insert(id.to_string().trim_matches('"').to_string(), n.to_string());
+                        company_map.insert(id.to_string(), n.to_string());
                     }
                 }
             }
@@ -138,8 +136,7 @@ pub async fn find_all(
                     if let (Some(id), Some(n)) =
                         (row.get("id"), row.get("nombre").and_then(|v| v.as_str()))
                     {
-                        company_map
-                            .insert(id.to_string().trim_matches('"').to_string(), n.to_string());
+                        company_map.insert(id.to_string(), n.to_string());
                     }
                 }
             }

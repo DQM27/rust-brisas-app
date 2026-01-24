@@ -36,7 +36,7 @@
 		try {
 			// If not showing resolved, only pull pending (false)
 			// If showing resolved, pull all (undefined)
-			const res = await getAllAlertas(showResolved ? undefined : false);
+			const res = await getAllAlertas(showResolved ? true : false);
 			if (res.ok) {
 				alerts = res.data;
 				if (gridWrapper) gridWrapper.replaceData(alerts);
