@@ -9,9 +9,11 @@
 		CheckCircle,
 		ShieldCheck,
 		SearchX,
-		ChevronRight
+		ChevronRight,
+		RefreshCw
 	} from 'lucide-svelte';
 	import { shortcutRegistry, shortcutCommand, clearCommand } from '$lib/shortcuts';
+	import PersonaFinder from '$lib/components/ingreso/shared/persona/PersonaFinder.svelte';
 
 	// Superforms & Zod v4
 	import { superForm } from 'sveltekit-superforms';
@@ -26,6 +28,9 @@
 	import { submitCreateEmpresa } from '$lib/logic/empresa/empresaService';
 	import { currentUser } from '$lib/stores/auth';
 	import { invoke } from '@tauri-apps/api/core';
+	import { vehiculos } from '$lib/api/vehiculos';
+	import type { VehiculoResponse } from '$lib/types/vehiculo';
+	import { PersonStanding, Car, Bike, Check } from 'lucide-svelte';
 
 	// Props
 	interface Props {
@@ -41,6 +46,8 @@
 	let searchingPerson = $state(false);
 	let validationResult = $state<any>(null);
 	let foundPreRegistroId = $state<string | undefined>(undefined);
+	let visitorSelected = $state(false);
+	let searchResetKey = $state(0);
 
 	// Derived
 	const isPreRegistroMode = $derived(!!foundPreRegistroId);
@@ -52,6 +59,31 @@
 	let creatingEmpresa = $state(false);
 	let showObservaciones = $state(false);
 	let checkTimeout: ReturnType<typeof setTimeout>;
+
+	// Vehicle State (Refined)
+	let vehiculosList = $state<VehiculoResponse[]>([]);
+	let loadingVehiculos = $state(false);
+	let showVehiculoDropdown = $state(false);
+	let showVehiculoForm = $state(false);
+
+	let groupedVehiculos = $derived(
+		vehiculosList.reduce(
+			(acc, v) => {
+				const key = v.tipoVehiculoDisplay;
+				if (!acc[key]) acc[key] = [];
+				acc[key].push(v);
+				return acc;
+			},
+			{} as Record<string, VehiculoResponse[]>
+		)
+	);
+
+	// Vehicle Creation State
+	let vehiculoTipo = $state('');
+	let vehiculoPlaca = $state('');
+	let vehiculoMarca = $state('');
+	let vehiculoModelo = $state('');
+	let vehiculoColor = $state('');
 
 	const defaultValues: IngresoVisitaFormData = {
 		cedula: '',
@@ -349,10 +381,96 @@
 		creatingEmpresa = false;
 	}
 
+	async function loadVehiculos(propietarioId?: string) {
+		if (!propietarioId) {
+			vehiculosList = [];
+			return;
+		}
+
+		loadingVehiculos = true;
+		try {
+			vehiculosList = await vehiculos.getByPropietario(propietarioId);
+		} catch (e) {
+			console.error('Error loading vehicles for visitor:', e);
+			vehiculosList = [];
+		} finally {
+			loadingVehiculos = false;
+		}
+	}
+
+	function resetVehiculoForm() {
+		vehiculoTipo = '';
+		vehiculoPlaca = '';
+		vehiculoMarca = '';
+		vehiculoModelo = '';
+		vehiculoColor = '';
+		showVehiculoDropdown = false;
+		showVehiculoForm = false;
+	}
+
+	async function handlePersonaSelect(event: CustomEvent) {
+		const { data } = event.detail;
+		visitorSelected = true;
+
+		// Rellenar formulario
+		$form.cedula = data.cedula || '';
+		$form.nombre = data.nombre || '';
+		$form.segundoNombre = data.segundoNombre || '';
+		$form.apellido = data.apellido || '';
+		$form.segundoApellido = data.segundoApellido || '';
+
+		// Empresa
+		if (data.empresaId) {
+			$form.empresaId = data.empresaId;
+		} else if (data.empresaNombre) {
+			const matched = empresaStore.empresas.find(
+				(e) => e.nombre.toLowerCase() === data.empresaNombre.toLowerCase()
+			);
+			if (matched) $form.empresaId = matched.id;
+		}
+
+		// Vehículo
+		if (data.placaVehiculo || data.placa) {
+			$form.placaVehiculo = data.placaVehiculo || data.placa || '';
+			$form.modoIngreso = 'vehiculo';
+		} else {
+			$form.placaVehiculo = '';
+			$form.modoIngreso = 'caminando';
+		}
+
+		// Cargar vehículos del visitante
+		if (data.id) {
+			loadVehiculos(data.id);
+		} else {
+			vehiculosList = [];
+		}
+
+		// Validar acceso
+		if ($form.cedula) {
+			await validarAcceso($form.cedula);
+		}
+
+		// Foco en gafete
+		setTimeout(() => {
+			const gafeteInput = document.getElementById('gafete') as HTMLInputElement;
+			if (gafeteInput) gafeteInput.focus();
+		}, 100);
+	}
+
+	function clearSearch() {
+		visitorSelected = false;
+		reset();
+		validationResult = null;
+		foundPreRegistroId = undefined;
+		searchResetKey++;
+	}
+
 	function handleClose() {
 		if (!loading) {
 			show = false;
 			reset();
+			visitorSelected = false;
+			searchResetKey++;
 		}
 	}
 
@@ -572,6 +690,13 @@
 							<!-- VISTA COMPLETA (Formulario Manual)       -->
 							<!-- ========================================== -->
 							<div class="bg-surface-1 rounded-lg border border-surface p-5 grid grid-cols-2 gap-4">
+								<!-- Buscador Unificado (Similar a Pre-Registro) -->
+								<div class="col-span-2 mb-2">
+									{#key searchResetKey}
+										<PersonaFinder scope="all" on:select={handlePersonaSelect} autoFocus={true} />
+									{/key}
+								</div>
+
 								<!-- Cédula (Full) -->
 								<div class="col-span-2">
 									<label for="cedula" class="form-label">
@@ -585,7 +710,8 @@
 											bind:value={$form.cedula}
 											oninput={handleCedulaInput}
 											placeholder="1-2345-6789"
-											disabled={loading}
+											disabled={loading || visitorSelected}
+											readonly={visitorSelected}
 											{...$constraints.cedula}
 										/>
 										{#if searchingPerson}
@@ -611,7 +737,8 @@
 										bind:value={$form.nombre}
 										oninput={() => validate('nombre')}
 										placeholder="Juan"
-										disabled={loading || searchingPerson}
+										disabled={loading || searchingPerson || visitorSelected}
+										readonly={visitorSelected}
 									/>
 									{#if $errors.nombre}<p class="form-error">{$errors.nombre}</p>{/if}
 								</div>
@@ -625,7 +752,8 @@
 										class="form-input"
 										bind:value={$form.segundoNombre}
 										placeholder=""
-										disabled={loading || searchingPerson}
+										disabled={loading || searchingPerson || visitorSelected}
+										readonly={visitorSelected}
 									/>
 								</div>
 
@@ -641,7 +769,8 @@
 										bind:value={$form.apellido}
 										oninput={() => validate('apellido')}
 										placeholder="Pérez"
-										disabled={loading || searchingPerson}
+										disabled={loading || searchingPerson || visitorSelected}
+										readonly={visitorSelected}
 									/>
 									{#if $errors.apellido}<p class="form-error">{$errors.apellido}</p>{/if}
 								</div>
@@ -655,7 +784,8 @@
 										class="form-input"
 										bind:value={$form.segundoApellido}
 										placeholder=""
-										disabled={loading || searchingPerson}
+										disabled={loading || searchingPerson || visitorSelected}
+										readonly={visitorSelected}
 									/>
 								</div>
 
@@ -670,7 +800,10 @@
 											<button
 												type="button"
 												onclick={() => (showEmpresaDropdown = !showEmpresaDropdown)}
-												disabled={loading || searchingPerson || empresaStore.loading}
+												disabled={loading ||
+													searchingPerson ||
+													empresaStore.loading ||
+													visitorSelected}
 												class="form-select w-full text-left {showEmpresaDropdown
 													? 'border-accent ring-1 ring-accent/20'
 													: getFieldStateClass('empresaId', $form.empresaId)}"
@@ -728,7 +861,7 @@
 										<button
 											type="button"
 											onclick={() => (showEmpresaModal = true)}
-											disabled={loading || searchingPerson}
+											disabled={loading || searchingPerson || visitorSelected}
 											class="px-3 py-1.5 rounded-lg border border-surface bg-surface-2 text-secondary hover:text-primary hover:border-border-emphasis transition-colors"
 											title="Añadir nueva empresa"
 										>
@@ -736,6 +869,125 @@
 										</button>
 									</div>
 									{#if $errors.empresaId}<p class="form-error">{$errors.empresaId}</p>{/if}
+								</div>
+
+								<!-- Selector Vehículo (Refinado) -->
+								<div class="col-span-2">
+									<label for="vehiculoPlaca" class="form-label">Vehículo / Medio Ingreso</label>
+									<div class="flex gap-2 relative">
+										<!-- Custom Dropdown Trigger -->
+										<div class="relative flex-1">
+											<button
+												type="button"
+												disabled={loading || loadingVehiculos}
+												onclick={() => (showVehiculoDropdown = !showVehiculoDropdown)}
+												class="form-select w-full text-left flex items-center justify-between {$form.placaVehiculo
+													? 'border-accent ring-1 ring-accent/10'
+													: ''}"
+											>
+												<span class="truncate flex items-center gap-2">
+													{#if loadingVehiculos}
+														Cargando...
+													{:else if $form.placaVehiculo}
+														<span class="font-mono font-bold bg-surface-3 px-1.5 rounded text-xs"
+															>{$form.placaVehiculo}</span
+														>
+														<span class="text-xs opacity-70">
+															{vehiculosList.find((v) => v.placa === $form.placaVehiculo)?.marca ||
+																''}
+														</span>
+													{:else}
+														<span class="opacity-50 flex items-center gap-2">
+															<PersonStanding size={14} />
+															Caminando (Sin vehículo)
+														</span>
+													{/if}
+												</span>
+												<ChevronDown size={14} class="text-secondary" />
+											</button>
+
+											<!-- Dropdown Options -->
+											{#if showVehiculoDropdown}
+												<!-- svelte-ignore a11y_click_events_have_key_events -->
+												<!-- svelte-ignore a11y_no_static_element_interactions -->
+												<div
+													class="fixed inset-0 z-40"
+													onclick={() => (showVehiculoDropdown = false)}
+												></div>
+
+												<div
+													class="form-dropdown absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto"
+													transition:fly={{ y: -5, duration: 200 }}
+												>
+													<!-- Opción Caminando (Limpiar) -->
+													<button
+														type="button"
+														onclick={() => {
+															$form.placaVehiculo = '';
+															$form.modoIngreso = 'caminando';
+															showVehiculoDropdown = false;
+														}}
+														class="form-dropdown-item justify-between border-b border-surface/50"
+													>
+														<div class="flex items-center gap-2">
+															<PersonStanding size={16} class="opacity-70" />
+															<span>Caminando</span>
+														</div>
+														{#if !$form.placaVehiculo}
+															<Check size={14} class="text-primary" />
+														{/if}
+													</button>
+
+													{#if vehiculosList.length > 0}
+														{#each Object.entries(groupedVehiculos) as [tipo, list]}
+															<div
+																class="px-3 py-1 text-[10px] text-secondary/50 font-bold uppercase bg-surface-3"
+															>
+																{tipo}
+															</div>
+															{#each list as v}
+																<button
+																	type="button"
+																	onclick={() => {
+																		$form.placaVehiculo = v.placa;
+																		$form.modoIngreso = 'vehiculo';
+																		showVehiculoDropdown = false;
+																	}}
+																	class="form-dropdown-item justify-between group"
+																>
+																	<div class="flex items-center gap-2">
+																		{#if v.tipoVehiculo === 'motocicleta'}
+																			<Bike size={14} class="opacity-70" />
+																		{:else}
+																			<Car size={14} class="opacity-70" />
+																		{/if}
+																		<span class="font-mono font-bold">{v.placa}</span>
+																	</div>
+																	{#if $form.placaVehiculo === v.placa}
+																		<Check size={14} class="text-primary" />
+																	{/if}
+																</button>
+															{/each}
+														{/each}
+													{:else}
+														<div class="px-3 py-4 text-xs text-secondary opacity-50 text-center">
+															No hay vehículos registrados
+														</div>
+													{/if}
+												</div>
+											{/if}
+										</div>
+
+										<button
+											type="button"
+											onclick={() => (showVehiculoForm = true)}
+											disabled={loading}
+											class="px-3 py-1.5 rounded-lg border border-surface bg-surface-2 text-secondary hover:text-primary hover:border-border-emphasis transition-colors"
+											title="Registrar nuevo vehículo"
+										>
+											<Plus size={16} />
+										</button>
+									</div>
 								</div>
 
 								<!-- Seccion de Ingreso Mixed In but visually grouped -->
@@ -798,7 +1050,7 @@
 											type="text"
 											bind:value={$form.gafete}
 											placeholder="00"
-											class="form-input text-center font-mono tracking-widest"
+											class="form-input text-center font-mono tracking-widest bg-surface-1 border-accent/30 focus:border-accent ring-accent/20"
 											autocomplete="off"
 											disabled={loading}
 										/>
@@ -806,7 +1058,7 @@
 								</div>
 
 								<!-- Observaciones - Toggle colapsable -->
-								<div class="col-span-2 border-t border-surface pt-2">
+								<div class="col-span-2">
 									<button
 										type="button"
 										onclick={() => (showObservaciones = !showObservaciones)}
@@ -911,6 +1163,94 @@
 					class="px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary transition-all duration-200 hover:border-blue-500 hover:text-blue-500 disabled:opacity-50"
 				>
 					{creatingEmpresa ? 'Guardando...' : 'Guardar'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Modal para Crear Vehículo -->
+{#if showVehiculoForm}
+	<div
+		class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+		transition:fade={{ duration: 150 }}
+	>
+		<div class="absolute inset-0" onclick={() => (showVehiculoForm = false)}></div>
+
+		<div
+			class="relative w-full max-w-[320px] bg-surface-2 rounded-xl shadow-2xl border border-surface overflow-hidden"
+			transition:fly={{ y: 10, duration: 200 }}
+		>
+			<div class="px-5 py-4 space-y-4">
+				<h3 class="text-sm font-semibold text-white">Nuevo Vehículo</h3>
+
+				<div class="space-y-3">
+					<div>
+						<label class="form-label" for="vt">Tipo</label>
+						<select id="vt" class="form-select text-xs h-9 bg-surface-1" bind:value={vehiculoTipo}>
+							<option value="automovil">Automóvil</option>
+							<option value="motocicleta">Motocicleta</option>
+							<option value="camion">Camión / Pesado</option>
+							<option value="otro">Otro</option>
+						</select>
+					</div>
+
+					<div>
+						<label class="form-label" for="vp">Placa</label>
+						<input
+							id="vp"
+							type="text"
+							class="form-input text-xs h-9 font-mono"
+							placeholder="ABC-123"
+							bind:value={vehiculoPlaca}
+						/>
+					</div>
+
+					<div class="grid grid-cols-2 gap-2">
+						<div>
+							<label class="form-label" for="vm">Marca</label>
+							<input
+								id="vm"
+								type="text"
+								class="form-input text-xs h-9"
+								placeholder="Toyota"
+								bind:value={vehiculoMarca}
+							/>
+						</div>
+						<div>
+							<label class="form-label" for="vmo">Modelo</label>
+							<input
+								id="vmo"
+								type="text"
+								class="form-input text-xs h-9"
+								placeholder="Yaris"
+								bind:value={vehiculoModelo}
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="flex justify-end gap-2 px-5 py-3 border-t border-surface bg-surface-1">
+				<button
+					type="button"
+					onclick={() => (showVehiculoForm = false)}
+					class="px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary transition-all duration-200 hover:border-white/60 hover:text-white/80"
+				>
+					Cancelar
+				</button>
+				<button
+					type="button"
+					disabled={!vehiculoPlaca.trim()}
+					onclick={async () => {
+						$form.placaVehiculo = vehiculoPlaca;
+						$form.modoIngreso = 'vehiculo';
+						showVehiculoForm = false;
+						toast.success('Vehículo asignado a este ingreso');
+					}}
+					class="px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-surface text-secondary transition-all duration-200 hover:border-blue-500 hover:text-blue-500"
+				>
+					Usar Placa
 				</button>
 			</div>
 		</div>

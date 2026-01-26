@@ -176,7 +176,7 @@
 				? `Filtrando: ${selectedResult.nombreCompleto || selectedResult.id}`
 				: placeholder}
 			{disabled}
-			class="w-full rounded-lg border bg-[#1e1e1e] pl-10 pr-16 py-2.5 text-sm text-white
+			class="w-full h-[34px] rounded-lg border bg-[#1e1e1e] pl-10 pr-16 py-1.5 text-sm text-white
         placeholder:text-gray-500 transition-colors
         focus:outline-none focus:ring-1
         disabled:opacity-50 disabled:cursor-not-allowed
@@ -290,6 +290,3 @@
 		</div>
 	{/if}
 </div>
-
-
-
