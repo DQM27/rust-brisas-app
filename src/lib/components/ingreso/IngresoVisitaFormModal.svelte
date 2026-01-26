@@ -350,6 +350,18 @@
 		}, 500);
 	}
 
+	function handleGafeteInput(event: Event) {
+		const input = event.target as HTMLInputElement;
+		// Solo números
+		let val = input.value.replace(/[^0-9]/g, '');
+		// Eliminar ceros a la izquierda
+		val = val.replace(/^0+/, '');
+
+		$form.gafete = val;
+		// Sincronizar el valor del input para evitar que se muestren los ceros borrados
+		input.value = val;
+	}
+
 	async function validarAcceso(ced: string) {
 		try {
 			validationResult = await ingresoVisitaService.validarIngreso(ced);
@@ -735,7 +747,8 @@
 										name="gafete"
 										type="text"
 										bind:value={$form.gafete}
-										placeholder="K-123456"
+										oninput={handleGafeteInput}
+										placeholder="Ej: 123"
 										class="form-input text-center font-mono tracking-widest bg-surface-1 border-accent/20"
 										autocomplete="off"
 										disabled={loading}
@@ -844,10 +857,12 @@
 											<Plus size={14} />
 										</button>
 										{#if showEmpresaDropdown}
-											<div
-												class="fixed inset-0 z-40"
+											<button
+												type="button"
+												class="fixed inset-0 z-40 w-full h-full bg-transparent border-none cursor-default"
 												onclick={() => (showEmpresaDropdown = false)}
-											></div>
+												aria-label="Cerrar desplegable"
+											></button>
 											<div
 												class="form-dropdown absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto"
 												transition:fly={{ y: -5, duration: 200 }}
@@ -896,7 +911,7 @@
 														>{$form.placaVehiculo}</span
 													>
 												{:else}
-													🚶 Caminando
+													Caminando
 												{/if}
 											</span>
 											<ChevronDown
@@ -913,10 +928,12 @@
 											<Plus size={14} />
 										</button>
 										{#if showVehiculoDropdown}
-											<div
-												class="fixed inset-0 z-40"
+											<button
+												type="button"
+												class="fixed inset-0 z-40 w-full h-full bg-transparent border-none cursor-default"
 												onclick={() => (showVehiculoDropdown = false)}
-											></div>
+												aria-label="Cerrar desplegable"
+											></button>
 											<div
 												class="form-dropdown absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto"
 												transition:fly={{ y: -5, duration: 200 }}
@@ -930,7 +947,7 @@
 													}}
 													class="form-dropdown-item text-xs"
 												>
-													🚶 Caminando
+													Caminando
 												</button>
 												{#each Object.entries(groupedVehiculos) as [tipo, list]}
 													<div
@@ -1001,7 +1018,7 @@
 								</div>
 
 								<div class="col-span-1">
-									<label class="form-label opacity-0" aria-hidden="true">-</label>
+									<div class="form-label opacity-0" aria-hidden="true">-</div>
 									<button
 										type="button"
 										onclick={() => (showObservaciones = !showObservaciones)}
@@ -1118,7 +1135,12 @@
 		class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
 		transition:fade={{ duration: 150 }}
 	>
-		<div class="absolute inset-0" onclick={() => (showVehiculoForm = false)}></div>
+		<button
+			type="button"
+			class="absolute inset-0 w-full h-full bg-transparent border-none cursor-default"
+			onclick={() => (showVehiculoForm = false)}
+			aria-label="Cerrar modal"
+		></button>
 
 		<div
 			class="relative w-full max-w-[320px] bg-surface-2 rounded-xl shadow-2xl border border-surface overflow-hidden"
