@@ -66,5 +66,14 @@ export const contratistas = {
 			const errMsg = e instanceof Error ? e.message : String(e);
 			return { ok: false, data: [], error: errMsg };
 		}
+	},
+
+	checkUnique: async (field: string, value: string, excludeId?: string): Promise<boolean> => {
+		return await invoke<boolean>('check_unique', {
+			table: 'contratista',
+			field,
+			value,
+			excludeId
+		});
 	}
 };

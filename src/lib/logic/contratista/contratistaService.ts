@@ -179,3 +179,94 @@ export async function getArchivedContratistas(): Promise<ServiceResult<Contratis
 		return { ok: false, error: parseError(err) };
 	}
 }
+
+// ============================================
+// UI HELPERS & LOGIC (Decoupled from Components)
+// ============================================
+
+/**
+ * Validar unicidad de cédula
+ */
+export async function checkCedulaUnique(
+	cedula: string,
+	excludeId?: string
+): Promise<boolean> {
+	if (!cedula || cedula.length < 4) return true;
+	try {
+		// El backend espera el field 'cedula'
+		return await contratistas.checkUnique('cedula', cedula, excludeId);
+	} catch (err) {
+		console.error('Error checking unique cedula:', err);
+		// Si falla, asumimos false para evitar duplicados accidentales o true para no bloquear?
+		// Mejor false para obligar re-intento o mostrar error
+		return false;
+	}
+}
+
+/**
+ * Formatear fecha para mostrar en UI (YYYY-MM-DD -> DD/MM/YYYY)
+ */
+export function formatDateForDisplay(isoDate?: string): string {
+	if (!isoDate) return '';
+	// Asume YYYY-MM-DD o ISO completo
+	try {
+		const [year, month, day] = isoDate.split('T')[0].split('-');
+		if (!year || !month || !day) return '';
+		return `${day}/${month}/${year}`;
+	} catch {
+		return '';
+	}
+}
+
+/**
+ * Formatear fecha para backend (DD/MM/YYYY -> YYYY-MM-DD)
+ */
+export function formatDateForBackend(displayDate: string): string {
+	if (!displayDate || displayDate.length !== 10) return '';
+	const [day, month, year] = displayDate.split('/');
+	if (!day || !month || !year) return '';
+	return `${year}-${month}-${day}`;
+}
+
+/**
+ * Preparar payload para creación
+ */
+export function prepareCreatePayload(
+	formData: any // Se puede tipar con ContratistaFormData si se importa, pero para evitar deps circulares usamos any o definimos interfaz parcial
+): CreateContratistaInput {
+	const payload: CreateContratistaInput = {
+		cedula: formData.cedula,
+		nombre: formData.nombre,
+		apellido: formData.apellido,
+		empresaId: formData.empresaId,
+		fechaVencimientoPraind: formatDateForBackend(formData.fechaVencimientoPraind),
+		tieneVehiculo: false
+	};
+
+	if (formData.segundoNombre?.trim()) payload.segundoNombre = formData.segundoNombre.trim();
+	if (formData.segundoApellido?.trim()) payload.segundoApellido = formData.segundoApellido.trim();
+
+	return payload;
+}
+
+/**
+ * Preparar payload para actualización
+ */
+export function prepareUpdatePayload(
+	id: string,
+	formData: any
+): UpdateContratistaInput {
+	const payload: UpdateContratistaInput = {
+		id,
+		cedula: formData.cedula,
+		nombre: formData.nombre,
+		apellido: formData.apellido,
+		empresaId: formData.empresaId,
+		fechaVencimientoPraind: formatDateForBackend(formData.fechaVencimientoPraind)
+	};
+
+	payload.segundoNombre = formData.segundoNombre?.trim() || undefined;
+	payload.segundoApellido = formData.segundoApellido?.trim() || undefined;
+
+	return payload;
+}

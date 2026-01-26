@@ -8,7 +8,13 @@
 		UpdateContratistaInput
 	} from '$lib/types/contratista';
 	import { submitCreateEmpresa } from '$lib/logic/empresa/empresaService';
-	import { invoke } from '@tauri-apps/api/core';
+	import QuickEmpresaCreateModal from './QuickEmpresaCreateModal.svelte';
+	import {
+		checkCedulaUnique,
+		formatDateForDisplay,
+		prepareCreatePayload,
+		prepareUpdatePayload
+	} from '$lib/logic/contratista/contratistaService';
 	import { empresaStore } from '$lib/stores/empresaStore.svelte';
 	import VehiculoManagerModal from '$lib/components/vehiculo/VehiculoManagerModal.svelte';
 	import { shortcutRegistry, shortcutCommand, clearCommand } from '$lib/shortcuts';
@@ -59,9 +65,6 @@
 	// Empresas State
 	let showEmpresaDropdown = $state(false);
 	let showEmpresaModal = $state(false);
-	let nuevaEmpresaNombre = $state('');
-	let creatingEmpresa = $state(false);
-	let empresaError = $state('');
 
 	// Vehicle Modal State
 	let showVehiculoModal = $state(false);
@@ -97,24 +100,14 @@
 				if (f.valid) {
 					if (cedulaDuplicateError) return; // Block submit if duplicate
 
-					const data = {
-						...f.data,
-						fechaVencimientoPraind: formatDateForBackend(f.data.fechaVencimientoPraind)
-					};
+					let payload;
+					if (isEditMode && contratista?.id) {
+						payload = prepareUpdatePayload(contratista.id, f.data);
+					} else {
+						payload = prepareCreatePayload(f.data);
+					}
 
-					const payload: CreateContratistaInput = {
-						cedula: data.cedula,
-						nombre: data.nombre,
-						apellido: data.apellido,
-						empresaId: data.empresaId,
-						fechaVencimientoPraind: data.fechaVencimientoPraind,
-						tieneVehiculo: false // Default to false for creation via this modal
-					};
-
-					if (data.segundoNombre) payload.segundoNombre = data.segundoNombre;
-					if (data.segundoApellido) payload.segundoApellido = data.segundoApellido;
-
-					const success = await onSave(payload as any); // Cast because onSave expects union but payload is partial logic here
+					const success = await onSave(payload);
 					if (success) {
 						handleClose();
 					}
@@ -163,18 +156,6 @@
 	});
 
 	// Helpers
-	function formatDateForDisplay(isoDate: string): string {
-		if (!isoDate) return '';
-		const [year, month, day] = isoDate.split('T')[0].split('-');
-		return `${day}/${month}/${year}`;
-	}
-
-	function formatDateForBackend(displayDate: string): string {
-		if (!displayDate || displayDate.length !== 10) return '';
-		const [day, month, year] = displayDate.split('/');
-		return `${year}-${month}-${day}`;
-	}
-
 	function handleClose() {
 		if (!loading) {
 			onClose();
@@ -201,12 +182,7 @@
 
 		checkTimeout = setTimeout(async () => {
 			try {
-				const isUnique = await invoke<boolean>('check_unique', {
-					table: 'contratista',
-					field: 'cedula',
-					value,
-					excludeId: contratista?.id
-				});
+				const isUnique = await checkCedulaUnique(value, contratista?.id);
 
 				if (!isUnique) {
 					cedulaDuplicateError = 'Esta cédula ya está registrada.';
@@ -219,20 +195,9 @@
 		}, 400);
 	}
 
-	async function handleCrearEmpresa() {
-		if (!nuevaEmpresaNombre.trim()) return;
-		creatingEmpresa = true;
-		empresaError = '';
-		const result = await submitCreateEmpresa(nuevaEmpresaNombre);
-		if (result.ok) {
-			empresaStore.add(result.empresa);
-			$form.empresaId = result.empresa.id;
-			nuevaEmpresaNombre = '';
-			showEmpresaModal = false;
-		} else {
-			empresaError = result.error;
-		}
-		creatingEmpresa = false;
+	function handleEmpresaCreated(id: string) {
+		$form.empresaId = id;
+		showEmpresaModal = false;
 	}
 
 	// --- UI PATTERNS (STANDARD CRUD) ---
@@ -572,69 +537,12 @@
 {/if}
 
 <!-- Modal para crear nueva empresa (Mini version inline) -->
-{#if showEmpresaModal}
-	<div
-		class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-		transition:fade={{ duration: 200 }}
-	>
-		<div
-			class="absolute inset-0"
-			role="button"
-			tabindex="0"
-			onclick={() => !creatingEmpresa && (showEmpresaModal = false)}
-			onkeydown={(e) => e.key === 'Escape' && !creatingEmpresa && (showEmpresaModal = false)}
-		></div>
-
-		<div
-			class="relative w-full max-w-sm rounded-lg bg-surface-2 shadow-xl border border-surface overflow-hidden"
-			transition:scale={{ start: 0.95, duration: 200 }}
-		>
-			<div class="px-5 py-4 border-b border-surface bg-surface-1">
-				<h3 class="text-base font-semibold text-primary">Nueva Empresa</h3>
-			</div>
-
-			<div class="p-5 space-y-4">
-				{#if empresaError}
-					<div class="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-300">
-						{empresaError}
-					</div>
-				{/if}
-
-				<div class="space-y-1">
-					<label for="newEmpresa" class="form-label">Nombre Comercial</label>
-					<input
-						id="newEmpresa"
-						type="text"
-						bind:value={nuevaEmpresaNombre}
-						placeholder="Ej: Servicios Generales S.A."
-						disabled={creatingEmpresa}
-						class="form-input"
-						onkeydown={(e) => e.key === 'Enter' && handleCrearEmpresa()}
-					/>
-				</div>
-			</div>
-
-			<div class="flex justify-end gap-2 px-5 py-3 border-t border-surface bg-surface-1">
-				<button
-					type="button"
-					disabled={creatingEmpresa}
-					onclick={() => (showEmpresaModal = false)}
-					class="form-btn-outline-secondary py-1.5 px-3 text-xs"
-				>
-					Cancelar
-				</button>
-				<button
-					type="button"
-					disabled={creatingEmpresa || !nuevaEmpresaNombre.trim()}
-					onclick={handleCrearEmpresa}
-					class="form-btn-outline-success py-1.5 px-3 text-xs"
-				>
-					{creatingEmpresa ? 'Guardando...' : 'Guardar'}
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
+<!-- Modal para crear nueva empresa (Componente extraído) -->
+<QuickEmpresaCreateModal
+	show={showEmpresaModal}
+	onClose={() => (showEmpresaModal = false)}
+	onEmpresaCreated={handleEmpresaCreated}
+/>
 
 <!-- Vehiculo Modal (Nested) -->
 {#if showVehiculoModal && contratista}

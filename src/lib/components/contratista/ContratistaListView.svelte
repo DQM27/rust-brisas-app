@@ -37,14 +37,15 @@
 	import { getContratistaColumns } from '$lib/logic/contratista/contratistaColumns';
 	// Services and Logic
 	import * as contratistaService from '$lib/logic/contratista/contratistaService';
+	import { vehiculos } from '$lib/api/vehiculos';
+	import { contratistaStore } from '$lib/stores/contratistaStore.svelte';
 	import { openConfirm } from '$lib/stores/confirm.svelte';
-	import { invoke } from '@tauri-apps/api/core';
-	import { save } from '@tauri-apps/plugin-dialog';
+	import { exportData } from '$lib/api/export';
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
-	import ContratistaFormModal from '$lib/components/contratista/ContratistaFormModal.svelte';
+	import ContratistaFormModal from '$lib/components/contratista/modal/ContratistaFormModal.svelte';
 	import VehiculoManagerModal from '$lib/components/vehiculo/VehiculoManagerModal.svelte';
 	import ExportDialog from '$lib/components/export/ExportDialog.svelte';
 
@@ -84,7 +85,52 @@
 	// ==========================================
 	// ESTADO LOCAL
 	// ==========================================
-	let contratistas = $state<ContratistaResponse[]>([]);
+	// NOTA: Usamos un derivado del store para reaccionar a cambios globales
+	let contratistas = $derived(contratistaStore.contratistas);
+	let contratistasTreeData = $state<any[]>([]); // Data transformada para tree view
+
+	// Transformación reactiva para Tree Data
+	$effect(() => {
+		if (!contratistas) {
+			contratistasTreeData = [];
+			return;
+		}
+
+		contratistasTreeData = contratistas.map((c: ContratistaResponse) => {
+			const children =
+				c.vehiculos && c.vehiculos.length > 0
+					? c.vehiculos.map((v: any) => ({
+							_parent: c, // Reference to parent for actions
+							id: v.id,
+							// Map vehicle fields to column matches
+							nombreCompleto: '', // Clear name column for cleaner look
+							vehiculoTipo:
+								`${v.tipoVehiculo} - ${v.marca || ''} ${v.modelo || ''} ${v.color || ''}`.trim(),
+							vehiculoPlaca: v.placa,
+							// Empty fields for other columns
+							cedula: '',
+							empresaNombre: '',
+							estado: null, // Avoid status badge
+							praindVencido: null,
+							puedeIngresar: null
+						}))
+					: undefined;
+
+			return {
+				...c,
+				_children: children
+			};
+		});
+
+		// Data update
+		if (gridWrapper && !loading) {
+			// Check if we are searching (smart search handles data replacement itself)
+			if (!searchTerm || searchTerm.length < 2) {
+				gridWrapper.replaceData(contratistasTreeData);
+			}
+		}
+	});
+
 	let loading = $state(false);
 	let error = $state('');
 	let showColDropdown = $state(false);
@@ -132,81 +178,6 @@
 	// COLUMN FORMATTERS (Tabulator Re-implementation)
 	// ==========================================
 
-	// Status Badge Formatter
-	const statusFormatter = (cell: any) => {
-		const estado = cell.getValue() as EstadoContratista;
-		const baseClass =
-			'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none shadow-sm cursor-pointer hover:opacity-80 transition-opacity';
-
-		let badgeClass = '';
-		if (estado === 'activo') {
-			badgeClass =
-				'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
-		} else if (estado === 'suspendido') {
-			badgeClass =
-				'bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20';
-		} else {
-			badgeClass =
-				'bg-gray-500/10 text-gray-600 border-gray-500/20 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700';
-		}
-
-		const displayText = estado ? estado.toUpperCase() : 'N/A';
-		return `<button class="status-btn ${baseClass} ${badgeClass}">${displayText}</button>`;
-	};
-
-	// Praind Badge Formatter
-	const praindFormatter = (cell: any) => {
-		const row = cell.getData() as ContratistaResponse;
-		const baseClass =
-			'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none shadow-sm';
-		let badgeClass = '';
-		let text = '';
-
-		if (row.praindVencido) {
-			badgeClass =
-				'bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20';
-			text = 'Vencido';
-		} else if (row.diasHastaVencimiento <= 30) {
-			badgeClass =
-				'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
-			text = `${row.diasHastaVencimiento} días`;
-		} else {
-			badgeClass =
-				'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
-			text = 'Vigente';
-		}
-		return `<span class="${baseClass} ${badgeClass}">${text}</span>`;
-	};
-
-	// Access Badge Formatter
-	const accessFormatter = (cell: any) => {
-		const row = cell.getData() as ContratistaResponse;
-		const baseClass =
-			'inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-widest leading-none shadow-sm';
-		const redBadge =
-			'bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20';
-		const greenBadge =
-			'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
-
-		if (row.estaBloqueado) return `<span class="${baseClass} ${redBadge}">Bloqueado</span>`;
-		if (row.estado !== 'activo') return `<span class="${baseClass} ${redBadge}">Denegado</span>`;
-		if (row.puedeIngresar) return `<span class="${baseClass} ${greenBadge}">Permitido</span>`;
-		return `<span class="${baseClass} ${redBadge}">Denegado</span>`;
-	};
-
-	// Actions Formatter
-	const actionsFormatter = (cell: any) => {
-		// We can check permissions here if we had access to $currentUser inside this pure function context
-		// Instead we'll render all buttons and handle clicks securely.
-		return `
-            <div class="flex gap-1 justify-center">
-                <button class="action-btn edit-btn p-1 hover:bg-white/10 rounded text-blue-400" title="Editar"><svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
-                <button class="action-btn car-btn p-1 hover:bg-white/10 rounded text-amber-400" title="Vehículos"><svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg></button>
-                <button class="action-btn delete-btn p-1 hover:bg-white/10 rounded text-red-400" title="Eliminar"><svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
-            </div>
-        `;
-	};
-
 	// Cell Click Handler
 	// Column Definitions (Tabulator)
 	// We use a derived state to ensure handlers are fresh if they depend on closure variables
@@ -221,13 +192,16 @@
 					openModal(c);
 				}
 			},
-			onDelete: (c) => {
+			onDelete: async (c) => {
 				if (!c.cedula) {
 					// Vehicle Deletion
 					if (confirm('¿Eliminar vehículo?')) {
-						invoke('delete_vehiculo', { id: c.id })
-							.then(() => loadContratistas())
-							.catch((e) => toast.error('Error al eliminar vehículo'));
+						try {
+							await vehiculos.delete(c.id);
+							loadContratistas();
+						} catch (e) {
+							toast.error('Error al eliminar vehículo');
+						}
 					}
 				} else {
 					handleDelete(c);
@@ -287,54 +261,17 @@
 		error = '';
 		try {
 			// Select service method based on view mode
-			const result = showArchived
-				? await contratistaService.getArchivedContratistas()
-				: await contratistaService.fetchAllContratistas();
+			// Usamos el store para cargar
+			contratistaStore.refresh(showArchived);
+			loading = contratistaStore.loading; // Sync local loading visual if needed, or bind directly
 
-			if (result.ok) {
-				// Normalize data source
-				const rawList =
-					'contratistas' in result.data
-						? (result.data as ContratistaListResponse).contratistas
-						: (result.data as ContratistaResponse[]);
+			// Wait for store update (optional, effect handles it)
+			// But for safety regarding loading state:
+			loading = false;
 
-				// Map vehicles to _children for Tree Data
-				contratistas = rawList.map((c: ContratistaResponse) => {
-					const children =
-						c.vehiculos && c.vehiculos.length > 0
-							? c.vehiculos.map((v: any) => ({
-									_parent: c, // Reference to parent for actions
-									id: v.id,
-									// Map vehicle fields to column matches
-									nombreCompleto: '', // Clear name column for cleaner look
-									vehiculoTipo:
-										`${v.tipoVehiculo} - ${v.marca || ''} ${v.modelo || ''} ${v.color || ''}`.trim(),
-									vehiculoPlaca: v.placa,
-									// Empty fields for other columns
-									cedula: '',
-									empresaNombre: '',
-									estado: null, // Avoid status badge
-									praindVencido: null,
-									puedeIngresar: null
-								}))
-							: undefined;
-
-					return {
-						...c,
-						_children: children
-					};
-				});
-
-				// Manual update needed as prop is not reactive in wrapper
-				if (gridWrapper) {
-					gridWrapper.replaceData(contratistas);
-					// Force redraw to fix layout glitches
-					gridWrapper.deselectAll();
-					setTimeout(() => gridWrapper.redraw(), 100);
-				}
-			} else {
-				error = result.error;
-			}
+			// Logic moved to effect:
+			// Normalize data is done in store
+			// Mapping to tree data is done in derived effect
 		} catch {
 			console.error('Error al cargar contratistas');
 			error = 'Error al cargar contratistas';
@@ -641,64 +578,41 @@
 				`Exportando ${isSelection ? 'selección' : 'todo'} a ${format.toUpperCase()}...`
 			);
 
-			const targetColIds = options.columnIds;
-			const table = gridWrapper?.getTable();
-			const allCols = table?.getColumns() || [];
-
-			const headers: string[] = [];
-			const fields: string[] = [];
-
-			targetColIds.forEach((id: string) => {
-				const col = allCols.find((c: any) => c.getField() === id);
-				if (col) {
-					headers.push(col.getDefinition().title || id);
-					fields.push(id);
-				}
-			});
-
-			const rowsToExport = exportRows.map((row: any) => {
-				const newRow: Record<string, any> = {};
-				fields.forEach((field, index) => {
-					const header = headers[index];
-					let val = row[field];
-					// Handle nested properties (e.g. vehiculo.placa) if field has dots?
-					// Tabulator handles this via getField but raw data might have nested objects or not depending on how it was loaded
-					// Since we use rowsData from table.getData(), it returns the data objects.
-					// If field is 'empresaNombre', it's direct.
-					// For safety, convert to string
-					if (val === null || val === undefined) val = '';
-					newRow[header] = String(val);
-				});
-				return newRow;
-			});
-
-			const request: any = {
-				format,
-				headers,
-				rows: rowsToExport,
+			// Preparar opciones
+			const exportOptions = {
+				...options,
 				title: options.title || `Reporte ${new Date().toLocaleDateString()}`,
-				orientation: options.orientation || 'landscape',
-				delimiter: options.delimiter || 'comma',
-				includeBom: options.includeBom ?? true,
-				showPreview: options.showPreview || false,
 				generatedBy: $currentUser?.nombreCompleto || ''
+				// Pasamos gridWrapper para q el servicio extraiga headers/rows si quiere,
+				// O podemos pasar lo que ya tenemos.
+				// El servicio exportData (api/export.ts) espera (table, format, options, onlySelected).
+				// Pero aquí `exportRows` YA contiene los datos filtrados/seleccionados que el usuario vio en el modal.
+				// Y `options.columnIds` tiene las columnas elegidas en el modal.
+				// PERO `exportData` de `api/export.ts` está diseñada para extraer DE NUEVO de la tabla.
+				// Si el usuario filtró columnas en el modal (ExportDialog), esa información está en options.columnIds.
+
+				// Opción A: Usar exportData pasando la tabla y dejar que re-extraiga.
+				// Opción B: Usar una función de `api/export` que acepte rows/headers ya procesados.
+
+				// Dado que `exportData` en `api/export.ts` hace `extractTabulatorData`, usemos esa comodidad.
+				// Solo necesitamos pasar la instancia de Tabulator.
 			};
 
-			let targetPath = null;
-			if (!options.showPreview) {
-				const defaultName = `${request.title.replace(/[^a-z0-9]/gi, '_')}.${format === 'excel' ? 'xlsx' : format}`;
-				const fileExtension = format === 'excel' ? 'xlsx' : format;
-				targetPath = await save({
-					defaultPath: defaultName,
-					filters: [{ name: format.toUpperCase(), extensions: [fileExtension] }]
-				});
-				if (!targetPath) throw new Error('Exportación cancelada');
-				request.targetPath = targetPath;
-			}
+			// Llamada al servicio centralizado
+			await exportData(
+				gridWrapper.getTable(),
+				format,
+				exportOptions,
+				isSelection // onlySelected
+			);
 
-			await invoke('export_data', { request });
 			toast.success('Exportación completada', { id: toastId });
 		} catch (err: any) {
+			// Cancelación por usuario no es error grave
+			if (err.message?.includes('cancelada')) {
+				toast('Exportación cancelada', { icon: 'ℹ️' });
+				return;
+			}
 			toast.error('Error: ' + err.message);
 		}
 	}
