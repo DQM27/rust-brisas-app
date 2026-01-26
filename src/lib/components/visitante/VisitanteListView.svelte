@@ -4,6 +4,7 @@
 	import { fade } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
 	import { Plus, Pencil, Trash2, X, RotateCcw, Undo2, History } from 'lucide-svelte';
+	import { ask } from '@tauri-apps/plugin-dialog';
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
@@ -186,12 +187,12 @@
 
 	// Delete/Restore Handlers
 	async function confirmDelete(visitante: VisitanteResponse) {
-		if (
-			!confirm(
-				`¿Mover a "${visitante.nombre} ${visitante.apellido}" a la papelera? Podrás recuperarlo más tarde.`
-			)
-		)
-			return;
+		const confirmed = await ask(
+			`¿Mover a "${visitante.nombre} ${visitante.apellido}" a la papelera? Podrás recuperarlo más tarde.`,
+			{ title: 'Confirmar Eliminación', kind: 'warning' }
+		);
+		if (!confirmed) return;
+
 		const res = await deleteVisitante(visitante.id);
 		if (res.ok) {
 			toast.success('Visitante movido a papelera');
@@ -202,12 +203,12 @@
 	}
 
 	async function handleRestore(visitante: VisitanteResponse) {
-		if (
-			!confirm(
-				`¿Restaurar al visitante "${visitante.nombre} ${visitante.apellido}" al catálogo activo?`
-			)
-		)
-			return;
+		const confirmed = await ask(
+			`¿Restaurar al visitante "${visitante.nombre} ${visitante.apellido}" al catálogo activo?`,
+			{ title: 'Confirmar Restauración', kind: 'info' }
+		);
+		if (!confirmed) return;
+
 		const res = await restoreVisitante(visitante.id);
 		if (res.ok) {
 			toast.success('Visitante restaurado con éxito');
@@ -218,7 +219,12 @@
 	}
 
 	async function handleDeleteMultiple(selection: VisitanteResponse[]) {
-		if (!confirm(`¿Mover ${selection.length} visitantes a la papelera?`)) return;
+		const confirmed = await ask(`¿Mover ${selection.length} visitantes a la papelera?`, {
+			title: 'Confirmar Eliminación Múltiple',
+			kind: 'warning'
+		});
+		if (!confirmed) return;
+
 		const toastId = toast.loading('Eliminando...');
 		let errors = 0;
 		for (const p of selection) {

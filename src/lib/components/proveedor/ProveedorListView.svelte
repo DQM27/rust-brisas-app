@@ -4,6 +4,7 @@
 	import { fade } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
 	import { Plus, Pencil, Trash2, X, RotateCcw, History } from 'lucide-svelte';
+	import { ask } from '@tauri-apps/plugin-dialog';
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
@@ -199,12 +200,12 @@
 	}
 
 	async function confirmDelete(proveedor: ProveedorResponse) {
-		if (
-			!confirm(
-				`¿Mover al proveedor "${proveedor.nombre}" a la papelera? Podrás recuperarlo más tarde.`
-			)
-		)
-			return;
+		const confirmed = await ask(
+			`¿Mover al proveedor "${proveedor.nombre}" a la papelera? Podrás recuperarlo más tarde.`,
+			{ title: 'Confirmar Eliminación', kind: 'warning' }
+		);
+		if (!confirmed) return;
+
 		const res = await deleteProveedor(proveedor.id);
 		if (res.ok) {
 			toast.success('Proveedor enviado a papelera');
@@ -215,7 +216,12 @@
 	}
 
 	async function handleRestore(proveedor: ProveedorResponse) {
-		if (!confirm(`¿Restaurar acceso al proveedor "${proveedor.nombre}"?`)) return;
+		const confirmed = await ask(`¿Restaurar acceso al proveedor "${proveedor.nombre}"?`, {
+			title: 'Confirmar Restauración',
+			kind: 'info'
+		});
+		if (!confirmed) return;
+
 		const toastId = toast.loading('Restaurando...');
 		const res = await restoreProveedor(proveedor.id);
 		if (res.ok) {
@@ -227,7 +233,11 @@
 	}
 
 	async function handleDeleteMultiple(selection: ProveedorResponse[]) {
-		if (!confirm(`¿Mover ${selection.length} proveedores a la papelera?`)) return;
+		const confirmed = await ask(`¿Mover ${selection.length} proveedores a la papelera?`, {
+			title: 'Confirmar Eliminación Múltiple',
+			kind: 'warning'
+		});
+		if (!confirmed) return;
 		const toastId = toast.loading('Eliminando...');
 		let errors = 0;
 		for (const p of selection) {

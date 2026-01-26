@@ -20,6 +20,7 @@
 	// Types
 	import type { UserResponse, CreateUserInput, UpdateUserInput } from '$lib/types/user';
 	import { searchByType } from '$lib/api/searchService';
+	import { ask } from '@tauri-apps/plugin-dialog';
 
 	// Stores
 	import { currentUser } from '$lib/stores/auth';
@@ -252,7 +253,12 @@
 			return;
 		}
 
-		if (!confirm(`¿Mover al usuario "${user.nombre}" a la papelera?`)) return;
+		const confirmed = await ask(`¿Mover al usuario "${user.nombre}" a la papelera?`, {
+			title: 'Confirmar Eliminación',
+			kind: 'warning'
+		});
+		if (!confirmed) return;
+
 		const toastId = toast.loading('Eliminando...');
 		const result = await userService.deleteUser(user.id);
 		if (result.ok) {
@@ -264,7 +270,12 @@
 	}
 
 	async function handleRestoreUser(user: UserResponse) {
-		if (!confirm(`¿Restaurar acceso al usuario "${user.nombre}"?`)) return;
+		const confirmed = await ask(`¿Restaurar acceso al usuario "${user.nombre}"?`, {
+			title: 'Confirmar Restauración',
+			kind: 'info'
+		});
+		if (!confirmed) return;
+
 		const toastId = toast.loading('Restaurando...');
 		const result = await userService.restoreUser(user.id);
 		if (result.ok) {
@@ -292,7 +303,12 @@
 			? `Has seleccionado tu cuenta (que no será eliminada). ¿Mover los otros ${count} usuarios a la papelera?`
 			: `¿Mover ${count} usuarios a la papelera?`;
 
-		if (!confirm(message)) return;
+		const confirmed = await ask(message, {
+			title: 'Confirmar Eliminación Múltiple',
+			kind: 'warning'
+		});
+
+		if (!confirmed) return;
 
 		const toastId = toast.loading('Procesando...');
 		let errors = 0;

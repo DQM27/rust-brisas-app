@@ -46,7 +46,7 @@
 	import ExportDialog from '$lib/components/export/ExportDialog.svelte';
 	import { getAvailableFormats } from '$lib/logic/export';
 	import { invoke } from '@tauri-apps/api/core';
-	import { save } from '@tauri-apps/plugin-dialog';
+	import { save, ask } from '@tauri-apps/plugin-dialog';
 
 	import type {
 		ContratistaResponse,
@@ -496,8 +496,11 @@
 			return;
 		}
 
-		if (!confirm(`¿Restaurar al contratista "${contratista.nombreCompleto}" al catálogo activo?`))
-			return;
+		const confirmed = await ask(
+			`¿Restaurar al contratista "${contratista.nombreCompleto}" al catálogo activo?`,
+			{ title: 'Confirmar Restauración', kind: 'info' }
+		);
+		if (!confirmed) return;
 
 		const toastId = toast.loading('Restaurando...');
 		const result = await contratistaService.restoreContratista(contratista.id);
@@ -517,12 +520,11 @@
 			return;
 		}
 
-		if (
-			!confirm(
-				`¿Mover a "${contratista.nombreCompleto}" a la papelera? Podrás recuperarlo más tarde.`
-			)
-		)
-			return;
+		const confirmed = await ask(`¿Mover a "${contratista.nombreCompleto}" a la papelera?`, {
+			title: 'Confirmar Eliminación',
+			kind: 'warning'
+		});
+		if (!confirmed) return;
 
 		const toastId = toast.loading('Eliminando...');
 		const result = await contratistaService.deleteContratista(contratista.id);
@@ -533,6 +535,35 @@
 		} else {
 			toast.error(result.error, { id: toastId });
 		}
+	}
+
+	// Bulk Delete
+	async function handleDeleteMultiple(selection: ContratistaResponse[]) {
+		if (!$currentUser || !can($currentUser, 'DELETE_CONTRACTOR')) {
+			toast.error('No tienes permisos para eliminar.');
+			return;
+		}
+
+		const confirmed = await ask(`¿Mover ${selection.length} contratistas a la papelera?`, {
+			title: 'Confirmar Eliminación Múltiple',
+			kind: 'warning'
+		});
+		if (!confirmed) return;
+
+		const toastId = toast.loading('Eliminando...');
+		let errors = 0;
+		for (const c of selection) {
+			const res = await contratistaService.deleteContratista(c.id);
+			if (!res.ok) errors++;
+		}
+
+		if (errors === 0) {
+			toast.success(`${selection.length} contratistas enviados a papelera`, { id: toastId });
+		} else {
+			toast.error(`Error en ${errors} registros`, { id: toastId });
+		}
+		loadContratistas();
+		gridWrapper?.deselectAll();
 	}
 
 	// Vehiculo Actions
@@ -787,12 +818,7 @@
 										   text-red-400 hover:text-red-300
 										   border border-red-500/20 hover:border-red-500/30
 										   rounded-md text-sm font-medium transition-all"
-									onclick={() => {
-										// TODO: Implement bulk delete
-										console.log('Deleting', selectedRows);
-										// After delete, clear selection
-										gridWrapper?.deselectAll();
-									}}
+									onclick={() => handleDeleteMultiple(selectedRows)}
 								>
 									<Trash2 size={16} />
 									<span>Eliminar ({selectedRows.length})</span>
