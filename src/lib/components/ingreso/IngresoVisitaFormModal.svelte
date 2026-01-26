@@ -509,7 +509,7 @@
 		tabindex="-1"
 	>
 		<div
-			class="relative z-10 w-full max-w-[480px] max-h-[95vh] overflow-hidden rounded-xl bg-surface-2 shadow-2xl border border-surface flex flex-col"
+			class="relative z-10 w-full max-w-[700px] max-h-[95vh] overflow-hidden rounded-xl bg-surface-2 shadow-2xl border border-surface flex flex-col"
 			transition:fly={{ y: 20, duration: 200 }}
 		>
 			<!-- Header -->
@@ -689,16 +689,19 @@
 							<!-- ========================================== -->
 							<!-- VISTA COMPLETA (Formulario Manual)       -->
 							<!-- ========================================== -->
-							<div class="bg-surface-1 rounded-lg border border-surface p-5 grid grid-cols-2 gap-4">
-								<!-- Buscador Unificado (Similar a Pre-Registro) -->
-								<div class="col-span-2 mb-2">
+							<!-- grid-cols-4 and spacing adapted to reference -->
+							<div
+								class="bg-surface-1 rounded-lg border border-surface p-5 grid grid-cols-4 gap-x-4 gap-y-3"
+							>
+								<!-- Buscador Unificado (Full Width) -->
+								<div class="col-span-4 mb-1">
 									{#key searchResetKey}
 										<PersonaFinder scope="all" on:select={handlePersonaSelect} autoFocus={true} />
 									{/key}
 								</div>
 
-								<!-- Cédula (Full) -->
-								<div class="col-span-2">
+								<!-- Identity Row -->
+								<div class="col-span-1">
 									<label for="cedula" class="form-label">
 										Cédula <span class="text-error">*</span>
 									</label>
@@ -709,7 +712,7 @@
 											class="form-input {getFieldStateClass('cedula', $form.cedula)}"
 											bind:value={$form.cedula}
 											oninput={handleCedulaInput}
-											placeholder="1-2345-6789"
+											placeholder="Ej: 1-1122-0333"
 											disabled={loading || visitorSelected}
 											readonly={visitorSelected}
 											{...$constraints.cedula}
@@ -725,275 +728,21 @@
 									{#if $errors.cedula}<p class="form-error">{$errors.cedula}</p>{/if}
 								</div>
 
-								<!-- Nombre -->
-								<div>
-									<label for="nombre" class="form-label"
-										>Nombre <span class="text-error">*</span></label
-									>
+								<div class="col-span-1">
+									<label class="form-label" for="gafete"> Gafete </label>
 									<input
-										id="nombre"
-										name="nombre"
-										class="form-input {getFieldStateClass('nombre', $form.nombre)}"
-										bind:value={$form.nombre}
-										oninput={() => validate('nombre')}
-										placeholder="Juan"
-										disabled={loading || searchingPerson || visitorSelected}
-										readonly={visitorSelected}
-									/>
-									{#if $errors.nombre}<p class="form-error">{$errors.nombre}</p>{/if}
-								</div>
-
-								<!-- Segundo Nombre -->
-								<div>
-									<label for="segundoNombre" class="form-label">Segundo Nombre</label>
-									<input
-										id="segundoNombre"
-										name="segundoNombre"
-										class="form-input"
-										bind:value={$form.segundoNombre}
-										placeholder=""
-										disabled={loading || searchingPerson || visitorSelected}
-										readonly={visitorSelected}
+										id="gafete"
+										name="gafete"
+										type="text"
+										bind:value={$form.gafete}
+										placeholder="K-123456"
+										class="form-input text-center font-mono tracking-widest bg-surface-1 border-accent/20"
+										autocomplete="off"
+										disabled={loading}
 									/>
 								</div>
 
-								<!-- Apellido -->
-								<div>
-									<label for="apellido" class="form-label"
-										>Apellido <span class="text-error">*</span></label
-									>
-									<input
-										id="apellido"
-										name="apellido"
-										class="form-input {getFieldStateClass('apellido', $form.apellido)}"
-										bind:value={$form.apellido}
-										oninput={() => validate('apellido')}
-										placeholder="Pérez"
-										disabled={loading || searchingPerson || visitorSelected}
-										readonly={visitorSelected}
-									/>
-									{#if $errors.apellido}<p class="form-error">{$errors.apellido}</p>{/if}
-								</div>
-
-								<!-- Segundo Apellido -->
-								<div>
-									<label for="segundoApellido" class="form-label">Segundo Apellido</label>
-									<input
-										id="segundoApellido"
-										name="segundoApellido"
-										class="form-input"
-										bind:value={$form.segundoApellido}
-										placeholder=""
-										disabled={loading || searchingPerson || visitorSelected}
-										readonly={visitorSelected}
-									/>
-								</div>
-
-								<!-- Empresa (Full) -->
-								<div class="col-span-2 relative">
-									<label for="empresaId" class="form-label"
-										>Empresa <span class="text-error">*</span></label
-									>
-									<div class="flex gap-2 relative">
-										<!-- Custom Dropdown Trigger -->
-										<div class="relative flex-1">
-											<button
-												type="button"
-												onclick={() => (showEmpresaDropdown = !showEmpresaDropdown)}
-												disabled={loading ||
-													searchingPerson ||
-													empresaStore.loading ||
-													visitorSelected}
-												class="form-select w-full text-left {showEmpresaDropdown
-													? 'border-accent ring-1 ring-accent/20'
-													: getFieldStateClass('empresaId', $form.empresaId)}"
-											>
-												<span class="truncate">
-													{#if empresaStore.loading}
-														Cargando...
-													{:else}
-														{empresaStore.empresas.find((e) => e.id === $form.empresaId)?.nombre ||
-															'Seleccione empresa'}
-													{/if}
-												</span>
-												<ChevronDown size={16} class="text-secondary" />
-											</button>
-
-											<!-- Dropdown Options -->
-											{#if showEmpresaDropdown}
-												<!-- Backdrop -->
-												<!-- svelte-ignore a11y_click_events_have_key_events -->
-												<!-- svelte-ignore a11y_no_static_element_interactions -->
-												<div
-													class="fixed inset-0 z-40"
-													onclick={() => (showEmpresaDropdown = false)}
-												></div>
-
-												<div
-													class="form-dropdown absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto"
-													transition:fly={{ y: -5, duration: 200 }}
-												>
-													{#if !empresaStore.empresas || empresaStore.empresas.length === 0}
-														<div class="px-3 py-2 text-sm text-secondary">No hay empresas</div>
-													{:else}
-														{#each empresaStore.empresas as empresa}
-															<button
-																type="button"
-																onclick={() => {
-																	$form.empresaId = empresa.id;
-																	showEmpresaDropdown = false;
-																	validate('empresaId');
-																}}
-																class="form-dropdown-item justify-between group"
-															>
-																<span>{empresa.nombre}</span>
-																{#if $form.empresaId === empresa.id}
-																	<CheckCircle size={14} class="text-primary" />
-																{/if}
-															</button>
-														{/each}
-													{/if}
-												</div>
-											{/if}
-										</div>
-
-										<!-- Add Button -->
-										<button
-											type="button"
-											onclick={() => (showEmpresaModal = true)}
-											disabled={loading || searchingPerson || visitorSelected}
-											class="px-3 py-1.5 rounded-lg border border-surface bg-surface-2 text-secondary hover:text-primary hover:border-border-emphasis transition-colors"
-											title="Añadir nueva empresa"
-										>
-											<Plus size={16} />
-										</button>
-									</div>
-									{#if $errors.empresaId}<p class="form-error">{$errors.empresaId}</p>{/if}
-								</div>
-
-								<!-- Selector Vehículo (Refinado) -->
-								<div class="col-span-2">
-									<label for="vehiculoPlaca" class="form-label">Vehículo / Medio Ingreso</label>
-									<div class="flex gap-2 relative">
-										<!-- Custom Dropdown Trigger -->
-										<div class="relative flex-1">
-											<button
-												type="button"
-												disabled={loading || loadingVehiculos}
-												onclick={() => (showVehiculoDropdown = !showVehiculoDropdown)}
-												class="form-select w-full text-left flex items-center justify-between {$form.placaVehiculo
-													? 'border-accent ring-1 ring-accent/10'
-													: ''}"
-											>
-												<span class="truncate flex items-center gap-2">
-													{#if loadingVehiculos}
-														Cargando...
-													{:else if $form.placaVehiculo}
-														<span class="font-mono font-bold bg-surface-3 px-1.5 rounded text-xs"
-															>{$form.placaVehiculo}</span
-														>
-														<span class="text-xs opacity-70">
-															{vehiculosList.find((v) => v.placa === $form.placaVehiculo)?.marca ||
-																''}
-														</span>
-													{:else}
-														<span class="opacity-50 flex items-center gap-2">
-															<PersonStanding size={14} />
-															Caminando (Sin vehículo)
-														</span>
-													{/if}
-												</span>
-												<ChevronDown size={14} class="text-secondary" />
-											</button>
-
-											<!-- Dropdown Options -->
-											{#if showVehiculoDropdown}
-												<!-- svelte-ignore a11y_click_events_have_key_events -->
-												<!-- svelte-ignore a11y_no_static_element_interactions -->
-												<div
-													class="fixed inset-0 z-40"
-													onclick={() => (showVehiculoDropdown = false)}
-												></div>
-
-												<div
-													class="form-dropdown absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto"
-													transition:fly={{ y: -5, duration: 200 }}
-												>
-													<!-- Opción Caminando (Limpiar) -->
-													<button
-														type="button"
-														onclick={() => {
-															$form.placaVehiculo = '';
-															$form.modoIngreso = 'caminando';
-															showVehiculoDropdown = false;
-														}}
-														class="form-dropdown-item justify-between border-b border-surface/50"
-													>
-														<div class="flex items-center gap-2">
-															<PersonStanding size={16} class="opacity-70" />
-															<span>Caminando</span>
-														</div>
-														{#if !$form.placaVehiculo}
-															<Check size={14} class="text-primary" />
-														{/if}
-													</button>
-
-													{#if vehiculosList.length > 0}
-														{#each Object.entries(groupedVehiculos) as [tipo, list]}
-															<div
-																class="px-3 py-1 text-[10px] text-secondary/50 font-bold uppercase bg-surface-3"
-															>
-																{tipo}
-															</div>
-															{#each list as v}
-																<button
-																	type="button"
-																	onclick={() => {
-																		$form.placaVehiculo = v.placa;
-																		$form.modoIngreso = 'vehiculo';
-																		showVehiculoDropdown = false;
-																	}}
-																	class="form-dropdown-item justify-between group"
-																>
-																	<div class="flex items-center gap-2">
-																		{#if v.tipoVehiculo === 'motocicleta'}
-																			<Bike size={14} class="opacity-70" />
-																		{:else}
-																			<Car size={14} class="opacity-70" />
-																		{/if}
-																		<span class="font-mono font-bold">{v.placa}</span>
-																	</div>
-																	{#if $form.placaVehiculo === v.placa}
-																		<Check size={14} class="text-primary" />
-																	{/if}
-																</button>
-															{/each}
-														{/each}
-													{:else}
-														<div class="px-3 py-4 text-xs text-secondary opacity-50 text-center">
-															No hay vehículos registrados
-														</div>
-													{/if}
-												</div>
-											{/if}
-										</div>
-
-										<button
-											type="button"
-											onclick={() => (showVehiculoForm = true)}
-											disabled={loading}
-											class="px-3 py-1.5 rounded-lg border border-surface bg-surface-2 text-secondary hover:text-primary hover:border-border-emphasis transition-colors"
-											title="Registrar nuevo vehículo"
-										>
-											<Plus size={16} />
-										</button>
-									</div>
-								</div>
-
-								<!-- Seccion de Ingreso Mixed In but visually grouped -->
-
-								<!-- Anfitrión & Motivo -->
-								<div>
+								<div class="col-span-1">
 									<label for="anfitrion" class="form-label"
 										>Anfitrión <span class="text-error">*</span></label
 									>
@@ -1009,7 +758,7 @@
 									{#if $errors.anfitrion}<p class="form-error">{$errors.anfitrion}</p>{/if}
 								</div>
 
-								<div>
+								<div class="col-span-1">
 									<label for="motivo" class="form-label"
 										>Motivo <span class="text-error">*</span></label
 									>
@@ -1025,44 +774,238 @@
 									{#if $errors.motivo}<p class="form-error">{$errors.motivo}</p>{/if}
 								</div>
 
-								<!-- Área & Gafete -->
-								<div>
+								<!-- Names Row (4 Cols) -->
+								<div class="col-span-1">
+									<label for="nombre" class="form-label"
+										>Nombre <span class="text-error">*</span></label
+									>
+									<input
+										id="nombre"
+										name="nombre"
+										class="form-input {getFieldStateClass('nombre', $form.nombre)}"
+										bind:value={$form.nombre}
+										oninput={() => validate('nombre')}
+										placeholder="Ej: Juan"
+										disabled={loading || searchingPerson || visitorSelected}
+										readonly={visitorSelected}
+									/>
+								</div>
+
+								<div class="col-span-1">
+									<label for="segundoNombre" class="form-label">Segundo Nombre</label>
+									<input
+										id="segundoNombre"
+										name="segundoNombre"
+										class="form-input"
+										bind:value={$form.segundoNombre}
+										placeholder="Ej: Carlos"
+										disabled={loading || searchingPerson || visitorSelected}
+										readonly={visitorSelected}
+									/>
+								</div>
+
+								<!-- Metadata row moved up -->
+								<div class="col-span-1">
+									<label for="empresaId" class="form-label"
+										>Empresa <span class="text-error">*</span></label
+									>
+									<div class="relative">
+										<button
+											type="button"
+											onclick={() => (showEmpresaDropdown = !showEmpresaDropdown)}
+											disabled={loading ||
+												searchingPerson ||
+												empresaStore.loading ||
+												visitorSelected}
+											class="form-select w-full h-[34px] pr-8 text-left {showEmpresaDropdown
+												? 'border-accent ring-1 ring-accent/20'
+												: getFieldStateClass('empresaId', $form.empresaId)}"
+										>
+											<span class="truncate">
+												{#if empresaStore.loading}
+													...
+												{:else}
+													{empresaStore.empresas.find((e) => e.id === $form.empresaId)?.nombre ||
+														'Seleccionar'}
+												{/if}
+											</span>
+											<ChevronDown
+												size={14}
+												class="absolute right-8 top-1/2 -translate-y-1/2 text-secondary"
+											/>
+										</button>
+										<button
+											type="button"
+											onclick={() => (showEmpresaModal = true)}
+											disabled={loading || searchingPerson || visitorSelected}
+											class="absolute right-0 top-0 h-[34px] w-8 flex items-center justify-center border-l border-surface text-secondary hover:text-primary transition-colors bg-surface-2 rounded-r-lg"
+											title="Añadir"
+										>
+											<Plus size={14} />
+										</button>
+										{#if showEmpresaDropdown}
+											<div
+												class="fixed inset-0 z-40"
+												onclick={() => (showEmpresaDropdown = false)}
+											></div>
+											<div
+												class="form-dropdown absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto"
+												transition:fly={{ y: -5, duration: 200 }}
+											>
+												{#if !empresaStore.empresas || empresaStore.empresas.length === 0}
+													<div class="px-3 py-2 text-sm text-secondary">Vacío</div>
+												{:else}
+													{#each empresaStore.empresas as empresa}
+														<button
+															type="button"
+															onclick={() => {
+																$form.empresaId = empresa.id;
+																showEmpresaDropdown = false;
+																validate('empresaId');
+															}}
+															class="form-dropdown-item justify-between group"
+														>
+															<span class="truncate">{empresa.nombre}</span>
+															{#if $form.empresaId === empresa.id}
+																<Check size={14} class="text-primary" />
+															{/if}
+														</button>
+													{/each}
+												{/if}
+											</div>
+										{/if}
+									</div>
+								</div>
+
+								<div class="col-span-1">
+									<label for="vehiculoPlaca" class="form-label">Vehículo</label>
+									<div class="relative">
+										<button
+											type="button"
+											disabled={loading || loadingVehiculos}
+											onclick={() => (showVehiculoDropdown = !showVehiculoDropdown)}
+											class="form-select w-full h-[34px] pr-8 text-left {$form.placaVehiculo
+												? 'border-accent ring-1 ring-accent/10 text-xs'
+												: 'text-xs opacity-70'}"
+										>
+											<span class="truncate">
+												{#if loadingVehiculos}
+													...
+												{:else if $form.placaVehiculo}
+													<span class="font-mono font-bold bg-surface-3 px-1 rounded"
+														>{$form.placaVehiculo}</span
+													>
+												{:else}
+													🚶 Caminando
+												{/if}
+											</span>
+											<ChevronDown
+												size={14}
+												class="absolute right-8 top-1/2 -translate-y-1/2 text-secondary"
+											/>
+										</button>
+										<button
+											type="button"
+											onclick={() => (showVehiculoForm = true)}
+											disabled={loading}
+											class="absolute right-0 top-0 h-[34px] w-8 flex items-center justify-center border-l border-surface text-secondary hover:text-primary transition-colors bg-surface-2 rounded-r-lg"
+										>
+											<Plus size={14} />
+										</button>
+										{#if showVehiculoDropdown}
+											<div
+												class="fixed inset-0 z-40"
+												onclick={() => (showVehiculoDropdown = false)}
+											></div>
+											<div
+												class="form-dropdown absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto"
+												transition:fly={{ y: -5, duration: 200 }}
+											>
+												<button
+													type="button"
+													onclick={() => {
+														$form.placaVehiculo = '';
+														$form.modoIngreso = 'caminando';
+														showVehiculoDropdown = false;
+													}}
+													class="form-dropdown-item text-xs"
+												>
+													🚶 Caminando
+												</button>
+												{#each Object.entries(groupedVehiculos) as [tipo, list]}
+													<div
+														class="px-2 py-1 text-[9px] uppercase font-bold bg-surface-3 opacity-50"
+													>
+														{tipo}
+													</div>
+													{#each list as v}
+														<button
+															type="button"
+															onclick={() => {
+																$form.placaVehiculo = v.placa;
+																$form.modoIngreso = 'vehiculo';
+																showVehiculoDropdown = false;
+															}}
+															class="form-dropdown-item text-xs"
+														>
+															{v.placa} ({v.marca || ''})
+														</button>
+													{/each}
+												{/each}
+											</div>
+										{/if}
+									</div>
+								</div>
+
+								<!-- Names Row Continued (Moved down) -->
+								<div class="col-span-1">
+									<label for="apellido" class="form-label"
+										>Apellido <span class="text-error">*</span></label
+									>
+									<input
+										id="apellido"
+										name="apellido"
+										class="form-input {getFieldStateClass('apellido', $form.apellido)}"
+										bind:value={$form.apellido}
+										oninput={() => validate('apellido')}
+										placeholder="Ej: Pérez"
+										disabled={loading || searchingPerson || visitorSelected}
+										readonly={visitorSelected}
+									/>
+								</div>
+
+								<div class="col-span-1">
+									<label for="segundoApellido" class="form-label">Segundo Apellido</label>
+									<input
+										id="segundoApellido"
+										name="segundoApellido"
+										class="form-input"
+										bind:value={$form.segundoApellido}
+										placeholder="Ej: González"
+										disabled={loading || searchingPerson || visitorSelected}
+										readonly={visitorSelected}
+									/>
+								</div>
+
+								<div class="col-span-1">
 									<label for="area" class="form-label">Área <span class="text-error">*</span></label
 									>
 									<input
 										id="area"
 										name="areaVisitada"
-										class="form-input {getFieldStateClass('areaVisitada', $form.areaVisitada)}"
+										class="form-input"
 										bind:value={$form.areaVisitada}
-										oninput={() => validate('areaVisitada')}
-										placeholder="Piso, etc."
+										placeholder="Ej: Piso 2"
 										disabled={loading}
 									/>
-									{#if $errors.areaVisitada}<p class="form-error">{$errors.areaVisitada}</p>{/if}
 								</div>
 
-								<div>
-									<label class="form-label" for="gafete"> Gafete </label>
-									<div class="relative w-full group">
-										<input
-											id="gafete"
-											name="gafete"
-											type="text"
-											bind:value={$form.gafete}
-											placeholder="00"
-											class="form-input text-center font-mono tracking-widest bg-surface-1 border-accent/30 focus:border-accent ring-accent/20"
-											autocomplete="off"
-											disabled={loading}
-										/>
-									</div>
-								</div>
-
-								<!-- Observaciones - Toggle colapsable -->
-								<div class="col-span-2">
+								<div class="col-span-1">
+									<label class="form-label opacity-0" aria-hidden="true">-</label>
 									<button
 										type="button"
 										onclick={() => (showObservaciones = !showObservaciones)}
-										class="flex items-center gap-1.5 text-secondary hover:text-primary transition-colors text-sm"
+										class="flex items-center justify-center w-full h-[34px] gap-1.5 text-secondary hover:text-primary transition-colors text-xs border border-surface rounded-lg bg-surface-1"
 									>
 										{#if showObservaciones}
 											<ChevronDown size={14} />
@@ -1070,27 +1013,27 @@
 											<ChevronRight size={14} />
 										{/if}
 										<span>Observaciones</span>
-										{#if !showObservaciones && $form.observaciones?.trim()}
-											<span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
-										{/if}
 									</button>
-
-									{#if showObservaciones}
-										<div class="mt-2" transition:slide>
-											<div
-												class="obs-container w-full bg-surface-2 border border-surface rounded-lg focus-within:border-accent focus-within:ring-1 focus-within:ring-accent/20 transition-all outline-none"
-											>
-												<textarea
-													class="w-full bg-transparent px-3 py-2 text-sm text-primary placeholder:text-secondary/50 resize-none focus:outline-none outline-none border-none appearance-none ring-0"
-													rows="2"
-													placeholder="Notas adicionales..."
-													bind:value={$form.observaciones}
-													disabled={loading}
-												></textarea>
-											</div>
-										</div>
-									{/if}
 								</div>
+
+								<!-- Moved Gafete upwards next to Cédula -->
+
+								<!-- Observaciones Section (Full Width if open) -->
+								{#if showObservaciones}
+									<div class="col-span-4" transition:slide>
+										<div
+											class="obs-container w-full bg-surface-2 border border-surface rounded-lg focus-within:border-accent focus-within:ring-1 focus-within:ring-accent/20 transition-all outline-none"
+										>
+											<textarea
+												class="w-full bg-transparent px-3 py-2 text-sm text-primary placeholder:text-secondary/50 resize-none focus:outline-none outline-none border-none appearance-none ring-0"
+												rows="2"
+												placeholder="Notas adicionales..."
+												bind:value={$form.observaciones}
+												disabled={loading}
+											></textarea>
+										</div>
+									</div>
+								{/if}
 							</div>
 						{/if}
 					</div>
