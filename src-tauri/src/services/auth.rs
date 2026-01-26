@@ -100,4 +100,3 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, UserError> {
     // La comparación se realiza en tiempo constante para mitigar ataques de temporización.
     Ok(argon2.verify_password(password.as_bytes(), &parsed_hash).is_ok())
 }
-

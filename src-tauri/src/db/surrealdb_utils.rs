@@ -21,4 +21,3 @@ pub fn make_record_id(table: &str, id: &str) -> String {
 pub fn normalize_id(id: &str, table: &str) -> String {
     strip_table_prefix(id, table).to_string()
 }
-

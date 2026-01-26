@@ -170,4 +170,3 @@ pub fn evaluar_ingreso_excepcional(
         valido_hasta: fin_del_dia.to_string(),
     }
 }
-

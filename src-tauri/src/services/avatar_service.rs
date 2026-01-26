@@ -184,4 +184,3 @@ pub async fn delete_avatar(user_id: &str) -> Result<(), UserError> {
 
     Ok(())
 }
-

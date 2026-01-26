@@ -144,4 +144,3 @@ pub fn normalizar_segundo_apellido(segundo_apellido: Option<&String>) -> Option<
 pub fn normalizar_texto_opcional(texto: Option<&String>) -> Option<String> {
     normalizar_opcional_estandar(texto)
 }
-
