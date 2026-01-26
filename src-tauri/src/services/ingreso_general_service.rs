@@ -16,7 +16,7 @@
 use crate::db::surrealdb_ingreso_general_queries as db;
 use crate::domain::errors::IngresoError;
 use crate::models::ingreso::{IngresoListResponse, IngresoResponse};
-use log::{error, info, warn};
+use log::{error, info};
 use surrealdb::RecordId;
 
 // --------------------------------------------------------------------------
@@ -57,20 +57,9 @@ pub async fn get_all_ingresos_with_stats() -> Result<IngresoListResponse, Ingres
     })?;
 
     let mut responses = Vec::with_capacity(results.len());
-    let mut errores_conversion = 0;
 
     for ingreso in results {
-        match ingreso.to_response() {
-            Ok(response) => responses.push(response),
-            Err(e) => {
-                errores_conversion += 1;
-                warn!("Error convirtiendo ingreso (ignorado): {e}");
-            }
-        }
-    }
-
-    if errores_conversion > 0 {
-        warn!("Se omitieron {errores_conversion} ingresos corruptos o incompatibles");
+        responses.push(ingreso.to_response());
     }
 
     let total = responses.len();
@@ -93,9 +82,7 @@ pub async fn get_personal_en_planta_unificado() -> Result<Vec<IngresoResponse>, 
 
     let mut responses = Vec::with_capacity(results.len());
     for ingreso in results {
-        if let Ok(response) = ingreso.to_response() {
-            responses.push(response);
-        }
+        responses.push(ingreso.to_response());
     }
 
     info!("Reporte de personal en planta generado: {} registros", responses.len());
@@ -124,9 +111,7 @@ pub async fn get_ingreso_by_id(id_str: &str) -> Result<Option<IngresoResponse>, 
         None => return Ok(None),
     };
 
-    let response = ingreso
-        .to_response()
-        .map_err(|e| IngresoError::Validation(format!("Error procesando datos de ingreso: {e}")))?;
+    let response = ingreso.to_response();
 
     Ok(Some(response))
 }
@@ -152,9 +137,7 @@ pub async fn get_ingreso_by_gafete(
         return Ok(None);
     };
 
-    let response = ingreso.to_response().map_err(|e| {
-        IngresoError::Validation(format!("Error procesando ingreso encontrado: {e}"))
-    })?;
+    let response = ingreso.to_response();
 
     info!("Gafete {} localizado: Asignado a {}", gafete_numero, response.nombre_completo);
     Ok(Some(response))
@@ -178,9 +161,7 @@ pub async fn get_salidas_en_rango(
 
     let mut responses = Vec::with_capacity(results.len());
     for ingreso in results {
-        if let Ok(response) = ingreso.to_response() {
-            responses.push(response);
-        }
+        responses.push(ingreso.to_response());
     }
 
     info!(
@@ -195,4 +176,3 @@ pub async fn get_salidas_en_rango(
 // --------------------------------------------------------------------------
 // TESTS UNITARIOS
 // --------------------------------------------------------------------------
-

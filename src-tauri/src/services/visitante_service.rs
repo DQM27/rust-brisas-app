@@ -175,9 +175,9 @@ async fn registrar_vehiculo_visitante(
     marca: Option<String>,
     modelo: Option<String>,
     color: Option<String>,
-) -> Result<(), String> {
+) -> Result<(), VisitanteError> {
     let tipo_norm = vehiculo_domain::validar_tipo_vehiculo(tipo)
-        .map_err(|e| e.to_string())?
+        .map_err(|e| VisitanteError::Validation(e.to_string()))?
         .as_str()
         .to_string();
 
@@ -185,7 +185,9 @@ async fn registrar_vehiculo_visitante(
 
     let dto_vehiculo = VehiculoCreateDTO {
         propietario: visitante_id.clone(),
-        tipo_vehiculo: tipo_norm.parse::<TipoVehiculo>()?,
+        tipo_vehiculo: tipo_norm
+            .parse::<TipoVehiculo>()
+            .map_err(|e| VisitanteError::Validation(e.to_string()))?,
         placa: placa_norm,
         marca: marca.as_ref().map(|s| s.trim().to_string()),
         modelo: modelo.as_ref().map(|s| s.trim().to_string()),
@@ -193,7 +195,7 @@ async fn registrar_vehiculo_visitante(
         is_active: true,
     };
 
-    veh_db::insert(dto_vehiculo).await.map_err(|e| e.to_string())?;
+    veh_db::insert(dto_vehiculo).await.map_err(map_db_error)?;
     Ok(())
 }
 

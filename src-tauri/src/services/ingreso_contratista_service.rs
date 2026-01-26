@@ -99,8 +99,7 @@ where
             .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
 
         if let Some(ing) = ing_ab {
-            let resp = IngresoResponse::from_contratista_fetched(ing)
-                .map_err(IngresoContratistaError::Validation)?;
+            let resp = IngresoResponse::from_contratista_fetched(ing);
 
             return Ok(ValidacionIngresoResponse {
                 puede_ingresar: false,
@@ -165,11 +164,7 @@ where
             .await
             .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
 
-        let ultimo_ingreso_resp = if let Some(ing) = last_ing {
-            IngresoResponse::from_contratista_fetched(ing).ok()
-        } else {
-            None
-        };
+        let ultimo_ingreso_resp = last_ing.map(IngresoResponse::from_contratista_fetched);
 
         Ok(ValidacionIngresoResponse {
             // Permitir si: motor permite Y no excede límite de gafetes
@@ -225,7 +220,7 @@ where
             } else {
                 Some(
                     crate::domain::common::normalizar_gafete_a_int(g_str)
-                        .map_err(IngresoContratistaError::Validation)?,
+                        .map_err(|e| IngresoContratistaError::Validation(e.to_string()))?,
                 )
             }
         } else {
@@ -284,8 +279,7 @@ where
 
         info!("Ingreso registrado: Contratista {} ingresó a planta", input.contratista_id);
 
-        IngresoResponse::from_contratista_fetched(nuevo_ingreso)
-            .map_err(IngresoContratistaError::Validation)
+        Ok(IngresoResponse::from_contratista_fetched(nuevo_ingreso))
     }
 
     pub async fn registrar_salida(
@@ -402,8 +396,7 @@ where
 
         info!("Salida registrada para ingreso: {}", input.ingreso_id);
 
-        IngresoResponse::from_contratista_fetched(ingreso_actualizado)
-            .map_err(IngresoContratistaError::Validation)
+        Ok(IngresoResponse::from_contratista_fetched(ingreso_actualizado))
     }
 
     pub const fn validar_puede_salir(
@@ -425,8 +418,7 @@ where
 
         let mut responses = Vec::with_capacity(activos.len());
         for ing in activos {
-            let resp = IngresoResponse::from_contratista_fetched(ing)
-                .map_err(IngresoContratistaError::Validation)?;
+            let resp = IngresoResponse::from_contratista_fetched(ing);
 
             responses.push(IngresoConEstadoResponse {
                 ingreso: resp,
@@ -447,8 +439,7 @@ where
 
         let mut responses = Vec::with_capacity(activos.len());
         for ing in activos {
-            let resp = IngresoResponse::from_contratista_fetched(ing)
-                .map_err(IngresoContratistaError::Validation)?;
+            let resp = IngresoResponse::from_contratista_fetched(ing);
             responses.push(resp);
         }
 
@@ -471,8 +462,7 @@ where
 
         let mut responses = Vec::with_capacity(results.len());
         for ing in results {
-            let resp = IngresoResponse::from_contratista_fetched(ing)
-                .map_err(IngresoContratistaError::Validation)?;
+            let resp = IngresoResponse::from_contratista_fetched(ing);
             responses.push(resp);
         }
 

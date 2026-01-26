@@ -111,7 +111,7 @@ impl TipoVehiculo {
 }
 
 impl std::str::FromStr for TipoVehiculo {
-    type Err = String;
+    type Err = crate::domain::errors::VehiculoError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
@@ -120,7 +120,7 @@ impl std::str::FromStr for TipoVehiculo {
             "camioneta" => Ok(Self::Camioneta),
             "camión" | "camion" => Ok(Self::Camion),
             "otro" => Ok(Self::Otro),
-            _ => Err(format!("Tipo de vehículo desconocido: {s}")),
+            _ => Err(crate::domain::errors::VehiculoError::InvalidType(s.to_string())),
         }
     }
 }

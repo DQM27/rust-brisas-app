@@ -126,7 +126,7 @@ pub async fn create_proveedor(
                     propietario: proveedor.id.clone(),
                     tipo_vehiculo: tipo_norm
                         .parse::<TipoVehiculo>()
-                        .map_err(ProveedorError::Validation)?,
+                        .map_err(|e| ProveedorError::Validation(e.to_string()))?,
                     placa: placa_norm,
                     marca: input.marca.as_ref().map(|s| s.trim().to_string()),
                     modelo: input.modelo.as_ref().map(|s| s.trim().to_string()),
@@ -308,7 +308,7 @@ pub async fn update_proveedor(
                         veh_dto.tipo_vehiculo = Some(
                             tipo_norm
                                 .parse::<crate::models::vehiculo::TipoVehiculo>()
-                                .map_err(ProveedorError::Validation)?,
+                                .map_err(|e| ProveedorError::Validation(e.to_string()))?,
                         );
                         veh_dto.marca = input.marca.clone();
                         veh_dto.modelo = input.modelo.clone();
@@ -323,7 +323,7 @@ pub async fn update_proveedor(
                             propietario: id.clone(),
                             tipo_vehiculo: tipo_norm
                                 .parse::<TipoVehiculo>()
-                                .map_err(ProveedorError::Validation)?,
+                                .map_err(|e| ProveedorError::Validation(e.to_string()))?,
                             placa: placa.clone(),
                             marca: input.marca.clone(),
                             modelo: input.modelo.clone(),
@@ -409,4 +409,3 @@ pub async fn get_archived_proveedores() -> Result<Vec<ProveedorResponse>, Provee
 // --------------------------------------------------------------------------
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
-

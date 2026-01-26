@@ -140,7 +140,7 @@ pub const ROLE_DESC_MAX_LEN: usize = 200;
 /// - "0" -> 0
 /// - "005" -> 5
 /// - "123" -> 123
-pub fn normalizar_gafete_a_int(input: &str) -> Result<i32, String> {
+pub fn normalizar_gafete_a_int(input: &str) -> Result<i32, CommonError> {
     let limpio = input.trim().to_uppercase();
 
     // Alias S/G
@@ -151,9 +151,9 @@ pub fn normalizar_gafete_a_int(input: &str) -> Result<i32, String> {
     // Intentar parsear número
     match limpio.parse::<i32>() {
         Ok(n) if n >= 0 => Ok(n),
-        _ => Err(format!(
+        _ => Err(CommonError::Validation(format!(
             "Formato de gafete inválido: '{input}'. Debe ser un número positivo o 'S/G'."
-        )),
+        ))),
     }
 }
 

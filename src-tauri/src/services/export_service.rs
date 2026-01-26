@@ -52,12 +52,12 @@ pub async fn export_data(request: ExportRequest) -> ExportResult<ExportResponse>
     );
 
     // 1. Validar request completo
-    domain::validar_export_request(&request).map_err(ExportError::InvalidData)?;
+    domain::validar_export_request(&request)?;
 
     // 2. Validar tamaño total (seguridad)
     if let Err(e) = domain::validar_tamano_total(&request) {
         warn!("Intento de exportación rechazada por tamaño: {e:?}");
-        return Err(ExportError::InvalidData(e));
+        return Err(e);
     }
 
     // 3. Normalizar datos
@@ -120,7 +120,7 @@ fn normalizar_export_data(request: &ExportRequest) -> ExportResult<ExportData> {
 fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
     // Título
     let title = if let Some(ref t) = request.title {
-        domain::validar_titulo(t).map_err(ExportError::InvalidTitle)?;
+        domain::validar_titulo(t)?;
         domain::normalizar_titulo(t)
     } else {
         "Reporte".to_string()
@@ -128,7 +128,7 @@ fn construir_pdf_config(request: &ExportRequest) -> ExportResult<PdfConfig> {
 
     // Orientación
     let orientation = if let Some(ref o) = request.orientation {
-        domain::validar_orientacion(o).map_err(ExportError::InvalidOrientation)?
+        domain::validar_orientacion(o)?
     } else {
         PageOrientation::Landscape
     };
@@ -185,7 +185,7 @@ fn construir_csv_config(request: &ExportRequest) -> ExportResult<CsvConfig> {
 
     // Delimitador
     let delimiter = if let Some(ref d) = request.delimiter {
-        domain::validar_delimitador(d).map_err(ExportError::InvalidDelimiter)?
+        domain::validar_delimitador(d)?
     } else {
         CsvDelimiter::Comma
     };
@@ -361,4 +361,3 @@ pub const fn is_export_available() -> bool {
 // ==========================================
 // TESTS UNITARIOS
 // ==========================================
-

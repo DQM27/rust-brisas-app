@@ -301,7 +301,7 @@ where
                             tipo_vehiculo: Some(
                                 tipo_norm
                                     .parse::<crate::models::vehiculo::TipoVehiculo>()
-                                    .map_err(ContratistaError::Validation)?,
+                                    .map_err(|e| ContratistaError::Validation(e.to_string()))?,
                             ),
                             marca: input.marca.as_ref().map(|s| s.trim().to_string()),
                             modelo: input.modelo.as_ref().map(|s| s.trim().to_string()),
@@ -314,7 +314,7 @@ where
                             propietario: updated.id.clone(),
                             tipo_vehiculo: tipo_norm
                                 .parse::<crate::models::vehiculo::TipoVehiculo>()
-                                .map_err(ContratistaError::Validation)?,
+                                .map_err(|e| ContratistaError::Validation(e.to_string()))?,
                             placa: placa_norm.clone(),
                             marca: input.marca.as_ref().map(|s| s.trim().to_string()),
                             modelo: input.modelo.as_ref().map(|s| s.trim().to_string()),

@@ -1,3 +1,4 @@
+use crate::export::errors::ExportError;
 /// Capa de Dominio: Reglas para Exportación de Datos.
 ///
 /// Este módulo define la lógica pura para la preparación y validación de datos
@@ -126,20 +127,23 @@ const CHARS_PROHIBIDOS: &[char] = &['<', '>', '{', '}', '|', '\\', '^', '~', '['
 // --------------------------------------------------------------------------
 
 /// Valida que la cadena represente un formato de exportación soportado.
-pub fn validar_formato(formato: &str) -> Result<ExportFormat, String> {
-    formato.parse()
+pub fn validar_formato(formato: &str) -> Result<ExportFormat, ExportError> {
+    formato.parse().map_err(|e: String| ExportError::InvalidFormat(e))
 }
 
 /// Garantiza que la lista de encabezados sea válida y no contenga duplicados.
-pub fn validar_headers(headers: &[String]) -> Result<(), String> {
+pub fn validar_headers(headers: &[String]) -> Result<(), ExportError> {
     if headers.is_empty() {
-        return Err("Los headers no pueden estar vacíos".to_string());
+        return Err(ExportError::EmptyHeaders);
     }
 
     // Verificar que no haya headers vacíos
     for (idx, header) in headers.iter().enumerate() {
         if header.trim().is_empty() {
-            return Err(format!("El header en posición {} está vacío", idx + 1));
+            return Err(ExportError::InvalidData(format!(
+                "El header en posición {} está vacío",
+                idx + 1
+            )));
         }
     }
 
@@ -148,7 +152,7 @@ pub fn validar_headers(headers: &[String]) -> Result<(), String> {
     for header in headers {
         let normalizado = normalizar_header(header);
         if !seen.insert(normalizado.clone()) {
-            return Err(format!("Header duplicado: {header}"));
+            return Err(ExportError::InvalidData(format!("Header duplicado: {header}")));
         }
     }
 
@@ -156,13 +160,17 @@ pub fn validar_headers(headers: &[String]) -> Result<(), String> {
 }
 
 /// Valida que el conjunto de datos a exportar cumpla con los límites de seguridad.
-pub fn validar_rows(rows: &[HashMap<String, serde_json::Value>]) -> Result<(), String> {
+pub fn validar_rows(rows: &[HashMap<String, serde_json::Value>]) -> Result<(), ExportError> {
     if rows.is_empty() {
-        return Err("No hay datos para exportar".to_string());
+        return Err(ExportError::EmptyData);
     }
 
     if rows.len() > MAX_ROWS {
-        return Err(format!("Demasiadas filas. Máximo: {}, recibido: {}", MAX_ROWS, rows.len()));
+        return Err(ExportError::InvalidData(format!(
+            "Demasiadas filas. Máximo: {}, recibido: {}",
+            MAX_ROWS,
+            rows.len()
+        )));
     }
 
     Ok(())
@@ -172,10 +180,10 @@ pub fn validar_rows(rows: &[HashMap<String, serde_json::Value>]) -> Result<(), S
 pub fn validar_consistencia_columnas(
     _headers: &[String],
     rows: &[HashMap<String, serde_json::Value>],
-) -> Result<(), String> {
+) -> Result<(), ExportError> {
     for (idx, row) in rows.iter().enumerate() {
         if row.is_empty() {
-            return Err(format!("La fila {} está vacía", idx + 1));
+            return Err(ExportError::MismatchedColumns(format!("La fila {} está vacía", idx + 1)));
         }
     }
 
@@ -183,34 +191,38 @@ pub fn validar_consistencia_columnas(
 }
 
 /// Valida la orientación de página solicitada para formatos visuales (PDF).
-pub fn validar_orientacion(orientacion: &str) -> Result<PageOrientation, String> {
+pub fn validar_orientacion(orientacion: &str) -> Result<PageOrientation, ExportError> {
     match orientacion.to_lowercase().as_str() {
         "portrait" | "vertical" => Ok(PageOrientation::Portrait),
         "landscape" | "horizontal" => Ok(PageOrientation::Landscape),
-        _ => Err(format!("Orientación inválida: {orientacion}")),
+        _ => Err(ExportError::InvalidOrientation(orientacion.to_string())),
     }
 }
 
 /// Valida el delimitador de campos para formatos de texto plano (CSV).
-pub fn validar_delimitador(delimitador: &str) -> Result<CsvDelimiter, String> {
-    delimitador.parse()
+pub fn validar_delimitador(delimitador: &str) -> Result<CsvDelimiter, ExportError> {
+    delimitador.parse().map_err(ExportError::InvalidDelimiter)
 }
 
 /// Valida que el título del documento cumpla con los requisitos estéticos y técnicos.
-pub fn validar_titulo(titulo: &str) -> Result<(), String> {
+pub fn validar_titulo(titulo: &str) -> Result<(), ExportError> {
     let limpio = titulo.trim();
 
     if limpio.is_empty() {
-        return Err("El título no puede estar vacío".to_string());
+        return Err(ExportError::InvalidTitle("El título no puede estar vacío".to_string()));
     }
 
     if limpio.len() > TITULO_MAX_LEN {
-        return Err(format!("El título no puede exceder {TITULO_MAX_LEN} caracteres"));
+        return Err(ExportError::InvalidTitle(format!(
+            "El título no puede exceder {TITULO_MAX_LEN} caracteres"
+        )));
     }
 
     // Validar caracteres prohibidos
     if limpio.chars().any(|c| CHARS_PROHIBIDOS.contains(&c)) {
-        return Err("El título contiene caracteres no permitidos".to_string());
+        return Err(ExportError::InvalidTitle(
+            "El título contiene caracteres no permitidos".to_string(),
+        ));
     }
 
     Ok(())
@@ -221,13 +233,11 @@ pub fn validar_titulo(titulo: &str) -> Result<(), String> {
 // --------------------------------------------------------------------------
 
 /// Realiza una auditoría completa de una solicitud de exportación.
-pub fn validar_export_request(request: &ExportRequest) -> Result<(), String> {
-    validar_formato(&request.format)?;
+pub fn validar_export_request(request: &ExportRequest) -> Result<(), ExportError> {
+    let formato = validar_formato(&request.format)?;
     validar_headers(&request.headers)?;
     validar_rows(&request.rows)?;
     validar_consistencia_columnas(&request.headers, &request.rows)?;
-
-    let formato: ExportFormat = request.format.parse()?;
 
     match formato {
         ExportFormat::Pdf => {
@@ -338,7 +348,7 @@ fn try_format_date(value: &str, header: &str) -> String {
 // --------------------------------------------------------------------------
 
 /// Estima el tamaño en memoria para prevenir desbordamientos durante la generación.
-pub fn validar_tamano_total(request: &ExportRequest) -> Result<(), String> {
+pub fn validar_tamano_total(request: &ExportRequest) -> Result<(), ExportError> {
     let headers_size: usize = request.headers.iter().map(std::string::String::len).sum();
 
     let mut rows_size: usize = 0;
@@ -351,11 +361,11 @@ pub fn validar_tamano_total(request: &ExportRequest) -> Result<(), String> {
     let total_size = headers_size + rows_size;
 
     if total_size > MAX_SIZE {
-        return Err(format!(
+        return Err(ExportError::InvalidData(format!(
             "Datos demasiado grandes. Máximo: {}MB, estimado: {}MB",
             MAX_SIZE / 1024 / 1024,
             total_size / 1024 / 1024
-        ));
+        )));
     }
 
     Ok(())
@@ -364,4 +374,3 @@ pub fn validar_tamano_total(request: &ExportRequest) -> Result<(), String> {
 // --------------------------------------------------------------------------
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
-

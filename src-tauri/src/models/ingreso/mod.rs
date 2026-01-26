@@ -174,11 +174,11 @@ pub enum UniversalIngresoFetched {
 }
 
 impl UniversalIngresoFetched {
-    pub fn to_response(self) -> Result<IngresoResponse, String> {
+    pub fn to_response(self) -> IngresoResponse {
         match self {
             Self::Contratista(i) => IngresoResponse::from_contratista_fetched(i),
-            Self::Proveedor(i) => Ok(IngresoResponse::from_proveedor_fetched(i)),
-            Self::Visita(i) => Ok(IngresoResponse::from_visita_fetched(i)),
+            Self::Proveedor(i) => IngresoResponse::from_proveedor_fetched(i),
+            Self::Visita(i) => IngresoResponse::from_visita_fetched(i),
         }
     }
 }

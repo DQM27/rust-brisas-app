@@ -181,7 +181,7 @@ impl IngresoResponse {
         }
     }
 
-    pub fn from_contratista_fetched(i: IngresoContratistaFetched) -> Result<Self, String> {
+    pub fn from_contratista_fetched(i: IngresoContratistaFetched) -> Self {
         let esta_adentro = i.fecha_hora_salida.is_none();
         let tiene_gafete_asignado = i.gafete_numero.is_some();
 
@@ -202,7 +202,7 @@ impl IngresoResponse {
             nombre_completo.push_str(s);
         }
 
-        Ok(Self {
+        Self {
             id: i.id.to_string(),
             contratista_id: Some(i.contratista.id.to_string()),
             cedula: i.cedula.clone(),
@@ -258,7 +258,7 @@ impl IngresoResponse {
                 &i.fecha_hora_ingreso,
                 i.fecha_hora_salida.as_ref(),
             ),
-        })
+        }
     }
 
     pub fn from_visita_fetched(i: IngresoVisitaFetched) -> Self {
