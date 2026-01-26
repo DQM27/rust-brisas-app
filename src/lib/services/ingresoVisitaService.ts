@@ -7,6 +7,7 @@ export interface CreateIngresoVisitaFullInput {
 	nombre: string;
 	apellido: string;
 	empresaNombre?: string;
+	empresaId?: string;
 	segundoNombre?: string;
 	segundoApellido?: string;
 	anfitrion: string;

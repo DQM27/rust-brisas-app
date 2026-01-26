@@ -11,7 +11,7 @@ use crate::db::surrealdb_visitante_queries as visitante_db;
 use crate::domain::errors::IngresoVisitaError;
 use crate::models::gafete::GafeteEstado;
 use crate::models::ingreso::{CreateIngresoVisitaInput, IngresoResponse, IngresoVisitaCreateDTO};
-use crate::models::visitante::VisitanteCreateDTO;
+use crate::models::visitante::{VisitanteCreateDTO, VisitanteUpdateDTO};
 use crate::services::{gafete_service, lista_negra_service};
 use log::{debug, error, info, warn};
 use surrealdb::RecordId;
@@ -108,7 +108,11 @@ pub async fn registrar_ingreso(
     validar_lista_negra(input.cedula.clone()).await?;
     validar_ingreso_unico_cedula(&input.cedula).await?;
 
-    // Asegurar que el perfil del visitante existe para futuras búsquedas
+    // Parsear empresa opcional
+    let empresa_id_opt =
+        if let Some(ref eid) = input.empresa_id { Some(parse_id(eid, "empresa")?) } else { None };
+
+    // Asegurar que el perfil del visitante existe y tiene la empresa actualizada
     match visitante_db::get_visitante_by_cedula(&input.cedula).await {
         Ok(None) => {
             debug!("Creando perfil automático para nuevo visitante: {}", input.cedula);
@@ -118,17 +122,29 @@ pub async fn registrar_ingreso(
                 apellido: input.apellido.clone(),
                 segundo_nombre: input.segundo_nombre.clone(),
                 segundo_apellido: input.segundo_apellido.clone(),
-                empresa: None,
+                empresa: empresa_id_opt.clone(),
                 has_vehicle: input.placa_vehiculo.is_some(),
             };
             if let Err(e) = visitante_db::create_visitante(v_dto).await {
                 warn!("No se pudo crear el perfil automático del visitante (no fatal): {e}");
             }
         }
+        Ok(Some(existente)) => {
+            // Actualizar empresa si cambió
+            if empresa_id_opt != existente.empresa {
+                debug!("Actualizando empresa en catálogo para visitante: {}", input.cedula);
+                let update_dto = VisitanteUpdateDTO {
+                    empresa: Some(empresa_id_opt.clone()),
+                    ..Default::default()
+                };
+                if let Err(e) = visitante_db::update(&existente.id, update_dto).await {
+                    warn!("No se pudo actualizar la empresa del visitante (no fatal): {e}");
+                }
+            }
+        }
         Err(e) => {
             warn!("Error al verificar existencia de visitante (no fatal): {e}");
         }
-        _ => {}
     }
 
     // Parsear pre_registro opcional

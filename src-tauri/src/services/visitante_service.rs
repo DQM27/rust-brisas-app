@@ -247,7 +247,7 @@ pub async fn update_visitante(
     dto.apellido = Some(input.apellido);
     dto.segundo_nombre = Some(input.segundo_nombre);
     dto.segundo_apellido = Some(input.segundo_apellido);
-    dto.empresa = Some(parse_record_id(&input.empresa_id, "empresa"));
+    dto.empresa = Some(Some(parse_record_id(&input.empresa_id, "empresa")));
     dto.has_vehicle = Some(input.has_vehicle);
     dto.updated_at = Some(surrealdb::Datetime::from(Utc::now()));
 

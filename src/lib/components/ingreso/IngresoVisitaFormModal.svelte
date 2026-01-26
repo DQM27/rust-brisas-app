@@ -141,6 +141,7 @@
 								initialPerson?.empresaNombre ||
 								initialPerson?.empresa_nombre ||
 								undefined,
+							empresaId: f.data.empresaId || undefined,
 							anfitrion: f.data.anfitrion.trim(),
 							areaVisitada: f.data.areaVisitada.trim(),
 							motivo: f.data.motivo.trim(),
@@ -150,14 +151,14 @@
 							observaciones: f.data.observaciones?.trim() || undefined
 						});
 
+						loading = false;
 						toast.success('Ingreso de visita registrado');
 						handleClose();
 						if (onComplete) onComplete();
 					} catch (e: any) {
 						console.error(e);
-						toast.error('Error al registrar: ' + (e.message || String(e)));
-					} finally {
 						loading = false;
+						toast.error('Error al registrar: ' + (e.message || String(e)));
 					}
 				}
 			}

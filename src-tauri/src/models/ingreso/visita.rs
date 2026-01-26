@@ -84,6 +84,7 @@ pub struct CreateIngresoVisitaInput {
     pub nombre: String,
     pub apellido: String,
     pub empresa_nombre: Option<String>,
+    pub empresa_id: Option<String>,
     pub segundo_nombre: Option<String>,
     pub segundo_apellido: Option<String>,
     pub anfitrion: String,

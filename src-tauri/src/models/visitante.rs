@@ -101,7 +101,7 @@ pub struct VisitanteUpdateDTO {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub segundo_apellido: Option<Option<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub empresa: Option<RecordId>,
+    pub empresa: Option<Option<RecordId>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub has_vehicle: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
