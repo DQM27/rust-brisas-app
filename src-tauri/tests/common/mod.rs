@@ -26,7 +26,7 @@ pub fn crear_contratista_activo(cedula: &str) -> Contratista {
     Contratista {
         id: RecordId::from_str(&id_str).expect("Valid ID"),
         cedula: cedula.to_string(),
-        nombre: format!("Test {}", cedula),
+        nombre: format!("Test {cedula}"),
         segundo_nombre: None,
         apellido: "User".to_string(),
         segundo_apellido: None,
