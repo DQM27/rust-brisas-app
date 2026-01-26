@@ -189,7 +189,7 @@ impl SearchService {
             for v in &visitantes {
                 // Visitante tiene empresa opcional
                 let empresa_nombre =
-                    v.empresa.as_ref().map(|e| e.nombre.as_str()).unwrap_or("Sin Empresa");
+                    v.empresa.as_ref().map_or("Sin Empresa", |e| e.nombre.as_str());
 
                 crate::search::index_visitante_fetched(&mut writer, &handles, v, empresa_nombre)?;
             }

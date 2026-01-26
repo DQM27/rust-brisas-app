@@ -174,7 +174,7 @@ pub fn search_by_type(
     }
 
     // Agregar filtro de tipo obligatorio (+)
-    let filtered_query = format!("+tipo:{} +({})", tipo, query_str);
+    let filtered_query = format!("+tipo:{tipo} +({query_str})");
     search_index(index, reader, fields, &filtered_query, limit)
 }
 

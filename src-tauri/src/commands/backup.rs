@@ -367,6 +367,7 @@ pub async fn backup_database_portable(
 }
 
 /// [Comando Tauri] Lista todos los backups disponibles en el directorio de backups.
+#[allow(clippy::case_sensitive_file_extension_comparisons)]
 #[command]
 pub async fn list_backups(
     config: State<'_, AppConfigState>,
@@ -389,12 +390,13 @@ pub async fn list_backups(
             path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
 
         // Verificar extensiones válidas (incluyendo encriptados)
-        let is_valid = filename.ends_with(".surql")
-            || filename.ends_with(".surql.enc")
-            || filename.ends_with(".surql.penc")
-            || filename.ends_with(".db")
-            || filename.ends_with(".sqlite")
-            || filename.ends_with(".bak");
+        let lower = filename.to_lowercase();
+        let is_valid = lower.ends_with(".surql")
+            || lower.ends_with(".surql.enc")
+            || lower.ends_with(".surql.penc")
+            || lower.ends_with(".db")
+            || lower.ends_with(".sqlite")
+            || lower.ends_with(".bak");
 
         if !is_valid {
             continue;
@@ -477,7 +479,7 @@ pub async fn restore_from_auto_backup(
     let source_path = backup_dir.join(&filename);
 
     if !source_path.exists() {
-        return Err(BackupError::NotFound(filename.clone()));
+        return Err(BackupError::NotFound(filename));
     }
 
     // Verificar que no sea portable (requiere contraseña)
@@ -530,7 +532,7 @@ pub async fn restore_portable_backup(
     let source_path = backup_dir.join(&filename);
 
     if !source_path.exists() {
-        return Err(BackupError::NotFound(filename.clone()));
+        return Err(BackupError::NotFound(filename));
     }
 
     if !filename.ends_with(".surql.penc") {
@@ -572,6 +574,7 @@ pub async fn restore_portable_backup(
 }
 
 /// [Comando Tauri] Limpia backups antiguos según la política de retención.
+#[allow(clippy::case_sensitive_file_extension_comparisons)]
 #[command]
 pub async fn cleanup_old_backups(config: State<'_, AppConfigState>) -> Result<u32, BackupError> {
     let backup_dir = get_backup_directory(&config)?;
@@ -603,12 +606,13 @@ pub async fn cleanup_old_backups(config: State<'_, AppConfigState>) -> Result<u3
             path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
 
         // Solo procesar archivos de backup (incluyendo encriptados)
-        let is_valid = filename.ends_with(".surql")
-            || filename.ends_with(".surql.enc")
-            || filename.ends_with(".surql.penc")
-            || filename.ends_with(".db")
-            || filename.ends_with(".sqlite")
-            || filename.ends_with(".bak");
+        let lower = filename.to_lowercase();
+        let is_valid = lower.ends_with(".surql")
+            || lower.ends_with(".surql.enc")
+            || lower.ends_with(".surql.penc")
+            || lower.ends_with(".db")
+            || lower.ends_with(".sqlite")
+            || lower.ends_with(".bak");
 
         if !is_valid {
             continue;

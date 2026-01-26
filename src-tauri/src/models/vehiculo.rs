@@ -69,7 +69,7 @@ pub enum PropietarioFetched {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PropietarioUnion {
-    Fetched(PropietarioFetched),
+    Fetched(Box<PropietarioFetched>),
     Unfetched(RecordId),
 }
 
@@ -294,7 +294,7 @@ impl VehiculoResponse {
         };
 
         if let Some(PropietarioUnion::Fetched(prop)) = &v.propietario {
-            match prop {
+            match prop.as_ref() {
                 PropietarioFetched::Contratista(c) => {
                     res.propietario_id = c.id.to_string();
                     res.propietario_nombre = format!("{} {}", c.nombre, c.apellido);

@@ -329,9 +329,7 @@ pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
 
         let key = (a.gafete_numero, tipo);
         // alerts are DESC (newest first), so only insert if not already present
-        if !alertas_map.contains_key(&key) {
-            alertas_map.insert(key, a);
-        }
+        alertas_map.entry(key).or_insert(a);
     }
 
     // Enrich each gafete with alert and ingreso data

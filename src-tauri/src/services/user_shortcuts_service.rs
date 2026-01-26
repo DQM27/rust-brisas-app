@@ -1,7 +1,7 @@
 /// Servicio: Gestión de Atajos de Teclado Personalizados
 ///
 /// Este servicio maneja la persistencia de atajos de teclado personalizados
-/// por usuario en SurrealDB.
+/// por usuario en `SurrealDB`.
 use crate::models::user_shortcuts::{
     UserShortcutInput, UserShortcutResponse, UserShortcutsListResponse,
 };
@@ -9,7 +9,7 @@ use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use log::info;
 use serde::{Deserialize, Serialize};
 
-/// Estructura interna para deserializar desde SurrealDB
+/// Estructura interna para deserializar desde `SurrealDB`
 #[derive(Debug, Serialize, Deserialize)]
 struct DbUserShortcut {
     id: surrealdb::sql::Thing,
@@ -31,7 +31,7 @@ impl From<DbUserShortcut> for UserShortcutResponse {
     }
 }
 
-/// Extrae el ID limpio de un user_id que puede venir como "user:⟨uuid⟩" o solo "uuid"
+/// Extrae el ID limpio de un `user_id` que puede venir como "user:⟨uuid⟩" o solo "uuid"
 fn extract_user_id(user_id: &str) -> String {
     // Si viene como "user:⟨uuid⟩" extraemos solo el uuid
     if user_id.starts_with("user:") {
@@ -59,7 +59,7 @@ impl UserShortcutService {
             .await?
             .take(0)?;
 
-        let shortcuts: Vec<UserShortcutResponse> = results.into_iter().map(|r| r.into()).collect();
+        let shortcuts: Vec<UserShortcutResponse> = results.into_iter().map(Into::into).collect();
 
         Ok(UserShortcutsListResponse { shortcuts })
     }
@@ -98,14 +98,14 @@ impl UserShortcutService {
             info!("➕ Creando atajo '{}' para usuario '{}'", input.shortcut_id, user_id);
             let mut response = db
                 .query(
-                    r#"
+                    r"
                 CREATE user_shortcuts SET 
                     user = type::thing('user', $user_id),
                     shortcut_id = $shortcut_id,
                     custom_keys = $custom_keys,
                     enabled = $enabled
                 RETURN AFTER
-                "#,
+                ",
                 )
                 .bind(("user_id", clean_id))
                 .bind(("shortcut_id", input.shortcut_id.clone()))
@@ -118,7 +118,7 @@ impl UserShortcutService {
         };
 
         result
-            .map(|r| r.into())
+            .map(Into::into)
             .ok_or_else(|| SurrealDbError::Query("No se pudo guardar el atajo".to_string()))
     }
 
@@ -127,7 +127,7 @@ impl UserShortcutService {
         let db = get_db().await?;
         let clean_id = extract_user_id(user_id);
 
-        info!("🗑️ Eliminando atajo personalizado '{}' para usuario '{}'", shortcut_id, user_id);
+        info!("🗑️ Eliminando atajo personalizado '{shortcut_id}' para usuario '{user_id}'");
 
         db.query("DELETE FROM user_shortcuts WHERE user = type::thing('user', $user_id) AND shortcut_id = $shortcut_id")
             .bind(("user_id", clean_id))
@@ -142,7 +142,7 @@ impl UserShortcutService {
         let db = get_db().await?;
         let clean_id = extract_user_id(user_id);
 
-        info!("🔄 Reseteando todos los atajos personalizados para usuario '{}'", user_id);
+        info!("🔄 Reseteando todos los atajos personalizados para usuario '{user_id}'");
 
         db.query("DELETE FROM user_shortcuts WHERE user = type::thing('user', $user_id)")
             .bind(("user_id", clean_id))

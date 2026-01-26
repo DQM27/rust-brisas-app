@@ -187,14 +187,15 @@ pub enum PreRegistroEstado {
     NoShow,
 }
 
-impl ToString for PreRegistroEstado {
-    fn to_string(&self) -> String {
-        match self {
-            Self::Pendiente => "PENDIENTE".to_string(),
-            Self::Completado => "COMPLETADO".to_string(),
-            Self::Cancelado => "CANCELADO".to_string(),
-            Self::NoShow => "NO_SHOW".to_string(),
-        }
+impl std::fmt::Display for PreRegistroEstado {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Self::Pendiente => "PENDIENTE",
+            Self::Completado => "COMPLETADO",
+            Self::Cancelado => "CANCELADO",
+            Self::NoShow => "NO_SHOW",
+        };
+        write!(f, "{s}")
     }
 }
 
@@ -207,7 +208,7 @@ impl std::str::FromStr for PreRegistroEstado {
             "COMPLETADO" => Ok(Self::Completado),
             "CANCELADO" => Ok(Self::Cancelado),
             "NO_SHOW" => Ok(Self::NoShow),
-            _ => Err(format!("Estado desconocido: {}", s)),
+            _ => Err(format!("Estado desconocido: {s}")),
         }
     }
 }

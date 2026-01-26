@@ -129,7 +129,7 @@ pub async fn registrar_salida(
 
         ingreso_proveedor_service::registrar_salida(
             input.ingreso_id,
-            user.id.to_string(),
+            user.id.clone(),
             input.observaciones_salida,
             input.devolvio_gafete,
         )
@@ -142,7 +142,7 @@ pub async fn registrar_salida(
 
         ingreso_visita_service::registrar_salida(
             input.ingreso_id,
-            user.id.to_string(),
+            user.id.clone(),
             input.devolvio_gafete,
             input.observaciones_salida,
         )

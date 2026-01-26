@@ -116,7 +116,7 @@ impl From<AlertaGafete> for AlertaGafeteResponse {
             fecha_reporte: a.fecha_reporte.to_string(),
             resuelto: a.resuelto,
             fecha_resolucion: a.fecha_resolucion.map(|d| d.to_string()),
-            resuelto_por: a.resuelto_por.as_ref().map(|id| id.to_string()),
+            resuelto_por: a.resuelto_por.as_ref().map(std::string::ToString::to_string),
             resuelto_por_nombre: String::new(),
             notas: a.notas,
             notas_resolucion: a.notas_resolucion,

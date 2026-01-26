@@ -152,8 +152,7 @@ pub async fn create_visitante(
     // Retornamos el perfil completo (incluyendo resolución de empresa si aplica).
     let mut response = if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
         // Sincronización con Tantivy
-        let emp_nombre =
-            fetched.empresa.as_ref().map(|e| e.nombre.as_str()).unwrap_or("Sin Empresa");
+        let emp_nombre = fetched.empresa.as_ref().map_or("Sin Empresa", |e| e.nombre.as_str());
         if let Err(e) = search_service.add_visitante_fetched(&fetched, emp_nombre).await {
             warn!("⚠️ Error al indexar nuevo visitante: {e}");
         }
@@ -256,8 +255,7 @@ pub async fn update_visitante(
 
     if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
         // Actualizar índice
-        let emp_nombre =
-            fetched.empresa.as_ref().map(|e| e.nombre.as_str()).unwrap_or("Sin Empresa");
+        let emp_nombre = fetched.empresa.as_ref().map_or("Sin Empresa", |e| e.nombre.as_str());
         if let Err(e) = search_service.update_visitante_fetched(&fetched, emp_nombre).await {
             warn!("⚠️ Error al actualizar índice de visitante: {e}");
         }
@@ -299,8 +297,7 @@ pub async fn restore_visitante(
 
     if let Ok(Some(fetched)) = db::find_by_id_fetched(&visitante.id).await {
         // Re-indexar
-        let emp_nombre =
-            fetched.empresa.as_ref().map(|e| e.nombre.as_str()).unwrap_or("Sin Empresa");
+        let emp_nombre = fetched.empresa.as_ref().map_or("Sin Empresa", |e| e.nombre.as_str());
         if let Err(e) = search_service.add_visitante_fetched(&fetched, emp_nombre).await {
             warn!("⚠️ Error al re-indexar visitante restaurado: {e}");
         }

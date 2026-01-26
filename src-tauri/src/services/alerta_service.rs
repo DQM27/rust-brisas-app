@@ -57,9 +57,13 @@ pub async fn find_all(
     let db = get_db().await.map_err(|e| AlertaError::Database(e.to_string()))?;
 
     // 1. Recolectar IDs para batch fetch
+    #[allow(clippy::mutable_key_type)]
     let mut user_ids: HashSet<RecordId> = HashSet::new();
+    #[allow(clippy::mutable_key_type)]
     let mut contractor_ids: HashSet<RecordId> = HashSet::new();
+    #[allow(clippy::mutable_key_type)]
     let mut provider_ids: HashSet<RecordId> = HashSet::new();
+    #[allow(clippy::mutable_key_type)]
     let mut visitor_ids: HashSet<RecordId> = HashSet::new();
 
     for a in &alertas {
@@ -167,9 +171,9 @@ pub async fn find_all(
 
             // Nombre empresa
             let possible_ids = [
-                a.ingreso_contratista.as_ref().map(|r| r.to_string()),
-                a.ingreso_proveedor.as_ref().map(|r| r.to_string()),
-                a.ingreso_visita.as_ref().map(|r| r.to_string()),
+                a.ingreso_contratista.as_ref().map(std::string::ToString::to_string),
+                a.ingreso_proveedor.as_ref().map(std::string::ToString::to_string),
+                a.ingreso_visita.as_ref().map(std::string::ToString::to_string),
             ];
 
             for id_opt in possible_ids.iter().flatten() {
@@ -192,7 +196,7 @@ pub async fn find_all(
     Ok(response)
 }
 
-/// Helper privado para limpiar fechas de SurrealDB d'YYYY-MM-DD...' -> YYYY-MM-DD...
+/// Helper privado para limpiar fechas de `SurrealDB` d'YYYY-MM-DD...' -> YYYY-MM-DD...
 fn clean_surreal_date(raw: &str) -> String {
     let mut cleaned = raw;
     if cleaned.starts_with('d') {
