@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Info } from 'lucide-svelte';
+	import { APP_VERSION } from '$lib/config/app';
 </script>
 
 <div class="h-full overflow-auto bg-surface-1">
@@ -38,7 +39,7 @@
 							<div class="flex items-center gap-2">
 								<span
 									class="bg-surface-3 text-primary px-2 py-0.5 rounded-md text-xs font-mono font-bold border border-surface"
-									>v1.0.0-alpha</span
+									>{APP_VERSION}</span
 								>
 							</div>
 						</div>

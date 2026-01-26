@@ -6,7 +6,7 @@
 
 export const APP_CONFIG = {
 	name: 'Mega Brisas',
-	version: 'v1.0.0-alpha',
+	version: '1.0.3',
 	description: 'Sistema ERP de Control de Acceso',
 	developer: '27Design',
 	identifier: 'com.femprobrisas.mega-brisas'
