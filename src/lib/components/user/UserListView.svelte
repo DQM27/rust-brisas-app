@@ -16,11 +16,12 @@
 	import * as userService from '$lib/logic/user/userService';
 	import { getUserColumns } from '$lib/logic/user/userColumns';
 	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
+	import { openConfirm } from '$lib/stores/confirm.svelte';
 
 	// Types
 	import type { UserResponse, CreateUserInput, UpdateUserInput } from '$lib/types/user';
 	import { searchByType } from '$lib/api/searchService';
-	import { ask } from '@tauri-apps/plugin-dialog';
+	// import { ask } from '@tauri-apps/plugin-dialog'; <-- Removed
 
 	// Stores
 	import { currentUser } from '$lib/stores/auth';
@@ -253,37 +254,41 @@
 			return;
 		}
 
-		const confirmed = await ask(`¿Mover al usuario "${user.nombre}" a la papelera?`, {
-			title: 'Confirmar Eliminación',
-			kind: 'warning'
+		openConfirm({
+			title: 'Mover a Papelera',
+			message: `¿Estás seguro de mover al usuario "${user.nombre}" a la papelera?`,
+			type: 'danger',
+			confirmText: 'Mover a Papelera',
+			onConfirm: async () => {
+				const toastId = toast.loading('Eliminando...');
+				const result = await userService.deleteUser(user.id);
+				if (result.ok) {
+					toast.success('Usuario enviado a papelera', { id: toastId });
+					loadUsers();
+				} else {
+					toast.error(result.error, { id: toastId });
+				}
+			}
 		});
-		if (!confirmed) return;
-
-		const toastId = toast.loading('Eliminando...');
-		const result = await userService.deleteUser(user.id);
-		if (result.ok) {
-			toast.success('Usuario enviado a papelera', { id: toastId });
-			loadUsers();
-		} else {
-			toast.error(result.error, { id: toastId });
-		}
 	}
 
 	async function handleRestoreUser(user: UserResponse) {
-		const confirmed = await ask(`¿Restaurar acceso al usuario "${user.nombre}"?`, {
-			title: 'Confirmar Restauración',
-			kind: 'info'
+		openConfirm({
+			title: 'Restaurar Usuario',
+			message: `¿Estás seguro de que deseas restaurar a ${user.nombre}?`,
+			type: 'info',
+			confirmText: 'Restaurar',
+			onConfirm: async () => {
+				const toastId = toast.loading('Restaurando...');
+				const result = await userService.restoreUser(user.id);
+				if (result.ok) {
+					toast.success('Usuario restaurado con éxito', { id: toastId });
+					loadUsers();
+				} else {
+					toast.error(result.error, { id: toastId });
+				}
+			}
 		});
-		if (!confirmed) return;
-
-		const toastId = toast.loading('Restaurando...');
-		const result = await userService.restoreUser(user.id);
-		if (result.ok) {
-			toast.success('Usuario restaurado con éxito', { id: toastId });
-			loadUsers();
-		} else {
-			toast.error(result.error, { id: toastId });
-		}
 	}
 
 	async function handleDeleteMultiple(selection: UserResponse[]) {
@@ -303,27 +308,28 @@
 			? `Has seleccionado tu cuenta (que no será eliminada). ¿Mover los otros ${count} usuarios a la papelera?`
 			: `¿Mover ${count} usuarios a la papelera?`;
 
-		const confirmed = await ask(message, {
-			title: 'Confirmar Eliminación Múltiple',
-			kind: 'warning'
+		openConfirm({
+			title: 'Eliminación Múltiple',
+			message: `¿Estás seguro de que quieres realizar esta acción? ${message}`,
+			type: 'danger',
+			confirmText: 'Mover a Papelera',
+			onConfirm: async () => {
+				const toastId = toast.loading('Procesando...');
+				let errors = 0;
+				for (const u of toDelete) {
+					const res = await userService.deleteUser(u.id);
+					if (!res.ok) errors++;
+				}
+
+				if (errors === 0) {
+					toast.success(`${count} usuarios enviados a papelera`, { id: toastId });
+				} else {
+					toast.error(`Error en ${errors} registros`, { id: toastId });
+				}
+				loadUsers();
+				gridWrapper?.deselectAll();
+			}
 		});
-
-		if (!confirmed) return;
-
-		const toastId = toast.loading('Procesando...');
-		let errors = 0;
-		for (const u of toDelete) {
-			const res = await userService.deleteUser(u.id);
-			if (!res.ok) errors++;
-		}
-
-		if (errors === 0) {
-			toast.success(`${count} usuarios enviados a papelera`, { id: toastId });
-		} else {
-			toast.error(`Error en ${errors} registros`, { id: toastId });
-		}
-		loadUsers();
-		gridWrapper?.deselectAll();
 	}
 
 	function handleRowDoubleClick(e: any, row: any) {

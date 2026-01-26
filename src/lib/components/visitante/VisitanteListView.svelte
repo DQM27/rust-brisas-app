@@ -4,12 +4,13 @@
 	import { fade } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
 	import { Plus, Pencil, Trash2, X, RotateCcw, Undo2, History } from 'lucide-svelte';
-	import { ask } from '@tauri-apps/plugin-dialog';
+	// import { ask } from '@tauri-apps/plugin-dialog'; <-- Removed
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 	import VisitanteFormModal from '$lib/components/visitante/VisitanteFormModal.svelte';
+	import { openConfirm } from '$lib/stores/confirm.svelte';
 
 	// Logic & Services
 	import {
@@ -186,58 +187,70 @@
 	}
 
 	// Delete/Restore Handlers
-	async function confirmDelete(visitante: VisitanteResponse) {
-		const confirmed = await ask(
-			`¿Mover a "${visitante.nombre} ${visitante.apellido}" a la papelera? Podrás recuperarlo más tarde.`,
-			{ title: 'Confirmar Eliminación', kind: 'warning' }
-		);
-		if (!confirmed) return;
-
-		const res = await deleteVisitante(visitante.id);
-		if (res.ok) {
-			toast.success('Visitante movido a papelera');
-			loadData();
-		} else {
-			toast.error(res.error);
-		}
-	}
-
-	async function handleRestore(visitante: VisitanteResponse) {
-		const confirmed = await ask(
-			`¿Restaurar al visitante "${visitante.nombre} ${visitante.apellido}" al catálogo activo?`,
-			{ title: 'Confirmar Restauración', kind: 'info' }
-		);
-		if (!confirmed) return;
-
-		const res = await restoreVisitante(visitante.id);
-		if (res.ok) {
-			toast.success('Visitante restaurado con éxito');
-			loadData();
-		} else {
-			toast.error(res.error);
-		}
-	}
-
-	async function handleDeleteMultiple(selection: VisitanteResponse[]) {
-		const confirmed = await ask(`¿Mover ${selection.length} visitantes a la papelera?`, {
-			title: 'Confirmar Eliminación Múltiple',
-			kind: 'warning'
+	function confirmDelete(visitante: VisitanteResponse) {
+		openConfirm({
+			title: 'Eliminar Visitante',
+			message: `¿Estás seguro de eliminar a "${visitante.nombre} ${visitante.apellido}"?`,
+			type: 'danger',
+			confirmText: 'Eliminar',
+			onConfirm: async () => {
+				const res = await deleteVisitante(visitante.id);
+				if (res.ok) {
+					toast.success('Visitante eliminado');
+					loadData();
+				} else {
+					toast.error(res.error);
+				}
+			}
 		});
-		if (!confirmed) return;
+	}
 
-		const toastId = toast.loading('Eliminando...');
-		let errors = 0;
-		for (const p of selection) {
-			const res = await deleteVisitante(p.id);
-			if (!res.ok) errors++;
-		}
-		if (errors === 0) {
-			toast.success(`${selection.length} visitantes enviados a papelera`, { id: toastId });
-		} else {
-			toast.error(`Error en ${errors} registros`, { id: toastId });
-		}
-		loadData();
-		gridWrapper?.deselectAll();
+	function handleRestore(visitante: VisitanteResponse) {
+		openConfirm({
+			title: 'Restaurar Visitante',
+			message: `¿Estás seguro de que deseas restaurar a ${visitante.nombre} ${visitante.apellido}?`,
+			type: 'info',
+			confirmText: 'Restaurar',
+			onConfirm: async () => {
+				const res = await restoreVisitante(visitante.id);
+				if (res.ok) {
+					toast.success('Visitante restaurado con éxito');
+					loadData();
+				} else {
+					toast.error(res.error);
+				}
+			}
+		});
+	}
+
+	function handleDeleteMultiple(selection: VisitanteResponse[]) {
+		const isSingular = selection.length === 1;
+		const title = isSingular ? 'Eliminar Visitante' : 'Eliminación Múltiple';
+		const message = isSingular
+			? `¿Estás seguro de eliminar al visitante seleccionado?`
+			: `¿Estás seguro de eliminar ${selection.length} visitantes?`;
+
+		openConfirm({
+			title,
+			message,
+			type: 'danger',
+			confirmText: 'Eliminar',
+			onConfirm: async () => {
+				const toastId = toast.loading('Eliminando...');
+				let errors = 0;
+				for (const p of selection) {
+					const res = await deleteVisitante(p.id);
+					if (!res.ok) errors++;
+				}
+				if (errors === 0) {
+					toast.success(`${selection.length} visitantes eliminados`, { id: toastId });
+				} else {
+					toast.error(`Error en ${errors} registros`, { id: toastId });
+				}
+				loadData();
+				gridWrapper?.deselectAll();
+			}
+		});
 	}
 
 	async function handleSearch(term: string) {

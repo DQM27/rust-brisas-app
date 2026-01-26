@@ -16,6 +16,7 @@
 	import ShortcutHelpModal from '$lib/components/modals/ShortcutHelpModal.svelte';
 	import PersonaQuickCardModal from '$lib/components/shared/PersonaQuickCardModal.svelte';
 	import QuickUserSwitchModal from '$lib/components/modals/QuickUserSwitchModal.svelte';
+	import GlobalConfirmModal from '$lib/components/shared/GlobalConfirmModal.svelte';
 	import { needsSetup, setWindowDecorations, setWindowSize } from '$lib/services/keyringService';
 	import {
 		setupWizardVisible,
@@ -281,6 +282,7 @@
 
 			<PersonaQuickCardModal />
 			<QuickUserSwitchModal />
+			<GlobalConfirmModal />
 		{/if}
 
 		<!-- Screensaver Password Modal -->

@@ -4,12 +4,11 @@
 	import { fade } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
 	import { Plus, Pencil, Trash2, X, RotateCcw, History } from 'lucide-svelte';
-	import { ask } from '@tauri-apps/plugin-dialog';
-
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
 	import ProveedorFormModal from '$lib/components/proveedor/ProveedorFormModal.svelte';
+	import { openConfirm } from '$lib/stores/confirm.svelte';
 
 	// Logic & Services
 	import {
@@ -200,57 +199,64 @@
 	}
 
 	async function confirmDelete(proveedor: ProveedorResponse) {
-		const confirmed = await ask(
-			`¿Mover al proveedor "${proveedor.nombre}" a la papelera? Podrás recuperarlo más tarde.`,
-			{ title: 'Confirmar Eliminación', kind: 'warning' }
-		);
-		if (!confirmed) return;
-
-		const res = await deleteProveedor(proveedor.id);
-		if (res.ok) {
-			toast.success('Proveedor enviado a papelera');
-			loadData();
-		} else {
-			toast.error(res.error);
-		}
+		openConfirm({
+			title: 'Mover a Papelera',
+			message: `¿Estás seguro de mover al proveedor "${proveedor.nombre}" a la papelera? Podrás recuperarlo más tarde.`,
+			type: 'danger',
+			confirmText: 'Mover a Papelera',
+			onConfirm: async () => {
+				const res = await deleteProveedor(proveedor.id);
+				if (res.ok) {
+					toast.success('Proveedor enviado a papelera');
+					loadData();
+				} else {
+					toast.error(res.error);
+				}
+			}
+		});
 	}
 
 	async function handleRestore(proveedor: ProveedorResponse) {
-		const confirmed = await ask(`¿Restaurar acceso al proveedor "${proveedor.nombre}"?`, {
-			title: 'Confirmar Restauración',
-			kind: 'info'
+		openConfirm({
+			title: 'Restaurar Proveedor',
+			message: `¿Estás seguro de que deseas restaurar a ${proveedor.nombre}? El elemento volverá a estar visible en la lista principal.`,
+			type: 'info',
+			confirmText: 'Restaurar',
+			onConfirm: async () => {
+				const toastId = toast.loading('Restaurando...');
+				const res = await restoreProveedor(proveedor.id);
+				if (res.ok) {
+					toast.success('Proveedor restaurado con éxito', { id: toastId });
+					loadData();
+				} else {
+					toast.error(res.error, { id: toastId });
+				}
+			}
 		});
-		if (!confirmed) return;
-
-		const toastId = toast.loading('Restaurando...');
-		const res = await restoreProveedor(proveedor.id);
-		if (res.ok) {
-			toast.success('Proveedor restaurado con éxito', { id: toastId });
-			loadData();
-		} else {
-			toast.error(res.error, { id: toastId });
-		}
 	}
 
 	async function handleDeleteMultiple(selection: ProveedorResponse[]) {
-		const confirmed = await ask(`¿Mover ${selection.length} proveedores a la papelera?`, {
-			title: 'Confirmar Eliminación Múltiple',
-			kind: 'warning'
+		openConfirm({
+			title: 'Eliminación Múltiple',
+			message: `¿Estás seguro de mover ${selection.length} proveedores a la papelera?`,
+			type: 'danger',
+			confirmText: 'Mover a Papelera',
+			onConfirm: async () => {
+				const toastId = toast.loading('Eliminando...');
+				let errors = 0;
+				for (const p of selection) {
+					const res = await deleteProveedor(p.id);
+					if (!res.ok) errors++;
+				}
+				if (errors === 0) {
+					toast.success(`${selection.length} proveedores enviados a papelera`, { id: toastId });
+				} else {
+					toast.error(`Error en ${errors} registros`, { id: toastId });
+				}
+				loadData();
+				gridWrapper?.deselectAll();
+			}
 		});
-		if (!confirmed) return;
-		const toastId = toast.loading('Eliminando...');
-		let errors = 0;
-		for (const p of selection) {
-			const res = await deleteProveedor(p.id);
-			if (!res.ok) errors++;
-		}
-		if (errors === 0) {
-			toast.success(`${selection.length} proveedores enviados a papelera`, { id: toastId });
-		} else {
-			toast.error(`Error en ${errors} registros`, { id: toastId });
-		}
-		loadData();
-		gridWrapper?.deselectAll();
 	}
 
 	function handleRowDblClick(e: any, row: any) {

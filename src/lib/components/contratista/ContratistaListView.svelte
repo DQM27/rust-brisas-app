@@ -37,17 +37,22 @@
 	import { getContratistaColumns } from '$lib/logic/contratista/contratistaColumns';
 	// Services and Logic
 	import * as contratistaService from '$lib/logic/contratista/contratistaService';
+	import { openConfirm } from '$lib/stores/confirm.svelte';
+	import { invoke } from '@tauri-apps/api/core';
+	import { save } from '@tauri-apps/plugin-dialog';
+
 	// Components
-	import { TabulatorWrapper } from '$lib/components/tabulator';
-	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
+	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
 	import GridToolbar from '$lib/components/tabulator/GridToolbar.svelte';
-	import ContratistaFormModal from './ContratistaFormModal.svelte';
+	import ContratistaFormModal from '$lib/components/contratista/ContratistaFormModal.svelte';
 	import VehiculoManagerModal from '$lib/components/vehiculo/VehiculoManagerModal.svelte';
 	import ExportDialog from '$lib/components/export/ExportDialog.svelte';
-	import { getAvailableFormats } from '$lib/logic/export';
-	import { invoke } from '@tauri-apps/api/core';
-	import { save, ask } from '@tauri-apps/plugin-dialog';
 
+	// Logic
+	import { defaultTabulatorOptions } from '$lib/logic/tabulator/tabulatorController';
+	import { getAvailableFormats } from '$lib/logic/export/exportService';
+
+	// Types
 	import type {
 		ContratistaResponse,
 		ContratistaListResponse,
@@ -490,80 +495,87 @@
 	}
 
 	// Restore
-	async function handleRestore(contratista: ContratistaResponse) {
+
+	// Delete Contractor
+
+	// Restore
+	function handleRestore(contratista: ContratistaResponse) {
 		if (!$currentUser || !can($currentUser, 'DELETE_CONTRACTOR')) {
 			toast.error('No tienes permisos para restaurar.');
 			return;
 		}
 
-		const confirmed = await ask(
-			`¿Restaurar al contratista "${contratista.nombreCompleto}" al catálogo activo?`,
-			{ title: 'Confirmar Restauración', kind: 'info' }
-		);
-		if (!confirmed) return;
-
-		const toastId = toast.loading('Restaurando...');
-		const result = await contratistaService.restoreContratista(contratista.id);
-
-		if (result.ok) {
-			toast.success('Contratista restaurado', { id: toastId });
-			loadContratistas();
-		} else {
-			toast.error(result.error || 'Error desconocido', { id: toastId });
-		}
+		openConfirm({
+			title: 'Restaurar Contratista',
+			message: `¿Estás seguro de que deseas restaurar a ${contratista.nombreCompleto}? El elemento volverá a estar visible en la lista principal.`,
+			type: 'info',
+			confirmText: 'Restaurar',
+			onConfirm: async () => {
+				const toastId = toast.loading('Restaurando...');
+				const result = await contratistaService.restoreContratista(contratista.id);
+				if (result.ok) {
+					toast.success('Contratista restaurado', { id: toastId });
+					loadContratistas();
+				} else {
+					toast.error(result.error || 'Error desconocido', { id: toastId });
+				}
+			}
+		});
 	}
 
 	// Delete Contractor
-	async function handleDelete(contratista: ContratistaResponse) {
+	function handleDelete(contratista: ContratistaResponse) {
 		if (!$currentUser || !can($currentUser, 'DELETE_CONTRACTOR')) {
 			toast.error('No tienes permisos para eliminar.');
 			return;
 		}
 
-		const confirmed = await ask(`¿Mover a "${contratista.nombreCompleto}" a la papelera?`, {
-			title: 'Confirmar Eliminación',
-			kind: 'warning'
+		openConfirm({
+			title: 'Mover a Papelera',
+			message: `¿Estás seguro de mover a "${contratista.nombreCompleto}" a la papelera? Podrás recuperarlo más tarde.`,
+			type: 'danger',
+			confirmText: 'Mover a Papelera',
+			onConfirm: async () => {
+				const toastId = toast.loading('Eliminando...');
+				const result = await contratistaService.deleteContratista(contratista.id);
+				if (result.ok) {
+					toast.success('Contratista movido a papelera', { id: toastId });
+					loadContratistas();
+				} else {
+					toast.error(result.error, { id: toastId });
+				}
+			}
 		});
-		if (!confirmed) return;
-
-		const toastId = toast.loading('Eliminando...');
-		const result = await contratistaService.deleteContratista(contratista.id);
-
-		if (result.ok) {
-			toast.success('Contratista movido a papelera', { id: toastId });
-			loadContratistas();
-		} else {
-			toast.error(result.error, { id: toastId });
-		}
 	}
 
 	// Bulk Delete
-	async function handleDeleteMultiple(selection: ContratistaResponse[]) {
+	function handleDeleteMultiple(selection: ContratistaResponse[]) {
 		if (!$currentUser || !can($currentUser, 'DELETE_CONTRACTOR')) {
 			toast.error('No tienes permisos para eliminar.');
 			return;
 		}
 
-		const confirmed = await ask(`¿Mover ${selection.length} contratistas a la papelera?`, {
-			title: 'Confirmar Eliminación Múltiple',
-			kind: 'warning'
+		openConfirm({
+			title: 'Eliminación Múltiple',
+			message: `¿Estás seguro de mover ${selection.length} contratistas a la papelera?`,
+			type: 'danger',
+			confirmText: 'Mover a Papelera',
+			onConfirm: async () => {
+				const toastId = toast.loading('Eliminando...');
+				let errors = 0;
+				for (const c of selection) {
+					const res = await contratistaService.deleteContratista(c.id);
+					if (!res.ok) errors++;
+				}
+				if (errors === 0) {
+					toast.success(`${selection.length} contratistas enviados a papelera`, { id: toastId });
+				} else {
+					toast.error(`Error en ${errors} registros`, { id: toastId });
+				}
+				loadContratistas();
+				gridWrapper?.deselectAll();
+			}
 		});
-		if (!confirmed) return;
-
-		const toastId = toast.loading('Eliminando...');
-		let errors = 0;
-		for (const c of selection) {
-			const res = await contratistaService.deleteContratista(c.id);
-			if (!res.ok) errors++;
-		}
-
-		if (errors === 0) {
-			toast.success(`${selection.length} contratistas enviados a papelera`, { id: toastId });
-		} else {
-			toast.error(`Error en ${errors} registros`, { id: toastId });
-		}
-		loadContratistas();
-		gridWrapper?.deselectAll();
 	}
 
 	// Vehiculo Actions
