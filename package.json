@@ -12,7 +12,9 @@
 		"tauri": "tauri",
 		"tauri:surrealdb": "tauri dev --config src-tauri/tauri.surrealdb.conf.json",
 		"lint": "prettier --check . && eslint .",
-		"format": "prettier --write . && eslint . --fix"
+		"format": "prettier --write . && eslint . --fix",
+		"version:sync": "node scripts/sync-versions.js",
+		"postversion": "npm run version:sync"
 	},
 	"license": "MIT",
 	"dependencies": {
