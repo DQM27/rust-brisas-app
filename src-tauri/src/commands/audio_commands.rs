@@ -4,16 +4,17 @@
 /// de archivos de audio personalizados, facilitando la identificación auditiva
 /// de eventos críticos en portería.
 use crate::config::settings::AppConfigState;
+use crate::domain::errors::ConfigError;
 use std::process::Command;
 use tauri::{command, State};
 
 /// Reproduce un sonido de alerta basado en la configuración actual.
 /// Soporta sonidos nativos del sistema y archivos WAV personalizados en Windows.
 #[command]
-pub async fn play_alert_sound(config: State<'_, AppConfigState>) -> Result<(), String> {
+pub async fn play_alert_sound(config: State<'_, AppConfigState>) -> Result<(), ConfigError> {
     #[allow(unused_variables)]
     let (sound, custom_path, use_custom) = {
-        let config_guard = config.read().expect("Error reading config");
+        let config_guard = config.read().map_err(|e| ConfigError::Message(e.to_string()))?;
         (
             config_guard.audio.alert_sound.clone(),
             config_guard.audio.custom_sound_path.clone(),
@@ -48,32 +49,31 @@ pub async fn play_alert_sound(config: State<'_, AppConfigState>) -> Result<(), S
 pub async fn upload_custom_sound(
     config: State<'_, AppConfigState>,
     file_path: String,
-) -> Result<String, String> {
+) -> Result<String, ConfigError> {
     use std::fs;
     use std::path::Path;
 
     let source = Path::new(&file_path);
     if !source.exists() {
-        return Err("El archivo de sonido no existe".to_string());
+        return Err(ConfigError::Io("El archivo de sonido no existe".to_string()));
     }
 
-    let data_dir = if let Some(dir) = dirs::data_local_dir() {
-        dir.join("Brisas").join("sounds")
-    } else {
-        return Err("No se pudo determinar el directorio de datos".to_string());
-    };
+    let data_dir =
+        dirs::data_local_dir().map(|dir| dir.join("Brisas").join("sounds")).ok_or_else(|| {
+            ConfigError::Io("No se pudo determinar el directorio de datos".to_string())
+        })?;
 
     if !data_dir.exists() {
-        fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
+        fs::create_dir_all(&data_dir)?;
     }
 
     let dest = data_dir.join("alert.wav");
-    fs::copy(source, &dest).map_err(|e| e.to_string())?;
+    fs::copy(source, &dest)?;
 
     let dest_str = dest.to_string_lossy().to_string();
 
     {
-        let mut config_guard = config.write().map_err(|e| e.to_string())?;
+        let mut config_guard = config.write().map_err(|e| ConfigError::Message(e.to_string()))?;
         config_guard.audio.custom_sound_path = Some(dest_str.clone());
         config_guard.audio.use_custom = true;
         let config_path = if let Some(d) = dirs::data_local_dir() {
@@ -82,8 +82,7 @@ pub async fn upload_custom_sound(
             std::path::PathBuf::from("./config/brisas.toml")
         };
 
-        crate::config::manager::save_config(&config_guard, &config_path)
-            .map_err(|e| e.to_string())?;
+        crate::config::manager::save_config(&config_guard, &config_path)?;
     }
 
     Ok(dest_str)
@@ -94,7 +93,7 @@ pub fn play_sound(
     _sound: String,
     _custom_path: Option<String>,
     _use_custom: bool,
-) -> Result<(), String> {
+) -> Result<(), ConfigError> {
     Ok(())
 }
 
@@ -103,8 +102,8 @@ pub fn play_sound(
 pub async fn set_use_custom_sound(
     config: State<'_, AppConfigState>,
     use_custom: bool,
-) -> Result<(), String> {
-    let mut config_guard = config.write().map_err(|e| e.to_string())?;
+) -> Result<(), ConfigError> {
+    let mut config_guard = config.write().map_err(|e| ConfigError::Message(e.to_string()))?;
     config_guard.audio.use_custom = use_custom;
 
     let config_path = if let Some(d) = dirs::data_local_dir() {
@@ -113,6 +112,6 @@ pub async fn set_use_custom_sound(
         std::path::PathBuf::from("./config/brisas.toml")
     };
 
-    crate::config::manager::save_config(&config_guard, &config_path).map_err(|e| e.to_string())?;
+    crate::config::manager::save_config(&config_guard, &config_path)?;
     Ok(())
 }

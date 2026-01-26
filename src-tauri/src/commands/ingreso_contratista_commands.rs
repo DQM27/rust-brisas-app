@@ -91,9 +91,7 @@ pub async fn validate_exit_contratista(
     require_session!(session);
     require_perm!(session, "ingresos:read")?;
 
-    create_service()
-        .validar_puede_salir(&ingreso_id, gafete_devuelto.as_deref())
-        .map_err(IngresoContratistaError::Validation)
+    create_service().validar_puede_salir(&ingreso_id, gafete_devuelto.as_deref())
 }
 
 /// [Comando Tauri] Finaliza el registro de permanencia y libera recursos.

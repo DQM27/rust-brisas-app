@@ -305,6 +305,29 @@ impl From<crate::services::surrealdb_authorization::AuthError> for VisitanteErro
     }
 }
 
+#[derive(Error, Debug, Serialize)]
+#[serde(tag = "type", content = "message")]
+pub enum PreRegistroError {
+    #[error("Pre-registro no encontrado")]
+    NotFound,
+    #[error("Ya existe un pre-registro pendiente para esta cédula")]
+    AlreadyExists,
+    #[error("El pre-registro ya fue procesado o cancelado")]
+    InvalidStatus,
+    #[error("Error de base de datos: {0}")]
+    Database(String),
+    #[error("Error de validación: {0}")]
+    Validation(String),
+    #[error("Error de búsqueda: {0}")]
+    Search(String),
+}
+
+impl From<crate::services::surrealdb_authorization::AuthError> for PreRegistroError {
+    fn from(err: crate::services::surrealdb_authorization::AuthError) -> Self {
+        Self::Validation(err.to_string())
+    }
+}
+
 // --------------------------------------------------------------------------
 // ERRORES DE INGRESOS (VISITAS, PROVEEDORES, CONTRATISTAS)
 // --------------------------------------------------------------------------
@@ -488,8 +511,28 @@ pub enum ConfigError {
     Message(String),
     #[error("Error de I/O: {0}")]
     Io(String),
+    #[error("Error de serialización/deserialización: {0}")]
+    Format(String),
     #[error("Error de base de datos: {0}")]
     Database(String),
+}
+
+impl From<std::io::Error> for ConfigError {
+    fn from(err: std::io::Error) -> Self {
+        Self::Io(err.to_string())
+    }
+}
+
+impl From<toml::de::Error> for ConfigError {
+    fn from(err: toml::de::Error) -> Self {
+        Self::Format(err.to_string())
+    }
+}
+
+impl From<toml::ser::Error> for ConfigError {
+    fn from(err: toml::ser::Error) -> Self {
+        Self::Format(err.to_string())
+    }
 }
 
 #[derive(Error, Debug, Serialize)]

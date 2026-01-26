@@ -15,8 +15,8 @@ pub async fn crear_ingreso_proveedor_v2(
     app: AppHandle,
     input: CreateIngresoProveedorInput,
     usuario_id: String,
-) -> Result<IngresoResponse, String> {
-    let res = service::registrar_ingreso(input, usuario_id).await.map_err(|e| e.to_string())?;
+) -> Result<IngresoResponse, IngresoProveedorError> {
+    let res = service::registrar_ingreso(input, usuario_id).await?;
 
     // Emitir evento para refrescar lista de gafetes en tiempo real
     let _ = app.emit("gafetes:refresh", ());
@@ -26,8 +26,9 @@ pub async fn crear_ingreso_proveedor_v2(
 
 /// Lista los proveedores que están actualmente dentro de las instalaciones.
 #[command]
-pub async fn get_ingresos_proveedores_activos() -> Result<Vec<IngresoResponse>, String> {
-    service::get_activos().await.map_err(|e| e.to_string())
+pub async fn get_ingresos_proveedores_activos(
+) -> Result<Vec<IngresoResponse>, IngresoProveedorError> {
+    service::get_activos().await
 }
 
 /// Lista el historial de accesos de proveedores finalizados en un rango de fechas.
@@ -35,8 +36,8 @@ pub async fn get_ingresos_proveedores_activos() -> Result<Vec<IngresoResponse>, 
 pub async fn get_ingresos_proveedores_historial(
     fecha_inicio: String,
     fecha_fin: String,
-) -> Result<Vec<IngresoResponse>, String> {
-    service::get_historial(fecha_inicio, fecha_fin).await.map_err(|e| e.to_string())
+) -> Result<Vec<IngresoResponse>, IngresoProveedorError> {
+    service::get_historial(fecha_inicio, fecha_fin).await
 }
 
 /// Cierra el ciclo de admisión registrando la salida física.
@@ -47,10 +48,8 @@ pub async fn registrar_salida_proveedor(
     usuario_id: String,
     observaciones: Option<String>,
     devolvio_gafete: bool,
-) -> Result<IngresoResponse, String> {
-    let res = service::registrar_salida(id, usuario_id, observaciones, devolvio_gafete)
-        .await
-        .map_err(|e| e.to_string())?;
+) -> Result<IngresoResponse, IngresoProveedorError> {
+    let res = service::registrar_salida(id, usuario_id, observaciones, devolvio_gafete).await?;
 
     // Emitir evento para refrescar lista de gafetes en tiempo real
     let _ = app.emit("gafetes:refresh", ());
@@ -62,8 +61,10 @@ pub async fn registrar_salida_proveedor(
 #[command]
 pub async fn search_proveedores_by_cedula(
     query: String,
-) -> Result<Vec<crate::models::proveedor::ProveedorResponse>, String> {
-    crate::services::proveedor_service::search_proveedores(&query).await.map_err(|e| e.to_string())
+) -> Result<Vec<crate::models::proveedor::ProveedorResponse>, IngresoProveedorError> {
+    crate::services::proveedor_service::search_proveedores(&query)
+        .await
+        .map_err(|e| IngresoProveedorError::Validation(e.to_string()))
 }
 
 /// Pre-chequeo de Seguridad: Valida si el proveedor es elegible para ingresar (Lista Negra).

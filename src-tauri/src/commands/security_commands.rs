@@ -4,6 +4,7 @@
 /// integrándose con los llaveros nativos (Keyring) de cada sistema operativo
 /// (Windows Credential Manager, Linux Secret-tool, macOS Keychain) para
 /// garantizar que los datos sensibles (Avatares, etc.) permanezcan seguros.
+use crate::domain::errors::KeyringError;
 use rand::rngs::OsRng;
 use std::sync::OnceLock;
 
@@ -16,7 +17,7 @@ static MASTER_KEY: OnceLock<[u8; 32]> = OnceLock::new();
 
 /// Protocolo de Recuperación: Establece un bridge con el Keyring nativo unificado. Si la llave no existe,
 /// genera una nueva con entropía de grado militar y la guarda de forma persistente.
-pub fn get_master_key() -> Result<&'static [u8; 32], String> {
+pub fn get_master_key() -> Result<&'static [u8; 32], KeyringError> {
     if let Some(key) = MASTER_KEY.get() {
         return Ok(key);
     }
@@ -62,12 +63,13 @@ use chacha20poly1305::{
 };
 
 /// Encripta bloques de datos (Ej: Fotos de trabajadores) usando ChaCha20-Poly1305.
-pub fn encrypt_data(data: &[u8]) -> Result<Vec<u8>, String> {
+pub fn encrypt_data(data: &[u8]) -> Result<Vec<u8>, KeyringError> {
     let key = get_master_key()?;
     let cipher = ChaCha20Poly1305::new(key.into());
     let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
 
-    let ciphertext = cipher.encrypt(&nonce, data).map_err(|e| e.to_string())?;
+    let ciphertext =
+        cipher.encrypt(&nonce, data).map_err(|e| KeyringError::Message(e.to_string()))?;
 
     let mut result = nonce.to_vec();
     result.extend(ciphertext);
@@ -76,18 +78,21 @@ pub fn encrypt_data(data: &[u8]) -> Result<Vec<u8>, String> {
 }
 
 /// Descifra los bloques de datos tras validar su autenticidad.
-pub fn decrypt_data(encrypted_data: &[u8]) -> Result<Vec<u8>, String> {
+pub fn decrypt_data(encrypted_data: &[u8]) -> Result<Vec<u8>, KeyringError> {
     let key = get_master_key()?;
     let cipher = ChaCha20Poly1305::new(key.into());
 
     if encrypted_data.len() < 12 {
-        return Err("Payload de seguridad corrupto o incompleto".to_string());
+        return Err(KeyringError::Message(
+            "Payload de seguridad corrupto o incompleto".to_string(),
+        ));
     }
 
     let nonce = Nonce::from_slice(&encrypted_data[0..12]);
     let ciphertext = &encrypted_data[12..];
 
-    let plaintext = cipher.decrypt(nonce, ciphertext).map_err(|e| e.to_string())?;
+    let plaintext =
+        cipher.decrypt(nonce, ciphertext).map_err(|e| KeyringError::Message(e.to_string()))?;
 
     Ok(plaintext)
 }

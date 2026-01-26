@@ -3,7 +3,7 @@
 /// Este módulo proporciona comandos genéricos para validar datos antes de su
 /// persistencia, asegurando que campos críticos como cédulas o correos electrónicos
 /// no estén duplicados en el sistema.
-use crate::services::surrealdb_service::get_db;
+use crate::services::surrealdb_service::{get_db, SurrealDbError};
 use tauri::command;
 
 /// Estructura interna para recibir el conteo de registros de `SurrealDB`.
@@ -23,15 +23,15 @@ pub async fn check_unique(
     field: String,
     value: String,
     exclude_id: Option<String>,
-) -> Result<bool, String> {
-    let db = get_db().await.map_err(|e| e.to_string())?;
+) -> Result<bool, SurrealDbError> {
+    let db = get_db().await?;
 
     // Sanitización básica de nombres de tabla y campos (Prevención de Inyección)
     if !table.chars().all(|c| c.is_alphanumeric() || c == '_') {
-        return Err("Nombre de tabla inválido".to_string());
+        return Err(SurrealDbError::Validation("Nombre de tabla inválido".to_string()));
     }
     if !field.chars().all(|c| c.is_alphanumeric() || c == '_') {
-        return Err("Nombre de campo inválido".to_string());
+        return Err(SurrealDbError::Validation("Nombre de campo inválido".to_string()));
     }
 
     // Construcción segura de la consulta SurrealQL
@@ -48,11 +48,10 @@ pub async fn check_unique(
         query = query.bind(("exclude_id", eid));
     }
 
-    let mut response = query.await.map_err(|e| e.to_string())?;
+    let mut response = query.await?;
 
     // Procesamiento del resultado: [{ count: N }]
-    let result: Vec<CountResult> =
-        response.take(0).map_err(|e| format!("Error de deserialización: {e}"))?;
+    let result: Vec<CountResult> = response.take(0)?;
 
     let count = result.first().map_or(0, |r| r.count);
 

@@ -369,19 +369,21 @@ pub async fn restore(id: String) -> Result<ListaNegraResponse, ListaNegraError> 
 // --------------------------------------------------------------------------
 
 /// @deprecated Use `get_by_id` en su lugar
-pub async fn get_lista_negra_by_id(id: String) -> Result<Option<ListaNegraResponse>, String> {
-    get_by_id(id).await.map_err(|e| e.to_string())
+pub async fn get_lista_negra_by_id(
+    id: String,
+) -> Result<Option<ListaNegraResponse>, ListaNegraError> {
+    get_by_id(id).await
 }
 
 /// @deprecated Use `get_all` en su lugar
-pub async fn get_all_lista_negra() -> Result<Vec<ListaNegraResponse>, String> {
-    let response = get_all().await.map_err(|e| e.to_string())?;
+pub async fn get_all_lista_negra() -> Result<Vec<ListaNegraResponse>, ListaNegraError> {
+    let response = get_all().await?;
     Ok(response.bloqueados)
 }
 
 /// @deprecated Use `search` en su lugar
 pub async fn search_personas_for_block(
     query: &str,
-) -> Result<Vec<crate::models::lista_negra::PersonaSearchResult>, String> {
-    db::search_candidates(query).await.map_err(|e| e.to_string())
+) -> Result<Vec<crate::models::lista_negra::PersonaSearchResult>, ListaNegraError> {
+    db::search_candidates(query).await.map_err(|e| ListaNegraError::Database(e.to_string()))
 }

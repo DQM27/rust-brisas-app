@@ -410,7 +410,7 @@ where
         &self,
         _ingreso_id: &str,
         _gafete: Option<&str>,
-    ) -> Result<ResultadoValidacionSalida, String> {
+    ) -> Result<ResultadoValidacionSalida, IngresoContratistaError> {
         Ok(ResultadoValidacionSalida { puede_salir: true, errores: vec![], advertencias: vec![] })
     }
 

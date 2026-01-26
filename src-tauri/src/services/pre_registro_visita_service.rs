@@ -14,12 +14,14 @@ use surrealdb::RecordId;
 use crate::services::search_service::SearchService;
 use std::sync::Arc;
 
+use crate::domain::errors::PreRegistroError;
+
 /// Crea un pre-registro de visita asegurando que el visitante exista en el catálogo.
 pub async fn create_pre_registro(
     search_service: &Arc<SearchService>,
     input: CreatePreRegistroInput,
     registrado_por: RecordId,
-) -> Result<PreRegistroVisitaFetched, String> {
+) -> Result<PreRegistroVisitaFetched, PreRegistroError> {
     debug!("Iniciando creación de pre-registro para cédula: {}", input.cedula);
 
     // 1. Asegurar que el perfil del visitante existe (Doble registro inteligente)
@@ -91,5 +93,5 @@ pub async fn create_pre_registro(
         updated_at: now,
     };
 
-    db::create(dto).await.map_err(|e| e.to_string())
+    db::create(dto).await.map_err(|e| PreRegistroError::Database(e.to_string()))
 }

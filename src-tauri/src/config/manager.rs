@@ -34,7 +34,7 @@ pub fn get_default_config_path() -> PathBuf {
 }
 
 /// Carga la configuración desde el archivo TOML con fallback a backup
-pub fn load_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
+pub fn load_config() -> Result<AppConfig, crate::domain::errors::ConfigError> {
     // Buscar archivo existente
     for path in get_config_search_paths() {
         if path.exists() {
@@ -88,7 +88,7 @@ pub fn load_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
 }
 
 /// Crea y guarda una configuración por defecto
-fn create_default_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
+fn create_default_config() -> Result<AppConfig, crate::domain::errors::ConfigError> {
     let mut config = AppConfig::default();
 
     // Generar ID único
@@ -110,7 +110,10 @@ fn create_default_config() -> Result<AppConfig, Box<dyn std::error::Error>> {
 }
 
 /// Guarda la configuración en un archivo TOML creando un backup previo
-pub fn save_config(config: &AppConfig, path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+pub fn save_config(
+    config: &AppConfig,
+    path: &std::path::Path,
+) -> Result<(), crate::domain::errors::ConfigError> {
     // Crear directorio si no existe
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
@@ -133,7 +136,7 @@ pub fn save_config(config: &AppConfig, path: &PathBuf) -> Result<(), Box<dyn std
 }
 
 /// Genera un ID único basado en el hardware de la máquina
-fn generate_hardware_id() -> Result<String, Box<dyn std::error::Error>> {
+fn generate_hardware_id() -> Result<String, crate::domain::errors::ConfigError> {
     // Intentar obtener MAC address
     if let Ok(Some(mac)) = mac_address::get_mac_address() {
         let mac_str = mac.to_string().replace(':', "");

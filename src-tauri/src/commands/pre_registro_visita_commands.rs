@@ -3,6 +3,7 @@
 // ==========================================
 
 use crate::db::surrealdb_pre_registro_visita_queries as db;
+use crate::domain::errors::PreRegistroError;
 use crate::models::ingreso::{CreatePreRegistroInput, PreRegistroEstado, PreRegistroVisitaFetched};
 use crate::services::session::SessionState;
 use surrealdb::RecordId;
@@ -37,8 +38,10 @@ pub async fn create_pre_registro_visita(
     session: State<'_, SessionState>,
     search_service: State<'_, Arc<SearchService>>,
     input: CreatePreRegistroInput,
-) -> Result<PreRegistroVisitaFetched, String> {
-    let user = session.get_user().ok_or("Usuario no autenticado para esta acción".to_string())?;
+) -> Result<PreRegistroVisitaFetched, PreRegistroError> {
+    let user = session
+        .get_user()
+        .ok_or_else(|| PreRegistroError::Validation("Usuario no autenticado".to_string()))?;
 
     let user_id = parse_user_id(&user.id);
 
@@ -51,18 +54,23 @@ pub async fn create_pre_registro_visita(
 }
 
 #[tauri::command]
-pub async fn get_pre_registros_pendientes() -> Result<Vec<PreRegistroVisitaFetched>, String> {
-    db::find_pending().await.map_err(|e| e.to_string())
+pub async fn get_pre_registros_pendientes(
+) -> Result<Vec<PreRegistroVisitaFetched>, PreRegistroError> {
+    db::find_pending().await.map_err(|e| PreRegistroError::Database(e.to_string()))
 }
 
 #[tauri::command]
 pub async fn check_pre_registro_by_cedula(
     cedula: String,
-) -> Result<Option<PreRegistroVisitaFetched>, String> {
-    db::find_by_cedula_pending(&cedula).await.map_err(|e| e.to_string())
+) -> Result<Option<PreRegistroVisitaFetched>, PreRegistroError> {
+    db::find_by_cedula_pending(&cedula).await.map_err(|e| PreRegistroError::Database(e.to_string()))
 }
 
 #[tauri::command]
-pub async fn cancel_pre_registro_visita(id: RecordId) -> Result<PreRegistroVisitaFetched, String> {
-    db::update_status(&id, PreRegistroEstado::Cancelado).await.map_err(|e| e.to_string())
+pub async fn cancel_pre_registro_visita(
+    id: RecordId,
+) -> Result<PreRegistroVisitaFetched, PreRegistroError> {
+    db::update_status(&id, PreRegistroEstado::Cancelado)
+        .await
+        .map_err(|e| PreRegistroError::Database(e.to_string()))
 }

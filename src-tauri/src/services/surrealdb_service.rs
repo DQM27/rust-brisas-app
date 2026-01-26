@@ -55,7 +55,8 @@ pub async fn get_db() -> Result<Surreal<Db>, SurrealDbError> {
 // MODELOS DE ERROR Y CONFIGURACIÓN
 // ==========================================
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Serialize)]
+#[serde(tag = "type", content = "message")]
 pub enum SurrealDbError {
     #[error("Error de conexión: {0}")]
     Connection(String),
@@ -69,6 +70,8 @@ pub enum SurrealDbError {
     Init(String),
     #[error("Error de transacción: {0}")]
     TransactionError(String),
+    #[error("Error de validación: {0}")]
+    Validation(String),
 }
 
 impl From<surrealdb::Error> for SurrealDbError {
@@ -179,4 +182,3 @@ impl SurrealDbService {
 // --------------------------------------------------------------------------
 // PRUEBAS UNITARIAS
 // --------------------------------------------------------------------------
-
