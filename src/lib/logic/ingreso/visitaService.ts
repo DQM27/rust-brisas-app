@@ -149,12 +149,13 @@ export async function crearIngresoVisita(
 		// Pero el backend lo soporta. Default undefined.
 
 		anfitrion: input.anfitrion,
-		area_visitada: input.areaVisitada,
+		areaVisitada: input.areaVisitada,
 		motivo: input.motivoVisita,
-		gafete: input.gafeteNumero || undefined,
+		modoIngreso: input.modoIngreso,
+		placaVehiculo: input.vehiculoPlaca || undefined,
+		gafeteNumero: input.gafeteNumero ? parseInt(input.gafeteNumero) : undefined,
 		observaciones: input.observaciones || undefined,
-		usuario_ingreso_id: input.usuarioIngresoId,
-		cita_id: undefined
+		preRegistroId: undefined
 	};
 
 	const result = await ingresoVisitaService.createIngreso(fullInput);

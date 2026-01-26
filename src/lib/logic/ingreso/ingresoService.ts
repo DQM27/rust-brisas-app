@@ -272,7 +272,7 @@ export async function crearIngreso(
 				throw new Error('Faltan datos requeridos para ingreso de visita (cedula, nombre, etc.)');
 			}
 
-			return await invoke('crear_ingreso_visita_v2', {
+			return await invoke('crear_ingreso_visita', {
 				input: {
 					cedula: extraData.cedula,
 					nombre: extraData.nombre,
@@ -282,10 +282,9 @@ export async function crearIngreso(
 					motivo: extraData.motivo || 'Visita',
 					modoIngreso: formData.modoIngreso || 'caminando',
 					placaVehiculo: null, // Visitas usually don't have vehicles in this form yet
-					gafeteNumero: formData.gafete,
+					gafeteNumero: formData.gafete ? parseInt(formData.gafete) : null,
 					observaciones: formData.observaciones || null
-				},
-				usuarioId: usuarioId
+				}
 			});
 		} else {
 			throw new Error(`Tipo de ingreso no soportado: ${tipo}`);

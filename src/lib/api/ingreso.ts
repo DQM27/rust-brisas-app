@@ -52,7 +52,7 @@ export const ingreso = {
 	 */
 	crearIngresoVisita: async (input: CreateIngresoVisitaInput): Promise<IngresoResponse> => {
 		const validated = CreateIngresoVisitaSchema.parse(input);
-		return await invoke('crear_ingreso_visita_v2', { input: validated });
+		return await invoke('crear_ingreso_visita', { input: validated });
 	},
 
 	/**
