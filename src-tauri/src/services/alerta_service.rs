@@ -90,62 +90,8 @@ pub async fn find_all(
         }
     }
 
-    // 3. Mapa de Empresas (Normalización de IDs para el matching)
-    let mut company_map: HashMap<String, String> = HashMap::new();
-
-    // Batch para Contratistas
-    if !contractor_ids.is_empty() {
-        let q = "SELECT id, contratista.empresa.nombre as nombre FROM ingreso_contratista WHERE id IN $ids FETCH contratista, contratista.empresa";
-        if let Ok(mut res) =
-            db.query(q).bind(("ids", contractor_ids.into_iter().collect::<Vec<_>>())).await
-        {
-            if let Ok(rows) = res.take::<Vec<serde_json::Value>>(0) {
-                for row in rows {
-                    if let (Some(id), Some(n)) =
-                        (row.get("id"), row.get("nombre").and_then(|v| v.as_str()))
-                    {
-                        company_map.insert(id.to_string(), n.to_string());
-                    }
-                }
-            }
-        }
-    }
-
-    // Batch para Proveedores
-    if !provider_ids.is_empty() {
-        let q = "SELECT id, proveedor.empresa.nombre as nombre FROM ingreso_proveedor WHERE id IN $ids FETCH proveedor, proveedor.empresa";
-        if let Ok(mut res) =
-            db.query(q).bind(("ids", provider_ids.into_iter().collect::<Vec<_>>())).await
-        {
-            if let Ok(rows) = res.take::<Vec<serde_json::Value>>(0) {
-                for row in rows {
-                    if let (Some(id), Some(n)) =
-                        (row.get("id"), row.get("nombre").and_then(|v| v.as_str()))
-                    {
-                        company_map.insert(id.to_string(), n.to_string());
-                    }
-                }
-            }
-        }
-    }
-
-    // Batch para Visitas
-    if !visitor_ids.is_empty() {
-        let q = "SELECT id, empresa_nombre as nombre FROM ingreso_visita WHERE id IN $ids";
-        if let Ok(mut res) =
-            db.query(q).bind(("ids", visitor_ids.into_iter().collect::<Vec<_>>())).await
-        {
-            if let Ok(rows) = res.take::<Vec<serde_json::Value>>(0) {
-                for row in rows {
-                    if let (Some(id), Some(n)) =
-                        (row.get("id"), row.get("nombre").and_then(|v| v.as_str()))
-                    {
-                        company_map.insert(id.to_string(), n.to_string());
-                    }
-                }
-            }
-        }
-    }
+    // 3. Mapa de Empresas
+    let company_map = fetch_company_names(contractor_ids, provider_ids, visitor_ids, &db).await;
 
     // 4. Transformación final
     let response = alertas
@@ -297,4 +243,71 @@ pub async fn resolver(
 /// * `id` - Identificador único de la alerta a eliminar.
 pub async fn delete(id: &str) -> Result<(), AlertaError> {
     db::delete(id).await.map_err(|e| AlertaError::Database(e.to_string()))
+}
+
+#[allow(clippy::mutable_key_type)]
+async fn fetch_company_names(
+    contractor_ids: std::collections::HashSet<surrealdb::RecordId>,
+    provider_ids: std::collections::HashSet<surrealdb::RecordId>,
+    visitor_ids: std::collections::HashSet<surrealdb::RecordId>,
+    db: &surrealdb::Surreal<surrealdb::engine::local::Db>,
+) -> std::collections::HashMap<String, String> {
+    use std::collections::HashMap;
+    let mut company_map: HashMap<String, String> = HashMap::new();
+
+    // Batch para Contratistas
+    if !contractor_ids.is_empty() {
+        let q = "SELECT id, contratista.empresa.nombre as nombre FROM ingreso_contratista WHERE id IN $ids FETCH contratista, contratista.empresa";
+        if let Ok(mut res) =
+            db.query(q).bind(("ids", contractor_ids.into_iter().collect::<Vec<_>>())).await
+        {
+            if let Ok(rows) = res.take::<Vec<serde_json::Value>>(0) {
+                for row in rows {
+                    if let (Some(id), Some(n)) =
+                        (row.get("id"), row.get("nombre").and_then(|v| v.as_str()))
+                    {
+                        company_map.insert(id.to_string(), n.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    // Batch para Proveedores
+    if !provider_ids.is_empty() {
+        let q = "SELECT id, proveedor.empresa.nombre as nombre FROM ingreso_proveedor WHERE id IN $ids FETCH proveedor, proveedor.empresa";
+        if let Ok(mut res) =
+            db.query(q).bind(("ids", provider_ids.into_iter().collect::<Vec<_>>())).await
+        {
+            if let Ok(rows) = res.take::<Vec<serde_json::Value>>(0) {
+                for row in rows {
+                    if let (Some(id), Some(n)) =
+                        (row.get("id"), row.get("nombre").and_then(|v| v.as_str()))
+                    {
+                        company_map.insert(id.to_string(), n.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    // Batch para Visitas
+    if !visitor_ids.is_empty() {
+        let q = "SELECT id, empresa_nombre as nombre FROM ingreso_visita WHERE id IN $ids";
+        if let Ok(mut res) =
+            db.query(q).bind(("ids", visitor_ids.into_iter().collect::<Vec<_>>())).await
+        {
+            if let Ok(rows) = res.take::<Vec<serde_json::Value>>(0) {
+                for row in rows {
+                    if let (Some(id), Some(n)) =
+                        (row.get("id"), row.get("nombre").and_then(|v| v.as_str()))
+                    {
+                        company_map.insert(id.to_string(), n.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    company_map
 }

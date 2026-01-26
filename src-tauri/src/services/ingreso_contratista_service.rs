@@ -88,29 +88,10 @@ where
             EstadoAutorizacion::from_str_lossy(contratista.estado.as_str())
         };
 
-        let b = self.security_repo.check_if_blocked_by_cedula(&contratista.cedula).await.unwrap_or(
-            BlockStatus { is_blocked: false, nivel_severidad: None, bloqueado_desde: None },
-        );
+        let b = self.get_block_status(&contratista.cedula).await;
 
-        let ing_ab = self
-            .ingreso_repo
-            .find_ingreso_abierto_by_contratista(&contratista.id)
-            .await
-            .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
-
-        if let Some(ing) = ing_ab {
-            let resp = IngresoResponse::from_contratista_fetched(ing);
-
-            return Ok(ValidacionIngresoResponse {
-                puede_ingresar: false,
-                motivo_rechazo: Some("Ya tiene un ingreso activo en planta".to_string()),
-                severidad_lista_negra: None,
-                alertas: vec![],
-                contratista: None,
-                tiene_ingreso_abierto: true,
-                ingreso_abierto: Some(resp.clone()),
-                ultimo_ingreso: Some(resp),
-            });
+        if let Some(resp) = self.check_active_ingreso(&contratista_id).await? {
+            return Ok(resp);
         }
 
         // Consultar alertas de gafete pendientes (deudas de gafetes no devueltos)
@@ -473,6 +454,41 @@ where
         &self,
     ) -> Result<Vec<AlertaTiempoExcedido>, IngresoContratistaError> {
         Ok(vec![])
+    }
+
+    async fn get_block_status(&self, cedula: &str) -> BlockStatus {
+        self.security_repo.check_if_blocked_by_cedula(cedula).await.unwrap_or(BlockStatus {
+            is_blocked: false,
+            nivel_severidad: None,
+            bloqueado_desde: None,
+        })
+    }
+
+    async fn check_active_ingreso(
+        &self,
+        contratista_id: &RecordId,
+    ) -> Result<Option<ValidacionIngresoResponse>, IngresoContratistaError> {
+        let ing_ab = self
+            .ingreso_repo
+            .find_ingreso_abierto_by_contratista(contratista_id)
+            .await
+            .map_err(|e| IngresoContratistaError::Database(e.to_string()))?;
+
+        if let Some(ing) = ing_ab {
+            let resp = IngresoResponse::from_contratista_fetched(ing);
+
+            return Ok(Some(ValidacionIngresoResponse {
+                puede_ingresar: false,
+                motivo_rechazo: Some("Ya tiene un ingreso activo en planta".to_string()),
+                severidad_lista_negra: None,
+                alertas: vec![],
+                contratista: None,
+                tiene_ingreso_abierto: true,
+                ingreso_abierto: Some(resp.clone()),
+                ultimo_ingreso: Some(resp),
+            }));
+        }
+        Ok(None)
     }
 
     fn format_alertas_pendientes(alertas: &[crate::models::ingreso::AlertaGafete]) -> Vec<String> {

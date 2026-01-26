@@ -261,9 +261,8 @@ fn format_datetime_iso(dt: &surrealdb::Datetime) -> String {
 pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
     use crate::db::surrealdb_alerta_queries as alerta_db;
     use crate::db::surrealdb_ingreso_general_queries as ingreso_db;
-    use crate::db::surrealdb_user_queries as user_db;
     use crate::models::ingreso::UniversalIngresoFetched;
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashMap;
 
     let gafetes = db::get_all_gafetes().await.map_err(|e| GafeteError::Database(e.to_string()))?;
 
@@ -273,24 +272,8 @@ pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
         vec![]
     });
 
-    // Collect all unique user IDs that we need to fetch (reportado_por, resuelto_por)
-    #[allow(clippy::mutable_key_type)]
-    let mut user_ids_to_fetch: HashSet<RecordId> = HashSet::new();
-    for alerta in &alertas {
-        user_ids_to_fetch.insert(alerta.reportado_por.clone());
-        if let Some(ref resuelto_por) = alerta.resuelto_por {
-            user_ids_to_fetch.insert(resuelto_por.clone());
-        }
-    }
-
     // Batch fetch users and create lookup map (user_id_string -> full name)
-    let mut user_names: HashMap<String, String> = HashMap::new();
-    for user_id in user_ids_to_fetch {
-        if let Ok(Some(user)) = user_db::find_by_id(&user_id).await {
-            let full_name = format!("{} {}", user.nombre, user.apellido);
-            user_names.insert(user_id.to_string(), full_name);
-        }
-    }
+    let user_names = fetch_user_names_for_alerts(&alertas).await;
 
     // Batch fetch ALL active ingresos to determine real usage status
     // This optimization replaces N+1 queries and ensures status is correct even if 'en_uso' flag is stale
@@ -300,18 +283,7 @@ pub async fn get_all_gafetes() -> Result<Vec<GafeteResponse>, GafeteError> {
     });
 
     // Create lookup map: (gafete_numero, TipoGafete) -> Ingreso
-    let mut active_gafete_map: HashMap<(i32, TipoGafete), UniversalIngresoFetched> = HashMap::new();
-    for ingreso in active_ingresos {
-        let (gafete_num, gafete_tipo) = match &ingreso {
-            UniversalIngresoFetched::Contratista(i) => (i.gafete_numero, TipoGafete::Contratista),
-            UniversalIngresoFetched::Proveedor(i) => (i.gafete_numero, TipoGafete::Proveedor),
-            UniversalIngresoFetched::Visita(i) => (i.gafete_numero, TipoGafete::Visita),
-        };
-
-        if let Some(num) = gafete_num {
-            active_gafete_map.insert((num, gafete_tipo), ingreso);
-        }
-    }
+    let active_gafete_map = create_active_gafete_map(active_ingresos);
 
     // Create lookup map by (gafete_numero, TipoGafete)
     let mut alertas_map: HashMap<(i32, TipoGafete), crate::models::ingreso::alerta::AlertaGafete> =
@@ -444,6 +416,49 @@ pub async fn delete_gafete(id_str: &str) -> Result<(), GafeteError> {
     Ok(())
 }
 
-// --------------------------------------------------------------------------
-// TESTS UNITARIOS
-// --------------------------------------------------------------------------
+async fn fetch_user_names_for_alerts(
+    alertas: &[crate::models::ingreso::alerta::AlertaGafete],
+) -> std::collections::HashMap<String, String> {
+    use crate::db::surrealdb_user_queries as user_db;
+    use std::collections::{HashMap, HashSet};
+    use surrealdb::RecordId;
+
+    #[allow(clippy::mutable_key_type)]
+    let mut user_ids_to_fetch: HashSet<RecordId> = HashSet::new();
+    for alerta in alertas {
+        user_ids_to_fetch.insert(alerta.reportado_por.clone());
+        if let Some(ref resuelto_por) = alerta.resuelto_por {
+            user_ids_to_fetch.insert(resuelto_por.clone());
+        }
+    }
+
+    let mut user_names: HashMap<String, String> = HashMap::new();
+    for user_id in user_ids_to_fetch {
+        if let Ok(Some(user)) = user_db::find_by_id(&user_id).await {
+            let full_name = format!("{} {}", user.nombre, user.apellido);
+            user_names.insert(user_id.to_string(), full_name);
+        }
+    }
+    user_names
+}
+
+fn create_active_gafete_map(
+    active_ingresos: Vec<crate::models::ingreso::UniversalIngresoFetched>,
+) -> std::collections::HashMap<(i32, TipoGafete), crate::models::ingreso::UniversalIngresoFetched> {
+    use crate::models::ingreso::UniversalIngresoFetched;
+    use std::collections::HashMap;
+
+    let mut active_gafete_map: HashMap<(i32, TipoGafete), UniversalIngresoFetched> = HashMap::new();
+    for ingreso in active_ingresos {
+        let (gafete_num, gafete_tipo) = match &ingreso {
+            UniversalIngresoFetched::Contratista(i) => (i.gafete_numero, TipoGafete::Contratista),
+            UniversalIngresoFetched::Proveedor(i) => (i.gafete_numero, TipoGafete::Proveedor),
+            UniversalIngresoFetched::Visita(i) => (i.gafete_numero, TipoGafete::Visita),
+        };
+
+        if let Some(num) = gafete_num {
+            active_gafete_map.insert((num, gafete_tipo), ingreso);
+        }
+    }
+    active_gafete_map
+}
