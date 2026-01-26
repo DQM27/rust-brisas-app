@@ -17,7 +17,9 @@
 		Edit, // Added from original imports
 		Filter,
 		Pencil,
-		X
+		X,
+		RotateCcw,
+		History
 	} from 'lucide-svelte';
 	import { can } from '$lib/logic/permissions';
 	import { currentUser } from '$lib/stores/auth';
@@ -46,7 +48,11 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { save } from '@tauri-apps/plugin-dialog';
 
-	import type { ContratistaResponse, EstadoContratista } from '$lib/types/contratista';
+	import type {
+		ContratistaResponse,
+		ContratistaListResponse,
+		EstadoContratista
+	} from '$lib/types/contratista';
 
 	interface Props {
 		tabId?: string;
@@ -264,18 +270,34 @@
 	// DATA LOADING
 	// ==========================================
 
+	// Archive State
+	let showArchived = $state(false);
+
+	// ==========================================
+	// DATA LOADING
+	// ==========================================
+
 	async function loadContratistas() {
 		loading = true;
 		error = '';
-		// We don't clear contratistas immediately to avoid flash if possible, or just let Tabulator handle it
 		try {
-			const result = await contratistaService.fetchAllContratistas();
+			// Select service method based on view mode
+			const result = showArchived
+				? await contratistaService.getArchivedContratistas()
+				: await contratistaService.fetchAllContratistas();
+
 			if (result.ok) {
+				// Normalize data source
+				const rawList =
+					'contratistas' in result.data
+						? (result.data as ContratistaListResponse).contratistas
+						: (result.data as ContratistaResponse[]);
+
 				// Map vehicles to _children for Tree Data
-				contratistas = result.data.contratistas.map((c) => {
+				contratistas = rawList.map((c: ContratistaResponse) => {
 					const children =
 						c.vehiculos && c.vehiculos.length > 0
-							? c.vehiculos.map((v) => ({
+							? c.vehiculos.map((v: any) => ({
 									_parent: c, // Reference to parent for actions
 									id: v.id,
 									// Map vehicle fields to column matches
@@ -297,10 +319,12 @@
 						_children: children
 					};
 				});
+
 				// Manual update needed as prop is not reactive in wrapper
 				if (gridWrapper) {
 					gridWrapper.replaceData(contratistas);
 					// Force redraw to fix layout glitches
+					gridWrapper.deselectAll();
 					setTimeout(() => gridWrapper.redraw(), 100);
 				}
 			} else {
@@ -311,6 +335,11 @@
 			error = 'Error al cargar contratistas';
 		}
 		loading = false;
+	}
+
+	function handleToggleArchived() {
+		showArchived = !showArchived;
+		loadContratistas();
 	}
 
 	// Smart Search implementation using Tantivy
@@ -460,6 +489,27 @@
 		modalLoading = false;
 	}
 
+	// Restore
+	async function handleRestore(contratista: ContratistaResponse) {
+		if (!$currentUser || !can($currentUser, 'DELETE_CONTRACTOR')) {
+			toast.error('No tienes permisos para restaurar.');
+			return;
+		}
+
+		if (!confirm(`¿Restaurar al contratista "${contratista.nombreCompleto}" al catálogo activo?`))
+			return;
+
+		const toastId = toast.loading('Restaurando...');
+		const result = await contratistaService.restoreContratista(contratista.id);
+
+		if (result.ok) {
+			toast.success('Contratista restaurado', { id: toastId });
+			loadContratistas();
+		} else {
+			toast.error(result.error || 'Error desconocido', { id: toastId });
+		}
+	}
+
 	// Delete Contractor
 	async function handleDelete(contratista: ContratistaResponse) {
 		if (!$currentUser || !can($currentUser, 'DELETE_CONTRACTOR')) {
@@ -469,7 +519,7 @@
 
 		if (
 			!confirm(
-				`¿Estás seguro de eliminar a ${contratista.nombreCompleto}? Se moverá a la papelera.`
+				`¿Mover a "${contratista.nombreCompleto}" a la papelera? Podrás recuperarlo más tarde.`
 			)
 		)
 			return;
@@ -716,45 +766,59 @@
 						<div
 							class="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200"
 						>
-							<button
-								class="flex items-center gap-2 px-3 py-1.5
-                                       bg-red-600/10 hover:bg-red-600/20
-                                       text-red-400 hover:text-red-300
-                                       border border-red-500/20 hover:border-red-500/30
-                                       rounded-md text-sm font-medium transition-all"
-								onclick={() => {
-									if (confirm(`¿Eliminar ${selectedRows.length} elementos seleccionados?`)) {
+							{#if showArchived && selectedRows.length === 1}
+								<button
+									class="flex items-center gap-2 px-3 py-1.5
+										   bg-teal-600/10 hover:bg-teal-600/20
+										   text-teal-400 hover:text-teal-300
+										   border border-teal-500/20 hover:border-teal-500/30
+										   rounded-md text-sm font-medium transition-all"
+									onclick={() => handleRestore(selectedRows[0])}
+								>
+									<RotateCcw size={16} />
+									<span>Restaurar</span>
+								</button>
+							{/if}
+
+							{#if !showArchived}
+								<button
+									class="flex items-center gap-2 px-3 py-1.5
+										   bg-red-600/10 hover:bg-red-600/20
+										   text-red-400 hover:text-red-300
+										   border border-red-500/20 hover:border-red-500/30
+										   rounded-md text-sm font-medium transition-all"
+									onclick={() => {
 										// TODO: Implement bulk delete
 										console.log('Deleting', selectedRows);
 										// After delete, clear selection
 										gridWrapper?.deselectAll();
-									}
-								}}
-							>
-								<Trash2 size={16} />
-								<span>Eliminar ({selectedRows.length})</span>
-							</button>
-
-							{#if selectedRows.length === 1}
-								<button
-									class="flex items-center gap-2 px-3 py-1.5
-                                           bg-amber-600/10 hover:bg-amber-600/20
-                                           text-amber-400 hover:text-amber-300
-                                           border border-amber-500/20 hover:border-amber-500/30
-                                           rounded-md text-sm font-medium transition-all"
-									onclick={() => openModal(selectedRows[0])}
+									}}
 								>
-									<Pencil size={16} />
-									<span>Editar</span>
+									<Trash2 size={16} />
+									<span>Eliminar ({selectedRows.length})</span>
 								</button>
+
+								{#if selectedRows.length === 1}
+									<button
+										class="flex items-center gap-2 px-3 py-1.5
+											   bg-amber-600/10 hover:bg-amber-600/20
+											   text-amber-400 hover:text-amber-300
+											   border border-amber-500/20 hover:border-amber-500/30
+											   rounded-md text-sm font-medium transition-all"
+										onclick={() => openModal(selectedRows[0])}
+									>
+										<Pencil size={16} />
+										<span>Editar</span>
+									</button>
+								{/if}
 							{/if}
 
 							<button
 								class="flex items-center gap-2 px-3 py-1.5
-                                       bg-[#27272a] hover:bg-[#3f3f46]
-                                       text-gray-400 hover:text-white
-                                       border border-white/10
-                                       rounded-md text-sm font-medium transition-all"
+									   bg-[#27272a] hover:bg-[#3f3f46]
+									   text-gray-400 hover:text-white
+									   border border-white/10
+									   rounded-md text-sm font-medium transition-all"
 								onclick={() => gridWrapper?.deselectAll()}
 							>
 								<X size={16} />
@@ -762,8 +826,21 @@
 							</button>
 						</div>
 					{:else}
-						<!-- Default Actions -->
-						{#if $currentUser && can($currentUser, 'CREATE_CONTRACTOR')}
+						<button
+							onclick={handleToggleArchived}
+							class="flex items-center gap-1.5 px-3 py-1.5 {showArchived
+								? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+								: 'bg-surface-3 text-secondary border-surface'} border rounded-md hover:bg-surface-4 text-sm font-medium transition-colors"
+							title={showArchived ? 'Ver Activos' : 'Ver Archivados'}
+						>
+							{#if showArchived}
+								<History size={14} /> Ver Activos
+							{:else}
+								<Trash2 size={14} /> Papelera
+							{/if}
+						</button>
+
+						{#if !showArchived && $currentUser && can($currentUser, 'CREATE_CONTRACTOR')}
 							<button
 								class="flex items-center gap-2 px-3 py-1.5
                                        bg-blue-600/10 hover:bg-blue-600/20

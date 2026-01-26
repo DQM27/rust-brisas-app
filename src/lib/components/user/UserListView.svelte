@@ -4,7 +4,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
-	import { AlertCircle, UserPlus, Pencil, Trash2, X } from 'lucide-svelte';
+	import { AlertCircle, UserPlus, Pencil, Trash2, X, RotateCcw, History } from 'lucide-svelte';
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
@@ -252,11 +252,11 @@
 			return;
 		}
 
-		if (!confirm(`¿Eliminar a ${user.nombre}?`)) return;
+		if (!confirm(`¿Mover al usuario "${user.nombre}" a la papelera?`)) return;
 		const toastId = toast.loading('Eliminando...');
 		const result = await userService.deleteUser(user.id);
 		if (result.ok) {
-			toast.success('Usuario eliminado', { id: toastId });
+			toast.success('Usuario enviado a papelera', { id: toastId });
 			loadUsers();
 		} else {
 			toast.error(result.error, { id: toastId });
@@ -264,10 +264,11 @@
 	}
 
 	async function handleRestoreUser(user: UserResponse) {
+		if (!confirm(`¿Restaurar acceso al usuario "${user.nombre}"?`)) return;
 		const toastId = toast.loading('Restaurando...');
 		const result = await userService.restoreUser(user.id);
 		if (result.ok) {
-			toast.success('Usuario restaurado', { id: toastId });
+			toast.success('Usuario restaurado con éxito', { id: toastId });
 			loadUsers();
 		} else {
 			toast.error(result.error, { id: toastId });
@@ -277,23 +278,33 @@
 	async function handleDeleteMultiple(selection: UserResponse[]) {
 		const selfIncluded = $currentUser && selection.some((u) => u.id === $currentUser.id);
 		let toDelete = selection;
+
 		if (selfIncluded) {
-			toast.error('No puedes eliminarte a ti mismo. Excluido de la selección.', { icon: '⚠️' });
 			toDelete = selection.filter((u) => u.id !== $currentUser!.id);
-			if (toDelete.length === 0) return;
+			if (toDelete.length === 0) {
+				toast.error('No puedes eliminar tu propia cuenta.', { icon: '🚫' });
+				return;
+			}
 		}
 
-		if (!confirm(`¿Eliminar ${toDelete.length} usuarios?`)) return;
-		const toastId = toast.loading('Eliminando...');
+		const count = toDelete.length;
+		const message = selfIncluded
+			? `Has seleccionado tu cuenta (que no será eliminada). ¿Mover los otros ${count} usuarios a la papelera?`
+			: `¿Mover ${count} usuarios a la papelera?`;
+
+		if (!confirm(message)) return;
+
+		const toastId = toast.loading('Procesando...');
 		let errors = 0;
 		for (const u of toDelete) {
 			const res = await userService.deleteUser(u.id);
 			if (!res.ok) errors++;
 		}
+
 		if (errors === 0) {
-			toast.success('Usuarios eliminados', { id: toastId });
+			toast.success(`${count} usuarios enviados a papelera`, { id: toastId });
 		} else {
-			toast.error(`Errores: ${errors}`, { id: toastId });
+			toast.error(`Error en ${errors} registros`, { id: toastId });
 		}
 		loadUsers();
 		gridWrapper?.deselectAll();
@@ -403,7 +414,7 @@
 								onclick={() => handleRestoreUser(selected)}
 								class="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500/10 text-teal-400 border border-teal-500/20 rounded-md hover:bg-teal-500/20 text-sm font-medium transition-colors"
 							>
-								<Trash2 size={14} /> Restaurar
+								<RotateCcw size={14} /> Restaurar
 							</button>
 						{:else if $currentUser && can($currentUser, 'UPDATE_USER_PROFILE', selected)}
 							<button
@@ -433,8 +444,11 @@
 							: 'bg-surface-3 text-secondary border-surface'} border rounded-md hover:bg-surface-4 text-sm font-medium transition-colors"
 						title={showArchived ? 'Ver Activos' : 'Ver Archivados'}
 					>
-						<Trash2 size={14} />
-						{showArchived ? 'Ver Activos' : 'Papelera'}
+						{#if showArchived}
+							<History size={14} /> Ver Activos
+						{:else}
+							<Trash2 size={14} /> Papelera
+						{/if}
 					</button>
 
 					{#if !showArchived && $currentUser && can($currentUser, 'CREATE_USER')}

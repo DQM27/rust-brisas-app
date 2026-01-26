@@ -3,7 +3,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
-	import { Plus, Pencil, Trash2, X } from 'lucide-svelte';
+	import { Plus, Pencil, Trash2, X, RotateCcw, Undo2, History } from 'lucide-svelte';
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
@@ -188,13 +188,13 @@
 	async function confirmDelete(visitante: VisitanteResponse) {
 		if (
 			!confirm(
-				`¿Estás seguro de eliminar al visitante "${visitante.nombre} ${visitante.apellido}"?`
+				`¿Mover a "${visitante.nombre} ${visitante.apellido}" a la papelera? Podrás recuperarlo más tarde.`
 			)
 		)
 			return;
 		const res = await deleteVisitante(visitante.id);
 		if (res.ok) {
-			toast.success('Visitante eliminado');
+			toast.success('Visitante movido a papelera');
 			loadData();
 		} else {
 			toast.error(res.error);
@@ -202,9 +202,15 @@
 	}
 
 	async function handleRestore(visitante: VisitanteResponse) {
+		if (
+			!confirm(
+				`¿Restaurar al visitante "${visitante.nombre} ${visitante.apellido}" al catálogo activo?`
+			)
+		)
+			return;
 		const res = await restoreVisitante(visitante.id);
 		if (res.ok) {
-			toast.success('Visitante restaurado');
+			toast.success('Visitante restaurado con éxito');
 			loadData();
 		} else {
 			toast.error(res.error);
@@ -212,7 +218,7 @@
 	}
 
 	async function handleDeleteMultiple(selection: VisitanteResponse[]) {
-		if (!confirm(`¿Eliminar ${selection.length} visitantes?`)) return;
+		if (!confirm(`¿Mover ${selection.length} visitantes a la papelera?`)) return;
 		const toastId = toast.loading('Eliminando...');
 		let errors = 0;
 		for (const p of selection) {
@@ -220,9 +226,9 @@
 			if (!res.ok) errors++;
 		}
 		if (errors === 0) {
-			toast.success('Visitantes eliminados', { id: toastId });
+			toast.success(`${selection.length} visitantes enviados a papelera`, { id: toastId });
 		} else {
-			toast.error(`Errores: ${errors}`, { id: toastId });
+			toast.error(`Error en ${errors} registros`, { id: toastId });
 		}
 		loadData();
 		gridWrapper?.deselectAll();
@@ -320,7 +326,7 @@
 								onclick={() => handleRestore(selectedRows[0])}
 								class="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500/10 text-teal-400 border border-teal-500/20 rounded-md hover:bg-teal-500/20 text-sm font-medium transition-colors"
 							>
-								<Trash2 size={14} /> Restaurar
+								<RotateCcw size={14} /> Restaurar
 							</button>
 						{:else}
 							<button
@@ -350,8 +356,11 @@
 							: 'bg-surface-3 text-secondary border-surface'} border rounded-md hover:bg-surface-4 text-sm font-medium transition-colors"
 						title={showArchived ? 'Ver Activos' : 'Ver Archivados'}
 					>
-						<Trash2 size={14} />
-						{showArchived ? 'Ver Activos' : 'Papelera'}
+						{#if showArchived}
+							<History size={14} /> Ver Activos
+						{:else}
+							<Trash2 size={14} /> Papelera
+						{/if}
 					</button>
 
 					{#if !showArchived}

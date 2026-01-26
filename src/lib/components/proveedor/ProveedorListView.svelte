@@ -3,7 +3,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { toast } from 'svelte-5-french-toast';
-	import { Plus, Pencil, Trash2, X } from 'lucide-svelte';
+	import { Plus, Pencil, Trash2, X, RotateCcw, History } from 'lucide-svelte';
 
 	// Components
 	import TabulatorWrapper from '$lib/components/tabulator/TabulatorWrapper.svelte';
@@ -13,9 +13,11 @@
 	// Logic & Services
 	import {
 		fetchAllProveedores,
+		getArchivedProveedores,
 		createProveedor,
 		updateProveedor,
 		deleteProveedor,
+		restoreProveedor,
 		changeStatus
 	} from '$lib/logic/proveedor/proveedorService';
 	import { getProveedorColumns } from '$lib/logic/proveedor/proveedorColumns';
@@ -62,6 +64,7 @@
 	});
 
 	// State
+	let showArchived = $state(false);
 	let proveedores = $state<ProveedorResponse[]>([]);
 	let loading = $state(false);
 	let error = $state<string | null>(null);
@@ -101,12 +104,6 @@
 						clearCommand();
 					}
 					break;
-				case 'create':
-					if (!showModal) {
-						openFormModal(null);
-						clearCommand();
-					}
-					break;
 				case 'refresh':
 					loadData();
 					clearCommand();
@@ -120,11 +117,13 @@
 		loading = true;
 		error = null;
 		try {
-			const res = await fetchAllProveedores();
+			const res = showArchived ? await getArchivedProveedores() : await fetchAllProveedores();
+
 			if (res.ok) {
 				proveedores = res.data;
 				if (gridWrapper) {
 					gridWrapper.replaceData(proveedores);
+					gridWrapper.deselectAll();
 				}
 			} else {
 				error = res.error;
@@ -134,6 +133,11 @@
 			loading = false;
 		}
 	};
+
+	function handleToggleArchived() {
+		showArchived = !showArchived;
+		loadData();
+	}
 
 	// Columns Definition
 	let columns = $derived(
@@ -195,18 +199,35 @@
 	}
 
 	async function confirmDelete(proveedor: ProveedorResponse) {
-		if (!confirm(`¿Estás seguro de eliminar al proveedor "${proveedor.nombre}"?`)) return;
+		if (
+			!confirm(
+				`¿Mover al proveedor "${proveedor.nombre}" a la papelera? Podrás recuperarlo más tarde.`
+			)
+		)
+			return;
 		const res = await deleteProveedor(proveedor.id);
 		if (res.ok) {
-			toast.success('Proveedor eliminado');
+			toast.success('Proveedor enviado a papelera');
 			loadData();
 		} else {
 			toast.error(res.error);
 		}
 	}
 
+	async function handleRestore(proveedor: ProveedorResponse) {
+		if (!confirm(`¿Restaurar acceso al proveedor "${proveedor.nombre}"?`)) return;
+		const toastId = toast.loading('Restaurando...');
+		const res = await restoreProveedor(proveedor.id);
+		if (res.ok) {
+			toast.success('Proveedor restaurado con éxito', { id: toastId });
+			loadData();
+		} else {
+			toast.error(res.error, { id: toastId });
+		}
+	}
+
 	async function handleDeleteMultiple(selection: ProveedorResponse[]) {
-		if (!confirm(`¿Eliminar ${selection.length} proveedores?`)) return;
+		if (!confirm(`¿Mover ${selection.length} proveedores a la papelera?`)) return;
 		const toastId = toast.loading('Eliminando...');
 		let errors = 0;
 		for (const p of selection) {
@@ -214,9 +235,9 @@
 			if (!res.ok) errors++;
 		}
 		if (errors === 0) {
-			toast.success('Proveedores eliminados', { id: toastId });
+			toast.success(`${selection.length} proveedores enviados a papelera`, { id: toastId });
 		} else {
-			toast.error(`Errores: ${errors}`, { id: toastId });
+			toast.error(`Error en ${errors} registros`, { id: toastId });
 		}
 		loadData();
 		gridWrapper?.deselectAll();
@@ -311,28 +332,55 @@
 					</button>
 
 					{#if selectedRows.length === 1}
-						<button
-							onclick={() => openFormModal(selectedRows[0])}
-							class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-md hover:bg-amber-500/20 text-sm font-medium transition-colors"
-						>
-							<Pencil size={14} /> Editar
-						</button>
+						{#if showArchived}
+							<button
+								onclick={() => handleRestore(selectedRows[0])}
+								class="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500/10 text-teal-400 border border-teal-500/20 rounded-md hover:bg-teal-500/20 text-sm font-medium transition-colors"
+							>
+								<RotateCcw size={14} /> Restaurar
+							</button>
+						{:else}
+							<button
+								onclick={() => openFormModal(selectedRows[0])}
+								class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-md hover:bg-amber-500/20 text-sm font-medium transition-colors"
+							>
+								<Pencil size={14} /> Editar
+							</button>
+						{/if}
 					{/if}
 
-					<button
-						onclick={() => handleDeleteMultiple(selectedRows)}
-						class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
-					>
-						<Trash2 size={14} /> Eliminar ({selectedRows.length})
-					</button>
+					{#if !showArchived}
+						<button
+							onclick={() => handleDeleteMultiple(selectedRows)}
+							class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-md hover:bg-red-500/20 text-sm font-medium transition-colors"
+						>
+							<Trash2 size={14} /> Eliminar ({selectedRows.length})
+						</button>
+					{/if}
 				</div>
 			{:else}
 				<button
-					onclick={() => openFormModal(null)}
-					class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
+					onclick={handleToggleArchived}
+					class="flex items-center gap-1.5 px-3 py-1.5 {showArchived
+						? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+						: 'bg-surface-3 text-secondary border-surface'} border rounded-md hover:bg-surface-4 text-sm font-medium transition-colors"
+					title={showArchived ? 'Ver Activos' : 'Ver Archivados'}
 				>
-					<Plus size={14} /> Nuevo
+					{#if showArchived}
+						<History size={14} /> Ver Activos
+					{:else}
+						<Trash2 size={14} /> Papelera
+					{/if}
 				</button>
+
+				{#if !showArchived}
+					<button
+						onclick={() => openFormModal(null)}
+						class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md hover:bg-blue-500/20 text-sm font-medium transition-colors"
+					>
+						<Plus size={14} /> Nuevo
+					</button>
+				{/if}
 			{/if}
 		{/snippet}
 	</GridToolbar>
