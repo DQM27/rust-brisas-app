@@ -8,7 +8,7 @@ export default defineConfig({
 		sveltekit()
 	],
 	define: {
-		__APP_VERSION__: JSON.stringify('2.5.0'),
+		__APP_VERSION__: JSON.stringify('2.5.0')
 	},
 	clearScreen: false,
 	server: {

@@ -177,7 +177,6 @@ export async function uploadUserAvatar(
 		// Actualizar sesión si es el usuario actual para evitar desincronización
 		const current = get(currentUser);
 		if (current && current.id === userId) {
-
 			const refresh = await fetchUserById(userId);
 			if (refresh.ok) {
 				reloadSession(refresh.data);

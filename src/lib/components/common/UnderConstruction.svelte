@@ -80,6 +80,3 @@
 		<!-- Botón eliminado por solicitud del usuario -->
 	</div>
 </div>
-
-
-

@@ -1,6 +1,6 @@
 /**
  * Store de Comandos de Atajos
- * 
+ *
  * Separado del registry para evitar dependencias circulares
  */
 
@@ -20,30 +20,30 @@ export const activeContext = writable<string | null>(null);
  * Emitir un comando de atajo
  */
 export function emitCommand(command: ShortcutCommand, context?: string): void {
-    shortcutCommand.set({
-        command,
-        timestamp: Date.now(),
-        context
-    });
+	shortcutCommand.set({
+		command,
+		timestamp: Date.now(),
+		context
+	});
 }
 
 /**
  * Limpiar el comando actual
  */
 export function clearCommand(): void {
-    shortcutCommand.set(null);
+	shortcutCommand.set(null);
 }
 
 /**
  * Establecer el contexto activo
  */
 export function setActiveContext(context: string | null): void {
-    activeContext.set(context);
+	activeContext.set(context);
 }
 
 /**
  * Verificar si un contexto está activo
  */
 export function isContextActive(context: string): boolean {
-    return get(activeContext) === context;
+	return get(activeContext) === context;
 }

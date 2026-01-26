@@ -1,6 +1,6 @@
 /**
  * Sistema de Atajos de Teclado - Tipos
- * 
+ *
  * Tipos centralizados para el sistema de shortcuts usando hotkeys-js
  */
 
@@ -9,19 +9,19 @@
 // ============================================
 
 export type ShortcutCategory =
-    | 'system'      // Globales del sistema (tema, spotlight, logout)
-    | 'modules'     // En vistas de lista/módulos
-    | 'modals'      // En modales abiertos
-    | 'grids'       // En grids/tablas
-    | 'ingresos'    // Específicos del módulo de ingresos
-    | 'ingress-access'; // Accesos rápidos a módulos de ingreso
+	| 'system' // Globales del sistema (tema, spotlight, logout)
+	| 'modules' // En vistas de lista/módulos
+	| 'modals' // En modales abiertos
+	| 'grids' // En grids/tablas
+	| 'ingresos' // Específicos del módulo de ingresos
+	| 'ingress-access'; // Accesos rápidos a módulos de ingreso
 
 export interface CategoryMetadata {
-    id: ShortcutCategory;
-    label: string;
-    description: string;
-    icon: string;
-    order: number;
+	id: ShortcutCategory;
+	label: string;
+	description: string;
+	icon: string;
+	order: number;
 }
 
 // ============================================
@@ -29,47 +29,47 @@ export interface CategoryMetadata {
 // ============================================
 
 export type ShortcutScope =
-    | 'all'         // Siempre activo (hotkeys-js default)
-    | 'global'      // Alias para 'all'
-    | 'modal'       // Cuando un modal está abierto
-    | 'list'        // En vistas de lista
-    | 'grid'        // En grids
-    | 'ingreso';    // En módulo de ingresos
+	| 'all' // Siempre activo (hotkeys-js default)
+	| 'global' // Alias para 'all'
+	| 'modal' // Cuando un modal está abierto
+	| 'list' // En vistas de lista
+	| 'grid' // En grids
+	| 'ingreso'; // En módulo de ingresos
 
 // ============================================
 // DEFINICIONES
 // ============================================
 
 export interface ShortcutDefinition {
-    /** Identificador único del atajo */
-    id: string;
+	/** Identificador único del atajo */
+	id: string;
 
-    /** Combinación de teclas (formato hotkeys-js: 'ctrl+n', 'escape', etc.) */
-    keys: string;
+	/** Combinación de teclas (formato hotkeys-js: 'ctrl+n', 'escape', etc.) */
+	keys: string;
 
-    /** Etiqueta para mostrar en UI */
-    label: string;
+	/** Etiqueta para mostrar en UI */
+	label: string;
 
-    /** Descripción detallada */
-    description?: string;
+	/** Descripción detallada */
+	description?: string;
 
-    /** Categoría para agrupar en UI de ayuda */
-    category: ShortcutCategory;
+	/** Categoría para agrupar en UI de ayuda */
+	category: ShortcutCategory;
 
-    /** Scope de hotkeys-js donde está activo */
-    scope: ShortcutScope;
+	/** Scope de hotkeys-js donde está activo */
+	scope: ShortcutScope;
 
-    /** Handler del atajo */
-    handler: (event: KeyboardEvent, hotkeysEvent: HotkeysEvent) => void;
+	/** Handler del atajo */
+	handler: (event: KeyboardEvent, hotkeysEvent: HotkeysEvent) => void;
 
-    /** Función opcional para verificar si el atajo debe ejecutarse */
-    enabled?: () => boolean;
+	/** Función opcional para verificar si el atajo debe ejecutarse */
+	enabled?: () => boolean;
 
-    /** Si true, no se puede personalizar */
-    readonly?: boolean;
+	/** Si true, no se puede personalizar */
+	readonly?: boolean;
 
-    /** Ícono para UI (nombre de Lucide icon) */
-    icon?: string;
+	/** Ícono para UI (nombre de Lucide icon) */
+	icon?: string;
 }
 
 // ============================================
@@ -77,17 +77,17 @@ export interface ShortcutDefinition {
 // ============================================
 
 export interface UserShortcutCustomization {
-    /** ID del usuario */
-    userId: string;
+	/** ID del usuario */
+	userId: string;
 
-    /** ID del atajo que se personaliza */
-    shortcutId: string;
+	/** ID del atajo que se personaliza */
+	shortcutId: string;
 
-    /** Nueva combinación de teclas */
-    customKeys: string;
+	/** Nueva combinación de teclas */
+	customKeys: string;
 
-    /** Si está habilitado */
-    enabled: boolean;
+	/** Si está habilitado */
+	enabled: boolean;
 }
 
 // ============================================
@@ -95,35 +95,35 @@ export interface UserShortcutCustomization {
 // ============================================
 
 export type ShortcutCommand =
-    // CRUD
-    | 'create'
-    | 'edit'
-    | 'delete'
-    | 'save'
-    | 'cancel'
-    | 'refresh'
-    // Navegación
-    | 'search'
-    | 'select-all'
-    | 'escape'
-    // Sistema
-    | 'toggle-spotlight'
-    | 'toggle-theme'
-    | 'show-help'
-    | 'logout'
-    // Grid
-    | 'next-page'
-    | 'prev-page'
-    | 'first-page'
-    // Ingresos
-    | 'quick-entry'
-    | 'quick-exit'
-    | 'scan-badge';
+	// CRUD
+	| 'create'
+	| 'edit'
+	| 'delete'
+	| 'save'
+	| 'cancel'
+	| 'refresh'
+	// Navegación
+	| 'search'
+	| 'select-all'
+	| 'escape'
+	// Sistema
+	| 'toggle-spotlight'
+	| 'toggle-theme'
+	| 'show-help'
+	| 'logout'
+	// Grid
+	| 'next-page'
+	| 'prev-page'
+	| 'first-page'
+	// Ingresos
+	| 'quick-entry'
+	| 'quick-exit'
+	| 'scan-badge';
 
 export interface ShortcutEvent {
-    command: ShortcutCommand;
-    timestamp: number;
-    context?: string;
+	command: ShortcutCommand;
+	timestamp: number;
+	context?: string;
 }
 
 // ============================================
@@ -131,11 +131,11 @@ export interface ShortcutEvent {
 // ============================================
 
 export interface HotkeysEvent {
-    key: string;
-    scope: string;
-    method: any; // Compatible con hotkeys-js internal types
-    mods: number[];
-    shortcut: string;
+	key: string;
+	scope: string;
+	method: any; // Compatible con hotkeys-js internal types
+	mods: number[];
+	shortcut: string;
 }
 
 // ============================================
@@ -143,21 +143,21 @@ export interface HotkeysEvent {
 // ============================================
 
 export interface ShortcutRegistryState {
-    /** Todos los atajos registrados */
-    shortcuts: ShortcutDefinition[];
+	/** Todos los atajos registrados */
+	shortcuts: ShortcutDefinition[];
 
-    /** Scope activo actual */
-    activeScope: ShortcutScope;
+	/** Scope activo actual */
+	activeScope: ShortcutScope;
 
-    /** Stack de scopes (para modales anidados) */
-    scopeStack: ShortcutScope[];
+	/** Stack de scopes (para modales anidados) */
+	scopeStack: ShortcutScope[];
 
-    /** Personalizaciones del usuario actual */
-    customizations: UserShortcutCustomization[];
+	/** Personalizaciones del usuario actual */
+	customizations: UserShortcutCustomization[];
 }
 
 export interface CollisionResult {
-    hasCollision: boolean;
-    conflictingShortcut?: ShortcutDefinition;
-    scope: ShortcutScope;
+	hasCollision: boolean;
+	conflictingShortcut?: ShortcutDefinition;
+	scope: ShortcutScope;
 }

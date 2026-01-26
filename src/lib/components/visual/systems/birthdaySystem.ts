@@ -53,7 +53,7 @@ function createConfetti(canvasWidth: number, canvasHeight: number, burst: boolea
 		rotationSpeed: randomRange(-10, 10),
 		color:
 			BIRTHDAY_CONFIG.CONFETTI_COLORS[
-			Math.floor(Math.random() * BIRTHDAY_CONFIG.CONFETTI_COLORS.length)
+				Math.floor(Math.random() * BIRTHDAY_CONFIG.CONFETTI_COLORS.length)
 			],
 		shape: shapes[Math.floor(Math.random() * shapes.length)],
 		size: randomRange(
@@ -145,7 +145,7 @@ function createFirework(canvasWidth: number, canvasHeight: number): Firework {
 		targetY: randomRange(canvasHeight * 0.15, canvasHeight * 0.4),
 		color:
 			BIRTHDAY_CONFIG.FIREWORK_COLORS[
-			Math.floor(Math.random() * BIRTHDAY_CONFIG.FIREWORK_COLORS.length)
+				Math.floor(Math.random() * BIRTHDAY_CONFIG.FIREWORK_COLORS.length)
 			],
 		exploded: false,
 		particles: []

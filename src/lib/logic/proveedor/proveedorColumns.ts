@@ -28,7 +28,8 @@ export const getProveedorColumns = (handlers: ProveedorColumnHandlers): ColumnDe
 			width: 130,
 			frozen: true,
 			headerFilter: 'input',
-			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
+			formatter: (cell) =>
+				`<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Empresa',
@@ -103,7 +104,8 @@ export const getProveedorTrashColumns = (): ColumnDefinition[] => {
 			title: 'Cédula',
 			field: 'cedula',
 			width: 130,
-			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
+			formatter: (cell) =>
+				`<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Nombre',

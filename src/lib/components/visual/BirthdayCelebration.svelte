@@ -16,6 +16,3 @@
 <SceneRenderer isBirthday={true} />
 
 <!-- Name sparkle overlay could go here if needed -->
-
-
-

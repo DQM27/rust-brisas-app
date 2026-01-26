@@ -654,6 +654,3 @@
 		outline: none !important;
 	}
 </style>
-
-
-

@@ -27,7 +27,7 @@ export interface StatusBarInfo {
 export const statusBarInfo = writable<StatusBarInfo>({
 	count: 0,
 	selectedCount: 0,
-	label: 'registros',
+	label: 'registros'
 });
 
 // Store para visibilidad del buscador global (Spotlight)
@@ -44,4 +44,3 @@ export const showQuickSwitch = writable(false);
 
 // Store para establecer un usuario objetivo para el cambio rápido desde afuera (ej. Spotlight)
 export const quickSwitchTarget = writable<any | null>(null);
-

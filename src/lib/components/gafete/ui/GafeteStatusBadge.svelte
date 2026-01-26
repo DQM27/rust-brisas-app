@@ -106,6 +106,3 @@
 <style>
 	/* Puedes agregar efectos de brillo o glassmorphism extra aquí si quieres */
 </style>
-
-
-

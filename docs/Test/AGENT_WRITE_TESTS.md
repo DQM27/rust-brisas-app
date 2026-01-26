@@ -16,9 +16,9 @@
 fn test_servicio_usa_query_correcta() {
     let mock = MockRepo::new();
     let service = IngresoService::new(mock);
-    
+
     service.registrar("123");
-    
+
     // Esto falla si optimizas la query, aunque el resultado sea correcto
     assert_eq!(mock.last_query(), "SELECT * FROM contratistas WHERE cedula = ?");
 }
@@ -28,10 +28,10 @@ fn test_servicio_usa_query_correcta() {
 fn test_rn_ing_001_contratista_inactivo_no_puede_ingresar() {
     // Given: Un sistema con un contratista inactivo
     let service = setup_service_with_inactive_contractor("123");
-    
+
     // When: Se intenta registrar ingreso
     let resultado = service.registrar_ingreso("123");
-    
+
     // Then: El sistema rechaza el ingreso
     assert!(matches!(resultado, Err(IngresoError::ContratistaInactivo)));
 }
@@ -44,6 +44,7 @@ fn test_rn_ing_001_contratista_inactivo_no_puede_ingresar() {
 Usa el formato de nombres: `test_rn_{modulo}_{numero}_{descripcion}`
 
 Ejemplo:
+
 - `test_rn_cont_003_inactivo_no_puede_ingresar`
 - `test_rn_ing_002_no_duplicar_ingreso_activo`
 
@@ -73,12 +74,12 @@ src-tauri/
 
 **Reglas de Negocio a Validar** (del documento `ARCHITECTURE.md`):
 
-| Regla | Descripción | Test a Crear |
-|-------|-------------|--------------|
+| Regla       | Descripción                      | Test a Crear                                     |
+| ----------- | -------------------------------- | ------------------------------------------------ |
 | RN-CONT-001 | Estado binario (activo/inactivo) | `test_rn_cont_001_estado_solo_activo_o_inactivo` |
-| RN-CONT-002 | Cédula única | `test_rn_cont_002_cedula_debe_ser_unica` |
-| RN-CONT-003 | Inactivo no ingresa | `test_rn_cont_003_inactivo_no_registra_ingreso` |
-| RN-CONT-004 | Solo admin cambia estado | `test_rn_cont_004_solo_admin_cambia_estado` |
+| RN-CONT-002 | Cédula única                     | `test_rn_cont_002_cedula_debe_ser_unica`         |
+| RN-CONT-003 | Inactivo no ingresa              | `test_rn_cont_003_inactivo_no_registra_ingreso`  |
+| RN-CONT-004 | Solo admin cambia estado         | `test_rn_cont_004_solo_admin_cambia_estado`      |
 
 **Ejemplo de Implementación**:
 
@@ -95,7 +96,7 @@ fn test_rn_cont_002_cedula_debe_ser_unica() {
         activo: true,
     };
     service.crear(contratista1.clone()).expect("Primer insert debe pasar");
-    
+
     // When: Se intenta crear otro con la misma cédula
     let contratista2 = Contractor {
         cedula: "123456789".to_string(), // Misma cédula
@@ -103,7 +104,7 @@ fn test_rn_cont_002_cedula_debe_ser_unica() {
         activo: true,
     };
     let resultado = service.crear(contratista2);
-    
+
     // Then: El sistema rechaza la operación
     assert!(matches!(resultado, Err(ContratistaError::CedulaDuplicada)));
 }
@@ -113,13 +114,13 @@ fn test_rn_cont_002_cedula_debe_ser_unica() {
 
 **Reglas de Negocio a Validar**:
 
-| Regla | Test a Crear |
-|-------|--------------|
-| RN-ING-001 | `test_rn_ing_001_requiere_contratista_activo` |
-| RN-ING-002 | `test_rn_ing_002_no_duplicar_ingreso_activo` |
+| Regla      | Test a Crear                                     |
+| ---------- | ------------------------------------------------ |
+| RN-ING-001 | `test_rn_ing_001_requiere_contratista_activo`    |
+| RN-ING-002 | `test_rn_ing_002_no_duplicar_ingreso_activo`     |
 | RN-ING-003 | `test_rn_ing_003_salida_requiere_entrada_previa` |
-| RN-ING-004 | `test_rn_ing_004_salida_posterior_a_entrada` |
-| RN-ING-005 | `test_rn_ing_005_timestamp_del_servidor` |
+| RN-ING-004 | `test_rn_ing_004_salida_posterior_a_entrada`     |
+| RN-ING-005 | `test_rn_ing_005_timestamp_del_servidor`         |
 
 **Ejemplo de Implementación**:
 
@@ -134,10 +135,10 @@ fn test_rn_ing_002_no_duplicar_ingreso_activo() {
     let contratista = crear_contratista_activo("123456789");
     service.registrar_entrada(contratista.cedula.clone())
         .expect("Primera entrada debe pasar");
-    
+
     // When: Se intenta registrar otra entrada sin haber registrado salida
     let resultado = service.registrar_entrada(contratista.cedula.clone());
-    
+
     // Then: El sistema rechaza la operación
     assert!(matches!(resultado, Err(IngresoError::IngresoDuplicado)));
 }
@@ -147,11 +148,11 @@ fn test_rn_ing_002_no_duplicar_ingreso_activo() {
 
 **Reglas de Negocio a Validar**:
 
-| Regla | Test a Crear |
-|-------|--------------|
+| Regla      | Test a Crear                                    |
+| ---------- | ----------------------------------------------- |
 | RN-REP-001 | `test_rn_rep_001_datos_desde_database_no_cache` |
 | RN-REP-002 | `test_rn_rep_002_exportacion_incluye_timestamp` |
-| RN-REP-003 | `test_rn_rep_003_solo_rol_reportes_exporta` |
+| RN-REP-003 | `test_rn_rep_003_solo_rol_reportes_exporta`     |
 
 ---
 
@@ -168,10 +169,10 @@ use surrealdb::{Surreal, engine::local::Mem};
 pub async fn setup_test_db() -> Surreal<Mem> {
     let db = Surreal::new::<Mem>(()).await.unwrap();
     db.use_ns("test").use_db("test").await.unwrap();
-    
+
     // Ejecutar migraciones/schema
     setup_schema(&db).await;
-    
+
     db
 }
 
@@ -262,9 +263,9 @@ impl ContratistaRepository for MockRepo {
 fn test_rn_ing_001_contratista_activo_puede_ingresar() {
     let service = setup_service();
     let contratista = crear_contratista_activo("123");
-    
+
     let resultado = service.registrar_entrada(contratista.cedula);
-    
+
     assert!(resultado.is_ok());
 }
 
@@ -273,9 +274,9 @@ fn test_rn_ing_001_contratista_activo_puede_ingresar() {
 fn test_rn_ing_001_contratista_inactivo_no_puede_ingresar() {
     let service = setup_service();
     let contratista = crear_contratista_inactivo("123");
-    
+
     let resultado = service.registrar_entrada(contratista.cedula);
-    
+
     assert!(matches!(resultado, Err(IngresoError::ContratistaInactivo)));
 }
 
@@ -314,10 +315,10 @@ fn test_ejemplo() {
     // Arrange (Given): Preparar el estado inicial
     let service = setup_service();
     let contratista = crear_contratista_activo("123");
-    
+
     // Act (When): Ejecutar la acción
     let resultado = service.registrar_entrada(contratista.cedula);
-    
+
     // Assert (Then): Verificar el resultado
     assert!(resultado.is_ok());
 }
@@ -378,9 +379,9 @@ fn test_calcular_total() {
     let precio = 100;
     let cantidad = 2;
     let descuento = 10;
-    
+
     let resultado = calcular_total(precio, cantidad, descuento);
-    
+
     // Esto es tautología: estás replicando la fórmula del código
     assert_eq!(resultado, precio * cantidad - descuento);
 }
@@ -436,10 +437,10 @@ async fn test_rn_ing_001_contratista_activo_puede_registrar_entrada() {
     let service = IngresoService::new(db);
     let contratista = crear_contratista_activo("123456789");
     service.contratista_repo.crear(contratista.clone()).await.unwrap();
-    
+
     // When: Se registra una entrada
     let resultado = service.registrar_entrada(contratista.cedula).await;
-    
+
     // Then: La operación es exitosa
     assert!(resultado.is_ok(), "Un contratista activo debe poder ingresar");
 }
@@ -451,10 +452,10 @@ async fn test_rn_ing_001_contratista_inactivo_no_puede_registrar_entrada() {
     let service = IngresoService::new(db);
     let contratista = crear_contratista_inactivo("987654321");
     service.contratista_repo.crear(contratista.clone()).await.unwrap();
-    
+
     // When: Se intenta registrar una entrada
     let resultado = service.registrar_entrada(contratista.cedula).await;
-    
+
     // Then: El sistema rechaza la operación
     assert!(
         matches!(resultado, Err(IngresoError::ContratistaInactivo)),
@@ -470,10 +471,10 @@ async fn test_rn_ing_002_no_permite_ingreso_duplicado() {
     let contratista = crear_contratista_activo("555555555");
     service.contratista_repo.crear(contratista.clone()).await.unwrap();
     service.registrar_entrada(contratista.cedula.clone()).await.unwrap();
-    
+
     // When: Se intenta registrar otra entrada sin salida previa
     let resultado = service.registrar_entrada(contratista.cedula).await;
-    
+
     // Then: El sistema rechaza la operación
     assert!(
         matches!(resultado, Err(IngresoError::IngresoDuplicado)),
@@ -494,18 +495,21 @@ Al completar la tarea, debes entregar:
 2. ✅ `tests/common/mod.rs` con utilities compartidas
 3. ✅ Output de `cargo test` mostrando todos los tests pasando
 4. ✅ Reporte de cobertura:
+
    ```markdown
    # Cobertura de Reglas de Negocio
-   
+
    ## Contratista
-   - [x] RN-CONT-001 (test_rn_cont_001_...)
-   - [x] RN-CONT-002 (test_rn_cont_002_...)
-   - [x] RN-CONT-003 (test_rn_cont_003_...)
-   - [x] RN-CONT-004 (test_rn_cont_004_...)
-   
+
+   - [x] RN-CONT-001 (test*rn_cont_001*...)
+   - [x] RN-CONT-002 (test*rn_cont_002*...)
+   - [x] RN-CONT-003 (test*rn_cont_003*...)
+   - [x] RN-CONT-004 (test*rn_cont_004*...)
+
    ## Ingreso
-   - [x] RN-ING-001 (test_rn_ing_001_...)
-   ...
+
+   - [x] RN-ING-001 (test*rn_ing_001*...)
+         ...
    ```
 
 ---

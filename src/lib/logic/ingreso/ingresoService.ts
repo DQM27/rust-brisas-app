@@ -22,8 +22,6 @@ export async function validarIngreso(
 	tipo: TipoIngreso,
 	id: string
 ): Promise<ValidacionIngresoResult> {
-
-
 	try {
 		let response: ValidacionIngresoResponse;
 
@@ -160,7 +158,9 @@ export function validarModoVehiculo(params: {
 // REGISTRO Y OPERACIONES
 // ==========================================
 
-export async function registrarEntrada(input: CreateIngresoInput): Promise<ServiceResult<IngresoResponse>> {
+export async function registrarEntrada(
+	input: CreateIngresoInput
+): Promise<ServiceResult<IngresoResponse>> {
 	try {
 		const formData: FinalizarIngresoForm = {
 			gafete: input.gafeteNumero || '',
@@ -221,7 +221,6 @@ export async function crearIngreso(
 		});
 		throw new Error('Se requiere un usuario autenticado para registrar el ingreso');
 	}
-
 
 	try {
 		if (tipo === 'contratista') {
@@ -412,28 +411,28 @@ function mapContratistaResponse(res: ValidacionIngresoResponse): ValidacionIngre
 		contratista: res.contratista,
 		persona: res.contratista
 			? {
-				id: res.contratista.id,
-				cedula: res.contratista.cedula,
-				nombre: res.contratista.nombre,
-				apellido: res.contratista.apellido,
-				nombreCompleto: `${res.contratista.nombre} ${res.contratista.apellido}`,
-				empresa: res.contratista.empresaNombre,
-				empresaId: res.contratista.empresaId || undefined,
-				estado: res.contratista.estado,
-				vehiculos: res.contratista.vehiculos || [],
-				praindVigente: praindVigente
-			}
+					id: res.contratista.id,
+					cedula: res.contratista.cedula,
+					nombre: res.contratista.nombre,
+					apellido: res.contratista.apellido,
+					nombreCompleto: `${res.contratista.nombre} ${res.contratista.apellido}`,
+					empresa: res.contratista.empresaNombre,
+					empresaId: res.contratista.empresaId || undefined,
+					estado: res.contratista.estado,
+					vehiculos: res.contratista.vehiculos || [],
+					praindVigente: praindVigente
+				}
 			: res.ingresoAbierto
 				? {
-					id: res.ingresoAbierto.contratistaId || '',
-					cedula: res.ingresoAbierto.cedula,
-					nombre: res.ingresoAbierto.nombre,
-					apellido: res.ingresoAbierto.apellido,
-					nombreCompleto: res.ingresoAbierto.nombreCompleto,
-					empresa: res.ingresoAbierto.empresaNombre,
-					vehiculos: [],
-					praindVigente: res.ingresoAbierto.praindVigenteAlIngreso ?? false
-				}
+						id: res.ingresoAbierto.contratistaId || '',
+						cedula: res.ingresoAbierto.cedula,
+						nombre: res.ingresoAbierto.nombre,
+						apellido: res.ingresoAbierto.apellido,
+						nombreCompleto: res.ingresoAbierto.nombreCompleto,
+						empresa: res.ingresoAbierto.empresaNombre,
+						vehiculos: [],
+						praindVigente: res.ingresoAbierto.praindVigenteAlIngreso ?? false
+					}
 				: undefined
 	};
 }
@@ -449,14 +448,14 @@ function mapProveedorResponse(res: ValidacionIngresoResponse): ValidacionIngreso
 		proveedor: res.proveedor,
 		persona: res.proveedor
 			? {
-				id: res.proveedor.id,
-				cedula: res.proveedor.cedula,
-				nombre: res.proveedor.nombre,
-				apellido: res.proveedor.apellido || '',
-				nombreCompleto: `${res.proveedor.nombre} ${res.proveedor.apellido || ''}`,
-				empresa: res.proveedor.empresaNombre,
-				vehiculos: []
-			}
+					id: res.proveedor.id,
+					cedula: res.proveedor.cedula,
+					nombre: res.proveedor.nombre,
+					apellido: res.proveedor.apellido || '',
+					nombreCompleto: `${res.proveedor.nombre} ${res.proveedor.apellido || ''}`,
+					empresa: res.proveedor.empresaNombre,
+					vehiculos: []
+				}
 			: undefined
 	};
 }
@@ -472,14 +471,14 @@ function mapVisitaResponse(res: ValidacionIngresoResponse): ValidacionIngresoRes
 		visitante: res.visitante,
 		persona: res.visitante
 			? {
-				id: res.visitante.id,
-				cedula: res.visitante.cedula,
-				nombre: res.visitante.nombre,
-				apellido: res.visitante.apellido,
-				nombreCompleto: `${res.visitante.nombre} ${res.visitante.apellido}`,
-				empresa: res.visitante.empresaNombre,
-				vehiculos: []
-			}
+					id: res.visitante.id,
+					cedula: res.visitante.cedula,
+					nombre: res.visitante.nombre,
+					apellido: res.visitante.apellido,
+					nombreCompleto: `${res.visitante.nombre} ${res.visitante.apellido}`,
+					empresa: res.visitante.empresaNombre,
+					vehiculos: []
+				}
 			: undefined
 	};
 }

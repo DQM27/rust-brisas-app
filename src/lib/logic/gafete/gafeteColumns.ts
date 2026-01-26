@@ -18,7 +18,8 @@ export const getGafeteColumns = (handlers: GafeteColumnHandlers): ColumnDefiniti
 			width: 100,
 			headerFilter: 'input',
 			frozen: true,
-			formatter: (cell) => `<span class="cell-code font-bold tracking-wide">${cell.getValue()}</span>`
+			formatter: (cell) =>
+				`<span class="cell-code font-bold tracking-wide">${cell.getValue()}</span>`
 		},
 		{
 			title: 'Tipo',
@@ -77,20 +78,44 @@ export const getGafeteColumns = (handlers: GafeteColumnHandlers): ColumnDefiniti
 				let buttons = '<div class="flex items-center justify-end gap-1.5">';
 
 				if (status === 'perdido') {
-					buttons += createGridBadge({ text: 'Resolver', color: 'green', isButton: true, className: 'resolve-btn' });
+					buttons += createGridBadge({
+						text: 'Resolver',
+						color: 'green',
+						isButton: true,
+						className: 'resolve-btn'
+					});
 				}
 
 				if (status !== 'perdido') {
-
 					if (status === 'extraviado') {
-						buttons += createGridBadge({ text: 'Recuperar', color: 'green', isButton: true, className: 'recover-btn' });
+						buttons += createGridBadge({
+							text: 'Recuperar',
+							color: 'green',
+							isButton: true,
+							className: 'recover-btn'
+						});
 					} else if (status !== 'danado') {
-						buttons += createGridBadge({ text: '?', color: 'amber', isButton: true, className: 'lost-btn' });
-						buttons += createGridBadge({ text: '⚡', color: 'red', isButton: true, className: 'damage-btn' });
+						buttons += createGridBadge({
+							text: '?',
+							color: 'amber',
+							isButton: true,
+							className: 'lost-btn'
+						});
+						buttons += createGridBadge({
+							text: '⚡',
+							color: 'red',
+							isButton: true,
+							className: 'damage-btn'
+						});
 					}
 
 					if (status === 'danado') {
-						buttons += createGridBadge({ text: '✓ Rep', color: 'green', isButton: true, className: 'recover-btn' });
+						buttons += createGridBadge({
+							text: '✓ Rep',
+							color: 'green',
+							isButton: true,
+							className: 'recover-btn'
+						});
 					}
 
 					if (status === 'danado' || status === 'disponible') {

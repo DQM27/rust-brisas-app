@@ -119,8 +119,18 @@ export const getContratistaColumns = (handlers: ContratistaColumnHandlers): Colu
 					const cleanD = d.replace(/['"]/g, '');
 
 					const months = [
-						'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-						'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
+						'ene',
+						'feb',
+						'mar',
+						'abr',
+						'may',
+						'jun',
+						'jul',
+						'ago',
+						'sep',
+						'oct',
+						'nov',
+						'dic'
 					];
 
 					const monthIndex = parseInt(m) - 1;

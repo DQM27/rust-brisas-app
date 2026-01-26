@@ -1,5 +1,9 @@
 import { visitante } from '$lib/api/visitante';
-import type { VisitanteResponse, CreateVisitanteInput, UpdateVisitanteInput } from '$lib/types/visitante';
+import type {
+	VisitanteResponse,
+	CreateVisitanteInput,
+	UpdateVisitanteInput
+} from '$lib/types/visitante';
 
 export type ServiceResult<T> = { ok: true; data: T } | { ok: false; error: string };
 

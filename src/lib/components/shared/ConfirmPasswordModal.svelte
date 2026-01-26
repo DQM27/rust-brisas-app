@@ -309,6 +309,3 @@
 		outline: none !important;
 	}
 </style>
-
-
-

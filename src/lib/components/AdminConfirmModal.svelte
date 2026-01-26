@@ -199,6 +199,3 @@
 		outline: none !important;
 	}
 </style>
-
-
-

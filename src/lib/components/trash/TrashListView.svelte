@@ -175,6 +175,3 @@
 	onConfirm={handleConfirmAction}
 	onClose={() => (showModal = false)}
 />
-
-
-

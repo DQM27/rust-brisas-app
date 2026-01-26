@@ -35,7 +35,7 @@ function parseAuthError(err: unknown): { message: string; code?: string } {
 			msg = JSON.stringify(obj);
 		}
 
-		const code = (typeof obj.code === 'string' ? obj.code : undefined);
+		const code = typeof obj.code === 'string' ? obj.code : undefined;
 
 		if (/credential/i.test(msg))
 			return { message: 'Credenciales inválidas.', code: 'INVALID_CREDENTIALS' };

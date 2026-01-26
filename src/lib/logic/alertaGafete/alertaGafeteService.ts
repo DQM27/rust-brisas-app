@@ -4,13 +4,13 @@ import type { AlertaGafeteResponse } from '$lib/types/ingreso';
 // Result type similar to other services
 export type ServiceResult<T> =
 	| {
-		ok: true;
-		data: T;
-	}
+			ok: true;
+			data: T;
+	  }
 	| {
-		ok: false;
-		error: string;
-	};
+			ok: false;
+			error: string;
+	  };
 
 /**
  * Resolver una alerta de gafete

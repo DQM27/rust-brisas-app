@@ -31,4 +31,3 @@ export type ComponentKey =
 	| 'dev-settings'
 	| 'spotlight-settings'
 	| 'alerta-gafete-list';
-

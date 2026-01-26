@@ -3,6 +3,7 @@
 **Objetivo**: Remover todos los tests existentes que puedan estar acoplados a implementación o que no sigan las mejores prácticas de testing comportamental.
 
 **Contexto**: El proyecto Mega Brisas está refactorizando su suite de tests para enfocarse en testing de comportamiento (behavior-driven) en lugar de testing de implementación. Los tests actuales pueden contener:
+
 - Mocks excesivos que acoplan a implementación
 - Validaciones de detalles internos (queries SQL, orden de llamadas)
 - Tests tautológicos que replican la lógica del código
@@ -54,19 +55,22 @@ echo "Total de tests encontrados: $(grep -c "#\[test\]" /tmp/tests_inventario.tx
 
 ```markdown
 # Reporte de Tests Removidos
+
 **Fecha**: 2026-01-08
 **Agente**: Test Cleanup Agent
 
 ## Tests Eliminados por Módulo
 
 ### Módulo: contratista
+
 - `test_crear_contratista_valido` (línea 45)
 - `test_validar_cedula_duplicada` (línea 67)
-Total: 2 tests
+  Total: 2 tests
 
 ### Módulo: ingreso
+
 - `test_registrar_ingreso` (línea 23)
-Total: 1 test
+  Total: 1 test
 
 **Gran Total: 3 tests removidos**
 ```
@@ -82,7 +86,7 @@ for module in contratista ingreso reportes; do
         echo "Removiendo src/$module/tests.rs"
         rm "src/$module/tests.rs"
     fi
-    
+
     # Remover declaración de módulo de tests en mod.rs
     sed -i '/#\[cfg(test)\]/,/^$/d' "src/$module/mod.rs"
 done
@@ -104,7 +108,8 @@ cargo check
 cargo test --no-fail-fast 2>&1 | tee /tmp/test_cleanup_verification.txt
 ```
 
-**Criterio de Éxito**: 
+**Criterio de Éxito**:
+
 - `cargo check` pasa sin errores
 - `cargo test` muestra: "running 0 tests"
 
@@ -120,7 +125,7 @@ Algunos tests pueden estar embebidos directamente en archivos como `service.rs`:
 // ❌ Este patrón debe removerse
 impl ContratistaService {
     // código de producción
-    
+
     #[cfg(test)]
     mod tests {
         #[test]
@@ -133,16 +138,16 @@ impl ContratistaService {
 
 ### Si encuentras doc tests
 
-```rust
+````rust
 /// Registra un nuevo contratista
-/// 
+///
 /// ```
 /// let service = ContratistaService::new();
 /// let result = service.crear(contratista);
 /// assert!(result.is_ok());
 /// ```
 pub fn crear(&self, contratista: Contractor) -> Result<()> { }
-```
+````
 
 **Acción**: **NO remover** estos doc tests. Son parte de la documentación y se mantendrán hasta que se decida su futuro.
 

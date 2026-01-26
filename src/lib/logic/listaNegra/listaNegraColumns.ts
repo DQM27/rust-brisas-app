@@ -10,7 +10,8 @@ export const getListaNegraColumns = (): ColumnDefinition[] => {
 			width: 130,
 			frozen: true,
 			headerFilter: 'input',
-			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
+			formatter: (cell) =>
+				`<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Nombre Completo',
@@ -19,7 +20,8 @@ export const getListaNegraColumns = (): ColumnDefinition[] => {
 			headerFilter: 'input',
 			formatter: (cell) => {
 				const data = cell.getData() as any;
-				const nombre = data.nombreCompleto || data.nombre_completo || `${data.nombre} ${data.apellido}`;
+				const nombre =
+					data.nombreCompleto || data.nombre_completo || `${data.nombre} ${data.apellido}`;
 				return `<span style="font-weight:500; color:#e2e8f0">${nombre || ''}</span>`;
 			}
 		},
@@ -81,7 +83,8 @@ export const getListaNegraColumns = (): ColumnDefinition[] => {
 			width: 160,
 			formatter: (cell) => {
 				const data = cell.getData() as any;
-				const nombre = data.bloqueadoPorNombre || data.bloqueado_por_nombre || data.bloqueadoPor || 'Sistema';
+				const nombre =
+					data.bloqueadoPorNombre || data.bloqueado_por_nombre || data.bloqueadoPor || 'Sistema';
 				return `<span style="color:#9ca3af">${nombre}</span>`;
 			}
 		},

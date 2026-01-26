@@ -1,7 +1,10 @@
 import { invoke } from '@tauri-apps/api/core';
 import { save } from '@tauri-apps/plugin-dialog';
 import type { ExportOptions, ExportRequest, ExportResponse } from '$lib/types/export';
-import { extractTabulatorData, extractTabulatorSelectedRows } from '$lib/logic/export/exportTabulator';
+import {
+	extractTabulatorData,
+	extractTabulatorSelectedRows
+} from '$lib/logic/export/exportTabulator';
 
 /**
  * Exporta datos usando el backend, compatible con Tabulator

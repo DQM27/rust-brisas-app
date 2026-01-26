@@ -187,10 +187,7 @@ export async function getArchivedContratistas(): Promise<ServiceResult<Contratis
 /**
  * Validar unicidad de cédula
  */
-export async function checkCedulaUnique(
-	cedula: string,
-	excludeId?: string
-): Promise<boolean> {
+export async function checkCedulaUnique(cedula: string, excludeId?: string): Promise<boolean> {
 	if (!cedula || cedula.length < 4) return true;
 	try {
 		// El backend espera el field 'cedula'
@@ -252,10 +249,7 @@ export function prepareCreatePayload(
 /**
  * Preparar payload para actualización
  */
-export function prepareUpdatePayload(
-	id: string,
-	formData: any
-): UpdateContratistaInput {
+export function prepareUpdatePayload(id: string, formData: any): UpdateContratistaInput {
 	const payload: UpdateContratistaInput = {
 		id,
 		cedula: formData.cedula,

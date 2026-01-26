@@ -64,6 +64,3 @@
 		></textarea>
 	</div>
 </div>
-
-
-

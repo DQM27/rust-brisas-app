@@ -62,7 +62,7 @@ export const getUserColumns = (handlers: UserColumnHandlers): ColumnDefinition[]
 			hozAlign: 'center',
 			headerFilter: 'list',
 			headerFilterParams: {
-				values: { "true": "Activo", "false": "Inactivo" },
+				values: { true: 'Activo', false: 'Inactivo' },
 				clearable: true
 			},
 			formatter: (cell) => {

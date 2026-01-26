@@ -61,8 +61,8 @@ export function openTab(options: OpenTabOptions): string {
 	if (existingTab) {
 		// Actualizar data si se proporciona
 		if (data) {
-			tabsStorePersisted.update(current =>
-				current.map(t => t.id === id ? { ...t, data: { ...t.data, ...data } } : t)
+			tabsStorePersisted.update((current) =>
+				current.map((t) => (t.id === id ? { ...t, data: { ...t.data, ...data } } : t))
 			);
 		}
 

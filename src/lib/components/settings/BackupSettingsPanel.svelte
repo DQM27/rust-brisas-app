@@ -469,6 +469,3 @@
 		display: none !important;
 	}
 </style>
-
-
-

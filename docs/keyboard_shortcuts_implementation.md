@@ -17,21 +17,21 @@ Refactorización completa del sistema de atajos de teclado para hacerlo más rob
 
 ### Backend (Rust)
 
-| Archivo | Descripción |
-|---------|-------------|
-| `src-tauri/src/db/surrealdb_schema.surql` | Tabla `user_shortcuts` agregada |
-| `src-tauri/src/models/user_shortcuts.rs` | Tipos de respuesta |
-| `src-tauri/src/services/user_shortcuts_service.rs` | CRUD en SurrealDB |
-| `src-tauri/src/commands/shortcuts_commands.rs` | Comandos Tauri |
+| Archivo                                            | Descripción                     |
+| -------------------------------------------------- | ------------------------------- |
+| `src-tauri/src/db/surrealdb_schema.surql`          | Tabla `user_shortcuts` agregada |
+| `src-tauri/src/models/user_shortcuts.rs`           | Tipos de respuesta              |
+| `src-tauri/src/services/user_shortcuts_service.rs` | CRUD en SurrealDB               |
+| `src-tauri/src/commands/shortcuts_commands.rs`     | Comandos Tauri                  |
 
 ### Frontend (Svelte)
 
-| Archivo | Descripción |
-|---------|-------------|
-| `src/lib/shortcuts/` | Sistema completo |
-| `src/lib/shortcuts/userShortcutsService.ts` | Cliente del backend |
+| Archivo                                                     | Descripción         |
+| ----------------------------------------------------------- | ------------------- |
+| `src/lib/shortcuts/`                                        | Sistema completo    |
+| `src/lib/shortcuts/userShortcutsService.ts`                 | Cliente del backend |
 | `src/lib/components/settings/ShortcutsSettingsPanel.svelte` | UI de configuración |
-| `src/lib/components/modals/ShortcutConfigModal.svelte` | Modal alternativo |
+| `src/lib/components/modals/ShortcutConfigModal.svelte`      | Modal alternativo   |
 
 ### Acceso
 
@@ -42,16 +42,16 @@ Refactorización completa del sistema de atajos de teclado para hacerlo más rob
 
 ## Características Implementadas
 
-| Característica | Estado |
-|----------------|--------|
-| Migración a hotkeys-js | ✅ |
-| Sistema de categorías | ✅ |
-| Detección de colisiones | ✅ |
-| Persistencia en SurrealDB | ✅ |
-| UI de configuración tipo Roles | ✅ |
-| Recording de teclas en vivo | ✅ |
-| Restaurar atajos individuales | ✅ |
-| Restaurar todos los atajos | ✅ |
+| Característica                 | Estado |
+| ------------------------------ | ------ |
+| Migración a hotkeys-js         | ✅     |
+| Sistema de categorías          | ✅     |
+| Detección de colisiones        | ✅     |
+| Persistencia en SurrealDB      | ✅     |
+| UI de configuración tipo Roles | ✅     |
+| Recording de teclas en vivo    | ✅     |
+| Restaurar atajos individuales  | ✅     |
+| Restaurar todos los atajos     | ✅     |
 
 ---
 
@@ -61,7 +61,7 @@ Refactorización completa del sistema de atajos de teclado para hacerlo más rob
 📂 CATEGORÍAS DE ATAJOS
 ├── 🖥️ Sistema (Global)
 │   ├── Tema claro/oscuro (Ctrl+T)
-│   ├── Spotlight (Ctrl+K)  
+│   ├── Spotlight (Ctrl+K)
 │   ├── Ayuda de atajos (Shift+?)
 │   └── Cerrar sesión (Ctrl+Q)
 │
@@ -126,10 +126,9 @@ src-tauri/src/
 
 ## Comandos Tauri
 
-| Comando | Descripción |
-|---------|-------------|
-| `get_user_shortcuts` | Obtiene atajos personalizados del usuario actual |
-| `save_user_shortcut` | Guarda/actualiza un atajo personalizado |
-| `delete_user_shortcut` | Elimina un atajo (vuelve al default) |
-| `reset_user_shortcuts` | Resetea todos los atajos del usuario |
-
+| Comando                | Descripción                                      |
+| ---------------------- | ------------------------------------------------ |
+| `get_user_shortcuts`   | Obtiene atajos personalizados del usuario actual |
+| `save_user_shortcut`   | Guarda/actualiza un atajo personalizado          |
+| `delete_user_shortcut` | Elimina un atajo (vuelve al default)             |
+| `reset_user_shortcuts` | Resetea todos los atajos del usuario             |

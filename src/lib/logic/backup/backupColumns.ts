@@ -59,14 +59,16 @@ export const getBackupColumns = (handlers: {
 			headerFilter: 'number',
 			width: 100,
 			hozAlign: 'right',
-			formatter: (cell) => `<span style="font-family:monospace; color:#9ca3af">${formatBytes(cell.getValue() || 0)}</span>`
+			formatter: (cell) =>
+				`<span style="font-family:monospace; color:#9ca3af">${formatBytes(cell.getValue() || 0)}</span>`
 		},
 		{
 			title: 'Fecha',
 			field: 'fechaCreacion',
 			headerFilter: 'input',
 			width: 180,
-			formatter: (cell) => `<span style="font-family:monospace; color:#9ca3af">${formatDate(cell.getValue() || '')}</span>`
+			formatter: (cell) =>
+				`<span style="font-family:monospace; color:#9ca3af">${formatDate(cell.getValue() || '')}</span>`
 		},
 		{
 			title: 'Antigüedad',

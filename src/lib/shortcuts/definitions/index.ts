@@ -21,24 +21,24 @@ import type { ShortcutDefinition } from '../types';
  * Todos los atajos por defecto
  */
 export const ALL_SHORTCUTS: ShortcutDefinition[] = [
-    ...systemShortcuts,
-    ...moduleShortcuts,
-    ...modalShortcuts,
-    ...gridShortcuts,
-    ...ingresoShortcuts,
-    ...ingressAccessShortcuts
+	...systemShortcuts,
+	...moduleShortcuts,
+	...modalShortcuts,
+	...gridShortcuts,
+	...ingresoShortcuts,
+	...ingressAccessShortcuts
 ];
 
 /**
  * Obtener atajos por categoría
  */
 export function getShortcutsByCategory(category: string): ShortcutDefinition[] {
-    return ALL_SHORTCUTS.filter(s => s.category === category);
+	return ALL_SHORTCUTS.filter((s) => s.category === category);
 }
 
 /**
  * Obtener atajos por scope
  */
 export function getShortcutsByScope(scope: string): ShortcutDefinition[] {
-    return ALL_SHORTCUTS.filter(s => s.scope === scope || s.scope === 'all');
+	return ALL_SHORTCUTS.filter((s) => s.scope === scope || s.scope === 'all');
 }

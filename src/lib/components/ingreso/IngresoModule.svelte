@@ -8,6 +8,3 @@
 </script>
 
 <IngresoListView tabId="ingreso-list" {data} />
-
-
-

@@ -10,7 +10,8 @@ export const getVisitanteColumns = (): ColumnDefinition[] => {
 			width: 140,
 			headerFilter: 'input',
 			frozen: true,
-			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
+			formatter: (cell) =>
+				`<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Nombre Completo',
@@ -91,7 +92,8 @@ export const getVisitanteTrashColumns = (): ColumnDefinition[] => {
 			title: 'Cédula',
 			field: 'cedula',
 			width: 140,
-			formatter: (cell) => `<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
+			formatter: (cell) =>
+				`<span style="font-family:monospace; font-size:13px; color:#f3f4f6">${cell.getValue() || ''}</span>`
 		},
 		{
 			title: 'Nombre',

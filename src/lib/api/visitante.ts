@@ -1,5 +1,9 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { VisitanteResponse, CreateVisitanteInput, UpdateVisitanteInput } from '$lib/types/visitante';
+import type {
+	VisitanteResponse,
+	CreateVisitanteInput,
+	UpdateVisitanteInput
+} from '$lib/types/visitante';
 
 export const visitante = {
 	create: async (input: CreateVisitanteInput): Promise<VisitanteResponse> => {

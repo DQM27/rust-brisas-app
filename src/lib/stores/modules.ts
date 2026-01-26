@@ -26,7 +26,6 @@ function createModulesStore() {
 					map[m.key] = m;
 				});
 				set(map);
-
 			} catch (error) {
 				console.error('Error cargando módulos:', error);
 				toast.error('Error al cargar configuración de módulos');

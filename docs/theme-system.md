@@ -9,11 +9,11 @@
 
 La aplicación soporta tres modos de visualización:
 
-| Modo | Descripción | Uso Principal |
-|------|-------------|---------------|
-| **Light** | Tema claro corporativo, azul como acento | Oficinas con luz natural |
-| **Dark** | Tema oscuro VS Code style | Uso general, menor fatiga visual |
-| **Tokyo Night** | Tema oscuro premium (solo grids) | Opcional, estética "hacker" |
+| Modo            | Descripción                              | Uso Principal                    |
+| --------------- | ---------------------------------------- | -------------------------------- |
+| **Light**       | Tema claro corporativo, azul como acento | Oficinas con luz natural         |
+| **Dark**        | Tema oscuro VS Code style                | Uso general, menor fatiga visual |
+| **Tokyo Night** | Tema oscuro premium (solo grids)         | Opcional, estética "hacker"      |
 
 ---
 
@@ -116,16 +116,16 @@ BORDES
 ```css
 /* Light mode (default en @theme) */
 @theme {
-  --color-surface-primary: #ffffff;
-  --color-text-primary: #1a1f2e;
-  /* ... */
+	--color-surface-primary: #ffffff;
+	--color-text-primary: #1a1f2e;
+	/* ... */
 }
 
 /* Dark mode (clase .dark) */
 .dark {
-  --color-surface-primary: #1e1e1e;
-  --color-text-primary: #e8e8e8;
-  /* ... */
+	--color-surface-primary: #1e1e1e;
+	--color-text-primary: #e8e8e8;
+	/* ... */
 }
 ```
 
@@ -134,22 +134,22 @@ BORDES
 ```css
 /* Grid-specific (hereda del tema activo) */
 :root {
-  --grid-bg: var(--color-surface-primary);
-  --grid-header-bg: var(--color-surface-secondary);
-  --grid-row-hover: var(--color-surface-hover);
-  --grid-text: var(--color-text-primary);
-  --grid-border: var(--color-border-subtle);
-  --grid-selection: var(--color-accent-bg);
+	--grid-bg: var(--color-surface-primary);
+	--grid-header-bg: var(--color-surface-secondary);
+	--grid-row-hover: var(--color-surface-hover);
+	--grid-text: var(--color-text-primary);
+	--grid-border: var(--color-border-subtle);
+	--grid-selection: var(--color-accent-bg);
 }
 
 /* Tokyo Night override (clase opcional) */
 .grid-tokyo {
-  --grid-bg: #1a1b26;
-  --grid-header-bg: #1f2335;
-  --grid-row-hover: #24283b;
-  --grid-text: #c0caf5;
-  --grid-border: rgba(122, 162, 247, 0.2);
-  --grid-selection: rgba(122, 162, 247, 0.2);
+	--grid-bg: #1a1b26;
+	--grid-header-bg: #1f2335;
+	--grid-row-hover: #24283b;
+	--grid-text: #c0caf5;
+	--grid-border: rgba(122, 162, 247, 0.2);
+	--grid-selection: rgba(122, 162, 247, 0.2);
 }
 ```
 
@@ -157,43 +157,43 @@ BORDES
 
 ## Clases Utilitarias
 
-| Clase | Uso |
-|-------|-----|
-| `.text-primary` | Texto principal (respeta tema) |
-| `.text-secondary` | Texto secundario |
-| `.bg-surface-1` | Fondo principal |
-| `.bg-surface-2` | Fondo secundario |
-| `.border-surface` | Borde sutil |
-| `.bg-accent` | Fondo acento |
-| `.text-accent` | Texto acento |
+| Clase             | Uso                            |
+| ----------------- | ------------------------------ |
+| `.text-primary`   | Texto principal (respeta tema) |
+| `.text-secondary` | Texto secundario               |
+| `.bg-surface-1`   | Fondo principal                |
+| `.bg-surface-2`   | Fondo secundario               |
+| `.border-surface` | Borde sutil                    |
+| `.bg-accent`      | Fondo acento                   |
+| `.text-accent`    | Texto acento                   |
 
 ---
 
 ## Migración de `text-white`
 
 ### ❌ Evitar
+
 ```html
-<span class="text-white">Nombre</span>
-<input class="text-white bg-black/20" />
+<span class="text-white">Nombre</span> <input class="text-white bg-black/20" />
 ```
 
 ### ✅ Usar
+
 ```html
-<span class="text-primary">Nombre</span>
-<input class="input-base" />
+<span class="text-primary">Nombre</span> <input class="input-base" />
 ```
 
 ---
 
 ## Archivos a Modificar
 
-| Archivo | Cambio |
-|---------|--------|
-| `TabulatorWrapper.svelte` | Usar variables `--grid-*`, hacer Tokyo opcional |
-| `ingresoColumns.ts` | `text-white` → `text-primary` |
-| `ingresoProveedorColumns.ts` | `text-white` → `text-primary` |
-| `gridBadge.ts` | Agregar variantes `dark:` |
-| Modales diversos | Usar clases `input-base`, `modal-input` |
+| Archivo                      | Cambio                                          |
+| ---------------------------- | ----------------------------------------------- |
+| `TabulatorWrapper.svelte`    | Usar variables `--grid-*`, hacer Tokyo opcional |
+| `ingresoColumns.ts`          | `text-white` → `text-primary`                   |
+| `ingresoProveedorColumns.ts` | `text-white` → `text-primary`                   |
+| `gridBadge.ts`               | Agregar variantes `dark:`                       |
+| Modales diversos             | Usar clases `input-base`, `modal-input`         |
 
 ---
 

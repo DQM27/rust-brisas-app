@@ -341,49 +341,49 @@ Reemplazo visual para el `<select>` nativo que ofrece una experiencia consistent
 
 ```svelte
 <div class="relative">
-  <label class={labelClass}>Etiqueta</label>
-  
-  <!-- 1. Trigger -->
-  <button
-    type="button"
-    onclick={() => (showDropdown = !showDropdown)}
-    class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left"
-    class:!border-blue-500={showDropdown}
-  >
-    <span class="truncate">{currentValue ?? 'Seleccionar...'}</span>
-    <ChevronDown size={16} class="text-secondary" />
-  </button>
+	<label class={labelClass}>Etiqueta</label>
 
-  {#if showDropdown}
-    <!-- 2. Backdrop -->
-    <div 
-      class="fixed inset-0 z-40" 
-      onclick={() => (showDropdown = false)} 
-      role="presentation"
-    ></div>
+	<!-- 1. Trigger -->
+	<button
+		type="button"
+		onclick={() => (showDropdown = !showDropdown)}
+		class="{inputClass} flex items-center justify-between cursor-pointer w-full text-left"
+		class:!border-blue-500={showDropdown}
+	>
+		<span class="truncate">{currentValue ?? 'Seleccionar...'}</span>
+		<ChevronDown size={16} class="text-secondary" />
+	</button>
 
-    <!-- 3. Menú -->
-    <div
-      class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top"
-      transition:fly={{ y: -5, duration: 200 }}
-    >
-      {#each options as option}
-        <button
-          type="button"
-          onclick={() => {
-            currentValue = option.value;
-            showDropdown = false;
-          }}
-          class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
-        >
-          <span>{option.label}</span>
-          {#if currentValue === option.value}
-            <Check size={14} class="text-white" />
-          {/if}
-        </button>
-      {/each}
-    </div>
-  {/if}
+	{#if showDropdown}
+		<!-- 2. Backdrop -->
+		<div
+			class="fixed inset-0 z-40"
+			onclick={() => (showDropdown = false)}
+			role="presentation"
+		></div>
+
+		<!-- 3. Menú -->
+		<div
+			class="absolute z-50 w-full mt-1 bg-[#1c2128] border border-white/10 rounded-lg shadow-xl overflow-hidden p-1 origin-top"
+			transition:fly={{ y: -5, duration: 200 }}
+		>
+			{#each options as option}
+				<button
+					type="button"
+					onclick={() => {
+						currentValue = option.value;
+						showDropdown = false;
+					}}
+					class="w-full text-left px-3 py-1.5 text-sm text-gray-300 hover:bg-white/10 rounded-md transition-colors flex items-center justify-between group"
+				>
+					<span>{option.label}</span>
+					{#if currentValue === option.value}
+						<Check size={14} class="text-white" />
+					{/if}
+				</button>
+			{/each}
+		</div>
+	{/if}
 </div>
 ```
 

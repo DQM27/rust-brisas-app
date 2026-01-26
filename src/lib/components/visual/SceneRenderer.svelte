@@ -338,6 +338,3 @@
 		pointer-events: none;
 	}
 </style>
-
-
-
