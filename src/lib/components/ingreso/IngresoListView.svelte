@@ -13,7 +13,7 @@
 	import QuickExitModal from './QuickExitModal.svelte';
 	import QuickEntryModal from './QuickEntryModal.svelte';
 	import DateRangePicker from '$lib/components/shared/DateRangePicker.svelte';
-	import ContratistaFormModal from '$lib/components/contratista/ContratistaFormModal.svelte';
+	import ContratistaFormModal from '$lib/components/contratista/modal/ContratistaFormModal.svelte';
 	import ExportDialog from '$lib/components/export/ExportDialog.svelte';
 
 	// Logic
