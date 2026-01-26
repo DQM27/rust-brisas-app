@@ -7,12 +7,13 @@ use crate::domain::errors::IngresoVisitaError;
 use crate::models::ingreso::{CreateIngresoVisitaInput, IngresoResponse};
 use crate::services::ingreso_visita_service as service;
 use crate::services::session::SessionState;
-use tauri::{command, State};
+use tauri::{command, AppHandle, Emitter, State};
 
 /// Registra físicamente la entrada de una visita.
 /// Requiere permiso 'ingresos:create'.
 #[command]
 pub async fn crear_ingreso_visita(
+    app: AppHandle,
     session: State<'_, SessionState>,
     input: CreateIngresoVisitaInput,
 ) -> Result<IngresoResponse, IngresoVisitaError> {
@@ -20,7 +21,13 @@ pub async fn crear_ingreso_visita(
     let user = session
         .get_user()
         .ok_or(IngresoVisitaError::Unauthorized("Sesión requerida".to_string()))?;
-    service::registrar_ingreso(input, user.id).await
+
+    let res = service::registrar_ingreso(input, user.id).await?;
+
+    // Emitir evento para refrescar lista de gafetes en tiempo real
+    let _ = app.emit("gafetes:refresh", ());
+
+    Ok(res)
 }
 
 /// Validación Preventiva: Comprueba requisitos de seguridad antes del acceso físico.
@@ -48,6 +55,7 @@ pub async fn get_ingresos_visita_historial(
 /// Cierre de Registro: Registra la salida física del visitante.
 #[command]
 pub async fn registrar_salida_visita(
+    app: AppHandle,
     ingreso_id: String,
     devolvio_gafete: bool,
     observaciones: Option<String>,
@@ -56,5 +64,12 @@ pub async fn registrar_salida_visita(
     let user = session
         .get_user()
         .ok_or(IngresoVisitaError::Unauthorized("Sesión requerida".to_string()))?;
-    service::registrar_salida(ingreso_id, user.id, devolvio_gafete, observaciones).await
+
+    let res =
+        service::registrar_salida(ingreso_id, user.id, devolvio_gafete, observaciones).await?;
+
+    // Emitir evento para refrescar lista de gafetes en tiempo real
+    let _ = app.emit("gafetes:refresh", ());
+
+    Ok(res)
 }

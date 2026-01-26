@@ -40,18 +40,6 @@ export const getGafeteColumns = (handlers: GafeteColumnHandlers): ColumnDefiniti
 			}
 		},
 		{
-			title: 'Asignado a',
-			field: 'asignadoA',
-			width: 200,
-			headerFilter: 'input',
-			formatter: (cell) => {
-				const val = cell.getValue();
-				return val
-					? `<span class="text-primary font-medium">${val}</span>`
-					: '<span class="text-tertiary opacity-30 italic"> - </span>';
-			}
-		},
-		{
 			title: 'Estado',
 			field: 'status',
 			width: 150,

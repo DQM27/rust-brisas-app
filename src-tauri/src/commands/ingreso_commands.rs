@@ -7,9 +7,10 @@ use crate::domain::errors::{AlertaError, IngresoError};
 use crate::models::ingreso::{
     AlertaGafeteResponse, IngresoListResponse, IngresoResponse, ResolverAlertaInput,
 };
-use crate::services::alerta_service;
-use crate::services::ingreso_general_service;
-use crate::services::session::SessionState;
+use crate::services::{
+    alerta_service, ingreso_general_service, ingreso_proveedor_service, ingreso_visita_service,
+    session::SessionState,
+};
 use tauri::{command, AppHandle, Emitter, State};
 
 // ==========================================
@@ -112,9 +113,7 @@ pub async fn registrar_salida(
     session: State<'_, SessionState>,
     input: crate::models::ingreso::RegistrarSalidaInput,
 ) -> Result<IngresoResponse, IngresoError> {
-    use crate::commands::{
-        ingreso_contratista_commands, ingreso_proveedor_commands, ingreso_visita_commands,
-    };
+    use crate::commands::ingreso_contratista_commands;
 
     let id_str = &input.ingreso_id;
 
@@ -127,20 +126,25 @@ pub async fn registrar_salida(
         let user = session
             .get_user()
             .ok_or(IngresoError::Validation("Usuario no autenticado".to_string()))?;
-        ingreso_proveedor_commands::registrar_salida_proveedor(
+
+        ingreso_proveedor_service::registrar_salida(
             input.ingreso_id,
-            user.id,
+            user.id.to_string(),
             input.observaciones_salida,
             input.devolvio_gafete,
         )
         .await
-        .map_err(IngresoError::Validation)
+        .map_err(|e| IngresoError::Validation(e.to_string()))
     } else if id_str.contains("ingreso_visita") {
-        ingreso_visita_commands::registrar_salida_visita(
+        let user = session
+            .get_user()
+            .ok_or(IngresoError::Validation("Usuario no autenticado".to_string()))?;
+
+        ingreso_visita_service::registrar_salida(
             input.ingreso_id,
+            user.id.to_string(),
             input.devolvio_gafete,
             input.observaciones_salida,
-            session,
         )
         .await
         .map_err(|e| IngresoError::Validation(e.to_string()))

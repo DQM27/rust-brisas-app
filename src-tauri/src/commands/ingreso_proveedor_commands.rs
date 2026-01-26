@@ -7,15 +7,21 @@ use crate::domain::errors::IngresoProveedorError;
 use crate::domain::ingreso_proveedor::ValidacionIngresoProveedorResponse;
 use crate::models::ingreso::{CreateIngresoProveedorInput, IngresoResponse};
 use crate::services::ingreso_proveedor_service as service;
-use tauri::command;
+use tauri::{command, AppHandle, Emitter};
 
 /// Registra físicamente la llegada de un proveedor.
 #[command]
 pub async fn crear_ingreso_proveedor_v2(
+    app: AppHandle,
     input: CreateIngresoProveedorInput,
     usuario_id: String,
 ) -> Result<IngresoResponse, String> {
-    service::registrar_ingreso(input, usuario_id).await.map_err(|e| e.to_string())
+    let res = service::registrar_ingreso(input, usuario_id).await.map_err(|e| e.to_string())?;
+
+    // Emitir evento para refrescar lista de gafetes en tiempo real
+    let _ = app.emit("gafetes:refresh", ());
+
+    Ok(res)
 }
 
 /// Lista los proveedores que están actualmente dentro de las instalaciones.
@@ -36,14 +42,20 @@ pub async fn get_ingresos_proveedores_historial(
 /// Cierra el ciclo de admisión registrando la salida física.
 #[command]
 pub async fn registrar_salida_proveedor(
+    app: AppHandle,
     id: String,
     usuario_id: String,
     observaciones: Option<String>,
     devolvio_gafete: bool,
 ) -> Result<IngresoResponse, String> {
-    service::registrar_salida(id, usuario_id, observaciones, devolvio_gafete)
+    let res = service::registrar_salida(id, usuario_id, observaciones, devolvio_gafete)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    // Emitir evento para refrescar lista de gafetes en tiempo real
+    let _ = app.emit("gafetes:refresh", ());
+
+    Ok(res)
 }
 
 /// Motor de Búsqueda: Localiza un perfil de proveedor para agilizar su ingreso.
